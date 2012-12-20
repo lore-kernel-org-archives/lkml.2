@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318Ab2LTTOS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 14:14:18 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48822 "EHLO
+	id S1752308Ab2LTTO1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 14:14:27 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48823 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab2LTTNn (ORCPT
+	with ESMTP id S1752237Ab2LTTNn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Dec 2012 14:13:43 -0500
 From: Sasha Levin <sasha.levin@oracle.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Alan Cox <alan@linux.intel.com>, linux-pci@vger.kernel.org,
+To: Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI: cpqphp: minor cleanup and removal of unreachable paths
-Date: Thu, 20 Dec 2012 14:11:23 -0500
-Message-Id: <1356030701-16284-15-git-send-email-sasha.levin@oracle.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] bnx2x: use ARRAY_SIZE where possible
+Date: Thu, 20 Dec 2012 14:11:24 -0500
+Message-Id: <1356030701-16284-16-git-send-email-sasha.levin@oracle.com>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
 References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
@@ -22,107 +22,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove cases of redundant checks and remote unreachable paths.
-
 Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
- drivers/pci/hotplug/cpqphp_ctrl.c | 57 ++++++++++++++-------------------------
- 1 file changed, 20 insertions(+), 37 deletions(-)
+ drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/pci/hotplug/cpqphp_ctrl.c b/drivers/pci/hotplug/cpqphp_ctrl.c
-index 36112fe..d282019 100644
---- a/drivers/pci/hotplug/cpqphp_ctrl.c
-+++ b/drivers/pci/hotplug/cpqphp_ctrl.c
-@@ -1900,8 +1900,7 @@ static void interrupt_event_handler(struct controller *ctrl)
- 					dbg("power fault\n");
- 				} else {
- 					/* refresh notification */
--					if (p_slot)
--						update_slot_info(ctrl, p_slot);
-+					update_slot_info(ctrl, p_slot);
- 				}
+diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+index 09096b4..cb41f54 100644
+--- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
++++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_link.c
+@@ -3659,7 +3659,7 @@ static void bnx2x_warpcore_enable_AN_KR2(struct bnx2x_phy *phy,
+ 	bnx2x_cl45_read_or_write(bp, phy, MDIO_WC_DEVAD,
+ 				 MDIO_WC_REG_CL49_USERB0_CTRL, (3<<6));
  
- 				ctrl->event_queue[loop].event_type = 0;
-@@ -2520,44 +2519,28 @@ static int configure_new_function(struct controller *ctrl, struct pci_func *func
+-	for (i = 0; i < sizeof(reg_set)/sizeof(struct bnx2x_reg_set); i++)
++	for (i = 0; i < ARRAY_SIZE(reg_set); i++)
+ 		bnx2x_cl45_write(bp, phy, reg_set[i].devad, reg_set[i].reg,
+ 				 reg_set[i].val);
  
- 		/* If we have IO resources copy them and fill in the bridge's
- 		 * IO range registers */
--		if (io_node) {
--			memcpy(hold_IO_node, io_node, sizeof(struct pci_resource));
--			io_node->next = NULL;
-+		memcpy(hold_IO_node, io_node, sizeof(struct pci_resource));
-+		io_node->next = NULL;
+@@ -3713,7 +3713,7 @@ static void bnx2x_warpcore_enable_AN_KR(struct bnx2x_phy *phy,
+ 	};
+ 	DP(NETIF_MSG_LINK, "Enable Auto Negotiation for KR\n");
+ 	/* Set to default registers that may be overriden by 10G force */
+-	for (i = 0; i < sizeof(reg_set)/sizeof(struct bnx2x_reg_set); i++)
++	for (i = 0; i < ARRAY_SIZE(reg_set); i++)
+ 		bnx2x_cl45_write(bp, phy, reg_set[i].devad, reg_set[i].reg,
+ 				 reg_set[i].val);
  
--			/* set IO base and Limit registers */
--			temp_byte = io_node->base >> 8;
--			rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_BASE, temp_byte);
-+		/* set IO base and Limit registers */
-+		temp_byte = io_node->base >> 8;
-+		rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_BASE, temp_byte);
+@@ -3854,7 +3854,7 @@ static void bnx2x_warpcore_set_10G_KR(struct bnx2x_phy *phy,
+ 		{MDIO_PMA_DEVAD, MDIO_WC_REG_PMD_KR_CONTROL, 0x2}
+ 	};
  
--			temp_byte = (io_node->base + io_node->length - 1) >> 8;
--			rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_LIMIT, temp_byte);
--		} else {
--			kfree(hold_IO_node);
--			hold_IO_node = NULL;
--		}
--
--		/* If we have memory resources copy them and fill in the
--		 * bridge's memory range registers.  Otherwise, fill in the
--		 * range registers with values that disable them. */
--		if (mem_node) {
--			memcpy(hold_mem_node, mem_node, sizeof(struct pci_resource));
--			mem_node->next = NULL;
--
--			/* set Mem base and Limit registers */
--			temp_word = mem_node->base >> 16;
--			rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_BASE, temp_word);
-+		temp_byte = (io_node->base + io_node->length - 1) >> 8;
-+		rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_LIMIT, temp_byte);
+-	for (i = 0; i < sizeof(reg_set)/sizeof(struct bnx2x_reg_set); i++)
++	for (i = 0; i < ARRAY_SIZE(reg_set); i++)
+ 		bnx2x_cl45_write(bp, phy, reg_set[i].devad, reg_set[i].reg,
+ 				 reg_set[i].val);
  
--			temp_word = (mem_node->base + mem_node->length - 1) >> 16;
--			rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_LIMIT, temp_word);
--		} else {
--			temp_word = 0xFFFF;
--			rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_BASE, temp_word);
-+		/* Copy the memory resources and fill in the bridge's memory
-+		 * range registers.
-+		 */
-+		memcpy(hold_mem_node, mem_node, sizeof(struct pci_resource));
-+		mem_node->next = NULL;
+@@ -4242,7 +4242,7 @@ static void bnx2x_warpcore_clear_regs(struct bnx2x_phy *phy,
+ 	bnx2x_cl45_read_or_write(bp, phy, MDIO_WC_DEVAD,
+ 				 MDIO_WC_REG_RX66_CONTROL, (3<<13));
  
--			temp_word = 0x0000;
--			rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_LIMIT, temp_word);
-+		/* set Mem base and Limit registers */
-+		temp_word = mem_node->base >> 16;
-+		rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_BASE, temp_word);
+-	for (i = 0; i < sizeof(wc_regs)/sizeof(struct bnx2x_reg_set); i++)
++	for (i = 0; i < ARRAY_SIZE(wc_regs); i++)
+ 		bnx2x_cl45_write(bp, phy, wc_regs[i].devad, wc_regs[i].reg,
+ 				 wc_regs[i].val);
  
--			kfree(hold_mem_node);
--			hold_mem_node = NULL;
--		}
-+		temp_word = (mem_node->base + mem_node->length - 1) >> 16;
-+		rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_LIMIT, temp_word);
+@@ -9520,7 +9520,7 @@ static void bnx2x_save_848xx_spirom_version(struct bnx2x_phy *phy,
+ 	} else {
+ 		/* For 32-bit registers in 848xx, access via MDIO2ARM i/f. */
+ 		/* (1) set reg 0xc200_0014(SPI_BRIDGE_CTRL_2) to 0x03000000 */
+-		for (i = 0; i < sizeof(reg_set)/sizeof(struct bnx2x_reg_set);
++		for (i = 0; i < ARRAY_SIZE(reg_set);
+ 		      i++)
+ 			bnx2x_cl45_write(bp, phy, reg_set[i].devad,
+ 					 reg_set[i].reg, reg_set[i].val);
+@@ -9592,7 +9592,7 @@ static void bnx2x_848xx_set_led(struct bnx2x *bp,
+ 			 MDIO_PMA_DEVAD,
+ 			 MDIO_PMA_REG_8481_LINK_SIGNAL, val);
  
- 		memcpy(hold_p_mem_node, p_mem_node, sizeof(struct pci_resource));
- 		p_mem_node->next = NULL;
-@@ -2627,7 +2610,7 @@ static int configure_new_function(struct controller *ctrl, struct pci_func *func
- 		/* Return unused bus resources
- 		 * First use the temporary node to store information for
- 		 * the board */
--		if (hold_bus_node && bus_node && temp_resources.bus_head) {
-+		if (bus_node && temp_resources.bus_head) {
- 			hold_bus_node->length = bus_node->base - hold_bus_node->base;
+-	for (i = 0; i < sizeof(reg_set)/sizeof(struct bnx2x_reg_set); i++)
++	for (i = 0; i < ARRAY_SIZE(reg_set); i++)
+ 		bnx2x_cl45_write(bp, phy, reg_set[i].devad, reg_set[i].reg,
+ 				 reg_set[i].val);
  
- 			hold_bus_node->next = func->bus_head;
-@@ -2751,7 +2734,7 @@ static int configure_new_function(struct controller *ctrl, struct pci_func *func
- 		}
- 		/* If we have prefetchable memory space available and there
- 		 * is some left at the end, return the unused portion */
--		if (hold_p_mem_node && temp_resources.p_mem_head) {
-+		if (temp_resources.p_mem_head) {
- 			p_mem_node = do_pre_bridge_resource_split(&(temp_resources.p_mem_head),
- 								  &hold_p_mem_node, 0x100000);
+@@ -13395,7 +13395,7 @@ static void bnx2x_disable_kr2(struct link_params *params,
+ 	};
+ 	DP(NETIF_MSG_LINK, "Disabling 20G-KR2\n");
  
+-	for (i = 0; i < sizeof(reg_set)/sizeof(struct bnx2x_reg_set); i++)
++	for (i = 0; i < ARRAY_SIZE(reg_set); i++)
+ 		bnx2x_cl45_write(bp, phy, reg_set[i].devad, reg_set[i].reg,
+ 				 reg_set[i].val);
+ 	vars->link_attr_sync &= ~LINK_ATTR_SYNC_KR2_ENABLE;
 -- 
 1.8.0
 
