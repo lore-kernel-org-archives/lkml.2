@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab2LTPYN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 10:24:13 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:50540 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab2LTPYD (ORCPT
+	id S1751392Ab2LTPa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 10:30:57 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:57024 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab2LTPau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 10:24:03 -0500
-Subject: Re: [PATCH] net: ipv4: route: fixed a coding style issues net:
- ipv4: tcp: fixed a coding style issues
-From: Eric Dumazet <erdnetdev@gmail.com>
-To: nicolas.dichtel@6wind.com
-Cc: Stefan Hasko <hasko.stevo@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <50D2FF86.3000603@6wind.com>
-References: <1355990910-3688-1-git-send-email-hasko.stevo@gmail.com>
-	 <50D2FF86.3000603@6wind.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 Dec 2012 07:23:59 -0800
-Message-ID: <1356017039.21834.2819.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Dec 2012 10:30:50 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] spidev.c: add sysfs attributes for SPI configuration
+Date: Thu, 20 Dec 2012 16:30:36 +0100
+Message-ID: <1440955.3UsNh3CGzX@number-5>
+User-Agent: KMail/4.9.4 (Linux/3.6.10-2.fc17.x86_64; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <20121219150925.8262E3E0AD7@localhost>
+References: <1353777608-24934-1-git-send-email-federico.vaga@gmail.com> <20121219150925.8262E3E0AD7@localhost>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-20 at 13:07 +0100, Nicolas Dichtel wrote:
-> Le 20/12/2012 09:08, Stefan Hasko a écrit :
+On Wednesday 19 December 2012 15:09:25 Grant Likely wrote:
+> Not a good idea. sysfs is not a good place for operational
+> interfaces. Please use the spi character devices for direct
+> manipulation of the SPI configuration.
 
-> > +				"out_hlist_search\n");
-> checkpatch will warn you about this one, something like:
-> "WARNING: quoted string split across lines".
-> Not breaking such line ease to grep the pattern.
+Hello,
 
+Can you explain why it is not a good idea? I do not understand; what 
+is the advantage of ioctl through char device? Or what it the issue 
+with sysfs?
 
-Yes.
-
-Could we please leave this file as is for at least 2 years ?
-
-We had a lot of recent changes and probable fixes are expected.
-
-Such "coding style" patches are a real pain when trying to fix bugs,
-especially dealing with stable/old kernels.
-
-Thanks
+Thank you very much
 
 
+-- 
+Federico Vaga
