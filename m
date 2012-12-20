@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab2LTALd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 19:11:33 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:33510 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271Ab2LTALZ (ORCPT
+	id S1752069Ab2LTAPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 19:15:32 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:51135 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751616Ab2LTAP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 19:11:25 -0500
-To: Milan Broz <mbroz@redhat.com>
-Cc: Mike Snitzer <snitzer@redhat.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Kernel Team <kernel-team@lists.ubuntu.com>,
-        linux-kernel@vger.kernel.org, jgarzik@redhat.com,
-        JBottomley@Parallels.com
-Subject: Re: [PATCH] dm-crypt: never use write same (was Re: [v3.7 Regression] [SCSI] sd: Implement support for WRITE SAME)
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <50CB8C74.3090102@canonical.com>
-	<yq11uesdzya.fsf@sermon.lab.mkp.net> <50D0C971.1000907@canonical.com>
-	<yq1bodq7zdv.fsf@sermon.lab.mkp.net>
-	<20121219195801.GA14456@redhat.com> <50D22766.9090107@redhat.com>
-	<50D22C7F.2020201@redhat.com>
-Date: Wed, 19 Dec 2012 19:11:13 -0500
-In-Reply-To: <50D22C7F.2020201@redhat.com> (Milan Broz's message of "Wed, 19
-	Dec 2012 22:07:11 +0100")
-Message-ID: <yq1mwx960ri.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.130005 (Ma Gnus v0.5) Emacs/24.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 19 Dec 2012 19:15:26 -0500
+Date: Wed, 19 Dec 2012 16:15:25 -0800 (PST)
+Message-Id: <20121219.161525.153169039035687883.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Milan" == Milan Broz <mbroz@redhat.com> writes:
 
-Milan> dm-crypt: never use write same
+Please pull to get these sparc AES/DES/CAMELLIA crypto bug fixes
+as well as an addition of a pte_accessible() define for sparc64
+and a hugetlb fix from Dave Kleikamp.
 
-Milan> Ciphertext device is not compatible with WRITE SAME, disable it
-Milan> for all dmcrypt devices.
+Thanks.
 
-Milan> Signed-off-by: Milan Broz <mbroz@redhat.com>
+The following changes since commit 31564cbd77baa88405862d4aa0d00893ab1d8cb7:
 
-Acked-by: Martin K. Petersen <martin.petersen@oracle.com>
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input (2012-12-18 12:46:37 -0800)
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/sparc master
+
+for you to fetch changes up to 62ba63dc892cf836ecb9ce4fdb7644d45c95070b:
+
+  sparc64: Set CRYPTO_TFM_REQ_MAY_SLEEP consistently in CAMELLIA code. (2012-12-19 15:44:31 -0800)
+
+----------------------------------------------------------------
+Dave Kleikamp (1):
+      sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
+
+David S. Miller (7):
+      sparc64: Define pte_accessible()
+      sparc64: Fix unrolled AES 256-bit key loops.
+      sparc64: Fix AES ctr mode block size.
+      sparc64: Set CRYPTO_TFM_REQ_MAY_SLEEP consistently in AES code.
+      sparc64: Fix ECB looping constructs in AES code.
+      sparc64: Set CRYPTO_TFM_REQ_MAY_SLEEP consistently in DES code.
+      sparc64: Set CRYPTO_TFM_REQ_MAY_SLEEP consistently in CAMELLIA code.
+
+ arch/sparc/crypto/aes_asm.S         | 20 ++++++++++++++------
+ arch/sparc/crypto/aes_glue.c        | 31 ++++++++++++++++++++++++++++---
+ arch/sparc/crypto/camellia_glue.c   |  3 +++
+ arch/sparc/crypto/des_asm.S         |  1 +
+ arch/sparc/crypto/des_glue.c        |  6 ++++++
+ arch/sparc/include/asm/hugetlb.h    | 10 ++++++++--
+ arch/sparc/include/asm/pgtable_64.h |  8 +++++++-
+ 7 files changed, 67 insertions(+), 12 deletions(-)
