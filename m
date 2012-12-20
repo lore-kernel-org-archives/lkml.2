@@ -1,99 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752438Ab2LTSlz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 13:41:55 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:43593 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328Ab2LTSll (ORCPT
+	id S1752356Ab2LTSmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 13:42:09 -0500
+Received: from gate.crashing.org ([63.228.1.57]:39069 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752065Ab2LTSmB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 13:41:41 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 14/24] sched: Update rq clock on tickless CPUs before calling check_preempt_curr()
-Date: Thu, 20 Dec 2012 19:33:01 +0100
-Message-Id: <1356028391-14427-15-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+	Thu, 20 Dec 2012 13:42:01 -0500
+Subject: Re: [v1][PATCH 3/6] book3e/kgdb: update thread's dbcr0
+Mime-Version: 1.0 (Apple Message framework v1278)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1355994510-11934-4-git-send-email-tiejun.chen@windriver.com>
+Date: Thu, 20 Dec 2012 12:41:53 -0600
+Cc: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <jason.wessel@windriver.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A47C9236-0744-45BC-B25A-3DDEB05CD8A1@kernel.crashing.org>
+References: <1355994510-11934-1-git-send-email-tiejun.chen@windriver.com> <1355994510-11934-4-git-send-email-tiejun.chen@windriver.com>
+To: Tiejun Chen <tiejun.chen@windriver.com>
+X-Mailer: Apple Mail (2.1278)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check_preempt_wakeup() of fair class needs an uptodate sched clock
-value to update runtime stats of the current task.
 
-When a task is woken up, activate_task() is usually called right before
-ttwu_do_wakeup() unless the task is already in the runqueue. In this
-case we need to update the rq clock manually in case the CPU runs
-tickless because ttwu_do_wakeup() calls check_preempt_wakeup().
+On Dec 20, 2012, at 3:08 AM, Tiejun Chen wrote:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/sched/core.c |   17 ++++++++++++++++-
- 1 files changed, 16 insertions(+), 1 deletions(-)
+> gdb always need to generate a single step properly to invoke
+> a kgdb state. But with lazy interrupt, book3e can't always
+> trigger a debug exception with a single step since the current
+> is blocked for handling those pending exception, then we miss
+> that expected dbcr configuration at last to generate a debug
+> exception.
+> 
+> So here we also update thread's dbcr0 to make sure the current
+> can go back with that missed dbcr0 configuration.
+> 
+> Signed-off-by: Tiejun Chen <tiejun.chen@windriver.com>
+> ---
+> arch/powerpc/kernel/kgdb.c |   10 ++++++++++
+> 1 file changed, 10 insertions(+)
+> 
+> diff --git a/arch/powerpc/kernel/kgdb.c b/arch/powerpc/kernel/kgdb.c
+> index c470a40..516b44b 100644
+> --- a/arch/powerpc/kernel/kgdb.c
+> +++ b/arch/powerpc/kernel/kgdb.c
+> @@ -426,8 +426,18 @@ int kgdb_arch_handle_exception(int vector, int signo, int err_code,
+> 		/* set the trace bit if we're stepping */
+> 		if (remcom_in_buffer[0] == 's') {
+> #ifdef CONFIG_PPC_ADV_DEBUG_REGS
+> +#ifdef CONFIG_PPC_BOOK3E
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 5d9060a..9cbace7 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1323,6 +1323,12 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
- 
- 	rq = __task_rq_lock(p);
- 	if (p->on_rq) {
-+		/*
-+		 * Ensure check_preempt_curr() won't deal with a stale value
-+		 * of rq clock if the CPU is tickless. BTW do we actually need
-+		 * check_preempt_curr() to be called here?
-+		 */
-+		update_nohz_rq_clock(rq);
- 		ttwu_do_wakeup(rq, p, wake_flags);
- 		ret = 1;
- 	}
-@@ -1500,8 +1506,17 @@ static void try_to_wake_up_local(struct task_struct *p)
- 	if (!(p->state & TASK_NORMAL))
- 		goto out;
- 
--	if (!p->on_rq)
-+	if (!p->on_rq) {
- 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
-+	} else {
-+		/*
-+		 * Even if the task is on the runqueue we still
-+		 * need to ensure check_preempt_curr() won't
-+		 * deal with a stale rq clock value on a tickless
-+		 * CPU
-+		 */
-+		update_nohz_rq_clock(rq);
-+	}
- 
- 	ttwu_do_wakeup(rq, p, 0);
- 	ttwu_stat(p, smp_processor_id(), 0);
--- 
-1.7.5.4
+Should this really be CONFIG_PPC64 or CONFIG_PPC_BOOK3E_64?
+
+> +			/* With lazy interrut we have to update thread dbcr0 here
+> +			 * to make sure we can set debug properly at last to invoke
+> +			 * kgdb again to work well.
+> +			 */
+> +			current->thread.dbcr0 =
+> +				mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM;
+> +			mtspr(SPRN_DBCR0, current->thread.dbcr0);
+> +#else
+> 			mtspr(SPRN_DBCR0,
+> 			      mfspr(SPRN_DBCR0) | DBCR0_IC | DBCR0_IDM);
+> +#endif
+
+Can we code this so we don't need the #else?
+
+> 			linux_regs->msr |= MSR_DE;
+> #else
+> 			linux_regs->msr |= MSR_SE;
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
