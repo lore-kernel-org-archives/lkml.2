@@ -1,109 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752428Ab2LTLe4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 06:34:56 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:65082 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab2LTLet (ORCPT
+	id S1752425Ab2LTLjA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 06:39:00 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55079 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469Ab2LTLiz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 06:34:49 -0500
-From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
-To: matt.fleming@intel.com
-Cc: linux-kernel@vger.kernel.org, "Lee, Chun-Yi" <jlee@suse.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH] x86, efi: Allow slash in file path of initrd
-Date: Thu, 20 Dec 2012 19:33:22 +0800
-Message-Id: <1356003202-29516-1-git-send-email-jlee@suse.com>
-X-Mailer: git-send-email 1.6.0.2
+	Thu, 20 Dec 2012 06:38:55 -0500
+Date: Thu, 20 Dec 2012 11:44:11 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Xiao Jin <jin.xiao@intel.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, rusty@rustcorp.com.au,
+        william.douglas@intel.com, sboyd@codeaurora.org,
+        gregkh@linuxfoundation.org, jslaby@suse.cz, vincentx.pillet@intel.com
+Subject: Re: [PATCH] n_gsm.c: add tx_lock in gsm_send
+Message-ID: <20121220114411.4dcc81bb@pyramind.ukuu.org.uk>
+In-Reply-To: <1355963920.9600.99.camel@xiaojin>
+References: <1355963920.9600.99.camel@xiaojin>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When initrd file didn't put at the same place with stub kernel, we
-need give the file path of initrd, but need use backslash to separate
-directory and file. It's not friendly to unix/linux user, and not so
-intuitive for bootloader forward paramters to efi stub kernel by
-chainloading.
+On Thu, 20 Dec 2012 08:38:40 +0800
+Xiao Jin <jin.xiao@intel.com> wrote:
 
-This patch add support to handle_ramdisks for allow slash in file path
-of initrd, it convert slash to backlash when parsing path.
+> From: xiaojin <jin.xiao@intel.com>
+> Date: Wed, 19 Dec 2012 11:53:43 +0800
+> Subject: [PATCH] n_gsm.c: add tx_lock in gsm_send
+> 
+> All the call to gsm->output should be in the tx_lock,
+> that could avoid potential race from MUX level. But
+> we have no tx_lock in gsm_send.
+> 
+> This patch is to add tx_lock in gsm_send.
 
-In additional, this patch also separates print code of efi_char16_t from
-efi_printk, and print out the path/filename of initrd when failed to open
-initrd file. It's good for debug and discover typo.
+gsm->output calls the transmit method of the underlying tty driver. We
+can't do that with interrupts off as some drivers expect to be able to
+sleep in their output paths.
 
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Matt Fleming <matt.fleming@intel.com> 
-Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
----
- arch/x86/boot/compressed/eboot.c |   26 +++++++++++++++++++-------
- 1 files changed, 19 insertions(+), 7 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index b1942e2..e360288 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -19,23 +19,28 @@
- 
- static efi_system_table_t *sys_table;
- 
-+static void efi_char16_printk(efi_char16_t *str)
-+{
-+	struct efi_simple_text_output_protocol *out;
-+
-+	out = (struct efi_simple_text_output_protocol *)sys_table->con_out;
-+	efi_call_phys2(out->output_string, out, str);
-+}
-+
- static void efi_printk(char *str)
- {
- 	char *s8;
- 
- 	for (s8 = str; *s8; s8++) {
--		struct efi_simple_text_output_protocol *out;
- 		efi_char16_t ch[2] = { 0 };
- 
- 		ch[0] = *s8;
--		out = (struct efi_simple_text_output_protocol *)sys_table->con_out;
--
- 		if (*s8 == '\n') {
- 			efi_char16_t nl[2] = { '\r', 0 };
--			efi_call_phys2(out->output_string, out, nl);
-+			efi_char16_printk(nl);
- 		}
- 
--		efi_call_phys2(out->output_string, out, ch);
-+		efi_char16_printk(ch);
- 	}
- }
- 
-@@ -708,7 +713,12 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 			if ((u8 *)p >= (u8 *)filename_16 + sizeof(filename_16))
- 				break;
- 
--			*p++ = *str++;
-+			if (*str == '/') {
-+				*p++ = '\\';
-+				*str++;
-+			} else {
-+				*p++ = *str++;
-+			}
- 		}
- 
- 		*p = '\0';
-@@ -736,7 +746,9 @@ static efi_status_t handle_ramdisks(efi_loaded_image_t *image,
- 		status = efi_call_phys5(fh->open, fh, &h, filename_16,
- 					EFI_FILE_MODE_READ, (u64)0);
- 		if (status != EFI_SUCCESS) {
--			efi_printk("Failed to open initrd file\n");
-+			efi_printk("Failed to open initrd file: ");
-+			efi_char16_printk(filename_16);
-+			efi_printk("\n");
- 			goto close_handles;
- 		}
- 
--- 
-1.6.4.2
-
+Alan
