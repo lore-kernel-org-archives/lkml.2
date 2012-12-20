@@ -1,152 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab2LTOoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 09:44:46 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:55512 "EHLO e9.ny.us.ibm.com"
+	id S1751765Ab2LTOoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 09:44:54 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:55566 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917Ab2LTOoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 09:44:18 -0500
+	id S1751417Ab2LTOoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 09:44:23 -0500
 From: zwu.kernel@gmail.com
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk, david@fromorbit.com,
         dave@jikos.cz, darrick.wong@oracle.com, andi@firstfloor.org,
         hch@infradead.org, linuxram@linux.vnet.ibm.com, zwu.kernel@gmail.com,
         wuzhy@linux.vnet.ibm.com
-Subject: [PATCH RESEND v1 05/16] vfs: add hooks to enable hot tracking
-Date: Thu, 20 Dec 2012 22:43:24 +0800
-Message-Id: <1356014615-15073-6-git-send-email-zwu.kernel@gmail.com>
+Subject: [PATCH RESEND v1 02/16] vfs: add init and cleanup functions
+Date: Thu, 20 Dec 2012 22:43:21 +0800
+Message-Id: <1356014615-15073-3-git-send-email-zwu.kernel@gmail.com>
 X-Mailer: git-send-email 1.7.6.5
 In-Reply-To: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
 References: <1356014615-15073-1-git-send-email-zwu.kernel@gmail.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12122014-7182-0000-0000-000003EDE9DE
+x-cbid: 12122014-7182-0000-0000-000003EDEA11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 
-  Miscellaneous features that implement hot data tracking
-and generally make the hot data functions a bit more friendly.
+  Add initialization function to create some
+key data structures when hot tracking is enabled;
+Clean up them when hot tracking is disabled
 
 Signed-off-by: Zhi Yong Wu <wuzhy@linux.vnet.ibm.com>
 ---
- fs/direct-io.c      |    6 ++++++
- mm/filemap.c        |    6 ++++++
- mm/page-writeback.c |   12 ++++++++++++
- mm/readahead.c      |    7 +++++++
- 4 files changed, 31 insertions(+), 0 deletions(-)
+ fs/hot_tracking.c            |  117 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h           |    4 ++
+ include/linux/hot_tracking.h |    3 +
+ 3 files changed, 124 insertions(+), 0 deletions(-)
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index cf5b44b..834d142 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -37,6 +37,7 @@
- #include <linux/uio.h>
- #include <linux/atomic.h>
- #include <linux/prefetch.h>
-+#include "hot_tracking.h"
- 
- /*
-  * How many user pages to map in one call to get_user_pages().  This determines
-@@ -1299,6 +1300,11 @@ __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
- 	prefetch(bdev->bd_queue);
- 	prefetch((char *)bdev->bd_queue + SMP_CACHE_BYTES);
- 
-+	/* Hot data tracking */
-+	hot_update_freqs(inode, offset,
-+			iov_length(iov, nr_segs),
-+			rw & WRITE);
-+
- 	return do_blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
- 				     nr_segs, get_block, end_io,
- 				     submit_io, flags);
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 83efee7..6141374 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -33,6 +33,7 @@
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
- #include <linux/memcontrol.h>
- #include <linux/cleancache.h>
-+#include <linux/hot_tracking.h>
- #include "internal.h"
- 
- /*
-@@ -1224,6 +1225,11 @@ readpage:
- 		 * PG_error will be set again if readpage fails.
- 		 */
- 		ClearPageError(page);
-+
-+		/* Hot data tracking */
-+		hot_update_freqs(inode, (loff_t)page->index << PAGE_CACHE_SHIFT,
-+				PAGE_CACHE_SIZE, 0);
-+
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 6f42712..7c5739f 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -35,6 +35,7 @@
- #include <linux/buffer_head.h> /* __set_page_dirty_buffers */
- #include <linux/pagevec.h>
- #include <linux/timer.h>
-+#include <linux/hot_tracking.h>
- #include <trace/events/writeback.h>
- 
- /*
-@@ -1902,13 +1903,24 @@ EXPORT_SYMBOL(generic_writepages);
- int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
- {
- 	int ret;
-+	loff_t start = 0;
-+	size_t count = 0;
- 
- 	if (wbc->nr_to_write <= 0)
- 		return 0;
-+
-+	start = mapping->writeback_index << PAGE_CACHE_SHIFT;
-+	count = wbc->nr_to_write;
-+
- 	if (mapping->a_ops->writepages)
- 		ret = mapping->a_ops->writepages(mapping, wbc);
- 	else
- 		ret = generic_writepages(mapping, wbc);
-+
-+	/* Hot data tracking */
-+	hot_update_freqs(mapping->host, start,
-+			(count - wbc->nr_to_write) * PAGE_CACHE_SIZE, 1);
-+
- 	return ret;
+diff --git a/fs/hot_tracking.c b/fs/hot_tracking.c
+index ef7ff09..a73477c 100644
+--- a/fs/hot_tracking.c
++++ b/fs/hot_tracking.c
+@@ -76,12 +76,94 @@ static void hot_inode_item_init(struct hot_inode_item *he,
+ 	he->hot_inode_tree = hot_inode_tree;
+ 	kref_init(&he->hot_inode.refs);
+ 	spin_lock_init(&he->hot_inode.lock);
++	INIT_LIST_HEAD(&he->hot_inode.n_list);
+ 	he->hot_inode.hot_freq_data.avg_delta_reads = (u64) -1;
+ 	he->hot_inode.hot_freq_data.avg_delta_writes = (u64) -1;
+ 	he->hot_inode.hot_freq_data.flags = FREQ_DATA_TYPE_INODE;
+ 	hot_range_tree_init(he);
  }
  
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 7963f23..d1ab688 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -19,6 +19,7 @@
- #include <linux/pagemap.h>
- #include <linux/syscalls.h>
- #include <linux/file.h>
++static void hot_range_item_free(struct kref *kref)
++{
++	struct hot_comm_item *comm_item = container_of(kref,
++		struct hot_comm_item, refs);
++	struct hot_range_item *hr = container_of(comm_item,
++		struct hot_range_item, hot_range);
++
++	rb_erase(&hr->hot_range.rb_node,
++		&hr->hot_inode->hot_range_tree.map);
++	kmem_cache_free(hot_range_item_cachep, hr);
++}
++
++/*
++ * Drops the reference out on hot_range_item by one
++ * and free the structure if the reference count hits zero
++ */
++static void hot_range_item_put(struct hot_range_item *hr)
++{
++	kref_put(&hr->hot_range.refs, hot_range_item_free);
++}
++
++/* Frees the entire hot_range_tree. */
++static void hot_range_tree_free(struct hot_inode_item *he)
++{
++	struct rb_node *node;
++	struct hot_comm_item *ci;
++	struct hot_range_item *hr;
++
++	/* Free hot inode and range trees on fs root */
++	spin_lock(&he->lock);
++	while ((node = rb_first(&he->hot_range_tree.map))) {
++		ci = rb_entry(node, struct hot_comm_item, rb_node);
++		hr = container_of(ci,
++			struct hot_range_item, hot_range);
++		hot_range_item_put(hr);
++	}
++	spin_unlock(&he->lock);
++}
++
++static void hot_inode_item_free(struct kref *kref)
++{
++	struct hot_comm_item *comm_item = container_of(kref,
++			struct hot_comm_item, refs);
++	struct hot_inode_item *he = container_of(comm_item,
++			struct hot_inode_item, hot_inode);
++
++	hot_range_tree_free(he);
++	spin_lock(&he->hot_inode.lock);
++	rb_erase(&he->hot_inode.rb_node, &he->hot_inode_tree->map);
++	spin_unlock(&he->hot_inode.lock);
++	kmem_cache_free(hot_inode_item_cachep, he);
++}
++
++/*
++ * Drops the reference out on hot_inode_item by one
++ * and free the structure if the reference count hits zero
++ */
++void hot_inode_item_put(struct hot_inode_item *he)
++{
++	kref_put(&he->hot_inode.refs, hot_inode_item_free);
++}
++EXPORT_SYMBOL_GPL(hot_inode_item_put);
++
++/* Frees the entire hot_inode_tree. */
++static void hot_inode_tree_exit(struct hot_info *root)
++{
++	struct rb_node *node;
++	struct hot_comm_item *ci;
++	struct hot_inode_item *he;
++
++	/* Free hot inode and range trees on fs root */
++	spin_lock(&root->lock);
++	while ((node = rb_first(&root->hot_inode_tree.map))) {
++		ci = rb_entry(node, struct hot_comm_item, rb_node);
++		he = container_of(ci,
++			struct hot_inode_item, hot_inode);
++		hot_inode_item_put(he);
++	}
++	spin_unlock(&root->lock);
++}
++
+ /*
+  * Initialize kmem cache for hot_inode_item and hot_range_item.
+  */
+@@ -107,3 +189,38 @@ err:
+ 	kmem_cache_destroy(hot_inode_item_cachep);
+ }
+ EXPORT_SYMBOL_GPL(hot_cache_init);
++
++/*
++ * Initialize the data structures for hot data tracking.
++ */
++int hot_track_init(struct super_block *sb)
++{
++	struct hot_info *root;
++	int ret = -ENOMEM;
++
++	root = kzalloc(sizeof(struct hot_info), GFP_NOFS);
++	if (!root) {
++		printk(KERN_ERR "%s: Failed to malloc memory for "
++				"hot_info\n", __func__);
++		return ret;
++	}
++
++	hot_inode_tree_init(root);
++
++	sb->s_hot_root = root;
++
++	printk(KERN_INFO "VFS: Turning on hot data tracking\n");
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(hot_track_init);
++
++void hot_track_exit(struct super_block *sb)
++{
++	struct hot_info *root = sb->s_hot_root;
++
++	hot_inode_tree_exit(root);
++	sb->s_hot_root = NULL;
++	kfree(root);
++}
++EXPORT_SYMBOL_GPL(hot_track_exit);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index a823d4b..c42dc37 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -27,6 +27,7 @@
+ #include <linux/lockdep.h>
+ #include <linux/percpu-rwsem.h>
+ #include <linux/blk_types.h>
 +#include <linux/hot_tracking.h>
  
- /*
-  * Initialise a struct file's readahead state.  Assumes that the caller has
-@@ -138,6 +139,12 @@ static int read_pages(struct address_space *mapping, struct file *filp,
- out:
- 	blk_finish_plug(&plug);
+ #include <asm/byteorder.h>
+ #include <uapi/linux/fs.h>
+@@ -1320,6 +1321,9 @@ struct super_block {
  
-+	/* Hot data tracking */
-+	hot_update_freqs(mapping->host,
-+		(loff_t)(list_entry(pages->prev, struct page, lru)->index)
-+			<< PAGE_CACHE_SHIFT,
-+		(size_t)nr_pages * PAGE_CACHE_SIZE, 0);
+ 	/* Being remounted read-only */
+ 	int s_readonly_remount;
 +
- 	return ret;
- }
++	/* Hot data tracking*/
++	struct hot_info *s_hot_root;
+ };
  
+ /* superblock cache pruning functions */
+diff --git a/include/linux/hot_tracking.h b/include/linux/hot_tracking.h
+index 294c4c9..3b0dfcf 100644
+--- a/include/linux/hot_tracking.h
++++ b/include/linux/hot_tracking.h
+@@ -74,5 +74,8 @@ struct hot_info {
+ };
+ 
+ extern void __init hot_cache_init(void);
++extern int hot_track_init(struct super_block *sb);
++extern void hot_track_exit(struct super_block *sb);
++extern void hot_inode_item_put(struct hot_inode_item *he);
+ 
+ #endif  /* _LINUX_HOTTRACK_H */
 -- 
 1.7.6.5
 
