@@ -1,67 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399Ab2LTCia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Dec 2012 21:38:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:49217 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751397Ab2LTCiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Dec 2012 21:38:23 -0500
-Message-ID: <50D279F9.4000707@zytor.com>
-Date: Wed, 19 Dec 2012 18:37:45 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752468Ab2LTC7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Dec 2012 21:59:11 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:54324 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751975Ab2LTC7C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Dec 2012 21:59:02 -0500
+X-AuditID: 9c930197-b7c5bae000000e31-6c-50d27ef581dd
+Date: Thu, 20 Dec 2012 11:59:01 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 07/14] perf ui/hist: Add support for event group view
+Message-ID: <20121220025901.GB3679@danjae>
+References: <1355726345-29553-1-git-send-email-namhyung@kernel.org>
+ <1355726345-29553-8-git-send-email-namhyung@kernel.org>
+ <20121218154710.GN1283@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Jacob Shin <jacob.shin@amd.com>
-CC: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: Re: [tip:x86/microcode] x86/microcode_intel_early.c: Early update
- ucode on Intel's CPU
-References: <50CD04F1.8020902@zytor.com> <0dcbce7a-d2ae-44fa-9658-81590f71ec47@email.android.com> <20121219220504.GA32212@jshin-Toonie> <50D23EE8.7030904@zytor.com> <20121219225155.GK24895@liondog.tnic> <20121219225941.GB2968@jshin-Toonie> <50D25AA9.3090306@zytor.com> <20121220002954.GA10405@jshin-Toonie>
-In-Reply-To: <20121220002954.GA10405@jshin-Toonie>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121218154710.GN1283@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/19/2012 04:29 PM, Jacob Shin wrote:
-> On Wed, Dec 19, 2012 at 04:24:09PM -0800, H. Peter Anvin wrote:
->> On 12/19/2012 04:07 PM, Jacob Shin wrote:
->>>
->>> From what I remember, accessing memory around the memory hole (not
->>> just the HT hole, but e038000000 ~ 10000000000 on our mentioned system
->>> ) generated prefetches because the memory hole was marked as WB in PAT.
->>>
->>> I'll take a look at the system again, try the blanket MTRR covering
->>> 0xe000000000 ~ 1TB, and talk to our BIOS guys.
->>>
->>
->> Yes, but do they all #MC (as opposed to, say, fetching all FFs)?
+On Tue, Dec 18, 2012 at 04:47:10PM +0100, Jiri Olsa wrote:
+> On Mon, Dec 17, 2012 at 03:38:58PM +0900, Namhyung Kim wrote:
+> > From: Namhyung Kim <namhyung.kim@lge.com>
+> > 
+> > Show group members' overhead also when showing the leader's if event
+> > group is enabled.  Use macro for defining hpp functions which looks
+> > almost identical.
 > 
-> Yes, MCE every time and it was fatal.
+> SNIP
 > 
+> > -
+> > -static int hpp__color_overhead_us(struct perf_hpp_fmt *fmt __maybe_unused,
+> > -				  struct perf_hpp *hpp, struct hist_entry *he)
+> > +static int __hpp__percent_fmt(struct perf_hpp *hpp, struct hist_entry *he,
+> > +			      u64 (*get_field)(struct hist_entry *),
+> > +			      const char *fmt, hpp_snprint_fn print_fn)
+> 
+> it's hard to tell from diff, but the function looks like this (group part):
 
-OK, one more question... there is something odd with the memory ranges here:
+Exactly.
 
- BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
- BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
- BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+> 
+>         if (symbol_conf.event_group) {
+>                 int prev_idx, idx_delta, i;
+>                 struct perf_evsel *evsel = hists_to_evsel(hists);
+>                 struct hist_entry *pair;
+>                 int nr_members = evsel->nr_members;
+> 
+>                 if (nr_members <= 1)
+>                         return ret;
+> 
+>                 prev_idx = perf_evsel__group_idx(evsel);
+> 
+>                 list_for_each_entry(pair, &he->pairs.head, pairs.node) {
+>                         u64 period = get_field(pair);
+>                         u64 total = pair->hists->stats.total_period;
+> 
+>                         if (!total)
+>                                 continue;
+> 
+>                         evsel = hists_to_evsel(pair->hists);
+>                         idx_delta = perf_evsel__group_idx(evsel) - prev_idx - 1;
+> 
+>                         for (i = 0; i < idx_delta; i++) {
+>                                 ret += print_fn(hpp->buf + ret, hpp->size - ret,
+>                                                 fmt, 0.0);
+>                         }
+> 
+>                         ret += print_fn(hpp->buf + ret, hpp->size - ret,
+>                                         fmt, 100.0 * period / total);
+> 
+>                         prev_idx += 1 + idx_delta;
+>                 }
+> 
+>                 idx_delta = nr_members - prev_idx - 1;
+> 
+>                 for (i = 0; i < idx_delta; i++) {
+>                         ret += print_fn(hpp->buf + ret, hpp->size - ret,
+>                                         fmt, 0.0);
+>                 }
+>         }
+> 
+> The temporary array (initial send) was more clear to me.. but if
+> this is the preffered way I wont object, since this is another place
+> that would benefit from hist_entries array linking.. when (and if)
+> there's ever patch for that ;-)
+> 
+> I think this code now suffers from mischosen data layer
 
-The first usable range here is 4G to 896G + 896M which is an awfully
-strange number.  Similarly, the second range is 1T to 1T + 128G - 16M.
-The little fiddly bits imply that there is either overshoot of some sort
-going on -- possibly reserved memory -- or these are fairly arbitrary
-sizes that don't match any physical bank sizes in which case it should
-be possible to shuffle it differently...
+Yes, I admit that using array can make things simple.  But I also don't
+like a temporary array due to its runtime cost.  Linking hist entries by
+array can be a solution since it can be reused for output resorting and
+(multiple) hpp column(s).  In addition, it might have a smaller memory
+footprint than the list method for the leader-only sample feature since
+it'll make every hist entries to be linked IMHO.
 
-	-hpa
-
+Thanks,
+Namhyung
