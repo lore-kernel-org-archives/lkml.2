@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758Ab2LTJOU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 04:14:20 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:47725 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab2LTJOP (ORCPT
+	id S1751956Ab2LTJOc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 04:14:32 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:62778 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775Ab2LTJO0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 04:14:15 -0500
-From: chenggang <chenggang.qin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: chenggang <chenggang.qin@gmail.com>, David Ahern <dsahern@gmail.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Yanmin Zhang <yanmin.zhang@intel.com>,
-        Wu Fengguang <fengguang.wu@intel.com>, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chenggang Qin <chenggang.qcg@taobao.com>
-Subject: [PATCH 2/5] perf tools: Add xyarray__realloc function in xyarray.c to expend xyarray.
-Date: Thu, 20 Dec 2012 17:05:50 +0800
-Message-Id: <1355994350-13622-1-git-send-email-chenggang.qin@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Dec 2012 04:14:26 -0500
+Message-ID: <50D2D6E6.2080609@windriver.com>
+Date: Thu, 20 Dec 2012 17:14:14 +0800
+From: "tiejun.chen" <tiejun.chen@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tabi Timur-B04825 <B04825@freescale.com>
+CC: "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] powerpc/book3e: load critical/machine/debug exception
+ stack
+References: <1351147410-17452-1-git-send-email-tiejun.chen@windriver.com> <6AE080B68D46FC4BA2D2769E68D765B7081D305D@039-SN2MPN1-023.039d.mgd.msft.net>
+In-Reply-To: <6AE080B68D46FC4BA2D2769E68D765B7081D305D@039-SN2MPN1-023.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [147.11.178.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-xyarray__realloc() could be used if we wish extend the evsel->fd,
-evsel->sample_id or any other xyarray on-the-fly.
+On 12/19/2012 06:10 AM, Tabi Timur-B04825 wrote:
+> On Thu, Oct 25, 2012 at 1:43 AM, Tiejun Chen <tiejun.chen@windriver.com> wrote:
+>> We always alloc critical/machine/debug check exceptions. This is
+>> different from the normal exception. So we should load these exception
+>> stack properly like we did for booke.
+>
+> Tiejun,
+>
+> I'm a little confused by these patches, because the actual critical
+> exception handlers are still commented out:
+>
+> /* Critical Input Interrupt */
+> 	START_EXCEPTION(critical_input);
+> 	CRIT_EXCEPTION_PROLOG(0x100, BOOKE_INTERRUPT_CRITICAL,
+> 			      PROLOG_ADDITION_NONE)
+> //	EXCEPTION_COMMON(0x100, PACA_EXCRIT, INTS_DISABLE)
+> //	bl	special_reg_save_crit
+> //	CHECK_NAPPING();
+> //	addi	r3,r1,STACK_FRAME_OVERHEAD
+> //	bl	.critical_exception
+> //	b	ret_from_crit_except
+> 	b	.
+>
+> Are you working on fixing this?  I'm trying to fix it, too, but I
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Yanmin Zhang <yanmin.zhang@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Chenggang Qin <chenggang.qcg@taobao.com>
----
- tools/perf/util/xyarray.c |   26 ++++++++++++++++++++++++++
- tools/perf/util/xyarray.h |    2 ++
- 2 files changed, 28 insertions(+)
+No, I have no approach to Crit/MC and currently I'm focus only on Debug so 
+please do this as you expect :)
 
-diff --git a/tools/perf/util/xyarray.c b/tools/perf/util/xyarray.c
-index 22afbf6..4e76377 100644
---- a/tools/perf/util/xyarray.c
-+++ b/tools/perf/util/xyarray.c
-@@ -18,3 +18,29 @@ void xyarray__delete(struct xyarray *xy)
- {
- 	free(xy);
- }
-+
-+int xyarray__realloc(struct xyarray **xy_old, int xlen_old, int xlen_new,
-+		      int ylen_new)
-+{
-+	size_t row_size_new = ylen_new * (*xy_old)->entry_size;
-+	struct xyarray *xy_new = zalloc(sizeof(*xy_new) + xlen_new
-+					* row_size_new);
-+	int x;
-+
-+	if (xy_new != NULL) {
-+		for (x = 0; x < xlen_old; x++)
-+			memcpy(&xy_new->contents[x * row_size_new],
-+			       &((*xy_old)->contents[x * (*xy_old)->row_size]),
-+			       (*xy_old)->row_size);
-+
-+		xy_new->row_size = row_size_new;
-+		xy_new->entry_size = (*xy_old)->entry_size;
-+
-+		xyarray__delete(*xy_old);
-+
-+		*xy_old = xy_new;
-+
-+		return 0;
-+	}
-+
-+	return -1;
-+}
-+
-diff --git a/tools/perf/util/xyarray.h b/tools/perf/util/xyarray.h
-index c488a07..ad41649 100644
---- a/tools/perf/util/xyarray.h
-+++ b/tools/perf/util/xyarray.h
-@@ -11,6 +11,8 @@ struct xyarray {
- 
- struct xyarray *xyarray__new(int xlen, int ylen, size_t entry_size);
- void xyarray__delete(struct xyarray *xy);
-+int xyarray__realloc(struct xyarray **xy_old, int xlen_old, int xlen_new,
-+		     int ylen_new);
- 
- static inline void *xyarray__entry(struct xyarray *xy, int x, int y)
- {
--- 
-1.7.9.5
+BTW, I send next version just now since there are something needed to 
+correct/improve.
 
+Tiejun
