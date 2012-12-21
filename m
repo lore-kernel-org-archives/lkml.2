@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab2LUBJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 20:09:08 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64838 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814Ab2LUBJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 20:09:06 -0500
-X-AuditID: 9c930179-b7becae000000e51-32-50d3b6ae594a
-Date: Fri, 21 Dec 2012 10:09:02 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: compare MIGRATE_ISOLATE selectively
-Message-ID: <20121221010902.GD2686@blaptop>
-References: <1355981152-2505-1-git-send-email-minchan@kernel.org>
- <xa1tfw30hgfb.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xa1tfw30hgfb.fsf@mina86.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+	id S1752287Ab2LUBKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 20:10:16 -0500
+Received: from mga02.intel.com ([134.134.136.20]:25108 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab2LUBKN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 20:10:13 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,327,1355126400"; 
+   d="scan'208";a="237272373"
+Subject: [PATCH] ASoC: core: giving WARN when device starting from non-off
+ bias with idle_bias_off
+From: Chuansheng Liu <chuansheng.liu@intel.com>
+To: broonie@opensource.wolfsonmicro.com
+Cc: lrg@ti.com, perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+In-Reply-To: <1355913397.17896.10.camel@cliu38-desktop-build>
+References: <1355913397.17896.10.camel@cliu38-desktop-build>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Dec 2012 18:17:12 +0800
+Message-ID: <1356085032.1839.14.camel@cliu38-desktop-build>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 04:49:44PM +0100, Michal Nazarewicz wrote:
-> On Thu, Dec 20 2012, Minchan Kim wrote:
-> > diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
-> > index a92061e..4ada4ef 100644
-> > --- a/include/linux/page-isolation.h
-> > +++ b/include/linux/page-isolation.h
-> > @@ -1,6 +1,25 @@
-> >  #ifndef __LINUX_PAGEISOLATION_H
-> >  #define __LINUX_PAGEISOLATION_H
-> >  
-> > +#ifdef CONFIG_MEMORY_ISOLATION
-> > +static inline bool page_isolated_pageblock(struct page *page)
-> > +{
-> > +	return get_pageblock_migratetype(page) == MIGRATE_ISOLATE;
-> > +}
-> > +static inline bool mt_isolated_pageblock(int migratetype)
-> > +{
-> > +	return migratetype == MIGRATE_ISOLATE;
-> > +}
-> 
-> Perhaps “is_migrate_isolate” to match already existing “is_migrate_cma”?
 
-Good poking. In fact, while I made this patch, I was very tempted by renaming
-is_migrate_cma to cma_pageblock.
+Just found some cases that some codec drivers set the bias to _STANDBY and
+set idle_bias_off to 1 during probing.
+It will cause unpaired runtime_get_sync/put() issue. Also as Mark suggested,
+there is no reason to start from _STANDBY bias with idle_bias_off == 1.
 
-        is_migrate_cma(mt)
+So here giving one warning when detected (dapm.idle_bias_off == 1) and
+(dapm.bias_level != SND_SOC_BIAS_OFF) just after driver->probe().
 
-I don't know who start to use "mt" instead of "migratetype" but anyway, it's
-not a good idea.
+Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+---
+ sound/soc/soc-core.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-        is_migrate_cma(migratetype)
-
-It's very clear for me because migratetype is per pageblock, we can know the
-function works per pageblock unit.
-
-> Especially as the “mt_isolated_pageblock” sound confusing to me, it
-> implies that it works on pageblocks which it does not.
-
--ENOPARSE.
-
-migratetype works on pageblock.
-I admit mt is really dirty but I used page_alloc.c already has lots of mt, SIGH.
-
-How about this?
-
-1. Let's change all "mt" with "migratetype" again.
-2. use is_migrate_isolate and is_migrate_cma for "migratetype".
-3. use is_migrate_isolate_page instead of page_isolated_pageblock for "page".
-
-Okay?
-
-> 
-> > +#else
-> > +static inline bool page_isolated_pageblock(struct page *page)
-> > +{
-> > +	return false;
-> > +}
-> > +static inline bool mt_isolated_pageblock(int migratetype)
-> > +{
-> > +	return false;
-> > +}
-> > +#endif
-> >  
-> >  bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
-> >  			 bool skip_hwpoisoned_pages);
-> -- 
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
-
-
-
-
-
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index 9c768bc..d7ec007 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -1107,6 +1107,10 @@ static int soc_probe_codec(struct snd_soc_card *card,
+ 				"ASoC: failed to probe CODEC %d\n", ret);
+ 			goto err_probe;
+ 		}
++		WARN(codec->dapm.idle_bias_off &&
++			codec->dapm.bias_level != SND_SOC_BIAS_OFF,
++			"codec %s can not start from non-off bias"
++			" with idle_bias_off==1\n", codec->name);
+ 	}
+ 
+ 	/* If the driver didn't set I/O up try regmap */
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
+
+
