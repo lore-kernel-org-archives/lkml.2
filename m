@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab2LUW2l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:28:41 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39332 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab2LUW2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:28:39 -0500
-Message-ID: <50D4E288.7070507@zytor.com>
-Date: Fri, 21 Dec 2012 14:28:24 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC] stack and heap are executable on x86_64
-References: <20121221030018.GA15032@www.outflux.net> <50D3E91C.9060907@zytor.com> <CAE9FiQVNeQqXktmaG0XOJwSxFEVrGKA9j6UDN2N_aDDp-8y_fA@mail.gmail.com> <50D495FD.8060103@zytor.com> <CAE9FiQXcXn0xr_ACt4fS_=xWtXR8zGoYfpSzFKG4nEvKF=sGdQ@mail.gmail.com> <50D49E0A.1080609@zytor.com> <CAE9FiQUu6mvTZ7ONsEeCx8OOocKkCEkC2-OmwdWyjHAJ4=gVHQ@mail.gmail.com> <CAE9FiQWWNhD5ttoiqmHoG0hrYu2NLO1T+DVN7cac2AG4iE+2og@mail.gmail.com> <50D4E15D.70404@zytor.com> <CAE9FiQWxm-RctpqbvF6VGtfgNQxazJbCsOQfrcseh8Q9iyrbUA@mail.gmail.com>
-In-Reply-To: <CAE9FiQWxm-RctpqbvF6VGtfgNQxazJbCsOQfrcseh8Q9iyrbUA@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752433Ab2LUW2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 17:28:49 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33416 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593Ab2LUW2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 17:28:46 -0500
+Date: Fri, 21 Dec 2012 14:28:45 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH v2 2/2] backlight: add new lp8788 backlight driver
+Message-Id: <20121221142845.c5d6ebda.akpm@linux-foundation.org>
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E108D2@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E108D2@DQHE02.ent.ti.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 02:26 PM, Yinghai Lu wrote:
-> On Fri, Dec 21, 2012 at 2:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/21/2012 02:22 PM, Yinghai Lu wrote:
->>>
->>> please check attached patch that set NX for data/bss/brk with 64bit.
->>>
->>
->> This is on top of for-x86-boot I presume?
-> 
-> yes, but should work on current linus tree.
-> 
-> Do we want one that handle low mapping for current linus tree ?
-> 
+On Fri, 21 Dec 2012 07:55:23 +0000
+"Kim, Milo" <Milo.Kim@ti.com> wrote:
 
-Let's worry about that one after New Year.  I am hoping to get all these
-patchsets into -tip either the week of Jan 7 or Jan 14 (I currently
-don't know when I will be back.)
+> TI LP8788 PMU supports regulators, battery charger, RTC, ADC, backlight driver
+> and current sinks.
+> This patch enables LP8788 backlight module.
+> 
+> (Brightness mode)
+> The brightness is controlled by PWM input or I2C register.
+> All modes are supported in the driver.
+> 
+> (Platform data)
+> Configurable data can be defined in the platform side.
+>  name                  : backlight driver name. (default: "lcd-backlight")
+>  initial_brightness    : initial value of backlight brightness
+>  bl_mode               : brightness control by PWM or lp8788 register
+>  dim_mode              : dimming mode selection
+>  full_scale            : full scale current setting
+>  rise_time             : brightness ramp up step time
+>  fall_time             : brightness ramp down step time
+>  pwm_pol               : PWM polarity setting when bl_mode is PWM based
+>  period_ns             : platform specific PWM period value. unit is nano.
 
-	-hpa
+There's also
 
+DEVICE_ATTR(bl_ctl_mode, S_IRUGO, lp8788_get_bl_ctl_mode, NULL);
+
+which isn't documented anywhere?
 
