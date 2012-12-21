@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751306Ab2LUFYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 00:24:52 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:50509 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUFYp (ORCPT
+	id S1751318Ab2LUFZn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 00:25:43 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:57846 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LUFZh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 00:24:45 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-c8-50d3f29bcdff
+	Fri, 21 Dec 2012 00:25:37 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-2e-50d3f2d04dac
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
 Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
+        "'Thierry Reding'" <thierry.reding@avionic-design.de>,
         "'Jingoo Han'" <jg1.han@samsung.com>
-Subject: [PATCH 1/6] backlight: aat2870: use bl_get_data instead of
- dev_get_drvdata
-Date: Fri, 21 Dec 2012 14:24:43 +0900
-Message-id: <001001cddf3b$7bb2c3b0$73184b10$%han@samsung.com>
+References: <001001cddf3b$7bb2c3b0$73184b10$%han@samsung.com>
+In-reply-to: <001001cddf3b$7bb2c3b0$73184b10$%han@samsung.com>
+Subject: [PATCH 2/6] pwm_backlight: use bl_get_data instead of dev_get_drvdata
+Date: Fri, 21 Dec 2012 14:25:36 +0900
+Message-id: <001101cddf3b$9b0f2d20$d12d8760$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3fO3udRdsnHWRmS2i/6pBmiWTW1A==
+Thread-index: Ac3fO3udRdsnHWRmS2i/6pBmiWTW1AAAAeCQ
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t8zA93Zny4HGOw7b2xxedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgyPqyby1Rwh73i17sbrA2Ml9i6GDk4JARMJBZvi+9i5AQyxSQu
-	3FsPFObiEBJYxihx7t0VJoiEiUT/r/+sEInpjBLP3s5khnBmM0ls3H6dFaSKTUBN4suXw+wg
-	tohAhETzjFnMIBuYBXwkNs/SBAkLC4RKzNj3jRnEZhFQlTi45gxYOa+ArUTjnGMsELagxI/J
-	98BsZgEtifU7jzNB2PISm9e8ZYY4Wl3i0V9diE16Em0nfjJDlIhI7HvxjhFivIDEt8mHWCDK
-	ZSU2HQC7WEKgmV3i7o0N7BB/SUocXHGDZQKj2Cwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyU
-	nmuoV5yYW1yal66XnJ+7iRESJ1I7GFc2WBxiFOBgVOLhZTS7HCDEmlhWXJl7iFGCg1lJhNf/
-	A1CINyWxsiq1KD++qDQntfgQow/Q5ROZpUST84ExnFcSb2hsbGJmYmpibmlqbopDWEmct9kj
-	JUBIID2xJDU7NbUgtQhmHBMHp1QDY7Us9+V7u0RKzA5M7/9Yt8pKZcafx0ptRY5s2264BKbm
-	1B16F6BTOeFj+HSTTUfrO+ftDIt/rOC1sF9jS/buzqkF2ddNTjqaZeqYfZjKvzlEQeOdTeG0
-	dUydgQ9ZjwWvCeYxvh2zt7tFvTLTtZ5HrvBQt+7eua9uTzfP0N/oMffBWoZPS9anK7EUZyQa
-	ajEXFScCACv7OvLAAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLIsWRmVeSWpSXmKPExsVy+t9jQd3Zny4HGExqNrC4vGsOmwOjx+dN
-	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGR/WzWUquMNe8evdDdYG
-	xktsXYycHBICJhL9v/6zQthiEhfurQeKc3EICUxnlHj2diYzhDObSWLj9utgVWwCahJfvhxm
-	B7FFBCIkmmfMAiri4GAW8JHYPEsTJCwsECoxY983ZhCbRUBV4uCaM2DlvAK2Eo1zjrFA2IIS
-	PybfA7OZBbQk1u88zgRhy0tsXvMWbKSEgLrEo7+6EJv0JNpO/GSGKBGR2PfiHeMERoFZSCbN
-	QjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRHIfPpHYwrmywOMQowMGo
-	xMPLaHY5QIg1say4MvcQowQHs5IIr/8HoBBvSmJlVWpRfnxRaU5q8SFGH6BHJzJLiSbnA1NE
-	Xkm8obGJmZGlkZmFkYm5OQ5hJXHeZo+UACGB9MSS1OzU1ILUIphxTBycUg2Mm+s2lV6Y0f26
-	fEnfybxt/040360sZz2r+vLNjokJxgfrCqXT/Z6fW33X6tnrm1uufpn5opj5Q4Dhx36l9IMa
-	cuWPPsjeTcoUktD4GL81PnEix+uV7l5P1Jps2uz6qy+Z7RBS0XiwWMvHzCUwePGuiMu7tGsZ
-	2utiKmc+r1esXzb1dyPr/ZP2SizFGYmGWsxFxYkA7tR7S/ACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t8zQ90Lny4HGPRNlbe4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZX15+ZiyYyl8xv+k9UwPjU54uRk4OCQETiRsnl7FB2GISF+6t
+	B7K5OIQEljFKLN+xlA2maMq5D4wQiUWMEgue/mWGcGYzSXzZcJYJpIpNQE3iy5fD7CC2iECE
+	RPOMWWBFzAKtjBJHn7xgAUkICdhKXJj0hRnE5hSwk+jc/YgRxBYW8JM43P0SrJlFQFVi+Z1X
+	rCA2L0j953PMELagxI/J98DmMAtoSazfeZwJwpaX2LzmLVANB9Cp6hKP/upC3GAk0XTwLiNE
+	iYjEvhfvGCHGC0h8m3yIBaJcVmLTAbAzJQQWsUvMet3PCPGxpMTBFTdYJjBKzEKyeRaSzbOQ
+	bJ6FZMUCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGCHRJbWDcWWDxSFGAQ5GJR5eRrPL
+	AUKsiWXFlbmHGCU4mJVEeP0/AIV4UxIrq1KL8uOLSnNSiw8x+gBdPpFZSjQ5Hxj5eSXxhsbG
+	JmYmpibmlqbmpjiElcR5mz1SAoQE0hNLUrNTUwtSi2DGMXFwSjUwyjC5acm/lD37594eh2Dt
+	O9d2t8oqnIuI19l5rftYMVvSZy+jLas7w5/wXJ3/5MbxlpXzpe33dP81uHOx5fS+zzP9trf2
+	yR57PvO6+fTDeiYWk70urOjda27JrXo46J+y+M5IDs3zbpNvcRYoN2ty/Kye9d1792/Txe5q
+	mfzie/d7SIut87nXr8RSnJFoqMVcVJwIAIwgCZLbAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOIsWRmVeSWpSXmKPExsVy+t9jAd0Lny4HGJybJGVxedccNgdGj8+b
+	5AIYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOA
+	pioplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkADCesYM768/MxYMJW/Yn7Te6YG
+	xqc8XYycHBICJhJTzn1ghLDFJC7cW8/WxcjFISSwiFFiwdO/zBDObCaJLxvOMoFUsQmoSXz5
+	cpgdxBYRiJBonjELrIhZoJVR4uiTFywgCSEBW4kLk74wg9icAnYSnbsfga0QFvCTONz9EqyZ
+	RUBVYvmdV6wgNi9I/edzzBC2oMSPyffA5jALaEms33mcCcKWl9i85i1QDQfQqeoSj/7qQtxg
+	JNF08C4jRImIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0
+	veT83E2M4Nh9JrWDcWWDxSFGAQ5GJR5eRrPLAUKsiWXFlbmHGCU4mJVEeP0/AIV4UxIrq1KL
+	8uOLSnNSiw8x+gA9OpFZSjQ5H5hW8kriDY1NzIwsjcwsjEzMzXEIK4nzNnukBAgJpCeWpGan
+	phakFsGMY+LglGpgFBW9fGvCJskWW+dcfm6fxA9NCq1x3q29HcISJ9Kq43g5/zdGlxcpHv7t
+	cWHX9vPBEdHTNOflyKTXil6tnBW2c58PS/YjnfR3C33W7nZYO9dHOFCnPdT0UnF1plzh23Xf
+	ftStyXnAe65tQ29AV2yWu+HMRx1bZ4S/tlDSeTn9h0zBjXtnvuYqsRRnJBpqMRcVJwIAycEZ
+	RgoDAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -59,23 +62,51 @@ backlight_device instead of using dev_get_drvdata with &bd->dev,
 so we can directly pass a struct backlight_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>
 ---
- drivers/video/backlight/aat2870_bl.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/video/backlight/pwm_bl.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/video/backlight/aat2870_bl.c b/drivers/video/backlight/aat2870_bl.c
-index 7ff7522..c6fc668 100644
---- a/drivers/video/backlight/aat2870_bl.c
-+++ b/drivers/video/backlight/aat2870_bl.c
-@@ -74,7 +74,7 @@ static int aat2870_bl_get_brightness(struct backlight_device *bd)
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 069983c..f2f4c43 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -37,7 +37,7 @@ struct pwm_bl_data {
  
- static int aat2870_bl_update_status(struct backlight_device *bd)
+ static int pwm_backlight_update_status(struct backlight_device *bl)
  {
--	struct aat2870_bl_driver_data *aat2870_bl = dev_get_drvdata(&bd->dev);
-+	struct aat2870_bl_driver_data *aat2870_bl = bl_get_data(bd);
- 	struct aat2870_data *aat2870 =
- 			dev_get_drvdata(aat2870_bl->pdev->dev.parent);
- 	int brightness = bd->props.brightness;
+-	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
++	struct pwm_bl_data *pb = bl_get_data(bl);
+ 	int brightness = bl->props.brightness;
+ 	int max = bl->props.max_brightness;
+ 
+@@ -83,7 +83,7 @@ static int pwm_backlight_get_brightness(struct backlight_device *bl)
+ static int pwm_backlight_check_fb(struct backlight_device *bl,
+ 				  struct fb_info *info)
+ {
+-	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
++	struct pwm_bl_data *pb = bl_get_data(bl);
+ 
+ 	return !pb->check_fb || pb->check_fb(pb->dev, info);
+ }
+@@ -264,7 +264,7 @@ err_alloc:
+ static int pwm_backlight_remove(struct platform_device *pdev)
+ {
+ 	struct backlight_device *bl = platform_get_drvdata(pdev);
+-	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
++	struct pwm_bl_data *pb = bl_get_data(bl);
+ 
+ 	backlight_device_unregister(bl);
+ 	pwm_config(pb->pwm, 0, pb->period);
+@@ -278,7 +278,7 @@ static int pwm_backlight_remove(struct platform_device *pdev)
+ static int pwm_backlight_suspend(struct device *dev)
+ {
+ 	struct backlight_device *bl = dev_get_drvdata(dev);
+-	struct pwm_bl_data *pb = dev_get_drvdata(&bl->dev);
++	struct pwm_bl_data *pb = bl_get_data(bl);
+ 
+ 	if (pb->notify)
+ 		pb->notify(pb->dev, 0);
 -- 
 1.7.2.5
 
