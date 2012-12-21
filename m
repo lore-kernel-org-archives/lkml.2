@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752305Ab2LUXPp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 18:15:45 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:56803 "EHLO mx12.netapp.com"
+	id S1752070Ab2LUX0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 18:26:13 -0500
+Received: from fieldses.org ([174.143.236.118]:55546 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751464Ab2LUXPm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 18:15:42 -0500
-X-IronPort-AV: E=Sophos;i="4.84,332,1355126400"; 
-   d="scan'208";a="2494172"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+	id S1750733Ab2LUX0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 18:26:10 -0500
+Date: Fri, 21 Dec 2012 18:26:09 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
         "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
         "Adamson, Dros" <Weston.Adamson@netapp.com>
-Subject: RE: nfsd oops on Linus' current tree.
-Thread-Topic: nfsd oops on Linus' current tree.
-Thread-Index: AQHN35CZ1gDHdp5O+Eehf/Br4MyqIpgkE1AAgAAJEYCAAErfgP//ego5
-Date: Fri, 21 Dec 2012 23:15:40 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
+Subject: Re: nfsd oops on Linus' current tree.
+Message-ID: <20121221232609.GC29739@fieldses.org>
 References: <20121221153348.GA32151@redhat.com>
  <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>,<20121221230849.GB29739@fieldses.org>
-In-Reply-To: <20121221230849.GB29739@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+ <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221230849.GB29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for top-posting. The SSD on my laptop died, and so I'm stuck using webmail for this account...
+On Fri, Dec 21, 2012 at 11:15:40PM +0000, Myklebust, Trond wrote:
+> Apologies for top-posting. The SSD on my laptop died, and so I'm stuck using webmail for this account...
 
-Our experience with nfsiod is that the WQ_MEM_RECLAIM option still deadlocks despite the "rescuer thread". The CPU that is running the workqueue will deadlock with any rpciod task that is assigned to the same CPU. Interestingly enough, the WQ_UNBOUND option also appears able to deadlock in the same situation.
+Fun!  If that happens to me on this trip, I've got a week trying to hack
+the kernel from my cell phone....
 
-Sorry, I have no explanation why...
+> Our experience with nfsiod is that the WQ_MEM_RECLAIM option still deadlocks despite the "rescuer thread". The CPU that is running the workqueue will deadlock with any rpciod task that is assigned to the same CPU. Interestingly enough, the WQ_UNBOUND option also appears able to deadlock in the same situation.
+> 
+> Sorry, I have no explanation why...
 
-Cheers,
-  Trond
+As I said:
 
+> there shouldn't be any deadlock as long as there's no circular
+> dependency among the three.
 
-________________________________________
-From: J. Bruce Fields [bfields@fieldses.org]
-Sent: Friday, December 21, 2012 6:08 PM
-To: Myklebust, Trond
-Cc: Dave Jones; Linux Kernel; linux-nfs@vger.kernel.org; Adamson, Dros
-Subject: Re: nfsd oops on Linus' current tree.
+There was a circular dependency (of rpciod on itself), so having a
+dedicated rpciod rescuer thread wouldn't help--once the rescuer thread
+is waiting for work queued to do the same queue you're asking for
+trouble.
 
-On Fri, Dec 21, 2012 at 06:40:54PM +0000, Myklebust, Trond wrote:
-> On Fri, 2012-12-21 at 13:08 -0500, J. Bruce Fields wrote:
-> > On Fri, Dec 21, 2012 at 10:33:48AM -0500, Dave Jones wrote:
-> > > Did a mount from a client (also running Linus current), and the
-> > > server spat this out..
-> > >
-> > > [ 6936.306135] ------------[ cut here ]------------
-> > > [ 6936.306154] WARNING: at net/sunrpc/clnt.c:617 rpc_shutdown_client+0x12a/0x1b0 [sunrpc]()
-> >
-> > This is a warning added by 168e4b39d1afb79a7e3ea6c3bb246b4c82c6bdb9
-> > "SUNRPC: add WARN_ON_ONCE for potential deadlock", pointing out that
-> > nfsd is calling shutdown_client from a workqueue, which is a problem
-> > because shutdown_client has to wait on rpc tasks that run on a
-> > workqueue.
-> >
-> > I don't believe there's any circular dependency among the workqueues
-> > (we're calling shutdown_client from callback_wq, not rpciod_workqueue),
->
-> We were getting deadlocks with rpciod when calling rpc_shutdown_client
-> from the nfsiod workqueue.
->
-> The problem here is that the workqueues all run using the same pool of
-> threads, and so you can get "interesting" deadlocks when one of these
-> threads has to wait for another one.
+The last argument in
 
-OK, coming back after reviewing Documentation/workqueue.txt: the
-workqueues potentially involved here are rpciod and the server's
-laundromat and callback workqueues.
+	alloc_workqueue("rpciod", WQ_MEM_RECLAIM, 1);
 
-The former is created with
+ensures that it will never allow more than 1 piece of work to run per
+CPU, so the deadlock should be pretty easy to hit.
 
-        alloc_workqueue("rpciod", WQ_MEM_RECLAIM, 1);
-
-and the latter two are both created with
-create_singlethread_workqueue(), which also sets WQ_MEM_RECLAIM.
-
-As I understand it, that ensures that each of the three has at least one
-"rescuer" thread dedicated to it--so there shouldn't be any deadlock as
-long as there's no circular dependency among the three.
-
-So think this is a false positive--am I missing something?
-
-> > but 168e4b39d1afb.. says that we could get a deadlock if both are
-> > running on the same kworker thread.
-> >
-> > I'm not sure what to do about that.
-> >
->
-> The question is if you really do need the call to rpc_killall_tasks and
-> the synchronous wait for completion of old tasks? If you don't care,
-> then we could just have you call rpc_release_client() in order to
-> release your reference on the rpc_client.
-
-No, the waiting's intentional: for example, the laundromat wq is what's
-responsible for reaping expired clients, and it wants to wait for
-callback rpc's to exit.  (If I remember right they may reference data
-structures we're about to clean up).
+And with UNBOUND that's only one piece of work globally, so yeah all you
+need is an rpc at shutdown time and it should deadlock every time.
 
 --b.
