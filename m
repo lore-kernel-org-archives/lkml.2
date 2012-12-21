@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995Ab2LUJpQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:45:16 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59174 "EHLO
+	id S1752045Ab2LUJpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:45:20 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:59178 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655Ab2LUJo3 (ORCPT
+	with ESMTP id S1751673Ab2LUJoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:44:29 -0500
+	Fri, 21 Dec 2012 04:44:30 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Grant Likely <grant.likely@secretlab.ca>,
         Thierry Reding <thierry.reding@avionic-design.de>
 CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v5 5/7] pwm: Add devm_of_pwm_get() as exported API for users
-Date: Fri, 21 Dec 2012 10:43:59 +0100
-Message-ID: <1356083041-29179-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v5 6/7] leds: leds-pwm: Simplify cleanup code
+Date: Fri, 21 Dec 2012 10:44:00 +0100
+Message-ID: <1356083041-29179-7-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
@@ -25,82 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When booted with DT users can use devm version of of_pwm_get() to benefit
-from automatic resource release.
+The code looks more nicer if we use:
+
+while (i--)
+
+instead:
+if (i > 0)
+	for (i = i - 1; i >= 0; i--)
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/pwm/core.c  | 30 ++++++++++++++++++++++++++++++
- include/linux/pwm.h |  9 +++++++++
- 2 files changed, 39 insertions(+)
+ drivers/leds/leds-pwm.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
-index 3cb741d..4a13da4 100644
---- a/drivers/pwm/core.c
-+++ b/drivers/pwm/core.c
-@@ -708,6 +708,36 @@ struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id)
- }
- EXPORT_SYMBOL_GPL(devm_pwm_get);
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index c767837..46f4e44 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -104,10 +104,8 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 	return 0;
  
-+/**
-+ * devm_of_pwm_get() - resource managed of_pwm_get()
-+ * @dev: device for PWM consumer
-+ * @np: device node to get the PWM from
-+ * @con_id: consumer name
-+ *
-+ * This function performs like of_pwm_get() but the acquired PWM device will
-+ * automatically be released on driver detach.
-+ */
-+struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
-+				   const char *con_id)
-+{
-+	struct pwm_device **ptr, *pwm;
-+
-+	ptr = devres_alloc(devm_pwm_release, sizeof(**ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	pwm = of_pwm_get(np, con_id);
-+	if (!IS_ERR(pwm)) {
-+		*ptr = pwm;
-+		devres_add(dev, ptr);
-+	} else {
-+		devres_free(ptr);
-+	}
-+
-+	return pwm;
-+}
-+EXPORT_SYMBOL_GPL(devm_of_pwm_get);
-+
- static int devm_pwm_match(struct device *dev, void *res, void *data)
- {
- 	struct pwm_device **p = res;
-diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-index 76a1959..70655a2 100644
---- a/include/linux/pwm.h
-+++ b/include/linux/pwm.h
-@@ -179,6 +179,8 @@ struct pwm_device *of_pwm_get(struct device_node *np, const char *con_id);
- void pwm_put(struct pwm_device *pwm);
+ err:
+-	if (i > 0) {
+-		for (i = i - 1; i >= 0; i--)
+-			led_classdev_unregister(&priv->leds[i].cdev);
+-	}
++	while (i--)
++		led_classdev_unregister(&priv->leds[i].cdev);
  
- struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
-+struct pwm_device *devm_of_pwm_get(struct device *dev, struct device_node *np,
-+				   const char *con_id);
- void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
- #else
- static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
-@@ -230,6 +232,13 @@ static inline struct pwm_device *devm_pwm_get(struct device *dev,
- 	return ERR_PTR(-ENODEV);
- }
- 
-+static inline struct pwm_device *devm_of_pwm_get(struct device *dev,
-+						 struct device_node *np,
-+						 const char *con_id)
-+{
-+	return ERR_PTR(-ENODEV);
-+}
-+
- static inline void devm_pwm_put(struct device *dev, struct pwm_device *pwm)
- {
+ 	return ret;
  }
 -- 
 1.8.0.2
