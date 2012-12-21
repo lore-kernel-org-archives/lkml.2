@@ -1,91 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671Ab2LUQNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 11:13:24 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4654 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab2LUQNT (ORCPT
+	id S1752475Ab2LUQQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 11:16:15 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:36641 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665Ab2LUQQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 11:13:19 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eZnsvP3-SpoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=om32Zw-ELMQA:10 a=VT4-vTsrXc7iMSGJpiAA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1356106396.5896.111.camel@gandalf.local.home>
-Subject: Re: [PATCH 07/24] nohz: Assign timekeeping duty to a non-full-nohz
- CPU
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Fri, 21 Dec 2012 11:13:16 -0500
-In-Reply-To: <1356028391-14427-8-git-send-email-fweisbec@gmail.com>
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
-	 <1356028391-14427-8-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Dec 2012 11:16:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABqxG0cFTu2qDo6RmZ7QfLsC4fDzLVj9WrocuDAz+dAQB8OJ6Q@mail.gmail.com>
+References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
+	<1354139277-17376-6-git-send-email-yinghai@kernel.org>
+	<CABqxG0cFTu2qDo6RmZ7QfLsC4fDzLVj9WrocuDAz+dAQB8OJ6Q@mail.gmail.com>
+Date: Fri, 21 Dec 2012 08:16:05 -0800
+X-Google-Sender-Auth: cG_RZR_LLupSbtwTSq2Naerw9p0
+Message-ID: <CAE9FiQU+8xAKQ20C7ZMFGGq8p7=TY9OpK3nf7V=uwDZoqSM2ig@mail.gmail.com>
+Subject: Re: [PATCH v9 05/46] x86, mm: Revert back good_end setting for 64bit
+From: Yinghai Lu <yinghai@kernel.org>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-20 at 19:32 +0100, Frederic Weisbecker wrote:
+On Fri, Dec 21, 2012 at 12:22 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
+>
+> What's the staus of this patch,  will it go for 3.8? Is there anything
+> blocking this patch?
 
-kernel/time/tick-sched.c:517:6: error: have_full_nohz_mask undeclared
-(first use in this function)
+no.
 
+Now it is in tip:x86/mm2.
 
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -112,7 +112,8 @@ static void tick_sched_do_timer(ktime_t now)
->  	 * this duty, then the jiffies update is still serialized by
->  	 * jiffies_lock.
->  	 */
-> -	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
-> +	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
-> +	    && !tick_nohz_full_cpu(cpu))
->  		tick_do_timer_cpu = cpu;
->  #endif
->  
-> @@ -512,6 +513,10 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->  		return false;
->  	}
->  
-> +	/* If there are full nohz CPUs around, we need to keep the timekeeping duty */
-> +	if (have_full_nohz_mask && tick_do_timer_cpu == cpu)
-> +		return false;
-> +
->  	return true;
->  }
->  
+it should be go with for-x86-boot for 3.9
 
-Fold in:
-
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 4a68b50..00e5682 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -164,6 +164,8 @@ static int __init tick_nohz_full_setup(char *str)
- 	return 1;
- }
- __setup("full_nohz=", tick_nohz_full_setup);
-+#else
-+#define have_full_nohz_mask 0
- #endif
- 
- /*
-
-
--- Steve
-
-
+Yinghai
