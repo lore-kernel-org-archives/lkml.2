@@ -1,161 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab2LUNFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 08:05:01 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:43355 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab2LUNEu convert rfc822-to-8bit (ORCPT
+	id S1752081Ab2LUNEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 08:04:44 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16891 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab2LUNE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 08:04:50 -0500
-Content-Type: text/plain; charset=GB2312
-Mime-Version: 1.0 (Mac OS X Mail 6.0 \(1485\))
-Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
-From: lihanhui <hanhui.li@gmail.com>
-In-Reply-To: <1346832673-12512-2-git-send-email-minchan@kernel.org>
-Date: Fri, 21 Dec 2012 21:04:37 +0800
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E270108E-B7EC-4A12-9662-4CF1CC7B69DE@gmail.com>
-References: <1346832673-12512-1-git-send-email-minchan@kernel.org> <1346832673-12512-2-git-send-email-minchan@kernel.org>
-To: Minchan Kim <minchan@kernel.org>
-X-Mailer: Apple Mail (2.1485)
+	Fri, 21 Dec 2012 08:04:28 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=NT_6bBl6HocA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=2YELVqqeHisA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=jWKSiNj9IdgEQznNnnMA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=2Uic3XbOqCnz-qcj:21 a=ZXoTVN85ac4fntqp:21 a=enz70vlK868dElRz_04A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-Id: <20121221130426.806436461@goodmis.org>
+User-Agent: quilt/0.60-1
+Date: Fri, 21 Dec 2012 08:03:25 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Jovi Zhang <bookjovi@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] tracing: Verify target file before registering a uprobe event
+References: <20121221130323.940466074@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-Verify-target-file-before-registering-a-upro.patch
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--00GvhwF7k39YY
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-ÔÚ 2012-9-5£¬ÏÂÎç4:11£¬Minchan Kim <minchan@kernel.org> Ð´µÀ£º
+From: Jovi Zhang <bookjovi@gmail.com>
 
-> This patch introudes MIGRATE_DISCARD mode in migration.
-> It drops *clean cache pages* instead of migration so that
-> migration latency could be reduced by avoiding (memcpy + page remapping).
-> It's useful for CMA because latency of migration is very important rather
-> than eviction of background processes's workingset. In addition, it needs
-> less free pages for migration targets so it could avoid memory reclaiming
-> to get free pages, which is another factor increase latency.
-> 
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Michal Nazarewicz <mina86@mina86.com>
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Signed-off-by: Minchan Kim <minchan@kernel.org>
-> ---
-> include/linux/migrate_mode.h |    7 +++++++
-> mm/migrate.c                 |   41 ++++++++++++++++++++++++++++++++++++++---
-> mm/page_alloc.c              |    2 +-
-> 3 files changed, 46 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/migrate_mode.h b/include/linux/migrate_mode.h
-> index 8848cad..4eb1646 100644
-> --- a/include/linux/migrate_mode.h
-> +++ b/include/linux/migrate_mode.h
-> @@ -14,6 +14,13 @@
->  */
-> #define MIGRATE_SYNC		((__force migrate_mode_t)0x4)
-> 
-> +/*
-> + * MIGRTATE_DISCARD will discard clean cache page instead of migration.
-> + * MIGRATE_ASYNC, MIGRATE_SYNC_LIGHT, MIGRATE_SYNC shouldn't be used
-> + * together with OR flag in current implementation.
-> + */
-> +#define MIGRATE_DISCARD		((__force migrate_mode_t)0x8)
-> +
-> typedef unsigned __bitwise__ migrate_mode_t;
-> 
-> #endif		/* MIGRATE_MODE_H_INCLUDED */
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 28d464b..2de7709 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -678,6 +678,19 @@ static int move_to_new_page(struct page *newpage, struct page *page,
-> 	return rc;
-> }
-> 
-> +static int discard_page(struct page *page)
-> +{
-> +	int ret = -EAGAIN;
-> +
-> +	struct address_space *mapping = page_mapping(page);
-> +	if (page_has_private(page))
-> +		if (!try_to_release_page(page, GFP_KERNEL))
-> +			return ret;
-> +	if (remove_mapping(mapping, page))
-> +		ret = 0;
-> +	return ret;
-> +}
-> +
-> static int __unmap_and_move(struct page *page, struct page *newpage,
-> 			int force, bool offlining, migrate_mode_t mode)
-> {
-> @@ -685,6 +698,9 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
-> 	int remap_swapcache = 1;
-> 	struct mem_cgroup *mem;
-> 	struct anon_vma *anon_vma = NULL;
-> +	enum ttu_flags ttu_flags;
-> +	bool discard_mode = false;
-> +	bool file = false;
-> 
-> 	if (!trylock_page(page)) {
-> 		if (!force || (mode & MIGRATE_ASYNC))
-> @@ -799,12 +815,31 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
-> 		goto skip_unmap;
-> 	}
-> 
-> +	file = page_is_file_cache(page);
-> +	ttu_flags = TTU_IGNORE_ACCESS;
-> +retry:
-> +	if (!(mode & MIGRATE_DISCARD) || !file || PageDirty(page))
-> +		ttu_flags |= (TTU_MIGRATION | TTU_IGNORE_MLOCK);
-> +	else
-> +		discard_mode = true;
-> +
-> 	/* Establish migration ptes or remove ptes */
-> -	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
-> +	rc = try_to_unmap(page, ttu_flags);
-> 
-> skip_unmap:
-> -	if (!page_mapped(page))
-> -		rc = move_to_new_page(newpage, page, remap_swapcache, mode);
-> +	if (rc == SWAP_SUCCESS) {
-> +		if (!discard_mode) {
-> +			rc = move_to_new_page(newpage, page,
-> +					remap_swapcache, mode);
-> +		} else {
-> +			rc = discard_page(page);
-> +			goto uncharge;
-> +		}
-> +	} else if (rc == SWAP_MLOCK && discard_mode) {
-> +		mode &= ~MIGRATE_DISCARD;
-> +		discard_mode = false;
-> +		goto retry;
-> +	}
-> 
-> 	if (rc && remap_swapcache)
-> 		remove_migration_ptes(page, page);
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index ba3100a..e14b960 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -5670,7 +5670,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
-> 
-> 		ret = migrate_pages(&cc.migratepages,
-> 				    __alloc_contig_migrate_alloc,
-> -				    0, false, MIGRATE_SYNC);
-> +				    0, false, MIGRATE_SYNC|MIGRATE_DISCARD);
-> 	}
-> 
-> 	putback_lru_pages(&cc.migratepages);
-> -- 
-> 1.7.9.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Without this patch, we can register a uprobe event for a directory.
+Enabling such a uprobe event would anyway fail.
 
+Example:
+$ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+
+However dirctories cannot be valid targets for uprobe.
+Hence verify if the target is a regular file during the probe
+registration.
+
+Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_uprobe.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 4ff9ca4..0bef43c 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -257,6 +257,10 @@ static int create_trace_uprobe(int argc, char **argv)
+ 		goto fail_address_parse;
+=20
+ 	inode =3D igrab(path.dentry->d_inode);
++	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
++		ret =3D -EINVAL;
++		goto fail_address_parse;
++	}
+=20
+ 	argc -=3D 2;
+ 	argv +=3D 2;
+@@ -356,7 +360,7 @@ fail_address_parse:
+ 	if (inode)
+ 		iput(inode);
+=20
+-	pr_info("Failed to parse address.\n");
++	pr_info("Failed to parse address or file.\n");
+=20
+ 	return ret;
+ }
+--=20
+1.7.10.4
+
+
+
+--00GvhwF7k39YY
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQEcBAABAgAGBQJQ1F5aAAoJEOdOSU1xswtMPyAIAIfnwy2gmhNs6tTdYU0ijgT5
+ua4/+3XkmSMZ3HDliRQZ7zQ+IKFoiuewGbZ+jMF1S7SkYyBmTNYGlIQpwYMxju0v
+zFgQWZzmvdFbirEdQ1rFo9U6SQ/IqHlRrwO0tjopyW+0PKSCXSaZxxX3A57PiBrX
+NOyfy+bf/F69CpAUHtkf1GR0JWtwDdGKSWhFRB8t/37ng+M+MBs2qR+wyIzN+uDp
+jPa6UEQxkVkJm2YMWyBzmrixXQX9J6vXoTMPMqvapgV/4CIowtv6sZA9cYou8sTv
+60I0HUoitnoQf0E6wIHvGj800aLivh6njx+5LOs/rUkm8hfz7oLNhpGwf1yCrHs=
+=dkDR
+-----END PGP SIGNATURE-----
+
+--00GvhwF7k39YY--
