@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062Ab2LUOnR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 09:43:17 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:58629 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab2LUOnI (ORCPT
+	id S1752190Ab2LUOna (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 09:43:30 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23803 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab2LUOnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 09:43:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <50D464D8.8070706@nvidia.com>
-References: <1356082135-14549-1-git-send-email-ldewangan@nvidia.com>
-	<CAHdPZaPJpB4Rzg1=DQr4udmp3-WCo8YLXVqribBw2o6HRiVU2Q@mail.gmail.com>
-	<50D464D8.8070706@nvidia.com>
-Date: Fri, 21 Dec 2012 20:13:07 +0530
-Message-ID: <CAHdPZaO4rtRv-6Z1yix06MXhoU-ZVqaJZyoBCdZPXmTRa2526g@mail.gmail.com>
-Subject: Re: [PATCH] rtc: add RTC driver for TPS6586x
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: Andrew Morton <akpm@linuxfoundation.org>,
-        "a.zummo@towertech.it" <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+	Fri, 21 Dec 2012 09:43:21 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=kMKUP9VcE-gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ErkLabmjQQoA:10 a=WbK1rQmuXVqljMr3nw4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1356100999.5896.98.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched/rt: Move cpu rq properties from "struct rt_rq" to
+ "struct rq"
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephen Warren <swarren@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Fri, 21 Dec 2012 09:43:19 -0500
+In-Reply-To: <1356094312.5896.97.camel@gandalf.local.home>
+References: <4807701355857948@web19f.yandex.ru>
+	 <alpine.LFD.2.02.1212201852060.3148@ionos>
+	 <401821356041818@web4f.yandex.ru>
+	 <1356044865.5896.78.camel@gandalf.local.home>
+	 <545781356071709@web16g.yandex.ru>
+	 <1356094312.5896.97.camel@gandalf.local.home>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 7:02 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> Hi Devendra,
-> Thanks for quick review.
->
-> All comments has been taken care. except
->
->
-> On Friday 21 December 2012 06:16 PM, devendra.aaru wrote:
->
->> so its better if you have this function down the registering the device.
->>
->> btw you may even remove disable_irq if you register below the
->> registering of device.
->
-> When I do request_irq() the interrupt already enable. I want to disable
-> until someone set alarm.
->
-> So In this case, I can not get rid of this call.
->
-Ok, nice to know :).
+On Fri, 2012-12-21 at 07:51 -0500, Steven Rostedt wrote:
+
+> Now if you want to encapsulate the rt sched group, then you could add a
+> new struct and put that into the rt_rq struct and use that for all the
+> group functions. But please don't just cludder the rq struct with rt
+
+cludder? I must have a studder, as it is suppose to be clutter and
+stutter!
+
+;-)
+
+-- Steve
+
+> specific data. The rt_rq was created as a container for the rt class.
+> 
+> -- Steve
+> 
+
+
