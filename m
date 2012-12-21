@@ -1,128 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744Ab2LUEle (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 23:41:34 -0500
-Received: from mail-la0-f74.google.com ([209.85.215.74]:55820 "EHLO
-	mail-la0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2LUEl2 (ORCPT
+	id S1752044Ab2LUEny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 23:43:54 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48102 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751706Ab2LUEnp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 23:41:28 -0500
-X-Greylist: delayed 321 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 23:41:28 EST
-From: Derek Basehore <dbasehore@chromium.org>
-To: JBottomley@parallels.com
-Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Derek Basehore <dbasehore@chromium.org>
-Subject: [PATCH 2/2] ata: don't wait on resume
-Date: Thu, 20 Dec 2012 20:35:40 -0800
-Message-Id: <1356064540-17414-2-git-send-email-dbasehore@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
-References: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
+	Thu, 20 Dec 2012 23:43:45 -0500
+X-AuditID: 9c930179-b7becae000000e51-15-50d3e8ff7080
+From: Namhyung Kim <namhyung@kernel.org>
+To: Alex Shi <alex.shi@intel.com>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, rob@landley.net,
+        mingo@redhat.com, peterz@infradead.org, gregkh@linuxfoundation.org,
+        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        vincent.guittot@linaro.org
+Subject: Re: [PATCH 08/18] sched: consider runnable load average in move_tasks
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+	<1355127754-8444-9-git-send-email-alex.shi@intel.com>
+	<50C80ADF.8050504@linux.vnet.ibm.com> <50C823A4.109@intel.com>
+Date: Fri, 21 Dec 2012 13:43:43 +0900
+In-Reply-To: <50C823A4.109@intel.com> (Alex Shi's message of "Wed, 12 Dec 2012
+	14:26:44 +0800")
+Message-ID: <871uekf20w.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When resuming an ata port, do not wait for the function ata_port_request_pm to
-return. The reasoning behing this is that we can resume the device much faster
-if we do not wait for ata ports connected to spinning disks to resume.
+On Wed, 12 Dec 2012 14:26:44 +0800, Alex Shi wrote:
+> On 12/12/2012 12:41 PM, Preeti U Murthy wrote:
+>> Also why can't p->se.load_avg_contrib be used directly? as a return
+>> value for task_h_load_avg? since this is already updated in
+>> update_task_entity_contrib and update_group_entity_contrib.
+>
+> No, only non task entity goes to  update_group_entity_contrib. not task
+> entity.
 
-A small change is made in ata_port_request_pm to make it return 0 when we do not
-wait. Previously, the function just returned an uninitialized variable if it did
-not wait.
+???
 
-The pm runtime status of the ata port is set to active (even though is has not
-fully resumed yet).
+But task entity goes to __update_task_entity_contrib()?
 
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
 
-Conflicts:
+/* Compute the current contribution to load_avg by se, return any delta */
+static long __update_entity_load_avg_contrib(struct sched_entity *se)
+{
+	long old_contrib = se->avg.load_avg_contrib;
 
-	drivers/ata/libata-core.c
+	if (entity_is_task(se)) {
+		__update_task_entity_contrib(se);
+	} else {
+		__update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
+		__update_group_entity_contrib(se);
+	}
 
----
- drivers/ata/libata-core.c |   25 ++++++++++++++++---------
- 1 files changed, 16 insertions(+), 9 deletions(-)
+	return se->avg.load_avg_contrib - old_contrib;
+}
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 9e8b99a..c700b79 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5279,7 +5279,7 @@ bool ata_link_offline(struct ata_link *link)
- #ifdef CONFIG_PM
- static int ata_port_request_pm(struct ata_port *ap, pm_message_t mesg,
- 			       unsigned int action, unsigned int ehi_flags,
--			       int *async)
-+			       int *async, int wait)
- {
- 	struct ata_link *link;
- 	unsigned long flags;
-@@ -5289,9 +5289,12 @@ static int ata_port_request_pm(struct ata_port *ap, pm_message_t mesg,
- 	 * progress.  Wait for PM_PENDING to clear.
- 	 */
- 	if (ap->pflags & ATA_PFLAG_PM_PENDING) {
--		if (async) {
--			*async = -EAGAIN;
--			return 0;
-+		if (!wait) {
-+			if (async) {
-+				*async = -EAGAIN;
-+				return 0;
-+			}
-+			return -EAGAIN;
- 		}
- 		ata_port_wait_eh(ap);
- 		WARN_ON(ap->pflags & ATA_PFLAG_PM_PENDING);
-@@ -5303,7 +5306,7 @@ static int ata_port_request_pm(struct ata_port *ap, pm_message_t mesg,
- 	ap->pm_mesg = mesg;
- 	if (async)
- 		ap->pm_result = async;
--	else
-+	else if (wait)
- 		ap->pm_result = &rc;
- 
- 	ap->pflags |= ATA_PFLAG_PM_PENDING;
-@@ -5317,7 +5320,7 @@ static int ata_port_request_pm(struct ata_port *ap, pm_message_t mesg,
- 	spin_unlock_irqrestore(ap->lock, flags);
- 
- 	/* wait and check result */
--	if (!async) {
-+	if (wait) {
- 		ata_port_wait_eh(ap);
- 		WARN_ON(ap->pflags & ATA_PFLAG_PM_PENDING);
- 	}
-@@ -5341,7 +5344,8 @@ static int __ata_port_suspend_common(struct ata_port *ap, pm_message_t mesg, int
- 	if (mesg.event == PM_EVENT_SUSPEND)
- 		ehi_flags |= ATA_EHI_NO_AUTOPSY | ATA_EHI_NO_RECOVERY;
- 
--	rc = ata_port_request_pm(ap, mesg, 0, ehi_flags, async);
-+	rc = ata_port_request_pm(ap, mesg, 0, ehi_flags, async,
-+			async == NULL ? 1 : 0);
- 	return rc;
- }
- 
-@@ -5381,7 +5385,8 @@ static int __ata_port_resume_common(struct ata_port *ap, int *async)
- 	int rc;
- 
- 	rc = ata_port_request_pm(ap, PMSG_ON, ATA_EH_RESET,
--		ATA_EHI_NO_AUTOPSY | ATA_EHI_QUIET, async);
-+		ATA_EHI_NO_AUTOPSY | ATA_EHI_QUIET, async,
-+		async == NULL ? 1 : 0);
- 	return rc;
- }
- 
-@@ -5394,9 +5399,11 @@ static int ata_port_resume_common(struct device *dev)
- 
- static int ata_port_resume(struct device *dev)
- {
-+	struct ata_port *ap = to_ata_port(dev);
- 	int rc;
- 
--	rc = ata_port_resume_common(dev);
-+	rc = ata_port_request_pm(ap, PMSG_ON, ATA_EH_RESET,
-+		ATA_EHI_NO_AUTOPSY | ATA_EHI_QUIET, NULL, 0);
- 	if (!rc) {
- 		pm_runtime_disable(dev);
- 		pm_runtime_set_active(dev);
--- 
-1.7.7.3
 
+Thanks,
+Namhyung
