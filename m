@@ -1,152 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514Ab2LUSiv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 13:38:51 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:63347 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab2LUSin (ORCPT
+	id S1751830Ab2LUSlW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 13:41:22 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:18313 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293Ab2LUSlP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 13:38:43 -0500
-Date: Fri, 21 Dec 2012 10:38:45 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Mel Gorman <mgorman@suse.de>
-cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: migrate_misplaced_transhuge_page: no page_count check?
-In-Reply-To: <20121220164923.GB13367@suse.de>
-Message-ID: <alpine.LNX.2.00.1212211030540.1893@eggly.anvils>
-References: <alpine.LNX.2.00.1212192011320.25992@eggly.anvils> <20121220164923.GB13367@suse.de>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 21 Dec 2012 13:41:15 -0500
+X-IronPort-AV: E=Sophos;i="4.84,331,1355126400"; 
+   d="scan'208";a="2435777"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Adamson, Dros" <Weston.Adamson@netapp.com>
+Subject: Re: nfsd oops on Linus' current tree.
+Thread-Topic: nfsd oops on Linus' current tree.
+Thread-Index: AQHN35CZ1gDHdp5O+Eehf/Br4MyqIpgkE1AAgAAJEYA=
+Date: Fri, 21 Dec 2012 18:40:54 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+References: <20121221153348.GA32151@redhat.com>
+	 <20121221180824.GA27729@fieldses.org>
+In-Reply-To: <20121221180824.GA27729@fieldses.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.114]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <AAD8A597179F934C9E7F91A7DA31B9C1@tahoe.netapp.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Dec 2012, Mel Gorman wrote:
-> On Wed, Dec 19, 2012 at 08:52:37PM -0800, Hugh Dickins wrote:
-> > Mel, Ingo,
-> > 
-> > I want to raise again a question I raised (in offline mail with Mel)
-> > a couple of weeks ago.
-> > 
-> 
-> It's a good question and thanks for kicking me on this again because I
-> had not followed up properly.
-> 
-> > I see only a page_mapcount check in migrate_misplaced_transhuge_page,
-> > and don't understand how migration can be safe against the possibility
-> > of an earlier call to get_user_pages or get_user_pages_fast (intended
-> > to pin a part of the THP) without a page_count check.
-> > 
-> 
-> It would be hard to trigger bugs in relation to it but it's not fundamentally
-> safe either and just happens to work due to limitations of THP as much as
-> anything else. Adding Andrea to cc in case I'm lacking imagination. IMO,
-> the GUP would need to be relatively long-lived to trigger a bug so the
-> realistic candidate is direct IO.  it. It would look something like;
-> 
-> 1. pin for direct IO
-> 2. PTE scanner run, mark pte_numa
-> 3. Incur a fault on a remote node, migrate the page
-> 4. direct IO completes on old page and is lost
-> 
-> Steps 1 and 2 can happen in either order. I am reasonably sure specjbb,
-> autonumabench and friends are not exercising such paths so I would not
-> have encountered it.
-> 
-> The end result would look like a read or write corruption to the application
-> but I also expect that applications that are accessing pages under direct
-> IO are already buggy and it'd be hard to tell the difference.  It's a
-> completely different situation than what khugepaged has to deal with.
-> The migration concerns for base pages are also much more involvedi.
-> 
-> > (I'm also still somewhat worried about unidentified attempts to
-> > pin the page concurrently; but since I don't have an example to give,
-> > and concurrent get_user_pages or get_user_pages_fast wouldn't get past
-> > the pmd_numa, let's not worry too much about my unidentified anxiety ;)
-> > 
-> 
-> You are right to be worried.
-> 
-> > migrate_page_move_mapping and migrate_huge_page_move_mapping check
-> > page_count, but migrate_misplaced_transhuge_page doesn't use those.
-> > __collapse_huge_page_isolate and khugepaged_scan_pmd (over in
-> > huge_memory.c) take commented care to check page_count lest GUP.
-> > 
-> > I can see that page_count might often be raised by concurrent faults
-> > on the same pmd_numa, waiting on the lock_page in do_huge_pmd_numa_page.
-> > That's unfortunate, and maybe you can find a clever way to discount
-> > those.  But safety must come first: don't we need to check page_count?
-> > 
-> 
-> We do and I'm not super-worried about the concurrent faults as a brief
-> check indicated that only 2% of migration attempts failed due to parallel
-> faults elevating the count when running autonumabench. The impact is that
-> the migration is delayed until the next PTE scan which is bad, but not
-> bad enough to delay the obvious safety fix first. How about this?
-> 
-> ---8<---
-> mm: migrate: Check page_count of THP before migrating
-> 
-> Hugh Dickins poined out that migrate_misplaced_transhuge_page() does not
-> check page_count before migrating like base page migration and khugepage. He
-> could not see why this was safe and he is right.
-> 
-> It happens to work for the most part. The page_mapcount() check ensures that
-> only a single address space is using this page and as THPs are typically
-> private it should not be possible for another address space to fault it in
-> parallel. If the address space has one associated task then it's difficult to
-> have both a GUP pin and be referencing the page at the same time. If there
-> are multiple tasks then a buggy scenario requires that another thread be
-> accessing the page while the direct IO is in flight. This is dodgy behaviour
-> as there is a possibility of corruption with or without THP migration. It
-> would be difficult to identify the corruption as being a migration bug.
-> 
-> While we happen to be ok for THP migration versus GUP it is shoddy to
-> depend on such "safety" so this patch checks the page count similar to
-> anonymous pages. Note that this does not mean that the page_mapcount()
-> check can go away. If we were to remove the page_mapcount() check then
-> the THP would have to be unmapped from all referencing PTEs, replaced with
-> migration PTEs and restored properly afterwards.
-> 
-> Reported-by: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
+On Fri, 2012-12-21 at 13:08 -0500, J. Bruce Fields wrote:
++AD4- On Fri, Dec 21, 2012 at 10:33:48AM -0500, Dave Jones wrote:
++AD4- +AD4- Did a mount from a client (also running Linus current), and the
++AD4- +AD4- server spat this out..
++AD4- +AD4- 
++AD4- +AD4- +AFs- 6936.306135+AF0- ------------+AFs- cut here +AF0-------------
++AD4- +AD4- +AFs- 6936.306154+AF0- WARNING: at net/sunrpc/clnt.c:617 rpc+AF8-shutdown+AF8-client+-0x12a/0x1b0 +AFs-sunrpc+AF0-()
++AD4- 
++AD4- This is a warning added by 168e4b39d1afb79a7e3ea6c3bb246b4c82c6bdb9
++AD4- +ACI-SUNRPC: add WARN+AF8-ON+AF8-ONCE for potential deadlock+ACI-, pointing out that
++AD4- nfsd is calling shutdown+AF8-client from a workqueue, which is a problem
++AD4- because shutdown+AF8-client has to wait on rpc tasks that run on a
++AD4- workqueue.
++AD4- 
++AD4- I don't believe there's any circular dependency among the workqueues
++AD4- (we're calling shutdown+AF8-client from callback+AF8-wq, not rpciod+AF8-workqueue),
 
-Thanks very much for responding so quickly on this, Mel.  It pains
-me that I cannot yet say acked-by, because I need to spend more time
-checking it, and cannot do so today.
+We were getting deadlocks with rpciod when calling rpc+AF8-shutdown+AF8-client
+from the nfsiod workqueue.
 
-I like where you've placed the check, that's just right.  But I'm
-worried that perhaps there's a putback_lru_page missing, and wonder
-if it's missing even without this additional patch.  It would not
-be immediately obvious if it's missing, the pages wouldn't leak,
-but more and more would become unreclaimable until freed.
+The problem here is that the workqueues all run using the same pool of
+threads, and so you can get +ACI-interesting+ACI- deadlocks when one of these
+threads has to wait for another one.
 
-Hugh
++AD4- but 168e4b39d1afb.. says that we could get a deadlock if both are
++AD4- running on the same kworker thread.
++AD4- 
++AD4- I'm not sure what to do about that.
++AD4- 
 
-> ---
->  mm/migrate.c |    8 +++++++-
->  1 file changed, 7 insertions(+), 1 deletion(-)
-> 
-> diff --git a/mm/migrate.c b/mm/migrate.c
-> index 3b676b0..7636b90 100644
-> --- a/mm/migrate.c
-> +++ b/mm/migrate.c
-> @@ -1679,7 +1679,13 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
->  	page_xchg_last_nid(new_page, page_last_nid(page));
->  
->  	isolated = numamigrate_isolate_page(pgdat, page);
-> -	if (!isolated) {
-> +
-> +	/*
-> +	 * Failing to isolate or a GUP pin prevents migration. The expected
-> +	 * page count is 2. 1 for anonymous pages without a mapping and 1
-> +	 * for the callers pin
-> +	 */
-> +	if (!isolated || page_count(page) != 2) {
->  		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
->  		put_page(new_page);
->  		goto out_keep_locked;
-> 
+The question is if you really do need the call to rpc+AF8-killall+AF8-tasks and
+the synchronous wait for completion of old tasks? If you don't care,
+then we could just have you call rpc+AF8-release+AF8-client() in order to
+release your reference on the rpc+AF8-client.
+
++AD4- +AD4- +AFs- 6936.306156+AF0- Hardware name:         
++AD4- +AD4- +AFs- 6936.306157+AF0- Modules linked in: ip6t+AF8-REJECT nf+AF8-conntrack+AF8-ipv6 nf+AF8-defrag+AF8-ipv6 xt+AF8-conntrack nf+AF8-conntrack ip6table+AF8-filter ip6+AF8-tables xfs coretemp iTCO+AF8-wdt iTCO+AF8-vendor+AF8-support snd+AF8-emu10k1 microcode snd+AF8-util+AF8-mem snd+AF8-ac97+AF8-codec ac97+AF8-bus snd+AF8-hwdep snd+AF8-seq snd+AF8-pcm snd+AF8-page+AF8-alloc snd+AF8-timer e1000e snd+AF8-rawmidi snd+AF8-seq+AF8-device snd emu10k1+AF8-gp pcspkr i2c+AF8-i801 soundcore gameport lpc+AF8-ich mfd+AF8-core i82975x+AF8-edac edac+AF8-core vhost+AF8-net tun macvtap macvlan kvm+AF8-intel kvm binfmt+AF8-misc nfsd auth+AF8-rpcgss nfs+AF8-acl lockd sunrpc btrfs libcrc32c zlib+AF8-deflate usb+AF8-storage firewire+AF8-ohci firewire+AF8-core sata+AF8-sil crc+AF8-itu+AF8-t radeon i2c+AF8-algo+AF8-bit drm+AF8-kms+AF8-helper ttm drm i2c+AF8-core floppy
++AD4- +AD4- +AFs- 6936.306214+AF0- Pid: 52, comm: kworker/u:2 Not tainted 3.7.0+- +ACM-34
++AD4- +AD4- +AFs- 6936.306216+AF0- Call Trace:
++AD4- +AD4- +AFs- 6936.306224+AF0-  +AFsAPA-ffffffff8106badf+AD4AXQ- warn+AF8-slowpath+AF8-common+-0x7f/0xc0
++AD4- +AD4- +AFs- 6936.306227+AF0-  +AFsAPA-ffffffff8106bb3a+AD4AXQ- warn+AF8-slowpath+AF8-null+-0x1a/0x20
++AD4- +AD4- +AFs- 6936.306235+AF0-  +AFsAPA-ffffffffa02c62ca+AD4AXQ- rpc+AF8-shutdown+AF8-client+-0x12a/0x1b0 +AFs-sunrpc+AF0-
++AD4- +AD4- +AFs- 6936.306240+AF0-  +AFsAPA-ffffffff81368318+AD4AXQ- ? delay+AF8-tsc+-0x98/0xf0
++AD4- +AD4- +AFs- 6936.306252+AF0-  +AFsAPA-ffffffffa034a60b+AD4AXQ- nfsd4+AF8-process+AF8-cb+AF8-update.isra.16+-0x4b/0x230 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.306256+AF0-  +AFsAPA-ffffffff8109677c+AD4AXQ- ? +AF8AXw-rcu+AF8-read+AF8-unlock+-0x5c/0xa0
++AD4- +AD4- +AFs- 6936.306260+AF0-  +AFsAPA-ffffffff81370d46+AD4AXQ- ? debug+AF8-object+AF8-deactivate+-0x46/0x130
++AD4- +AD4- +AFs- 6936.306269+AF0-  +AFsAPA-ffffffffa034a87d+AD4AXQ- nfsd4+AF8-do+AF8-callback+AF8-rpc+-0x8d/0xa0 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.306272+AF0-  +AFsAPA-ffffffff810900f7+AD4AXQ- process+AF8-one+AF8-work+-0x207/0x760
++AD4- +AD4- +AFs- 6936.306274+AF0-  +AFsAPA-ffffffff81090087+AD4AXQ- ? process+AF8-one+AF8-work+-0x197/0x760
++AD4- +AD4- +AFs- 6936.306277+AF0-  +AFsAPA-ffffffff81090afe+AD4AXQ- ? worker+AF8-thread+-0x21e/0x440
++AD4- +AD4- +AFs- 6936.306285+AF0-  +AFsAPA-ffffffffa034a7f0+AD4AXQ- ? nfsd4+AF8-process+AF8-cb+AF8-update.isra.16+-0x230/0x230 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.306289+AF0-  +AFsAPA-ffffffff81090a3e+AD4AXQ- worker+AF8-thread+-0x15e/0x440
++AD4- +AD4- +AFs- 6936.306292+AF0-  +AFsAPA-ffffffff810908e0+AD4AXQ- ? rescuer+AF8-thread+-0x250/0x250
++AD4- +AD4- +AFs- 6936.306295+AF0-  +AFsAPA-ffffffff8109b16d+AD4AXQ- kthread+-0xed/0x100
++AD4- +AD4- +AFs- 6936.306299+AF0-  +AFsAPA-ffffffff810dd86e+AD4AXQ- ? put+AF8-lock+AF8-stats.isra.25+-0xe/0x40
++AD4- +AD4- +AFs- 6936.306302+AF0-  +AFsAPA-ffffffff8109b080+AD4AXQ- ? kthread+AF8-create+AF8-on+AF8-node+-0x160/0x160
++AD4- +AD4- +AFs- 6936.306307+AF0-  +AFsAPA-ffffffff81711e2c+AD4AXQ- ret+AF8-from+AF8-fork+-0x7c/0xb0
++AD4- +AD4- +AFs- 6936.306310+AF0-  +AFsAPA-ffffffff8109b080+AD4AXQ- ? kthread+AF8-create+AF8-on+AF8-node+-0x160/0x160
++AD4- +AD4- +AFs- 6936.306312+AF0- ---+AFs- end trace 5bab69e086ae3c6f +AF0----
++AD4- +AD4- +AFs- 6936.363213+AF0- ------------+AFs- cut here +AF0-------------
++AD4- +AD4- +AFs- 6936.363226+AF0- WARNING: at fs/nfsd/vfs.c:937 nfsd+AF8-vfs+AF8-read.isra.13+-0x197/0x1b0 +AFs-nfsd+AF0-()
++AD4- 
++AD4- This warning is unrelated, and is probably just carelessness on my part:
++AD4- I couldn't see why this condition would happen, and I stuck the warning
++AD4- in there without looking much harder.  Probably we should just revert
++AD4- 79f77bf9a4e3dd5ead006b8f17e7c4ff07d8374e +ACI-nfsd: warn on odd reply state
++AD4- in nfsd+AF8-vfs+AF8-read+ACI- while I go stare at the code.
++AD4- 
++AD4- --b.
++AD4- 
++AD4- +AD4- +AFs- 6936.363229+AF0- Hardware name:         
++AD4- +AD4- +AFs- 6936.363230+AF0- Modules linked in: ip6t+AF8-REJECT nf+AF8-conntrack+AF8-ipv6 nf+AF8-defrag+AF8-ipv6 xt+AF8-conntrack nf+AF8-conntrack ip6table+AF8-filter ip6+AF8-tables xfs coretemp iTCO+AF8-wdt iTCO+AF8-vendor+AF8-support snd+AF8-emu10k1 microcode snd+AF8-util+AF8-mem snd+AF8-ac97+AF8-codec ac97+AF8-bus snd+AF8-hwdep snd+AF8-seq snd+AF8-pcm snd+AF8-page+AF8-alloc snd+AF8-timer e1000e snd+AF8-rawmidi snd+AF8-seq+AF8-device snd emu10k1+AF8-gp pcspkr i2c+AF8-i801 soundcore gameport lpc+AF8-ich mfd+AF8-core i82975x+AF8-edac edac+AF8-core vhost+AF8-net tun macvtap macvlan kvm+AF8-intel kvm binfmt+AF8-misc nfsd auth+AF8-rpcgss nfs+AF8-acl lockd sunrpc btrfs libcrc32c zlib+AF8-deflate usb+AF8-storage firewire+AF8-ohci firewire+AF8-core sata+AF8-sil crc+AF8-itu+AF8-t radeon i2c+AF8-algo+AF8-bit drm+AF8-kms+AF8-helper ttm drm i2c+AF8-core floppy
++AD4- +AD4- +AFs- 6936.363284+AF0- Pid: 699, comm: nfsd Tainted: G        W    3.7.0+- +ACM-34
++AD4- +AD4- +AFs- 6936.363286+AF0- Call Trace:
++AD4- +AD4- +AFs- 6936.363293+AF0-  +AFsAPA-ffffffff8106badf+AD4AXQ- warn+AF8-slowpath+AF8-common+-0x7f/0xc0
++AD4- +AD4- +AFs- 6936.363296+AF0-  +AFsAPA-ffffffff8106bb3a+AD4AXQ- warn+AF8-slowpath+AF8-null+-0x1a/0x20
++AD4- +AD4- +AFs- 6936.363302+AF0-  +AFsAPA-ffffffffa031ef77+AD4AXQ- nfsd+AF8-vfs+AF8-read.isra.13+-0x197/0x1b0 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363310+AF0-  +AFsAPA-ffffffffa0321948+AD4AXQ- nfsd+AF8-read+AF8-file+-0x88/0xb0 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363317+AF0-  +AFsAPA-ffffffffa0332956+AD4AXQ- nfsd4+AF8-encode+AF8-read+-0x186/0x260 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363325+AF0-  +AFsAPA-ffffffffa03391cc+AD4AXQ- nfsd4+AF8-encode+AF8-operation+-0x5c/0xa0 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363333+AF0-  +AFsAPA-ffffffffa032e5a9+AD4AXQ- nfsd4+AF8-proc+AF8-compound+-0x289/0x780 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363339+AF0-  +AFsAPA-ffffffffa0319e5b+AD4AXQ- nfsd+AF8-dispatch+-0xeb/0x230 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363355+AF0-  +AFsAPA-ffffffffa02d3d38+AD4AXQ- svc+AF8-process+AF8-common+-0x328/0x6d0 +AFs-sunrpc+AF0-
++AD4- +AD4- +AFs- 6936.363365+AF0-  +AFsAPA-ffffffffa02d4433+AD4AXQ- svc+AF8-process+-0x103/0x160 +AFs-sunrpc+AF0-
++AD4- +AD4- +AFs- 6936.363371+AF0-  +AFsAPA-ffffffffa031921b+AD4AXQ- nfsd+-0xdb/0x160 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363378+AF0-  +AFsAPA-ffffffffa0319140+AD4AXQ- ? nfsd+AF8-destroy+-0x210/0x210 +AFs-nfsd+AF0-
++AD4- +AD4- +AFs- 6936.363381+AF0-  +AFsAPA-ffffffff8109b16d+AD4AXQ- kthread+-0xed/0x100
++AD4- +AD4- +AFs- 6936.363385+AF0-  +AFsAPA-ffffffff810dd86e+AD4AXQ- ? put+AF8-lock+AF8-stats.isra.25+-0xe/0x40
++AD4- +AD4- +AFs- 6936.363388+AF0-  +AFsAPA-ffffffff8109b080+AD4AXQ- ? kthread+AF8-create+AF8-on+AF8-node+-0x160/0x160
++AD4- +AD4- +AFs- 6936.363393+AF0-  +AFsAPA-ffffffff81711e2c+AD4AXQ- ret+AF8-from+AF8-fork+-0x7c/0xb0
++AD4- +AD4- +AFs- 6936.363396+AF0-  +AFsAPA-ffffffff8109b080+AD4AXQ- ? kthread+AF8-create+AF8-on+AF8-node+-0x160/0x160
++AD4- +AD4- +AFs- 6936.363398+AF0- ---+AFs- end trace 5bab69e086ae3c70 +AF0----
++AD4- +AD4- 
+
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust+AEA-netapp.com
+www.netapp.com
