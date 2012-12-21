@@ -1,183 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038Ab2LUKaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 05:30:14 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:58303 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab2LUKaE convert rfc822-to-8bit (ORCPT
+	id S1752016Ab2LUKfn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 05:35:43 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:55185 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab2LUKfd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 05:30:04 -0500
-From: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
-To: Loic Pallardy <loic.pallardy-ext@stericsson.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Ohad Ben-Cohen <ohad@wizery.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Loic PALLARDY <loic.pallardy@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Gutierrez, Juan" <jgutierrez@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>, Tejun Heo <tj@kernel.org>,
-        "Anna, Suman" <s-anna@ti.com>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 4/9] mailbox: create opened message type
-Thread-Topic: [PATCH 4/9] mailbox: create opened message type
-Thread-Index: AQHN3SJEGY59nq1a/Um05UIeNVCh75gjCfVQ
-Date: Fri, 21 Dec 2012 10:28:47 +0000
-Message-ID: <B5906170F1614E41A8A28DE3B8D121433EC9CE7A@DBDE01.ent.ti.com>
-References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
- <1355836212-17956-5-git-send-email-loic.pallardy-ext@stericsson.com>
-In-Reply-To: <1355836212-17956-5-git-send-email-loic.pallardy-ext@stericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-puzzleid: {35C581CE-3421-428D-8341-2666878AB8A1}
-x-cr-hashedpuzzle: =?us-ascii?Q?C1Pe_Hf8c_UH3V_glvo_iYUH_il8e_ldaU_mR2R_wtLf_29li_8KWv_AB3gq?=
- =?us-ascii?B?dz09IEFIb2hydz09IEFNZks2dz09IEFNb3ZvQT09IEFSWlI4UT09OzE5O1lR?=
- =?us-ascii?Q?ByAG4AZABAAGEAcgBuAGQAYgAuAGQAZQA7AGIAcgBvAG8AbgBpAGUAQABvAH?=
- =?us-ascii?Q?AAZQBuAHMAbwB1AHIAYwBlAC4AdwBvAGwAZgBzAG8AbgBtAGkAYwByAG8ALg?=
- =?us-ascii?Q?BjAG8AbQA7AGYAZQBsAGkAcABlAC4AYwBvAG4AdAByAGUAcgBhAHMAQABuAG?=
- =?us-ascii?Q?8AawBpAGEALgBjAG8AbQA7AGcAcgBlAGcAawBoAEAAbABpAG4AdQB4AGYAbw?=
- =?us-ascii?Q?B1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGoAawByAHoAeQBzAHoAdABAAH?=
- =?us-ascii?Q?QAaQBzAC4AaQBjAG4AZQB0AC4AcABsADsAbABpAG4AdQBzAC4AdwBhAGwAbA?=
- =?us-ascii?Q?BlAGkAagBAAGwAaQBuAGEAcgBvAC4AbwByAGcAOwBsAGkAbgB1AHgALQBhAH?=
- =?us-ascii?Q?IAbQAtAGsAZQByAG4AZQBsAEAAbABpAHMAdABzAC4AaQBuAGYAcgBhAGQAZQ?=
- =?us-ascii?Q?BhAGQALgBvAHIAZwA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAG?=
- =?us-ascii?Q?UAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBvAG0AYQ?=
- =?us-ascii?Q?BwAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AH?=
- =?us-ascii?Q?gAQABhAHIAbQAuAGwAaQBuAHUAeAAuAG8AcgBnAC4AdQBrADsAbABvAGkAYw?=
- =?us-ascii?Q?AuAHAAYQBsAGwAYQByAGQAeQAtAGUAeAB0AEAAcwB0AGUAcgBpAGMAcwBzAG?=
- =?us-ascii?Q?8AbgAuAGMAbwBtADsAbABvAGkAYwAuAHAAYQBsAGwAYQByAGQAeQBAAHMAdA?=
- =?us-ascii?Q?AuAGMAbwBtADsAbwBoAGEAZABAAHcAaQB6AGUAcgB5AC4AYwBvAG0AOwBvAG?=
- =?us-ascii?Q?0AYQByAC4AcgBhAG0AaQByAGUAegBAAGMAbwBwAGkAdABsAC4AYwBvAG0AOw?=
- =?us-ascii?Q?BwAG8AcABjAG8AcgBuAG0AaQB4AEAAZwBtAGEAaQBsAC4AYwBvAG0AOwBzAH?=
- =?us-ascii?Q?QAZQByAGkAYwBzAHMAbwBuAF8AbgBvAG0AYQBkAGkAawBfAGwAaQBuAHUAeA?=
- =?us-ascii?Q?BAAGwAaQBzAHQALgBzAHQALgBjAG8AbQA7AHQAagBAAGsAZQByAG4AZQBsAC?=
- =?us-ascii?Q?4AbwByAGcAOwB0AG8AbgB5AEAAYQB0AG8AbQBpAGQAZQAuAGMAbwBtADsAdw?=
- =?us-ascii?Q?BpAG0AQABpAGcAdQBhAG4AYQAuAGIAZQA=3D;Sosha1=5Fv1;7;{35C581CE?=
- =?us-ascii?Q?-3421-428D-8341-2666878AB8A1};dgBhAGkAYgBoAGEAdgAuAGIAZQBkAG?=
- =?us-ascii?Q?kAYQBAAHQAaQAuAGMAbwBtAA=3D=3D;Fri,_21_Dec_2012_10:23:59_GMT?=
- =?us-ascii?Q?;UgBFADoAIABbAFAAQQBUAEMASAAgADQALwA5AF0AIABtAGEAaQBsAGIAbwB?=
- =?us-ascii?Q?4ADoAIABjAHIAZQBhAHQAZQAgAG8AcABlAG4AZQBkACAAbQBlAHMAcwBhAGc?=
- =?us-ascii?Q?AZQAgAHQAeQBwAGUA?=
-x-originating-ip: [172.24.133.119]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Dec 2012 05:35:33 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
+References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
+	<878v9f5ugn.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
+	<87k3sy17vk.fsf@devron.myhome.or.jp>
+	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
+	<87txs0x45r.fsf@devron.myhome.or.jp>
+	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
+	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
+	<87623ydnvq.fsf@devron.myhome.or.jp>
+	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
+	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
+	<877gobn7fy.fsf@devron.myhome.or.jp>
+	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
+Date: Fri, 21 Dec 2012 19:35:30 +0900
+In-Reply-To: <CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
+	(Namjae Jeon's message of "Fri, 21 Dec 2012 19:15:29 +0900")
+Message-ID: <87obhnlmkt.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 18:40:07, Loic Pallardy wrote:
-> Current message type is a u32 to fit HW fifo format.
-> This should be extended to support any message exchanges
-> and type of mailbox.
-> Propose structure owns the original u32 and an optional
-> pointer on additional data.
-> 
-> Signed-off-by: Loic Pallardy <loic.pallardy@st.com>
-> ---
->  drivers/mailbox/Kconfig         |  9 ++++++
->  drivers/mailbox/mailbox-omap1.c | 18 ++++++------
->  drivers/mailbox/mailbox-omap2.c | 10 ++++---
->  drivers/mailbox/mailbox.c       | 64 +++++++++++++++++++++++++++++------------
->  drivers/mailbox/mailbox.h       |  6 ++--
->  include/linux/mailbox.h         | 17 ++++++++++-
->  6 files changed, 89 insertions(+), 35 deletions(-)
-> 
-> diff --git a/drivers/mailbox/Kconfig b/drivers/mailbox/Kconfig
-> index d1e7d74..efb766f 100644
-> --- a/drivers/mailbox/Kconfig
-> +++ b/drivers/mailbox/Kconfig
-> @@ -33,4 +33,13 @@ config MBOX_KFIFO_SIZE
->           This can also be changed at runtime (via the mbox_kfifo_size
->           module parameter).
->  
-> +config MBOX_DATA_SIZE
-> +	int "Mailbox associated data max size (bytes)"
-> +	default 64
-> +	help
-> +	  Specify the default size of mailbox's associated data buffer
-> +	  (bytes)
-> +          This can also be changed at runtime (via the mbox_kfifo_size
-> +          module parameter).
-> +
->  endif
-> diff --git a/drivers/mailbox/mailbox-omap1.c b/drivers/mailbox/mailbox-omap1.c
-> index 31cb70a..94e90af 100644
-> --- a/drivers/mailbox/mailbox-omap1.c
-> +++ b/drivers/mailbox/mailbox-omap1.c
-> @@ -50,26 +50,26 @@ static inline void mbox_write_reg(u32 val, size_t ofs)
->  }
->  
->  /* msg */
-> -static mbox_msg_t omap1_mbox_fifo_read(struct mailbox *mbox)
-> +static int omap1_mbox_fifo_read(struct mailbox *mbox, struct mailbox_msg *msg)
->  {
->  	struct omap_mbox1_fifo *fifo =
->  		&((struct omap_mbox1_priv *)mbox->priv)->rx_fifo;
-> -	mbox_msg_t msg;
->  
-> -	msg = mbox_read_reg(fifo->data);
-> -	msg |= ((mbox_msg_t) mbox_read_reg(fifo->cmd)) << 16;
-> +	msg->header = mbox_read_reg(fifo->data);
-> +	msg->header |= ((mbox_msg_t) mbox_read_reg(fifo->cmd)) << 16;
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-Now that struct mailbox_msg encapsulates the data, you can
-get rid of the mbox_msg_t typedef completely. Having the data
-as part of the mailbox_msg along with the functions with mbox_msg_t
-as the return type just creates confusion IMHO.
- 
->  
-> -	return msg;
-> +	return 0;
->  }
+>> Yes, we can't use fat_search_long() as is, of course. However, we can
+>> share the basic algorithm and code.
+>>
+>> The both are doing,
+>>
+>> 1) traverse the blocks chained by ->i_start.
+>> 2) get the record (dirent) from blocks.
+>> 3) check the detail of record
+>>
+>> The difference is only (3), right? I know, the code has many differences
+>> though. The actual logic are almost same.
+>>
+>> And see, e.g., fat_get_cluster() is checking several unexpected
+>> state. We have to care about corrupting data. It is not only
+>> "infinite-loop" case.  And why I'm saying it is better to share code.
+>
+> Regarding unexpected conditions,
+> When we compare the unexpected conditions in fat_get_cluster:
+> We get these as conditions which can arise:
+> fat_end_read() returns:
+>  1) < 0
+>  2) FAT_ENT_FREE
+>  3) FAT_ENT_EOF
+> And the last is
+>       4) Preventing the infinite looping of cluster chain.
+>
+> Our patch is already covering the cases:
+>  case 1) , 2) =>  if (search_clus < 0 || search_clus == FAT_ENT_FREE)
+>  about  case 3) => while (search_clus != FAT_ENT_EOF);
+>
+> while for Case 4:
+> We can make changes like this:
+>
+> @@ -179,8 +179,9 @@ struct dentry *fat_get_parent(struct dentry *child_dir)
+>         struct inode *parent_inode = NULL;
+>         struct msdos_sb_info *sbi = MSDOS_SB(sb);
+>         int parent_logstart;
+> -       int search_clus, clus_to_match;
+> +       int search_clus, clus_to_match, clus_count = 0;
+>         sector_t blknr;
+> +       const int limit = sb->s_maxbytes >> MSDOS_SB(sb)->cluster_bits;
+>
+>         if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
+>                 parent_logstart = fat_get_start(sbi, de);
+> @@ -223,6 +224,14 @@ struct dentry *fat_get_parent(struct dentry *child_dir)
+>                                                 search_clus, clus_to_match);
+>                                 if (IS_ERR(parent_inode) || parent_inode)
+>                                         break;
+> +                               if (++clus_count > limit) {
+> +                                       fat_fs_error_ratelimit(sb,
+> +                                       "%s: detected the cluster chain loop"
+> +                                       " while reading directory entries from"
+> +                                       " cluster %d", __func__, search_clus);
+> +                                       parent_inode = ERR_PTR(-EIO);
+> +                                       break;
+> +                               }
+>                                 fatent_init(&fatent);
+>                                 search_clus = fat_ent_read(sb, &fatent,
+>                                                            search_clus);
 
-Convert all return 0 functions to void?
-
-[...]
-
->  
-> diff --git a/include/linux/mailbox.h b/include/linux/mailbox.h
-> index 18c9502..d256e1a 100644
-> --- a/include/linux/mailbox.h
-> +++ b/include/linux/mailbox.h
-> @@ -7,7 +7,22 @@ typedef int __bitwise mailbox_irq_t;
->  #define IRQ_TX ((__force mailbox_irq_t) 1)
->  #define IRQ_RX ((__force mailbox_irq_t) 2)
->  
-> -int mailbox_msg_send(struct mailbox *, mbox_msg_t msg);
-> +struct mailbox_msg {
-> +	int		size;
-> +	u32		header;
-> +	void		*pdata;
-> +};
-> +
-> +#define MAILBOX_FILL_MSG(_msg, _header, _pdata, _size) { \
-> +	_msg.header = _header; \
-> +	_msg.pdata = (void *)_pdata; \
-> +	_msg.size = _size; \
-> +}
-> +
-> +#define MAILBOX_FILL_HEADER_MSG(_msg, _header) \
-> +	MAILBOX_FILL_MSG(_msg, _header, NULL, 0);
-> +
-
-I used these patches as part of the suspend-resume support for AM335x
-which has the same mailbox IP as OMAP4. I used the MAILBOX_FILL_HEADER_MSG
-helper and things work as expected.
-
-However, I found the 'header' part to be very confusing. Why not treat the
-OMAP case as a special case of the new MAILBOX_FILL_MSG where the data size
-is set to 1?
-
-Regards,
-Vaibhav
+and it is copy of fat_get_cluster(), right? It would be sane as start
+though, it is true to increase maintain cost, and it makes more similar
+to fat_search_long() path. It is why I said, copy at first, and
+refactoring after that.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
