@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab2LUJoy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:44:54 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59168 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab2LUJoW (ORCPT
+	id S1751843Ab2LUJrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:47:41 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:39577 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab2LUJre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:44:22 -0500
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v5 1/7] leds: leds-pwm: Convert to use devm_get_pwm
-Date: Fri, 21 Dec 2012 10:43:55 +0100
-Message-ID: <1356083041-29179-2-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Fri, 21 Dec 2012 04:47:34 -0500
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: andrey.smirnov@convergeddevices.net
+Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Add "no-bus" configuration for regmap API
+Date: Fri, 21 Dec 2012 01:47:15 -0800
+Message-Id: <1356083238-6932-1-git-send-email-andrew.smirnov@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the driver to use the new API for requesting pwm so we can take
-advantage of the pwm_lookup table to find the correct pwm to be used for the
-LED functionality.
+This patch proposes extension to the API that was suggested by Mark in
+the following thread:
+http://article.gmane.org/gmane.linux.kernel/1383734
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- drivers/leds/leds-pwm.c  | 19 ++++++-------------
- include/linux/leds_pwm.h |  2 +-
- 2 files changed, 7 insertions(+), 14 deletions(-)
+The idea behind extensions is to allow the devices that expose some
+register-like interface but whose protocol for reading or writing
+those registers could not be simplified to serialized bytestream
+writes to be used within 'regmap' framework
 
-diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
-index 2157524..351257c 100644
---- a/drivers/leds/leds-pwm.c
-+++ b/drivers/leds/leds-pwm.c
-@@ -67,12 +67,11 @@ static int led_pwm_probe(struct platform_device *pdev)
- 		cur_led = &pdata->leds[i];
- 		led_dat = &leds_data[i];
- 
--		led_dat->pwm = pwm_request(cur_led->pwm_id,
--				cur_led->name);
-+		led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
- 		if (IS_ERR(led_dat->pwm)) {
- 			ret = PTR_ERR(led_dat->pwm);
--			dev_err(&pdev->dev, "unable to request PWM %d\n",
--					cur_led->pwm_id);
-+			dev_err(&pdev->dev, "unable to request PWM for %s\n",
-+				cur_led->name);
- 			goto err;
- 		}
- 
-@@ -86,10 +85,8 @@ static int led_pwm_probe(struct platform_device *pdev)
- 		led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
- 
- 		ret = led_classdev_register(&pdev->dev, &led_dat->cdev);
--		if (ret < 0) {
--			pwm_free(led_dat->pwm);
-+		if (ret < 0)
- 			goto err;
--		}
- 	}
- 
- 	platform_set_drvdata(pdev, leds_data);
-@@ -98,10 +95,8 @@ static int led_pwm_probe(struct platform_device *pdev)
- 
- err:
- 	if (i > 0) {
--		for (i = i - 1; i >= 0; i--) {
-+		for (i = i - 1; i >= 0; i--)
- 			led_classdev_unregister(&leds_data[i].cdev);
--			pwm_free(leds_data[i].pwm);
--		}
- 	}
- 
- 	return ret;
-@@ -115,10 +110,8 @@ static int led_pwm_remove(struct platform_device *pdev)
- 
- 	leds_data = platform_get_drvdata(pdev);
- 
--	for (i = 0; i < pdata->num_leds; i++) {
-+	for (i = 0; i < pdata->num_leds; i++)
- 		led_classdev_unregister(&leds_data[i].cdev);
--		pwm_free(leds_data[i].pwm);
--	}
- 
- 	return 0;
- }
-diff --git a/include/linux/leds_pwm.h b/include/linux/leds_pwm.h
-index 33a0711..a65e964 100644
---- a/include/linux/leds_pwm.h
-+++ b/include/linux/leds_pwm.h
-@@ -7,7 +7,7 @@
- struct led_pwm {
- 	const char	*name;
- 	const char	*default_trigger;
--	unsigned	pwm_id;
-+	unsigned	pwm_id __deprecated;
- 	u8 		active_low;
- 	unsigned 	max_brightness;
- 	unsigned	pwm_period_ns;
+Original RFC thread can be found here:
+https://lkml.org/lkml/2012/11/23/367
+
+First two patches are refactoring patches that add all the necessary
+plumbing to the regmap internals and move old functionality to use
+that infrastracture.
+
+Third patch introduces code that implements 'no-bus' configuration
+
+Andrey Smirnov (3):
+  Add provisions to have user-defined read operation
+  Add provisions to have user-defined write operation
+  Add "no-bus" option for regmap API
+
+ drivers/base/regmap/internal.h |    5 ++
+ drivers/base/regmap/regmap.c   |  156 +++++++++++++++++++++++++++++-----------
+ include/linux/regmap.h         |    7 ++
+ 3 files changed, 126 insertions(+), 42 deletions(-)
+
 -- 
-1.8.0.2
+1.7.9.5
 
