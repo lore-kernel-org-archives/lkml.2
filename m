@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab2LUFWW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 00:22:22 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:57329 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710Ab2LUFWP (ORCPT
+	id S1751161Ab2LUFXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 00:23:04 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:40787 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750710Ab2LUFWz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 00:22:15 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-0c-50d3f2035786
+	Fri, 21 Dec 2012 00:22:55 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-12-50d3f22ddc3c
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
@@ -15,43 +15,41 @@ Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <000501cddf3a$9ba1ecb0$d2e5c610$%han@samsung.com>
 In-reply-to: <000501cddf3a$9ba1ecb0$d2e5c610$%han@samsung.com>
-Subject: [PATCH 08/11] backlight: vgg2432a4: use spi_get_drvdata and
- spi_set_drvdata
-Date: Fri, 21 Dec 2012 14:22:11 +0900
-Message-id: <000c01cddf3b$21163360$63429a20$%han@samsung.com>
+Subject: [PATCH 09/11] backlight: tosa: use spi_get_drvdata and spi_set_drvdata
+Date: Fri, 21 Dec 2012 14:22:53 +0900
+Message-id: <000d01cddf3b$39f4a010$addde030$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3fOptdKnZ1gkj6SBm7JPAbRHnX+QAAHAGQ
+Thread-index: Ac3fOptdKnZ1gkj6SBm7JPAbRHnX+QAAIjBg
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGIsWRmVeSWpSXmKPExsVy+t8zY13mT5cDDO59MbK4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZZz+fZy74zl2x9fxilgbG2VxdjJwcEgImEk2/P7JD2GISF+6t
-	Z+ti5OIQEljGKPGp6z0jTNHHvd9ZIRKLGCU+r/nPBOHMZpJo+3QPrJ1NQE3iy5fDYLaIQIRE
-	84xZzF2MHBzMAj4Sm2dpgoSFBGwl2r/uABvKKWAn0Ty3iQXEFhYIkzhw+jxYK4uAqsTNTWfB
-	aniB6j/f+AVlC0r8mHwPrJ5ZQEti/c7jTBC2vMTmNW/BVkkIqEs8+qsLcYGRxLcTaxghSkQk
-	9r14xwgxXkDi2+RDLBDlshKbDjCDfCIhsIhd4t6HY1D/SkocXHGDZQKjxCwkm2ch2TwLyeZZ
-	SFYsYGRZxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iRESWdI7GFc1WBxiFOBgVOLhjbS4HCDE
-	mlhWXJl7iFGCg1lJhPf5EqAQb0piZVVqUX58UWlOavEhRh+gyycyS4km5wOjPq8k3tDY2MTM
-	xNTE3NLU3BSHsJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGxqRl7dcYi0Xf9Zp3mkkvq/I6
-	MYUja5K5mJ2w3eVf04qYAhTkDBY+dW+duXzmy4C+NwY7v7aWMxQKmLN5xfz9GZXy1Yevfgtv
-	+BSF6bdi5+tYl+bd2fSyZoXJ5426Xid15tybO+tAEd+GmhzbNw1ZHWsXXX9dd/RdxtSJ9ldj
-	V90S5/crfBBcqsRSnJFoqMVcVJwIAC7ZuPTZAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jAV3mT5cDDNqm6Vtc3jWHzYHR4/Mm
-	uQDGqAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRbJRefAF23zByg
-	qUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC4HqMDNBAwjrGjLOfzzMXfOeu2Hp+MUsD
-	42yuLkZODgkBE4mPe7+zQthiEhfurWfrYuTiEBJYxCjxec1/JghnNpNE26d77CBVbAJqEl++
-	HAazRQQiJJpnzGLuYuTgYBbwkdg8SxMkLCRgK9H+dQcjiM0pYCfRPLeJBcQWFgiTOHD6PFgr
-	i4CqxM1NZ8FqeIHqP9/4BWULSvyYfA+snllAS2L9zuNMELa8xOY1b8FWSQioSzz6qwtxgZHE
-	txNrGCFKRCT2vXjHOIFRaBaSSbOQTJqFZNIsJC0LGFlWMYqmFiQXFCel5xrpFSfmFpfmpesl
-	5+duYgTH7TPpHYyrGiwOMQpwMCrx8EZaXA4QYk0sK67MPcQowcGsJML7fAlQiDclsbIqtSg/
-	vqg0J7X4EKMP0KMTmaVEk/OBKSWvJN7Q2MTMyNLIzMLIxNwch7CSOG+zR0qAkEB6Yklqdmpq
-	QWoRzDgmDk6pBkbHlq05+WfFqvIbHhteexgccLPnIOMUgWNz6jk+85/btPOpl8utxQcieE+0
-	3sx4vvR53Nnp3XNabvx6Jns7n1dsV3WRdKtcZXdoe0/5zrWntJ/3Gz75MNnxRniO2qLUO37K
-	+y73vlkvu7uN+Z689Y5VdtbBFqYCF0+ZWXybc/AKG8fKyEW1U8uVWIozEg21mIuKEwFMYQWQ
-	CAMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zA13dT5cDDL7uULK4vGsOmwOjx+dN
+	cgGMUVw2Kak5mWWpRfp2CVwZ9y6sYC84I1Cx9vUk5gbGj7xdjBwcEgImErcWm3YxcgKZYhIX
+	7q1n62Lk4hASWMYo8av1LSNEwkTiZO8+qMR0Ron+pv2MEM5sJol597YygVSxCahJfPlymB3E
+	FhGIkGieMYsZZAOzgI/E5lmaIGEhAVuJ9q87wIZyCthJNM9tYgGxhQX8JU43toHFWQRUJfb9
+	mQBm8wLVn+7YygJhC0r8mHwPzGYW0JJYv/M4E4QtL7F5zVtmiGfUJR791YW4wEjiwK/7UOUi
+	EvtevIMaLyDxbfIhFohyWYlNB5hBPpEQmMcu8eR3DwvEv5ISB1fcYJnAKDELyeZZSDbPQrJ5
+	FpIVCxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmKExJXUDsaVDRaHGAU4GJV4eBnNLgcI
+	sSaWFVfmHmKU4GBWEuH1/wAU4k1JrKxKLcqPLyrNSS0+xOgDdPlEZinR5HxgzOeVxBsaG5uY
+	mZiamFuampviEFYS5232SAkQEkhPLEnNTk0tSC2CGcfEwSnVwFghFerU0ith/OTE6+VtTP6H
+	X/PvOBebN3OuTnD2efXOgDZu0QDBtn6PvMObLzEU/tuy++ILY9HtUicOr9Y7dCBafJLivX3P
+	DXj1+h7dXcuRy3JqA3OWiknnPFevjVKVxl2nKz3+Xd7IWCUlYdXn8PNJY+XrJw5y/Tn7wsTv
+	KhZWSMg4ce5drsRSnJFoqMVcVJwIAGJYLXXYAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKIsWRmVeSWpSXmKPExsVy+t9jQV3dT5cDDN4+k7O4vGsOmwOjx+dN
+	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGfcurGAvOCNQsfb1JOYG
+	xo+8XYycHBICJhIne/exQdhiEhfurQeyuTiEBKYzSvQ37WeEcGYzScy7t5UJpIpNQE3iy5fD
+	7CC2iECERPOMWcxdjBwczAI+EptnaYKEhQRsJdq/7mAEsTkF7CSa5zaxgNjCAv4SpxvbwOIs
+	AqoS+/5MALN5gepPd2xlgbAFJX5MvgdmMwtoSazfeZwJwpaX2LzmLdgqCQF1iUd/dSEuMJI4
+	8Os+VLmIxL4X7xgnMArNQjJpFpJJs5BMmoWkZQEjyypG0dSC5ILipPRcQ73ixNzi0rx0veT8
+	3E2M4Lh9JrWDcWWDxSFGAQ5GJR5eRrPLAUKsiWXFlbmHGCU4mJVEeP0/AIV4UxIrq1KL8uOL
+	SnNSiw8x+gA9OpFZSjQ5H5hS8kriDY1NzIwsjcwsjEzMzXEIK4nzNnukBAgJpCeWpGanphak
+	FsGMY+LglGpgZDJfOv/3fhHVzd2zTfOdn71p/OV/WbKqvDMwx13zcsw6yYTAt1rbznCcqGtT
+	S57ByPJAoZXfX1Rf7Oi8/GIO9mk/1c8utDy1RlZccLGGUOT8Rav2nJWOYny2f9lUAbubd/lK
+	w+dumf1IPlz3UWdrl3FZvwHv2wf+8emvDpgW/t3Ke3Xy/YUvlViKMxINtZiLihMB94GNOAgD	AAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -63,43 +61,65 @@ using spi_device instead of using dev_{get|set}_drvdata with
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/vgg2432a4.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ drivers/video/backlight/tosa_lcd.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/video/backlight/vgg2432a4.c b/drivers/video/backlight/vgg2432a4.c
-index 45e81b4..84d582f 100644
---- a/drivers/video/backlight/vgg2432a4.c
-+++ b/drivers/video/backlight/vgg2432a4.c
-@@ -208,12 +208,11 @@ static int vgg2432a4_lcd_init(struct ili9320 *lcd,
+diff --git a/drivers/video/backlight/tosa_lcd.c b/drivers/video/backlight/tosa_lcd.c
+index 96bae94..666fe25 100644
+--- a/drivers/video/backlight/tosa_lcd.c
++++ b/drivers/video/backlight/tosa_lcd.c
+@@ -193,7 +193,7 @@ static int tosa_lcd_probe(struct spi_device *spi)
+ 		return ret;
+ 
+ 	data->spi = spi;
+-	dev_set_drvdata(&spi->dev, data);
++	spi_set_drvdata(spi, data);
+ 
+ 	ret = devm_gpio_request_one(&spi->dev, TOSA_GPIO_TG_ON,
+ 				GPIOF_OUT_INIT_LOW, "tg #pwr");
+@@ -220,13 +220,13 @@ static int tosa_lcd_probe(struct spi_device *spi)
+ err_register:
+ 	tosa_lcd_tg_off(data);
+ err_gpio_tg:
+-	dev_set_drvdata(&spi->dev, NULL);
++	spi_set_drvdata(spi, NULL);
+ 	return ret;
+ }
+ 
+ static int tosa_lcd_remove(struct spi_device *spi)
+ {
+-	struct tosa_lcd_data *data = dev_get_drvdata(&spi->dev);
++	struct tosa_lcd_data *data = spi_get_drvdata(spi);
+ 
+ 	lcd_device_unregister(data->lcd);
+ 
+@@ -235,7 +235,7 @@ static int tosa_lcd_remove(struct spi_device *spi)
+ 
+ 	tosa_lcd_tg_off(data);
+ 
+-	dev_set_drvdata(&spi->dev, NULL);
++	spi_set_drvdata(spi, NULL);
+ 
+ 	return 0;
+ }
+@@ -243,7 +243,7 @@ static int tosa_lcd_remove(struct spi_device *spi)
  #ifdef CONFIG_PM
- static int vgg2432a4_suspend(struct spi_device *spi, pm_message_t state)
+ static int tosa_lcd_suspend(struct spi_device *spi, pm_message_t state)
  {
--	return ili9320_suspend(dev_get_drvdata(&spi->dev), state);
-+	return ili9320_suspend(spi_get_drvdata(spi), state);
- }
--
- static int vgg2432a4_resume(struct spi_device *spi)
- {
--	return ili9320_resume(dev_get_drvdata(&spi->dev));
-+	return ili9320_resume(spi_get_drvdata(spi));
- }
- #else
- #define vgg2432a4_suspend	NULL
-@@ -242,12 +241,12 @@ static int vgg2432a4_probe(struct spi_device *spi)
+-	struct tosa_lcd_data *data = dev_get_drvdata(&spi->dev);
++	struct tosa_lcd_data *data = spi_get_drvdata(spi);
  
- static int vgg2432a4_remove(struct spi_device *spi)
- {
--	return ili9320_remove(dev_get_drvdata(&spi->dev));
-+	return ili9320_remove(spi_get_drvdata(spi));
- }
+ 	tosa_lcd_tg_off(data);
  
- static void vgg2432a4_shutdown(struct spi_device *spi)
- {
--	ili9320_shutdown(dev_get_drvdata(&spi->dev));
-+	ili9320_shutdown(spi_get_drvdata(spi));
- }
+@@ -252,7 +252,7 @@ static int tosa_lcd_suspend(struct spi_device *spi, pm_message_t state)
  
- static struct spi_driver vgg2432a4_driver = {
+ static int tosa_lcd_resume(struct spi_device *spi)
+ {
+-	struct tosa_lcd_data *data = dev_get_drvdata(&spi->dev);
++	struct tosa_lcd_data *data = spi_get_drvdata(spi);
+ 
+ 	tosa_lcd_tg_init(data);
+ 	if (POWER_IS_ON(data->lcd_power))
 -- 
 1.7.2.5
 
