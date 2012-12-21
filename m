@@ -1,41 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab2LUQHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 11:07:21 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45102 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab2LUQHS (ORCPT
+	id S1752464Ab2LUQKC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 11:10:02 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:56170 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751885Ab2LUQJ4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 11:07:18 -0500
-Date: Fri, 21 Dec 2012 16:07:14 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: CONFIG_GENERIC_SIGALTSTACK with asm-generic/syscalls.h (was Re:
- [git pull] signal.git pile 2)
-Message-ID: <20121221160713.GT4939@ZenIV.linux.org.uk>
-References: <20121221002100.GM4939@ZenIV.linux.org.uk>
- <50D40088.3030304@synopsys.com>
- <50D44D61.6090006@imgtec.com>
+	Fri, 21 Dec 2012 11:09:56 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+CC: "a.zummo@towertech.it" <a.zummo@towertech.it>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: RE: [PATCH v3 1/2] rtc: add new lp8788 rtc driver
+Thread-Topic: [PATCH v3 1/2] rtc: add new lp8788 rtc driver
+Thread-Index: Ac3fUIXDqZYgoeWsSjiBLm1bKZpEpv//xn0A//9RFnA=
+Date: Fri, 21 Dec 2012 16:09:30 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E10977@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E108CA@DQHE02.ent.ti.com>
+ <CAHdPZaOrVQ-oU_+N621izgFedjvWBCJGh2vDub4HjzVemusG7w@mail.gmail.com>
+In-Reply-To: <CAHdPZaOrVQ-oU_+N621izgFedjvWBCJGh2vDub4HjzVemusG7w@mail.gmail.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D44D61.6090006@imgtec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 11:52:01AM +0000, James Hogan wrote:
+Hi Devendra,
 
-> Reviewed-by: James Hogan <james.hogan@imgtec.com>
+> > +static int lp8788_alarm_irq_enable(struct device *dev, unsigned int
+> enable)
+> > +{
+> > +       struct lp8788_rtc *rtc = dev_get_drvdata(dev);
+> > +       struct lp8788 *lp = rtc->lp;
+> > +       u8 mask, shift;
+> > +
+> > +       mask = mask_alarm_en[rtc->alarm];
+> > +       shift = shift_alarm_en[rtc->alarm];
+> > +
+> > +       return lp8788_update_bits(lp, LP8788_INTEN_3, mask, enable <<
+> shift);
 > 
-> I also see this issue with metag when I try and select
-> CONFIG_GENERIC_SIGALTSTACK. Until asm-generic/syscalls.h goes away it
-> seems a shame to have to keep a misleading #define sys_sigaltstack
-> sys_sigaltstack bodge in architecture's asm/syscalls.h.
+> i have no idea about this function but just asking,
+> 
+> this will be called from ioctl right? so what if user calls RTC_AIE_ON
+> and you return the IRQ status ? enable or disable like that?
+> 
+> i guess a failure in setting for no irq and a success otherwise.
 
-OK, I'm convinced; Vineet, could you reply with Signed-off-by: to use?
-It's trivial, of course, but...
+Please go to my answer below - at the end of mail.
+
+> 
+> > +}
+> > +
+> > +static const struct rtc_class_ops lp8788_rtc_ops = {
+> > +       .read_time = lp8788_rtc_read_time,
+> > +       .set_time = lp8788_rtc_set_time,
+> > +       .read_alarm = lp8788_read_alarm,
+> > +       .set_alarm = lp8788_set_alarm,
+> > +       .alarm_irq_enable = lp8788_alarm_irq_enable,
+> > +};
+> > +
+> > +static irqreturn_t lp8788_alarm_irq_handler(int irq, void *ptr)
+> > +{
+> > +       struct lp8788_rtc *rtc = ptr;
+> > +
+> > +       rtc_update_irq(rtc->rdev, 1, ALARM_IRQ_FLAG);
+> > +       return IRQ_HANDLED;
+> > +}
+> > +
+> > +static int lp8788_alarm_irq_register(struct platform_device *pdev,
+> > +                               struct lp8788_rtc *rtc)
+> > +{
+> > +       struct resource *r;
+> > +       struct lp8788 *lp = rtc->lp;
+> > +       struct irq_domain *irqdm = lp->irqdm;
+> > +       int irq;
+> > +
+> > +       rtc->irq = 0;
+> > +
+> > +       if (!lp->pdata) {
+> > +               dev_warn(lp->dev, "no platform data for rtc irq\n");
+> 
+> but we didn't registered irqs right? if we return 0 here means that we
+> have a vaild irq no?
+
+Oh, it's my mistake.
+Alarm IRQ number is configured in the mfd-lp8788 driver and map it by irq-domain.
+Therefore no platform data is required here.
+
+> > +static int lp8788_rtc_probe(struct platform_device *pdev)
+> > +{
+> > +       struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
+> > +       struct lp8788_rtc *rtc;
+> > +       struct device *dev = &pdev->dev;
+> > +
+> > +       rtc = devm_kzalloc(lp->dev, sizeof(struct lp8788_rtc),
+> GFP_KERNEL);
+> 
+> lp->dev may be parent device, is &pdev->dev, or dev may be correct?
+
+Great catch! You're correct. Thanks!
+
+> 
+> > +       if (!rtc)
+> > +               return -ENOMEM;
+> > +
+> > +       rtc->lp = lp;
+> > +       rtc->alarm = lp->pdata ? lp->pdata->alarm_sel :
+> DEFAULT_ALARM_SEL;
+> > +       platform_set_drvdata(pdev, rtc);
+> > +
+> > +       device_init_wakeup(dev, 1);
+> > +
+> > +       rtc->rdev = rtc_device_register("lp8788_rtc", dev,
+> > +                                       &lp8788_rtc_ops, THIS_MODULE);
+> > +       if (IS_ERR(rtc->rdev)) {
+> > +               dev_err(dev, "can not register rtc device\n");
+> 
+>                     return PTR_ERR(rtc->rdev);  may be better?
+
+Agree, thanks!
+
+> 
+> > +               return -ENODEV;
+> > +       }
+> > +
+> > +       if (lp8788_alarm_irq_register(pdev, rtc))
+> > +               dev_warn(lp->dev, "no rtc irq handler\n");
+> > +
+> 
+> even if there is no alarm irq, we can still use the rtc to get the
+> time, but there wont be RTC_AIE_ON ioctl enabled ?
+
+If ALARM IRQ can't be registered, there are two handling conditions.
+
+(a) Should it return as error in _probe() and no RTC is used anymore?
+: Very simple handling but we can't set/get the RTC time even no problem.
+
+(b) Just returns OK in _probe() and error handling when RTC_AIE_ON/OFF IOCTL is 
+called?
+: It guarantees RTC time functions but alarm IRQ doesn't work.
+Please see the code below.
+
+static int lp8788_alarm_irq_enable(struct device *dev, unsigned int enable)
+{
+	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
+	struct lp8788 *lp = rtc->lp;
+	u8 mask, shift;
+
++	if (!rtc->irq)
++		return -EIO;
+
+	mask = mask_alarm_en[rtc->alarm];
+	shift = shift_alarm_en[rtc->alarm];
+
+	return lp8788_update_bits(lp, LP8788_INTEN_3, mask, enable << shift);
+}
+
+'rtc->irq' is updated only when lp8788_alarm_irq_register() returns true.
+If no alarm IRQ is specified, RTC_AIE_ON/OFF returns as EIO.
+Then, RTC set/get time works well and alarm IRQ doesn't work.
+
+I believe case (b) is better solution, but I'd like to have your opinion.
+Thanks!
+
+Best Regards,
+Milo
+
+
