@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741Ab2LUE27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 23:28:59 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53769 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUE2z (ORCPT
+	id S1751832Ab2LUEdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 23:33:25 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:62377 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LUEdR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 23:28:55 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-72-50d3e5847931
+	Thu, 20 Dec 2012 23:33:17 -0500
+X-AuditID: 9c930197-b7c5bae000000e31-d3-50d3e68b9f37
 From: Namhyung Kim <namhyung@kernel.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Alex Shi <alex.shi@intel.com>, rob@landley.net, mingo@redhat.com,
-        peterz@infradead.org, gregkh@linuxfoundation.org,
-        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, pjt@google.com,
-        vincent.guittot@linaro.org
-Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
+To: Alex Shi <alex.shi@intel.com>
+Cc: rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Subject: Re: [PATCH 06/18] sched: set initial load avg of new forked task as its load weight
 References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
-	<1355127754-8444-2-git-send-email-alex.shi@intel.com>
-	<50C6B530.3030307@linux.vnet.ibm.com> <50C6C462.6030808@intel.com>
-	<50C6D31F.1030408@linux.vnet.ibm.com>
-Date: Fri, 21 Dec 2012 13:28:52 +0900
-In-Reply-To: <50C6D31F.1030408@linux.vnet.ibm.com> (Preeti U. Murthy's message
-	of "Tue, 11 Dec 2012 12:00:55 +0530")
-Message-ID: <87k3scf2pn.fsf@sejong.aot.lge.com>
+	<1355127754-8444-7-git-send-email-alex.shi@intel.com>
+Date: Fri, 21 Dec 2012 13:33:15 +0900
+In-Reply-To: <1355127754-8444-7-git-send-email-alex.shi@intel.com> (Alex Shi's
+	message of "Mon, 10 Dec 2012 16:22:22 +0800")
+Message-ID: <87a9t8f2ic.fsf@sejong.aot.lge.com>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -33,60 +30,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, 11 Dec 2012 12:00:55 +0530, Preeti U. Murthy wrote:
-> On 12/11/2012 10:58 AM, Alex Shi wrote:
->> On 12/11/2012 12:23 PM, Preeti U Murthy wrote:
->>> Hi Alex,
->>>
->>> On 12/10/2012 01:52 PM, Alex Shi wrote:
->>>> It is impossible to miss a task allowed cpu in a eligible group.
->>>
->>> The one thing I am concerned with here is if there is a possibility of
->>> the task changing its tsk_cpus_allowed() while this code is running.
->>>
->>> i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
->>> for the task changes,perhaps by the user himself,which might not include
->>> the cpus in the idle group.After this find_idlest_cpu() is called.I mean
->>> a race condition in short.Then we might not have an eligible cpu in that
->>> group right?
->> 
->> your worry make sense, but the code handle the situation, in
->> select_task_rq(), it will check the cpu allowed again. if the answer is
->> no, it will fallback to old cpu.
->>>
->>>> And since find_idlest_group only return a different group which
->>>> excludes old cpu, it's also imporissible to find a new cpu same as old
->>>> cpu.
+On Mon, 10 Dec 2012 16:22:22 +0800, Alex Shi wrote:
+> New task has no runnable sum at its first runnable time, that make
+> burst forking just select few idle cpus to put tasks.
+> Set initial load avg of new forked task as its load weight to resolve
+> this issue.
 >
-> I doubt this will work correctly.Consider the following situation:sched
-> domain begins with sd that encloses both socket1 and socket2
+> Signed-off-by: Alex Shi <alex.shi@intel.com>
+> ---
+>  include/linux/sched.h |    1 +
+>  kernel/sched/core.c   |    2 +-
+>  kernel/sched/fair.c   |   13 +++++++++++--
+>  3 files changed, 13 insertions(+), 3 deletions(-)
 >
-> cpu0 cpu1  | cpu2 cpu3
-> -----------|-------------
->  socket1   |  socket2
->
-> old cpu = cpu1
->
-> Iteration1:
-> 1.find_idlest_group() returns socket2 to be idlest.
-> 2.task changes tsk_allowed_cpus to 0,1
-> 3.find_idlest_cpu() returns cpu2
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 5dafac3..093f9cd 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1058,6 +1058,7 @@ struct sched_domain;
+>  #else
+>  #define ENQUEUE_WAKING		0
+>  #endif
+> +#define ENQUEUE_NEWTASK		8
+>  
+>  #define DEQUEUE_SLEEP		1
+>  
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+> index e6533e1..96fa5f1 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -1648,7 +1648,7 @@ void wake_up_new_task(struct task_struct *p)
+>  #endif
+>  
+>  	rq = __task_rq_lock(p);
+> -	activate_task(rq, p, 0);
+> +	activate_task(rq, p, ENQUEUE_NEWTASK);
+>  	p->on_rq = 1;
+>  	trace_sched_wakeup_new(p, true);
+>  	check_preempt_curr(rq, p, WF_FORK);
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 1faf89f..61c8d24 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -1277,8 +1277,9 @@ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+>  /* Add the load generated by se into cfs_rq's child load-average */
+>  static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>  						  struct sched_entity *se,
+> -						  int wakeup)
+> +						  int flags)
+>  {
+> +	int wakeup = flags & ENQUEUE_WAKEUP;
+>  	/*
+>  	 * We track migrations using entity decay_count <= 0, on a wake-up
+>  	 * migration we use a negative decay count to track the remote decays
+> @@ -1312,6 +1313,12 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+>  		update_entity_load_avg(se, 0);
+>  	}
+>  
+> +	/*
+> +	 * set the initial load avg of new task same as its load
+> +	 * in order to avoid brust fork make few cpu too heavier
+> +	 */
+> +	if (flags & ENQUEUE_NEWTASK)
+> +		se->avg.load_avg_contrib = se->load.weight;
+>  	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
+>  	/* we force update consideration on load-balancer moves */
+>  	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+> @@ -1476,7 +1483,8 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
+>  	 */
+>  	update_curr(cfs_rq);
+>  	account_entity_enqueue(cfs_rq, se);
+> -	enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+> +	enqueue_entity_load_avg(cfs_rq, se, flags &
+> +				(ENQUEUE_WAKEUP | ENQUEUE_NEWTASK));
 
-AFAIK The tsk->cpus_allowed cannot be changed during the operation since
-it's protected by tsk->pi_lock.  I can see the following comment:
+It seems that just passing 'flags' is enough.
 
-kernel/sched/core.c:
-/*
- * The caller (fork, wakeup) owns p->pi_lock, ->cpus_allowed is stable.
- */
-static inline
-int select_task_rq(struct task_struct *p, int sd_flags, int wake_flags)
-{
-	int cpu = p->sched_class->select_task_rq(p, sd_flags, wake_flags);
+>  
+>  	if (flags & ENQUEUE_WAKEUP) {
+>  		place_entity(cfs_rq, se, 0);
+> @@ -2586,6 +2594,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>  		cfs_rq->h_nr_running++;
+>  
+>  		flags = ENQUEUE_WAKEUP;
+> +		flags &= ~ENQUEUE_NEWTASK;
 
-
+Why is this needed?
 
 Thanks,
 Namhyung
+
+
+>  	}
+>  
+>  	for_each_sched_entity(se) {
