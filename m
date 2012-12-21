@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750908Ab2LUGYb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 01:24:31 -0500
-Received: from kiruna.synopsys.com ([198.182.44.80]:43526 "EHLO
-	kiruna.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2LUGYY (ORCPT
+	id S1751031Ab2LUG0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 01:26:49 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13662 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2LUG0m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 01:24:24 -0500
-Message-ID: <50D40088.3030304@synopsys.com>
-Date: Fri, 21 Dec 2012 11:54:08 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Fri, 21 Dec 2012 01:26:42 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 20 Dec 2012 22:26:35 -0800
+Message-ID: <50D40236.9080403@nvidia.com>
+Date: Fri, 21 Dec 2012 08:31:18 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
-Subject: CONFIG_GENERIC_SIGALTSTACK with asm-generic/syscalls.h (was Re: [git
- pull] signal.git pile 2)
-References: <20121221002100.GM4939@ZenIV.linux.org.uk>
-In-Reply-To: <20121221002100.GM4939@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+References: <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de> <50D2D792.1050401@nvidia.com> <50D34775.5010606@wwwdotorg.org> <50D34F00.4080308@nvidia.com> <50D3511F.2090308@wwwdotorg.org> <50D35287.3040509@nvidia.com> <20121220203059.GA12977@avionic-0098.adnet.avionic-design.de> <50D38462.3060302@nvidia.com> <50D39122.3060401@wwwdotorg.org>
+In-Reply-To: <50D39122.3060401@wwwdotorg.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 December 2012 05:51 AM, Al Viro wrote:
-> sigaltstack infrastructure + conversion for x86, alpha and um,
-> COMPAT_SYSCALL_DEFINE infrastructure.  Note that there are several
-> conflicts between "unify SS_ONSTACK/SS_DISABLE definitions" and
-> UAPI patches in mainline; resolution is trivial - just remove definitions
-> of SS_ONSTACK and SS_DISABLED from arch/*/uapi/asm/signal.h; they are
-> all identical and include/uapi/linux/signal.h contains the unified
-> variant.  Please, pull from
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal for-linus
+On 21.12.2012 00:28, Stephen Warren wrote:
+> On 12/20/2012 02:34 PM, Terje Bergström wrote:
+>> On 20.12.2012 22:30, Thierry Reding wrote:
+>>> The problem with your proposed solution is that, even any of Stephen's
+>>> valid objections aside, it won't work. Once the tegra-drm module is
+>>> unloaded, the driver's data will be left in the current state and the
+>>> link to the dummy device will be lost.
+>>
+>> The dummy device is created by tegradrm's module init, because it's used
 > 
+> No, the tegradrm driver object might be registered by tegradrm's module
+> init, but the dummy tegradrm platform device would need to be
+> created/registered by host1x's probe. Otherwise, the device would get
+> created even if there was no host1x/... in the system (disabled for some
+> reason, multi-SoC kernel, ...)
 
-Hi Arnd,
+Oh. I was all the time thinking that dummy device needs to be created by
+tegradrm, because it's only used by tegradrm.  But as we're mixing the
+responsibilities, we might then just as well go all the way.
 
-In Linus' tree with above merged, selecting CONFIG_GENERIC_SIGALTSTACK
-is causing build issues for ARC port (and possibly others as well) which
-use asm-generic/syscalls.h due to a different prototype for
-sys_sigaltstack coming in from linux/syscalls.h
-
-While I can band-aid ARC port by #define sys_sigaltstack before
-including asm-generic, it might be better if we conditional-ize one of
-the prototypes. Following works for me.
-
-diff --git a/include/asm-generic/syscalls.h b/include/asm-generic/syscalls.h
-index 58f466f..1db51b8 100644
---- a/include/asm-generic/syscalls.h
-+++ b/include/asm-generic/syscalls.h
-@@ -21,10 +21,12 @@ asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
-                        unsigned long fd, off_t pgoff);
- #endif
-
-+#ifndef CONFIG_GENERIC_SIGALTSTACK
- #ifndef sys_sigaltstack
- asmlinkage long sys_sigaltstack(const stack_t __user *, stack_t __user *,
-                        struct pt_regs *);
- #endif
-+#endif
-
- #ifndef sys_rt_sigreturn
- asmlinkage long sys_rt_sigreturn(struct pt_regs *regs);
-
-
-Thx,
--Vineet
+Terje
