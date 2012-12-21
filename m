@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396Ab2LUF0f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 00:26:35 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:50734 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUF03 (ORCPT
+	id S1751226Ab2LUF04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 00:26:56 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:41583 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LUF0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 00:26:29 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-57-50d3f304aa1e
+	Fri, 21 Dec 2012 00:26:50 -0500
+X-AuditID: cbfee61a-b7fa66d0000004cf-1e-50d3f319b249
 From: Jingoo Han <jg1.han@samsung.com>
 To: "'Andrew Morton'" <akpm@linux-foundation.org>,
         "'LKML'" <linux-kernel@vger.kernel.org>
@@ -15,42 +15,41 @@ Cc: "'Richard Purdie'" <rpurdie@rpsys.net>,
         "'Jingoo Han'" <jg1.han@samsung.com>
 References: <001001cddf3b$7bb2c3b0$73184b10$%han@samsung.com>
 In-reply-to: <001001cddf3b$7bb2c3b0$73184b10$%han@samsung.com>
-Subject: [PATCH 4/6] backlight: corgi_lcd: use bl_get_data instead of
- dev_get_drvdata
-Date: Fri, 21 Dec 2012 14:26:28 +0900
-Message-id: <001301cddf3b$ba29d2a0$2e7d77e0$%han@samsung.com>
+Subject: [PATCH 5/6] backlight: tosa: use bl_get_data instead of dev_get_drvdata
+Date: Fri, 21 Dec 2012 14:26:48 +0900
+Message-id: <001401cddf3b$c6848310$538d8930$%han@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3fO3udRdsnHWRmS2i/6pBmiWTW1AAAC21g
+Thread-index: Ac3fO3udRdsnHWRmS2i/6pBmiWTW1AAAD9og
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMIsWRmVeSWpSXmKPExsVy+t8zI12Wz5cDDFa90bS4vGsOmwOjx+dN
-	cgGMUVw2Kak5mWWpRfp2CVwZE97/YiqYzlnxeuZt1gbGu+xdjJwcEgImEq83LICyxSQu3FvP
-	1sXIxSEksIxRYveVL2wwRdsn9zNBJKYzSnxf1s8KkhASmM0ksW2dGojNJqAm8eXLYbBJIgIR
-	Es0zZjF3MXJwMAv4SGyepQlRbitxYdIXZhCbU8BOonP3I0aQEmGBcIn+S2BhFgFViUUXLjCB
-	2LxA5bdnr4WyBSV+TL7HAmIzC2hJrN95nAnClpfYvOYt2CYJAXWJR391IQ4wkmi+9YwVokRE
-	Yt+Ld4wQ4wUkvk0+xAJRLiux6QAzxIPz2CUm/nGFsCUlDq64wTKBUWIWksWzkCyehWTxLCQb
-	FjCyrGIUTS1ILihOSs811CtOzC0uzUvXS87P3cQIiSmpHYwrGywOMQpwMCrx8DKaXQ4QYk0s
-	K67MPcQowcGsJMLr/wEoxJuSWFmVWpQfX1Sak1p8iNEH6PCJzFKiyfnAeM8riTc0NjYxMzE1
-	Mbc0NTfFIawkztvskRIgJJCeWJKanZpakFoEM46Jg1OqgbFjGq/31EuptTN3fFvx+N0Muc/n
-	3TPE32wOy93x+b2a2OV3t1M1DBqOTnvwR62uUMR3gpuOx763Hzd5zzlhPk1kgsWElGvq76os
-	t86O83lVmnj8yf6lyYHmLRXPX2fsVhHvDfGPLjtj8I2fJfilzU0x7pdtAu+vRR7csbXg3Rfx
-	qPszo01Fb1xVYinOSDTUYi4qTgQABmrLdtYCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsVy+t9jQV2Wz5cDDH7tU7O4vGsOmwOjx+dN
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKIsWRmVeSWpSXmKPExsVy+t8zY13Jz5cDDLpOy1hc3jWHzYHR4/Mm
+	uQDGKC6blNSczLLUIn27BK6MjiMN7AXH2St6dp1hbGDcwdbFyMkhIWAisf7GNWYIW0ziwr31
+	QHEuDiGBZYwS7dceMMMULbjdyQpiCwksYpTYs8YGomg2k8S9XxfBitgE1CS+fDnMDmKLCERI
+	NM+YBRTn4GAW8JHYPEsTotdW4sKkL2DlnAJ2Ep27HzGC2MICARIfv1wFi7MIqEps/vyFCcTm
+	Bao//u4VK4QtKPFj8j0WEJtZQEti/c7jTBC2vMTmNW/BVkkIqEs8+qsLcYGRxJdPHVDlIhL7
+	XrxjhBgvIPFt8iEWiHJZiU0HmEE+kRCYxy7Rdv0sC8S7khIHV9xgmcAoMQvJ5llINs9CsnkW
+	khULGFlWMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYoTEldQOxpUNFocYBTgYlXh4Gc0uBwix
+	JpYVV+YeYpTgYFYS4fX/ABTiTUmsrEotyo8vKs1JLT7E6AN0+URmKdHkfGDM55XEGxobm5iZ
+	mJqYW5qam+IQVhLnbfZICRASSE8sSc1OTS1ILYIZx8TBKdXAGHVlqjd39bwiycrDfHtvuOxl
+	tvypdkN1YqJtQrGuwa7DdwXfr2DZ/DOxsqI2fnP3zs1O+iwVQfIKmZONnkgK//TYea767vf0
+	2csrRYodFicEzRGVtQ7Lima9ZLhtGcuSTPturdWpwVs25FlJBXQJME98Zrj7q7RbpZbwSrb6
+	W6WrDY++naSjxFKckWioxVxUnAgAa9muFtgCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCIsWRmVeSWpSXmKPExsVy+t9jAV3Jz5cDDGZOl7S4vGsOmwOjx+dN
 	cgGMUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA
-	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGRPe/2IqmM5Z8XrmbdYG
-	xrvsXYycHBICJhLbJ/czQdhiEhfurWfrYuTiEBKYzijxfVk/K0hCSGA2k8S2dWogNpuAmsSX
-	L4fBmkUEIiSaZ8xi7mLk4GAW8JHYPEsTotxW4sKkL8wgNqeAnUTn7keMICXCAuES/ZfAwiwC
-	qhKLLlwAW8sLVH579looW1Dix+R7LCA2s4CWxPqdx5kgbHmJzWvegm2SEFCXePRXF+IAI4nm
-	W89YIUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn
-	525iBMfsM6kdjCsbLA4xCnAwKvHwMppdDhBiTSwrrsw9xCjBwawkwuv/ASjEm5JYWZValB9f
-	VJqTWnyI0Qfo0YnMUqLJ+cB0klcSb2hsYmZkaWRmYWRibo5DWEmct9kjJUBIID2xJDU7NbUg
-	tQhmHBMHp1QDI9+WLdMqtt57yZjNsGPeF+E77d+apvpwcj8OijjwdUn5vqXCYqXu3uJrjf2t
-	6mxVVz7dfkY7N0fWZl9ZFWvMdX9tkY8RC+PXiit3WByr2fZ8Wuaq14z3EveaLJXQYJtmOGF+
-	yCmTSTEs+xg2Ha2VmZtsODUmKf7jkqeaCtbZZktPXAtfERjkosRSnJFoqMVcVJwIAFS8NmYG	AwAA
+	U5UUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGR1HGtgLjrNX9Ow6w9jA
+	uIOti5GTQ0LARGLB7U5WCFtM4sK99WBxIYFFjBJ71th0MXIB2bOZJO79usgMkmATUJP48uUw
+	O4gtIhAh0TxjFlCcg4NZwEdi8yxNiF5biQuTvoCVcwrYSXTufsQIYgsLBEh8/HIVLM4ioCqx
+	+fMXJhCbF6j++LtXrBC2oMSPyfdYQGxmAS2J9TuPM0HY8hKb17wFWyUhoC7x6K8uxAVGEl8+
+	dUCVi0jse/GOcQKj0Cwkk2YhmTQLyaRZSFoWMLKsYhRNLUguKE5KzzXUK07MLS7NS9dLzs/d
+	xAiO2mdSOxhXNlgcYhTgYFTi4WU0uxwgxJpYVlyZe4hRgoNZSYTX/wNQiDclsbIqtSg/vqg0
+	J7X4EKMP0KMTmaVEk/OBCSWvJN7Q2MTMyNLIzMLIxNwch7CSOG+zR0qAkEB6YklqdmpqQWoR
+	zDgmDk6pBsYzi1gufetwPd4XURZ9Zn/LTSaWReXs6z635v3i+LZE8b10m/U+o0aZzPt8EuuL
+	YyW0v+5Tmz1nV8/qiYdW3t3yesXdnj8/dZWSn5dtd/x4bB7bxyU6r0WeJ3Qc1laXtWt+2x4m
+	VpuadvHRMkNrfn/eVdL8NVuPPJ679ca79YWmp96IH7cRXxGvxFKckWioxVxUnAgAvR6NSAcD	AAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -62,31 +61,22 @@ so we can directly pass a struct backlight_device.
 
 Signed-off-by: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/video/backlight/corgi_lcd.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/backlight/tosa_bl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/corgi_lcd.c b/drivers/video/backlight/corgi_lcd.c
-index 77c81f8..13ef511 100644
---- a/drivers/video/backlight/corgi_lcd.c
-+++ b/drivers/video/backlight/corgi_lcd.c
-@@ -391,7 +391,7 @@ static struct lcd_ops corgi_lcd_ops = {
- 
- static int corgi_bl_get_intensity(struct backlight_device *bd)
+diff --git a/drivers/video/backlight/tosa_bl.c b/drivers/video/backlight/tosa_bl.c
+index 588682c..2326fa8 100644
+--- a/drivers/video/backlight/tosa_bl.c
++++ b/drivers/video/backlight/tosa_bl.c
+@@ -54,7 +54,7 @@ static void tosa_bl_set_backlight(struct tosa_bl_data *data, int brightness)
+ static int tosa_bl_update_status(struct backlight_device *dev)
  {
--	struct corgi_lcd *lcd = dev_get_drvdata(&bd->dev);
-+	struct corgi_lcd *lcd = bl_get_data(bd);
+ 	struct backlight_properties *props = &dev->props;
+-	struct tosa_bl_data *data = dev_get_drvdata(&dev->dev);
++	struct tosa_bl_data *data = bl_get_data(dev);
+ 	int power = max(props->power, props->fb_blank);
+ 	int brightness = props->brightness;
  
- 	return lcd->intensity;
- }
-@@ -423,7 +423,7 @@ static int corgi_bl_set_intensity(struct corgi_lcd *lcd, int intensity)
- 
- static int corgi_bl_update_status(struct backlight_device *bd)
- {
--	struct corgi_lcd *lcd = dev_get_drvdata(&bd->dev);
-+	struct corgi_lcd *lcd = bl_get_data(bd);
- 	int intensity = bd->props.brightness;
- 
- 	if (bd->props.power != FB_BLANK_UNBLANK)
 -- 
 1.7.2.5
 
