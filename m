@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751760Ab2LUIzF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:55:05 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:53096 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751339Ab2LUIy4 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 03:54:56 -0500
-From: Loic PALLARDY <loic.pallardy@st.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Olof Johansson <olof@lixom.net>, Tony Lindgren <tony@atomide.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Loic PALLARDY STE <loic.pallardy-ext@stericsson.com>,
-        "arm@kernel.org" <arm@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        Suman Anna <s-anna@ti.com>, Juan Gutierrez <jgutierrez@ti.com>,
-        Felipe Contreras <felipe.contreras@nokia.com>,
-        Tejun Heo <tj@kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Omar Ramirez Luna <omar.luna@linaro.org>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>
-Date: Fri, 21 Dec 2012 09:52:07 +0100
-Subject: Re: [PATCH 0/9] drivers: mailbox: framework creation
-Thread-Topic: [PATCH 0/9] drivers: mailbox: framework creation
-Thread-Index: Ac3fWHV8iHv2gCl1TqiHHSmDRbFnhg==
-Message-ID: <50D42337.3080204@st.com>
-References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
- <CACRpkdaqO7AAeYeR8SZt4Tbv1grrMq85TNYMc-FSbUSrnZBm=Q@mail.gmail.com>
- <20121220182835.GB21056@atomide.com>
- <CAOesGMh2uZC_9FzAxDVZqwe06OgqOrKjPgQi6wOJCt-SAmoHwg@mail.gmail.com>
- <CAK=Wgba=jLiig+TBcAcp7STz=Y6RM8noR_0S2HZjNQXLZV8JBA@mail.gmail.com>
-In-Reply-To: <CAK=Wgba=jLiig+TBcAcp7STz=Y6RM8noR_0S2HZjNQXLZV8JBA@mail.gmail.com>
-Accept-Language: fr-FR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
- Thunderbird/11.0.1
-acceptlanguage: fr-FR, en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1751947Ab2LUIzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:55:15 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46086 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab2LUIzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 03:55:08 -0500
+Date: Fri, 21 Dec 2012 09:55:06 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org
+Subject: Re: mmotm 2012-12-20-16-15 uploaded
+Message-ID: <20121221085506.GA13375@dhcp22.suse.cz>
+References: <20121221001631.74ECA82004A@wpzn4.hot.corp.google.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221001631.74ECA82004A@wpzn4.hot.corp.google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cma-use-unsigned-type-for-count-argument-fix.patch has a typo:
+@@ -1060,38 +1059,39 @@ static struct page **__iommu_alloc_buffe
+ 
+ 		__dma_clear_buffer(page, size);
+ 
+-		for (i = 0; i < count; i++)
+-			pages[i] = page + i;
++		for (idx = 0; idx < count; idx++)
++			pages[i] = page + idx;
+ 
+ 		return pages;
+ 	}
+ 
+ 	while (count) {
+-		int j, order = __fls(count);
++		unsigned int j;
++		unnsigned int order = __fls(count);
 
+s/unnsigned/unsigned/
 
-On 12/21/2012 08:31 AM, Ohad Ben-Cohen wrote:
-> On Thu, Dec 20, 2012 at 9:19 PM, Olof Johansson<olof@lixom.net>  wrote:
->> While we can make the branch stable, would it make sense to make
->> remoteproc for omap depend on !multiplatform during the transition, to
->> reduce dependencies a little? Either way works, but it'd be nice to
->> keep them independent if we can.
->
-> I'm not sure multiplatform is the culprit; OMAP's remoteproc driver
-> heavily depends on this mailbox code, and obviously breaks with this
-> patch-set if only for the the naming changes. We'll need this patch
-> set to update omap's remoteproc as well so at least we don't break
-> bisectibility, though running a sanity test before merging would be
-> even nicer (Loic I can help if you don't have a panda board).
-
-Hi Ohad,
-Yes tidspbridge and remoteproc must be adapted.
-This new mailbox fw has been tested on TI environment by Omar, who did 
-adaptation at least for tidspbridge.
-
-Omar, do you have patch series ready for TI adaptations to new mailbox 
-framework?
-Else I can do it, but I won't be able to test it (no panda board)
-
-Regards,
-Loic
->
-> BTW - grep shows that tidspbridge is using the mailbox code too, but
-> it's in staging and I'm not sure it gets much love. Nevertheless, as
-> long as it's there we should at least update it with the new API as
-> well.
->
-> Thanks,
-> Ohad.
+-- 
+Michal Hocko
+SUSE Labs
