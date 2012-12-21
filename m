@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416Ab2LUXIr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 18:08:47 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:64302 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752288Ab2LUXIp (ORCPT
+	id S1752700Ab2LUXI5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 18:08:57 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:61803 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab2LUXIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 18:08:45 -0500
+	Fri, 21 Dec 2012 18:08:52 -0500
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 18:08:52 EST
 From: Cruz Julian Bishop <cruzjbishop@gmail.com>
 To: greg@kroah.com
 Cc: swetland@google.com, linux-kernel@vger.kernel.org,
         Cruz Julian Bishop <cruzjbishop@gmail.com>
-Subject: [PATCH 1/3] staging: android: Avoid using camelcase in binder.h
-Date: Sat, 22 Dec 2012 09:00:44 +1000
-Message-Id: <1356130846-6973-2-git-send-email-cruzjbishop@gmail.com>
+Subject: [PATCH 2/3] staging: android: Fix two checkpatch issues in binder.c
+Date: Sat, 22 Dec 2012 09:00:45 +1000
+Message-Id: <1356130846-6973-3-git-send-email-cruzjbishop@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1356130846-6973-1-git-send-email-cruzjbishop@gmail.com>
 References: <1356130846-6973-1-git-send-email-cruzjbishop@gmail.com>
@@ -21,42 +22,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes the following:
+This fixes two instances of
+"static const char * array should probably be static const char * const"
 
-1: BinderDriverReturnProtocol -> binder_driver_return_protocol
-2: BinderDriverCommandProtocol -> binder_driver_return_protocol
+I have seen other commits doing this in other files, so I am
+assuming it should be done here as well.
 
-These enums are not currently used, but still generate noise in checkpatch.
-
-Well, did. They don't now :)
+Please tell me if this is wrong :)
 
 Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
 ---
- drivers/staging/android/binder.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/android/binder.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/android/binder.h b/drivers/staging/android/binder.h
-index 2f7d195..76ead8d 100644
---- a/drivers/staging/android/binder.h
-+++ b/drivers/staging/android/binder.h
-@@ -163,7 +163,7 @@ struct binder_pri_ptr_cookie {
- 	void *cookie;
+diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
+index 2d12e8a..538ebe2 100644
+--- a/drivers/staging/android/binder.c
++++ b/drivers/staging/android/binder.c
+@@ -3227,7 +3227,7 @@ static void print_binder_proc(struct seq_file *m,
+ 		m->count = start_pos;
+ }
+ 
+-static const char *binder_return_strings[] = {
++static const char * const binder_return_strings[] = {
+ 	"BR_ERROR",
+ 	"BR_OK",
+ 	"BR_TRANSACTION",
+@@ -3248,7 +3248,7 @@ static const char *binder_return_strings[] = {
+ 	"BR_FAILED_REPLY"
  };
  
--enum BinderDriverReturnProtocol {
-+enum binder_driver_return_protocol {
- 	BR_ERROR = _IOR('r', 0, int),
- 	/*
- 	 * int: error code
-@@ -251,7 +251,7 @@ enum BinderDriverReturnProtocol {
- 	 */
+-static const char *binder_command_strings[] = {
++static const char * const binder_command_strings[] = {
+ 	"BC_TRANSACTION",
+ 	"BC_REPLY",
+ 	"BC_ACQUIRE_RESULT",
+@@ -3268,7 +3268,7 @@ static const char *binder_command_strings[] = {
+ 	"BC_DEAD_BINDER_DONE"
  };
  
--enum BinderDriverCommandProtocol {
-+enum binder_driver_command_protocol {
- 	BC_TRANSACTION = _IOW('c', 0, struct binder_transaction_data),
- 	BC_REPLY = _IOW('c', 1, struct binder_transaction_data),
- 	/*
+-static const char *binder_objstat_strings[] = {
++static const char * const binder_objstat_strings[] = {
+ 	"proc",
+ 	"thread",
+ 	"node",
 -- 
 1.7.10.4
 
