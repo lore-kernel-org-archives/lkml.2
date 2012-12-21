@@ -1,81 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751738Ab2LUW0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:26:45 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:47708 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751445Ab2LUW0k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:26:40 -0500
-Date: Fri, 21 Dec 2012 17:26:19 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 12/13] x86, 64bit: Print init kernel lowmap correctly
-Message-ID: <20121221222619.GA1102@phenom.dumpdata.com>
-References: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
- <1354089042-10023-13-git-send-email-yinghai@kernel.org>
+	id S1751527Ab2LUW2l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 17:28:41 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:39332 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751024Ab2LUW2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 17:28:39 -0500
+Message-ID: <50D4E288.7070507@zytor.com>
+Date: Fri, 21 Dec 2012 14:28:24 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1354089042-10023-13-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [RFC] stack and heap are executable on x86_64
+References: <20121221030018.GA15032@www.outflux.net> <50D3E91C.9060907@zytor.com> <CAE9FiQVNeQqXktmaG0XOJwSxFEVrGKA9j6UDN2N_aDDp-8y_fA@mail.gmail.com> <50D495FD.8060103@zytor.com> <CAE9FiQXcXn0xr_ACt4fS_=xWtXR8zGoYfpSzFKG4nEvKF=sGdQ@mail.gmail.com> <50D49E0A.1080609@zytor.com> <CAE9FiQUu6mvTZ7ONsEeCx8OOocKkCEkC2-OmwdWyjHAJ4=gVHQ@mail.gmail.com> <CAE9FiQWWNhD5ttoiqmHoG0hrYu2NLO1T+DVN7cac2AG4iE+2og@mail.gmail.com> <50D4E15D.70404@zytor.com> <CAE9FiQWxm-RctpqbvF6VGtfgNQxazJbCsOQfrcseh8Q9iyrbUA@mail.gmail.com>
+In-Reply-To: <CAE9FiQWxm-RctpqbvF6VGtfgNQxazJbCsOQfrcseh8Q9iyrbUA@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-> index 4178530..30f6190 100644
-> --- a/arch/x86/mm/init_64.c
-> +++ b/arch/x86/mm/init_64.c
-> @@ -304,10 +304,14 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
->  void __init cleanup_highmap(void)
->  {
->  	unsigned long vaddr = __START_KERNEL_map;
-> -	unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
-> +	unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
+On 12/21/2012 02:26 PM, Yinghai Lu wrote:
+> On Fri, Dec 21, 2012 at 2:23 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 12/21/2012 02:22 PM, Yinghai Lu wrote:
+>>>
+>>> please check attached patch that set NX for data/bss/brk with 64bit.
+>>>
+>>
+>> This is on top of for-x86-boot I presume?
+> 
+> yes, but should work on current linus tree.
+> 
+> Do we want one that handle low mapping for current linus tree ?
+> 
 
-Should you remove the line in head64.c that sets the
-max_pfn_mapped to KERNEL_IMAGE_SIZE >> PAGE_SHIFT?
+Let's worry about that one after New Year.  I am hoping to get all these
+patchsets into -tip either the week of Jan 7 or Jan 14 (I currently
+don't know when I will be back.)
 
->  	unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
->  	pmd_t *pmd = level2_kernel_pgt;
->  
-> +	/* Xen has its own end somehow with abused max_pfn_mapped */
-
-Could you clarify please?
-
-My recollection is that the max_pfn_mapped would point to the end of the
-RAMdisk. And yes (from mmu.c):
-
-   1862         /* max_pfn_mapped is the last pfn mapped in the initial memory
-   1863          * mappings. Considering that on Xen after the kernel mappings we
-   1864          * have the mappings of some pages that don't exist in pfn space, we
-   1865          * set max_pfn_mapped to the last real pfn mapped. */
-   1866         max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
-   1867 
-
-And if you follow xen_start_info, you get to include/xen/interface/xen.h which has:
-
-    406  *  4. This the order of bootstrap elements in the initial virtual region:
-    407  *      a. relocated kernel image
-    408  *      b. initial ram disk              [mod_start, mod_len]
-    409  *      c. list of allocated page frames [mfn_list, nr_pages]
-
-so per that code I believe max_pfn_mapped covers the kernel and the ramdisk - no more.
+	-hpa
 
 
-> +	if (max_pfn_mapped)
-> +		vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
-> +
->  	for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
->  		if (pmd_none(*pmd))
->  			continue;
-> -- 
-
-This part of the patch does not seem to have much to do with the printk?
-Should it be seperate patch?
