@@ -1,101 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232Ab2LUWom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:44:42 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:52214 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab2LUWok (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:44:40 -0500
+	id S1752669Ab2LUWrE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 17:47:04 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4732 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab2LUWrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 17:47:00 -0500
+Date: Fri, 21 Dec 2012 22:46:50 +0000
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dm-devel@redhat.com, Joe Thornber <ejt@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>, linux-kernel@vger.kernel.org,
+        Mike Snitzer <snitzer@redhat.com>, stable@vger.kernel.org,
+        Milan Broz <mbroz@redhat.com>, Jonathan Brassow <jbrassow@redhat.com>,
+        Zdenek Kabelac <zkabelac@redhat.com>
+Subject: [git pull] 3.8 device-mapper updates
+Message-ID: <20121221224649.GA3228@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	dm-devel@redhat.com, Joe Thornber <ejt@redhat.com>,
+	Mikulas Patocka <mpatocka@redhat.com>, linux-kernel@vger.kernel.org,
+	Mike Snitzer <snitzer@redhat.com>, stable@vger.kernel.org,
+	Milan Broz <mbroz@redhat.com>,
+	Jonathan Brassow <jbrassow@redhat.com>,
+	Zdenek Kabelac <zkabelac@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20121221222619.GA1102@phenom.dumpdata.com>
-References: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
-	<1354089042-10023-13-git-send-email-yinghai@kernel.org>
-	<20121221222619.GA1102@phenom.dumpdata.com>
-Date: Fri, 21 Dec 2012 14:44:39 -0800
-X-Google-Sender-Auth: WlZiWKEv3a-s3Ru8UTZBPaSLPWk
-Message-ID: <CAE9FiQXsi5gj6QGp-rreH6Bqb6A5WTA6umFiiJ1mQFRp6u5ziw@mail.gmail.com>
-Subject: Re: [PATCH v5 12/13] x86, 64bit: Print init kernel lowmap correctly
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: 64 Baker Street, 4th floor, London,
+	W1U 7DF.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 2:26 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
->> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
->> index 4178530..30f6190 100644
->> --- a/arch/x86/mm/init_64.c
->> +++ b/arch/x86/mm/init_64.c
->> @@ -304,10 +304,14 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
->>  void __init cleanup_highmap(void)
->>  {
->>       unsigned long vaddr = __START_KERNEL_map;
->> -     unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
->> +     unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
->
-> Should you remove the line in head64.c that sets the
-> max_pfn_mapped to KERNEL_IMAGE_SIZE >> PAGE_SHIFT?
->
->>       unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
->>       pmd_t *pmd = level2_kernel_pgt;
->>
->> +     /* Xen has its own end somehow with abused max_pfn_mapped */
->
-> Could you clarify please?
->
-> My recollection is that the max_pfn_mapped would point to the end of the
-> RAMdisk. And yes (from mmu.c):
->
->    1862         /* max_pfn_mapped is the last pfn mapped in the initial memory
->    1863          * mappings. Considering that on Xen after the kernel mappings we
->    1864          * have the mappings of some pages that don't exist in pfn space, we
->    1865          * set max_pfn_mapped to the last real pfn mapped. */
->    1866         max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
->    1867
->
-> And if you follow xen_start_info, you get to include/xen/interface/xen.h which has:
->
->     406  *  4. This the order of bootstrap elements in the initial virtual region:
->     407  *      a. relocated kernel image
->     408  *      b. initial ram disk              [mod_start, mod_len]
->     409  *      c. list of allocated page frames [mfn_list, nr_pages]
->
-> so per that code I believe max_pfn_mapped covers the kernel and the ramdisk - no more.
->
+Please pull from:
+ 
+  git://git.kernel.org/pub/scm/linux/kernel/git/agk/linux-dm tags/dm-3.8-fixes
+ 
+to get the following device-mapper updates:
 
-for native path, in x86_64_start_kernel, we set max_pfn_mapped wrongly (my fault
-, I messed up low mapping and high mapping).
-before this patchset, low_mapping end before end of x86_64_start_kernel is
-1G, and high mapping end is 512M.
+----------------------------------------------------------------
+Miscellaneous device-mapper fixes, cleanups and performance improvements.
 
-max_pfn_mapped is for low mapping.
+Of particular note:
+- Disable broken WRITE SAME support in all targets except linear and striped.
+  Use it when kcopyd is zeroing blocks.
+- Remove several mempools from targets by moving the data into the bio's new
+  front_pad area(which dm calls 'per_bio_data').
+- Fix a race in thin provisioning if discards are misused.
+- Prevent userspace from interfering with the ioctl parameters and
+  use kmalloc for the data buffer if it's small instead of vmalloc.
+- Throttle some annoying error messages when I/O fails.
 
-in this patch, for native patch, we keep max_pfn_mapped untouched, so
-before clean_highmap, it will be 0.
+----------------------------------------------------------------
+Alasdair G Kergon (1):
+      dm ioctl: prevent unsafe change to dm_ioctl data_size
 
-so we check !max_pfn_mapped to make xen still work.
+Joe Thornber (7):
+      dm thin: replace dm_cell_release_singleton with cell_defer_except
+      dm thin: fix race between simultaneous io and discards to same block
+      dm thin: wake worker when discard is prepared
+      dm persistent data: fix nested btree deletion
+      dm thin: rename cell_defer_except to cell_defer_no_holder
+      dm thin: cleanup dead code
+      dm persistent data: improve improve space map block alloc failure message
 
->
->> +     if (max_pfn_mapped)
->> +             vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
->> +
->>       for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
->>               if (pmd_none(*pmd))
->>                       continue;
->> --
->
-> This part of the patch does not seem to have much to do with the printk?
-> Should it be seperate patch?
+Jonathan Brassow (1):
+      dm raid: round region_size to power of two
 
-maybe we can change the subject of this patch to:
+Mike Snitzer (10):
+      dm: disable WRITE SAME
+      dm thin: emit ignore_discard in status when discards disabled
+      dm block manager: reinstate message when validator fails
+      dm persistent data: use DMERR_LIMIT for errors
+      dm thin: use DMERR_LIMIT for errors
+      dm: prepare to support WRITE SAME
+      dm: add WRITE SAME support
+      dm linear: add WRITE SAME support
+      dm kcopyd: add WRITE SAME support to dm_kcopyd_zero
+      dm stripe: add WRITE SAME support
 
-Subject: [PATCH] x86, 64bit: Don't set max_pfn_mapped wrong on native boot path
+Mikulas Patocka (17):
+      dm persistent data: rename node to btree_node
+      dm raid1: remove impossible mempool_alloc error test
+      dm raid: use DM_ENDIO_INCOMPLETE
+      dm snapshot: optimize track_chunk
+      dm ioctl: remove PF_MEMALLOC
+      dm ioctl: use kmalloc if possible
+      dm: introduce per_bio_data
+      dm raid1: use per_bio_data
+      dm verity: use per_bio_data
+      dm snapshot: use per_bio_data
+      dm: move target request nr to dm_target_io
+      dm raid1: rename read_record to bio_record
+      dm flakey: dont use map_context
+      dm raid1: dont use map_context
+      dm thin: dont use map_context
+      dm snapshot: do not use map_context
+      dm: remove map_info
 
-?
+ drivers/md/dm-bio-prison.c                         |   25 ---
+ drivers/md/dm-bio-prison.h                         |    1 -
+ drivers/md/dm-crypt.c                              |    5 +-
+ drivers/md/dm-delay.c                              |    5 +-
+ drivers/md/dm-flakey.c                             |   21 +-
+ drivers/md/dm-io.c                                 |   23 +-
+ drivers/md/dm-ioctl.c                              |   64 ++++--
+ drivers/md/dm-kcopyd.c                             |   18 +-
+ drivers/md/dm-linear.c                             |    6 +-
+ drivers/md/dm-raid.c                               |    8 +-
+ drivers/md/dm-raid1.c                              |   75 ++-----
+ drivers/md/dm-snap.c                               |   90 +++-----
+ drivers/md/dm-stripe.c                             |   20 +-
+ drivers/md/dm-table.c                              |   41 +++-
+ drivers/md/dm-target.c                             |    5 +-
+ drivers/md/dm-thin-metadata.c                      |    2 +-
+ drivers/md/dm-thin.c                               |  234 ++++++++++----------
+ drivers/md/dm-verity.c                             |   25 +--
+ drivers/md/dm-zero.c                               |    5 +-
+ drivers/md/dm.c                                    |   84 ++++---
+ drivers/md/dm.h                                    |    2 +-
+ drivers/md/persistent-data/dm-block-manager.c      |   12 +-
+ drivers/md/persistent-data/dm-btree-internal.h     |   16 +-
+ drivers/md/persistent-data/dm-btree-remove.c       |   50 ++---
+ drivers/md/persistent-data/dm-btree-spine.c        |   20 +-
+ drivers/md/persistent-data/dm-btree.c              |   31 +--
+ drivers/md/persistent-data/dm-space-map-common.c   |   16 +-
+ drivers/md/persistent-data/dm-space-map-metadata.c |    2 +-
+ include/linux/device-mapper.h                      |   55 ++++-
+ include/uapi/linux/dm-ioctl.h                      |    4 +-
+ 30 files changed, 522 insertions(+), 443 deletions(-)
