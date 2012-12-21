@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803Ab2LUUSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 15:18:41 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:23123 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab2LUUSh (ORCPT
+	id S1751618Ab2LUUXo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 15:23:44 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:58623 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750729Ab2LUUXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 15:18:37 -0500
-Date: Fri, 21 Dec 2012 15:18:24 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>, dgdegra@tycho.nsa.gov,
-        xen-devel@lists.xensource.com, david.vrabel@citrix.com,
-        stefano.stabellini@eu.citrix.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: oopsable race in xen-gntdev (unsafe vma access)
-Message-ID: <20121221201824.GA31554@phenom.dumpdata.com>
-References: <20121215181211.GV4939@ZenIV.linux.org.uk>
+	Fri, 21 Dec 2012 15:23:42 -0500
+X-IronPort-AV: E=Sophos;i="4.84,331,1355126400"; 
+   d="scan'208";a="16040724"
+Message-ID: <50D4C54D.8020700@codeaurora.org>
+Date: Fri, 21 Dec 2012 12:23:41 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121215181211.GV4939@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Dmitry Voytik <dvv.kernel@gmail.com>
+CC: mmarek@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nconf: add j, k and l keys for menu navigation
+References: <1356117145-14158-1-git-send-email-dvv.kernel@gmail.com>
+In-Reply-To: <1356117145-14158-1-git-send-email-dvv.kernel@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 06:12:11PM +0000, Al Viro wrote:
-> 	1) find_vma() is *not* safe without ->mmap_sem and its result may
-> very well be freed just as it's returned to caller.  IOW,
-> gntdev_ioctl_get_offset_for_vaddr() is racy and may end up with
-> dereferencing freed memory.
-> 
-> 	2) gntdev_vma_close() is putting NULL into map->vma with only
-> ->mmap_sem held by caller.  Things like
->                 if (!map->vma)
->                         continue;
->                 if (map->vma->vm_start >= end)
->                         continue;
->                 if (map->vma->vm_end <= start)
-> done with just priv->lock held are racy.
-> 
-> 	I'm not familiar with the code, but it looks like we need to
-> protect gntdev_vma_close() guts with the same spinlock and probably
-> hold ->mmap_sem shared around the "find_vma()+get to map->{index,count}"
-> in the ioctl.  Or replace the logics in ioctl with search through the
-> list of grant_map under the same spinlock...
-> 
-> 	Comments?
-Hey Al,
+On 12/21/12 11:12, Dmitry Voytik wrote:
+> Add vi-style keys for menu navigation: press j/k for down/up navigation
+> and l for entering to a submenu. Unfortantely h key is reserved for
+> the items help.
 
-Thank you for your analysis.
+Maybe you can just add j/k for up/down and then use enter and backspace
+for right/left?
 
-CC-ing Daniel, David and Stefano. I recall we had some priv->lock movement
-in the past and there is also interaction with another piece of code - 
-the balloon code so we better be circumspect of not blowing up.
+>
+> Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
 
-Al, it is around holidays and folks are mostly gone - so this will take
-a bit of time to get sorted out.
+Tested-by: Stephen Boyd <sboyd@codeaurora.org>
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
+
