@@ -1,160 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2LUS1G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 13:27:06 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:32769 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751924Ab2LUS07 (ORCPT
+	id S1752521Ab2LUSdf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 13:33:35 -0500
+Received: from out02.mta.xmission.com ([166.70.13.232]:54449 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab2LUSd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 13:26:59 -0500
+	Fri, 21 Dec 2012 13:33:28 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Serge Hallyn <serge@hallyn.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <8739097bkk.fsf@xmission.com>
+	<1353083750-3621-1-git-send-email-ebiederm@xmission.com>
+	<1353083750-3621-7-git-send-email-ebiederm@xmission.com>
+	<20121219184757.GB22991@redhat.com> <87bodourqt.fsf@xmission.com>
+	<20121221141133.GA13805@redhat.com>
+Date: Fri, 21 Dec 2012 10:33:19 -0800
+In-Reply-To: <20121221141133.GA13805@redhat.com> (Oleg Nesterov's message of
+	"Fri, 21 Dec 2012 15:11:33 +0100")
+Message-ID: <87licrl0gg.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121221105126.GD17357@quack.suse.cz>
-References: <cover.1356043686.git.luto@amacapital.net> <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
- <20121221001457.GY15182@dastard> <CALCETrXT2uYwuYR3402LUO2uw3d++=f9vxtFLq8Ez62VdAgOcw@mail.gmail.com>
- <20121221105126.GD17357@quack.suse.cz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Dec 2012 10:26:37 -0800
-Message-ID: <CALCETrX3uSkASU-aw5HF9mNtzVr4HsXt-2a97wzDfc9sDwp8Qw@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/4] mm: Update file times when inodes are written
- after mmaped writes
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX19uX9hwkU5q/Vuf5hw2twOjttwEfwRBQkM=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.5 XMGappySubj_01 Very gappy subject
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
+	*      [score: 0.1549]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_04 7+ unique symbols in subject
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: *;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH 07/11] pidns: Wait in zap_pid_ns_processes until pid_ns->nr_hashed == 1
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 2:51 AM, Jan Kara <jack@suse.cz> wrote:
-> On Thu 20-12-12 21:36:58, Andy Lutomirski wrote:
->> On Thu, Dec 20, 2012 at 4:14 PM, Dave Chinner <david@fromorbit.com> wrote:
->> > On Thu, Dec 20, 2012 at 03:10:10PM -0800, Andy Lutomirski wrote:
->> >> The onus is currently on filesystems to call file_update_time
->> >> somewhere in the page_mkwrite path.  This is unfortunate for three
->> >> reasons:
+Oleg Nesterov <oleg@redhat.com> writes:
+
+> On 12/20, Eric W. Biederman wrote:
+>>
+>> Oleg Nesterov <oleg@redhat.com> writes:
+>>
+>> > On 11/16, Eric W. Biederman wrote:
 >> >>
->> >> 1. page_mkwrite on a locked page should be fast.  ext4, for example,
->> >>    often sleeps while dirtying inodes.
+>> >> @@ -216,22 +216,15 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+>> >>
+>> >>  	/*
+>> >>  	 * sys_wait4() above can't reap the TASK_DEAD children.
+>> >> -	 * Make sure they all go away, see __unhash_process().
+>> >> +	 * Make sure they all go away, see free_pid().
+>> >>  	 */
+>> >>  	for (;;) {
+>> >> -		bool need_wait = false;
+>> >> -
+>> >> -		read_lock(&tasklist_lock);
+>> >> -		if (!list_empty(&current->children)) {
+>> >> -			__set_current_state(TASK_UNINTERRUPTIBLE);
+>> >> -			need_wait = true;
+>> >> -		}
+>> >> -		read_unlock(&tasklist_lock);
+>> >> -
+>> >> -		if (!need_wait)
+>> >> +		set_current_state(TASK_UNINTERRUPTIBLE);
+>> >> +		if (pid_ns->nr_hashed == 1)
+>> >>  			break;
+>> >>  		schedule();
+>> >>  	}
 >> >
->> > That's an ext4 problem, not a page fault or timestamp update
->> > problem. Fix ext4.
->>
->> I could fix ext4 (or rather, someone who understands jbd2 could fix
->> ext4), but I think my approach is considerably simpler and fixes all
->> filesystems at once.
->   Well, you could implement the fix you did just inside ext4. Remove
-> timestamp update from ext4_page_mkwrite(), just set some inode flag there,
-> update times in ext4_writepages(), ext4_sync_file(), and
-> ext4_release_file(). It won't be as elegant but it would work.
-
-I'm worried about funny corner cases.  Suppose fd1 and fd2 refer to
-two separate struct files for the same inode.  Then do this:
-
-addr1 = mmap(fd1);
-addr2 = mmap(fd2);
-*addr2 = 0;  <-- calls page_mkwrite
-munmap(addr1);
-close(fd1);
-sleep(10);
-*addr2 = 1;  <-- probably does not call page_mkwrite
-munmap(addr2);
-close(fd2);
-
-Without extra care, the file timestamp will be ten seconds too early.
-To make this work, ext4 would need to keep track of which vma is
-dirty, which would involve a lot more complexity.  Alternatively, ext4
-could call page_mkclean on all pages in the mapping in
-ext4_release_file, but that would suck for performance.  (Actually,
-that would probably be awful for my workload -- I have a background
-task that periodically opens and (critically) closes the same files
-that are mmaped in real-time thread, and all those extra tlb flushes
-and page faults would hurt.)
-
-The approach in my patches magically avoids this problem by using the
-per-pte dirty bit as opposed to anything that's per page. :)
-Admittedly, I could leave the AS_CMTIME stuff in the core and just
-sprinkle mapping_flush_cmtime calls around ext4.
-
-One of these days I hope to open-source the thing that hits all these
-issues.  It's useful and has no good reason to be proprietary, other
-than its present messiness.
-
+>> > I agree, the patch itself looks fine.
+>> >
+>> > But, with all other changes I do not understand this part at all.
+>> >
+>> > A task from the parent namespace can do setns + fork at any time
+>> > (until nr_hashed >= 0). So ->nr_hashed can be incremented again
+>> > after zap_pid_ns_processes() returns.
 >
->> >> 3. (An ulterior motive) I'd like to use hardware dirty tracking for
->> >>    shared, locked, writable mappings (instead of page faults).  Moving
->> >>    important work out of the page_mkwrite path is an important first step.
->> >
->> > I don't think you're going to get very far doing this. page_mkwrite
->> > needs to do:
->> >
->> >         a) block allocation in page_mkwrite() for faults over holes
->> >            to detect ENOSPC conditions immediately rather than in
->> >            writeback when such an error results in data loss.
->> >         b) detect writes over unwritten extents so that the pages in
->> >            the page cache can be set up correctly for conversion to
->> >            occur during writeback.
->> >
->> > Correcting these two problems was the reason for introducing
->> > page_mkwrite in the first place - we need to do this stuff before
->> > the page fault is completed, and that means, by definition,
->> > page_mkwrite needs to be able to block. Moving c/mtime updates out
->> > of the way does not, in any way, change these requirements.
->>
->> I was unclear.  I have no problem if PROT_WRITE, MAP_SHARED pages
->> start out write protected.  I want two changes from the status quo,
->> though:
->>
->> 1. ptes (maybe only if mlocked or maybe even only if some new madvise
->> flag is set) should be marked clean but stay writable during and after
->> writeback.  (This would only work when stable pages are not in
->> effect.)
->   This is actually problematic - s390 architecture doesn't have PTE dirty
-> bit. It has per page HW dirty bit but that's problematic to use so it's
-> completely relying on page being protected after writeback so that it hits
-> page fault when it should be dirtied again. Also memory management uses
-> these page faults to track number of dirty pages which is then important to
-> throttle aggressive writers etc. (we used to do what you describe sometimes
-> in early 2.6 days but then we switched to writeprotecting the page for
-> writeback to be able to do dirty page tracking).
-
-Ugh.  I thought arches without per-pte dirty bits were supposed to
-emulate them by treating writable+clean as write protected and fixing
-everything up when page faults happen.
-
-This whole thing could just be turned off on s390, though.
-
+> XXX: this creates the new pid P in this ns. Please see below...
 >
-> If we limit the behavior you desribe to mlocked pages, I could imagine
-> things would work out from the accounting POV (we could treat mlocked pages
-> as always dirty for accounting purposes) but it's definitely not a change
-> to be easily made.
+>> I want to talk about how alloc_pid and free_pid prevent nr_hashed
+>> from increasing once the last processes has exited the pid namespace
+>> but that doesn't apply here.
 >
->> 2. There should be a way to request that pages be made clean-but-writable.
+> Not sure I understand, but it seems you agree this can happen.
+>
+>> > Or, we can sleep in TASK_UNINTERRUPTIBLE "forever" if this happens
+>> > after kill-them-all.
 >>
->> #1 should be mostly fine already from the filesystems' point of view.
->> #2 would involve calling page_mkwrite or some equivalent.
+>> Sleeping forever should be prevented by this chunk in free_pid:
+>
+> Note that I said "forever", not forever ;)
+>
 >>
->> I suspect that there are bugs that are currently untriggerable
->> involving clean-but-writable pages.  For example, what happens if cpu
->> 0 (atomically) changes a pte from clean/writable to not present, but
->> cpu 1 writes the page before the TLB flush happens.  I think the pte
->> ends up not present + dirty, but the current unmapping code won't
->> notice.
+>> 		switch(--ns->nr_hashed) {
+>> 		case 1:
+>> 			/* When all that is left in the pid namespace
+>> 			 * is the reaper wake up the reaper.  The reaper
+>> 			 * may be sleeping in zap_pid_ns_processes().
+>> 			 */
+>> 			wake_up_process(ns->child_reaper);
 >>
->> This would involve splitting page_mkclean into "make clean and write
->> protect" and "make clean but leave writable".
 >>
->> Doing this would avoid ~1M "soft" page faults per day in a single
->> real-time thread in my software.  (The file time patches are to make
->> sure that the "soft" page faults actually don't sleep.)
->   Yes, there's a non-negligible cost of writeprotecting the page during
-> writeback. But the avoidance of OOM conditions due to too aggressive
-> writers simply has precedence... Anyway, if you want to push more in this
-> direction, I suggest to move this discussion to linux-mm@kvack.org as there
-> are lingering more appropriate listeners :). I'm just a filesystem guy with
-> some basic knowledge of MM.
+>> I admit it continues to be true that if an injected process or a
+>> debugged process does not exit we can block waiting for all of the
+>> processes to be reaped indefinitely.
+>
+> Yes, I meant until the injected process exits.
 
-Will do.  I'll send out updated patches as well.
 
---Andy
+>> > Could you explain why do we need to wait at all? I can be easily
+>> > wrong, but at first glance the original reason for this wait has
+>> > gone away?
+>>
+>> It is very nice to know that when you do waitpid for the init process of
+>> a pid namespace that there are no other processes in the pid namespace.
+>
+> OK, and I agree. But my point was, at least this _looks_ strange, because
+> ns->nr_hashed == 1 is not stable.
+>
+> And in fact I think this is not strange, but simply wrong.
+>
+> Please consider the XXX case above. Suppose that free_pid(P) happens
+> after ns->child_reaper exits and thus this pointer points to nowhere.
+> Suppose also that there is another injected pid so nr_hashed == 2.
+> In this case wake_up_process(ns->child_reaper) means use-after-free,
+> no?
+
+That is a bug in two dimensions.
+- The use after free.
+- The fact that a process can persist in the pid namespace after the
+  init process has been exited and waited on.
+
+Without the setns support this code is fine, but with setns we have
+an process injection bug.
+
+I suspect zap_pid_ns_processes just needs to set a flag that prevents
+the allocation of new pids.  I am going to have to step back and think
+of something clean.
+
+Eric
+
