@@ -1,114 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027Ab2LUKgo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 05:36:44 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:55190 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab2LUKgg (ORCPT
+	id S1752023Ab2LUKht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 05:37:49 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40840 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab2LUKho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 05:36:36 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Namjae Jeon <linkinjeon@gmail.com>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-	<87k3sy17vk.fsf@devron.myhome.or.jp>
-	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
-	<87txs0x45r.fsf@devron.myhome.or.jp>
-	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
-	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
-	<87623ydnvq.fsf@devron.myhome.or.jp>
-	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
-	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
-	<877gobn7fy.fsf@devron.myhome.or.jp>
-	<CAKYAXd8SB7tz82Y57TKcngZC8vzvy1S=SAhzurA92jyobaVtNg@mail.gmail.com>
-	<87obhnlmkt.fsf@devron.myhome.or.jp>
-Date: Fri, 21 Dec 2012 19:36:33 +0900
-In-Reply-To: <87obhnlmkt.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Fri, 21 Dec 2012 19:35:30 +0900")
-Message-ID: <87k3sblmj2.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Fri, 21 Dec 2012 05:37:44 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <50D43BCF.3080201@jp.fujitsu.com>
+Date: Fri, 21 Dec 2012 19:37:03 +0900
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: yangoliver@gmail.com
+CC: linux-pci@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
+        andi@firstfloor.org, tokunaga.keiich@jp.fujitsu.com,
+        kexec@lists.infradead.org, hbabu@us.ibm.com, mingo@redhat.com,
+        ddutile@redhat.com, vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com,
+        hpa@zytor.com, bhelgaas@google.com, tglx@linutronix.de,
+        yinghai@kernel.org, khalid@gonehiking.org
+Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <CAK4g67ZEUfCqqpa1-4wkN4+OXZYQqLTiJC+6OpwVWVLfO2_7xQ@mail.gmail.com>
+In-Reply-To: <CAK4g67ZEUfCqqpa1-4wkN4+OXZYQqLTiJC+6OpwVWVLfO2_7xQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> writes:
+Hi,
 
-> Namjae Jeon <linkinjeon@gmail.com> writes:
+(2012/12/21 18:59), oliver yang wrote:
 >
->>> Yes, we can't use fat_search_long() as is, of course. However, we can
->>> share the basic algorithm and code.
->>>
->>> The both are doing,
->>>
->>> 1) traverse the blocks chained by ->i_start.
->>> 2) get the record (dirent) from blocks.
->>> 3) check the detail of record
->>>
->>> The difference is only (3), right? I know, the code has many differences
->>> though. The actual logic are almost same.
->>>
->>> And see, e.g., fat_get_cluster() is checking several unexpected
->>> state. We have to care about corrupting data. It is not only
->>> "infinite-loop" case.  And why I'm saying it is better to share code.
->>
->> Regarding unexpected conditions,
->> When we compare the unexpected conditions in fat_get_cluster:
->> We get these as conditions which can arise:
->> fat_end_read() returns:
->>  1) < 0
->>  2) FAT_ENT_FREE
->>  3) FAT_ENT_EOF
->> And the last is
->>       4) Preventing the infinite looping of cluster chain.
->>
->> Our patch is already covering the cases:
->>  case 1) , 2) =>  if (search_clus < 0 || search_clus == FAT_ENT_FREE)
->>  about  case 3) => while (search_clus != FAT_ENT_EOF);
->>
->> while for Case 4:
->> We can make changes like this:
->>
->> @@ -179,8 +179,9 @@ struct dentry *fat_get_parent(struct dentry *child_dir)
->>         struct inode *parent_inode = NULL;
->>         struct msdos_sb_info *sbi = MSDOS_SB(sb);
->>         int parent_logstart;
->> -       int search_clus, clus_to_match;
->> +       int search_clus, clus_to_match, clus_count = 0;
->>         sector_t blknr;
->> +       const int limit = sb->s_maxbytes >> MSDOS_SB(sb)->cluster_bits;
->>
->>         if (!fat_get_dotdot_entry(child_dir->d_inode, &dotdot_bh, &de)) {
->>                 parent_logstart = fat_get_start(sbi, de);
->> @@ -223,6 +224,14 @@ struct dentry *fat_get_parent(struct dentry *child_dir)
->>                                                 search_clus, clus_to_match);
->>                                 if (IS_ERR(parent_inode) || parent_inode)
->>                                         break;
->> +                               if (++clus_count > limit) {
->> +                                       fat_fs_error_ratelimit(sb,
->> +                                       "%s: detected the cluster chain loop"
->> +                                       " while reading directory entries from"
->> +                                       " cluster %d", __func__, search_clus);
->> +                                       parent_inode = ERR_PTR(-EIO);
->> +                                       break;
->> +                               }
->>                                 fatent_init(&fatent);
->>                                 search_clus = fat_ent_read(sb, &fatent,
->>                                                            search_clus);
+> Hi Takao,
 >
-> and it is copy of fat_get_cluster(), right? It would be sane as start
-> though, it is true to increase maintain cost, and it makes more similar
-> to fat_search_long() path. It is why I said, copy at first, and
-> refactoring after that.
+> Because I want to config the kdump in our lab, I have some questions
+> about the backgroud of your patch.
+>
+> 1. Will you patch only work while IOMMU is enabled?
 
-BTW, fat_search_long() was wrong as similar function. Actually it would
-be fat_scan(), because we don't care longname entry.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+No. It always works when "reset_devices" is specified as boot parameter.
+
+
+>
+> 2. Looks like kdump doesn't disable DMA and interrupts in the systems,
+> how can Linux make sure second kernel's memory is not corrupted by
+> devices initialized by first kernel?
+
+See purgatory/purgatory.c in kexec_tools. Before jumping into second
+kernel, a part of memory is checked using sha256 digest.
+
+Thanks,
+Takao Indoh
+
+
+>
+>
+> 2012/11/27 Takao Indoh <indou.takao@jp.fujitsu.com <mailto:indou.takao@jp.fujitsu.com>>
+>
+>     These patches reset PCIe devices at boot time to address DMA problem on
+>     kdump with iommu. When "reset_devices" is specified, a hot reset is
+>     triggered on each PCIe root port and downstream port to reset its
+>     downstream endpoint.
+>
+>     Background:
+>     A kdump problem about DMA has been discussed for a long time. That is,
+>     when a kernel is switched to the kdump kernel, DMA derived from first
+>     kernel affects second kernel. Especially this problem surfaces when
+>     iommu is used for PCI passthrough on KVM guest. In the case of the
+>     machine I use, when intel_iommu=on is specified, DMAR error is detected
+>     in kdump kernel and PCI SERR is also detected. Finally kdump fails
+>     because some devices does not work correctly.
+>
+>     The root cause is that ongoing DMA from first kernel causes DMAR fault
+>     because page table of DMAR is initialized while kdump kernel is booting
+>     up. Therefore to solve this problem DMA needs to be stopped before DMAR
+>     is initialized at kdump kernel boot time. By these patches, PCIe devices
+>     are reset by hot reset and its DMA is stopped when reset_devices is
+>     specified. One problem of this solution is that the monitor blacks out
+>     when VGA controller is reset. So this patch does not reset the port
+>     whose child endpoint is VGA device.
+>
+>     What I tried:
+>     - Clearing bus master bit and INTx disable bit at boot time
+>          This did not solve this problem. I still got DMAR error on devices.
+>     - Resetting devices in fixup_final(v1 patch)
+>          DMAR error disappeared, but sometimes PCI SERR was detected. This
+>          is well explained here.
+>     https://lkml.org/lkml/2012/9/9/245
+>          This PCI SERR seems to be related to interrupt remapping.
+>     - Clearing bus master in setup_arch() and resetting devices in
+>        fixup_final
+>          Neither DMAR error nor PCI SERR occurred. But on certain machine
+>          kdump kernel hung up when resetting devices. It seems to be a
+>          problem specific to the platform.
+>     - Resetting devices in setup_arch() (v2 and later patch)
+>          This solution solves all problems I found so far.
+>
+>     Changelog:
+>     v7:
+>     Update Yinghai's dummy-pci patch with macros in linux/pci.h, and fix
+>     some bugs
+>
+>     v6:
+>     Rewrite using Yinghai's dummy-pci patch
+>     https://lkml.org/lkml/2012/11/13/118
+>
+>     v5:
+>     Do bus reset after all devices are scanned and its config registers are
+>     saved. This fixes a bug that config register is accessed without delay
+>     after reset.
+>     https://lkml.org/lkml/2012/10/17/47
+>
+>     v4:
+>     Reduce waiting time after resetting devices. A previous patch does reset
+>     like this:
+>        for (each device) {
+>          save config registers
+>          reset
+>          wait for 500 ms
+>          restore config registers
+>        }
+>
+>     If there are N devices to be reset, it takes N*500 ms. On the other
+>     hand, the v4 patch does:
+>        for (each device) {
+>          save config registers
+>          reset
+>        }
+>        wait 500 ms
+>        for (each device) {
+>          restore config registers
+>        }
+>     Though it needs more memory space to save config registers, the waiting
+>     time is always 500ms.
+>     https://lkml.org/lkml/2012/10/15/49
+>
+>     v3:
+>     Move alloc_bootmem and free_bootmem to early_reset_pcie_devices so that
+>     they are called only once.
+>     https://lkml.org/lkml/2012/10/10/57
+>
+>     v2:
+>     Reset devices in setup_arch() because reset need to be done before
+>     interrupt remapping is initialized.
+>     https://lkml.org/lkml/2012/10/2/54
+>
+>     v1:
+>     Add fixup_final quirk to reset PCIe devices
+>     https://lkml.org/lkml/2012/8/3/160
+>
+>     Takao Indoh (5):
+>        x86, pci: add dummy pci device for early stage
+>        PCI: Define the maximum number of PCI function
+>        Make reset_devices available at early stage
+>        x86, pci: Reset PCIe devices at boot time
+>        x86, pci: Enable PCI INTx when MSI is disabled
+>
+>       arch/x86/include/asm/pci-direct.h |    3 +
+>       arch/x86/kernel/setup.c           |    3 +
+>       arch/x86/pci/common.c             |    4 +-
+>       arch/x86/pci/early.c              |  315 +++++++++++++++++++++++++++++++++++++
+>       include/linux/pci.h               |    2 +
+>       init/main.c                       |    4 +-
+>       6 files changed, 328 insertions(+), 3 deletions(-)
+>
+>
+>     --
+>     To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>     the body of a message to majordomo@vger.kernel.org <mailto:majordomo@vger.kernel.org>
+>     More majordomo info at http://vger.kernel.org/majordomo-info.html
+>     Please read the FAQ at http://www.tux.org/lkml/
+>
+>
+>
+>
+> --
+> ------------------
+> Oliver Yang
+
