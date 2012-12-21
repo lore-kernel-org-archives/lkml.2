@@ -1,165 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432Ab2LUIQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:16:37 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:50372 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab2LUIQa (ORCPT
+	id S1751483Ab2LUITl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:19:41 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:55154 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2LUITc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 03:16:30 -0500
+	Fri, 21 Dec 2012 03:19:32 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ravishankar N <ravi.n1@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if fat_dget() fails
+References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
+	<878v9f5ugn.fsf@devron.myhome.or.jp>
+	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
+	<87k3sy17vk.fsf@devron.myhome.or.jp>
+	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
+	<87txs0x45r.fsf@devron.myhome.or.jp>
+	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
+	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
+	<87623ydnvq.fsf@devron.myhome.or.jp>
+	<CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
+	<CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
+Date: Fri, 21 Dec 2012 17:19:29 +0900
+In-Reply-To: <CAKYAXd9OhKDh5r6O=ACyDez1B2S=DB0Eo2-cSNuM1vaURmFNoQ@mail.gmail.com>
+	(Namjae Jeon's message of "Fri, 21 Dec 2012 14:08:22 +0900")
+Message-ID: <877gobn7fy.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <CAFp+6iHoS4XJWHNrsyVsQS4bYZs1PUNEGsRr=EqAS7kpm2XGMQ@mail.gmail.com>
-References: <1355416562-25539-1-git-send-email-gautam.vivek@samsung.com>
-	<1355416562-25539-2-git-send-email-gautam.vivek@samsung.com>
-	<20121215072312.EBCAA3E0C06@localhost>
-	<CAFp+6iHoS4XJWHNrsyVsQS4bYZs1PUNEGsRr=EqAS7kpm2XGMQ@mail.gmail.com>
-Date: Fri, 21 Dec 2012 13:46:28 +0530
-Message-ID: <CAFp+6iFSZjfVJp23j2dEz0hRap07RMo68GJpsQM7YqOMBCbqsQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] ARM: Exynos5250: Enabling ehci-s5p driver
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: dianders@chromium.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, kgene.kim@samsung.com,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-2022-jp
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Namjae Jeon <linkinjeon@gmail.com> writes:
 
-
-On Wed, Dec 19, 2012 at 7:20 PM, Vivek Gautam <gautamvivek1987@gmail.com> wrote:
-> CC: Doug Anderson
->
->
-> On Sat, Dec 15, 2012 at 12:53 PM, Grant Likely
-> <grant.likely@secretlab.ca> wrote:
->> On Thu, 13 Dec 2012 22:06:01 +0530, Vivek Gautam <gautam.vivek@samsung.com> wrote:
->>> Adding EHCI device tree node for Exynos5250 along with
->>> the device base adress and gpio line for vbus.
+>>> Hm, start with copy of fat_search_long() and refactoring it. With it, we
+>>> will be able to avoid the fixed bugs.
 >>>
->>> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->>> Acked-by: Jingoo Han <jg1.han@samsung.com>
->>> ---
->>>  .../devicetree/bindings/usb/exynos-usb.txt         |   25 ++++++++++++++++++++
->>>  arch/arm/boot/dts/exynos5250-smdk5250.dts          |    4 +++
->>>  arch/arm/boot/dts/exynos5250.dtsi                  |    6 ++++
->>>  arch/arm/mach-exynos/include/mach/map.h            |    1 +
->>>  arch/arm/mach-exynos/mach-exynos5-dt.c             |    2 +
->>>  5 files changed, 38 insertions(+), 0 deletions(-)
->>>  create mode 100644 Documentation/devicetree/bindings/usb/exynos-usb.txt
->>>
->>> diff --git a/Documentation/devicetree/bindings/usb/exynos-usb.txt b/Documentation/devicetree/bindings/usb/exynos-usb.txt
->>> new file mode 100644
->>> index 0000000..e8bbb47
->>> --- /dev/null
->>> +++ b/Documentation/devicetree/bindings/usb/exynos-usb.txt
->>> @@ -0,0 +1,25 @@
->>> +Samsung Exynos SoC USB controller
->>> +
->>> +The USB devices interface with USB controllers on Exynos SOCs.
->>> +The device node has following properties.
->>> +
->>> +EHCI
->>> +Required properties:
->>> + - compatible: should be "samsung,exynos4210-ehci" for USB 2.0
->>> +   EHCI controller in host mode.
->>> + - reg: physical base address of the controller and length of memory mapped
->>> +   region.
->>> + - interrupts: interrupt number to the cpu.
->>> +
->>> +Optional properties:
->>> + - samsung,vbus-gpio:  if present, specifies the GPIO that
->>> +   needs to be pulled up for the bus to be powered.
->>> +
->>> +Example:
->>> +
->>> +     usb@12110000 {
->>> +             compatible = "samsung,exynos4210-ehci";
->>> +             reg = <0x12110000 0x100>;
->>> +             interrupts = <0 71 0>;
->>> +             samsung,vbus-gpio = <&gpx2 6 1 3 3>;
->>> +     };
->>> diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
->>> index 711b55f..f990086 100644
->>> --- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
->>> +++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
->>> @@ -218,4 +218,8 @@
->>>       i2s_2: i2s@12D70000 {
->>>               status = "disabled";
->>>       };
->>> +
->>> +     usb@12110000 {
->>> +             samsung,vbus-gpio = <&gpx2 6 1 3 3>;
->>> +     };
->>>  };
->>> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
->>> index 581e57a..584bb9a 100644
->>> --- a/arch/arm/boot/dts/exynos5250.dtsi
->>> +++ b/arch/arm/boot/dts/exynos5250.dtsi
->>> @@ -299,6 +299,12 @@
->>>               rx-dma-channel = <&pdma0 11>; /* preliminary */
->>>       };
->>>
->>> +     usb@12110000 {
->>> +             compatible = "samsung,exynos4210-ehci";
->>> +             reg = <0x12110000 0x100>;
->>> +             interrupts = <0 71 0>;
->>> +     };
->>> +
->>>       amba {
->>>               #address-cells = <1>;
->>>               #size-cells = <1>;
->>> diff --git a/arch/arm/mach-exynos/include/mach/map.h b/arch/arm/mach-exynos/include/mach/map.h
->>> index cbb2852..b2c662f 100644
->>> --- a/arch/arm/mach-exynos/include/mach/map.h
->>> +++ b/arch/arm/mach-exynos/include/mach/map.h
->>> @@ -201,6 +201,7 @@
->>>  #define EXYNOS4_PA_EHCI                      0x12580000
->>>  #define EXYNOS4_PA_OHCI                      0x12590000
->>>  #define EXYNOS4_PA_HSPHY             0x125B0000
->>> +#define EXYNOS5_PA_EHCI                      0x12110000
->>>  #define EXYNOS4_PA_MFC                       0x13400000
->>>
->>>  #define EXYNOS4_PA_UART                      0x13800000
->>> diff --git a/arch/arm/mach-exynos/mach-exynos5-dt.c b/arch/arm/mach-exynos/mach-exynos5-dt.c
->>> index 462e5ac..b3b9af1 100644
->>> --- a/arch/arm/mach-exynos/mach-exynos5-dt.c
->>> +++ b/arch/arm/mach-exynos/mach-exynos5-dt.c
->>> @@ -110,6 +110,8 @@ static const struct of_dev_auxdata exynos5250_auxdata_lookup[] __initconst = {
->>>                               "samsung-i2s.1", NULL),
->>>       OF_DEV_AUXDATA("samsung,samsung-i2s", 0x12D70000,
->>>                               "samsung-i2s.2", NULL),
->>> +     OF_DEV_AUXDATA("samsung,exynos4210-ehci", EXYNOS5_PA_EHCI,
->>> +                             "s5p-ehci", NULL),
->>
->> I'm assuming the above change is temporary. What is left to be done to
->> drop the auxdata in theses two patches?
->>
->> Otherwise the patch looks fine.
->>
->> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-
-Any more thought about this patch?
-Or does this change seems fine?
-
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+>>> After that, we might be able to merge those somehow. Well, I'm not
+>>> pretty sure without doing it actually though.
+> Hi OGAWA.
 >
->
->
-> --
-> Thanks & Regards
-> Vivek
+> When we checked to merge it with fat_search_long, we really did not
+> find any possibility of code reusing for fat_traverse_cluster.
+> It will not be proper. In case of fat_search_long()-> it is performing
+> a name based lookup in a particular directory.
+> While for reconnection with parent from NFS, we do not have the name
+> of the parent directory. We are relying on ‘i_pos’ on disk position of
+> directory entry.
+> So, on first request for lookup for “..” (i.e if we call
+> fat_search_long(child_dir->d_inode, MSDOS_DOTDOT,2,slot_info) it will
+> return the directory entry for “..” itself.  From this entry we can
+> read the “log start” which is the starting cluster of the parent
+> directory, but instead we need the “directory entry” where this is
+> stored.
+> So, from this level we need to go further one level up and read the
+> parent ->parent-> cluster. After reading that cluster, we need to do a
+> lookup of the “required ipos” in this directory block.
+> i.e., if the path is A/B/C and we call the get_parent() from ‘C’. We
+> need to read the directory block contents of ‘A’ and from those
+> ‘directory entries' compare the log_start with the log_start value of
+> B, which was obtained by doing a lookup “..” in C.
+> So, Instead of it, we suggest we fix the “infinite-loop” condition in
+> fat_traverse_logic and retain the code.
+> of course, we will test it with corrupted FATfs.
+> Please share your thoughts on this.
 
+Yes, we can't use fat_search_long() as is, of course. However, we can
+share the basic algorithm and code.
 
+The both are doing,
 
+1) traverse the blocks chained by ->i_start.
+2) get the record (dirent) from blocks.
+3) check the detail of record
+
+The difference is only (3), right? I know, the code has many differences
+though. The actual logic are almost same.
+
+And see, e.g., fat_get_cluster() is checking several unexpected
+state. We have to care about corrupting data. It is not only
+"infinite-loop" case.  And why I'm saying it is better to share code.
+
+Thanks.
 -- 
-Thanks & Regards
-Vivek
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
