@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab2LUEny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 23:43:54 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:48102 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab2LUEnp (ORCPT
+	id S1751962Ab2LUEon (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 23:44:43 -0500
+Received: from mga02.intel.com ([134.134.136.20]:29117 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069Ab2LUEoj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 23:43:45 -0500
-X-AuditID: 9c930179-b7becae000000e51-15-50d3e8ff7080
-From: Namhyung Kim <namhyung@kernel.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, rob@landley.net,
-        mingo@redhat.com, peterz@infradead.org, gregkh@linuxfoundation.org,
-        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, pjt@google.com,
-        vincent.guittot@linaro.org
-Subject: Re: [PATCH 08/18] sched: consider runnable load average in move_tasks
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
-	<1355127754-8444-9-git-send-email-alex.shi@intel.com>
-	<50C80ADF.8050504@linux.vnet.ibm.com> <50C823A4.109@intel.com>
-Date: Fri, 21 Dec 2012 13:43:43 +0900
-In-Reply-To: <50C823A4.109@intel.com> (Alex Shi's message of "Wed, 12 Dec 2012
-	14:26:44 +0800")
-Message-ID: <871uekf20w.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Thu, 20 Dec 2012 23:44:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,328,1355126400"; 
+   d="scan'208";a="237330198"
+From: "Yu, Fenghua" <fenghua.yu@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: H Peter Anvin <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Mallick, Asit K" <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: RE: [PATCH v4 09/11] x86/head64.c: Early update ucode in 64-bit
+Thread-Topic: [PATCH v4 09/11] x86/head64.c: Early update ucode in 64-bit
+Thread-Index: AQHN3yYFVmoxtIcZeUWxSqmbqiPh75gjKeQA//+DbgA=
+Date: Fri, 21 Dec 2012 04:44:36 +0000
+Message-ID: <3E5A0FA7E9CA944F9D5414FEC6C71220471099EF@ORSMSX105.amr.corp.intel.com>
+References: <1356032893-2730-1-git-send-email-fenghua.yu@intel.com>
+	<1356032893-2730-10-git-send-email-fenghua.yu@intel.com>
+ <CAE9FiQUCqeWH2qezRMH=PY39tiy4MhSF1yy77QUBfdtPMr_hqQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQUCqeWH2qezRMH=PY39tiy4MhSF1yy77QUBfdtPMr_hqQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Dec 2012 14:26:44 +0800, Alex Shi wrote:
-> On 12/12/2012 12:41 PM, Preeti U Murthy wrote:
->> Also why can't p->se.load_avg_contrib be used directly? as a return
->> value for task_h_load_avg? since this is already updated in
->> update_task_entity_contrib and update_group_entity_contrib.
->
-> No, only non task entity goes to  update_group_entity_contrib. not task
-> entity.
+> -----Original Message-----
+> From: yhlu.kernel@gmail.com [mailto:yhlu.kernel@gmail.com] On Behalf Of
+> Yinghai Lu
+> Sent: Thursday, December 20, 2012 8:10 PM
+> To: Yu, Fenghua
+> Cc: H Peter Anvin; Ingo Molnar; Thomas Gleixner; Mallick, Asit K;
+> Tigran Aivazian; Andreas Herrmann; Borislav Petkov; linux-kernel; x86
+> Subject: Re: [PATCH v4 09/11] x86/head64.c: Early update ucode in 64-
+> bit
+> 
+> On Thu, Dec 20, 2012 at 11:48 AM, Fenghua Yu <fenghua.yu@intel.com>
+> wrote:
+> > From: Fenghua Yu <fenghua.yu@intel.com>
+> >
+> > This updates ucode on BSP in 64-bit mode. Paging and virtual address
+> are
+> > working now.
+> >
+> > Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> > ---
+> >  arch/x86/kernel/head64.c | 6 ++++++
+> >  1 file changed, 6 insertions(+)
+> >
+> > diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+> > index e1cb611..1ccbaf1 100644
+> > --- a/arch/x86/kernel/head64.c
+> > +++ b/arch/x86/kernel/head64.c
+> > @@ -26,6 +26,7 @@
+> >  #include <asm/kdebug.h>
+> >  #include <asm/e820.h>
+> >  #include <asm/bios_ebda.h>
+> > +#include <asm/microcode.h>
+> >
+> >  /*
+> >   * Manage page tables very early on.
+> > @@ -179,6 +180,11 @@ void __init x86_64_start_kernel(char *
+> real_mode_data)
+> >         }
+> >         load_idt((const struct desc_ptr *)&idt_descr);
+> >
+> > +       /*
+> > +        * Load microcode early on BSP.
+> > +        */
+> > +       load_ucode_bsp(__va(real_mode_data));
+> > +
+> >         copy_bootdata(__va(real_mode_data));
+> 
+> can you make load_ucode_bsp take boot_param directly instead of
+> real_mode_data. ?
+> 
+> could be
+> 
+> 
+>         copy_bootdata(__va(real_mode_data));
+> +
+> +        /* Load microcode early on BSP. */
+> +       load_ucode_bsp(&boot_params);
+> +
+> 
+> because copy_bootdata, already copy boot_params...
+> 
+> Thanks
+> 
+> Yinghai
 
-???
+That's right. Will fix this.
 
-But task entity goes to __update_task_entity_contrib()?
+Thanks.
 
-
-/* Compute the current contribution to load_avg by se, return any delta */
-static long __update_entity_load_avg_contrib(struct sched_entity *se)
-{
-	long old_contrib = se->avg.load_avg_contrib;
-
-	if (entity_is_task(se)) {
-		__update_task_entity_contrib(se);
-	} else {
-		__update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
-		__update_group_entity_contrib(se);
-	}
-
-	return se->avg.load_avg_contrib - old_contrib;
-}
-
-
-Thanks,
-Namhyung
+-Fenghua
