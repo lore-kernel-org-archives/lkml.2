@@ -1,180 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2LULRT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 06:17:19 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:64901 "EHLO mx1.redhat.com"
+	id S1751383Ab2LULRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 06:17:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22553 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751355Ab2LULQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 06:16:55 -0500
+	id S1751363Ab2LULQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 06:16:56 -0500
 From: Anton Arapov <anton@redhat.com>
 To: Oleg Nesterov <oleg@redhat.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
         Frank Eigler <fche@redhat.com>, Anton Arapov <anton@redhat.com>
-Subject: [RFC PATCH 5/6] uprobes: add bp_vaddr argument to consumer handler
-Date: Fri, 21 Dec 2012 12:16:35 +0100
-Message-Id: <1356088596-17858-6-git-send-email-anton@redhat.com>
+Subject: [RFC PATCH 6/6] uretprobes: register() and unregister() implementation
+Date: Fri, 21 Dec 2012 12:16:36 +0100
+Message-Id: <1356088596-17858-7-git-send-email-anton@redhat.com>
 In-Reply-To: <1356088596-17858-1-git-send-email-anton@redhat.com>
 References: <1356088596-17858-1-git-send-email-anton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add argument to handler() to pass the breakpoint address(bp_vaddr). This makes
-uprobes consistent, doesn't require users to calculate the pre-breakpoint
-address themselves as well as remove uprobes.h import(see the cuts in
-trace_event.c here). It also simplifies implementation of the return
-probes(uretprobes).
-
-I can't foresee whether anything else from the u[ret]probes should be exposed
-the same way as breakpoint address and bet on it as unlikely, so I think
-anything heavier than just a sufficient to pass an address variable is overkill.
-Any input are welcome though.
+A uretprobe is specified by a file:offset:handler. A uprobe is created
+at the offset specified. When this uprobe is hit a uretprobe instance
+created and a probe placed instead of the return address of the current
+function. The handler specified is invoked before replacing the return
+address. A uretprobe therefore places two probes, firstly a uprobe at
+offset, whose handler in turn places the second probe at the return
+address at task runtime.
 
 Signed-off-by: Anton Arapov <anton@redhat.com>
 ---
- include/linux/uprobes.h     |  2 +-
- kernel/events/uprobes.c     |  9 +++++----
- kernel/trace/trace_uprobe.c | 20 +++++++++++---------
- 3 files changed, 17 insertions(+), 14 deletions(-)
+ include/linux/uprobes.h | 10 +++++
+ kernel/events/uprobes.c | 97 +++++++++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 91 insertions(+), 16 deletions(-)
 
 diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index 1222a2c..741cc77 100644
+index 741cc77..ebf957f 100644
 --- a/include/linux/uprobes.h
 +++ b/include/linux/uprobes.h
-@@ -39,7 +39,7 @@ struct inode;
- #endif
- 
- struct uprobe_consumer {
--	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
-+	int (*handler)(struct uprobe_consumer *self, unsigned long bp_vaddr, struct pt_regs *regs);
- 
- 	struct uprobe_consumer *next;
- };
+@@ -104,6 +104,8 @@ extern int __weak set_orig_insn(struct arch_uprobe *aup, struct mm_struct *mm, u
+ extern bool __weak is_swbp_insn(uprobe_opcode_t *insn);
+ extern int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
++extern int uretprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
++extern void uretprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc);
+ extern int uprobe_mmap(struct vm_area_struct *vma);
+ extern void uprobe_munmap(struct vm_area_struct *vma, unsigned long start, unsigned long end);
+ extern void uprobe_start_dup_mmap(void);
+@@ -130,6 +132,14 @@ static inline void
+ uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
+ {
+ }
++uretprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
++{
++	return -ENOSYS;
++}
++static inline void
++uretprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
++{
++}
+ static inline int uprobe_mmap(struct vm_area_struct *vma)
+ {
+ 	return 0;
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index a3b3a60..d4016282 100644
+index d4016282..d360077 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -454,7 +454,8 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
- 	return uprobe;
+@@ -486,6 +486,14 @@ static void consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
+ 	up_write(&uprobe->consumer_rwsem);
  }
  
--static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
-+static void
-+handler_chain(struct uprobe *uprobe, unsigned long bp_vaddr, struct pt_regs *regs)
- {
- 	struct uprobe_consumer *uc;
- 
-@@ -463,7 +464,7 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
- 		prepare_uretprobe(uprobe, regs);
- 
- 	for (uc = uprobe->consumers; uc; uc = uc->next)
--		uc->handler(uc, regs);
-+		uc->handler(uc, bp_vaddr, regs);
- 	up_read(&uprobe->register_rwsem);
- }
- 
-@@ -473,7 +474,7 @@ static void uretprobe_handler_chain(struct uprobe *uprobe, unsigned long bp_vadd
- 
- 	down_read(&uprobe->register_rwsem);
- 	for (uc = uprobe->return_consumers; uc; uc = uc->next)
--		uc->handler(uc, regs);
-+		uc->handler(uc, bp_vaddr, regs);
- 	up_read(&uprobe->register_rwsem);
- }
- 
-@@ -1676,7 +1677,7 @@ static void handle_swbp(struct pt_regs *regs)
- 			goto restart;
- 	}
- 
--	handler_chain(uprobe, regs);
-+	handler_chain(uprobe, bp_vaddr, regs);
- 	if (can_skip_sstep(uprobe, regs))
- 		goto out;
- 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 920dfd0..999da12 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -20,7 +20,6 @@
- 
- #include <linux/module.h>
- #include <linux/uaccess.h>
--#include <linux/uprobes.h>
- #include <linux/namei.h>
- #include <linux/string.h>
- 
-@@ -62,7 +61,7 @@ static void unregister_uprobe_event(struct trace_uprobe *tu);
- static DEFINE_MUTEX(uprobe_lock);
- static LIST_HEAD(uprobe_list);
- 
--static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs);
-+static int uprobe_dispatcher(struct uprobe_consumer *con, unsigned long bp_vaddr, struct pt_regs *regs);
- 
++static void return_consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
++{
++	down_write(&uprobe->consumer_rwsem);
++	uc->next = uprobe->return_consumers;
++	uprobe->return_consumers = uc;
++	up_write(&uprobe->consumer_rwsem);
++}
++
  /*
-  * Allocate new trace_uprobe and initialize it (including uprobes).
-@@ -465,7 +464,8 @@ static const struct file_operations uprobe_profile_ops = {
- };
+  * For uprobe @uprobe, delete the consumer @uc.
+  * Return true if the @uc is deleted successfully
+@@ -509,6 +517,24 @@ static bool consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
+ 	return ret;
+ }
  
- /* uprobe handler */
--static void uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
-+static void
-+uprobe_trace_func(struct trace_uprobe *tu, unsigned long bp_vaddr, struct pt_regs *regs)
++static bool return_consumer_del(struct uprobe *uprobe, struct uprobe_consumer *uc)
++{
++	struct uprobe_consumer **con;
++	bool ret = false;
++
++	down_write(&uprobe->consumer_rwsem);
++	for (con = &uprobe->return_consumers; *con; con = &(*con)->next) {
++		if (*con == uc) {
++			*con = uc->next;
++			ret = true;
++			break;
++		}
++	}
++	up_write(&uprobe->consumer_rwsem);
++
++	return ret;
++}
++
+ static int
+ __copy_insn(struct address_space *mapping, struct file *filp, char *insn,
+ 			unsigned long nbytes, loff_t offset)
+@@ -831,30 +857,29 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 	return err;
+ }
+ 
+-static int __uprobe_register(struct uprobe *uprobe, struct uprobe_consumer *uc)
+-{
+-	consumer_add(uprobe, uc);
+-	return register_for_each_vma(uprobe, true);
+-}
+-
+-static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc)
++static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *uc, bool is_rp)
  {
- 	struct uprobe_trace_entry_head *entry;
- 	struct ring_buffer_event *event;
-@@ -488,7 +488,7 @@ static void uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+ 	int err;
+ 
+-	if (!consumer_del(uprobe, uc))	/* WARN? */
++	if (is_rp)
++		err = return_consumer_del(uprobe, uc);
++	else
++		err = consumer_del(uprobe, uc);
++	if (!err) /* WARN? */
  		return;
  
- 	entry = ring_buffer_event_data(event);
--	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
-+	entry->ip = bp_vaddr;
- 	data = (u8 *)&entry[1];
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-@@ -642,7 +642,8 @@ static int set_print_fmt(struct trace_uprobe *tu)
- 
- #ifdef CONFIG_PERF_EVENTS
- /* uprobe profile handler */
--static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
-+static void
-+uprobe_perf_func(struct trace_uprobe *tu, unsigned long bp_vaddr, struct pt_regs *regs)
- {
- 	struct ftrace_event_call *call = &tu->call;
- 	struct uprobe_trace_entry_head *entry;
-@@ -663,7 +664,7 @@ static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	if (!entry)
- 		goto out;
- 
--	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
-+	entry->ip = bp_vaddr;
- 	data = (u8 *)&entry[1];
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-@@ -703,7 +704,8 @@ int trace_uprobe_register(struct ftrace_event_call *event, enum trace_reg type,
- 	return 0;
+ 	err = register_for_each_vma(uprobe, false);
+ 	/* TODO : cant unregister? schedule a worker thread */
+-	if (!uprobe->consumers && !err)
++	if (!uprobe->consumers && !uprobe->return_consumers && !err)
+ 		delete_uprobe(uprobe);
  }
  
--static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
-+static int
-+uprobe_dispatcher(struct uprobe_consumer *con, unsigned long bp_vaddr, struct pt_regs *regs)
+ /*
+- * uprobe_register - register a probe
++ * __uprobe_register - register a probe
+  * @inode: the file in which the probe has to be placed.
+  * @offset: offset from the start of the file.
+- * @uc: information on howto handle the probe..
++ * @uc: information on howto handle the probe.
++ * @is_rp: if true - return probe.
+  *
+  * Apart from the access refcount, uprobe_register() takes a creation
+  * refcount (thro alloc_uprobe) if and only if this @uprobe is getting
+@@ -867,7 +892,7 @@ static void __uprobe_unregister(struct uprobe *uprobe, struct uprobe_consumer *u
+  * Return errno if it cannot successully install probes
+  * else return 0 (success)
+  */
+-int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
++int __uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc, bool is_rp)
  {
- 	struct uprobe_trace_consumer *utc;
- 	struct trace_uprobe *tu;
-@@ -714,11 +716,11 @@ static int uprobe_dispatcher(struct uprobe_consumer *con, struct pt_regs *regs)
- 		return 0;
- 
- 	if (tu->flags & TP_FLAG_TRACE)
--		uprobe_trace_func(tu, regs);
-+		uprobe_trace_func(tu, bp_vaddr, regs);
- 
- #ifdef CONFIG_PERF_EVENTS
- 	if (tu->flags & TP_FLAG_PROFILE)
--		uprobe_perf_func(tu, regs);
-+		uprobe_perf_func(tu, bp_vaddr, regs);
- #endif
- 	return 0;
+ 	struct uprobe *uprobe;
+ 	int ret;
+@@ -887,9 +912,14 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+ 	down_write(&uprobe->register_rwsem);
+ 	ret = -EAGAIN;
+ 	if (likely(uprobe_is_active(uprobe))) {
+-		ret = __uprobe_register(uprobe, uc);
++		if (is_rp)
++			return_consumer_add(uprobe, uc);
++		else
++			consumer_add(uprobe, uc);
++
++		ret = register_for_each_vma(uprobe, true);
+ 		if (ret)
+-			__uprobe_unregister(uprobe, uc);
++			__uprobe_unregister(uprobe, uc, is_rp);
+ 	}
+ 	up_write(&uprobe->register_rwsem);
+ 	put_uprobe(uprobe);
+@@ -900,7 +930,26 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
  }
+ 
+ /*
+- * uprobe_unregister - unregister a already registered probe.
++ * u[ret]probe_register - register a probe
++ * @inode: the file in which the probe has to be placed.
++ * @offset: offset from the start of the file.
++ * @uc: information on howto handle the probe.
++ *
++ * Return errno if it cannot successully install probes
++ * else return 0 (success)
++ */
++int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
++{
++	return __uprobe_register(inode, offset, uc, false);
++}
++
++int uretprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
++{
++	return __uprobe_register(inode, offset, uc, true);
++}
++
++/*
++ * u[ret]probe_unregister - unregister a already registered probe.
+  * @inode: the file in which the probe has to be removed.
+  * @offset: offset from the start of the file.
+  * @uc: identify which probe if multiple probes are colocated.
+@@ -914,8 +963,24 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+ 		return;
+ 
+ 	down_write(&uprobe->register_rwsem);
+-	__uprobe_unregister(uprobe, uc);
++	__uprobe_unregister(uprobe, uc, false);
+ 	up_write(&uprobe->register_rwsem);
++
++	put_uprobe(uprobe);
++}
++
++void uretprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consumer *uc)
++{
++	struct uprobe *uprobe;
++
++	uprobe = find_uprobe(inode, offset);
++	if (!uprobe)
++		return;
++
++	down_write(&uprobe->register_rwsem);
++	__uprobe_unregister(uprobe, uc, true);
++	up_write(&uprobe->register_rwsem);
++
+ 	put_uprobe(uprobe);
+ }
+ 
 -- 
 1.8.0.2
 
