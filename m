@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378Ab2LUFha (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 00:37:30 -0500
-Received: from mail-vb0-f48.google.com ([209.85.212.48]:49063 "EHLO
-	mail-vb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUFhT (ORCPT
+	id S1751484Ab2LUFnM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 00:43:12 -0500
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:41872 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab2LUFnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 00:37:19 -0500
+	Fri, 21 Dec 2012 00:43:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121221001457.GY15182@dastard>
+In-Reply-To: <20121221003401.GB13474@quack.suse.cz>
 References: <cover.1356043686.git.luto@amacapital.net> <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
- <20121221001457.GY15182@dastard>
+ <20121221003401.GB13474@quack.suse.cz>
 From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 20 Dec 2012 21:36:58 -0800
-Message-ID: <CALCETrXT2uYwuYR3402LUO2uw3d++=f9vxtFLq8Ez62VdAgOcw@mail.gmail.com>
+Date: Thu, 20 Dec 2012 21:42:46 -0800
+Message-ID: <CALCETrVCGeL6-Jji05CLrFUSyMOE6b5W2dqGNQoyUqLYXw0LLg@mail.gmail.com>
 Subject: Re: [RFC PATCH 2/4] mm: Update file times when inodes are written
  after mmaped writes
-To: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
 Cc: linux-kernel@vger.kernel.org,
         Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 4:14 PM, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Dec 20, 2012 at 03:10:10PM -0800, Andy Lutomirski wrote:
+On Thu, Dec 20, 2012 at 4:34 PM, Jan Kara <jack@suse.cz> wrote:
+> On Thu 20-12-12 15:10:10, Andy Lutomirski wrote:
 >> The onus is currently on filesystems to call file_update_time
 >> somewhere in the page_mkwrite path.  This is unfortunate for three
 >> reasons:
 >>
 >> 1. page_mkwrite on a locked page should be fast.  ext4, for example,
 >>    often sleeps while dirtying inodes.
->
-> That's an ext4 problem, not a page fault or timestamp update
-> problem. Fix ext4.
-
-I could fix ext4 (or rather, someone who understands jbd2 could fix
-ext4), but I think my approach is considerably simpler and fixes all
-filesystems at once.
-
->
+>>
 >> 2. The current behavior is surprising -- the timestamp resulting from
 >>    an mmaped write will be before the write, not after.  This contradicts
 >>    the mmap(2) manpage, which says:
@@ -50,67 +42,135 @@ filesystems at once.
 >>      MAP_SHARED  will  be  updated  after  a write to the mapped region, and
 >>      before a subsequent msync(2) with the MS_SYNC or MS_ASYNC flag, if  one
 >>      occurs.
+>   I agree your behavior is more correct wrt to the manpage / spec. OTOH I
+> could dig out several emails where users complain time stamps magically
+> change some time after the file was written via mmap (because writeback
+> happened at that time and it did some allocation to the inode). People hit
+> this e.g. when compiling something, ld(1) writes final binary through mmap,
+> the package / archive the final binary and later some sanity check finds
+> the time stamp on the binary is newer than the package / archive.
 >
-> What you propose (time updates in do_writepages()) violates this.
-> msync(MS_ASYNC) doesn't actually start any IO, therefore the
-> timestamp wil not be updated.
+> Looking more into the patch you end up updating timestamps on munmap(2)
+> (thus on file close in particular). That should avoid the most surprising
+> cases and users hopefully won't notice the difference. Good. But please
+> mention this explicitely in the changelog.
 
-That's easy enough -- I can add special-case code for MS_ASYNC.  It'll
-make an operation that is otherwise a no-op considerably less free,
-though.
+I was careful to get that case right.  I'll update the changelog.
+
+In particular, I've so far tested munmap, msync(MS_SYNC), fsync,
+waiting 30 seconds, and dying by fatal signal.  All of those paths
+work right.
+
+>> +/**
+>> + *   inode_update_time_writable      -       update mtime and ctime time
+>> + *   @inode: inode accessed
+>> + *
+>> + *   This is like file_update_time, but it assumes the mnt is writable
+>> + *   and takes an inode parameter instead.
+>> + */
+>> +
+>> +int inode_update_time_writable(struct inode *inode)
+>> +{
+>> +     struct timespec now;
+>> +     int sync_it = 0;
+>> +     int ret;
+>> +
+>> +     /* First try to exhaust all avenues to not sync */
+>> +     if (IS_NOCMTIME(inode))
+>> +             return 0;
+>> +
+>> +     now = current_fs_time(inode->i_sb);
+>> +     if (!timespec_equal(&inode->i_mtime, &now))
+>> +             sync_it = S_MTIME;
+>> +
+>> +     if (!timespec_equal(&inode->i_ctime, &now))
+>> +             sync_it |= S_CTIME;
+>> +
+>> +     if (IS_I_VERSION(inode))
+>> +             sync_it |= S_VERSION;
+>> +
+>> +     if (!sync_it)
+>> +             return 0;
+>> +
+>> +     ret = update_time(inode, &now, sync_it);
+>> +
+>> +     return ret;
+>> +}
+>> +EXPORT_SYMBOL(inode_update_time_writable);
+>> +
+>   So this differs from file_update_time() only by not calling
+> __mnt_want_write(). Why this special function? It is actually unsafe wrt
+> remounts read-only or filesystem freezing... For that you need to call
+> sb_start_write() / sb_end_write() around the timestamp update. Umm, or
+> better sb_start_pagefault() / sb_end_pagefault() because the call in
+> remove_vma() gets called under mmap_sem so we are in a rather similar
+> situation to ->page_mkwrite.
+
+The important difference is that it takes an inode* as a parameter
+instead of a file*.  I don't think that inodes have a struct vfsmount,
+so I can't call __mnt_want_write.  I'll take a look at
+sb_start_pagefault.  I'll also refactor this a bit to minimize code
+duplication.  The current approach was for the v1 rfc version. :)
 
 >
-> Besides, what POSIX actually says is:
-
-[snipped -- covered elsewhere in the thread]
-
+>> diff --git a/mm/mmap.c b/mm/mmap.c
+>> index 3913262..60301dc 100644
+>> --- a/mm/mmap.c
+>> +++ b/mm/mmap.c
+>> @@ -223,6 +223,10 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
+>>       struct vm_area_struct *next = vma->vm_next;
+>>
+>>       might_sleep();
+>> +
+>> +     if (vma->vm_file)
+>> +             mapping_flush_cmtime(vma->vm_file->f_mapping);
+>> +
+>>       if (vma->vm_ops && vma->vm_ops->close)
+>>               vma->vm_ops->close(vma);
+>>       if (vma->vm_file)
+>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>> index cdea11a..8cbb7fb 100644
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -1910,6 +1910,13 @@ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+>>               ret = mapping->a_ops->writepages(mapping, wbc);
+>>       else
+>>               ret = generic_writepages(mapping, wbc);
+>> +
+>> +     /*
+>> +      * This is after writepages because the AS_CMTIME bit won't
+>> +      * bet set until writepages is called.
+>> +      */
+>> +     mapping_flush_cmtime(mapping);
+>> +
+>>       return ret;
+>>  }
+>>
+>> @@ -2117,8 +2124,17 @@ EXPORT_SYMBOL(set_page_dirty);
+>>   */
+>>  int set_page_dirty_from_pte(struct page *page)
+>>  {
+>> -     /* Doesn't do anything interesting yet. */
+>> -     return set_page_dirty(page);
+>> +     int ret = set_page_dirty(page);
+>> +
+>> +     /*
+>> +      * We may be out of memory and/or have various locks held, so
+>> +      * there isn't much we can do in here.
+>> +      */
+>> +     struct address_space *mapping = page_mapping(page);
+>   Declarations should go together please. So something like:
+>         int ret = set_page_dirty(page);
+>         struct address_space *mapping = page_mapping(page);
 >
->> 3. (An ulterior motive) I'd like to use hardware dirty tracking for
->>    shared, locked, writable mappings (instead of page faults).  Moving
->>    important work out of the page_mkwrite path is an important first step.
->
-> I don't think you're going to get very far doing this. page_mkwrite
-> needs to do:
->
->         a) block allocation in page_mkwrite() for faults over holes
->            to detect ENOSPC conditions immediately rather than in
->            writeback when such an error results in data loss.
->         b) detect writes over unwritten extents so that the pages in
->            the page cache can be set up correctly for conversion to
->            occur during writeback.
->
-> Correcting these two problems was the reason for introducing
-> page_mkwrite in the first place - we need to do this stuff before
-> the page fault is completed, and that means, by definition,
-> page_mkwrite needs to be able to block. Moving c/mtime updates out
-> of the way does not, in any way, change these requirements.
+>         /* comment... */
 
-I was unclear.  I have no problem if PROT_WRITE, MAP_SHARED pages
-start out write protected.  I want two changes from the status quo,
-though:
+Will do.  Some day I'll learn how to act less like a C99/C++
+programmer when writing kernel code.
 
-1. ptes (maybe only if mlocked or maybe even only if some new madvise
-flag is set) should be marked clean but stay writable during and after
-writeback.  (This would only work when stable pages are not in
-effect.)
+Am I correct in interpreting this as "these patches may be
+sufficiently non-insane that I should keep working on them"?  I admit
+I'm pretty far out of my depth working on vm/vfs stuff.
 
-2. There should be a way to request that pages be made clean-but-writable.
-
-#1 should be mostly fine already from the filesystems' point of view.
-#2 would involve calling page_mkwrite or some equivalent.
-
-I suspect that there are bugs that are currently untriggerable
-involving clean-but-writable pages.  For example, what happens if cpu
-0 (atomically) changes a pte from clean/writable to not present, but
-cpu 1 writes the page before the TLB flush happens.  I think the pte
-ends up not present + dirty, but the current unmapping code won't
-notice.
-
-This would involve splitting page_mkclean into "make clean and write
-protect" and "make clean but leave writable".
-
-Doing this would avoid ~1M "soft" page faults per day in a single
-real-time thread in my software.  (The file time patches are to make
-sure that the "soft" page faults actually don't sleep.)
-
---Andy
+Thanks,
+Andy
