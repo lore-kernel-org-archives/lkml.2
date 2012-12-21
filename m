@@ -1,96 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751745Ab2LUJRB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:17:01 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:54409 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab2LUJQs (ORCPT
+	id S1751871Ab2LUJRv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:17:51 -0500
+Received: from mga02.intel.com ([134.134.136.20]:27339 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751549Ab2LUJRj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:16:48 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-b0-50d428fe3b78
-From: Namhyung Kim <namhyung@kernel.org>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH 6/6] perf annotate: Add --gtk option
-References: <1356078018-31905-1-git-send-email-namhyung@kernel.org>
-	<1356078018-31905-7-git-send-email-namhyung@kernel.org>
-	<20121221083205.GA15226@liondog.tnic>
-Date: Fri, 21 Dec 2012 18:16:46 +0900
-In-Reply-To: <20121221083205.GA15226@liondog.tnic> (Borislav Petkov's message
-	of "Fri, 21 Dec 2012 09:32:05 +0100")
-Message-ID: <878v8repdt.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 21 Dec 2012 04:17:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,329,1355126400"; 
+   d="scan'208";a="237431162"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Hongbo Zhang <hongbo.zhang@linaro.org>
+CC: Wei Ni <wni@nvidia.com>, "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/8] Thermal Framework Enhancements
+Thread-Topic: [PATCH 0/8] Thermal Framework Enhancements
+Thread-Index: AQHN3QLYWsFdy6+maESoXsRsheh4gZgijcQAgABi5OD//6iOAIAAZEUQ
+Date: Fri, 21 Dec 2012 09:17:27 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924D83E@BGSMSX101.gar.corp.intel.com>
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
+	<50D41860.7040406@nvidia.com>
+	<4D68720C2E767A4AA6A8796D42C8EB5924D729@BGSMSX101.gar.corp.intel.com>
+ <CAJLyvQztwuvG0GooBUKApR+VnP9=yxKUu6sRn1AqR8Sno_MP8Q@mail.gmail.com>
+In-Reply-To: <CAJLyvQztwuvG0GooBUKApR+VnP9=yxKUu6sRn1AqR8Sno_MP8Q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
 
-On Fri, 21 Dec 2012 09:32:05 +0100, Borislav Petkov wrote:
-> On Fri, Dec 21, 2012 at 05:20:18PM +0900, Namhyung Kim wrote:
->> Now we have GTK2 implementation, add a new --gtk option to use it.
->> 
->> Cc: Pekka Enberg <penberg@kernel.org>
->> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
->> ---
->>  tools/perf/Documentation/perf-annotate.txt | 4 ++++
->>  tools/perf/builtin-annotate.c              | 5 ++++-
->>  2 files changed, 8 insertions(+), 1 deletion(-)
->> 
->> diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
->> index c8ffd9fd5c6a..482e1f753127 100644
->> --- a/tools/perf/Documentation/perf-annotate.txt
->> +++ b/tools/perf/Documentation/perf-annotate.txt
->> @@ -66,6 +66,10 @@ OPTIONS
->>  	used. This interfaces starts by centering on the line with more
->>  	samples, TAB/UNTAB cycles through the lines with more samples.
->>  
->> +--gtk:: Use the GTK interface. Use of --gtk requires (but not uses) a tty,
->
-> What does that even mean?
->
-> * it requires one but doesn't use it by default
->
-> * it requires one but if none is present, falls back to stdio
->
-> * it simply checks for tty presence and uses something completely different
->
-> * something else
->
-> ?
+> -----Original Message-----
+> From: Hongbo Zhang [mailto:hongbo.zhang@linaro.org]
+> Sent: Friday, December 21, 2012 2:17 PM
+> To: R, Durgadoss
+> Cc: Wei Ni; Zhang, Rui; linux-pm@vger.kernel.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
+> 
+> On 21 December 2012 16:30, R, Durgadoss <durgadoss.r@intel.com> wrote:
+> > Hi Ni,
+> >
+> >> -----Original Message-----
+> >> From: Wei Ni [mailto:wni@nvidia.com]
+> >> Sent: Friday, December 21, 2012 1:36 PM
+> >> To: R, Durgadoss
+> >> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> >> hongbo.zhang@linaro.org
+> >> Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
+> >>
+> >> On 12/18/2012 05:29 PM, Durgadoss R wrote:
+> >> > This patch is a v1 based on the RFC submitted here:
+> >> > https://patchwork.kernel.org/patch/1758921/
+> >> >
+> >> > This patch set is based on Rui's -thermal tree, and is
+> >> > tested on a Core-i5 and an Atom netbook.
+> >> >
+> >> > This series contains 8 patches:
+> >> > Patch 1/8: Creates new sensor level APIs
+> >> > Patch 2/8: Creates new zone level APIs. The existing tzd structure is
+> >> >            kept as such for clarity and compatibility purposes.
+> >> > Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
+> >> >            existing tcd structure need not be modified.
+> >> > Patch 4/8: Adds a thermal_trip sysfs node, which exposes various trip
+> >> >            points for all sensors present in a zone.
+> >> > Patch 5/8: Adds a thermal_map sysfs node. It is a compact
+> representation
+> >> >            of the binding relationship between a sensor and a cdev,
+> >> >            within a zone.
+> >> > Patch 6/8: Creates Documentation for the new APIs. A new file is
+> >> >            created for clarity. Final goal is to merge with the existing
+> >> >            file or refactor the files, as whatever seems appropriate.
+> >> > Patch 7/8: Make PER ZONE values configurable through Kconfig
+> >> > Patch 8/8: A dummy driver that can be used for testing. This is not for
+> >> merge.
+> >>
+> >> I read these patches, they create new APIs and sysfs, but it seems they
+> >> didn't use the thermal_zone to handle the thermal_throttle issue,
+> >> something like update thermal_zone, update temperature, handle
+> >> governors
+> >> when cross the trip temp. So will you send out next serial patches for
+> >> these implementation?
+> >
+> > Yes, once these get into Rui's tree, we will start migrating the existing
+> drivers/
+> > and governors, to get things working.
+> Durgadoss,
+> See function psy_register_thermal() in power_supply_core.c,
+> thermal_zone_device_register() is used here, what will this look like
+> in future?
 
-Hmm.. sorry for the unclear message.  I just copied description of --tui
-option and failed to make it clear. :/
+Yes, I know this code.
+This will be a thermal_sensor_register.
+Basically this will expose battery's temperature as a 'sensor'
+under /sys/class/thermal/.
 
-Current setup_browser() code checks the stdin to be a tty and if not it
-assumes piping to other commands so set the use_browser to 0 (stdio) and
-disables GTK output.
-
-Maybe we can change this behavior for --gtk case.
-
-
->> @@ -307,6 +308,8 @@ int cmd_annotate(int argc, const char **argv, const char *prefix __maybe_unused)
->>  		use_browser = 0;
->>  	else if (annotate.use_tui)
->>  		use_browser = 1;
->> +	else if (annotate.use_gtk)
->> +		use_browser = 2;
->
-> Btw, acme, those use_browser values could use proper defines like:
->
-> #define PERF_BROWSER_NONE	0
-> #define PERF_BROWSER_TUI	1
-> #define PERF_BROWSER_GTK	2
->
-> or even an enum or whatever else comes natural in perf-speak.
-
-Looks good, will change in the next spin.
+Then, each platform can add it to whatever zone they like to.
 
 Thanks,
-Namhyung
+Durga
