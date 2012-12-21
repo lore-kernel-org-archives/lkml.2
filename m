@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573Ab2LUI2a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:28:30 -0500
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:35726 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751235Ab2LUI2W (ORCPT
+	id S1751869Ab2LUI2j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:28:39 -0500
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:57091 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751383Ab2LUI2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Dec 2012 03:28:22 -0500
-Date: Fri, 21 Dec 2012 17:02:50 +0900
+Date: Fri, 21 Dec 2012 17:05:41 +0900
 From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 To: Alex Williamson <alex.williamson@redhat.com>
 Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
@@ -15,7 +15,7 @@ Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
         kvm@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
  dirty logging
-Message-Id: <20121221170250.067716b4.yoshikawa_takuya_b1@lab.ntt.co.jp>
+Message-Id: <20121221170541.d2299618.yoshikawa_takuya_b1@lab.ntt.co.jp>
 In-Reply-To: <1356015343.10845.16.camel@ul30vt.home>
 References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
 	<20121219213037.b234f9d4f187df2132e65576@gmail.com>
