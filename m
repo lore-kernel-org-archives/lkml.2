@@ -1,174 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab2LUA6O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 19:58:14 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:41549 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab2LUA6G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 19:58:06 -0500
-X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 19:58:06 EST
-From: Michel Lespinasse <walken@google.com>
-To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] mm: introduce VM_POPULATE flag to better deal with racy userspace programs
-Date: Thu, 20 Dec 2012 16:49:57 -0800
-Message-Id: <1356050997-2688-10-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.7.3
-In-Reply-To: <1356050997-2688-1-git-send-email-walken@google.com>
-References: <1356050997-2688-1-git-send-email-walken@google.com>
+	id S1752310Ab2LUA6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 19:58:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34841 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751976Ab2LUA62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 19:58:28 -0500
+Date: Fri, 21 Dec 2012 01:58:25 +0100
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC PATCH 2/4] mm: Update file times when inodes are written
+ after mmaped writes
+Message-ID: <20121221005825.GC13474@quack.suse.cz>
+References: <cover.1356043686.git.luto@amacapital.net>
+ <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
+ <20121221001457.GY15182@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221001457.GY15182@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vm_populate() code populates user mappings without constantly
-holding the mmap_sem. This makes it susceptible to racy userspace
-programs: the user mappings may change while vm_populate() is running,
-and in this case vm_populate() may end up populating the new mapping
-instead of the old one.
+On Fri 21-12-12 11:14:57, Dave Chinner wrote:
+> On Thu, Dec 20, 2012 at 03:10:10PM -0800, Andy Lutomirski wrote:
+> > The onus is currently on filesystems to call file_update_time
+> > somewhere in the page_mkwrite path.  This is unfortunate for three
+> > reasons:
+> > 
+> > 1. page_mkwrite on a locked page should be fast.  ext4, for example,
+> >    often sleeps while dirtying inodes.
+> 
+> That's an ext4 problem, not a page fault or timestamp update
+> problem. Fix ext4.
+  Well, XFS doesn't journal the timestamp update which is why it gets away
+without blocking on journal. Other filesystems (and I don't think it's just
+ext4) are so benevolent with timestamps so their updates are more costly...
 
-In order to reduce the possibility of userspace getting surprised by
-this behavior, this change introduces the VM_POPULATE vma flag which
-gets set on vmas we want vm_populate() to work on. This way
-vm_populate() may still end up populating the new mapping after such a
-race, but only if the new mapping is also one that the user has
-requested (using MAP_SHARED, MAP_LOCKED or mlock) to be populated.
+> > 2. The current behavior is surprising -- the timestamp resulting from
+> >    an mmaped write will be before the write, not after.  This contradicts
+> >    the mmap(2) manpage, which says:
+> > 
+> >      The st_ctime and st_mtime field for a file mapped with  PROT_WRITE  and
+> >      MAP_SHARED  will  be  updated  after  a write to the mapped region, and
+> >      before a subsequent msync(2) with the MS_SYNC or MS_ASYNC flag, if  one
+> >      occurs.
+> 
+> What you propose (time updates in do_writepages()) violates this.
+> msync(MS_ASYNC) doesn't actually start any IO, therefore the
+> timestamp wil not be updated.
+> 
+> Besides, what POSIX actually says is:
+> 
+> | The st_ctime and st_mtime fields of a file that is mapped with
+> | MAP_SHARED and PROT_WRITE shall be marked for update at some point
+> | in the interval between a write reference to the mapped region and
+> | the next call to msync() with MS_ASYNC or MS_SYNC for that portion
+> | of the file by any process.
+> 
+> Which means updating the timestamp during the first write is
+> perfectly acceptible. Indeed, by definition, we are compliant with
+> the man page because the update is after the write has occurred.
+> That is, the write triggered the page fault, so the page fault
+> processing where we update the timestamps is definitely after the
+> write occurred. :)
+  Well, but there can be more writes to the already write faulted page.
+They can come seconds after we called ->page_mkwrite() and thus updated
+time stamps. So Andy is correct we violate the spec AFAICT.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
+> > 3. (An ulterior motive) I'd like to use hardware dirty tracking for
+> >    shared, locked, writable mappings (instead of page faults).  Moving
+> >    important work out of the page_mkwrite path is an important first step.
+> 
+> I don't think you're going to get very far doing this. page_mkwrite
+> needs to do:
+> 
+> 	a) block allocation in page_mkwrite() for faults over holes
+> 	   to detect ENOSPC conditions immediately rather than in
+> 	   writeback when such an error results in data loss.
+> 	b) detect writes over unwritten extents so that the pages in
+> 	   the page cache can be set up correctly for conversion to
+> 	   occur during writeback.
+> 
+> Correcting these two problems was the reason for introducing
+> page_mkwrite in the first place - we need to do this stuff before
+> the page fault is completed, and that means, by definition,
+> page_mkwrite needs to be able to block. Moving c/mtime updates out
+> of the way does not, in any way, change these requirements.
+  Here I completely agree. I wanted to comment on it in my post as well but
+then forgot about it.
 
----
- include/linux/mm.h   |    1 +
- include/linux/mman.h |    4 +++-
- mm/fremap.c          |   12 ++++++++++--
- mm/mlock.c           |   19 ++++++++++---------
- mm/mmap.c            |    4 +---
- 5 files changed, 25 insertions(+), 15 deletions(-)
+> Perhaps you should implement everything you want to do inside ext4
+> first, so we can get an idea of exactly what you want page_mkwrite()
+> to do, how you want it to behave, and how you expect filesystems to
+> handle the above situations correctly....
+  Ah, now I noticed we don't call file_update_time() from
+__block_page_mkwrite() so yes, just changing ext4 without touching generic
+code is easily possible.
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index d32ace5fba93..77311274f0b5 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -87,6 +87,7 @@ extern unsigned int kobjsize(const void *objp);
- #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
- #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
- 
-+#define VM_POPULATE     0x00001000
- #define VM_LOCKED	0x00002000
- #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
- 
-diff --git a/include/linux/mman.h b/include/linux/mman.h
-index d09dde1e57fb..e4ad758962e5 100644
---- a/include/linux/mman.h
-+++ b/include/linux/mman.h
-@@ -77,6 +77,8 @@ calc_vm_flag_bits(unsigned long flags)
- {
- 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
- 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
--	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
-+	       ((flags & MAP_LOCKED) ? (VM_LOCKED | VM_POPULATE) : 0) |
-+	       (((flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE) ?
-+							VM_POPULATE : 0);
- }
- #endif /* _LINUX_MMAN_H */
-diff --git a/mm/fremap.c b/mm/fremap.c
-index 503a72387087..0cd4c11488ed 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -204,8 +204,10 @@ get_write_lock:
- 			unsigned long addr;
- 			struct file *file = get_file(vma->vm_file);
- 
--			addr = mmap_region(file, start, size,
--					vma->vm_flags, pgoff);
-+			vm_flags = vma->vm_flags;
-+			if (!(flags & MAP_NONBLOCK))
-+				vm_flags |= VM_POPULATE;
-+			addr = mmap_region(file, start, size, vm_flags, pgoff);
- 			fput(file);
- 			if (IS_ERR_VALUE(addr)) {
- 				err = addr;
-@@ -224,6 +226,12 @@ get_write_lock:
- 		mutex_unlock(&mapping->i_mmap_mutex);
- 	}
- 
-+	if (!(flags & MAP_NONBLOCK) && !(vma->vm_flags & VM_POPULATE)) {
-+		if (!has_write_lock)
-+			goto get_write_lock;
-+		vma->vm_flags |= VM_POPULATE;
-+	}
-+
- 	if (vma->vm_flags & VM_LOCKED) {
- 		/*
- 		 * drop PG_Mlocked flag for over-mapped range
-diff --git a/mm/mlock.c b/mm/mlock.c
-index ab0cfe21f538..b1647fbd6bce 100644
---- a/mm/mlock.c
-+++ b/mm/mlock.c
-@@ -340,9 +340,9 @@ static int do_mlock(unsigned long start, size_t len, int on)
- 
- 		/* Here we know that  vma->vm_start <= nstart < vma->vm_end. */
- 
--		newflags = vma->vm_flags | VM_LOCKED;
--		if (!on)
--			newflags &= ~VM_LOCKED;
-+		newflags = vma->vm_flags & ~VM_LOCKED;
-+		if (on)
-+			newflags |= VM_LOCKED | VM_POPULATE;
- 
- 		tmp = vma->vm_end;
- 		if (tmp > end)
-@@ -402,7 +402,8 @@ int __mm_populate(unsigned long start, unsigned long len, int ignore_errors)
- 		 * range with the first VMA. Also, skip undesirable VMA types.
- 		 */
- 		nend = min(end, vma->vm_end);
--		if (vma->vm_flags & (VM_IO | VM_PFNMAP))
-+		if ((vma->vm_flags & (VM_IO | VM_PFNMAP | VM_POPULATE)) !=
-+		    VM_POPULATE)
- 			continue;
- 		if (nstart < vma->vm_start)
- 			nstart = vma->vm_start;
-@@ -475,9 +476,9 @@ static int do_mlockall(int flags)
- 	struct vm_area_struct * vma, * prev = NULL;
- 	unsigned int def_flags;
- 
--	def_flags = current->mm->def_flags & ~VM_LOCKED;
-+	def_flags = current->mm->def_flags & ~(VM_LOCKED | VM_POPULATE);
- 	if (flags & MCL_FUTURE)
--		def_flags |= VM_LOCKED;
-+		def_flags |= (VM_LOCKED | VM_POPULATE);
- 	current->mm->def_flags = def_flags;
- 	if (flags == MCL_FUTURE)
- 		goto out;
-@@ -485,9 +486,9 @@ static int do_mlockall(int flags)
- 	for (vma = current->mm->mmap; vma ; vma = prev->vm_next) {
- 		vm_flags_t newflags;
- 
--		newflags = vma->vm_flags | VM_LOCKED;
--		if (!(flags & MCL_CURRENT))
--			newflags &= ~VM_LOCKED;
-+		newflags = vma->vm_flags & ~VM_LOCKED;
-+		if (flags & MCL_CURRENT)
-+			newflags |= VM_LOCKED | VM_POPULATE;
- 
- 		/* Ignore errors */
- 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 290d023632e6..27f98850fa8c 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1153,9 +1153,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	}
- 
- 	addr = mmap_region(file, addr, len, vm_flags, pgoff);
--	if (!IS_ERR_VALUE(addr) &&
--	    ((vm_flags & VM_LOCKED) ||
--	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
-+	if (!IS_ERR_VALUE(addr) && (vm_flags & VM_POPULATE))
- 		*populate = true;
- 	return addr;
- }
+								Honza
 -- 
-1.7.7.3
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
