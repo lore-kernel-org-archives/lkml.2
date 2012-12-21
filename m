@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab2LUPdE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 10:33:04 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:53670 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752165Ab2LUPcw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 10:32:52 -0500
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 10:32:51 EST
+	id S1752315Ab2LUPeA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 10:34:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:19662 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371Ab2LUPdy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 10:33:54 -0500
+Date: Fri, 21 Dec 2012 10:33:48 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: bfields@fieldses.org, linux-nfs@vger.kernel.org
+Subject: nfsd oops on Linus' current tree.
+Message-ID: <20121221153348.GA32151@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, bfields@fieldses.org,
+	linux-nfs@vger.kernel.org
 MIME-Version: 1.0
-X-Originating-IP: [93.172.165.108]
-In-Reply-To: <81C3A93C17462B4BBD7E272753C1057924576E5095@EXDCVYMBSTM005.EQ1STM.local>
-References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
- <1355501220-4572-8-git-send-email-sjur.brandeland@stericsson.com>
- <20121221021801.GD28692@WorkStation.localnet> <81C3A93C17462B4BBD7E272753C1057924576E500F@EXDCVYMBSTM005.EQ1STM.local>
- <20121221134051.GB22252@WorkStation.localnet> <81C3A93C17462B4BBD7E272753C1057924576E5095@EXDCVYMBSTM005.EQ1STM.local>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Fri, 21 Dec 2012 17:26:15 +0200
-Message-ID: <CAK=WgbbaRmhKzibfT4NwDUthdLpCZVO3uo6TrHdJTthp9GHx0w@mail.gmail.com>
-Subject: Re: [RFCv2 07/11] remoteproc: Register virtio devices after vring allocation
-To: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-Cc: Ido Yariv <ido@wizery.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sjur,
+Did a mount from a client (also running Linus current), and the
+server spat this out..
 
-On Fri, Dec 21, 2012 at 3:50 PM, Sjur BRENDELAND
-<sjur.brandeland@stericsson.com> wrote:
-> Yes, but I think this will work if we allocate resources first,
-> and then in the next step register the virtio devices.
-> All the resources for all the vdevs will be allocated first
-> and then rproc_boot will be called.
+[ 6936.306135] ------------[ cut here ]------------
+[ 6936.306154] WARNING: at net/sunrpc/clnt.c:617 rpc_shutdown_client+0x12a/0x1b0 [sunrpc]()
+[ 6936.306156] Hardware name:         
+[ 6936.306157] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables xfs coretemp iTCO_wdt iTCO_vendor_support snd_emu10k1 microcode snd_util_mem snd_ac97_codec ac97_bus snd_hwdep snd_seq snd_pcm snd_page_alloc snd_timer e1000e snd_rawmidi snd_seq_device snd emu10k1_gp pcspkr i2c_i801 soundcore gameport lpc_ich mfd_core i82975x_edac edac_core vhost_net tun macvtap macvlan kvm_intel kvm binfmt_misc nfsd auth_rpcgss nfs_acl lockd sunrpc btrfs libcrc32c zlib_deflate usb_storage firewire_ohci firewire_core sata_sil crc_itu_t radeon i2c_algo_bit drm_kms_helper ttm drm i2c_core floppy
+[ 6936.306214] Pid: 52, comm: kworker/u:2 Not tainted 3.7.0+ #34
+[ 6936.306216] Call Trace:
+[ 6936.306224]  [<ffffffff8106badf>] warn_slowpath_common+0x7f/0xc0
+[ 6936.306227]  [<ffffffff8106bb3a>] warn_slowpath_null+0x1a/0x20
+[ 6936.306235]  [<ffffffffa02c62ca>] rpc_shutdown_client+0x12a/0x1b0 [sunrpc]
+[ 6936.306240]  [<ffffffff81368318>] ? delay_tsc+0x98/0xf0
+[ 6936.306252]  [<ffffffffa034a60b>] nfsd4_process_cb_update.isra.16+0x4b/0x230 [nfsd]
+[ 6936.306256]  [<ffffffff8109677c>] ? __rcu_read_unlock+0x5c/0xa0
+[ 6936.306260]  [<ffffffff81370d46>] ? debug_object_deactivate+0x46/0x130
+[ 6936.306269]  [<ffffffffa034a87d>] nfsd4_do_callback_rpc+0x8d/0xa0 [nfsd]
+[ 6936.306272]  [<ffffffff810900f7>] process_one_work+0x207/0x760
+[ 6936.306274]  [<ffffffff81090087>] ? process_one_work+0x197/0x760
+[ 6936.306277]  [<ffffffff81090afe>] ? worker_thread+0x21e/0x440
+[ 6936.306285]  [<ffffffffa034a7f0>] ? nfsd4_process_cb_update.isra.16+0x230/0x230 [nfsd]
+[ 6936.306289]  [<ffffffff81090a3e>] worker_thread+0x15e/0x440
+[ 6936.306292]  [<ffffffff810908e0>] ? rescuer_thread+0x250/0x250
+[ 6936.306295]  [<ffffffff8109b16d>] kthread+0xed/0x100
+[ 6936.306299]  [<ffffffff810dd86e>] ? put_lock_stats.isra.25+0xe/0x40
+[ 6936.306302]  [<ffffffff8109b080>] ? kthread_create_on_node+0x160/0x160
+[ 6936.306307]  [<ffffffff81711e2c>] ret_from_fork+0x7c/0xb0
+[ 6936.306310]  [<ffffffff8109b080>] ? kthread_create_on_node+0x160/0x160
+[ 6936.306312] ---[ end trace 5bab69e086ae3c6f ]---
+[ 6936.363213] ------------[ cut here ]------------
+[ 6936.363226] WARNING: at fs/nfsd/vfs.c:937 nfsd_vfs_read.isra.13+0x197/0x1b0 [nfsd]()
+[ 6936.363229] Hardware name:         
+[ 6936.363230] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 xt_conntrack nf_conntrack ip6table_filter ip6_tables xfs coretemp iTCO_wdt iTCO_vendor_support snd_emu10k1 microcode snd_util_mem snd_ac97_codec ac97_bus snd_hwdep snd_seq snd_pcm snd_page_alloc snd_timer e1000e snd_rawmidi snd_seq_device snd emu10k1_gp pcspkr i2c_i801 soundcore gameport lpc_ich mfd_core i82975x_edac edac_core vhost_net tun macvtap macvlan kvm_intel kvm binfmt_misc nfsd auth_rpcgss nfs_acl lockd sunrpc btrfs libcrc32c zlib_deflate usb_storage firewire_ohci firewire_core sata_sil crc_itu_t radeon i2c_algo_bit drm_kms_helper ttm drm i2c_core floppy
+[ 6936.363284] Pid: 699, comm: nfsd Tainted: G        W    3.7.0+ #34
+[ 6936.363286] Call Trace:
+[ 6936.363293]  [<ffffffff8106badf>] warn_slowpath_common+0x7f/0xc0
+[ 6936.363296]  [<ffffffff8106bb3a>] warn_slowpath_null+0x1a/0x20
+[ 6936.363302]  [<ffffffffa031ef77>] nfsd_vfs_read.isra.13+0x197/0x1b0 [nfsd]
+[ 6936.363310]  [<ffffffffa0321948>] nfsd_read_file+0x88/0xb0 [nfsd]
+[ 6936.363317]  [<ffffffffa0332956>] nfsd4_encode_read+0x186/0x260 [nfsd]
+[ 6936.363325]  [<ffffffffa03391cc>] nfsd4_encode_operation+0x5c/0xa0 [nfsd]
+[ 6936.363333]  [<ffffffffa032e5a9>] nfsd4_proc_compound+0x289/0x780 [nfsd]
+[ 6936.363339]  [<ffffffffa0319e5b>] nfsd_dispatch+0xeb/0x230 [nfsd]
+[ 6936.363355]  [<ffffffffa02d3d38>] svc_process_common+0x328/0x6d0 [sunrpc]
+[ 6936.363365]  [<ffffffffa02d4433>] svc_process+0x103/0x160 [sunrpc]
+[ 6936.363371]  [<ffffffffa031921b>] nfsd+0xdb/0x160 [nfsd]
+[ 6936.363378]  [<ffffffffa0319140>] ? nfsd_destroy+0x210/0x210 [nfsd]
+[ 6936.363381]  [<ffffffff8109b16d>] kthread+0xed/0x100
+[ 6936.363385]  [<ffffffff810dd86e>] ? put_lock_stats.isra.25+0xe/0x40
+[ 6936.363388]  [<ffffffff8109b080>] ? kthread_create_on_node+0x160/0x160
+[ 6936.363393]  [<ffffffff81711e2c>] ret_from_fork+0x7c/0xb0
+[ 6936.363396]  [<ffffffff8109b080>] ? kthread_create_on_node+0x160/0x160
+[ 6936.363398] ---[ end trace 5bab69e086ae3c70 ]---
 
-This sounds similar to what we had originally, before commit 6db20ea
-"remoteproc: allocate vrings on demand, free when not needed". We can
-revert this, but we then lose the properties 6db20ea provided.
-
-Will Ido's suggestion to count the number of notifiyids in advance
-work for you? at foresight it sounds like it could be just a few lines
-of code, with no real hit on performance.
-
-Thanks and happy holidays!
-Ohad.
