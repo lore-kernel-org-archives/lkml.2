@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab2LUIab (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:30:31 -0500
-Received: from nm26-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.160]:32822 "EHLO
-	nm26-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751678Ab2LUIaY (ORCPT
+	id S1751826Ab2LUIbB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:31:01 -0500
+Received: from nm29-vm5.bullet.mail.ne1.yahoo.com ([98.138.91.251]:44872 "EHLO
+	nm29-vm5.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751091Ab2LUIaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 03:30:24 -0500
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 03:30:23 EST
+	Fri, 21 Dec 2012 03:30:55 -0500
+X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 03:30:54 EST
 X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 746174.16852.bm@omp1029.access.mail.mud.yahoo.com
-X-YMail-OSG: LGadsG4VM1mlfB8mSNVEgePtrqx1s3paivM7Ez3XPu_.z_X
- eUcUBvBAXGDb5vM97hfyTaNDHLPnOt9g1G5BJN5D2vBC61.VOGP7WKZlJFZG
- hemOjdzeOFU6W1jwj_hKctCIlWKwWaD.ovdVHB6Ka5OA5Qs6tLTbspKfUpCf
- RhR2MxSQlOer6czicOefeKQLb5C17iAnp0milMzeyWW4Xzr30X0gLlpWN1vL
- 4ORD3R2J.5fO_GIaQzRXHmyU9oId..T28iF9kSU5LbdM4VAIcgoL.kL4.m9M
- WgJ87I8dJXQNH5GQxB2NjGeDo26zGISIqm5hYLrLbS7gavyB7zfVAsDK_VE3
- P4TkX60QekU4DEHjFipmmlsvJ7NSlKQk6VZE6CnoWP0h6EqLLkQwSbbw2Dj_
- xNo3wo7n9Q5u6intMzpiiHRWb89SA56sZc7N4uqWiPdz0zq31S9KvPi7BZYU
- LwWQL1WwfbQMRoylKmVbaY.aa0lIo166FZjSi2OW8WcDz5qQ7TTAiScXUq2k
- u7Q.a
+X-Yahoo-Newman-Id: 262577.41297.bm@omp1014.access.mail.mud.yahoo.com
+X-YMail-OSG: Ld423M4VM1npkQtyIVit.PciUtKvHHa3Q9_.EdQCW6OIvCC
+ 08hdkv0K18dS93L9Gd.0dq0VVeHNXqWrO3b917l1nFDeuS4vfzxU6ooARG18
+ YZudu9aSlVsJPqW4ufUM9dvbJJTkZlEy6hrB.ZEfhMP34Hg5kbJqiy.NR4.b
+ Aj0aeXbhKFgZHA2_JhU5X2mCNSR2sxPDeS90JVC4xQh4aUvHVOLGhsOnXjtR
+ QM24UDclqAXO3ds53th7WPk.nwHvM1p2sRIzmha.IanoqY4IWAESX9MuXer1
+ hKIc8SQ08E9YlKyZ2NucTvZNej8K_fToMN6QJdh.jmo7aqnrIQGHsTyZfwqU
+ M0Vqi9gY7aP1NTcIHVsVSqjVOSFdIESzCAYwuo1bUIlE3_GuD7X485GikYy7
+ oFVkFDNWcelzylDbYyI21SOAE3dFGp41OGfoloPho8.IfLKl64A3vmXbuGoL
+ BV0Ri.Gob9j9SBb6NU9kH_OtY1duEnH4pxOAmkLzcpsqclHdB2ZvCLihY_y7
+ q.ZBn
 X-Rocket-MIMEInfo: 001.001,IApHb29kIERheSBLaW5kbHkgT3BlbiBUaGUgQXR0YWNobWVudCBGaWxlICAgICAgICAgICAgICAgICAgICAgICAgATABAQEB
 X-RocketYMMF: webmega646
 X-Mailer: YahooMailRC/718 YahooMailWebService/0.8.129.483
-Message-ID: <1356078273.49350.YahooMailRC@web5720.biz.mail.ne1.yahoo.com>
-Date: Fri, 21 Dec 2012 00:24:33 -0800 (PST)
+Message-ID: <1356078306.11004.YahooMailRC@web5712.biz.mail.ne1.yahoo.com>
+Date: Fri, 21 Dec 2012 00:25:06 -0800 (PST)
 From: Thabopeter <thabopeter2011@gmail.com>
 Reply-To: Thabopeter <thabopeters@hotmail.com>
 Subject: INVESTMENT ASSISTANCE
 To: undisclosed recipients:;
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="1181194666-1076079246-1356078273=:49350"
+Content-Type: multipart/mixed; boundary="941025335-17805849-1356078306=:11004"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1181194666-1076079246-1356078273=:49350
+--941025335-17805849-1356078306=:11004
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: quoted-printable
 
  =0AGood Day Kindly Open The Attachment File                        
---1181194666-1076079246-1356078273=:49350
+--941025335-17805849-1356078306=:11004
 Content-Type: application/msword; name=INVESTMENT
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename="INVESTMENT ASSISTANCE.doc"
@@ -1127,4 +1127,4 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
 
---1181194666-1076079246-1356078273=:49350--
+--941025335-17805849-1356078306=:11004--
