@@ -1,120 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2LUSVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 13:21:23 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:36075 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab2LUSVP (ORCPT
+	id S1752159Ab2LUSYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 13:24:54 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:36839 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352Ab2LUSYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 13:21:15 -0500
-Date: Fri, 21 Dec 2012 10:21:16 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [patch] mm, mempolicy: Introduce spinlock to read shared policy
- tree
-In-Reply-To: <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1212210944050.1699@eggly.anvils>
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org> <1353624594-1118-19-git-send-email-mingo@kernel.org> <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com> <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
- <alpine.DEB.2.00.1212201440250.7807@chino.kir.corp.google.com> <20121221134740.GC13367@suse.de> <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Fri, 21 Dec 2012 13:24:49 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20121218171217.GD7155@moon>
+References: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
+ <1342995307-884-2-git-send-email-gorcunov@openvz.org> <CAKgNAkj-=wLEM+SjA_S8GUp0+0o5R4NuDH4fL-8H-pKCKdLryA@mail.gmail.com>
+ <20121218170624.GA7148@moon> <20121218171217.GD7155@moon>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 21 Dec 2012 19:24:27 +0100
+Message-ID: <CAKgNAkg536wfJy6WjjLANamchZg0XQ3sAHtCtvPtgCkTu_hHMw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Add kcmp.2 manpage
+To: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Dec 2012, Linus Torvalds wrote:
-> On Fri, Dec 21, 2012 at 5:47 AM, Mel Gorman <mgorman@suse.de> wrote:
-> > On Thu, Dec 20, 2012 at 02:55:22PM -0800, David Rientjes wrote:
-> >>
-> >> This is probably worth discussing now to see if we can't revert
-> >> b22d127a39dd ("mempolicy: fix a race in shared_policy_replace()"), keep it
-> >> only as a spinlock as you suggest, and do what KOSAKI suggested in
-> >> http://marc.info/?l=linux-kernel&m=133940650731255 instead.  I don't think
-> >> it's worth trying to optimize this path at the cost of having both a
-> >> spinlock and mutex.
-> >
-> > Jeez, I'm still not keen on that approach for the reasons that are explained
-> > in the changelog for b22d127a39dd.
-> 
-> Christ, Mel.
-> 
-> Your reasons in b22d127a39dd are weak as hell, and then you come up
-> with *THIS* shit instead:
-> 
-> > That leads to this third *ugly* option that conditionally drops the lock
-> > and it's up to the caller to figure out what happened. Fooling around with
-> > how it conditionally releases the lock results in different sorts of ugly.
-> > We now have three ugly sister patches for this. Who wants to be Cinderalla?
-> >
-> > ---8<---
-> > mm: numa: Release the PTL if calling vm_ops->get_policy during NUMA hinting faults
-> 
-> Heck no. In fact, not a f*cking way in hell. Look yourself in the
-> mirror, Mel. This patch is ugly, and *guaranteed* to result in subtle
-> locking issues, and then you have the *gall* to quote the "uhh, that's
-> a bit ugly due to some trivial duplication" thing in commit
-> b22d127a39dd.
-> 
-> Reverting commit b22d127a39dd and just having a "ok, if we need to
-> allocate, then drop the lock, allocate, re-get the lock, and see if we
-> still need the new allocation" is *beautiful* code compared to the
-> diseased abortion you just posted.
-> 
-> Seriously. Conditional locking is error-prone, and about a million
-> times worse than the trivial fix that Kosaki suggested.
+On Tue, Dec 18, 2012 at 6:12 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+> On Tue, Dec 18, 2012 at 09:06:24PM +0400, Cyrill Gorcunov wrote:
+>> On Tue, Dec 18, 2012 at 05:54:49PM +0100, Michael Kerrisk (man-pages) wrote:
+>> > Hello Cyrill,
+>> >
+>> > On Mon, Jul 23, 2012 at 12:15 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
+>> > > NAME
+>> > >        kcmp - compare if two processes do share a particular kernel resource
+>> >
+>> > Very late follow up on this page, sorry. You didn't provide a
+>> > copyright or license for this page. Could you please supply that
+>> > information. See http://www.kernel.org/doc/man-pages/licenses.html .
+>>
+>> Sure, gimme some time to update it...
+>
+> Something like below?
 
-I'm picking up a vibe that you don't entirely like Mel's approach.
+Yep, that's fine. I've done some substantial editing and added several
+pieces to the page.  Could you take a careful look at the version to
+see that I have not injected any inaccuracies?
 
-I've an unsubstantiated suspicion that it's also incomplete as is.
-Although at first I thought huge_memory.c does not need a similar
-mod, because THPages are anonymous and cannot come from tmpfs,
-I now wonder about a MAP_PRIVATE mapping from tmpfs - for better
-or for worse, anon pages there are subject to the same mempolicy
-as the shared file pages, and I don't see what prevents khugepaged
-from gathering those into THPages.  But it didn't happen when I
-tried, so maybe I'm just missing what prevents it.
+Thanks,
 
-I don't understand David's and Mel's remarks about the "shared pages"
-check making Sasha's warning unlikely: page_mapcount has nothing to do
-with whether a page belongs to shm/shmem/tmpfs, and it's easy enough
-to reproduce Sasha's warning on the current git tree.  "mount -o
-remount,mpol=local /tmp" or something like that is useful in testing.
+Michael
 
-I wish wish wish I had time to spend on this today, but I don't.
-And I've not looked to see (let alone tested) whether it's easy
-to revert Mel's mutex then add in Kosaki's patch (which I didn't
-look at so have no opinion on).
 
-Shall we go for Peter/David's mutex+spinlock for rc1 - I assume
-they both tested that - with a promise to do better in rc2?
+.\" Copyright (C) 2012, Cyrill Gorcunov <gorcunov@openvz.org>
+.\" and Copyright (C) 2012, Michael Kerrisk <mtk.manpages@gmail.com>
+.\"
+.\" Permission is granted to make and distribute verbatim copies of this
+.\" manual provided the copyright notice and this permission notice are
+.\" preserved on all copies.
+.\"
+.\" Permission is granted to copy and distribute modified versions of
+.\" this manual under the conditions for verbatim copying, provided that
+.\" the entire resulting derived work is distributed under the terms of
+.\" a permission notice identical to this one.
+.\"
+.\" Since the Linux kernel and libraries are constantly changing, this
+.\" manual page may be incorrect or out-of-date.  The author(s) assume.
+.\" no responsibility for errors or omissions, or for damages resulting.
+.\" from the use of the information contained herein.  The author(s) may.
+.\" not have taken the same level of care in the production of this.
+.\" manual, which is licensed free of charge, as they might when working.
+.\" professionally.
+.\"
+.\" Formatted or processed versions of this manual, if unaccompanied by
+.\" the source, must acknowledge the copyright and authors of this work.
+.\"
+.\" Kernel commit d97b46a64674a267bc41c9e16132ee2a98c3347d
+.\"
+.TH KCMP 2 2012-12-19 "Linux" "Linux Programmer's Manual"
 
-What I wanted to try is separate the get_vma_policy() out from
-mpol_misplaced(), and have the various callsites do that first
-outside the page table lock, passing it in to mpol_misplaced.
-But that doesn't work (efficiently) unless it also returns the
-range that that policy is valid for, so we don't have to (drop
-lock and) call it on every pte.  I cannot do that for rc1, and
-perhaps it's irrelevant if Kosaki's patch is preferred.
+.SH NAME
+kcmp \- compare two processes to determine if they share a kernel resource
 
-(Perhaps I should confess I've another reason to come here for
-rc2: that "+ info->vfs_inode.i_ino" we recently added for better
-interleave distribution in shmem_alloc_page: I think NUMA placement
-faults will be fighting shmem_alloc_page's choices because that
-offset is not exposed.)
+.SH SYNOPSIS
+.nf
+.B #include <linux/kcmp.h>
 
-Hugh
+.BI "int kcmp(pid_t " pid1 ", pid_t " pid2 ", int " type ,
+.BI "         unsigned long " idx1 ", unsigned long "  idx2 );
+
+.fi
+
+.IR Note :
+There is no glibc wrapper for this system call; see NOTES.
+
+.SH DESCRIPTION
+The
+.BR kcmp ()
+system call can be used to check whether the two processes identified by
+.I pid1
+and
+.I pid2
+share a kernel resource such as virtual memory, file descriptors,
+and so on.
+
+The
+.I type
+argument specifies which resource is to be compared in the two processes.
+It has one of the following values:
+
+.TP
+.BR KCMP_FILE
+Check whether a file descriptor
+.I idx1
+in the process
+.I pid1
+refers to the same open file description (see
+.BR open (2))
+as file descriptor
+.I idx2
+in the process
+.IR pid2 .
+
+.TP
+.BR KCMP_FILES
+Check whether the process share the same set of open file descriptors.
+The arguments
+.I idx1
+and
+.I idx2
+are ignored.
+
+.TP
+.BR KCMP_FS
+Check whether the processes share the same file system information
+(i.e., file mode creation mask, working directory, and file system root).
+The arguments
+.I idx1
+and
+.I idx2
+are ignored.
+
+.TP
+.BR KCMP_IO
+Check whether the processes share I/O context.
+The arguments
+.I idx1
+and
+.I idx2
+are ignored.
+
+.TP
+.BR KCMP_SIGHAND
+Check whether the processes share the same table of signal dispositions.
+The arguments
+.I idx1
+and
+.I idx2
+are ignored.
+
+.TP
+.BR KCMP_SYSVSEM
+Check whether the processes share the same
+list of System V semaphore undo operations.
+The arguments
+.I idx1
+and
+.I idx2
+are ignored.
+
+.TP
+.BR KCMP_VM
+Check whether the processes share the same address space.
+The arguments
+.I idx1
+and
+.I idx2
+are ignored.
+
+.PP
+Note the
+.BR kcmp ()
+is not protected against false positives which may have place if tasks are
+running.
+Which means one should stop tasks being inspected with this syscall to obtain
+meaningful results.
+
+.SH "RETURN VALUE"
+The return value of a successful call to
+.BR kcmp ()
+is simply the result of arithmetic comparison
+of kernel pointers (when the kernel compares resources, it uses their
+memory addresses).
+
+The easiest way to explain is to consider an example.
+Suppose that
+.I v1
+and
+.I v2
+are the addresses of appropriate resources, then the return value
+is one of the following:
+
+.RS 4
+.IP 0 4
+.I v1
+is equal to
+.IR v2 ;
+in other words, the two processes share the resource.
+
+.IP 1
+.I v1
+is less than
+.IR v2 .
+
+.IP 2
+.I v1
+is greater than
+.IR v2 .
+
+.IP 3
+.I v1
+is not equal to
+.IR v2 ,
+but ordering information is unavailable.
+.RE
+
+.PP
+On error, \-1 is returned, and
+.I errno
+is set appropriately.
+
+.B kcmp ()
+was designed to return values suitable for sorting.
+This is particularly handy if one needs to compare
+a large number of file descriptors.
+
+.SH ERRORS
+
+.TP
+.B EBADF
+.I type
+is
+.B KCMP_FILE
+and
+.I fd1
+or
+.I fd2
+is not an open file descriptor.
+.TP
+.B EINVAL
+.I type
+is invalid.
+.TP
+.B EPERM
+Insufficient permission to inspect process resources.
+The
+.B CAP_SYS_PTRACE
+capability is required to inspect processes that you do not own.
+.TP
+.B ESRCH
+Process
+.I pid1
+or
+.I pid2
+does not exist.
+
+.SH VERSIONS
+The
+.BR kcmp ()
+system call first appeared in Linux 3.5.
+
+.SH "CONFORMING TO"
+.BR kcmp ()
+is Linux specific and should not be used in programs intended to be portable.
+
+.SH NOTES
+Glibc does not provide a wrapper for this system call; call it using
+.BR syscall (2).
+
+This system call is available only if the kernel was configured with
+.BR CONFIG_CHECKPOINT_RESTORE .
+The main use of the system call is for the
+checkpoint/restore in user space (CRIU) feature.
+The alternative to this system call would have been to expose suitable
+process information via the
+.BR proc (5)
+file system; this was deemed to be unsuitable for security reasons.
+
+See
+.BR clone (2)
+for some background information on the shared resources
+referred to on this page.
+
+.SH "SEE ALSO"
+.BR clone (2),
+.BR unshare (2)
