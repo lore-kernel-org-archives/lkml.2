@@ -1,382 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690Ab2LUOId (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 09:08:33 -0500
-Received: from www.linutronix.de ([62.245.132.108]:52734 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab2LUOI1 (ORCPT
+	id S1752051Ab2LUOJp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 09:09:45 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:50093 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751251Ab2LUOJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 09:08:27 -0500
-From: Torben Hohn <torbenh@linutronix.de>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
-        Torben Hohn <torbenh@linutronix.de>
-Subject: [PATCH] rtc: add support for spi rtc rx4581
-Date: Fri, 21 Dec 2012 15:08:02 +0100
-Message-Id: <1356098882-10732-1-git-send-email-torbenh@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 21 Dec 2012 09:09:39 -0500
+Date: Fri, 21 Dec 2012 15:09:35 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: Terje Bergstrom <tbergstrom@nvidia.com>, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4 8/8] gpu: host1x: Register DRM dummy device
+Message-ID: <20121221140935.GB9729@avionic-0098.adnet.avionic-design.de>
+References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com>
+ <1356089964-5265-9-git-send-email-tbergstrom@nvidia.com>
+ <1356098031.1490.111.camel@tellur>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="kXdP64Ggrk/fb43R"
+Content-Disposition: inline
+In-Reply-To: <1356098031.1490.111.camel@tellur>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:0VweZntXKrhgF4lsjvup30q5eob5e1r+OoCz8RyyqjD
+ xWzL0saEY9iPsCOYMBOvhc85XJwbpywtlelevGOjD+40DJxHdz
+ 6e7DsZuvyS8hRClfsYhGGUPAr6UvruXqS2fXLg5uA8qJRnDd2g
+ SQupv9RqiZDsbQ+8fT8UM4nZLGbYaeAgOLPSBUr7Mu+29y/ULu
+ iccDfZ4lS81gLfI8syeb7xM/qIOZn6C9KhF9XrfWrMSbWhFOAU
+ qeIJLJXUCcslfX4ZUMJKUPi3mSKdLWjcnXdlGhUJWbQpKeVCXG
+ /yyW1S7JXvwTIiCuTIsHZ3TqNWLMBF3GNkXgaVALxlPP4wJHFU
+ oholzN98W/aJofu3GyQqlke4RvU+rQRotXC0yLT/iRu35FM+iR
+ 01nxvshnQy4Vl8voRfWHii1pysjrT7IFLQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Torben Hohn <torbenh@linutronix.de>
----
- drivers/rtc/Kconfig      |    8 ++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-rx4581.c |  313 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 322 insertions(+)
- create mode 100644 drivers/rtc/rtc-rx4581.c
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index d0cea02..64ce23f 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -519,6 +519,14 @@ config RTC_DRV_PCF2123
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-pcf2123.
- 
-+config RTC_DRV_RX4581
-+	tristate "Epson RX-4581"
-+	help
-+	  If you say yes here you will get support for the Epson RX-4581.
-+
-+	  This driver can also be built as a module. If so the module
-+	  will be called rtc-rx4581.
-+
- endif # SPI_MASTER
- 
- comment "Platform RTC drivers"
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index c3f62c8..9b63071 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -95,6 +95,7 @@ obj-$(CONFIG_RTC_DRV_RS5C313)	+= rtc-rs5c313.o
- obj-$(CONFIG_RTC_DRV_RS5C348)	+= rtc-rs5c348.o
- obj-$(CONFIG_RTC_DRV_RS5C372)	+= rtc-rs5c372.o
- obj-$(CONFIG_RTC_DRV_RV3029C2)	+= rtc-rv3029c2.o
-+obj-$(CONFIG_RTC_DRV_RX4581)	+= rtc-rx4581.o
- obj-$(CONFIG_RTC_DRV_RX8025)	+= rtc-rx8025.o
- obj-$(CONFIG_RTC_DRV_RX8581)	+= rtc-rx8581.o
- obj-$(CONFIG_RTC_DRV_S35390A)	+= rtc-s35390a.o
-diff --git a/drivers/rtc/rtc-rx4581.c b/drivers/rtc/rtc-rx4581.c
-new file mode 100644
-index 0000000..c49315f
---- /dev/null
-+++ b/drivers/rtc/rtc-rx4581.c
-@@ -0,0 +1,313 @@
-+/* drivers/rtc/rtc-rx4581.c
-+ *
-+ * written by Torben Hohn <torbenh@linutronix.de>
-+ *
-+ * Based on:
-+ * drivers/rtc/rtc-max6902.c
-+ *
-+ * Copyright (C) 2006 8D Technologies inc.
-+ * Copyright (C) 2004 Compulab Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Driver for MAX6902 spi RTC
-+ *
-+ * and based on:
-+ * drivers/rtc/rtc-rx8581.c
-+ *
-+ * An I2C driver for the Epson RX8581 RTC
-+ *
-+ * Author: Martyn Welch <martyn.welch@ge.com>
-+ * Copyright 2008 GE Intelligent Platforms Embedded Systems, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Based on: rtc-pcf8563.c (An I2C driver for the Philips PCF8563 RTC)
-+ * Copyright 2005-06 Tower Technologies
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/platform_device.h>
-+#include <linux/init.h>
-+#include <linux/rtc.h>
-+#include <linux/spi/spi.h>
-+#include <linux/bcd.h>
-+
-+#define RX4581_REG_SC		0x00 /* Second in BCD */
-+#define RX4581_REG_MN		0x01 /* Minute in BCD */
-+#define RX4581_REG_HR		0x02 /* Hour in BCD */
-+#define RX4581_REG_DW		0x03 /* Day of Week */
-+#define RX4581_REG_DM		0x04 /* Day of Month in BCD */
-+#define RX4581_REG_MO		0x05 /* Month in BCD */
-+#define RX4581_REG_YR		0x06 /* Year in BCD */
-+#define RX4581_REG_RAM		0x07 /* RAM */
-+#define RX4581_REG_AMN		0x08 /* Alarm Min in BCD*/
-+#define RX4581_REG_AHR		0x09 /* Alarm Hour in BCD */
-+#define RX4581_REG_ADM		0x0A
-+#define RX4581_REG_ADW		0x0A
-+#define RX4581_REG_TMR0		0x0B
-+#define RX4581_REG_TMR1		0x0C
-+#define RX4581_REG_EXT		0x0D /* Extension Register */
-+#define RX4581_REG_FLAG		0x0E /* Flag Register */
-+#define RX4581_REG_CTRL		0x0F /* Control Register */
-+
-+
-+/* Flag Register bit definitions */
-+#define RX4581_FLAG_UF		0x20 /* Update */
-+#define RX4581_FLAG_TF		0x10 /* Timer */
-+#define RX4581_FLAG_AF		0x08 /* Alarm */
-+#define RX4581_FLAG_VLF		0x02 /* Voltage Low */
-+
-+/* Control Register bit definitions */
-+#define RX4581_CTRL_UIE		0x20 /* Update Interrupt Enable */
-+#define RX4581_CTRL_TIE		0x10 /* Timer Interrupt Enable */
-+#define RX4581_CTRL_AIE		0x08 /* Alarm Interrupt Enable */
-+#define RX4581_CTRL_STOP	0x02 /* STOP bit */
-+#define RX4581_CTRL_RESET	0x01 /* RESET bit */
-+
-+static int rx4581_set_reg(struct device *dev, unsigned char address,
-+				unsigned char data)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	unsigned char buf[2];
-+
-+	/* high nibble must be '0' to write */
-+	buf[0] = address & 0x0f;
-+	buf[1] = data;
-+
-+	return spi_write_then_read(spi, buf, 2, NULL, 0);
-+}
-+
-+static int rx4581_get_reg(struct device *dev, unsigned char address,
-+				unsigned char *data)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	/* Set MSB to indicate read */
-+	*data = address | 0x80;
-+
-+	return spi_write_then_read(spi, data, 1, data, 1);
-+}
-+
-+/*
-+ * In the routines that deal directly with the rx8581 hardware, we use
-+ * rtc_time -- month 0-11, hour 0-23, yr = calendar year-epoch.
-+ */
-+static int rx4581_get_datetime(struct device *dev, struct rtc_time *tm)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	unsigned char date[7];
-+	unsigned char data, err;
-+
-+	/* First we ensure that the "update flag" is not set, we read the
-+	 * time and date then re-read the "update flag". If the update flag
-+	 * has been set, we know that the time has changed during the read so
-+	 * we repeat the whole process again.
-+	 */
-+	err = rx4581_get_reg(dev, RX4581_REG_FLAG, &data);
-+	if (err != 0) {
-+		dev_err(dev, "Unable to read device flags\n");
-+		return -EIO;
-+	}
-+
-+	do {
-+		/* If update flag set, clear it */
-+		if (data & RX4581_FLAG_UF) {
-+			err = rx4581_set_reg(dev,
-+				RX4581_REG_FLAG, (data & ~RX4581_FLAG_UF));
-+			if (err != 0) {
-+				dev_err(dev, "Unable to write device "
-+					"flags\n");
-+				return -EIO;
-+			}
-+		}
-+
-+		/* Now read time and date */
-+		date[0] = 0x80;
-+		err = spi_write_then_read(spi, date, 1, date, 7);
-+		if (err < 0) {
-+			dev_err(dev, "Unable to read date\n");
-+			return -EIO;
-+		}
-+
-+		/* Check flag register */
-+		err = rx4581_get_reg(dev, RX4581_REG_FLAG, &data);
-+		if (err != 0) {
-+			dev_err(dev, "Unable to read device flags\n");
-+			return -EIO;
-+		}
-+	} while (data & RX4581_FLAG_UF);
-+
-+	if (data & RX4581_FLAG_VLF)
-+		dev_info(dev,
-+			"low voltage detected, date/time is not reliable.\n");
-+
-+	dev_dbg(dev,
-+		"%s: raw data is sec=%02x, min=%02x, hr=%02x, "
-+		"wday=%02x, mday=%02x, mon=%02x, year=%02x\n",
-+		__func__,
-+		date[0], date[1], date[2], date[3], date[4], date[5], date[6]);
-+
-+	tm->tm_sec = bcd2bin(date[RX4581_REG_SC] & 0x7F);
-+	tm->tm_min = bcd2bin(date[RX4581_REG_MN] & 0x7F);
-+	tm->tm_hour = bcd2bin(date[RX4581_REG_HR] & 0x3F); /* rtc hr 0-23 */
-+	tm->tm_wday = ilog2(date[RX4581_REG_DW] & 0x7F);
-+	tm->tm_mday = bcd2bin(date[RX4581_REG_DM] & 0x3F);
-+	tm->tm_mon = bcd2bin(date[RX4581_REG_MO] & 0x1F) - 1; /* rtc mn 1-12 */
-+	tm->tm_year = bcd2bin(date[RX4581_REG_YR]);
-+	if (tm->tm_year < 70)
-+		tm->tm_year += 100;	/* assume we are in 1970...2069 */
-+
-+
-+	dev_dbg(dev, "%s: tm is secs=%d, mins=%d, hours=%d, "
-+		"mday=%d, mon=%d, year=%d, wday=%d\n",
-+		__func__,
-+		tm->tm_sec, tm->tm_min, tm->tm_hour,
-+		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
-+
-+	err = rtc_valid_tm(tm);
-+	if (err < 0)
-+		dev_err(dev, "retrieved date/time is not valid.\n");
-+
-+	return err;
-+}
-+
-+static int rx4581_set_datetime(struct device *dev, struct rtc_time *tm)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	int err;
-+	unsigned char buf[8], data;
-+
-+	dev_dbg(dev, "%s: secs=%d, mins=%d, hours=%d, "
-+		"mday=%d, mon=%d, year=%d, wday=%d\n",
-+		__func__,
-+		tm->tm_sec, tm->tm_min, tm->tm_hour,
-+		tm->tm_mday, tm->tm_mon, tm->tm_year, tm->tm_wday);
-+
-+	buf[0] = 0x00;
-+	/* hours, minutes and seconds */
-+	buf[RX4581_REG_SC+1] = bin2bcd(tm->tm_sec);
-+	buf[RX4581_REG_MN+1] = bin2bcd(tm->tm_min);
-+	buf[RX4581_REG_HR+1] = bin2bcd(tm->tm_hour);
-+
-+	buf[RX4581_REG_DM+1] = bin2bcd(tm->tm_mday);
-+
-+	/* month, 1 - 12 */
-+	buf[RX4581_REG_MO+1] = bin2bcd(tm->tm_mon + 1);
-+
-+	/* year and century */
-+	buf[RX4581_REG_YR+1] = bin2bcd(tm->tm_year % 100);
-+	buf[RX4581_REG_DW+1] = (0x1 << tm->tm_wday);
-+
-+	/* Stop the clock */
-+	err = rx4581_get_reg(dev, RX4581_REG_CTRL, &data);
-+	if (err != 0) {
-+		dev_err(dev, "Unable to read control register\n");
-+		return -EIO;
-+	}
-+
-+	err = rx4581_set_reg(dev, RX4581_REG_CTRL,
-+		(data | RX4581_CTRL_STOP));
-+	if (err != 0) {
-+		dev_err(dev, "Unable to write control register\n");
-+		return -EIO;
-+	}
-+
-+	/* write register's data */
-+	err = spi_write_then_read(spi, buf, 8, NULL, 0);
-+	if (err != 0) {
-+		dev_err(dev, "Unable to write to date registers\n");
-+		return -EIO;
-+	}
-+
-+	/* get VLF and clear it */
-+	err = rx4581_get_reg(dev, RX4581_REG_FLAG, &data);
-+	if (err != 0) {
-+		dev_err(dev, "Unable to read flag register\n");
-+		return -EIO;
-+	}
-+
-+	err = rx4581_set_reg(dev, RX4581_REG_FLAG,
-+		(data & ~(RX4581_FLAG_VLF)));
-+	if (err != 0) {
-+		dev_err(dev, "Unable to write flag register\n");
-+		return -EIO;
-+	}
-+
-+	/* Restart the clock */
-+	err = rx4581_get_reg(dev, RX4581_REG_CTRL, &data);
-+	if (err != 0) {
-+		dev_err(dev, "Unable to read control register\n");
-+		return -EIO;
-+	}
-+
-+	err = rx4581_set_reg(dev, RX4581_REG_CTRL,
-+		(data & ~(RX4581_CTRL_STOP)));
-+	if (err != 0) {
-+		dev_err(dev, "Unable to write control register\n");
-+		return -EIO;
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct rtc_class_ops rx4581_rtc_ops = {
-+	.read_time	= rx4581_get_datetime,
-+	.set_time	= rx4581_set_datetime,
-+};
-+
-+static int __devinit rx4581_probe(struct spi_device *spi)
-+{
-+	struct rtc_device *rtc;
-+	unsigned char tmp;
-+	int res;
-+
-+	res = rx4581_get_reg(&spi->dev, RX4581_REG_SC, &tmp);
-+	if (res != 0)
-+		return res;
-+
-+	rtc = rtc_device_register("rx4581",
-+				&spi->dev, &rx4581_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(rtc))
-+		return PTR_ERR(rtc);
-+
-+	dev_set_drvdata(&spi->dev, rtc);
-+	return 0;
-+}
-+
-+static int __devexit rx4581_remove(struct spi_device *spi)
-+{
-+	struct rtc_device *rtc = dev_get_drvdata(&spi->dev);
-+
-+	rtc_device_unregister(rtc);
-+	return 0;
-+}
-+
-+static const struct spi_device_id rx4581_id[] = {
-+	{ "rx4581", 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(spi, rx4581_id);
-+
-+static struct spi_driver rx4581_driver = {
-+	.driver = {
-+		.name	= "rtc-rx4581",
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe	= rx4581_probe,
-+	.remove = __devexit_p(rx4581_remove),
-+	.id_table = rx4581_id,
-+};
-+
-+module_spi_driver(rx4581_driver);
-+
-+MODULE_DESCRIPTION ("rx4581 spi RTC driver");
-+MODULE_AUTHOR ("Torben Hohn");
-+MODULE_LICENSE ("GPL");
-+MODULE_ALIAS("spi:rtc-rx4581");
--- 
-1.7.10.4
+--kXdP64Ggrk/fb43R
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
+On Fri, Dec 21, 2012 at 02:53:51PM +0100, Lucas Stach wrote:
+> Am Freitag, den 21.12.2012, 13:39 +0200 schrieb Terje Bergstrom:
+[...]
+> > +void host1x_unregister_drm_device(struct host1x *host1x)
+> > +{
+> > +	if (host1x->drm_device)
+> > +		platform_device_unregister(host1x->drm_device);
+> > +}
+> > +EXPORT_SYMBOL(host1x_unregister_drm_device);
+> > +
+> > +struct platform_device *host1x_drm_device(struct platform_device *pdev)
+> > +{
+> > +	struct host1x *host = platform_get_drvdata(pdev);
+> > +	return host->drm_device;
+> > +}
+> > +EXPORT_SYMBOL(host1x_drm_device);
+> This should be called host1x_get_drm_device
+
+Or maybe even host1x_drm_get_device() to make it more obvious that it
+doesn't return a struct drm_device. Also I think it would be better to
+make it take a struct device * and return a struct device * instead.
+Users of the API will probably call this like so:
+
+	struct device *dummy = host1x_drm_get_device(pdev->dev.parent);
+	struct drm_device *drm = dev_get_drvdata(dummy);
+
+So we save ourselves some needless up-casting.
+
+Thierry
+
+--kXdP64Ggrk/fb43R
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ1G2fAAoJEN0jrNd/PrOh8goP/3/mlTk7KUz2hI8V5KTQrrlu
+v0HpANG7CrXsW9Js9fVFL4mfaKK3+x/FycRvbgZecBBYPbuSyT3LdPzsnhVZAf1Y
+C6hXFf66cxYLQHihAPTLqIcajYq8h4RjvtL5GdthxB6HhCAlWrv/tDdhnUZJbfD6
+B1mwrgJUJga8GHvfjmolPt+xHeRxCmIKwUjNlBnki92NnIo3pyX7SILNny2UXAPi
+1/kMilGOCnnKO8Q/LhFe2tSVZ1YgNlZlLOCNjuGo5E4RJHsskn4c3fnu41xxYBRp
+Zar1kwM8SXBVWjvCov+YbUwld8P5KhAif7fkfklzVvi1M8ylLHodApplc+CEyglW
+xVxSDzyTG0txQNRuivtXkdTD9DEUzkfkTx7TRI4txDhCfW3mQUF+dtLqwe3a+lGr
+VfEQCziTjK3uN9U7MapOB0M+EHVEOgBV0R/4H6gavZ5UvDSks4IaSMwAIicpLojp
+/DFgXqCKL2TyhcRT1uLbfBrJ6LAX/33haNfnsU3VYyKvo1EF5TJbdzzQ1uJE2vvi
+cM/x1oWqaNt32divgGHv13ctaV3eKLdG4VlnnZpcZ238JGniOis3P4l1mRRi6Xjp
+Q8oyK5uPdX6w4zzgOXzsAYlEsK3OIUN95laPf+7zZhYigQSooK/UEmj8ifLR5Lkq
+izZWjBq97PBIg/kkarC+
+=aQmT
+-----END PGP SIGNATURE-----
+
+--kXdP64Ggrk/fb43R--
