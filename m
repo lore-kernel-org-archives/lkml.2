@@ -1,170 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539Ab2LUTCm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 14:02:42 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39192 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab2LUTCe (ORCPT
+	id S1752501Ab2LUTEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 14:04:25 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:41945 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab2LUTEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 14:02:34 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: rientjes@google.com, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] mm/huge_memory: use new hashtable implementation
-Date: Fri, 21 Dec 2012 13:59:00 -0500
-Message-Id: <1356116342-2121-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 21 Dec 2012 14:04:20 -0500
+Date: Fri, 21 Dec 2012 13:04:16 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: [PATCH 00/19] MAINTAINERS: fix file patterns
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+References: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
+	<1355264351.24219.8.camel@joe-AO722> <1356105142.19585.13.camel@joe-AO722>
+In-Reply-To: <1356105142.19585.13.camel@joe-AO722> (from joe@perches.com on
+	Fri Dec 21 09:52:22 2012)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1356116656.21178.1@driftwood>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-WWX37GV8SIzjQgIuh1gt"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch hugemem to use the new hashtable implementation. This reduces the
-amount of generic unrelated code in the hugemem.
+--=-WWX37GV8SIzjQgIuh1gt
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This also removes the dymanic allocation of the hash table. The upside is that
-we save a pointer dereference when accessing the hashtable, but we lose 8KB
-if CONFIG_TRANSPARENT_HUGEPAGE is enabled but the processor doesn't
-support hugepages.
+On 12/21/2012 09:52:22 AM, Joe Perches wrote:
+> On Tue, 2012-12-11 at 14:19 -0800, Joe Perches wrote:
+> > On Tue, 2012-12-11 at 19:49 -0200, Cesar Eduardo Barros wrote:
+> > > I could not find the maintainer for the MAINTAINERS file, so =20
+> sending
+> > > directly to Linus. Sorry if I am mistaken.
+> >
+> > Thanks Cesar.
+> >
+> > Most maintainers patches are picked up by Andrew Morton (cc'd)
 
-This patch depends on d9b482c ("hashtable: introduce a small and naive
-hashtable") which was merged in v3.6.
+Which implies... (attached because Balsa damages whitespace).
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
-Changes in v2:
- - Addressed comments by David Rientjes.
+Rob=
 
- mm/huge_memory.c | 54 +++++++++---------------------------------------------
- 1 file changed, 9 insertions(+), 45 deletions(-)
+--=-WWX37GV8SIzjQgIuh1gt
+Content-Type: text/x-patch; charset=us-ascii; name=maintainers.patch
+Content-Disposition: attachment; filename=maintainers.patch
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 9e894ed..f62654c 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -20,6 +20,7 @@
- #include <linux/mman.h>
- #include <linux/pagemap.h>
- #include <linux/migrate.h>
-+#include <linux/hashtable.h>
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 4e2a1f6..3c30157 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -646,7 +646,7 @@ F:	arch/arm/
  
- #include <asm/tlb.h>
- #include <asm/pgalloc.h>
-@@ -62,12 +63,11 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
- static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
+ ARM SUB-ARCHITECTURES
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+-S:	MAINTAINED
++S:	Maintained
+ F:	arch/arm/mach-*/
+ F:	arch/arm/plat-*/
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
+@@ -4859,6 +4859,11 @@ S:	Maintained
+ F:	drivers/net/macvlan.c
+ F:	include/linux/if_macvlan.h
  
- static int khugepaged(void *none);
--static int mm_slots_hash_init(void);
- static int khugepaged_slab_init(void);
--static void khugepaged_slab_free(void);
- 
--#define MM_SLOTS_HASH_HEADS 1024
--static struct hlist_head *mm_slots_hash __read_mostly;
-+#define MM_SLOTS_HASH_BITS 10
-+static __read_mostly DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
++MAINTAINERS: UPDATES TO THIS FILE
++M:	Andrew Morton <akpm@linux-foundation.org>
++S:	Maintained
++F:	MAINTAINERS
 +
- static struct kmem_cache *mm_slot_cache __read_mostly;
- 
- /**
-@@ -634,12 +634,6 @@ static int __init hugepage_init(void)
- 	if (err)
- 		goto out;
- 
--	err = mm_slots_hash_init();
--	if (err) {
--		khugepaged_slab_free();
--		goto out;
--	}
--
- 	register_shrinker(&huge_zero_page_shrinker);
- 
- 	/*
-@@ -1893,12 +1887,6 @@ static int __init khugepaged_slab_init(void)
- 	return 0;
- }
- 
--static void __init khugepaged_slab_free(void)
--{
--	kmem_cache_destroy(mm_slot_cache);
--	mm_slot_cache = NULL;
--}
--
- static inline struct mm_slot *alloc_mm_slot(void)
- {
- 	if (!mm_slot_cache)	/* initialization failed */
-@@ -1911,47 +1899,23 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 	kmem_cache_free(mm_slot_cache, mm_slot);
- }
- 
--static int __init mm_slots_hash_init(void)
--{
--	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
--				GFP_KERNEL);
--	if (!mm_slots_hash)
--		return -ENOMEM;
--	return 0;
--}
--
--#if 0
--static void __init mm_slots_hash_free(void)
--{
--	kfree(mm_slots_hash);
--	mm_slots_hash = NULL;
--}
--#endif
--
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
- 	struct mm_slot *mm_slot;
--	struct hlist_head *bucket;
- 	struct hlist_node *node;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
--	hlist_for_each_entry(mm_slot, node, bucket, hash) {
-+	hash_for_each_possible(mm_slots_hash, mm_slot, node, hash, (unsigned long) mm)
- 		if (mm == mm_slot->mm)
- 			return mm_slot;
--	}
-+
- 	return NULL;
- }
- 
- static void insert_to_mm_slots_hash(struct mm_struct *mm,
- 				    struct mm_slot *mm_slot)
- {
--	struct hlist_head *bucket;
--
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
- 	mm_slot->mm = mm;
--	hlist_add_head(&mm_slot->hash, bucket);
-+	hash_add(mm_slots_hash, &mm_slot->hash, (long)mm);
- }
- 
- static inline int khugepaged_test_exit(struct mm_struct *mm)
-@@ -2020,7 +1984,7 @@ void __khugepaged_exit(struct mm_struct *mm)
- 	spin_lock(&khugepaged_mm_lock);
- 	mm_slot = get_mm_slot(mm);
- 	if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
--		hlist_del(&mm_slot->hash);
-+		hash_del(&mm_slot->hash);
- 		list_del(&mm_slot->mm_node);
- 		free = 1;
- 	}
-@@ -2469,7 +2433,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
- 
- 	if (khugepaged_test_exit(mm)) {
- 		/* free mm_slot */
--		hlist_del(&mm_slot->hash);
-+		hash_del(&mm_slot->hash);
- 		list_del(&mm_slot->mm_node);
- 
- 		/*
--- 
-1.8.0
+ MAN-PAGES: MANUAL PAGES FOR LINUX -- Sections 2, 3, 4, 5, and 7
+ M:	Michael Kerrisk <mtk.manpages@gmail.com>
+ W:	http://www.kernel.org/doc/man-pages
 
+--=-WWX37GV8SIzjQgIuh1gt--
