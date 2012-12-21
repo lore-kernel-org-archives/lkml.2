@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751684Ab2LUWve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:51:34 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:41100 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab2LUWvc (ORCPT
+	id S1751898Ab2LUWvx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 17:51:53 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:35408 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab2LUWvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:51:32 -0500
-MIME-Version: 1.0
-In-Reply-To: <50D4E515.5070802@zytor.com>
-References: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
-	<1354089042-10023-4-git-send-email-yinghai@kernel.org>
-	<20121221222840.GB1102@phenom.dumpdata.com>
-	<CAE9FiQWXz1xtgbAocvgXKigKJS1Yqr_CPdiLm4N6=PrUxkoPMg@mail.gmail.com>
-	<50D4E515.5070802@zytor.com>
-Date: Fri, 21 Dec 2012 14:51:31 -0800
-X-Google-Sender-Auth: cILxKYixUV6IRDoviLiy_VOAHFk
-Message-ID: <CAE9FiQUvZCyLgV=x19J0ssYZxdZJ7fTsf=3s-yaLUB9HXqg+rg@mail.gmail.com>
-Subject: Re: [PATCH v5 03/13] x86, 64bit: Set extra ident mapping for whole
- kernel range
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Dec 2012 17:51:51 -0500
+Subject: Re: [PATCH] net: sched: integer overflow fix
+From: Eric Dumazet <erdnetdev@gmail.com>
+To: Stefan Hasko <hasko.stevo@gmail.com>
+Cc: Jamal Hadi Salim <jhs@mojatatu.com>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Vimalkumar <j.vimal@gmail.com>
+In-Reply-To: <1356122364-1418-1-git-send-email-hasko.stevo@gmail.com>
+References: <1356122364-1418-1-git-send-email-hasko.stevo@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Dec 2012 14:51:48 -0800
+Message-ID: <1356130308.21834.8014.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 2:39 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/21/2012 02:35 PM, Yinghai Lu wrote:
->>
->> stop #PF handler after init_mem_mapping
->> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->> for-x86-boot-v7
->>
->> stop #PF handler in x86_64_start_kernel, to keep kgdb working.
->> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->> for-x86-boot-v8
->>
->
-> The latter really isn't right but we need someone from the kgdb team to
-> get involved there.  However, saying we can't evolve the kernel because
-> of kgdb is not acceptable.
+On Fri, 2012-12-21 at 21:39 +0100, Stefan Hasko wrote:
+> Fixed integer overflow in function htb_dequeue
+> 
+> Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
+> ---
+>  net/sched/sch_htb.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
+> index d2922c0..1bd3faa 100644
+> --- a/net/sched/sch_htb.c
+> +++ b/net/sched/sch_htb.c
+> @@ -919,7 +919,7 @@ ok:
+>  	q->now = ktime_to_ns(ktime_get());
+>  	start_at = jiffies;
+>  
+> -	next_event = q->now + 5 * NSEC_PER_SEC;
+> +	next_event = q->now + (u32)5 * NSEC_PER_SEC;
+>  
+>  	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
+>  		/* common case optimization - skip event handler quickly */
 
-agree.
+But this patch is wrong !
 
-looks like no one care about kgdb now.
-hope they could notice until that is broken later.
+I am a bit surprised, as I remember spotting this error in one patch
+submission from Vimalkumar.
+
+Apparently it got lost.
+
+Please fix the bug for good, not adding another one.
+
+Thanks
+
+
