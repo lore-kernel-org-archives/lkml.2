@@ -1,158 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab2LUNEq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 08:04:46 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28116 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab2LUNE2 (ORCPT
+	id S1751741Ab2LUNFB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 08:05:01 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:43355 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750801Ab2LUNEu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 08:04:28 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=N7apZ2mRdwEA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=kkeB2nsji94A:10 a=QyXUC8HyAAAA:8 a=2fI_1bGreRXKKz6Lyv8A:9 a=QEXdDO2ut3YA:10 a=dGJ0OcVc7YAA:10 a=jeBq3FmKZ4MA:10 a=Z-dSymqPRmjn_ZaJ:21 a=s4WAr9l-bKdMQQ9N:21 a=k7M1AjPP8X9euP_yWA8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121221130426.971049063@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 21 Dec 2012 08:03:26 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: [PATCH 3/3] tracing/syscalls: Make local functions static
-References: <20121221130323.940466074@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-syscalls-Make-local-functions-static.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	Fri, 21 Dec 2012 08:04:50 -0500
+Content-Type: text/plain; charset=GB2312
+Mime-Version: 1.0 (Mac OS X Mail 6.0 \(1485\))
+Subject: Re: [PATCH 2/2] mm: support MIGRATE_DISCARD
+From: lihanhui <hanhui.li@gmail.com>
+In-Reply-To: <1346832673-12512-2-git-send-email-minchan@kernel.org>
+Date: Fri, 21 Dec 2012 21:04:37 +0800
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E270108E-B7EC-4A12-9662-4CF1CC7B69DE@gmail.com>
+References: <1346832673-12512-1-git-send-email-minchan@kernel.org> <1346832673-12512-2-git-send-email-minchan@kernel.org>
+To: Minchan Kim <minchan@kernel.org>
+X-Mailer: Apple Mail (2.1485)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-From: Fengguang Wu <fengguang.wu@intel.com>
+ÔÚ 2012-9-5£¬ÏÂÎç4:11£¬Minchan Kim <minchan@kernel.org> Ð´µÀ£º
 
-Some functions in the syscall tracing is used only locally to
-the file, but they are labeled global. Convert them to static functions.
+> This patch introudes MIGRATE_DISCARD mode in migration.
+> It drops *clean cache pages* instead of migration so that
+> migration latency could be reduced by avoiding (memcpy + page remapping).
+> It's useful for CMA because latency of migration is very important rather
+> than eviction of background processes's workingset. In addition, it needs
+> less free pages for migration targets so it could avoid memory reclaiming
+> to get free pages, which is another factor increase latency.
+> 
+> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Signed-off-by: Minchan Kim <minchan@kernel.org>
+> ---
+> include/linux/migrate_mode.h |    7 +++++++
+> mm/migrate.c                 |   41 ++++++++++++++++++++++++++++++++++++++---
+> mm/page_alloc.c              |    2 +-
+> 3 files changed, 46 insertions(+), 4 deletions(-)
+> 
+> diff --git a/include/linux/migrate_mode.h b/include/linux/migrate_mode.h
+> index 8848cad..4eb1646 100644
+> --- a/include/linux/migrate_mode.h
+> +++ b/include/linux/migrate_mode.h
+> @@ -14,6 +14,13 @@
+>  */
+> #define MIGRATE_SYNC		((__force migrate_mode_t)0x4)
+> 
+> +/*
+> + * MIGRTATE_DISCARD will discard clean cache page instead of migration.
+> + * MIGRATE_ASYNC, MIGRATE_SYNC_LIGHT, MIGRATE_SYNC shouldn't be used
+> + * together with OR flag in current implementation.
+> + */
+> +#define MIGRATE_DISCARD		((__force migrate_mode_t)0x8)
+> +
+> typedef unsigned __bitwise__ migrate_mode_t;
+> 
+> #endif		/* MIGRATE_MODE_H_INCLUDED */
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 28d464b..2de7709 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -678,6 +678,19 @@ static int move_to_new_page(struct page *newpage, struct page *page,
+> 	return rc;
+> }
+> 
+> +static int discard_page(struct page *page)
+> +{
+> +	int ret = -EAGAIN;
+> +
+> +	struct address_space *mapping = page_mapping(page);
+> +	if (page_has_private(page))
+> +		if (!try_to_release_page(page, GFP_KERNEL))
+> +			return ret;
+> +	if (remove_mapping(mapping, page))
+> +		ret = 0;
+> +	return ret;
+> +}
+> +
+> static int __unmap_and_move(struct page *page, struct page *newpage,
+> 			int force, bool offlining, migrate_mode_t mode)
+> {
+> @@ -685,6 +698,9 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+> 	int remap_swapcache = 1;
+> 	struct mem_cgroup *mem;
+> 	struct anon_vma *anon_vma = NULL;
+> +	enum ttu_flags ttu_flags;
+> +	bool discard_mode = false;
+> +	bool file = false;
+> 
+> 	if (!trylock_page(page)) {
+> 		if (!force || (mode & MIGRATE_ASYNC))
+> @@ -799,12 +815,31 @@ static int __unmap_and_move(struct page *page, struct page *newpage,
+> 		goto skip_unmap;
+> 	}
+> 
+> +	file = page_is_file_cache(page);
+> +	ttu_flags = TTU_IGNORE_ACCESS;
+> +retry:
+> +	if (!(mode & MIGRATE_DISCARD) || !file || PageDirty(page))
+> +		ttu_flags |= (TTU_MIGRATION | TTU_IGNORE_MLOCK);
+> +	else
+> +		discard_mode = true;
+> +
+> 	/* Establish migration ptes or remove ptes */
+> -	try_to_unmap(page, TTU_MIGRATION|TTU_IGNORE_MLOCK|TTU_IGNORE_ACCESS);
+> +	rc = try_to_unmap(page, ttu_flags);
+> 
+> skip_unmap:
+> -	if (!page_mapped(page))
+> -		rc = move_to_new_page(newpage, page, remap_swapcache, mode);
+> +	if (rc == SWAP_SUCCESS) {
+> +		if (!discard_mode) {
+> +			rc = move_to_new_page(newpage, page,
+> +					remap_swapcache, mode);
+> +		} else {
+> +			rc = discard_page(page);
+> +			goto uncharge;
+> +		}
+> +	} else if (rc == SWAP_MLOCK && discard_mode) {
+> +		mode &= ~MIGRATE_DISCARD;
+> +		discard_mode = false;
+> +		goto retry;
+> +	}
+> 
+> 	if (rc && remap_swapcache)
+> 		remove_migration_ptes(page, page);
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index ba3100a..e14b960 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -5670,7 +5670,7 @@ static int __alloc_contig_migrate_range(unsigned long start, unsigned long end)
+> 
+> 		ret = migrate_pages(&cc.migratepages,
+> 				    __alloc_contig_migrate_alloc,
+> -				    0, false, MIGRATE_SYNC);
+> +				    0, false, MIGRATE_SYNC|MIGRATE_DISCARD);
+> 	}
+> 
+> 	putback_lru_pages(&cc.migratepages);
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_syscalls.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 7609dd6..5329e13e 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -77,7 +77,7 @@ static struct syscall_metadata *syscall_nr_to_meta(int nr)
- 	return syscalls_metadata[nr];
- }
-=20
--enum print_line_t
-+static enum print_line_t
- print_syscall_enter(struct trace_iterator *iter, int flags,
- 		    struct trace_event *event)
- {
-@@ -130,7 +130,7 @@ end:
- 	return TRACE_TYPE_HANDLED;
- }
-=20
--enum print_line_t
-+static enum print_line_t
- print_syscall_exit(struct trace_iterator *iter, int flags,
- 		   struct trace_event *event)
- {
-@@ -270,7 +270,7 @@ static int syscall_exit_define_fields(struct ftrace_eve=
-nt_call *call)
- 	return ret;
- }
-=20
--void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long id)
-+static void ftrace_syscall_enter(void *ignore, struct pt_regs *regs, long =
-id)
- {
- 	struct syscall_trace_enter *entry;
- 	struct syscall_metadata *sys_data;
-@@ -305,7 +305,7 @@ void ftrace_syscall_enter(void *ignore, struct pt_regs =
-*regs, long id)
- 		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
- }
-=20
--void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
-+static void ftrace_syscall_exit(void *ignore, struct pt_regs *regs, long r=
-et)
- {
- 	struct syscall_trace_exit *entry;
- 	struct syscall_metadata *sys_data;
-@@ -337,7 +337,7 @@ void ftrace_syscall_exit(void *ignore, struct pt_regs *=
-regs, long ret)
- 		trace_current_buffer_unlock_commit(buffer, event, 0, 0);
- }
-=20
--int reg_event_syscall_enter(struct ftrace_event_call *call)
-+static int reg_event_syscall_enter(struct ftrace_event_call *call)
- {
- 	int ret =3D 0;
- 	int num;
-@@ -356,7 +356,7 @@ int reg_event_syscall_enter(struct ftrace_event_call *c=
-all)
- 	return ret;
- }
-=20
--void unreg_event_syscall_enter(struct ftrace_event_call *call)
-+static void unreg_event_syscall_enter(struct ftrace_event_call *call)
- {
- 	int num;
-=20
-@@ -371,7 +371,7 @@ void unreg_event_syscall_enter(struct ftrace_event_call=
- *call)
- 	mutex_unlock(&syscall_trace_lock);
- }
-=20
--int reg_event_syscall_exit(struct ftrace_event_call *call)
-+static int reg_event_syscall_exit(struct ftrace_event_call *call)
- {
- 	int ret =3D 0;
- 	int num;
-@@ -390,7 +390,7 @@ int reg_event_syscall_exit(struct ftrace_event_call *ca=
-ll)
- 	return ret;
- }
-=20
--void unreg_event_syscall_exit(struct ftrace_event_call *call)
-+static void unreg_event_syscall_exit(struct ftrace_event_call *call)
- {
- 	int num;
-=20
-@@ -459,7 +459,7 @@ unsigned long __init __weak arch_syscall_addr(int nr)
- 	return (unsigned long)sys_call_table[nr];
- }
-=20
--int __init init_ftrace_syscalls(void)
-+static int __init init_ftrace_syscalls(void)
- {
- 	struct syscall_metadata *meta;
- 	unsigned long addr;
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJQ1F5bAAoJEOdOSU1xswtMd9sH/36GrZULQjDMBJQFfWtzugq2
-ODGo4v3UIfMWRjuDwfrhofY/Pvoe6hOFoqxUES7V73nDnvNhbiDPQZFrb+b87igS
-AiNAEGtgkjRpk0fWD23gaj8rbN9+FCl5LpFaDM3b+543lXxtJczYFnENz0dbSkHT
-oQkkN1R0QkiAF6S2H4o2v69n57Gy2nTDFGu6znu5upuQ8tEBnuzcXm5heU3UTIOj
-kXoKh+J7kf1Ez6yB/27xZOpFkilDPwONm5NFAv05qmwWMCkjvjqRlwftI2ce5QoE
-OgfuGMLznW7siMV+qc4eusv+yW0qlBGgAy8QhnxAcTR7Qqf3wbIdEGXTRfBkG7Y=
-=w/w6
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
