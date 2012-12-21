@@ -1,64 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab2LUKlJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 05:41:09 -0500
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:44549 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594Ab2LUKk7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 05:40:59 -0500
+	id S1752104Ab2LUKl1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 05:41:27 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:33423 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751594Ab2LUKlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 05:41:12 -0500
+Message-ID: <50D43CCA.5050703@parallels.com>
+Date: Fri, 21 Dec 2012 14:41:14 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Fri, 21 Dec 2012 16:10:38 +0530
-Message-ID: <CA+V-a8s=ykTn1AW3iSZZG1qQWH9L-sEs2Fu=DN_gjGu2Dv5-tQ@mail.gmail.com>
-Subject: [GIT PULL FOR v3.9] Davinci VPBE Trivial Fixes
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        Manjunath Hadli <manjunath.hadli@ti.com>,
-        Prabhakar Lad <prabhakar.lad@ti.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dave Chinner <david@fromorbit.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <xfs@oss.sgi.com>
+Subject: Re: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
+References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <50D2FA58.9030605@parallels.com> <20121221025001.GC15182@dastard>
+In-Reply-To: <20121221025001.GC15182@dastard>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+Hey Dave,
 
-Please pull the following patches for DaVinci VPBE driver.
-One of the patch has ARM changes and is Acked-by the ARM
-maintainer.
+On 12/21/2012 06:50 AM, Dave Chinner wrote:
+>> But on a broader sense: The only thing that still bothers me personally
+>> > (meaning: it created particular pain points), is the very loose coupling
+>> > between all the elements involved in the shrinking process:
+>> > 
+>> > 1) the shrinker, always present
+>> > 2) the lru, usually present
+>> > 3) the cache, usually present, specially when there is an LRU.
+>> > 
+>> > I of course understand that they are not always present, and when they
+>> > are, they are not in a 1:1 relation.
+>> > 
+>> > But still, it would be nice to be able to register them to one another,
+>> > so that we can easily answer things like:
+>> > 
+>> > "Given a set of caches, what is the set of shrinkers that will shrink them?"
+>> > 
+>> > "What are the lrus that are driven by this shrinker?"
+>> > 
+>> > This would allow me to do things like this:
+>> > 
+>> > * When a per-memcg cache is created (not all of the caches are
+>> > replicated), find the shrinkers that can shrink them.
+>> > 
+>> > * For each shrinker, also replicate the LRUs that are driven by them.
+>> > 
+>> > Does that make any sense to you ?
+> It certainly does, though I see that as a separate problem to the
+> one that this patch set solves. i.e. this is an issue related to the
+> scope and context of a shrinker/LRU couplet, rather than the
+> implementation of a shrinker/LRU couplet. This patchset addresses
+> the latter of the two, and I'm pretty sure that I mentioned that the
+> former was not a problem I am trying to solve yet....
 
-Thanks and Regards,
---Prabhakar Lad
+Yes. And now I am pretty sure that I mentioned that this is actually a
+problem!
+
+Really, the only major change I would like to see made in this patchset
+is the provision of more context to the lru functions. It is fine if it
+is a lru-specific context.
+
+All the rest is details.
+
+> 
+> As it is, right now we embed the struct shrinker into the owner
+> context, and that's how we find the LRU/cache instances that the
+> shrinker operates on. In the case of per-memcg shrinker
+> instantiation that fixed relationship does not work.
+
+Yes, and there is also another problem that arises from it:
+
+the superblock is the owner, but superblocks are no memcg's business. It
+is caches that we track, so it would be good to determine which
+shrinkers are responsible for each caches -> a n:m relationship.
+
+Those are the ones we need to run per-memcg. Otherwise, we need to go
+mess with them all.
+
+> 
+> Further, the struct shrinker has context specific information in it,
+> like the defered scan count that it carries from one invocation to
+> the next, so what we end up with is a tightly coupled owner/shrinker
+> relationship.  That is, a shrinker is really made up of four things:
+> 
+> 	- a shrinker definition (set of methods and configuration
+> 	  data)
+> 	- a non-volatile set of data
+> 	- the owner context
+> 	- the LRU/cache to be shrunk
+> 
+> I suspect that a shrinker instance would look something like this:
+> 
+> shrinker_instance {
+> 	non-volatile set of data
+> 	LRU/cache to be shrunk
+> 	pointer to the owner context
+> 	pointer to the shrinker definition
+> }
+> 
+> But I'm not really sure how to group them sanely, how to know what
+> shrinkers would need multiple instantiation and when you'd do that
+> instantiation, or even how an owner context would then do global
+> operations (e.g empty caches prior to unmount).
+
+Ok, so right now, what my PoC does, is to leave the shrinkers mostly
+alone (I just have a static flag to indicate that this is a possible
+per-memcg candidate).
+
+The LRUs are all copied over (a bit of a waste, but this is still a
+PoC), and whenever the shrinker is called, we trust that the LRUs will
+be available, and then using the memcg pointer, derive the
+memcg-specific LRUs from the global, original LRUs.
+
+It is still unsolved for the non-volatile set of data belonging to the
+shrinker.
+
+So the full solution, would be to create a isolated copy of all that.
+
+"Which shrinkers to copy" is just an item in the wishlist. We don't
+replicate all caches because some of them will truly never be used
+in a typical container, but most of the shrinkers are fs-related anyway,
+and we'll always touch the filesystems. However, we will likely not
+touch *all* the filesystems, so a lot of them will just be there,
+hanging around and wasting memory.
 
 
-The following changes since commit 4bb891ebf60eb43ebd04e09bbcad24013067873f:
+> 
+> I simply don't know what the requirements for such infrastructure
+> is, so I can't really say much more than this. Hence I think the
+> first thing to do here is work out and document what such
+> instantiation, tracking and grouping needs to be able to do before
+> anything else...
+> 
+Yes, let's do it.
 
-  [media] ivtv: ivtv-driver: Replace 'flush_work_sync()' (2012-12-20
-15:22:30 -0200)
 
-are available in the git repository at:
-  git://linuxtv.org/mhadli/v4l-dvb-davinci_devices.git davinci_media
-
-Lad, Prabhakar (2):
-      davinci: vpbe: pass different platform names to handle different ip's
-      media: davinci: vpbe: enable building of vpbe driver for DM355 and DM365
-
-Wei Yongjun (3):
-      media: davinci: vpbe: fix return value check in vpbe_display_reqbufs()
-      media: davinci: vpbe: return error code on error in vpbe_display_g_crop()
-      davinci: vpbe: remove unused variable in vpbe_initialize()
-
- arch/arm/mach-davinci/board-dm644x-evm.c      |    8 ++--
- arch/arm/mach-davinci/dm644x.c                |   10 +---
- drivers/media/platform/davinci/Kconfig        |   22 ++------
- drivers/media/platform/davinci/Makefile       |    4 +-
- drivers/media/platform/davinci/vpbe.c         |    6 +--
- drivers/media/platform/davinci/vpbe_display.c |    9 ++--
- drivers/media/platform/davinci/vpbe_osd.c     |   35 ++++++++++----
- drivers/media/platform/davinci/vpbe_venc.c    |   65 +++++++++++++++++--------
- include/media/davinci/vpbe_osd.h              |    5 +-
- include/media/davinci/vpbe_venc.h             |    5 +-
- 10 files changed, 95 insertions(+), 74 deletions(-)
