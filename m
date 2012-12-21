@@ -1,299 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159Ab2LUSYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 13:24:54 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:36839 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab2LUSYt (ORCPT
+	id S1752448Ab2LUS1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 13:27:06 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:32769 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751924Ab2LUS07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 13:24:49 -0500
+	Fri, 21 Dec 2012 13:26:59 -0500
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20121218171217.GD7155@moon>
-References: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
- <1342995307-884-2-git-send-email-gorcunov@openvz.org> <CAKgNAkj-=wLEM+SjA_S8GUp0+0o5R4NuDH4fL-8H-pKCKdLryA@mail.gmail.com>
- <20121218170624.GA7148@moon> <20121218171217.GD7155@moon>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 21 Dec 2012 19:24:27 +0100
-Message-ID: <CAKgNAkg536wfJy6WjjLANamchZg0XQ3sAHtCtvPtgCkTu_hHMw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] Add kcmp.2 manpage
-To: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
+In-Reply-To: <20121221105126.GD17357@quack.suse.cz>
+References: <cover.1356043686.git.luto@amacapital.net> <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
+ <20121221001457.GY15182@dastard> <CALCETrXT2uYwuYR3402LUO2uw3d++=f9vxtFLq8Ez62VdAgOcw@mail.gmail.com>
+ <20121221105126.GD17357@quack.suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Fri, 21 Dec 2012 10:26:37 -0800
+Message-ID: <CALCETrX3uSkASU-aw5HF9mNtzVr4HsXt-2a97wzDfc9sDwp8Qw@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/4] mm: Update file times when inodes are written
+ after mmaped writes
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 6:12 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> On Tue, Dec 18, 2012 at 09:06:24PM +0400, Cyrill Gorcunov wrote:
->> On Tue, Dec 18, 2012 at 05:54:49PM +0100, Michael Kerrisk (man-pages) wrote:
->> > Hello Cyrill,
+On Fri, Dec 21, 2012 at 2:51 AM, Jan Kara <jack@suse.cz> wrote:
+> On Thu 20-12-12 21:36:58, Andy Lutomirski wrote:
+>> On Thu, Dec 20, 2012 at 4:14 PM, Dave Chinner <david@fromorbit.com> wrote:
+>> > On Thu, Dec 20, 2012 at 03:10:10PM -0800, Andy Lutomirski wrote:
+>> >> The onus is currently on filesystems to call file_update_time
+>> >> somewhere in the page_mkwrite path.  This is unfortunate for three
+>> >> reasons:
+>> >>
+>> >> 1. page_mkwrite on a locked page should be fast.  ext4, for example,
+>> >>    often sleeps while dirtying inodes.
 >> >
->> > On Mon, Jul 23, 2012 at 12:15 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
->> > > NAME
->> > >        kcmp - compare if two processes do share a particular kernel resource
->> >
->> > Very late follow up on this page, sorry. You didn't provide a
->> > copyright or license for this page. Could you please supply that
->> > information. See http://www.kernel.org/doc/man-pages/licenses.html .
+>> > That's an ext4 problem, not a page fault or timestamp update
+>> > problem. Fix ext4.
 >>
->> Sure, gimme some time to update it...
+>> I could fix ext4 (or rather, someone who understands jbd2 could fix
+>> ext4), but I think my approach is considerably simpler and fixes all
+>> filesystems at once.
+>   Well, you could implement the fix you did just inside ext4. Remove
+> timestamp update from ext4_page_mkwrite(), just set some inode flag there,
+> update times in ext4_writepages(), ext4_sync_file(), and
+> ext4_release_file(). It won't be as elegant but it would work.
+
+I'm worried about funny corner cases.  Suppose fd1 and fd2 refer to
+two separate struct files for the same inode.  Then do this:
+
+addr1 = mmap(fd1);
+addr2 = mmap(fd2);
+*addr2 = 0;  <-- calls page_mkwrite
+munmap(addr1);
+close(fd1);
+sleep(10);
+*addr2 = 1;  <-- probably does not call page_mkwrite
+munmap(addr2);
+close(fd2);
+
+Without extra care, the file timestamp will be ten seconds too early.
+To make this work, ext4 would need to keep track of which vma is
+dirty, which would involve a lot more complexity.  Alternatively, ext4
+could call page_mkclean on all pages in the mapping in
+ext4_release_file, but that would suck for performance.  (Actually,
+that would probably be awful for my workload -- I have a background
+task that periodically opens and (critically) closes the same files
+that are mmaped in real-time thread, and all those extra tlb flushes
+and page faults would hurt.)
+
+The approach in my patches magically avoids this problem by using the
+per-pte dirty bit as opposed to anything that's per page. :)
+Admittedly, I could leave the AS_CMTIME stuff in the core and just
+sprinkle mapping_flush_cmtime calls around ext4.
+
+One of these days I hope to open-source the thing that hits all these
+issues.  It's useful and has no good reason to be proprietary, other
+than its present messiness.
+
 >
-> Something like below?
+>> >> 3. (An ulterior motive) I'd like to use hardware dirty tracking for
+>> >>    shared, locked, writable mappings (instead of page faults).  Moving
+>> >>    important work out of the page_mkwrite path is an important first step.
+>> >
+>> > I don't think you're going to get very far doing this. page_mkwrite
+>> > needs to do:
+>> >
+>> >         a) block allocation in page_mkwrite() for faults over holes
+>> >            to detect ENOSPC conditions immediately rather than in
+>> >            writeback when such an error results in data loss.
+>> >         b) detect writes over unwritten extents so that the pages in
+>> >            the page cache can be set up correctly for conversion to
+>> >            occur during writeback.
+>> >
+>> > Correcting these two problems was the reason for introducing
+>> > page_mkwrite in the first place - we need to do this stuff before
+>> > the page fault is completed, and that means, by definition,
+>> > page_mkwrite needs to be able to block. Moving c/mtime updates out
+>> > of the way does not, in any way, change these requirements.
+>>
+>> I was unclear.  I have no problem if PROT_WRITE, MAP_SHARED pages
+>> start out write protected.  I want two changes from the status quo,
+>> though:
+>>
+>> 1. ptes (maybe only if mlocked or maybe even only if some new madvise
+>> flag is set) should be marked clean but stay writable during and after
+>> writeback.  (This would only work when stable pages are not in
+>> effect.)
+>   This is actually problematic - s390 architecture doesn't have PTE dirty
+> bit. It has per page HW dirty bit but that's problematic to use so it's
+> completely relying on page being protected after writeback so that it hits
+> page fault when it should be dirtied again. Also memory management uses
+> these page faults to track number of dirty pages which is then important to
+> throttle aggressive writers etc. (we used to do what you describe sometimes
+> in early 2.6 days but then we switched to writeprotecting the page for
+> writeback to be able to do dirty page tracking).
 
-Yep, that's fine. I've done some substantial editing and added several
-pieces to the page.  Could you take a careful look at the version to
-see that I have not injected any inaccuracies?
+Ugh.  I thought arches without per-pte dirty bits were supposed to
+emulate them by treating writable+clean as write protected and fixing
+everything up when page faults happen.
 
-Thanks,
+This whole thing could just be turned off on s390, though.
 
-Michael
+>
+> If we limit the behavior you desribe to mlocked pages, I could imagine
+> things would work out from the accounting POV (we could treat mlocked pages
+> as always dirty for accounting purposes) but it's definitely not a change
+> to be easily made.
+>
+>> 2. There should be a way to request that pages be made clean-but-writable.
+>>
+>> #1 should be mostly fine already from the filesystems' point of view.
+>> #2 would involve calling page_mkwrite or some equivalent.
+>>
+>> I suspect that there are bugs that are currently untriggerable
+>> involving clean-but-writable pages.  For example, what happens if cpu
+>> 0 (atomically) changes a pte from clean/writable to not present, but
+>> cpu 1 writes the page before the TLB flush happens.  I think the pte
+>> ends up not present + dirty, but the current unmapping code won't
+>> notice.
+>>
+>> This would involve splitting page_mkclean into "make clean and write
+>> protect" and "make clean but leave writable".
+>>
+>> Doing this would avoid ~1M "soft" page faults per day in a single
+>> real-time thread in my software.  (The file time patches are to make
+>> sure that the "soft" page faults actually don't sleep.)
+>   Yes, there's a non-negligible cost of writeprotecting the page during
+> writeback. But the avoidance of OOM conditions due to too aggressive
+> writers simply has precedence... Anyway, if you want to push more in this
+> direction, I suggest to move this discussion to linux-mm@kvack.org as there
+> are lingering more appropriate listeners :). I'm just a filesystem guy with
+> some basic knowledge of MM.
 
+Will do.  I'll send out updated patches as well.
 
-.\" Copyright (C) 2012, Cyrill Gorcunov <gorcunov@openvz.org>
-.\" and Copyright (C) 2012, Michael Kerrisk <mtk.manpages@gmail.com>
-.\"
-.\" Permission is granted to make and distribute verbatim copies of this
-.\" manual provided the copyright notice and this permission notice are
-.\" preserved on all copies.
-.\"
-.\" Permission is granted to copy and distribute modified versions of
-.\" this manual under the conditions for verbatim copying, provided that
-.\" the entire resulting derived work is distributed under the terms of
-.\" a permission notice identical to this one.
-.\"
-.\" Since the Linux kernel and libraries are constantly changing, this
-.\" manual page may be incorrect or out-of-date.  The author(s) assume.
-.\" no responsibility for errors or omissions, or for damages resulting.
-.\" from the use of the information contained herein.  The author(s) may.
-.\" not have taken the same level of care in the production of this.
-.\" manual, which is licensed free of charge, as they might when working.
-.\" professionally.
-.\"
-.\" Formatted or processed versions of this manual, if unaccompanied by
-.\" the source, must acknowledge the copyright and authors of this work.
-.\"
-.\" Kernel commit d97b46a64674a267bc41c9e16132ee2a98c3347d
-.\"
-.TH KCMP 2 2012-12-19 "Linux" "Linux Programmer's Manual"
-
-.SH NAME
-kcmp \- compare two processes to determine if they share a kernel resource
-
-.SH SYNOPSIS
-.nf
-.B #include <linux/kcmp.h>
-
-.BI "int kcmp(pid_t " pid1 ", pid_t " pid2 ", int " type ,
-.BI "         unsigned long " idx1 ", unsigned long "  idx2 );
-
-.fi
-
-.IR Note :
-There is no glibc wrapper for this system call; see NOTES.
-
-.SH DESCRIPTION
-The
-.BR kcmp ()
-system call can be used to check whether the two processes identified by
-.I pid1
-and
-.I pid2
-share a kernel resource such as virtual memory, file descriptors,
-and so on.
-
-The
-.I type
-argument specifies which resource is to be compared in the two processes.
-It has one of the following values:
-
-.TP
-.BR KCMP_FILE
-Check whether a file descriptor
-.I idx1
-in the process
-.I pid1
-refers to the same open file description (see
-.BR open (2))
-as file descriptor
-.I idx2
-in the process
-.IR pid2 .
-
-.TP
-.BR KCMP_FILES
-Check whether the process share the same set of open file descriptors.
-The arguments
-.I idx1
-and
-.I idx2
-are ignored.
-
-.TP
-.BR KCMP_FS
-Check whether the processes share the same file system information
-(i.e., file mode creation mask, working directory, and file system root).
-The arguments
-.I idx1
-and
-.I idx2
-are ignored.
-
-.TP
-.BR KCMP_IO
-Check whether the processes share I/O context.
-The arguments
-.I idx1
-and
-.I idx2
-are ignored.
-
-.TP
-.BR KCMP_SIGHAND
-Check whether the processes share the same table of signal dispositions.
-The arguments
-.I idx1
-and
-.I idx2
-are ignored.
-
-.TP
-.BR KCMP_SYSVSEM
-Check whether the processes share the same
-list of System V semaphore undo operations.
-The arguments
-.I idx1
-and
-.I idx2
-are ignored.
-
-.TP
-.BR KCMP_VM
-Check whether the processes share the same address space.
-The arguments
-.I idx1
-and
-.I idx2
-are ignored.
-
-.PP
-Note the
-.BR kcmp ()
-is not protected against false positives which may have place if tasks are
-running.
-Which means one should stop tasks being inspected with this syscall to obtain
-meaningful results.
-
-.SH "RETURN VALUE"
-The return value of a successful call to
-.BR kcmp ()
-is simply the result of arithmetic comparison
-of kernel pointers (when the kernel compares resources, it uses their
-memory addresses).
-
-The easiest way to explain is to consider an example.
-Suppose that
-.I v1
-and
-.I v2
-are the addresses of appropriate resources, then the return value
-is one of the following:
-
-.RS 4
-.IP 0 4
-.I v1
-is equal to
-.IR v2 ;
-in other words, the two processes share the resource.
-
-.IP 1
-.I v1
-is less than
-.IR v2 .
-
-.IP 2
-.I v1
-is greater than
-.IR v2 .
-
-.IP 3
-.I v1
-is not equal to
-.IR v2 ,
-but ordering information is unavailable.
-.RE
-
-.PP
-On error, \-1 is returned, and
-.I errno
-is set appropriately.
-
-.B kcmp ()
-was designed to return values suitable for sorting.
-This is particularly handy if one needs to compare
-a large number of file descriptors.
-
-.SH ERRORS
-
-.TP
-.B EBADF
-.I type
-is
-.B KCMP_FILE
-and
-.I fd1
-or
-.I fd2
-is not an open file descriptor.
-.TP
-.B EINVAL
-.I type
-is invalid.
-.TP
-.B EPERM
-Insufficient permission to inspect process resources.
-The
-.B CAP_SYS_PTRACE
-capability is required to inspect processes that you do not own.
-.TP
-.B ESRCH
-Process
-.I pid1
-or
-.I pid2
-does not exist.
-
-.SH VERSIONS
-The
-.BR kcmp ()
-system call first appeared in Linux 3.5.
-
-.SH "CONFORMING TO"
-.BR kcmp ()
-is Linux specific and should not be used in programs intended to be portable.
-
-.SH NOTES
-Glibc does not provide a wrapper for this system call; call it using
-.BR syscall (2).
-
-This system call is available only if the kernel was configured with
-.BR CONFIG_CHECKPOINT_RESTORE .
-The main use of the system call is for the
-checkpoint/restore in user space (CRIU) feature.
-The alternative to this system call would have been to expose suitable
-process information via the
-.BR proc (5)
-file system; this was deemed to be unsuitable for security reasons.
-
-See
-.BR clone (2)
-for some background information on the shared resources
-referred to on this page.
-
-.SH "SEE ALSO"
-.BR clone (2),
-.BR unshare (2)
+--Andy
