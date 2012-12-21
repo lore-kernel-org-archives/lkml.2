@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab2LUQsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 11:48:09 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36877 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751897Ab2LUQr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 11:47:59 -0500
-Message-ID: <50D49290.2030403@zytor.com>
-Date: Fri, 21 Dec 2012 08:47:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752357Ab2LUQyB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 11:54:01 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:56577 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab2LUQxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 11:53:54 -0500
 MIME-Version: 1.0
-To: Dave Young <hidave.darkstar@gmail.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Jacob Shin <jacob.shin@amd.com>,
+In-Reply-To: <20121221134740.GC13367@suse.de>
+References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+ <1353624594-1118-19-git-send-email-mingo@kernel.org> <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com>
+ <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
+ <alpine.DEB.2.00.1212201440250.7807@chino.kir.corp.google.com> <20121221134740.GC13367@suse.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 21 Dec 2012 08:53:33 -0800
+X-Google-Sender-Auth: OJGKuImtDak2rNdlPZcZE4D_FDs
+Message-ID: <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
+Subject: Re: [patch] mm, mempolicy: Introduce spinlock to read shared policy tree
+To: Mel Gorman <mgorman@suse.de>
+Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v9 05/46] x86, mm: Revert back good_end setting for 64bit
-References: <1354139277-17376-1-git-send-email-yinghai@kernel.org> <1354139277-17376-6-git-send-email-yinghai@kernel.org> <CABqxG0cFTu2qDo6RmZ7QfLsC4fDzLVj9WrocuDAz+dAQB8OJ6Q@mail.gmail.com>
-In-Reply-To: <CABqxG0cFTu2qDo6RmZ7QfLsC4fDzLVj9WrocuDAz+dAQB8OJ6Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 12:22 AM, Dave Young wrote:
-> On Thu, Nov 29, 2012 at 5:47 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+On Fri, Dec 21, 2012 at 5:47 AM, Mel Gorman <mgorman@suse.de> wrote:
+> On Thu, Dec 20, 2012 at 02:55:22PM -0800, David Rientjes wrote:
+>>
+>> This is probably worth discussing now to see if we can't revert
+>> b22d127a39dd ("mempolicy: fix a race in shared_policy_replace()"), keep it
+>> only as a spinlock as you suggest, and do what KOSAKI suggested in
+>> http://marc.info/?l=linux-kernel&m=133940650731255 instead.  I don't think
+>> it's worth trying to optimize this path at the cost of having both a
+>> spinlock and mutex.
 >
-> Hi, Yinghai and HPA
+> Jeez, I'm still not keen on that approach for the reasons that are explained
+> in the changelog for b22d127a39dd.
+
+Christ, Mel.
+
+Your reasons in b22d127a39dd are weak as hell, and then you come up
+with *THIS* shit instead:
+
+> That leads to this third *ugly* option that conditionally drops the lock
+> and it's up to the caller to figure out what happened. Fooling around with
+> how it conditionally releases the lock results in different sorts of ugly.
+> We now have three ugly sister patches for this. Who wants to be Cinderalla?
 >
-> What's the staus of this patch,  will it go for 3.8? Is there anything
-> blocking this patch?
->
+> ---8<---
+> mm: numa: Release the PTL if calling vm_ops->get_policy during NUMA hinting faults
 
-It's 3.9 material at this point.  The sheer size and messiness of the 
-whole set has been the holdup.
+Heck no. In fact, not a f*cking way in hell. Look yourself in the
+mirror, Mel. This patch is ugly, and *guaranteed* to result in subtle
+locking issues, and then you have the *gall* to quote the "uhh, that's
+a bit ugly due to some trivial duplication" thing in commit
+b22d127a39dd.
 
-	-hpa
+Reverting commit b22d127a39dd and just having a "ok, if we need to
+allocate, then drop the lock, allocate, re-get the lock, and see if we
+still need the new allocation" is *beautiful* code compared to the
+diseased abortion you just posted.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Seriously. Conditional locking is error-prone, and about a million
+times worse than the trivial fix that Kosaki suggested.
 
+                         Linus
