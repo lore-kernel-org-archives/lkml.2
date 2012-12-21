@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752190Ab2LUOna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 09:43:30 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:23803 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab2LUOnV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 09:43:21 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=kMKUP9VcE-gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ErkLabmjQQoA:10 a=WbK1rQmuXVqljMr3nw4A:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1356100999.5896.98.camel@gandalf.local.home>
-Subject: Re: [PATCH] sched/rt: Move cpu rq properties from "struct rt_rq" to
- "struct rq"
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Date: Fri, 21 Dec 2012 09:43:19 -0500
-In-Reply-To: <1356094312.5896.97.camel@gandalf.local.home>
-References: <4807701355857948@web19f.yandex.ru>
-	 <alpine.LFD.2.02.1212201852060.3148@ionos>
-	 <401821356041818@web4f.yandex.ru>
-	 <1356044865.5896.78.camel@gandalf.local.home>
-	 <545781356071709@web16g.yandex.ru>
-	 <1356094312.5896.97.camel@gandalf.local.home>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752164Ab2LUOrC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 09:47:02 -0500
+Received: from mga03.intel.com ([143.182.124.21]:40310 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab2LUOqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 09:46:55 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,329,1355126400"; 
+   d="scan'208";a="235197514"
+From: "Fenghua Yu" <fenghua.yu@intel.com>
+To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Asit K Mallick" <asit.k.mallick@intel.com>,
+        "Tigran Aivazian" <tigran@aivazian.fsnet.co.uk>,
+        "Yinghai Lu" <yinghai@kernel.org>,
+        "Andreas Herrmann" <andreas.herrmann3@amd.com>,
+        "Borislav Petkov" <borislav.petkov@amd.com>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
+Cc: "Fenghua Yu" <fenghua.yu@intel.com>
+Subject: [PATCH v5 00/12] x86/microcode: Early load microcode
+Date: Thu, 20 Dec 2012 23:44:20 -0800
+Message-Id: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-21 at 07:51 -0500, Steven Rostedt wrote:
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-> Now if you want to encapsulate the rt sched group, then you could add a
-> new struct and put that into the rt_rq struct and use that for all the
-> group functions. But please don't just cludder the rq struct with rt
+The problem in current microcode loading method is that we load a microcode way,
+way too late; ideally we should load it before turning paging on.  This may only
+be practical on 32 bits since we can't get to 64-bit mode without paging on,
+but we should still do it as early as at all possible.
 
-cludder? I must have a studder, as it is suppose to be clutter and
-stutter!
+Similarly, we should load the microcode update as early as possible during AP
+bringup and when processors are brought back online after hotplug or S3/S4.
 
-;-)
+In order to do that, the microcode patch needs to be permanently present in
+kernel memory.  Each individual patch is fairly small, so that is OK, but the
+entire blob with support for each CPU is too big. Since only CPU's with same
+model can be in the same platform, we store microcode with the same model as
+BSP. Later on APs can upload microcode from the saved microcodep patches.
 
--- Steve
+Note, however, that Linux users have gotten used to being able to install a
+microcode patch in the field without having a reboot; we support that model too.
 
-> specific data. The rt_rq was created as a container for the rt class.
-> 
-> -- Steve
-> 
+In x86_64, this patchset needs early #PF handler set page table patchset. So
+this patchset is based on:
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
 
+v5: Call 64 bit load_ucode_bsp() after copy_bootdata() and remove its
+parameter.
+
+v4: Change CPUID_IS macro. Call load_ucode_bsp after load_idt in x86_64. Flush
+tlb after applying microcode.
+
+v3: Change .hex to .bin in 01/10 and 05/10 patches. Fix some compilation
+warnings. In x86_32 mode, access global varialbes by __pa_symobl() and fix
+static string issue in x86_vendor(). Call load_ucode_ap() in real mode as well.
+Add debug info.
+
+v2: Detect vendor before loading microcode. Move some functions from
+microcode_intel_early.c to microcode_intel_lib.c. Change some early loading
+microcode dependencies in Kconfig. Reword doc.
+
+Fenghua Yu (12):
+  Documentation/x86: Early load microcode
+  x86/microcode_intel.h: Define functions and macros for early loading
+    ucode
+  x86/common.c: Make have_cpuid_p() a global function
+  x86/common.c: load ucode in 64 bit or show loading ucode info in 32
+    bit on AP
+  x86/microcode_core_early.c: Define interfaces for early loading ucode
+  x86/microcode_intel_lib.c: Early update ucode on Intel's CPU
+  x86/tlbflush.h: Define __native_flush_tlb_global_irq_disabled()
+  x86/microcode_intel_early.c: Early update ucode on Intel's CPU
+  x86/head_32.S: Early update ucode in 32-bit
+  x86/head64.c: Early update ucode in 64-bit
+  x86/mm/init.c: Copy ucode from initrd image to kernel memory
+  x86/Kconfig: Configurations to enable/disable the feature
+
+ Documentation/x86/early-microcode.txt   |  43 ++
+ arch/x86/Kconfig                        |  18 +
+ arch/x86/include/asm/microcode.h        |  14 +
+ arch/x86/include/asm/microcode_intel.h  |  85 ++++
+ arch/x86/include/asm/processor.h        |   8 +
+ arch/x86/include/asm/tlbflush.h         |  18 +-
+ arch/x86/kernel/Makefile                |   3 +
+ arch/x86/kernel/cpu/common.c            |  17 +-
+ arch/x86/kernel/head64.c                |   6 +
+ arch/x86/kernel/head_32.S               |  11 +
+ arch/x86/kernel/microcode_core.c        |   7 +-
+ arch/x86/kernel/microcode_core_early.c  |  76 +++
+ arch/x86/kernel/microcode_intel.c       | 198 ++------
+ arch/x86/kernel/microcode_intel_early.c | 796 ++++++++++++++++++++++++++++++++
+ arch/x86/kernel/microcode_intel_lib.c   | 174 +++++++
+ arch/x86/mm/init.c                      |  10 +
+ 16 files changed, 1301 insertions(+), 183 deletions(-)
+ create mode 100644 Documentation/x86/early-microcode.txt
+ create mode 100644 arch/x86/include/asm/microcode_intel.h
+ create mode 100644 arch/x86/kernel/microcode_core_early.c
+ create mode 100644 arch/x86/kernel/microcode_intel_early.c
+ create mode 100644 arch/x86/kernel/microcode_intel_lib.c
+
+-- 
+1.8.0.1
 
