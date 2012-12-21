@@ -1,121 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752182Ab2LUBT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 20:19:26 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:52804 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab2LUBTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 20:19:19 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Serge Hallyn <serge@hallyn.com>,
-        Gao feng <gaofeng@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <8739097bkk.fsf@xmission.com>
-	<1353083750-3621-1-git-send-email-ebiederm@xmission.com>
-	<1353083750-3621-7-git-send-email-ebiederm@xmission.com>
-	<20121219184757.GB22991@redhat.com>
-Date: Thu, 20 Dec 2012 17:19:06 -0800
-In-Reply-To: <20121219184757.GB22991@redhat.com> (Oleg Nesterov's message of
-	"Wed, 19 Dec 2012 19:47:57 +0100")
-Message-ID: <87bodourqt.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752075Ab2LUBex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 20:34:53 -0500
+Received: from home.kolivas.org ([59.167.196.135]:51216 "EHLO mine.kolivas.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751626Ab2LUBep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 20:34:45 -0500
+From: Con Kolivas <kernel@kolivas.org>
+To: Matthias Kohler <matthias.kohler2224@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Multiple run-queues for BFS
+Date: Fri, 21 Dec 2012 12:34:41 +1100
+Message-ID: <7642932.sVkG1EKMhP@hex>
+User-Agent: KMail/4.9.4 (Linux/3.7.0-ck1; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <1355591803.23863.3.camel@findus-T530>
+References: <1355591803.23863.3.camel@findus-T530>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/b2LeZWmoVamm55dk5SaVY+FfUIDceKKU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0048]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_04 7+ unique symbols in subject
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH 07/11] pidns: Wait in zap_pid_ns_processes until pid_ns->nr_hashed == 1
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+Hi Matthias, et al.
 
-> On 11/16, Eric W. Biederman wrote:
->>
->> @@ -216,22 +216,15 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
->>
->>  	/*
->>  	 * sys_wait4() above can't reap the TASK_DEAD children.
->> -	 * Make sure they all go away, see __unhash_process().
->> +	 * Make sure they all go away, see free_pid().
->>  	 */
->>  	for (;;) {
->> -		bool need_wait = false;
->> -
->> -		read_lock(&tasklist_lock);
->> -		if (!list_empty(&current->children)) {
->> -			__set_current_state(TASK_UNINTERRUPTIBLE);
->> -			need_wait = true;
->> -		}
->> -		read_unlock(&tasklist_lock);
->> -
->> -		if (!need_wait)
->> +		set_current_state(TASK_UNINTERRUPTIBLE);
->> +		if (pid_ns->nr_hashed == 1)
->>  			break;
->>  		schedule();
->>  	}
->
-> I agree, the patch itself looks fine.
->
-> But, with all other changes I do not understand this part at all.
->
-> A task from the parent namespace can do setns + fork at any time
-> (until nr_hashed >= 0). So ->nr_hashed can be incremented again
-> after zap_pid_ns_processes() returns.
+On Sat, 15 Dec 2012 18:16:43 Matthias Kohler wrote:
+> I'm doing a CPU-Scheduler based on BFS by Con Kolivas with support for
+> multiple run-queues. 
 
-I want to talk about how alloc_pid and free_pid prevent nr_hashed
-from increasing once the last processes has exited the pid namespace
-but that doesn't apply here.
+Nice to see you doing interesting hacking on BFS and thanks for your bugfixes 
+previously. Well done making it this far! Multiple runqueues is something 
+that's been on and off the boil for BFS right from the start. I've also done 
+various experiments and some ground work along similar lines (I'll explain 
+later), but soon lost interest since my experiments suggested I would need a 
+heck of a lot of time to implement it the way I envisioned.
 
-> Or, we can sleep in TASK_UNINTERRUPTIBLE "forever" if this happens
-> after kill-them-all.
+> BFS in itself uses only one run-queue for all
+> CPU's. This avoids the load-balancing overhead, but does not scale well.
 
-Sleeping forever should be prevented by this chunk in free_pid:
+Actually describing it like this is a little bit of a generalisation that 
+unfortunately has the tendency to point to the obvious culprit for scaling 
+without really defining what the limitations are to scaling and how removing it 
+might help. The culprit people point to is the single runqueue because of the 
+potential for lock contention rising exponentially as the number of CPUs 
+rises. However while some very early testing showed that scalability of -some- 
+workloads did not match mainline once we reached 16 CPUs, it was just an 
+assumption that it was lock contention that caused this. The most CPUs I can 
+find someone to test BFS on previously was 16, and lock debugging actually did 
+NOT show there to be significant contention as registering any more than 
+mainline. This is not that surprising really since the critical sections under 
+the global runqueue lock are kept as short as possible.
 
-		switch(--ns->nr_hashed) {
-		case 1:
-			/* When all that is left in the pid namespace
-			 * is the reaper wake up the reaper.  The reaper
-			 * may be sleeping in zap_pid_ns_processes().
-			 */
-			wake_up_process(ns->child_reaper);
+Scalability seems only affected on workloads that rely greatly on cache 
+warmth, and very low cache requirement workloads like simple networking based 
+tasks do not suffer at all (and some benchmarks have shown it to be better 
+than mainline at these). This implies to me that complex balancing mechanisms 
+designed to keep tasks cache warm is the reason mainline outperforms with 
+these workloads. The main thrust of BFS is to offer -any- free CPU to the task 
+that has waited the longest, thereby minimising latency at all times, and 
+bringing it down the more CPUs you have. This approach is pretty much 
+orthogonal to trying to keep tasks bound to their old CPU or a cache shared 
+sibling if it means occasionally leaving a cold cache CPU free for a period 
+instead. BFS uses only the simplest possible cache warmth approach which 
+proves to help, but overrides it in the interests of latency. Certainly in the 
+- now overworked example - of the make kernel benchmarks, it performs very 
+well up to 16x.
 
+Which brings up the question of just how many CPUs it requires for lock 
+contention to be a problem. I don't have the answer to that question, but I 
+would not be surprised if it was a significant problem at 64 or more. Luckily, 
+while the general trend is for more and more threads even on commodity 
+hardware, I don't see this size happening any time soon (note I'm not saying 
+never). That said, it is a valid endpoint to scale beyond that if possible in 
+the design if one wished BFS to be used outside the commodity hardware 
+spectrum.
 
-I admit it continues to be true that if an injected process or a
-debugged process does not exit we can block waiting for all of the
-processes to be reaped indefinitely.
+> One run-queue per CPU does scale well, but then the scheduler has
+> load-balancing overhead. The scheduler I'm developing supports every
+> possible run-queues configuration. You can have one single run-queue
+> like in BFS, or you can have one run-queue per CPU, or something
+> completely different like one run-queue every two CPU's. This, in theory
+> would  allow the scheduler to be fine-tuned to the hardware and the
+> workload.
 
-> Could you explain why do we need to wait at all? I can be easily
-> wrong, but at first glance the original reason for this wait has
-> gone away?
+I agree with you this is by far the most interesting way of tackling this 
+problem, while trying to maintain the benefits of the shared runqueue as much 
+as possible. Given that lock contention is not a problem even up to 16 
+threads/CPUs, it gives scope to have clusters of CPUs benefiting from the 
+shared runqueue aspects BFS has while still allowing it to scale beyond that. 
+I would hazard a guess that optimal would simply be one runqueue per shared 
+cache.
 
-It is very nice to know that when you do waitpid for the init process of
-a pid namespace that there are no other processes in the pid namespace.
+> 
+> What state is it in?
+> Currently it is very unstable, CPU-Hotplug is broken, scheduling
+> statistics are broken, support for real-time tasks is broken. Load
+> balancing when having more than one run-queue is working, but is nothing
+> more than keeping the load on all run-queues equal. Associating a CPU
+> and a run-queue is currently done with a system call and there is no
+> access right checking. The source is in a very bad state.
+> Uni-processor build is broken.
+> It lacks proper Documentation.
+> 
+> Why allow the user to change the run-queue layout?
+> To optimize the scheduler to specific hardware and workloads.
+> You could use one run-queue for all CPU's if you want low latency and
+> low scheduling overhead.
+> You could use one run-queue per CPU if you want high scalability.
+> You could use one run-queue per n CPU's is these n CPU's share cache and
+> there is not much benefit in load balancing between them.
 
-Leaving the wait here has the nice effect that it doesn't penalize
-anything but pid namespace code paths.
+That is in agreement with what I said above :) Admittedly trying to find just 
+the right balance would be tricky, but having infinite flexibility is an 
+admirable quality that would allow the optimal design to be found.
 
-Eric
+> 
+> Benchmarks?
+> None, it is not stable enough to benchmark and the load balancing
+> algorithm that is currently used, delivers very bad performance.
+
+Well this would be crucial to get right given my experience with BFS. Fixing t 
+he locking contention would only go partway to a solution since balancing is 
+so important with our extremely cache fat CPUs these days, and localised 
+memory and so on in the case of NUMA.
+> 
+> What advantages does it have when compared to other schedulers?
+> It is more scalable than BFS.
+> It could in future have all features of BFS and of CFS, especially
+> throughput and low latency.
+> It has far less lines of code than CFS.
+> 
+> What disadvantages does it have when compared to other schedulers?
+> It is not stable.
+> It is not tested on anything else than kvm and more than 4 CPU's.
+> Many features are not yet working or not implemented at all (good load
+> balancing).
+> 
+> Implementation details:
+> All tasks that are runnable but not currently executing on a CPU, are
+> queued on one of the global run-queues. Every global run-queue has its
+> own spin-lock. When a task gets queued or dequeued this lock needs to be
+> taken. All global run-queues are protected by one global read-write
+> lock. When normal scheduling is done, this lock needs to be read_locked.
+> When any change to the layout of the global run-queues is done,
+> like adding new global run-queues or removing them, the global
+> read-write lock needs to be write-locked.
+
+This is where the parallels between your approach and my experiments starts 
+becoming apparent. You will note in the last few -ck releases, there are extra 
+patches that are not applied, that I mentioned in my blog.
+
+http://ck-hack.blogspot.com/2012/06/upgradeable-rwlocks-and-bfs.html
+
+These  patches have been updated slightly since then and the latest can be 
+found here: 
+http://ck.kolivas.org/patches/3.0/3.7/3.7-ck1/patches/
+
+The reason I point these out are the problem with using read locks is that 
+they're not upgradeable, and favour reads over writes. This means that if you 
+had something time critical to do under the write lock, under heavy contention 
+you may not be able to achieve it. The upgradeable rwlock favours writes over 
+reads, and allows an intermediate stage between read and write which is 
+upgradeable to a write lock or downgradeable to a read lock while still 
+allowing read access to the critical sections. I have used it in place of the 
+current global runqueue spinlock to create more read sections, although it has  
+not had a massive impact on the hardware that I could test it on (up to 16x 
+again). I wonder if you might find the urwlocks helpful for your code?
+
+However the main reason for developing the upgradeable rwlocks was not just to 
+create more critical sections that other CPUs can have read access. Ultimately 
+I had a pipe dream that it could be used to create multiple runqueues as you 
+have done in your patch. However, what I didn't want to do was to create a 
+multi runqueue design that then needed a load balancer as that took away one 
+of the advantages of BFS needing no balancer and keeping latency as low as 
+possible.
+
+I've not ever put a post up about what my solution was to this problem because 
+the logistics of actually creating it, and the work required kept putting me 
+off since it would require many hours, and I really hate to push vapourware. 
+Code speaks louder than rhetoric. However since you are headed down creating 
+multi runqueue code, perhaps you might want to consider it. 
+
+What I had in mind was to create varying numbers of runqueues in a 
+hierarchical fashion. Whenever possible, the global runqueue could be grabbed 
+in order to find the best possible task to schedule on that CPU from the entire 
+pool. If there was contention however on the global runqueue, it could step 
+down in the hierarchy and just grab a runqueue effective for a numa node and 
+schedule the best task from that. If there was contention on that it could 
+step down and schedule the best task from a physical package, and then shared 
+cache, then shared threads, and if all that failed only would it just grab a 
+local CPU runqueue. The reason for doing this is it would create a load 
+balancer by sheer virtue of the locking mechanism itself rather than there 
+actually being a load balancer at all, thereby benefiting from the BFS approach 
+in terms of minimising latency, finding the best global task, not requiring a 
+load balancer, and at the same time benefit from having multiple runqueues to 
+avoid lock contention - and in fact use that lock contention as a means to an 
+endpoint.
+
+Alas to implement it myself I'd have to be employed full time for months 
+working on just this to get it working...
+
+> Fair time distribution among tasks is done via the deadline mechanism of
+> BFS.
+> 
+
+While I unfortunately do not have the time to review your code due to my own 
+real life events, I greatly look forward to seeing how your code evolves and 
+wish you luck.
+
+-- 
+-ck
