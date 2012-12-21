@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab2LUOtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 09:49:05 -0500
-Received: from mga03.intel.com ([143.182.124.21]:41824 "EHLO mga03.intel.com"
+	id S1752443Ab2LUOtM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 09:49:12 -0500
+Received: from mga03.intel.com ([143.182.124.21]:40310 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab2LUOrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 09:47:06 -0500
+	id S1751099Ab2LUOrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 09:47:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,329,1355126400"; 
-   d="scan'208";a="235197570"
+   d="scan'208";a="235197563"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Thomas Gleixner" <tglx@linutronix.de>,
@@ -19,9 +19,9 @@ To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Borislav Petkov" <borislav.petkov@amd.com>,
         "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v5 10/12] x86/head64.c: Early update ucode in 64-bit
-Date: Thu, 20 Dec 2012 23:44:30 -0800
-Message-Id: <1356075872-3054-11-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v5 09/12] x86/head_32.S: Early update ucode in 32-bit
+Date: Thu, 20 Dec 2012 23:44:29 -0800
+Message-Id: <1356075872-3054-10-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
 References: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
@@ -31,38 +31,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-This updates ucode on BSP in 64-bit mode. Paging and virtual address are
-working now.
+This updates ucode in 32-bit kernel on BSP and AP. At this point, there is no
+paging and no virtual address yet.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/kernel/head64.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/head_32.S | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
-index e1cb611..5a97fcc 100644
---- a/arch/x86/kernel/head64.c
-+++ b/arch/x86/kernel/head64.c
-@@ -26,6 +26,7 @@
- #include <asm/kdebug.h>
- #include <asm/e820.h>
- #include <asm/bios_ebda.h>
-+#include <asm/microcode.h>
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 8e7f655..2f70530 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -144,6 +144,11 @@ ENTRY(startup_32)
+ 	movl %eax, pa(olpc_ofw_pgd)
+ #endif
  
- /*
-  * Manage page tables very early on.
-@@ -181,6 +182,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
- 
- 	copy_bootdata(__va(real_mode_data));
- 
-+	/*
-+	 * Load microcode early on BSP.
-+	 */
-+	load_ucode_bsp();
++#ifdef CONFIG_MICROCODE_EARLY
++	/* Early load ucode on BSP. */
++	call load_ucode_bsp
++#endif
 +
- 	if (console_loglevel == 10)
- 		early_printk("Kernel alive\n");
+ /*
+  * Initialize page tables.  This creates a PDE and a set of page
+  * tables, which are located immediately beyond __brk_base.  The variable
+@@ -299,6 +304,12 @@ ENTRY(startup_32_smp)
+ 	movl %eax,%ss
+ 	leal -__PAGE_OFFSET(%ecx),%esp
  
++#ifdef CONFIG_MICROCODE_EARLY
++	/* Early load ucode on AP. */
++	call load_ucode_ap
++#endif
++
++
+ default_entry:
+ /*
+  *	New page tables may be in 4Mbyte page mode and may
 -- 
 1.8.0.1
 
