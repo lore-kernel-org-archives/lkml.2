@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751812Ab2LUJxr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:53:47 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:42132 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751131Ab2LUJxj (ORCPT
+	id S1751633Ab2LUJx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:53:56 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:51364 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512Ab2LUJxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:53:39 -0500
-X-Greylist: delayed 363 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 04:53:38 EST
+	Fri, 21 Dec 2012 04:53:42 -0500
 From: Andrey Smirnov <andrew.smirnov@gmail.com>
 To: andrey.smirnov@convergeddevices.net
 Cc: broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] Add provisions to have user-defined read operation
-Date: Fri, 21 Dec 2012 01:47:16 -0800
-Message-Id: <1356083238-6932-2-git-send-email-andrew.smirnov@gmail.com>
+Subject: [PATCH 2/3] Add provisions to have user-defined write operation
+Date: Fri, 21 Dec 2012 01:47:17 -0800
+Message-Id: <1356083238-6932-3-git-send-email-andrew.smirnov@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1356083238-6932-1-git-send-email-andrew.smirnov@gmail.com>
 References: <1356083238-6932-1-git-send-email-andrew.smirnov@gmail.com>
@@ -23,108 +22,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This commit is a preparatory commit to provide "no-bus" configuration
 option for regmap API. It adds necessary plumbing needed to have the
-ability to provide user define register read function.
+ability to provide user define register write function.
 
 Signed-off-by: Andrey Smirnov <andrew.smirnov@gmail.com>
 ---
- drivers/base/regmap/internal.h |    2 ++
- drivers/base/regmap/regmap.c   |   34 +++++++++++++++++++++++++---------
- 2 files changed, 27 insertions(+), 9 deletions(-)
+ drivers/base/regmap/internal.h |    1 +
+ drivers/base/regmap/regmap.c   |   72 ++++++++++++++++++++++++++--------------
+ 2 files changed, 48 insertions(+), 25 deletions(-)
 
 diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
-index 80f9ab9..c450c1f 100644
+index c450c1f..5d10c6d 100644
 --- a/drivers/base/regmap/internal.h
 +++ b/drivers/base/regmap/internal.h
-@@ -58,6 +58,8 @@ struct regmap {
- 	bool (*volatile_reg)(struct device *dev, unsigned int reg);
+@@ -59,6 +59,7 @@ struct regmap {
  	bool (*precious_reg)(struct device *dev, unsigned int reg);
  
-+	int (*reg_read)(struct regmap *map, unsigned int reg, unsigned int *val);
-+
+ 	int (*reg_read)(struct regmap *map, unsigned int reg, unsigned int *val);
++	int (*reg_write)(struct regmap *map, unsigned int reg, unsigned int val);
+ 
  	u8 read_flag_mask;
  	u8 write_flag_mask;
- 
 diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
-index c241ae2..4e45877 100644
+index 4e45877..006b50b 100644
 --- a/drivers/base/regmap/regmap.c
 +++ b/drivers/base/regmap/regmap.c
-@@ -34,6 +34,9 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
- 			       unsigned int mask, unsigned int val,
- 			       bool *change);
+@@ -36,6 +36,11 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
  
-+static int _regmap_bus_read(struct regmap *map, unsigned int reg,
-+			    unsigned int *val);
+ static int _regmap_bus_read(struct regmap *map, unsigned int reg,
+ 			    unsigned int *val);
++static int _regmap_bus_formatted_write(struct regmap *map, unsigned int reg,
++				       unsigned int val);
++static int _regmap_bus_raw_write(struct regmap *map, unsigned int reg,
++				 unsigned int val);
 +
+ 
  bool regmap_writeable(struct regmap *map, unsigned int reg)
  {
- 	if (map->max_register && reg > map->max_register)
-@@ -373,6 +376,8 @@ struct regmap *regmap_init(struct device *dev,
- 		map->read_flag_mask = bus->read_flag_mask;
+@@ -523,6 +528,11 @@ struct regmap *regmap_init(struct device *dev,
+ 		goto err_map;
  	}
  
-+	map->reg_read = _regmap_bus_read;
++	if (map->format.format_write)
++		map->reg_write = _regmap_bus_formatted_write;
++	else if (map->format.format_val)
++		map->reg_write = _regmap_bus_raw_write;
 +
- 	reg_endian = config->reg_format_endian;
- 	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
- 		reg_endian = bus->reg_format_endian_default;
-@@ -1090,10 +1095,26 @@ static int _regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	map->range_tree = RB_ROOT;
+ 	for (i = 0; i < config->n_ranges; i++) {
+ 		const struct regmap_range_cfg *range_cfg = &config->ranges[i];
+@@ -883,11 +893,46 @@ static int _regmap_raw_write(struct regmap *map, unsigned int reg,
  	return ret;
  }
  
-+static int _regmap_bus_read(struct regmap *map, unsigned int reg,
-+			    unsigned int *val)
++static int _regmap_bus_formatted_write(struct regmap *map, unsigned int reg,
++				       unsigned int val)
 +{
 +	int ret;
++	BUG_ON(!map->format.format_write);
 +
-+	if (!map->format.parse_val)
-+		return -EINVAL;
++	ret = _regmap_select_page(map, &reg, 1);
++	if (ret < 0)
++		return ret;
 +
-+	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
-+	if (ret == 0)
-+		*val = map->format.parse_val(map->work_buf);
++	map->format.format_write(map, reg, val);
++
++	trace_regmap_hw_write_start(map->dev, reg, 1);
++
++	ret = map->bus->write(map->bus_context, map->work_buf,
++			      map->format.buf_size);
++
++	trace_regmap_hw_write_done(map->dev, reg, 1);
 +
 +	return ret;
 +}
 +
- static int _regmap_read(struct regmap *map, unsigned int reg,
- 			unsigned int *val)
++static int _regmap_bus_raw_write(struct regmap *map, unsigned int reg,
++				 unsigned int val)
++{
++	BUG_ON(!map->format.format_val);
++
++	map->format.format_val(map->work_buf + map->format.reg_bytes
++			       + map->format.pad_bytes, val, 0);
++	return _regmap_raw_write(map, reg,
++				 map->work_buf +
++				 map->format.reg_bytes +
++				 map->format.pad_bytes,
++				 map->format.val_bytes);
++}
++
+ int _regmap_write(struct regmap *map, unsigned int reg,
+ 		  unsigned int val)
  {
  	int ret;
-+	BUG_ON(!map->reg_read);
+-	BUG_ON(!map->format.format_write && !map->format.format_val);
  
- 	if (!map->cache_bypass) {
- 		ret = regcache_read(map, reg, val);
-@@ -1101,26 +1122,21 @@ static int _regmap_read(struct regmap *map, unsigned int reg,
- 			return 0;
- 	}
+ 	if (!map->cache_bypass && map->format.format_write) {
+ 		ret = regcache_write(map, reg, val);
+@@ -906,30 +951,7 @@ int _regmap_write(struct regmap *map, unsigned int reg,
  
--	if (!map->format.parse_val)
--		return -EINVAL;
+ 	trace_regmap_reg_write(map->dev, reg, val);
+ 
+-	if (map->format.format_write) {
+-		ret = _regmap_select_page(map, &reg, 1);
+-		if (ret < 0)
+-			return ret;
 -
- 	if (map->cache_only)
- 		return -EBUSY;
- 
--	ret = _regmap_raw_read(map, reg, map->work_buf, map->format.val_bytes);
-+	ret = map->reg_read(map, reg, val);
- 	if (ret == 0) {
--		*val = map->format.parse_val(map->work_buf);
+-		map->format.format_write(map, reg, val);
 -
- #ifdef LOG_DEVICE
- 		if (strcmp(dev_name(map->dev), LOG_DEVICE) == 0)
- 			dev_info(map->dev, "%x => %x\n", reg, *val);
- #endif
- 
- 		trace_regmap_reg_read(map->dev, reg, *val);
+-		trace_regmap_hw_write_start(map->dev, reg, 1);
+-
+-		ret = map->bus->write(map->bus_context, map->work_buf,
+-				      map->format.buf_size);
+-
+-		trace_regmap_hw_write_done(map->dev, reg, 1);
+-
+-		return ret;
+-	} else {
+-		map->format.format_val(map->work_buf + map->format.reg_bytes
+-				       + map->format.pad_bytes, val, 0);
+-		return _regmap_raw_write(map, reg,
+-					 map->work_buf +
+-					 map->format.reg_bytes +
+-					 map->format.pad_bytes,
+-					 map->format.val_bytes);
 -	}
- 
--	if (ret == 0 && !map->cache_bypass)
--		regcache_write(map, reg, *val);
-+		if (!map->cache_bypass)
-+			regcache_write(map, reg, *val);
-+	}
- 
- 	return ret;
++	return map->reg_write(map, reg, val);
  }
+ 
+ /**
 -- 
 1.7.9.5
 
