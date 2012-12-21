@@ -1,88 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751054Ab2LUFKi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 00:10:38 -0500
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:48123 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750784Ab2LUFKa convert rfc822-to-8bit (ORCPT
+	id S1751084Ab2LUFLr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 00:11:47 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:6679 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab2LUFLm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 00:10:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <87623ydnvq.fsf@devron.myhome.or.jp>
-References: <1353504311-6020-1-git-send-email-linkinjeon@gmail.com>
-	<878v9f5ugn.fsf@devron.myhome.or.jp>
-	<CAKYAXd-ydXkwDq6vkECEKPUQiNgg2+GKbL+ah9sn+uqr8BT1kQ@mail.gmail.com>
-	<87k3sy17vk.fsf@devron.myhome.or.jp>
-	<CAKYAXd8=7BG8NsVyvUP5xW48Y9FJpD7M95_MiJVGcwYOfYsrLA@mail.gmail.com>
-	<87txs0x45r.fsf@devron.myhome.or.jp>
-	<CAKYAXd8OP_FXxJWHESW_bCY1hGQuZPMJYOkLkmQ4fOkDhGO8xw@mail.gmail.com>
-	<CAKYAXd9NXVsBTMpTUWxN_10z1Ozt47f6Ghvsv9rbp_Y8tVMg2A@mail.gmail.com>
-	<87623ydnvq.fsf@devron.myhome.or.jp>
-Date: Fri, 21 Dec 2012 14:03:19 +0900
-Message-ID: <CAKYAXd8GgrG+cMN_wQDFLiuXoBPbR7c6N9eZqGCrK-OH3HpuZA@mail.gmail.com>
-Subject: Re: [PATCH v5 7/8] fat (exportfs): rebuild directory-inode if
- fat_dget() fails
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
-        Ravishankar N <ravi.n1@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Dec 2012 00:11:42 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=BDNqrsFge44A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=-V7fij46oSQA:10 a=o1VdtP4Gw7yDHObwThwA:9 a=PUjeQqilurYA:10 a=4OhlYjbsDToTLMtN:21 a=rs3c4bfwSMBzanLP:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1356066698.5896.90.camel@gandalf.local.home>
+Subject: Re: [PATCH 02/24] cputime: Generic on-demand virtual cputime
+ accounting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Fri, 21 Dec 2012 00:11:38 -0500
+In-Reply-To: <1356028391-14427-3-git-send-email-fweisbec@gmail.com>
+References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+	 <1356028391-14427-3-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/20, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>:
-> Namjae Jeon <linkinjeon@gmail.com> writes:
->
->>> Okay, We will check how we can consolidate the 2 paths to avoid any
->>> issue.
->> Hi OGAWA.
->>
->> On checking fat_search_long() logic, it is observed that it performs
->> name based lookup of the entries in a given directory.
->> In fat_get_parent(), we do not have such information to use the
->> existing API to reconstruct the  parent inode.
->> Could you give me some hint or guide to consolidate smoothly
->> fat_search_long and current traverse_logic ?
->
-> Hm, start with copy of fat_search_long() and refactoring it. With it, we
-> will be able to avoid the fixed bugs.
->
-> After that, we might be able to merge those somehow. Well, I'm not
-> pretty sure without doing it actually though.
-Hi OGAWA.
+On Thu, 2012-12-20 at 19:32 +0100, Frederic Weisbecker wrote:
 
-When we checked to merge it with fat_search_long, we really did not
-find any possibility of code reusing for fat_traverse_cluster.
-It will not be proper ? In case of fat_search_long()-> it is
-performing a name based lookup in a particular directory.
-While for reconnection with parent from NFS ? we do not have the name
-of the parent directory. We are relying on ‘i_pos’ ? on disk position
-of directory entry.
-So, on first request for lookup for “..” (i.e if we call
-fat_search_long(child_dir->d_inode, MSDOS_DOTDOT,2,slot_info) it will
-return the directory entry for “..” itself.  From this entry we can
-read the “log start” which is the starting cluster of the parent
-directory, but instead we need the “directory entry” where this is
-stored.
-So, from this level we need to go further one level up and read the
-parent ->parent-> cluster. After reading that cluster, we need to do a
-lookup of the “required ipos” in this directory block.
-i.e., if the path is A/B/C ? and we call the get_parent() from ‘C’. We
-need to read the directory block contents of ‘A’ and from those
-‘directory entries' compare the log_start with the log_start value of
-B, which was obtained by doing a lookup “..” in C.
-So, Instead of it, we suggest we fix the “infinite-loop” condition in
-fat_traverse_logic and retain the code.
-of course, we will test it with corrupted FATfs.
-Please share your thoughts on this.
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index 293b202..da0a9e7 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -3,6 +3,7 @@
+>  #include <linux/tsacct_kern.h>
+>  #include <linux/kernel_stat.h>
+>  #include <linux/static_key.h>
+> +#include <linux/context_tracking.h>
+>  #include "sched.h"
+>  
+> 
+> @@ -495,10 +496,24 @@ void vtime_task_switch(struct task_struct *prev)
+>  #ifndef __ARCH_HAS_VTIME_ACCOUNT
+>  void vtime_account(struct task_struct *tsk)
+>  {
+> -	if (in_interrupt() || !is_idle_task(tsk))
+> -		vtime_account_system(tsk);
+> -	else
+> -		vtime_account_idle(tsk);
+> +	if (!in_interrupt()) {
+> +		/*
+> +		 * If we interrupted user, context_tracking_in_user()
+> +		 * is 1 because the context tracking don't hook
+> +		 * on irq entry/exit. This way we know if
+> +		 * we need to flush user time on kernel entry.
+> +		 */
+> +		if (context_tracking_in_user()) {
+> +			vtime_account_user(tsk);
+> +			return;
+> +		}
+> +
+> +		if (is_idle_task(tsk)) {
+> +			vtime_account_idle(tsk);
+> +			return;
+> +		}
+> +	}
+> +	vtime_account_system(tsk);
+>  }
+>  EXPORT_SYMBOL_GPL(vtime_account);
+>  #endif /* __ARCH_HAS_VTIME_ACCOUNT */
+> @@ -586,4 +601,72 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+>  	thread_group_cputime(p, &cputime);
+>  	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
+>  }
+> -#endif
 
-Thanks.
->
-> Thanks.
-> --
-> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
->
+Deleted #endif here.
+
+> +
+> +#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+
+Added #ifdef here.
+
+> +static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
+> +
+> +static cputime_t get_vtime_delta(void)
+> +{
+> +	long delta;
+> +
+> +	delta = jiffies - __this_cpu_read(last_jiffies);
+> +	__this_cpu_add(last_jiffies, delta);
+> +
+> +	return jiffies_to_cputime(delta);
+> +}
+> +
+> +void vtime_account_system(struct task_struct *tsk)
+> +{
+> +	cputime_t delta_cpu = get_vtime_delta();
+> +
+> +	account_system_time(tsk, irq_count(), delta_cpu, cputime_to_scaled(delta_cpu));
+> +}
+> +
+> +void vtime_account_user(struct task_struct *tsk)
+> +{
+> +	cputime_t delta_cpu = get_vtime_delta();
+> +
+> +	/*
+> +	 * This is an unfortunate hack: if we flush user time only on
+> +	 * irq entry, we miss the jiffies update and the time is spuriously
+> +	 * accounted to system time.
+> +	 */
+> +	if (context_tracking_in_user())
+> +		account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
+> +}
+> +
+> +void vtime_account_idle(struct task_struct *tsk)
+> +{
+> +	cputime_t delta_cpu = get_vtime_delta();
+> +
+> +	account_idle_time(delta_cpu);
+> +}
+> +
+> +static int __cpuinit vtime_cpu_notify(struct notifier_block *self,
+> +				      unsigned long action, void *hcpu)
+> +{
+> +	long cpu = (long)hcpu;
+> +	long *last_jiffies_cpu = per_cpu_ptr(&last_jiffies, cpu);
+> +
+> +	switch (action) {
+> +	case CPU_UP_PREPARE:
+> +	case CPU_UP_PREPARE_FROZEN:
+> +		/*
+> +		 * CHECKME: ensure that's visible by the CPU
+> +		 * once it wakes up
+> +		 */
+> +		*last_jiffies_cpu = jiffies;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static int __init init_vtime(void)
+> +{
+> +	cpu_notifier(vtime_cpu_notify, 0);
+> +	return 0;
+> +}
+> +early_initcall(init_vtime);
+> +#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
+
+Added #endif here
+
+Hmm, missing #endif somewhere. Must explain my error message:
+
+  kernel/sched/cputime.c:448:0: error: unterminated #else
+
+Looks like a possible mismerge.
+
+-- Steve
+
+
+
