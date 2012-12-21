@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751949Ab2LUXgz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 18:36:55 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:28415 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059Ab2LUXgx convert rfc822-to-8bit (ORCPT
+	id S1751969Ab2LUXkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 18:40:07 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:25791 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751059Ab2LUXkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 18:36:53 -0500
-X-IronPort-AV: E=Sophos;i="4.84,332,1355126400"; 
-   d="scan'208";a="2499145"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Adamson, Dros" <Weston.Adamson@netapp.com>
-Subject: RE: nfsd oops on Linus' current tree.
-Thread-Topic: nfsd oops on Linus' current tree.
-Thread-Index: AQHN35CZ1gDHdp5O+Eehf/Br4MyqIpgkE1AAgAAJEYCAAErfgP//ego5gACKzoD//3sf0A==
-Date: Fri, 21 Dec 2012 23:36:51 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
-References: <20121221153348.GA32151@redhat.com>
- <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>,<20121221232609.GC29739@fieldses.org>
-In-Reply-To: <20121221232609.GC29739@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Dec 2012 18:40:04 -0500
+Date: Fri, 21 Dec 2012 18:39:42 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 12/13] x86, 64bit: Print init kernel lowmap correctly
+Message-ID: <20121221233942.GA2000@phenom.dumpdata.com>
+References: <1354089042-10023-1-git-send-email-yinghai@kernel.org>
+ <1354089042-10023-13-git-send-email-yinghai@kernel.org>
+ <20121221222619.GA1102@phenom.dumpdata.com>
+ <CAE9FiQXsi5gj6QGp-rreH6Bqb6A5WTA6umFiiJ1mQFRp6u5ziw@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAE9FiQXsi5gj6QGp-rreH6Bqb6A5WTA6umFiiJ1mQFRp6u5ziw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please reread what I said. There was no obvious circular dependency, because nfsiod and rpciod are separate workqueues, both created with WQ_MEM_RECLAIM. Dros' experience shows, however that a call to rpc_shutdown_client in an nfsiod work item will deadlock with rpciod if the RPC task's work item has been assigned to the same CPU as the one running the rpc_shutdown_client work item.
+On Fri, Dec 21, 2012 at 02:44:39PM -0800, Yinghai Lu wrote:
+> On Fri, Dec 21, 2012 at 2:26 PM, Konrad Rzeszutek Wilk
+> <konrad.wilk@oracle.com> wrote:
+> >> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> >> index 4178530..30f6190 100644
+> >> --- a/arch/x86/mm/init_64.c
+> >> +++ b/arch/x86/mm/init_64.c
+> >> @@ -304,10 +304,14 @@ void __init init_extra_mapping_uc(unsigned long phys, unsigned long size)
+> >>  void __init cleanup_highmap(void)
+> >>  {
+> >>       unsigned long vaddr = __START_KERNEL_map;
+> >> -     unsigned long vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+> >> +     unsigned long vaddr_end = __START_KERNEL_map + KERNEL_IMAGE_SIZE;
+> >
+> > Should you remove the line in head64.c that sets the
+> > max_pfn_mapped to KERNEL_IMAGE_SIZE >> PAGE_SHIFT?
+> >
+> >>       unsigned long end = roundup((unsigned long)_brk_end, PMD_SIZE) - 1;
+> >>       pmd_t *pmd = level2_kernel_pgt;
+> >>
+> >> +     /* Xen has its own end somehow with abused max_pfn_mapped */
+> >
+> > Could you clarify please?
+> >
+> > My recollection is that the max_pfn_mapped would point to the end of the
+> > RAMdisk. And yes (from mmu.c):
+> >
+> >    1862         /* max_pfn_mapped is the last pfn mapped in the initial memory
+> >    1863          * mappings. Considering that on Xen after the kernel mappings we
+> >    1864          * have the mappings of some pages that don't exist in pfn space, we
+> >    1865          * set max_pfn_mapped to the last real pfn mapped. */
+> >    1866         max_pfn_mapped = PFN_DOWN(__pa(xen_start_info->mfn_list));
+> >    1867
+> >
+> > And if you follow xen_start_info, you get to include/xen/interface/xen.h which has:
+> >
+> >     406  *  4. This the order of bootstrap elements in the initial virtual region:
+> >     407  *      a. relocated kernel image
+> >     408  *      b. initial ram disk              [mod_start, mod_len]
+> >     409  *      c. list of allocated page frames [mfn_list, nr_pages]
+> >
+> > so per that code I believe max_pfn_mapped covers the kernel and the ramdisk - no more.
+> >
+> 
+> for native path, in x86_64_start_kernel, we set max_pfn_mapped wrongly (my fault
+> , I messed up low mapping and high mapping).
+> before this patchset, low_mapping end before end of x86_64_start_kernel is
+> 1G, and high mapping end is 512M.
+> 
+> max_pfn_mapped is for low mapping.
+> 
+> in this patch, for native patch, we keep max_pfn_mapped untouched, so
+> before clean_highmap, it will be 0.
+> 
+> so we check !max_pfn_mapped to make xen still work.
+> 
+OK. Might want to have a comment pointing to the xen/mmu.c and the max_pfn_mapped
+that is happening there. Thought if somebody is using 'cscope' or 'tags' they
+should be able to find it.
 
-I can't tell right now if that is intentional (in which case the WARN_ON in the rpc code is correct), or if it is a bug in the workqueue code. For now, we're assuming the former.
+Perhaps just have a comment and say:
+'/* Xen includes the RAMdisk as well - which is right after the kernel. */
 
-________________________________________
-From: J. Bruce Fields [bfields@fieldses.org]
-Sent: Friday, December 21, 2012 6:26 PM
-To: Myklebust, Trond
-Cc: Dave Jones; Linux Kernel; linux-nfs@vger.kernel.org; Adamson, Dros
-Subject: Re: nfsd oops on Linus' current tree.
 
-On Fri, Dec 21, 2012 at 11:15:40PM +0000, Myklebust, Trond wrote:
-> Apologies for top-posting. The SSD on my laptop died, and so I'm stuck using webmail for this account...
+> >
+> >> +     if (max_pfn_mapped)
+> >> +             vaddr_end = __START_KERNEL_map + (max_pfn_mapped << PAGE_SHIFT);
+> >> +
+> >>       for (; vaddr + PMD_SIZE - 1 < vaddr_end; pmd++, vaddr += PMD_SIZE) {
+> >>               if (pmd_none(*pmd))
+> >>                       continue;
+> >> --
+> >
+> > This part of the patch does not seem to have much to do with the printk?
+> > Should it be seperate patch?
+> 
+> maybe we can change the subject of this patch to:
+> 
+> Subject: [PATCH] x86, 64bit: Don't set max_pfn_mapped wrong on native boot path
 
-Fun!  If that happens to me on this trip, I've got a week trying to hack
-the kernel from my cell phone....
+Or the inverse.
 
-> Our experience with nfsiod is that the WQ_MEM_RECLAIM option still deadlocks despite the "rescuer thread". The CPU that is running the workqueue will deadlock with any rpciod task that is assigned to the same CPU. Interestingly enough, the WQ_UNBOUND option also appears able to deadlock in the same situation.
->
-> Sorry, I have no explanation why...
+Set max_pfn_mapped correctly on non-native boot path?
 
-As I said:
+But this patch is not actually touching max_pfn_mapped - it is vaddr_end?
+So maybe:
 
-> there shouldn't be any deadlock as long as there's no circular
-> dependency among the three.
+Subject: For platforms to set max_pfn_mapped, take that under advisement when blowing away __ka page entries.
 
-There was a circular dependency (of rpciod on itself), so having a
-dedicated rpciod rescuer thread wouldn't help--once the rescuer thread
-is waiting for work queued to do the same queue you're asking for
-trouble.
-
-The last argument in
-
-        alloc_workqueue("rpciod", WQ_MEM_RECLAIM, 1);
-
-ensures that it will never allow more than 1 piece of work to run per
-CPU, so the deadlock should be pretty easy to hit.
-
-And with UNBOUND that's only one piece of work globally, so yeah all you
-need is an rpc at shutdown time and it should deadlock every time.
-
---b.
+> 
+> ?
