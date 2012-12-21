@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab2LUVob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 16:44:31 -0500
-Received: from mail.ispras.ru ([83.149.199.43]:39088 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751024Ab2LUVo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 16:44:28 -0500
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Tomas Winkler <tomas.winkler@intel.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] mei: fix mismatch in mutex unlock-lock in mei_amthif_read()
-Date: Sat, 22 Dec 2012 01:44:16 +0400
-Message-Id: <1356126256-21389-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751854Ab2LUVvv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 16:51:51 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:64977 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468Ab2LUVvr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 16:51:47 -0500
+MIME-Version: 1.0
+In-Reply-To: <alpine.LNX.2.00.1212210944050.1699@eggly.anvils>
+References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
+ <1353624594-1118-19-git-send-email-mingo@kernel.org> <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com>
+ <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
+ <alpine.DEB.2.00.1212201440250.7807@chino.kir.corp.google.com>
+ <20121221134740.GC13367@suse.de> <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
+ <alpine.LNX.2.00.1212210944050.1699@eggly.anvils>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 21 Dec 2012 13:51:26 -0800
+X-Google-Sender-Auth: CFwOIYs19_6wdxfTpCvt7opHOmE
+Message-ID: <CA+55aFwUpuLgeyBNBD64Qy3iBhRz5-8F6z+V3WZXXvY7khnp_A@mail.gmail.com>
+Subject: Re: [patch] mm, mempolicy: Introduce spinlock to read shared policy tree
+To: Hugh Dickins <hughd@google.com>
+Cc: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Users of mei_amthif_read() expect it leaves dev->device_lock held,
-while there is a path where mei_amthif_read() unlocks device_lock
-and returns -ERESTARTSYS.
+On Fri, Dec 21, 2012 at 10:21 AM, Hugh Dickins <hughd@google.com> wrote:
+> On Fri, 21 Dec 2012, Linus Torvalds wrote:
+>>
+>> compared to the diseased abortion you just posted.
+>
+> I'm picking up a vibe that you don't entirely like Mel's approach.
 
-The patch move code locking device_lock back before the return.
+Good job. I was a bit nervous that I was being too subtle.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+> I don't understand David's and Mel's remarks about the "shared pages"
+> check making Sasha's warning unlikely: page_mapcount has nothing to do
+> with whether a page belongs to shm/shmem/tmpfs, and it's easy enough
+> to reproduce Sasha's warning on the current git tree.  "mount -o
+> remount,mpol=local /tmp" or something like that is useful in testing.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/misc/mei/amthif.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I think that Mel and David may talk about the mutex actually blocking
+(not just the debug message possibly triggering).
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 18794ae..e40ffd9 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -187,13 +187,13 @@ int mei_amthif_read(struct mei_device *dev, struct file *file,
- 		wait_ret = wait_event_interruptible(dev->iamthif_cl.wait,
- 			(cb = mei_amthif_find_read_list_entry(dev, file)));
- 
-+		/* Locking again the Mutex */
-+		mutex_lock(&dev->device_lock);
-+
- 		if (wait_ret)
- 			return -ERESTARTSYS;
- 
- 		dev_dbg(&dev->pdev->dev, "woke up from sleep\n");
--
--		/* Locking again the Mutex */
--		mutex_lock(&dev->device_lock);
- 	}
- 
- 
--- 
-1.7.9.5
+> I wish wish wish I had time to spend on this today, but I don't.
+> And I've not looked to see (let alone tested) whether it's easy
+> to revert Mel's mutex then add in Kosaki's patch (which I didn't
+> look at so have no opinion on).
 
+I don't actually have Kosaki's patch either, just the description of
+it. We've done that kind of "preallocate before taking the lock"
+before, though.
+
+> Shall we go for Peter/David's mutex+spinlock for rc1 - I assume
+> they both tested that - with a promise to do better in rc2?
+
+Well, if the plan is to fix it for rc2, then there is no point in
+putting a workaround in now, since actually hitting the problem (as
+opposed to seeing the warning) is presumably much harder.
+
+               Linus
