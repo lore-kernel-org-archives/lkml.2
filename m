@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125Ab2LUKqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 05:46:39 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:56119 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab2LUKqd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 05:46:33 -0500
+	id S1752154Ab2LUKu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 05:50:56 -0500
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:52014 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751603Ab2LUKur convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 05:50:47 -0500
+From: Loic PALLARDY <loic.pallardy@st.com>
+To: "Bedia, Vaibhav" <vaibhav.bedia@ti.com>
+Cc: Loic PALLARDY STE <loic.pallardy-ext@stericsson.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Gutierrez, Juan" <jgutierrez@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>, Tejun Heo <tj@kernel.org>,
+        "Anna, Suman" <s-anna@ti.com>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Fri, 21 Dec 2012 11:50:01 +0100
+Subject: Re: [PATCH 4/9] mailbox: create opened message type
+Thread-Topic: [PATCH 4/9] mailbox: create opened message type
+Thread-Index: Ac3faO3Dh/krb8ZeQQKq/L0wRg7D2A==
+Message-ID: <50D43ED9.4030906@st.com>
+References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
+ <1355836212-17956-5-git-send-email-loic.pallardy-ext@stericsson.com>
+ <B5906170F1614E41A8A28DE3B8D121433EC9CE7A@DBDE01.ent.ti.com>
+In-Reply-To: <B5906170F1614E41A8A28DE3B8D121433EC9CE7A@DBDE01.ent.ti.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
+ Thunderbird/11.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-In-Reply-To: <1356050997-2688-1-git-send-email-walken@google.com>
-References: <1356050997-2688-1-git-send-email-walken@google.com>
-Date: Fri, 21 Dec 2012 02:46:32 -0800
-Message-ID: <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
-Subject: Re: [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem held
-From: Michel Lespinasse <walken@google.com>
-To: Greg Ungerer <gerg@uclinux.org>
-Cc: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
-        Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-I wanted to ask if you could check the sanity of the following patches
-in nommu configurations. My understanding is that these always
-populate mappings when they are created, so that MAP_POPULATE and
-MAP_LOCKED are actually no-ops. Is this an accurate description ?
-
-Thanks,
-
-On Thu, Dec 20, 2012 at 4:49 PM, Michel Lespinasse <walken@google.com> wrote:
-> We have many vma manipulation functions that are fast in the typical case,
-> but can optionally be instructed to populate an unbounded number of ptes
-> within the region they work on:
-> - mmap with MAP_POPULATE or MAP_LOCKED flags;
-> - remap_file_pages() with MAP_NONBLOCK not set or when working on a
->   VM_LOCKED vma;
-> - mmap_region() and all its wrappers when mlock(MCL_FUTURE) is in effect;
-> - brk() when mlock(MCL_FUTURE) is in effect.
->
-> Current code handles these pte operations locally, while the sourrounding
-> code has to hold the mmap_sem write side since it's manipulating vmas.
-> This means we're doing an unbounded amount of pte population work with
-> mmap_sem held, and this causes problems as Andy Lutomirski reported
-> (we've hit this at Google as well, though it's not entirely clear why
-> people keep trying to use mlock(MCL_FUTURE) in the first place).
->
-> I propose introducing a new mm_populate() function to do this pte
-> population work after the mmap_sem has been released. mm_populate()
-> does need to acquire the mmap_sem read side, but critically, it
-> doesn't need to hold continuously for the entire duration of the
-> operation - it can drop it whenever things take too long (such as when
-> hitting disk for a file read) and re-acquire it later on.
->
-> The following patches are against v3.7:
->
-> - Patches 1-2 fix some issues I noticed while working on the existing code.
->   If needed, they could potentially go in before the rest of the patches.
->
-> - Patch 3 introduces the new mm_populate() function and changes
->   mmap_region() call sites to use it after they drop mmap_sem. This is
->   inspired from Andy Lutomirski's proposal and is built as an extension
->   of the work I had previously done for mlock() and mlockall() around
->   v2.6.38-rc1. I had tried doing something similar at the time but had
->   given up as there were so many do_mmap() call sites; the recent cleanups
->   by Linus and Viro are a tremendous help here.
->
-> - Patches 4-6 convert some of the less-obvious places doing unbounded
->   pte populates to the new mm_populate() mechanism.
->
-> - Patches 7-8 are code cleanups that are made possible by the
->   mm_populate() work. In particular, they remove more code than the
->   entire patch series added, which should be a good thing :)
->
-> - Patch 9 is optional to this entire series. It only helps to deal more
->   nicely with racy userspace programs that might modify their mappings
->   while we're trying to populate them. It adds a new VM_POPULATE flag
->   on the mappings we do want to populate, so that if userspace replaces
->   them with mappings it doesn't want populated, mm_populate() won't
->   populate those replacement mappings.
->
-> Michel Lespinasse (9):
->   mm: make mlockall preserve flags other than VM_LOCKED in def_flags
->   mm: remap_file_pages() fixes
->   mm: introduce mm_populate() for populating new vmas
->   mm: use mm_populate() for blocking remap_file_pages()
->   mm: use mm_populate() when adjusting brk with MCL_FUTURE in effect.
->   mm: use mm_populate() for mremap() of VM_LOCKED vmas
->   mm: remove flags argument to mmap_region
->   mm: directly use __mlock_vma_pages_range() in find_extend_vma()
->   mm: introduce VM_POPULATE flag to better deal with racy userspace programs
->
->  arch/tile/mm/elf.c   |    1 -
->  fs/aio.c             |    6 +++-
->  include/linux/mm.h   |   23 +++++++++---
->  include/linux/mman.h |    4 ++-
->  ipc/shm.c            |   12 ++++---
->  mm/fremap.c          |   51 ++++++++++++++-------------
->  mm/internal.h        |    4 +-
->  mm/memory.c          |   24 -------------
->  mm/mlock.c           |   94 +++++++++++++------------------------------------
->  mm/mmap.c            |   77 ++++++++++++++++++++++++----------------
->  mm/mremap.c          |   25 +++++++------
->  mm/nommu.c           |    5 ++-
->  mm/util.c            |    6 +++-
->  13 files changed, 154 insertions(+), 178 deletions(-)
->
-> --
-> 1.7.7.3
 
 
+On 12/21/2012 11:28 AM, Bedia, Vaibhav wrote:
+> On Tue, Dec 18, 2012 at 18:40:07, Loic Pallardy wrote:
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+>> -	msg = mbox_read_reg(fifo->data);
+>> -	msg |= ((mbox_msg_t) mbox_read_reg(fifo->cmd))<<  16;
+>> +	msg->header = mbox_read_reg(fifo->data);
+>> +	msg->header |= ((mbox_msg_t) mbox_read_reg(fifo->cmd))<<  16;
+>
+> Now that struct mailbox_msg encapsulates the data, you can
+> get rid of the mbox_msg_t typedef completely. Having the data
+> as part of the mailbox_msg along with the functions with mbox_msg_t
+> as the return type just creates confusion IMHO.
+>
+OK I'll clean up mbox_msg_t typedef.
+>>
+>> -	return msg;
+>> +	return 0;
+>>   }
+>
+> Convert all return 0 functions to void?
+>
+> [...]
+>
+Yes, agree I'll change the prototype.
+>>
+>> +
+>> +#define MAILBOX_FILL_HEADER_MSG(_msg, _header) \
+>> +	MAILBOX_FILL_MSG(_msg, _header, NULL, 0);
+>> +
+>
+> I used these patches as part of the suspend-resume support for AM335x
+> which has the same mailbox IP as OMAP4. I used the MAILBOX_FILL_HEADER_MSG
+> helper and things work as expected.
+
+Nice.
+>
+> However, I found the 'header' part to be very confusing. Why not treat the
+> OMAP case as a special case of the new MAILBOX_FILL_MSG where the data size
+> is set to 1?
+
+Yes it is another possibility. Changes are not big.
+Omar, what's your view on this point?
+
+Regards,
+Loic
+>
+> Regards,
+> Vaibhav
