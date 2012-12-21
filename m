@@ -1,62 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab2LUSeK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 13:34:10 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61169 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab2LUSeF (ORCPT
+	id S1752514Ab2LUSiv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 13:38:51 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:63347 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab2LUSin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 13:34:05 -0500
-Date: Fri, 21 Dec 2012 22:34:00 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: linux-man@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/2] Add kcmp.2 manpage
-Message-ID: <20121221183400.GL32442@moon>
-References: <1342995307-884-1-git-send-email-gorcunov@openvz.org>
- <1342995307-884-2-git-send-email-gorcunov@openvz.org>
- <CAKgNAkj-=wLEM+SjA_S8GUp0+0o5R4NuDH4fL-8H-pKCKdLryA@mail.gmail.com>
- <20121218170624.GA7148@moon>
- <20121218171217.GD7155@moon>
- <CAKgNAkg536wfJy6WjjLANamchZg0XQ3sAHtCtvPtgCkTu_hHMw@mail.gmail.com>
+	Fri, 21 Dec 2012 13:38:43 -0500
+Date: Fri, 21 Dec 2012 10:38:45 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Mel Gorman <mgorman@suse.de>
+cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: migrate_misplaced_transhuge_page: no page_count check?
+In-Reply-To: <20121220164923.GB13367@suse.de>
+Message-ID: <alpine.LNX.2.00.1212211030540.1893@eggly.anvils>
+References: <alpine.LNX.2.00.1212192011320.25992@eggly.anvils> <20121220164923.GB13367@suse.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkg536wfJy6WjjLANamchZg0XQ3sAHtCtvPtgCkTu_hHMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 07:24:27PM +0100, Michael Kerrisk (man-pages) wrote:
-> On Tue, Dec 18, 2012 at 6:12 PM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> > On Tue, Dec 18, 2012 at 09:06:24PM +0400, Cyrill Gorcunov wrote:
-> >> On Tue, Dec 18, 2012 at 05:54:49PM +0100, Michael Kerrisk (man-pages) wrote:
-> >> > Hello Cyrill,
-> >> >
-> >> > On Mon, Jul 23, 2012 at 12:15 AM, Cyrill Gorcunov <gorcunov@openvz.org> wrote:
-> >> > > NAME
-> >> > >        kcmp - compare if two processes do share a particular kernel resource
-> >> >
-> >> > Very late follow up on this page, sorry. You didn't provide a
-> >> > copyright or license for this page. Could you please supply that
-> >> > information. See http://www.kernel.org/doc/man-pages/licenses.html .
-> >>
-> >> Sure, gimme some time to update it...
-> >
-> > Something like below?
+On Thu, 20 Dec 2012, Mel Gorman wrote:
+> On Wed, Dec 19, 2012 at 08:52:37PM -0800, Hugh Dickins wrote:
+> > Mel, Ingo,
+> > 
+> > I want to raise again a question I raised (in offline mail with Mel)
+> > a couple of weeks ago.
+> > 
 > 
-> Yep, that's fine. I've done some substantial editing and added several
-> pieces to the page.  Could you take a careful look at the version to
-> see that I have not injected any inaccuracies?
+> It's a good question and thanks for kicking me on this again because I
+> had not followed up properly.
+> 
+> > I see only a page_mapcount check in migrate_misplaced_transhuge_page,
+> > and don't understand how migration can be safe against the possibility
+> > of an earlier call to get_user_pages or get_user_pages_fast (intended
+> > to pin a part of the THP) without a page_count check.
+> > 
+> 
+> It would be hard to trigger bugs in relation to it but it's not fundamentally
+> safe either and just happens to work due to limitations of THP as much as
+> anything else. Adding Andrea to cc in case I'm lacking imagination. IMO,
+> the GUP would need to be relatively long-lived to trigger a bug so the
+> realistic candidate is direct IO.  it. It would look something like;
+> 
+> 1. pin for direct IO
+> 2. PTE scanner run, mark pte_numa
+> 3. Incur a fault on a remote node, migrate the page
+> 4. direct IO completes on old page and is lost
+> 
+> Steps 1 and 2 can happen in either order. I am reasonably sure specjbb,
+> autonumabench and friends are not exercising such paths so I would not
+> have encountered it.
+> 
+> The end result would look like a read or write corruption to the application
+> but I also expect that applications that are accessing pages under direct
+> IO are already buggy and it'd be hard to tell the difference.  It's a
+> completely different situation than what khugepaged has to deal with.
+> The migration concerns for base pages are also much more involvedi.
+> 
+> > (I'm also still somewhat worried about unidentified attempts to
+> > pin the page concurrently; but since I don't have an example to give,
+> > and concurrent get_user_pages or get_user_pages_fast wouldn't get past
+> > the pmd_numa, let's not worry too much about my unidentified anxiety ;)
+> > 
+> 
+> You are right to be worried.
+> 
+> > migrate_page_move_mapping and migrate_huge_page_move_mapping check
+> > page_count, but migrate_misplaced_transhuge_page doesn't use those.
+> > __collapse_huge_page_isolate and khugepaged_scan_pmd (over in
+> > huge_memory.c) take commented care to check page_count lest GUP.
+> > 
+> > I can see that page_count might often be raised by concurrent faults
+> > on the same pmd_numa, waiting on the lock_page in do_huge_pmd_numa_page.
+> > That's unfortunate, and maybe you can find a clever way to discount
+> > those.  But safety must come first: don't we need to check page_count?
+> > 
+> 
+> We do and I'm not super-worried about the concurrent faults as a brief
+> check indicated that only 2% of migration attempts failed due to parallel
+> faults elevating the count when running autonumabench. The impact is that
+> the migration is delayed until the next PTE scan which is bad, but not
+> bad enough to delay the obvious safety fix first. How about this?
+> 
+> ---8<---
+> mm: migrate: Check page_count of THP before migrating
+> 
+> Hugh Dickins poined out that migrate_misplaced_transhuge_page() does not
+> check page_count before migrating like base page migration and khugepage. He
+> could not see why this was safe and he is right.
+> 
+> It happens to work for the most part. The page_mapcount() check ensures that
+> only a single address space is using this page and as THPs are typically
+> private it should not be possible for another address space to fault it in
+> parallel. If the address space has one associated task then it's difficult to
+> have both a GUP pin and be referencing the page at the same time. If there
+> are multiple tasks then a buggy scenario requires that another thread be
+> accessing the page while the direct IO is in flight. This is dodgy behaviour
+> as there is a possibility of corruption with or without THP migration. It
+> would be difficult to identify the corruption as being a migration bug.
+> 
+> While we happen to be ok for THP migration versus GUP it is shoddy to
+> depend on such "safety" so this patch checks the page count similar to
+> anonymous pages. Note that this does not mean that the page_mapcount()
+> check can go away. If we were to remove the page_mapcount() check then
+> the THP would have to be unmapped from all referencing PTEs, replaced with
+> migration PTEs and restored properly afterwards.
+> 
+> Reported-by: Hugh Dickins <hughd@google.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
 
-Looks good to me, thanks! (There is some work initiated to make this
-syscall available for all archs so this page will need to be updated
-more-less soon, but it's my problems, i'll send you update once transition
-complete).
+Thanks very much for responding so quickly on this, Mel.  It pains
+me that I cannot yet say acked-by, because I need to spend more time
+checking it, and cannot do so today.
 
-	Cyrill
+I like where you've placed the check, that's just right.  But I'm
+worried that perhaps there's a putback_lru_page missing, and wonder
+if it's missing even without this additional patch.  It would not
+be immediately obvious if it's missing, the pages wouldn't leak,
+but more and more would become unreclaimable until freed.
+
+Hugh
+
+> ---
+>  mm/migrate.c |    8 +++++++-
+>  1 file changed, 7 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/migrate.c b/mm/migrate.c
+> index 3b676b0..7636b90 100644
+> --- a/mm/migrate.c
+> +++ b/mm/migrate.c
+> @@ -1679,7 +1679,13 @@ int migrate_misplaced_transhuge_page(struct mm_struct *mm,
+>  	page_xchg_last_nid(new_page, page_last_nid(page));
+>  
+>  	isolated = numamigrate_isolate_page(pgdat, page);
+> -	if (!isolated) {
+> +
+> +	/*
+> +	 * Failing to isolate or a GUP pin prevents migration. The expected
+> +	 * page count is 2. 1 for anonymous pages without a mapping and 1
+> +	 * for the callers pin
+> +	 */
+> +	if (!isolated || page_count(page) != 2) {
+>  		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+>  		put_page(new_page);
+>  		goto out_keep_locked;
+> 
