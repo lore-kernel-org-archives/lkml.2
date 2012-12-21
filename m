@@ -1,143 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752104Ab2LUKl1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 05:41:27 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:33423 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751594Ab2LUKlM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 05:41:12 -0500
-Message-ID: <50D43CCA.5050703@parallels.com>
-Date: Fri, 21 Dec 2012 14:41:14 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752088Ab2LUKoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 05:44:12 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:37138 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab2LUKoI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 05:44:08 -0500
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, <xfs@oss.sgi.com>
-Subject: Re: [RFC, PATCH 00/19] Numa aware LRU lists and shrinkers
-References: <1354058086-27937-1-git-send-email-david@fromorbit.com> <50D2FA58.9030605@parallels.com> <20121221025001.GC15182@dastard>
-In-Reply-To: <20121221025001.GC15182@dastard>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20121219075550.GD5228@arwen.pp.htv.fi>
+References: <1355843426-13613-1-git-send-email-gautam.vivek@samsung.com>
+	<1355843426-13613-2-git-send-email-gautam.vivek@samsung.com>
+	<20121218151349.GC32437@arwen.pp.htv.fi>
+	<CAFp+6iHQMDuwPd08KwPyxE_eXyofv_31-Azr0F9+LS2E9aY52w@mail.gmail.com>
+	<CAFp+6iFk_eXaJidfL-PBhB6haJnmovVw3AwG5p6kJ-U+R2jFzA@mail.gmail.com>
+	<20121219075550.GD5228@arwen.pp.htv.fi>
+Date: Fri, 21 Dec 2012 16:14:05 +0530
+Message-ID: <CAFp+6iEE8=Zv2FUrLZfwn1XpBygaQRZX=XJ13fq5a0uOhRF8-w@mail.gmail.com>
+Subject: Re: [PATCH] usb: phy: samsung: Add support for USB 3.0 phy for exynos5250
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: balbi@ti.com
+Cc: linux-usb@vger.kernel.org, dianders@chromium.org,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, gregkh@linuxfoundation.org,
+        kgene.kim@samsung.com, thomas.abraham@linaro.org,
+        rob.herring@calxeda.com, grant.likely@secretlab.ca,
+        sylvester.nawrocki@gmail.com, av.tikhomirov@samsung.com,
+        yulgon.kim@samsung.com, kishon@ti.com, p.paneri@samsung.com,
+        Vivek Gautam <gautam.vivek@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Dave,
-
-On 12/21/2012 06:50 AM, Dave Chinner wrote:
->> But on a broader sense: The only thing that still bothers me personally
->> > (meaning: it created particular pain points), is the very loose coupling
->> > between all the elements involved in the shrinking process:
->> > 
->> > 1) the shrinker, always present
->> > 2) the lru, usually present
->> > 3) the cache, usually present, specially when there is an LRU.
->> > 
->> > I of course understand that they are not always present, and when they
->> > are, they are not in a 1:1 relation.
->> > 
->> > But still, it would be nice to be able to register them to one another,
->> > so that we can easily answer things like:
->> > 
->> > "Given a set of caches, what is the set of shrinkers that will shrink them?"
->> > 
->> > "What are the lrus that are driven by this shrinker?"
->> > 
->> > This would allow me to do things like this:
->> > 
->> > * When a per-memcg cache is created (not all of the caches are
->> > replicated), find the shrinkers that can shrink them.
->> > 
->> > * For each shrinker, also replicate the LRUs that are driven by them.
->> > 
->> > Does that make any sense to you ?
-> It certainly does, though I see that as a separate problem to the
-> one that this patch set solves. i.e. this is an issue related to the
-> scope and context of a shrinker/LRU couplet, rather than the
-> implementation of a shrinker/LRU couplet. This patchset addresses
-> the latter of the two, and I'm pretty sure that I mentioned that the
-> former was not a problem I am trying to solve yet....
-
-Yes. And now I am pretty sure that I mentioned that this is actually a
-problem!
-
-Really, the only major change I would like to see made in this patchset
-is the provision of more context to the lru functions. It is fine if it
-is a lru-specific context.
-
-All the rest is details.
-
-> 
-> As it is, right now we embed the struct shrinker into the owner
-> context, and that's how we find the LRU/cache instances that the
-> shrinker operates on. In the case of per-memcg shrinker
-> instantiation that fixed relationship does not work.
-
-Yes, and there is also another problem that arises from it:
-
-the superblock is the owner, but superblocks are no memcg's business. It
-is caches that we track, so it would be good to determine which
-shrinkers are responsible for each caches -> a n:m relationship.
-
-Those are the ones we need to run per-memcg. Otherwise, we need to go
-mess with them all.
-
-> 
-> Further, the struct shrinker has context specific information in it,
-> like the defered scan count that it carries from one invocation to
-> the next, so what we end up with is a tightly coupled owner/shrinker
-> relationship.  That is, a shrinker is really made up of four things:
-> 
-> 	- a shrinker definition (set of methods and configuration
-> 	  data)
-> 	- a non-volatile set of data
-> 	- the owner context
-> 	- the LRU/cache to be shrunk
-> 
-> I suspect that a shrinker instance would look something like this:
-> 
-> shrinker_instance {
-> 	non-volatile set of data
-> 	LRU/cache to be shrunk
-> 	pointer to the owner context
-> 	pointer to the shrinker definition
-> }
-> 
-> But I'm not really sure how to group them sanely, how to know what
-> shrinkers would need multiple instantiation and when you'd do that
-> instantiation, or even how an owner context would then do global
-> operations (e.g empty caches prior to unmount).
-
-Ok, so right now, what my PoC does, is to leave the shrinkers mostly
-alone (I just have a static flag to indicate that this is a possible
-per-memcg candidate).
-
-The LRUs are all copied over (a bit of a waste, but this is still a
-PoC), and whenever the shrinker is called, we trust that the LRUs will
-be available, and then using the memcg pointer, derive the
-memcg-specific LRUs from the global, original LRUs.
-
-It is still unsolved for the non-volatile set of data belonging to the
-shrinker.
-
-So the full solution, would be to create a isolated copy of all that.
-
-"Which shrinkers to copy" is just an item in the wishlist. We don't
-replicate all caches because some of them will truly never be used
-in a typical container, but most of the shrinkers are fs-related anyway,
-and we'll always touch the filesystems. However, we will likely not
-touch *all* the filesystems, so a lot of them will just be there,
-hanging around and wasting memory.
+Hi Felipe,
 
 
-> 
-> I simply don't know what the requirements for such infrastructure
-> is, so I can't really say much more than this. Hence I think the
-> first thing to do here is work out and document what such
-> instantiation, tracking and grouping needs to be able to do before
-> anything else...
-> 
-Yes, let's do it.
+On Wed, Dec 19, 2012 at 1:25 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Wed, Dec 19, 2012 at 11:52:01AM +0530, Vivek Gautam wrote:
+>> >>> @@ -736,7 +1035,41 @@ static int __devinit samsung_usbphy_probe(struct platform_device *pdev)
+>> >>>
+>> >>>       sphy->clk = clk;
+>> >>>
+>> >>> -     return usb_add_phy(&sphy->phy, USB_PHY_TYPE_USB2);
+>> >>> +     sphy->has_usb3 = (sphy->cpu_type == TYPE_EXYNOS5250);
+>> >>> +
+>> >>> +     if (sphy->has_usb3) {
+>> >>> +             struct resource *usb3phy_mem;
+>> >>> +             void __iomem    *usb3phy_base;
+>> >>> +
+>> >>> +             usb3phy_mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+>> >>> +             if (!usb3phy_mem) {
+>> >>> +                     dev_err(dev, "%s: missing mem resource\n", __func__);
+>> >>> +                     return -ENODEV;
+>> >>> +             }
+>> >>> +
+>> >>> +             usb3phy_base = devm_request_and_ioremap(dev, usb3phy_mem);
+>> >>> +             if (!usb3phy_base) {
+>> >>> +                     dev_err(dev, "%s: register mapping failed\n", __func__);
+>> >>> +                     return -ENXIO;
+>> >>> +             }
+>> >>> +
+>> >>> +             sphy->usb3phy.regs_phy          = usb3phy_base;
+>> >>> +             sphy->usb3phy.phy.dev           = sphy->dev;
+>> >>> +             sphy->usb3phy.phy.label         = "samsung-usb3phy";
+>> >>> +             sphy->usb3phy.phy.init          = samsung_usb3phy_init;
+>> >>> +             sphy->usb3phy.phy.shutdown      = samsung_usb3phy_shutdown;
+>> >>> +     }
+>> >>> +
+>> >>> +     ret = usb_add_phy(&sphy->phy, USB_PHY_TYPE_USB2);
+>> >>> +     if (ret)
+>> >>> +             return ret;
+>> >>
+>> >> is this realy how your HW behaves ? USB2 and USB3 phys are a single HW
+>> >> entity ? I kinda doubt that :-s
+>> >>
+>>
+>> They are separate HW in fact.
+>> So, do you expect to see a separate driver interface for USB 3.0 type phy ?
+>
+> yes. Just as we did on OMAP. One driver for the USB2 part and one driver
+> for USB3 part (which are actually two, but you can only talk to them as
+> one) :-)
+>
+Sure as you suggest, we will pull out the USB 3.0 code from here and put
+a new driver in place for the same.
+
+>> That will be quite similar architecturally to current samsung-usbphy
+>> driver for USB 2.0 type phy,
+>> and may require some code duplication too.
+>
+> If it duplicates code, then perhaps it's best to keep it as is but I'm
+> actually surprised you guys have similar programming model on both
+> parts. I mean, the differences at HW behavior are huge: on one side you
+> use ULPI/UTMI+ on the other PIPE3, on one side you have 480Mbps
+> half-duplex signalling, on the other you have 5Gbps dual simplex
+> signalling, the differences go on and on.
+>
+The programming model for USB phy is just about setting up the phy registers
+for example to provide proper clocks to PHY controller, setting up setting up
+the UTMI block etc, under a sequence.
+
+> Also, what you say about duplicating, it seems to me that it will
+> duplicate only the boilerplate part (allocating memory, having a
+> platform_driver, and so on), because you _do_ have completely separate
+> functions to handle usb3 part.
+>
+Yes, the duplication was in fact just the boilerplate part ;-)
+apart from having separate functions for USB 3.0 type phy.
+
+> One more comment below:
+>
+>> +static u32 exynos5_usb3phy_set_clock(struct samsung_usbphy *sphy)
+>> +{
+>> +     u32 reg;
+>> +     u32 refclk;
+>> +
+>> +     refclk = sphy->ref_clk_freq;
+>> +
+>> +     reg = PHYCLKRST_REFCLKSEL_EXT_REFCLK |
+>> +             PHYCLKRST_FSEL(refclk);
+>> +
+>> +     switch (refclk) {
+>> +     case HOST_CTRL0_FSEL_CLKSEL_50M:
+>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_50M_REF |
+>> +                     PHYCLKRST_SSC_REFCLKSEL(0x00));
+>> +             break;
+>> +     case HOST_CTRL0_FSEL_CLKSEL_20M:
+>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_20MHZ_REF |
+>> +                     PHYCLKRST_SSC_REFCLKSEL(0x00));
+>> +             break;
+>> +     case HOST_CTRL0_FSEL_CLKSEL_19200K:
+>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_19200KHZ_REF |
+>> +                     PHYCLKRST_SSC_REFCLKSEL(0x88));
+>> +             break;
+>> +     case HOST_CTRL0_FSEL_CLKSEL_24M:
+>> +     default:
+>> +             reg |= (PHYCLKRST_MPLL_MULTIPLIER_24MHZ_REF |
+>> +                     PHYCLKRST_SSC_REFCLKSEL(0x88));
+>> +             break;
+>> +     }
+>> +
+>> +     return reg;
+>> +}
+>
+> looks like this should be done by commong clock framework by clock
+> reparenting perhaps ?
+>
+Need to check on this one.
+
+> --
+> balbi
 
 
+
+-- 
+Thanks & Regards
+Vivek
