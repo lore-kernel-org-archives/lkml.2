@@ -1,96 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab2LUEfr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 23:35:47 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:51027 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUEfm (ORCPT
+	id S1751715Ab2LUEgD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 23:36:03 -0500
+Received: from mail-gg0-f202.google.com ([209.85.161.202]:45158 "EHLO
+	mail-gg0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916Ab2LUEfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 23:35:42 -0500
-X-AuditID: 9c930179-b7becae000000e51-ad-50d3e71d402c
-From: Namhyung Kim <namhyung@kernel.org>
-To: Alex Shi <alex.shi@intel.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, rob@landley.net,
-        mingo@redhat.com, peterz@infradead.org, gregkh@linuxfoundation.org,
-        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, pjt@google.com,
-        vincent.guittot@linaro.org
-Subject: Re: [PATCH 07/18] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
-	<1355127754-8444-8-git-send-email-alex.shi@intel.com>
-	<50C800B5.1080205@linux.vnet.ibm.com> <50C995B8.6020801@intel.com>
-Date: Fri, 21 Dec 2012 13:35:40 +0900
-In-Reply-To: <50C995B8.6020801@intel.com> (Alex Shi's message of "Thu, 13 Dec
-	2012 16:45:44 +0800")
-Message-ID: <87623wf2eb.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 20 Dec 2012 23:35:54 -0500
+From: Derek Basehore <dbasehore@chromium.org>
+To: JBottomley@parallels.com
+Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Derek Basehore <dbasehore@chromium.org>
+Subject: [PATCH 1/2] don't wait on disk to start on resume
+Date: Thu, 20 Dec 2012 20:35:39 -0800
+Message-Id: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 Dec 2012 16:45:44 +0800, Alex Shi wrote:
-> On 12/12/2012 11:57 AM, Preeti U Murthy wrote:
->> Hi Alex,
->> On 12/10/2012 01:52 PM, Alex Shi wrote:
->>> They are the base values in load balance, update them with rq runnable
->>> load average, then the load balance will consider runnable load avg
->>> naturally.
->>>
->
-> updated with UP config fix:
->
->
-> ==========
->> From d271c93b40411660dd0e54d99946367c87002cc8 Mon Sep 17 00:00:00 2001
-> From: Alex Shi <alex.shi@intel.com>
-> Date: Sat, 17 Nov 2012 13:56:11 +0800
-> Subject: [PATCH 07/18] sched: compute runnable load avg in cpu_load and
->  cpu_avg_load_per_task
->
-> They are the base values in load balance, update them with rq runnable
-> load average, then the load balance will consider runnable load avg
-> naturally.
->
-> Signed-off-by: Alex Shi <alex.shi@intel.com>
-> ---
->  kernel/sched/core.c | 8 ++++++--
->  kernel/sched/fair.c | 4 ++--
->  2 files changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 96fa5f1..d306a84 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2487,7 +2487,7 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
->  void update_idle_cpu_load(struct rq *this_rq)
->  {
->  	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-> -	unsigned long load = this_rq->load.weight;
-> +	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
+We no longer wait for the disk to spin up in sd_resume. It now enters the
+request to spinup the disk into the elevator and returns.
 
-So shouldn't this line be guarded with CONFIG_SMP too?
+A function is scheduled under the scsi_sd_probe_domain to wait for the command
+to spinup the disk to complete. This function then checks for errors and cleans
+up after the sd resume function.
 
-Thanks,
-Namhyung
+This allows system resume to complete much faster on systems with an HDD since
+spinning up the disk is a significant portion of resume time.
 
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+---
+ drivers/scsi/sd.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++---
+ drivers/scsi/sd.h |    9 ++++
+ 2 files changed, 108 insertions(+), 7 deletions(-)
 
->  	unsigned long pending_updates;
->  
->  	/*
-> @@ -2537,8 +2537,12 @@ static void update_cpu_load_active(struct rq *this_rq)
->  	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
->  	 */
->  	this_rq->last_load_update_tick = jiffies;
-> -	__update_cpu_load(this_rq, this_rq->load.weight, 1);
->  
-> +#ifdef CONFIG_SMP
-> +	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
-> +#else
-> +	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-> +#endif
->  	calc_load_account_active(this_rq);
->  }
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 7992635..2fe051f 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -3045,6 +3045,7 @@ static void sd_shutdown(struct device *dev)
+ 	if (!sdkp)
+ 		return;         /* this can happen */
+ 
++	async_synchronize_full_domain(&scsi_sd_probe_domain);
+ 	if (pm_runtime_suspended(dev))
+ 		goto exit;
+ 
+@@ -3070,6 +3071,7 @@ static int sd_suspend(struct device *dev)
+ 	if (!sdkp)
+ 		return 0;	/* this can happen */
+ 
++	async_synchronize_full_domain(&scsi_sd_probe_domain);
+ 	if (sdkp->WCE) {
+ 		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
+ 		ret = sd_sync_cache(sdkp);
+@@ -3087,20 +3089,110 @@ done:
+ 	return ret;
+ }
+ 
++/*
++ * Callback function for when the request that starts the disk completes. Passed
++ * into blk_execute_rq_nowait in sd_resume.
++ */
++static void sd_end_start_rq(struct request *rq, int error)
++{
++	struct completion *waiting = rq->end_io_data;
++
++	rq->end_io_data = NULL;
++	/*
++	 * Set the end_io_data to NULL before calling complete. This (with
++	 * sd_resume async) ensures that it is set to NULL before we call
++	 * blk_put_request.
++	 */
++	complete(waiting);
++}
++
++/*
++ * Asynchronous part of sd_resume. This is separate from sd_end_start_rq since
++ * we need to block on resume for suspend and shutdown. We already do this by
++ * synchronizing on the scsi_sd_probe_domain, so use that.
++ */
++static void sd_resume_async(void *data, async_cookie_t cookie)
++{
++	struct scsi_sense_hdr sshdr;
++	struct resume_async_struct *resume = data;
++	struct scsi_disk *sdkp = resume->sdkp;
++	struct request *req = resume->req;
++
++	wait_for_completion(&resume->wait);
++
++	if (req->errors) {
++		scsi_normalize_sense(resume->sense,
++				     SCSI_SENSE_BUFFERSIZE,
++				     &sshdr);
++		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
++		sd_print_result(sdkp, req->errors);
++		if (driver_byte(req->errors) & DRIVER_SENSE)
++			sd_print_sense_hdr(sdkp, &sshdr);
++	}
++	kfree(resume);
++	scsi_disk_put(sdkp);
++	blk_put_request(req);
++}
++
++/*
++ * This does not wait for the disk to spin up. This function enters the request
++ * to spinup the disk and schedules a function, sd_resume_async, that waits for
++ * that request to complete.
++ */
+ static int sd_resume(struct device *dev)
+ {
+ 	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+-	int ret = 0;
++	struct scsi_device *sdp = sdkp->device;
++	struct resume_async_struct *resume = NULL;
++	struct request *req;
++	unsigned char cmd[6] = { START_STOP };	/* START_VALID */
+ 
+-	if (!sdkp->device->manage_start_stop)
+-		goto done;
++	if (!sdkp->device->manage_start_stop) {
++		scsi_disk_put(sdkp);
++		return 0;
++	}
+ 
+ 	sd_printk(KERN_NOTICE, sdkp, "Starting disk\n");
+-	ret = sd_start_stop_device(sdkp, 1);
+ 
+-done:
+-	scsi_disk_put(sdkp);
+-	return ret;
++	cmd[4] |= 1;	/* START */
++
++	if (sdp->start_stop_pwr_cond)
++		cmd[4] |= 1 << 4;	/* Active */
++
++	if (!scsi_device_online(sdp))
++		return -ENODEV;
++
++	resume = kzalloc(sizeof(struct resume_async_struct), GFP_NOIO);
++	if (!resume)
++		return DRIVER_ERROR << 24;
++
++	req = blk_get_request(sdp->request_queue, 0, __GFP_WAIT);
++	if (!req)
++		return DRIVER_ERROR << 24;
++
++	resume->req = req;
++	resume->sdkp = sdkp;
++	init_completion(&resume->wait);
++
++	req->cmd_len = COMMAND_SIZE(cmd[0]);
++	memcpy(req->cmd, cmd, req->cmd_len);
++	req->sense = resume->sense;
++	req->sense_len = 0;
++	req->retries = SD_MAX_RETRIES;
++	req->timeout = SD_TIMEOUT;
++	req->cmd_type = REQ_TYPE_BLOCK_PC;
++	req->cmd_flags |= REQ_QUIET | REQ_PREEMPT;
++	req->end_io_data = &resume->wait;
++
++	async_schedule_domain(sd_resume_async, resume, &scsi_sd_probe_domain);
++	/*
++	 * don't wait here for the disk to spin up, since we can resume faster
++	 * if we don't. Cleanup and checking for errors is done the the
++	 * previously scheduled sd_resume_async function
++	 */
++	blk_execute_rq_nowait(req->q, NULL, req, 1, sd_end_start_rq);
++
++	return 0;
+ }
+ 
+ /**
+diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
+index 74a1e4c..b09f255 100644
+--- a/drivers/scsi/sd.h
++++ b/drivers/scsi/sd.h
+@@ -1,6 +1,8 @@
+ #ifndef _SCSI_DISK_H
+ #define _SCSI_DISK_H
+ 
++#include <scsi/scsi_cmnd.h>
++
+ /*
+  * More than enough for everybody ;)  The huge number of majors
+  * is a leftover from 16bit dev_t days, we don't really need that
+@@ -87,6 +89,13 @@ struct scsi_disk {
+ };
+ #define to_scsi_disk(obj) container_of(obj,struct scsi_disk,dev)
+ 
++struct resume_async_struct {
++	struct scsi_disk *sdkp;
++	struct request *req;
++	struct completion wait;
++	char sense[SCSI_SENSE_BUFFERSIZE];
++};
++
+ static inline struct scsi_disk *scsi_disk(struct gendisk *disk)
+ {
+ 	return container_of(disk->private_data, struct scsi_disk, driver);
+-- 
+1.7.7.3
+
