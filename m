@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2LUOJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 09:09:45 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:50093 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab2LUOJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 09:09:39 -0500
-Date: Fri, 21 Dec 2012 15:09:35 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Lucas Stach <dev@lynxeye.de>
-Cc: Terje Bergstrom <tbergstrom@nvidia.com>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4 8/8] gpu: host1x: Register DRM dummy device
-Message-ID: <20121221140935.GB9729@avionic-0098.adnet.avionic-design.de>
-References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com>
- <1356089964-5265-9-git-send-email-tbergstrom@nvidia.com>
- <1356098031.1490.111.camel@tellur>
+	id S1752144Ab2LUOLg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 09:11:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:32726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751318Ab2LUOLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 09:11:31 -0500
+Date: Fri, 21 Dec 2012 15:11:33 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Serge Hallyn <serge@hallyn.com>,
+        Gao feng <gaofeng@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 07/11] pidns: Wait in zap_pid_ns_processes until
+	pid_ns->nr_hashed == 1
+Message-ID: <20121221141133.GA13805@redhat.com>
+References: <8739097bkk.fsf@xmission.com> <1353083750-3621-1-git-send-email-ebiederm@xmission.com> <1353083750-3621-7-git-send-email-ebiederm@xmission.com> <20121219184757.GB22991@redhat.com> <87bodourqt.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kXdP64Ggrk/fb43R"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356098031.1490.111.camel@tellur>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:0VweZntXKrhgF4lsjvup30q5eob5e1r+OoCz8RyyqjD
- xWzL0saEY9iPsCOYMBOvhc85XJwbpywtlelevGOjD+40DJxHdz
- 6e7DsZuvyS8hRClfsYhGGUPAr6UvruXqS2fXLg5uA8qJRnDd2g
- SQupv9RqiZDsbQ+8fT8UM4nZLGbYaeAgOLPSBUr7Mu+29y/ULu
- iccDfZ4lS81gLfI8syeb7xM/qIOZn6C9KhF9XrfWrMSbWhFOAU
- qeIJLJXUCcslfX4ZUMJKUPi3mSKdLWjcnXdlGhUJWbQpKeVCXG
- /yyW1S7JXvwTIiCuTIsHZ3TqNWLMBF3GNkXgaVALxlPP4wJHFU
- oholzN98W/aJofu3GyQqlke4RvU+rQRotXC0yLT/iRu35FM+iR
- 01nxvshnQy4Vl8voRfWHii1pysjrT7IFLQ=
+In-Reply-To: <87bodourqt.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/20, Eric W. Biederman wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> writes:
+>
+> > On 11/16, Eric W. Biederman wrote:
+> >>
+> >> @@ -216,22 +216,15 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
+> >>
+> >>  	/*
+> >>  	 * sys_wait4() above can't reap the TASK_DEAD children.
+> >> -	 * Make sure they all go away, see __unhash_process().
+> >> +	 * Make sure they all go away, see free_pid().
+> >>  	 */
+> >>  	for (;;) {
+> >> -		bool need_wait = false;
+> >> -
+> >> -		read_lock(&tasklist_lock);
+> >> -		if (!list_empty(&current->children)) {
+> >> -			__set_current_state(TASK_UNINTERRUPTIBLE);
+> >> -			need_wait = true;
+> >> -		}
+> >> -		read_unlock(&tasklist_lock);
+> >> -
+> >> -		if (!need_wait)
+> >> +		set_current_state(TASK_UNINTERRUPTIBLE);
+> >> +		if (pid_ns->nr_hashed == 1)
+> >>  			break;
+> >>  		schedule();
+> >>  	}
+> >
+> > I agree, the patch itself looks fine.
+> >
+> > But, with all other changes I do not understand this part at all.
+> >
+> > A task from the parent namespace can do setns + fork at any time
+> > (until nr_hashed >= 0). So ->nr_hashed can be incremented again
+> > after zap_pid_ns_processes() returns.
 
---kXdP64Ggrk/fb43R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+XXX: this creates the new pid P in this ns. Please see below...
 
-On Fri, Dec 21, 2012 at 02:53:51PM +0100, Lucas Stach wrote:
-> Am Freitag, den 21.12.2012, 13:39 +0200 schrieb Terje Bergstrom:
-[...]
-> > +void host1x_unregister_drm_device(struct host1x *host1x)
-> > +{
-> > +	if (host1x->drm_device)
-> > +		platform_device_unregister(host1x->drm_device);
-> > +}
-> > +EXPORT_SYMBOL(host1x_unregister_drm_device);
-> > +
-> > +struct platform_device *host1x_drm_device(struct platform_device *pdev)
-> > +{
-> > +	struct host1x *host = platform_get_drvdata(pdev);
-> > +	return host->drm_device;
-> > +}
-> > +EXPORT_SYMBOL(host1x_drm_device);
-> This should be called host1x_get_drm_device
+> I want to talk about how alloc_pid and free_pid prevent nr_hashed
+> from increasing once the last processes has exited the pid namespace
+> but that doesn't apply here.
 
-Or maybe even host1x_drm_get_device() to make it more obvious that it
-doesn't return a struct drm_device. Also I think it would be better to
-make it take a struct device * and return a struct device * instead.
-Users of the API will probably call this like so:
+Not sure I understand, but it seems you agree this can happen.
 
-	struct device *dummy = host1x_drm_get_device(pdev->dev.parent);
-	struct drm_device *drm = dev_get_drvdata(dummy);
+> > Or, we can sleep in TASK_UNINTERRUPTIBLE "forever" if this happens
+> > after kill-them-all.
+>
+> Sleeping forever should be prevented by this chunk in free_pid:
 
-So we save ourselves some needless up-casting.
+Note that I said "forever", not forever ;)
 
-Thierry
+>
+> 		switch(--ns->nr_hashed) {
+> 		case 1:
+> 			/* When all that is left in the pid namespace
+> 			 * is the reaper wake up the reaper.  The reaper
+> 			 * may be sleeping in zap_pid_ns_processes().
+> 			 */
+> 			wake_up_process(ns->child_reaper);
+>
+>
+> I admit it continues to be true that if an injected process or a
+> debugged process does not exit we can block waiting for all of the
+> processes to be reaped indefinitely.
 
---kXdP64Ggrk/fb43R
-Content-Type: application/pgp-signature
+Yes, I meant until the injected process exits.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+> > Could you explain why do we need to wait at all? I can be easily
+> > wrong, but at first glance the original reason for this wait has
+> > gone away?
+>
+> It is very nice to know that when you do waitpid for the init process of
+> a pid namespace that there are no other processes in the pid namespace.
 
-iQIcBAEBAgAGBQJQ1G2fAAoJEN0jrNd/PrOh8goP/3/mlTk7KUz2hI8V5KTQrrlu
-v0HpANG7CrXsW9Js9fVFL4mfaKK3+x/FycRvbgZecBBYPbuSyT3LdPzsnhVZAf1Y
-C6hXFf66cxYLQHihAPTLqIcajYq8h4RjvtL5GdthxB6HhCAlWrv/tDdhnUZJbfD6
-B1mwrgJUJga8GHvfjmolPt+xHeRxCmIKwUjNlBnki92NnIo3pyX7SILNny2UXAPi
-1/kMilGOCnnKO8Q/LhFe2tSVZ1YgNlZlLOCNjuGo5E4RJHsskn4c3fnu41xxYBRp
-Zar1kwM8SXBVWjvCov+YbUwld8P5KhAif7fkfklzVvi1M8ylLHodApplc+CEyglW
-xVxSDzyTG0txQNRuivtXkdTD9DEUzkfkTx7TRI4txDhCfW3mQUF+dtLqwe3a+lGr
-VfEQCziTjK3uN9U7MapOB0M+EHVEOgBV0R/4H6gavZ5UvDSks4IaSMwAIicpLojp
-/DFgXqCKL2TyhcRT1uLbfBrJ6LAX/33haNfnsU3VYyKvo1EF5TJbdzzQ1uJE2vvi
-cM/x1oWqaNt32divgGHv13ctaV3eKLdG4VlnnZpcZ238JGniOis3P4l1mRRi6Xjp
-Q8oyK5uPdX6w4zzgOXzsAYlEsK3OIUN95laPf+7zZhYigQSooK/UEmj8ifLR5Lkq
-izZWjBq97PBIg/kkarC+
-=aQmT
------END PGP SIGNATURE-----
+OK, and I agree. But my point was, at least this _looks_ strange, because
+ns->nr_hashed == 1 is not stable.
 
---kXdP64Ggrk/fb43R--
+And in fact I think this is not strange, but simply wrong.
+
+Please consider the XXX case above. Suppose that free_pid(P) happens
+after ns->child_reaper exits and thus this pointer points to nowhere.
+Suppose also that there is another injected pid so nr_hashed == 2.
+In this case wake_up_process(ns->child_reaper) means use-after-free,
+no?
+
+Oleg.
+
