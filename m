@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2LUNvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 08:51:15 -0500
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:41075 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751153Ab2LUNvJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 08:51:09 -0500
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Ido Yariv <ido@wizery.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, Linus Walleij <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?Sjur_Br=E6ndeland?= <sjur@brendeland.net>
-Date: Fri, 21 Dec 2012 14:50:53 +0100
-Subject: RE: [RFCv2 07/11] remoteproc: Register virtio devices after vring
- allocation
-Thread-Topic: [RFCv2 07/11] remoteproc: Register virtio devices after vring
- allocation
-Thread-Index: Ac3fgNAhdrbtPex/QxerJ+4m00M2UQAAKAVg
-Message-ID: <81C3A93C17462B4BBD7E272753C1057924576E5095@EXDCVYMBSTM005.EQ1STM.local>
-References: <1355501220-4572-1-git-send-email-sjur.brandeland@stericsson.com>
- <1355501220-4572-8-git-send-email-sjur.brandeland@stericsson.com>
- <20121221021801.GD28692@WorkStation.localnet>
- <81C3A93C17462B4BBD7E272753C1057924576E500F@EXDCVYMBSTM005.EQ1STM.local>
- <20121221134051.GB22252@WorkStation.localnet>
-In-Reply-To: <20121221134051.GB22252@WorkStation.localnet>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1752093Ab2LUNx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 08:53:29 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2586 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751153Ab2LUNxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 08:53:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Fri, 21 Dec 2012 05:51:30 -0800
+Message-ID: <50D46AE4.8020308@nvidia.com>
+Date: Fri, 21 Dec 2012 15:57:56 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Lucas Stach <dev@lynxeye.de>
+CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 0/8] Support for Tegra 2D hardware
+References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <1356097818.1490.109.camel@tellur>
+In-Reply-To: <1356097818.1490.109.camel@tellur>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ido,
-> > Ugh, thanks I missed this. How about calling rproc_alloc_vring from
-> > rproc_parse_vring so that the resource allocation are done before
-> > the virtio devices are started?
+On 21.12.2012 15:50, Lucas Stach wrote:
+> This has to be resolved before merging. Personally I'm in favour of
+> keeping reg access patterns close to what is done in other parts of the
+> kernel.
 
-> I don't think that would solve it - rproc_parse_vring is called from
-> rproc_handle_vdev which is called more than once (for each vdev), so
-> max_notifyid could still be increased after the first call to
-> rproc_add_virtio_dev.
+I haven't so far received comments from too many people, so that's why I
+left it as is.
 
-Yes, but I think this will work if we allocate resources first,
-and then in the next step register the virtio devices.
-All the resources for all the vdevs will be allocated first
-and then rproc_boot will be called.
+>>  * Uses still CMA helpers. IOMMU support will replace CMA with host1x
+>>    specific allocator.
+> 
+> I really want the allocator issue resolved before talking about merging
+> those patches. Proper IOMMU support will require a bit of rework of the
+> current upstream IOMMU API, so it will still be a bit out.
+> 
+> But if you don't mind I'll try to implement the host1x allocator over
+> the holidays and provide an incremental patch.
 
-> Great, thanks!
-> Happy new year :)
+Do you mean host1x CMA allocator using dma mapping API? That'd be great
+if you could help out. I've just tried to concentrate on getting ok for
+base essentials before doing any extra work.
 
-Thanks, Same to you.
+Terje
 
-Regards,
-Sjur
