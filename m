@@ -1,162 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab2LUWSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:18:37 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:11465 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab2LUWSf (ORCPT
+	id S1752652Ab2LUWWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 17:22:14 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:43347 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab2LUWWM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:18:35 -0500
-X-IronPort-AV: E=Sophos;i="4.84,332,1355126400"; 
-   d="scan'208";a="16068487"
-Date: Fri, 21 Dec 2012 14:18:28 -0800
-From: Pratik Patel <pratikp@codeaurora.org>
-To: Jon Hunter <jon-hunter@ti.com>
-Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        linux-arm-msm@vger.kernel.org,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
-        "david.rusling@linaro.org" <david.rusling@linaro.org>,
-        "arve@android.com" <arve@android.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "d-deao@ti.com" <d-deao@ti.com>,
-        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: CoreSight framework and drivers
-Message-ID: <20121221221828.GA2658@pratikp-linux.qualcomm.com>
-References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
- <20121219112314.GA26329@mudshark.cambridge.arm.com>
- <50D1F37E.6000804@ti.com>
- <20121219212431.GC23594@pratikp-linux.qualcomm.com>
- <50D34EE5.8090407@ti.com>
- <20121220195127.GA14877@pratikp-linux.qualcomm.com>
- <50D3972E.4030607@ti.com>
+	Fri, 21 Dec 2012 17:22:12 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D3972E.4030607@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAE9FiQUu6mvTZ7ONsEeCx8OOocKkCEkC2-OmwdWyjHAJ4=gVHQ@mail.gmail.com>
+References: <20121221030018.GA15032@www.outflux.net>
+	<50D3E91C.9060907@zytor.com>
+	<CAE9FiQVNeQqXktmaG0XOJwSxFEVrGKA9j6UDN2N_aDDp-8y_fA@mail.gmail.com>
+	<50D495FD.8060103@zytor.com>
+	<CAE9FiQXcXn0xr_ACt4fS_=xWtXR8zGoYfpSzFKG4nEvKF=sGdQ@mail.gmail.com>
+	<50D49E0A.1080609@zytor.com>
+	<CAE9FiQUu6mvTZ7ONsEeCx8OOocKkCEkC2-OmwdWyjHAJ4=gVHQ@mail.gmail.com>
+Date: Fri, 21 Dec 2012 14:22:10 -0800
+X-Google-Sender-Auth: 9yqBivVxrPXTcKj1146iAKNdJYM
+Message-ID: <CAE9FiQWWNhD5ttoiqmHoG0hrYu2NLO1T+DVN7cac2AG4iE+2og@mail.gmail.com>
+Subject: Re: [RFC] stack and heap are executable on x86_64
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Content-Type: multipart/mixed; boundary=00151747bd5459bb0104d16447c4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 04:54:38PM -0600, Jon Hunter wrote:
-> 
-> On 12/20/2012 01:51 PM, Pratik Patel wrote:
-> > On Thu, Dec 20, 2012 at 11:46:13AM -0600, Jon Hunter wrote:
-> >>
-> >> On 12/19/2012 03:24 PM, Pratik Patel wrote:
-> >>
-> >> [snip]
-> >>
-> >>> Currently we use the CoreSight virtual bus to conveniently list
-> >>> sysfs configuration attributes for all the registered CoreSight
-> >>> devices.
-> >>>
-> >>> For eg:
-> >>> /sys/bus/coresight/devices/coresight-etm0/<attribute>
-> >>> /sys/bus/coresight/devices/coresight-etm1/<attribute>
-> >>> /sys/bus/coresight/devices/coresight-stm/<attribute>
-> >>> /sys/bus/coresight/devices/coresight-tmc-etf/<attribute>
-> >>> ...
-> >>> ...
-> >>>
-> >>> Some of the attributes are based on device type (i.e. source,
-> >>> link or sink) so they will exist for all devices of that type
-> >>> while some are device specific.
-> >>>
-> >>> Maybe I am misunderstanding the question but are you suggesting
-> >>> to register CoreSight devices to the AMBA bus instead of the
-> >>> CoreSight core layer code?
-> >>
-> >> Yes exactly.
-> >>
-> >>> Will Deacon mentioned earlier that AMBA framework can be changed
-> >>> to accomodate devices with a different class but I am more
-> >>> concerned with losing some of the stuff that the core layer code
-> >>> does (eg. coresight_register, coresight_enable, coresight_disable
-> >>> in coresight.c) if we register CoreSight drivers to the AMBA bus
-> >>> without letting the core layer know about the device connections.
-> >>
-> >> I may be missing something, but couldn't you keep all the
-> >> register/enable/disable stuff but just register the device with the amba
-> >> bus? Obviously some changes would need to be made.
-> >>
-> > 
-> > Ok, so are you referring to making CoreSight devices register
-> > with AMBA bus instead of platform bus keeping everything else
-> > intact?
-> 
-> Yes exactly. However, please note I am not saying that we should do
-> this, and I asking what direction does the community want us to take
-> here? Platform bus or AMBA bus?
-> 
-> >> Personally, I don't have strong feeling either way, but we have ETM/ETB
-> >> drivers using AMBA today and so I am hoping we can come to agreement on
-> >> this going forward.
-> >>
-> >> Russell, Will, what are your thoughts?
-> >>
-> >> Otherwise, looking at the code, I like what you have implemented. I
-> >> still need to look closer, but I am struggling to figure out how a
-> >> coresight device such as the cross-trigger-interface fits with this
-> >> model. This model appears to be geared towards coresight devices used
-> >> for traces purposes and are either source, links or sinks. The
-> >> cross-trigger-interface is not a source or a sink. However, although you
-> >> it could be considered as a link (routing events), it is not really, as
-> >> it may not link to other coresight sinks/source.
-> >>
-> >> In my case, I have PMU-IRQ --> CTI --> GIC. So a non-coresight source
-> >> and sink. In away the CTI looks more like a 2nd-level interrupt
-> >> controller than anything else. Hence, another type of coresight device
-> >> may be needed in addition to source, links and sinks. Or link is
-> >> extended in some way to connect to non-coresight sources/sinks.
-> >>
-> >> Let me know if you have any thoughts.
-> >>
-> > 
-> > I had left the "None" type for miscellaneous stuff but I agree it
-> > should be a separate type - maybe "debug".
-> > 
-> > Having said that I like the CTI driver you have uploaded. Need to
-> > look at it in more detail. Since CTI connections can vary between
-> > chip to chip, we need a generic way to deal with it.
-> 
-> Yes if you have any ideas let me know. As Will had mentioned it would be
-> good to have a common function table all these devices could use too. I
-> will take a closer look at what you have.
-> 
+--00151747bd5459bb0104d16447c4
+Content-Type: text/plain; charset=ISO-8859-1
 
-I had started on a CTI driver much in line with your current
-implementation but your approach looks good to me.
+On Fri, Dec 21, 2012 at 1:26 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Dec 21, 2012 at 9:36 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> We should NEVER have RW + x at the same time (at least when the kernel
+>> is compiled properly.)  Looks like your patch does get rid of a bunch of
+>> stuff in the low mapping -- although the low mapping really should never
+>> be +x at all -- but there are still problems with the high mapping
+>
+> after enabling CONFIG_DEBUG_RODATA
+>
+> get
+> ---[ High Kernel Mapping ]---
+> 0xffffffff80000000-0xffffffff81000000          16M                           pmd
+> 0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
+> 0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
+> 0xffffffff82c00000-0xffffffff82dc9000        1828K     RW             GLB x  pte
+> 0xffffffff82dc9000-0xffffffff82e00000         220K     RW             GLB NX pte
+> 0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
+> 0xffffffff83000000-0xffffffff8313a000        1256K     RW             GLB NX pte
+> 0xffffffff8313a000-0xffffffff83200000         792K     RW             GLB x  pte
+> 0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB x  pmd
+> 0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
+>
+> for
+> [    0.000000] Kernel Layout:
+> [    0.000000]   .text: [0x01000000-0x021434f8]
+> [    0.000000] .rodata: [0x02200000-0x02a13fff]
+> [    0.000000]   .data: [0x02c00000-0x02dc763f]
+> [    0.000000]   .init: [0x02dc9000-0x0312cfff]
+> [    0.000000]    .bss: [0x0313b000-0x03dd6fff]
+> [    0.000000]    .brk: [0x03dd7000-0x03dfffff]
+>
+> looks like .data, .bss, .brk should not have x set.
 
-Looking at the code though, I couldn't find a way to perform a
-mapping between two different CTIs. Reason I ask is because we
-have use cases where we need to map one CTIs input to another
-CTIs output on the same channel.
+please check attached patch that set NX for data/bss/brk with 64bit.
 
-Do you intend to support different entities within kernel to map
-different trig_in or trig_out on the same CTI? If so, it might
-probably require reference counting for the enable/disable.
+Thanks
 
-What user interface do you plan to provide for the CTI? Maybe
-something consistent with other CoreSight components in sysfs to
-allow users to enable, disable, map and unmap ???
+Yinghai
 
-Please let me know your thoughts.
+--00151747bd5459bb0104d16447c4
+Content-Type: application/octet-stream; name="no_x_for_data_bss_brk.patch"
+Content-Disposition: attachment; filename="no_x_for_data_bss_brk.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hazvwto80
 
-CTIs can easily be made part of the CoreSight core layer using a
-different type but apart from being part of the CoreSight list
-containing all the trace and CTI components, not sure if there is
-anything that is useful to do in the core layer. Need to think
-about this.
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+U3ViamVjdDogW1BBVENIXSB4ODYsIDY0Yml0LCBtbTogTWFyayBkYXRhL2Jzcy9icmsgdG8gbngK
+CkhQQSBzYWlkLCB3ZSBzaG91bGQgbm90IGhhdmUgUlcgYW5kICt4IHNldCBhdCB0aGUgdGltZS4K
+CmZvciBrZXJuZWwgbGF5b3V0OgpbICAgIDAuMDAwMDAwXSBLZXJuZWwgTGF5b3V0OgpbICAgIDAu
+MDAwMDAwXSAgIC50ZXh0OiBbMHgwMTAwMDAwMC0weDAyMTQzNGY4XQpbICAgIDAuMDAwMDAwXSAu
+cm9kYXRhOiBbMHgwMjIwMDAwMC0weDAyYTEzZmZmXQpbICAgIDAuMDAwMDAwXSAgIC5kYXRhOiBb
+MHgwMmMwMDAwMC0weDAyZGM3NjNmXQpbICAgIDAuMDAwMDAwXSAgIC5pbml0OiBbMHgwMmRjOTAw
+MC0weDAzMTJjZmZmXQpbICAgIDAuMDAwMDAwXSAgICAuYnNzOiBbMHgwMzEzYjAwMC0weDAzZGQ2
+ZmZmXQpbICAgIDAuMDAwMDAwXSAgICAuYnJrOiBbMHgwM2RkNzAwMC0weDAzZGZmZmZmXQoKYmVm
+b3JlIHRoZSBwYXRjaCwgd2UgaGF2ZQotLS1bIEhpZ2ggS2VybmVsIE1hcHBpbmcgXS0tLQoweGZm
+ZmZmZmZmODAwMDAwMDAtMHhmZmZmZmZmZjgxMDAwMDAwICAgICAgICAgIDE2TSAgICAgICAgICAg
+ICAgICAgICAgICAgICAgIHBtZAoweGZmZmZmZmZmODEwMDAwMDAtMHhmZmZmZmZmZjgyMjAwMDAw
+ICAgICAgICAgIDE4TSAgICAgcm8gICAgICAgICBQU0UgR0xCIHggIHBtZAoweGZmZmZmZmZmODIy
+MDAwMDAtMHhmZmZmZmZmZjgyYzAwMDAwICAgICAgICAgIDEwTSAgICAgcm8gICAgICAgICBQU0Ug
+R0xCIE5YIHBtZAoweGZmZmZmZmZmODJjMDAwMDAtMHhmZmZmZmZmZjgyZGM5MDAwICAgICAgICAx
+ODI4SyAgICAgUlcgICAgICAgICAgICAgR0xCIHggIHB0ZQoweGZmZmZmZmZmODJkYzkwMDAtMHhm
+ZmZmZmZmZjgyZTAwMDAwICAgICAgICAgMjIwSyAgICAgUlcgICAgICAgICAgICAgR0xCIE5YIHB0
+ZQoweGZmZmZmZmZmODJlMDAwMDAtMHhmZmZmZmZmZjgzMDAwMDAwICAgICAgICAgICAyTSAgICAg
+UlcgICAgICAgICBQU0UgR0xCIE5YIHBtZAoweGZmZmZmZmZmODMwMDAwMDAtMHhmZmZmZmZmZjgz
+MTNhMDAwICAgICAgICAxMjU2SyAgICAgUlcgICAgICAgICAgICAgR0xCIE5YIHB0ZQoweGZmZmZm
+ZmZmODMxM2EwMDAtMHhmZmZmZmZmZjgzMjAwMDAwICAgICAgICAgNzkySyAgICAgUlcgICAgICAg
+ICAgICAgR0xCIHggIHB0ZQoweGZmZmZmZmZmODMyMDAwMDAtMHhmZmZmZmZmZjgzZTAwMDAwICAg
+ICAgICAgIDEyTSAgICAgUlcgICAgICAgICBQU0UgR0xCIHggIHBtZAoweGZmZmZmZmZmODNlMDAw
+MDAtMHhmZmZmZmZmZmEwMDAwMDAwICAgICAgICAgNDUwTSAgICAgICAgICAgICAgICAgICAgICAg
+ICAgIHBtZAoKYWZ0ZXIgcGF0Y2gsLCB3ZSBnZXQKLS0tWyBIaWdoIEtlcm5lbCBNYXBwaW5nIF0t
+LS0KMHhmZmZmZmZmZjgwMDAwMDAwLTB4ZmZmZmZmZmY4MTAwMDAwMCAgICAgICAgICAxNk0gICAg
+ICAgICAgICAgICAgICAgICAgICAgICBwbWQKMHhmZmZmZmZmZjgxMDAwMDAwLTB4ZmZmZmZmZmY4
+MjIwMDAwMCAgICAgICAgICAxOE0gICAgIHJvICAgICAgICAgUFNFIEdMQiB4ICBwbWQKMHhmZmZm
+ZmZmZjgyMjAwMDAwLTB4ZmZmZmZmZmY4MmMwMDAwMCAgICAgICAgICAxME0gICAgIHJvICAgICAg
+ICAgUFNFIEdMQiBOWCBwbWQKMHhmZmZmZmZmZjgyYzAwMDAwLTB4ZmZmZmZmZmY4MmUwMDAwMCAg
+ICAgICAgICAgMk0gICAgIFJXICAgICAgICAgICAgIEdMQiBOWCBwdGUKMHhmZmZmZmZmZjgyZTAw
+MDAwLTB4ZmZmZmZmZmY4MzAwMDAwMCAgICAgICAgICAgMk0gICAgIFJXICAgICAgICAgUFNFIEdM
+QiBOWCBwbWQKMHhmZmZmZmZmZjgzMDAwMDAwLTB4ZmZmZmZmZmY4MzIwMDAwMCAgICAgICAgICAg
+Mk0gICAgIFJXICAgICAgICAgICAgIEdMQiBOWCBwdGUKMHhmZmZmZmZmZjgzMjAwMDAwLTB4ZmZm
+ZmZmZmY4M2UwMDAwMCAgICAgICAgICAxMk0gICAgIFJXICAgICAgICAgUFNFIEdMQiBOWCBwbWQK
+MHhmZmZmZmZmZjgzZTAwMDAwLTB4ZmZmZmZmZmZhMDAwMDAwMCAgICAgICAgIDQ1ME0gICAgICAg
+ICAgICAgICAgICAgICAgICAgICBwbWQKCnNvIGRhdGEsIGJzcywgYnJrIGdldCBOWCAuLi4KClNp
+Z25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVsLm9yZz4KCi0tLQogYXJjaC94
+ODYvbW0vaW5pdF82NC5jIHwgICAgNyArKysrLS0tCiAxIGZpbGUgY2hhbmdlZCwgNCBpbnNlcnRp
+b25zKCspLCAzIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9tbS9pbml0
+XzY0LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvYXJjaC94ODYvbW0vaW5pdF82NC5j
+CisrKyBsaW51eC0yLjYvYXJjaC94ODYvbW0vaW5pdF82NC5jCkBAIC04MTEsNiArODExLDcgQEAg
+dm9pZCBtYXJrX3JvZGF0YV9ybyh2b2lkKQogCXVuc2lnbmVkIGxvbmcgZW5kID0gKHVuc2lnbmVk
+IGxvbmcpICZfX2VuZF9yb2RhdGFfaHBhZ2VfYWxpZ247CiAJdW5zaWduZWQgbG9uZyB0ZXh0X2Vu
+ZCA9IFBGTl9BTElHTigmX19zdG9wX19fZXhfdGFibGUpOwogCXVuc2lnbmVkIGxvbmcgcm9kYXRh
+X2VuZCA9IFBGTl9BTElHTigmX19lbmRfcm9kYXRhKTsKKwl1bnNpZ25lZCBsb25nIGFsbF9lbmQg
+PSBQRk5fQUxJR04oJl9lbmQpOwogCiAJcHJpbnRrKEtFUk5fSU5GTyAiV3JpdGUgcHJvdGVjdGlu
+ZyB0aGUga2VybmVsIHJlYWQtb25seSBkYXRhOiAlbHVrXG4iLAogCSAgICAgICAoZW5kIC0gc3Rh
+cnQpID4+IDEwKTsKQEAgLTgxOSwxMCArODIwLDEwIEBAIHZvaWQgbWFya19yb2RhdGFfcm8odm9p
+ZCkKIAlrZXJuZWxfc2V0X3RvX3JlYWRvbmx5ID0gMTsKIAogCS8qCi0JICogVGhlIHJvZGF0YSBz
+ZWN0aW9uIChidXQgbm90IHRoZSBrZXJuZWwgdGV4dCEpIHNob3VsZCBhbHNvIGJlCi0JICogbm90
+LWV4ZWN1dGFibGUuCisJICogVGhlIHJvZGF0YS9kYXRhL2Jzcy9icmsgc2VjdGlvbiAoYnV0IG5v
+dCB0aGUga2VybmVsIHRleHQhKQorCSAqIHNob3VsZCBhbHNvIGJlIG5vdC1leGVjdXRhYmxlLgog
+CSAqLwotCXNldF9tZW1vcnlfbngocm9kYXRhX3N0YXJ0LCAoZW5kIC0gcm9kYXRhX3N0YXJ0KSA+
+PiBQQUdFX1NISUZUKTsKKwlzZXRfbWVtb3J5X254KHJvZGF0YV9zdGFydCwgKGFsbF9lbmQgLSBy
+b2RhdGFfc3RhcnQpID4+IFBBR0VfU0hJRlQpOwogCiAJcm9kYXRhX3Rlc3QoKTsKIAo=
+--00151747bd5459bb0104d16447c4--
