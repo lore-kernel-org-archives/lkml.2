@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751031Ab2LUG0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 01:26:49 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13662 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2LUG0m convert rfc822-to-8bit (ORCPT
+	id S1751099Ab2LUG1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 01:27:19 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:37227 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab2LUG1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 01:26:42 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 20 Dec 2012 22:26:35 -0800
-Message-ID: <50D40236.9080403@nvidia.com>
-Date: Fri, 21 Dec 2012 08:31:18 +0200
-From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 21 Dec 2012 01:27:12 -0500
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Thierry Reding <thierry.reding@avionic-design.de>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arto Merilainen <amerilainen@nvidia.com>
-Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
-References: <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de> <50D2D792.1050401@nvidia.com> <50D34775.5010606@wwwdotorg.org> <50D34F00.4080308@nvidia.com> <50D3511F.2090308@wwwdotorg.org> <50D35287.3040509@nvidia.com> <20121220203059.GA12977@avionic-0098.adnet.avionic-design.de> <50D38462.3060302@nvidia.com> <50D39122.3060401@wwwdotorg.org>
-In-Reply-To: <50D39122.3060401@wwwdotorg.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <50D3E91C.9060907@zytor.com>
+References: <20121221030018.GA15032@www.outflux.net>
+	<50D3E91C.9060907@zytor.com>
+Date: Thu, 20 Dec 2012 22:27:10 -0800
+X-Google-Sender-Auth: ZIPAJDjCzGulQ9UCAhsZQI6jrog
+Message-ID: <CAE9FiQVNeQqXktmaG0XOJwSxFEVrGKA9j6UDN2N_aDDp-8y_fA@mail.gmail.com>
+Subject: Re: [RFC] stack and heap are executable on x86_64
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.12.2012 00:28, Stephen Warren wrote:
-> On 12/20/2012 02:34 PM, Terje Bergström wrote:
->> On 20.12.2012 22:30, Thierry Reding wrote:
->>> The problem with your proposed solution is that, even any of Stephen's
->>> valid objections aside, it won't work. Once the tegra-drm module is
->>> unloaded, the driver's data will be left in the current state and the
->>> link to the dummy device will be lost.
->>
->> The dummy device is created by tegradrm's module init, because it's used
-> 
-> No, the tegradrm driver object might be registered by tegradrm's module
-> init, but the dummy tegradrm platform device would need to be
-> created/registered by host1x's probe. Otherwise, the device would get
-> created even if there was no host1x/... in the system (disabled for some
-> reason, multi-SoC kernel, ...)
+On Thu, Dec 20, 2012 at 8:44 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> I just looked at a /sys/kernel/debug/kernel_page_tables dump.... and there
+> are a bunch of pages which are RWX:
+>
+> 0xffff880000000000-0xffff880000097000  604K RW             GLB x  pte
+> 0xffff88000009d000-0xffff880000200000 1420K RW             GLB x  pte
+> 0xffff880000200000-0xffff880001000000   14M RW         PSE GLB x  pmd
+> 0xffff880001c00000-0xffff880035e00000  834M RW         PSE GLB x  pmd
+> 0xffff880035e00000-0xffff880035ffe000 2040K RW             GLB x  pte
+> 0xffff880036ff7000-0xffff880037000000   36K RW             GLB x  pte
+> 0xffff880037000000-0xffff880040000000  144M RW         PSE GLB x  pmd
+> 0xffffffff81c00000-0xffffffff81cea000  936K RW             GLB x  pte
+> 0xffffffff81dfd000-0xffffffff81e00000   12K RW             GLB x  pte
+> 0xffffffff81e00000-0xffffffff82000000    2M RW         PSE GLB x  pmd
 
-Oh. I was all the time thinking that dummy device needs to be created by
-tegradrm, because it's only used by tegradrm.  But as we're mixing the
-responsibilities, we might then just as well go all the way.
+after for-x86-boot we will have
+---[ Low Kernel Mapping ]---
+0xffff880000000000-0xffff880000099000         612K     RW             GLB NX pte
+0xffff880000099000-0xffff88000009a000           4K     ro             GLB NX pte
+0xffff88000009a000-0xffff88000009b000           4K     ro             GLB x  pte
+0xffff88000009b000-0xffff880000200000        1428K     RW             GLB NX pte
+0xffff880000200000-0xffff8800dfe00000        3580M     RW         PSE GLB NX pmd
+0xffff8800dfe00000-0xffff8800dfffe000        2040K     RW             GLB NX pte
+0xffff8800dfffe000-0xffff8800e0000000           8K                           pte
+0xffff8800e0000000-0xffff880100000000         512M                           pmd
+0xffff880100000000-0xffff8801a0000000        2560M     RW         PSE GLB NX pmd
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+0xffffffff81000000-0xffffffff82a00000          26M     RW         PSE GLB x  pmd
+0xffffffff82a00000-0xffffffff82b21000        1156K     RW             GLB x  pte
+0xffffffff82b21000-0xffffffff82c00000         892K     RW             GLB NX pte
+0xffffffff82c00000-0xffffffff82e00000           2M     RW         PSE GLB NX pmd
+0xffffffff82e00000-0xffffffff82e92000         584K     RW             GLB NX pte
+0xffffffff82e92000-0xffffffff83000000        1464K     RW             GLB x  pte
+0xffffffff83000000-0xffffffff83c00000          12M     RW         PSE GLB x  pmd
+0xffffffff83c00000-0xffffffffa0000000         452M                           pmd
 
-Terje
+so low mapping will only have trampoline get x set.
+is that expected ?
+
+Do we need to set low mapping corresponding to kernel range to x?
+
+Yinghai
