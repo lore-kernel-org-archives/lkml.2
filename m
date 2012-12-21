@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab2LUOsw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 09:48:52 -0500
-Received: from mga03.intel.com ([143.182.124.21]:45293 "EHLO mga03.intel.com"
+	id S1752389Ab2LUOtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 09:49:05 -0500
+Received: from mga03.intel.com ([143.182.124.21]:41824 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752203Ab2LUOrH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 09:47:07 -0500
+	id S1752199Ab2LUOrG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 09:47:06 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,329,1355126400"; 
-   d="scan'208";a="235197575"
+   d="scan'208";a="235197570"
 From: "Fenghua Yu" <fenghua.yu@intel.com>
 To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Thomas Gleixner" <tglx@linutronix.de>,
@@ -19,9 +19,9 @@ To: "H Peter Anvin" <hpa@zytor.com>, "Ingo Molnar" <mingo@elte.hu>,
         "Borislav Petkov" <borislav.petkov@amd.com>,
         "linux-kernel" <linux-kernel@vger.kernel.org>, "x86" <x86@kernel.org>
 Cc: "Fenghua Yu" <fenghua.yu@intel.com>
-Subject: [PATCH v5 11/12] x86/mm/init.c: Copy ucode from initrd image to kernel memory
-Date: Thu, 20 Dec 2012 23:44:31 -0800
-Message-Id: <1356075872-3054-12-git-send-email-fenghua.yu@intel.com>
+Subject: [PATCH v5 10/12] x86/head64.c: Early update ucode in 64-bit
+Date: Thu, 20 Dec 2012 23:44:30 -0800
+Message-Id: <1356075872-3054-11-git-send-email-fenghua.yu@intel.com>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
 References: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
@@ -31,43 +31,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Fenghua Yu <fenghua.yu@intel.com>
 
-Before initrd image is freed, copy valid ucode patches from initrd image
-to kernel memory. The saved ucode will be used to update AP in resume
-or hotplug.
+This updates ucode on BSP in 64-bit mode. Paging and virtual address are
+working now.
 
 Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
 ---
- arch/x86/mm/init.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/kernel/head64.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 5f59473..36bad16 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -16,6 +16,7 @@
- #include <asm/tlb.h>
- #include <asm/proto.h>
- #include <asm/dma.h>		/* for MAX_DMA_PFN */
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index e1cb611..5a97fcc 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -26,6 +26,7 @@
+ #include <asm/kdebug.h>
+ #include <asm/e820.h>
+ #include <asm/bios_ebda.h>
 +#include <asm/microcode.h>
  
- #include "mm_internal.h"
+ /*
+  * Manage page tables very early on.
+@@ -181,6 +182,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
  
-@@ -555,6 +556,15 @@ void free_initmem(void)
- #ifdef CONFIG_BLK_DEV_INITRD
- void __init free_initrd_mem(unsigned long start, unsigned long end)
- {
-+#ifdef CONFIG_MICROCODE_EARLY
+ 	copy_bootdata(__va(real_mode_data));
+ 
 +	/*
-+	 * Remember, initrd memory may contain microcode or other useful things.
-+	 * Before we lose initrd mem, we need to find a place to hold them
-+	 * now that normal virtual memory is enabled.
++	 * Load microcode early on BSP.
 +	 */
-+	save_microcode_in_initrd();
-+#endif
++	load_ucode_bsp();
 +
- 	/*
- 	 * end could be not aligned, and We can not align that,
- 	 * decompresser could be confused by aligned initrd_end
+ 	if (console_loglevel == 10)
+ 		early_printk("Kernel alive\n");
+ 
 -- 
 1.8.0.1
 
