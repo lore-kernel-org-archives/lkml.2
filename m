@@ -1,121 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2LUI2j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:28:39 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:57091 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383Ab2LUI2W (ORCPT
+	id S1751671Ab2LUIaS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:30:18 -0500
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:47146 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091Ab2LUIaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 03:28:22 -0500
-Date: Fri, 21 Dec 2012 17:05:41 +0900
-From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        Gleb Natapov <gleb@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
- dirty logging
-Message-Id: <20121221170541.d2299618.yoshikawa_takuya_b1@lab.ntt.co.jp>
-In-Reply-To: <1356015343.10845.16.camel@ul30vt.home>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	<20121219213037.b234f9d4f187df2132e65576@gmail.com>
-	<1355931777.3224.562.camel@bling.home>
-	<20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	<20121220125946.GB7750@amt.cnet>
-	<20121220132255.GH17584@redhat.com>
-	<1356010887.10845.11.camel@ul30vt.home>
-	<20121220233545.95378d066b2ce61a76106a88@gmail.com>
-	<1356015343.10845.16.camel@ul30vt.home>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Dec 2012 03:30:14 -0500
+X-Greylist: delayed 434 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 03:30:14 EST
+MIME-Version: 1.0
+In-Reply-To: <1354139277-17376-6-git-send-email-yinghai@kernel.org>
+References: <1354139277-17376-1-git-send-email-yinghai@kernel.org>
+	<1354139277-17376-6-git-send-email-yinghai@kernel.org>
+Date: Fri, 21 Dec 2012 16:22:59 +0800
+Message-ID: <CABqxG0cFTu2qDo6RmZ7QfLsC4fDzLVj9WrocuDAz+dAQB8OJ6Q@mail.gmail.com>
+Subject: Re: [PATCH v9 05/46] x86, mm: Revert back good_end setting for 64bit
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jacob Shin <jacob.shin@amd.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Dec 2012 07:55:43 -0700
-Alex Williamson <alex.williamson@redhat.com> wrote:
-
-> > Yes, the fix should work, but I do not want to update the
-> > generation from outside of update_memslots().
-> 
-> Ok, then:
+On Thu, Nov 29, 2012 at 5:47 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> After
 >
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index 87089dd..c7b5061 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -413,7 +413,8 @@ void kvm_exit(void);
->  
->  void kvm_get_kvm(struct kvm *kvm);
->  void kvm_put_kvm(struct kvm *kvm);
-> -void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new);
-> +void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
-> +                     u64 last_generation);
->  
->  static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
->  {
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index c4c8ec1..06961ea 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -667,7 +667,8 @@ static void sort_memslots(struct kvm_memslots *slots)
->  		slots->id_to_index[slots->memslots[i].id] = i;
->  }
->  
-> -void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
-> +void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
-> +                     u64 last_generation)
->  {
->  	if (new) {
->  		int id = new->id;
-> @@ -679,7 +680,7 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
->  			sort_memslots(slots);
->  	}
->  
-> -	slots->generation++;
-> +	slots->generation = last_generation + 1;
->  }
->  
->  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
-> @@ -814,7 +815,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
->  		slot = id_to_memslot(slots, mem->slot);
->  		slot->flags |= KVM_MEMSLOT_INVALID;
->  
-> -		update_memslots(slots, NULL);
-> +		update_memslots(slots, NULL, kvm->memslots->generation);
->  
->  		old_memslots = kvm->memslots;
->  		rcu_assign_pointer(kvm->memslots, slots);
-> @@ -862,7 +863,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
->  		memset(&new.arch, 0, sizeof(new.arch));
->  	}
->  
-> -	update_memslots(slots, &new);
-> +	update_memslots(slots, &new, kvm->memslots->generation);
->  	old_memslots = kvm->memslots;
->  	rcu_assign_pointer(kvm->memslots, slots);
->  	synchronize_srcu_expedited(&kvm->srcu);
-> 
-> > > The original patch can be reverted, there are no following dependencies,
-> > > but the idea was that we're making the memslot array larger, so there
-> > > could be more pressure in allocating it, so let's not trivially do extra
-> > > frees and allocs.  Thanks,
-> > 
-> > I agree that the current set_memory_region() is not good for frequent updates.
-> > But the alloc/free is not a major factor at the moment: flushing shadows should
-> > be more problematic.
-> 
-> I don't understand why we'd throw away even a minor optimization that's
-> so easy to fix.  We're not only removing a free/alloc, but we're being
-> more friendly to the cache by avoiding the extra memcpy.  The above also
-> makes the generation management a bit more explicit.  Thanks,
+> | commit 8548c84da2f47e71bbbe300f55edb768492575f7
+> | Author: Takashi Iwai <tiwai@suse.de>
+> | Date:   Sun Oct 23 23:19:12 2011 +0200
+> |
+> |    x86: Fix S4 regression
+> |
+> |    Commit 4b239f458 ("x86-64, mm: Put early page table high") causes a S4
+> |    regression since 2.6.39, namely the machine reboots occasionally at S4
+> |    resume.  It doesn't happen always, overall rate is about 1/20.  But,
+> |    like other bugs, once when this happens, it continues to happen.
+> |
+> |    This patch fixes the problem by essentially reverting the memory
+> |    assignment in the older way.
+>
+> Have some page table around 512M again, that will prevent kdump to find 512M
+> under 768M.
+>
+> We need revert that reverting, so we could put page table high again for 64bit.
+>
+> Takashi agreed that S4 regression could be something else.
+>
+>         https://lkml.org/lkml/2012/6/15/182
+>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Looks good to me!
+Hi, Yinghai and HPA
 
-I just wanted to keep the code readable, so no reason to object to
-a clean solution.  Any chance to see the fix on kvm.git soon?
+What's the staus of this patch,  will it go for 3.8? Is there anything
+blocking this patch?
 
-Thanks,
-	Takuya
+> ---
+>  arch/x86/mm/init.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+> index 9e17f9e..dbef4ff 100644
+> --- a/arch/x86/mm/init.c
+> +++ b/arch/x86/mm/init.c
+> @@ -234,8 +234,8 @@ static void __init find_early_table_space(struct map_range *mr, int nr_range)
+>  #ifdef CONFIG_X86_32
+>         /* for fixmap */
+>         tables += roundup(__end_of_fixed_addresses * sizeof(pte_t), PAGE_SIZE);
+> -#endif
+>         good_end = max_pfn_mapped << PAGE_SHIFT;
+> +#endif
+>
+>         base = memblock_find_in_range(start, good_end, tables, PAGE_SIZE);
+>         if (!base)
+> --
+> 1.7.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Regards
+Dave
