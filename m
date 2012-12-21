@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752409Ab2LUAvE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 19:51:04 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:50753 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab2LUAuW (ORCPT
+	id S1752109Ab2LUAvP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 19:51:15 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:57908 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752202Ab2LUAuY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 19:50:22 -0500
+	Thu, 20 Dec 2012 19:50:24 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 7/9] mm: remove flags argument to mmap_region
-Date: Thu, 20 Dec 2012 16:49:55 -0800
-Message-Id: <1356050997-2688-8-git-send-email-walken@google.com>
+Subject: [PATCH 8/9] mm: directly use __mlock_vma_pages_range() in find_extend_vma()
+Date: Thu, 20 Dec 2012 16:49:56 -0800
+Message-Id: <1356050997-2688-9-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1356050997-2688-1-git-send-email-walken@google.com>
 References: <1356050997-2688-1-git-send-email-walken@google.com>
@@ -23,118 +23,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the MAP_POPULATE handling has been moved to mmap_region() call sites,
-the only remaining use of the flags argument is to pass the MAP_NORESERVE
-flag. This can be just as easily handled by do_mmap_pgoff(), so do that
-and remove the mmap_region() flags parameter.
+In find_extend_vma(), we don't need mlock_vma_pages_range() to verify the
+vma type - we know we're working with a stack. So, we can call directly
+into __mlock_vma_pages_range(), and remove the last make_pages_present()
+call site.
+
+Note that we don't use mm_populate() here, so we can't release the mmap_sem
+while allocating new stack pages. This is deemed acceptable, because the
+stack vmas grow by a bounded number of pages at a time, and these are
+anon pages so we don't have to read from disk to populate them.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- arch/tile/mm/elf.c |    1 -
- include/linux/mm.h |    3 +--
- mm/fremap.c        |    3 +--
- mm/mmap.c          |   33 ++++++++++++++++-----------------
- 4 files changed, 18 insertions(+), 22 deletions(-)
+ include/linux/mm.h |    1 -
+ mm/internal.h      |    4 +-
+ mm/memory.c        |   24 ---------------------
+ mm/mlock.c         |   57 ++-------------------------------------------------
+ mm/mmap.c          |   10 +++-----
+ 5 files changed, 9 insertions(+), 87 deletions(-)
 
-diff --git a/arch/tile/mm/elf.c b/arch/tile/mm/elf.c
-index 3cfa98bf9125..743c951c61b0 100644
---- a/arch/tile/mm/elf.c
-+++ b/arch/tile/mm/elf.c
-@@ -130,7 +130,6 @@ int arch_setup_additional_pages(struct linux_binprm *bprm,
- 	if (!retval) {
- 		unsigned long addr = MEM_USER_INTRPT;
- 		addr = mmap_region(NULL, addr, INTRPT_SIZE,
--				   MAP_FIXED|MAP_ANONYMOUS|MAP_PRIVATE,
- 				   VM_READ|VM_EXEC|
- 				   VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC, 0);
- 		if (addr > (unsigned long) -PAGE_SIZE)
 diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fea461cd9027..3b2912f6e91a 100644
+index 3b2912f6e91a..d32ace5fba93 100644
 --- a/include/linux/mm.h
 +++ b/include/linux/mm.h
-@@ -1442,8 +1442,7 @@ extern int install_special_mapping(struct mm_struct *mm,
- extern unsigned long get_unmapped_area(struct file *, unsigned long, unsigned long, unsigned long, unsigned long);
+@@ -1007,7 +1007,6 @@ static inline int fixup_user_fault(struct task_struct *tsk,
+ }
+ #endif
  
- extern unsigned long mmap_region(struct file *file, unsigned long addr,
--	unsigned long len, unsigned long flags,
--	vm_flags_t vm_flags, unsigned long pgoff);
-+	unsigned long len, vm_flags_t vm_flags, unsigned long pgoff);
- extern unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	unsigned long len, unsigned long prot, unsigned long flags,
- 	unsigned long pgoff, bool *populate);
-diff --git a/mm/fremap.c b/mm/fremap.c
-index b42e32171530..503a72387087 100644
---- a/mm/fremap.c
-+++ b/mm/fremap.c
-@@ -204,9 +204,8 @@ get_write_lock:
- 			unsigned long addr;
- 			struct file *file = get_file(vma->vm_file);
+-extern int make_pages_present(unsigned long addr, unsigned long end);
+ extern int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write);
+ extern int access_remote_vm(struct mm_struct *mm, unsigned long addr,
+ 		void *buf, int len, int write);
+diff --git a/mm/internal.h b/mm/internal.h
+index a4fa284f6bc2..e646c46c0d63 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -158,8 +158,8 @@ void __vma_link_list(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		struct vm_area_struct *prev, struct rb_node *rb_parent);
  
--			flags = (flags & MAP_NONBLOCK) | MAP_POPULATE;
- 			addr = mmap_region(file, start, size,
--					flags, vma->vm_flags, pgoff);
-+					vma->vm_flags, pgoff);
- 			fput(file);
- 			if (IS_ERR_VALUE(addr)) {
- 				err = addr;
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 4c8d39e64e80..b0a341e5685f 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1138,7 +1138,21 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 		}
- 	}
+ #ifdef CONFIG_MMU
+-extern long mlock_vma_pages_range(struct vm_area_struct *vma,
+-			unsigned long start, unsigned long end);
++extern long __mlock_vma_pages_range(struct vm_area_struct *vma,
++		unsigned long start, unsigned long end, int *nonblocking);
+ extern void munlock_vma_pages_range(struct vm_area_struct *vma,
+ 			unsigned long start, unsigned long end);
+ static inline void munlock_vma_pages_all(struct vm_area_struct *vma)
+diff --git a/mm/memory.c b/mm/memory.c
+index 221fc9ffcab1..e4ab66b94bb8 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3629,30 +3629,6 @@ int __pmd_alloc(struct mm_struct *mm, pud_t *pud, unsigned long address)
+ }
+ #endif /* __PAGETABLE_PMD_FOLDED */
  
--	addr = mmap_region(file, addr, len, flags, vm_flags, pgoff);
-+	/*
-+	 * Set 'VM_NORESERVE' if we should not account for the
-+	 * memory use of this mapping.
-+	 */
-+	if ((flags & MAP_NORESERVE)) {
-+		/* We honor MAP_NORESERVE if allowed to overcommit */
-+		if (sysctl_overcommit_memory != OVERCOMMIT_NEVER)
-+			vm_flags |= VM_NORESERVE;
-+
-+		/* hugetlb applies strict overcommit unless MAP_NORESERVE */
-+		if (file && is_file_hugepages(file))
-+			vm_flags |= VM_NORESERVE;
-+	}
-+
-+	addr = mmap_region(file, addr, len, vm_flags, pgoff);
- 	if (!IS_ERR_VALUE(addr) &&
- 	    ((vm_flags & VM_LOCKED) ||
- 	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
-@@ -1257,8 +1271,7 @@ static inline int accountable_mapping(struct file *file, vm_flags_t vm_flags)
+-int make_pages_present(unsigned long addr, unsigned long end)
+-{
+-	int ret, len, write;
+-	struct vm_area_struct * vma;
+-
+-	vma = find_vma(current->mm, addr);
+-	if (!vma)
+-		return -ENOMEM;
+-	/*
+-	 * We want to touch writable mappings with a write fault in order
+-	 * to break COW, except for shared mappings because these don't COW
+-	 * and we would not want to dirty them for nothing.
+-	 */
+-	write = (vma->vm_flags & (VM_WRITE | VM_SHARED)) == VM_WRITE;
+-	BUG_ON(addr >= end);
+-	BUG_ON(end > vma->vm_end);
+-	len = DIV_ROUND_UP(end, PAGE_SIZE) - addr/PAGE_SIZE;
+-	ret = get_user_pages(current, current->mm, addr,
+-			len, write, 0, NULL, NULL);
+-	if (ret < 0)
+-		return ret;
+-	return ret == len ? 0 : -EFAULT;
+-}
+-
+ #if !defined(__HAVE_ARCH_GATE_AREA)
+ 
+ #if defined(AT_SYSINFO_EHDR)
+diff --git a/mm/mlock.c b/mm/mlock.c
+index 7f94bc3b46ef..ab0cfe21f538 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -155,9 +155,8 @@ void munlock_vma_page(struct page *page)
+  *
+  * vma->vm_mm->mmap_sem must be held for at least read.
+  */
+-static long __mlock_vma_pages_range(struct vm_area_struct *vma,
+-				    unsigned long start, unsigned long end,
+-				    int *nonblocking)
++long __mlock_vma_pages_range(struct vm_area_struct *vma,
++		unsigned long start, unsigned long end, int *nonblocking)
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	unsigned long addr = start;
+@@ -202,56 +201,6 @@ static int __mlock_posix_error_return(long retval)
+ 	return retval;
  }
  
- unsigned long mmap_region(struct file *file, unsigned long addr,
--			  unsigned long len, unsigned long flags,
--			  vm_flags_t vm_flags, unsigned long pgoff)
-+		unsigned long len, vm_flags_t vm_flags, unsigned long pgoff)
- {
- 	struct mm_struct *mm = current->mm;
- 	struct vm_area_struct *vma, *prev;
-@@ -1282,20 +1295,6 @@ munmap_back:
- 		return -ENOMEM;
- 
- 	/*
--	 * Set 'VM_NORESERVE' if we should not account for the
--	 * memory use of this mapping.
--	 */
--	if ((flags & MAP_NORESERVE)) {
--		/* We honor MAP_NORESERVE if allowed to overcommit */
--		if (sysctl_overcommit_memory != OVERCOMMIT_NEVER)
--			vm_flags |= VM_NORESERVE;
+-/**
+- * mlock_vma_pages_range() - mlock pages in specified vma range.
+- * @vma - the vma containing the specfied address range
+- * @start - starting address in @vma to mlock
+- * @end   - end address [+1] in @vma to mlock
+- *
+- * For mmap()/mremap()/expansion of mlocked vma.
+- *
+- * return 0 on success for "normal" vmas.
+- *
+- * return number of pages [> 0] to be removed from locked_vm on success
+- * of "special" vmas.
+- */
+-long mlock_vma_pages_range(struct vm_area_struct *vma,
+-			unsigned long start, unsigned long end)
+-{
+-	int nr_pages = (end - start) / PAGE_SIZE;
+-	BUG_ON(!(vma->vm_flags & VM_LOCKED));
 -
--		/* hugetlb applies strict overcommit unless MAP_NORESERVE */
--		if (file && is_file_hugepages(file))
--			vm_flags |= VM_NORESERVE;
+-	/*
+-	 * filter unlockable vmas
+-	 */
+-	if (vma->vm_flags & (VM_IO | VM_PFNMAP))
+-		goto no_mlock;
+-
+-	if (!((vma->vm_flags & VM_DONTEXPAND) ||
+-			is_vm_hugetlb_page(vma) ||
+-			vma == get_gate_vma(current->mm))) {
+-
+-		__mlock_vma_pages_range(vma, start, end, NULL);
+-
+-		/* Hide errors from mmap() and other callers */
+-		return 0;
 -	}
 -
 -	/*
- 	 * Private writable mapping: check memory availability
- 	 */
- 	if (accountable_mapping(file, vm_flags)) {
+-	 * User mapped kernel pages or huge pages:
+-	 * make these pages present to populate the ptes, but
+-	 * fall thru' to reset VM_LOCKED--no need to unlock, and
+-	 * return nr_pages so these don't get counted against task's
+-	 * locked limit.  huge pages are already counted against
+-	 * locked vm limit.
+-	 */
+-	make_pages_present(start, end);
+-
+-no_mlock:
+-	vma->vm_flags &= ~VM_LOCKED;	/* and don't come back! */
+-	return nr_pages;		/* error or pages NOT mlocked */
+-}
+-
+ /*
+  * munlock_vma_pages_range() - munlock all pages in the vma range.'
+  * @vma - vma containing range to be munlock()ed.
+@@ -303,7 +252,7 @@ void munlock_vma_pages_range(struct vm_area_struct *vma,
+  *
+  * Filters out "special" vmas -- VM_LOCKED never gets set for these, and
+  * munlock is a no-op.  However, for some special vmas, we go ahead and
+- * populate the ptes via make_pages_present().
++ * populate the ptes.
+  *
+  * For vmas that pass the filters, merge/split as appropriate.
+  */
+diff --git a/mm/mmap.c b/mm/mmap.c
+index b0a341e5685f..290d023632e6 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1881,9 +1881,8 @@ find_extend_vma(struct mm_struct *mm, unsigned long addr)
+ 		return vma;
+ 	if (!prev || expand_stack(prev, addr))
+ 		return NULL;
+-	if (prev->vm_flags & VM_LOCKED) {
+-		mlock_vma_pages_range(prev, addr, prev->vm_end);
+-	}
++	if (prev->vm_flags & VM_LOCKED)
++		__mlock_vma_pages_range(prev, addr, prev->vm_end, NULL);
+ 	return prev;
+ }
+ #else
+@@ -1909,9 +1908,8 @@ find_extend_vma(struct mm_struct * mm, unsigned long addr)
+ 	start = vma->vm_start;
+ 	if (expand_stack(vma, addr))
+ 		return NULL;
+-	if (vma->vm_flags & VM_LOCKED) {
+-		mlock_vma_pages_range(vma, addr, start);
+-	}
++	if (vma->vm_flags & VM_LOCKED)
++		__mlock_vma_pages_range(vma, addr, start, NULL);
+ 	return vma;
+ }
+ #endif
 -- 
 1.7.7.3
