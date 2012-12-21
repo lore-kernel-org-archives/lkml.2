@@ -1,109 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871Ab2LUJRv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:17:51 -0500
-Received: from mga02.intel.com ([134.134.136.20]:27339 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab2LUJRj convert rfc822-to-8bit (ORCPT
+	id S1751949Ab2LUJZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:25:51 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35357 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667Ab2LUJZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:17:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,329,1355126400"; 
-   d="scan'208";a="237431162"
-From: "R, Durgadoss" <durgadoss.r@intel.com>
-To: Hongbo Zhang <hongbo.zhang@linaro.org>
-CC: Wei Ni <wni@nvidia.com>, "Zhang, Rui" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/8] Thermal Framework Enhancements
-Thread-Topic: [PATCH 0/8] Thermal Framework Enhancements
-Thread-Index: AQHN3QLYWsFdy6+maESoXsRsheh4gZgijcQAgABi5OD//6iOAIAAZEUQ
-Date: Fri, 21 Dec 2012 09:17:27 +0000
-Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5924D83E@BGSMSX101.gar.corp.intel.com>
-References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
-	<50D41860.7040406@nvidia.com>
-	<4D68720C2E767A4AA6A8796D42C8EB5924D729@BGSMSX101.gar.corp.intel.com>
- <CAJLyvQztwuvG0GooBUKApR+VnP9=yxKUu6sRn1AqR8Sno_MP8Q@mail.gmail.com>
-In-Reply-To: <CAJLyvQztwuvG0GooBUKApR+VnP9=yxKUu6sRn1AqR8Sno_MP8Q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Dec 2012 04:25:41 -0500
+Date: Fri, 21 Dec 2012 09:24:21 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 4/4] net/smsc911x: Provide common clock functionality
+Message-ID: <20121221092421.GG14363@n2100.arm.linux.org.uk>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org> <1355937587-31730-4-git-send-email-lee.jones@linaro.org> <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com> <20121220192441.GC14363@n2100.arm.linux.org.uk> <20121220203514.GN2691@gmail.com> <20121220205113.GD14363@n2100.arm.linux.org.uk> <20121221091306.GO2691@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221091306.GO2691@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Dec 21, 2012 at 09:13:06AM +0000, Lee Jones wrote:
+> Are you saying remove "pdata->clk = NULL;" and test for IS_ERR
+> every time?
 
-> -----Original Message-----
-> From: Hongbo Zhang [mailto:hongbo.zhang@linaro.org]
-> Sent: Friday, December 21, 2012 2:17 PM
-> To: R, Durgadoss
-> Cc: Wei Ni; Zhang, Rui; linux-pm@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
-> 
-> On 21 December 2012 16:30, R, Durgadoss <durgadoss.r@intel.com> wrote:
-> > Hi Ni,
-> >
-> >> -----Original Message-----
-> >> From: Wei Ni [mailto:wni@nvidia.com]
-> >> Sent: Friday, December 21, 2012 1:36 PM
-> >> To: R, Durgadoss
-> >> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
-> >> hongbo.zhang@linaro.org
-> >> Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
-> >>
-> >> On 12/18/2012 05:29 PM, Durgadoss R wrote:
-> >> > This patch is a v1 based on the RFC submitted here:
-> >> > https://patchwork.kernel.org/patch/1758921/
-> >> >
-> >> > This patch set is based on Rui's -thermal tree, and is
-> >> > tested on a Core-i5 and an Atom netbook.
-> >> >
-> >> > This series contains 8 patches:
-> >> > Patch 1/8: Creates new sensor level APIs
-> >> > Patch 2/8: Creates new zone level APIs. The existing tzd structure is
-> >> >            kept as such for clarity and compatibility purposes.
-> >> > Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
-> >> >            existing tcd structure need not be modified.
-> >> > Patch 4/8: Adds a thermal_trip sysfs node, which exposes various trip
-> >> >            points for all sensors present in a zone.
-> >> > Patch 5/8: Adds a thermal_map sysfs node. It is a compact
-> representation
-> >> >            of the binding relationship between a sensor and a cdev,
-> >> >            within a zone.
-> >> > Patch 6/8: Creates Documentation for the new APIs. A new file is
-> >> >            created for clarity. Final goal is to merge with the existing
-> >> >            file or refactor the files, as whatever seems appropriate.
-> >> > Patch 7/8: Make PER ZONE values configurable through Kconfig
-> >> > Patch 8/8: A dummy driver that can be used for testing. This is not for
-> >> merge.
-> >>
-> >> I read these patches, they create new APIs and sysfs, but it seems they
-> >> didn't use the thermal_zone to handle the thermal_throttle issue,
-> >> something like update thermal_zone, update temperature, handle
-> >> governors
-> >> when cross the trip temp. So will you send out next serial patches for
-> >> these implementation?
-> >
-> > Yes, once these get into Rui's tree, we will start migrating the existing
-> drivers/
-> > and governors, to get things working.
-> Durgadoss,
-> See function psy_register_thermal() in power_supply_core.c,
-> thermal_zone_device_register() is used here, what will this look like
-> in future?
-
-Yes, I know this code.
-This will be a thermal_sensor_register.
-Basically this will expose battery's temperature as a 'sensor'
-under /sys/class/thermal/.
-
-Then, each platform can add it to whatever zone they like to.
-
-Thanks,
-Durga
+Exactly.
