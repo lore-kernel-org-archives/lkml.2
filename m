@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751866Ab2LUJok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:44:40 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59166 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355Ab2LUJoW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:44:22 -0500
+	id S1751136Ab2LUJo7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:44:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:39804 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751616Ab2LUJo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 04:44:28 -0500
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Grant Likely <grant.likely@secretlab.ca>,
         Thierry Reding <thierry.reding@avionic-design.de>
 CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
-Subject: [PATCH v5 0/7] leds: leds-pwm: Device tree support
-Date: Fri, 21 Dec 2012 10:43:54 +0100
-Message-ID: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v5 3/7] pwm: Correct parameter name in header for *pwm_get() functions
+Date: Fri, 21 Dec 2012 10:43:57 +0100
+Message-ID: <1356083041-29179-4-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+To synchronize the header file definition and the actual code. In the code
+the consumer parameter is named as con_id, change the header file and replace
+consumer -> con_id in the parameter list.
 
-Changes since v4:
-- Commit message for patch #7 (DT binding for the leds-pwm driver) has been
-  updated
-
-Changes since v3:
-Addressed comments from Thierry Redding:
-- DT binding documentation for leds-pwm updated
-- of_pwm_request() renamed as of_pwm_get()
-- introduction of devm_of_pwm_get()
-- Commit message updates
-- Other comments has been also addressed
-- Acked-by from Grant is not added to the patches since they were modified since
-  v3
-
-Changes since v2:
-- rebased on top of linux-next
-- DT bindings now alligned with Grant's request
-- exporting of_pwm_request() from PWM core to allow clean DT bindings
-- DT binding documentation changed to reflect the changes
-
-Changes since v1:
-- As suggested by Bryan Wu: the legacy pwm_request() has been removed from
-  patch 1
-- Device tree bindings added for leds-pwm driver.
-
-When we boot with Device tree we handle one LED per device to be more aligned
-with PWM core's DT implementation.
-An example of the DT usage is provided in the new DT binding documentation for
-leds-pwm.
-
-Tested on OMAP4 Blaze (SDP), BeagleBoard with legacy and DT boot. On Zoom2 with
-legacy boot.
-
-Regards,
-Peter
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-Peter Ujfalusi (7):
-  leds: leds-pwm: Convert to use devm_get_pwm
-  leds: leds-pwm: Preparing the driver for device tree support
-  pwm: Correct parameter name in header for *pwm_get() functions
-  pwm: core: Rename of_pwm_request() to of_pwm_get() and export it
-  pwm: Add devm_of_pwm_get() as exported API for users
-  leds: leds-pwm: Simplify cleanup code
-  leds: leds-pwm: Add device tree bindings
+ include/linux/pwm.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
- .../devicetree/bindings/leds/leds-pwm.txt          |  48 +++++++
- drivers/leds/leds-pwm.c                            | 152 +++++++++++++++------
- drivers/pwm/core.c                                 |  38 +++++-
- include/linux/leds_pwm.h                           |   2 +-
- include/linux/pwm.h                                |  20 ++-
- 5 files changed, 212 insertions(+), 48 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/leds/leds-pwm.txt
-
+diff --git a/include/linux/pwm.h b/include/linux/pwm.h
+index 6d661f3..cc908a5 100644
+--- a/include/linux/pwm.h
++++ b/include/linux/pwm.h
+@@ -174,10 +174,10 @@ struct pwm_device *pwm_request_from_chip(struct pwm_chip *chip,
+ struct pwm_device *of_pwm_xlate_with_flags(struct pwm_chip *pc,
+ 		const struct of_phandle_args *args);
+ 
+-struct pwm_device *pwm_get(struct device *dev, const char *consumer);
++struct pwm_device *pwm_get(struct device *dev, const char *con_id);
+ void pwm_put(struct pwm_device *pwm);
+ 
+-struct pwm_device *devm_pwm_get(struct device *dev, const char *consumer);
++struct pwm_device *devm_pwm_get(struct device *dev, const char *con_id);
+ void devm_pwm_put(struct device *dev, struct pwm_device *pwm);
+ #else
+ static inline int pwm_set_chip_data(struct pwm_device *pwm, void *data)
 -- 
 1.8.0.2
 
