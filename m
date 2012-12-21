@@ -1,126 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656Ab2LUIyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:54:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27455 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339Ab2LUIyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 03:54:08 -0500
-Date: Fri, 21 Dec 2012 10:54:04 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
- dirty logging
-Message-ID: <20121221085404.GQ29007@redhat.com>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121219213037.b234f9d4f187df2132e65576@gmail.com>
- <1355931777.3224.562.camel@bling.home>
- <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121220125946.GB7750@amt.cnet>
- <20121220132255.GH17584@redhat.com>
- <1356010887.10845.11.camel@ul30vt.home>
- <20121220233545.95378d066b2ce61a76106a88@gmail.com>
- <1356015343.10845.16.camel@ul30vt.home>
- <20121221170250.067716b4.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	id S1751760Ab2LUIzF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:55:05 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:53096 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751339Ab2LUIy4 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 03:54:56 -0500
+From: Loic PALLARDY <loic.pallardy@st.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Olof Johansson <olof@lixom.net>, Tony Lindgren <tony@atomide.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Loic PALLARDY STE <loic.pallardy-ext@stericsson.com>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dom Cobley <popcornmix@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Suman Anna <s-anna@ti.com>, Juan Gutierrez <jgutierrez@ti.com>,
+        Felipe Contreras <felipe.contreras@nokia.com>,
+        Tejun Heo <tj@kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Omar Ramirez Luna <omar.luna@linaro.org>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>
+Date: Fri, 21 Dec 2012 09:52:07 +0100
+Subject: Re: [PATCH 0/9] drivers: mailbox: framework creation
+Thread-Topic: [PATCH 0/9] drivers: mailbox: framework creation
+Thread-Index: Ac3fWHV8iHv2gCl1TqiHHSmDRbFnhg==
+Message-ID: <50D42337.3080204@st.com>
+References: <1355836212-17956-1-git-send-email-loic.pallardy-ext@stericsson.com>
+ <CACRpkdaqO7AAeYeR8SZt4Tbv1grrMq85TNYMc-FSbUSrnZBm=Q@mail.gmail.com>
+ <20121220182835.GB21056@atomide.com>
+ <CAOesGMh2uZC_9FzAxDVZqwe06OgqOrKjPgQi6wOJCt-SAmoHwg@mail.gmail.com>
+ <CAK=Wgba=jLiig+TBcAcp7STz=Y6RM8noR_0S2HZjNQXLZV8JBA@mail.gmail.com>
+In-Reply-To: <CAK=Wgba=jLiig+TBcAcp7STz=Y6RM8noR_0S2HZjNQXLZV8JBA@mail.gmail.com>
+Accept-Language: fr-FR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Mozilla/5.0 (X11; Linux x86_64; rv:11.0) Gecko/20120412
+ Thunderbird/11.0.1
+acceptlanguage: fr-FR, en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121221170250.067716b4.yoshikawa_takuya_b1@lab.ntt.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 05:02:50PM +0900, Takuya Yoshikawa wrote:
-> On Thu, 20 Dec 2012 07:55:43 -0700
-> Alex Williamson <alex.williamson@redhat.com> wrote:
-> 
-> > > Yes, the fix should work, but I do not want to update the
-> > > generation from outside of update_memslots().
-> > 
-> > Ok, then:
-> >
-> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> > index 87089dd..c7b5061 100644
-> > --- a/include/linux/kvm_host.h
-> > +++ b/include/linux/kvm_host.h
-> > @@ -413,7 +413,8 @@ void kvm_exit(void);
-> >  
-> >  void kvm_get_kvm(struct kvm *kvm);
-> >  void kvm_put_kvm(struct kvm *kvm);
-> > -void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new);
-> > +void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
-> > +                     u64 last_generation);
-> >  
-> >  static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
-> >  {
-> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> > index c4c8ec1..06961ea 100644
-> > --- a/virt/kvm/kvm_main.c
-> > +++ b/virt/kvm/kvm_main.c
-> > @@ -667,7 +667,8 @@ static void sort_memslots(struct kvm_memslots *slots)
-> >  		slots->id_to_index[slots->memslots[i].id] = i;
-> >  }
-> >  
-> > -void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
-> > +void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
-> > +                     u64 last_generation)
-> >  {
-> >  	if (new) {
-> >  		int id = new->id;
-> > @@ -679,7 +680,7 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
-> >  			sort_memslots(slots);
-> >  	}
-> >  
-> > -	slots->generation++;
-> > +	slots->generation = last_generation + 1;
-> >  }
-> >  
-> >  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
-> > @@ -814,7 +815,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
-> >  		slot = id_to_memslot(slots, mem->slot);
-> >  		slot->flags |= KVM_MEMSLOT_INVALID;
-> >  
-> > -		update_memslots(slots, NULL);
-> > +		update_memslots(slots, NULL, kvm->memslots->generation);
-> >  
-> >  		old_memslots = kvm->memslots;
-> >  		rcu_assign_pointer(kvm->memslots, slots);
-> > @@ -862,7 +863,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
-> >  		memset(&new.arch, 0, sizeof(new.arch));
-> >  	}
-> >  
-> > -	update_memslots(slots, &new);
-> > +	update_memslots(slots, &new, kvm->memslots->generation);
-> >  	old_memslots = kvm->memslots;
-> >  	rcu_assign_pointer(kvm->memslots, slots);
-> >  	synchronize_srcu_expedited(&kvm->srcu);
-> > 
-> > > > The original patch can be reverted, there are no following dependencies,
-> > > > but the idea was that we're making the memslot array larger, so there
-> > > > could be more pressure in allocating it, so let's not trivially do extra
-> > > > frees and allocs.  Thanks,
-> > > 
-> > > I agree that the current set_memory_region() is not good for frequent updates.
-> > > But the alloc/free is not a major factor at the moment: flushing shadows should
-> > > be more problematic.
-> > 
-> > I don't understand why we'd throw away even a minor optimization that's
-> > so easy to fix.  We're not only removing a free/alloc, but we're being
-> > more friendly to the cache by avoiding the extra memcpy.  The above also
-> > makes the generation management a bit more explicit.  Thanks,
-> 
-> Looks good to me!
-> 
-Me too.
 
-> I just wanted to keep the code readable, so no reason to object to
-> a clean solution.  Any chance to see the fix on kvm.git soon?
-> 
-Soon after Alex will send proper patch with Signed-off-by.
 
---
-			Gleb.
+On 12/21/2012 08:31 AM, Ohad Ben-Cohen wrote:
+> On Thu, Dec 20, 2012 at 9:19 PM, Olof Johansson<olof@lixom.net>  wrote:
+>> While we can make the branch stable, would it make sense to make
+>> remoteproc for omap depend on !multiplatform during the transition, to
+>> reduce dependencies a little? Either way works, but it'd be nice to
+>> keep them independent if we can.
+>
+> I'm not sure multiplatform is the culprit; OMAP's remoteproc driver
+> heavily depends on this mailbox code, and obviously breaks with this
+> patch-set if only for the the naming changes. We'll need this patch
+> set to update omap's remoteproc as well so at least we don't break
+> bisectibility, though running a sanity test before merging would be
+> even nicer (Loic I can help if you don't have a panda board).
+
+Hi Ohad,
+Yes tidspbridge and remoteproc must be adapted.
+This new mailbox fw has been tested on TI environment by Omar, who did 
+adaptation at least for tidspbridge.
+
+Omar, do you have patch series ready for TI adaptations to new mailbox 
+framework?
+Else I can do it, but I won't be able to test it (no panda board)
+
+Regards,
+Loic
+>
+> BTW - grep shows that tidspbridge is using the mailbox code too, but
+> it's in staging and I'm not sure it gets much love. Nevertheless, as
+> long as it's there we should at least update it with the new API as
+> well.
+>
+> Thanks,
+> Ohad.
