@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196Ab2LUUsZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 15:48:25 -0500
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:61670 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab2LUUsX (ORCPT
+	id S1752212Ab2LUUvE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 15:51:04 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:51117 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450Ab2LUUvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 15:48:23 -0500
-From: Stefan Hasko <hasko.stevo@gmail.com>
-To: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stefan Hasko <hasko.stevo@gmail.com>
-Subject: [PATCH] net: sched: integer overflow fix
-Date: Fri, 21 Dec 2012 21:39:24 +0100
-Message-Id: <1356122364-1418-1-git-send-email-hasko.stevo@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 21 Dec 2012 15:51:00 -0500
+Message-ID: <50D4CBB0.7080603@wwwdotorg.org>
+Date: Fri, 21 Dec 2012 13:50:56 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: dts: add aliases and DMA requestor for serial
+ controller
+References: <1355898671-3960-1-git-send-email-ldewangan@nvidia.com> <50D1F2CB.3090206@wwwdotorg.org> <50D2AD02.6060101@nvidia.com> <50D344E9.70305@wwwdotorg.org> <50D3E320.2090804@nvidia.com>
+In-Reply-To: <50D3E320.2090804@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed integer overflow in function htb_dequeue
+On 12/20/2012 09:18 PM, Laxman Dewangan wrote:
+> On Thursday 20 December 2012 10:33 PM, Stephen Warren wrote:
+>> On 12/19/2012 11:15 PM, Laxman Dewangan wrote:
+>>> On Wednesday 19 December 2012 10:30 PM, Stephen Warren wrote:
+>>>> On 12/18/2012 11:31 PM, Laxman Dewangan wrote:
+>>>>> Add APB DMA requestor and serial aliases for serial controller.
+>>>>> There will be two serial driver i.e. 8250 based simple serial driver
+>>>>> and APB DMA based serial driver for higher baudrate and performace.
+...
+>>>> This patch seems to do two things:
+...
+>>>> 2) Add aliases for the serial ports. I have no idea why this is useful.
+>>> Serial aliases are added because we want to get the port number like
+>>> /dev/ttyTHS0,  /d/ttyTHS2 etc. The uarta should be /dev/ttyTHS0 and
+>>> uartc should be /dev/ttyTHS2. The port number can be found using aliases
+>>> and of_alias_get_id() in driver file:
+>>>
+>>> port_number = of_alias_get_id(np, "serial");
+>>
+>> Oh, I see. I guess the aliases make sense then.
+>>
+>> But, wouldn't you only add aliases for the specific UARTs that are in
+>> use on a particular board (so put them in tegraNN-board.dts) rather than
+>> all UARTs on Tegra (i.e. the current patch which puts them into
+>> tegraNN.dtsi)?
+> 
+> I like to have this in tegraN N.dtsi file becasue:
+> - This policy is not going to change the board to board. For high speed
+> driver the uarta will be ttyTHS0 and uartb ttyTHS1.
 
-Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
----
- net/sched/sch_htb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
-index d2922c0..1bd3faa 100644
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -919,7 +919,7 @@ ok:
- 	q->now = ktime_to_ns(ktime_get());
- 	start_at = jiffies;
- 
--	next_event = q->now + 5 * NSEC_PER_SEC;
-+	next_event = q->now + (u32)5 * NSEC_PER_SEC;
- 
- 	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
- 		/* common case optimization - skip event handler quickly */
--- 
-1.7.10.4
-
+Sure it is. Since the board files select which UARTs use the low-speed
+driver vs. the high-speed driver by overriding the compatible value,
+each board will have a different subset of UARTs which use the high
+speed driver and hence which use the aliases. Don't you want to end up
+with /dev/ttyHS0 on each board, rather than ending up with a "random"
+device node name depending on which UART the board designer picked for
+the high speed device?
