@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976Ab2LUUBn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 15:01:43 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:47568 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293Ab2LUUBj (ORCPT
+	id S1751841Ab2LUUMh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 15:12:37 -0500
+Received: from popelka.ms.mff.cuni.cz ([195.113.20.131]:40451 "EHLO
+	popelka.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2LUUMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 15:01:39 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: Namhyung Kim <namhyung@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] tools lib traceevent: test correct variable after allocation
-Date: Fri, 21 Dec 2012 15:00:58 -0500
-Message-Id: <1356120062-2648-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	Fri, 21 Dec 2012 15:12:35 -0500
+Date: Fri, 21 Dec 2012 21:07:35 +0100
+From: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
+To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, Jeff Liu <jeff.liu@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] avoid entropy starvation due to stack protection
+Message-ID: <20121221200735.GB5867@domone>
+References: <50C72800.20508@chronox.de>
+ <20121212164321.a01c5641.akpm@linux-foundation.org>
+ <50C98764.6050104@chronox.de>
+ <50CB63A9.80409@chronox.de>
+ <20121216003020.GC9016@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121216003020.GC9016@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we've tested the wrong variable for allocation failure, fix it to
-test the right one.
+On Sat, Dec 15, 2012 at 07:30:20PM -0500, Theodore Ts'o wrote:
+> 
+> What I would do instead is use an AES-based cryptographic random
+> number generator.  That is, at boot time, grab enough randomness to
+> for an AES key, and then use that key to create a cryptographic random
+> number generator by encrypting a counter with said AES key.  This is a
+> cryptographic primitive which has been very carefully studied, and for
+> architectures where you have a hardware support for AES (including
+> ARMv8, Power 7, Sparc T4, as well as x86 processors with the AES-NI
+> instructions), this will be much faster and require much less memory
+> and CPU resources than replicating the /dev/urandom infrastructure.
+> 
+I was suggesting in another thread different approach.
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- tools/lib/traceevent/event-parse.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Use AES-based cryptographic random number generator as replacement of 
+/dev/urandom. Reseeding would get done by changing both aes key and
+data.
 
-diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
-index 5a824e3..7538a1f 100644
---- a/tools/lib/traceevent/event-parse.c
-+++ b/tools/lib/traceevent/event-parse.c
-@@ -2481,7 +2481,7 @@ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **
- 
- 	free_token(token);
- 	arg = alloc_arg();
--	if (!field) {
-+	if (!arg) {
- 		do_warning("%s: not enough memory!", __func__);
- 		*tok = NULL;
- 		return EVENT_ERROR;
--- 
-1.8.0
-
+This would with hardware support make /dev/urandom much faster than its now.
