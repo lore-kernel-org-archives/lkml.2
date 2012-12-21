@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab2LUNEo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 08:04:44 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:16891 "EHLO
+	id S1751586Ab2LUNFT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 08:05:19 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28116 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab2LUNE2 (ORCPT
+	with ESMTP id S1751729Ab2LUNEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 08:04:28 -0500
-X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=NT_6bBl6HocA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=2YELVqqeHisA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=jWKSiNj9IdgEQznNnnMA:9 a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=2Uic3XbOqCnz-qcj:21 a=ZXoTVN85ac4fntqp:21 a=enz70vlK868dElRz_04A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+	Fri, 21 Dec 2012 08:04:30 -0500
+X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=hLV8KNO-s9wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_TjlKMzeso4A:10 a=GvQkQWPkAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=NufY4J3AAAAA:8 a=lSNQQfP47xnSsY6BjWYA:9 a=QEXdDO2ut3YA:10 a=Wwjp7rKQgkIA:10 a=MSl-tDqOz04A:10 a=re9sYKne76oA:10 a=jeBq3FmKZ4MA:10 a=OPuCKHDGhKn4kWgsPm8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
 X-Cloudmark-Score: 0
 X-Authenticated-User: 
 X-Originating-IP: 74.67.115.198
-Message-Id: <20121221130426.806436461@goodmis.org>
+Message-Id: <20121221130426.632458767@goodmis.org>
 User-Agent: quilt/0.60-1
-Date: Fri, 21 Dec 2012 08:03:25 -0500
+Date: Fri, 21 Dec 2012 08:03:24 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jovi Zhang <bookjovi@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Subject: [PATCH 2/3] tracing: Verify target file before registering a uprobe event
+        Christoph Lameter <cl@linux.com>, Shan Wei <davidshan@tencent.com>
+Subject: [PATCH 1/3] tracing: Use this_cpu_ptr per-cpu helper
 References: <20121221130323.940466074@goodmis.org>
-Content-Disposition: inline; filename=0002-tracing-Verify-target-file-before-registering-a-upro.patch
+Content-Disposition: inline; filename=0001-tracing-Use-this_cpu_ptr-per-cpu-helper.patch
 Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,49 +30,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-From: Jovi Zhang <bookjovi@gmail.com>
+From: Shan Wei <davidshan@tencent.com>
 
-Without this patch, we can register a uprobe event for a directory.
-Enabling such a uprobe event would anyway fail.
+typeof(&buffer) is a pointer to array of 1024 char, or char (*)[1024].
+But, typeof(&buffer[0]) is a pointer to char which match the return type of=
+ get_trace_buf().
+As well-known, the value of &buffer is equal to &buffer[0].
+so return this_cpu_ptr(&percpu_buffer->buffer[0]) can avoid type cast.
 
-Example:
-$ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+Link: http://lkml.kernel.org/r/50A1A800.3020102@gmail.com
 
-However dirctories cannot be valid targets for uprobe.
-Hence verify if the target is a regular file during the probe
-registration.
-
-Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Reviewed-by: Christoph Lameter <cl@linux.com>
+Signed-off-by: Shan Wei <davidshan@tencent.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_uprobe.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ kernel/trace/blktrace.c |    2 +-
+ kernel/trace/trace.c    |    5 +----
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 4ff9ca4..0bef43c 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -257,6 +257,10 @@ static int create_trace_uprobe(int argc, char **argv)
- 		goto fail_address_parse;
+diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+index c0bd030..71259e2 100644
+--- a/kernel/trace/blktrace.c
++++ b/kernel/trace/blktrace.c
+@@ -147,7 +147,7 @@ void __trace_note_message(struct blk_trace *bt, const c=
+har *fmt, ...)
+ 		return;
 =20
- 	inode =3D igrab(path.dentry->d_inode);
-+	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
-+		ret =3D -EINVAL;
-+		goto fail_address_parse;
-+	}
+ 	local_irq_save(flags);
+-	buf =3D per_cpu_ptr(bt->msg_data, smp_processor_id());
++	buf =3D this_cpu_ptr(bt->msg_data);
+ 	va_start(args, fmt);
+ 	n =3D vscnprintf(buf, BLK_TN_MAX_MSG, fmt, args);
+ 	va_end(args);
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 5bc3590..b6c183b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1517,7 +1517,6 @@ static struct trace_buffer_struct *trace_percpu_nmi_b=
+uffer;
+ static char *get_trace_buf(void)
+ {
+ 	struct trace_buffer_struct *percpu_buffer;
+-	struct trace_buffer_struct *buffer;
 =20
- 	argc -=3D 2;
- 	argv +=3D 2;
-@@ -356,7 +360,7 @@ fail_address_parse:
- 	if (inode)
- 		iput(inode);
+ 	/*
+ 	 * If we have allocated per cpu buffers, then we do not
+@@ -1535,9 +1534,7 @@ static char *get_trace_buf(void)
+ 	if (!percpu_buffer)
+ 		return NULL;
 =20
--	pr_info("Failed to parse address.\n");
-+	pr_info("Failed to parse address or file.\n");
-=20
- 	return ret;
+-	buffer =3D per_cpu_ptr(percpu_buffer, smp_processor_id());
+-
+-	return buffer->buffer;
++	return this_cpu_ptr(&percpu_buffer->buffer[0]);
  }
+=20
+ static int alloc_percpu_trace_buffer(void)
 --=20
 1.7.10.4
 
@@ -86,13 +98,13 @@ Content-Description: This is a digitally signed message part
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQEcBAABAgAGBQJQ1F5aAAoJEOdOSU1xswtMPyAIAIfnwy2gmhNs6tTdYU0ijgT5
-ua4/+3XkmSMZ3HDliRQZ7zQ+IKFoiuewGbZ+jMF1S7SkYyBmTNYGlIQpwYMxju0v
-zFgQWZzmvdFbirEdQ1rFo9U6SQ/IqHlRrwO0tjopyW+0PKSCXSaZxxX3A57PiBrX
-NOyfy+bf/F69CpAUHtkf1GR0JWtwDdGKSWhFRB8t/37ng+M+MBs2qR+wyIzN+uDp
-jPa6UEQxkVkJm2YMWyBzmrixXQX9J6vXoTMPMqvapgV/4CIowtv6sZA9cYou8sTv
-60I0HUoitnoQf0E6wIHvGj800aLivh6njx+5LOs/rUkm8hfz7oLNhpGwf1yCrHs=
-=dkDR
+iQEcBAABAgAGBQJQ1F5aAAoJEOdOSU1xswtMLJIIAIcMdSYBglvOWvRx93MldwuQ
+iOCpNmlHE+2h9KB0fWX4EJ8SMW8jqKW3E4IuSrOXL2HIjGYBNnBJvk3weJhNWXsd
+nBYfdJ/GS1nG4yl7Ru+CgxowLJ9M7FcEVkChl8TSQ32WjyYhvRbl22OpjQFNNEf3
+fwgN23xgqrZE7GWMqgtxDpDL9FMmiaYAN8EwLZJZB3wokT9ubbjgJOXOlYXICEDN
+Uoj+j5mxoVCOxt5Q8i5i9yJ5k+apIsD/ZsvjxGWJt/vD2nI6p975qq578K70AjVD
+vDJJcYTaPvEZd//oieX+3FYQacg4iVhwHC8klMRYab0pVa7xWjhc5kf0xhBaN+g=
+=lDq/
 -----END PGP SIGNATURE-----
 
 --00GvhwF7k39YY--
