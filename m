@@ -1,103 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab2LUCj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 21:39:56 -0500
-Received: from mail-qa0-f74.google.com ([209.85.216.74]:40245 "EHLO
-	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab2LUCjt (ORCPT
+	id S1752081Ab2LUCmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 21:42:25 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53730 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab2LUCmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 21:39:49 -0500
-From: Shawn Nematbakhsh <shawnn@chromium.org>
-To: dmitry.torokhov@gmail.com
-Cc: shawnn@chromium.org, jj@chaosbits.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] atkbd: Fix multi-char scancode handling on reconnect.
-Date: Thu, 20 Dec 2012 18:33:11 -0800
-Message-Id: <1356057191-24664-1-git-send-email-shawnn@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Thu, 20 Dec 2012 21:42:16 -0500
+Date: Fri, 21 Dec 2012 13:42:14 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Subject: linux-next: manual merge of the signal tree with Linus' tree
+Message-Id: <20121221134214.456d97d43402481a38e12023@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Dec_2012_13_42_14_+1100_D7/5bskR=nKEV2=V"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On resume from suspend there is a possibility for multi-byte scancodes
-to be handled incorrectly. atkbd_reconnect disables the processing of
-scancodes in software by calling atkbd_disable, but the keyboard may
-still be active because no disconnect command was sent. Later, software
-handling is re-enabled. If a multi-byte scancode sent from the keyboard
-straddles the re-enable, only the latter byte(s) will be handled.
+--Signature=_Fri__21_Dec_2012_13_42_14_+1100_D7/5bskR=nKEV2=V
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In practice, this leads to cases where multi-byte break codes (ex. "e0
-4d" - break code for right-arrow) are misread as make codes ("4d" - make
-code for numeric 6), leading to one or more unwanted, untyped characters
-being interpreted.
+Hi Al,
 
-The solution implemented here involves sending command f5 (reset
-disable) to the keyboard prior to disabling software handling of codes.
-Later, the command to re-enable the keyboard is sent only after we are
-prepared to handle scancodes.
+Today's linux-next merge of the signal tree got a conflict in
+arch/m32r/include/asm/signal.h between commit f7f4dc10e1eb ("UAPI:
+(Scripted) Disintegrate arch/m32r/include/asm") from Linus' tree and
+commit 031b6566983a ("unify SS_ONSTACK/SS_DISABLE definitions") from the
+signal tree.
 
-Signed-off-by: Shawn Nematbakhsh <shawnn@chromium.org>
----
-Changes since v1:
-- Removed unused return values from atkbd_deactivate.
+I just used the former version, but removed the SS_* constants from the
+uap version of the include files as well and can carry the fix as
+necessary (no action is required).
 
- drivers/input/keyboard/atkbd.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
-index add5ffd..44dcf83 100644
---- a/drivers/input/keyboard/atkbd.c
-+++ b/drivers/input/keyboard/atkbd.c
-@@ -844,6 +844,20 @@ static int atkbd_activate(struct atkbd *atkbd)
- }
- 
- /*
-+ * atkbd_deactivate() resets and disables the keyboard from sending
-+ * keystrokes.
-+ */
-+static void atkbd_deactivate(struct atkbd *atkbd)
-+{
-+	struct ps2dev *ps2dev = &atkbd->ps2dev;
-+
-+	if (ps2_command(ps2dev, NULL, ATKBD_CMD_RESET_DIS))
-+		dev_err(&ps2dev->serio->dev,
-+			"Failed to deactivate keyboard on %s\n",
-+			ps2dev->serio->phys);
-+}
-+
-+/*
-  * atkbd_cleanup() restores the keyboard state so that BIOS is happy after a
-  * reboot.
-  */
-@@ -1199,6 +1213,9 @@ static int atkbd_reconnect(struct serio *serio)
- 
- 	mutex_lock(&atkbd->mutex);
- 
-+	if (atkbd->write)
-+		atkbd_deactivate(atkbd);
-+
- 	atkbd_disable(atkbd);
- 
- 	if (atkbd->write) {
-@@ -1208,8 +1225,6 @@ static int atkbd_reconnect(struct serio *serio)
- 		if (atkbd->set != atkbd_select_set(atkbd, atkbd->set, atkbd->extra))
- 			goto out;
- 
--		atkbd_activate(atkbd);
--
- 		/*
- 		 * Restore LED state and repeat rate. While input core
- 		 * will do this for us at resume time reconnect may happen
-@@ -1224,6 +1239,9 @@ static int atkbd_reconnect(struct serio *serio)
- 	}
- 
- 	atkbd_enable(atkbd);
-+	if (atkbd->write)
-+		atkbd_activate(atkbd);
-+
- 	retval = 0;
- 
-  out:
--- 
-1.7.7.3
+--Signature=_Fri__21_Dec_2012_13_42_14_+1100_D7/5bskR=nKEV2=V
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ08yGAAoJEECxmPOUX5FEm9sP/Atke9WHGf8EkbV0IAHmvLwp
+CPfQNiNob1QmH3f1ZgBKtPth6YxTeAjFWHdrbgGw1njpMzBbmrVbInk2KJecEI86
+fVhedDFe/qlznSCJ8Aatzf82GJ0rNFdZ/+9HJ7SzWpUh1MM1uxKoHLY3njmSd956
+Nyf/HLe1sLAHIGFJtXa5OAQIwVhOZoTEn1AEbhn1r3N733C+wQByIALuQZRTv6Sk
+NwQH0vVD3fSJCZopPWgJQ6vCKxPP/5ysXJZVZzpayKcfxHIevByR6tiNiDsNm02M
+cBln6Db11ZtDaEC3TCveDgIO+hjz3Tw4F2V/TbELb1AoyCh/qyEa91yBuydBY6wc
+fPf7/7qCa2aFcWBvJoth0TXWQFjy5k94/DNKPsbVvopCHwfwRdJGfHhxW4RP2kg5
+JK0sigX3sjodSyZW1p/luMqdb1e0bZsXUmoJxRyI0wU/dcL162Xgdw9qkSB3IIbT
+eHHygNzuDuiKhsStVO+hP74Ih4EKFlyca1ikj6YjmnVZzqZGgZdi7A4LM4P9K21B
+wznKcHb7HjMlvAMX+HMWKJru+5tXbrdBM187TJhXoCV5Rjp8Vrut8yc/I7arjr2Q
+/55MQO4P8OpoWqG3JPYFVn9LQb9XDZsMVL50ME7Fer95LIDlWX9JctuPxyJf+ps/
+6uxEBHwFclqTf+2jXu82
+=DnDE
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Dec_2012_13_42_14_+1100_D7/5bskR=nKEV2=V--
