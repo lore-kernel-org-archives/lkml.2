@@ -1,29 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab2LUVfN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 16:35:13 -0500
-Received: from mga14.intel.com ([143.182.124.37]:30887 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750876Ab2LUVfK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 16:35:10 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,332,1355126400"; 
-   d="scan'208";a="183568763"
-Date: Fri, 21 Dec 2012 21:55:05 +0000
-From: Alan Cox <alan@linux.intel.com>
-To: Ilya Zykov <ilya@ilyx.ru>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
-        Sasha Levin <levinsasha928@gmail.com>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tty: Fix unreasonable write toward closed pty.
-Message-ID: <20121221215505.6dab13ca@bob.linux.org.uk>
-In-Reply-To: <50D20E87.9060403@ilyx.ru>
-References: <50D20E87.9060403@ilyx.ru>
-Organization: Intel
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
+	id S1752244Ab2LUVgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 16:36:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:33198 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab2LUVgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 16:36:12 -0500
+Date: Fri, 21 Dec 2012 13:36:10 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Sasha Levin <levinsasha928@gmail.com>
+Subject: Re: [PATCH v2] mm,ksm: use new hashtable implementation
+Message-Id: <20121221133610.bb516813.akpm@linux-foundation.org>
+In-Reply-To: <1356112012-24584-1-git-send-email-sasha.levin@oracle.com>
+References: <1356112012-24584-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,35 +26,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Dec 2012 22:59:19 +0400
-Ilya Zykov <ilya@ilyx.ru> wrote:
+On Fri, 21 Dec 2012 12:46:50 -0500
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-> We should not write toward the closed pty. 
-> Now it happens, if one side close last file descriptor,
-> and other side in this moment write to it.
-> It also prevents scheduling unnecessary work.
-> 
-> Signed-off-by: Ilya Zykov <ilya@ilyx.ru>
-> ---
->  drivers/tty/pty.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-> index a82b399..1ce1362 100644
-> --- a/drivers/tty/pty.c
-> +++ b/drivers/tty/pty.c
-> @@ -116,6 +116,8 @@ static int pty_space(struct tty_struct *to)
->  
->  static int pty_write(struct tty_struct *tty, const unsigned char
-> *buf, int c) {
-> +	if (test_bit(TTY_OTHER_CLOSED, &tty->flags))
-> +		return -EIO;
->  	struct tty_struct *to = tty->link;
+> Switch ksm to use the new hashtable implementation. This reduces the amount of
+> generic unrelated code in the ksm module.
 
-This
+hm, include/linux/hashtable.h:hash_min() is rather dangerous - it
+returns different values depending on the size of the first argument. 
+So if the calling code mixes up its ints and longs (and boy we do that
+a lot), the result will work on 32-bit and fail on 64-bit.
 
-a) doesn't do anything in many cases because there is no lock to make
-the test_bit meaningful
-
-b) produces an obvious compiler warning
+Also, is there ever likely to be a situation where the first arg to
+hash_min() is *not* a pointer?  Perhaps it would be better to concede
+to reality: rename `key' to `ptr' and remove all those typcasts you
+just added.
 
