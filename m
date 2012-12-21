@@ -1,145 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab2LURTf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 12:19:35 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:38979 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500Ab2LURT1 (ORCPT
+	id S1752414Ab2LUR2R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 12:28:17 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:34913 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983Ab2LUR2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 12:19:27 -0500
-X-Greylist: delayed 441 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 12:19:26 EST
-From: Dongjin Kim <tobetter@gmail.com>
-Cc: Dongjin Kim <tobetter@gmail.com>, Chris Ball <cjb@laptop.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Will Newton <will.newton@imgtec.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: host: dw_mmc-exynos: Add support for pinctrl
-Date: Sat, 22 Dec 2012 02:11:27 +0900
-Message-Id: <1356109906-1622-1-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 21 Dec 2012 12:28:10 -0500
+MIME-Version: 1.0
+In-Reply-To: <50D495FD.8060103@zytor.com>
+References: <20121221030018.GA15032@www.outflux.net>
+	<50D3E91C.9060907@zytor.com>
+	<CAE9FiQVNeQqXktmaG0XOJwSxFEVrGKA9j6UDN2N_aDDp-8y_fA@mail.gmail.com>
+	<50D495FD.8060103@zytor.com>
+Date: Fri, 21 Dec 2012 09:28:08 -0800
+X-Google-Sender-Auth: Z6edTmcSgjHn_bivgLp0TmDTOys
+Message-ID: <CAE9FiQXcXn0xr_ACt4fS_=xWtXR8zGoYfpSzFKG4nEvKF=sGdQ@mail.gmail.com>
+Subject: Re: [RFC] stack and heap are executable on x86_64
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Jim Kukunas <james.t.kukunas@linux.intel.com>,
+        Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for pin configuration using pinctrl subsystem to
-dw_mmc-exynos driver. The property 'wp-gpios' can be specified for write
-protect but 'samsung,cd-pinmux-gpio' and gpios used for clock, command and
-data lines will be ignored.
+On Fri, Dec 21, 2012 at 9:01 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/20/2012 10:27 PM, Yinghai Lu wrote:
+>>
+>>
+>> after for-x86-boot we will have
+>> ---[ Low Kernel Mapping ]---
+>> 0xffff880000000000-0xffff880000099000         612K     RW             GLB
+>> NX pte
+>> 0xffff880000099000-0xffff88000009a000           4K     ro             GLB
+>> NX pte
+>> 0xffff88000009a000-0xffff88000009b000           4K     ro             GLB
+>> x  pte
+>> 0xffff88000009b000-0xffff880000200000        1428K     RW             GLB
+>> NX pte
+>> 0xffff880000200000-0xffff8800dfe00000        3580M     RW         PSE GLB
+>> NX pmd
+>> 0xffff8800dfe00000-0xffff8800dfffe000        2040K     RW             GLB
+>> NX pte
+>> 0xffff8800dfffe000-0xffff8800e0000000           8K
+>> pte
+>> 0xffff8800e0000000-0xffff880100000000         512M
+>> pmd
+>> 0xffff880100000000-0xffff8801a0000000        2560M     RW         PSE GLB
+>> NX pmd
+>> ---[ High Kernel Mapping ]---
+>> 0xffffffff80000000-0xffffffff81000000          16M
+>> pmd
+>> 0xffffffff81000000-0xffffffff82a00000          26M     RW         PSE GLB
+>> x  pmd
+>> 0xffffffff82a00000-0xffffffff82b21000        1156K     RW             GLB
+>> x  pte
+>> 0xffffffff82b21000-0xffffffff82c00000         892K     RW             GLB
+>> NX pte
+>> 0xffffffff82c00000-0xffffffff82e00000           2M     RW         PSE GLB
+>> NX pmd
+>> 0xffffffff82e00000-0xffffffff82e92000         584K     RW             GLB
+>> NX pte
+>> 0xffffffff82e92000-0xffffffff83000000        1464K     RW             GLB
+>> x  pte
+>> 0xffffffff83000000-0xffffffff83c00000          12M     RW         PSE GLB
+>> x  pmd
+>> 0xffffffff83c00000-0xffffffffa0000000         452M
+>> pmd
+>>
+>> so low mapping will only have trampoline get x set.
+>> is that expected ?
+>>
+>
+> Yes.
+>
+>
+>> Do we need to set low mapping corresponding to kernel range to x?
+>
+>
+> No; we probably should never have the low mappings set to X, which comes
+> down to what I said earlier... we should mark the low mapping NX at the
+> PGD/PML4 level.
+>
+> However, this isn't good enough.  You still have a large number of pages
+> which are RWX, and we should *never* have RWX pages, period, full stop, and
+> your map above sill have megabytes of them.
 
--. 'pinctrl-0' should specify pin control groups (clock, comand and data
-    lines) used for this controller.
--. 'pinctrl-names' should contain only one value, 'default'.
+which line?
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- drivers/mmc/host/dw_mmc-exynos.c |   44 ++++++++++++++++++++++++--------------
- 1 file changed, 28 insertions(+), 16 deletions(-)
+ 0xffffffff83000000-0xffffffff83c00000          12M     RW         PSE
+GLB  x  pmd
 
-diff --git a/drivers/mmc/host/dw_mmc-exynos.c b/drivers/mmc/host/dw_mmc-exynos.c
-index 4d50da6..d1c9963 100644
---- a/drivers/mmc/host/dw_mmc-exynos.c
-+++ b/drivers/mmc/host/dw_mmc-exynos.c
-@@ -16,6 +16,7 @@
- #include <linux/mmc/dw_mmc.h>
- #include <linux/of.h>
- #include <linux/of_gpio.h>
-+#include <linux/pinctrl/consumer.h>
- 
- #include "dw_mmc.h"
- #include "dw_mmc-pltfm.h"
-@@ -49,6 +50,7 @@ struct dw_mci_exynos_priv_data {
- 	u8				ciu_div;
- 	u32				sdr_timing;
- 	u32				ddr_timing;
-+	struct pinctrl			*pctrl;
- };
- 
- static struct dw_mci_exynos_compatible {
-@@ -84,6 +86,10 @@ static int dw_mci_exynos_priv_init(struct dw_mci *host)
- 			priv->ctrl_type = exynos_compat[idx].ctrl_type;
- 	}
- 
-+	priv->pctrl = devm_pinctrl_get_select_default(host->dev);
-+	if (IS_ERR(priv->pctrl))
-+		dev_dbg(host->dev, "no pinctrl node\n");
-+
- 	host->priv = priv;
- 	return 0;
- }
-@@ -149,32 +155,19 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
- 		return ret;
- 
- 	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], div);
-+
- 	return 0;
- }
- 
- static int dw_mci_exynos_setup_bus(struct dw_mci *host,
- 				struct device_node *slot_np, u8 bus_width)
- {
-+	struct dw_mci_exynos_priv_data *priv = host->priv;
- 	int idx, gpio, ret;
- 
- 	if (!slot_np)
- 		return -EINVAL;
- 
--	/* cmd + clock + bus-width pins */
--	for (idx = 0; idx < NUM_PINS(bus_width); idx++) {
--		gpio = of_get_gpio(slot_np, idx);
--		if (!gpio_is_valid(gpio)) {
--			dev_err(host->dev, "invalid gpio: %d\n", gpio);
--			return -EINVAL;
--		}
--
--		ret = devm_gpio_request(host->dev, gpio, "dw-mci-bus");
--		if (ret) {
--			dev_err(host->dev, "gpio [%d] request failed\n", gpio);
--			return -EBUSY;
--		}
--	}
--
- 	gpio = of_get_named_gpio(slot_np, "wp-gpios", 0);
- 	if (gpio_is_valid(gpio)) {
- 		if (devm_gpio_request(host->dev, gpio, "dw-mci-wp"))
-@@ -185,9 +178,12 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
- 		host->pdata->quirks |= DW_MCI_QUIRK_NO_WRITE_PROTECT;
- 	}
- 
--	if (host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
-+	if (!IS_ERR(priv->pctrl))
- 		return 0;
- 
-+	if (host->pdata->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
-+		goto setup_bus;
-+
- 	gpio = of_get_named_gpio(slot_np, "samsung,cd-pinmux-gpio", 0);
- 	if (gpio_is_valid(gpio)) {
- 		if (devm_gpio_request(host->dev, gpio, "dw-mci-cd"))
-@@ -196,6 +192,22 @@ static int dw_mci_exynos_setup_bus(struct dw_mci *host,
- 		dev_info(host->dev, "cd gpio not available");
- 	}
- 
-+ setup_bus:
-+	/* cmd + clock + bus-width pins */
-+	for (idx = 0; idx < NUM_PINS(bus_width); idx++) {
-+		gpio = of_get_gpio(slot_np, idx);
-+		if (!gpio_is_valid(gpio)) {
-+			dev_err(host->dev, "invalid gpio: %d\n", gpio);
-+			return -EINVAL;
-+		}
-+
-+		ret = devm_gpio_request(host->dev, gpio, "dw-mci-bus");
-+		if (ret) {
-+			dev_err(host->dev, "gpio [%d] request failed\n", gpio);
-+			return -EBUSY;
-+		}
-+	}
-+
- 	return 0;
- }
- 
--- 
-1.7.9.5
+my kernel INIT_SIZE is 27M, and it includes everything that i needed
+in the kernel.
 
+>
+> Furthermore, just saying "we applied this patchset and it seems to go away"
+> isn't good enough... we need an understanding of *why* it makes things go
+> away and how that makes it safe.
+
+i know the reason:
+
+current kernel set x from trampoline to be x too late. So it set EXEC
+in head_64.c for all 1G range.
+
+so patch
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=b927466d72df250fa9b79fce3624cd5efd1317b7
+set that x early.
+and in #PF handler version:
+http://git.kernel.org/?p=linux/kernel/git/yinghai/linux-yinghai.git;a=commitdiff;h=3c06147be8e6db30dba4cafb170ad66f7baffbfc
+init_mapping_kernel will set mapping for kernel  and first 2M to
+LARGEPAGE only without EXEC.
+
+that is the reason why #PF handler version does not work with SMP.
