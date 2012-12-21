@@ -1,169 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752048Ab2LUAbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 19:31:51 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:62845 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab2LUAbo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 19:31:44 -0500
-X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 19:31:43 EST
+	id S1752114Ab2LUAeH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 19:34:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34208 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751344Ab2LUAeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 19:34:03 -0500
+Date: Fri, 21 Dec 2012 01:34:01 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: linux-kernel@vger.kernel.org,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [RFC PATCH 2/4] mm: Update file times when inodes are written
+ after mmaped writes
+Message-ID: <20121221003401.GB13474@quack.suse.cz>
+References: <cover.1356043686.git.luto@amacapital.net>
+ <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
 MIME-Version: 1.0
-In-Reply-To: <150695156.KNRhubloU5@vostro.rjw.lan>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <3596215.suSiEFiGH8@vostro.rjw.lan>
- <CAErSpo7NWHmSEJMuytUTziRTwUmnPHCVcD0zX7pKVmhQyv26sQ@mail.gmail.com> <150695156.KNRhubloU5@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 20 Dec 2012 17:25:55 -0700
-Message-ID: <CAErSpo5ZpUaHzYQEpR9Jh0MbcmjHfhKUQ-EpRJH1PNCHR_qnVg@mail.gmail.com>
-Subject: Re: [Update 2][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        David Miller <davem@davemloft.net>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Jan Glauber <jang@linux.vnet.ibm.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 3:56 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday, December 20, 2012 02:13:15 PM Bjorn Helgaas wrote:
->> [+cc linux-pci, Myron]
->>
->> On Mon, Dec 17, 2012 at 4:30 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
->> >
->> > The ACPI handles of PCI root bridges need to be known to
->> > acpi_bind_one(), so that it can create the appropriate
->> > "firmware_node" and "physical_node" files for them, but currently
->> > the way it gets to know those handles is not exactly straightforward
->> > (to put it lightly).
->> >
->> > This is how it works, roughly:
->> >
->> >   1. acpi_bus_scan() finds the handle of a PCI root bridge,
->> >      creates a struct acpi_device object for it and passes that
->> >      object to acpi_pci_root_add().
->> >
->> >   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
->> >      populates its "device" field with its argument's address
->> >      (device->handle is the ACPI handle found in step 1).
->> >
->> >   3. The struct acpi_pci_root object created in step 2 is passed
->> >      to pci_acpi_scan_root() and used to get resources that are
->> >      passed to pci_create_root_bus().
->> >
->> >   4. pci_create_root_bus() creates a struct pci_host_bridge object
->> >      and passes its "dev" member to device_register().
->> >
->> >   5. platform_notify(), which for systems with ACPI is set to
->> >      acpi_platform_notify(), is called.
->> >
->> > So far, so good.  Now it starts to be "interesting".
->> >
->> >   6. acpi_find_bridge_device() is used to find the ACPI handle of
->> >      the given device (which is the PCI root bridge) and executes
->> >      acpi_pci_find_root_bridge(), among other things, for the
->> >      given device object.
->> >
->> >   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
->> >      device object to extract the segment and bus numbers of the PCI
->> >      root bridge and passes them to acpi_get_pci_rootbridge_handle().
->> >
->> >   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
->> >      root bridges and finds the one that matches the given segment
->> >      and bus numbers.  Its handle is then used to initialize the
->> >      ACPI handle of the PCI root bridge's device object by
->> >      acpi_bind_one().  However, this is *exactly* the ACPI handle we
->> >      started with in step 1.
->> >
->> > Needless to say, this is quite embarassing, but it may be avoided
->> > thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
->> > initialized in advance), which makes it possible to initialize the
->> > ACPI handle of a device before passing it to device_register().
->>
->> This was a mess.  Thanks for cleaning it up.
->>
->> > Accordingly, make pci_acpi_scan_root() pass the root bridge's ACPI
->> > handle to pci_create_root_bus() and make the latter set the ACPI
->> > handle in its struct pci_host_bridge object's "dev" member before
->> > passing it to device_register(), so that steps 6-8 above aren't
->> > necessary any more.
->> >
->> > To implement that, I decided to repurpose the 4th argument of
->> > pci_create_root_bus(), because that allowed me to avoid defining
->> > additional callbacks or similar things and didn't seem to impact
->> > architectures without ACPI substantially.
->> >
->> > All architectures using pci_create_root_bus() directly are updated
->> > as needed, but only x86 and ia64 are affected as far as the behavior
->> > is concerned (no one else uses ACPI).  There should be no changes in
->> > behavior resulting from this on the other architectures.
->>
->> I'd like to converge all architectures on a single higher-level
->> interface, pci_scan_root_bus(), then deprecate and remove
->> pci_create_root_bus(), pci_scan_bus_parented(), and pci_scan_bus().
->> You're changing the underlying pci_create_root_bus(), but not the
->> higher-level interfaces that use it, which will make converging a bit
->> harder.
->
-> Do you mean that pci_scan_root_bus() and friends should take a
-> struct pci_root_sys_info pointer rather than (void *) as an argument?
-> That's not too difficult to do on top of my patch.  I can do that if you
-> want me to, no problem.
->
->> Here's an alternate implementation strategy; see what you think:
->>
->> - Add "struct acpi_dev_node acpi_node" to struct pci_sysdata (x86) and
->> struct pci_controller (ia64).  These are the only two arches that use
->> ACPI.
->>
->> - Add an empty generic (weak) pcibios_create_root_ bus().
->
-> Well, in my opinion things like that make following the code more difficult.
-> If you were new to the code in question and wanted to understand what it was
-> doing, you'd need to inspect all architectures to see (1) if they defined
-> pcibios_create_root_bus() and (2) what was in there if so.
+On Thu 20-12-12 15:10:10, Andy Lutomirski wrote:
+> The onus is currently on filesystems to call file_update_time
+> somewhere in the page_mkwrite path.  This is unfortunate for three
+> reasons:
+> 
+> 1. page_mkwrite on a locked page should be fast.  ext4, for example,
+>    often sleeps while dirtying inodes.
+> 
+> 2. The current behavior is surprising -- the timestamp resulting from
+>    an mmaped write will be before the write, not after.  This contradicts
+>    the mmap(2) manpage, which says:
+> 
+>      The st_ctime and st_mtime field for a file mapped with  PROT_WRITE  and
+>      MAP_SHARED  will  be  updated  after  a write to the mapped region, and
+>      before a subsequent msync(2) with the MS_SYNC or MS_ASYNC flag, if  one
+>      occurs.
+  I agree your behavior is more correct wrt to the manpage / spec. OTOH I
+could dig out several emails where users complain time stamps magically
+change some time after the file was written via mmap (because writeback
+happened at that time and it did some allocation to the inode). People hit
+this e.g. when compiling something, ld(1) writes final binary through mmap,
+the package / archive the final binary and later some sanity check finds
+the time stamp on the binary is newer than the package / archive.
 
-It's a trade-off.  Your approach puts arch-specific ACPI code in the
-generic PCI path.  I wouldn't like to see that extended to do
-ACPI_HANDLE_SET(), PDC_HPA_SET(), OF_HANDLE_SET(), etc., all in the
-generic code.  I guess I'm used to using "make ALLSOURCE_ARCHS=all
-cscope" so I see all the architectures all the time, and I actually
-like the fact that we have arch-specific hooks (we have too many right
-now, but we do need some).
+Looking more into the patch you end up updating timestamps on munmap(2)
+(thus on file close in particular). That should avoid the most surprising
+cases and users hopefully won't notice the difference. Good. But please
+mention this explicitely in the changelog.
 
-pcibios_create_root_bus() isn't really a good name; it only gives a
-hint about where it's called.  Maybe
-pcibios_host_bridge_platform_info() or something would make it more
-readable.
 
->> - Add pcibios_create_root_bus() for x86 and ia64 that does the
->> ACPI_HANDLE_SET().
->>
->> It does add a pcibios callback, which you were trying to avoid, but it
->> does have the advantages that all the higher-level interfaces that use
->> pci_create_root_bus() will keep working and only the ACPI arches have
->> the acpi_dev_node member and associated code.
->
-> All of the things that use pci_create_root_bus() are still working with my
-> patch applied, hopefully. :-)
+ 
+> 3. (An ulterior motive) I'd like to use hardware dirty tracking for
+>    shared, locked, writable mappings (instead of page faults).  Moving
+>    important work out of the page_mkwrite path is an important first step.
+> 
+> The next patch will remove the now-unnecessary file_update_time calls.
+> 
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  fs/inode.c              | 37 +++++++++++++++++++++++++++++++++++++
+>  include/linux/fs.h      |  1 +
+>  include/linux/pagemap.h |  3 +++
+>  mm/memory.c             |  2 +-
+>  mm/mmap.c               |  4 ++++
+>  mm/page-writeback.c     | 30 ++++++++++++++++++++++++++++--
+>  6 files changed, 74 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/inode.c b/fs/inode.c
+> index 64999f1..d881d0b 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -1688,6 +1688,43 @@ int file_update_time(struct file *file)
+>  }
+>  EXPORT_SYMBOL(file_update_time);
+>  
+> +/**
+> + *	inode_update_time_writable	-	update mtime and ctime time
+> + *	@inode: inode accessed
+> + *
+> + *	This is like file_update_time, but it assumes the mnt is writable
+> + *	and takes an inode parameter instead.
+> + */
+> +
+> +int inode_update_time_writable(struct inode *inode)
+> +{
+> +	struct timespec now;
+> +	int sync_it = 0;
+> +	int ret;
+> +
+> +	/* First try to exhaust all avenues to not sync */
+> +	if (IS_NOCMTIME(inode))
+> +		return 0;
+> +
+> +	now = current_fs_time(inode->i_sb);
+> +	if (!timespec_equal(&inode->i_mtime, &now))
+> +		sync_it = S_MTIME;
+> +
+> +	if (!timespec_equal(&inode->i_ctime, &now))
+> +		sync_it |= S_CTIME;
+> +
+> +	if (IS_I_VERSION(inode))
+> +		sync_it |= S_VERSION;
+> +
+> +	if (!sync_it)
+> +		return 0;
+> +
+> +	ret = update_time(inode, &now, sync_it);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(inode_update_time_writable);
+> +
+  So this differs from file_update_time() only by not calling
+__mnt_want_write(). Why this special function? It is actually unsafe wrt
+remounts read-only or filesystem freezing... For that you need to call
+sb_start_write() / sb_end_write() around the timestamp update. Umm, or
+better sb_start_pagefault() / sb_end_pagefault() because the call in
+remove_vma() gets called under mmap_sem so we are in a rather similar
+situation to ->page_mkwrite.
 
-Well, sure, but only because no ACPI architectures use pci_scan_root_bus() yet.
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 3913262..60301dc 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -223,6 +223,10 @@ static struct vm_area_struct *remove_vma(struct vm_area_struct *vma)
+>  	struct vm_area_struct *next = vma->vm_next;
+>  
+>  	might_sleep();
+> +
+> +	if (vma->vm_file)
+> +		mapping_flush_cmtime(vma->vm_file->f_mapping);
+> +
+>  	if (vma->vm_ops && vma->vm_ops->close)
+>  		vma->vm_ops->close(vma);
+>  	if (vma->vm_file)
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index cdea11a..8cbb7fb 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -1910,6 +1910,13 @@ int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
+>  		ret = mapping->a_ops->writepages(mapping, wbc);
+>  	else
+>  		ret = generic_writepages(mapping, wbc);
+> +
+> +	/*
+> +	 * This is after writepages because the AS_CMTIME bit won't
+> +	 * bet set until writepages is called.
+> +	 */
+> +	mapping_flush_cmtime(mapping);
+> +
+>  	return ret;
+>  }
+>  
+> @@ -2117,8 +2124,17 @@ EXPORT_SYMBOL(set_page_dirty);
+>   */
+>  int set_page_dirty_from_pte(struct page *page)
+>  {
+> -	/* Doesn't do anything interesting yet. */
+> -	return set_page_dirty(page);
+> +	int ret = set_page_dirty(page);
+> +
+> +	/*
+> +	 * We may be out of memory and/or have various locks held, so
+> +	 * there isn't much we can do in here.
+> +	 */
+> +	struct address_space *mapping = page_mapping(page);
+  Declarations should go together please. So something like:
+	int ret = set_page_dirty(page);
+	struct address_space *mapping = page_mapping(page);
 
-> You seem to would like the headers of all the involved functions, including
-> pci_create_root_bus(), not to change.
+	/* comment... */
 
-I think it's OK to change the pci_create_root_bus() signature because
-it's not exported to modules.  But yes, I think it will be a problem
-to change pci_scan_root_bus(), because it *is* exported.  So distros
-won't be able to backport a change there unless you change the name.
+> +	if (mapping)
+> +		set_bit(AS_CMTIME, &mapping->flags);
+> +
+> +	return ret;
+>  }
+>  
+>  /*
+> @@ -2287,3 +2303,13 @@ int mapping_tagged(struct address_space *mapping, int tag)
+>  	return radix_tree_tagged(&mapping->page_tree, tag);
+>  }
+>  EXPORT_SYMBOL(mapping_tagged);
+> +
+> +/*
+> + * Call from any context from which inode_update_time_writable would be okay
+> + * to flush deferred cmtime changes.
+> + */
+> +void mapping_flush_cmtime(struct address_space *mapping)
+> +{
+> +	if (test_and_clear_bit(AS_CMTIME, &mapping->flags))
+> +		inode_update_time_writable(mapping->host);
+> +}
 
-Bjorn
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
