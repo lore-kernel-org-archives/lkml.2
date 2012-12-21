@@ -1,53 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973Ab2LUDDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 22:03:12 -0500
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:40645 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307Ab2LUDDF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 22:03:05 -0500
-X-Greylist: delayed 421 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 22:03:05 EST
-Message-ID: <50D3CFBF.50902@gmail.com>
-Date: Thu, 20 Dec 2012 21:55:59 -0500
-From: Daniel Hazelton <dshadowwolf@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752062Ab2LUDDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 22:03:36 -0500
+Received: from zene.cmpxchg.org ([85.214.230.12]:36783 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab2LUDDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 22:03:30 -0500
+Date: Thu, 20 Dec 2012 22:02:36 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Satoru Moriya <satoru.moriya@hds.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/7] mm: vmscan: save work scanning (almost) empty LRU
+ lists
+Message-ID: <20121221030236.GF7147@cmpxchg.org>
+References: <1355767957-4913-1-git-send-email-hannes@cmpxchg.org>
+ <1355767957-4913-3-git-send-email-hannes@cmpxchg.org>
+ <20121219155901.c488bac2.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Paton J. Lewis" <palewis@adobe.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] epoll: stop comparing pointers with 0 in self-test app
-References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-6-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1356030701-16284-6-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121219155901.c488bac2.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I don't see anything obviously wrong here...
-Reviewed-By: Daniel Hazelton <dshadowwolf@gmail.com>
+On Wed, Dec 19, 2012 at 03:59:01PM -0800, Andrew Morton wrote:
+> On Mon, 17 Dec 2012 13:12:32 -0500
+> Johannes Weiner <hannes@cmpxchg.org> wrote:
+> 
+> > In certain cases (kswapd reclaim, memcg target reclaim), a fixed
+> > minimum amount of pages is scanned from the LRU lists on each
+> > iteration, to make progress.
+> > 
+> > Do not make this minimum bigger than the respective LRU list size,
+> > however, and save some busy work trying to isolate and reclaim pages
+> > that are not there.
+> > 
+> > Empty LRU lists are quite common with memory cgroups in NUMA
+> > environments because there exists a set of LRU lists for each zone for
+> > each memory cgroup, while the memory of a single cgroup is expected to
+> > stay on just one node.  The number of expected empty LRU lists is thus
+> > 
+> >   memcgs * (nodes - 1) * lru types
+> > 
+> > Each attempt to reclaim from an empty LRU list does expensive size
+> > comparisons between lists, acquires the zone's lru lock etc.  Avoid
+> > that.
+> > 
+> > ...
+> >
+> > -#define SWAP_CLUSTER_MAX 32
+> > +#define SWAP_CLUSTER_MAX 32UL
+> 
+> You made me review the effects of this change.  It looks OK.  A few
+> cleanups are possible, please review.
+> 
+> I wonder what happens in __setup_per_zone_wmarks() if we set
+> SWAP_CLUSTER_MAX greater than 128.
 
-On 12/20/2012 02:11 PM, Sasha Levin wrote:
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->   tools/testing/selftests/epoll/test_epoll.c | 4 ++--
->   1 file changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/tools/testing/selftests/epoll/test_epoll.c b/tools/testing/selftests/epoll/test_epoll.c
-> index 4a14a7f..1034ed4 100644
-> --- a/tools/testing/selftests/epoll/test_epoll.c
-> +++ b/tools/testing/selftests/epoll/test_epoll.c
-> @@ -199,8 +199,8 @@ int main(int argc, char **argv)
->
->   	epoll_items = malloc(n_epoll_items * sizeof(struct epoll_item_private));
->
-> -	if (epoll_set < 0 || epoll_items == 0 || write_thread_data.fds == 0 ||
-> -		read_thread_data == 0 || read_threads == 0)
-> +	if (epoll_set < 0 || !epoll_items || write_thread_data.fds == NULL ||
-> +		!read_thread_data || !read_threads)
->   		goto error;
->
->   	if (sysconf(_SC_NPROCESSORS_ONLN) < 2) {
->
+In the current clamp() implementation max overrides min, so...
 
+BUILD_BUG_ON()?  Probably unnecessary, it seems like a rather
+arbitrary range to begin with.
+
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm/page_alloc.c:__setup_per_zone_wmarks: make min_pages unsigned long
+> 
+> `int' is an inappropriate type for a number-of-pages counter.
+> 
+> While we're there, use the clamp() macro.
+> 
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Satoru Moriya <satoru.moriya@hds.com>
+> Cc: Simon Jeons <simon.jeons@gmail.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm/vmscan.c:shrink_lruvec(): switch to min()
+> 
+> "mm: vmscan: save work scanning (almost) empty LRU lists" made
+> SWAP_CLUSTER_MAX an unsigned long.
+> 
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Satoru Moriya <satoru.moriya@hds.com>
+> Cc: Simon Jeons <simon.jeons@gmail.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm/vmscan.c:__zone_reclaim(): replace max_t() with max()
+> 
+> "mm: vmscan: save work scanning (almost) empty LRU lists" made
+> SWAP_CLUSTER_MAX an unsigned long.
+> 
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Satoru Moriya <satoru.moriya@hds.com>
+> Cc: Simon Jeons <simon.jeons@gmail.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
