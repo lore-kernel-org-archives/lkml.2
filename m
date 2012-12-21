@@ -1,134 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab2LULtB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 06:49:01 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:35900 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868Ab2LULs4 (ORCPT
+	id S1751855Ab2LULvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 06:51:39 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:61452 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab2LULvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 06:48:56 -0500
-X-Greylist: delayed 465 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 06:48:56 EST
-Date: Fri, 21 Dec 2012 11:41:05 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Robert Marklund <robert.marklund@stericsson.com>,
-        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/4 v2] net/smsc911x: Provide common clock functionality
-Message-ID: <20121221114105.GP2691@gmail.com>
-References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
- <1355937587-31730-4-git-send-email-lee.jones@linaro.org>
- <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
- <20121220192441.GC14363@n2100.arm.linux.org.uk>
- <20121220203514.GN2691@gmail.com>
- <20121220205113.GD14363@n2100.arm.linux.org.uk>
- <20121221091306.GO2691@gmail.com>
- <20121221092421.GG14363@n2100.arm.linux.org.uk>
+	Fri, 21 Dec 2012 06:51:32 -0500
+X-Greylist: delayed 172040 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 06:51:32 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121221092421.GG14363@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50D24CD9.8070507@iskon.hr>
+References: <50D24AF3.1050809@iskon.hr>
+	<50D24CD9.8070507@iskon.hr>
+Date: Fri, 21 Dec 2012 19:51:31 +0800
+Message-ID: <CAJd=RBCQN1GxOUCwGPXL27d_q8hv50uHK5LhDnsv7mdv_2Usaw@mail.gmail.com>
+Subject: Re: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o congestion
+From: Hillf Danton <dhillf@gmail.com>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms provide clocks which require enabling before the
-SMSC911x chip will power on. This patch uses the new common clk
-framework to do just that. If no clock is provided, it will just
-be ignored and the driver will continue to assume that no clock
-is required for the chip to run successfully.
+On Thu, Dec 20, 2012 at 7:25 AM, Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
+>  static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>                                                         int *classzone_idx)
+>  {
+> -       int all_zones_ok;
+> +       struct zone *unbalanced_zone;
 
-Cc: Steve Glendinning <steve.glendinning@shawell.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/net/ethernet/smsc/smsc911x.c |   29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+nit: less hunks if not erase that mark
 
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index e112877..afa4d62 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -33,6 +33,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/crc32.h>
-+#include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/etherdevice.h>
-@@ -144,6 +145,9 @@ struct smsc911x_data {
- 
- 	/* regulators */
- 	struct regulator_bulk_data supplies[SMSC911X_NUM_SUPPLIES];
-+
-+	/* clock */
-+	struct clk *clk;
- };
- 
- /* Easy access to information */
-@@ -369,7 +373,7 @@ out:
- }
- 
- /*
-- * enable resources, currently just regulators.
-+ * enable regulator and clock resources.
-  */
- static int smsc911x_enable_resources(struct platform_device *pdev)
- {
-@@ -382,6 +386,13 @@ static int smsc911x_enable_resources(struct platform_device *pdev)
- 	if (ret)
- 		netdev_err(ndev, "failed to enable regulators %d\n",
- 				ret);
-+
-+	if (IS_ERR(pdata->clk)) {
-+		ret = clk_prepare_enable(pdata->clk);
-+		if (ret < 0)
-+			netdev_err(ndev, "failed to enable clock %d\n", ret);
-+	}
-+
- 	return ret;
- }
- 
-@@ -396,6 +407,10 @@ static int smsc911x_disable_resources(struct platform_device *pdev)
- 
- 	ret = regulator_bulk_disable(ARRAY_SIZE(pdata->supplies),
- 			pdata->supplies);
-+
-+	if (IS_ERR(pdata->clk))
-+		clk_disable_unprepare(pdata->clk);
-+
- 	return ret;
- }
- 
-@@ -421,6 +436,12 @@ static int smsc911x_request_resources(struct platform_device *pdev)
- 	if (ret)
- 		netdev_err(ndev, "couldn't get regulators %d\n",
- 				ret);
-+
-+	/* Request clock */
-+	pdata->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pdata->clk))
-+		netdev_warn(ndev, "couldn't get clock %li\n", PTR_ERR(pdata->clk));
-+
- 	return ret;
- }
- 
-@@ -436,6 +457,12 @@ static void smsc911x_free_resources(struct platform_device *pdev)
- 	/* Free regulators */
- 	regulator_bulk_free(ARRAY_SIZE(pdata->supplies),
- 			pdata->supplies);
-+
-+	/* Free clock */
-+	if (IS_ERR(pdata->clk)) {
-+		clk_put(pdata->clk);
-+		pdata->clk = NULL;
-+	}
- }
- 
- /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
--- 
-1.7.9.5
+Hillf
+>         unsigned long balanced;
+>         int i;
+>         int end_zone = 0;       /* Inclusive.  0 = ZONE_DMA */
+> @@ -2580,7 +2580,7 @@ loop_again:
+>                 unsigned long lru_pages = 0;
+>                 int has_under_min_watermark_zone = 0;
+>
+> -               all_zones_ok = 1;
+> +               unbalanced_zone = NULL;
+>                 balanced = 0;
+>
+>                 /*
+> @@ -2719,7 +2719,7 @@ loop_again:
+>                         }
+>
+>                         if (!zone_balanced(zone, testorder, 0, end_zone)) {
+> -                               all_zones_ok = 0;
+> +                               unbalanced_zone = zone;
+>                                 /*
+>                                  * We are still under min water mark.  This
+>                                  * means that we have a GFP_ATOMIC allocation
+> @@ -2752,7 +2752,7 @@ loop_again:
+>                                 pfmemalloc_watermark_ok(pgdat))
+>                         wake_up(&pgdat->pfmemalloc_wait);
+>
+> -               if (all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+> +               if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
+>                         break;          /* kswapd: all done */
+>                 /*
+>                  * OK, kswapd is getting into trouble.  Take a nap, then take
+> @@ -2762,7 +2762,7 @@ loop_again:
+>                         if (has_under_min_watermark_zone)
+>                                 count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+>                         else
+> -                               congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +                               wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
+>                 }
+>
+>                 /*
+> @@ -2781,7 +2781,7 @@ out:
+>          * high-order: Balanced zones must make up at least 25% of the node
+>          *             for the node to be balanced
+>          */
+> -       if (!(all_zones_ok || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))) {
+> +       if (unbalanced_zone && (!order || !pgdat_balanced(pgdat, balanced, *classzone_idx))) {
+>                 cond_resched();
+>
+>                 try_to_freeze();
+> -- 1.7.10.4
