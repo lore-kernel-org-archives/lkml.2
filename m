@@ -1,85 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374Ab2LUIF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 03:05:58 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:19477 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079Ab2LUIFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 03:05:51 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Fri, 21 Dec 2012 00:04:09 -0800
-Message-ID: <50D41860.7040406@nvidia.com>
-Date: Fri, 21 Dec 2012 16:05:52 +0800
-From: Wei Ni <wni@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751393Ab2LUIJh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 03:09:37 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44167 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751079Ab2LUIJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 03:09:33 -0500
+Date: Fri, 21 Dec 2012 09:09:29 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v3] mm: limit mmu_gather batching to fix soft lockups on
+ !CONFIG_PREEMPT
+Message-ID: <20121221080655.GA13438@dhcp22.suse.cz>
+References: <1355847088-1207-1-git-send-email-mhocko@suse.cz>
+ <20121218140219.45867ddd.akpm@linux-foundation.org>
+ <20121218235042.GA10350@dhcp22.suse.cz>
+ <20121218160030.baf723aa.akpm@linux-foundation.org>
+ <20121219150423.GA12888@dhcp22.suse.cz>
+ <20121219131316.7d13fcb1.akpm@linux-foundation.org>
+ <20121220124710.GA31912@dhcp22.suse.cz>
+ <20121220122746.72d889fd.akpm@linux-foundation.org>
+ <20121220223623.GA9012@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Durgadoss R <durgadoss.r@intel.com>
-CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
-Subject: Re: [PATCH 0/8] Thermal Framework Enhancements
-References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
-In-Reply-To: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220223623.GA9012@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/18/2012 05:29 PM, Durgadoss R wrote:
-> This patch is a v1 based on the RFC submitted here:
-> https://patchwork.kernel.org/patch/1758921/
+On Thu 20-12-12 23:36:23, Michal Hocko wrote:
+> From 839736c13064008a41fabf5de69c2f23d685a1fd Mon Sep 17 00:00:00 2001
+> From: Michal Hocko <mhocko@suse.cz>
+> Date: Thu, 20 Dec 2012 23:25:24 +0100
+> Subject: [PATCH] mm: limit mmu_gather batching to fix soft lockups on
+>  !CONFIG_PREEMPT
 > 
-> This patch set is based on Rui's -thermal tree, and is
-> tested on a Core-i5 and an Atom netbook.
+> Since e303297 (mm: extended batches for generic mmu_gather) we are batching
+> pages to be freed until either tlb_next_batch cannot allocate a new batch or we
+> are done.
 > 
-> This series contains 8 patches:
-> Patch 1/8: Creates new sensor level APIs
-> Patch 2/8: Creates new zone level APIs. The existing tzd structure is
->            kept as such for clarity and compatibility purposes.
-> Patch 3/8: Creates functions to add/remove a cdev to/from a zone. The
->            existing tcd structure need not be modified.
-> Patch 4/8: Adds a thermal_trip sysfs node, which exposes various trip
->            points for all sensors present in a zone.
-> Patch 5/8: Adds a thermal_map sysfs node. It is a compact representation
->            of the binding relationship between a sensor and a cdev,
->            within a zone.
-> Patch 6/8: Creates Documentation for the new APIs. A new file is
->            created for clarity. Final goal is to merge with the existing
->            file or refactor the files, as whatever seems appropriate.
-> Patch 7/8: Make PER ZONE values configurable through Kconfig
-> Patch 8/8: A dummy driver that can be used for testing. This is not for merge.
+> This works just fine most of the time but we can get in troubles with
+> non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
+> on large machines where too aggressive batching might lead to soft
+> lockups during process exit path (exit_mmap) because there are no
+> scheduling points down the free_pages_and_swap_cache path and so the
+> freeing can take long enough to trigger the soft lockup.
+> 
+> The lockup is harmless except when the system is setup to panic on
+> softlockup which is not that unusual.
+> 
+> The simplest way to work around this issue is to limit the maximum
+> number of batches in a single mmu_gather. 10k of collected pages should
+> be safe to prevent from soft lockups (we would have 2ms for one) even if
+> they are all freed without an explicit scheduling point.
+> 
+> This patch doesn't add any new explicit scheduling points because
+> it relies on zap_pmd_range during page tables zapping which calls
+> cond_resched per PMD.
+> 
+> The following lockup has been reported for 3.0 kernel with a huge process
+> (in order of hundreds gigs but I do know any more details).
+> 
+> [65674.040540] BUG: soft lockup - CPU#56 stuck for 22s! [kernel:31053]
+> [65674.040544] Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc mptctl mptbase autofs4 binfmt_misc dm_round_robin dm_multipath bonding cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq mperf microcode fuse loop osst sg sd_mod crc_t10dif st qla2xxx scsi_transport_fc scsi_tgt netxen_nic i7core_edac iTCO_wdt joydev e1000e serio_raw pcspkr edac_core iTCO_vendor_support acpi_power_meter rtc_cmos hpwdt hpilo button container usbhid hid dm_mirror dm_region_hash dm_log linear uhci_hcd ehci_hcd usbcore usb_common scsi_dh_emc scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh dm_snapshot pcnet32 mii edd dm_mod raid1 ext3 mbcache jbd fan thermal processor thermal_sys hwmon cciss scsi_mod
+> [65674.040602] Supported: Yes
+> [65674.040604] CPU 56
+> [65674.040639] Pid: 31053, comm: kernel Not tainted 3.0.31-0.9-default #1 HP ProLiant DL580 G7
+> [65674.040643] RIP: 0010:[<ffffffff81443a88>]  [<ffffffff81443a88>] _raw_spin_unlock_irqrestore+0x8/0x10
+> [65674.040656] RSP: 0018:ffff883ec1037af0  EFLAGS: 00000206
+> [65674.040657] RAX: 0000000000000e00 RBX: ffffea01a0817e28 RCX: ffff88803ffd9e80
+> [65674.040659] RDX: 0000000000000200 RSI: 0000000000000206 RDI: 0000000000000206
+> [65674.040661] RBP: 0000000000000002 R08: 0000000000000001 R09: ffff887ec724a400
+> [65674.040663] R10: 0000000000000000 R11: dead000000200200 R12: ffffffff8144c26e
+> [65674.040665] R13: 0000000000000030 R14: 0000000000000297 R15: 000000000000000e
+> [65674.040667] FS:  00007ed834282700(0000) GS:ffff88c03f200000(0000) knlGS:0000000000000000
+> [65674.040669] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [65674.040671] CR2: 000000000068b240 CR3: 0000003ec13c5000 CR4: 00000000000006e0
+> [65674.040673] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [65674.040675] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [65674.040678] Process kernel (pid: 31053, threadinfo ffff883ec1036000, task ffff883ebd5d4100)
+> [65674.040680] Stack:
+> [65674.042972]  ffffffff810fc935 ffff88a9f1e182b0 0000000000000206 0000000000000009
+> [65674.042978]  0000000000000000 ffffea01a0817e60 ffffea0211d3a808 ffffea0211d3a840
+> [65674.042983]  ffffea01a0827a28 ffffea01a0827a60 ffffea0288a598c0 ffffea0288a598f8
+> [65674.042989] Call Trace:
+> [65674.045765]  [<ffffffff810fc935>] release_pages+0xc5/0x260
+> [65674.045779]  [<ffffffff811289dd>] free_pages_and_swap_cache+0x9d/0xc0
+> [65674.045786]  [<ffffffff81115d6c>] tlb_flush_mmu+0x5c/0x80
+> [65674.045791]  [<ffffffff8111628e>] tlb_finish_mmu+0xe/0x50
+> [65674.045796]  [<ffffffff8111c65d>] exit_mmap+0xbd/0x120
+> [65674.045805]  [<ffffffff810582d9>] mmput+0x49/0x120
+> [65674.045813]  [<ffffffff8105cbb2>] exit_mm+0x122/0x160
+> [65674.045818]  [<ffffffff8105e95a>] do_exit+0x17a/0x430
+> [65674.045824]  [<ffffffff8105ec4d>] do_group_exit+0x3d/0xb0
+> [65674.045831]  [<ffffffff8106f7c7>] get_signal_to_deliver+0x247/0x480
+> [65674.045840]  [<ffffffff81002931>] do_signal+0x71/0x1b0
+> [65674.045845]  [<ffffffff81002b08>] do_notify_resume+0x98/0xb0
+> [65674.045853]  [<ffffffff8144bb60>] int_signal+0x12/0x17
+> [65674.046737] DWARF2 unwinder stuck at int_signal+0x12/0x17
+> 
+> Changes since v2
+> - make the baches count limit depend on the number of entries rather
+>   than size of the freed memory
+> 
+> Changes since v1
+> - do not cond_resched in tlb_flush_mmu as we do not want to limit this
+>   interface for non atomic contexts and limit batching instead.
+> 
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Cc: stable@vger.kernel.org # 3.0 and higher
+> ---
+>  include/asm-generic/tlb.h |    9 +++++++++
+>  mm/memory.c               |    4 ++++
+>  2 files changed, 13 insertions(+)
+> 
+> diff --git a/include/asm-generic/tlb.h b/include/asm-generic/tlb.h
+> index ed6642a..25f01d0 100644
+> --- a/include/asm-generic/tlb.h
+> +++ b/include/asm-generic/tlb.h
+> @@ -78,6 +78,14 @@ struct mmu_gather_batch {
+>  #define MAX_GATHER_BATCH	\
+>  	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+>  
+> +/*
+> + * Limit the maximum number of mmu_gather batches to reduce a risk of soft
+> + * lockups for non-preemptible kernels on huge machines when a lot of memory
+> + * is zapped during unmapping.
+> + * 10K pages freed at once should be safe even without a preemption point.
+> + */
+> +#define MAX_GATHER_BATCH_COUNT	(10000UL/MAX_GATHER_BATCH)
+> +
+>  /* struct mmu_gather is an opaque type used by the mm code for passing around
+>   * any data needed by arch specific code for tlb_remove_page.
+>   */
+> @@ -96,6 +104,7 @@ struct mmu_gather {
+>  	struct mmu_gather_batch *active;
+>  	struct mmu_gather_batch	local;
+>  	struct page		*__pages[MMU_GATHER_BUNDLE];
+> +	unsigned int		batch_count;
+>  };
+>  
+>  #define HAVE_GENERIC_MMU_GATHER
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 1f6cae4..d4aebd9 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -183,10 +183,14 @@ static int tlb_next_batch(struct mmu_gather *tlb)
+>  		return 1;
+>  	}
+>  
+> +	if (tlb->batch_count == MAX_GATHER_BATCH_COUNT)
+> +		return 0;
+> +
+>  	batch = (void *)__get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
+>  	if (!batch)
+>  		return 0;
+>  
+> +	tlb->batch_count++;
+>  	batch->next = NULL;
+>  	batch->nr   = 0;
+>  	batch->max  = MAX_GATHER_BATCH;
 
-I read these patches, they create new APIs and sysfs, but it seems they
-didn't use the thermal_zone to handle the thermal_throttle issue,
-something like update thermal_zone, update temperature, handle governors
-when cross the trip temp. So will you send out next serial patches for
-these implementation?
-
-> 
-> Thanks to Rui Zhang, Honghbo Zhang, Wei Ni for their feedback on the
-> RFC version.
-> 
-> Durgadoss R (8):
->   Thermal: Create sensor level APIs
->   Thermal: Create zone level APIs
->   Thermal: Add APIs to bind cdev to new zone structure
->   Thermal: Add Thermal_trip sysfs node
->   Thermal: Add 'thermal_map' sysfs node
->   Thermal: Add Documentation to new APIs
->   Thermal: Make PER_ZONE values configurable
->   Thermal: Dummy driver used for testing
-> 
->  Documentation/thermal/sysfs-api2.txt |  248 +++++++++
->  drivers/thermal/Kconfig              |   19 +
->  drivers/thermal/Makefile             |    3 +
->  drivers/thermal/thermal_sys.c        |  932 ++++++++++++++++++++++++++++++++++
->  drivers/thermal/thermal_test.c       |  315 ++++++++++++
->  include/linux/thermal.h              |  124 +++++
->  6 files changed, 1641 insertions(+)
->  create mode 100644 Documentation/thermal/sysfs-api2.txt
->  create mode 100644 drivers/thermal/thermal_test.c
-> 
-
+Dohh, I knew I forgot about something. mmu_gather is a on-stack data
+structure, so we need (sorry about not noticing earlier) the following.
+Could you fold this into the patch, please?
+---
+diff --git a/mm/memory.c b/mm/memory.c
+index d4aebd9..93cdb15 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -219,6 +219,7 @@ void tlb_gather_mmu(struct mmu_gather *tlb, struct mm_struct *mm, bool fullmm)
+ 	tlb->local.nr   = 0;
+ 	tlb->local.max  = ARRAY_SIZE(tlb->__pages);
+ 	tlb->active     = &tlb->local;
++	tlb->batch_count = 0;
+ 
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb->batch = NULL;
+-- 
+Michal Hocko
+SUSE Labs
