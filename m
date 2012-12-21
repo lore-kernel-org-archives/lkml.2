@@ -1,77 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501Ab2LUTEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 14:04:25 -0500
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:41945 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab2LUTEU (ORCPT
+	id S1752511Ab2LUTMk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 14:12:40 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:47751 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab2LUTMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 14:04:20 -0500
-Date: Fri, 21 Dec 2012 13:04:16 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: [PATCH 00/19] MAINTAINERS: fix file patterns
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-References: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
-	<1355264351.24219.8.camel@joe-AO722> <1356105142.19585.13.camel@joe-AO722>
-In-Reply-To: <1356105142.19585.13.camel@joe-AO722> (from joe@perches.com on
-	Fri Dec 21 09:52:22 2012)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1356116656.21178.1@driftwood>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-WWX37GV8SIzjQgIuh1gt"
+	Fri, 21 Dec 2012 14:12:38 -0500
+From: Dmitry Voytik <dvv.kernel@gmail.com>
+To: mmarek@suse.cz
+Cc: linux-kernel@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>
+Subject: [PATCH] nconf: add j, k and l keys for menu navigation
+Date: Fri, 21 Dec 2012 23:12:25 +0400
+Message-Id: <1356117145-14158-1-git-send-email-dvv.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-WWX37GV8SIzjQgIuh1gt
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Add vi-style keys for menu navigation: press j/k for down/up navigation
+and l for entering to a submenu. Unfortantely h key is reserved for
+the items help.
 
-On 12/21/2012 09:52:22 AM, Joe Perches wrote:
-> On Tue, 2012-12-11 at 14:19 -0800, Joe Perches wrote:
-> > On Tue, 2012-12-11 at 19:49 -0200, Cesar Eduardo Barros wrote:
-> > > I could not find the maintainer for the MAINTAINERS file, so =20
-> sending
-> > > directly to Linus. Sorry if I am mistaken.
-> >
-> > Thanks Cesar.
-> >
-> > Most maintainers patches are picked up by Andrew Morton (cc'd)
+Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
+---
+ scripts/kconfig/nconf.c |   13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-Which implies... (attached because Balsa damages whitespace).
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index ce93e87..ccf6766 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -38,10 +38,10 @@ static const char nconf_readme[] = N_(
+ "\n"
+ "Menus\n"
+ "----------\n"
+-"o  Use the Up/Down arrow keys (cursor keys) to highlight the item\n"
+-"   you wish to change use <Enter> or <Space>. Goto submenu by \n"
+-"   pressing <Enter> of <right-arrow>. Use <Esc> or <left-arrow> to go back.\n"
+-"   Submenus are designated by \"--->\".\n"
++"o  Use the Up/Down arrow keys (cursor keys) or <j>/<k> to highlight\n"
++"   the item you wish to change use <Enter> or <Space>. Goto submenu by\n"
++"   pressing <Enter>, <right-arrow> or <l>. Use <Esc> or <left-arrow>\n"
++"   to go back. Submenus are designated by \"--->\".\n"
+ "\n"
+ "   Searching: pressing '/' triggers interactive search mode.\n"
+ "              nconfig performs a case insensitive search for the string\n"
+@@ -1115,9 +1115,11 @@ static void conf(struct menu *menu)
+ 						(struct menu *) item_data()))
+ 				break;
+ 			switch (res) {
++			case 'j':
+ 			case KEY_DOWN:
+ 				menu_driver(curses_menu, REQ_DOWN_ITEM);
+ 				break;
++			case 'k':
+ 			case KEY_UP:
+ 				menu_driver(curses_menu, REQ_UP_ITEM);
+ 				break;
+@@ -1141,7 +1143,7 @@ static void conf(struct menu *menu)
+ 			if (res == 10 || res == 27 ||
+ 				res == 32 || res == 'n' || res == 'y' ||
+ 				res == KEY_LEFT || res == KEY_RIGHT ||
+-				res == 'm')
++				res == 'm' || res == 'l')
+ 				break;
+ 			refresh_all_windows(main_window);
+ 		}
+@@ -1170,6 +1172,7 @@ static void conf(struct menu *menu)
+ 			else if (item_is_tag('m'))
+ 				conf(submenu);
+ 			break;
++		case 'l':
+ 		case KEY_RIGHT:
+ 		case 10: /* ENTER WAS PRESSED */
+ 			switch (item_tag()) {
+-- 
+1.7.9.5
 
-Rob=
-
---=-WWX37GV8SIzjQgIuh1gt
-Content-Type: text/x-patch; charset=us-ascii; name=maintainers.patch
-Content-Disposition: attachment; filename=maintainers.patch
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 4e2a1f6..3c30157 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -646,7 +646,7 @@ F:	arch/arm/
- 
- ARM SUB-ARCHITECTURES
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
--S:	MAINTAINED
-+S:	Maintained
- F:	arch/arm/mach-*/
- F:	arch/arm/plat-*/
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git
-@@ -4859,6 +4859,11 @@ S:	Maintained
- F:	drivers/net/macvlan.c
- F:	include/linux/if_macvlan.h
- 
-+MAINTAINERS: UPDATES TO THIS FILE
-+M:	Andrew Morton <akpm@linux-foundation.org>
-+S:	Maintained
-+F:	MAINTAINERS
-+
- MAN-PAGES: MANUAL PAGES FOR LINUX -- Sections 2, 3, 4, 5, and 7
- M:	Michael Kerrisk <mtk.manpages@gmail.com>
- W:	http://www.kernel.org/doc/man-pages
-
---=-WWX37GV8SIzjQgIuh1gt--
