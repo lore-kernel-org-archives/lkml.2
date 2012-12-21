@@ -1,71 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751099Ab2LUG1T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 01:27:19 -0500
-Received: from mail-bk0-f44.google.com ([209.85.214.44]:37227 "EHLO
-	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab2LUG1M (ORCPT
+	id S1751097Ab2LUGoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 01:44:22 -0500
+Received: from forward17.mail.yandex.net ([95.108.253.142]:59646 "EHLO
+	forward17.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab2LUGoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 01:27:12 -0500
+	Fri, 21 Dec 2012 01:44:18 -0500
+X-Greylist: delayed 542 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 01:44:18 EST
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+In-Reply-To: <1356044865.5896.78.camel@gandalf.local.home>
+References: <4807701355857948@web19f.yandex.ru>
+	 <alpine.LFD.2.02.1212201852060.3148@ionos>
+	 <401821356041818@web4f.yandex.ru> <1356044865.5896.78.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched/rt: Move cpu rq properties from "struct rt_rq" to "struct rq"
 MIME-Version: 1.0
-In-Reply-To: <50D3E91C.9060907@zytor.com>
-References: <20121221030018.GA15032@www.outflux.net>
-	<50D3E91C.9060907@zytor.com>
-Date: Thu, 20 Dec 2012 22:27:10 -0800
-X-Google-Sender-Auth: ZIPAJDjCzGulQ9UCAhsZQI6jrog
-Message-ID: <CAE9FiQVNeQqXktmaG0XOJwSxFEVrGKA9j6UDN2N_aDDp-8y_fA@mail.gmail.com>
-Subject: Re: [RFC] stack and heap are executable on x86_64
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-Id: <545781356071709@web16g.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 21 Dec 2012 10:35:09 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 8:44 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I just looked at a /sys/kernel/debug/kernel_page_tables dump.... and there
-> are a bunch of pages which are RWX:
+
+
+21.12.2012, 03:07, "Steven Rostedt" <rostedt@goodmis.org>:
+> On Fri, 2012-12-21 at 02:16 +0400, Kirill Tkhai wrote:
 >
-> 0xffff880000000000-0xffff880000097000  604K RW             GLB x  pte
-> 0xffff88000009d000-0xffff880000200000 1420K RW             GLB x  pte
-> 0xffff880000200000-0xffff880001000000   14M RW         PSE GLB x  pmd
-> 0xffff880001c00000-0xffff880035e00000  834M RW         PSE GLB x  pmd
-> 0xffff880035e00000-0xffff880035ffe000 2040K RW             GLB x  pte
-> 0xffff880036ff7000-0xffff880037000000   36K RW             GLB x  pte
-> 0xffff880037000000-0xffff880040000000  144M RW         PSE GLB x  pmd
-> 0xffffffff81c00000-0xffffffff81cea000  936K RW             GLB x  pte
-> 0xffffffff81dfd000-0xffffffff81e00000   12K RW             GLB x  pte
-> 0xffffffff81e00000-0xffffffff82000000    2M RW         PSE GLB x  pmd
+>> š20.12.2012, 21:53, "Thomas Gleixner" <tglx@linutronix.de>:
+>>> šOn Tue, 18 Dec 2012, Kirill Tkhai wrote:
+>>>> ššThe members rt_nr_total, rt_nr_migratory, overloaded and pushable_tasks are
+>>>> ššproperties of cpu runqueue, not group rt_rq.
+>>> šWhy?
+>> šBecause, they depend on number and properties of all processes of rq, not of nested rt_rq.
+>
+> You're answer is still confusing.
+>
+> ššššššššstruct rq {
+> šššššššššššššššš[...]
+> ššššššššššššššššstruct rt_rq rt;
+>
+> rt_rq is just a part of rq. What's the point?
+>
+> ššššššššrq = container_of(rt_rq, struct rt_rq, rt);
+>
+> As the comment above struct rt_rq says:
+>
+> /* Real-Time classes' related field in a runqueue: */
+>
+> Those look like fields related to the Real-Time class. I don't see them
+> used outside of kernel/sched/rt.c
+>
+                                    
+           entity_1->my_q_1
+           /                        
+          /                         
+rq->rt  -entity_2->my_q_2
+          \                          
+           \                           
+             entity_n->my_q_n
+                                        
 
-after for-x86-boot we will have
----[ Low Kernel Mapping ]---
-0xffff880000000000-0xffff880000099000         612K     RW             GLB NX pte
-0xffff880000099000-0xffff88000009a000           4K     ro             GLB NX pte
-0xffff88000009a000-0xffff88000009b000           4K     ro             GLB x  pte
-0xffff88000009b000-0xffff880000200000        1428K     RW             GLB NX pte
-0xffff880000200000-0xffff8800dfe00000        3580M     RW         PSE GLB NX pmd
-0xffff8800dfe00000-0xffff8800dfffe000        2040K     RW             GLB NX pte
-0xffff8800dfffe000-0xffff8800e0000000           8K                           pte
-0xffff8800e0000000-0xffff880100000000         512M                           pmd
-0xffff880100000000-0xffff8801a0000000        2560M     RW         PSE GLB NX pmd
----[ High Kernel Mapping ]---
-0xffffffff80000000-0xffffffff81000000          16M                           pmd
-0xffffffff81000000-0xffffffff82a00000          26M     RW         PSE GLB x  pmd
-0xffffffff82a00000-0xffffffff82b21000        1156K     RW             GLB x  pte
-0xffffffff82b21000-0xffffffff82c00000         892K     RW             GLB NX pte
-0xffffffff82c00000-0xffffffff82e00000           2M     RW         PSE GLB NX pmd
-0xffffffff82e00000-0xffffffff82e92000         584K     RW             GLB NX pte
-0xffffffff82e92000-0xffffffff83000000        1464K     RW             GLB x  pte
-0xffffffff83000000-0xffffffff83c00000          12M     RW         PSE GLB x  pmd
-0xffffffff83c00000-0xffffffffa0000000         452M                           pmd
+I say about child rt_rqs (my_q_1....my_q_n). They don't have rt_nr_total, rt_nr_migratory, overloaded and pushable_tasks.
+The only use of overloaded, for example, is "rq->rt.overloaded". The same with other variables.
 
-so low mapping will only have trampoline get x set.
-is that expected ?
+Kirill
 
-Do we need to set low mapping corresponding to kernel range to x?
 
-Yinghai
+> -- Steve
+>
+>>> šThanks,
+>>>
+>>> ššššššššštglx
