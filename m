@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2LUEo4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 23:44:56 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60144 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab2LUEok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 23:44:40 -0500
-Message-ID: <50D3E91C.9060907@zytor.com>
-Date: Thu, 20 Dec 2012 20:44:12 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751803Ab2LUE5m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 23:57:42 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:49696 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LUE5e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 23:57:34 -0500
+Date: Fri, 21 Dec 2012 04:57:31 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, Vineet.Gupta1@synopsys.com,
+        linux-kernel@vger.kernel.org, James Hogan <james.hogan@imgtec.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: new architectures, time_t __kernel_long_t
+Message-ID: <20121221045731.GO4939@ZenIV.linux.org.uk>
+References: <201211141218.02105.arnd@arndb.de>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
-        Jim Kukunas <james.t.kukunas@linux.intel.com>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [RFC] stack and heap are executable on x86_64
-References: <20121221030018.GA15032@www.outflux.net>
-In-Reply-To: <20121221030018.GA15032@www.outflux.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201211141218.02105.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/20/2012 07:00 PM, Kees Cook wrote:
->
-> This change for pre-v3.5 creates a new exception table instead of
-> trying to rewrite the old one. Since the tables are now relative,
-> we can't actually set up an exception for things in stack and heap on
-> x86_64 since the distance between the address and the table's .insn is
-> more than INT_MAX. And if the table were moved into the stack or heap,
-> then the fixup couldn't point back to the module's text segment. For
-> v3.5 and later, I'm not sure what to do...
->
-> So, mainly two things:
-> - we need to fix the stack/heap markings.
-> - it'd be nice to get test_nx back on its feet again.
->
+On Wed, Nov 14, 2012 at 12:18:01PM +0000, Arnd Bergmann wrote:
 
-I just looked at a /sys/kernel/debug/kernel_page_tables dump.... and 
-there are a bunch of pages which are RWX:
+> The other types that are used as 64 bit on x32 are ino_t, nlink_t,
+> size_t, ssize_t, ptrdiff_t, and off_t.
 
-0xffff880000000000-0xffff880000097000  604K RW             GLB x  pte
-0xffff88000009d000-0xffff880000200000 1420K RW             GLB x  pte
-0xffff880000200000-0xffff880001000000   14M RW         PSE GLB x  pmd
-0xffff880001c00000-0xffff880035e00000  834M RW         PSE GLB x  pmd
-0xffff880035e00000-0xffff880035ffe000 2040K RW             GLB x  pte
-0xffff880036ff7000-0xffff880037000000   36K RW             GLB x  pte
-0xffff880037000000-0xffff880040000000  144M RW         PSE GLB x  pmd
-0xffffffff81c00000-0xffffffff81cea000  936K RW             GLB x  pte
-0xffffffff81dfd000-0xffffffff81e00000   12K RW             GLB x  pte
-0xffffffff81e00000-0xffffffff82000000    2M RW         PSE GLB x  pmd
+*Kernel-side* we should not give a damn about the userland nlink_t, period.
+Making it architecture-dependent had been a bad mistake that essentially
+made nlink_t useless for the kernel.  That mistake had been fixed; please,
+do not bring it back.  If some userland structure needs to include a field
+encoding nlink_t values, please use an explicitly-sized type when refering
+to it kernel-side.
 
-One particular piece of idiocy is that we tied marking the pages 
-executable into the PAT system, which means that if it is executable 
-anywhere in the kernel it is executable everywhere.  That being said, I 
-don't think that is the only thing at play here.
-
-On the other hand... do we *ever* have a legitimate reason to run code 
-below the -2G point?  If so we could/should probably mark those NX 
-already at the higher paging levels...
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+The same should've been true for mode_t, but for historical reasons we
+are using umode_t for just about everything and IMO we should kill the
+last references to mode_t anywhere kernel-side (again, explicitly-sized
+types for userland st_mode and friends on the last few architectures
+still refering to mode_t there) and just rename umode_t to mode_t; I'm
+sick and tired of playing whack-a-mole with code using (arch-dependent)
+mode_t for kernel data.  And no, it's not always harmless - we had rather
+ugly bugs based on that.
