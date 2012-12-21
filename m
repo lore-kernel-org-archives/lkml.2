@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab2LUMss (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 07:48:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35494 "EHLO mx1.redhat.com"
+	id S1751234Ab2LUMs5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 07:48:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750871Ab2LUMsm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 07:48:42 -0500
+	id S1751765Ab2LUMst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 07:48:49 -0500
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 1/2] UAPI: Remove empty Kbuild files
+Subject: [PATCH 2/2] UAPI: Strip _UAPI prefix on header install no matter
+ the whitespace
 To: torvalds@linux-foundation.org
 From: David Howells <dhowells@redhat.com>
 Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Dec 2012 12:48:40 +0000
-Message-ID: <20121221124840.9484.93112.stgit@warthog.procyon.org.uk>
+Date: Fri, 21 Dec 2012 12:48:47 +0000
+Message-ID: <20121221124847.9484.75554.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20121221124840.9484.93112.stgit@warthog.procyon.org.uk>
+References: <20121221124840.9484.93112.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,69 +27,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Empty files can get deleted by the patch program, so remove empty Kbuild files
-and their links from the parent Kbuilds.
+The following commit:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
+	commit 56c176c9cac9a77249fa1736bfd792f379d61942
+	Author: David Howells <dhowells@redhat.com>
+	Date:   Mon Nov 26 16:29:39 2012 -0800
+	Subject: UAPI: strip the _UAPI prefix from header guards during header installation
+
+strips the _UAPI prefix from header guards, but only if there's a single space
+between the cpp directive and the label.  Make it more flexible and able to
+handle tabs and multiple white space characters.
+
+Signed-off-by: David Howells <dhowell@redhat.com>
 ---
 
- include/Kbuild            |    3 ---
- include/linux/Kbuild      |    5 -----
- include/linux/hdlc/Kbuild |    0 
- include/linux/hsi/Kbuild  |    0 
- include/linux/raid/Kbuild |    0 
- include/linux/usb/Kbuild  |    0 
- include/rdma/Kbuild       |    0 
- include/sound/Kbuild      |    0 
- 8 files changed, 8 deletions(-)
- delete mode 100644 include/linux/Kbuild
- delete mode 100644 include/linux/hdlc/Kbuild
- delete mode 100644 include/linux/hsi/Kbuild
- delete mode 100644 include/linux/raid/Kbuild
- delete mode 100644 include/linux/usb/Kbuild
- delete mode 100644 include/rdma/Kbuild
- delete mode 100644 include/sound/Kbuild
+ scripts/headers_install.pl |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/Kbuild b/include/Kbuild
-index 83256b6..1dfd33e 100644
---- a/include/Kbuild
-+++ b/include/Kbuild
-@@ -1,8 +1,5 @@
- # Top-level Makefile calls into asm-$(ARCH)
- # List only non-arch directories below
- 
--header-y += linux/
--header-y += sound/
--header-y += rdma/
- header-y += video/
- header-y += scsi/
-diff --git a/include/linux/Kbuild b/include/linux/Kbuild
-deleted file mode 100644
-index 7fe2dae..0000000
---- a/include/linux/Kbuild
-+++ /dev/null
-@@ -1,5 +0,0 @@
--header-y += dvb/
--header-y += hdlc/
--header-y += hsi/
--header-y += raid/
--header-y += usb/
-diff --git a/include/linux/hdlc/Kbuild b/include/linux/hdlc/Kbuild
-deleted file mode 100644
-index e69de29..0000000
-diff --git a/include/linux/hsi/Kbuild b/include/linux/hsi/Kbuild
-deleted file mode 100644
-index e69de29..0000000
-diff --git a/include/linux/raid/Kbuild b/include/linux/raid/Kbuild
-deleted file mode 100644
-index e69de29..0000000
-diff --git a/include/linux/usb/Kbuild b/include/linux/usb/Kbuild
-deleted file mode 100644
-index e69de29..0000000
-diff --git a/include/rdma/Kbuild b/include/rdma/Kbuild
-deleted file mode 100644
-index e69de29..0000000
-diff --git a/include/sound/Kbuild b/include/sound/Kbuild
-deleted file mode 100644
-index e69de29..0000000
+diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
+index 6c353ae..581ca99 100644
+--- a/scripts/headers_install.pl
++++ b/scripts/headers_install.pl
+@@ -42,9 +42,9 @@ foreach my $filename (@files) {
+ 		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
+ 		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
+ 		$line =~ s/(^|\s|[(])(volatile)\b(\s|[(]|$)/$1__$2__$3/g;
+-		$line =~ s/#ifndef _UAPI/#ifndef /;
+-		$line =~ s/#define _UAPI/#define /;
+-		$line =~ s!#endif /[*] _UAPI!#endif /* !;
++		$line =~ s/#ifndef\s+_UAPI/#ifndef /;
++		$line =~ s/#define\s+_UAPI/#define /;
++		$line =~ s!#endif\s+/[*]\s*_UAPI!#endif /* !;
+ 		printf {$out} "%s", $line;
+ 	}
+ 	close $out;
 
