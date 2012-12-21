@@ -1,117 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2LUW7H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:59:07 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:60002 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751Ab2LUW7E (ORCPT
+	id S1751996Ab2LUXBG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 18:01:06 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:34999 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751Ab2LUXBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:59:04 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Rob Landley <rob@landley.net>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Michael Kerrisk \(man-pages\)" <mtk.manpages@gmail.com>
-References: <1356117854.21178.2@driftwood>
-Date: Fri, 21 Dec 2012 14:58:56 -0800
-In-Reply-To: <1356117854.21178.2@driftwood> (Rob Landley's message of "Fri, 21
-	Dec 2012 13:24:14 -0600")
-Message-ID: <87fw2zj9lb.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+mnF0v9Ov1YwfrpQAJinkXXQ7PNpu8nGg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0008]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Rob Landley <rob@landley.net>
-X-Spam-Relay-Country: 
-Subject: namespace documentation.
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 21 Dec 2012 18:01:05 -0500
+From: Cruz Julian Bishop <cruzjbishop@gmail.com>
+To: greg@kroah.com
+Cc: swetland@google.com, linux-kernel@vger.kernel.org,
+        Cruz Julian Bishop <cruzjbishop@gmail.com>
+Subject: [PATCH 3/3] staging: android: Add some Kconfig help entries
+Date: Sat, 22 Dec 2012 09:00:46 +1000
+Message-Id: <1356130846-6973-4-git-send-email-cruzjbishop@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1356130846-6973-1-git-send-email-cruzjbishop@gmail.com>
+References: <1356130846-6973-1-git-send-email-cruzjbishop@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Landley <rob@landley.net> writes:
+This commit adds Kconfig entries for the following:
 
-> On 12/21/2012 11:51:03 AM, Eric W. Biederman wrote:
->> Oleg Nesterov <oleg@redhat.com> writes:
->> 
->> > Eric. I understand that it is too late to discuss this. And yes, I  
->> simply
->> > do not understand the problem space, I never used containers.
->> >
->> > But, stupid question. Let's ignore the pid_ns-specific oddities.
->> >
->> > 1. Ignoring setns(), why do we need /proc/pid/ns/ ?
->> >
->> > 2. Why setns() requires /proc/pid/ns/ ? IOW, why it can't be
->> >
->> > 	sys_setns(pid_t pid, int clone_flags)
->> > 	{
->> > 		truct task_struct *tsk = find_task_by_vpid(pid);
->> > 		struct nsproxy *target = get_nsproxy(tsk->nsproxy);
->> >
->> > 		new_nsproxy = create_new_namespaces(...);
->> >
->> > 		if (clone_flags & CLONE_NEWNS)
->> > 			mntns_install(...);
->> > 		if (clone_flags & CLONE_NEWIPC)
->> > 			ipcns_install(...);
->> > 		...
->> > 	}
->> >
->> > I feel I missed something trivial, but what?
->> 
->> It is a question of naming.
->> 
->> The problem I set out to solve when all of this was introduced was how
->> to name namespaces without introducing yet another namespace.
->> 
->> The solution to the naming problem that I finally found was to  
->> introduce
->> something I could mount.
->
-> Where might I find documentation on this? I'm aware of  
-> Documentation/namespaces but it's only got one file in it (about  
-> conflicts between namespace types). I'm aware of  
-> http://lxc.sourceforge.net/index.php/about/kernel-namespaces/ and  
-> http://lxc.sourceforge.net/man/ but that's mixed in with the  
-> implementation details of a particular userspace tool, and tends to lag  
-> the kernel significantly. (Those man pages were last updated in 2010,  
-> which if I recall was the last time I poked them about it.)
+	1: ANDROID_BINDER_IPC
+	2: ASHMEM (additional text)
+	3: ANDROID_LOGGER
 
-I'm not certain what you are asking about.
+It also changes "Register" to "Registers" in
+ANDROID_LOW_MEMORY_KILLER
 
-The man pages that I endeavour to keep reasonably current are.
+Finally, all "help" instances are changed to "---help---",
+as recommended by kconfig-language.txt in order to visually
+aid developers.
 
-man 5 proc
-man 2 setns
-man 2 unshare
-man 2 clone
+Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
+---
+ drivers/staging/android/Kconfig |   29 ++++++++++++++++++++++++++---
+ 1 file changed, 26 insertions(+), 3 deletions(-)
 
-You won't get a design discussion but you will get a description of how
-the existing pieces work.  Of course now that I look it appears my
-patches have not merged yet.  But that is reasonable since my recent
-changes did not merge until a few days ago.
+diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
+index 0ce50d1..465a28c 100644
+--- a/drivers/staging/android/Kconfig
++++ b/drivers/staging/android/Kconfig
+@@ -11,19 +11,42 @@ if ANDROID
+ config ANDROID_BINDER_IPC
+ 	bool "Android Binder IPC Driver"
+ 	default n
++	---help---
++	  Binder is used in Android for both communication between processes,
++	  and remote method invocation.
++
++	  This means one Android process can call a method/routine in another
++	  Android process, using Binder to identify, invoke and pass arguments
++	  between said processes.
+ 
+ config ASHMEM
+ 	bool "Enable the Anonymous Shared Memory Subsystem"
+ 	default n
+ 	depends on SHMEM || TINY_SHMEM
+-	help
++	---help---
+ 	  The ashmem subsystem is a new shared memory allocator, similar to
+ 	  POSIX SHM but with different behavior and sporting a simpler
+ 	  file-based API.
+ 
++	  It is, in theory, a good memory allocator for low-memory devices,
++	  because it can discard shared memory units when under memory pressure.
++
+ config ANDROID_LOGGER
+ 	tristate "Android log driver"
+ 	default n
++	---help---
++	  This adds support for system-wide logging using four log buffers.
++
++	  These are:
++
++	      1: main
++	      2: events
++	      3: radio
++	      4: system
++
++	  Log reading and writing is performed via normal Linux reads and
++	  optimized writes. This optimization avoids logging having too
++	  much overhead in the system.
+ 
+ config ANDROID_TIMED_OUTPUT
+ 	bool "Timed output class driver"
+@@ -38,13 +61,13 @@ config ANDROID_LOW_MEMORY_KILLER
+ 	bool "Android Low Memory Killer"
+ 	default N
+ 	---help---
+-	  Register processes to be killed when memory is low
++	  Registers processes to be killed when memory is low
+ 
+ config ANDROID_INTF_ALARM_DEV
+ 	bool "Android alarm driver"
+ 	depends on RTC_CLASS
+ 	default n
+-	help
++	---help---
+ 	  Provides non-wakeup and rtc backed wakeup alarms based on rtc or
+ 	  elapsed realtime, and a non-wakeup alarm on the monotonic clock.
+ 	  Also exports the alarm interface to user-space.
+-- 
+1.7.10.4
 
-There is also iproute2 it's man pages and source.
-
-There is the kernel source.
-
-There are the occassional lwn articles.
-
-I believe there should be a reasonable amount of email in the mailing
-list archives when talking about the design descision, and when I
-introduced setns.
-
-Eric
