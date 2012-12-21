@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab2LUXI5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 18:08:57 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:61803 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab2LUXIw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 18:08:52 -0500
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 18:08:52 EST
-From: Cruz Julian Bishop <cruzjbishop@gmail.com>
-To: greg@kroah.com
-Cc: swetland@google.com, linux-kernel@vger.kernel.org,
-        Cruz Julian Bishop <cruzjbishop@gmail.com>
-Subject: [PATCH 2/3] staging: android: Fix two checkpatch issues in binder.c
-Date: Sat, 22 Dec 2012 09:00:45 +1000
-Message-Id: <1356130846-6973-3-git-send-email-cruzjbishop@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1356130846-6973-1-git-send-email-cruzjbishop@gmail.com>
-References: <1356130846-6973-1-git-send-email-cruzjbishop@gmail.com>
+	id S1752686Ab2LUXIz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 18:08:55 -0500
+Received: from fieldses.org ([174.143.236.118]:57138 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab2LUXIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 18:08:51 -0500
+Date: Fri, 21 Dec 2012 18:08:49 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Adamson, Dros" <Weston.Adamson@netapp.com>
+Subject: Re: nfsd oops on Linus' current tree.
+Message-ID: <20121221230849.GB29739@fieldses.org>
+References: <20121221153348.GA32151@redhat.com>
+ <20121221180824.GA27729@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes two instances of
-"static const char * array should probably be static const char * const"
+On Fri, Dec 21, 2012 at 06:40:54PM +0000, Myklebust, Trond wrote:
+> On Fri, 2012-12-21 at 13:08 -0500, J. Bruce Fields wrote:
+> > On Fri, Dec 21, 2012 at 10:33:48AM -0500, Dave Jones wrote:
+> > > Did a mount from a client (also running Linus current), and the
+> > > server spat this out..
+> > > 
+> > > [ 6936.306135] ------------[ cut here ]------------
+> > > [ 6936.306154] WARNING: at net/sunrpc/clnt.c:617 rpc_shutdown_client+0x12a/0x1b0 [sunrpc]()
+> > 
+> > This is a warning added by 168e4b39d1afb79a7e3ea6c3bb246b4c82c6bdb9
+> > "SUNRPC: add WARN_ON_ONCE for potential deadlock", pointing out that
+> > nfsd is calling shutdown_client from a workqueue, which is a problem
+> > because shutdown_client has to wait on rpc tasks that run on a
+> > workqueue.
+> > 
+> > I don't believe there's any circular dependency among the workqueues
+> > (we're calling shutdown_client from callback_wq, not rpciod_workqueue),
+> 
+> We were getting deadlocks with rpciod when calling rpc_shutdown_client
+> from the nfsiod workqueue.
+> 
+> The problem here is that the workqueues all run using the same pool of
+> threads, and so you can get "interesting" deadlocks when one of these
+> threads has to wait for another one.
 
-I have seen other commits doing this in other files, so I am
-assuming it should be done here as well.
+OK, coming back after reviewing Documentation/workqueue.txt: the
+workqueues potentially involved here are rpciod and the server's
+laundromat and callback workqueues.
 
-Please tell me if this is wrong :)
+The former is created with
 
-Signed-off-by: Cruz Julian Bishop <cruzjbishop@gmail.com>
----
- drivers/staging/android/binder.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+	alloc_workqueue("rpciod", WQ_MEM_RECLAIM, 1);
 
-diff --git a/drivers/staging/android/binder.c b/drivers/staging/android/binder.c
-index 2d12e8a..538ebe2 100644
---- a/drivers/staging/android/binder.c
-+++ b/drivers/staging/android/binder.c
-@@ -3227,7 +3227,7 @@ static void print_binder_proc(struct seq_file *m,
- 		m->count = start_pos;
- }
- 
--static const char *binder_return_strings[] = {
-+static const char * const binder_return_strings[] = {
- 	"BR_ERROR",
- 	"BR_OK",
- 	"BR_TRANSACTION",
-@@ -3248,7 +3248,7 @@ static const char *binder_return_strings[] = {
- 	"BR_FAILED_REPLY"
- };
- 
--static const char *binder_command_strings[] = {
-+static const char * const binder_command_strings[] = {
- 	"BC_TRANSACTION",
- 	"BC_REPLY",
- 	"BC_ACQUIRE_RESULT",
-@@ -3268,7 +3268,7 @@ static const char *binder_command_strings[] = {
- 	"BC_DEAD_BINDER_DONE"
- };
- 
--static const char *binder_objstat_strings[] = {
-+static const char * const binder_objstat_strings[] = {
- 	"proc",
- 	"thread",
- 	"node",
--- 
-1.7.10.4
+and the latter two are both created with
+create_singlethread_workqueue(), which also sets WQ_MEM_RECLAIM.
 
+As I understand it, that ensures that each of the three has at least one
+"rescuer" thread dedicated to it--so there shouldn't be any deadlock as
+long as there's no circular dependency among the three.
+
+So think this is a false positive--am I missing something?
+
+> > but 168e4b39d1afb.. says that we could get a deadlock if both are
+> > running on the same kworker thread.
+> > 
+> > I'm not sure what to do about that.
+> > 
+> 
+> The question is if you really do need the call to rpc_killall_tasks and
+> the synchronous wait for completion of old tasks? If you don't care,
+> then we could just have you call rpc_release_client() in order to
+> release your reference on the rpc_client.
+
+No, the waiting's intentional: for example, the laundromat wq is what's
+responsible for reaping expired clients, and it wants to wait for
+callback rpc's to exit.  (If I remember right they may reference data
+structures we're about to clean up).
+
+--b.
