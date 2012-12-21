@@ -1,91 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293Ab2LUFrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 00:47:22 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:47913 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUFrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 00:47:15 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-28-50d3f7e02d96
-Date: Fri, 21 Dec 2012 14:47:12 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Alex Shi <alex.shi@intel.com>, len.brown@intel.com, tony.luck@intel.com,
-        linux@arm.linux.org.uk, peterz@infradead.org, arjan@linux.intel.com,
-        linux-kernel@vger.kernel.org, cmetcalf@tilera.com,
-        viresh.kumar@linaro.org, preeti@linux.vnet.ibm.com,
-        linaro-dev@lists.linaro.org, tglx@linutronix.de,
-        chander.kashyap@linaro.org, pjt@google.com, mingo@kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH v2 3/6] sched: pack small tasks
-Message-ID: <20121221054712.GA2933@danjae>
-References: <1355319092-30980-1-git-send-email-vincent.guittot@linaro.org>
- <1355319092-30980-4-git-send-email-vincent.guittot@linaro.org>
- <50C93AC1.1060202@intel.com>
- <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
+	id S1751415Ab2LUFsM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 00:48:12 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:60861 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750908Ab2LUFsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 00:48:02 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20121221051921.GQ4939@ZenIV.linux.org.uk>
+References: <201211141218.02105.arnd@arndb.de> <20121221045731.GO4939@ZenIV.linux.org.uk> <50D3ECEB.1070401@zytor.com> <20121221050202.GP4939@ZenIV.linux.org.uk> <50D3EE1A.7020703@zytor.com> <20121221051921.GQ4939@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAKfTPtB9iz1ePsS+juQVRhuWREYB1duGWRJT7ya8XBXPhC-mkw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: new architectures, time_t __kernel_long_t
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 20 Dec 2012 21:47:45 -0800
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Vineet.Gupta1@synopsys.com, linux-kernel@vger.kernel.org,
+        James Hogan <james.hogan@imgtec.com>
+Message-ID: <2a8cf990-8197-4a8f-854f-14b8fb65e9c2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vincent,
+Fair enough.
 
-On Thu, Dec 13, 2012 at 11:11:11AM +0100, Vincent Guittot wrote:
-> On 13 December 2012 03:17, Alex Shi <alex.shi@intel.com> wrote:
-> > On 12/12/2012 09:31 PM, Vincent Guittot wrote:
-> >> +static bool is_buddy_busy(int cpu)
-> >> +{
-> >> +     struct rq *rq = cpu_rq(cpu);
-> >> +
-> >> +     /*
-> >> +      * A busy buddy is a CPU with a high load or a small load with a lot of
-> >> +      * running tasks.
-> >> +      */
-> >> +     return ((rq->avg.runnable_avg_sum << rq->nr_running) >
-> >
-> > If nr_running a bit big, rq->avg.runnable_avg_sum << rq->nr_running is
-> > zero. you will get the wrong decision.
-> 
-> yes, I'm going to do that like below instead:
-> return (rq->avg.runnable_avg_sum > (rq->avg.runnable_avg_period >>
-> rq->nr_running));
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-Doesn't it consider nr_running too much?  It seems current is_buddy_busy
-returns false on a cpu that has 1 task runs 40% cputime, but returns true
-on a cpu that has 3 tasks runs 10% cputime each or for 2 tasks of 15%
-cputime each, right?
+>On Thu, Dec 20, 2012 at 09:05:30PM -0800, H. Peter Anvin wrote:
+>> >... as long as we do not have typedef __kernel_foo_t foo_t in
+>linux/types.h.
+>> >
+>> 
+>> In the case of things like nlink_t and dev_t I would suggest we
+>> explicitly call out the types as kernel and user.  I would suggest
+>> knlink_t and unlink_t but the latter made me want to stab my eyes
+>> out due to its confusion potential, so I wonder if we should
+>> establish a new convention with _kt (kernel type) and _ut (user
+>> type) suffixes, so nlink_kt and nlink_ut, alternatively one could
+>> consider k_nlink_t and u_nlink_t.
+>
+>What the hell for?  _Which_ userland nlink_t, anyway?  We have quite a
+>few
+>struct stat variants in there.  Sorry, but I really don't see any point
+>in that, and a lot of potential for confusion.  Marshalling is about
+>the
+>only thing we need the userland ones for and the code doing it is just
+>fine
+>with the only object of that type in sight being the field of e.g.
+>struct stat
+>with given name...
 
-I don't know what is correct, but just guessing that in a cpu's point
-of view it'd be busier if it has a higher runnable_avg_sum than a
-higher nr_running IMHO.
-
-
-> 
-> >
-> >> +                     rq->avg.runnable_avg_period);
-> >> +}
-> >> +
-> >> +static bool is_light_task(struct task_struct *p)
-> >> +{
-> >> +     /* A light task runs less than 25% in average */
-> >> +     return ((p->se.avg.runnable_avg_sum << 1) <
-> >> +                     p->se.avg.runnable_avg_period);
-> >
-> > 25% may not suitable for big machine.
-> 
-> Threshold is always an issue, which threshold should be suitable for
-> big machine ?
-> 
-> I'm wondering if i should use the imbalance_pct value for computing
-> the threshold
-
-Anyway, I wonder how 'sum << 1' computes 25%.  Shouldn't it be << 2 ?
-
-Thanks,
-Namhyung
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
