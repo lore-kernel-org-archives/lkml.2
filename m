@@ -1,110 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab2LUNFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 08:05:19 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:28116 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab2LUNEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 08:04:30 -0500
-X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=hLV8KNO-s9wA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=_TjlKMzeso4A:10 a=GvQkQWPkAAAA:8 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=NufY4J3AAAAA:8 a=lSNQQfP47xnSsY6BjWYA:9 a=QEXdDO2ut3YA:10 a=Wwjp7rKQgkIA:10 a=MSl-tDqOz04A:10 a=re9sYKne76oA:10 a=jeBq3FmKZ4MA:10 a=OPuCKHDGhKn4kWgsPm8A:9 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121221130426.632458767@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 21 Dec 2012 08:03:24 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux.com>, Shan Wei <davidshan@tencent.com>
-Subject: [PATCH 1/3] tracing: Use this_cpu_ptr per-cpu helper
-References: <20121221130323.940466074@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Use-this_cpu_ptr-per-cpu-helper.patch
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="00GvhwF7k39YY"
+	id S1751996Ab2LUNYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 08:24:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751130Ab2LUNYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 08:24:35 -0500
+Message-ID: <1356096270.3625.37.camel@ul30vt.home>
+Subject: Re: [PATCH 0/7] KVM: Alleviate mmu_lock hold time when we start
+ dirty logging
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>,
+        Takuya Yoshikawa <takuya.yoshikawa@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 21 Dec 2012 06:24:30 -0700
+In-Reply-To: <20121221085404.GQ29007@redhat.com>
+References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	 <20121219213037.b234f9d4f187df2132e65576@gmail.com>
+	 <1355931777.3224.562.camel@bling.home>
+	 <20121220140232.67733085.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	 <20121220125946.GB7750@amt.cnet> <20121220132255.GH17584@redhat.com>
+	 <1356010887.10845.11.camel@ul30vt.home>
+	 <20121220233545.95378d066b2ce61a76106a88@gmail.com>
+	 <1356015343.10845.16.camel@ul30vt.home>
+	 <20121221170250.067716b4.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	 <20121221085404.GQ29007@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00GvhwF7k39YY
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2012-12-21 at 10:54 +0200, Gleb Natapov wrote:
+> On Fri, Dec 21, 2012 at 05:02:50PM +0900, Takuya Yoshikawa wrote:
+> > On Thu, 20 Dec 2012 07:55:43 -0700
+> > Alex Williamson <alex.williamson@redhat.com> wrote:
+> > 
+> > > > Yes, the fix should work, but I do not want to update the
+> > > > generation from outside of update_memslots().
+> > > 
+> > > Ok, then:
+> > >
+> > > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > > index 87089dd..c7b5061 100644
+> > > --- a/include/linux/kvm_host.h
+> > > +++ b/include/linux/kvm_host.h
+> > > @@ -413,7 +413,8 @@ void kvm_exit(void);
+> > >  
+> > >  void kvm_get_kvm(struct kvm *kvm);
+> > >  void kvm_put_kvm(struct kvm *kvm);
+> > > -void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new);
+> > > +void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
+> > > +                     u64 last_generation);
+> > >  
+> > >  static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+> > >  {
+> > > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > > index c4c8ec1..06961ea 100644
+> > > --- a/virt/kvm/kvm_main.c
+> > > +++ b/virt/kvm/kvm_main.c
+> > > @@ -667,7 +667,8 @@ static void sort_memslots(struct kvm_memslots *slots)
+> > >  		slots->id_to_index[slots->memslots[i].id] = i;
+> > >  }
+> > >  
+> > > -void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
+> > > +void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new,
+> > > +                     u64 last_generation)
+> > >  {
+> > >  	if (new) {
+> > >  		int id = new->id;
+> > > @@ -679,7 +680,7 @@ void update_memslots(struct kvm_memslots *slots, struct kvm_memory_slot *new)
+> > >  			sort_memslots(slots);
+> > >  	}
+> > >  
+> > > -	slots->generation++;
+> > > +	slots->generation = last_generation + 1;
+> > >  }
+> > >  
+> > >  static int check_memory_region_flags(struct kvm_userspace_memory_region *mem)
+> > > @@ -814,7 +815,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+> > >  		slot = id_to_memslot(slots, mem->slot);
+> > >  		slot->flags |= KVM_MEMSLOT_INVALID;
+> > >  
+> > > -		update_memslots(slots, NULL);
+> > > +		update_memslots(slots, NULL, kvm->memslots->generation);
+> > >  
+> > >  		old_memslots = kvm->memslots;
+> > >  		rcu_assign_pointer(kvm->memslots, slots);
+> > > @@ -862,7 +863,7 @@ int __kvm_set_memory_region(struct kvm *kvm,
+> > >  		memset(&new.arch, 0, sizeof(new.arch));
+> > >  	}
+> > >  
+> > > -	update_memslots(slots, &new);
+> > > +	update_memslots(slots, &new, kvm->memslots->generation);
+> > >  	old_memslots = kvm->memslots;
+> > >  	rcu_assign_pointer(kvm->memslots, slots);
+> > >  	synchronize_srcu_expedited(&kvm->srcu);
+> > > 
+> > > > > The original patch can be reverted, there are no following dependencies,
+> > > > > but the idea was that we're making the memslot array larger, so there
+> > > > > could be more pressure in allocating it, so let's not trivially do extra
+> > > > > frees and allocs.  Thanks,
+> > > > 
+> > > > I agree that the current set_memory_region() is not good for frequent updates.
+> > > > But the alloc/free is not a major factor at the moment: flushing shadows should
+> > > > be more problematic.
+> > > 
+> > > I don't understand why we'd throw away even a minor optimization that's
+> > > so easy to fix.  We're not only removing a free/alloc, but we're being
+> > > more friendly to the cache by avoiding the extra memcpy.  The above also
+> > > makes the generation management a bit more explicit.  Thanks,
+> > 
+> > Looks good to me!
+> > 
+> Me too.
+> 
+> > I just wanted to keep the code readable, so no reason to object to
+> > a clean solution.  Any chance to see the fix on kvm.git soon?
+> > 
+> Soon after Alex will send proper patch with Signed-off-by.
 
-From: Shan Wei <davidshan@tencent.com>
+I'll test and do that first thing today, thanks,
 
-typeof(&buffer) is a pointer to array of 1024 char, or char (*)[1024].
-But, typeof(&buffer[0]) is a pointer to char which match the return type of=
- get_trace_buf().
-As well-known, the value of &buffer is equal to &buffer[0].
-so return this_cpu_ptr(&percpu_buffer->buffer[0]) can avoid type cast.
+Alex
 
-Link: http://lkml.kernel.org/r/50A1A800.3020102@gmail.com
-
-Reviewed-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Shan Wei <davidshan@tencent.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/blktrace.c |    2 +-
- kernel/trace/trace.c    |    5 +----
- 2 files changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
-index c0bd030..71259e2 100644
---- a/kernel/trace/blktrace.c
-+++ b/kernel/trace/blktrace.c
-@@ -147,7 +147,7 @@ void __trace_note_message(struct blk_trace *bt, const c=
-har *fmt, ...)
- 		return;
-=20
- 	local_irq_save(flags);
--	buf =3D per_cpu_ptr(bt->msg_data, smp_processor_id());
-+	buf =3D this_cpu_ptr(bt->msg_data);
- 	va_start(args, fmt);
- 	n =3D vscnprintf(buf, BLK_TN_MAX_MSG, fmt, args);
- 	va_end(args);
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 5bc3590..b6c183b 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1517,7 +1517,6 @@ static struct trace_buffer_struct *trace_percpu_nmi_b=
-uffer;
- static char *get_trace_buf(void)
- {
- 	struct trace_buffer_struct *percpu_buffer;
--	struct trace_buffer_struct *buffer;
-=20
- 	/*
- 	 * If we have allocated per cpu buffers, then we do not
-@@ -1535,9 +1534,7 @@ static char *get_trace_buf(void)
- 	if (!percpu_buffer)
- 		return NULL;
-=20
--	buffer =3D per_cpu_ptr(percpu_buffer, smp_processor_id());
--
--	return buffer->buffer;
-+	return this_cpu_ptr(&percpu_buffer->buffer[0]);
- }
-=20
- static int alloc_percpu_trace_buffer(void)
---=20
-1.7.10.4
-
-
-
---00GvhwF7k39YY
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQEcBAABAgAGBQJQ1F5aAAoJEOdOSU1xswtMLJIIAIcMdSYBglvOWvRx93MldwuQ
-iOCpNmlHE+2h9KB0fWX4EJ8SMW8jqKW3E4IuSrOXL2HIjGYBNnBJvk3weJhNWXsd
-nBYfdJ/GS1nG4yl7Ru+CgxowLJ9M7FcEVkChl8TSQ32WjyYhvRbl22OpjQFNNEf3
-fwgN23xgqrZE7GWMqgtxDpDL9FMmiaYAN8EwLZJZB3wokT9ubbjgJOXOlYXICEDN
-Uoj+j5mxoVCOxt5Q8i5i9yJ5k+apIsD/ZsvjxGWJt/vD2nI6p975qq578K70AjVD
-vDJJcYTaPvEZd//oieX+3FYQacg4iVhwHC8klMRYab0pVa7xWjhc5kf0xhBaN+g=
-=lDq/
------END PGP SIGNATURE-----
-
---00GvhwF7k39YY--
