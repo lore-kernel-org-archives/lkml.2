@@ -1,141 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab2LUVci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 16:32:38 -0500
-Received: from void.printf.net ([89.145.121.20]:57009 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab2LUVcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 16:32:35 -0500
-From: Chris Ball <cjb@laptop.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: zhenpeng.qian@tieto.com, Greg KH <gregkh@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc:core:if detect mmc card remove,don't wait for req done
-References: <034FBC2C8CCA484FBA5BA5FC707AC8303AD02F0D1E@EXMB02.eu.tieto.com>
-	<CA+55aFxbE9G+2NdA_8s1vyjrkNE5mBdYZ5Cy9tYr4AJOdvdivg@mail.gmail.com>
-Date: Fri, 21 Dec 2012 16:32:10 -0500
-In-Reply-To: <CA+55aFxbE9G+2NdA_8s1vyjrkNE5mBdYZ5Cy9tYr4AJOdvdivg@mail.gmail.com>
-	(Linus Torvalds's message of "Thu, 20 Dec 2012 07:49:18 -0800")
-Message-ID: <87r4mjay79.fsf@laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752271Ab2LUVdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 16:33:14 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:64409 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2LUVdL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 16:33:11 -0500
+Subject: Re: How kernel handle interrupts[AX88796B network controller]
+From: anish kumar <anish198519851985@gmail.com>
+To: Woody Wu <narkewoody@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20121221153451.GB5530@zuhnb712>
+References: <20121220142745.GB3578@zuhnb712>
+	 <CAK7N6vq07CHhhOJTgC=5H5f3Nsi_od=qGJjzu01iL1_3AvTWHg@mail.gmail.com>
+	 <20121221153451.GB5530@zuhnb712>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Dec 2012 13:33:03 -0800
+Message-ID: <1356125583.1598.111.camel@anish-Inspiron-N5050>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2012-12-21 at 23:34 +0800, Woody Wu wrote:
+> On Thu, Dec 20, 2012 at 10:05:05AM -0800, anish singh wrote:
+> > On Dec 20, 2012 6:30 AM, "Woody Wu" <narkewoody@gmail.com> wrote:
+> > >
+> > > Hi, List
+> > >
+> > > Where is the Kernel code that handles external interrupts? I want to
+> > > have a look at it but haven't found out where it is.
+> > >
+> > > Actually, I have some basic questions about interrupt handling in Linux.
+> > > 1. After Kernel's ISR received an interrupt, I believe it will invoke a
+> > >    handler defined in a device driver if any. But it should be the
+> > >    device driver's responsibility or kernel ISR's responsibility to
+> > >    clear (or acknowledge) the interrupt?
+> > If the interrupt in question is currently being handled then in
+> > the case of edge triggered interrupt we just mask the interrupt,set it
+> > pending and bail out.Once the interrupt handler completes then we check for
+> > pending interrupt and handle it.In level triggered we don't do that.
+> > Kerenel ISR -this is mixture of core kernel interrupt handling code + your
+> > device driver interrupt handler(if this is chip driver which is supposed to
+> > get one interrupt and is reponsible for calling other interrupt handlers
+> > based on the chip register status then you do explicit masking unmasking
+> > yourself).
+> > If you device driver is a interrupt controller driver then you register
+> > your driver with kernel interrupt handling code and need to write some
+> > callbacks such as .mask,.unmask and so on.This callbacks are called at
+> > appropiate places whenever the interrupt is raised.This interrupt is then
+> > passed to drivers who has requested for this interrupt by calling
+> > request_irq.
+> > >
+> > > 2. My device, an AX88796B network controller, asserting the interrupt
+> > >    line in a level-triggered manner. Now I met problem with the device
+> > that
+> > >    might caused by the CPU interrupt mode is not set as level-triggered by
+> > >    edge trigger.  My CPU is Samsung S3C2410, an ARM920T powered one.  Does
+> > >    anyone know usually where and how should I do this kind of setting?
+> > Just pass the parameter "level triggered" in request_irq in your device
+> > driver.
+> 
+> Hi Sign,
+> 
+> I searched the interrupt.h for the all the defined flags that I can pass
+> to the request_irq, but there is no a flag looks like "level triggered".
+> Would you tell me what you mean the parameter "level triggered"?
+irq_set_irq_type(info->irq, IRQ_TYPE_LEVEL_LOW)
 
-On Thu, Dec 20 2012, Linus Torvalds wrote:
-> On Thu, Dec 20, 2012 at 1:32 AM,  <zhenpeng.qian@tieto.com> wrote:
->>
->>         I find a bug about mmc/core/core.c, and send you a patch which I fix
->> this bug.
->>
->>         In fact, the bug is a low probability of occurrence.
->>
->>         Hope you help me to analyze it and discuss with me.
->
-> I've added the proper people - Chris Ball and linux-mmc - to the
-> participants list.
->
-> I also wanted to check with you: the commit message implies that this
-> can cause an IO timeout and then a call to
-> msmsdcc_start_command_deferred() with a NULL cmd->mrq. Which I assume
-> results in a NULL pointer dereference and Oops, but that wasn't
-> spelled out.
->
-> Chris, please give it a look, and perhaps edit the commit message a bit.
-
-Thanks, I've queued the patch for 3.8.  I edited the commit message and
-modified the patch: adding a check in the host driver to avoid any other
-blind dereferences of cmd->mrq, and skipping the unnecessary assignment
-to "err".  Here's the updated patch -- Qian, does it look okay to you?
-
-- Chris.
+include/linux/irq.h
+IRQ_TYPE_LEVEL_HIGH          - high level triggered
+IRQ_TYPE_LEVEL_LOW           - low level triggered
+> 
+> Thanks.
+> 
+> > >
+> > >
+> > > Thanks in advance.
+> > >
+> > > --
+> > > woody
+> > > I can't go back to yesterday - because I was a different person then.
+> > >
+> > > _______________________________________________
+> > > Kernelnewbies mailing list
+> > > Kernelnewbies@kernelnewbies.org
+> > > http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+> 
 
 
-From: Zhenpeng Qian <zhenpeng.qian@tieto.com>
-Date: Thu, 20 Dec 2012 16:20:12 +0800
-Subject: [PATCH] mmc: core: If card was removed, don't wait for request to
- finish.
-
-mmc_wait_for_req() calls __mmc_start_req().  If __mmc_start_req() detects
-that the card's been removed, it will return -ENOMEDIUM and not wait for
-the request to be finished.  In this way, it can reduce io_schedule once.
-
-And if io_schedule times out and mmc_card_remove() fails, it will call
-host->ops->request (sometimes this occurs by insmod and rmmod fast), then
-will get through to msmsdcc_start_command_deferred() finally.  cmd->mrq
-will be NULL -- it's created in mmc_start_request() -- and a NULL deref
-of cmd->mrq->stop will result.
-
-This was seen in msm_sdcc.c, which dereferenced cmd->mrq blindly; also
-add a check to that host driver to stop this happening again in other
-potential cases.
-
-10 [<c06e8458>] (__dabt_svc) from [<c04c8c2c>]
-11 [<c04c8a44>] (msmsdcc_start_command_deferred) from [<c04c8c2c>]
-12 [<c04c8c2c>] (msmsdcc_start_command) from [<c04d1428>]
-13 [<c04d1428>] (msmsdcc_request) from [<c04b7c80>]
-14 [<c04b7c80>] (mmc_wait_for_req_done) from [<c04b8630>]
-15 [<c04b8630>] (mmc_wait_for_cmd) from [<c04c4980>]
-16 [<c04c4980>] (get_card_status) from [<c04c5338>]
-17 [<c04c5338>] (mmc_blk_err_check) from [<c04b8a78>]
-18 [<c04b8a78>] (mmc_start_req) from [<c04c6020>]
-19 [<c04c6020>] (mmc_blk_issue_rw_rq) from [<c04c6a1c>]
-20 [<c04c6a1c>] (mmc_blk_issue_rq) from [<c04c6c7c>]
-21 [<c04c6c7c>] (mmc_queue_thread) from [<c0091d54>]
-22 [<c0091d54>] (kthread) from [<c000f028>]
-
-Signed-off-by: Zhenpeng Qian <zhenpeng.qian@tieto.com>
-[cjb: Rewrite commit message, add msm_sdcc.c test]
-Signed-off-by: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/core/core.c     |    5 +++--
- drivers/mmc/host/msm_sdcc.c |    4 ++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index aaed768..87edbc0 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -470,8 +470,9 @@ EXPORT_SYMBOL(mmc_start_req);
-  */
- void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
- {
--	__mmc_start_req(host, mrq);
--	mmc_wait_for_req_done(host, mrq);
-+	/* If the card's been removed, don't wait for the request. */
-+	if (!__mmc_start_req(host, mrq))
-+		mmc_wait_for_req_done(host, mrq);
- }
- EXPORT_SYMBOL(mmc_wait_for_req);
- 
-diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c
-index 7c0af0e..056ccd0 100644
---- a/drivers/mmc/host/msm_sdcc.c
-+++ b/drivers/mmc/host/msm_sdcc.c
-@@ -468,7 +468,7 @@ msmsdcc_start_command_deferred(struct msmsdcc_host *host,
- 		host->prog_enable = true;
- 	}
- 
--	if (cmd == cmd->mrq->stop)
-+	if (cmd->mrq && (cmd == cmd->mrq->stop))
- 		*c |= MCI_CSPM_MCIABORT;
- 
- 	if (snoop_cccr_abort(cmd))
-@@ -559,7 +559,7 @@ msmsdcc_start_data(struct msmsdcc_host *host, struct mmc_data *data,
- static void
- msmsdcc_start_command(struct msmsdcc_host *host, struct mmc_command *cmd, u32 c)
- {
--	if (cmd == cmd->mrq->stop)
-+	if (cmd->mrq && (cmd == cmd->mrq->stop))
- 		c |= MCI_CSPM_MCIABORT;
- 
- 	host->stats.cmds++;
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
