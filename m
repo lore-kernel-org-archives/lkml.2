@@ -1,56 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751869Ab2LUSPQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 13:15:16 -0500
-Received: from fbr04.mfg.siteprotect.com ([64.26.60.139]:39783 "EHLO
-	fbr04.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab2LUSPM (ORCPT
+	id S1751999Ab2LUSVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 13:21:23 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:36075 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130Ab2LUSVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 13:15:12 -0500
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 13:15:12 EST
-Date: Fri, 21 Dec 2012 13:07:38 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Jiri Olsa <jolsa@redhat.com>
-cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 3/3] perf tool: Add non arch events for SandyBridge
- microarchitecture
-In-Reply-To: <20121220111313.GB1241@krava.brq.redhat.com>
-Message-ID: <alpine.DEB.2.02.1212211305300.13284@pianoman.cluster.toy>
-References: <1355751425-7993-1-git-send-email-jolsa@redhat.com> <1355751425-7993-4-git-send-email-jolsa@redhat.com> <m2zk19d7vk.fsf@firstfloor.org> <20121220111313.GB1241@krava.brq.redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Fri, 21 Dec 2012 13:21:15 -0500
+Date: Fri, 21 Dec 2012 10:21:16 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, David Rientjes <rientjes@google.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [patch] mm, mempolicy: Introduce spinlock to read shared policy
+ tree
+In-Reply-To: <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1212210944050.1699@eggly.anvils>
+References: <1353624594-1118-1-git-send-email-mingo@kernel.org> <1353624594-1118-19-git-send-email-mingo@kernel.org> <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com> <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
+ <alpine.DEB.2.00.1212201440250.7807@chino.kir.corp.google.com> <20121221134740.GC13367@suse.de> <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020208.50D4A4F9.00E8,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Dec 2012, Jiri Olsa wrote:
-
-> BR_MISP_EXEC.ALL_BRANCHES,event=0x89,umask=0xff
-> BR_MISP_EXEC.COND,event=0x89,umask=0x1
-> BR_MISP_EXEC.DIRECT_NEAR_CALL,event=0x89,umask=0x10
-> BR_MISP_EXEC.INDIRECT_JMP_NON_CALL_RET,event=0x89,umask=0x4
-> BR_MISP_EXEC.INDIRECT_NEAR_CALL,event=0x89,umask=0x20
-> BR_MISP_EXEC.NONTAKEN,event=0x89,umask=0x40
-> BR_MISP_EXEC.RETURN_NEAR,event=0x89,umask=0x8
-> BR_MISP_EXEC.TAKEN,event=0x89,umask=0x80
+On Fri, 21 Dec 2012, Linus Torvalds wrote:
+> On Fri, Dec 21, 2012 at 5:47 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > On Thu, Dec 20, 2012 at 02:55:22PM -0800, David Rientjes wrote:
+> >>
+> >> This is probably worth discussing now to see if we can't revert
+> >> b22d127a39dd ("mempolicy: fix a race in shared_policy_replace()"), keep it
+> >> only as a spinlock as you suggest, and do what KOSAKI suggested in
+> >> http://marc.info/?l=linux-kernel&m=133940650731255 instead.  I don't think
+> >> it's worth trying to optimize this path at the cost of having both a
+> >> spinlock and mutex.
+> >
+> > Jeez, I'm still not keen on that approach for the reasons that are explained
+> > in the changelog for b22d127a39dd.
 > 
+> Christ, Mel.
+> 
+> Your reasons in b22d127a39dd are weak as hell, and then you come up
+> with *THIS* shit instead:
+> 
+> > That leads to this third *ugly* option that conditionally drops the lock
+> > and it's up to the caller to figure out what happened. Fooling around with
+> > how it conditionally releases the lock results in different sorts of ugly.
+> > We now have three ugly sister patches for this. Who wants to be Cinderalla?
+> >
+> > ---8<---
+> > mm: numa: Release the PTL if calling vm_ops->get_policy during NUMA hinting faults
+> 
+> Heck no. In fact, not a f*cking way in hell. Look yourself in the
+> mirror, Mel. This patch is ugly, and *guaranteed* to result in subtle
+> locking issues, and then you have the *gall* to quote the "uhh, that's
+> a bit ugly due to some trivial duplication" thing in commit
+> b22d127a39dd.
+> 
+> Reverting commit b22d127a39dd and just having a "ok, if we need to
+> allocate, then drop the lock, allocate, re-get the lock, and see if we
+> still need the new allocation" is *beautiful* code compared to the
+> diseased abortion you just posted.
+> 
+> Seriously. Conditional locking is error-prone, and about a million
+> times worse than the trivial fix that Kosaki suggested.
 
-I hate to sound like a broken record here, but, again, what's the 
-rationalization for not using libpfm4 here?
+I'm picking up a vibe that you don't entirely like Mel's approach.
 
-Is it simply NIH or is there some sort of technical reason?  It seems a 
-lot of wasted effort to create all these tables one chip at a time when 
-libpfm4 already has well-tested and debugged event tables for most CPUs 
-with perf_event support.
+I've an unsubstantiated suspicion that it's also incomplete as is.
+Although at first I thought huge_memory.c does not need a similar
+mod, because THPages are anonymous and cannot come from tmpfs,
+I now wonder about a MAP_PRIVATE mapping from tmpfs - for better
+or for worse, anon pages there are subject to the same mempolicy
+as the shared file pages, and I don't see what prevents khugepaged
+from gathering those into THPages.  But it didn't happen when I
+tried, so maybe I'm just missing what prevents it.
 
-Vince
+I don't understand David's and Mel's remarks about the "shared pages"
+check making Sasha's warning unlikely: page_mapcount has nothing to do
+with whether a page belongs to shm/shmem/tmpfs, and it's easy enough
+to reproduce Sasha's warning on the current git tree.  "mount -o
+remount,mpol=local /tmp" or something like that is useful in testing.
+
+I wish wish wish I had time to spend on this today, but I don't.
+And I've not looked to see (let alone tested) whether it's easy
+to revert Mel's mutex then add in Kosaki's patch (which I didn't
+look at so have no opinion on).
+
+Shall we go for Peter/David's mutex+spinlock for rc1 - I assume
+they both tested that - with a promise to do better in rc2?
+
+What I wanted to try is separate the get_vma_policy() out from
+mpol_misplaced(), and have the various callsites do that first
+outside the page table lock, passing it in to mpol_misplaced.
+But that doesn't work (efficiently) unless it also returns the
+range that that policy is valid for, so we don't have to (drop
+lock and) call it on every pte.  I cannot do that for rc1, and
+perhaps it's irrelevant if Kosaki's patch is preferred.
+
+(Perhaps I should confess I've another reason to come here for
+rc2: that "+ info->vfs_inode.i_ino" we recently added for better
+interleave distribution in shmem_alloc_page: I think NUMA placement
+faults will be fighting shmem_alloc_page's choices because that
+offset is not exposed.)
+
+Hugh
