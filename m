@@ -1,61 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab2LUJiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 04:38:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:7918 "EHLO mga09.intel.com"
+	id S1751624Ab2LUJo2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 04:44:28 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48160 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab2LUJiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 04:38:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,329,1355126400"; 
-   d="scan'208";a="260656635"
-Subject: Re: [PATCH] spi: Add the flag indicate to registe new device as
- children of master or not.
-From: Jun Chen <jun.d.chen@intel.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, Bi Chao <chao.bi@intel.com>,
-        spi-devel-general@lists.sourceforge.net, jun.zhang@intel.com
-In-Reply-To: <20121219162142.9E1123E0B72@localhost>
-References: <1355848174.1435.25.camel@chenjun-workstation>
-	 <20121218152623.GA26077@sirena.org.uk>
-	 <1355910243.1435.39.camel@chenjun-workstation>
-	 <20121219090416.GK4985@opensource.wolfsonmicro.com>
-	 <20121219162142.9E1123E0B72@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Dec 2012 12:39:52 -0500
-Message-ID: <1356111592.731.4.camel@chenjun-workstation>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1750983Ab2LUJoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 04:44:20 -0500
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Thierry Reding <thierry.reding@avionic-design.de>
+CC: <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-leds@vger.kernel.org>
+Subject: [PATCH v5 2/7] leds: leds-pwm: Preparing the driver for device tree support
+Date: Fri, 21 Dec 2012 10:43:56 +0100
+Message-ID: <1356083041-29179-3-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-19 at 16:21 +0000, Grant Likely wrote:
-> On Wed, 19 Dec 2012 09:04:16 +0000, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> > On Wed, Dec 19, 2012 at 04:44:03AM -0500, Jun Chen wrote:
-> > 
-> > > This spi_alloc_device function will be called in the spi_new_device
-> > > function to alloc new device as the master. But other way, it is called
-> > > by the of_register_spi_devices function to register new device as the
-> > > children of the master. I will update changlog to add it. 
-> > 
-> > But why is this a bad thing?  You've said what's happening but not why
-> > it's a problem.
-> 
-> spi_devices should always be children of the spi_master. If that is not
-> the case then it is a bug to be fixed.
-> 
+In order to be able to add device tree support for leds-pwm driver we need
+to rearrange the data structures used by the drivers.
 
-When many boards initializing, boards will call function
-spi_register_board_info to create bi->board_info,Then spi driver probe
-to call spi_register_master to register the driver and in the function
-spi_match_master_to_boardinfo To create new spi device, and this cases
-the spi_devices are not children of the spi_master.
-Many drivers do these steps. If all spi_devices must be children of the
-spi_master, Do spi core have plan to delete this way? 
-Or spi core can hold this way for many drivers. 
-Thanks! 
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/leds/leds-pwm.c | 39 +++++++++++++++++++++++----------------
+ 1 file changed, 23 insertions(+), 16 deletions(-)
 
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index 351257c..c767837 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -30,6 +30,11 @@ struct led_pwm_data {
+ 	unsigned int		period;
+ };
+ 
++struct led_pwm_priv {
++	int num_leds;
++	struct led_pwm_data leds[0];
++};
++
+ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	enum led_brightness brightness)
+ {
+@@ -47,25 +52,29 @@ static void led_pwm_set(struct led_classdev *led_cdev,
+ 	}
+ }
+ 
++static inline size_t sizeof_pwm_leds_priv(int num_leds)
++{
++	return sizeof(struct led_pwm_priv) +
++		      (sizeof(struct led_pwm_data) * num_leds);
++}
++
+ static int led_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
+-	struct led_pwm *cur_led;
+-	struct led_pwm_data *leds_data, *led_dat;
++	struct led_pwm_priv *priv;
+ 	int i, ret = 0;
+ 
+ 	if (!pdata)
+ 		return -EBUSY;
+ 
+-	leds_data = devm_kzalloc(&pdev->dev,
+-			sizeof(struct led_pwm_data) * pdata->num_leds,
+-				GFP_KERNEL);
+-	if (!leds_data)
++	priv = devm_kzalloc(&pdev->dev, sizeof_pwm_leds_priv(pdata->num_leds),
++			    GFP_KERNEL);
++	if (!priv)
+ 		return -ENOMEM;
+ 
+ 	for (i = 0; i < pdata->num_leds; i++) {
+-		cur_led = &pdata->leds[i];
+-		led_dat = &leds_data[i];
++		struct led_pwm *cur_led = &pdata->leds[i];
++		struct led_pwm_data *led_dat = &priv->leds[i];
+ 
+ 		led_dat->pwm = devm_pwm_get(&pdev->dev, cur_led->name);
+ 		if (IS_ERR(led_dat->pwm)) {
+@@ -88,15 +97,16 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 		if (ret < 0)
+ 			goto err;
+ 	}
++	priv->num_leds = pdata->num_leds;
+ 
+-	platform_set_drvdata(pdev, leds_data);
++	platform_set_drvdata(pdev, priv);
+ 
+ 	return 0;
+ 
+ err:
+ 	if (i > 0) {
+ 		for (i = i - 1; i >= 0; i--)
+-			led_classdev_unregister(&leds_data[i].cdev);
++			led_classdev_unregister(&priv->leds[i].cdev);
+ 	}
+ 
+ 	return ret;
+@@ -104,14 +114,11 @@ err:
+ 
+ static int led_pwm_remove(struct platform_device *pdev)
+ {
++	struct led_pwm_priv *priv = platform_get_drvdata(pdev);
+ 	int i;
+-	struct led_pwm_platform_data *pdata = pdev->dev.platform_data;
+-	struct led_pwm_data *leds_data;
+-
+-	leds_data = platform_get_drvdata(pdev);
+ 
+-	for (i = 0; i < pdata->num_leds; i++)
+-		led_classdev_unregister(&leds_data[i].cdev);
++	for (i = 0; i < priv->num_leds; i++)
++		led_classdev_unregister(&priv->leds[i].cdev);
+ 
+ 	return 0;
+ }
+-- 
+1.8.0.2
 
