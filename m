@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186Ab2LUP1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 10:27:20 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:1088 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751079Ab2LUP1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 10:27:11 -0500
-Date: Fri, 21 Dec 2012 09:26:51 -0600
-From: Clark Williams <williams@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [ANNOUNCE] 3.6.11-rt24 (apocalypse release)c
-Message-ID: <20121221092651.55b44bfb@redhat.com>
-In-Reply-To: <alpine.LFD.2.02.1212211413200.3148@ionos>
-References: <alpine.LFD.2.02.1212211413200.3148@ionos>
-Organization: Red Hat, Inc
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/g3NKqU3gkaxQotzOcEjh4hl"; protocol="application/pgp-signature"
+	id S1751509Ab2LUP2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 10:28:38 -0500
+Received: from co1ehsobe001.messaging.microsoft.com ([216.32.180.184]:25760
+	"EHLO co1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751083Ab2LUP23 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 10:28:29 -0500
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 11
+X-BigFish: VPS11(zzbb2dI98dI9371I148cI542I1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz30ih95h668h839h944hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1307i1155h)
+From: Michal Simek <michal.simek@xilinx.com>
+To: Josh Cartwright <josh.cartwright@ni.com>,
+        Stephen Boyd <sboyd@codeaurora.org>
+CC: Soren Brinkmann <sorenb@xilinx.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
+Thread-Topic: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
+Thread-Index: AQHN3irhYIXeOzwhN0ebrdWq6ectEpgjYsZg
+Date: Fri, 21 Dec 2012 15:28:10 +0000
+References: <1355778135-32458-1-git-send-email-sboyd@codeaurora.org>
+ <1355778135-32458-5-git-send-email-sboyd@codeaurora.org>
+ <b11edd0b-27ff-48b3-9f2a-1e7ab293cc34@CO9EHSMHS019.ehs.local>
+ <50D223DD.8070208@codeaurora.org>
+ <20121219205330.GE1005@beefymiracle.amer.corp.natinst.com>
+In-Reply-To: <20121219205330.GE1005@beefymiracle.amer.corp.natinst.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.26.120]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-RCIS-Action: ALLOW
+Message-ID: <296b6ceb-f248-4add-9b4e-bceddcc1613c@CO1EHSMHS028.ehs.local>
+X-OriginatorOrg: xilinx.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/g3NKqU3gkaxQotzOcEjh4hl
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, 21 Dec 2012 14:50:38 +0100 (CET)
-Thomas Gleixner <tglx@linutronix.de> wrote:
-> Index: linux-stable/block/blk-ioc.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- linux-stable.orig/block/blk-ioc.c
-> +++ linux-stable/block/blk-ioc.c
-> @@ -110,7 +110,7 @@ static void ioc_release_fn(struct work_s
->  			spin_unlock(q->queue_lock);
->  		} else {
->  			spin_unlock_irqrestore(&ioc->lock, flags);
-> -			cpu_relax();
-> +			cpu_chill();
->  			spin_lock_irqsave_nested(&ioc->lock, flags, 1);
->  		}
->  	}
-> @@ -188,7 +188,7 @@ retry:
->  			spin_unlock(icq->q->queue_lock);
->  		} else {
->  			spin_unlock_irqrestore(&ioc->lock, flags);
-> -			cpu_relax();
-> +			cpu_chill();
->  			goto retry;
->  		}
->  	}
->
 
-Thomas,
+> -----Original Message-----
+> From: Josh Cartwright [mailto:josh.cartwright@ni.com]
+> Sent: Wednesday, December 19, 2012 9:54 PM
+> To: Stephen Boyd; Michal Simek
+> Cc: Soren Brinkmann; Mike Turquette; linux-kernel@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org
+> Subject: Re: [PATCH 4/4] clk: zynq: Use of_init_clk_data()
+> 
+> On Wed, Dec 19, 2012 at 12:30:21PM -0800, Stephen Boyd wrote:
+> > On 12/19/12 11:22, Soren Brinkmann wrote:
+> [..]
+> > >
+> > > A probably unique thing I do is, I set the status of uart0 to
+> > > disabled. This way I can reuse my rootfs which does not run getty on
+> > > ttyPS1. And this worked fine before.
+> > >
+> >
+> > Thanks for testing. It seems that clocks are failing to register.
+> > Please try this patch.
+> >
+> > --->8-----
+> >
+> > diff --git a/drivers/tty/serial/xilinx_uartps.c
+> > b/drivers/tty/serial/xilinx_uartps.c
+> > index 2be22a2..2734715 100644
+> > --- a/drivers/tty/serial/xilinx_uartps.c
+> > +++ b/drivers/tty/serial/xilinx_uartps.c
+> > @@ -948,9 +948,9 @@ static int xuartps_probe(struct platform_device *pdev)
+> >         struct clk *clk;
+> >
+> >         clk = of_clk_get(pdev->dev.of_node, 0);
+> > -       if (!clk) {
+> > -               dev_err(&pdev->dev, "no clock specified\n");
+> > -               return -ENODEV;
+> > +       if (IS_ERR(clk)) {
+> > +               dev_err(&pdev->dev, "failed to get clock\n");
+> > +               return PTR_ERR(clk);
+> >         }
+> >
+> >         rc = clk_prepare_enable(clk);
+> 
+> Yes, indeed.
+> 
+> As a side note, this is introduced in my patch "serial: xilinx_uartps:
+> get clock rate info from dts", which is in xilinx/arm-next (and thus in linux-next),
+> but as far as I can tell, didn't ever make it into the arm-soc tree.
+> 
+> Michal, did you have plans for pushing this through arm-soc?
 
-I had to add this to get -rt24 to compile:
+I have had this patch in my devel branch for a while. 
+It is in arm-next tree right now and I will provide path to mainline.
 
-commit cb25d4b84a6d8f155134f6d9aa2997a452ab1dca
-Author: Clark Williams <williams@redhat.com>
-Date:   Fri Dec 21 09:22:26 2012 -0600
+Thanks for reminder,
+Michal
 
-    [RT] pull in include/linux/delay.h to get cpu_chill()
-   =20
-    Signed-off-by: Clark Williams <williams@redhat.com>
 
-diff --git a/block/blk-ioc.c b/block/blk-ioc.c
-index 2332787..fb21ad5 100644
---- a/block/blk-ioc.c
-+++ b/block/blk-ioc.c
-@@ -8,6 +8,7 @@
- #include <linux/blkdev.h>
- #include <linux/bootmem.h>     /* for max_pfn/max_low_pfn */
- #include <linux/slab.h>
-+#include <linux/delay.h>
-=20
- #include "blk.h"
-=20
-
---Sig_/g3NKqU3gkaxQotzOcEjh4hl
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iEYEARECAAYFAlDUf8QACgkQHyuj/+TTEp0zVQCgs6Sx4dgW1+oim5Ce/V9siEhu
-2goAnjV3/vhABZ2tTUPgJbJMN93YbXCz
-=QuPB
------END PGP SIGNATURE-----
-
---Sig_/g3NKqU3gkaxQotzOcEjh4hl--
