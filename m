@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab2LUAzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 19:55:48 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:33418 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab2LUAzn (ORCPT
+	id S1752195Ab2LUA6O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 19:58:14 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:41549 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab2LUA6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 19:55:43 -0500
-X-Greylist: delayed 318 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 19:55:43 EST
+	Thu, 20 Dec 2012 19:58:06 -0500
+X-Greylist: delayed 470 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Dec 2012 19:58:06 EST
 From: Michel Lespinasse <walken@google.com>
 To: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
         Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
         Jorn_Engel <joern@logfs.org>, Rik van Riel <riel@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/9] mm: remap_file_pages() fixes
-Date: Thu, 20 Dec 2012 16:49:50 -0800
-Message-Id: <1356050997-2688-3-git-send-email-walken@google.com>
+Subject: [PATCH 9/9] mm: introduce VM_POPULATE flag to better deal with racy userspace programs
+Date: Thu, 20 Dec 2012 16:49:57 -0800
+Message-Id: <1356050997-2688-10-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1356050997-2688-1-git-send-email-walken@google.com>
 References: <1356050997-2688-1-git-send-email-walken@google.com>
@@ -24,118 +24,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assorted small fixes. The first two are quite small:
+The vm_populate() code populates user mappings without constantly
+holding the mmap_sem. This makes it susceptible to racy userspace
+programs: the user mappings may change while vm_populate() is running,
+and in this case vm_populate() may end up populating the new mapping
+instead of the old one.
 
-- Move check for vma->vm_private_data && !(vma->vm_flags & VM_NONLINEAR)
-  within existing if (!(vma->vm_flags & VM_NONLINEAR)) block.
-  Purely cosmetic.
-
-- In the VM_LOCKED case, when dropping PG_Mlocked for the over-mapped
-  range, make sure we own the mmap_sem write lock around the
-  munlock_vma_pages_range call as this manipulates the vma's vm_flags.
-
-Last fix requires a longer explanation. remap_file_pages() can do its work
-either through VM_NONLINEAR manipulation or by creating extra vmas.
-These two cases were inconsistent with each other (and ultimately, both wrong)
-as to exactly when did they fault in the newly mapped file pages:
-
-- In the VM_NONLINEAR case, new file pages would be populated if
-  the MAP_NONBLOCK flag wasn't passed. If MAP_NONBLOCK was passed,
-  new file pages wouldn't be populated even if the vma is already
-  marked as VM_LOCKED.
-
-- In the linear (emulated) case, the work is passed to the mmap_region()
-  function which would populate the pages if the vma is marked as
-  VM_LOCKED, and would not otherwise - regardless of the value of the
-  MAP_NONBLOCK flag, because MAP_POPULATE wasn't being passed to
-  mmap_region().
-
-The desired behavior is that we want the pages to be populated and locked
-if the vma is marked as VM_LOCKED, or to be populated if the MAP_NONBLOCK
-flag is not passed to remap_file_pages().
+In order to reduce the possibility of userspace getting surprised by
+this behavior, this change introduces the VM_POPULATE vma flag which
+gets set on vmas we want vm_populate() to work on. This way
+vm_populate() may still end up populating the new mapping after such a
+race, but only if the new mapping is also one that the user has
+requested (using MAP_SHARED, MAP_LOCKED or mlock) to be populated.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- mm/fremap.c |   22 ++++++++++++++--------
- 1 files changed, 14 insertions(+), 8 deletions(-)
+ include/linux/mm.h   |    1 +
+ include/linux/mman.h |    4 +++-
+ mm/fremap.c          |   12 ++++++++++--
+ mm/mlock.c           |   19 ++++++++++---------
+ mm/mmap.c            |    4 +---
+ 5 files changed, 25 insertions(+), 15 deletions(-)
 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index d32ace5fba93..77311274f0b5 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -87,6 +87,7 @@ extern unsigned int kobjsize(const void *objp);
+ #define VM_PFNMAP	0x00000400	/* Page-ranges managed without "struct page", just pure PFN */
+ #define VM_DENYWRITE	0x00000800	/* ETXTBSY on write attempts.. */
+ 
++#define VM_POPULATE     0x00001000
+ #define VM_LOCKED	0x00002000
+ #define VM_IO           0x00004000	/* Memory mapped I/O or similar */
+ 
+diff --git a/include/linux/mman.h b/include/linux/mman.h
+index d09dde1e57fb..e4ad758962e5 100644
+--- a/include/linux/mman.h
++++ b/include/linux/mman.h
+@@ -77,6 +77,8 @@ calc_vm_flag_bits(unsigned long flags)
+ {
+ 	return _calc_vm_trans(flags, MAP_GROWSDOWN,  VM_GROWSDOWN ) |
+ 	       _calc_vm_trans(flags, MAP_DENYWRITE,  VM_DENYWRITE ) |
+-	       _calc_vm_trans(flags, MAP_LOCKED,     VM_LOCKED    );
++	       ((flags & MAP_LOCKED) ? (VM_LOCKED | VM_POPULATE) : 0) |
++	       (((flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE) ?
++							VM_POPULATE : 0);
+ }
+ #endif /* _LINUX_MMAN_H */
 diff --git a/mm/fremap.c b/mm/fremap.c
-index a0aaf0e56800..2db886e31044 100644
+index 503a72387087..0cd4c11488ed 100644
 --- a/mm/fremap.c
 +++ b/mm/fremap.c
-@@ -160,15 +160,11 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 	/*
- 	 * Make sure the vma is shared, that it supports prefaulting,
- 	 * and that the remapped range is valid and fully within
--	 * the single existing vma.  vm_private_data is used as a
--	 * swapout cursor in a VM_NONLINEAR vma.
-+	 * the single existing vma.
- 	 */
- 	if (!vma || !(vma->vm_flags & VM_SHARED))
- 		goto out;
- 
--	if (vma->vm_private_data && !(vma->vm_flags & VM_NONLINEAR))
--		goto out;
--
- 	if (!vma->vm_ops || !vma->vm_ops->remap_pages)
- 		goto out;
- 
-@@ -177,6 +173,13 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 
- 	/* Must set VM_NONLINEAR before any pages are populated. */
- 	if (!(vma->vm_flags & VM_NONLINEAR)) {
-+		/*
-+		 * vm_private_data is used as a swapout cursor
-+		 * in a VM_NONLINEAR vma.
-+		 */
-+		if (vma->vm_private_data)
-+			goto out;
-+
- 		/* Don't need a nonlinear mapping, exit success */
- 		if (pgoff == linear_page_index(vma, start)) {
- 			err = 0;
-@@ -184,6 +187,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 		}
- 
- 		if (!has_write_lock) {
-+get_write_lock:
- 			up_read(&mm->mmap_sem);
- 			down_write(&mm->mmap_sem);
- 			has_write_lock = 1;
-@@ -199,7 +203,7 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
+@@ -204,8 +204,10 @@ get_write_lock:
  			unsigned long addr;
  			struct file *file = get_file(vma->vm_file);
  
--			flags &= MAP_NONBLOCK;
-+			flags = (flags & MAP_NONBLOCK) | MAP_POPULATE;
- 			addr = mmap_region(file, start, size,
- 					flags, vma->vm_flags, pgoff);
+-			addr = mmap_region(file, start, size,
+-					vma->vm_flags, pgoff);
++			vm_flags = vma->vm_flags;
++			if (!(flags & MAP_NONBLOCK))
++				vm_flags |= VM_POPULATE;
++			addr = mmap_region(file, start, size, vm_flags, pgoff);
  			fput(file);
-@@ -225,6 +229,8 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 		 * drop PG_Mlocked flag for over-mapped range
- 		 */
- 		vm_flags_t saved_flags = vma->vm_flags;
+ 			if (IS_ERR_VALUE(addr)) {
+ 				err = addr;
+@@ -224,6 +226,12 @@ get_write_lock:
+ 		mutex_unlock(&mapping->i_mmap_mutex);
+ 	}
+ 
++	if (!(flags & MAP_NONBLOCK) && !(vma->vm_flags & VM_POPULATE)) {
 +		if (!has_write_lock)
 +			goto get_write_lock;
- 		munlock_vma_pages_range(vma, start, start + size);
- 		vma->vm_flags = saved_flags;
++		vma->vm_flags |= VM_POPULATE;
++	}
++
+ 	if (vma->vm_flags & VM_LOCKED) {
+ 		/*
+ 		 * drop PG_Mlocked flag for over-mapped range
+diff --git a/mm/mlock.c b/mm/mlock.c
+index ab0cfe21f538..b1647fbd6bce 100644
+--- a/mm/mlock.c
++++ b/mm/mlock.c
+@@ -340,9 +340,9 @@ static int do_mlock(unsigned long start, size_t len, int on)
+ 
+ 		/* Here we know that  vma->vm_start <= nstart < vma->vm_end. */
+ 
+-		newflags = vma->vm_flags | VM_LOCKED;
+-		if (!on)
+-			newflags &= ~VM_LOCKED;
++		newflags = vma->vm_flags & ~VM_LOCKED;
++		if (on)
++			newflags |= VM_LOCKED | VM_POPULATE;
+ 
+ 		tmp = vma->vm_end;
+ 		if (tmp > end)
+@@ -402,7 +402,8 @@ int __mm_populate(unsigned long start, unsigned long len, int ignore_errors)
+ 		 * range with the first VMA. Also, skip undesirable VMA types.
+ 		 */
+ 		nend = min(end, vma->vm_end);
+-		if (vma->vm_flags & (VM_IO | VM_PFNMAP))
++		if ((vma->vm_flags & (VM_IO | VM_PFNMAP | VM_POPULATE)) !=
++		    VM_POPULATE)
+ 			continue;
+ 		if (nstart < vma->vm_start)
+ 			nstart = vma->vm_start;
+@@ -475,9 +476,9 @@ static int do_mlockall(int flags)
+ 	struct vm_area_struct * vma, * prev = NULL;
+ 	unsigned int def_flags;
+ 
+-	def_flags = current->mm->def_flags & ~VM_LOCKED;
++	def_flags = current->mm->def_flags & ~(VM_LOCKED | VM_POPULATE);
+ 	if (flags & MCL_FUTURE)
+-		def_flags |= VM_LOCKED;
++		def_flags |= (VM_LOCKED | VM_POPULATE);
+ 	current->mm->def_flags = def_flags;
+ 	if (flags == MCL_FUTURE)
+ 		goto out;
+@@ -485,9 +486,9 @@ static int do_mlockall(int flags)
+ 	for (vma = current->mm->mmap; vma ; vma = prev->vm_next) {
+ 		vm_flags_t newflags;
+ 
+-		newflags = vma->vm_flags | VM_LOCKED;
+-		if (!(flags & MCL_CURRENT))
+-			newflags &= ~VM_LOCKED;
++		newflags = vma->vm_flags & ~VM_LOCKED;
++		if (flags & MCL_CURRENT)
++			newflags |= VM_LOCKED | VM_POPULATE;
+ 
+ 		/* Ignore errors */
+ 		mlock_fixup(vma, &prev, vma->vm_start, vma->vm_end, newflags);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 290d023632e6..27f98850fa8c 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1153,9 +1153,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
  	}
-@@ -232,13 +238,13 @@ SYSCALL_DEFINE5(remap_file_pages, unsigned long, start, unsigned long, size,
- 	mmu_notifier_invalidate_range_start(mm, start, start + size);
- 	err = vma->vm_ops->remap_pages(vma, start, size, pgoff);
- 	mmu_notifier_invalidate_range_end(mm, start, start + size);
--	if (!err && !(flags & MAP_NONBLOCK)) {
-+	if (!err) {
- 		if (vma->vm_flags & VM_LOCKED) {
- 			/*
- 			 * might be mapping previously unmapped range of file
- 			 */
- 			mlock_vma_pages_range(vma, start, start + size);
--		} else {
-+		} else if (!(flags & MAP_NONBLOCK)) {
- 			if (unlikely(has_write_lock)) {
- 				downgrade_write(&mm->mmap_sem);
- 				has_write_lock = 0;
+ 
+ 	addr = mmap_region(file, addr, len, vm_flags, pgoff);
+-	if (!IS_ERR_VALUE(addr) &&
+-	    ((vm_flags & VM_LOCKED) ||
+-	     (flags & (MAP_POPULATE | MAP_NONBLOCK)) == MAP_POPULATE))
++	if (!IS_ERR_VALUE(addr) && (vm_flags & VM_POPULATE))
+ 		*populate = true;
+ 	return addr;
+ }
 -- 
 1.7.7.3
