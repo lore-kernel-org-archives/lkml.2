@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab2LUXpf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 18:45:35 -0500
-Received: from fieldses.org ([174.143.236.118]:35161 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371Ab2LUXpd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 18:45:33 -0500
-Date: Fri, 21 Dec 2012 18:45:30 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Adamson, Dros" <Weston.Adamson@netapp.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Message-ID: <20121221234530.GA30048@fieldses.org>
-References: <20121221153348.GA32151@redhat.com>
- <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
+	id S1752222Ab2LUXsZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 18:48:25 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:35079 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161Ab2LUXsV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 18:48:21 -0500
+Date: Fri, 21 Dec 2012 15:37:07 -0800
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Seiji Aguchi <seiji.aguchi@hds.com>
+Cc: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "dzickus@redhat.com" <dzickus@redhat.com>
+Subject: Re: [PATCH v3 0/2] pstore,efi_pstore: Avoid deadlock in non-blocking
+ paths
+Message-ID: <20121221233706.GA29709@lizard.sbx05280.losalca.wayport.net>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A2A03B@USINDEM103.corp.hds.com>
+ <20121220190923.GP88797@redhat.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D414A2B22C@USINDEM103.corp.hds.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
+In-Reply-To: <A5ED84D3BB3A384992CBB9C77DEDA4D414A2B22C@USINDEM103.corp.hds.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
-> Please reread what I said. There was no obvious circular dependency,
-> because nfsiod and rpciod are separate workqueues, both created with
-> WQ_MEM_RECLAIM.
-
-Oh, sorry, I read "rpciod" as "nfsiod"!
-
-> Dros' experience shows, however that a call to
-> rpc_shutdown_client in an nfsiod work item will deadlock with rpciod
-> if the RPC task's work item has been assigned to the same CPU as the
-> one running the rpc_shutdown_client work item.
+On Fri, Dec 21, 2012 at 11:27:00PM +0000, Seiji Aguchi wrote:
+> Tony,
 > 
-> I can't tell right now if that is intentional (in which case the
-> WARN_ON in the rpc code is correct), or if it is a bug in the
-> workqueue code. For now, we're assuming the former.
+> Could you please apply this patchset to your tree?
 
-Well, Documentation/workqueue.txt says:
+Actually, I'd prefer to take both patches via pstore tree. The EFI part is
+isolated and small, so even if it conflicts, it would be easy to resolve,
+unlike to pstore core part.
 
-	"Each wq with WQ_MEM_RECLAIM set has an execution context
-	reserved for it.  If there is dependency among multiple work
-	items used during memory reclaim, they should be queued to
-	separate wq each with WQ_MEM_RECLAIM."
+So, would be great if Tony could give an Ack for EFI part and we'd merge
+this via pstore tree.
 
-And I can't see how it could have been safe to convert
-create_single_singlethread_workqueue() callers otherwise.
-
---b.
+Thanks,
+Anton
