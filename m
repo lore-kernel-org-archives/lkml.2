@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab2LUEMK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 23:12:10 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:38377 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab2LUEMF (ORCPT
+	id S1751841Ab2LUESy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 23:18:54 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4563 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab2LUESp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 23:12:05 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-e9-50d3e1947b36
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Subject: [PATCH] f2fs: add MAINTAINERS entry
-Date: Fri, 21 Dec 2012 13:11:51 +0900
-Message-id: <1356063111-22007-1-git-send-email-jaegeuk.kim@samsung.com>
-X-Mailer: git-send-email 1.8.0.1.250.gb7973fb
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t8zfd0pDy8HGEy5w2OxZ+9JFovLu+aw
-	OTB5fN4kF8AYxWWTkpqTWZZapG+XwJUx9+E2toLLbBUfD/1kbmC8ytrFyMkhIWAi8X3XByhb
-	TOLCvfVsXYxcHEICyxgl3sz7zgRT9LzlFTNEYjqjxMrlz9hBEkICLUwSk95adjFycLAJaEts
-	3m8AEhYRyJQ4snIGK0iYWUBTYsaTOpCwsICORPuclSwgNouAqsTmW0vBbF4Bd4mGSeuYQcol
-	BHQlpm4WgSgRkPg2+RALRFhWYtMBsAMkBA6wSXx7c5gZ4jJJiYMrbrBMYBRcwMiwilE0tSC5
-	oDgpPddQrzgxt7g0L10vOT93EyMkrKR2MK5ssDjEKMDBqMTDy2h2OUCINbGsuDL3EKMEB7OS
-	CO/zJUAh3pTEyqrUovz4otKc1OJDjD5Al0xklhJNzgeGfF5JvKGxsYmZiamJuaWpuSkOYSVx
-	3maPlAAhgfTEktTs1NSC1CKYcUwcnFINjEyrDpq961soFBBxVmnCRYnqmK72G87+p20cQi75
-	CLmd3F1jxMQk9GfiuQOMXLNuzZL5cMNWY2rwjuYTLzxZjmy7VNAfGLhypQyvXaT18Tcy6XJ7
-	r/aZSW6oN9w63XtvwXnJj34NWlHzdkRmcQRoBi2xr+XdkD9/USfDOS/fplNFYaaKd/gWKbEU
-	ZyQaajEXFScCAE2fvKpYAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCLMWRmVeSWpSXmKPExsVy+t9jQd0pDy8HGOyZyGGxZ+9JFovLu+aw
-	OTB5fN4kF8AY1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIT
-	oOuWmQM0WkmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeYMffhNraCy2wV
-	Hw/9ZG5gvMraxcjJISFgIvG85RUzhC0mceHeerYuRi4OIYHpjBIrlz9jB0kICbQwSUx6a9nF
-	yMHBJqAtsXm/AUhYRCBT4sjKGawgYWYBTYkZT+pAwsICOhLtc1aygNgsAqoSm28tBbN5Bdwl
-	GiatYwYplxDQlZi6WWQCI/cCRoZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMFB+0xqB+PK
-	BotDjAIcjEo8vIxmlwOEWBPLiitzDzFKcDArifA+XwIU4k1JrKxKLcqPLyrNSS0+xOgDtHwi
-	s5Rocj4wovJK4g2NTcyMLI3MLIxMzM1xCCuJ8zZ7pAQICaQnlqRmp6YWpBbBjGPi4JRqYJy1
-	Wog/wcaQjcfpYv/x0tyNTFbpb90tw3aqPlzs8nk2h9V9RzaBQ+fOzea59lZptuKhQtcff5kU
-	T3ptfXZTZp1CzfIOk/CC3c3yD3ZoF7CfYndbvsEhaMp5pewmh1N9K/sXnI03dOfjW/Xown5x
-	syj5Dyvtclz4CyZvV/qtcHLJ2n/RdjJtmkosxRmJhlrMRcWJAB+npc+HAgAA
-X-CFilter-Loop: Reflected
+	Thu, 20 Dec 2012 23:18:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 20 Dec 2012 20:18:39 -0800
+Message-ID: <50D3E320.2090804@nvidia.com>
+Date: Fri, 21 Dec 2012 09:48:40 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
+MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: dts: add aliases and DMA requestor for serial
+ controller
+References: <1355898671-3960-1-git-send-email-ldewangan@nvidia.com> <50D1F2CB.3090206@wwwdotorg.org> <50D2AD02.6060101@nvidia.com> <50D344E9.70305@wwwdotorg.org>
+In-Reply-To: <50D344E9.70305@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds myself to MAINTAINERS entry for the f2fs file system.
+On Thursday 20 December 2012 10:33 PM, Stephen Warren wrote:
+> On 12/19/2012 11:15 PM, Laxman Dewangan wrote:
+>> On Wednesday 19 December 2012 10:30 PM, Stephen Warren wrote:
+>>> On 12/18/2012 11:31 PM, Laxman Dewangan wrote:
+>>>> Add APB DMA requestor and serial aliases for serial controller.
+>>>> There will be two serial driver i.e. 8250 based simple serial driver
+>>>> and APB DMA based serial driver for higher baudrate and performace.
+>>>>
+>>>> The simple serial driver get enabled with compatible nvidia,tegra20-uart
+>>>> and APB DMA based driver will get enabled with compatible
+>>>> nvidia,tegra20-hsuart.
+>>> This patch seems to do two things:
+>>>
+>>> 1) Add a comment describing how to select the basic or DMA-based driver.
+>>> I can see why this is useful.
+>>>
+>>> 2) Add aliases for the serial ports. I have no idea why this is useful.
+>> Serial aliases are added because we want to get the port number like
+>> /dev/ttyTHS0,  /d/ttyTHS2 etc. The uarta should be /dev/ttyTHS0 and
+>> uartc should be /dev/ttyTHS2. The port number can be found using aliases
+>> and of_alias_get_id() in driver file:
+>>
+>> port_number = of_alias_get_id(np, "serial");
+> Oh, I see. I guess the aliases make sense then.
+>
+> But, wouldn't you only add aliases for the specific UARTs that are in
+> use on a particular board (so put them in tegraNN-board.dts) rather than
+> all UARTs on Tegra (i.e. the current patch which puts them into
+> tegraNN.dtsi)?
 
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- MAINTAINERS | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+I like to have this in tegraN N.dtsi file becasue:
+- This policy is not going to change the board to board. For high speed 
+driver the uarta will be ttyTHS0 and uartb ttyTHS1.
+- In board file I will only enable driver and make compatible, not worry 
+about the making aliases.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 9386a63..f15d168 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3204,6 +3204,16 @@ F:	Documentation/filesystems/caching/
- F:	fs/fscache/
- F:	include/linux/fscache*.h
- 
-+F2FS FILE SYSTEM
-+M:	Jaegeuk Kim <jaegeuk.kim@samsung.com>
-+L:	linux-f2fs-devel@lists.sourceforge.net
-+W:	http://en.wikipedia.org/wiki/F2FS
-+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git
-+S:	Maintained
-+F:	Documentation/filesystems/f2fs.txt
-+F:	fs/f2fs/
-+F:	include/linux/f2fs_fs.h
-+
- FUJITSU FR-V (FRV) PORT
- M:	David Howells <dhowells@redhat.com>
- S:	Maintained
--- 
-1.8.0.1.250.gb7973fb
+This approach will simplify the instantiation. This will also avoid 
+confusion like the aliases get added or not when we create board dts file.
+This will be on same line we have with board files where pdev->id is 
+fixed for all board in common place i.e. device.c which decide the 
+port-number.
+
+
 
