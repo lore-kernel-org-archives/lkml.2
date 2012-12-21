@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751234Ab2LUMs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 07:48:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751765Ab2LUMst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 07:48:49 -0500
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 2/2] UAPI: Strip _UAPI prefix on header install no matter
- the whitespace
-To: torvalds@linux-foundation.org
-From: David Howells <dhowells@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Date: Fri, 21 Dec 2012 12:48:47 +0000
-Message-ID: <20121221124847.9484.75554.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20121221124840.9484.93112.stgit@warthog.procyon.org.uk>
-References: <20121221124840.9484.93112.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.16
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1751883Ab2LUMwB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 07:52:01 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:9210 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750752Ab2LUMvy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 07:51:54 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=kMKUP9VcE-gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=ErkLabmjQQoA:10 a=R8mZSiGc1X9eDgQI46QA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1356094312.5896.97.camel@gandalf.local.home>
+Subject: Re: [PATCH] sched/rt: Move cpu rq properties from "struct rt_rq" to
+ "struct rq"
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Kirill Tkhai <tkhai@yandex.ru>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Date: Fri, 21 Dec 2012 07:51:52 -0500
+In-Reply-To: <545781356071709@web16g.yandex.ru>
+References: <4807701355857948@web19f.yandex.ru>
+	 <alpine.LFD.2.02.1212201852060.3148@ionos>
+	 <401821356041818@web4f.yandex.ru>
+	 <1356044865.5896.78.camel@gandalf.local.home>
+	 <545781356071709@web16g.yandex.ru>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following commit:
+On Fri, 2012-12-21 at 10:35 +0400, Kirill Tkhai wrote:
+> 
+>                                    
+>            entity_1->my_q_1
+>            /                        
+>           /                         
+> rq->rt  -entity_2->my_q_2
+>           \                          
+>            \                           
+>              entity_n->my_q_n
+>                                         
+> 
+> I say about child rt_rqs (my_q_1....my_q_n). They don't have rt_nr_total, rt_nr_migratory, overloaded and pushable_tasks.
+> The only use of overloaded, for example, is "rq->rt.overloaded". The same with other variables.
 
-	commit 56c176c9cac9a77249fa1736bfd792f379d61942
-	Author: David Howells <dhowells@redhat.com>
-	Date:   Mon Nov 26 16:29:39 2012 -0800
-	Subject: UAPI: strip the _UAPI prefix from header guards during header installation
+You're missing the point. rt_rq is not just for entities, it's the
+encapsulation of the rt class.
 
-strips the _UAPI prefix from header guards, but only if there's a single space
-between the cpp directive and the label.  Make it more flexible and able to
-handle tabs and multiple white space characters.
+Now if you want to encapsulate the rt sched group, then you could add a
+new struct and put that into the rt_rq struct and use that for all the
+group functions. But please don't just cludder the rq struct with rt
+specific data. The rt_rq was created as a container for the rt class.
 
-Signed-off-by: David Howells <dhowell@redhat.com>
----
+-- Steve
 
- scripts/headers_install.pl |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
-index 6c353ae..581ca99 100644
---- a/scripts/headers_install.pl
-+++ b/scripts/headers_install.pl
-@@ -42,9 +42,9 @@ foreach my $filename (@files) {
- 		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
- 		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
- 		$line =~ s/(^|\s|[(])(volatile)\b(\s|[(]|$)/$1__$2__$3/g;
--		$line =~ s/#ifndef _UAPI/#ifndef /;
--		$line =~ s/#define _UAPI/#define /;
--		$line =~ s!#endif /[*] _UAPI!#endif /* !;
-+		$line =~ s/#ifndef\s+_UAPI/#ifndef /;
-+		$line =~ s/#define\s+_UAPI/#define /;
-+		$line =~ s!#endif\s+/[*]\s*_UAPI!#endif /* !;
- 		printf {$out} "%s", $line;
- 	}
- 	close $out;
 
