@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310Ab2LUA6h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Dec 2012 19:58:37 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:34841 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751976Ab2LUA62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Dec 2012 19:58:28 -0500
-Date: Fri, 21 Dec 2012 01:58:25 +0100
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC PATCH 2/4] mm: Update file times when inodes are written
- after mmaped writes
-Message-ID: <20121221005825.GC13474@quack.suse.cz>
-References: <cover.1356043686.git.luto@amacapital.net>
- <bd4585908de458907ce90417fcd8233d33960e8f.1356043686.git.luto@amacapital.net>
- <20121221001457.GY15182@dastard>
+	id S1752235Ab2LUBJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Dec 2012 20:09:08 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:64838 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814Ab2LUBJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Dec 2012 20:09:06 -0500
+X-AuditID: 9c930179-b7becae000000e51-32-50d3b6ae594a
+Date: Fri, 21 Dec 2012 10:09:02 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: compare MIGRATE_ISOLATE selectively
+Message-ID: <20121221010902.GD2686@blaptop>
+References: <1355981152-2505-1-git-send-email-minchan@kernel.org>
+ <xa1tfw30hgfb.fsf@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20121221001457.GY15182@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <xa1tfw30hgfb.fsf@mina86.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 21-12-12 11:14:57, Dave Chinner wrote:
-> On Thu, Dec 20, 2012 at 03:10:10PM -0800, Andy Lutomirski wrote:
-> > The onus is currently on filesystems to call file_update_time
-> > somewhere in the page_mkwrite path.  This is unfortunate for three
-> > reasons:
-> > 
-> > 1. page_mkwrite on a locked page should be fast.  ext4, for example,
-> >    often sleeps while dirtying inodes.
+On Thu, Dec 20, 2012 at 04:49:44PM +0100, Michal Nazarewicz wrote:
+> On Thu, Dec 20 2012, Minchan Kim wrote:
+> > diff --git a/include/linux/page-isolation.h b/include/linux/page-isolation.h
+> > index a92061e..4ada4ef 100644
+> > --- a/include/linux/page-isolation.h
+> > +++ b/include/linux/page-isolation.h
+> > @@ -1,6 +1,25 @@
+> >  #ifndef __LINUX_PAGEISOLATION_H
+> >  #define __LINUX_PAGEISOLATION_H
+> >  
+> > +#ifdef CONFIG_MEMORY_ISOLATION
+> > +static inline bool page_isolated_pageblock(struct page *page)
+> > +{
+> > +	return get_pageblock_migratetype(page) == MIGRATE_ISOLATE;
+> > +}
+> > +static inline bool mt_isolated_pageblock(int migratetype)
+> > +{
+> > +	return migratetype == MIGRATE_ISOLATE;
+> > +}
 > 
-> That's an ext4 problem, not a page fault or timestamp update
-> problem. Fix ext4.
-  Well, XFS doesn't journal the timestamp update which is why it gets away
-without blocking on journal. Other filesystems (and I don't think it's just
-ext4) are so benevolent with timestamps so their updates are more costly...
+> Perhaps “is_migrate_isolate” to match already existing “is_migrate_cma”?
 
-> > 2. The current behavior is surprising -- the timestamp resulting from
-> >    an mmaped write will be before the write, not after.  This contradicts
-> >    the mmap(2) manpage, which says:
-> > 
-> >      The st_ctime and st_mtime field for a file mapped with  PROT_WRITE  and
-> >      MAP_SHARED  will  be  updated  after  a write to the mapped region, and
-> >      before a subsequent msync(2) with the MS_SYNC or MS_ASYNC flag, if  one
-> >      occurs.
-> 
-> What you propose (time updates in do_writepages()) violates this.
-> msync(MS_ASYNC) doesn't actually start any IO, therefore the
-> timestamp wil not be updated.
-> 
-> Besides, what POSIX actually says is:
-> 
-> | The st_ctime and st_mtime fields of a file that is mapped with
-> | MAP_SHARED and PROT_WRITE shall be marked for update at some point
-> | in the interval between a write reference to the mapped region and
-> | the next call to msync() with MS_ASYNC or MS_SYNC for that portion
-> | of the file by any process.
-> 
-> Which means updating the timestamp during the first write is
-> perfectly acceptible. Indeed, by definition, we are compliant with
-> the man page because the update is after the write has occurred.
-> That is, the write triggered the page fault, so the page fault
-> processing where we update the timestamps is definitely after the
-> write occurred. :)
-  Well, but there can be more writes to the already write faulted page.
-They can come seconds after we called ->page_mkwrite() and thus updated
-time stamps. So Andy is correct we violate the spec AFAICT.
+Good poking. In fact, while I made this patch, I was very tempted by renaming
+is_migrate_cma to cma_pageblock.
 
-> > 3. (An ulterior motive) I'd like to use hardware dirty tracking for
-> >    shared, locked, writable mappings (instead of page faults).  Moving
-> >    important work out of the page_mkwrite path is an important first step.
-> 
-> I don't think you're going to get very far doing this. page_mkwrite
-> needs to do:
-> 
-> 	a) block allocation in page_mkwrite() for faults over holes
-> 	   to detect ENOSPC conditions immediately rather than in
-> 	   writeback when such an error results in data loss.
-> 	b) detect writes over unwritten extents so that the pages in
-> 	   the page cache can be set up correctly for conversion to
-> 	   occur during writeback.
-> 
-> Correcting these two problems was the reason for introducing
-> page_mkwrite in the first place - we need to do this stuff before
-> the page fault is completed, and that means, by definition,
-> page_mkwrite needs to be able to block. Moving c/mtime updates out
-> of the way does not, in any way, change these requirements.
-  Here I completely agree. I wanted to comment on it in my post as well but
-then forgot about it.
+        is_migrate_cma(mt)
 
-> Perhaps you should implement everything you want to do inside ext4
-> first, so we can get an idea of exactly what you want page_mkwrite()
-> to do, how you want it to behave, and how you expect filesystems to
-> handle the above situations correctly....
-  Ah, now I noticed we don't call file_update_time() from
-__block_page_mkwrite() so yes, just changing ext4 without touching generic
-code is easily possible.
+I don't know who start to use "mt" instead of "migratetype" but anyway, it's
+not a good idea.
 
-								Honza
+        is_migrate_cma(migratetype)
+
+It's very clear for me because migratetype is per pageblock, we can know the
+function works per pageblock unit.
+
+> Especially as the “mt_isolated_pageblock” sound confusing to me, it
+> implies that it works on pageblocks which it does not.
+
+-ENOPARSE.
+
+migratetype works on pageblock.
+I admit mt is really dirty but I used page_alloc.c already has lots of mt, SIGH.
+
+How about this?
+
+1. Let's change all "mt" with "migratetype" again.
+2. use is_migrate_isolate and is_migrate_cma for "migratetype".
+3. use is_migrate_isolate_page instead of page_isolated_pageblock for "page".
+
+Okay?
+
+> 
+> > +#else
+> > +static inline bool page_isolated_pageblock(struct page *page)
+> > +{
+> > +	return false;
+> > +}
+> > +static inline bool mt_isolated_pageblock(int migratetype)
+> > +{
+> > +	return false;
+> > +}
+> > +#endif
+> >  
+> >  bool has_unmovable_pages(struct zone *zone, struct page *page, int count,
+> >  			 bool skip_hwpoisoned_pages);
+> -- 
+> Best regards,                                         _     _
+> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
+> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
+> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+
+
+
+
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Kind regards,
+Minchan Kim
