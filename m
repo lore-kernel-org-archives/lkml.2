@@ -1,79 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999Ab2LUKCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 05:02:15 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:40621 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751645Ab2LUKB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 05:01:56 -0500
-Message-ID: <50D433AA.6070606@ti.com>
-Date: Fri, 21 Dec 2012 15:32:18 +0530
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>,
-        <nico@linaro.org>, <marc.zyngier@arm.com>, <will.deacon@arm.com>,
-        <john.stultz@linaro.org>, <tglx@linutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clockevents: Add generic timer broadcast receiver
-References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com> <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
-In-Reply-To: <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1751983Ab2LUKEw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 05:04:52 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:38990 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab2LUKEs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 05:04:48 -0500
+Date: Fri, 21 Dec 2012 11:04:27 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Laurent Navet <laurent.navet@gmail.com>
+Cc: w.sang@pengutronix.de, ben-linux@fluff.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: i2c-nforce2: fix coding style issues
+Message-ID: <20121221110427.6e33bb9d@endymion.delvare>
+In-Reply-To: <1355951171-3230-1-git-send-email-laurent.navet@gmail.com>
+References: <1355951171-3230-1-git-send-email-laurent.navet@gmail.com>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 December 2012 05:36 PM, Mark Rutland wrote:
-> Currently the broadcast mechanism used for timers is abstracted by a
-> function pointer on struct clock_event_device. As the fundamental
-> mechanism for broadcast is architecture-specific, this ties each
-> clock_event_device driver to a single architecture, even where the
-> driver is otherwise generic.
->
-> This patch adds a standard path for the receipt of timer broadcasts, so
-> drivers and/or architecture backends need not manage redundant lists of
-> timers for the purpose of routing broadcast timer ticks.
->
-> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+Hi Laurent,
+
+On Wed, 19 Dec 2012 22:06:11 +0100, Laurent Navet wrote:
+> avoid these checkpatch.pl issues :
+> - ERROR: "foo * bar" should be "foo *bar"
+> - ERROR: switch and case should be at the same indent
+> - ERROR: "(foo*)" should be "(foo *)"
+> - ERROR: do not use assignment in if condition
+> - ERROR: space required before the open parenthesis '('
+> - WARNING: suspect code indent for conditional statements
+> - WARNING: quoted string split across lines
+> - WARNING: space prohibited between function name and open parenthesis '('
+> 
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
 > ---
->   include/linux/clockchips.h   |    4 ++++
->   kernel/time/tick-broadcast.c |   15 +++++++++++++++
->   2 files changed, 19 insertions(+), 0 deletions(-)
->
-> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> index 8a7096f..e1089aa 100644
-> --- a/include/linux/clockchips.h
-> +++ b/include/linux/clockchips.h
-> @@ -161,6 +161,10 @@ clockevents_calc_mult_shift(struct clock_event_device *ce, u32 freq, u32 minsec)
->   extern void clockevents_suspend(void);
->   extern void clockevents_resume(void);
->
-> +#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-> +extern int tick_receive_broadcast(void);
-> +#endif
+>  drivers/i2c/busses/i2c-nforce2.c |  149 +++++++++++++++++++-------------------
+>  1 file changed, 75 insertions(+), 74 deletions(-)
+
+Thanks for the update. I have a few more comments:
+
+> 
+> diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+> index 392303b..03f32c5 100644
+> --- a/drivers/i2c/busses/i2c-nforce2.c
+> +++ b/drivers/i2c/busses/i2c-nforce2.c
+> @@ -60,7 +60,7 @@
+>  #include <linux/io.h>
+>  
+>  MODULE_LICENSE("GPL");
+> -MODULE_AUTHOR ("Hans-Frieder Vogt <hfvogt@gmx.net>");
+> +MODULE_AUTHOR("Hans-Frieder Vogt <hfvogt@gmx.net>");
+>  MODULE_DESCRIPTION("nForce2/3/4/5xx SMBus driver");
+>  
+>  
+> @@ -188,9 +188,9 @@ static int nforce2_check_status(struct i2c_adapter *adap)
+>  }
+>  
+>  /* Return negative errno on error */
+> -static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+> +static s32 nforce2_access(struct i2c_adapter *adap, u16 addr,
+>  		unsigned short flags, char read_write,
+> -		u8 command, int size, union i2c_smbus_data * data)
+> +		u8 command, int size, union i2c_smbus_data *data)
+>  {
+>  	struct nforce2_smbus *smbus = adap->algo_data;
+>  	unsigned char protocol, pec;
+> @@ -203,55 +203,54 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+>  
+>  	switch (size) {
+>  
+
+While you're here, please drop this useless blank line.
+
+> -		case I2C_SMBUS_QUICK:
+> -			protocol |= NVIDIA_SMB_PRTCL_QUICK;
+> -			read_write = I2C_SMBUS_WRITE;
+> -			break;
+> +	case I2C_SMBUS_QUICK:
+> +		protocol |= NVIDIA_SMB_PRTCL_QUICK;
+> +		read_write = I2C_SMBUS_WRITE;
+> +		break;
+>  
+> -		case I2C_SMBUS_BYTE:
+> -			if (read_write == I2C_SMBUS_WRITE)
+> -				outb_p(command, NVIDIA_SMB_CMD);
+> -			protocol |= NVIDIA_SMB_PRTCL_BYTE;
+> -			break;
+> -
+> -		case I2C_SMBUS_BYTE_DATA:
+> -			outb_p(command, NVIDIA_SMB_CMD);
+> -			if (read_write == I2C_SMBUS_WRITE)
+> -				outb_p(data->byte, NVIDIA_SMB_DATA);
+> -			protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
+> -			break;
+> -
+> -		case I2C_SMBUS_WORD_DATA:
+> -			outb_p(command, NVIDIA_SMB_CMD);
+> -			if (read_write == I2C_SMBUS_WRITE) {
+> -				 outb_p(data->word, NVIDIA_SMB_DATA);
+> -				 outb_p(data->word >> 8, NVIDIA_SMB_DATA+1);
+> -			}
+> -			protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
+> -			break;
+> -
+> -		case I2C_SMBUS_BLOCK_DATA:
+> +	case I2C_SMBUS_BYTE:
+> +		if (read_write == I2C_SMBUS_WRITE)
+>  			outb_p(command, NVIDIA_SMB_CMD);
+> -			if (read_write == I2C_SMBUS_WRITE) {
+> -				len = data->block[0];
+> -				if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> -					dev_err(&adap->dev,
+> -						"Transaction failed "
+> -						"(requested block size: %d)\n",
+> -						len);
+> -					return -EINVAL;
+> -				}
+> -				outb_p(len, NVIDIA_SMB_BCNT);
+> -				for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
+> -					outb_p(data->block[i + 1],
+> -					       NVIDIA_SMB_DATA+i);
+> +		protocol |= NVIDIA_SMB_PRTCL_BYTE;
+> +		break;
 > +
-As mentioned in earlier patch, CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-isn't must for SMP kernel and hence when build with
-!GENERIC_CLOCKEVENTS_BROADCAST, $subject patch will break the build.
+> +	case I2C_SMBUS_BYTE_DATA:
+> +		outb_p(command, NVIDIA_SMB_CMD);
+> +		if (read_write == I2C_SMBUS_WRITE)
+> +			outb_p(data->byte, NVIDIA_SMB_DATA);
+> +		protocol |= NVIDIA_SMB_PRTCL_BYTE_DATA;
+> +		break;
+> +
+> +	case I2C_SMBUS_WORD_DATA:
+> +		outb_p(command, NVIDIA_SMB_CMD);
+> +		if (read_write == I2C_SMBUS_WRITE) {
+> +			outb_p(data->word, NVIDIA_SMB_DATA);
+> +			outb_p(data->word >> 8, NVIDIA_SMB_DATA+1);
 
-Below is the fix for the same. Feel free to fold it if you agree.
+While this isn't reported by checkpatch, I'd appreciate if you could
+add spaces around "+" on lines you're already touching.
 
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index 6634652..921568b 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -168,6 +168,11 @@ extern void tick_broadcast(const struct cpumask *mask);
-  #define tick_broadcast	NULL
-  #endif
-  extern int tick_receive_broadcast(void);
-+#else
-+static inline int tick_receive_broadcast(void)
-+{
-+	return 0;
-+}
-  #endif
+> +		}
+> +		protocol |= NVIDIA_SMB_PRTCL_WORD_DATA | pec;
+> +		break;
+> +
+> +	case I2C_SMBUS_BLOCK_DATA:
+> +		outb_p(command, NVIDIA_SMB_CMD);
+> +		if (read_write == I2C_SMBUS_WRITE) {
+> +			len = data->block[0];
+> +			if ((len == 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> +				dev_err(&adap->dev,
+> +				"Transaction failed (requested block size: %d)\n",
+> +				len);
 
-  #ifdef CONFIG_GENERIC_CLOCKEVENTS
+Your indentation is wrong here, the last two lines should be aligned on
+the opening parenthesis of the previous line.
 
+> +				return -EINVAL;
+>  			}
+> -			protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
+> -			break;
+> +			outb_p(len, NVIDIA_SMB_BCNT);
+> +			for (i = 0; i < I2C_SMBUS_BLOCK_MAX; i++)
+> +				outb_p(data->block[i + 1],
+> +				       NVIDIA_SMB_DATA+i);
+> +		}
+> +		protocol |= NVIDIA_SMB_PRTCL_BLOCK_DATA | pec;
+> +		break;
+>  
+> -		default:
+> -			dev_err(&adap->dev, "Unsupported transaction %d\n", size);
+> -			return -EOPNOTSUPP;
+> +	default:
+> +		dev_err(&adap->dev, "Unsupported transaction %d\n", size);
+> +		return -EOPNOTSUPP;
+>  	}
+>  
+>  	outb_p((addr & 0x7f) << 1, NVIDIA_SMB_ADDR);
+> @@ -266,27 +265,28 @@ static s32 nforce2_access(struct i2c_adapter * adap, u16 addr,
+>  
+>  	switch (size) {
+>  
+
+While you're here, please drop this useless blank line.
+
+> -		case I2C_SMBUS_BYTE:
+> -		case I2C_SMBUS_BYTE_DATA:
+> -			data->byte = inb_p(NVIDIA_SMB_DATA);
+> -			break;
+> -
+> -		case I2C_SMBUS_WORD_DATA:
+> -			data->word = inb_p(NVIDIA_SMB_DATA) | (inb_p(NVIDIA_SMB_DATA+1) << 8);
+> -			break;
+> -
+> -		case I2C_SMBUS_BLOCK_DATA:
+> -			len = inb_p(NVIDIA_SMB_BCNT);
+> -			if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> -				dev_err(&adap->dev, "Transaction failed "
+> -					"(received block size: 0x%02x)\n",
+> -					len);
+> -				return -EPROTO;
+> -			}
+> -			for (i = 0; i < len; i++)
+> -				data->block[i+1] = inb_p(NVIDIA_SMB_DATA + i);
+> -			data->block[0] = len;
+> -			break;
+> +	case I2C_SMBUS_BYTE:
+> +	case I2C_SMBUS_BYTE_DATA:
+> +		data->byte = inb_p(NVIDIA_SMB_DATA);
+> +		break;
+> +
+> +	case I2C_SMBUS_WORD_DATA:
+> +		data->word = inb_p(NVIDIA_SMB_DATA) |
+> +			(inb_p(NVIDIA_SMB_DATA+1) << 8);
+
+Please add a few spaces to align on the = sign:
+
+		data->word = inb_p(NVIDIA_SMB_DATA) |
+			     (inb_p(NVIDIA_SMB_DATA + 1) << 8);
+
+> +		break;
+> +
+> +	case I2C_SMBUS_BLOCK_DATA:
+> +		len = inb_p(NVIDIA_SMB_BCNT);
+> +		if ((len <= 0) || (len > I2C_SMBUS_BLOCK_MAX)) {
+> +			dev_err(&adap->dev,
+> +			"Transaction failed (received block size: 0x%02x)\n",
+> +			len);
+
+Your indentation is wrong here, the last two lines should be aligned on
+the opening parenthesis of the previous line.
+
+> +			return -EPROTO;
+> +		}
+> +		for (i = 0; i < len; i++)
+> +			data->block[i+1] = inb_p(NVIDIA_SMB_DATA + i);
+> +		data->block[0] = len;
+> +		break;
+>  	}
+>  
+>  	return 0;
+> @@ -299,7 +299,7 @@ static u32 nforce2_func(struct i2c_adapter *adapter)
+>  	return I2C_FUNC_SMBUS_QUICK | I2C_FUNC_SMBUS_BYTE |
+>  	       I2C_FUNC_SMBUS_BYTE_DATA | I2C_FUNC_SMBUS_WORD_DATA |
+>  	       I2C_FUNC_SMBUS_PEC |
+> -	       (((struct nforce2_smbus*)adapter->algo_data)->blockops ?
+> +	       (((struct nforce2_smbus *)adapter->algo_data)->blockops ?
+>  		I2C_FUNC_SMBUS_BLOCK_DATA : 0);
+>  }
+>  
+> @@ -327,10 +327,10 @@ static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
+>  	{ 0 }
+>  };
+>  
+> -MODULE_DEVICE_TABLE (pci, nforce2_ids);
+> +MODULE_DEVICE_TABLE(pci, nforce2_ids);
+>  
+>  
+> -static int __devinit nforce2_probe_smb (struct pci_dev *dev, int bar,
+> +static int __devinit nforce2_probe_smb(struct pci_dev *dev, int bar,
+>  	int alt_reg, struct nforce2_smbus *smbus, const char *name)
+
+This change causes a reject because __devinit was removed by another
+patch:
+http://git.pengutronix.de/?p=wsa/linux.git;a=commit;h=cda2826abea9a78d21b5e35d71db328657b756e5
+
+The space issue was fixed in that patch too so you can simply omit that
+change from your own patch to avoid the reject.
+
+>  {
+>  	int error;
+> @@ -388,11 +388,12 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
+>  	int res1, res2;
+>  
+>  	/* we support 2 SMBus adapters */
+> -	if (!(smbuses = kzalloc(2*sizeof(struct nforce2_smbus), GFP_KERNEL)))
+> +	smbuses = kzalloc(2*sizeof(struct nforce2_smbus), GFP_KERNEL);
+
+Spaces around "*" please.
+
+> +	if (!smbuses)
+>  		return -ENOMEM;
+>  	pci_set_drvdata(dev, smbuses);
+>  
+> -	switch(dev->device) {
+> +	switch (dev->device) {
+>  	case PCI_DEVICE_ID_NVIDIA_NFORCE2_SMBUS:
+>  	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP51_SMBUS:
+>  	case PCI_DEVICE_ID_NVIDIA_NFORCE_MCP55_SMBUS:
+
+Other than these minor details, this looks good. You could fix the
+following warning as well:
+
+WARNING: line over 80 characters
+#380: FILE: i2c/busses/i2c-nforce2.c:380:
++	dev_info(&smbus->adapter.dev, "nForce2 SMBus adapter at %#x\n", smbus->base);
+
+It's an easy one. Please resubmit with the requested changes and then
+Wolfram can apply your patch. Thanks for the good work!
+
+-- 
+Jean Delvare
