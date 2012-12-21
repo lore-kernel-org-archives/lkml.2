@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab2LUTMk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 14:12:40 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:47751 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab2LUTMi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 14:12:38 -0500
-From: Dmitry Voytik <dvv.kernel@gmail.com>
-To: mmarek@suse.cz
-Cc: linux-kernel@vger.kernel.org, Dmitry Voytik <dvv.kernel@gmail.com>
-Subject: [PATCH] nconf: add j, k and l keys for menu navigation
-Date: Fri, 21 Dec 2012 23:12:25 +0400
-Message-Id: <1356117145-14158-1-git-send-email-dvv.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752548Ab2LUTNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 14:13:51 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:49066 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751085Ab2LUTNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 14:13:48 -0500
+Message-ID: <1356117229.19585.20.camel@joe-AO722>
+Subject: Re: [PATCH 00/19] MAINTAINERS: fix file patterns
+From: Joe Perches <joe@perches.com>
+To: Rob Landley <rob@landley.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Date: Fri, 21 Dec 2012 11:13:49 -0800
+In-Reply-To: <1356116656.21178.1@driftwood>
+References: <1355262601-4263-1-git-send-email-cesarb@cesarb.net>
+	 <1355264351.24219.8.camel@joe-AO722> <1356105142.19585.13.camel@joe-AO722>
+	 <1356116656.21178.1@driftwood>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add vi-style keys for menu navigation: press j/k for down/up navigation
-and l for entering to a submenu. Unfortantely h key is reserved for
-the items help.
+On Fri, 2012-12-21 at 13:04 -0600, Rob Landley wrote:
+> On 12/21/2012 09:52:22 AM, Joe Perches wrote:
+> > On Tue, 2012-12-11 at 14:19 -0800, Joe Perches wrote:
+> > > On Tue, 2012-12-11 at 19:49 -0200, Cesar Eduardo Barros wrote:
+> > > > I could not find the maintainer for the MAINTAINERS file, so  
+> > sending
+> > > > directly to Linus. Sorry if I am mistaken.
+> > >
+> > > Thanks Cesar.
+> > >
+> > > Most maintainers patches are picked up by Andrew Morton (cc'd)
+> 
+> Which implies... (attached because Balsa damages whitespace).
 
-Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
----
- scripts/kconfig/nconf.c |   13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+Maybe something like:
 
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index ce93e87..ccf6766 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -38,10 +38,10 @@ static const char nconf_readme[] = N_(
- "\n"
- "Menus\n"
- "----------\n"
--"o  Use the Up/Down arrow keys (cursor keys) to highlight the item\n"
--"   you wish to change use <Enter> or <Space>. Goto submenu by \n"
--"   pressing <Enter> of <right-arrow>. Use <Esc> or <left-arrow> to go back.\n"
--"   Submenus are designated by \"--->\".\n"
-+"o  Use the Up/Down arrow keys (cursor keys) or <j>/<k> to highlight\n"
-+"   the item you wish to change use <Enter> or <Space>. Goto submenu by\n"
-+"   pressing <Enter>, <right-arrow> or <l>. Use <Esc> or <left-arrow>\n"
-+"   to go back. Submenus are designated by \"--->\".\n"
- "\n"
- "   Searching: pressing '/' triggers interactive search mode.\n"
- "              nconfig performs a case insensitive search for the string\n"
-@@ -1115,9 +1115,11 @@ static void conf(struct menu *menu)
- 						(struct menu *) item_data()))
- 				break;
- 			switch (res) {
-+			case 'j':
- 			case KEY_DOWN:
- 				menu_driver(curses_menu, REQ_DOWN_ITEM);
- 				break;
-+			case 'k':
- 			case KEY_UP:
- 				menu_driver(curses_menu, REQ_UP_ITEM);
- 				break;
-@@ -1141,7 +1143,7 @@ static void conf(struct menu *menu)
- 			if (res == 10 || res == 27 ||
- 				res == 32 || res == 'n' || res == 'y' ||
- 				res == KEY_LEFT || res == KEY_RIGHT ||
--				res == 'm')
-+				res == 'm' || res == 'l')
- 				break;
- 			refresh_all_windows(main_window);
- 		}
-@@ -1170,6 +1172,7 @@ static void conf(struct menu *menu)
- 			else if (item_is_tag('m'))
- 				conf(submenu);
- 			break;
-+		case 'l':
- 		case KEY_RIGHT:
- 		case 10: /* ENTER WAS PRESSED */
- 			switch (item_tag()) {
--- 
-1.7.9.5
+MAINTAINERS: UPDATES TO THIS FILE
+M:	Andrew Morton <akpm@linux-foundation.org>
+S:	Odd fixes
+F:	MAINTAINERS
+
+But then Andrew tried to get me added as a checkpatch
+maintainer and I demurred, so he'll have to add himself if
+he wants.
+
+Anyway, even without a specific MAINTAINERS maintainer entry,
+get_maintainers uses git log history and Andrew shows up anyway.
+
+$ ./scripts/get_maintainer.pl -f MAINTAINERS 
+Andrew Morton <akpm@linux-foundation.org> (commit_signer:51/331=15%)
+Mauro Carvalho Chehab <mchehab@redhat.com> (commit_signer:39/331=12%)
+Joe Perches <joe@perches.com> (commit_signer:25/331=8%)
+"David S. Miller" <davem@davemloft.net> (commit_signer:25/331=8%)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> (commit_signer:22/331=7%)
+linux-kernel@vger.kernel.org (open list)
+
 
