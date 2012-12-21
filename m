@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab2LUUMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 15:12:37 -0500
-Received: from popelka.ms.mff.cuni.cz ([195.113.20.131]:40451 "EHLO
-	popelka.ms.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2LUUMf (ORCPT
+	id S1751803Ab2LUUSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 15:18:41 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23123 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab2LUUSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 15:12:35 -0500
-Date: Fri, 21 Dec 2012 21:07:35 +0100
-From: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
-To: "Theodore Ts'o" <tytso@mit.edu>, Stephan Mueller <smueller@chronox.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, Jeff Liu <jeff.liu@oracle.com>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH] avoid entropy starvation due to stack protection
-Message-ID: <20121221200735.GB5867@domone>
-References: <50C72800.20508@chronox.de>
- <20121212164321.a01c5641.akpm@linux-foundation.org>
- <50C98764.6050104@chronox.de>
- <50CB63A9.80409@chronox.de>
- <20121216003020.GC9016@thunk.org>
+	Fri, 21 Dec 2012 15:18:37 -0500
+Date: Fri, 21 Dec 2012 15:18:24 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>, dgdegra@tycho.nsa.gov,
+        xen-devel@lists.xensource.com, david.vrabel@citrix.com,
+        stefano.stabellini@eu.citrix.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: oopsable race in xen-gntdev (unsafe vma access)
+Message-ID: <20121221201824.GA31554@phenom.dumpdata.com>
+References: <20121215181211.GV4939@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121216003020.GC9016@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121215181211.GV4939@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 15, 2012 at 07:30:20PM -0500, Theodore Ts'o wrote:
+On Sat, Dec 15, 2012 at 06:12:11PM +0000, Al Viro wrote:
+> 	1) find_vma() is *not* safe without ->mmap_sem and its result may
+> very well be freed just as it's returned to caller.  IOW,
+> gntdev_ioctl_get_offset_for_vaddr() is racy and may end up with
+> dereferencing freed memory.
 > 
-> What I would do instead is use an AES-based cryptographic random
-> number generator.  That is, at boot time, grab enough randomness to
-> for an AES key, and then use that key to create a cryptographic random
-> number generator by encrypting a counter with said AES key.  This is a
-> cryptographic primitive which has been very carefully studied, and for
-> architectures where you have a hardware support for AES (including
-> ARMv8, Power 7, Sparc T4, as well as x86 processors with the AES-NI
-> instructions), this will be much faster and require much less memory
-> and CPU resources than replicating the /dev/urandom infrastructure.
+> 	2) gntdev_vma_close() is putting NULL into map->vma with only
+> ->mmap_sem held by caller.  Things like
+>                 if (!map->vma)
+>                         continue;
+>                 if (map->vma->vm_start >= end)
+>                         continue;
+>                 if (map->vma->vm_end <= start)
+> done with just priv->lock held are racy.
 > 
-I was suggesting in another thread different approach.
+> 	I'm not familiar with the code, but it looks like we need to
+> protect gntdev_vma_close() guts with the same spinlock and probably
+> hold ->mmap_sem shared around the "find_vma()+get to map->{index,count}"
+> in the ioctl.  Or replace the logics in ioctl with search through the
+> list of grant_map under the same spinlock...
+> 
+> 	Comments?
+Hey Al,
 
-Use AES-based cryptographic random number generator as replacement of 
-/dev/urandom. Reseeding would get done by changing both aes key and
-data.
+Thank you for your analysis.
 
-This would with hardware support make /dev/urandom much faster than its now.
+CC-ing Daniel, David and Stefano. I recall we had some priv->lock movement
+in the past and there is also interaction with another piece of code - 
+the balloon code so we better be circumspect of not blowing up.
+
+Al, it is around holidays and folks are mostly gone - so this will take
+a bit of time to get sorted out.
