@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751238Ab2LUHzr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 02:55:47 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:33926 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812Ab2LUHzl convert rfc822-to-8bit (ORCPT
+	id S1751392Ab2LUH4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 02:56:05 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:53714 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750812Ab2LUH4B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 02:55:41 -0500
+	Fri, 21 Dec 2012 02:56:01 -0500
 From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Richard Purdie <rpurdie@rpsys.net>
+To: "a.zummo@towertech.it" <a.zummo@towertech.it>
 CC: Andrew Morton <akpm@linux-foundation.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Thierry Reding <thierry.reding@avionic-design.de>
-Subject: [PATCH v2 2/2] backlight: add new lp8788 backlight driver
-Thread-Topic: [PATCH v2 2/2] backlight: add new lp8788 backlight driver
-Thread-Index: Ac3fUIc+XT4fXXkCRl+TTu4PYuoz9g==
-Date: Fri, 21 Dec 2012 07:55:23 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E108D2@DQHE02.ent.ti.com>
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: [PATCH v3 1/2] rtc: add new lp8788 rtc driver
+Thread-Topic: [PATCH v3 1/2] rtc: add new lp8788 rtc driver
+Thread-Index: Ac3fUIXDqZYgoeWsSjiBLm1bKZpEpg==
+Date: Fri, 21 Dec 2012 07:55:21 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E108CA@DQHE02.ent.ti.com>
 Accept-Language: ko-KR, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -32,80 +32,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 TI LP8788 PMU supports regulators, battery charger, RTC, ADC, backlight driver
 and current sinks.
-This patch enables LP8788 backlight module.
+This patch enables LP8788 RTC module.
 
-(Brightness mode)
-The brightness is controlled by PWM input or I2C register.
-All modes are supported in the driver.
-
-(Platform data)
-Configurable data can be defined in the platform side.
- name                  : backlight driver name. (default: "lcd-backlight")
- initial_brightness    : initial value of backlight brightness
- bl_mode               : brightness control by PWM or lp8788 register
- dim_mode              : dimming mode selection
- full_scale            : full scale current setting
- rise_time             : brightness ramp up step time
- fall_time             : brightness ramp down step time
- pwm_pol               : PWM polarity setting when bl_mode is PWM based
- period_ns             : platform specific PWM period value. unit is nano.
-
-The default values are set in case no platform data is defined.
+Patch v3.
+ remove __devinit and __devexit.
+ add weekday definition and comments.
 
 Patch v2.
- use generic PWM functions rather than lp8788 platform data function calls.
- add configurable PWM period in the platform data.
+ use IRQ domain for handling alarm IRQ.
  replace module_init() and module_exit() with module_platform_driver().
+ clean up code for _probe() and _remove().
 
 Patch v1.
  initial patch
 
 Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
 ---
- drivers/video/backlight/Kconfig     |    6 +
- drivers/video/backlight/Makefile    |    1 +
- drivers/video/backlight/lp8788_bl.c |  350 +++++++++++++++++++++++++++++++++++
- include/linux/mfd/lp8788.h          |   16 +-
- 4 files changed, 360 insertions(+), 13 deletions(-)
- create mode 100644 drivers/video/backlight/lp8788_bl.c
+ drivers/rtc/Kconfig      |    6 +
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-lp8788.c |  345 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 352 insertions(+)
+ create mode 100644 drivers/rtc/rtc-lp8788.c
 
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index 765a945..455646a 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -369,6 +369,12 @@ config BACKLIGHT_LP855X
- 	  This supports TI LP8550, LP8551, LP8552, LP8553 and LP8556
- 	  backlight driver.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index d0cea02..a3996c4 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -194,6 +194,12 @@ config RTC_DRV_DS3232
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called rtc-ds3232.
  
-+config BACKLIGHT_LP8788
-+	tristate "Backlight driver for TI LP8788 MFD"
-+	depends on BACKLIGHT_CLASS_DEVICE && MFD_LP8788
++config RTC_DRV_LP8788
++	tristate "TI LP8788 RTC driver"
++	depends on MFD_LP8788
 +	help
-+	  This supports TI LP8788 backlight driver.
++	  Say Y to enable support for the LP8788 RTC/ALARM driver.
 +
- config BACKLIGHT_OT200
- 	tristate "Backlight driver for ot200 visualisation device"
- 	depends on BACKLIGHT_CLASS_DEVICE && CS5535_MFGPT && GPIO_CS5535
-diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index e7ce729..4d125ce 100644
---- a/drivers/video/backlight/Makefile
-+++ b/drivers/video/backlight/Makefile
-@@ -26,6 +26,7 @@ obj-$(CONFIG_BACKLIGHT_LOCOMO)	+= locomolcd.o
- obj-$(CONFIG_BACKLIGHT_LM3630)	+= lm3630_bl.o
- obj-$(CONFIG_BACKLIGHT_LM3639)	+= lm3639_bl.o
- obj-$(CONFIG_BACKLIGHT_LP855X)	+= lp855x_bl.o
-+obj-$(CONFIG_BACKLIGHT_LP8788)	+= lp8788_bl.o
- obj-$(CONFIG_BACKLIGHT_OMAP1)	+= omap1_bl.o
- obj-$(CONFIG_BACKLIGHT_PANDORA)	+= pandora_bl.o
- obj-$(CONFIG_BACKLIGHT_CARILLO_RANCH) += cr_bllcd.o
-diff --git a/drivers/video/backlight/lp8788_bl.c b/drivers/video/backlight/lp8788_bl.c
+ config RTC_DRV_MAX6900
+ 	tristate "Maxim MAX6900"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index c3f62c8..66050d8 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -56,6 +56,7 @@ obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+ obj-$(CONFIG_RTC_DRV_ISL12022)	+= rtc-isl12022.o
+ obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
++obj-$(CONFIG_RTC_DRV_LP8788)	+= rtc-lp8788.o
+ obj-$(CONFIG_RTC_DRV_LPC32XX)	+= rtc-lpc32xx.o
+ obj-$(CONFIG_RTC_DRV_LOONGSON1)	+= rtc-ls1x.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+diff --git a/drivers/rtc/rtc-lp8788.c b/drivers/rtc/rtc-lp8788.c
 new file mode 100644
-index 0000000..fbf17bc
+index 0000000..2363e52
 --- /dev/null
-+++ b/drivers/video/backlight/lp8788_bl.c
-@@ -0,0 +1,350 @@
++++ b/drivers/rtc/rtc-lp8788.c
+@@ -0,0 +1,345 @@
 +/*
-+ * TI LP8788 MFD - backlight driver
++ * TI LP8788 MFD - rtc driver
 + *
 + * Copyright 2012 Texas Instruments
 + *
@@ -117,389 +102,342 @@ index 0000000..fbf17bc
 + *
 + */
 +
-+#include <linux/backlight.h>
 +#include <linux/err.h>
++#include <linux/irqdomain.h>
 +#include <linux/mfd/lp8788.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/pwm.h>
++#include <linux/rtc.h>
 +#include <linux/slab.h>
 +
 +/* register address */
-+#define LP8788_BL_CONFIG		0x96
-+#define LP8788_BL_BRIGHTNESS		0x97
-+#define LP8788_BL_RAMP			0x98
++#define LP8788_INTEN_3			0x05
++#define LP8788_RTC_UNLOCK		0x64
++#define LP8788_RTC_SEC			0x70
++#define LP8788_ALM1_SEC			0x77
++#define LP8788_ALM1_EN			0x7D
++#define LP8788_ALM2_SEC			0x7E
++#define LP8788_ALM2_EN			0x84
 +
 +/* mask/shift bits */
-+#define LP8788_BL_EN			BIT(0)	/* Addr 96h */
-+#define LP8788_BL_PWM_EN		BIT(5)
-+#define LP8788_BL_FULLSCALE_S		2
-+#define LP8788_BL_DIM_MODE_S		1
-+#define LP8788_BL_PWM_POLARITY_S	6
-+#define LP8788_BL_RAMP_RISE_S		4	/* Addr 98h */
++#define LP8788_INT_RTC_ALM1_M		BIT(1)	/* Addr 05h */
++#define LP8788_INT_RTC_ALM1_S		1
++#define LP8788_INT_RTC_ALM2_M		BIT(2)	/* Addr 05h */
++#define LP8788_INT_RTC_ALM2_S		2
++#define LP8788_ALM_EN_M			BIT(7)	/* Addr 7Dh or 84h */
++#define LP8788_ALM_EN_S			7
 +
-+#define BUF_SIZE			20
-+#define MAX_BRIGHTNESS			127
-+#define DEFAULT_BL_NAME			"lcd-backlight"
++#define DEFAULT_ALARM_SEL		LP8788_ALARM_1
++#define LP8788_MONTH_OFFSET		1
++#define LP8788_BASE_YEAR		2000
++#define MAX_WDAY_BITS			7
++#define LP8788_WDAY_SET			1
++#define RTC_UNLOCK			0x1
++#define RTC_LATCH			0x2
++#define ALARM_IRQ_FLAG			(RTC_IRQF | RTC_AF)
 +
-+struct lp8788_bl_config {
-+	enum lp8788_bl_ctrl_mode bl_mode;
-+	enum lp8788_bl_dim_mode dim_mode;
-+	enum lp8788_bl_full_scale_current full_scale;
-+	enum lp8788_bl_ramp_step rise_time;
-+	enum lp8788_bl_ramp_step fall_time;
-+	enum lp8788_bl_pwm_polarity pwm_pol;
++enum lp8788_time {
++	LPTIME_SEC,
++	LPTIME_MIN,
++	LPTIME_HOUR,
++	LPTIME_MDAY,
++	LPTIME_MON,
++	LPTIME_YEAR,
++	LPTIME_WDAY,
++	LPTIME_MAX,
 +};
 +
-+struct lp8788_bl {
++struct lp8788_rtc {
 +	struct lp8788 *lp;
-+	struct backlight_device *bl_dev;
-+	struct lp8788_backlight_platform_data *pdata;
-+	enum lp8788_bl_ctrl_mode mode;
-+	struct pwm_device *pwm;
++	struct rtc_device *rdev;
++	enum lp8788_alarm_sel alarm;
++	int irq;
 +};
 +
-+struct lp8788_bl_config default_bl_config = {
-+	.bl_mode    = LP8788_BL_REGISTER_ONLY,
-+	.dim_mode   = LP8788_DIM_EXPONENTIAL,
-+	.full_scale = LP8788_FULLSCALE_1900uA,
-+	.rise_time  = LP8788_RAMP_8192us,
-+	.fall_time  = LP8788_RAMP_8192us,
-+	.pwm_pol    = LP8788_PWM_ACTIVE_HIGH,
++static const u8 addr_alarm_sec[LP8788_ALARM_MAX] = {
++	LP8788_ALM1_SEC,
++	LP8788_ALM2_SEC,
 +};
 +
-+static inline bool is_brightness_ctrl_by_pwm(enum lp8788_bl_ctrl_mode mode)
++static const u8 addr_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_ALM1_EN,
++	LP8788_ALM2_EN,
++};
++
++static const u8 mask_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_INT_RTC_ALM1_M,
++	LP8788_INT_RTC_ALM2_M,
++};
++
++static const u8 shift_alarm_en[LP8788_ALARM_MAX] = {
++	LP8788_INT_RTC_ALM1_S,
++	LP8788_INT_RTC_ALM2_S,
++};
++
++static int _to_tm_wday(u8 lp8788_wday)
 +{
-+	return (mode == LP8788_BL_COMB_PWM_BASED);
++	int i;
++
++	if (lp8788_wday == 0)
++		return 0;
++
++	/* lookup defined weekday from read register value */
++	for (i = 0; i < MAX_WDAY_BITS; i++) {
++		if ((lp8788_wday >> i) == LP8788_WDAY_SET)
++			break;
++	}
++
++	return i + 1;
 +}
 +
-+static inline bool is_brightness_ctrl_by_register(enum lp8788_bl_ctrl_mode mode)
++static inline int _to_lp8788_wday(int tm_wday)
 +{
-+	return (mode == LP8788_BL_REGISTER_ONLY ||
-+		mode == LP8788_BL_COMB_REGISTER_BASED);
++	return LP8788_WDAY_SET << (tm_wday - 1);
 +}
 +
-+static int lp8788_backlight_configure(struct lp8788_bl *bl)
++static void lp8788_rtc_unlock(struct lp8788 *lp)
 +{
-+	struct lp8788_backlight_platform_data *pdata = bl->pdata;
-+	struct lp8788_bl_config *cfg = &default_bl_config;
++	lp8788_write_byte(lp, LP8788_RTC_UNLOCK, RTC_UNLOCK);
++	lp8788_write_byte(lp, LP8788_RTC_UNLOCK, RTC_LATCH);
++}
++
++static int lp8788_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 data[LPTIME_MAX];
 +	int ret;
-+	u8 val;
 +
-+	/* update chip configuration if platform data exists,
-+	   otherwise use the default settings */
-+	if (pdata) {
-+		cfg->bl_mode    = pdata->bl_mode;
-+		cfg->dim_mode   = pdata->dim_mode;
-+		cfg->full_scale = pdata->full_scale;
-+		cfg->rise_time  = pdata->rise_time;
-+		cfg->fall_time  = pdata->fall_time;
-+		cfg->pwm_pol    = pdata->pwm_pol;
-+	}
++	lp8788_rtc_unlock(lp);
 +
-+	/* brightness ramp up/down */
-+	val = (cfg->rise_time << LP8788_BL_RAMP_RISE_S) | cfg->fall_time;
-+	ret = lp8788_write_byte(bl->lp, LP8788_BL_RAMP, val);
-+	if (ret) {
-+		/* no I2C needed in case of pwm control mode */
-+		if (is_brightness_ctrl_by_pwm(cfg->bl_mode))
-+			goto no_err;
-+		else
-+			return ret;
-+	}
++	ret = lp8788_read_multi_bytes(lp, LP8788_RTC_SEC, data,	LPTIME_MAX);
++	if (ret)
++		return ret;
 +
-+	/* fullscale current setting */
-+	val = (cfg->full_scale << LP8788_BL_FULLSCALE_S) |
-+		(cfg->dim_mode << LP8788_BL_DIM_MODE_S);
++	tm->tm_sec  = data[LPTIME_SEC];
++	tm->tm_min  = data[LPTIME_MIN];
++	tm->tm_hour = data[LPTIME_HOUR];
++	tm->tm_mday = data[LPTIME_MDAY];
++	tm->tm_mon  = data[LPTIME_MON] - LP8788_MONTH_OFFSET;
++	tm->tm_year = data[LPTIME_YEAR] + LP8788_BASE_YEAR - 1900;
++	tm->tm_wday = _to_tm_wday(data[LPTIME_WDAY]);
 +
-+	/* brightness control mode */
-+	switch (cfg->bl_mode) {
-+	case LP8788_BL_REGISTER_ONLY:
-+		val |= LP8788_BL_EN;
-+		break;
-+	case LP8788_BL_COMB_PWM_BASED:
-+	case LP8788_BL_COMB_REGISTER_BASED:
-+		val |= LP8788_BL_EN | LP8788_BL_PWM_EN |
-+			(cfg->pwm_pol << LP8788_BL_PWM_POLARITY_S);
-+		break;
-+	default:
-+		dev_err(bl->lp->dev, "invalid mode: %d\n", cfg->bl_mode);
++	return 0;
++}
++
++static int lp8788_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 data[LPTIME_MAX - 1];
++	int ret, i, year;
++
++	year = tm->tm_year + 1900 - LP8788_BASE_YEAR;
++	if (year < 0) {
++		dev_err(lp->dev, "invalid year: %d\n", year);
 +		return -EINVAL;
 +	}
 +
-+	bl->mode = cfg->bl_mode;
++	/* because rtc weekday is a readonly register, do not update */
++	data[LPTIME_SEC]  = tm->tm_sec;
++	data[LPTIME_MIN]  = tm->tm_min;
++	data[LPTIME_HOUR] = tm->tm_hour;
++	data[LPTIME_MDAY] = tm->tm_mday;
++	data[LPTIME_MON]  = tm->tm_mon + LP8788_MONTH_OFFSET;
++	data[LPTIME_YEAR] = year;
 +
-+	return lp8788_write_byte(bl->lp, LP8788_BL_CONFIG, val);
-+
-+no_err:
-+	return 0;
-+}
-+
-+static void lp8788_pwm_ctrl(struct lp8788_bl *bl, int br, int max_br)
-+{
-+	unsigned int period;
-+	unsigned int duty;
-+	struct device *dev;
-+	struct pwm_device *pwm;
-+
-+	if (!bl->pdata)
-+		return;
-+
-+	period = bl->pdata->period_ns;
-+	duty = br * period / max_br;
-+	dev = bl->lp->dev;
-+
-+	/* request pwm device with the consumer name */
-+	if (!bl->pwm) {
-+		pwm = devm_pwm_get(dev, LP8788_DEV_BACKLIGHT);
-+		if (IS_ERR(pwm)) {
-+			dev_err(dev, "can not get pwm device\n");
-+			return;
-+		}
-+
-+		bl->pwm = pwm;
-+	}
-+
-+	pwm_config(bl->pwm, duty, period);
-+	if (duty)
-+		pwm_enable(bl->pwm);
-+	else
-+		pwm_disable(bl->pwm);
-+}
-+
-+static int lp8788_bl_update_status(struct backlight_device *bl_dev)
-+{
-+	struct lp8788_bl *bl = bl_get_data(bl_dev);
-+	enum lp8788_bl_ctrl_mode mode = bl->mode;
-+
-+	if (bl_dev->props.state & BL_CORE_SUSPENDED)
-+		bl_dev->props.brightness = 0;
-+
-+	if (is_brightness_ctrl_by_pwm(mode)) {
-+		int brt = bl_dev->props.brightness;
-+		int max = bl_dev->props.max_brightness;
-+
-+		lp8788_pwm_ctrl(bl, brt, max);
-+	} else if (is_brightness_ctrl_by_register(mode)) {
-+		u8 brt = bl_dev->props.brightness;
-+
-+		lp8788_write_byte(bl->lp, LP8788_BL_BRIGHTNESS, brt);
++	for (i = 0; i < ARRAY_SIZE(data); i++) {
++		ret = lp8788_write_byte(lp, LP8788_RTC_SEC + i, data[i]);
++		if (ret)
++			return ret;
 +	}
 +
 +	return 0;
 +}
 +
-+static int lp8788_bl_get_brightness(struct backlight_device *bl_dev)
++static int lp8788_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 +{
-+	struct lp8788_bl *bl = bl_get_data(bl_dev);
-+	enum lp8788_bl_ctrl_mode mode = bl->mode;
-+
-+	if (is_brightness_ctrl_by_register(mode)) {
-+		u8 val = 0;
-+
-+		lp8788_read_byte(bl->lp, LP8788_BL_BRIGHTNESS, &val);
-+		bl_dev->props.brightness = val;
-+	}
-+
-+	return bl_dev->props.brightness;
-+}
-+
-+static const struct backlight_ops lp8788_bl_ops = {
-+	.options = BL_CORE_SUSPENDRESUME,
-+	.update_status = lp8788_bl_update_status,
-+	.get_brightness = lp8788_bl_get_brightness,
-+};
-+
-+static int lp8788_backlight_register(struct lp8788_bl *bl)
-+{
-+	struct backlight_device *bl_dev;
-+	struct backlight_properties props;
-+	struct lp8788_backlight_platform_data *pdata = bl->pdata;
-+	int init_brt;
-+	char *name;
-+
-+	props.type = BACKLIGHT_PLATFORM;
-+	props.max_brightness = MAX_BRIGHTNESS;
-+
-+	/* initial brightness */
-+	if (pdata)
-+		init_brt = min_t(int, pdata->initial_brightness,
-+				props.max_brightness);
-+	else
-+		init_brt = 0;
-+
-+	props.brightness = init_brt;
-+
-+	/* backlight device name */
-+	if (!pdata || !pdata->name)
-+		name = DEFAULT_BL_NAME;
-+	else
-+		name = pdata->name;
-+
-+	bl_dev = backlight_device_register(name, bl->lp->dev, bl,
-+				       &lp8788_bl_ops, &props);
-+	if (IS_ERR(bl_dev))
-+		return PTR_ERR(bl_dev);
-+
-+	bl->bl_dev = bl_dev;
-+
-+	return 0;
-+}
-+
-+static void lp8788_backlight_unregister(struct lp8788_bl *bl)
-+{
-+	struct backlight_device *bl_dev = bl->bl_dev;
-+
-+	if (bl_dev)
-+		backlight_device_unregister(bl_dev);
-+}
-+
-+static ssize_t lp8788_get_bl_ctl_mode(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	struct lp8788_bl *bl = dev_get_drvdata(dev);
-+	enum lp8788_bl_ctrl_mode mode = bl->mode;
-+	char *strmode;
-+
-+	if (is_brightness_ctrl_by_pwm(mode))
-+		strmode = "pwm based";
-+	else if (is_brightness_ctrl_by_register(mode))
-+		strmode = "register based";
-+	else
-+		strmode = "invalid mode";
-+
-+	return scnprintf(buf, BUF_SIZE, "%s\n", strmode);
-+}
-+
-+static DEVICE_ATTR(bl_ctl_mode, S_IRUGO, lp8788_get_bl_ctl_mode, NULL);
-+
-+static struct attribute *lp8788_attributes[] = {
-+	&dev_attr_bl_ctl_mode.attr,
-+	NULL,
-+};
-+
-+static const struct attribute_group lp8788_attr_group = {
-+	.attrs = lp8788_attributes,
-+};
-+
-+static int lp8788_backlight_probe(struct platform_device *pdev)
-+{
-+	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
-+	struct lp8788_bl *bl;
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	struct rtc_time *tm = &alarm->time;
++	u8 addr, data[LPTIME_MAX];
 +	int ret;
 +
-+	bl = devm_kzalloc(lp->dev, sizeof(struct lp8788_bl), GFP_KERNEL);
-+	if (!bl)
-+		return -ENOMEM;
++	addr = addr_alarm_sec[rtc->alarm];
++	ret = lp8788_read_multi_bytes(lp, addr, data, LPTIME_MAX);
++	if (ret)
++		return ret;
 +
-+	bl->lp = lp;
-+	if (lp->pdata)
-+		bl->pdata = lp->pdata->bl_pdata;
-+
-+	platform_set_drvdata(pdev, bl);
-+
-+	ret = lp8788_backlight_configure(bl);
-+	if (ret) {
-+		dev_err(lp->dev, "backlight config err: %d\n", ret);
-+		goto err_dev;
-+	}
-+
-+	ret = lp8788_backlight_register(bl);
-+	if (ret) {
-+		dev_err(lp->dev, "register backlight err: %d\n", ret);
-+		goto err_dev;
-+	}
-+
-+	ret = sysfs_create_group(&pdev->dev.kobj, &lp8788_attr_group);
-+	if (ret) {
-+		dev_err(lp->dev, "register sysfs err: %d\n", ret);
-+		goto err_sysfs;
-+	}
-+
-+	backlight_update_status(bl->bl_dev);
++	tm->tm_sec  = data[LPTIME_SEC];
++	tm->tm_min  = data[LPTIME_MIN];
++	tm->tm_hour = data[LPTIME_HOUR];
++	tm->tm_mday = data[LPTIME_MDAY];
++	tm->tm_mon  = data[LPTIME_MON] - LP8788_MONTH_OFFSET;
++	tm->tm_year = data[LPTIME_YEAR] + LP8788_BASE_YEAR - 1900;
++	tm->tm_wday = _to_tm_wday(data[LPTIME_WDAY]);
++	alarm->enabled = data[LPTIME_WDAY] & LP8788_ALM_EN_M;
 +
 +	return 0;
-+
-+err_sysfs:
-+	lp8788_backlight_unregister(bl);
-+err_dev:
-+	return ret;
 +}
 +
-+static int lp8788_backlight_remove(struct platform_device *pdev)
++static int lp8788_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 +{
-+	struct lp8788_bl *bl = platform_get_drvdata(pdev);
-+	struct backlight_device *bl_dev = bl->bl_dev;
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	struct rtc_time *tm = &alarm->time;
++	u8 addr, data[LPTIME_MAX];
++	int ret, i, year;
 +
-+	bl_dev->props.brightness = 0;
-+	backlight_update_status(bl_dev);
-+	sysfs_remove_group(&pdev->dev.kobj, &lp8788_attr_group);
-+	lp8788_backlight_unregister(bl);
++	year = tm->tm_year + 1900 - LP8788_BASE_YEAR;
++	if (year < 0) {
++		dev_err(lp->dev, "invalid year: %d\n", year);
++		return -EINVAL;
++	}
++
++	data[LPTIME_SEC]  = tm->tm_sec;
++	data[LPTIME_MIN]  = tm->tm_min;
++	data[LPTIME_HOUR] = tm->tm_hour;
++	data[LPTIME_MDAY] = tm->tm_mday;
++	data[LPTIME_MON]  = tm->tm_mon + LP8788_MONTH_OFFSET;
++	data[LPTIME_YEAR] = year;
++	data[LPTIME_WDAY] = _to_lp8788_wday(tm->tm_wday);
++
++	for (i = 0; i < ARRAY_SIZE(data); i++) {
++		addr = addr_alarm_sec[rtc->alarm] + i;
++		ret = lp8788_write_byte(lp, addr, data[i]);
++		if (ret)
++			return ret;
++	}
++
++	alarm->enabled = 1;
++	addr = addr_alarm_en[rtc->alarm];
++
++	return lp8788_update_bits(lp, addr, LP8788_ALM_EN_M,
++				alarm->enabled << LP8788_ALM_EN_S);
++}
++
++static int lp8788_alarm_irq_enable(struct device *dev, unsigned int enable)
++{
++	struct lp8788_rtc *rtc = dev_get_drvdata(dev);
++	struct lp8788 *lp = rtc->lp;
++	u8 mask, shift;
++
++	mask = mask_alarm_en[rtc->alarm];
++	shift = shift_alarm_en[rtc->alarm];
++
++	return lp8788_update_bits(lp, LP8788_INTEN_3, mask, enable << shift);
++}
++
++static const struct rtc_class_ops lp8788_rtc_ops = {
++	.read_time = lp8788_rtc_read_time,
++	.set_time = lp8788_rtc_set_time,
++	.read_alarm = lp8788_read_alarm,
++	.set_alarm = lp8788_set_alarm,
++	.alarm_irq_enable = lp8788_alarm_irq_enable,
++};
++
++static irqreturn_t lp8788_alarm_irq_handler(int irq, void *ptr)
++{
++	struct lp8788_rtc *rtc = ptr;
++
++	rtc_update_irq(rtc->rdev, 1, ALARM_IRQ_FLAG);
++	return IRQ_HANDLED;
++}
++
++static int lp8788_alarm_irq_register(struct platform_device *pdev,
++				struct lp8788_rtc *rtc)
++{
++	struct resource *r;
++	struct lp8788 *lp = rtc->lp;
++	struct irq_domain *irqdm = lp->irqdm;
++	int irq;
++
++	rtc->irq = 0;
++
++	if (!lp->pdata) {
++		dev_warn(lp->dev, "no platform data for rtc irq\n");
++		return 0;
++	}
++
++	r = platform_get_resource_byname(pdev, IORESOURCE_IRQ, LP8788_ALM_IRQ);
++	if (!r)
++		return 0;
++
++	if (rtc->alarm == LP8788_ALARM_1)
++		irq = r->start;
++	else
++		irq = r->end;
++
++	rtc->irq = irq_create_mapping(irqdm, irq);
++
++	return request_threaded_irq(rtc->irq, NULL, lp8788_alarm_irq_handler,
++				0, LP8788_ALM_IRQ, rtc);
++}
++
++static void lp8788_alarm_irq_unregister(struct lp8788_rtc *rtc)
++{
++	if (rtc->irq)
++		free_irq(rtc->irq, rtc);
++}
++
++static int lp8788_rtc_probe(struct platform_device *pdev)
++{
++	struct lp8788 *lp = dev_get_drvdata(pdev->dev.parent);
++	struct lp8788_rtc *rtc;
++	struct device *dev = &pdev->dev;
++
++	rtc = devm_kzalloc(lp->dev, sizeof(struct lp8788_rtc), GFP_KERNEL);
++	if (!rtc)
++		return -ENOMEM;
++
++	rtc->lp = lp;
++	rtc->alarm = lp->pdata ? lp->pdata->alarm_sel : DEFAULT_ALARM_SEL;
++	platform_set_drvdata(pdev, rtc);
++
++	device_init_wakeup(dev, 1);
++
++	rtc->rdev = rtc_device_register("lp8788_rtc", dev,
++					&lp8788_rtc_ops, THIS_MODULE);
++	if (IS_ERR(rtc->rdev)) {
++		dev_err(dev, "can not register rtc device\n");
++		return -ENODEV;
++	}
++
++	if (lp8788_alarm_irq_register(pdev, rtc))
++		dev_warn(lp->dev, "no rtc irq handler\n");
++
++	return 0;
++}
++
++static int lp8788_rtc_remove(struct platform_device *pdev)
++{
++	struct lp8788_rtc *rtc = platform_get_drvdata(pdev);
++
++	lp8788_alarm_irq_unregister(rtc);
++	rtc_device_unregister(rtc->rdev);
 +	platform_set_drvdata(pdev, NULL);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver lp8788_bl_driver = {
-+	.probe = lp8788_backlight_probe,
-+	.remove = lp8788_backlight_remove,
++static struct platform_driver lp8788_rtc_driver = {
++	.probe = lp8788_rtc_probe,
++	.remove = lp8788_rtc_remove,
 +	.driver = {
-+		.name = LP8788_DEV_BACKLIGHT,
++		.name = LP8788_DEV_RTC,
 +		.owner = THIS_MODULE,
 +	},
 +};
-+module_platform_driver(lp8788_bl_driver);
++module_platform_driver(lp8788_rtc_driver);
 +
-+MODULE_DESCRIPTION("Texas Instruments LP8788 Backlight Driver");
++MODULE_DESCRIPTION("Texas Instruments LP8788 RTC Driver");
 +MODULE_AUTHOR("Milo Kim");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:lp8788-backlight");
-diff --git a/include/linux/mfd/lp8788.h b/include/linux/mfd/lp8788.h
-index 2a32b16..5c0a49b 100644
---- a/include/linux/mfd/lp8788.h
-+++ b/include/linux/mfd/lp8788.h
-@@ -229,16 +229,6 @@ struct lp8788_charger_platform_data {
- };
- 
- /*
-- * struct lp8788_bl_pwm_data
-- * @pwm_set_intensity     : set duty of pwm
-- * @pwm_get_intensity     : get current duty of pwm
-- */
--struct lp8788_bl_pwm_data {
--	void (*pwm_set_intensity) (int brightness, int max_brightness);
--	int (*pwm_get_intensity) (int max_brightness);
--};
--
--/*
-  * struct lp8788_backlight_platform_data
-  * @name                  : backlight driver name. (default: "lcd-backlight")
-  * @initial_brightness    : initial value of backlight brightness
-@@ -248,8 +238,8 @@ struct lp8788_bl_pwm_data {
-  * @rise_time             : brightness ramp up step time
-  * @fall_time             : brightness ramp down step time
-  * @pwm_pol               : pwm polarity setting when bl_mode is pwm based
-- * @pwm_data              : platform specific pwm generation functions
-- *                          only valid when bl_mode is pwm based
-+ * @period_ns             : platform specific pwm period value. unit is nano.
-+		            Only valid when bl_mode is LP8788_BL_COMB_PWM_BASED
-  */
- struct lp8788_backlight_platform_data {
- 	char *name;
-@@ -260,7 +250,7 @@ struct lp8788_backlight_platform_data {
- 	enum lp8788_bl_ramp_step rise_time;
- 	enum lp8788_bl_ramp_step fall_time;
- 	enum lp8788_bl_pwm_polarity pwm_pol;
--	struct lp8788_bl_pwm_data pwm_data;
-+	unsigned int period_ns;
- };
- 
- /*
++MODULE_ALIAS("platform:lp8788-rtc");
 -- 
 1.7.9.5
 
 
 Best Regards,
 Milo
-
 
