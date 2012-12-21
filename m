@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab2LUWC3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 17:02:29 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52342 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab2LUWC0 (ORCPT
+	id S1752603Ab2LUWDU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 17:03:20 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:50893 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab2LUWDR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 17:02:26 -0500
+	Fri, 21 Dec 2012 17:03:17 -0500
+Date: Fri, 21 Dec 2012 23:03:15 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Pekka Enberg <penberg@kernel.org>, Sasha Levin <levinsasha928@gmail.com>,
+        Asias He <asias.hejun@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kvm tools: remove unneeded checks in qcow code
+In-Reply-To: <1356030701-16284-2-git-send-email-sasha.levin@oracle.com>
+Message-ID: <alpine.LNX.2.00.1212212301290.6098@swampdragon.chaosbits.net>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-2-git-send-email-sasha.levin@oracle.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20121221195817.GE13367@suse.de>
-References: <1353624594-1118-1-git-send-email-mingo@kernel.org>
- <1353624594-1118-19-git-send-email-mingo@kernel.org> <alpine.DEB.2.00.1212031644440.32354@chino.kir.corp.google.com>
- <CA+55aFyrSVzGZ438DGnTFuyFb1BOXaMmvxtkW0Xhnx+BxAg2PA@mail.gmail.com>
- <alpine.DEB.2.00.1212201440250.7807@chino.kir.corp.google.com>
- <20121221134740.GC13367@suse.de> <CA+55aFxrdPpMWLD8LF0NNqgJqmB-L-HW3Xyxht6e5AwnoaueTw@mail.gmail.com>
- <20121221195817.GE13367@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 21 Dec 2012 14:02:04 -0800
-X-Google-Sender-Auth: CANWjmwZ01cajrFArGq7wonnVWk
-Message-ID: <CA+55aFwDXj3LqCRepsaeZMjOg0YsWV=7GFLHqHe2CxoF4JchCQ@mail.gmail.com>
-Subject: Re: [patch] mm, mempolicy: Introduce spinlock to read shared policy tree
-To: Mel Gorman <mgorman@suse.de>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Johannes Weiner <hannes@cmpxchg.org>, Hugh Dickins <hughd@google.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 11:58 AM, Mel Gorman <mgorman@suse.de> wrote:
->
-> Kosaki's patch does not fix the actual problem with NUMA hinting
-> faults. Converting to a spinlock is nice but we'd still hold the PTL at
-> the time sp_alloc is called and potentially allocating GFP_KERNEL with a
-> spinlock held.
+On Thu, 20 Dec 2012, Sasha Levin wrote:
 
-The problem I saw reported - and the problem that the "mutex+spinlock"
-patch was fixing - wasn't actually sp_alloc(), but just sp_lookup()
-through mpol_shared_policy_lookup().
+> We already know q!=NULL at that point, no need to retest.
+> 
+Right, and even if it was ==NULL then 'free(NULL)' is guaranteed to be a 
+NOP, so it would still be fine.
 
-And converting that to a spinlock would definitely fix it - taking
-that spinlock quickly for the lookup while holding the pt lock is
-fine.
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-Now, if we have to call sp_alloc() too at some point, that's
-different, but that wouldn't be helped by the "mutex+spinlock" patch
-(that started this thread) anyway.
 
-> At the risk of making your head explode, here is another patch.
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  tools/kvm/disk/qcow.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/kvm/disk/qcow.c b/tools/kvm/disk/qcow.c
+> index ee2992e..64a2550 100644
+> --- a/tools/kvm/disk/qcow.c
+> +++ b/tools/kvm/disk/qcow.c
+> @@ -1361,8 +1361,7 @@ free_header:
+>  	if (q->header)
+>  		free(q->header);
+>  free_qcow:
+> -	if (q)
+> -		free(q);
+> +	free(q);
+>  
+>  	return NULL;
+>  }
+> @@ -1492,8 +1491,7 @@ free_header:
+>  	if (q->header)
+>  		free(q->header);
+>  free_qcow:
+> -	if (q)
+> -		free(q);
+> +	free(q);
+>  
+>  	return NULL;
+>  }
+> 
 
-So I don't hate this patch, but I don't see the point of your games in
-do_pmd_numa_page(). I'm not seeing the allocation in mpol_misplaced(),
-and that wasn't what the original report was.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-The backtrace you quote is literally *only* about the fact that you
-cannot take a mutex inside a spinlock. No allocation, just a lookup.
-
-So where's the sp_alloc()?
-
-                 Linus
