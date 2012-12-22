@@ -1,49 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab2LVUxY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 15:53:24 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:19880 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab2LVUxW (ORCPT
+	id S1752195Ab2LVVHX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 16:07:23 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:56957 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752106Ab2LVVHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 15:53:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sat, 22 Dec 2012 12:51:29 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <swarren@wwwdotorg.org>
-CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] ARM: tegra: config: Add TPS6586X RTC config
-Date: Sun, 23 Dec 2012 02:23:05 +0530
-Message-ID: <1356209585-6506-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Sat, 22 Dec 2012 16:07:18 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Piotr Haber <phaber@broadcom.com>, Arend van Spriel <arend@broadcom.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] brcmsmac: initialize morepending in brcms_b_recv()
+Date: Sat, 22 Dec 2012 22:07:14 +0100
+Message-Id: <1356210434-28435-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-enable CONFIG_RTC_DRV_TPS6586X to have RTC driver support for
-ventana, harmony etc.
+drivers/net/wireless/brcm80211/brcmsmac/main.c: In function ‘brcms_b_recv’:
+drivers/net/wireless/brcm80211/brcmsmac/main.c:7636: warning: ‘morepending’ may be used uninitialized in this function
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- arch/arm/configs/tegra_defconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/net/wireless/brcm80211/brcmsmac/main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
-index a7827fd..b88ec5a 100644
---- a/arch/arm/configs/tegra_defconfig
-+++ b/arch/arm/configs/tegra_defconfig
-@@ -186,6 +186,7 @@ CONFIG_RTC_INTF_SYSFS=y
- CONFIG_RTC_INTF_PROC=y
- CONFIG_RTC_INTF_DEV=y
- CONFIG_RTC_DRV_MAX8907=y
-+CONFIG_RTC_DRV_TPS6586X=y
- CONFIG_RTC_DRV_TPS65910=y
- CONFIG_RTC_DRV_EM3027=y
- CONFIG_RTC_DRV_TEGRA=y
+diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+index 17594de..5f0f444 100644
+--- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
++++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
+@@ -7633,7 +7633,7 @@ brcms_b_recv(struct brcms_hardware *wlc_hw, uint fifo, bool bound)
+ 
+ 	uint n = 0;
+ 	uint bound_limit = bound ? RXBND : -1;
+-	bool morepending;
++	bool morepending = false;
+ 
+ 	skb_queue_head_init(&recv_frames);
+ 
 -- 
-1.7.1.1
+1.7.0.4
 
