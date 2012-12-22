@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab2LVBWk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 20:22:40 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:61620 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab2LVBWj (ORCPT
+	id S1751968Ab2LVB4W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 20:56:22 -0500
+Received: from smtpauth12.mfg.siteprotect.com ([64.26.60.150]:37742 "EHLO
+	smtpauth02.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750832Ab2LVB4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 20:22:39 -0500
-X-Greylist: delayed 358 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 20:22:38 EST
-Subject: Re: [PATCH] net: sched: integer overflow fix
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stefan Hasko <hasko.stevo@gmail.com>
-Cc: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1356138300-16076-1-git-send-email-hasko.stevo@gmail.com>
-References: <1356138300-16076-1-git-send-email-hasko.stevo@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Dec 2012 17:16:37 -0800
-Message-ID: <1356138997.21834.8185.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Dec 2012 20:56:21 -0500
+Date: Fri, 21 Dec 2012 20:58:12 -0500 (EST)
+From: Vince Weaver <vince@deater.net>
+X-X-Sender: vince@pianoman.cluster.toy
+To: Andi Kleen <andi@firstfloor.org>
+cc: Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 3/3] perf tool: Add non arch events for SandyBridge
+ microarchitecture
+In-Reply-To: <20121221184324.GG16230@one.firstfloor.org>
+Message-ID: <alpine.DEB.2.02.1212212055120.24063@pianoman.cluster.toy>
+References: <1355751425-7993-1-git-send-email-jolsa@redhat.com> <1355751425-7993-4-git-send-email-jolsa@redhat.com> <m2zk19d7vk.fsf@firstfloor.org> <20121220111313.GB1241@krava.brq.redhat.com> <alpine.DEB.2.02.1212211305300.13284@pianoman.cluster.toy>
+ <20121221184324.GG16230@one.firstfloor.org>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-CTCH-Spam: Unknown
+X-CTCH-RefID: str=0001.0A020208.50D51343.017C,ss=1,re=0.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-22 at 02:04 +0100, Stefan Hasko wrote:
-> Sorry, I did not realize different sizes casting problem, now it's clear to me. Thanks for help.
+On Fri, 21 Dec 2012, Andi Kleen wrote:
+
+> > I hate to sound like a broken record here, but, again, what's the 
+> > rationalization for not using libpfm4 here?
 > 
-> Fixed integer overflow in function htb_dequeue
-> 
-> Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
-> ---
->  net/sched/sch_htb.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
-> index d2922c0..51561ea 100644
-> --- a/net/sched/sch_htb.c
-> +++ b/net/sched/sch_htb.c
-> @@ -919,7 +919,7 @@ ok:
->  	q->now = ktime_to_ns(ktime_get());
->  	start_at = jiffies;
->  
-> -	next_event = q->now + 5 * NSEC_PER_SEC;
-> +	next_event = q->now + 5LLU * NSEC_PER_SEC;
->  
->  	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
->  		/* common case optimization - skip event handler quickly */
+> Personally I always hated the libpfm4 syntax. It's even worse than
+> oprofile.
 
-I guess David will remove the first line of your changelog
+how so?  The libpfm4 event names are more or less the same as that from 
+the manuals with the exception that . is replaced with : in some cases.
 
-Acked-by: Eric Dumazet <edumazet@google.com>
+> I'm probably biased, but it's usually best to use the format the CPU
+> vendor releases the original event tables in. That gives you
+> the fastest access with the minimum amount of hazzle.
 
-Thanks
+Which vendors provide "original tables"?  None as far as I know, you are 
+stuck digging through PDFs.
 
+Unless you mean the tables that come with Vtune... are those licensed in a 
+way that is useful?
 
+libpfm4 also provides at least minimal event descriptions along with each 
+event, will the kernel/perf provide those too?
+
+Vince
