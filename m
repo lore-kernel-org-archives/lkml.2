@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752010Ab2LVR5W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 12:57:22 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37499 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751883Ab2LVR5R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 12:57:17 -0500
+	id S1752019Ab2LVSCy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 13:02:54 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39939 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab2LVSCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 13:02:52 -0500
+Date: Sat, 22 Dec 2012 19:02:47 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>, netdev@vger.kernel.org
 Subject: Re: Regression in 3.8-rc1:  "BUG: sleeping function called from
  invalid context"
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <50D5E9D9.3070904@lwfinger.net>
+Message-ID: <20121222180247.GA10250@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Larry Finger <Larry.Finger@lwfinger.net>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Christoph Lameter <cl@linux-foundation.org>,
+	Pekka Enberg <penberg@kernel.org>, netdev@vger.kernel.org
 References: <50D5E9D9.3070904@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 Dec 2012 09:57:14 -0800
-Message-ID: <1356199034.21834.8457.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50D5E9D9.3070904@lwfinger.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-22 at 11:11 -0600, Larry Finger wrote:
-> With kernel 3.8-rc1, I get 2 "BUG: sleeping function called from invalid 
-> context" reports. These have been present got some time in the 3.7-git versions 
-> and I have tried twice to bisect the problem. Both times, I ended up at a merge 
-> commit. The most recent found commit a11da7d as the bad one, and commit d7460f4 
-> as the last good one. I have not had time to make a third try.
+Top-posting so that the rest can remain untouched.
+
+Right, so AFAICT, something is holding rtnl_mutex (probably some
+rtnetlink traffic) and device_rename() is doing kstrdup with
+GFP_KERNEL which, among others, has __GFP_WAIT and *that* triggers the
+might_sleep_if() check in slab_pre_alloc_hook():
+
+static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
+{
+        flags &= gfp_allowed_mask;
+        lockdep_trace_alloc(flags);
+        might_sleep_if(flags & __GFP_WAIT);		<--- HERE
+
+Adding Christoph and Pekka although the slub.c might_sleep stuff is from
+2010. Still, they might have a better idea.
+
+Oh well, let's add netdev while we're at it. :-)
+
+HTH.
+
+On Sat, Dec 22, 2012 at 11:11:53AM -0600, Larry Finger wrote:
+> With kernel 3.8-rc1, I get 2 "BUG: sleeping function called from
+> invalid context" reports. These have been present got some time in
+> the 3.7-git versions and I have tried twice to bisect the problem.
+> Both times, I ended up at a merge commit. The most recent found
+> commit a11da7d as the bad one, and commit d7460f4 as the last good
+> one. I have not had time to make a third try.
 > 
-> My system is x86_64 running on an HP laptop with a dual-core AMD CPU. My 
-> configuration file is attached.
+> My system is x86_64 running on an HP laptop with a dual-core AMD
+> CPU. My configuration file is attached.
 > 
 > The logged details are as follows:
 > 
 > [   31.715016] BUG: sleeping function called from invalid context at mm/slub.c:925
 > [   31.715022] in_atomic(): 1, irqs_disabled(): 0, pid: 2129, name: udevd
 > [   31.715025] 2 locks held by udevd/2129:
-> [   31.715028]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81386382>] 
+> [   31.715028]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81386382>]
 > rtnl_lock+0x12/0x20
-> [   31.715041]  #1:  (devnet_rename_seq){+.+.+.}, at: [<ffffffff81376033>] 
-> dev_change_name+0x43/0x260
+> [   31.715041]  #1:  (devnet_rename_seq){+.+.+.}, at:
+> [<ffffffff81376033>] dev_change_name+0x43/0x260
 > [   31.715053] Pid: 2129, comm: udevd Not tainted 3.8.0-rc1 #56
 > [   31.715056] Call Trace:
 > [   31.715063]  [<ffffffff81076ca2>] __might_sleep+0x152/0x250
@@ -64,17 +91,18 @@ On Sat, 2012-12-22 at 11:11 -0600, Larry Finger wrote:
 > [   31.715136]  [<ffffffff81422a29>] system_call_fastpath+0x16/0x1b
 > [   31.715764] BUG: scheduling while atomic: udevd/2129/0x00000002
 > [   31.715768] 2 locks held by udevd/2129:
-> [   31.715769]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81386382>] 
+> [   31.715769]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff81386382>]
 > rtnl_lock+0x12/0x20
-> [   31.715779]  #1:  (devnet_rename_seq){+.+.+.}, at: [<ffffffff81376033>] 
-> dev_change_name+0x43/0x260
-> [   31.715787] Modules linked in: b43 arc4 rtl8723ae rtlwifi mac80211 
-> snd_hda_codec_conexant snd_hda_intel snd_hda_codec cfg80211 powernow_k8 kvm_amd 
-> snd_pcm_oss kvm snd_pcm snd_seq bcma rng_core ssb snd_timer mmc_core 
-> snd_seq_device pcmcia rfkill snd sr_mod cdrom soundcore ehci_pci battery 
-> pcmcia_core sg k8temp ac i2c_nforce2 hwmon forcedeth video snd_page_alloc 
-> serio_raw i2c_core joydev wmi button ipv6 autofs4 ext4 mbcache jbd2 crc16 
-> ohci_hcd ehci_hcd usbcore usb_common thermal processor scsi_dh_rdac scsi_dh_alua 
+> [   31.715779]  #1:  (devnet_rename_seq){+.+.+.}, at:
+> [<ffffffff81376033>] dev_change_name+0x43/0x260
+> [   31.715787] Modules linked in: b43 arc4 rtl8723ae rtlwifi
+> mac80211 snd_hda_codec_conexant snd_hda_intel snd_hda_codec cfg80211
+> powernow_k8 kvm_amd snd_pcm_oss kvm snd_pcm snd_seq bcma rng_core
+> ssb snd_timer mmc_core snd_seq_device pcmcia rfkill snd sr_mod cdrom
+> soundcore ehci_pci battery pcmcia_core sg k8temp ac i2c_nforce2
+> hwmon forcedeth video snd_page_alloc serio_raw i2c_core joydev wmi
+> button ipv6 autofs4 ext4 mbcache jbd2 crc16 ohci_hcd ehci_hcd
+> usbcore usb_common thermal processor scsi_dh_rdac scsi_dh_alua
 > scsi_dh_emc scsi_dh_hp_sw scsi_dh ata_generic pata_amd
 > [   31.715867] Pid: 2129, comm: udevd Not tainted 3.8.0-rc1 #56
 > [   31.715868] Call Trace:
@@ -108,11 +136,11 @@ On Sat, 2012-12-22 at 11:11 -0600, Larry Finger wrote:
 > [   31.716097]  [<ffffffff8121a69e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
 > [   31.716102]  [<ffffffff81422a29>] system_call_fastpath+0x16/0x1b
 
-Thanks for the report
-
-Fix is in David tree : 
-
-http://git.kernel.org/?p=linux/kernel/git/davem/net.git;a=commitdiff;h=30e6c9fa93cf3dbc7cc6df1d748ad25e4264545a
 
 
+-- 
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
