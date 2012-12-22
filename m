@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751371Ab2LVAs5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 19:48:57 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48693 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab2LVAsz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 19:48:55 -0500
-Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
- factor
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20121221185613.1f4c9523@annuminas.surriel.com>
-References: <20121221184940.103c31ad@annuminas.surriel.com>
-	 <20121221185147.4ae48ab5@annuminas.surriel.com>
-	 <20121221185613.1f4c9523@annuminas.surriel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 Dec 2012 16:48:52 -0800
-Message-ID: <1356137332.21834.8155.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751655Ab2LVAtG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 19:49:06 -0500
+Received: from fieldses.org ([174.143.236.118]:45043 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751445Ab2LVAtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 19:49:03 -0500
+Date: Fri, 21 Dec 2012 19:48:59 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-nfs@vger.kernel.org, Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [PATCH] Revert "nfsd: warn on odd reply state in nfsd_vfs_read"
+Message-ID: <20121222004859.GA30312@fieldses.org>
+References: <20121221153348.GA32151@redhat.com>
+ <20121221180824.GA27729@fieldses.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221180824.GA27729@fieldses.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-21 at 18:56 -0500, Rik van Riel wrote:
-> Argh, the first one had a typo in it that did not influence
-> performance with fewer threads running, but that made things
-> worse with more than a dozen threads...
-> 
-> Please let me know if you can break these patches.
-> ---8<---
-> Subject: x86,smp: auto tune spinlock backoff delay factor
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-> +#define MIN_SPINLOCK_DELAY 1
-> +#define MAX_SPINLOCK_DELAY 1000
-> +DEFINE_PER_CPU(int, spinlock_delay) = { MIN_SPINLOCK_DELAY };
+This reverts commit 79f77bf9a4e3dd5ead006b8f17e7c4ff07d8374e.
 
-Using a single spinlock_delay per cpu assumes there is a single
-contended spinlock on the machine, or that contended
-spinlocks protect the same critical section.
+This is obviously wrong, and I have no idea how I missed seeing the
+warning in testing: I must just not have looked at the right logs.  The
+caller bumps rq_resused/rq_next_page, so it will always be hit on a
+large enough read.
 
-Given that we probably know where the contended spinlocks are, couldnt
-we use a real scalable implementation for them ?
+Reported-by: Dave Jones <davej@redhat.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+---
+ fs/nfsd/vfs.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-A known contended one is the Qdisc lock in network layer. We added a
-second lock (busylock) to lower a bit the pressure on a separate cache
-line, but a scalable lock would be much better...
-
-I guess there are patent issues...
-
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index f0a6d88..d586117 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -934,7 +934,6 @@ nfsd_vfs_read(struct svc_rqst *rqstp, struct svc_fh *fhp, struct file *file,
+ 			.u.data		= rqstp,
+ 		};
+ 
+-		WARN_ON_ONCE(rqstp->rq_next_page != rqstp->rq_respages + 1);
+ 		rqstp->rq_next_page = rqstp->rq_respages + 1;
+ 		host_err = splice_direct_to_actor(file, &sd, nfsd_direct_splice_actor);
+ 	} else {
+-- 
+1.7.11.7
 
