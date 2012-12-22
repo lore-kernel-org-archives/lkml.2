@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751094Ab2LVHUI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 02:20:08 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:50128 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750799Ab2LVHUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 02:20:07 -0500
-Message-ID: <1356160806.5754.4.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] staging/media: Fix trailing statements should be on
- next line in go7007/go7007-fw.c
-From: Joe Perches <joe@perches.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: YAMANE Toshiaki <yamanetoshi@gmail.com>,
-        Greg Kroah-Hartman <greg@kroah.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 21 Dec 2012 23:20:06 -0800
-In-Reply-To: <20121221184311.2da34111@redhat.com>
-References: <1352115526-8287-1-git-send-email-yamanetoshi@gmail.com>
-	 <1352115573-8321-1-git-send-email-yamanetoshi@gmail.com>
-	 <20121221184311.2da34111@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	id S1751231Ab2LVIBR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 03:01:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:49145 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab2LVIBO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 03:01:14 -0500
+Date: Sat, 22 Dec 2012 00:01:11 -0800 (PST)
+Message-Id: <20121222.000111.1132195626602429566.davem@davemloft.net>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, wg@grandegger.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 03/25] sja1000: don't use [delayed_]work_pending()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1356141435-17340-4-git-send-email-tj@kernel.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+	<1356141435-17340-4-git-send-email-tj@kernel.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-21 at 18:43 -0200, Mauro Carvalho Chehab wrote:
-> Em Mon,  5 Nov 2012 20:39:33 +0900
-> YAMANE Toshiaki <yamanetoshi@gmail.com> escreveu:
+From: Tejun Heo <tj@kernel.org>
+Date: Fri, 21 Dec 2012 17:56:53 -0800
+
+> There's no need to test whether a (delayed) work item in pending
+> before queueing, flushing or cancelling it.  Most uses are unnecessary
+> and quite a few of them are buggy.
 > 
-> > fixed below checkpatch error.
-> > - ERROR: trailing statements should be on next line
-> > 
-> > Signed-off-by: YAMANE Toshiaki <yamanetoshi@gmail.com>
-> > ---
-> >  drivers/staging/media/go7007/go7007-fw.c |    3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/staging/media/go7007/go7007-fw.c b/drivers/staging/media/go7007/go7007-fw.c
-> > index f99c05b..cfce760 100644
-> > --- a/drivers/staging/media/go7007/go7007-fw.c
-> > +++ b/drivers/staging/media/go7007/go7007-fw.c
-> > @@ -725,7 +725,8 @@ static int vti_bitlen(struct go7007 *go)
-> >  {
-> >  	unsigned int i, max_time_incr = go->sensor_framerate / go->fps_scale;
-> >  
-> > -	for (i = 31; (max_time_incr & ((1 << i) - 1)) == max_time_incr; --i);
-> > +	for (i = 31; (max_time_incr & ((1 << i) - 1)) == max_time_incr; --i)
-> > +		;
+> Remove unnecessary pending tests from sja1000.  Only compile tested.
 > 
-> Nah, this doesn't sound right to me. IMO, in this specific case,
-> checkpatch.pl did a bad job.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Wolfgang Grandegger <wg@grandegger.com>
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> ---
+> Please let me know how this patch should be routed.  I can take it
+> through the workqueue tree if necessary.
 
-Is this even guaranteed to exit the loop?
-Maybe using ffs would be more sensible.
-
-
+I would suggest just taking it via the workqueue tree, thanks Tejun.
