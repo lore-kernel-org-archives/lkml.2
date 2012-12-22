@@ -1,135 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751647Ab2LVCVk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 21:21:40 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:38225 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751094Ab2LVCVh (ORCPT
+	id S1751805Ab2LVCWZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 21:22:25 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:45205 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751165Ab2LVCWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 21:21:37 -0500
-Date: Fri, 21 Dec 2012 21:21:13 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kerne.org>
-Subject: Re: [PATCH v6 23/27] x86: Don't panic if can not alloc buffer for
- swiotlb
-Message-ID: <20121222022113.GD3468@phenom.dumpdata.com>
-References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
- <1355436141-8668-24-git-send-email-yinghai@kernel.org>
+	Fri, 21 Dec 2012 21:22:23 -0500
+Date: Fri, 21 Dec 2012 18:22:10 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 25/25] ipc: don't use [delayed_]work_pending()
+Message-ID: <20121222022210.GA30177@htj.dyndns.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-26-git-send-email-tj@kernel.org>
+ <20121221181523.0e0998e4.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1355436141-8668-24-git-send-email-yinghai@kernel.org>
+In-Reply-To: <20121221181523.0e0998e4.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 02:02:17PM -0800, Yinghai Lu wrote:
-> Normal boot path on system with iommu support:
-> swiotlb buffer will be allocated early at first and then try to initialize
-> iommu, if iommu for intel or amd could setup properly, swiotlb buffer
-> will be freed.
-> 
-> The early allocating is with bootmem, and could panic when we try to use
-> kdump with buffer above 4G only.
-> 
-> Replace the panic with WARN, and the kernel can go on without swiotlb,
-> and could iommu later.
+Hello, Andrew.
 
+On Fri, Dec 21, 2012 at 06:15:23PM -0800, Andrew Morton wrote:
+> On Fri, 21 Dec 2012 17:57:15 -0800 Tejun Heo <tj@kernel.org> wrote:
+> 
+> > There's no need to test whether a (delayed) work item in pending
+> > before queueing, flushing or cancelling it.  Most uses are unnecessary
+> > and quite a few of them are buggy.
+> 
+> > -		if (!work_pending(&ipc_memory_wq))
+> > -			schedule_work(&ipc_memory_wq);
+> > +		schedule_work(&ipc_memory_wq);
+> 
+> Well, the new code is a ton slower than the old code if the work is
+> frequently pending, so some care is needed with such a conversion.
 
-What if SWIOTLB is the only option? Meaning there are no other IOMMUs?
+Yeah, I mentioned it in the head message.  it comes down to
+test_and_set_bit() vs. test_bit() and none of the current users seems
+to be hot enough for that to matter at all.
 
+In very hot paths, such optimization *could* be valid.  The problem is
+that [delayed_]work_pending() seem to be abused much more than they
+are put to any actual usefulness.  Maybe we should rename them to
+something really ugly.  I don't know.
 
+> That's not an issue for the IPC callsite - memory offlining isn't
+> frequent.
 > 
-> Signed-off-by: Yinghai Lu <yinghai@kerne.org>
-> ---
->  arch/x86/kernel/pci-swiotlb.c |    5 ++++-
->  include/linux/swiotlb.h       |    2 +-
->  lib/swiotlb.c                 |   17 +++++++++++------
->  3 files changed, 16 insertions(+), 8 deletions(-)
+> > ...
+> >
+> > Please let me know how this patch should be routed.  I can take it
+> > through the workqueue tree if necessary.
+> > 
 > 
-> diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-> index 6c483ba..6f93eb7 100644
-> --- a/arch/x86/kernel/pci-swiotlb.c
-> +++ b/arch/x86/kernel/pci-swiotlb.c
-> @@ -91,7 +91,10 @@ IOMMU_INIT(pci_swiotlb_detect_4gb,
->  void __init pci_swiotlb_init(void)
->  {
->  	if (swiotlb) {
-> -		swiotlb_init(0);
-> +		if (swiotlb_init(0)) {
-> +			swiotlb = 0;
-> +			return;
-> +		}
->  		dma_ops = &swiotlb_dma_ops;
->  	}
->  }
-> diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-> index 8d08b3e..f7535d1 100644
-> --- a/include/linux/swiotlb.h
-> +++ b/include/linux/swiotlb.h
-> @@ -22,7 +22,7 @@ extern int swiotlb_force;
->   */
->  #define IO_TLB_SHIFT 11
->  
-> -extern void swiotlb_init(int verbose);
-> +int swiotlb_init(int verbose);
->  extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
->  extern unsigned long swiotlb_nr_tbl(void);
->  extern int swiotlb_late_init_with_tbl(char *tlb, unsigned long nslabs);
-> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-> index f114bf6..6b99ea7 100644
-> --- a/lib/swiotlb.c
-> +++ b/lib/swiotlb.c
-> @@ -170,7 +170,7 @@ void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
->   * Statically reserve bounce buffer space and initialize bounce buffer data
->   * structures for the software IO TLB used to implement the DMA API.
->   */
-> -static void __init
-> +static int __init
->  swiotlb_init_with_default_size(size_t default_size, int verbose)
->  {
->  	unsigned long bytes;
-> @@ -185,17 +185,22 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
->  	/*
->  	 * Get IO TLB memory from the low pages
->  	 */
-> -	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
-> -	if (!io_tlb_start)
-> -		panic("Cannot allocate SWIOTLB buffer");
-> +	io_tlb_start = alloc_bootmem_low_pages_nopanic(PAGE_ALIGN(bytes));
-> +	if (!io_tlb_start) {
-> +		WARN(1, "Cannot allocate SWIOTLB buffer");
-> +		return -1;
-> +	}
->  
->  	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
-> +
-> +	return 0;
->  }
->  
-> -void __init
-> +int __init
->  swiotlb_init(int verbose)
->  {
-> -	swiotlb_init_with_default_size(64 * (1<<20), verbose);	/* default to 64MB */
-> +	/* default to 64MB */
-> +	return swiotlb_init_with_default_size(64 * (1<<20), verbose);
->  }
->  
->  /*
-> -- 
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Please merge this one yourself.
+
+Can I add your acked-by?
+
+Thanks.
+
+-- 
+tejun
