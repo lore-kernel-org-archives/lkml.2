@@ -1,95 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab2LVQye (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 11:54:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54649 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751722Ab2LVQyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 11:54:32 -0500
-Date: Sat, 22 Dec 2012 17:54:38 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH review 2/3] pidns: Stop pid allocation when init dies
-Message-ID: <20121222165438.GA19680@redhat.com>
-References: <87d2y2elbi.fsf@xmission.com> <871ueiel9d.fsf@xmission.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <871ueiel9d.fsf@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751890Ab2LVRFx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 12:05:53 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:10516 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab2LVRFu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 12:05:50 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=eZnsvP3-SpoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=om32Zw-ELMQA:10 a=ImJolIsyp5_pLRy3UgMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1356195947.5896.125.camel@gandalf.local.home>
+Subject: Re: [PATCH 07/24] nohz: Assign timekeeping duty to a non-full-nohz
+ CPU
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Sat, 22 Dec 2012 12:05:47 -0500
+In-Reply-To: <CAFTL4hxSMmu5h1=yVK1qn6NNVYF3WfTZYxPxPTJ=xzibgpkayQ@mail.gmail.com>
+References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+	 <1356028391-14427-8-git-send-email-fweisbec@gmail.com>
+	 <1356106396.5896.111.camel@gandalf.local.home>
+	 <CAFTL4hxSMmu5h1=yVK1qn6NNVYF3WfTZYxPxPTJ=xzibgpkayQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21, Eric W. Biederman wrote:
->
-> --- a/include/linux/pid_namespace.h
-> +++ b/include/linux/pid_namespace.h
-> @@ -21,7 +21,7 @@ struct pid_namespace {
->  	struct kref kref;
->  	struct pidmap pidmap[PIDMAP_ENTRIES];
->  	int last_pid;
-> -	int nr_hashed;
-> +	unsigned int nr_hashed;
->  	struct task_struct *child_reaper;
->  	struct kmem_cache *pid_cachep;
->  	unsigned int level;
-> @@ -42,6 +42,8 @@ struct pid_namespace {
->
->  extern struct pid_namespace init_pid_ns;
->
-> +#define PIDNS_HASH_ADDING (1U << 31)
+On Sat, 2012-12-22 at 17:39 +0100, Frederic Weisbecker wrote:
 
-Yes, agreed. We can't rely on PF_EXITING/whatever, we need the explicit
-flag.
+> Ah thanks! I'm folding your patch.
+> I can add your SOB, right?
 
-1/2 looks fine too. Only one nit about init_pid_ns below...
+Sure, feel free to add my SOB on any of the changes I sent to you.
 
+-- Steve
 
-> @@ -319,7 +318,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
->
->  	upid = pid->numbers + ns->level;
->  	spin_lock_irq(&pidmap_lock);
-> -	if (ns->nr_hashed < 0)
-> +	if (ns->nr_hashed < PIDNS_HASH_ADDING)
-
-I won't insist, but perhaps if "(!(nr_hashed & PIDNS_HASH_ADDING))"
-looks more understandable.
-
-> +void disable_pid_allocation(struct pid_namespace *ns)
-> +{
-> +	spin_lock_irq(&pidmap_lock);
-> +	if (ns->nr_hashed >= PIDNS_HASH_ADDING)
-
-Do we really need this check? It seems that PIDNS_HASH_ADDING
-bit must be always set when disable_pid_allocation() is called.
-
-> +		ns->nr_hashed -= PIDNS_HASH_ADDING;
-
-Anyway, nr_hashed &= ~PIDNS_HASH_ADDING looks simpler and doesn't
-need a check.
-
-But again, I won't insist this is minor and subjective.
-
->  struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
->  {
->  	struct hlist_node *elem;
-> @@ -584,7 +591,7 @@ void __init pidmap_init(void)
->  	/* Reserve PID 0. We never call free_pidmap(0) */
->  	set_bit(0, init_pid_ns.pidmap[0].page);
->  	atomic_dec(&init_pid_ns.pidmap[0].nr_free);
-> -	init_pid_ns.nr_hashed = 1;
-> +	init_pid_ns.nr_hashed = 1 + PIDNS_HASH_ADDING;
-
-The obly chunk which doesn't look exactly correct to me, although this
-doesn't really matter. Hmm, actually the code was already wrong before
-this patch.
-
-I think init_pid_ns.nr_hashed should be PIDNS_HASH_ADDING, we should not
-add 1 to account the unused zero pid, and kernel_thread(kernel_init) was
-not called yet.
-
-Oleg.
 
