@@ -1,239 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab2LVSyK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 13:54:10 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:46863 "EHLO mxout2.iskon.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751731Ab2LVSyI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 13:54:08 -0500
-X-Remote-IP: 213.191.128.133
-Date: Sat, 22 Dec 2012 19:54:01 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1751864Ab2LVTAs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 14:00:48 -0500
+Received: from e24smtp03.br.ibm.com ([32.104.18.24]:40405 "EHLO
+	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751790Ab2LVTAq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 14:00:46 -0500
+Message-ID: <50D60349.7080400@linux.vnet.ibm.com>
+Date: Sat, 22 Dec 2012 17:00:25 -0200
+From: Lucas Kannebley Tavares <lucaskt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <50D24AF3.1050809@iskon.hr> <20121220111208.GD10819@suse.de> <20121220125802.23e9b22d.akpm@linux-foundation.org>
-In-Reply-To: <20121220125802.23e9b22d.akpm@linux-foundation.org>
-Message-ID: <50D601C9.9060803@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: dri-devel@lists.freedesktop.org, David Airlie <airlied@linux.ie>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        brking@linux.vnet.ibm.com, benh@au1.ibm.com,
+        Betty Dall <betty.dall@hp.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Subject: Re: drm: Added ppc64 root device getter
+References: <50CA5EE2.30206@linux.vnet.ibm.com> <CAErSpo6BfWGYH+=ygS6qWT-YFKPuywooVgLWm+g_eB2dMw3iKQ@mail.gmail.com>
+In-Reply-To: <CAErSpo6BfWGYH+=ygS6qWT-YFKPuywooVgLWm+g_eB2dMw3iKQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Subject: [PATCH] mm: modify pgdat_balanced() so that it also handles order=0
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121222 #8835399, check: 20121222 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40628 [Dec 22 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12122219-9254-0000-0000-00000B1EE969
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.12.2012 21:58, Andrew Morton wrote:
-> There seems to be some complexity/duplication here between the new
-> unbalanced_zone() and pgdat_balanced().
-> 
-> Can we modify pgdat_balanced() so that it also handles order=0, then do
-> 
-> -		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
-> +		if (!pgdat_balanced(...))
-> 
-> ?
-> 
+On 12/13/2012 09:31 PM, Bjorn Helgaas wrote:
+> [+cc Betty]
+>
+> On Thu, Dec 13, 2012 at 4:04 PM, Lucas Kannebley Tavares
+> <lucaskt@linux.vnet.ibm.com>  wrote:
+>> On architectures such as ppc64, there is no root bus device (it belongs
+>> to the hypervisor). DRM attempted to get one, causing a null-pointer
+>> dereference.
+>
+> In addition to ppc64, at least ia64 and parisc have the same situation
+> of the PCI host bridge not appearing as a  PCI device itself.
+>
+>> Signed-off-by: Lucas Kannebley Tavares<lucaskt@linux.vnet.ibm.com>
+>>
+>> --
+>> diff --git a/arch/powerpc/platforms/pseries/Makefile
+>> b/arch/powerpc/platforms/pseries/Makefile
+>> index 890622b..ddfdda8 100644
+>> --- a/arch/powerpc/platforms/pseries/Makefile
+>> +++ b/arch/powerpc/platforms/pseries/Makefile
+>> @@ -1,6 +1,8 @@
+>>   ccflags-$(CONFIG_PPC64)                        := -mno-minimal-toc
+>>   ccflags-$(CONFIG_PPC_PSERIES_DEBUG)    += -DDEBUG
+>>
+>> +drm-y                  += drm_pci.o
+>> +
+>>   obj-y                  := lpar.o hvCall.o nvram.o reconfig.o \
+>>                             setup.o iommu.o event_sources.o ras.o \
+>>                             firmware.o power.o dlpar.o mobility.o
+>> diff --git a/arch/powerpc/platforms/pseries/drm_pci.c
+>> b/arch/powerpc/platforms/pseries/drm_pci.c
+>> new file mode 100644
+>> index 0000000..da6675e
+>> --- /dev/null
+>> +++ b/arch/powerpc/platforms/pseries/drm_pci.c
+>> @@ -0,0 +1,24 @@
+>> +/*
+>> + * Copyright (C) 2012 Lucas Kannebley Tavares, IBM Corporation
+>> + *
+>> + * pSeries specific routines for DRM.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program; if not, write to the Free Software
+>> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+>> + */
+>> +
+>> +inline struct pci_device *drm_get_parent_device(struct drm_device *dev) {
+>> +       return (dev->pdev->bus->self == NULL) ? dev->pdev :
+>> dev->pdev->bus->self;
+>
+> So for DRM devices on a root bus, the parent is the DRM device itself,
+> while for DRM devices deeper in the hierarchy, the parent is the
+> upstream P2P bridge?  That doesn't really make sense to me.  If the
+> caller operates on the DRM device in some cases and on the bridge in
+> other cases, it's going to need to know the difference, so hiding the
+> difference in this wrapper seems counterproductive.
+>
+>> +}
+>> +
+>> diff --git a/drivers/gpu/drm/drm_pci.c b/drivers/gpu/drm/drm_pci.c
+>> index eb37466..5a8a4f5 100644
+>> --- a/drivers/gpu/drm/drm_pci.c
+>> +++ b/drivers/gpu/drm/drm_pci.c
+>> @@ -466,6 +466,10 @@ void drm_pci_exit(struct drm_driver *driver, struct
+>> pci_driver *pdriver)
+>>   }
+>>   EXPORT_SYMBOL(drm_pci_exit);
+>>
+>> +inline __weak struct pci_device *drm_get_parent_device(struct drm_device
+>> *dev) {
+>> +       return dev->pdev->bus->self;
+>> +}
+>> +
+>>   int drm_pcie_get_speed_cap_mask(struct drm_device *dev, u32 *mask)
+>>   {
+>>          struct pci_dev *root;
+>> @@ -479,7 +483,7 @@ int drm_pcie_get_speed_cap_mask(struct drm_device *dev,
+>> u32 *mask)
+>>                  return -EINVAL;
+>>
+>>          // find PCI device for capabilities
+>> -       root = dev->pdev->bus->self;
+>> +       root = drm_get_parent_device(dev);
+>>
+>>          // some architectures might not have host bridges as PCI devices
+>>          if (root == NULL)
+>
+> What tree does this apply to?  Upstream doesn't have the "if (root ==
+> NULL)" check yet.  That check looks like the sort of thing you'd need
+> to avoid the null pointer dereference.  So maybe adding that check and
+> the associated code is enough to fix the problem, even without adding
+> drm_get_parent_device().
+>
+> With the code in the tree, it looks like you'd dereference a null
+> pointer in pci_pcie_cap(root), so I assume that's what you tripped
+> over.
+>
+> I'm not really sure that code outside the PCI core should be looking
+> at capabilities of upstream devices like this.  It seems like the sort
+> of thing where the core might need to provide better interfaces.
+>
+> Bjorn
+>
 
-Makes sense, I like the idea! Took me some time to wrap my mind around
-all the logic in balance_pgdat(), while writing my previous patch. Also had
-to revert one if-case logic to avoid double negation, which would be even
-harder to grok. But unbalanced_zone (var, not a function!) has to stay because
-wait_iff_congested() needs a struct zone* param. Here's my take on the subject:
-
----8<---
-mm: modify pgdat_balanced() so that it also handles order=0
-
-Teach pgdat_balanced() about order-0 allocations so that we can simplify
-code in a few places in vmstat.c.
-
-Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
----
- mm/vmscan.c | 101 +++++++++++++++++++++++++++---------------------------------
- 1 file changed, 45 insertions(+), 56 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index adc7e90..0d15d99 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2452,12 +2452,16 @@ static bool zone_balanced(struct zone *zone, int order,
- }
- 
- /*
-- * pgdat_balanced is used when checking if a node is balanced for high-order
-- * allocations. Only zones that meet watermarks and are in a zone allowed
-- * by the callers classzone_idx are added to balanced_pages. The total of
-- * balanced pages must be at least 25% of the zones allowed by classzone_idx
-- * for the node to be considered balanced. Forcing all zones to be balanced
-- * for high orders can cause excessive reclaim when there are imbalanced zones.
-+ * pgdat_balanced() is used when checking if a node is balanced.
-+ *
-+ * For order-0, all zones must be balanced!
-+ *
-+ * For high-order allocations only zones that meet watermarks and are in a
-+ * zone allowed by the callers classzone_idx are added to balanced_pages. The
-+ * total of balanced pages must be at least 25% of the zones allowed by
-+ * classzone_idx for the node to be considered balanced. Forcing all zones to
-+ * be balanced for high orders can cause excessive reclaim when there are
-+ * imbalanced zones.
-  * The choice of 25% is due to
-  *   o a 16M DMA zone that is balanced will not balance a zone on any
-  *     reasonable sized machine
-@@ -2467,17 +2471,43 @@ static bool zone_balanced(struct zone *zone, int order,
-  *     Similarly, on x86-64 the Normal zone would need to be at least 1G
-  *     to balance a node on its own. These seemed like reasonable ratios.
-  */
--static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
--						int classzone_idx)
-+static bool pgdat_balanced(pg_data_t *pgdat, int order, int classzone_idx)
- {
- 	unsigned long present_pages = 0;
-+	unsigned long balanced_pages = 0;
- 	int i;
- 
--	for (i = 0; i <= classzone_idx; i++)
--		present_pages += pgdat->node_zones[i].present_pages;
-+	/* Check the watermark levels */
-+	for (i = 0; i <= classzone_idx; i++) {
-+		struct zone *zone = pgdat->node_zones + i;
-+
-+		if (!populated_zone(zone))
-+			continue;
-+
-+		present_pages += zone->present_pages;
-+
-+		/*
-+		 * A special case here:
-+		 *
-+		 * balance_pgdat() skips over all_unreclaimable after
-+		 * DEF_PRIORITY. Effectively, it considers them balanced so
-+		 * they must be considered balanced here as well!
-+		 */
-+		if (zone->all_unreclaimable) {
-+			balanced_pages += zone->present_pages;
-+			continue;
-+		}
-+
-+		if (zone_balanced(zone, order, 0, i))
-+			balanced_pages += zone->present_pages;
-+		else if (!order)
-+			return false;
-+	}
- 
--	/* A special case here: if zone has no page, we think it's balanced */
--	return balanced_pages >= (present_pages >> 2);
-+	if (order)
-+		return balanced_pages >= (present_pages >> 2);
-+	else
-+		return true;
- }
- 
- /*
-@@ -2511,39 +2541,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 		return false;
- 	}
- 
--	/* Check the watermark levels */
--	for (i = 0; i <= classzone_idx; i++) {
--		struct zone *zone = pgdat->node_zones + i;
--
--		if (!populated_zone(zone))
--			continue;
--
--		/*
--		 * balance_pgdat() skips over all_unreclaimable after
--		 * DEF_PRIORITY. Effectively, it considers them balanced so
--		 * they must be considered balanced here as well if kswapd
--		 * is to sleep
--		 */
--		if (zone->all_unreclaimable) {
--			balanced += zone->present_pages;
--			continue;
--		}
--
--		if (!zone_balanced(zone, order, 0, i))
--			all_zones_ok = false;
--		else
--			balanced += zone->present_pages;
--	}
--
--	/*
--	 * For high-order requests, the balanced zones must contain at least
--	 * 25% of the nodes pages for kswapd to sleep. For order-0, all zones
--	 * must be balanced
--	 */
--	if (order)
--		return pgdat_balanced(pgdat, balanced, classzone_idx);
--	else
--		return all_zones_ok;
-+	return pgdat_balanced(pgdat, order, classzone_idx);
- }
- 
- /*
-@@ -2571,7 +2569,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 							int *classzone_idx)
- {
- 	struct zone *unbalanced_zone;
--	unsigned long balanced;
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 	unsigned long total_scanned;
-@@ -2605,7 +2602,6 @@ loop_again:
- 		int has_under_min_watermark_zone = 0;
- 
- 		unbalanced_zone = NULL;
--		balanced = 0;
- 
- 		/*
- 		 * Scan in the highmem->dma direction for the highest
-@@ -2761,8 +2757,6 @@ loop_again:
- 				 * speculatively avoid congestion waits
- 				 */
- 				zone_clear_flag(zone, ZONE_CONGESTED);
--				if (i <= *classzone_idx)
--					balanced += zone->present_pages;
- 			}
- 
- 		}
-@@ -2776,7 +2770,7 @@ loop_again:
- 				pfmemalloc_watermark_ok(pgdat))
- 			wake_up(&pgdat->pfmemalloc_wait);
- 
--		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
-+		if (pgdat_balanced(pgdat, order, *classzone_idx))
- 			break;		/* kswapd: all done */
- 		/*
- 		 * OK, kswapd is getting into trouble.  Take a nap, then take
-@@ -2800,12 +2794,7 @@ loop_again:
- 	} while (--sc.priority >= 0);
- out:
- 
--	/*
--	 * order-0: All zones must meet high watermark for a balanced node
--	 * high-order: Balanced zones must make up at least 25% of the node
--	 *             for the node to be balanced
--	 */
--	if (unbalanced_zone && (!order || !pgdat_balanced(pgdat, balanced, *classzone_idx))) {
-+	if (!pgdat_balanced(pgdat, order, *classzone_idx)) {
- 		cond_resched();
- 
- 		try_to_freeze();
--- 
-1.8.1.rc0
+Ok Bjorn, thanks for the comments, indeed I had a dirty tree here and 
+didn't realize it, sorry. Either way I'm then sending the "if (root == 
+NULL)" patch as a reply to this. I'm sending it along with another 
+independent patch (they are NOT a series) that changes 
+pci_read_config_dword calls to pci_capability_read_dword ones on the drm 
+driver. There were only a couple of those to start with.
 
 -- 
-Zlatko
+Lucas Kannebley Tavares
+Software Engineer
+IBM Linux Technology Center
+
