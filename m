@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab2LVCsC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 21:48:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46582 "EHLO mx1.redhat.com"
+	id S1752090Ab2LVCyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 21:54:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:63233 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352Ab2LVCsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 21:48:00 -0500
-Message-ID: <50D52037.60602@redhat.com>
-Date: Fri, 21 Dec 2012 21:51:35 -0500
+	id S1751113Ab2LVCyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 21:54:09 -0500
+Message-ID: <50D521A4.7050509@redhat.com>
+Date: Fri, 21 Dec 2012 21:57:40 -0500
 From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: David Daney <ddaney.cavm@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
 CC: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
         lwoodman@redhat.com, jeremy@goop.org,
         Jan Beulich <JBeulich@novell.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 3/3] x86,smp: auto tune spinlock backoff delay factor
-References: <20121221184940.103c31ad@annuminas.surriel.com> <20121221185147.4ae48ab5@annuminas.surriel.com> <50D5033A.2070309@gmail.com>
-In-Reply-To: <50D5033A.2070309@gmail.com>
+Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
+ factor
+References: <20121221184940.103c31ad@annuminas.surriel.com>  <20121221185147.4ae48ab5@annuminas.surriel.com>  <20121221185613.1f4c9523@annuminas.surriel.com> <1356137332.21834.8155.camel@edumazet-glaptop>
+In-Reply-To: <1356137332.21834.8155.camel@edumazet-glaptop>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 07:47 PM, David Daney wrote:
-
+On 12/21/2012 07:48 PM, Eric Dumazet wrote:
+> On Fri, 2012-12-21 at 18:56 -0500, Rik van Riel wrote:
+>> Argh, the first one had a typo in it that did not influence
+>> performance with fewer threads running, but that made things
+>> worse with more than a dozen threads...
+>>
+>> Please let me know if you can break these patches.
+>> ---8<---
+>> Subject: x86,smp: auto tune spinlock backoff delay factor
+>
 >> +#define MIN_SPINLOCK_DELAY 1
 >> +#define MAX_SPINLOCK_DELAY 1000
 >> +DEFINE_PER_CPU(int, spinlock_delay) = { MIN_SPINLOCK_DELAY };
 >
->
-> This gives the same delay for all locks in the system, but the amount of
-> work done under each lock is different.  So, for any given lock, the
-> delay is not optimal.
->
-> This is an untested idea that came to me after looking at this:
->
-> o Assume that for any given lock, the optimal delay is the same for all
-> CPUs in the system.
- >
-> o Store a per-lock delay value in arch_spinlock_t.
->
-> o Once a CPU owns the lock it can update the delay as you do for the
-> per_cpu version.  Tuning the delay on fewer of the locking operations
-> reduces bus traffic, but makes it converge more slowly.
->
-> o Bonus points if you can update the delay as part of the releasing store.
+> Using a single spinlock_delay per cpu assumes there is a single
+> contended spinlock on the machine, or that contended
+> spinlocks protect the same critical section.
 
-It would absolutely have to be part of the same load and
-store cycle, otherwise we would increase bus traffic and
-defeat the purpose.
+The goal is to reduce bus traffic, and keep total
+system performance from falling through the floor.
 
-However, since spinlock contention should not be the
-usual state, and all a scalable lock does is make sure
-that N+1 CPUs does not perform worse than N CPUs, using
-scalable locks is a stop-gap measure.
+If we have one lock that takes N cycles to acquire,
+and a second contended lock that takes N*2 cycles
+to acquire, checking the first lock fewer times
+before acquisition, and the second lock more times,
+should still result in similar average system
+throughput.
 
-I believe a stop-gap measure should be kept as simple as
-we can. I am willing to consider moving to a per-lock
-delay factor if we can figure out an easy way to do it,
-but I would like to avoid too much extra complexity...
+I suspect this approach should work well if we have
+multiple contended locks in the system.
+
+> Given that we probably know where the contended spinlocks are, couldnt
+> we use a real scalable implementation for them ?
+
+The scalable locks tend to have a slightly more
+complex locking API, resulting in a slightly
+higher overhead in the non-contended (normal)
+case.  That means we cannot use them everywhere.
+
+Also, scalable locks merely make sure that N+1
+CPUs perform the same as N CPUs when there is
+lock contention.  They do not cause the system
+to actually scale.
+
+For actual scalability, the data structure would
+need to be changed, so locking requirements are
+better.
+
+> A known contended one is the Qdisc lock in network layer. We added a
+> second lock (busylock) to lower a bit the pressure on a separate cache
+> line, but a scalable lock would be much better...
+
+My locking patches are meant for dealing with the
+offenders we do not know about, to make sure that
+system performance does not fall off a cliff when
+we run into a surprise.
+
+Known scalability bugs we can fix.
+
+Unknown ones should not cause somebody's system
+to fail.
+
+> I guess there are patent issues...
+
+At least one of the scalable lock implementations has been
+known since 1991, so there should not be any patent issues
+with that one.
+
