@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab2LVDBt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 22:01:49 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41138 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751496Ab2LVDBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 22:01:46 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20121222024225.GG3468@phenom.dumpdata.com>
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <20121222024225.GG3468@phenom.dumpdata.com>
+	id S1752418Ab2LVDF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 22:05:59 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31384 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751497Ab2LVDF5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 22:05:57 -0500
+X-Authority-Analysis: v=2.0 cv=QPnqt33L c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=wom5GMh1gUkA:10 a=R0qdkdZMuLMA:10 a=5SG0PmZfjMsA:10 a=kj9zAlcOel0A:10 a=meVymXHHAAAA:8 a=NBdiTfTIyVEA:10 a=20KFwNOVAAAA:8 a=MJxrH50jwXVXVaWTwd0A:9 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Date: Fri, 21 Dec 2012 22:05:54 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 1/3] x86,smp: move waiting on contended lock out of
+ line
+Message-ID: <20121222030554.GC27621@home.goodmis.org>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+ <20121221185038.43e8246c@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, 21 Dec 2012 19:01:21 -0800
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Message-ID: <eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221185038.43e8246c@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Earlyprintk please?
+On Fri, Dec 21, 2012 at 06:50:38PM -0500, Rik van Riel wrote:
+> Subject: x86,smp: move waiting on contended ticket lock out of line
+> 
+> Moving the wait loop for congested loops to its own function allows
+> us to add things to that wait loop, without growing the size of the
+> kernel text appreciably.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
->On Mon, Dec 17, 2012 at 11:15:32PM -0800, Yinghai Lu wrote:
->> Now we have limit kdump reseved under 896M, because kexec has the
->limitation.
->> and also bzImage need to stay under 4g.
->> 
->> To make kexec/kdump could use range above 4g, we need to make bzImage
->and
->> ramdisk could be loaded above 4g.
->> During booting bzImage will be unpacked on same postion and stay
->high.
->> 
->> The patches add fields in setup_header and boot_params to
->> 1. get info about ramdisk position info above 4g from
->bootloader/kexec
->> 2. get info about cmd_line_ptr info above 4g from bootloader/kexec
->> 3. set xloadflags bit0 in header for bzImage and bootloader/kexec
->load
->>    could check that to decide if it could to put bzImage high.
->> 4. use sentinel to make sure ext_* fields in boot_params could be
->used.
->> 
->> This patches is tested with kexec tools with local changes and they
->are sent
->> to kexec list later.
->> 
->> could be found at:
->> 
->>        
->git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
->for-x86-boot
->
->Did a light test and it looks to work under Xen - thought I had not
->tested
->any various configuration of memory layouts. 
->
->More worryingly it blew up under native under an Dell T105 AMD box with
->4GB of memory.
->I can't get it even to print anything on the serial log:
->
->(this is an excerpt from pxelinux.cfg/C0A8 file)
->LABEL BAREMETAL
->   KERNEL vmlinuz
->APPEND initrd=initramfs.cpio.gz debug selinux=0  loglevel=10 apic=debug
->console=uart8250,115200n8
->
->
->PXELINUX 3.82 2009-06-09  Copyright (C) 1994-2009 H. Peter Anvin et al
->Loading
->vmlinuz.......................................................................
->Loading
->initramfs.cpio.gz...........................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................!
- .........
-................................................................................................................................................................................................................................................................................ready.
+-- Steve
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
