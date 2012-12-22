@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290Ab2LVKid (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 05:38:33 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:38487 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab2LVKib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 05:38:31 -0500
+	id S1751299Ab2LVLJh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 06:09:37 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:57330 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906Ab2LVLJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 06:09:34 -0500
+Date: Sat, 22 Dec 2012 12:09:29 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 25/25] ipc: don't use [delayed_]work_pending()
+Message-ID: <20121222110929.GA3567@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	linux-kernel@vger.kernel.org
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-26-git-send-email-tj@kernel.org>
+ <20121221181523.0e0998e4.akpm@linux-foundation.org>
+ <20121222022210.GA30177@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20121222024225.GG3468@phenom.dumpdata.com>
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<20121222024225.GG3468@phenom.dumpdata.com>
-Date: Sat, 22 Dec 2012 02:38:29 -0800
-X-Google-Sender-Auth: 9_XdxU2Z6ttAlGfmZgdNr4ke0Ew
-Message-ID: <CAE9FiQV2HU+OpYmGH3Ttn103+-s=KgdokXGroZgooMSGMPJbsw@mail.gmail.com>
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121222022210.GA30177@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 6:42 PM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Mon, Dec 17, 2012 at 11:15:32PM -0800, Yinghai Lu wrote:
->> Now we have limit kdump reseved under 896M, because kexec has the limitation.
->> and also bzImage need to stay under 4g.
->>
->> To make kexec/kdump could use range above 4g, we need to make bzImage and
->> ramdisk could be loaded above 4g.
->> During booting bzImage will be unpacked on same postion and stay high.
->>
->> The patches add fields in setup_header and boot_params to
->> 1. get info about ramdisk position info above 4g from bootloader/kexec
->> 2. get info about cmd_line_ptr info above 4g from bootloader/kexec
->> 3. set xloadflags bit0 in header for bzImage and bootloader/kexec load
->>    could check that to decide if it could to put bzImage high.
->> 4. use sentinel to make sure ext_* fields in boot_params could be used.
->>
->> This patches is tested with kexec tools with local changes and they are sent
->> to kexec list later.
->>
->> could be found at:
->>
->>         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
->
-> Did a light test and it looks to work under Xen - thought I had not tested
-> any various configuration of memory layouts.
->
-> More worryingly it blew up under native under an Dell T105 AMD box with 4GB of memory.
-> I can't get it even to print anything on the serial log:
+On Fri, Dec 21, 2012 at 06:22:10PM -0800, Tejun Heo wrote:
+> Hello, Andrew.
+> 
+> On Fri, Dec 21, 2012 at 06:15:23PM -0800, Andrew Morton wrote:
+> > On Fri, 21 Dec 2012 17:57:15 -0800 Tejun Heo <tj@kernel.org> wrote:
+> > 
+> > > There's no need to test whether a (delayed) work item in pending
+> > > before queueing, flushing or cancelling it.  Most uses are unnecessary
+> > > and quite a few of them are buggy.
+> > 
+> > > -		if (!work_pending(&ipc_memory_wq))
+> > > -			schedule_work(&ipc_memory_wq);
+> > > +		schedule_work(&ipc_memory_wq);
+> > 
+> > Well, the new code is a ton slower than the old code if the work is
+> > frequently pending, so some care is needed with such a conversion.
+> 
+> Yeah, I mentioned it in the head message.  it comes down to
+> test_and_set_bit() vs. test_bit() and none of the current users seems
+> to be hot enough for that to matter at all.
+> 
+> In very hot paths, such optimization *could* be valid.  The problem is
+> that [delayed_]work_pending() seem to be abused much more than they
+> are put to any actual usefulness.  Maybe we should rename them to
+> something really ugly.  I don't know.
 
-can you try that branch again ? update the #PF handler to clean
-init_level4_pgt in all case.
+Hmm, we're also disabling local interrupts for no reason, if there's no
+work pending (this is queue_work_on()):
 
-I did not consider when you are xen enabled kernel on bare metal.
+    2d1a:       9c                      pushfq
+    2d1b:       41 5c                   pop    %r12
+    2d1d:       fa                      cli
+    2d1e:       e8 00 00 00 00          callq  2d23 <queue_work_on+0x33>
+    2d23:       f0 0f ba 2b 00          lock btsl $0x0,(%rbx)
 
-aka need to add
-          clear_page(init_level4_pgt);
+so there's IRQ disable + locked operation in schedule_work vs a simple
+test_bit which doesn't even require the LOCK prefix.
 
-in init_mapping_kernel() of head_64.S
+Now you say those paths are not fast paths, but the reverse of
+this optimization is also true: what happens if people start using
+schedule_work() in fast paths without checking whether work is pending?
+A useless IRQ disable + locked operation + IRQ enable.
 
-Thanks
+I don't know but this could hurt in some situations, I'm thinking of RT
+folk especially here.
 
-Yinghai
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
