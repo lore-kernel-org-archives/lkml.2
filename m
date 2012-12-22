@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751852Ab2LVPuK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 10:50:10 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11731 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168Ab2LVPtt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 10:49:49 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=Ciwy3NGCPMMA:10 a=rZbusVlU-hoA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=meVymXHHAAAA:8 a=8kzRziY1_1cA:10 a=VwQbUJbxAAAA:8 a=tJHY4lP-bUIGcm4lGvsA:9 a=Zh68SRI7RUMA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-Id: <20121222154947.211931347@goodmis.org>
-User-Agent: quilt/0.60-1
-Date: Sat, 22 Dec 2012 10:49:24 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>, <stable@vger.kernel.org>,
-        <stable-rt@vger.kernel.org>
-Subject: [PATCH RT 2/4] sched: Queue RT tasks to head when prio drops
-References: <20121222154922.724242376@goodmis.org>
-Content-Disposition: inline; filename=0002-sched-Queue-RT-tasks-to-head-when-prio-drops.patch
+	id S1751664Ab2LVQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 11:02:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:10433 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751511Ab2LVQCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 11:02:06 -0500
+Date: Sat, 22 Dec 2012 17:02:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Anton Arapov <anton@redhat.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
+        Frank Eigler <fche@redhat.com>,
+        Anithra P Janakiraman <anithra@linux.vnet.ibm.com>
+Subject: Re: [RFC PATCH 1/6] uretprobes/x86: hijack return address
+Message-ID: <20121222160212.GA18082@redhat.com>
+References: <1356088596-17858-1-git-send-email-anton@redhat.com> <1356088596-17858-2-git-send-email-anton@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356088596-17858-2-git-send-email-anton@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+On 12/21, Anton Arapov wrote:
+>
+> +extern unsigned long
+> +arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs)
+> +{
+> +	struct uprobe_task *utask = current->utask;
+> +	int rasize, ncopied;
+> +	unsigned long orig_return_vaddr = 0; /* clear high bits for 32-bit apps */
+> +
+> +	if (is_ia32_task())
+> +		rasize = 4;
+> +	else
+> +		rasize = 8;
+> +
+> +	ncopied = copy_from_user(&orig_return_vaddr, (void __user *)regs->sp, rasize);
+> +	if (unlikely(ncopied))
+> +		return -EFAULT;
 
-The following scenario does not work correctly:
+Hmm. The caller (added by 3/6) does
 
-Runqueue of CPUx contains two runnable and pinned tasks:
- T1: SCHED_FIFO, prio 80
- T2: SCHED_FIFO, prio 80
+	ri->orig_return_vaddr = arch_uretprobe_hijack_return_addr(...);
+	if (likely(ri->orig_return_vaddr)) {
 
-T1 is on the cpu and executes the following syscalls (classic priority
-ceiling scenario):
 
- sys_sched_setscheduler(pid(T1), SCHED_FIFO, .prio = 90);
- ...
- sys_sched_setscheduler(pid(T1), SCHED_FIFO, .prio = 80);
- ...
+> +	ncopied = copy_to_user((void __user *)regs->sp, &rp_trampoline_vaddr, rasize);
+> +	if (unlikely(ncopied)) {
+> +		if (ncopied != rasize) {
+> +			printk(KERN_ERR "uretprobe: return address clobbered: "
+> +					"pid=%d, %%sp=%#lx, %%ip=%#lx\n",
+> +					current->pid, regs->sp, regs->ip);
 
-Now T1 gets preempted by T3 (SCHED_FIFO, prio 95). After T3 goes back
-to sleep the scheduler picks T2. Surprise!
+OK... perhaps we could try to write rasize - ncopied bytes first, but
+this is minor.
 
-The same happens w/o actual preemption when T1 is forced into the
-scheduler due to a sporadic NEED_RESCHED event. The scheduler invokes
-pick_next_task() which returns T2. So T1 gets preempted and scheduled
-out.
+> +			utask->doomed = true;
 
-This happens because sched_setscheduler() dequeues T1 from the prio 90
-list and then enqueues it on the tail of the prio 80 list behind T2.
-This violates the POSIX spec and surprises user space which relies on
-the guarantee that SCHED_FIFO tasks are not scheduled out unless they
-give the CPU up voluntarily or are preempted by a higher priority
-task. In the latter case the preempted task must get back on the CPU
-after the preempting task schedules out again.
+But this looks strange. We set ->doomed = true, but the task continues to run.
+I think in this case we should send SIGTRAP right now. We should not wait until
+handle_swbp() notices this flag (which btw can never happen). And this also
+means ->doomed should die.
 
-We fixed a similar issue already in commit 60db48c (sched: Queue a
-deboosted task to the head of the RT prio queue). The same treatment
-is necessary for sched_setscheduler(). So enqueue to head of the prio
-bucket list if the priority of the task is lowered.
+> +		return -EFAULT;
 
-It might be possible that existing user space relies on the current
-behaviour, but it can be considered highly unlikely due to the corner
-case nature of the application scenario.
+Again, NULL or fix the caller.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@vger.kernel.org
-Cc: stable-rt@vger.kernel.org
----
- kernel/sched.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+> + * On x86_32, if a function returns a struct or union, the return
+> + * value is copied into an area created by the caller. The address
+> + * of this area is passed on the stack as a "hidden" first argument.
+> + * When such a function returns, it uses a "ret $4" instruction to pop
+> + * not only the return address but also the hidden arg.  To accommodate
+> + * such functions, we add 4 bytes of slop when predicting the return
+> + * address. See PR #10078.
+                   ^^^^^^^^^
+I'd wish I knew what this "PR" means ;)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 9af4bbe..ed7f001 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5767,8 +5767,13 @@ recheck:
- 
- 	if (running)
- 		p->sched_class->set_curr_task(rq);
--	if (on_rq)
--		activate_task(rq, p, 0);
-+	if (on_rq) {
-+		/*
-+		 * We enqueue to tail when the priority of a task is
-+		 * increased (user space view).
-+		 */
-+		activate_task(rq, p, oldprio <= p->prio ? ENQUEUE_HEAD : 0);
-+	}
- 
- 	check_class_changed(rq, p, prev_class, oldprio);
- 	task_rq_unlock(rq, p, &flags);
--- 
-1.7.10.4
 
+> +#define STRUCT_RETURN_SLOP 4
+> +
+> +extern unsigned long
+> +arch_uretprobe_predict_sp_at_return(struct pt_regs *regs, struct task_struct *tsk)
+> +{
+> +	if (test_tsk_thread_flag(tsk, TIF_IA32))
+> +		return (unsigned long) (regs->sp + 4 + STRUCT_RETURN_SLOP);
+
+Somehow I can't understand the logic behind arch_uretprobe_predict_sp_at_return()
+at all... I'll try more. but tsk is always current, I see no point to pass the
+argument.
+
+> @@ -60,6 +63,12 @@ struct uprobe_task {
+>
+>  	unsigned long			xol_vaddr;
+>  	unsigned long			vaddr;
+> +
+> +	/*
+> +	 * Unexpected error in probe point handling has left task's
+> +	 * text or stack corrupted. Kill task ASAP.
+                                    ^^^^^^^^^^^^^^
+Exactly, so ...
+
+> +	bool				doomed;
+
+must die, I think.
+
+Oleg.
 
