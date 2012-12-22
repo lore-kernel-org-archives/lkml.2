@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752217Ab2LVCm6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 21:42:58 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:43893 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060Ab2LVCmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 21:42:54 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<1355814959-10573-25-git-send-email-yinghai@kernel.org>
-	<20121222023741.GF3468@phenom.dumpdata.com>
-Date: Fri, 21 Dec 2012 18:42:47 -0800
-In-Reply-To: <20121222023741.GF3468@phenom.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Fri, 21 Dec 2012 21:37:41 -0500")
-Message-ID: <87bodmhkns.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752110Ab2LVCsC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 21:48:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46582 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751352Ab2LVCsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 21:48:00 -0500
+Message-ID: <50D52037.60602@redhat.com>
+Date: Fri, 21 Dec 2012 21:51:35 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18m/2mrTqCnMrlEOPStt99ti99aLqVJSFI=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v7 24/27] x86: Add swiotlb force off support
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: David Daney <ddaney.cavm@gmail.com>
+CC: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 3/3] x86,smp: auto tune spinlock backoff delay factor
+References: <20121221184940.103c31ad@annuminas.surriel.com> <20121221185147.4ae48ab5@annuminas.surriel.com> <50D5033A.2070309@gmail.com>
+In-Reply-To: <50D5033A.2070309@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+On 12/21/2012 07:47 PM, David Daney wrote:
 
-> On Mon, Dec 17, 2012 at 11:15:56PM -0800, Yinghai Lu wrote:
->> So use could disable swiotlb from command line, even swiotlb support
->> is compiled in.  Just like we have intel_iommu=on and intel_iommu=off.
+>> +#define MIN_SPINLOCK_DELAY 1
+>> +#define MAX_SPINLOCK_DELAY 1000
+>> +DEFINE_PER_CPU(int, spinlock_delay) = { MIN_SPINLOCK_DELAY };
 >
-> You really need to spell out why this is useful.
+>
+> This gives the same delay for all locks in the system, but the amount of
+> work done under each lock is different.  So, for any given lock, the
+> delay is not optimal.
+>
+> This is an untested idea that came to me after looking at this:
+>
+> o Assume that for any given lock, the optimal delay is the same for all
+> CPUs in the system.
+ >
+> o Store a per-lock delay value in arch_spinlock_t.
+>
+> o Once a CPU owns the lock it can update the delay as you do for the
+> per_cpu version.  Tuning the delay on fewer of the locking operations
+> reduces bus traffic, but makes it converge more slowly.
+>
+> o Bonus points if you can update the delay as part of the releasing store.
 
-YH why can't we safely autodetect that the swiotlb is unusable when
-there is no memory below 4G free?
+It would absolutely have to be part of the same load and
+store cycle, otherwise we would increase bus traffic and
+defeat the purpose.
 
-Eric
+However, since spinlock contention should not be the
+usual state, and all a scalable lock does is make sure
+that N+1 CPUs does not perform worse than N CPUs, using
+scalable locks is a stop-gap measure.
+
+I believe a stop-gap measure should be kept as simple as
+we can. I am willing to consider moving to a per-lock
+delay factor if we can figure out an easy way to do it,
+but I would like to avoid too much extra complexity...
