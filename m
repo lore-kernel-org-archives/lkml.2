@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044Ab2LVCmq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 21:42:46 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:44869 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352Ab2LVCmo convert rfc822-to-8bit (ORCPT
+	id S1752217Ab2LVCm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 21:42:58 -0500
+Received: from out01.mta.xmission.com ([166.70.13.231]:43893 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752060Ab2LVCmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 21:42:44 -0500
-Date: Fri, 21 Dec 2012 21:42:25 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+	Fri, 21 Dec 2012 21:42:54 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-Message-ID: <20121222024225.GG3468@phenom.dumpdata.com>
 References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+	<1355814959-10573-25-git-send-email-yinghai@kernel.org>
+	<20121222023741.GF3468@phenom.dumpdata.com>
+Date: Fri, 21 Dec 2012 18:42:47 -0800
+In-Reply-To: <20121222023741.GF3468@phenom.dumpdata.com> (Konrad Rzeszutek
+	Wilk's message of "Fri, 21 Dec 2012 21:37:41 -0500")
+Message-ID: <87bodmhkns.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX18m/2mrTqCnMrlEOPStt99ti99aLqVJSFI=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v7 24/27] x86: Add swiotlb force off support
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 11:15:32PM -0800, Yinghai Lu wrote:
-> Now we have limit kdump reseved under 896M, because kexec has the limitation.
-> and also bzImage need to stay under 4g.
-> 
-> To make kexec/kdump could use range above 4g, we need to make bzImage and
-> ramdisk could be loaded above 4g.
-> During booting bzImage will be unpacked on same postion and stay high.
-> 
-> The patches add fields in setup_header and boot_params to
-> 1. get info about ramdisk position info above 4g from bootloader/kexec
-> 2. get info about cmd_line_ptr info above 4g from bootloader/kexec
-> 3. set xloadflags bit0 in header for bzImage and bootloader/kexec load
->    could check that to decide if it could to put bzImage high.
-> 4. use sentinel to make sure ext_* fields in boot_params could be used.
-> 
-> This patches is tested with kexec tools with local changes and they are sent
-> to kexec list later.
-> 
-> could be found at:
-> 
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
 
-Did a light test and it looks to work under Xen - thought I had not tested
-any various configuration of memory layouts. 
+> On Mon, Dec 17, 2012 at 11:15:56PM -0800, Yinghai Lu wrote:
+>> So use could disable swiotlb from command line, even swiotlb support
+>> is compiled in.  Just like we have intel_iommu=on and intel_iommu=off.
+>
+> You really need to spell out why this is useful.
 
-More worryingly it blew up under native under an Dell T105 AMD box with 4GB of memory.
-I can't get it even to print anything on the serial log:
+YH why can't we safely autodetect that the swiotlb is unusable when
+there is no memory below 4G free?
 
-(this is an excerpt from pxelinux.cfg/C0A8 file)
-LABEL BAREMETAL
-   KERNEL vmlinuz
-   APPEND initrd=initramfs.cpio.gz debug selinux=0  loglevel=10 apic=debug console=uart8250,115200n8
-
-
-PXELINUX 3.82 2009-06-09  Copyright (C) 1994-2009 H. Peter Anvin et al
-Loading vmlinuz.......................................................................
-Loading initramfs.cpio.gz.....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................ready.
-
+Eric
