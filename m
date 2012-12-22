@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab2LVB6y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 20:58:54 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:62932 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752840Ab2LVB6s (ORCPT
+	id S1752855Ab2LVB6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 20:58:51 -0500
+Received: from mail-ia0-f177.google.com ([209.85.210.177]:63688 "EHLO
+	mail-ia0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752116Ab2LVB6r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 20:58:48 -0500
-X-IronPort-AV: E=Sophos;i="4.84,333,1355126400"; 
-   d="scan'208";a="16092952"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: [PATCH] Makefile: Make checkstack work with O= builds
-Date: Fri, 21 Dec 2012 17:58:45 -0800
-Message-Id: <1356141525-25162-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.8.1.rc2
+	Fri, 21 Dec 2012 20:58:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 25/25] ipc: don't use [delayed_]work_pending()
+Date: Fri, 21 Dec 2012 17:57:15 -0800
+Message-Id: <1356141435-17340-26-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1356141435-17340-1-git-send-email-tj@kernel.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vmlinux doesn't always live in the same directory as the
-source files and so 'make O=obj checkstack' fails with a missing
-vmlinux file. Fix checkstack so that this is possible.
+There's no need to test whether a (delayed) work item in pending
+before queueing, flushing or cancelling it.  Most uses are unnecessary
+and quite a few of them are buggy.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Remove unnecessary pending tests from ipc.  Only compile tested.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
+Please let me know how this patch should be routed.  I can take it
+through the workqueue tree if necessary.
 
-It would also be nice if this depended on vmlinux and modules being built
-already but I couldn't figure that part out.
+Thanks.
 
- Makefile | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ ipc/util.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/Makefile b/Makefile
-index 4fe0559..54a386b 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1318,7 +1318,7 @@ else
- CHECKSTACK_ARCH := $(ARCH)
- endif
- checkstack:
--	$(OBJDUMP) -d vmlinux $$(find . -name '*.ko') | \
-+	$(OBJDUMP) -d $(objtree)/vmlinux $$(find $(objtree) -name '*.ko') | \
- 	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
- 
- kernelrelease:
+diff --git a/ipc/util.c b/ipc/util.c
+index 72fd078..add2776 100644
+--- a/ipc/util.c
++++ b/ipc/util.c
+@@ -71,8 +71,7 @@ static int ipc_memory_callback(struct notifier_block *self,
+ 		 * activate the ipcns notification chain.
+ 		 * No need to keep several ipc work items on the queue.
+ 		 */
+-		if (!work_pending(&ipc_memory_wq))
+-			schedule_work(&ipc_memory_wq);
++		schedule_work(&ipc_memory_wq);
+ 		break;
+ 	case MEM_GOING_ONLINE:
+ 	case MEM_GOING_OFFLINE:
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.0.2
 
