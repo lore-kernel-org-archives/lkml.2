@@ -1,47 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751842Ab2LVBFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 20:05:19 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:39880 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab2LVBFR (ORCPT
+	id S1751609Ab2LVBFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 20:05:34 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:35301 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab2LVBFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 20:05:17 -0500
-X-Greylist: delayed 15838 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 20:05:17 EST
-From: Stefan Hasko <hasko.stevo@gmail.com>
-To: Jamal Hadi Salim <jhs@mojatatu.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stefan Hasko <hasko.stevo@gmail.com>
-Subject: [PATCH] net: sched: integer overflow fix
-Date: Sat, 22 Dec 2012 02:04:59 +0100
-Message-Id: <1356138300-16076-1-git-send-email-hasko.stevo@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 21 Dec 2012 20:05:32 -0500
+X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 20:05:32 EST
+MIME-Version: 1.0
+In-Reply-To: <CALCETrUi4JJSahrDKBARrwGsGE=1RbH8WL4tk1YgDmEowzXtSQ@mail.gmail.com>
+References: <1356050997-2688-1-git-send-email-walken@google.com>
+	<CALCETrUi4JJSahrDKBARrwGsGE=1RbH8WL4tk1YgDmEowzXtSQ@mail.gmail.com>
+Date: Fri, 21 Dec 2012 16:59:38 -0800
+Message-ID: <CANN689H+yOeA3pvBMGu52q7brfoDwtkh0pA==c8VVoCkapkx6g@mail.gmail.com>
+Subject: Re: [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem held
+From: Michel Lespinasse <walken@google.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, Jorn_Engel <joern@logfs.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I did not realize different sizes casting problem, now it's clear to me. Thanks for help.
+On Fri, Dec 21, 2012 at 4:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Thu, Dec 20, 2012 at 4:49 PM, Michel Lespinasse <walken@google.com> wrote:
+>> We have many vma manipulation functions that are fast in the typical case,
+>> but can optionally be instructed to populate an unbounded number of ptes
+>> within the region they work on:
+>> - mmap with MAP_POPULATE or MAP_LOCKED flags;
+>> - remap_file_pages() with MAP_NONBLOCK not set or when working on a
+>>   VM_LOCKED vma;
+>> - mmap_region() and all its wrappers when mlock(MCL_FUTURE) is in effect;
+>> - brk() when mlock(MCL_FUTURE) is in effect.
+>>
+>
+> Something's buggy here.  My evil test case is stuck with lots of
+> threads spinning at 100% system time.  Stack traces look like:
+>
+> [<0000000000000000>] __mlock_vma_pages_range+0x66/0x70
+> [<0000000000000000>] __mm_populate+0xf9/0x150
+> [<0000000000000000>] vm_mmap_pgoff+0x9f/0xc0
+> [<0000000000000000>] sys_mmap_pgoff+0x7e/0x150
+> [<0000000000000000>] sys_mmap+0x22/0x30
+> [<0000000000000000>] system_call_fastpath+0x16/0x1b
+> [<0000000000000000>] 0xffffffffffffffff
+>
+> perf top says:
+>
+>  38.45%  [kernel]            [k] __mlock_vma_pages_range
+>  33.04%  [kernel]            [k] __get_user_pages
+>  28.18%  [kernel]            [k] __mm_populate
+>
+> The tasks in question use MCL_FUTURE but not MAP_POPULATE.  These
+> tasks are immune to SIGKILL.
 
-Fixed integer overflow in function htb_dequeue
+Looking into it.
 
-Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
----
- net/sched/sch_htb.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+There seems to be a problem with mlockall - the following program
+fails in an unkillable way even before my changes:
 
-diff --git a/net/sched/sch_htb.c b/net/sched/sch_htb.c
-index d2922c0..51561ea 100644
---- a/net/sched/sch_htb.c
-+++ b/net/sched/sch_htb.c
-@@ -919,7 +919,7 @@ ok:
- 	q->now = ktime_to_ns(ktime_get());
- 	start_at = jiffies;
- 
--	next_event = q->now + 5 * NSEC_PER_SEC;
-+	next_event = q->now + 5LLU * NSEC_PER_SEC;
- 
- 	for (level = 0; level < TC_HTB_MAXDEPTH; level++) {
- 		/* common case optimization - skip event handler quickly */
+#include <sys/mman.h>
+#include <stdio.h>
+#include <stdint.h>
+
+int main(void) {
+  void *p = mmap(NULL, 0x100000000000,
+                 PROT_READ | PROT_WRITE,
+                 MAP_PRIVATE | MAP_ANON | MAP_NORESERVE,
+                 -1, 0);
+  printf("p: %p\n", p);
+  mlockall(MCL_CURRENT);
+  return 0;
+}
+
+I think my changes propagate this existing problem so it now shows up
+in more places :/
+
 -- 
-1.7.10.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
