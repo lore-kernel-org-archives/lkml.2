@@ -1,478 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752073Ab2LVCQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 21:16:59 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:43935 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab2LVCQ4 (ORCPT
+	id S1752119Ab2LVCSi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 21:18:38 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:22353 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab2LVCSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 21:16:56 -0500
-MIME-Version: 1.0
-In-Reply-To: <CANN689GBCsZWKkAQuNGfF4OJwVOyZ5neUcJo=ajzMKNmFug+XQ@mail.gmail.com>
-References: <1356050997-2688-1-git-send-email-walken@google.com>
- <CALCETrUi4JJSahrDKBARrwGsGE=1RbH8WL4tk1YgDmEowzXtSQ@mail.gmail.com>
- <CANN689H+yOeA3pvBMGu52q7brfoDwtkh0pA==c8VVoCkapkx6g@mail.gmail.com>
- <CALCETrU7u7P67QCwmj4qTMHti1=MXyjy3V9FejWbbrMVi01mDw@mail.gmail.com> <CANN689GBCsZWKkAQuNGfF4OJwVOyZ5neUcJo=ajzMKNmFug+XQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Fri, 21 Dec 2012 18:16:35 -0800
-Message-ID: <CALCETrUOXjm6uoZ=TwyPr0_EQT-10ko5k448FwGP_dMwb=v=AA@mail.gmail.com>
-Subject: Re: [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem held
-To: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, Jorn_Engel <joern@logfs.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+	Fri, 21 Dec 2012 21:18:35 -0500
+Date: Fri, 21 Dec 2012 21:18:13 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH v6 24/27] x86: Add swiotlb force off support
+Message-ID: <20121222021813.GC3468@phenom.dumpdata.com>
+References: <1355436141-8668-1-git-send-email-yinghai@kernel.org>
+ <1355436141-8668-25-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1355436141-8668-25-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 5:59 PM, Michel Lespinasse <walken@google.com> wrote:
-> On Fri, Dec 21, 2012 at 5:09 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> On Fri, Dec 21, 2012 at 4:59 PM, Michel Lespinasse <walken@google.com> wrote:
->>> On Fri, Dec 21, 2012 at 4:36 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->>>> Something's buggy here.  My evil test case is stuck with lots of
->>>> threads spinning at 100% system time.
->>>>
->>>> The tasks in question use MCL_FUTURE but not MAP_POPULATE.  These
->>>> tasks are immune to SIGKILL.
->>>
->>> Looking into it.
->>>
->>> There seems to be a problem with mlockall - the following program
->>> fails in an unkillable way even before my changes:
->>>
->>> #include <sys/mman.h>
->>> #include <stdio.h>
->>> #include <stdint.h>
->>>
->>> int main(void) {
->>>   void *p = mmap(NULL, 0x100000000000,
->>>                  PROT_READ | PROT_WRITE,
->>>                  MAP_PRIVATE | MAP_ANON | MAP_NORESERVE,
->>>                  -1, 0);
->>>   printf("p: %p\n", p);
->>>   mlockall(MCL_CURRENT);
->>>   return 0;
->>> }
->>>
->>> I think my changes propagate this existing problem so it now shows up
->>> in more places :/
->
-> So in my test case, the issue was caused by the mapping being 2^32
-> pages, which overflowed the integer 'nr_pages' argument to
-> __get_user_pages, which caused an infinite loop as __get_user_pages()
-> would return 0 so __mm_populate() would make no progress.
->
-> When dropping one zero from that humongous size in the test case, the
-> test case becomes at least killable.
->
->> Hmm.  I'm using MCL_FUTURE with MAP_NORESERVE, but those mappings are
->> not insanely large.  Should MAP_NORESERVE would negate MCL_FUTURE?
->> I'm doing MAP_NORESERVE, PROT_NONE to prevent pages from being
->> allocated in the future -- I have no intention of ever using them.
->
-> MAP_NORESERVE doesn't prevent page allocation, but PROT_NONE does
-> (precisely because people use it the same way as you do :)
->
->> The other odd thing I do is use MAP_FIXED to replace MAP_NORESERVE pages.
-> Yes, I've seen people do that here too.
->
-> Could you share your test case so I can try reproducing the issue
-> you're seeing ?
+On Thu, Dec 13, 2012 at 02:02:18PM -0800, Yinghai Lu wrote:
+> So use could disable swiotlb from command line, even swiotlb support
+> is compiled in.  Just like we have intel_iommu=on and intel_iommu=off.
 
-Not so easy.  My test case is a large chunk of a high-frequency
-trading system :)
+Does this have any usage besides testing?
 
-I just tried it again.  Not I have a task stuck in
-mlockall(MCL_CURRENT|MCL_FUTURE).  The stack is:
+And also pls in the future use scripts/get_maintainer.pl so
+that you can extract from the email of the maintainer (which would be me).
 
-[<0000000000000000>] flush_work+0x1c2/0x280
-[<0000000000000000>] schedule_on_each_cpu+0xe3/0x130
-[<0000000000000000>] lru_add_drain_all+0x15/0x20
-[<0000000000000000>] sys_mlockall+0x125/0x1a0
-[<0000000000000000>] tracesys+0xd0/0xd5
-[<0000000000000000>] 0xffffffffffffffff
-
-The sequence of mmap and munmap calls, according to strace, is:
-
-6084  mmap(NULL, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0e4000
-6084  mmap(NULL, 8388744, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55096c3000
-6084  mmap(0x7f5509ec2000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3ff000) = 0x7f5509ec2000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0e3000
-6084  mmap(NULL, 2413688, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5509475000
-6084  mmap(0x7f550969c000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x27000) = 0x7f550969c000
-6084  mmap(0x7f550969e000, 148600, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f550969e000
-6084  mmap(NULL, 12636304, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5508867000
-6084  mmap(0x7f5509420000, 327680, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x7b9000) = 0x7f5509420000
-6084  mmap(0x7f5509470000, 16528, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5509470000
-6084  mmap(NULL, 8409224, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5508061000
-6084  mmap(0x7f550885b000, 36864, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3fa000) = 0x7f550885b000
-6084  mmap(0x7f5508864000, 8328, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5508864000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f5508060000
-6084  mmap(NULL, 8404144, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f550785c000
-6084  mmap(0x7f5508054000, 45056, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3f8000) = 0x7f5508054000
-6084  mmap(0x7f550805f000, 3248, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f550805f000
-6084  mmap(NULL, 8390584, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f550705b000
-6084  mmap(0x7f5507859000, 12288, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3fe000) = 0x7f5507859000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550705a000
-6084  mmap(NULL, 8393296, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5506858000
-6084  mmap(0x7f5507055000, 16384, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3fd000) = 0x7f5507055000
-6084  mmap(0x7f5507059000, 592, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5507059000
-6084  mmap(NULL, 8393224, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5506056000
-6084  mmap(0x7f5506855000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3ff000) = 0x7f5506855000
-6084  mmap(0x7f5506857000, 520, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5506857000
-6084  mmap(NULL, 46777, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f550604a000
-6084  mmap(NULL, 2109672, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5505e46000
-6084  mmap(0x7f5506048000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f5506048000
-6084  mmap(NULL, 3150176, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5505b44000
-6084  mmap(0x7f5505e3e000, 28672, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xfa000) = 0x7f5505e3e000
-6084  mmap(0x7f5505e45000, 352, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5505e45000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0e2000
-6084  mmap(NULL, 2217600, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5505926000
-6084  mmap(0x7f5505b42000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1c000) = 0x7f5505b42000
-6084  mmap(NULL, 2509488, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55056c1000
-6084  mmap(0x7f5505922000, 16384, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x61000) = 0x7f5505922000
-6084  mmap(NULL, 3073904, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55053d2000
-6084  mmap(0x7f55056bc000, 20480, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xea000) = 0x7f55056bc000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0e1000
-6084  mmap(NULL, 3517816, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5505077000
-6084  mmap(0x7f55053c7000, 40960, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x150000) = 0x7f55053c7000
-6084  mmap(0x7f55053d1000, 3448, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f55053d1000
-6084  mmap(NULL, 3142544, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5504d77000
-6084  mmap(0x7f5505058000, 40960, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe1000) = 0x7f5505058000
-6084  mmap(0x7f5505062000, 82832, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5505062000
-6084  mmap(NULL, 3125544, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5504a7b000
-6084  mmap(0x7f5504d75000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xfa000) = 0x7f5504d75000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0e0000
-6084  mmap(NULL, 2184216, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5504865000
-6084  mmap(0x7f5504a79000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x14000) = 0x7f5504a79000
-6084  mmap(NULL, 2212904, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5504648000
-6084  mmap(0x7f550485f000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x17000) = 0x7f550485f000
-6084  mmap(0x7f5504861000, 13352, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5504861000
-6084  mmap(NULL, 3925208, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5504289000
-6084  mmap(0x7f550463d000, 24576, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b4000) = 0x7f550463d000
-6084  mmap(0x7f5504643000, 17624, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5504643000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0df000
-6084  mmap(NULL, 8392040, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5503a88000
-6084  mmap(0x7f5504287000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3ff000) = 0x7f5504287000
-6084  mmap(NULL, 2196528, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f550386f000
-6084  mmap(0x7f5503a85000, 12288, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x16000) = 0x7f5503a85000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0de000
-6084  mmap(NULL, 2708032, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55035d9000
-6084  mmap(0x7f5503867000, 32768, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8e000) = 0x7f5503867000
-6084  mmap(NULL, 2408864, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f550338c000
-6084  mmap(0x7f55035d7000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4b000) = 0x7f55035d7000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0dd000
-6084  mmap(NULL, 8388656, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5502b8b000
-6084  mmap(0x7f550338a000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3ff000) = 0x7f550338a000
-6084  mmap(NULL, 2518464, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5502924000
-6084  mmap(0x7f5502b82000, 32768, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x5e000) = 0x7f5502b82000
-6084  mmap(0x7f5502b8a000, 3520, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5502b8a000
-6084  mmap(NULL, 2162064, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5502714000
-6084  mmap(0x7f5502922000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe000) = 0x7f5502922000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f5502713000
-6084  mmap(NULL, 4454088, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55022d3000
-6084  mmap(0x7f5502701000, 69632, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x22e000) = 0x7f5502701000
-6084  mmap(0x7f5502712000, 1736, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5502712000
-6084  mmap(NULL, 2249496, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55020ad000
-6084  mmap(0x7f55022be000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x11000) = 0x7f55022be000
-6084  mmap(0x7f55022c0000, 74520, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f55022c0000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f55020ac000
-6084  mmap(NULL, 2232416, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5501e8a000
-6084  mmap(0x7f55020aa000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x20000) = 0x7f55020aa000
-6084  mmap(NULL, 2113944, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5501c85000
-6084  mmap(0x7f5501e88000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3000) = 0x7f5501e88000
-6084  mmap(NULL, 2128984, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5501a7d000
-6084  mmap(0x7f5501c83000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000) = 0x7f5501c83000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0dc000
-6084  mmap(NULL, 2109704, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5501879000
-6084  mmap(0x7f5501a7b000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f5501a7b000
-6084  mmap(NULL, 2366184, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5501637000
-6084  mmap(0x7f5501870000, 32768, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x39000) = 0x7f5501870000
-6084  mmap(0x7f5501878000, 2792, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5501878000
-6084  mmap(NULL, 3578368, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55012cd000
-6084  mmap(0x7f5501622000, 69632, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x155000) = 0x7f5501622000
-6084  mmap(0x7f5501633000, 14848, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5501633000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0db000
-6084  mmap(NULL, 3964496, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5500f05000
-6084  mmap(0x7f55012bf000, 57344, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1ba000) = 0x7f55012bf000
-6084  mmap(NULL, 2187824, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5500cee000
-6084  mmap(0x7f5500f03000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x15000) = 0x7f5500f03000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0da000
-6084  mmap(NULL, 2469936, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5500a92000
-6084  mmap(0x7f5500ce4000, 36864, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x52000) = 0x7f5500ce4000
-6084  mmap(0x7f5500ced000, 48, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5500ced000
-6084  mmap(NULL, 2134448, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f5500888000
-6084  mmap(0x7f5500a90000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8000) = 0x7f5500a90000
-6084  mmap(NULL, 2205832, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f550066d000
-6084  mmap(0x7f5500886000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x19000) = 0x7f5500886000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d9000
-6084  mmap(NULL, 2864104, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f55003b1000
-6084  mmap(0x7f5500665000, 28672, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xb4000) = 0x7f5500665000
-6084  mmap(0x7f550066c000, 1000, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f550066c000
-6084  mmap(NULL, 2255936, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f550018a000
-6084  mmap(0x7f55003ac000, 20480, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x22000) = 0x7f55003ac000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f5500189000
-6084  mmap(NULL, 20377632, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fee19000
-6084  mmap(0x7f5500187000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x116e000) = 0x7f5500187000
-6084  mmap(NULL, 3963320, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fea51000
-6084  mmap(0x7f54fedef000, 155648, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x19e000) = 0x7f54fedef000
-6084  mmap(0x7f54fee15000, 14776, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f54fee15000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f54fea50000
-6084  mmap(NULL, 2612480, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fe7d2000
-6084  mmap(0x7f54fea4c000, 16384, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x7a000) = 0x7f54fea4c000
-6084  mmap(NULL, 2302408, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fe59f000
-6084  mmap(0x7f54fe7d0000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x31000) = 0x7f54fe7d0000
-6084  mmap(NULL, 2125992, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fe397000
-6084  mmap(0x7f54fe59d000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000) = 0x7f54fe59d000
-6084  mmap(NULL, 2348544, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fe159000
-6084  mmap(0x7f54fe394000, 12288, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x3b000) = 0x7f54fe394000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d8000
-6084  mmap(NULL, 2163496, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fdf48000
-6084  mmap(0x7f54fe157000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xf000) = 0x7f54fe157000
-6084  mmap(NULL, 2168048, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fdd36000
-6084  mmap(0x7f54fdf46000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x7f54fdf46000
-6084  mmap(NULL, 2109528, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fdb32000
-6084  mmap(0x7f54fdd34000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f54fdd34000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d7000
-6084  mmap(NULL, 2940512, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fd864000
-6084  mmap(0x7f54fdb27000, 45056, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xc3000) = 0x7f54fdb27000
-6084  mmap(NULL, 2256944, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fd63c000
-6084  mmap(0x7f54fd861000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x25000) = 0x7f54fd861000
-6084  mmap(0x7f54fd863000, 48, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f54fd863000
-6084  mmap(NULL, 2109864, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fd438000
-6084  mmap(0x7f54fd63a000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f54fd63a000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d6000
-6084  mmap(NULL, 2126576, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fd230000
-6084  mmap(0x7f54fd436000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x6000) = 0x7f54fd436000
-6084  mmap(NULL, 2109536, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fd02c000
-6084  mmap(0x7f54fd22e000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2000) = 0x7f54fd22e000
-6084  mmap(NULL, 2210424, PROT_READ|PROT_EXEC,
-MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x7f54fce10000
-6084  mmap(0x7f54fd028000, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x18000) = 0x7f54fd028000
-6084  mmap(0x7f54fd02a000, 6776, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f54fd02a000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d5000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d4000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d3000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d2000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0d1000
-6084  mmap(NULL, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0cf000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0ce000
-6084  mmap(NULL, 8192, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f550a0cc000
-6084  munmap(0x7f550604a000, 46777)     = 0
-6084  mmap(NULL, 139264, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f550a0aa000
-6084  mmap(0x7f550a0ab000, 131072, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f550a0ab000
-6084  mmap(NULL, 139264, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f550a088000
-6084  mmap(0x7f550a089000, 131072, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f550a089000
-6084  mmap(NULL, 139264, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f550a066000
-6084  mmap(0x7f550a067000, 131072, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f550a067000
-6084  mmap(NULL, 548864, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f5509fe0000
-6084  mmap(0x7f5509fe1000, 540672, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5509fe1000
-6084  mmap(NULL, 40960, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f5509fd6000
-6084  mmap(0x7f5509fd7000, 32768, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5509fd7000
-6084  mmap(NULL, 139264, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f5509fb4000
-6084  mmap(0x7f5509fb5000, 131072, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5509fb5000
-6084  mmap(NULL, 4198400, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f54fca0f000
-6084  mmap(0x7f54fcc00000, 2097152, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS|0x40000, -1, 0) = 0x7f54fcc00000
-6084  munmap(0x7f54fca0f000, 2031616)   = 0
-6084  munmap(0x7f54fce01000, 61440)     = 0
-6084  mmap(NULL, 40960, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f5509faa000
-6084  mmap(0x7f5509fab000, 32768, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5509fab000
-6084  mmap(NULL, 24576, PROT_NONE,
-MAP_PRIVATE|MAP_ANONYMOUS|MAP_NORESERVE, -1, 0) = 0x7f5509fa4000
-6084  mmap(0x7f5509fa5000, 16384, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x7f5509fa5000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f5509fa3000
-6084  munmap(0x7f5509fa3000, 4096)      = 0
-6084  mmap(NULL, 2919792, PROT_READ, MAP_PRIVATE, 4, 0) = 0x7f54fc936000
-6084  mmap(NULL, 26258, PROT_READ, MAP_SHARED, 4, 0) = 0x7f5509f9d000
-6084  mmap(NULL, 4096, PROT_READ|PROT_WRITE,
-MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f5509f9c000
-6084  munmap(0x7f5509f9c000, 4096)      = 0
-6084  mlockall(MCL_CURRENT|MCL_FUTURE
-
-This task is unkillable.  Two other tasks are stuck spinning.
-
-Note the line with 0x40000, which is MAP_HUGETLB.  Could that be the problem?
-
---Andy
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  Documentation/kernel-parameters.txt |    7 +++++++
+>  arch/x86/kernel/pci-swiotlb.c       |   10 +++++-----
+>  drivers/iommu/amd_iommu.c           |    1 +
+>  include/linux/swiotlb.h             |    1 +
+>  lib/swiotlb.c                       |    5 ++++-
+>  5 files changed, 18 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 20e248c..08b4c9d 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2832,6 +2832,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  
+>  	swiotlb=	[IA-64] Number of I/O TLB slabs
+>  
+> +	swiotlb=[force|off|on] [KNL] disable or enable swiotlb.
+> +		force
+> +		on
+> +			Enable swiotlb.
+> +		off
+> +			Disable swiotlb.
+> +
+>  	switches=	[HW,M68k]
+>  
+>  	sysfs.deprecated=0|1 [KNL]
+> diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
+> index 6f93eb7..80afd3b 100644
+> --- a/arch/x86/kernel/pci-swiotlb.c
+> +++ b/arch/x86/kernel/pci-swiotlb.c
+> @@ -58,12 +58,12 @@ static struct dma_map_ops swiotlb_dma_ops = {
+>   */
+>  int __init pci_swiotlb_detect_override(void)
+>  {
+> -	int use_swiotlb = swiotlb | swiotlb_force;
+> -
+>  	if (swiotlb_force)
+>  		swiotlb = 1;
+> +	else if (swiotlb_force_off)
+> +		swiotlb = 0;
+>  
+> -	return use_swiotlb;
+> +	return swiotlb;
+>  }
+>  IOMMU_INIT_FINISH(pci_swiotlb_detect_override,
+>  		  pci_xen_swiotlb_detect,
+> @@ -76,9 +76,9 @@ IOMMU_INIT_FINISH(pci_swiotlb_detect_override,
+>   */
+>  int __init pci_swiotlb_detect_4gb(void)
+>  {
+> -	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
+> +	/* don't initialize swiotlb if iommu=off (no_iommu=1) or force off */
+>  #ifdef CONFIG_X86_64
+> -	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
+> +	if (!no_iommu && !swiotlb_force_off && max_pfn > MAX_DMA32_PFN)
+>  		swiotlb = 1;
+>  #endif
+>  	return swiotlb;
+> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> index 55074cb..4f370d3 100644
+> --- a/drivers/iommu/amd_iommu.c
+> +++ b/drivers/iommu/amd_iommu.c
+> @@ -3082,6 +3082,7 @@ int __init amd_iommu_init_dma_ops(void)
+>  	unhandled = device_dma_ops_init();
+>  	if (unhandled && max_pfn > MAX_DMA32_PFN) {
+>  		/* There are unhandled devices - initialize swiotlb for them */
+> +		WARN(swiotlb_force_off, "Please remove swiotlb=off\n");
+>  		swiotlb = 1;
+>  	}
+>  
+> diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
+> index f7535d1..dd7cf65 100644
+> --- a/include/linux/swiotlb.h
+> +++ b/include/linux/swiotlb.h
+> @@ -8,6 +8,7 @@ struct dma_attrs;
+>  struct scatterlist;
+>  
+>  extern int swiotlb_force;
+> +extern int swiotlb_force_off;
+>  
+>  /*
+>   * Maximum allowable number of contiguous slabs to map,
+> diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+> index 6b99ea7..3f51b2c 100644
+> --- a/lib/swiotlb.c
+> +++ b/lib/swiotlb.c
+> @@ -51,6 +51,7 @@
+>  #define IO_TLB_MIN_SLABS ((1<<20) >> IO_TLB_SHIFT)
+>  
+>  int swiotlb_force;
+> +int swiotlb_force_off;
+>  
+>  /*
+>   * Used to do a quick range check in swiotlb_tbl_unmap_single and
+> @@ -102,8 +103,10 @@ setup_io_tlb_npages(char *str)
+>  	}
+>  	if (*str == ',')
+>  		++str;
+> -	if (!strcmp(str, "force"))
+> +	if (!strcmp(str, "force") || !strcmp(str, "on"))
+>  		swiotlb_force = 1;
+> +	if (!strcmp(str, "off"))
+> +		swiotlb_force_off = 1;
+>  
+>  	return 1;
+>  }
+> -- 
+> 1.7.10.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
