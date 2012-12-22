@@ -1,136 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab2LVPCu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 10:02:50 -0500
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:10117 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751144Ab2LVPCs (ORCPT
+	id S1751496Ab2LVPJN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 10:09:13 -0500
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:60732 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751181Ab2LVPJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 10:02:48 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAJrK1VB8q8xJ/2dsb2JhbAANOL4ggxEBAQEDAThAAQULCw4KCRYPCQMCAQIBRQYNAQUCAQGHfAEMoXyTGoxXhEMDn1mKAQ
-X-IronPort-AV: E=Sophos;i="4.84,336,1355068800"; 
-   d="scan'208";a="300244180"
-Message-ID: <50D5CB93.6060501@westnet.com.au>
-Date: Sun, 23 Dec 2012 01:02:43 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sat, 22 Dec 2012 10:09:11 -0500
+Date: Sun, 23 Dec 2012 00:09:09 +0900
+From: Norbert Preining <preining@logic.at>
+To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: dire state of rtl driver in 3.7
+Message-ID: <20121222150909.GA3979@gamma.logic.tuwien.ac.at>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Greg Ungerer <gerg@uclinux.org>, Andy Lutomirski <luto@amacapital.net>,
-        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, Jorn_Engel <joern@logfs.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem
- held
-References: <1356050997-2688-1-git-send-email-walken@google.com> <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
-In-Reply-To: <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michel,
+Dear all,
 
-On 12/21/2012 08:46 PM, Michel Lespinasse wrote:
-> I wanted to ask if you could check the sanity of the following patches
-> in nommu configurations. My understanding is that these always
+I have no idea who is responsible or how to continue, but the rtl driver
+is in such a dire state and it seems nobody cares. I have no reported
+several times about it, without the slightest reactions. How can it be
+that after so many years we still not be able to do wireless.
 
-Sure. I think it is worth CC'ing David Howells on these as well,
-he has spent a fair bit of time in the mmap code for nommu.
+Ok, here are some facts to make people happy:
+kernel 3.7.0
+rtl8192se
+AP infos:distance: 3m
+NEC Aterm WR8600N ATERM-B45459
+firmware 1.0.11
 
-Regards
-Greg
+Network card is built in into a Lenovo Thinkpad Edge
+# lspci -nnv -s  03:00.0
+03:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB
+Wireless LAN Controller [10ec:8172] (rev 10)
+        Subsystem: Realtek Semiconductor Co., Ltd. Device [10ec:e020]
+        Flags: bus master, fast devsel, latency 0, IRQ 17
+        I/O ports at 2000 [size=256]
+        Memory at f0500000 (32-bit, non-prefetchable) [size=16K]
+        Capabilities: [40] Power Management version 3
+        Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+        Capabilities: [70] Express Legacy Endpoint, MSI 00
+        Capabilities: [100] Advanced Error Reporting
+        Capabilities: [140] Virtual Channel
+        Capabilities: [160] Device Serial Number 88-55-22-fe-ff-4c-e0-00
+        Kernel driver in use: rtl8192se
+
+# iwconfig wlan0
+wlan0     IEEE 802.11bgn  ESSID:"norbujp"
+          Mode:Managed  Frequency:2.442 GHz  Access Point: 00:3A:9D:B4:54:5A
+          Bit Rate=150 Mb/s   Tx-Power=20 dBm
+          Retry  long limit:7   RTS thr=2347 B   Fragment thr:off
+          Encryption key:off
+          Power Management:off
+          Link Quality=70/70  Signal level=-35 dBm
 
 
-> populate mappings when they are created, so that MAP_POPULATE and
-> MAP_LOCKED are actually no-ops. Is this an accurate description ?
->
-> Thanks,
->
-> On Thu, Dec 20, 2012 at 4:49 PM, Michel Lespinasse <walken@google.com> wrote:
->> We have many vma manipulation functions that are fast in the typical case,
->> but can optionally be instructed to populate an unbounded number of ptes
->> within the region they work on:
->> - mmap with MAP_POPULATE or MAP_LOCKED flags;
->> - remap_file_pages() with MAP_NONBLOCK not set or when working on a
->>    VM_LOCKED vma;
->> - mmap_region() and all its wrappers when mlock(MCL_FUTURE) is in effect;
->> - brk() when mlock(MCL_FUTURE) is in effect.
->>
->> Current code handles these pte operations locally, while the sourrounding
->> code has to hold the mmap_sem write side since it's manipulating vmas.
->> This means we're doing an unbounded amount of pte population work with
->> mmap_sem held, and this causes problems as Andy Lutomirski reported
->> (we've hit this at Google as well, though it's not entirely clear why
->> people keep trying to use mlock(MCL_FUTURE) in the first place).
->>
->> I propose introducing a new mm_populate() function to do this pte
->> population work after the mmap_sem has been released. mm_populate()
->> does need to acquire the mmap_sem read side, but critically, it
->> doesn't need to hold continuously for the entire duration of the
->> operation - it can drop it whenever things take too long (such as when
->> hitting disk for a file read) and re-acquire it later on.
->>
->> The following patches are against v3.7:
->>
->> - Patches 1-2 fix some issues I noticed while working on the existing code.
->>    If needed, they could potentially go in before the rest of the patches.
->>
->> - Patch 3 introduces the new mm_populate() function and changes
->>    mmap_region() call sites to use it after they drop mmap_sem. This is
->>    inspired from Andy Lutomirski's proposal and is built as an extension
->>    of the work I had previously done for mlock() and mlockall() around
->>    v2.6.38-rc1. I had tried doing something similar at the time but had
->>    given up as there were so many do_mmap() call sites; the recent cleanups
->>    by Linus and Viro are a tremendous help here.
->>
->> - Patches 4-6 convert some of the less-obvious places doing unbounded
->>    pte populates to the new mm_populate() mechanism.
->>
->> - Patches 7-8 are code cleanups that are made possible by the
->>    mm_populate() work. In particular, they remove more code than the
->>    entire patch series added, which should be a good thing :)
->>
->> - Patch 9 is optional to this entire series. It only helps to deal more
->>    nicely with racy userspace programs that might modify their mappings
->>    while we're trying to populate them. It adds a new VM_POPULATE flag
->>    on the mappings we do want to populate, so that if userspace replaces
->>    them with mappings it doesn't want populated, mm_populate() won't
->>    populate those replacement mappings.
->>
->> Michel Lespinasse (9):
->>    mm: make mlockall preserve flags other than VM_LOCKED in def_flags
->>    mm: remap_file_pages() fixes
->>    mm: introduce mm_populate() for populating new vmas
->>    mm: use mm_populate() for blocking remap_file_pages()
->>    mm: use mm_populate() when adjusting brk with MCL_FUTURE in effect.
->>    mm: use mm_populate() for mremap() of VM_LOCKED vmas
->>    mm: remove flags argument to mmap_region
->>    mm: directly use __mlock_vma_pages_range() in find_extend_vma()
->>    mm: introduce VM_POPULATE flag to better deal with racy userspace programs
->>
->>   arch/tile/mm/elf.c   |    1 -
->>   fs/aio.c             |    6 +++-
->>   include/linux/mm.h   |   23 +++++++++---
->>   include/linux/mman.h |    4 ++-
->>   ipc/shm.c            |   12 ++++---
->>   mm/fremap.c          |   51 ++++++++++++++-------------
->>   mm/internal.h        |    4 +-
->>   mm/memory.c          |   24 -------------
->>   mm/mlock.c           |   94 +++++++++++++------------------------------------
->>   mm/mmap.c            |   77 ++++++++++++++++++++++++----------------
->>   mm/mremap.c          |   25 +++++++------
->>   mm/nommu.c           |    5 ++-
->>   mm/util.c            |    6 +++-
->>   13 files changed, 154 insertions(+), 178 deletions(-)
->>
->> --
->> 1.7.7.3
->
->
->
+Effects:
+- either does not associate at all with the AP
+- or the kernel believes it is associated and packages ping to the router
+  get stuck for up to 50+ seconds!!!
+- the kernel believes everything is fine but actually nothing gets out
+  (Destination unreachable)
+- wild ping time up-down:
+64 bytes from 192.168.0.1: icmp_req=73 ttl=255 time=3.05 ms
+64 bytes from 192.168.0.1: icmp_req=74 ttl=255 time=6.42 ms
+64 bytes from 192.168.0.1: icmp_req=75 ttl=255 time=1.21 ms
+64 bytes from 192.168.0.1: icmp_req=76 ttl=255 time=6808 ms
+64 bytes from 192.168.0.1: icmp_req=77 ttl=255 time=5800 ms
+64 bytes from 192.168.0.1: icmp_req=78 ttl=255 time=4792 ms
+64 bytes from 192.168.0.1: icmp_req=79 ttl=255 time=3784 ms
+64 bytes from 192.168.0.1: icmp_req=80 ttl=255 time=2776 ms
+64 bytes from 192.168.0.1: icmp_req=81 ttl=255 time=1768 ms
+64 bytes from 192.168.0.1: icmp_req=82 ttl=255 time=760 ms
+64 bytes from 192.168.0.1: icmp_req=83 ttl=255 time=2.19 ms
+64 bytes from 192.168.0.1: icmp_req=84 ttl=255 time=1.67 ms
+64 bytes from 192.168.0.1: icmp_req=85 ttl=255 time=4.99 ms
+64 bytes from 192.168.0.1: icmp_req=86 ttl=255 time=1.40 ms
+64 bytes from 192.168.0.1: icmp_req=87 ttl=255 time=583 ms
+64 bytes from 192.168.0.1: icmp_req=88 ttl=255 time=4.96 ms
+64 bytes from 192.168.0.1: icmp_req=89 ttl=255 time=1.26 ms
 
+
+Then, when one tries to reset the driver by echoing 1 onto /sys/debug/.../reset
+it hoses the driver even more, going into DMAR fault:
+Dec 22 23:37:35 tofuschnitzel kernel: [ 3383.668663] dmar: DRHD: handling fault status reg 2
+Dec 22 23:37:35 tofuschnitzel kernel: [ 3383.668674] dmar: DMAR:[DMA Read] Request device [03:00.0] fault addr fff35000
+Dec 22 23:37:35 tofuschnitzel kernel: [ 3383.668674] DMAR:[fault reason 06] PTE Read access is not set
+Dec 22 23:37:36 tofuschnitzel kernel: [ 3384.666158] rtlwifi:rtl_pci_tx():<300-1> No more TX desc@1, ring->idx = 9, idx = 9, skb_queue_len = 0x0
+Dec 22 23:37:37 tofuschnitzel kernel: [ 3385.680919] rtlwifi:rtl_pci_tx():<600-1> No more TX desc@1, ring->idx = 9, idx = 9, skb_queue_len = 0x0
+Dec 22 23:37:38 tofuschnitzel kernel: [ 3386.677098] rtlwifi:rtl_pci_tx():<300-1> No more TX desc@1, ring->idx = 9, idx = 9, skb_queue_len = 0x0
+Dec 22 23:37:39 tofuschnitzel kernel: [ 3387.674602] rtlwifi:rtl_pci_tx():<300-1> No more TX desc@1, ring->idx = 9, idx = 9, skb_queue_len = 0x0
+Dec 22 23:37:40 tofuschnitzel kernel: [ 3388.689394] rtlwifi:rtl_pci_tx():<600-1> No more TX desc@1, ring->idx = 9, idx = 9, skb_queue_len = 0x0
+Dec 22 23:37:41 tofuschnitzel kernel: [ 3389.685531] rtlwifi:rtl_pci_tx():<300-1> No more TX desc@1, ring->idx = 9, idx = 9, skb_queue_len = 0x0
+
+
+
+Then it often hangs in endless loops where it does not associate:
+Dec 22 23:43:11 tofuschnitzel kernel: [ 3718.925859] wlan0: authentication with 00:3a:9d:b4:54:5a timed out
+Dec 22 23:43:11 tofuschnitzel kernel: [ 3718.925954] rtlwifi:rtl_op_bss_info_changed():<0-0> 00:00:00:00:00:00
+Dec 22 23:43:11 tofuschnitzel NetworkManager[7546]: <info> (wlan0): supplicant interface state: authenticating -> disconnected
+Dec 22 23:43:11 tofuschnitzel kernel: [ 3719.025581] rtl8192se:rtl92s_phy_set_rf_power_state():<0-0> IPS Set eRf nic disable
+Dec 22 23:43:11 tofuschnitzel NetworkManager[7546]: <info> (wlan0): supplicant interface state: disconnected -> scanning
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3719.089498] rtl8192se:rtl92s_phy_set_rf_power_state():<0-1> IPS Set eRf nic enable
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3719.112723] rtl8192se:_rtl92se_macconfig_after_fwdownload():<0-1> EFUSE CONFIG OK
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3719.112726] rtl8192se:_rtl92se_macconfig_after_fwdownload():<0-1> OK
+^LDec 22 23:43:12 tofuschnitzel wpa_supplicant[4641]: wlan0: SME: Trying to authenticate with 00:3a:9d:b4:54:5a (SSID='norbujp' freq=2447 MHz)
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3719.996208] wlan0: authenticate with 00:3a:9d:b4:54:5a
+Dec 22 23:43:12 tofuschnitzel NetworkManager[7546]: <info> (wlan0): supplicant interface state: scanning -> authenticating
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3720.015206] rtlwifi:rtl_op_bss_info_changed():<0-0> 00:3a:9d:b4:54:5a
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3720.015285] wlan0: send auth to 00:3a:9d:b4:54:5a (try 1/3)
+Dec 22 23:43:12 tofuschnitzel kernel: [ 3720.015301] rtlwifi:rtl_pci_tx():<200-1> MAC80211_LINKING
+Dec 22 23:43:13 tofuschnitzel kernel: [ 3720.218612] wlan0: send auth to 00:3a:9d:b4:54:5a (try 2/3)
+Dec 22 23:43:13 tofuschnitzel kernel: [ 3720.218630] rtlwifi:rtl_pci_tx():<200-1> MAC80211_LINKING
+Dec 22 23:43:13 tofuschnitzel kernel: [ 3720.422100] wlan0: send auth to 00:3a:9d:b4:54:5a (try 3/3)
+Dec 22 23:43:13 tofuschnitzel kernel: [ 3720.422120] rtlwifi:rtl_pci_tx():<200-1> MAC80211_LINKING
+Dec 22 23:43:13 tofuschnitzel kernel: [ 3720.625545] wlan0: authentication with 00:3a:9d:b4:54:5a timed out
+
+==================
+
+It seems that often when something happens it is related to WPA Group rekeying or somethin, because
+immediately afterwards it starts hanging.
+
+Dec 22 23:55:50 tofuschnitzel wpa_supplicant[4650]: wlan0: WPA: Group rekeying completed with 00:3a:9d:b4:54:5a [GTK=CCMP]
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278193] rtlwifi:rtl_op_set_key():<0-0> Disabling hardware based encryption for keyidx: 1, mac: ff:ff:ff
+:ff:ff:ff
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278200] rtlwifi:rtl_op_set_key():<0-0> alg:CCMP
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278203] rtlwifi:rtl_op_set_key():<
+0-0> disable key delete one entry
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278206] rtlwifi:rtl_cam_delete_one_entry():<0-0> key_idx:1
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278209] rtlwifi:rtl_cam_delete_one_entry():<0-0> rtl_cam_delete_one_entry(): WRITE A4: 0
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278212] rtlwifi:rtl_cam_delete_one_entry():<0-0> rtl_cam_delete_one_entry(): WRITE A0: 80010008
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278275] rtlwifi:rtl_op_set_key():<0-0> Using hardware based encryption for keyidx: 1, mac: ff:ff:ff:ff:ff:ff
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278278] rtlwifi:rtl_op_set_key():<0-0> alg:CCMP
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278281] rtlwifi:rtl_op_set_key():<0-0> set enable_hw_sec, key_type:4(OPEN:0 WEP40:1 TKIP:2 AES:4 WEP104:5)
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278284] rtlwifi:rtl_op_set_key():<0-0> set group key
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278288] rtl8192se:rtl92se_set_key():<0-0> add one entry
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278290] rtl8192se:rtl92se_set_key():<0-0> set group key
+Dec 22 23:55:50 tofuschnitzel kernel: [  487.278891] rtlwifi:rtl_cam_add_one_entry():<0-0> <===
+Dec 22 23:55:52 tofuschnitzel kernel: [  489.272265] wlan0: deauthenticated from 00:3a:9d:b4:54:5a (Reason: 2)
+
+========================
+
+
+Another strange message I got was this beautiful one:
+Dec 22 23:45:55 tofuschnitzel kernel: [ 3882.413599] rtl8192se:rtl92s_phy_set_rf_power_state():<0-1> awake, sleeped:3591952 ms state_inap:0
+
+***sleeped:3591952 ms***
+
+This is *VERY* close to exactely 1 hours 60*60 = 360000 ms .... whatever that might be....
+
+================
+
+I don't know what other information I can provide.
+I don't know if there is anyone who feels responsible.
+I am willing to test and provide more data.
+
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+CRANLEIGH (n.)
+A mood of irrational irritation with everyone and everything.
+			--- Douglas Adams, The Meaning of Liff
