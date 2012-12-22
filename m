@@ -1,42 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953Ab2LVDxU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 22:53:20 -0500
-Received: from mailreg.NCTU.edu.tw ([211.76.241.6]:61398 "EHLO
-	mailreg.nctu.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751097Ab2LVDxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 22:53:19 -0500
-Message-ID: <6ec09bb641d19e31e173f0d7f338cdfb.squirrel@webmail.nctu.edu.tw>
-Date: Sat, 22 Dec 2012 11:37:02 +0800
-Subject: The relationship between flag: BH_Uptodate & BH_Dirty in 
- buffer_head
-From: cyhung.cs00g@nctu.edu.tw
-To: linux-kernel@vger.kernel.org
-User-Agent: SquirrelMail/1.4.19
+	id S1752339Ab2LVDxr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 22:53:47 -0500
+Received: from linode.aoot.com ([69.164.194.13]:44796 "EHLO linode.aoot.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab2LVDxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 22:53:44 -0500
+X-Greylist: delayed 1339 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Dec 2012 22:53:44 EST
+Message-ID: <50D52990.2060503@opengridcomputing.com>
+Date: Fri, 21 Dec 2012 21:31:28 -0600
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain;charset=Big5
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
+To: Stefan Hasko <hasko.stevo@gmail.com>
+CC: Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] drivers: infiniband: hw: cxgb4: fix cast warning
+References: <1356143361-31783-1-git-send-email-hasko.stevo@gmail.com>
+In-Reply-To: <1356143361-31783-1-git-send-email-hasko.stevo@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
-
-I want ask a question.
-
-As we know, structure buffer_head has a member called b_state.
-And this state could be defined by many flags.
-
-The question is that, I want to know the relationship between BH_Uptodate
-& BH_Dirty.
-
-If a data is verified, the BH_Dirty will setup, and what about BH_Uptodate?
-
-Under what circumstance the BH_Uptodate would be set up?
-
-
-Thanks. :)
-
+Acked-by: Steve Wise <swise@opengridcomputing.com>
