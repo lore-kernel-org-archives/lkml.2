@@ -1,71 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751700Ab2LVQEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 11:04:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:21714 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751511Ab2LVQEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 11:04:06 -0500
-Date: Sat, 22 Dec 2012 17:02:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>,
-        Anithra P Janakiraman <anithra@linux.vnet.ibm.com>
-Subject: Re: [RFC PATCH 2/6] uretprobes: trampoline implementation
-Message-ID: <20121222160228.GB18082@redhat.com>
-References: <1356088596-17858-1-git-send-email-anton@redhat.com> <1356088596-17858-3-git-send-email-anton@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356088596-17858-3-git-send-email-anton@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751667Ab2LVQGm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 11:06:42 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:36301 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab2LVQGj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 11:06:39 -0500
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Dec 2012 11:06:39 EST
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] profiling: Remove unused timer hook
+Date: Sat, 22 Dec 2012 16:59:51 +0100
+Message-Id: <1356191991-2251-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21, Anton Arapov wrote:
->
-> +static unsigned long xol_get_trampoline_slot(void)
-> +{
-> +	struct xol_area *area;
-> +	unsigned long offset;
-> +	void *vaddr;
-> +	uprobe_opcode_t bp_insn = UPROBE_SWBP_INSN;
-> +
-> +	area = get_xol_area(current->mm);
-> +	if (!area) {
-> +		area = xol_alloc_area();
-> +		if (!area)
-> +			return 0;
-> +	}
-> +
-> +	if (!area->rp_trampoline_vaddr)
-> +		area->rp_trampoline_vaddr = xol_take_insn_slot(area);
-> +
-> +	/*
-> +	 * Initialize the slot if rp_trampoline_vaddr points to valid
-> +	 * instruction slot.
-> +	 */
-> +	if (unlikely(!area->rp_trampoline_vaddr))
-> +		return 0;
-> +
-> +	offset = area->rp_trampoline_vaddr & ~PAGE_MASK;
-> +	vaddr = kmap_atomic(area->page);
-> +	memcpy(vaddr + offset, &bp_insn, UPROBE_SWBP_INSN_SIZE);
-> +	kunmap_atomic(vaddr);
-> +
-> +	return area->rp_trampoline_vaddr;
-> +}
+The last remaining user was oprofile and its use has been removed
+a while ago on commit bc078e4eab65f11bbaeed380593ab8151b30d703
+"oprofile: convert oprofile from timer_hook to hrtimer".
 
-Oh, this should be unified with xol_get_insn_slot(), we certainly do not
-want to copy-and-paste it.
+There doesn't seem to be any upstream user of this hook
+for about two years now. And I'm not even aware of any out of tree
+user.
 
-Or. Perhaps even better, do not add this helper at all. xol_alloc_area()
-could reserve the first slot/bit for trampoline. And note that in this
-case we do not need xol_area->rp_trampoline_vaddr, it is always equal
-to xol_area->vaddr.
+Let's remove it.
 
-Oleg.
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+---
+ include/linux/profile.h |   13 -------------
+ kernel/profile.c        |   24 ------------------------
+ 2 files changed, 0 insertions(+), 37 deletions(-)
+
+diff --git a/include/linux/profile.h b/include/linux/profile.h
+index a0fc322..2112390 100644
+--- a/include/linux/profile.h
++++ b/include/linux/profile.h
+@@ -82,9 +82,6 @@ int task_handoff_unregister(struct notifier_block * n);
+ int profile_event_register(enum profile_type, struct notifier_block * n);
+ int profile_event_unregister(enum profile_type, struct notifier_block * n);
+ 
+-int register_timer_hook(int (*hook)(struct pt_regs *));
+-void unregister_timer_hook(int (*hook)(struct pt_regs *));
+-
+ struct pt_regs;
+ 
+ #else
+@@ -135,16 +132,6 @@ static inline int profile_event_unregister(enum profile_type t, struct notifier_
+ #define profile_handoff_task(a) (0)
+ #define profile_munmap(a) do { } while (0)
+ 
+-static inline int register_timer_hook(int (*hook)(struct pt_regs *))
+-{
+-	return -ENOSYS;
+-}
+-
+-static inline void unregister_timer_hook(int (*hook)(struct pt_regs *))
+-{
+-	return;
+-}
+-
+ #endif /* CONFIG_PROFILING */
+ 
+ #endif /* _LINUX_PROFILE_H */
+diff --git a/kernel/profile.c b/kernel/profile.c
+index 1f39181..dc3384e 100644
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -37,9 +37,6 @@ struct profile_hit {
+ #define NR_PROFILE_HIT		(PAGE_SIZE/sizeof(struct profile_hit))
+ #define NR_PROFILE_GRP		(NR_PROFILE_HIT/PROFILE_GRPSZ)
+ 
+-/* Oprofile timer tick hook */
+-static int (*timer_hook)(struct pt_regs *) __read_mostly;
+-
+ static atomic_t *prof_buffer;
+ static unsigned long prof_len, prof_shift;
+ 
+@@ -208,25 +205,6 @@ int profile_event_unregister(enum profile_type type, struct notifier_block *n)
+ }
+ EXPORT_SYMBOL_GPL(profile_event_unregister);
+ 
+-int register_timer_hook(int (*hook)(struct pt_regs *))
+-{
+-	if (timer_hook)
+-		return -EBUSY;
+-	timer_hook = hook;
+-	return 0;
+-}
+-EXPORT_SYMBOL_GPL(register_timer_hook);
+-
+-void unregister_timer_hook(int (*hook)(struct pt_regs *))
+-{
+-	WARN_ON(hook != timer_hook);
+-	timer_hook = NULL;
+-	/* make sure all CPUs see the NULL hook */
+-	synchronize_sched();  /* Allow ongoing interrupts to complete. */
+-}
+-EXPORT_SYMBOL_GPL(unregister_timer_hook);
+-
+-
+ #ifdef CONFIG_SMP
+ /*
+  * Each cpu has a pair of open-addressed hashtables for pending
+@@ -436,8 +414,6 @@ void profile_tick(int type)
+ {
+ 	struct pt_regs *regs = get_irq_regs();
+ 
+-	if (type == CPU_PROFILING && timer_hook)
+-		timer_hook(regs);
+ 	if (!user_mode(regs) && prof_cpu_mask != NULL &&
+ 	    cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
+ 		profile_hit(type, (void *)profile_pc(regs));
+-- 
+1.7.5.4
 
