@@ -1,118 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab2LVUQe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 15:16:34 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:41424 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab2LVUQ3 (ORCPT
+	id S1752164Ab2LVUTZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 15:19:25 -0500
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:48266 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab2LVUTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 15:16:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Rob Landley <rob@landley.net>
-Cc: Oleg Nesterov <oleg@redhat.com>,
-        Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <1356205160.5255.0@driftwood>
-Date: Sat, 22 Dec 2012 12:16:22 -0800
-In-Reply-To: <1356205160.5255.0@driftwood> (Rob Landley's message of "Sat, 22
-	Dec 2012 13:39:20 -0600")
-Message-ID: <874njddeqx.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Sat, 22 Dec 2012 15:19:22 -0500
+Message-ID: <50D61561.7090805@linux.vnet.ibm.com>
+Date: Sun, 23 Dec 2012 01:47:37 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+6qXtjeXGP+jX18fay1owFvoSc8gqWP2s=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Rob Landley <rob@landley.net>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH review 1/3] pidns: Outlaw thread creation after unshare(CLONE_NEWPID)
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Oleg Nesterov <oleg@redhat.com>
+CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
+        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
+        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
+        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
+        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
+        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
+ from atomic context
+References: <20121212180248.GA24882@redhat.com> <50C8CD52.8040808@linux.vnet.ibm.com> <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <50D0CCB3.10105@linux.vnet.ibm.com> <20121219163900.GA18516@redhat.com> <50D2047A.1040606@linux.vnet.ibm.com> <20121219191436.GA25829@redhat.com> <50D21A5F.4040604@linux.vnet.ibm.com> <20121220134203.GB10813@redhat.com>
+In-Reply-To: <20121220134203.GB10813@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 12122220-0260-0000-0000-00000253627F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Landley <rob@landley.net> writes:
+On 12/20/2012 07:12 PM, Oleg Nesterov wrote:
+> On 12/20, Srivatsa S. Bhat wrote:
+>>
+>> On 12/20/2012 12:44 AM, Oleg Nesterov wrote:
+>>>
+>>> We need 2 helpers for writer, the 1st one does synchronize_sched() and the
+>>> 2nd one takes rwlock. A generic percpu_write_lock() simply calls them both.
+>>>
+>>
+>> Ah, that's the problem no? Users of reader-writer locks expect to run in
+>> atomic context (ie., they don't want to sleep).
+> 
+> Ah, I misunderstood.
+> 
+> Sure, percpu_write_lock() should be might_sleep(), and this is not
+> symmetric to percpu_read_lock().
+> 
+>> We can't expose an API that
+>> can make the task go to sleep under the covers!
+> 
+> Why? Just this should be documented. However I would not worry until we
+> find another user. Until then we do not even need to add percpu_write_lock
+> or try to generalize this code too much.
+> 
+>>> To me, the main question is: can we use synchronize_sched() in cpu_down?
+>>> It is slow.
+>>>
+>>
+>> Haha :-) So we don't want smp_mb() in the reader,
+> 
+> We need mb() + rmb(). Plust cli/sti unless this arch has optimized
+> this_cpu_add() like x86 (as you pointed out).
+> 
 
-> On 12/21/2012 10:57:34 PM, Eric W. Biederman wrote:
->> 
->> The sequence:
->> unshare(CLONE_NEWPID)
->> clone(CLONE_THREAD|CLONE_SIGHAND|CLONE_VM)
->> 
->> Creates a new process in the new pid namespace without setting
->> pid_ns->child_reaper.  After forking this results in a NULL
->> pointer dereference.
->> 
->> Avoid this and other nonsense scenarios that can show up after
->> creating a new pid namespace with unshare by adding a new
->> check in copy_prodcess.
->> 
->> Pointed-out-by:  Oleg Nesterov <oleg@redhat.com>
->> Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
->> ---
->>  kernel/fork.c |    8 ++++++++
->>  1 files changed, 8 insertions(+), 0 deletions(-)
->> 
->> diff --git a/kernel/fork.c b/kernel/fork.c
->> index a31b823..65ca6d2 100644
->> --- a/kernel/fork.c
->> +++ b/kernel/fork.c
->> @@ -1166,6 +1166,14 @@ static struct task_struct  
->> *copy_process(unsigned long clone_flags,
->>  				current->signal->flags &  
->> SIGNAL_UNKILLABLE)
->>  		return ERR_PTR(-EINVAL);
->> 
->> +	/*
->> +	 * If the new process will be in a different pid namespace
->> +	 * don't allow the creation of threads.
->> +	 */
->> +	if ((clone_flags & (CLONE_VM|CLONE_NEWPID)) &&
->> +	    (task_active_pid_ns(current) != current->nsproxy->pid_ns))
->> +		return ERR_PTR(-EINVAL);
->> +
->
-> Since the first bit will trigger if clone_flags has just CLONE_VM  
-> without CLONE_NEWPID, or vice versa, I'm guessing this is a fast path  
-> optimization? (Otherwise you meant (clone_flags &  
-> (CLONE_VM|CLONE_NEWPID)) == CLONE_VM|CLONE_NEWPID ?)
->
-> (Just trying to wrap my head around it...)
+Hey, IIUC, we actually don't need mb() in the reader!! Just an rmb() will do.
 
-Actually I mean (clone_flags & (CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_NEWPID))
-CLONE_THREAD and CLONE_SIGHAND imply CLONE_VM... and that is enfored above.
+This is the reader code I have so far:
 
-I don't mean all of those flags must be in place.
+#define reader_nested_percpu()						\
+	     (__this_cpu_read(reader_percpu_refcnt) & READER_REFCNT_MASK)
 
-CLONE_NEWPID is an optimization in that the test is also in copy_pid_ns
-but there is no point in going to all of the work to get there if we are
-going to be testing for this scenario anyway.
+#define writer_active()							\
+				(__this_cpu_read(writer_signal))
 
-I definitely don't mean (clone_flags & (CLONE_VM|CLONE_NEWPID)) ==
-(CLONE_VM|CLONE_NEWPID)).  The task_active_pid_ns(current) !=
-current->nsproxy->pid_ns case is what tests to see if the pid namespace
-has already been unshared.
 
-The sequence "unshare(CLONE_NEWPID); unshare(CLONE_NEWPID);" is nonsense
-and that is what CLONE_NEWPID is about in that test.
+#define READER_PRESENT		(1UL << 16)
+#define READER_REFCNT_MASK	(READER_PRESENT - 1)
 
-Similary the sequence "unshare(CLONE_NEWPID); clone(CLONE_THREAD);" is
-nonsense and what the CLONE_VM is the test is for.  There are also a
-number of other nonsense thread like states that CLONE_VM also catches
-and prevents.
+void get_online_cpus_atomic(void)
+{
+	preempt_disable();
 
-Eric
+	/*
+	 * First and foremost, make your presence known to the writer.
+	 */
+	this_cpu_add(reader_percpu_refcnt, READER_PRESENT);
+
+	/*
+	 * If we are already using per-cpu refcounts, it is not safe to switch
+	 * the synchronization scheme. So continue using the refcounts.
+	 */
+	if (reader_nested_percpu()) {
+		this_cpu_inc(reader_percpu_refcnt);
+	} else {
+		smp_rmb();
+		if (unlikely(writer_active())) {
+			... //take hotplug_rwlock
+		}
+	}
+
+	...
+
+	/* Prevent reordering of any subsequent reads of cpu_online_mask. */
+	smp_rmb();
+}
+
+The smp_rmb() before writer_active() ensures that LOAD(writer_signal) follows
+LOAD(reader_percpu_refcnt) (at the 'if' condition). And in turn, that load is
+automatically going to follow the STORE(reader_percpu_refcnt) (at this_cpu_add())
+due to the data dependency. So it is something like a transitive relation.
+
+So, the result is that, we mark ourselves as active in reader_percpu_refcnt before
+we check writer_signal. This is exactly what we wanted to do right?
+And luckily, due to the dependency, we can achieve it without using the heavy
+smp_mb(). And, we can't crib about the smp_rmb() because it is unavoidable anyway
+(because we want to prevent reordering of the reads to cpu_online_mask, like you
+pointed out earlier).
+
+I hope I'm not missing anything...
+
+Regards,
+Srivatsa S. Bhat
 
