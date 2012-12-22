@@ -1,133 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752116Ab2LVT2J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 14:28:09 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:51996 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751790Ab2LVT2H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 14:28:07 -0500
-Message-ID: <50D6086E.4000402@gmail.com>
-Date: Sat, 22 Dec 2012 12:22:22 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752138Ab2LVT3P (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 14:29:15 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:39910 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751790Ab2LVT3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 14:29:12 -0500
+Date: Sat, 22 Dec 2012 14:29:05 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: =?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>
+Cc: Stephan Mueller <smueller@chronox.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, Jeff Liu <jeff.liu@oracle.com>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH] avoid entropy starvation due to stack protection
+Message-ID: <20121222192905.GA12563@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	=?utf-8?B?T25kxZllaiBCw61sa2E=?= <neleai@seznam.cz>,
+	Stephan Mueller <smueller@chronox.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	lkml <linux-kernel@vger.kernel.org>, Jeff Liu <jeff.liu@oracle.com>,
+	Kees Cook <keescook@chromium.org>
+References: <50C72800.20508@chronox.de>
+ <20121212164321.a01c5641.akpm@linux-foundation.org>
+ <50C98764.6050104@chronox.de>
+ <50CB63A9.80409@chronox.de>
+ <20121216003020.GC9016@thunk.org>
+ <20121221200735.GB5867@domone>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL] perf changes for v3.8
-References: <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com> <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com> <50C9E692.9070506@gmail.com> <CA+55aFzmDooC3tYzvP1YGv9g4ej1hBUQBPV6R+ukrfxuEELBaQ@mail.gmail.com> <50CA0134.2090608@gmail.com> <CA+55aFyZ2kAQPmZSv_sfHDAR1gusOxO22TRX-kqSim-cZrMscw@mail.gmail.com> <20121213165904.GA18574@gmail.com> <CA+55aFwfxRgLqSsa1=4KvhR6E5GdvfGGxTM_0++YepLv5A_U_w@mail.gmail.com> <20121213173101.GA19444@gmail.com> <50CEA2F7.7020908@gmail.com>
-In-Reply-To: <50CEA2F7.7020908@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121221200735.GB5867@domone>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-any opinions on whether the approach is reasonable?
+On Fri, Dec 21, 2012 at 09:07:35PM +0100, Ondřej Bílka wrote:
+> I was suggesting in another thread different approach.
+> 
+> Use AES-based cryptographic random number generator as replacement of 
+> /dev/urandom. Reseeding would get done by changing both aes key and
+> data.
+> 
+> This would with hardware support make /dev/urandom much faster than its now.
 
-On 12/16/12 9:43 PM, David Ahern wrote:
-> On 12/13/12 10:31 AM, Ingo Molnar wrote:
->> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
->>> So the default shouldn't necessarily be "include guest". The default
->>> should presumably be "the user didn't say", and then the kernel does
->>> whatever works best.
->>>
->>> If the user actually explicitly says one or the other, we should try
->>> to honor that (and then EOPNOTSUPP may be a "sorry, I really cannot do
->>> that particular combination that you explicitly asked for").
->>>
->>> That should make everybody happy. Doing a non-PEBS virtualized perf
->>> run should still work with the old binary.
->>>
->>> So there should be two bits: "include guest" (V in the event specifier
->>> unless you already used that for something else) and "host only" (H),
->>> and they should both default to off. Then the kernel can see the three
->>> actual cases.
->>>
->>> (Or four cases, if you really want to: you may or may not want to make
->>> the "both V and H set means both, and _only_ V set means 'no host at
->>> all, _only_ virtual environment'. So then ":ppV" would mean
->>> "cycle-accurate for virtual box _only_", while ":ppVH" would mean
->>> "cycle-accurate for both the host and the virtual box". Of course,
->>> considering the PEBS interface, right now neither of those can
->>> actually work, but plain ":V" and ":HV" could work).
->>>
->>> The important thing, I think, is that if the user doesn't know
->>> or care about the VM case (because he's not running any!) and
->>> doesn't specify, then the kernel should not say EOPNOTSUPP,
->>> and should do whatever works for that cpu.
->>
->> Agreed.
->>
->> David, wanna send a patch for this?
->
-> As I mentioned in a prior email exclude_{guest,host} work currently work
-> fine without PEBS. The current matrix for the flags:
->
->                     profiling
->                    guest    host
-> -e <event>         y        y
-> -e <event>:G       y        n    - G means enable guest, turn off host
-> -e <event>:H       n        y    - H means enable host, turn off guest
-> -e <event>:GH      y        y    - G followed by H means enable both
-> -e <event>:HG      y        y    - same as GH
->
-> There is no reason to change how these work. It's the variants with :p
-> that need to be handled:
->
-> -e <event>:p       n        y    - guest off is required
-> -e <event>:pG      y        n    - needs to fail - not supported
-> -e <event>:pH      n        y
-> -e <event>:pGH     y        y    - needs to fail - not supported
->
-> This is the logic that was implemented in the original patchset which
-> was pulled into v3.7 and the cause of this email thread.
->
-> One suggestion was to switch exclude_guest to include_guest. I take that
-> to mean deprecate the current exclude_guest and add a new include_guest
-> flag. Given that there are a number of exclude_XXXX flags (XXXX = user,
-> kernel, host, guest, hv, etc) that would make the perf code inconsistent.
->
-> All that is needed is for the current exclude_guest flag to be
-> deprecated such that for older binaries on newer kernels it is ignored
-> (perhaps a warn on once), and then a new flag -- exclude_guest2 -- is
-> then used for the new logic.
->
-> e.g.,
->
-> diff --git a/include/uapi/linux/perf_event.h
-> b/include/uapi/linux/perf_event.h
-> index 4f63c05..19900df 100644
-> --- a/include/uapi/linux/perf_event.h
-> +++ b/include/uapi/linux/perf_event.h
-> @@ -266,12 +266,14 @@ struct perf_event_attr {
->                  sample_id_all  :  1, /* sample_type all events */
->
->                  exclude_host   :  1, /* don't count in host   */
-> -               exclude_guest  :  1, /* don't count in guest  */
-> +               exclude_guest  :  1, /* don't count in guest -
-> DEPRECATED */
->
->                  exclude_callchain_kernel : 1, /* exclude kernel
-> callchains */
->                  exclude_callchain_user   : 1, /* exclude user
-> callchains */
->
-> -               __reserved_1   : 41;
-> +               exclude_guest2  :  1, /* don't count in guest  */
-> +
-> +               __reserved_1   : 40;
->
->      union {
->          __u32       wakeup_events;    /* wakeup every n events */
->
->
-> Do you agree with that?
->
-> David
+You can do this in userspace.  And in fact, if you need huge numbers
+of random session keys, such as in a Kerberos KDC or an IPSEC IKE
+daemon, that's what I would recommand (and what most of them do
+already).
+
+The original goal and intent for /dev/random was really for long-term
+keys where we are trying to leverage randomness available from
+hardware, which only the kernel would be able to collect.  It was not
+intended as a high speed random number generator; the best use of it
+is either for the generation of a long-term public key, or other
+secret (such as a Kerberos master key), or to seed a cryptographic
+random number generator which then operates in userspace.
+
+If you need speed, then by all means, use a cryptographic random
+number generator in userspace, or if it's for a monte carlo simulator,
+use a good userspace PRNG.
+
+						- Ted
+
+
+
+
+
 
