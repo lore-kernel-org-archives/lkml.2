@@ -1,134 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752210Ab2LVUbb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 15:31:31 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:44951 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034Ab2LVUb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 15:31:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-References: <87d2y2elbi.fsf@xmission.com> <871ueiel9d.fsf@xmission.com>
-	<20121222165438.GA19680@redhat.com>
-Date: Sat, 22 Dec 2012 12:31:21 -0800
-In-Reply-To: <20121222165438.GA19680@redhat.com> (Oleg Nesterov's message of
-	"Sat, 22 Dec 2012 17:54:38 +0100")
-Message-ID: <87bodlbzhi.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752203Ab2LVUfy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 15:35:54 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45382 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034Ab2LVUfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 15:35:50 -0500
+Date: Sat, 22 Dec 2012 21:35:47 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Deucher <alexander.deucher@amd.com>
+Cc: dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Subject: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+Message-ID: <20121222203547.GA5319@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19NRCHA0ErxyjF0Y8pajPUV9d3dxNXtF8c=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.5 BAYES_05 BODY: Bayes spam probability is 1 to 5%
-	*      [score: 0.0203]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH review 2/3] pidns: Stop pid allocation when init dies
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> writes:
+Hi Alex,
 
-> On 12/21, Eric W. Biederman wrote:
->>
->> --- a/include/linux/pid_namespace.h
->> +++ b/include/linux/pid_namespace.h
->> @@ -21,7 +21,7 @@ struct pid_namespace {
->>  	struct kref kref;
->>  	struct pidmap pidmap[PIDMAP_ENTRIES];
->>  	int last_pid;
->> -	int nr_hashed;
->> +	unsigned int nr_hashed;
->>  	struct task_struct *child_reaper;
->>  	struct kmem_cache *pid_cachep;
->>  	unsigned int level;
->> @@ -42,6 +42,8 @@ struct pid_namespace {
->>
->>  extern struct pid_namespace init_pid_ns;
->>
->> +#define PIDNS_HASH_ADDING (1U << 31)
->
-> Yes, agreed. We can't rely on PF_EXITING/whatever, we need the explicit
-> flag.
+got the sickest bug on 3.8-rc1, see below. The GPU locks up somewhere
+down radeon_fence_wait_seq, judging by the error messages.
 
-The simpler and more comprehensible we can make this code the better. 
-We have had too many surprises in this code because of complex failure
-modes.
+And this doesn't happen with 3.7, of course.
 
-> 1/2 looks fine too. Only one nit about init_pid_ns below...
+Let me know if you need any more info, thanks.
 
-Then I will add your acked-by to the first patch.
+[16273.668350] radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+[16273.668361] radeon 0000:02:00.0: GPU lockup (waiting for 0x000000000000002b last fence id 0x000000000000002a)
+[16273.882550] plugin-containe[11435]: segfault at 7f1f0a66cc08 ip 00007f1f13289bdb sp 00007f1f0a2fe9e0 error 4 in libflashplayer.so[7f1f130c5000+117b000]
+[16274.502807] ------------[ cut here ]------------
+[16274.502845] WARNING: at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
+[16274.502880] Hardware name:  
+[16274.502897] list_del corruption, ffff8802216a3f10->next is LIST_POISON1 (dead000000100100)
+[16274.502939] Modules linked in: nls_iso8859_15 nls_cp437 acpi_cpufreq mperf cpufreq_powersave cpufreq_userspace cpufreq_conservative cpufreq_stats binfmt_misc dm_crypt dm_mod ipv6 vfat fat fuse kvm_amd kvm radeon drm_kms_helper ttm edac_core microcode cfbfillrect cfbimgblt cfbcopyarea k10temp
+[16274.503141] Pid: 17386, comm: Xorg Not tainted 3.8.0-rc1 #13
+[16274.503172] Call Trace:
+[16274.503190]  [<ffffffff8124bd00>] ? __list_del_entry+0x60/0xd0
+[16274.503224]  [<ffffffff8103b2cf>] warn_slowpath_common+0x7f/0xc0
+[16274.503257]  [<ffffffff8103b3c6>] warn_slowpath_fmt+0x46/0x50
+[16274.503289]  [<ffffffff8124bd03>] __list_del_entry+0x63/0xd0
+[16274.503320]  [<ffffffff8124bd81>] list_del+0x11/0x40
+[16274.503348]  [<ffffffff812fa00e>] drm_mm_remove_node+0x9e/0xd0
+[16274.503383]  [<ffffffff812fa065>] drm_mm_put_block+0x25/0x70
+[16274.503422]  [<ffffffffa003dd71>] ? ttm_bo_man_put_node+0x31/0x60 [ttm]
+[16274.503464]  [<ffffffffa003dd79>] ttm_bo_man_put_node+0x39/0x60 [ttm]
+[16274.503503]  [<ffffffffa0036790>] ttm_bo_cleanup_memtype_use+0x80/0xb0 [ttm]
+[16274.503545]  [<ffffffffa0037a3b>] ttm_bo_release+0x1fb/0x270 [ttm]
+[16274.503585]  [<ffffffffa0037ae1>] ttm_bo_unref+0x31/0x40 [ttm]
+[16274.503656]  [<ffffffffa00a04c7>] radeon_bo_unref+0x47/0x80 [radeon]
+[16274.503707]  [<ffffffffa00b2929>] radeon_gem_object_free+0x39/0x40 [radeon]
+[16274.503748]  [<ffffffff812f0e59>] drm_gem_object_free+0x29/0x30
+[16274.503781]  [<ffffffff812f1248>] drm_gem_object_release_handle+0xb8/0xd0
+[16274.503819]  [<ffffffff8122f97d>] idr_for_each+0xdd/0x180
+[16274.503850]  [<ffffffff812f1190>] ? drm_gem_handle_create+0x100/0x100
+[16274.503887]  [<ffffffff81099e0d>] ? trace_hardirqs_on+0xd/0x10
+[16274.503920]  [<ffffffff812f17c4>] drm_gem_release+0x24/0x40
+[16274.503952]  [<ffffffff812efffa>] drm_release+0x54a/0x5e0
+[16274.503984]  [<ffffffff8106eed2>] ? lg_local_unlock+0x42/0x70
+[16274.504016]  [<ffffffff8113afe2>] __fput+0xb2/0x240
+[16274.504044]  [<ffffffff8113b22e>] ____fput+0xe/0x10
+[16274.504073]  [<ffffffff81061765>] task_work_run+0xb5/0xd0
+[16274.504105]  [<ffffffff8104144a>] do_exit+0x23a/0xac0
+[16274.504135]  [<ffffffff81041e8c>] do_group_exit+0x4c/0xc0
+[16274.504167]  [<ffffffff8105453d>] get_signal_to_deliver+0x22d/0x960
+[16274.504202]  [<ffffffff81001a9f>] do_signal+0x3f/0x5a0
+[16274.504233]  [<ffffffff8123a36e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[16274.504269]  [<ffffffff8100205d>] do_notify_resume+0x5d/0x90
+[16274.504300]  [<ffffffff8123a36e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[16274.504337]  [<ffffffff8151d6c8>] int_signal+0x12/0x17
+[16274.504366] ---[ end trace 4aad5b52e5533e3e ]---
 
->> @@ -319,7 +318,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
->>
->>  	upid = pid->numbers + ns->level;
->>  	spin_lock_irq(&pidmap_lock);
->> -	if (ns->nr_hashed < 0)
->> +	if (ns->nr_hashed < PIDNS_HASH_ADDING)
->
-> I won't insist, but perhaps if "(!(nr_hashed & PIDNS_HASH_ADDING))"
-> looks more understandable.
 
-I will stare at it both ways and post an updated patch.
+-- 
+Regards/Gruss,
+    Boris.
 
-I'm not certain which form I like better.  Certainly the decrements
-are doing a double duty.
-
->> +void disable_pid_allocation(struct pid_namespace *ns)
->> +{
->> +	spin_lock_irq(&pidmap_lock);
->> +	if (ns->nr_hashed >= PIDNS_HASH_ADDING)
->
-> Do we really need this check? It seems that PIDNS_HASH_ADDING
-> bit must be always set when disable_pid_allocation() is called.
->
->> +		ns->nr_hashed -= PIDNS_HASH_ADDING;
->
-> Anyway, nr_hashed &= ~PIDNS_HASH_ADDING looks simpler and doesn't
-> need a check.
-
-That I agree with.
-
-> But again, I won't insist this is minor and subjective.
->
->>  struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
->>  {
->>  	struct hlist_node *elem;
->> @@ -584,7 +591,7 @@ void __init pidmap_init(void)
->>  	/* Reserve PID 0. We never call free_pidmap(0) */
->>  	set_bit(0, init_pid_ns.pidmap[0].page);
->>  	atomic_dec(&init_pid_ns.pidmap[0].nr_free);
->> -	init_pid_ns.nr_hashed = 1;
->> +	init_pid_ns.nr_hashed = 1 + PIDNS_HASH_ADDING;
->
-> The obly chunk which doesn't look exactly correct to me, although this
-> doesn't really matter. Hmm, actually the code was already wrong before
-> this patch.
->
-> I think init_pid_ns.nr_hashed should be PIDNS_HASH_ADDING, we should not
-> add 1 to account the unused zero pid, and kernel_thread(kernel_init) was
-> not called yet.
-
-Good point because the zero pid does not get hashed.  Who knows perhaps
-with a little more evolution create_pid_ns can be used to create the
-initial pid namespace.
-
-I am also going to add "BUILD_BUG_ON(PID_MAX_LIMIT >= PIDNS_HASH_ADDING);"
-to document that the pid values and PIDNS_HASH_ADDING can't overlap.
-
-Eric	
-
+Sent from a fat crate under my desk. Formatting is fine.
+--
