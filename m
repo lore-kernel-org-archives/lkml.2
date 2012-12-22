@@ -1,145 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751667Ab2LVQGm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 11:06:42 -0500
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:36301 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab2LVQGj (ORCPT
+	id S1751761Ab2LVQVC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 11:21:02 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:41242 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab2LVQVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 11:06:39 -0500
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Dec 2012 11:06:39 EST
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] profiling: Remove unused timer hook
-Date: Sat, 22 Dec 2012 16:59:51 +0100
-Message-Id: <1356191991-2251-1-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
+	Sat, 22 Dec 2012 11:21:00 -0500
+From: Cong Ding <dinggnu@gmail.com>
+To: Steve Underwood <steveu@coppice.org>, David Rowe <david@rowetel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jesper Juhl <jj@chaosbits.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Cong Ding <dinggnu@gmail.com>
+Subject: [PATCH] staging: echo.c: fix memory leakage
+Date: Sat, 22 Dec 2012 17:12:26 +0100
+Message-Id: <1356192750-13370-1-git-send-email-dinggnu@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last remaining user was oprofile and its use has been removed
-a while ago on commit bc078e4eab65f11bbaeed380593ab8151b30d703
-"oprofile: convert oprofile from timer_hook to hrtimer".
+we should check the return value of calling function fir16_create(): a NULL
+value means the memory allocation fails.
 
-There doesn't seem to be any upstream user of this hook
-for about two years now. And I'm not even aware of any out of tree
-user.
+this patch also cleans up the error handling in function function oslec_create()
 
-Let's remove it.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Cong Ding <dinggnu@gmail.com>
 ---
- include/linux/profile.h |   13 -------------
- kernel/profile.c        |   24 ------------------------
- 2 files changed, 0 insertions(+), 37 deletions(-)
+ drivers/staging/echo/echo.c |   39 ++++++++++++++++++++++++++-------------
+ 1 file changed, 26 insertions(+), 13 deletions(-)
 
-diff --git a/include/linux/profile.h b/include/linux/profile.h
-index a0fc322..2112390 100644
---- a/include/linux/profile.h
-+++ b/include/linux/profile.h
-@@ -82,9 +82,6 @@ int task_handoff_unregister(struct notifier_block * n);
- int profile_event_register(enum profile_type, struct notifier_block * n);
- int profile_event_unregister(enum profile_type, struct notifier_block * n);
- 
--int register_timer_hook(int (*hook)(struct pt_regs *));
--void unregister_timer_hook(int (*hook)(struct pt_regs *));
--
- struct pt_regs;
- 
- #else
-@@ -135,16 +132,6 @@ static inline int profile_event_unregister(enum profile_type t, struct notifier_
- #define profile_handoff_task(a) (0)
- #define profile_munmap(a) do { } while (0)
- 
--static inline int register_timer_hook(int (*hook)(struct pt_regs *))
--{
--	return -ENOSYS;
--}
--
--static inline void unregister_timer_hook(int (*hook)(struct pt_regs *))
--{
--	return;
--}
--
- #endif /* CONFIG_PROFILING */
- 
- #endif /* _LINUX_PROFILE_H */
-diff --git a/kernel/profile.c b/kernel/profile.c
-index 1f39181..dc3384e 100644
---- a/kernel/profile.c
-+++ b/kernel/profile.c
-@@ -37,9 +37,6 @@ struct profile_hit {
- #define NR_PROFILE_HIT		(PAGE_SIZE/sizeof(struct profile_hit))
- #define NR_PROFILE_GRP		(NR_PROFILE_HIT/PROFILE_GRPSZ)
- 
--/* Oprofile timer tick hook */
--static int (*timer_hook)(struct pt_regs *) __read_mostly;
--
- static atomic_t *prof_buffer;
- static unsigned long prof_len, prof_shift;
- 
-@@ -208,25 +205,6 @@ int profile_event_unregister(enum profile_type type, struct notifier_block *n)
- }
- EXPORT_SYMBOL_GPL(profile_event_unregister);
- 
--int register_timer_hook(int (*hook)(struct pt_regs *))
--{
--	if (timer_hook)
--		return -EBUSY;
--	timer_hook = hook;
--	return 0;
--}
--EXPORT_SYMBOL_GPL(register_timer_hook);
--
--void unregister_timer_hook(int (*hook)(struct pt_regs *))
--{
--	WARN_ON(hook != timer_hook);
--	timer_hook = NULL;
--	/* make sure all CPUs see the NULL hook */
--	synchronize_sched();  /* Allow ongoing interrupts to complete. */
--}
--EXPORT_SYMBOL_GPL(unregister_timer_hook);
--
--
- #ifdef CONFIG_SMP
- /*
-  * Each cpu has a pair of open-addressed hashtables for pending
-@@ -436,8 +414,6 @@ void profile_tick(int type)
+diff --git a/drivers/staging/echo/echo.c b/drivers/staging/echo/echo.c
+index ca87ce9..0c24a10 100644
+--- a/drivers/staging/echo/echo.c
++++ b/drivers/staging/echo/echo.c
+@@ -230,6 +230,7 @@ struct oslec_state *oslec_create(int len, int adaption_mode)
  {
- 	struct pt_regs *regs = get_irq_regs();
+ 	struct oslec_state *ec;
+ 	int i;
++	const int16_t *history;
  
--	if (type == CPU_PROFILING && timer_hook)
--		timer_hook(regs);
- 	if (!user_mode(regs) && prof_cpu_mask != NULL &&
- 	    cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
- 		profile_hit(type, (void *)profile_pc(regs));
+ 	ec = kzalloc(sizeof(*ec), GFP_KERNEL);
+ 	if (!ec)
+@@ -239,15 +240,22 @@ struct oslec_state *oslec_create(int len, int adaption_mode)
+ 	ec->log2taps = top_bit(len);
+ 	ec->curr_pos = ec->taps - 1;
+ 
+-	for (i = 0; i < 2; i++) {
+-		ec->fir_taps16[i] =
+-		    kcalloc(ec->taps, sizeof(int16_t), GFP_KERNEL);
+-		if (!ec->fir_taps16[i])
+-			goto error_oom;
+-	}
++	ec->fir_taps16[0] =
++	    kcalloc(ec->taps, sizeof(int16_t), GFP_KERNEL);
++	if (!ec->fir_taps16[0])
++		goto error_oom_0;
++
++	ec->fir_taps16[1] =
++	    kcalloc(ec->taps, sizeof(int16_t), GFP_KERNEL);
++	if (!ec->fir_taps16[1])
++		goto error_oom_1;
+ 
+-	fir16_create(&ec->fir_state, ec->fir_taps16[0], ec->taps);
+-	fir16_create(&ec->fir_state_bg, ec->fir_taps16[1], ec->taps);
++	history = fir16_create(&ec->fir_state, ec->fir_taps16[0], ec->taps);
++	if (!history)
++		goto error_state;
++	history = fir16_create(&ec->fir_state_bg, ec->fir_taps16[1], ec->taps);
++	if (!history)
++		goto error_state_bg;
+ 
+ 	for (i = 0; i < 5; i++)
+ 		ec->xvtx[i] = ec->yvtx[i] = ec->xvrx[i] = ec->yvrx[i] = 0;
+@@ -257,7 +265,7 @@ struct oslec_state *oslec_create(int len, int adaption_mode)
+ 
+ 	ec->snapshot = kcalloc(ec->taps, sizeof(int16_t), GFP_KERNEL);
+ 	if (!ec->snapshot)
+-		goto error_oom;
++		goto error_snap;
+ 
+ 	ec->cond_met = 0;
+ 	ec->Pstates = 0;
+@@ -270,10 +278,15 @@ struct oslec_state *oslec_create(int len, int adaption_mode)
+ 
+ 	return ec;
+ 
+-error_oom:
+-	for (i = 0; i < 2; i++)
+-		kfree(ec->fir_taps16[i]);
+-
++error_snap:
++	fir16_free(&ec->fir_state_bg);
++error_state_bg:
++	fir16_free(&ec->fir_state);
++error_state:
++	kfree(ec->fir_taps16[1]);
++error_oom_1:
++	kfree(ec->fir_taps16[0]);
++error_oom_0:
+ 	kfree(ec);
+ 	return NULL;
+ }
 -- 
-1.7.5.4
+1.7.10.4
 
