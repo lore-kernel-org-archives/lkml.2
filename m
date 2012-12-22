@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab2LVQjS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 11:39:18 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:35135 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab2LVQjP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 11:39:15 -0500
+	id S1751865Ab2LVQye (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 11:54:34 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54649 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722Ab2LVQyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 11:54:32 -0500
+Date: Sat, 22 Dec 2012 17:54:38 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linux Containers <containers@lists.linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
+Subject: Re: [PATCH review 2/3] pidns: Stop pid allocation when init dies
+Message-ID: <20121222165438.GA19680@redhat.com>
+References: <87d2y2elbi.fsf@xmission.com> <871ueiel9d.fsf@xmission.com>
 MIME-Version: 1.0
-In-Reply-To: <1356106396.5896.111.camel@gandalf.local.home>
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
-	<1356028391-14427-8-git-send-email-fweisbec@gmail.com>
-	<1356106396.5896.111.camel@gandalf.local.home>
-Date: Sat, 22 Dec 2012 17:39:14 +0100
-Message-ID: <CAFTL4hxSMmu5h1=yVK1qn6NNVYF3WfTZYxPxPTJ=xzibgpkayQ@mail.gmail.com>
-Subject: Re: [PATCH 07/24] nohz: Assign timekeeping duty to a non-full-nohz CPU
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <871ueiel9d.fsf@xmission.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/21 Steven Rostedt <rostedt@goodmis.org>:
-> On Thu, 2012-12-20 at 19:32 +0100, Frederic Weisbecker wrote:
+On 12/21, Eric W. Biederman wrote:
 >
-> kernel/time/tick-sched.c:517:6: error: have_full_nohz_mask undeclared
-> (first use in this function)
+> --- a/include/linux/pid_namespace.h
+> +++ b/include/linux/pid_namespace.h
+> @@ -21,7 +21,7 @@ struct pid_namespace {
+>  	struct kref kref;
+>  	struct pidmap pidmap[PIDMAP_ENTRIES];
+>  	int last_pid;
+> -	int nr_hashed;
+> +	unsigned int nr_hashed;
+>  	struct task_struct *child_reaper;
+>  	struct kmem_cache *pid_cachep;
+>  	unsigned int level;
+> @@ -42,6 +42,8 @@ struct pid_namespace {
 >
+>  extern struct pid_namespace init_pid_ns;
 >
->> --- a/kernel/time/tick-sched.c
->> +++ b/kernel/time/tick-sched.c
->> @@ -112,7 +112,8 @@ static void tick_sched_do_timer(ktime_t now)
->>        * this duty, then the jiffies update is still serialized by
->>        * jiffies_lock.
->>        */
->> -     if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
->> +     if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
->> +         && !tick_nohz_full_cpu(cpu))
->>               tick_do_timer_cpu = cpu;
->>  #endif
->>
->> @@ -512,6 +513,10 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->>               return false;
->>       }
->>
->> +     /* If there are full nohz CPUs around, we need to keep the timekeeping duty */
->> +     if (have_full_nohz_mask && tick_do_timer_cpu == cpu)
->> +             return false;
->> +
->>       return true;
->>  }
->>
->
-> Fold in:
->
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 4a68b50..00e5682 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -164,6 +164,8 @@ static int __init tick_nohz_full_setup(char *str)
->         return 1;
->  }
->  __setup("full_nohz=", tick_nohz_full_setup);
-> +#else
-> +#define have_full_nohz_mask 0
->  #endif
+> +#define PIDNS_HASH_ADDING (1U << 31)
 
-Ah thanks! I'm folding your patch.
-I can add your SOB, right?
+Yes, agreed. We can't rely on PF_EXITING/whatever, we need the explicit
+flag.
+
+1/2 looks fine too. Only one nit about init_pid_ns below...
+
+
+> @@ -319,7 +318,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
+>
+>  	upid = pid->numbers + ns->level;
+>  	spin_lock_irq(&pidmap_lock);
+> -	if (ns->nr_hashed < 0)
+> +	if (ns->nr_hashed < PIDNS_HASH_ADDING)
+
+I won't insist, but perhaps if "(!(nr_hashed & PIDNS_HASH_ADDING))"
+looks more understandable.
+
+> +void disable_pid_allocation(struct pid_namespace *ns)
+> +{
+> +	spin_lock_irq(&pidmap_lock);
+> +	if (ns->nr_hashed >= PIDNS_HASH_ADDING)
+
+Do we really need this check? It seems that PIDNS_HASH_ADDING
+bit must be always set when disable_pid_allocation() is called.
+
+> +		ns->nr_hashed -= PIDNS_HASH_ADDING;
+
+Anyway, nr_hashed &= ~PIDNS_HASH_ADDING looks simpler and doesn't
+need a check.
+
+But again, I won't insist this is minor and subjective.
+
+>  struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
+>  {
+>  	struct hlist_node *elem;
+> @@ -584,7 +591,7 @@ void __init pidmap_init(void)
+>  	/* Reserve PID 0. We never call free_pidmap(0) */
+>  	set_bit(0, init_pid_ns.pidmap[0].page);
+>  	atomic_dec(&init_pid_ns.pidmap[0].nr_free);
+> -	init_pid_ns.nr_hashed = 1;
+> +	init_pid_ns.nr_hashed = 1 + PIDNS_HASH_ADDING;
+
+The obly chunk which doesn't look exactly correct to me, although this
+doesn't really matter. Hmm, actually the code was already wrong before
+this patch.
+
+I think init_pid_ns.nr_hashed should be PIDNS_HASH_ADDING, we should not
+add 1 to account the unused zero pid, and kernel_thread(kernel_init) was
+not called yet.
+
+Oleg.
+
