@@ -1,73 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460Ab2LVO2w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 09:28:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24094 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751238Ab2LVO2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 09:28:50 -0500
-Message-ID: <50D5C474.9020906@redhat.com>
-Date: Sat, 22 Dec 2012 09:32:20 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751447Ab2LVOcW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 09:32:22 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:52910 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab2LVOcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 09:32:17 -0500
+Message-ID: <50D5C473.2030902@mvista.com>
+Date: Sat, 22 Dec 2012 18:32:19 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, lwoodman@redhat.com,
-        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH 3/3] x86,smp: auto tune spinlock backoff delay factor
-References: <20121221184940.103c31ad@annuminas.surriel.com> <20121221185147.4ae48ab5@annuminas.surriel.com> <CANN689ETQgT48WkW4upUuv-5xj=g1wgkCuhW0AQ0H7pWfG1BPQ@mail.gmail.com>
-In-Reply-To: <CANN689ETQgT48WkW4upUuv-5xj=g1wgkCuhW0AQ0H7pWfG1BPQ@mail.gmail.com>
+To: Derek Basehore <dbasehore@chromium.org>
+CC: JBottomley@parallels.com, jgarzik@pobox.com, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
+References: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
+In-Reply-To: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2012 12:42 AM, Michel Lespinasse wrote:
+Hello.
 
-> However, I have a few concerns about the behavior of this, which I
-> think deserve more experimentation (I may try helping with it after
-> new years).
+On 21-12-2012 8:35, Derek Basehore wrote:
 
-More experimentation is always good. Different hardware
-will probably behave differently, etc...
+> We no longer wait for the disk to spin up in sd_resume. It now enters the
+> request to spinup the disk into the elevator and returns.
+>
+> A function is scheduled under the scsi_sd_probe_domain to wait for the command
+> to spinup the disk to complete. This function then checks for errors and cleans
+> up after the sd resume function.
 
-> One thing you mentioned in 0/3 is that the best value varies depending
-> on the number of CPUs contending. This is somewhat surprising to me; I
-> would have guessed/hoped that the (inc.tail - inc.head) multiplicative
-> factor would account for that already.
+> This allows system resume to complete much faster on systems with an HDD since
+> spinning up the disk is a significant portion of resume time.
 
-I had hoped the same, but testing things out while
-developing the code showed it not to be so.
+> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+> ---
+>   drivers/scsi/sd.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++---
+>   drivers/scsi/sd.h |    9 ++++
+>   2 files changed, 108 insertions(+), 7 deletions(-)
 
-A larger constant scales to a larger number of CPUs,
-while a smaller constant works faster when there are
-few CPUs contending on the lock.
+> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+> index 7992635..2fe051f 100644
+> --- a/drivers/scsi/sd.c
+> +++ b/drivers/scsi/sd.c
+[...]
+> @@ -3087,20 +3089,110 @@ done:
+>   	return ret;
+>   }
+>
+> +/*
+> + * Callback function for when the request that starts the disk completes. Passed
+> + * into blk_execute_rq_nowait in sd_resume.
+> + */
+> +static void sd_end_start_rq(struct request *rq, int error)
+> +{
+> +	struct completion *waiting = rq->end_io_data;
+> +
+> +	rq->end_io_data = NULL;
+> +	/*
+> +	 * Set the end_io_data to NULL before calling complete. This (with
+> +	 * sd_resume async) ensures that it is set to NULL before we call
+> +	 * blk_put_request.
+> +	 */
 
-The graph attached to patch 0/3 shows this effect.
+    Shouldn't this comment precede the previous statement?
 
-> What I'm getting at is that I would be more confident that the
-> autotune algorithm will work well in all cases if the value only
-> depended on the system parameters such as CPU type and frequency,
-> rather than per-spinlock parameters such as number of waiters and hold
-> time.
+> +	complete(waiting);
+> +}
+[...]
+>   static int sd_resume(struct device *dev)
+>   {
+>   	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
+> -	int ret = 0;
+> +	struct scsi_device *sdp = sdkp->device;
+> +	struct resume_async_struct *resume = NULL;
+> +	struct request *req;
+> +	unsigned char cmd[6] = { START_STOP };	/* START_VALID */
+>
+> -	if (!sdkp->device->manage_start_stop)
+> -		goto done;
+> +	if (!sdkp->device->manage_start_stop) {
+> +		scsi_disk_put(sdkp);
+> +		return 0;
+> +	}
+>
+>   	sd_printk(KERN_NOTICE, sdkp, "Starting disk\n");
+> -	ret = sd_start_stop_device(sdkp, 1);
+>
+> -done:
+> -	scsi_disk_put(sdkp);
+> -	return ret;
+> +	cmd[4] |= 1;	/* START */
+> +
+> +	if (sdp->start_stop_pwr_cond)
+> +		cmd[4] |= 1 << 4;	/* Active */
+> +
+> +	if (!scsi_device_online(sdp))
+> +		return -ENODEV;
+> +
+> +	resume = kzalloc(sizeof(struct resume_async_struct), GFP_NOIO);
+> +	if (!resume)
+> +		return DRIVER_ERROR << 24;
+> +
+> +	req = blk_get_request(sdp->request_queue, 0, __GFP_WAIT);
+> +	if (!req)
+> +		return DRIVER_ERROR << 24;
+> +
+> +	resume->req = req;
+> +	resume->sdkp = sdkp;
+> +	init_completion(&resume->wait);
+> +
+> +	req->cmd_len = COMMAND_SIZE(cmd[0]);
+> +	memcpy(req->cmd, cmd, req->cmd_len);
+> +	req->sense = resume->sense;
+> +	req->sense_len = 0;
 
-The autotune algorithm adjusts the delay factor so
-we access the spinlock, on average, 2.7 times before
-we acquire it (the 3.7th time).
+    Not SCSI_SENSE_BUFFERSIZE?
 
-This provides scalability by keeping the number of
-shared cache line touches constant for each lock
-acquisition.
+> +	req->retries = SD_MAX_RETRIES;
+> +	req->timeout = SD_TIMEOUT;
+> +	req->cmd_type = REQ_TYPE_BLOCK_PC;
+> +	req->cmd_flags |= REQ_QUIET | REQ_PREEMPT;
+> +	req->end_io_data = &resume->wait;
+> +
+> +	async_schedule_domain(sd_resume_async, resume, &scsi_sd_probe_domain);
+> +	/*
+> +	 * don't wait here for the disk to spin up, since we can resume faster
+> +	 * if we don't. Cleanup and checking for errors is done the the
 
-Going for a fixed value, either at compile time or
-at boot time, cannot provide such a guarantee.
+    s/the the/in the/
 
-> I feel this review is too high-level to be really helpful, so I'll
-> stop until I can find time to experiment :)
-
-I am looking forward to test results.
-
-If anyone manages to break the code, I will fix it...
+WBR, Sergei
 
