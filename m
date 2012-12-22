@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752150Ab2LVD0S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 22:26:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:41323 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751168Ab2LVD0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 22:26:16 -0500
-Message-ID: <50D52841.9030301@zytor.com>
-Date: Fri, 21 Dec 2012 19:25:53 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 24/27] x86: Add swiotlb force off support
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <1355814959-10573-25-git-send-email-yinghai@kernel.org> <20121222023741.GF3468@phenom.dumpdata.com> <87bodmhkns.fsf@xmission.com> <20121222031019.GA4120@phenom.dumpdata.com> <87pq22g488.fsf@xmission.com>
-In-Reply-To: <87pq22g488.fsf@xmission.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752117Ab2LVD3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 22:29:48 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:51820 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab2LVD3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Dec 2012 22:29:45 -0500
+Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
+ factor
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20121221185613.1f4c9523@annuminas.surriel.com>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+	 <20121221185147.4ae48ab5@annuminas.surriel.com>
+	 <20121221185613.1f4c9523@annuminas.surriel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 Dec 2012 19:29:42 -0800
+Message-ID: <1356146982.21834.8321.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 07:23 PM, Eric W. Biederman wrote:
-> 
-> In this case YH has been working on the case of loading a kernel
-> completely above 4G, and apparently he has also been testing the case of
-> running a kernel with no memory below 4G.
-> 
+On Fri, 2012-12-21 at 18:56 -0500, Rik van Riel wrote:
+> +	int *delay_ptr = &per_cpu(spinlock_delay, smp_processor_id());
+> +	int delay = *delay_ptr;
 
-It is worth noting that we cannot run with *no* memory below 4G -- it is
-not possible to run SMP at least without some memory below the 1M mark.
+int delay = __this_cpu_read(spinlock_delay);
 
-	-hpa
+>  	}
+> +	*delay_ptr = delay;
+
+__this_cpu_write(spinlock_delay, delay);
 
 
