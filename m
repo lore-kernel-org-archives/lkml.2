@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab2LVUfy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 15:35:54 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:45382 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751034Ab2LVUfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 15:35:50 -0500
-Date: Sat, 22 Dec 2012 21:35:47 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Alex Deucher <alexander.deucher@amd.com>
-Cc: dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
-Subject: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-Message-ID: <20121222203547.GA5319@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	dri-devel@lists.freedesktop.org,
-	lkml <linux-kernel@vger.kernel.org>
+	id S1752209Ab2LVUxY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 15:53:24 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:19880 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab2LVUxW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Dec 2012 15:53:22 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 22 Dec 2012 12:51:29 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <swarren@wwwdotorg.org>
+CC: <linux@arm.linux.org.uk>, <linux-tegra@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH] ARM: tegra: config: Add TPS6586X RTC config
+Date: Sun, 23 Dec 2012 02:23:05 +0530
+Message-ID: <1356209585-6506-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+enable CONFIG_RTC_DRV_TPS6586X to have RTC driver support for
+ventana, harmony etc.
 
-got the sickest bug on 3.8-rc1, see below. The GPU locks up somewhere
-down radeon_fence_wait_seq, judging by the error messages.
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ arch/arm/configs/tegra_defconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-And this doesn't happen with 3.7, of course.
-
-Let me know if you need any more info, thanks.
-
-[16273.668350] radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-[16273.668361] radeon 0000:02:00.0: GPU lockup (waiting for 0x000000000000002b last fence id 0x000000000000002a)
-[16273.882550] plugin-containe[11435]: segfault at 7f1f0a66cc08 ip 00007f1f13289bdb sp 00007f1f0a2fe9e0 error 4 in libflashplayer.so[7f1f130c5000+117b000]
-[16274.502807] ------------[ cut here ]------------
-[16274.502845] WARNING: at lib/list_debug.c:53 __list_del_entry+0x63/0xd0()
-[16274.502880] Hardware name:  
-[16274.502897] list_del corruption, ffff8802216a3f10->next is LIST_POISON1 (dead000000100100)
-[16274.502939] Modules linked in: nls_iso8859_15 nls_cp437 acpi_cpufreq mperf cpufreq_powersave cpufreq_userspace cpufreq_conservative cpufreq_stats binfmt_misc dm_crypt dm_mod ipv6 vfat fat fuse kvm_amd kvm radeon drm_kms_helper ttm edac_core microcode cfbfillrect cfbimgblt cfbcopyarea k10temp
-[16274.503141] Pid: 17386, comm: Xorg Not tainted 3.8.0-rc1 #13
-[16274.503172] Call Trace:
-[16274.503190]  [<ffffffff8124bd00>] ? __list_del_entry+0x60/0xd0
-[16274.503224]  [<ffffffff8103b2cf>] warn_slowpath_common+0x7f/0xc0
-[16274.503257]  [<ffffffff8103b3c6>] warn_slowpath_fmt+0x46/0x50
-[16274.503289]  [<ffffffff8124bd03>] __list_del_entry+0x63/0xd0
-[16274.503320]  [<ffffffff8124bd81>] list_del+0x11/0x40
-[16274.503348]  [<ffffffff812fa00e>] drm_mm_remove_node+0x9e/0xd0
-[16274.503383]  [<ffffffff812fa065>] drm_mm_put_block+0x25/0x70
-[16274.503422]  [<ffffffffa003dd71>] ? ttm_bo_man_put_node+0x31/0x60 [ttm]
-[16274.503464]  [<ffffffffa003dd79>] ttm_bo_man_put_node+0x39/0x60 [ttm]
-[16274.503503]  [<ffffffffa0036790>] ttm_bo_cleanup_memtype_use+0x80/0xb0 [ttm]
-[16274.503545]  [<ffffffffa0037a3b>] ttm_bo_release+0x1fb/0x270 [ttm]
-[16274.503585]  [<ffffffffa0037ae1>] ttm_bo_unref+0x31/0x40 [ttm]
-[16274.503656]  [<ffffffffa00a04c7>] radeon_bo_unref+0x47/0x80 [radeon]
-[16274.503707]  [<ffffffffa00b2929>] radeon_gem_object_free+0x39/0x40 [radeon]
-[16274.503748]  [<ffffffff812f0e59>] drm_gem_object_free+0x29/0x30
-[16274.503781]  [<ffffffff812f1248>] drm_gem_object_release_handle+0xb8/0xd0
-[16274.503819]  [<ffffffff8122f97d>] idr_for_each+0xdd/0x180
-[16274.503850]  [<ffffffff812f1190>] ? drm_gem_handle_create+0x100/0x100
-[16274.503887]  [<ffffffff81099e0d>] ? trace_hardirqs_on+0xd/0x10
-[16274.503920]  [<ffffffff812f17c4>] drm_gem_release+0x24/0x40
-[16274.503952]  [<ffffffff812efffa>] drm_release+0x54a/0x5e0
-[16274.503984]  [<ffffffff8106eed2>] ? lg_local_unlock+0x42/0x70
-[16274.504016]  [<ffffffff8113afe2>] __fput+0xb2/0x240
-[16274.504044]  [<ffffffff8113b22e>] ____fput+0xe/0x10
-[16274.504073]  [<ffffffff81061765>] task_work_run+0xb5/0xd0
-[16274.504105]  [<ffffffff8104144a>] do_exit+0x23a/0xac0
-[16274.504135]  [<ffffffff81041e8c>] do_group_exit+0x4c/0xc0
-[16274.504167]  [<ffffffff8105453d>] get_signal_to_deliver+0x22d/0x960
-[16274.504202]  [<ffffffff81001a9f>] do_signal+0x3f/0x5a0
-[16274.504233]  [<ffffffff8123a36e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[16274.504269]  [<ffffffff8100205d>] do_notify_resume+0x5d/0x90
-[16274.504300]  [<ffffffff8123a36e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[16274.504337]  [<ffffffff8151d6c8>] int_signal+0x12/0x17
-[16274.504366] ---[ end trace 4aad5b52e5533e3e ]---
-
-
+diff --git a/arch/arm/configs/tegra_defconfig b/arch/arm/configs/tegra_defconfig
+index a7827fd..b88ec5a 100644
+--- a/arch/arm/configs/tegra_defconfig
++++ b/arch/arm/configs/tegra_defconfig
+@@ -186,6 +186,7 @@ CONFIG_RTC_INTF_SYSFS=y
+ CONFIG_RTC_INTF_PROC=y
+ CONFIG_RTC_INTF_DEV=y
+ CONFIG_RTC_DRV_MAX8907=y
++CONFIG_RTC_DRV_TPS6586X=y
+ CONFIG_RTC_DRV_TPS65910=y
+ CONFIG_RTC_DRV_EM3027=y
+ CONFIG_RTC_DRV_TEGRA=y
 -- 
-Regards/Gruss,
-    Boris.
+1.7.1.1
 
-Sent from a fat crate under my desk. Formatting is fine.
---
