@@ -1,139 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447Ab2LVOcW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 09:32:22 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:52910 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab2LVOcR (ORCPT
+	id S1751427Ab2LVPCu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 10:02:50 -0500
+Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:10117 "EHLO
+	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751144Ab2LVPCs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 09:32:17 -0500
-Message-ID: <50D5C473.2030902@mvista.com>
-Date: Sat, 22 Dec 2012 18:32:19 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 22 Dec 2012 10:02:48 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApMBAJrK1VB8q8xJ/2dsb2JhbAANOL4ggxEBAQEDAThAAQULCw4KCRYPCQMCAQIBRQYNAQUCAQGHfAEMoXyTGoxXhEMDn1mKAQ
+X-IronPort-AV: E=Sophos;i="4.84,336,1355068800"; 
+   d="scan'208";a="300244180"
+Message-ID: <50D5CB93.6060501@westnet.com.au>
+Date: Sun, 23 Dec 2012 01:02:43 +1000
+From: Greg Ungerer <gregungerer@westnet.com.au>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Derek Basehore <dbasehore@chromium.org>
-CC: JBottomley@parallels.com, jgarzik@pobox.com, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-References: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
-In-Reply-To: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
+To: Michel Lespinasse <walken@google.com>
+CC: Greg Ungerer <gerg@uclinux.org>, Andy Lutomirski <luto@amacapital.net>,
+        Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Hugh Dickins <hughd@google.com>, Jorn_Engel <joern@logfs.org>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem
+ held
+References: <1356050997-2688-1-git-send-email-walken@google.com> <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
+In-Reply-To: <CANN689Eeh-s_npXe5nuEb1ryAcU-7CzSZ=X_6SUpUjA2FGh4ag@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Michel,
 
-On 21-12-2012 8:35, Derek Basehore wrote:
+On 12/21/2012 08:46 PM, Michel Lespinasse wrote:
+> I wanted to ask if you could check the sanity of the following patches
+> in nommu configurations. My understanding is that these always
 
-> We no longer wait for the disk to spin up in sd_resume. It now enters the
-> request to spinup the disk into the elevator and returns.
+Sure. I think it is worth CC'ing David Howells on these as well,
+he has spent a fair bit of time in the mmap code for nommu.
+
+Regards
+Greg
+
+
+> populate mappings when they are created, so that MAP_POPULATE and
+> MAP_LOCKED are actually no-ops. Is this an accurate description ?
 >
-> A function is scheduled under the scsi_sd_probe_domain to wait for the command
-> to spinup the disk to complete. This function then checks for errors and cleans
-> up after the sd resume function.
-
-> This allows system resume to complete much faster on systems with an HDD since
-> spinning up the disk is a significant portion of resume time.
-
-> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> ---
->   drivers/scsi/sd.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++---
->   drivers/scsi/sd.h |    9 ++++
->   2 files changed, 108 insertions(+), 7 deletions(-)
-
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 7992635..2fe051f 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-[...]
-> @@ -3087,20 +3089,110 @@ done:
->   	return ret;
->   }
+> Thanks,
 >
-> +/*
-> + * Callback function for when the request that starts the disk completes. Passed
-> + * into blk_execute_rq_nowait in sd_resume.
-> + */
-> +static void sd_end_start_rq(struct request *rq, int error)
-> +{
-> +	struct completion *waiting = rq->end_io_data;
-> +
-> +	rq->end_io_data = NULL;
-> +	/*
-> +	 * Set the end_io_data to NULL before calling complete. This (with
-> +	 * sd_resume async) ensures that it is set to NULL before we call
-> +	 * blk_put_request.
-> +	 */
-
-    Shouldn't this comment precede the previous statement?
-
-> +	complete(waiting);
-> +}
-[...]
->   static int sd_resume(struct device *dev)
->   {
->   	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
-> -	int ret = 0;
-> +	struct scsi_device *sdp = sdkp->device;
-> +	struct resume_async_struct *resume = NULL;
-> +	struct request *req;
-> +	unsigned char cmd[6] = { START_STOP };	/* START_VALID */
+> On Thu, Dec 20, 2012 at 4:49 PM, Michel Lespinasse <walken@google.com> wrote:
+>> We have many vma manipulation functions that are fast in the typical case,
+>> but can optionally be instructed to populate an unbounded number of ptes
+>> within the region they work on:
+>> - mmap with MAP_POPULATE or MAP_LOCKED flags;
+>> - remap_file_pages() with MAP_NONBLOCK not set or when working on a
+>>    VM_LOCKED vma;
+>> - mmap_region() and all its wrappers when mlock(MCL_FUTURE) is in effect;
+>> - brk() when mlock(MCL_FUTURE) is in effect.
+>>
+>> Current code handles these pte operations locally, while the sourrounding
+>> code has to hold the mmap_sem write side since it's manipulating vmas.
+>> This means we're doing an unbounded amount of pte population work with
+>> mmap_sem held, and this causes problems as Andy Lutomirski reported
+>> (we've hit this at Google as well, though it's not entirely clear why
+>> people keep trying to use mlock(MCL_FUTURE) in the first place).
+>>
+>> I propose introducing a new mm_populate() function to do this pte
+>> population work after the mmap_sem has been released. mm_populate()
+>> does need to acquire the mmap_sem read side, but critically, it
+>> doesn't need to hold continuously for the entire duration of the
+>> operation - it can drop it whenever things take too long (such as when
+>> hitting disk for a file read) and re-acquire it later on.
+>>
+>> The following patches are against v3.7:
+>>
+>> - Patches 1-2 fix some issues I noticed while working on the existing code.
+>>    If needed, they could potentially go in before the rest of the patches.
+>>
+>> - Patch 3 introduces the new mm_populate() function and changes
+>>    mmap_region() call sites to use it after they drop mmap_sem. This is
+>>    inspired from Andy Lutomirski's proposal and is built as an extension
+>>    of the work I had previously done for mlock() and mlockall() around
+>>    v2.6.38-rc1. I had tried doing something similar at the time but had
+>>    given up as there were so many do_mmap() call sites; the recent cleanups
+>>    by Linus and Viro are a tremendous help here.
+>>
+>> - Patches 4-6 convert some of the less-obvious places doing unbounded
+>>    pte populates to the new mm_populate() mechanism.
+>>
+>> - Patches 7-8 are code cleanups that are made possible by the
+>>    mm_populate() work. In particular, they remove more code than the
+>>    entire patch series added, which should be a good thing :)
+>>
+>> - Patch 9 is optional to this entire series. It only helps to deal more
+>>    nicely with racy userspace programs that might modify their mappings
+>>    while we're trying to populate them. It adds a new VM_POPULATE flag
+>>    on the mappings we do want to populate, so that if userspace replaces
+>>    them with mappings it doesn't want populated, mm_populate() won't
+>>    populate those replacement mappings.
+>>
+>> Michel Lespinasse (9):
+>>    mm: make mlockall preserve flags other than VM_LOCKED in def_flags
+>>    mm: remap_file_pages() fixes
+>>    mm: introduce mm_populate() for populating new vmas
+>>    mm: use mm_populate() for blocking remap_file_pages()
+>>    mm: use mm_populate() when adjusting brk with MCL_FUTURE in effect.
+>>    mm: use mm_populate() for mremap() of VM_LOCKED vmas
+>>    mm: remove flags argument to mmap_region
+>>    mm: directly use __mlock_vma_pages_range() in find_extend_vma()
+>>    mm: introduce VM_POPULATE flag to better deal with racy userspace programs
+>>
+>>   arch/tile/mm/elf.c   |    1 -
+>>   fs/aio.c             |    6 +++-
+>>   include/linux/mm.h   |   23 +++++++++---
+>>   include/linux/mman.h |    4 ++-
+>>   ipc/shm.c            |   12 ++++---
+>>   mm/fremap.c          |   51 ++++++++++++++-------------
+>>   mm/internal.h        |    4 +-
+>>   mm/memory.c          |   24 -------------
+>>   mm/mlock.c           |   94 +++++++++++++------------------------------------
+>>   mm/mmap.c            |   77 ++++++++++++++++++++++++----------------
+>>   mm/mremap.c          |   25 +++++++------
+>>   mm/nommu.c           |    5 ++-
+>>   mm/util.c            |    6 +++-
+>>   13 files changed, 154 insertions(+), 178 deletions(-)
+>>
+>> --
+>> 1.7.7.3
 >
-> -	if (!sdkp->device->manage_start_stop)
-> -		goto done;
-> +	if (!sdkp->device->manage_start_stop) {
-> +		scsi_disk_put(sdkp);
-> +		return 0;
-> +	}
 >
->   	sd_printk(KERN_NOTICE, sdkp, "Starting disk\n");
-> -	ret = sd_start_stop_device(sdkp, 1);
 >
-> -done:
-> -	scsi_disk_put(sdkp);
-> -	return ret;
-> +	cmd[4] |= 1;	/* START */
-> +
-> +	if (sdp->start_stop_pwr_cond)
-> +		cmd[4] |= 1 << 4;	/* Active */
-> +
-> +	if (!scsi_device_online(sdp))
-> +		return -ENODEV;
-> +
-> +	resume = kzalloc(sizeof(struct resume_async_struct), GFP_NOIO);
-> +	if (!resume)
-> +		return DRIVER_ERROR << 24;
-> +
-> +	req = blk_get_request(sdp->request_queue, 0, __GFP_WAIT);
-> +	if (!req)
-> +		return DRIVER_ERROR << 24;
-> +
-> +	resume->req = req;
-> +	resume->sdkp = sdkp;
-> +	init_completion(&resume->wait);
-> +
-> +	req->cmd_len = COMMAND_SIZE(cmd[0]);
-> +	memcpy(req->cmd, cmd, req->cmd_len);
-> +	req->sense = resume->sense;
-> +	req->sense_len = 0;
-
-    Not SCSI_SENSE_BUFFERSIZE?
-
-> +	req->retries = SD_MAX_RETRIES;
-> +	req->timeout = SD_TIMEOUT;
-> +	req->cmd_type = REQ_TYPE_BLOCK_PC;
-> +	req->cmd_flags |= REQ_QUIET | REQ_PREEMPT;
-> +	req->end_io_data = &resume->wait;
-> +
-> +	async_schedule_domain(sd_resume_async, resume, &scsi_sd_probe_domain);
-> +	/*
-> +	 * don't wait here for the disk to spin up, since we can resume faster
-> +	 * if we don't. Cleanup and checking for errors is done the the
-
-    s/the the/in the/
-
-WBR, Sergei
 
