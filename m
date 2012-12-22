@@ -1,165 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752280Ab2LVDJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Dec 2012 22:09:29 -0500
-Received: from mail-da0-f45.google.com ([209.85.210.45]:40265 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2LVDJ0 (ORCPT
+	id S1752354Ab2LVDKn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Dec 2012 22:10:43 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:18194 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab2LVDKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Dec 2012 22:09:26 -0500
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <linkinjeon@gmail.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Subject: [PATCH 1/5] f2fs: Introduce some information prints in the mount path
-Date: Sat, 22 Dec 2012 12:08:45 +0900
-Message-Id: <1356145725-19940-1-git-send-email-linkinjeon@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 21 Dec 2012 22:10:41 -0500
+Date: Fri, 21 Dec 2012 22:10:19 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 24/27] x86: Add swiotlb force off support
+Message-ID: <20121222031019.GA4120@phenom.dumpdata.com>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+ <1355814959-10573-25-git-send-email-yinghai@kernel.org>
+ <20121222023741.GF3468@phenom.dumpdata.com>
+ <87bodmhkns.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bodmhkns.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namjae Jeon <namjae.jeon@samsung.com>
+On Fri, Dec 21, 2012 at 06:42:47PM -0800, Eric W. Biederman wrote:
+> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+> 
+> > On Mon, Dec 17, 2012 at 11:15:56PM -0800, Yinghai Lu wrote:
+> >> So use could disable swiotlb from command line, even swiotlb support
+> >> is compiled in.  Just like we have intel_iommu=on and intel_iommu=off.
+> >
+> > You really need to spell out why this is useful.
+> 
+> YH why can't we safely autodetect that the swiotlb is unusable when
+> there is no memory below 4G free?
 
-Added few informative prints in the mount path, to convey proper error
-in case of mount failure.
+I am not sure what 'YH' stands for (Yeah?).
 
-Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
----
- fs/f2fs/super.c |   46 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 36 insertions(+), 10 deletions(-)
+However we could turn SWIOTLB off altogether if it cannot allocate
+_some_ memory. It could try first 64MB, then 32MB, lastly 16MB. And
+if all that fails - print a nice warning and continue on.
 
-diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
-index cf0ffb8..86f8549 100644
---- a/fs/f2fs/super.c
-+++ b/fs/f2fs/super.c
-@@ -342,19 +342,29 @@ static int sanity_check_raw_super(struct f2fs_super_block *raw_super)
- {
- 	unsigned int blocksize;
- 
--	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic))
-+	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic)) {
-+		pr_info("Magic Mismatch, valid(0x%x) - read(0x%x)\n",
-+			F2FS_SUPER_MAGIC, le32_to_cpu(raw_super->magic));
- 		return 1;
-+	}
- 
- 	/* Currently, support only 4KB block size */
- 	blocksize = 1 << le32_to_cpu(raw_super->log_blocksize);
--	if (blocksize != PAGE_CACHE_SIZE)
-+	if (blocksize != PAGE_CACHE_SIZE) {
-+		pr_info("Not valid blocksize (%u), supports only 4KB\n",
-+			blocksize);
- 		return 1;
-+	}
- 	if (le32_to_cpu(raw_super->log_sectorsize) !=
--					F2FS_LOG_SECTOR_SIZE)
-+					F2FS_LOG_SECTOR_SIZE) {
-+		pr_info("Not valid log sectorsize\n");
- 		return 1;
-+	}
- 	if (le32_to_cpu(raw_super->log_sectors_per_block) !=
--					F2FS_LOG_SECTORS_PER_BLOCK)
-+					F2FS_LOG_SECTORS_PER_BLOCK) {
-+			pr_info("Not valid log sectors per block\n");
- 		return 1;
-+	}
- 	return 0;
- }
- 
-@@ -415,13 +425,16 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 		return -ENOMEM;
- 
- 	/* set a temporary block size */
--	if (!sb_set_blocksize(sb, F2FS_BLKSIZE))
-+	if (!sb_set_blocksize(sb, F2FS_BLKSIZE)) {
-+		pr_err("unable to set blocksize\n");
- 		goto free_sbi;
-+	}
- 
- 	/* read f2fs raw super block */
- 	raw_super_buf = sb_bread(sb, 0);
- 	if (!raw_super_buf) {
- 		err = -EIO;
-+		pr_err("unable to read superblock\n");
- 		goto free_sbi;
- 	}
- 	raw_super = (struct f2fs_super_block *)
-@@ -443,8 +456,10 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 		goto free_sb_buf;
- 
- 	/* sanity checking of raw super */
--	if (sanity_check_raw_super(raw_super))
-+	if (sanity_check_raw_super(raw_super)) {
-+		pr_err("Not a valid F2FS filesystem\n");
- 		goto free_sb_buf;
-+	}
- 
- 	sb->s_maxbytes = max_file_size(le32_to_cpu(raw_super->log_blocksize));
- 	sb->s_max_links = F2FS_LINK_MAX;
-@@ -478,18 +493,23 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	/* get an inode for meta space */
- 	sbi->meta_inode = f2fs_iget(sb, F2FS_META_INO(sbi));
- 	if (IS_ERR(sbi->meta_inode)) {
-+		pr_err("Failed to read F2FS meta data inode\n");
- 		err = PTR_ERR(sbi->meta_inode);
- 		goto free_sb_buf;
- 	}
- 
- 	err = get_valid_checkpoint(sbi);
--	if (err)
-+	if (err) {
-+		pr_err("Failed to get valid F2FS checkpoint\n");
- 		goto free_meta_inode;
-+	}
- 
- 	/* sanity checking of checkpoint */
- 	err = -EINVAL;
--	if (sanity_check_ckpt(raw_super, sbi->ckpt))
-+	if (sanity_check_ckpt(raw_super, sbi->ckpt)) {
-+		pr_err("Not a valid F2FS checkpoint\n");
- 		goto free_cp;
-+	}
- 
- 	sbi->total_valid_node_count =
- 				le32_to_cpu(sbi->ckpt->valid_node_count);
-@@ -511,17 +531,22 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 
- 	/* setup f2fs internal modules */
- 	err = build_segment_manager(sbi);
--	if (err)
-+	if (err) {
-+		pr_err("Failed to initialize F2FS segment manager\n");
- 		goto free_sm;
-+	}
- 	err = build_node_manager(sbi);
--	if (err)
-+	if (err) {
-+		pr_err("Failed to initialize F2FS node manager\n");
- 		goto free_nm;
-+	}
- 
- 	build_gc_manager(sbi);
- 
- 	/* get an inode for node space */
- 	sbi->node_inode = f2fs_iget(sb, F2FS_NODE_INO(sbi));
- 	if (IS_ERR(sbi->node_inode)) {
-+		pr_err("Failed to read node inode\n");
- 		err = PTR_ERR(sbi->node_inode);
- 		goto free_nm;
- 	}
-@@ -534,6 +559,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
- 	/* read root inode and dentry */
- 	root = f2fs_iget(sb, F2FS_ROOT_INO(sbi));
- 	if (IS_ERR(root)) {
-+		pr_err("Failed to read root inode\n");
- 		err = PTR_ERR(root);
- 		goto free_node_inode;
- 	}
--- 
-1.7.9.5
-
+Later in the late initialization phase, when pci_swiotlb_late_init
+is called - it can then figure out whether 'iommu' has been set
+and it iself was never able to allocate. At that point it can try
+the dynamic allocation (swiotlb_late_init_with_default_size)
+... and if that fails give up and panic.
