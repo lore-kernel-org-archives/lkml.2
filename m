@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751962Ab2LWORy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 09:17:54 -0500
-Received: from ja.ssi.bg ([178.16.129.10]:53338 "EHLO ja.ssi.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396Ab2LWORw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 09:17:52 -0500
-X-Greylist: delayed 475 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Dec 2012 09:17:52 EST
-Date: Sun, 23 Dec 2012 16:10:44 +0200 (EET)
-From: Julian Anastasov <ja@ssi.bg>
-To: Cong Wang <xiyou.wangcong@gmail.com>
-cc: sedat.dilek@gmail.com, Borislav Petkov <bp@alien8.de>,
+	id S1751866Ab2LWOZz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 09:25:55 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:39523 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab2LWOZx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 09:25:53 -0500
+MIME-Version: 1.0
+In-Reply-To: <CA+icZUV4WEu6xp=-TyHH2z4Zcz8g0iHY2ZVk-jBJNt1azcXa2A@mail.gmail.com>
+References: <CA+icZUXJeWNceo_y-TSUVzXmjbrauWmCdkgW3EJtr_vpbcrk-A@mail.gmail.com>
+	<20121223114213.GB8386@liondog.tnic>
+	<CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com>
+	<CA+icZUU2OdNq5WKd7abNNe2eevxZBbMRS0eBGyU_rzjVBAgcOg@mail.gmail.com>
+	<CA+icZUVxdp-Lcf4FLfY-80qvVsTQn-ajfh8vn2T=FC6-QbLv7w@mail.gmail.com>
+	<CAM_iQpVdqYceHejqyQOn5wqj-xQFjn6E4u5ws4MuoOd=SiVtww@mail.gmail.com>
+	<CA+icZUV4WEu6xp=-TyHH2z4Zcz8g0iHY2ZVk-jBJNt1azcXa2A@mail.gmail.com>
+Date: Sun, 23 Dec 2012 22:25:53 +0800
+Message-ID: <CAM_iQpU5VLGOAcZ=RfF8VqpRNTy7rueVpm=+U0Zy5SoAYk4THw@mail.gmail.com>
+Subject: Re: [3.8-rc1] Networking problems after pulling-in net.git#master
+From: Cong Wang <xiyou.wangcong@gmail.com>
+To: sedat.dilek@gmail.com
+Cc: Borislav Petkov <bp@alien8.de>,
         Linux Kernel Network Developers <netdev@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Subject: Re: [3.8-rc1] Networking problems after pulling-in net.git#master
-In-Reply-To: <CAM_iQpVdqYceHejqyQOn5wqj-xQFjn6E4u5ws4MuoOd=SiVtww@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1212231601330.1555@ja.ssi.bg>
-References: <CA+icZUXJeWNceo_y-TSUVzXmjbrauWmCdkgW3EJtr_vpbcrk-A@mail.gmail.com> <20121223114213.GB8386@liondog.tnic> <CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com> <CA+icZUU2OdNq5WKd7abNNe2eevxZBbMRS0eBGyU_rzjVBAgcOg@mail.gmail.com>
- <CA+icZUVxdp-Lcf4FLfY-80qvVsTQn-ajfh8vn2T=FC6-QbLv7w@mail.gmail.com> <CAM_iQpVdqYceHejqyQOn5wqj-xQFjn6E4u5ws4MuoOd=SiVtww@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Dec 23, 2012 at 10:14 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+> [ CCing Eric ]
+>
+> YES, thie fixes my problem.
+> But your patch was somehow malformed, so I attached mine.
+>
 
-	Hello,
+Thanks for testing!
 
-On Sun, 23 Dec 2012, Cong Wang wrote:
-
-> On Sun, Dec 23, 2012 at 9:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >
-> > The culprit commit here seems to be...
-> >
-> > commit 9650388b5c56578fdccc79c57a8c82fb92b8e7f1
-> > Author: Eric Dumazet <edumazet@google.com>
-> > Date:   Fri Dec 21 07:32:10 2012 +0000
-> >
-> >     ipv4: arp: fix a lockdep splat in arp_solicit()
-> 
-> Can you try the following one-line fix?
-> 
-> Thanks.
-> 
-> ------------>
-> 
-> diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
-> index 1169ed4..75e0d7c 100644
-> --- a/net/ipv4/arp.c
-> +++ b/net/ipv4/arp.c
-> @@ -365,7 +365,7 @@ static void arp_solicit(struct neighbour *neigh,
-> struct sk_buff *skb)
->                         pr_debug("trying to ucast probe in NUD_INVALID\n");
->                 neigh_ha_snapshot(dst_ha, neigh, dev);
->         } else {
-> -               memset(dst_ha, 0, dev->addr_len);
-> +               memcpy(dst_ha, dev->broadcast, MAX_ADDR_LEN);
-
-	Use dev->addr_len instead of MAX_ADDR_LEN or
-better provide NULL ptr to arp_send as before the
-"ipv4: arp: fix a lockdep splat in arp_solicit" change,
-for example by keeping dst_ha as pointer and using another
-name for the temp array that is now dst_ha[MAX_ADDR_LEN].
-
->                 probes -= neigh->parms->app_probes;
->                 if (probes < 0) {
->  #ifdef CONFIG_ARPD
-
-Regards
-
---
-Julian Anastasov <ja@ssi.bg>
+I knew it as I replied in wed Gmail. :) I will send a normal patch
+with your Reported-by and Tested-by.
