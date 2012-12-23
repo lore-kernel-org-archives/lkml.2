@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752491Ab2LWW4S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 17:56:18 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55250 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab2LWW4Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 17:56:16 -0500
-Date: Mon, 24 Dec 2012 09:56:14 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: linux-next: manual merge of the driver-core.current tree with
- Linus' tree
-Message-Id: <20121224095614.3d1fc65e9ade946cc6a8a2e1@canb.auug.org.au>
-In-Reply-To: <20121224095200.a94a61d18925f30909964dfb@canb.auug.org.au>
-References: <20121224095200.a94a61d18925f30909964dfb@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Dec_2012_09_56_14_+1100_4k80Ol.1NrBiLhC/"
+	id S1752480Ab2LWXJI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 18:09:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42464 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752245Ab2LWXJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 18:09:07 -0500
+Date: Sun, 23 Dec 2012 21:08:48 -0200
+From: Rafael Aquini <aquini@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, David Daney <ddaney.cavm@gmail.com>,
+        linux-kernel@vger.kernel.org, walken@google.com, lwoodman@redhat.com,
+        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH 3/3] x86,smp: auto tune spinlock backoff delay factor
+Message-ID: <20121223230847.GC4186@x61.redhat.com>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+ <20121221185147.4ae48ab5@annuminas.surriel.com>
+ <50D5033A.2070309@gmail.com>
+ <50D52037.60602@redhat.com>
+ <20121222034910.GG27621@home.goodmis.org>
+ <50D52FF8.1050104@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50D52FF8.1050104@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Dec_2012_09_56_14_+1100_4k80Ol.1NrBiLhC/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Greg,
-
-On Mon, 24 Dec 2012 09:52:00 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Fri, Dec 21, 2012 at 10:58:48PM -0500, Rik van Riel wrote:
+> On 12/21/2012 10:49 PM, Steven Rostedt wrote:
+> >On Fri, Dec 21, 2012 at 09:51:35PM -0500, Rik van Riel wrote:
+> 
+> >>However, since spinlock contention should not be the
+> >>usual state, and all a scalable lock does is make sure
+> >>that N+1 CPUs does not perform worse than N CPUs, using
+> >>scalable locks is a stop-gap measure.
+> >>
+> >>I believe a stop-gap measure should be kept as simple as
+> >>we can. I am willing to consider moving to a per-lock
+> >>delay factor if we can figure out an easy way to do it,
+> >>but I would like to avoid too much extra complexity...
+> >
+> >Rik,
+> >
+> >I like your solution. It's rather simple and simple solutions tend to
+> >end up being the closest to optimal. The more complex a solution gets,
+> >the more it starts chasing fireflies.
+> 
+> >Anyway, I'd like to see this code tested, and more benchmarks run
+> >against it.
+> 
+> Absolutely.  I would love to see if this code actually
+> causes regressions anywhere.
+> 
+> It is simple enough that I suspect it will not, but there
+> really is only one way to find out.
+> 
+> The more people test this with different workloads on
+> different SMP systems, the better.
 >
-> Today's linux-next merge of the driver-core.current tree got conflicts
-> in 21 files in drivers/i2c between commit 0b255e927d47 ("i2c: remove
-> __dev* attributes from subsystem") from Linus' tree and commit
-> eeb30d064414 ("Drivers: i2c: remove __dev* attributes") from the
-> driver-core.current tree.
->=20
-> I fixed it up (taking a mixture of both commits) and can carry the fix as
-> necessary (no action is required).
 
-BTW, Greg, the patch in your tree to drivers/i2c/busses/i2c-au1550.c is
-incorrect and would not build.
+Great work Rik,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I have a couple of small SMP systems I'll start to test with your patches, also
+I might be able to test this work after new year's eve on a big SMP box that 
+seems to be facing a severe lock starvation issue due to the BUS saturation 
+your work is aiming to reduce.
 
---Signature=_Mon__24_Dec_2012_09_56_14_+1100_4k80Ol.1NrBiLhC/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ14wOAAoJEECxmPOUX5FEovsQAIq0BCjv+HpqfQFiJecD7Wrx
-F/Rp1KQ997FKcydDVbYPx/F4WZmp+FbQrftlYyNARbK+HOgvkxAd5iPilJz1qjTn
-D/peas1w3xBdG3o3EY0gpdsFRR9Rq3+0H1vh7zvFR+z366eHRMeN3OHFI2welOj9
-LiWG+v/8sWoXl473ZKTWQ5TNh1Nt38GrKfvUksjj0LH6pk5g8HGPa4jsB3/UIIzw
-GAeU/fUpgORfchoIoO1Lw3J2ErLPPW3X3pDbfGKwItWW652HHh+2ZPBKx8Qx+YqQ
-2xbKsOaY8UQdb9cD8uuJ6bTTalGipQWlSRAyuDZDeXFOn0z1YDmdzmlMvosQvoi1
-B2JcThZy9j3LwhoA+c6Em2tBYRv5mK8IuJJhU4WroCKobciLv3xvQwhwcTJylAbA
-uP213hBl3icSSLFOT1tpaBXen+T8fDDDulY1YaUPQMpPvGJMjuVTJ6peA651oByM
-pkwkrGkGMFZd2eS9tXhh4q9GsfFR2PH3GRe3RepKd/YiQC0svX5NL98rtoAmVcom
-G/Js1nQkRfCRMSShw2CmvFERXsymJ17TYb+aG8rytLMnZdQBJij2lNuLuactdzlm
-44qrgMj7fzNYPjN2rSc+vQB+Es8PnImUi9y4U7x9YhLqvWbGNT6QrtZ/dOJaUVFp
-/FuUFI/C5Pc19XtmYyfC
-=J7/S
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Dec_2012_09_56_14_+1100_4k80Ol.1NrBiLhC/--
+Cheers!
+-- Rafael
