@@ -1,68 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab2LWTjh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 14:39:37 -0500
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:39036 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922Ab2LWTjd (ORCPT
+	id S1752668Ab2LWUQG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 15:16:06 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42549 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab2LWUQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 14:39:33 -0500
-Message-ID: <50D757D0.2010501@lwfinger.net>
-Date: Sun, 23 Dec 2012 13:13:20 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Mike Galbraith <bitbucket@online.de>,
-        Norbert Preining <preining@logic.at>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: dire state of rtl driver in 3.7
-References: <20121222150909.GA3979@gamma.logic.tuwien.ac.at> <1356241795.5620.47.camel@marge.simpson.net> <20121223132134.GA8190@liondog.tnic>
-In-Reply-To: <20121223132134.GA8190@liondog.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Dec 2012 15:16:04 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: rientjes@google.com, Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH 2/3] mm, bootmem: panic in bootmem alloc functions even if slab is available
+Date: Sun, 23 Dec 2012 15:15:07 -0500
+Message-Id: <1356293711-23864-2-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1356293711-23864-1-git-send-email-sasha.levin@oracle.com>
+References: <1356293711-23864-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2012 07:21 AM, Borislav Petkov wrote:
-> On Sun, Dec 23, 2012 at 06:49:55AM +0100, Mike Galbraith wrote:
->> Looks a lot like my driver experience with older kernels, I had to use
->> the external driver in the rare event that I needed wireless to work.
->> The in tree driver works peachy these days (needed it recently, was
->> pleasantly surprised when it _just worked_, not even a hiccup), so
->> somebody cared, gave at least the 10ec:8181 bits some serious love.
->
-> Good for you.
->
-> I have a [10ec:8176] in my laptop and while I don't have the issues
-> Norbert is reporting, I can't say the thing just worked.
->
-> I had to use the wireless recently in a bunch of networks and what it
-> would do, is associate properly, connection gets established and traffic
-> is fine for a minute or so. Then, after a minute traffic would cease and
-> I'd need to re-associate. And it worked sporadically, sometimes fine,
-> sometimes with constant connection interruptions. And this observation
-> was the case with almost all wireless networks I'd use.
->
-> FWIW, the wifi adapter is:
->
-> 01:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8188CE 802.11b/g/n WiFi Adapter [10ec:8176] (rev 01)
->          Subsystem: Realtek Semiconductor Co., Ltd. Device [10ec:8195]
->          Flags: fast devsel, IRQ 17
->          I/O ports at 3000 [size=256]
->          Memory at f0200000 (64-bit, non-prefetchable) [size=16K]
->          Capabilities: [40] Power Management version 3
->          Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
->          Capabilities: [70] Express Endpoint, MSI 00
->          Capabilities: [100] Advanced Error Reporting
->          Capabilities: [140] Virtual Channel
->          Capabilities: [160] Device Serial Number 01-91-81-fe-ff-4c-e0-00
->
-> using rtl8192ce.
+Bootmem alloc functions are supposed to panic if allocation fails unless a
+*_nopanic() function is used. However, if slab is available this is not the
+case currently, and the function might return a NULL.
 
-Again a different driver! What do you mean "in a bunch of networks"? How am I 
-supposed to duplicate the conditions with descriptions like this?
+Currect it to panic on failed allocations even if slab is available.
 
-Larry
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ mm/bootmem.c   | 9 ---------
+ mm/nobootmem.c | 6 ------
+ 2 files changed, 15 deletions(-)
 
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 1324cd7..198a92f 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -763,9 +763,6 @@ void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ 				   unsigned long align, unsigned long goal)
+ {
+-	if (WARN_ON_ONCE(slab_is_available()))
+-		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+-
+ 	return  ___alloc_bootmem_node(pgdat, size, align, goal, 0);
+ }
+ 
+@@ -775,9 +772,6 @@ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+ #ifdef MAX_DMA32_PFN
+ 	unsigned long end_pfn;
+ 
+-	if (WARN_ON_ONCE(slab_is_available()))
+-		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+-
+ 	/* update goal according ...MAX_DMA32_PFN */
+ 	end_pfn = pgdat->node_start_pfn + pgdat->node_spanned_pages;
+ 
+@@ -839,9 +833,6 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
+ void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
+ 				       unsigned long align, unsigned long goal)
+ {
+-	if (WARN_ON_ONCE(slab_is_available()))
+-		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+-
+ 	return ___alloc_bootmem_node(pgdat, size, align,
+ 				     goal, ARCH_LOW_ADDRESS_LIMIT);
+ }
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index b8294fc..7c4c608 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -371,9 +371,6 @@ void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ 				   unsigned long align, unsigned long goal)
+ {
+-	if (WARN_ON_ONCE(slab_is_available()))
+-		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+-
+ 	return ___alloc_bootmem_node(pgdat, size, align, goal, 0);
+ }
+ 
+@@ -424,9 +421,6 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
+ void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
+ 				       unsigned long align, unsigned long goal)
+ {
+-	if (WARN_ON_ONCE(slab_is_available()))
+-		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+-
+ 	return ___alloc_bootmem_node(pgdat, size, align, goal,
+ 				     ARCH_LOW_ADDRESS_LIMIT);
+ }
+-- 
+1.8.0
 
