@@ -1,225 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab2LWLt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 06:49:57 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:39401 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751082Ab2LWLtz (ORCPT
+	id S1751938Ab2LWLvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 06:51:32 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:46915 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750947Ab2LWLvb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 06:49:55 -0500
-Message-ID: <1356263388.15812.7.camel@dabdike.home>
-Subject: Re: [PATCH 1/2] don't wait on disk to start on resume
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Derek Basehore <dbasehore@chromium.org>
-Cc: jgarzik@pobox.com, linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Sun, 23 Dec 2012 11:49:48 +0000
-In-Reply-To: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
-References: <1356064540-17414-1-git-send-email-dbasehore@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Dec 2012 06:51:31 -0500
+X-Greylist: delayed 1098 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Dec 2012 06:51:30 EST
+Date: Sun, 23 Dec 2012 11:32:39 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Pratik Patel <pratikp@codeaurora.org>
+Cc: Jon Hunter <jon-hunter@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
+        "david.rusling@linaro.org" <david.rusling@linaro.org>,
+        "arve@android.com" <arve@android.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "d-deao@ti.com" <d-deao@ti.com>,
+        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: CoreSight framework and drivers
+Message-ID: <20121223113239.GG16237@mudshark.cambridge.arm.com>
+References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
+ <20121219112314.GA26329@mudshark.cambridge.arm.com>
+ <50D1F37E.6000804@ti.com>
+ <20121219212431.GC23594@pratikp-linux.qualcomm.com>
+ <50D34EE5.8090407@ti.com>
+ <20121220195127.GA14877@pratikp-linux.qualcomm.com>
+ <50D3972E.4030607@ti.com>
+ <20121221221828.GA2658@pratikp-linux.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221221828.GA2658@pratikp-linux.qualcomm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Missing cc to linux-scsi added 
-
-On Thu, 2012-12-20 at 20:35 -0800, Derek Basehore wrote:
-> We no longer wait for the disk to spin up in sd_resume. It now enters the
-> request to spinup the disk into the elevator and returns.
+On Fri, Dec 21, 2012 at 10:18:28PM +0000, Pratik Patel wrote:
+> What user interface do you plan to provide for the CTI? Maybe
+> something consistent with other CoreSight components in sysfs to
+> allow users to enable, disable, map and unmap ???
 > 
-> A function is scheduled under the scsi_sd_probe_domain to wait for the command
-> to spinup the disk to complete. This function then checks for errors and cleans
-> up after the sd resume function.
-> 
-> This allows system resume to complete much faster on systems with an HDD since
-> spinning up the disk is a significant portion of resume time.
-> 
-> Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-> ---
->  drivers/scsi/sd.c |  106 +++++++++++++++++++++++++++++++++++++++++++++++++---
->  drivers/scsi/sd.h |    9 ++++
->  2 files changed, 108 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-> index 7992635..2fe051f 100644
-> --- a/drivers/scsi/sd.c
-> +++ b/drivers/scsi/sd.c
-> @@ -3045,6 +3045,7 @@ static void sd_shutdown(struct device *dev)
->  	if (!sdkp)
->  		return;         /* this can happen */
->  
-> +	async_synchronize_full_domain(&scsi_sd_probe_domain);
+> Please let me know your thoughts.
 
-What's the point of this?  We already have one in sd_remove() which is
-the correct last callback.
+Rather than have your current approach of dev nodes + sysfs config files for
+each coresight device, I think it might be better to follow something closer
+to ftrace and stick per-device directories under debugfs/coresight/. Then you
+can have a pipe file and some config files in the same directory for each
+component. You also don't need to do any mapping operations with this (just
+post-process the stream directly).
 
->  	if (pm_runtime_suspended(dev))
->  		goto exit;
->  
-> @@ -3070,6 +3071,7 @@ static int sd_suspend(struct device *dev)
->  	if (!sdkp)
->  		return 0;	/* this can happen */
->  
-> +	async_synchronize_full_domain(&scsi_sd_probe_domain);
->  	if (sdkp->WCE) {
->  		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
->  		ret = sd_sync_cache(sdkp);
-> @@ -3087,20 +3089,110 @@ done:
->  	return ret;
->  }
->  
-> +/*
-> + * Callback function for when the request that starts the disk completes. Passed
-> + * into blk_execute_rq_nowait in sd_resume.
-> + */
-> +static void sd_end_start_rq(struct request *rq, int error)
-> +{
-> +	struct completion *waiting = rq->end_io_data;
-> +
-> +	rq->end_io_data = NULL;
-> +	/*
-> +	 * Set the end_io_data to NULL before calling complete. This (with
-> +	 * sd_resume async) ensures that it is set to NULL before we call
-> +	 * blk_put_request.
-> +	 */
-> +	complete(waiting);
-> +}
-> +
-> +/*
-> + * Asynchronous part of sd_resume. This is separate from sd_end_start_rq since
-> + * we need to block on resume for suspend and shutdown. We already do this by
-> + * synchronizing on the scsi_sd_probe_domain, so use that.
-> + */
-> +static void sd_resume_async(void *data, async_cookie_t cookie)
-> +{
-> +	struct scsi_sense_hdr sshdr;
-> +	struct resume_async_struct *resume = data;
-> +	struct scsi_disk *sdkp = resume->sdkp;
-> +	struct request *req = resume->req;
-> +
-> +	wait_for_completion(&resume->wait);
-> +
-> +	if (req->errors) {
-> +		scsi_normalize_sense(resume->sense,
-> +				     SCSI_SENSE_BUFFERSIZE,
-> +				     &sshdr);
-> +		sd_printk(KERN_WARNING, sdkp, "START_STOP FAILED\n");
-> +		sd_print_result(sdkp, req->errors);
-> +		if (driver_byte(req->errors) & DRIVER_SENSE)
-> +			sd_print_sense_hdr(sdkp, &sshdr);
-> +	}
-> +	kfree(resume);
-> +	scsi_disk_put(sdkp);
-> +	blk_put_request(req);
-> +}
-> +
-> +/*
-> + * This does not wait for the disk to spin up. This function enters the request
-> + * to spinup the disk and schedules a function, sd_resume_async, that waits for
-> + * that request to complete.
-> + */
->  static int sd_resume(struct device *dev)
->  {
->  	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
-> -	int ret = 0;
-> +	struct scsi_device *sdp = sdkp->device;
-> +	struct resume_async_struct *resume = NULL;
-> +	struct request *req;
-> +	unsigned char cmd[6] = { START_STOP };	/* START_VALID */
->  
-> -	if (!sdkp->device->manage_start_stop)
-> -		goto done;
-> +	if (!sdkp->device->manage_start_stop) {
-> +		scsi_disk_put(sdkp);
-> +		return 0;
-> +	}
->  
->  	sd_printk(KERN_NOTICE, sdkp, "Starting disk\n");
-> -	ret = sd_start_stop_device(sdkp, 1);
->  
-> -done:
-> -	scsi_disk_put(sdkp);
-> -	return ret;
-> +	cmd[4] |= 1;	/* START */
-> +
-> +	if (sdp->start_stop_pwr_cond)
-> +		cmd[4] |= 1 << 4;	/* Active */
-> +
-> +	if (!scsi_device_online(sdp))
-> +		return -ENODEV;
-> +
-> +	resume = kzalloc(sizeof(struct resume_async_struct), GFP_NOIO);
-> +	if (!resume)
-> +		return DRIVER_ERROR << 24;
-> +
-> +	req = blk_get_request(sdp->request_queue, 0, __GFP_WAIT);
-> +	if (!req)
-> +		return DRIVER_ERROR << 24;
-> +
-> +	resume->req = req;
-> +	resume->sdkp = sdkp;
-> +	init_completion(&resume->wait);
-> +
-> +	req->cmd_len = COMMAND_SIZE(cmd[0]);
-> +	memcpy(req->cmd, cmd, req->cmd_len);
-> +	req->sense = resume->sense;
-> +	req->sense_len = 0;
-> +	req->retries = SD_MAX_RETRIES;
-> +	req->timeout = SD_TIMEOUT;
-> +	req->cmd_type = REQ_TYPE_BLOCK_PC;
-> +	req->cmd_flags |= REQ_QUIET | REQ_PREEMPT;
-> +	req->end_io_data = &resume->wait;
-> +
-> +	async_schedule_domain(sd_resume_async, resume, &scsi_sd_probe_domain);
-> +	/*
-> +	 * don't wait here for the disk to spin up, since we can resume faster
-> +	 * if we don't. Cleanup and checking for errors is done the the
-> +	 * previously scheduled sd_resume_async function
-> +	 */
-> +	blk_execute_rq_nowait(req->q, NULL, req, 1, sd_end_start_rq);
+It might also be fun to play with file redirection for sources and sinks, but
+that's probably a bit too invasive.
 
-What is the point of open coding sd_start_stop_device() instead of just
-calling it in the async function?
-
-> +
-> +	return 0;
->  }
->  
->  /**
-> diff --git a/drivers/scsi/sd.h b/drivers/scsi/sd.h
-> index 74a1e4c..b09f255 100644
-> --- a/drivers/scsi/sd.h
-> +++ b/drivers/scsi/sd.h
-> @@ -1,6 +1,8 @@
->  #ifndef _SCSI_DISK_H
->  #define _SCSI_DISK_H
->  
-> +#include <scsi/scsi_cmnd.h>
-> +
->  /*
->   * More than enough for everybody ;)  The huge number of majors
->   * is a leftover from 16bit dev_t days, we don't really need that
-> @@ -87,6 +89,13 @@ struct scsi_disk {
->  };
->  #define to_scsi_disk(obj) container_of(obj,struct scsi_disk,dev)
->  
-> +struct resume_async_struct {
-> +	struct scsi_disk *sdkp;
-> +	struct request *req;
-> +	struct completion wait;
-> +	char sense[SCSI_SENSE_BUFFERSIZE];
-> +};
-
-If you don't open code sd_start_stop_device() you don't need any of this
-because you don't pass information around to async functions.
-
-James
-
->  static inline struct scsi_disk *scsi_disk(struct gendisk *disk)
->  {
->  	return container_of(disk->private_data, struct scsi_disk, driver);
-
-
+Will
