@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751941Ab2LWMk6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 07:40:58 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:51232 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947Ab2LWMk4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 07:40:56 -0500
+	id S1751903Ab2LWNVl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 08:21:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47980 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750947Ab2LWNVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 08:21:39 -0500
+Date: Sun, 23 Dec 2012 14:21:34 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Mike Galbraith <bitbucket@online.de>
+Cc: Norbert Preining <preining@logic.at>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: dire state of rtl driver in 3.7
+Message-ID: <20121223132134.GA8190@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Mike Galbraith <bitbucket@online.de>,
+	Norbert Preining <preining@logic.at>,
+	linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Larry Finger <Larry.Finger@lwfinger.net>
+References: <20121222150909.GA3979@gamma.logic.tuwien.ac.at>
+ <1356241795.5620.47.camel@marge.simpson.net>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com>
-References: <CA+icZUXJeWNceo_y-TSUVzXmjbrauWmCdkgW3EJtr_vpbcrk-A@mail.gmail.com>
-	<20121223114213.GB8386@liondog.tnic>
-	<CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com>
-Date: Sun, 23 Dec 2012 13:40:55 +0100
-Message-ID: <CA+icZUU2OdNq5WKd7abNNe2eevxZBbMRS0eBGyU_rzjVBAgcOg@mail.gmail.com>
-Subject: Re: [3.8-rc1] Networking problems after pulling-in net.git#master
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Sedat Dilek <sedat.dilek@gmail.com>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1356241795.5620.47.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 1:26 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> On Sun, Dec 23, 2012 at 12:42 PM, Borislav Petkov <bp@alien8.de> wrote:
->> On Sun, Dec 23, 2012 at 04:14:39AM +0100, Sedat Dilek wrote:
->>> Hi,
->>>
->>> after reading the thread "Regression in 3.8-rc1: "BUG: sleeping
->>> function called from invalid context"" [1] I decided to pull-in
->>> net.git#master (up to commit 9b1536c490d5: "bridge: call
->>> br_netpoll_disable in br_add_if") on top of Linus upstream.
->>>
->>> With this kernel I can't neither ping my router nor does DNS work.
->>> IIRC there were 6 commits, not sure which of them is culprit.
->>>
->>> I tried the v3.8-rc1-raring from [2] which works nicely here on
->>> Ubuntu/precise AMD64.
->>> Can't say if NetworkManager is involved or not.
->>
->> Does that mean that with Linus upstream, i.e. 3.8-rc1, you can ping your
->> router, etc?
->>
->> If so, you could bisect the 6 commits...
->>
->
-> Nah, he said that b-word :-).
-> The machine I am working on has some hardware damage (keyboard gets
-> not detected on bios start or even within daily-work, recently I could
-> not type further while writing an email, so raping that machine is not
-> a good idea. I could bisect within a reduced localmodconfig setup. No
-> big promises...)
->
+On Sun, Dec 23, 2012 at 06:49:55AM +0100, Mike Galbraith wrote:
+> Looks a lot like my driver experience with older kernels, I had to use
+> the external driver in the rare event that I needed wireless to work.
+> The in tree driver works peachy these days (needed it recently, was
+> pleasantly surprised when it _just worked_, not even a hiccup), so
+> somebody cared, gave at least the 10ec:8181 bits some serious love.
 
-Starting bisect session with a "localmodconfig" setup... (bad: last
-commit and good: v3.8-rc1)...
+Good for you.
 
-- Sedat -
+I have a [10ec:8176] in my laptop and while I don't have the issues
+Norbert is reporting, I can't say the thing just worked.
 
-[1] http://www.h-online.com/open/features/Good-and-quick-kernel-configuration-creation-1403046.html
-[2] http://www.kernel.org/pub/software/scm/git/docs/git-bisect.html
+I had to use the wireless recently in a bunch of networks and what it
+would do, is associate properly, connection gets established and traffic
+is fine for a minute or so. Then, after a minute traffic would cease and
+I'd need to re-associate. And it worked sporadically, sometimes fine,
+sometimes with constant connection interruptions. And this observation
+was the case with almost all wireless networks I'd use.
 
-> - Sedat -
->
->> Thanks.
->>
->> --
->> Regards/Gruss,
->>     Boris.
->>
->> Sent from a fat crate under my desk. Formatting is fine.
->> --
+FWIW, the wifi adapter is:
+
+01:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8188CE 802.11b/g/n WiFi Adapter [10ec:8176] (rev 01)
+        Subsystem: Realtek Semiconductor Co., Ltd. Device [10ec:8195]
+        Flags: fast devsel, IRQ 17
+        I/O ports at 3000 [size=256]
+        Memory at f0200000 (64-bit, non-prefetchable) [size=16K]
+        Capabilities: [40] Power Management version 3
+        Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
+        Capabilities: [70] Express Endpoint, MSI 00
+        Capabilities: [100] Advanced Error Reporting
+        Capabilities: [140] Virtual Channel
+        Capabilities: [160] Device Serial Number 01-91-81-fe-ff-4c-e0-00
+
+using rtl8192ce.
+
+Hmm.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
