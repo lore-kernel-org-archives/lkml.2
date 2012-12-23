@@ -1,191 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752484Ab2LWBZo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 20:25:44 -0500
-Received: from nm3-vm7.bullet.mail.gq1.yahoo.com ([98.136.218.150]:35464 "EHLO
-	nm3-vm7.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752359Ab2LWBZl (ORCPT
+	id S1752479Ab2LWBtM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 20:49:12 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:41858 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab2LWBtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 20:25:41 -0500
-X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Dec 2012 20:25:41 EST
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 453420.95380.bm@omp1013.access.mail.sp2.yahoo.com
-X-YMail-OSG: Vf2ES74VM1mowMRXgp2wnVdWNrtRktCfa9ZBcL00odw11M4
- CJn7ygonHogQm90WlajT0tHeoFipWMdGNAs2XIfCaukfrZuDEy8V31GqnYIJ
- G7U9Q4yCChf7eK6NG7Pqjm3Gf4ivGFQ9b6jnl7.VQPGS8IEL_PNGLGDx7I3G
- GQjN8fFHHzUaKH7.cYiLQU0YUTFou7EVHNyLoa6fIOD6aPwavaKBU7cu_IHz
- nEYWj0sjPOpq2IAAtLuaZzOkLZFknjILJ1BaeAcHxJglgcD96fCJPtWN2frX
- l2y2kJYgiukOUejnErgu0rHSlMjdnV2nbJRdXBmkepTvcB.H1sONmztzB8cy
- Thf00EBea_5Kk1L_oAQqjxR.qyZUqfuQ0jyj51X7siMpcK_.fOQ_9jAXNiLS
- Xnh7Vea4_Kmszc9Msq7vs.eIY2OE0hBJEsBUon3b5gTViUg67hhmHsProIXu
- ZxrjFAHVqaytA5m8sLyDUTx2uqXr7ZfkDh2sw0_J2zZhsy1s-
-X-RocketYMMF: webhunzax
-X-Mailer: YahooMailClassic/15.1.1 YahooMailWebService/0.8.129.483
-Message-ID: <1356225545.73003.YahooMailClassic@web5719.biz.mail.ne1.yahoo.com>
-Date: Sat, 22 Dec 2012 17:19:05 -0800 (PST)
-From: "\"\"Barclays bank Plc\"\"" 
-	<foreiegnemittanc_department@accountant.com>
-Reply-To: foreignemittanc_department@accountant.com
-Subject: International fund Manager
-To: undisclosed recipients:;
+	Sat, 22 Dec 2012 20:49:11 -0500
+Message-ID: <50D66313.3000208@lwfinger.net>
+Date: Sat, 22 Dec 2012 19:49:07 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="-1772018104-1225955106-1356225545=:73003"
+To: Norbert Preining <preining@logic.at>
+CC: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: dire state of rtl8192se driver in 3.7
+References: <20121222150909.GA3979@gamma.logic.tuwien.ac.at> <50D5E194.3050503@lwfinger.net> <20121222225543.GA21544@gamma.logic.tuwien.ac.at>
+In-Reply-To: <20121222225543.GA21544@gamma.logic.tuwien.ac.at>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----1772018104-1225955106-1356225545=:73003
-Content-Type: text/plain; charset=us-ascii
+On 12/22/2012 04:55 PM, Norbert Preining wrote:
+> Hi Larry,, hi all
+>
+> On Sa, 22 Dez 2012, Larry Finger wrote:
+>> It is not that no one cares; however, your attitude does nothing to
+>> induce me to work on this problem. The facts are not needed "to make
+>
+> Aehm, ... after my initial report you asked me several more questions,
+> which I answered within a few hours. After that no as in 0 response,
+> although I pinged back a few times.
+>
+> So am I supposed to deduce from 0 reactions that anyone is interested?
+>
+>> people happy", they are necessary to try to reproduce the problem. If I
+>> cannot make it happen here, then I cannot fix it. Also, remember that I
+>
+> Disagree. I am involved in tracking down a nasty regression in the intel
+> drm driver, which the intel people can *not* reproduce, but several
+> other people, and after long trials and patches and converse it is
+> starting to look much better.
+>
+>> am a volunteer. I get nothing from Realtek but starting code of varying
+>> quality and some sample chips. At least my versions do not crash your
+>
+> Ok, that is a problem I understand. If this is the case, that it is
+> a single volunteer caring for the code, then I see a real problem.
+> (And I also will try to stay away from rtl wlan cards on my next laptop)
+>
+>> I have never tested forcing a reset on the chip the way you did. I am not
+>> surprised that bad things happen.
+>
+> But the DMAR item I also reported points to a real problem I guess.
 
+Yes, I would agree.
 
----1772018104-1225955106-1356225545=:73003
-Content-Type: application/pdf; name="Barclays bank.pdf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="Barclays bank.pdf"
+>>  From some of the material that you report, it appears that you have an
+>> 802.11n connection using WPA1 encryption. (More of those pesky details!)
+>
+> WPA PSK, yes. I don't know the difference between WPA2 and WPA, though.
 
-JVBERi0xLjMNJeLjz9MNCjcgMCBvYmoNPDwvTGluZWFyaXplZCAxL0wgNjQz
-NS9PIDkvRSAyMzYzL04gMS9UIDYxNDYvSCBbIDQ0NyAxMzJdPj4NZW5kb2Jq
-DSAgICAgICAgICAgICAgICAgICAgICAgDQoxMiAwIG9iag08PC9EZWNvZGVQ
-YXJtczw8L0NvbHVtbnMgNC9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVE
-ZWNvZGUvSURbPDhCRkI0NTE3QTgyQTNBMkI1NzJDMzcyMDkyMDA5MzBBPjw5
-OEQ2MEUwRTIwQjIyQTRBOUY0RTE2QTAwNEI5RUVCOT5dL0luZGV4WzcgMTBd
-L0luZm8gNiAwIFIvTGVuZ3RoIDQ4L1ByZXYgNjE0Ny9Sb290IDggMCBSL1Np
-emUgMTcvVHlwZS9YUmVmL1dbMSAyIDFdPj5zdHJlYW0NCmjeYmJkEGBgYmAy
-BhIMNkCCcROI6wQkfjMyMDEyTANJMDBCiP+MW/8BBBgAW4wF1g0KZW5kc3Ry
-ZWFtDWVuZG9iag1zdGFydHhyZWYNCjANCiUlRU9GDQogICAgICAgIA0KMTYg
-MCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0kgNjcvTGVuZ3RoIDUzL1Mg
-Mzg+PnN0cmVhbQ0KaN5iYGBgZmBg/M0ABGx7GFABIxCzMHA0IIsxQzEDwyYG
-LgZJngiooPxmqIZbAAEGAL7/BT4NCmVuZHN0cmVhbQ1lbmRvYmoNOCAwIG9i
-ag08PC9NZXRhZGF0YSAxIDAgUi9QYWdlcyA1IDAgUi9UeXBlL0NhdGFsb2c+
-Pg1lbmRvYmoNOSAwIG9iag08PC9Db250ZW50cyAxMSAwIFIvQ3JvcEJveFsw
-IDAgNjEyIDc5Ml0vTWVkaWFCb3hbMCAwIDYxMiA3OTJdL1BhcmVudCA1IDAg
-Ui9SZXNvdXJjZXM8PC9Gb250PDwvRjE1IDE1IDAgUj4+L1Byb2NTZXRbL1BE
-Ri9UZXh0L0ltYWdlQi9JbWFnZUNdPj4vUm90YXRlIDAvVHlwZS9QYWdlPj4N
-ZW5kb2JqDTEwIDAgb2JqDTw8L0ZpbHRlci9GbGF0ZURlY29kZS9GaXJzdCAy
-MC9MZW5ndGggNDgzL04gMy9UeXBlL09ialN0bT4+c3RyZWFtDQpo3pxUbWvc
-MAz+K/oDw2+xnUA5uOtWNtj6oT3aD6Ufsqu5C1xzR+LC+u8rKbYvvW10jPAQ
-S5YeyZYsZUCCqkAZB8qCUrKGiwuxHDehj9BIKy7b49fQbXcRfF2Lz2Ha+aSV
-Flf7djuCwcWhj6vV4deD5A3QzllyfuSd6/Y5iOXQtfsfa/Ettvtus+y3+wBS
-3MbwfIf/9esxsC3xD90xHobFAtn+//N2gvY1w1gL1jpGXTfgnAfVKDDGTECd
-ravJFuXsl30+QrFHjgLUK4nXSsEIXmsGy0qBRweS2VFK1nOCmADbop79kl3x
-S+umqgo36XMShMo1zEWHKYlijHnCZU05IGif/vXcJ4F5pDz54donnwxj8ALd
-9KcLoAKQLReCbBOPkrNEioJOUQRy4aPmOqYUS70SNRufOJNAF8PBE22u6m9V
-c7Lk4A2G9ykvTD7rrNVQEXfVnKITl0c7c+JmOJsKWBXQKUqRzjAdNVd2hnkl
-dap+7ohz8E3PbeZdljrjb21LT2HeFeft/E/PAC/mjzEyr5SPOFNW7RjoiZdR
-8KXfHJ66fivuu37Zj12Rr7phjJe7dsDJ8H4o4JzCt30jvrfJQFsrbl9+Rpof
-6+El8CAp0wSZn+JupAGHXovFmwADACz8DqgNCmVuZHN0cmVhbQ1lbmRvYmoN
-MTEgMCBvYmoNPDwvRmlsdGVyL0ZsYXRlRGVjb2RlL0xlbmd0aCA4OTg+PnN0
-cmVhbQ0KeNqNVUtv2zgQvvtXzKEHGmhUvW3fmgAtkKA9FDDQw2JRMCIlsZFJ
-laLq6t93Zqg43a6LXfhiUuR8j3nw7rh58z6rIINjuzkkhzo9QIq/9e8uh/pw
-SPISjqfNX+Ie5Ak+enjY3uSVkCc9wZ3zZ/sa6AtvgrRgbNDeymCcxb1CyAHa
-2SoYJS4PYtkWqaDTudA2wEla2WkPfPRsQg+h13AnfTPgVibkMsGjtE+8IKRJ
-nmFxM974G44PmxRusiSr6gqOCjka2zpwloM07sSI44yEJnAt7xrL2BeOkpcD
-g+AZXNUCJh3CoE9IcIJee7oFH1hPJRSGf43/9hk6MjiH1IpMaAVK63FY0AIF
-rZujePUPmmW50nRzQDIykOxSsBz26CwnDDMQp51A5WrWENz2pqr3gshHJwgO
-BXGAHuEGBOcYI4eTCxGHs/a8JPL6x6i90bbRivdIT+jNdN3EyflAdnHGCrEA
-0p2Sy9E8KbIinryHBjPe62G8KEGyVS06HSIAyVpzh9WDh5lKAMOhVxYRkHcI
-dYnGk5H3wFbgVR+LKaDW29tbeFzg3ezdqDGktJw1dV3N7QmlN7GYbEwz1RmZ
-WovgRvCaPzbOKyodVp2RlN9Ep9mzaGWmxn3HulCcBGYGv+QnJYO/6yk8J6bl
-csiQIkFT9vFUHhPfODtRvjAlEvhUb7o+tpGeODa2ibN6gdG7zlOrFelekD3X
-e4C6SmmMhoFiQLrZGk7qK8jpfr32oBkG47b4x8I8KWqws2HLhwGmIDEvrfFT
-IL9HviAXYztSxYJl03Di/YxSubV2gnkHeKnqqyxl82025KCaPV8sRUchqX72
-f7Ig9sWzD1whMbEtnowNEUtyjDNquRCN3YittSAksbpez22Mx0MKb57NsI6H
-wTxpIOcLQS1JFBqtYz4ZgMum/G28RT/RSv7GMZiQg06vsh5l80QbFLvG2ByQ
-veNZtkqsxZ9nHhZQkE2AsUeHwM4x0iONiEFjHxFVVoV8X1QXSVnt1gjHPk7Y
-nSDkfxsjHuK09+5st3D8uqFHIgPfrafqLI+BWue16aw+sTgTgrTNF6VHrCNi
-VZEnb7FmcDzip5DQiGa0d8cNvjZlvUvqEvK0SoocbtIE97zetIyXEt7df75Y
-OGPpcnyxXp4ieoU4CVSQH+Ojc4H+huD0zKGQpKoJGBdpUu4J/TPYzaf/c+Qn
-HOEUCw0KZW5kc3RyZWFtDWVuZG9iag0xIDAgb2JqDTw8L0xlbmd0aCAzMzQ5
-L1N1YnR5cGUvWE1ML1R5cGUvTWV0YWRhdGE+PnN0cmVhbQ0KPD94cGFja2V0
-IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4K
-PHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0i
-QWRvYmUgWE1QIENvcmUgNS4yLWMwMDEgNjMuMTM5NDM5LCAyMDEwLzA5LzI3
-LTEzOjM3OjI2ICAgICAgICAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0
-dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgog
-ICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAg
-ICB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iPgog
-ICAgICAgICA8eG1wOkNyZWF0ZURhdGU+MjAxMi0wOC0yOFQyMzozNDozNC0w
-NzowMDwveG1wOkNyZWF0ZURhdGU+CiAgICAgICAgIDx4bXA6Q3JlYXRvclRv
-b2w+ZWFzeVBERiBTREsgNy4wPC94bXA6Q3JlYXRvclRvb2w+CiAgICAgICAg
-IDx4bXA6TW9kaWZ5RGF0ZT4yMDEyLTA5LTE3VDA4OjE5OjM3KzAyOjAwPC94
-bXA6TW9kaWZ5RGF0ZT4KICAgICAgICAgPHhtcDpNZXRhZGF0YURhdGU+MjAx
-Mi0wOS0xN1QwODoxOTozNyswMjowMDwveG1wOk1ldGFkYXRhRGF0ZT4KICAg
-ICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24g
-cmRmOmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnBkZj0iaHR0cDovL25z
-LmFkb2JlLmNvbS9wZGYvMS4zLyI+CiAgICAgICAgIDxwZGY6UHJvZHVjZXI+
-QkNMIGVhc3lQREYgNy4wMCAoMDM1MSk8L3BkZjpQcm9kdWNlcj4KICAgICAg
-PC9yZGY6RGVzY3JpcHRpb24+CiAgICAgIDxyZGY6RGVzY3JpcHRpb24gcmRm
-OmFib3V0PSIiCiAgICAgICAgICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMu
-YWRvYmUuY29tL3hhcC8xLjAvbW0vIj4KICAgICAgICAgPHhtcE1NOkRvY3Vt
-ZW50SUQ+dXVpZDphMjVkZGRkZi1lZDYxLTRiNDYtOTZlOC1kYWQ5MjdjMWI0
-ODQ8L3htcE1NOkRvY3VtZW50SUQ+CiAgICAgICAgIDx4bXBNTTpJbnN0YW5j
-ZUlEPnV1aWQ6NWYyMjhmYjQtZmM1Zi00YjQ5LWE2MTItYmZmYjdiYTIyNDRi
-PC94bXBNTTpJbnN0YW5jZUlEPgogICAgICA8L3JkZjpEZXNjcmlwdGlvbj4K
-ICAgICAgPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIKICAgICAgICAg
-ICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEv
-Ij4KICAgICAgICAgPGRjOmZvcm1hdD5hcHBsaWNhdGlvbi9wZGY8L2RjOmZv
-cm1hdD4KICAgICAgPC9yZGY6RGVzY3JpcHRpb24+CiAgIDwvcmRmOlJERj4K
-PC94OnhtcG1ldGE+CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-CiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAK
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAog
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgCiAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAKICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgIAogICAgICAgICAgICAgICAgICAgICAgICAgICAKPD94cGFja2V0
-IGVuZD0idyI/Pg0KZW5kc3RyZWFtDWVuZG9iag0yIDAgb2JqDTw8L0ZpbHRl
-ci9GbGF0ZURlY29kZS9GaXJzdCA0L0xlbmd0aCA0OC9OIDEvVHlwZS9PYmpT
-dG0+PnN0cmVhbQ0KaN4yVTBQsLHRd84vzStRMNT3zkwpjrYEigXF6odUFqTq
-BySmpxbb2QEEGADWdwuADQplbmRzdHJlYW0NZW5kb2JqDTMgMCBvYmoNPDwv
-RmlsdGVyL0ZsYXRlRGVjb2RlL0ZpcnN0IDQvTGVuZ3RoIDEyNS9OIDEvVHlw
-ZS9PYmpTdG0+PnN0cmVhbQ0KaN4yUzBQsLHRdy5KTSzJzM9zSSxJ1XCxMjIw
-NDKwMLIwMjY2MTbRNTBXNzBQ14Soyi/SSE0srgxwcVMIdvFWMNcz0NT3zU9B
-1mlpaG5gYWhpbK5tYATRGVCUn1KanFqk4eTsowDTDtRqoBCjYWBsahijqWln
-BxBgAEAXJKwNCmVuZHN0cmVhbQ1lbmRvYmoNNCAwIG9iag08PC9EZWNvZGVQ
-YXJtczw8L0NvbHVtbnMgMy9QcmVkaWN0b3IgMTI+Pi9GaWx0ZXIvRmxhdGVE
-ZWNvZGUvSURbPDhCRkI0NTE3QTgyQTNBMkI1NzJDMzcyMDkyMDA5MzBBPjw5
-OEQ2MEUwRTIwQjIyQTRBOUY0RTE2QTAwNEI5RUVCOT5dL0luZm8gNiAwIFIv
-TGVuZ3RoIDM3L1Jvb3QgOCAwIFIvU2l6ZSA3L1R5cGUvWFJlZi9XWzEgMiAw
-XT4+c3RyZWFtDQpo3mJiYGBgYuS0ZmLgTWJiYOwB4ltMjC/+MzEwMAIEGAAn
-bQQUDQplbmRzdHJlYW0NZW5kb2JqDXN0YXJ0eHJlZg0KMTE2DQolJUVPRg0K
+WPA2 is AES and WPA(1) is TKIP.
 
+My device is the same as yours. The command 'lspci -nn' shows:
 
----1772018104-1225955106-1356225545=:73003--
+0e:00.0 Network controller [0280]: Realtek Semiconductor Co., Ltd. RTL8191SEvB 
+Wireless LAN Controller [10ec:8172] (rev 10)
+
+The B variety is a 1x2 configuration.
+
+My signal strength is essentially the same as yours.
+
+wlan0     IEEE 802.11bgn  ESSID:"lwfdjf-n"
+           Mode:Managed  Frequency:2.422 GHz  Access Point: C0:3F:0E:BE:2B:44
+           Bit Rate=18 Mb/s   Tx-Power=20 dBm
+           Retry  long limit:7   RTS thr=2347 B   Fragment thr:off
+           Power Management:off
+           Link Quality=70/70  Signal level=-35 dBm
+           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+           Tx excessive retries:0  Invalid misc:1943   Missed beacon:0
+
+A throughput test with netperf shows the following for 3 second samples:
+
+TCP_MAERTS Test:  23.73 20.80 20.87 20.62 20.50 20.62 20.19 20.67 20.70 20.75
+RX Results: max 23.73, min 20.19. Mean 20.95(0.95)
+
+TCP_STREAM Test:  20.82 26.36 25.77 25.89 26.36 26.31 26.19 26.50 26.16 25.93
+TX Results: max 26.50, min 20.82. Mean 25.63(1.62)
+
+My router does not let me change the TKIP interval, which I think means 3600 
+seconds. Running a ping for ~4000 seconds results in
+
+--- 192.168.1.1 ping statistics ---
+4004 packets transmitted, 4002 received, 0% packet loss, time 4007793ms
+rtt min/avg/max/mdev = 0.782/1.605/77.929/4.310 ms
+
+Only 2 packets lost in 4000 is pretty good, and my longest return time of 77 ms 
+is certainly not like you get.
+
+My router is a Netgear WNDR3300 running firmware version V1.0.45_1.0.45NA.
+
+These results are representative of what I have always gotten. I have no idea 
+why your system is so different.
+
+One thing to try is loading the module with option "ips=0".
+
+Larry
+
