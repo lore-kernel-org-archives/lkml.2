@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab2LWLvc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 06:51:32 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:46915 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750947Ab2LWLvb (ORCPT
+	id S1752039Ab2LWLvk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 06:51:40 -0500
+Received: from ud10.udmedia.de ([194.117.254.50]:59407 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab2LWLvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 06:51:31 -0500
-X-Greylist: delayed 1098 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Dec 2012 06:51:30 EST
-Date: Sun, 23 Dec 2012 11:32:39 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Pratik Patel <pratikp@codeaurora.org>
-Cc: Jon Hunter <jon-hunter@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
-        "david.rusling@linaro.org" <david.rusling@linaro.org>,
-        "arve@android.com" <arve@android.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "d-deao@ti.com" <d-deao@ti.com>,
-        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: CoreSight framework and drivers
-Message-ID: <20121223113239.GG16237@mudshark.cambridge.arm.com>
-References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
- <20121219112314.GA26329@mudshark.cambridge.arm.com>
- <50D1F37E.6000804@ti.com>
- <20121219212431.GC23594@pratikp-linux.qualcomm.com>
- <50D34EE5.8090407@ti.com>
- <20121220195127.GA14877@pratikp-linux.qualcomm.com>
- <50D3972E.4030607@ti.com>
- <20121221221828.GA2658@pratikp-linux.qualcomm.com>
+	Sun, 23 Dec 2012 06:51:36 -0500
+Date: Sun, 23 Dec 2012 12:51:33 +0100
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Borislav Petkov <bp@alien8.de>, Andy Furniss <andyqos@ukfsn.org>,
+        Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+Message-ID: <20121223115133.GA229@x4>
+References: <20121222203547.GA5319@liondog.tnic>
+ <CADnq5_MJzNdWVCauZj5Z7Monmsy4gWeYP3gJaPUPwHEgqhqOYw@mail.gmail.com>
+ <20121223002507.GA12121@liondog.tnic>
+ <CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
+ <20121223105527.GA6230@liondog.tnic>
+ <50D6E491.3030801@ukfsn.org>
+ <20121223110730.GC6230@liondog.tnic>
+ <50D6E8A4.1030204@ukfsn.org>
+ <20121223113153.GA8918@liondog.tnic>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121221221828.GA2658@pratikp-linux.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121223113153.GA8918@liondog.tnic>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 10:18:28PM +0000, Pratik Patel wrote:
-> What user interface do you plan to provide for the CTI? Maybe
-> something consistent with other CoreSight components in sysfs to
-> allow users to enable, disable, map and unmap ???
+On 2012.12.23 at 12:31 +0100, Borislav Petkov wrote:
+> On Sun, Dec 23, 2012 at 11:19:00AM +0000, Andy Furniss wrote:
+> > modinfo radeon
+> > 
+> > will give a list assuming you use modules, I think all of them need =<num>.
 > 
-> Please let me know your thoughts.
+> Yep, that is one way of getting that info, thanks. I always go and look
+> at Documentation/kernel-parameters.txt and forget about modinfo.
+> 
+> As you say 'radeon' needs to be module but since this is the case with
+> the distros, the majority of Linux installations out there have it this
+> way so we're fine.
 
-Rather than have your current approach of dev nodes + sysfs config files for
-each coresight device, I think it might be better to follow something closer
-to ftrace and stick per-device directories under debugfs/coresight/. Then you
-can have a pipe file and some config files in the same directory for each
-component. You also don't need to do any mapping operations with this (just
-post-process the stream directly).
+(If you don't use modules:
+ git grep MODULE_PARM_DESC -- drivers/gpu/drm/radeon/
+)
 
-It might also be fun to play with file redirection for sources and sinks, but
-that's probably a bit too invasive.
+You may have hit the same issue as I, see:
+http://thread.gmane.org/gmane.comp.video.dri.devel/78328
 
-Will
+Reverting commit 2d6cc729 fixes the problem for me, setting
+radeon.no_wb=1 doesn't help.
+
+-- 
+Markus
