@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab2LWOdZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 09:33:25 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:54420 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab2LWOdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 09:33:22 -0500
+	id S1751937Ab2LWOeO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 09:34:14 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52378 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab2LWOeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 09:34:11 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <20121222024225.GG3468@phenom.dumpdata.com> <eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com> <20121222132419.GB2936@phenom.dumpdata.com> <CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1212231601330.1555@ja.ssi.bg>
-References: <CA+icZUXJeWNceo_y-TSUVzXmjbrauWmCdkgW3EJtr_vpbcrk-A@mail.gmail.com>
-	<20121223114213.GB8386@liondog.tnic>
-	<CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com>
-	<CA+icZUU2OdNq5WKd7abNNe2eevxZBbMRS0eBGyU_rzjVBAgcOg@mail.gmail.com>
-	<CA+icZUVxdp-Lcf4FLfY-80qvVsTQn-ajfh8vn2T=FC6-QbLv7w@mail.gmail.com>
-	<CAM_iQpVdqYceHejqyQOn5wqj-xQFjn6E4u5ws4MuoOd=SiVtww@mail.gmail.com>
-	<alpine.LFD.2.00.1212231601330.1555@ja.ssi.bg>
-Date: Sun, 23 Dec 2012 22:28:01 +0800
-Message-ID: <CAM_iQpX0Zp78VuH1Pr7h4u3pPib-DDSHPiwSphjZ+WWG5j2w3Q@mail.gmail.com>
-Subject: Re: [3.8-rc1] Networking problems after pulling-in net.git#master
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Julian Anastasov <ja@ssi.bg>
-Cc: sedat.dilek@gmail.com, Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 23 Dec 2012 06:33:38 -0800
+To: Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 10:10 PM, Julian Anastasov <ja@ssi.bg> wrote:
->> -               memset(dst_ha, 0, dev->addr_len);
->> +               memcpy(dst_ha, dev->broadcast, MAX_ADDR_LEN);
->
->         Use dev->addr_len instead of MAX_ADDR_LEN or
-> better provide NULL ptr to arp_send as before the
-> "ipv4: arp: fix a lockdep splat in arp_solicit" change,
-> for example by keeping dst_ha as pointer and using another
-> name for the temp array that is now dst_ha[MAX_ADDR_LEN].
->
+Explanation please?
 
-OK, I will use a new temp variable.
+Yinghai Lu <yinghai@kernel.org> wrote:
 
-Thanks.
+>On Sat, Dec 22, 2012 at 5:24 AM, Konrad Rzeszutek Wilk
+><konrad.wilk@oracle.com> wrote:
+>>
+>> Interestingly enough I only see this on any AMD machine - different
+>> motherboards, different memory configurations.
+>>
+>> And also in a HVM guest running on an AMD machine. If it runs on
+>Intel
+>> it works just fine.
+>
+>Found the reason,
+>
+>-v11: change far jmp back to far return to initial_code, that is needed
+>     to fix failure that is reported by Konard on AMD system.
+>
+>works well on on AMD 4 sockets that I found.
+>
+>update the for-x86-boot branch, please check that.
+>git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+>for-x86-boot
+>
+>Thanks a lot for the testing on AMD system.
+>
+>Yinghai
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
