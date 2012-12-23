@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752444Ab2LVXzL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Dec 2012 18:55:11 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:33394 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752298Ab2LVXzH (ORCPT
+	id S1752460Ab2LWAAY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Dec 2012 19:00:24 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:36787 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab2LWAAX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Dec 2012 18:55:07 -0500
-X-Sasl-enc: HqryFAzLCW+qwYOCKGr5kLXJ4goQzU5Ci+/wkEOqfwm5 1356220506
-Date: Sat, 22 Dec 2012 21:55:04 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>,
-        ibm-acpi-devel@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH 08/25] thinkpad_acpi: don't use [delayed_]work_pending()
-Message-ID: <20121222235504.GA12747@khazad-dum.debian.net>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-9-git-send-email-tj@kernel.org>
+	Sat, 22 Dec 2012 19:00:23 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356141435-17340-9-git-send-email-tj@kernel.org>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50D6086E.4000402@gmail.com>
+References: <50C94ECD.6020504@gmail.com> <CA+55aFzmsEbKCg=Qp0LGxQb-D+ZfBAELEa4HyUkuxkj6Z0-agA@mail.gmail.com>
+ <50C95A21.1010101@gmail.com> <20121213073056.GA13156@gmail.com>
+ <50C9E692.9070506@gmail.com> <CA+55aFzmDooC3tYzvP1YGv9g4ej1hBUQBPV6R+ukrfxuEELBaQ@mail.gmail.com>
+ <50CA0134.2090608@gmail.com> <CA+55aFyZ2kAQPmZSv_sfHDAR1gusOxO22TRX-kqSim-cZrMscw@mail.gmail.com>
+ <20121213165904.GA18574@gmail.com> <CA+55aFwfxRgLqSsa1=4KvhR6E5GdvfGGxTM_0++YepLv5A_U_w@mail.gmail.com>
+ <20121213173101.GA19444@gmail.com> <50CEA2F7.7020908@gmail.com> <50D6086E.4000402@gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 22 Dec 2012 16:00:00 -0800
+X-Google-Sender-Auth: 91KJF2vPPgntr_4b8aKZ0-iqR9c
+Message-ID: <CA+55aFzADpQTEGNDNVBpL9Ep8xD=9_1pViiZvFLb4KPzKpKNZQ@mail.gmail.com>
+Subject: Re: [GIT PULL] perf changes for v3.8
+To: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Dec 2012, Tejun Heo wrote:
-> There's no need to test whether a (delayed) work item in pending
-> before queueing, flushing or cancelling it.  Most uses are unnecessary
-> and quite a few of them are buggy.
-> 
-> Remove unnecessary pending tests from thinkpad_acpi.  Only compile
-> tested.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Henrique de Moraes Holschuh <ibm-acpi@hmh.eng.br>
-> Cc: ibm-acpi-devel@lists.sourceforge.net
-> Cc: platform-driver-x86@vger.kernel.org
+Sure. I actually think both should be deprecated, and replaced with
+explicit "trace guest" vs "trace host" flags, just to make it
+consistent, but I don't care deeply.
 
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+The only thing I care about is that compatibility must never be broken
+(which the current setup does), and that people who don't use
+virtualization should never be asked to use flags that have anything
+to do with virtualization (which the current work-around involves).
 
-> ---
-> Please let me know how this patch should be routed.  I can take it
-> through the workqueue tree if necessary.
+        Linus
 
-It will not clash with anything I know of, so feel free to route it
-through the workqueue tree.
-
--- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+On Sat, Dec 22, 2012 at 11:22 AM, David Ahern <dsahern@gmail.com> wrote:
+> any opinions on whether the approach is reasonable?
+>
+> On 12/16/12 9:43 PM, David Ahern wrote:
+>>
+>> All that is needed is for the current exclude_guest flag to be
+>> deprecated such that for older binaries on newer kernels it is ignored
+>> (perhaps a warn on once), and then a new flag -- exclude_guest2 -- is
+>> then used for the new logic.
