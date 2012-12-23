@@ -1,258 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751850Ab2LWOND (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 09:13:03 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:37207 "EHLO mxout2.iskon.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750947Ab2LWONA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 09:13:00 -0500
-X-Remote-IP: 213.191.128.133
-Date: Sun, 23 Dec 2012 15:12:54 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1751995Ab2LWOPF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 09:15:05 -0500
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:63600 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab2LWOPA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 09:15:00 -0500
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <50D24AF3.1050809@iskon.hr> <20121220111208.GD10819@suse.de> <20121220125802.23e9b22d.akpm@linux-foundation.org> <50D601C9.9060803@iskon.hr>
-In-Reply-To: <50D601C9.9060803@iskon.hr>
-Message-ID: <50D71166.6030608@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-Subject: [PATCH v2] mm: modify pgdat_balanced() so that it also handles order=0
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121223 #8843675, check: 20121223 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40645 [Dec 23 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CAM_iQpVdqYceHejqyQOn5wqj-xQFjn6E4u5ws4MuoOd=SiVtww@mail.gmail.com>
+References: <CA+icZUXJeWNceo_y-TSUVzXmjbrauWmCdkgW3EJtr_vpbcrk-A@mail.gmail.com>
+	<20121223114213.GB8386@liondog.tnic>
+	<CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com>
+	<CA+icZUU2OdNq5WKd7abNNe2eevxZBbMRS0eBGyU_rzjVBAgcOg@mail.gmail.com>
+	<CA+icZUVxdp-Lcf4FLfY-80qvVsTQn-ajfh8vn2T=FC6-QbLv7w@mail.gmail.com>
+	<CAM_iQpVdqYceHejqyQOn5wqj-xQFjn6E4u5ws4MuoOd=SiVtww@mail.gmail.com>
+Date: Sun, 23 Dec 2012 15:14:59 +0100
+Message-ID: <CA+icZUV4WEu6xp=-TyHH2z4Zcz8g0iHY2ZVk-jBJNt1azcXa2A@mail.gmail.com>
+Subject: Re: [3.8-rc1] Networking problems after pulling-in net.git#master
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Borislav Petkov <bp@alien8.de>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+Content-Type: multipart/mixed; boundary=047d7b6777f2bd30d904d185b4f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.12.2012 19:54, Zlatko Calusic wrote:
-> On 20.12.2012 21:58, Andrew Morton wrote:
->> There seems to be some complexity/duplication here between the new
->> unbalanced_zone() and pgdat_balanced().
+--047d7b6777f2bd30d904d185b4f0
+Content-Type: text/plain; charset=UTF-8
+
+On Sun, Dec 23, 2012 at 2:44 PM, Cong Wang <xiyou.wangcong@gmail.com> wrote:
+> On Sun, Dec 23, 2012 at 9:19 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
 >>
->> Can we modify pgdat_balanced() so that it also handles order=0, then do
+>> The culprit commit here seems to be...
 >>
->> -		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
->> +		if (!pgdat_balanced(...))
+>> commit 9650388b5c56578fdccc79c57a8c82fb92b8e7f1
+>> Author: Eric Dumazet <edumazet@google.com>
+>> Date:   Fri Dec 21 07:32:10 2012 +0000
 >>
->> ?
->>
-> 
-> Makes sense, I like the idea! Took me some time to wrap my mind around
-> all the logic in balance_pgdat(), while writing my previous patch. Also had
-> to revert one if-case logic to avoid double negation, which would be even
-> harder to grok. But unbalanced_zone (var, not a function!) has to stay because
-> wait_iff_congested() needs a struct zone* param. Here's my take on the subject:
-> 
+>>     ipv4: arp: fix a lockdep splat in arp_solicit()
+>
+> Can you try the following one-line fix?
+>
+> Thanks.
+>
+> ------------>
+>
+> diff --git a/net/ipv4/arp.c b/net/ipv4/arp.c
+> index 1169ed4..75e0d7c 100644
+> --- a/net/ipv4/arp.c
+> +++ b/net/ipv4/arp.c
+> @@ -365,7 +365,7 @@ static void arp_solicit(struct neighbour *neigh,
+> struct sk_buff *skb)
+>                         pr_debug("trying to ucast probe in NUD_INVALID\n");
+>                 neigh_ha_snapshot(dst_ha, neigh, dev);
+>         } else {
+> -               memset(dst_ha, 0, dev->addr_len);
+> +               memcpy(dst_ha, dev->broadcast, MAX_ADDR_LEN);
+>                 probes -= neigh->parms->app_probes;
+>                 if (probes < 0) {
+>  #ifdef CONFIG_ARPD
 
-And now also with 3 unused variables removed, no other changes.
-prepare_kswapd_sleep() now looks so beautiful. ;)
+[ CCing Eric ]
 
-I've been testing the patch on 3 different machines, and no problem at all. One of
-those I pushed hard, and it survived.
+YES, thie fixes my problem.
+But your patch was somehow malformed, so I attached mine.
 
----8<---
-mm: modify pgdat_balanced() so that it also handles order=0
+- Sedat -
 
-Teach pgdat_balanced() about order-0 allocations so that we can simplify
-code in a few places in vmstat.c.
+--047d7b6777f2bd30d904d185b4f0
+Content-Type: application/octet-stream; 
+	name="0001-ipv4-arp-Fixup-to-commit-9650388b5c56578fdccc79c57a8.patch"
+Content-Disposition: attachment; 
+	filename="0001-ipv4-arp-Fixup-to-commit-9650388b5c56578fdccc79c57a8.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hb29bxt40
 
-Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
----
- mm/vmscan.c | 105 ++++++++++++++++++++++++++----------------------------------
- 1 file changed, 45 insertions(+), 60 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index adc7e90..23291b9 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2452,12 +2452,16 @@ static bool zone_balanced(struct zone *zone, int order,
- }
- 
- /*
-- * pgdat_balanced is used when checking if a node is balanced for high-order
-- * allocations. Only zones that meet watermarks and are in a zone allowed
-- * by the callers classzone_idx are added to balanced_pages. The total of
-- * balanced pages must be at least 25% of the zones allowed by classzone_idx
-- * for the node to be considered balanced. Forcing all zones to be balanced
-- * for high orders can cause excessive reclaim when there are imbalanced zones.
-+ * pgdat_balanced() is used when checking if a node is balanced.
-+ *
-+ * For order-0, all zones must be balanced!
-+ *
-+ * For high-order allocations only zones that meet watermarks and are in a
-+ * zone allowed by the callers classzone_idx are added to balanced_pages. The
-+ * total of balanced pages must be at least 25% of the zones allowed by
-+ * classzone_idx for the node to be considered balanced. Forcing all zones to
-+ * be balanced for high orders can cause excessive reclaim when there are
-+ * imbalanced zones.
-  * The choice of 25% is due to
-  *   o a 16M DMA zone that is balanced will not balance a zone on any
-  *     reasonable sized machine
-@@ -2467,17 +2471,43 @@ static bool zone_balanced(struct zone *zone, int order,
-  *     Similarly, on x86-64 the Normal zone would need to be at least 1G
-  *     to balance a node on its own. These seemed like reasonable ratios.
-  */
--static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
--						int classzone_idx)
-+static bool pgdat_balanced(pg_data_t *pgdat, int order, int classzone_idx)
- {
- 	unsigned long present_pages = 0;
-+	unsigned long balanced_pages = 0;
- 	int i;
- 
--	for (i = 0; i <= classzone_idx; i++)
--		present_pages += pgdat->node_zones[i].present_pages;
-+	/* Check the watermark levels */
-+	for (i = 0; i <= classzone_idx; i++) {
-+		struct zone *zone = pgdat->node_zones + i;
- 
--	/* A special case here: if zone has no page, we think it's balanced */
--	return balanced_pages >= (present_pages >> 2);
-+		if (!populated_zone(zone))
-+			continue;
-+
-+		present_pages += zone->present_pages;
-+
-+		/*
-+		 * A special case here:
-+		 *
-+		 * balance_pgdat() skips over all_unreclaimable after
-+		 * DEF_PRIORITY. Effectively, it considers them balanced so
-+		 * they must be considered balanced here as well!
-+		 */
-+		if (zone->all_unreclaimable) {
-+			balanced_pages += zone->present_pages;
-+			continue;
-+		}
-+
-+		if (zone_balanced(zone, order, 0, i))
-+			balanced_pages += zone->present_pages;
-+		else if (!order)
-+			return false;
-+	}
-+
-+	if (order)
-+		return balanced_pages >= (present_pages >> 2);
-+	else
-+		return true;
- }
- 
- /*
-@@ -2489,10 +2519,6 @@ static bool pgdat_balanced(pg_data_t *pgdat, unsigned long balanced_pages,
- static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 					int classzone_idx)
- {
--	int i;
--	unsigned long balanced = 0;
--	bool all_zones_ok = true;
--
- 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
- 	if (remaining)
- 		return false;
-@@ -2511,39 +2537,7 @@ static bool prepare_kswapd_sleep(pg_data_t *pgdat, int order, long remaining,
- 		return false;
- 	}
- 
--	/* Check the watermark levels */
--	for (i = 0; i <= classzone_idx; i++) {
--		struct zone *zone = pgdat->node_zones + i;
--
--		if (!populated_zone(zone))
--			continue;
--
--		/*
--		 * balance_pgdat() skips over all_unreclaimable after
--		 * DEF_PRIORITY. Effectively, it considers them balanced so
--		 * they must be considered balanced here as well if kswapd
--		 * is to sleep
--		 */
--		if (zone->all_unreclaimable) {
--			balanced += zone->present_pages;
--			continue;
--		}
--
--		if (!zone_balanced(zone, order, 0, i))
--			all_zones_ok = false;
--		else
--			balanced += zone->present_pages;
--	}
--
--	/*
--	 * For high-order requests, the balanced zones must contain at least
--	 * 25% of the nodes pages for kswapd to sleep. For order-0, all zones
--	 * must be balanced
--	 */
--	if (order)
--		return pgdat_balanced(pgdat, balanced, classzone_idx);
--	else
--		return all_zones_ok;
-+	return pgdat_balanced(pgdat, order, classzone_idx);
- }
- 
- /*
-@@ -2571,7 +2565,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 							int *classzone_idx)
- {
- 	struct zone *unbalanced_zone;
--	unsigned long balanced;
- 	int i;
- 	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
- 	unsigned long total_scanned;
-@@ -2605,7 +2598,6 @@ loop_again:
- 		int has_under_min_watermark_zone = 0;
- 
- 		unbalanced_zone = NULL;
--		balanced = 0;
- 
- 		/*
- 		 * Scan in the highmem->dma direction for the highest
-@@ -2761,8 +2753,6 @@ loop_again:
- 				 * speculatively avoid congestion waits
- 				 */
- 				zone_clear_flag(zone, ZONE_CONGESTED);
--				if (i <= *classzone_idx)
--					balanced += zone->present_pages;
- 			}
- 
- 		}
-@@ -2776,7 +2766,7 @@ loop_again:
- 				pfmemalloc_watermark_ok(pgdat))
- 			wake_up(&pgdat->pfmemalloc_wait);
- 
--		if (!unbalanced_zone || (order && pgdat_balanced(pgdat, balanced, *classzone_idx)))
-+		if (pgdat_balanced(pgdat, order, *classzone_idx))
- 			break;		/* kswapd: all done */
- 		/*
- 		 * OK, kswapd is getting into trouble.  Take a nap, then take
-@@ -2800,12 +2790,7 @@ loop_again:
- 	} while (--sc.priority >= 0);
- out:
- 
--	/*
--	 * order-0: All zones must meet high watermark for a balanced node
--	 * high-order: Balanced zones must make up at least 25% of the node
--	 *             for the node to be balanced
--	 */
--	if (unbalanced_zone && (!order || !pgdat_balanced(pgdat, balanced, *classzone_idx))) {
-+	if (!pgdat_balanced(pgdat, order, *classzone_idx)) {
- 		cond_resched();
- 
- 		try_to_freeze();
--- 
-1.8.1.rc0
-
--- 
-Zlatko
+RnJvbSA0OGVhMmRjNzlmNjQ1OTRlYjJiYjRlOWIxOWNiNjliNzQxNTZlYTZhIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBTZWRhdCBEaWxlayA8c2VkYXQuZGlsZWtAZ21haWwuY29tPgpE
+YXRlOiBTdW4sIDIzIERlYyAyMDEyIDE1OjAwOjU0ICswMTAwClN1YmplY3Q6IFtQQVRDSF0gaXB2
+NDogYXJwOiBGaXh1cCB0byBjb21taXQKIDk2NTAzODhiNWM1NjU3OGZkY2NjNzljNTdhOGM4MmZi
+OTJiOGU3ZjEKClBhdGNoIGlzIGZyb20gPGh0dHA6Ly9wYXRjaHdvcmsub3psYWJzLm9yZy9wYXRj
+aC8yMDc5NzIvPgotLS0KIG5ldC9pcHY0L2FycC5jIHwgICAgMiArLQogMSBmaWxlIGNoYW5nZWQs
+IDEgaW5zZXJ0aW9uKCspLCAxIGRlbGV0aW9uKC0pCgpkaWZmIC0tZ2l0IGEvbmV0L2lwdjQvYXJw
+LmMgYi9uZXQvaXB2NC9hcnAuYwppbmRleCAxMTY5ZWQ0Li43NWUwZDdjIDEwMDY0NAotLS0gYS9u
+ZXQvaXB2NC9hcnAuYworKysgYi9uZXQvaXB2NC9hcnAuYwpAQCAtMzY1LDcgKzM2NSw3IEBAIHN0
+YXRpYyB2b2lkIGFycF9zb2xpY2l0KHN0cnVjdCBuZWlnaGJvdXIgKm5laWdoLCBzdHJ1Y3Qgc2tf
+YnVmZiAqc2tiKQogCQkJcHJfZGVidWcoInRyeWluZyB0byB1Y2FzdCBwcm9iZSBpbiBOVURfSU5W
+QUxJRFxuIik7CiAJCW5laWdoX2hhX3NuYXBzaG90KGRzdF9oYSwgbmVpZ2gsIGRldik7CiAJfSBl
+bHNlIHsKLQkJbWVtc2V0KGRzdF9oYSwgMCwgZGV2LT5hZGRyX2xlbik7CisJCW1lbWNweShkc3Rf
+aGEsIGRldi0+YnJvYWRjYXN0LCBNQVhfQUREUl9MRU4pOwogCQlwcm9iZXMgLT0gbmVpZ2gtPnBh
+cm1zLT5hcHBfcHJvYmVzOwogCQlpZiAocHJvYmVzIDwgMCkgewogI2lmZGVmIENPTkZJR19BUlBE
+Ci0tIAoxLjcuOS41Cgo=
+--047d7b6777f2bd30d904d185b4f0--
