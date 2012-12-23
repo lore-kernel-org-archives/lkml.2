@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab2LWLvk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 06:51:40 -0500
-Received: from ud10.udmedia.de ([194.117.254.50]:59407 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab2LWLvg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 06:51:36 -0500
-Date: Sun, 23 Dec 2012 12:51:33 +0100
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Borislav Petkov <bp@alien8.de>, Andy Furniss <andyqos@ukfsn.org>,
-        Alex Deucher <alexdeucher@gmail.com>,
+	id S1752030Ab2LWLwO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 06:52:14 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:40048 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751082Ab2LWLwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 06:52:13 -0500
+Message-ID: <1356263531.10873.6.camel@joe-AO722>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+From: Joe Perches <joe@perches.com>
+To: Andy Furniss <andyqos@ukfsn.org>
+Cc: Borislav Petkov <bp@alien8.de>, Alex Deucher <alexdeucher@gmail.com>,
         Alex Deucher <alexander.deucher@amd.com>,
         dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-Message-ID: <20121223115133.GA229@x4>
+Date: Sun, 23 Dec 2012 03:52:11 -0800
+In-Reply-To: <50D6E491.3030801@ukfsn.org>
 References: <20121222203547.GA5319@liondog.tnic>
- <CADnq5_MJzNdWVCauZj5Z7Monmsy4gWeYP3gJaPUPwHEgqhqOYw@mail.gmail.com>
- <20121223002507.GA12121@liondog.tnic>
- <CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
- <20121223105527.GA6230@liondog.tnic>
- <50D6E491.3030801@ukfsn.org>
- <20121223110730.GC6230@liondog.tnic>
- <50D6E8A4.1030204@ukfsn.org>
- <20121223113153.GA8918@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121223113153.GA8918@liondog.tnic>
+	 <CADnq5_MJzNdWVCauZj5Z7Monmsy4gWeYP3gJaPUPwHEgqhqOYw@mail.gmail.com>
+	 <20121223002507.GA12121@liondog.tnic>
+	 <CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
+	 <20121223105527.GA6230@liondog.tnic> <50D6E491.3030801@ukfsn.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012.12.23 at 12:31 +0100, Borislav Petkov wrote:
-> On Sun, Dec 23, 2012 at 11:19:00AM +0000, Andy Furniss wrote:
-> > modinfo radeon
-> > 
-> > will give a list assuming you use modules, I think all of them need =<num>.
+On Sun, 2012-12-23 at 11:01 +0000, Andy Furniss wrote:
+> Borislav Petkov wrote:
 > 
-> Yep, that is one way of getting that info, thanks. I always go and look
-> at Documentation/kernel-parameters.txt and forget about modinfo.
+> > [   28.191072] radeon: `0' invalid for parameter `wb'
+> >
+> > although the whole driver blubber didn't appear on the console fterwards
+> > aso something got turned off allright.
+> >
+> > Then, I went and tried "radeon.no_wb" where the driver blubber appeared
+> > but AGP writeback was still enabled:
 > 
-> As you say 'radeon' needs to be module but since this is the case with
-> the distros, the majority of Linux installations out there have it this
-> way so we're fine.
+> no_wb=1 should work.
 
-(If you don't use modules:
- git grep MODULE_PARM_DESC -- drivers/gpu/drm/radeon/
-)
+Perhaps some of the module_param_named(,,int,) should be bool
+Also, are all of the various permissions appropriate?
 
-You may have hit the same issue as I, see:
-http://thread.gmane.org/gmane.comp.video.dri.devel/78328
+$ git grep module_param_named drivers/gpu/drm/radeon/
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(no_wb, radeon_no_wb, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(modeset, radeon_modeset, int, 0400);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(dynclks, radeon_dynclks, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(r4xx_atom, radeon_r4xx_atom, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(vramlimit, radeon_vram_limit, int, 0600);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(agpmode, radeon_agpmode, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(gartsize, radeon_gart_size, int, 0600);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(benchmark, radeon_benchmarking, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(test, radeon_testing, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(connector_table, radeon_connector_table, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(tv, radeon_tv, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(audio, radeon_audio, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(disp_priority, radeon_disp_priority, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(hw_i2c, radeon_hw_i2c, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(pcie_gen2, radeon_pcie_gen2, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(msi, radeon_msi, int, 0444);
+drivers/gpu/drm/radeon/radeon_drv.c:module_param_named(lockup_timeout, radeon_lockup_timeout, int, 0444);
 
-Reverting commit 2d6cc729 fixes the problem for me, setting
-radeon.no_wb=1 doesn't help.
 
--- 
-Markus
