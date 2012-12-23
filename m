@@ -1,84 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751863Ab2LWK0g (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 05:26:36 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:13092 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751732Ab2LWK0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 05:26:33 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sun, 23 Dec 2012 02:24:38 -0800
-Message-ID: <50D6DC4E.9020205@nvidia.com>
-Date: Sun, 23 Dec 2012 15:56:22 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	id S1751912Ab2LWKzg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 05:55:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43220 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751836Ab2LWKzd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 05:55:33 -0500
+Date: Sun, 23 Dec 2012 11:55:28 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Alex Deucher <alexander.deucher@amd.com>, dri-devel@lists.freedesktop.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+Message-ID: <20121223105527.GA6230@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org,
+	lkml <linux-kernel@vger.kernel.org>
+References: <20121222203547.GA5319@liondog.tnic>
+ <CADnq5_MJzNdWVCauZj5Z7Monmsy4gWeYP3gJaPUPwHEgqhqOYw@mail.gmail.com>
+ <20121223002507.GA12121@liondog.tnic>
+ <CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
 MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] clk: debug clock tree
-References: <1355370586-6600-1-git-send-email-pgaikwad@nvidia.com> <CAPtuhThBigSQMkNDf16Fo1tddTKo=rPEydHmzep0DqtgLrB+HA@mail.gmail.com> <50CA17FB.9060606@wwwdotorg.org> <50D2A7DA.5050907@nvidia.com> <CAPtuhTgytOHGpVQ+vXQMpgFhuUo+y0H-QqpLg5cff2cdC-Rkzg@mail.gmail.com>
-In-Reply-To: <CAPtuhTgytOHGpVQ+vXQMpgFhuUo+y0H-QqpLg5cff2cdC-Rkzg@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 December 2012 04:26 AM, Mike Turquette wrote:
-> On Wed, Dec 19, 2012 at 11:53 PM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
->> On Thursday 13 December 2012 11:31 PM, Stephen Warren wrote:
->>> On 12/13/2012 09:27 AM, Mike Turquette wrote:
->>>> On Wed, Dec 12, 2012 at 7:49 PM, Prashant Gaikwad <pgaikwad@nvidia.com>
->>>> wrote:
->>>>> Adds debug file "clock_tree" in /sys/kernel/debug/clk dir.
->>>>> It helps to view all the clock registered in tree format.
->>>>>
->>>> Prashant,
->>>>
->>>> Thanks for submitting this.  We've been talking about having a single
->>>> file for representing the tree for some time.
->>>>
->>>> Regarding the output format had you considered using a well known
->>>> format which can be parsed using well known parsing libs?  This avoids
->>>> needing a custom parser just for this one file.  JSON springs to mind
->>>> as something lightweight and well-understood.
->>> One advantage of the format below is that it's very easily
->>> human-readable, and it's not too hard to parse (although I guess you'd
->>> have to parse the indent level to get parent/child relation, which would
->>> suck a bit). Is there room to provide both? Otherwise, I guess the
->>> kernel could include a script to convert from JSON/whatever into the
->>> format below.
->>>
->>>>> For example:
->>>>>      clock                        enable_cnt  prepare_cnt  rate
->>>>> ---------------------------------------------------------------------
->>>>>    i2s0_sync                      0           0            24000000
->>>>>    spdif_in_sync                  0           0            24000000
->>>>>       spdif_mux                   0           0            24000000
->>>>>          spdif                    0           0            24000000
->>>>>             spdif_doubler         0           0            48000000
->>>>>                spdif_div          0           0            48000000
->>>>>                   spdif_2x        0           0            48000000
->>>
->> Even I think that output must be easily human-readable. How about adding
->> sysfs to switch between human-readable and machine-readable format?
->> I will try come up with a implementation.
->>
-> Do you mean a sysfs file which controls the output format?  How about
-> just two different files?  One can be clk-dump (machine readable) and
-> the other is clk-summary (human readable).
+On Sat, Dec 22, 2012 at 07:42:16PM -0500, Alex Deucher wrote:
+> Does booting with radeon.wb=0 help?
 
-It is also fine. Is this patch ok for human-readable format? or any 
-suggestions?
-I will change the file name to clk-summary.
+Right, this param specification somehow didn't work here:
 
->
-> Regards,
-> Mike
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-3.8.0-rc1 root=/dev/sda1 ro vga=0 log_bug_len=10M resume=/dev/sda2 no_console_suspend ignore_loglevel hpet=force radeon.wb=0
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-3.8.0-rc1 root=/dev/sda1 ro vga=0 log_bug_len=10M resume=/dev/sda2 no_console_suspend ignore_loglevel hpet=force radeon.wb=0
 
+[ … ]
+
+[    6.910104] radeon: `0' invalid for parameter `wb'
+
+[ … ]
+
+[   28.191072] radeon: `0' invalid for parameter `wb'
+
+although the whole driver blubber didn't appear on the console fterwards
+aso something got turned off allright.
+
+Then, I went and tried "radeon.no_wb" where the driver blubber appeared
+but AGP writeback was still enabled:
+
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-3.8.0-rc1 root=/dev/sda1 ro vga=0 log_bug_len=10M resume=/dev/sda2 no_console_suspend ignore_loglevel hpet=force radeon.no_wb
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-3.8.0-rc1 root=/dev/sda1 ro vga=0 log_bug_len=10M resume=/dev/sda2 no_console_suspend ignore_loglevel hpet=force radeon.no_wb
+
+[ … ]
+
+[    6.382636] [drm] radeon kernel modesetting enabled.
+[    6.384915] radeon 0000:02:00.0: VRAM: 512M 0x0000000000000000 - 0x000000001FFFFFFF (512M used)
+[    6.384981] radeon 0000:02:00.0: GTT: 512M 0x0000000020000000 - 0x000000003FFFFFFF
+[    6.388137] [drm] radeon: 512M of VRAM memory ready
+[    6.388181] [drm] radeon: 512M of GTT memory ready.
+[    6.388509] radeon 0000:02:00.0: irq 42 for MSI/MSI-X
+[    6.388570] radeon 0000:02:00.0: radeon: using MSI.
+[    6.388705] [drm] radeon: irq initialized.
+[    6.567811] radeon 0000:02:00.0: WB enabled
+				    ^^^^^^^^^^
+
+[    6.567856] radeon 0000:02:00.0: fence driver on ring 0 use gpu addr 0x0000000020000c00 and cpu addr 0xffff8802243e5c00
+[    6.567922] radeon 0000:02:00.0: fence driver on ring 3 use gpu addr 0x0000000020000c0c and cpu addr 0xffff8802243e5c0c
+[    6.601247] [drm] Radeon Display Connectors
+[    6.602427] [drm] radeon: power management initialized
+[    6.722544] fbcon: radeondrmfb (fb0) is primary device
+[    6.945065] radeon 0000:02:00.0: fb0: radeondrmfb frame buffer device
+[    6.945100] radeon 0000:02:00.0: registered panic notifier
+[    6.945159] [drm] Initialized radeon 2.27.0 20080528 for 0000:02:00.0 on minor 0
+
+At this point, I got tired of this experimenting and went and took the
+big hammer :-):
+
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index 49b06590001e..00214312db23 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -307,6 +307,11 @@ int radeon_wb_init(struct radeon_device *rdev)
+                rdev->wb.use_event = true;
+        }
+ 
++       if (rdev->wb.enabled) {
++               pr_err("%s: disable the goddam WB: radeon_no_wb: %d\n", __func__, radeon_no_wb);
++               rdev->wb.enabled = false;
++       }
++
+        dev_info(rdev->dev, "WB %sabled\n", rdev->wb.enabled ? "en" : "dis");
+ 
+        return 0;
+
+
+[    0.000000] Command line: BOOT_IMAGE=/boot/vmlinuz-3.8.0-rc1+ root=/dev/sda1 ro vga=0 log_bug_len=10M resume=/dev/sda2 no_console_suspend ignore_loglevel hpet=force radeon.no_wb no_wb
+[    0.000000] Kernel command line: BOOT_IMAGE=/boot/vmlinuz-3.8.0-rc1+ root=/dev/sda1 ro vga=0 log_bug_len=10M resume=/dev/sda2 no_console_suspend ignore_loglevel hpet=force radeon.no_wb no_wb
+
+[    6.562905] [drm] radeon kernel modesetting enabled.
+[    6.565106] radeon 0000:02:00.0: VRAM: 512M 0x0000000000000000 - 0x000000001FFFFFFF (512M used)
+[    6.565172] radeon 0000:02:00.0: GTT: 512M 0x0000000020000000 - 0x000000003FFFFFFF
+[    6.567696] [drm] radeon: 512M of VRAM memory ready
+[    6.567742] [drm] radeon: 512M of GTT memory ready.
+[    6.568068] radeon 0000:02:00.0: irq 42 for MSI/MSI-X
+[    6.568130] radeon 0000:02:00.0: radeon: using MSI.
+[    6.568269] [drm] radeon: irq initialized.
+[    6.684920] radeon_wb_init: disable the goddam WB: radeon_no_wb: 0
+[    6.684967] radeon 0000:02:00.0: WB disabled
+				    ^^^^^^^^^^^
+
+[    6.685011] radeon 0000:02:00.0: fence driver on ring 0 use gpu addr 0x0000000020000c00 and cpu addr 0xffff880221ea3c00
+[    6.685077] radeon 0000:02:00.0: fence driver on ring 3 use gpu addr 0x0000000020000c0c and cpu addr 0xffff880221ea3c0c
+[    6.722367] [drm] Radeon Display Connectors
+[    6.723548] [drm] radeon: power management initialized
+[    6.843185] fbcon: radeondrmfb (fb0) is primary device
+[    7.066368] radeon 0000:02:00.0: fb0: radeondrmfb frame buffer device
+[    7.066402] radeon 0000:02:00.0: registered panic notifier
+[    7.066462] [drm] Initialized radeon 2.27.0 20080528 for 0000:02:00.0 on minor 0
+
+Ok, I hope I turned off the proper WB thing (I'm assuming you meant the
+radeon_no_wb parameter).
+
+And I'm running with it now, will report what happens.
+
+Btw, I'm no GPU guy but why does radeon_wb_init() do all that memory
+allocation and cleaning if wb can be disabled with a parameter?
+Shouldn't it be checking the parameter, ->family, etc setting first and
+only do the allocations when rdev->wb.enabled remains true?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
