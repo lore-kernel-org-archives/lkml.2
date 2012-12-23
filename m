@@ -1,59 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752715Ab2LWUQt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 15:16:49 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42637 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624Ab2LWUQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 15:16:44 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: rientjes@google.com, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] mm, sparse: don't check return value of alloc_bootmem calls
-Date: Sun, 23 Dec 2012 15:15:08 -0500
-Message-Id: <1356293711-23864-3-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1356293711-23864-1-git-send-email-sasha.levin@oracle.com>
-References: <1356293711-23864-1-git-send-email-sasha.levin@oracle.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1752644Ab2LWUWK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 15:22:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37095 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752573Ab2LWUWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 15:22:09 -0500
+Date: Sun, 23 Dec 2012 18:21:35 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Subject: Re: [Regression w/ patch] Media commit causes user space to
+ misbahave (was: Re: Linux 3.8-rc1)
+Message-ID: <20121223182135.575cb915@redhat.com>
+In-Reply-To: <CA+55aFy98A+LJK4+GWMcbzaa1zsPBRo76q+ioEjbx-uaMKH6Uw@mail.gmail.com>
+References: <CA+55aFyd0Wk=hPqiRmk5MMnrwPhse5k1Aih9P-j-Badr7kwhbw@mail.gmail.com>
+	<2183382.xv2VGtqdUf@vostro.rjw.lan>
+	<20121223120822.233282ba@redhat.com>
+	<CA+55aFy98A+LJK4+GWMcbzaa1zsPBRo76q+ioEjbx-uaMKH6Uw@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There's no need to check the result of alloc_bootmem() functions since
-they'll panic if allocation fails.
+Linus,
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- mm/sparse.c | 4 ----
- 1 file changed, 4 deletions(-)
+Em Sun, 23 Dec 2012 09:36:15 -0800
+Linus Torvalds <torvalds@linux-foundation.org> escreveu:
 
-diff --git a/mm/sparse.c b/mm/sparse.c
-index 72a0db6..949fb38 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -497,8 +497,6 @@ void __init sparse_init(void)
- 	 */
- 	size = sizeof(unsigned long *) * NR_MEM_SECTIONS;
- 	usemap_map = alloc_bootmem(size);
--	if (!usemap_map)
--		panic("can not allocate usemap_map\n");
- 
- 	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
- 		struct mem_section *ms;
-@@ -538,8 +536,6 @@ void __init sparse_init(void)
- #ifdef CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER
- 	size2 = sizeof(struct page *) * NR_MEM_SECTIONS;
- 	map_map = alloc_bootmem(size2);
--	if (!map_map)
--		panic("can not allocate map_map\n");
- 
- 	for (pnum = 0; pnum < NR_MEM_SECTIONS; pnum++) {
- 		struct mem_section *ms;
--- 
-1.8.0
+> To make matters worse, commit f0ed2ce840b3 is clearly total and utter
+> CRAP even if it didn't break applications. ENOENT is not a valid error
+> return from an ioctl. Never has been, never will be. ENOENT means "No
+> such file and directory", and is for path operations. ioctl's are done
+> on files that have already been opened, there's no way in hell that
+> ENOENT would ever be valid.
 
+Agreed: ENOENT was a bad choice, and it should be reverted.
+
+What I'm trying to understand is why pulseaudio is complaining.
+Is it because it only accepts EINVAL error code for media controls?
+
+I'm asking it to Rafael because I'm pretty sure that other drivers
+don't return EINVAL when a media control is not available. So, the bug
+may already be there, and probably got noticed on 3.8-rc1 because most
+notebooks come with UVC cameras installed internally.
+
+> > So, on a first glance, this doesn't sound like a regression,
+> > but, instead, it looks tha pulseaudio/tumbleweed has some serious
+> > bugs and/or regressions.
+> 
+> Shut up, Mauro. And I don't _ever_ want to hear that kind of obvious
+> garbage and idiocy from a kernel maintainer again. Seriously.
+
+OK.
+
+> I'd wait for Rafael's patch to go through you, but I have another
+> error report in my mailbox of all KDE media applications being broken
+> by v3.8-rc1, and I bet it's the same kernel bug.
+
+Ouch!
+
+> And you've shown
+> yourself to not be competent in this issue, so I'll apply it directly
+> and immediately myself.
+
+OK, please apply it.
+
+I suspect however that just applying Rafael's patch may not be enough,
+as the bug may still be there affecting all other drivers.
+
+> WE DO NOT BREAK USERSPACE!
+
+I know and I'm doing my best rejecting patches that could potentially
+break userspace in advance.
+
+Sometimes shit happens. Sorry for that.
+
+Cheers,
+Mauro
