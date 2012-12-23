@@ -1,135 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab2LWUiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 15:38:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13231 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab2LWUiL convert rfc822-to-8bit (ORCPT
+	id S1752696Ab2LWVAG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 16:00:06 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:53221 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab2LWVAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 15:38:11 -0500
-Date: Sun, 23 Dec 2012 18:37:43 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: =?UTF-8?B?SsO2cmc=?= Otte <jrg.otte@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [v3.8-rc1] Multimedia regression, ioctl(17,..)-API changed ?
-Message-ID: <20121223183743.0400ac93@redhat.com>
-In-Reply-To: <CADDKRnB=KYBuue10BnPpiRD=rrrATgxt-DfgLHmK-cqRAvJsUQ@mail.gmail.com>
-References: <CADDKRnB=KYBuue10BnPpiRD=rrrATgxt-DfgLHmK-cqRAvJsUQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 23 Dec 2012 16:00:03 -0500
+Date: Sun, 23 Dec 2012 12:59:50 -0800
+From: Jonathan Nieder <jrnieder@gmail.com>
+To: stable@vger.kernel.org
+Cc: Matthew Garrett <mjg@redhat.com>, x86@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, Keith Ward <keith@chaos-realm.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [2.6.32.y, 2.6.34.y] Re: [PATCH] x86: Don't use the EFI reboot
+ method by default
+Message-ID: <20121223205950.GA16511@elie.Belkin>
+References: <1309985557-15350-1-git-send-email-mjg@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309985557-15350-1-git-send-email-mjg@redhat.com>
+User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jörg,
+Hi Willy et al,
 
-Em Sun, 23 Dec 2012 17:46:07 +0100
-Jörg Otte <jrg.otte@gmail.com> escreveu:
+Please consider
 
-> With kernel v3.8 all multimedia programs under KDE4 don't work (Kubuntu 12.04).
-> They alltogether ( at least Dragonplayer (Mediaplayer), Knotify4
-> (system-sound),
-> System-Settings-Multimedia,..) are looping forever producing 100% CPU-usage
-> and must be killed.
-> 
-> With kernel 3.7 there are no problems.
+  f70e957cda22 x86: Don't use the EFI reboot method by default,
+               2011-07-06
 
-Do you have any other non-uvc device to test?
+for application to the 2.6.32.y and 2.6.34.y trees.  The patch was
+applied upstream late in the 3.0 cycle, so newer kernels don't need
+it.
 
-> I compared an strace of Dragonplayer under 3.7 and 3.8 kernels. The
-> main difference
-> of both traces are the following corresponding outputs just before
-> looping in v3.8
-> begins:
-> 
-> v3.7:
-> ioctl(17, VIDIOC_ENUMSTD, 0x7fff6cce66a0) = -1 EINVAL (Invalid argument)
+In 2011, Keith Ward wrote[1]:
 
-This ioctl returns -ENOTTY already with other media drivers on v3.7.
+> When attempting to reboot my my UEFI enabled system, the system hangs when
+> calling reboot requiring me to manually reset the system via the reset switch.
+>
+> Screenshot: http://twitgoo.com/29bq1c
 
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fff6cce66f0) = -1 EINVAL (Invalid argument)
+Ben Hutchings writes[1]:
 
-This change is new, and, AFAIKT, only UVC returns -ENOENT on 3.8-rc1.
+> Version: 3.0.0-1
+>
+> I also had this problem on my own system, but it is fixed now.
+> I bisected the fix to:
+>
+> commit f70e957cda22d309c769805cbb932407a5232219
+> Author: Matthew Garrett <mjg@redhat.com>
+> Date:   Wed Jul 6 16:52:37 2011 -0400
+>
+>     x86: Don't use the EFI reboot method by default
+>
+> which is basically equivalent to the workaround!
+>
+> I'll also apply this fix to squeeze as it's so simple.
 
-This is likely the source of the troubles.
+Keith Ward also wrote[1]:
 
-> 
-> v3.8:
-> ioctl(17, VIDIOC_ENUMSTD, 0x7fffc3be6990) = -1 ENOTTY (Inappropriate
-> ioctl for device)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> 
-> So error number EINVAL was changed to ENOTTY/ENOENT
-> 
-> When Dragonplayer under v3.8 comes to ioctl(17, VIDIOC_QUERYCTRL,...)
-> and sees error
-> number ENOENT instead of EINVAL it loops forever producing 100% CPU
-> usage like so:
-> 
->   .
->   .
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
-> ioctl(17, VIDIOC_QUERYCTRL, 0x7fffc3be69e0) = -1 ENOENT (No such file
-> or directory)
+> It seems as if this has recently been reported at Ubuntu's Launchpad as well:
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/721576
 
-Yeah, it started an endless loop here, likely because kde4 seems to be
-expecting either 0 or -EINVAL error code for VIDIOC_QUERYCTRL.
-
-It should be noticed that there are other valid error codes here. For
-example, if this ioctl is not implemented, -ENOTTY may also be returned.
-Fortunately, almost all drivers do implement this ioctl.
-
-The expected return error codes for this ioctl are described at:
-	http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-queryctrl.html
-
-In practice, except for the uvc driver, the current return codes are
-EINVAL/EACCES/ENOTTY.
-
->   .
->   and so on
->   .
-> 
-> For me it looks like that KDE4 multimedia is not aware of the new error numbers.
-> 
-> Looking through the commits I found driver uvcvideo producing the changed
-> error numbers.
-> 
-> commit f0ed2ce840b3a59b587e8aa398538141a86e9588
-> Author: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> [media] uvcvideo: Set error_idx properly for extended controls API failures
-> 
-> To verify this I built a v3.8-kernel without uvcvideo (USB_VIDEO_CLASS=n)
-> and the problem disappeared!
-> 
-> Simply reverting the commit is not an option for me because then I am left
-> with merge conflicts and I don't know how to resolve.
-> 
-> Unfortunately without uvcvideo I lost my usb-camera support.
-
-Rafael made a patch fixing it, and Linus should be applying it.
+There are a variety of reports of the same panic at that bug on
+2.6.32.y-, 2.6.38.y-, and 2.6.39-based kernels.  Passing "reboot=a,w"
+on the kernel command line avoids trouble for reporters.
 
 Regards,
-Mauro
+Jonathan
+
+[1] http://bugs.debian.org/626022
