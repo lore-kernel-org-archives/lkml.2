@@ -1,101 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab2LWX0n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 18:26:43 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:63520 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285Ab2LWX0m (ORCPT
+	id S1752642Ab2LWX1B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 18:27:01 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54293 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752157Ab2LWX05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 18:26:42 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-fb-50d7932f60b4
-Date: Mon, 24 Dec 2012 08:26:39 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Michal Nazarewicz <mina86@mina86.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: compare MIGRATE_ISOLATE selectively
-Message-ID: <20121223231547.GA2453@blaptop>
-References: <1355981152-2505-1-git-send-email-minchan@kernel.org>
- <xa1tfw30hgfb.fsf@mina86.com>
- <20121221010902.GD2686@blaptop>
- <xa1tr4mjpo80.fsf@mina86.com>
+	Sun, 23 Dec 2012 18:26:57 -0500
+X-Sasl-enc: iCaWzUCJv9ZJ2qfIochFYeEY8gB7Szud61FGmoOtPbfe 1356305216
+Date: Sun, 23 Dec 2012 15:30:10 -0800
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: Re: linux-next: manual merge of the driver-core.current tree with
+ Linus' tree
+Message-ID: <20121223233010.GA23879@kroah.com>
+References: <20121224095200.a94a61d18925f30909964dfb@canb.auug.org.au>
+ <20121224095614.3d1fc65e9ade946cc6a8a2e1@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <xa1tr4mjpo80.fsf@mina86.com>
+In-Reply-To: <20121224095614.3d1fc65e9ade946cc6a8a2e1@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 01:46:23PM +0100, Michal Nazarewicz wrote:
-> > On Thu, Dec 20, 2012 at 04:49:44PM +0100, Michal Nazarewicz wrote:
-> >> Perhaps “is_migrate_isolate” to match already existing “is_migrate_cma”?
+On Mon, Dec 24, 2012 at 09:56:14AM +1100, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> On Fri, Dec 21 2012, Minchan Kim wrote:
-> > Good poking. In fact, while I made this patch, I was very tempted by renaming
-> > is_migrate_cma to cma_pageblock.
+> On Mon, 24 Dec 2012 09:52:00 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 > >
-> >         is_migrate_cma(mt)
-> >
-> > I don't know who start to use "mt" instead of "migratetype" but anyway, it's
-> > not a good idea.
-> >
-> >         is_migrate_cma(migratetype)
-> >
-> > It's very clear for me because migratetype is per pageblock, we can know the
-> > function works per pageblock unit.
-> >
-> >> Especially as the “mt_isolated_pageblock” sound confusing to me, it
-> >> implies that it works on pageblocks which it does not.
-> >
-> > -ENOPARSE.
-> >
-> > migratetype works on pageblock.
+> > Today's linux-next merge of the driver-core.current tree got conflicts
+> > in 21 files in drivers/i2c between commit 0b255e927d47 ("i2c: remove
+> > __dev* attributes from subsystem") from Linus' tree and commit
+> > eeb30d064414 ("Drivers: i2c: remove __dev* attributes") from the
+> > driver-core.current tree.
+> > 
+> > I fixed it up (taking a mixture of both commits) and can carry the fix as
+> > necessary (no action is required).
 > 
-> migratetype is a number, which can be assigned to a pageblock.  In some
-> transitional cases, the migratetype associated with a page can differ
-> from the migratetype associated with the pageblock the page is in.  As
-> such, I think it's confusing to add “pageblock” to the name of the
-> function which does not read migratetype from pageblock but rather
-> operates on the number it is provided.
+> BTW, Greg, the patch in your tree to drivers/i2c/busses/i2c-au1550.c is
+> incorrect and would not build.
 
-Fair enough.
+Ugh, that's a horrible merge error on my part, thanks for pointing it
+out.  My 'make allmodconfig' doesn't happen to build that module.
 
-> 
-> > I admit mt is really dirty but I used page_alloc.c already has lots of
-> > mt, SIGH.
-> 
-> I don't really have an issue with “mt” myself, especially since the few
-> times “mt” is used in page_alloc.c it is a local variable which I don't
-> think needs a long descriptive name since context is all there.
-> 
-> > How about this?
-> >
-> > 1. Let's change all "mt" with "migratetype" again.
-> > 2. use is_migrate_isolate and is_migrate_cma for "migratetype".
-> > 3. use is_migrate_isolate_page instead of page_isolated_pageblock for
-> >    "page".
-> 
-> Like I've said.  Personally I don't really think 1 is needed, but 2 and
-> 3 look good to me.
+And sorry about the merge issues, I wasn't aware that Wolfram was going
+to be sending these to Linus after 3.8-rc1 was out, sorry about that.
+The merge issues are due to me trying to get the coding style correct,
+which Bill's sed script didn't always do.
 
-Okay. It would be a first patch in New Year.
-Thanks for the review, Michal.
+thanks,
 
-> 
-> -- 
-> Best regards,                                         _     _
-> .o. | Liege of Serenely Enlightened Majesty of      o' \,=./ `o
-> ..o | Computer Science,  Michał “mina86” Nazarewicz    (o o)
-> ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
-
-
-
-
-
--- 
-Kind regards,
-Minchan Kim
+greg k-h
