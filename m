@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752341Ab2LWRnZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 12:43:25 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:50160 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab2LWRnX convert rfc822-to-8bit (ORCPT
+	id S1752389Ab2LWSAb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 13:00:31 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:39438 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab2LWSA2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 12:43:23 -0500
+	Sun, 23 Dec 2012 13:00:28 -0500
 MIME-Version: 1.0
-In-Reply-To: <CADDKRnB=KYBuue10BnPpiRD=rrrATgxt-DfgLHmK-cqRAvJsUQ@mail.gmail.com>
-References: <CADDKRnB=KYBuue10BnPpiRD=rrrATgxt-DfgLHmK-cqRAvJsUQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 23 Dec 2012 09:43:01 -0800
-X-Google-Sender-Auth: -CLorWCJspomaDOJD_QymUcak-E
-Message-ID: <CA+55aFzXShkx-QCohNABW+S=43f9K8iyy=vFyGPpG7Tx7=VrgA@mail.gmail.com>
-Subject: Re: [v3.8-rc1] Multimedia regression, ioctl(17,..)-API changed ?
-To: =?ISO-8859-1?Q?J=F6rg_Otte?= <jrg.otte@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+In-Reply-To: <6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+	<20121222024225.GG3468@phenom.dumpdata.com>
+	<eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
+	<20121222132419.GB2936@phenom.dumpdata.com>
+	<CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
+	<6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
+Date: Sun, 23 Dec 2012 10:00:26 -0800
+X-Google-Sender-Auth: YfbbXbwaxl2xxiJ-jF0SMorz70c
+Message-ID: <CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
+ ramdisk and bzImage above 4G
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jörg - does current git work for you? It has a patch from Rafael that
-just reverts the insane error code, and fixed something very similar
-for him.
+On Sun, Dec 23, 2012 at 6:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Explanation please?
+>
 
-(I just pushed out, so it might take a few minutes to mirror out to
-the public sites).
+you have following change in the patch
 
-              Linus
+        /* Finally jump to run C code and to be on real kernel address
+         * Since we are running on identity-mapped space we have to jump
+         * to the full 64bit address, this is only possible as indirect
+         * jump.  In addition we need to ensure %cs is set so we make this
+-        * a far return.
++        * a far jump.
+         */
+-       movq    initial_code(%rip),%rax
+        pushq   $0              # fake return address to stop unwinder
+-       pushq   $__KERNEL_CS    # set correct cs
+-       pushq   %rax            # target address in negative space
+-       lretq
++       /* gas 2.22 is buggy and mis-assembles ljmpq */
++       rex64 ljmp *initial_code(%rip)
 
-On Sun, Dec 23, 2012 at 8:46 AM, Jörg Otte <jrg.otte@gmail.com> wrote:
-> With kernel v3.8 all multimedia programs under KDE4 don't work (Kubuntu 12.04).
-> They alltogether ( at least Dragonplayer (Mediaplayer), Knotify4
-> (system-sound),
-> System-Settings-Multimedia,..) are looping forever producing 100% CPU-usage
-> and must be killed.
+ #ifdef CONFIG_HOTPLUG_CPU
+ /*
+
+remove that change, AMD systems works again.
+
+Yinghai
