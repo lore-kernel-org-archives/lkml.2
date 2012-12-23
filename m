@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab2LWM0m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 07:26:42 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:57676 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751755Ab2LWM0j (ORCPT
+	id S1752031Ab2LWM3y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 07:29:54 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:41969 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750947Ab2LWM3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 07:26:39 -0500
+	Sun, 23 Dec 2012 07:29:51 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20121223114213.GB8386@liondog.tnic>
-References: <CA+icZUXJeWNceo_y-TSUVzXmjbrauWmCdkgW3EJtr_vpbcrk-A@mail.gmail.com>
-	<20121223114213.GB8386@liondog.tnic>
-Date: Sun, 23 Dec 2012 13:26:38 +0100
-Message-ID: <CA+icZUXeddp5UZ10ZWTsWLnmegHGJ+VHnr4=oAm34hXgHD2FDg@mail.gmail.com>
-Subject: Re: [3.8-rc1] Networking problems after pulling-in net.git#master
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Sedat Dilek <sedat.dilek@gmail.com>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <871uekf20w.fsf@sejong.aot.lge.com>
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+	<1355127754-8444-9-git-send-email-alex.shi@intel.com>
+	<50C80ADF.8050504@linux.vnet.ibm.com>
+	<50C823A4.109@intel.com>
+	<871uekf20w.fsf@sejong.aot.lge.com>
+Date: Sun, 23 Dec 2012 20:29:50 +0800
+Message-ID: <CAGjg+kG+0zu25LbvtiraBnn8ks27t8MXeFvgO-NQk18YN30S=A@mail.gmail.com>
+Subject: Re: [PATCH 08/18] sched: consider runnable load average in move_tasks
+From: Alex Shi <lkml.alex@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Alex Shi <alex.shi@intel.com>, Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        rob@landley.net, mingo@redhat.com, peterz@infradead.org,
+        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
+        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        pjt@google.com, vincent.guittot@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 12:42 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sun, Dec 23, 2012 at 04:14:39AM +0100, Sedat Dilek wrote:
->> Hi,
+On Fri, Dec 21, 2012 at 12:43 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> On Wed, 12 Dec 2012 14:26:44 +0800, Alex Shi wrote:
+>> On 12/12/2012 12:41 PM, Preeti U Murthy wrote:
+>>> Also why can't p->se.load_avg_contrib be used directly? as a return
+>>> value for task_h_load_avg? since this is already updated in
+>>> update_task_entity_contrib and update_group_entity_contrib.
 >>
->> after reading the thread "Regression in 3.8-rc1: "BUG: sleeping
->> function called from invalid context"" [1] I decided to pull-in
->> net.git#master (up to commit 9b1536c490d5: "bridge: call
->> br_netpoll_disable in br_add_if") on top of Linus upstream.
->>
->> With this kernel I can't neither ping my router nor does DNS work.
->> IIRC there were 6 commits, not sure which of them is culprit.
->>
->> I tried the v3.8-rc1-raring from [2] which works nicely here on
->> Ubuntu/precise AMD64.
->> Can't say if NetworkManager is involved or not.
+>> No, only non task entity goes to  update_group_entity_contrib. not task
+>> entity.
 >
-> Does that mean that with Linus upstream, i.e. 3.8-rc1, you can ping your
-> router, etc?
+> ???
 >
-> If so, you could bisect the 6 commits...
->
+> But task entity goes to __update_task_entity_contrib()?
 
-Nah, he said that b-word :-).
-The machine I am working on has some hardware damage (keyboard gets
-not detected on bios start or even within daily-work, recently I could
-not type further while writing an email, so raping that machine is not
-a good idea. I could bisect within a reduced localmodconfig setup. No
-big promises...)
-
-- Sedat -
-
-> Thanks.
+yes, but if the task is in a task_group, its load weight need to
+reweight with its task_group's fraction.
+can not use direct load weight in balancing calculation, so in
+move_tasks, it uses task_h_load.
 >
+>
+> /* Compute the current contribution to load_avg by se, return any delta */
+> static long __update_entity_load_avg_contrib(struct sched_entity *se)
+> {
+>         long old_contrib = se->avg.load_avg_contrib;
+>
+>         if (entity_is_task(se)) {
+>                 __update_task_entity_contrib(se);
+>         } else {
+>                 __update_tg_runnable_avg(&se->avg, group_cfs_rq(se));
+>                 __update_group_entity_contrib(se);
+>         }
+>
+>         return se->avg.load_avg_contrib - old_contrib;
+> }
+>
+>
+> Thanks,
+> Namhyung
 > --
-> Regards/Gruss,
->     Boris.
->
-> Sent from a fat crate under my desk. Formatting is fine.
-> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
+-- 
+Thanks
+    Alex
