@@ -1,118 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084Ab2LWQnI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 11:43:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18511 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751154Ab2LWQnH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 11:43:07 -0500
-Date: Sun, 23 Dec 2012 17:42:42 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU
-	offline from atomic context
-Message-ID: <20121223164242.GA9979@redhat.com>
-References: <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <50D0CCB3.10105@linux.vnet.ibm.com> <20121219163900.GA18516@redhat.com> <50D2047A.1040606@linux.vnet.ibm.com> <20121219191436.GA25829@redhat.com> <50D21A5F.4040604@linux.vnet.ibm.com> <20121220134203.GB10813@redhat.com> <50D61561.7090805@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50D61561.7090805@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752202Ab2LWQuf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 11:50:35 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:55497 "EHLO
+	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751182Ab2LWQua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 11:50:30 -0500
+From: Roland Stigge <stigge@antcom.de>
+To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
+        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
+        jbe@pengutronix.de, plagnioj@jcrosoft.com, highguy@gmail.com,
+        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
+        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
+        tru@work-microwave.de, mark.rutland@arm.com
+Cc: Roland Stigge <stigge@antcom.de>
+Subject: [PATCH 0/6 v12] gpio: Add block GPIO
+Date: Sun, 23 Dec 2012 17:49:30 +0100
+Message-Id: <1356281376-25853-1-git-send-email-stigge@antcom.de>
+X-Mailer: git-send-email 1.7.10.4
+X-FEAS-SYSTEM-WL: rst@work-microwave.de, 192.168.11.78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23, Srivatsa S. Bhat wrote:
->
-> On 12/20/2012 07:12 PM, Oleg Nesterov wrote:
-> >
-> > We need mb() + rmb(). Plust cli/sti unless this arch has optimized
-> > this_cpu_add() like x86 (as you pointed out).
-> >
->
-> Hey, IIUC, we actually don't need mb() in the reader!! Just an rmb() will do.
+This set of patches adds:
 
-Well. I don't think so. But when it comes to the barriers I am never sure
-until Paul confirms my understanding ;)
+* Block GPIO API to gpiolib
+* Sysfs support for GPIO API, to provide userland access
+* Device interface for userland access (alternative to sysfs)
+* Devicetree support to instantiate GPIO blocks via DT
+* Example implementations in several gpio drivers since they need
+  special accessor functions for block wise GPIO access (only for some
+  selected drivers since the feature is optional and not suitable for
+  all GPIO hardware)
+* Fix for race condition in gpiolib on device creation
 
-> #define reader_nested_percpu()						\
-> 	     (__this_cpu_read(reader_percpu_refcnt) & READER_REFCNT_MASK)
->
-> #define writer_active()							\
-> 				(__this_cpu_read(writer_signal))
->
->
-> #define READER_PRESENT		(1UL << 16)
-> #define READER_REFCNT_MASK	(READER_PRESENT - 1)
->
-> void get_online_cpus_atomic(void)
-> {
-> 	preempt_disable();
->
-> 	/*
-> 	 * First and foremost, make your presence known to the writer.
-> 	 */
-> 	this_cpu_add(reader_percpu_refcnt, READER_PRESENT);
->
-> 	/*
-> 	 * If we are already using per-cpu refcounts, it is not safe to switch
-> 	 * the synchronization scheme. So continue using the refcounts.
-> 	 */
-> 	if (reader_nested_percpu()) {
-> 		this_cpu_inc(reader_percpu_refcnt);
-> 	} else {
-> 		smp_rmb();
-> 		if (unlikely(writer_active())) {
-> 			... //take hotplug_rwlock
-> 		}
-> 	}
->
-> 	...
->
-> 	/* Prevent reordering of any subsequent reads of cpu_online_mask. */
-> 	smp_rmb();
-> }
->
-> The smp_rmb() before writer_active() ensures that LOAD(writer_signal) follows
-> LOAD(reader_percpu_refcnt) (at the 'if' condition). And in turn, that load is
-> automatically going to follow the STORE(reader_percpu_refcnt)
+Signed-off-by: Roland Stigge <stigge@antcom.de>
+Tested by: Wolfgang Grandegger <wg@grandegger.com>
+--
 
-But why this STORE should be visible on another CPU before we LOAD(writer_signal)?
+Testing branch available at: git://git.antcom.de/linux-2.6.git blockgpio
 
-Lets discuss the simple and artificial example. Suppose we have
+Changes since v11:
+* Removed support for at91, since this one is currently in the migration
+  process to pinctrl implementation
+* Fixed mask setting via sysfs
+* Device interface: declare gpio_block_fop_poll() static
 
-	int X, Y;
+Changes since v10:
+* gpioblock-of.c: Catch <1 specified GPIOs
+* gpioblock-of.c: Fixed memory leak in probe()'s error path
+* gpioblock-of.c: Fixed block node's refcount via of_node_put()
+* Added driver support for samsung, mm-lantiq and sa1100
+* Added driver support for at91 (by Wolfgang Grandegger)
+* Added pinctrl driver support for pinctl-nomadik
 
-	int func(void)
-	{
-		X = 1;	// suppose that nobody else can change it
-		mb();
-		return Y;
-	}
+Changed since v9:
+* Changed IRQ flags for device interface's poll() from IRQF_TRIGGER_FALLING
+  to IRQF_SHARED
+* Use block name on gpio_request
+* Added spinlock for ISR manipulated data (dev interface / poll())
 
-Now you are saying that we can change it and avoid the costly mb():
+Changed since v8:
+* Added poll() function to dev interface for IRQ handling
+* Fixed gpio_block_register() in case of missing CONFIG_GPIO_SYSFS
+* Fixed mask handling in sysfs interface
+* Fixed get_user/put_user pointer (cast)
 
-	int func(void)
-	{
-		X = 1;
+Changes since v7:
+* Fixed error in API documentation (name arg missing in prototype)
+* Fixed compile error if sysfs is missing: Moved gpio_block_is_output()
+  out of sysfs-ifdef
+* Added error handling to gpio_block_register()
+* Added mask attribute to sysfs (although dev interface exists now)
 
-		if (X != 1)
-			BUG();
-	
-		rmb();
-		return Y;
-	}
+Changes since v6:
+* Changed realloc to list handling
+* Added mask to kernel API
+* Added device interface as userspace API
+* Changed sizeof() to BITS_PER_LONG
+* Fixed multiline comment style
+* Documented direction setting by the user
+* Documented order of handled chips in case of multiple chips in one block
 
-I doubt. rmb() can only guarantee that the preceding LOAD's should be
-completed. Without mb() it is possible that this CPU won't write X to
-memory at all.
+Changes since v5:
+* Documented sysfs: elaborated on "exported" and "values" attributes
+* Documented sysfs: gpiochip is a separate class now
+* Aggregated driver support patches for block gpio into one single patch
+* Added gpio block driver support for twl6040 and pch
 
-Oleg.
+Changes since v4:
+* Documented word width
+* Bugfix: export/unexport on register/unregister
+* Using default dev_attrs for gpio_block_class
+* Fix gpiolib: race condition on device creation
+* Added driver support for ucb14500, vt8500, xilinx
 
+Changes since v3:
+* Added driver support for pca953x, em, pl061, max732x, pcf857x
+* Coding style improvements
+* Fixed krealloc memory leak in error case
+* sysfs: values in hex
+* Register blocks in a list
+* Narrowing lock scope
+* Use S_IWUSR and S_IRUGO instead of direct octal values
+* Use for_each_set_bit()
+* Change from unsigned to unsigned long for masks and values
+
+Changes since v2:
+* Added sysfs support
+* Added devicetree support
+* Added support for lpc32xx, generic
+* Added functions for GPIO block registration
+* Added more error checking
+* Bit remapping bugfix
+
+Changes since v1:
+* API change to 32/64 bit word, bit masks
+
+Thanks to Ryan Mallon, Linus Walleij, Stijn Devriendt, Jean-Christophe
+Plagniol-Villard, Mark Brown, Greg Kroah-Hartman, Grant Likely, Stefan
+Roese, Wolfgang Grandegger, Tobias Rutz, Fengguang Wu and Mark Rutland
+for reviewing and testing!
+
+Roland Stigge (6):
+ gpio: Add a block GPIO API to gpiolib
+ gpio: Add sysfs support to block GPIO API
+ gpio: Add userland device interface to block GPIO
+ gpiolib: Fix default attributes for class
+ gpio: Add device tree support to block GPIO API
+ gpio: Add block gpio to several gpio drivers
+
+ Documentation/ABI/testing/dev-gpioblock               |   34 
+ Documentation/ABI/testing/sysfs-gpio                  |   31 
+ Documentation/devicetree/bindings/gpio/gpio-block.txt |   36 
+ Documentation/gpio.txt                                |   58 +
+ drivers/gpio/Makefile                                 |    1 
+ drivers/gpio/gpio-em.c                                |   23 
+ drivers/gpio/gpio-generic.c                           |   56 +
+ drivers/gpio/gpio-lpc32xx.c                           |   82 +
+ drivers/gpio/gpio-max730x.c                           |   61 +
+ drivers/gpio/gpio-max732x.c                           |   59 +
+ drivers/gpio/gpio-mm-lantiq.c                         |   22 
+ drivers/gpio/gpio-pca953x.c                           |   64 +
+ drivers/gpio/gpio-pcf857x.c                           |   24 
+ drivers/gpio/gpio-pch.c                               |   27 
+ drivers/gpio/gpio-pl061.c                             |   17 
+ drivers/gpio/gpio-sa1100.c                            |   20 
+ drivers/gpio/gpio-samsung.c                           |   31 
+ drivers/gpio/gpio-twl6040.c                           |   32 
+ drivers/gpio/gpio-ucb1400.c                           |   23 
+ drivers/gpio/gpio-vt8500.c                            |   24 
+ drivers/gpio/gpio-xilinx.c                            |   44 +
+ drivers/gpio/gpioblock-of.c                           |  100 ++
+ drivers/gpio/gpiolib.c                                |  782 ++++++++++++++++--
+ drivers/pinctrl/pinctrl-nomadik.c                     |   36 
+ include/asm-generic/gpio.h                            |   28 
+ include/linux/gpio.h                                  |  125 ++
+ 26 files changed, 1793 insertions(+), 47 deletions(-)
