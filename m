@@ -1,59 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642Ab2LWX1B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 18:27:01 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:54293 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752157Ab2LWX05 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 18:26:57 -0500
-X-Sasl-enc: iCaWzUCJv9ZJ2qfIochFYeEY8gB7Szud61FGmoOtPbfe 1356305216
-Date: Sun, 23 Dec 2012 15:30:10 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: linux-next: manual merge of the driver-core.current tree with
- Linus' tree
-Message-ID: <20121223233010.GA23879@kroah.com>
-References: <20121224095200.a94a61d18925f30909964dfb@canb.auug.org.au>
- <20121224095614.3d1fc65e9ade946cc6a8a2e1@canb.auug.org.au>
-MIME-Version: 1.0
+	id S1752602Ab2LWXde (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 18:33:34 -0500
+Received: from 1wt.eu ([62.212.114.60]:37234 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751285Ab2LWXdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 18:33:32 -0500
+Date: Mon, 24 Dec 2012 00:33:13 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Jonathan Nieder <jrnieder@gmail.com>, stable@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, x86@kernel.org, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, Keith Ward <keith@chaos-realm.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [2.6.32.y, 2.6.34.y] Re: [PATCH] x86: Don't use the EFI reboot method by default
+Message-ID: <20121223233313.GI3263@1wt.eu>
+References: <1309985557-15350-1-git-send-email-mjg@redhat.com> <20121223205950.GA16511@elie.Belkin> <20121223210348.GG3263@1wt.eu> <1356297096.21837.27.camel@deadeye.wl.decadent.org.uk>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121224095614.3d1fc65e9ade946cc6a8a2e1@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1356297096.21837.27.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 09:56:14AM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> On Mon, 24 Dec 2012 09:52:00 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> >
-> > Today's linux-next merge of the driver-core.current tree got conflicts
-> > in 21 files in drivers/i2c between commit 0b255e927d47 ("i2c: remove
-> > __dev* attributes from subsystem") from Linus' tree and commit
-> > eeb30d064414 ("Drivers: i2c: remove __dev* attributes") from the
-> > driver-core.current tree.
-> > 
-> > I fixed it up (taking a mixture of both commits) and can carry the fix as
-> > necessary (no action is required).
-> 
-> BTW, Greg, the patch in your tree to drivers/i2c/busses/i2c-au1550.c is
-> incorrect and would not build.
+On Sun, Dec 23, 2012 at 09:11:36PM +0000, Ben Hutchings wrote:
+(...)
+> In 2.6.32 the relevant code is in arch/x86/kernel/efi.c.  With the
+> filename changed, the patch applies cleanly and works for me.
 
-Ugh, that's a horrible merge error on my part, thanks for pointing it
-out.  My 'make allmodconfig' doesn't happen to build that module.
+OK, thanks Ben, I had not looked at it yet.
 
-And sorry about the merge issues, I wasn't aware that Wolfram was going
-to be sending these to Linus after 3.8-rc1 was out, sorry about that.
-The merge issues are due to me trying to get the coding style correct,
-which Bill's sed script didn't always do.
+Best regards,
+Willy
 
-thanks,
-
-greg k-h
