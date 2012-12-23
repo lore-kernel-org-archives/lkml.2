@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2LWL5E (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 06:57:04 -0500
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:63791 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082Ab2LWL5A (ORCPT
+	id S1751973Ab2LWMAg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 07:00:36 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:34542 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154Ab2LWMAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 06:57:00 -0500
+	Sun, 23 Dec 2012 07:00:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKGA1bnzYWG5POJ228ytayXztoXcMXt2rB-4S6fnrv5Gxo_=TQ@mail.gmail.com>
-References: <1343843371-14143-1-git-send-email-matt@genesi-usa.com>
-	<1343843371-14143-5-git-send-email-matt@genesi-usa.com>
-	<CAOMZO5CcUZ8NKM6uHkBB1Yo9MjeoBq9NzpOYwT1squM4TOgV7g@mail.gmail.com>
-	<CAKGA1bnzYWG5POJ228ytayXztoXcMXt2rB-4S6fnrv5Gxo_=TQ@mail.gmail.com>
-Date: Sun, 23 Dec 2012 09:48:57 -0200
-Message-ID: <CAOMZO5DDV5HVF+WNd8gUmwpfmxiFQcjWBWkNfNT1cdpHLCoVGg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] efikamx: remove Efika MX-specific CHRGVBUS hack from
- the USB driver
-From: Fabio Estevam <festevam@gmail.com>
-To: Matt Sealey <matt@genesi-usa.com>
-Cc: Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <87a9t8f2ic.fsf@sejong.aot.lge.com>
+References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
+	<1355127754-8444-7-git-send-email-alex.shi@intel.com>
+	<87a9t8f2ic.fsf@sejong.aot.lge.com>
+Date: Sun, 23 Dec 2012 20:00:33 +0800
+Message-ID: <CAGjg+kEKE3T0h8Z1YHourT3iVW_nb8FkAUZ9jnOE8Urxo2KpxQ@mail.gmail.com>
+Subject: Re: [PATCH 06/18] sched: set initial load avg of new forked task as
+ its load weight
+From: Alex Shi <lkml.alex@gmail.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Alex Shi <alex.shi@intel.com>, rob@landley.net, mingo@redhat.com,
+        peterz@infradead.org, gregkh@linuxfoundation.org,
+        andre.przywara@amd.com, rjw@sisk.pl, paul.gortmaker@windriver.com,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, pjt@google.com,
+        vincent.guittot@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 8:42 AM, Matt Sealey <matt@genesi-usa.com> wrote:
-> Anyone got a clue who the actual USB maintainer is who cares about ehci-mxc?
-
-$ ./scripts/get_maintainer.pl -F drivers/usb/host/ehci-mxc.c
-Alan Stern <stern@rowland.harvard.edu> (maintainer:USB EHCI DRIVER)
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:USB SUBSYSTEM)
-linux-usb@vger.kernel.org (open list:USB EHCI DRIVER)
-linux-kernel@vger.kernel.org (open list)
-
-> Best search through the maintainers file is Li Yang <leoli@freescale.com>
-> and of course I could always nudge David Brownell, Sascha (your name is at
-> the top of the file!)
+>>       update_curr(cfs_rq);
+>>       account_entity_enqueue(cfs_rq, se);
+>> -     enqueue_entity_load_avg(cfs_rq, se, flags & ENQUEUE_WAKEUP);
+>> +     enqueue_entity_load_avg(cfs_rq, se, flags &
+>> +                             (ENQUEUE_WAKEUP | ENQUEUE_NEWTASK));
 >
-> I was going to resubmit on Friday and push an alternative patch to the
-> chipidea driver but I can't figure out who's in control, if the only nitpick
-> is I didn't CC the right people then this could take many, many submissions
-> while this gets figured out :D
+> It seems that just passing 'flags' is enough.
 
-$ ./scripts/get_maintainer.pl -F drivers/usb/chipidea/host.c
-Alexander Shishkin <alexander.shishkin@linux.intel.com>
-(maintainer:CHIPIDEA USB HIGH...)
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> (supporter:USB SUBSYSTEM)
-linux-usb@vger.kernel.org (open list:CHIPIDEA USB HIGH...)
-linux-kernel@vger.kernel.org (open list)
+Uh, Yes, it's true. will remove this.
+>
+>>
+>>       if (flags & ENQUEUE_WAKEUP) {
+>>               place_entity(cfs_rq, se, 0);
+>> @@ -2586,6 +2594,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
+>>               cfs_rq->h_nr_running++;
+>>
+>>               flags = ENQUEUE_WAKEUP;
+>> +             flags &= ~ENQUEUE_NEWTASK;
+>
+> Why is this needed?
 
-Regards,
+Uh. not needed, will remove this too. Thanks a lot!
 
-Fabio Estevam
+-- 
+Thanks
+    Alex
