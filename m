@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752311Ab2LWW32 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 17:29:28 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:40214 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab2LWW3Z (ORCPT
+	id S1752383Ab2LWWgM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 17:36:12 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:51558 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab2LWWgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 17:29:25 -0500
+	Sun, 23 Dec 2012 17:36:10 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121223182135.575cb915@redhat.com>
+In-Reply-To: <50D764BA.1030501@gmail.com>
 References: <CA+55aFyd0Wk=hPqiRmk5MMnrwPhse5k1Aih9P-j-Badr7kwhbw@mail.gmail.com>
- <2183382.xv2VGtqdUf@vostro.rjw.lan> <20121223120822.233282ba@redhat.com>
- <CA+55aFy98A+LJK4+GWMcbzaa1zsPBRo76q+ioEjbx-uaMKH6Uw@mail.gmail.com> <20121223182135.575cb915@redhat.com>
+ <50D764BA.1030501@gmail.com>
 From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 23 Dec 2012 14:29:04 -0800
-X-Google-Sender-Auth: rcJHgV_-Sqbk84rbQCun0YOG7TI
-Message-ID: <CA+55aFzX56kPPwSO97X=UyPaMzV5QRNG9ScN=nxnHFjmz=_8yA@mail.gmail.com>
-Subject: Re: [Regression w/ patch] Media commit causes user space to misbahave
- (was: Re: Linux 3.8-rc1)
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>
+Date: Sun, 23 Dec 2012 14:35:49 -0800
+X-Google-Sender-Auth: sk8fdj8W8OD1FJv41ajaeMyUP4o
+Message-ID: <CA+55aFwButY7LcOH2XCh1Q8fKi2KQiNS_Caj4O9cHzb4C=TKGw@mail.gmail.com>
+Subject: Re: Linux 3.8-rc1 - another regression on USB :-(
+To: Woody Suwalski <terraluna977@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        USB list <linux-usb@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 12:21 PM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
+Woody,
+ Any chance you can bisect this? It's not going to be hugely pleasant
+(with 11k+ commits in between 3.7 and 3.8-rc1 you'll have to compile
+and test at least 14 kernels), but it would help enormously. Of
+course, maybe some USB person can guess what would cause the device to
+go offline..
+
+Added Greg and the linux-usb mailing list to the participants list:
+the images are in the original email on lkml, but there isn't anything
+particularly interesting there, it really just seems to be an
+unexpected and spurious USB disconnect, resulting in "USB disconnect,
+device number 2" followed by "Rejecting I/O to offline device".
+
+                  Linus
+
+On Sun, Dec 23, 2012 at 12:08 PM, Woody Suwalski <terraluna977@gmail.com> wrote:
+> I see a regression with USB subsystem when reading from a USB key.
+> I have a live squashfs image, which suddenly has stopped working.
+> It seems that USB prints this sequence:
 >
-> Agreed: ENOENT was a bad choice, and it should be reverted.
-
-Well, *any* other error value is likely a bad choice.
-
-> What I'm trying to understand is why pulseaudio is complaining.
-> Is it because it only accepts EINVAL error code for media controls?
-
-What I am trying to understand is why you even care, and how you could
-*possibly* ever even consider this to be a user-space bug.
-
-Applications *do* care about error return values. There's no way in
-hell you can willy-nilly just change them. And if you do change them,
-and applications break, there is no way in hell you can then blame the
-application.
-
-Yes, I'm upset. Very upset. Why was the error value changed in the
-first place? There was no reason given, and it was changed to a
-completely idiotic value. And when applications - understandably -
-broke, you start asking "why?"
-
-If applications didn't care about specific error values, then it
-wouldn't make sense to have more than one to begin with, and you
-shouldn't care which one that was. But since applications *do* care,
-and since we *do* have multiple error values, we stick to the old
-ones, unless there are some *very* good reasons not to.
-
-And those reasons really need to be very good, and spelled out and
-explained. In this case, none of that was even remotely the case.
-
-So your question "why would pulseaudio care" is totally *irrelevant*,
-senseless, and has nothing to do with anything. Pulseaudio cares, and
-caring fundamentally makes sense. It's questioning that obvious fact
-that does not make sense!
-
-                   Linus
+> rejecting I/O to offline device
+> killing request
+> Unhandled error code
+>
+> I could not safe an actual dmesg - USB was dead...
+> So I attach snapshots in place...
+>
+> The same squashfs seems OK with 3.7.1
+> The same squashfs seems OK when run from ATAPIIX with 3.8-rc1
+> So it looks like USB...
+>
+> Woody
+>
