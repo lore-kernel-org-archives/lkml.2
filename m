@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab2LWMRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 07:17:09 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:56100 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154Ab2LWMRH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 07:17:07 -0500
+	id S1752021Ab2LWMWU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 07:22:20 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:35835 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab2LWMWR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 07:22:17 -0500
+Date: Sun, 23 Dec 2012 13:22:12 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Andy Furniss <andyqos@ukfsn.org>, Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+Message-ID: <20121223122210.GA4460@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Andy Furniss <andyqos@ukfsn.org>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org,
+	lkml <linux-kernel@vger.kernel.org>
+References: <20121222203547.GA5319@liondog.tnic>
+ <CADnq5_MJzNdWVCauZj5Z7Monmsy4gWeYP3gJaPUPwHEgqhqOYw@mail.gmail.com>
+ <20121223002507.GA12121@liondog.tnic>
+ <CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
+ <20121223105527.GA6230@liondog.tnic>
+ <50D6E491.3030801@ukfsn.org>
+ <20121223110730.GC6230@liondog.tnic>
+ <50D6E8A4.1030204@ukfsn.org>
+ <20121223113153.GA8918@liondog.tnic>
+ <20121223115133.GA229@x4>
 MIME-Version: 1.0
-In-Reply-To: <87k3scf2pn.fsf@sejong.aot.lge.com>
-References: <1355127754-8444-1-git-send-email-alex.shi@intel.com>
-	<1355127754-8444-2-git-send-email-alex.shi@intel.com>
-	<50C6B530.3030307@linux.vnet.ibm.com>
-	<50C6C462.6030808@intel.com>
-	<50C6D31F.1030408@linux.vnet.ibm.com>
-	<87k3scf2pn.fsf@sejong.aot.lge.com>
-Date: Sun, 23 Dec 2012 20:17:06 +0800
-Message-ID: <CAGjg+kECsZ1erixN=xiV3Fi9weT21ysU2mVBgS1SXKXAOpo_Ww@mail.gmail.com>
-Subject: Re: [PATCH 01/18] sched: select_task_rq_fair clean up
-From: Alex Shi <lkml.alex@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, Alex Shi <alex.shi@intel.com>,
-        rob@landley.net, mingo@redhat.com, peterz@infradead.org,
-        gregkh@linuxfoundation.org, andre.przywara@amd.com, rjw@sisk.pl,
-        paul.gortmaker@windriver.com, akpm@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        pjt@google.com, vincent.guittot@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121223115133.GA229@x4>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 12:28 PM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi,
->
-> On Tue, 11 Dec 2012 12:00:55 +0530, Preeti U. Murthy wrote:
->> On 12/11/2012 10:58 AM, Alex Shi wrote:
->>> On 12/11/2012 12:23 PM, Preeti U Murthy wrote:
->>>> Hi Alex,
->>>>
->>>> On 12/10/2012 01:52 PM, Alex Shi wrote:
->>>>> It is impossible to miss a task allowed cpu in a eligible group.
->>>>
->>>> The one thing I am concerned with here is if there is a possibility of
->>>> the task changing its tsk_cpus_allowed() while this code is running.
->>>>
->>>> i.e find_idlest_group() finds an idle group,then the tsk_cpus_allowed()
->>>> for the task changes,perhaps by the user himself,which might not include
->>>> the cpus in the idle group.After this find_idlest_cpu() is called.I mean
->>>> a race condition in short.Then we might not have an eligible cpu in that
->>>> group right?
->>>
->>> your worry make sense, but the code handle the situation, in
->>> select_task_rq(), it will check the cpu allowed again. if the answer is
->>> no, it will fallback to old cpu.
->>>>
->>>>> And since find_idlest_group only return a different group which
->>>>> excludes old cpu, it's also imporissible to find a new cpu same as old
->>>>> cpu.
->>
->> I doubt this will work correctly.Consider the following situation:sched
->> domain begins with sd that encloses both socket1 and socket2
->>
->> cpu0 cpu1  | cpu2 cpu3
->> -----------|-------------
->>  socket1   |  socket2
->>
->> old cpu = cpu1
->>
->> Iteration1:
->> 1.find_idlest_group() returns socket2 to be idlest.
->> 2.task changes tsk_allowed_cpus to 0,1
->> 3.find_idlest_cpu() returns cpu2
->
-> AFAIK The tsk->cpus_allowed cannot be changed during the operation since
-> it's protected by tsk->pi_lock.  I can see the following comment:
+On Sun, Dec 23, 2012 at 12:51:33PM +0100, Markus Trippelsdorf wrote:
+> (If you don't use modules: git grep MODULE_PARM_DESC --
+> drivers/gpu/drm/radeon/ )
 
-You are right. I misunderstand some comments in wake_up_new_task.
+Yeah.
 
+> You may have hit the same issue as I, see:
+> http://thread.gmane.org/gmane.comp.video.dri.devel/78328
+
+Yes, it very much looks like it. That same page kills the machine here
+too. Maybe the GPU gets scared from the graphic nature of those images
+and gives up. :-D
+
+Although the box is not completely dead - I can login to a console and
+save dmesg before rebooting.
+
+And this bug becomes funnier and funnier - Alex, you might want to add
+that webpage to your testsuite :-).
+
+> Reverting commit 2d6cc729 fixes the problem for me, setting
+> radeon.no_wb=1 doesn't help.
+
+Right, let me try that and report back.
+
+Good job Markus, thanks!
 
 -- 
-Thanks
-    Alex
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
