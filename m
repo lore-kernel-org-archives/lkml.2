@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab2LXTQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 14:16:33 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:33830 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab2LXTQb (ORCPT
+	id S1753371Ab2LXTTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 14:19:35 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:41075 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274Ab2LXTTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 14:16:31 -0500
-Subject: Re: Porting problem: ndo_set_multicast_list removed
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Woody Wu <narkewoody@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <20121224163005.GA3970@zuhnb712>
-References: <20121224163005.GA3970@zuhnb712>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Dec 2012 11:16:27 -0800
-Message-ID: <1356376587.20133.9693.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Dec 2012 14:19:32 -0500
+Date: Mon, 24 Dec 2012 13:19:25 -0600
+Message-Id: <E1TnDYb-0003FO-4k@localhost>
+To: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        ralf@linux-mips.org, sshtylyov@mvista.com
+Subject: [PATCH v2] MIPS: MSP71xx: Move include files
+From: Shane McDonald <mcdonald.shane@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-25 at 00:30 +0800, Woody Wu wrote:
-> Hi, list
-> 
-> I am porting an ethernet driver from 2.6.x to 3.7.1.  I found in the new
-> kernel, the ndo_set_multicast_list method in the net_device_ops had been
-> removed. What's the story behind?  Can I simply ignore this method
-> defined in an old driver?
-> 
-> Please also help to check the below code, is the list of the operations
-> defined for my driver enough or not?
-> 
-> const struct net_device_ops ax_netdev_ops = {
-> 	.ndo_open		= mydriver_open,
-> 	.ndo_stop		= mydriver_close,
-> 	.ndo_start_xmit		= mydriver_start_xmit,
-> 	.ndo_get_stats		= mydriver_get_stats,
-> 	/*.ndo_set_multicast_list = mydriver_set_multicast_list,*/
-> 	.ndo_set_mac_address 	= mydriver_set_mac_address,
-> };
-> 
-> Thanks in advance.
-> 
+Now that Yosemite's gone we can move the MSP71xx include files
+one level up.
 
-Take a look at :
+Signed-off-by: Shane McDonald <mcdonald.shane@gmail.com>
+---
+Patch history:
+V1: Original patch
+V2: Use format-patch's -M option to indicate file renames
 
-commit afc4b13df143122f99a0eb10bfefb216c2806de0
-Author: Jiri Pirko <jpirko@redhat.com>
-Date:   Tue Aug 16 06:29:01 2011 +0000
+ .../cpu-feature-overrides.h                        |    0
+ .../msp71xx => mach-pmcs-msp71xx}/gpio.h           |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_cic_int.h    |    0
+ .../msp_gpio_macros.h                              |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_int.h        |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_pci.h        |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_prom.h       |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_regops.h     |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_regs.h       |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_slp_int.h    |    0
+ .../msp71xx => mach-pmcs-msp71xx}/msp_usb.h        |    0
+ .../msp71xx => mach-pmcs-msp71xx}/war.h            |    0
+ arch/mips/pmcs-msp71xx/Platform                    |    2 +-
+ 13 files changed, 1 insertions(+), 1 deletions(-)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/cpu-feature-overrides.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/gpio.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_cic_int.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_gpio_macros.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_int.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_pci.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_prom.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_regops.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_regs.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_slp_int.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/msp_usb.h (100%)
+ rename arch/mips/include/asm/{pmc-sierra/msp71xx => mach-pmcs-msp71xx}/war.h (100%)
 
-    net: remove use of ndo_set_multicast_list in drivers
-    
-    replace it by ndo_set_rx_mode
-    
-    Signed-off-by: Jiri Pirko <jpirko@redhat.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-
-
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/cpu-feature-overrides.h b/arch/mips/include/asm/mach-pmcs-msp71xx/cpu-feature-overrides.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/cpu-feature-overrides.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/cpu-feature-overrides.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/gpio.h b/arch/mips/include/asm/mach-pmcs-msp71xx/gpio.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/gpio.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/gpio.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_cic_int.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_cic_int.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_cic_int.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_cic_int.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_gpio_macros.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_gpio_macros.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_gpio_macros.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_gpio_macros.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_int.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_int.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_int.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_int.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_pci.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_pci.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_pci.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_pci.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_prom.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_prom.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_prom.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_prom.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_regops.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_regops.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_regops.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_regops.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_regs.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_regs.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_regs.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_regs.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_slp_int.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_slp_int.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_slp_int.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_slp_int.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/msp_usb.h b/arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/msp_usb.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/msp_usb.h
+diff --git a/arch/mips/include/asm/pmc-sierra/msp71xx/war.h b/arch/mips/include/asm/mach-pmcs-msp71xx/war.h
+similarity index 100%
+rename from arch/mips/include/asm/pmc-sierra/msp71xx/war.h
+rename to arch/mips/include/asm/mach-pmcs-msp71xx/war.h
+diff --git a/arch/mips/pmcs-msp71xx/Platform b/arch/mips/pmcs-msp71xx/Platform
+index 9a86e29..7af0734 100644
+--- a/arch/mips/pmcs-msp71xx/Platform
++++ b/arch/mips/pmcs-msp71xx/Platform
+@@ -2,6 +2,6 @@
+ # PMC-Sierra MSP SOCs
+ #
+ platform-$(CONFIG_PMC_MSP)	+= pmcs-msp71xx/
+-cflags-$(CONFIG_PMC_MSP)	+= -I$(srctree)/arch/mips/include/asm/pmc-sierra/msp71xx \
++cflags-$(CONFIG_PMC_MSP)	+= -I$(srctree)/arch/mips/include/asm/mach-pmcs-msp71xx \
+ 					-mno-branch-likely
+ load-$(CONFIG_PMC_MSP)		+= 0xffffffff80100000
+-- 
+1.7.2.5
 
