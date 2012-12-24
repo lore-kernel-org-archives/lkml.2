@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab2LXQgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 11:36:01 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45015 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753137Ab2LXQf7 (ORCPT
+	id S1753334Ab2LXQk6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 11:40:58 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:50618 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab2LXQkz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 11:35:59 -0500
-Date: Mon, 24 Dec 2012 16:35:56 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Rajendra Nayak <rnayak@ti.com>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: twl: Convert twl[6030|4030]fixed_ops to
- regulator_list_voltage_linear
-Message-ID: <20121224163556.GZ30837@opensource.wolfsonmicro.com>
-References: <1356154279.21963.2.camel@phoenix>
+	Mon, 24 Dec 2012 11:40:55 -0500
+Message-ID: <50D88594.6060601@nvidia.com>
+Date: Mon, 24 Dec 2012 09:40:52 -0700
+From: Stephen Warren <swarren@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="KLINyTCByxgMLuN/"
-Content-Disposition: inline
-In-Reply-To: <1356154279.21963.2.camel@phoenix>
-X-Cookie: Your step will soil many countries.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
+        linux-cris-kernel@axis.com, Mike Frysinger <vapier@gentoo.org>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Joshua Thompson <funaho@jurai.org>, Sam Creasey <sammy@sammy.net>,
+        Andrew Victor <linux@maxim.org.za>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Hartley Sweeten <hsweeten@visionengravers.com>,
+        Ryan Mallon <rmallon@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH V3 00/11] ARM: delete struct sys_timer
+References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
+In-Reply-To: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 11/19/2012 11:30 AM, Stephen Warren wrote:
+> Russell, I'm mainly reposting this to see if you have any comments or
+> opinion, in particular on the core ARM changes.
+> 
+> The aim of this series is to remove ARM's struct sys_timer. As a pre-
+> cursor, this requires a little re-arrangement of arch_gettimeoffset and
+> associated changes to other architectures.
+> 
+> The full series can be found in git at:
 
---KLINyTCByxgMLuN/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+(now at):
+git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
+arm-timer-rework
 
-On Sat, Dec 22, 2012 at 01:31:19PM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
-
-Applied, thanks.
-
---KLINyTCByxgMLuN/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ2IRlAAoJELSic+t+oim9YZUP/3PV20e8R9HiDfgut3mo7EzK
-i+sqDqh0PO+EiYDKxQ8dGMltUYWNET0tuReoRq76bFkzLqAZ4ROzmqc8ZGFjA97C
-YjyTimUpqyIuu0KsjZ8qZYlrpuEPCUZ44l1/d8dztK/O6XmN/ooqGG5dIrAgCpkj
-TDPGEwdpJzUD1JIyM3VOno/QoTQaQIVbSMmSXKYeK/LYJnsoG0tzAl98CQUFZePm
-5kF7/3XsmBIebCTIq8BjEXzUZIDWBx43e1G9wKrOyiC+0E9yBHKpSeXYjc2CN8MM
-6v6GnGM470zzE1VGKSFcwB5fIl6AOTpNSTVdBnRzhqoI1jlCYJ24ucyYJDY/HMud
-iB+Nr7yBzanSlG3ARLqyF7Y91/y7Gs9hawcFWFSFhdQA47blWIcyXDhcWPQE/L4e
-cMshqeVUXh7YttFrg/PXw5avtoSUdjyjy5OwBrIBRdS5av5xT3XWLYQi5QBGbPp3
-/Il9jAqrGX6l4BZ2lIg89dFWfpo7ph3xrAfGuDbfCad2vnSSTY/tG3HKCiZk8U7X
-44v6OvQyZSiUYtlI8jEzC079VIbYUkMZyNtvWFroXUDaEIb1Fpc5zBiJgTS4PSOb
-G8Qz0oORRbF68sFSTGMKaxvwKTGAyZSHG7uKfN/o3efLNNq0CrkJXKGLj5saQnhj
-7YvbPIn/oCif8zStdnpv
-=ZohH
------END PGP SIGNATURE-----
-
---KLINyTCByxgMLuN/--
+I have put this branch into the Tegra tree's for-next branch. Once the
+holidays are over, I'll send a pull request to get this into arm-soc as
+a baseline branch for others to build on.
