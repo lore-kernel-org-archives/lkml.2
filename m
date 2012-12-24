@@ -1,79 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab2LXTHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 14:07:31 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:47724 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab2LXTH3 (ORCPT
+	id S1753388Ab2LXTQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 14:16:33 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:33830 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753129Ab2LXTQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 14:07:29 -0500
-Date: Mon, 24 Dec 2012 11:07:23 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 25/25] ipc: don't use [delayed_]work_pending()
-Message-ID: <20121224190723.GE11817@htj.dyndns.org>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-26-git-send-email-tj@kernel.org>
- <20121221181523.0e0998e4.akpm@linux-foundation.org>
- <20121222022210.GA30177@htj.dyndns.org>
- <20121222110929.GA3567@liondog.tnic>
- <20121224183334.GB11817@htj.dyndns.org>
- <20121224185555.GA5344@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121224185555.GA5344@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Dec 2012 14:16:31 -0500
+Subject: Re: Porting problem: ndo_set_multicast_list removed
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Woody Wu <narkewoody@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <20121224163005.GA3970@zuhnb712>
+References: <20121224163005.GA3970@zuhnb712>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Dec 2012 11:16:27 -0800
+Message-ID: <1356376587.20133.9693.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Borislav.
-
-On Mon, Dec 24, 2012 at 07:55:55PM +0100, Borislav Petkov wrote:
-> Basically, with the amount of bloat we're adding to the kernel, the
-> couple of instructions we're adding here and there and think they won't
-> harm us, tends to crop up with time until we're too damn slow to do
-> anything.
-
-Yeah, I think we need them for the operations to hold w/o outer
-synchronization.  If you can think of ways to optimize them, please be
-my guest.
-
-> Now, you're saying that optimizing cold paths is something that calls
-> for serious reconsideration of a person's priorities, and I'm saying
-> just don't do anything in code that's not necessary. Fullstop. If this
-
-Not doing anything that's not necessary is an extreme and not
-necessary what you want in cold paths.  If doing something extra makes
-your code much simpler and more maintainable and the path is cold
-enough for the extra to not matter, then that's the right trade-off.
-
-> is leading to convolutions, then the design is suboptimal and needs
-> adjustment. If [delayed_]work_pending is being abused, then fix it or
-> add a new primitive which only checks for pending work and doesn't
-> unconditionally toggle interrupts.
-
-"only checks for pending work" in a way which is race-free and usable
-from any context is a tricky thing to do.
-
-> > I don't think we have cases where this actually matters but it could
-> > be that we can add work_pending() tests to queue_work_on(). I *think*
-> > that shouldn't break work scheduling semantics. Not completely sure
-> > tho. Need to think about it more.
+On Tue, 2012-12-25 at 00:30 +0800, Woody Wu wrote:
+> Hi, list
 > 
-> Yes, something like that.
+> I am porting an ethernet driver from 2.6.x to 3.7.1.  I found in the new
+> kernel, the ndo_set_multicast_list method in the net_device_ops had been
+> removed. What's the story behind?  Can I simply ignore this method
+> defined in an old driver?
+> 
+> Please also help to check the below code, is the list of the operations
+> defined for my driver enough or not?
+> 
+> const struct net_device_ops ax_netdev_ops = {
+> 	.ndo_open		= mydriver_open,
+> 	.ndo_stop		= mydriver_close,
+> 	.ndo_start_xmit		= mydriver_start_xmit,
+> 	.ndo_get_stats		= mydriver_get_stats,
+> 	/*.ndo_set_multicast_list = mydriver_set_multicast_list,*/
+> 	.ndo_set_mac_address 	= mydriver_set_mac_address,
+> };
+> 
+> Thanks in advance.
+> 
 
-And that's broken.  It seems trivial but it really isn't and trying to
-optimize things like that in cold paths is just a bad idea.  Not
-enough people will pay attention to them and they will stay subtly
-broken for a very long time.  So, having "not doing anything in code
-which isn't necessary in code" as priority in cold paths is likely to
-hurt you.  A better one would be "doing straight-forward and simple
-thing with acceptable overhead".
+Take a look at :
 
-Thanks.
+commit afc4b13df143122f99a0eb10bfefb216c2806de0
+Author: Jiri Pirko <jpirko@redhat.com>
+Date:   Tue Aug 16 06:29:01 2011 +0000
 
--- 
-tejun
+    net: remove use of ndo_set_multicast_list in drivers
+    
+    replace it by ndo_set_rx_mode
+    
+    Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+
+
