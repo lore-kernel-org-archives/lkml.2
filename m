@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab2LXRwX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 12:52:23 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:36213 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2LXRwU (ORCPT
+	id S1753353Ab2LXSPP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 13:15:15 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49826 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2LXSPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 12:52:20 -0500
-Date: Mon, 24 Dec 2012 09:55:32 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "he, bo" <bo.he@intel.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>, akpm@linux-foundation.org,
-        mingo@elte.hu, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [PATCH V2] output the cpu number  when printking.
-Message-ID: <20121224175532.GA15041@kroah.com>
-References: <1356316276.2385.7.camel@hebo>
- <50D7CDED.4060308@infradead.org>
- <1356321255.2385.8.camel@hebo>
- <1356325315.2385.74.camel@hebo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1356325315.2385.74.camel@hebo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Dec 2012 13:15:10 -0500
+From: Stephen Warren <swarren@wwwdotorg.org>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jens Axboe <axboe@kernel.dk>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        Stephen Warren <swarren@wwwdotorg.org>
+Subject: [PATCH] namei.h: include errno.h
+Date: Mon, 24 Dec 2012 11:14:58 -0700
+Message-Id: <1356372898-21272-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 01:01:55PM +0800, he, bo wrote:
-> From: "he, bo" <bo.he@intel.com>
-> 
-> We often hit kernel panic issues on SMP machines because processes race
-> on multiple cpu. By adding a new parameter printk.cpu, kernel prints
-> cpu number at printk information line. It’s useful to debug what cpus
-> are racing.
+This solves:
 
-How useful is this really for normal developers?  We complained when
-this option was proposed by the ARM developers who were, for the first
-time, handling more than one processor and the issues involved with
-that.  You are enabling this as a default option, for all developers,
-and almost no one will ever need it.
+In file included from fs/ext3/symlink.c:20:0:
+include/linux/namei.h: In function 'retry_estale':
+include/linux/namei.h:114:19: error: 'ESTALE' undeclared (first use in this function)
 
-So, if you really want this, don't enable this by default.  Also, go
-back and read the old thread about this option and why it was rejeted
-previously.
+Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+---
+ include/linux/namei.h |    1 +
+ 1 file changed, 1 insertion(+)
 
-thanks,
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index e998c03..5a5ff57 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_NAMEI_H
+ 
+ #include <linux/dcache.h>
++#include <linux/errno.h>
+ #include <linux/linkage.h>
+ #include <linux/path.h>
+ 
+-- 
+1.7.10.4
 
-greg k-h
