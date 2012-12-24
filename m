@@ -1,134 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2LXCW4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:22:56 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:33682 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab2LXCWy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:22:54 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michael Chan <mchan@broadcom.com>,
-        Thomas Sailer <t.sailer@alumni.ethz.ch>,
-        Jean-Paul Roubelat <jpr@f6fbb.org>, Bing Zhao <bzhao@marvell.com>,
-        netdev@vger.kernel.org, linux-hams@vger.kernel.org,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH 18/29] drivers/net: rename random32() to prandom_u32()
-Date: Mon, 24 Dec 2012 11:14:05 +0900
-Message-Id: <1356315256-6572-19-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
-References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
+	id S1752789Ab2LXCbo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:31:44 -0500
+Received: from mga14.intel.com ([143.182.124.37]:37936 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752388Ab2LXCbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 21:31:41 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,343,1355126400"; 
+   d="scan'208";a="236019508"
+Subject: [PATCH] output the cpu number  when printking.
+From: "he, bo" <bo.he@intel.com>
+To: akpm@linux-foundation.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org
+Cc: yanmin_zhang@linux.intel.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Dec 2012 10:31:16 +0800
+Message-ID: <1356316276.2385.7.camel@hebo>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more preferable function name which implies using a pseudo-random
-number generator.
+From: "he, bo" <bo.he@intel.com>
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Michael Chan <mchan@broadcom.com>
-Cc: Thomas Sailer <t.sailer@alumni.ethz.ch>
-Cc: Jean-Paul Roubelat <jpr@f6fbb.org>
-Cc: Bing Zhao <bzhao@marvell.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-hams@vger.kernel.org
-Cc: linux-wireless@vger.kernel.org
+We often hit kernel panic issues on SMP machines because processes race
+on multiple cpu. By adding a new parameter printk.cpu, kernel prints
+cpu number at printk information line. It’s useful to debug what cpus
+are racing.
+
+Signed-off-by: he, bo <bo.he@intel.com>
 ---
- drivers/net/ethernet/broadcom/cnic.c    | 4 ++--
- drivers/net/hamradio/baycom_epp.c       | 2 +-
- drivers/net/hamradio/hdlcdrv.c          | 2 +-
- drivers/net/hamradio/yam.c              | 2 +-
- drivers/net/wireless/mwifiex/cfg80211.c | 4 ++--
- 5 files changed, 7 insertions(+), 7 deletions(-)
+ Documentation/kernel-parameters.txt |    4 ++++
+ kernel/printk.c                     |   18 ++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/broadcom/cnic.c b/drivers/net/ethernet/broadcom/cnic.c
-index df8c30d..27d7a32 100644
---- a/drivers/net/ethernet/broadcom/cnic.c
-+++ b/drivers/net/ethernet/broadcom/cnic.c
-@@ -4085,7 +4085,7 @@ static int cnic_cm_alloc_mem(struct cnic_dev *dev)
- 	if (!cp->csk_tbl)
- 		return -ENOMEM;
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index ddd84d6..ccd5266 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2378,6 +2378,10 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 	printk.time=	Show timing data prefixed to each printk message line
+ 			Format: <bool>  (1/Y/y=enable, 0/N/n=disable)
  
--	port_id = random32();
-+	port_id = prandom_u32();
- 	port_id %= CNIC_LOCAL_PORT_RANGE;
- 	if (cnic_init_id_tbl(&cp->csk_port_tbl, CNIC_LOCAL_PORT_RANGE,
- 			     CNIC_LOCAL_PORT_MIN, port_id)) {
-@@ -4145,7 +4145,7 @@ static int cnic_cm_init_bnx2_hw(struct cnic_dev *dev)
++	printk.cpu=	Show cpu data prefixed to each printk message line
++			Format: <bool>  (1/Y/y=enable, 0/N/n=disable)
++	printk.cpu takes effect only when printk.time=y.
++
+ 	processor.max_cstate=	[HW,ACPI]
+ 			Limit processor to maximum C-state
+ 			max_cstate=9 overrides any DMI blacklist limit.
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 19c0d7b..873a226 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -863,9 +863,14 @@ static bool printk_time;
+ #endif
+ module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+ 
++static bool printk_cpu = 1;
++module_param_named(cpu, printk_cpu, bool, S_IRUGO | S_IWUSR);
++
+ static size_t print_time(u64 ts, char *buf)
  {
- 	u32 seed;
+ 	unsigned long rem_nsec;
++	size_t len = 0;
++	int this_cpu;
  
--	seed = random32();
-+	seed = prandom_u32();
- 	cnic_ctx_wr(dev, 45, 0, seed);
- 	return 0;
+ 	if (!printk_time)
+ 		return 0;
+@@ -874,8 +879,17 @@ static size_t print_time(u64 ts, char *buf)
+ 		return 15;
+ 
+ 	rem_nsec = do_div(ts, 1000000000);
+-	return sprintf(buf, "[%5lu.%06lu] ",
+-		       (unsigned long)ts, rem_nsec / 1000);
++
++	if (printk_cpu) {
++		this_cpu = raw_smp_processor_id();
++		len = sprintf(buf, "[%5lu.%06lu,%u] ",
++			       (unsigned long)ts, rem_nsec / 1000, this_cpu);
++	} else {
++		len = sprintf(buf, "[%5lu.%06lu] ",
++			       (unsigned long)ts, rem_nsec / 1000);
++	}
++
++	return len;
  }
-diff --git a/drivers/net/hamradio/baycom_epp.c b/drivers/net/hamradio/baycom_epp.c
-index 49b8b58..484f77e 100644
---- a/drivers/net/hamradio/baycom_epp.c
-+++ b/drivers/net/hamradio/baycom_epp.c
-@@ -449,7 +449,7 @@ static int transmit(struct baycom_state *bc, int cnt, unsigned char stat)
- 			if ((--bc->hdlctx.slotcnt) > 0)
- 				return 0;
- 			bc->hdlctx.slotcnt = bc->ch_params.slottime;
--			if ((random32() % 256) > bc->ch_params.ppersist)
-+			if ((prandom_u32() % 256) > bc->ch_params.ppersist)
- 				return 0;
- 		}
- 	}
-diff --git a/drivers/net/hamradio/hdlcdrv.c b/drivers/net/hamradio/hdlcdrv.c
-index a4a3516..3169252 100644
---- a/drivers/net/hamradio/hdlcdrv.c
-+++ b/drivers/net/hamradio/hdlcdrv.c
-@@ -389,7 +389,7 @@ void hdlcdrv_arbitrate(struct net_device *dev, struct hdlcdrv_state *s)
- 	if ((--s->hdlctx.slotcnt) > 0)
- 		return;
- 	s->hdlctx.slotcnt = s->ch_params.slottime;
--	if ((random32() % 256) > s->ch_params.ppersist)
-+	if ((prandom_u32() % 256) > s->ch_params.ppersist)
- 		return;
- 	start_tx(dev, s);
- }
-diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
-index c6645f1..21f231a 100644
---- a/drivers/net/hamradio/yam.c
-+++ b/drivers/net/hamradio/yam.c
-@@ -638,7 +638,7 @@ static void yam_arbitrate(struct net_device *dev)
- 	yp->slotcnt = yp->slot / 10;
  
- 	/* is random > persist ? */
--	if ((random32() % 256) > yp->pers)
-+	if ((prandom_u32() % 256) > yp->pers)
- 		return;
- 
- 	yam_start_tx(dev, yp);
-diff --git a/drivers/net/wireless/mwifiex/cfg80211.c b/drivers/net/wireless/mwifiex/cfg80211.c
-index a875499..78dbc18 100644
---- a/drivers/net/wireless/mwifiex/cfg80211.c
-+++ b/drivers/net/wireless/mwifiex/cfg80211.c
-@@ -216,7 +216,7 @@ mwifiex_cfg80211_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
- 	mwifiex_form_mgmt_frame(skb, buf, len);
- 	mwifiex_queue_tx_pkt(priv, skb);
- 
--	*cookie = random32() | 1;
-+	*cookie = prandom_u32() | 1;
- 	cfg80211_mgmt_tx_status(wdev, *cookie, buf, len, true, GFP_ATOMIC);
- 
- 	wiphy_dbg(wiphy, "info: management frame transmitted\n");
-@@ -271,7 +271,7 @@ mwifiex_cfg80211_remain_on_channel(struct wiphy *wiphy,
- 					 duration);
- 
- 	if (!ret) {
--		*cookie = random32() | 1;
-+		*cookie = prandom_u32() | 1;
- 		priv->roc_cfg.cookie = *cookie;
- 		priv->roc_cfg.chan = *chan;
- 
+ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
 -- 
-1.7.11.7
+1.7.6
+
+
 
