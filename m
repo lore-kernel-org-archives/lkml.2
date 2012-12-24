@@ -1,102 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab2LXGFp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 01:05:45 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:50342 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2LXGEP (ORCPT
+	id S1752836Ab2LXGNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 01:13:34 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:56599 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab2LXGNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 01:04:15 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBO63hxM029385, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <cjb@laptop.org>, <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH 5/7] MMC:rtsx: Using callback function to switch output voltage
-Date: Mon, 24 Dec 2012 14:03:43 +0800
-Message-ID: <dbab60306ea3295d7260090e9ef361c38aadd45c.1356319097.git.wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1356319097.git.wei_wang@realsil.com.cn>
-References: <cover.1356319097.git.wei_wang@realsil.com.cn>
+	Mon, 24 Dec 2012 01:13:32 -0500
+X-Greylist: delayed 491 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Dec 2012 01:13:32 EST
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20121221154457.GE15204@liondog.tnic>
+References: <1356078018-31905-1-git-send-email-namhyung@kernel.org>
+ <1356078018-31905-7-git-send-email-namhyung@kernel.org> <20121221083205.GA15226@liondog.tnic>
+ <878v8repdt.fsf@sejong.aot.lge.com> <20121221154457.GE15204@liondog.tnic>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 24 Dec 2012 15:04:59 +0900
+X-Google-Sender-Auth: KL9mSmBWaJKmp5zrkwDCVW_h54c
+Message-ID: <CAM9d7cj2mtQ5=vzLeAREA4kUYKh_qJYi+c2AVry6eK1H58f+zA@mail.gmail.com>
+Subject: Re: [PATCH 6/6] perf annotate: Add --gtk option
+To: Borislav Petkov <bp@alien8.de>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+On Sat, Dec 22, 2012 at 12:44 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Fri, Dec 21, 2012 at 06:16:46PM +0900, Namhyung Kim wrote:
+>> Current setup_browser() code checks the stdin to be a tty and if
+>> not it assumes piping to other commands so set the use_browser to 0
+>> (stdio) and disables GTK output.
+>>
+>> Maybe we can change this behavior for --gtk case.
+>
+> Change it in the sense that for the --gtk case stdin doesn't have to
+> be a tty? So that with --gtk you can still pipe perf output to other
+> commands?
+>
+> I can't imagine a sensible --gtk use case with output piped to other
+> commands. Hmm.
 
-Different card reader has different method to switch output voltage, so
-we have to use the callback function provided by MFD driver to switch
-output pad voltage.
+Right.  I also have no idea what's the best way to handle --gtk option
+with the piped output.  I can think of 3 options for this:
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++-------------------------
- 1 file changed, 5 insertions(+), 25 deletions(-)
+1) exit with a error message
+2) honor --gtk option and launch a gui browser
+3) honor piped output and print to stdout (thus ignore --gtk) like
+this patch does
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 571915d..f74b5ad 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -1060,26 +1060,6 @@ static int sd_wait_voltage_stable_2(struct realtek_pci_sdmmc *host)
- 	return 0;
- }
- 
--static int sd_change_bank_voltage(struct realtek_pci_sdmmc *host, u8 voltage)
--{
--	struct rtsx_pcr *pcr = host->pcr;
--	int err;
--
--	if (voltage == SD_IO_3V3) {
--		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
--		if (err < 0)
--			return err;
--	} else if (voltage == SD_IO_1V8) {
--		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
--		if (err < 0)
--			return err;
--	} else {
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
- static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- {
- 	struct realtek_pci_sdmmc *host = mmc_priv(mmc);
-@@ -1098,11 +1078,11 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- 	rtsx_pci_start_run(pcr);
- 
- 	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
--		voltage = SD_IO_3V3;
-+		voltage = OUTPUT_3V3;
- 	else
--		voltage = SD_IO_1V8;
-+		voltage = OUTPUT_1V8;
- 
--	if (voltage == SD_IO_1V8) {
-+	if (voltage == OUTPUT_1V8) {
- 		err = rtsx_pci_write_register(pcr,
- 				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
- 		if (err < 0)
-@@ -1113,11 +1093,11 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- 			goto out;
- 	}
- 
--	err = sd_change_bank_voltage(host, voltage);
-+	err = rtsx_pci_switch_output_voltage(pcr, voltage);
- 	if (err < 0)
- 		goto out;
- 
--	if (voltage == SD_IO_1V8) {
-+	if (voltage == OUTPUT_1V8) {
- 		err = sd_wait_voltage_stable_2(host);
- 		if (err < 0)
- 			goto out;
+Any thoughts?
+
 -- 
-1.7.9.5
-
+Thanks,
+Namhyung
