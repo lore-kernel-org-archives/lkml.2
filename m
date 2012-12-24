@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab2LXSkE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 13:40:04 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:51319 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2LXSj7 (ORCPT
+	id S1753368Ab2LXSoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 13:44:16 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:41036 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2LXSoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 13:39:59 -0500
-Date: Mon, 24 Dec 2012 10:43:12 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Amit Shah <amit.shah@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] virtio_console: correct error message on failure of
- debugfs_create_dir
-Message-ID: <20121224184312.GA15597@kroah.com>
-References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
- <1356030701-16284-13-git-send-email-sasha.levin@oracle.com>
- <20121221075909.GA15739@amit.redhat.com>
- <201212241155.46866.arnd@arndb.de>
- <20121224173937.GB14754@kroah.com>
- <CA+1xoqdd3DN6ApCnQh=8fQBvFh40O2BJPf4mAA_L17cRH8kShQ@mail.gmail.com>
+	Mon, 24 Dec 2012 13:44:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+1xoqdd3DN6ApCnQh=8fQBvFh40O2BJPf4mAA_L17cRH8kShQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121224100457.GA9927@liondog.tnic>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+	<20121222024225.GG3468@phenom.dumpdata.com>
+	<eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
+	<20121222132419.GB2936@phenom.dumpdata.com>
+	<CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
+	<6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
+	<CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
+	<20121223184516.GC8190@liondog.tnic>
+	<171018c8-b640-4234-a25e-7040d9e21acd@email.android.com>
+	<20121224100457.GA9927@liondog.tnic>
+Date: Mon, 24 Dec 2012 10:44:12 -0800
+X-Google-Sender-Auth: dnmjtcwQviliJyI1Hq3AyK6ez_Y
+Message-ID: <CAE9FiQVwaEJ=uGyMVg33ahNorbDk0AnM83WUJAZ5CENTsgO8Ag@mail.gmail.com>
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
+ ramdisk and bzImage above 4G
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 01:24:52PM -0500, Sasha Levin wrote:
-> On Mon, Dec 24, 2012 at 12:39 PM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Mon, Dec 24, 2012 at 11:55:46AM +0000, Arnd Bergmann wrote:
-> >> On Friday 21 December 2012, Amit Shah wrote:
-> >> > On (Thu) 20 Dec 2012 [14:11:21], Sasha Levin wrote:
-> >> > > debugfs_create_dir() returns NULL if it fails, there's little point in
-> >> > > calling PTR_ERR on it.
-> >> >
-> >> > debugfs_create_dir() does return an error value if debugfs is not
-> >> > enabled.
-> >> >
-> >> > This check for !pdrvdata.debugfs_dir should infact use
-> >> > IS_ERR_OR_NULL().  Care to submit a patch for that?
-> >>
-> >> How about we fix the stub instead to return NULL when debugfs is disabled?
-> >
-> > No, please read debugfs.h for why I decided to not do this (i.e. we try
-> > to learn from our mistakes...)
-> 
-> Why won't we fix it the other way around and return an actual error
-> code instead of a NULL on failure?
+On Mon, Dec 24, 2012 at 2:04 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Sun, Dec 23, 2012 at 08:54:37PM -0800, H. Peter Anvin wrote:
+>> Makes sense.  Ljmpq it is.  A comment might be useful.
+>
+> Yes, a LRETQ comment is definitely useful so that we know. Yinghai,
+> please add it the next time you're rebasing. Btw, which branch is the
+> current one for that patchset so that people can review and test it?
 
-Again, no, that doesn't make your code simpler/faster.  You really don't
-need to check the return value of debugfs, just handle it as if it
-always works, and look, the code handles it all properly, no matter if
-debugfs is enabled or not.  It's only debugging code, you shouldn't
-really care if it is present or not, right?
-
-If you do, perhaps you shouldn't be using debugfs?
-
-greg k-h
+for-x86-boot and it points to -v8 that does not break KGDB.
