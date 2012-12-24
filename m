@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab2LXXzt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 18:55:49 -0500
-Received: from mail-bk0-f49.google.com ([209.85.214.49]:36960 "EHLO
-	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab2LXXzp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 18:55:45 -0500
+	id S1753462Ab2LXX4w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 18:56:52 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34823 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753377Ab2LXX4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 18:56:51 -0500
+Message-ID: <50D8EBB3.5040408@zytor.com>
+Date: Mon, 24 Dec 2012 15:56:35 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <50D8E671.3020502@zytor.com>
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<1355814959-10573-25-git-send-email-yinghai@kernel.org>
-	<20121222023741.GF3468@phenom.dumpdata.com>
-	<87bodmhkns.fsf@xmission.com>
-	<20121222031019.GA4120@phenom.dumpdata.com>
-	<87pq22g488.fsf@xmission.com>
-	<50D52841.9030301@zytor.com>
-	<CAE9FiQWY+LTZkmWmDvoLmrayG+a0uScpR=YThr+hogOU7HbJ9w@mail.gmail.com>
-	<50D8E671.3020502@zytor.com>
-Date: Mon, 24 Dec 2012 15:55:43 -0800
-X-Google-Sender-Auth: o4Q5Ux2NbkafVNZmgE0jaqCnDjs
-Message-ID: <CAE9FiQVhu7HFU1Ar_9WO+sUGQVKg1DgGTr-f3b6GHc5X6X6mDA@mail.gmail.com>
-Subject: Re: [PATCH v7 24/27] x86: Add swiotlb force off support
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk
+ and bzImage above 4G
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <20121222024225.GG3468@phenom.dumpdata.com> <eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com> <20121222132419.GB2936@phenom.dumpdata.com> <CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com> <6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com> <CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
+In-Reply-To: <CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 3:34 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/21/2012 09:11 PM, Yinghai Lu wrote:
->> On Fri, Dec 21, 2012 at 7:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 12/21/2012 07:23 PM, Eric W. Biederman wrote:
->>>>
->>>> In this case YH has been working on the case of loading a kernel
->>>> completely above 4G, and apparently he has also been testing the case of
->>>> running a kernel with no memory below 4G.
->>>>
->>>
->>> It is worth noting that we cannot run with *no* memory below 4G -- it is
->>> not possible to run SMP at least without some memory below the 1M mark.
+On 12/23/2012 10:00 AM, Yinghai Lu wrote:
+> On Sun, Dec 23, 2012 at 6:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> Explanation please?
 >>
->> yes need keep 8k or so for trampoline.
->>
->> but kdump only use one CPU.
->>
->
-> ... except we have an active request to change that, and the trampoline
-> is more like 20K depending on options.
+> 
+> you have following change in the patch
+> 
+>         /* Finally jump to run C code and to be on real kernel address
+>          * Since we are running on identity-mapped space we have to jump
+>          * to the full 64bit address, this is only possible as indirect
+>          * jump.  In addition we need to ensure %cs is set so we make this
+> -        * a far return.
+> +        * a far jump.
+>          */
+> -       movq    initial_code(%rip),%rax
+>         pushq   $0              # fake return address to stop unwinder
+> -       pushq   $__KERNEL_CS    # set correct cs
+> -       pushq   %rax            # target address in negative space
+> -       lretq
+> +       /* gas 2.22 is buggy and mis-assembles ljmpq */
+> +       rex64 ljmp *initial_code(%rip)
+> 
+>  #ifdef CONFIG_HOTPLUG_CPU
+>  /*
+> 
+> remove that change, AMD systems works again.
+> 
 
-looks like we should not worry that this now.
+That is not an explanation.
 
-kdump conf scripts always append some low range under 1M for second kernel.
+	-hpa
+
+
