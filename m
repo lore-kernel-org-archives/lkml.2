@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab2LXCUh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:20:37 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:52585 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753016Ab2LXCUb (ORCPT
+	id S1753153Ab2LXCUo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:20:44 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:61182 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab2LXCUk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:20:31 -0500
+	Sun, 23 Dec 2012 21:20:40 -0500
+X-Greylist: delayed 313 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Dec 2012 21:20:40 EST
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org
-Subject: [PATCH 17/29] mtd: rename random32() to prandom_u32()
-Date: Mon, 24 Dec 2012 11:14:04 +0900
-Message-Id: <1356315256-6572-18-git-send-email-akinobu.mita@gmail.com>
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 26/29] net/core:  rename random32() and net_random() to prandom_u32()
+Date: Mon, 24 Dec 2012 11:14:13 +0900
+Message-Id: <1356315256-6572-27-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
 References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
@@ -26,150 +26,170 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: linux-mtd@lists.infradead.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
- drivers/mtd/nand/nandsim.c          |  6 +++---
- drivers/mtd/tests/mtd_nandecctest.c | 10 +++++-----
- drivers/mtd/tests/mtd_stresstest.c  |  8 ++++----
- drivers/mtd/ubi/debug.h             |  6 +++---
- 4 files changed, 15 insertions(+), 15 deletions(-)
+ net/core/neighbour.c |  4 ++--
+ net/core/pktgen.c    | 29 +++++++++++++++--------------
+ net/core/stream.c    |  2 +-
+ 3 files changed, 18 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
-index 818b65c..4c31798 100644
---- a/drivers/mtd/nand/nandsim.c
-+++ b/drivers/mtd/nand/nandsim.c
-@@ -1476,12 +1476,12 @@ int do_read_error(struct nandsim *ns, int num)
+diff --git a/net/core/neighbour.c b/net/core/neighbour.c
+index c815f28..6818badb 100644
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -123,7 +123,7 @@ static void neigh_cleanup_and_release(struct neighbour *neigh)
  
- void do_bit_flips(struct nandsim *ns, int num)
+ unsigned long neigh_rand_reach_time(unsigned long base)
  {
--	if (bitflips && random32() < (1 << 22)) {
-+	if (bitflips && prandom_u32() < (1 << 22)) {
- 		int flips = 1;
- 		if (bitflips > 1)
--			flips = (random32() % (int) bitflips) + 1;
-+			flips = (prandom_u32() % (int) bitflips) + 1;
- 		while (flips--) {
--			int pos = random32() % (num * 8);
-+			int pos = prandom_u32() % (num * 8);
- 			ns->buf.byte[pos / 8] ^= (1 << (pos % 8));
- 			NS_WARN("read_page: flipping bit %d in page %d "
- 				"reading from %d ecc: corrected=%u failed=%u\n",
-diff --git a/drivers/mtd/tests/mtd_nandecctest.c b/drivers/mtd/tests/mtd_nandecctest.c
-index ceb261f..2e6b41e 100644
---- a/drivers/mtd/tests/mtd_nandecctest.c
-+++ b/drivers/mtd/tests/mtd_nandecctest.c
-@@ -43,7 +43,7 @@ struct nand_ecc_test {
- static void single_bit_error_data(void *error_data, void *correct_data,
- 				size_t size)
+-	return base ? (net_random() % base) + (base >> 1) : 0;
++	return base ? (prandom_u32() % base) + (base >> 1) : 0;
+ }
+ EXPORT_SYMBOL(neigh_rand_reach_time);
+ 
+@@ -1402,7 +1402,7 @@ void pneigh_enqueue(struct neigh_table *tbl, struct neigh_parms *p,
+ 		    struct sk_buff *skb)
  {
--	unsigned int offset = random32() % (size * BITS_PER_BYTE);
-+	unsigned int offset = prandom_u32() % (size * BITS_PER_BYTE);
+ 	unsigned long now = jiffies;
+-	unsigned long sched_next = now + (net_random() % p->proxy_delay);
++	unsigned long sched_next = now + (prandom_u32() % p->proxy_delay);
  
- 	memcpy(error_data, correct_data, size);
- 	__change_bit_le(offset, error_data);
-@@ -54,9 +54,9 @@ static void double_bit_error_data(void *error_data, void *correct_data,
- {
- 	unsigned int offset[2];
+ 	if (tbl->proxy_queue.qlen > p->proxy_qlen) {
+ 		kfree_skb(skb);
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index b29dacf..d23ec86 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -2182,7 +2182,7 @@ static inline int f_pick(struct pktgen_dev *pkt_dev)
+ 				pkt_dev->curfl = 0; /*reset */
+ 		}
+ 	} else {
+-		flow = random32() % pkt_dev->cflows;
++		flow = prandom_u32() % pkt_dev->cflows;
+ 		pkt_dev->curfl = flow;
  
--	offset[0] = random32() % (size * BITS_PER_BYTE);
-+	offset[0] = prandom_u32() % (size * BITS_PER_BYTE);
- 	do {
--		offset[1] = random32() % (size * BITS_PER_BYTE);
-+		offset[1] = prandom_u32() % (size * BITS_PER_BYTE);
- 	} while (offset[0] == offset[1]);
+ 		if (pkt_dev->flows[flow].count > pkt_dev->lflow) {
+@@ -2229,7 +2229,7 @@ static void set_cur_queue_map(struct pktgen_dev *pkt_dev)
+ 	else if (pkt_dev->queue_map_min <= pkt_dev->queue_map_max) {
+ 		__u16 t;
+ 		if (pkt_dev->flags & F_QUEUE_MAP_RND) {
+-			t = random32() %
++			t = prandom_u32() %
+ 				(pkt_dev->queue_map_max -
+ 				 pkt_dev->queue_map_min + 1)
+ 				+ pkt_dev->queue_map_min;
+@@ -2261,7 +2261,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 		__u32 tmp;
  
- 	memcpy(error_data, correct_data, size);
-@@ -67,7 +67,7 @@ static void double_bit_error_data(void *error_data, void *correct_data,
+ 		if (pkt_dev->flags & F_MACSRC_RND)
+-			mc = random32() % pkt_dev->src_mac_count;
++			mc = prandom_u32() % pkt_dev->src_mac_count;
+ 		else {
+ 			mc = pkt_dev->cur_src_mac_offset++;
+ 			if (pkt_dev->cur_src_mac_offset >=
+@@ -2287,7 +2287,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 		__u32 tmp;
  
- static unsigned int random_ecc_bit(size_t size)
- {
--	unsigned int offset = random32() % (3 * BITS_PER_BYTE);
-+	unsigned int offset = prandom_u32() % (3 * BITS_PER_BYTE);
+ 		if (pkt_dev->flags & F_MACDST_RND)
+-			mc = random32() % pkt_dev->dst_mac_count;
++			mc = prandom_u32() % pkt_dev->dst_mac_count;
  
- 	if (size == 256) {
- 		/*
-@@ -75,7 +75,7 @@ static unsigned int random_ecc_bit(size_t size)
- 		 * and 17th bit) in ECC code for 256 byte data block
- 		 */
- 		while (offset == 16 || offset == 17)
--			offset = random32() % (3 * BITS_PER_BYTE);
-+			offset = prandom_u32() % (3 * BITS_PER_BYTE);
+ 		else {
+ 			mc = pkt_dev->cur_dst_mac_offset++;
+@@ -2314,21 +2314,21 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 		for (i = 0; i < pkt_dev->nr_labels; i++)
+ 			if (pkt_dev->labels[i] & MPLS_STACK_BOTTOM)
+ 				pkt_dev->labels[i] = MPLS_STACK_BOTTOM |
+-					     ((__force __be32)random32() &
++					     ((__force __be32)prandom_u32() &
+ 						      htonl(0x000fffff));
  	}
  
- 	return offset;
-diff --git a/drivers/mtd/tests/mtd_stresstest.c b/drivers/mtd/tests/mtd_stresstest.c
-index dc89e32..4e9fc1f 100644
---- a/drivers/mtd/tests/mtd_stresstest.c
-+++ b/drivers/mtd/tests/mtd_stresstest.c
-@@ -57,7 +57,7 @@ static int rand_eb(void)
- 	unsigned int eb;
+ 	if ((pkt_dev->flags & F_VID_RND) && (pkt_dev->vlan_id != 0xffff)) {
+-		pkt_dev->vlan_id = random32() & (4096-1);
++		pkt_dev->vlan_id = prandom_u32() & (4096 - 1);
+ 	}
  
- again:
--	eb = random32();
-+	eb = prandom_u32();
- 	/* Read or write up 2 eraseblocks at a time - hence 'ebcnt - 1' */
- 	eb %= (ebcnt - 1);
- 	if (bbt[eb])
-@@ -69,7 +69,7 @@ static int rand_offs(void)
- {
- 	unsigned int offs;
+ 	if ((pkt_dev->flags & F_SVID_RND) && (pkt_dev->svlan_id != 0xffff)) {
+-		pkt_dev->svlan_id = random32() & (4096 - 1);
++		pkt_dev->svlan_id = prandom_u32() & (4096 - 1);
+ 	}
  
--	offs = random32();
-+	offs = prandom_u32();
- 	offs %= bufsize;
- 	return offs;
- }
-@@ -78,7 +78,7 @@ static int rand_len(int offs)
- {
- 	unsigned int len;
+ 	if (pkt_dev->udp_src_min < pkt_dev->udp_src_max) {
+ 		if (pkt_dev->flags & F_UDPSRC_RND)
+-			pkt_dev->cur_udp_src = random32() %
++			pkt_dev->cur_udp_src = prandom_u32() %
+ 				(pkt_dev->udp_src_max - pkt_dev->udp_src_min)
+ 				+ pkt_dev->udp_src_min;
  
--	len = random32();
-+	len = prandom_u32();
- 	len %= (bufsize - offs);
- 	return len;
- }
-@@ -148,7 +148,7 @@ static int do_write(void)
+@@ -2341,7 +2341,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
  
- static int do_operation(void)
- {
--	if (random32() & 1)
-+	if (prandom_u32() & 1)
- 		return do_read();
- 	else
- 		return do_write();
-diff --git a/drivers/mtd/ubi/debug.h b/drivers/mtd/ubi/debug.h
-index 33f8f3b..cba89fc 100644
---- a/drivers/mtd/ubi/debug.h
-+++ b/drivers/mtd/ubi/debug.h
-@@ -86,7 +86,7 @@ static inline int ubi_dbg_is_bgt_disabled(const struct ubi_device *ubi)
- static inline int ubi_dbg_is_bitflip(const struct ubi_device *ubi)
- {
- 	if (ubi->dbg.emulate_bitflips)
--		return !(random32() % 200);
-+		return !(prandom_u32() % 200);
- 	return 0;
- }
+ 	if (pkt_dev->udp_dst_min < pkt_dev->udp_dst_max) {
+ 		if (pkt_dev->flags & F_UDPDST_RND) {
+-			pkt_dev->cur_udp_dst = random32() %
++			pkt_dev->cur_udp_dst = prandom_u32() %
+ 				(pkt_dev->udp_dst_max - pkt_dev->udp_dst_min)
+ 				+ pkt_dev->udp_dst_min;
+ 		} else {
+@@ -2358,7 +2358,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 		if (imn < imx) {
+ 			__u32 t;
+ 			if (pkt_dev->flags & F_IPSRC_RND)
+-				t = random32() % (imx - imn) + imn;
++				t = prandom_u32() % (imx - imn) + imn;
+ 			else {
+ 				t = ntohl(pkt_dev->cur_saddr);
+ 				t++;
+@@ -2379,7 +2379,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 				__be32 s;
+ 				if (pkt_dev->flags & F_IPDST_RND) {
  
-@@ -100,7 +100,7 @@ static inline int ubi_dbg_is_bitflip(const struct ubi_device *ubi)
- static inline int ubi_dbg_is_write_failure(const struct ubi_device *ubi)
- {
- 	if (ubi->dbg.emulate_io_failures)
--		return !(random32() % 500);
-+		return !(prandom_u32() % 500);
- 	return 0;
- }
+-					t = random32() % (imx - imn) + imn;
++					t = prandom_u32() % (imx - imn) + imn;
+ 					s = htonl(t);
  
-@@ -114,7 +114,7 @@ static inline int ubi_dbg_is_write_failure(const struct ubi_device *ubi)
- static inline int ubi_dbg_is_erase_failure(const struct ubi_device *ubi)
- {
- 	if (ubi->dbg.emulate_io_failures)
--		return !(random32() % 400);
-+		return !(prandom_u32() % 400);
- 	return 0;
- }
+ 					while (ipv4_is_loopback(s) ||
+@@ -2387,7 +2387,8 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 					       ipv4_is_lbcast(s) ||
+ 					       ipv4_is_zeronet(s) ||
+ 					       ipv4_is_local_multicast(s)) {
+-						t = random32() % (imx - imn) + imn;
++						t = prandom_u32() %
++							(imx - imn) + imn;
+ 						s = htonl(t);
+ 					}
+ 					pkt_dev->cur_daddr = s;
+@@ -2420,7 +2421,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
  
+ 			for (i = 0; i < 4; i++) {
+ 				pkt_dev->cur_in6_daddr.s6_addr32[i] =
+-				    (((__force __be32)random32() |
++				    (((__force __be32)prandom_u32() |
+ 				      pkt_dev->min_in6_daddr.s6_addr32[i]) &
+ 				     pkt_dev->max_in6_daddr.s6_addr32[i]);
+ 			}
+@@ -2430,7 +2431,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
+ 	if (pkt_dev->min_pkt_size < pkt_dev->max_pkt_size) {
+ 		__u32 t;
+ 		if (pkt_dev->flags & F_TXSIZE_RND) {
+-			t = random32() %
++			t = prandom_u32() %
+ 				(pkt_dev->max_pkt_size - pkt_dev->min_pkt_size)
+ 				+ pkt_dev->min_pkt_size;
+ 		} else {
+diff --git a/net/core/stream.c b/net/core/stream.c
+index f5df85d..6881f0c 100644
+--- a/net/core/stream.c
++++ b/net/core/stream.c
+@@ -122,7 +122,7 @@ int sk_stream_wait_memory(struct sock *sk, long *timeo_p)
+ 	DEFINE_WAIT(wait);
+ 
+ 	if (sk_stream_memory_free(sk))
+-		current_timeo = vm_wait = (net_random() % (HZ / 5)) + 2;
++		current_timeo = vm_wait = (prandom_u32() % (HZ / 5)) + 2;
+ 
+ 	while (1) {
+ 		set_bit(SOCK_ASYNC_NOSPACE, &sk->sk_socket->flags);
 -- 
 1.7.11.7
 
