@@ -1,203 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab2LXUx4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 15:53:56 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:46998 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab2LXUxx (ORCPT
+	id S1753440Ab2LXU7b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 15:59:31 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:34555 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab2LXU72 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 15:53:53 -0500
+	Mon, 24 Dec 2012 15:59:28 -0500
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Dec 2012 15:59:28 EST
 MIME-Version: 1.0
-In-Reply-To: <1356336807-5517-4-git-send-email-avagin@openvz.org>
-References: <1356336807-5517-1-git-send-email-avagin@openvz.org> <1356336807-5517-4-git-send-email-avagin@openvz.org>
+In-Reply-To: <1356336807-5517-1-git-send-email-avagin@openvz.org>
+References: <1356336807-5517-1-git-send-email-avagin@openvz.org>
 From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Mon, 24 Dec 2012 21:53:33 +0100
-X-Google-Sender-Auth: Qd-K1CmMi2sqayDHKiQAncO7FPc
-Message-ID: <CAHO5Pa2TY3fVs4fFNdhrRN79QkVrWhR_sxD1JoEt-wSwCSN8_A@mail.gmail.com>
-Subject: Re: [PATCH 3/4] signalfd: add ability to choose a private or shared queue
+Date: Mon, 24 Dec 2012 21:51:10 +0100
+X-Google-Sender-Auth: FbY9NsbKK2d75b4ef8yObdfgTnE
+Message-ID: <CAHO5Pa0B9KsU-kr=M78kRG5WqOf-ere6YmZ0GPUv4WLF6at_RQ@mail.gmail.com>
+Subject: Re: [PATCH 0/4] signalfd: a kernel interface for dumping/restoring
+ pending signals
 To: Andrey Vagin <avagin@openvz.org>
 Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
         linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
         Pavel Emelyanov <xemul@parallels.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 [CC+=linux-api]
 
-Andrey,
-
-(Among other things, some suggested wording fixes below to improve the
-eventual commit log entry).
+Hi Andrey,
 
 On Mon, Dec 24, 2012 at 9:13 AM, Andrey Vagin <avagin@openvz.org> wrote:
-> This patch is added two flags SFD_GROUP and SFD_SHARED.
-> SFD_SHARED - read signals from a shared queue
-> SFD_PRIVATE - read signals from a private queue
-
-These names and comments are not quite meaningful I find. Also, you
-use SFD_SHARED here, but the name below is SFD_GROUP. I had to read
-further to confirm what I guessed the names meant. How about these
-names and comments:
-
-SFD_SHARED_QUEUE - read signals from a shared (process wide) queue
-SFD_PER_THREAD_QUEUE - read signals from a per-thread queue
-
-> Without this flags or with both flags signals are read from both queues.
-
-Without these flags
-
-> This functionality is requered for dumping pending signals.
-
-"required"
-
-> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-> Cc: Pavel Emelyanov <xemul@parallels.com>
-> CC: Cyrill Gorcunov <gorcunov@openvz.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  fs/signalfd.c                 | 25 +++++++++++++++++++------
->  include/uapi/linux/signalfd.h |  2 ++
->  2 files changed, 21 insertions(+), 6 deletions(-)
+> The idea is simple. We need to get the siginfo for each signal on dump,
+> and then return it back on restore.
 >
-> diff --git a/fs/signalfd.c b/fs/signalfd.c
-> index 95f1444..a35aeda 100644
-> --- a/fs/signalfd.c
-> +++ b/fs/signalfd.c
-> @@ -170,13 +170,13 @@ static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
->  }
+> The first problem is that the kernel doesn’t report complete siginfo-s
+> in user-space. In a signal handler the kernel strips SI_CODE from
+> siginfo. When a siginfo is received from signalfd, it has a different
+> format with fixed sizes of fields. The interface of signalfd was
+> extended. If a signalfd is created with the flag SFD_RAW, it returns
+> siginfo in a raw format. We need to choose a queue, so two flags
+> SFD_GROUP and SFD_PRIVATE were added.
 >
->  static ssize_t signalfd_dequeue(struct signalfd_ctx *ctx, siginfo_t *info,
-> -                               int nonblock)
-> +                               int nonblock, int queue)
->  {
->         ssize_t ret;
->         DECLARE_WAITQUEUE(wait, current);
->
->         spin_lock_irq(&current->sighand->siglock);
-> -       ret = dequeue_signal(current, &ctx->sigmask, info);
-> +       ret = do_dequeue_signal(current, &ctx->sigmask, info, queue);
->         switch (ret) {
->         case 0:
->                 if (!nonblock)
-> @@ -223,14 +223,21 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
->         bool raw = file->f_flags & SFD_RAW;
->         ssize_t ret, total = 0;
->         siginfo_t info;
-> +       int queue = 0;
->
->         count /= sizeof(struct signalfd_siginfo);
->         if (!count)
->                 return -EINVAL;
->
-> +       if (file->f_flags & SFD_GROUP)
-> +               queue++;
-> +
-> +       if (file->f_flags & SFD_PRIVATE)
-> +               queue--;
-> +
->         siginfo = (struct signalfd_siginfo __user *) buf;
->         do {
-> -               ret = signalfd_dequeue(ctx, &info, nonblock);
-> +               ret = signalfd_dequeue(ctx, &info, nonblock, queue);
->                 if (unlikely(ret <= 0))
->                         break;
->
-> @@ -274,6 +281,8 @@ static const struct file_operations signalfd_fops = {
->         .llseek         = noop_llseek,
->  };
->
-> +#define SIGNAFD_FLAGS (SFD_RAW | SFD_GROUP | SFD_PRIVATE)
+> rt_sigqueueinfo looks suitable for restoring signals, but it can’t send
+> siginfo with a positive si_code, because these codes are reserved for
+> the kernel. In the real world each person has right to do anything with
+> himself, so I think a process should able to send any siginfo to itself.
 
-This name is rather obtuse. What is the purpose of grouping these
-three flags like this? Yes, I understand how you use the name below,
-but the grouping seems arbitrary.
+I see that you CCed me on a couple of the patches in this series.
+Thanks for that. But, since most of the series concerns API changes,
+it would be good also to CC linux-api on (future revisions of) the
+entire series.
 
-Why not have a grouping of all SFD_ 5 flags?
+I have a few largely cosmetic comments on some of the patches, which
+I'll add in the respective threads.
 
-#define SFD_ALL_FLAGS (SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW |
-SFD_GROUP | SFD_PRIVATE)
-
-And use that appropriately below.
-
-See also the comments below about individual flags.
-
-
-> +
->  SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->                 size_t, sizemask, int, flags)
->  {
-> @@ -284,7 +293,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->         BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
->         BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
->
-> -       if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW))
-> +       if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SIGNAFD_FLAGS))
->                 return -EINVAL;
->
->         if (sizemask != sizeof(sigset_t) ||
-> @@ -308,9 +317,9 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->                                        O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
->                 if (ufd < 0)
->                         kfree(ctx);
-> -               else if (flags & SFD_RAW) {
-> +               else if (flags & SIGNAFD_FLAGS) {
->                         struct fd f = fdget(ufd);
-> -                       f.file->f_flags |= flags & SFD_RAW;
-> +                       f.file->f_flags |= flags & SIGNAFD_FLAGS;
->                         fdput(f);
->                 }
->         } else {
-> @@ -322,6 +331,10 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->                         fdput(f);
->                         return -EINVAL;
->                 }
-> +
-> +               f.file->f_flags = (f.file->f_flags & ~SIGNAFD_FLAGS) |
-> +                                               (flags & SIGNAFD_FLAGS);
-> +
->                 spin_lock_irq(&current->sighand->siglock);
->                 ctx->sigmask = sigmask;
->                 spin_unlock_irq(&current->sighand->siglock);
-> diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
-> index bc31849..9421321 100644
-> --- a/include/uapi/linux/signalfd.h
-> +++ b/include/uapi/linux/signalfd.h
-> @@ -16,6 +16,8 @@
->  #define SFD_CLOEXEC O_CLOEXEC
->  #define SFD_NONBLOCK O_NONBLOCK
->  #define SFD_RAW O_DIRECT
-> +#define SFD_GROUP O_DIRECTORY
-> +#define SFD_PRIVATE O_EXCL
-
-What's the reason for making these flags synonyms of existing O_*
-flags, as opposed to just choosing suitable numeric values. (There is
-a rationale for this, in the case of CLOEXEC and NONBLOCK, as
-indicated by the names, but that rationale doesn't extend to the three
-new flags.) Using synonyms here suggests that there's a relationship
-between SFD_RAW and O_DIRECT and so on, when there isn't.
-
->  struct signalfd_siginfo {
->         __u32 ssi_signo;
-> --
-> 1.7.11.7
-
-Cheers,
+Thanks,
 
 Michael
+
+
+> Cc: Serge Hallyn <serge.hallyn@canonical.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> CC: Cyrill Gorcunov <gorcunov@openvz.org>
+>
+> --
+> 1.7.11.7
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
 -- 
 Michael Kerrisk Linux man-pages maintainer;
