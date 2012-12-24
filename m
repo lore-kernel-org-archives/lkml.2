@@ -1,76 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab2LXQQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 11:16:56 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:35581 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752597Ab2LXQQy (ORCPT
+	id S1753267Ab2LXQSc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 11:18:32 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43781 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752597Ab2LXQSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 11:16:54 -0500
-Message-ID: <1356365803.17063.0.camel@phoenix>
-Subject: [PATCH 1/2] mfd: max77686: Init max77686->dev before using it
-From: Axel Lin <axel.lin@ingics.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Chiwoong Byun <woong.byun@samsung.com>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 25 Dec 2012 00:16:43 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 24 Dec 2012 11:18:30 -0500
+Date: Mon, 24 Dec 2012 16:18:27 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-input@vger.kernel.org
+Subject: Re: [PATCH 17/25] wm97xx: don't use [delayed_]work_pending()
+Message-ID: <20121224161827.GR30837@opensource.wolfsonmicro.com>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-18-git-send-email-tj@kernel.org>
+ <20121223095450.GA17407@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Uw+RRa3pmtkgiNaD"
+Content-Disposition: inline
+In-Reply-To: <20121223095450.GA17407@core.coreip.homeip.net>
+X-Cookie: Your step will soil many countries.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code uses max77686->dev in the dev_err call before setting it to
-&i2c->dev. Fix it.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/max77686.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+--Uw+RRa3pmtkgiNaD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index f6878f8..4d73963 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -93,15 +93,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	if (max77686 == NULL)
- 		return -ENOMEM;
- 
--	max77686->regmap = regmap_init_i2c(i2c, &max77686_regmap_config);
--	if (IS_ERR(max77686->regmap)) {
--		ret = PTR_ERR(max77686->regmap);
--		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
--				ret);
--		kfree(max77686);
--		return ret;
--	}
--
- 	i2c_set_clientdata(i2c, max77686);
- 	max77686->dev = &i2c->dev;
- 	max77686->i2c = i2c;
-@@ -111,6 +102,15 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 	max77686->irq_gpio = pdata->irq_gpio;
- 	max77686->irq = i2c->irq;
- 
-+	max77686->regmap = regmap_init_i2c(i2c, &max77686_regmap_config);
-+	if (IS_ERR(max77686->regmap)) {
-+		ret = PTR_ERR(max77686->regmap);
-+		dev_err(max77686->dev, "Failed to allocate register map: %d\n",
-+				ret);
-+		kfree(max77686);
-+		return ret;
-+	}
-+
- 	if (regmap_read(max77686->regmap,
- 			 MAX77686_REG_DEVICE_ID, &data) < 0) {
- 		dev_err(max77686->dev,
--- 
-1.7.9.5
+On Sun, Dec 23, 2012 at 01:54:50AM -0800, Dmitry Torokhov wrote:
 
+> This is not 100% equivalent transformation as now we schedule first and
+> disable IRQ later... Anyway, I think the driver shoudl be converted to
+> threaded IRQ instead. Mark, does the patch below make any sense to you?
 
+I'm a bit nervous about the fact that currently both the pen down IRQ
+and the coordinate read are pushed through a single workqueue so are
+serialised but after your patch they'll be split into the IRQ thread and
+the workqueue.  It *should* be fine but I'd have to sit there and study
+it to convince myself that it's safe.
 
+--Uw+RRa3pmtkgiNaD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ2IBFAAoJELSic+t+oim9mGYP/3C4VuumUxsIPl+RptwTmy4O
+8JNW2IYdnTmsP8FbNGrXH/sAqERbOzTt9gfJuRAz1jhUT02p6+IX4naDcSxSMN68
+4Uxt3ZgFUCRu6J13wV+Wkd6d1714UyzrK8eE+RQG8N5Xyx4I1N5DsT9kPmmzsFUB
+TxCWkK5J7iwPHamgYL34j2AbvKe4kyCeHckxMVEt6pGlDqcm4o6JF+/HL6pLHtkS
+Ez+M0m1/waw/tGASZJgCJ4mANkAja/kT1EPiXmzBD4rrVyej1N9JVoU6GcO2LzT6
+GUrdqw9MQ6J634A+fMkSNfcwy7if4KLJb4kOWTTXiRYaXEISgT83NIdKV30dJdTz
+wzfaGCGVYzXZXvo4jQjUhGAXiP9Kaf8PftmSlH2ebNpK1g0fCbs78Py9bb+MYHdK
+6eBTwydWgD2LwnKGrNwYAIPPjd/+PRDr8rIEHFuME2g6Q/IyAgWkk171CvTvRaZv
+CvnVTOXfa0AOWc96jKVGlBNCVFOJW1zKnTxF3p63LwtAPyxvGdcxH3Eig3G7qTRr
+hK3Qs8ZPdl/LRc12Pj1ZQ84ibbxF+mGzsyjJK63nh2ryGMSB54j71rsRBBr1IpiL
+TEgi1xdpcWAeLu7Sl1M+kXQCd+mopjq1tkvhcc+KXM41+alIPDrYRZjHExGVYgV/
+nvDIPFAUwFwBJAeIvgoo
+=a4ol
+-----END PGP SIGNATURE-----
+
+--Uw+RRa3pmtkgiNaD--
