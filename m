@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab2LXCUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:20:12 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:52824 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345Ab2LXCUH (ORCPT
+	id S1753006Ab2LXCUT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:20:19 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:60893 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752772Ab2LXCUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:20:07 -0500
+	Sun, 23 Dec 2012 21:20:14 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>
-Subject: [PATCH 05/29] lib/: rename random32() to prandom_u32()
-Date: Mon, 24 Dec 2012 11:13:52 +0900
-Message-Id: <1356315256-6572-6-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH 16/29] scsi: rename random32() to prandom_u32()
+Date: Mon, 24 Dec 2012 11:14:03 +0900
+Message-Id: <1356315256-6572-17-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
 References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
@@ -24,37 +29,90 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Robert Love <robert.w.love@intel.com>
+Cc: devel@open-fcoe.org
+Cc: James Smart <james.smart@emulex.com>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Cc: linux-driver@qlogic.com
+Cc: linux-scsi@vger.kernel.org
 ---
- lib/fault-inject.c | 2 +-
- lib/list_sort.c    | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/fcoe/fcoe_ctlr.c    | 4 ++--
+ drivers/scsi/lpfc/lpfc_hbadisc.c | 6 +++---
+ drivers/scsi/qla2xxx/qla_attr.c  | 7 +++++--
+ 3 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/lib/fault-inject.c b/lib/fault-inject.c
-index f7210ad..c5c7a76 100644
---- a/lib/fault-inject.c
-+++ b/lib/fault-inject.c
-@@ -122,7 +122,7 @@ bool should_fail(struct fault_attr *attr, ssize_t size)
- 			return false;
- 	}
+diff --git a/drivers/scsi/fcoe/fcoe_ctlr.c b/drivers/scsi/fcoe/fcoe_ctlr.c
+index 4a909d7..d870ccc 100644
+--- a/drivers/scsi/fcoe/fcoe_ctlr.c
++++ b/drivers/scsi/fcoe/fcoe_ctlr.c
+@@ -2153,7 +2153,7 @@ static void fcoe_ctlr_vn_restart(struct fcoe_ctlr *fip)
  
--	if (attr->probability <= random32() % 100)
-+	if (attr->probability <= prandom_u32() % 100)
- 		return false;
- 
- 	if (!fail_stacktrace(attr))
-diff --git a/lib/list_sort.c b/lib/list_sort.c
-index d7325c6..1183fa7 100644
---- a/lib/list_sort.c
-+++ b/lib/list_sort.c
-@@ -229,7 +229,7 @@ static int __init list_sort_test(void)
- 			goto exit;
+ 	if (fip->probe_tries < FIP_VN_RLIM_COUNT) {
+ 		fip->probe_tries++;
+-		wait = random32() % FIP_VN_PROBE_WAIT;
++		wait = prandom_u32() % FIP_VN_PROBE_WAIT;
+ 	} else
+ 		wait = FIP_VN_RLIM_INT;
+ 	mod_timer(&fip->timer, jiffies + msecs_to_jiffies(wait));
+@@ -2786,7 +2786,7 @@ static void fcoe_ctlr_vn_timeout(struct fcoe_ctlr *fip)
+ 					  fcoe_all_vn2vn, 0);
+ 			fip->port_ka_time = jiffies +
+ 				 msecs_to_jiffies(FIP_VN_BEACON_INT +
+-					(random32() % FIP_VN_BEACON_FUZZ));
++					(prandom_u32() % FIP_VN_BEACON_FUZZ));
  		}
- 		 /* force some equivalencies */
--		el->value = random32() % (TEST_LIST_LEN/3);
-+		el->value = prandom_u32() % (TEST_LIST_LEN / 3);
- 		el->serial = i;
- 		el->poison1 = TEST_POISON1;
- 		el->poison2 = TEST_POISON2;
+ 		if (time_before(fip->port_ka_time, next_time))
+ 			next_time = fip->port_ka_time;
+diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
+index d7096ad..bfda184 100644
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -1732,7 +1732,7 @@ lpfc_check_pending_fcoe_event(struct lpfc_hba *phba, uint8_t unreg_fcf)
+  * use through a sequence of @fcf_cnt eligible FCF records with equal
+  * probability. To perform integer manunipulation of random numbers with
+  * size unit32_t, the lower 16 bits of the 32-bit random number returned
+- * from random32() are taken as the random random number generated.
++ * from prandom_u32() are taken as the random random number generated.
+  *
+  * Returns true when outcome is for the newly read FCF record should be
+  * chosen; otherwise, return false when outcome is for keeping the previously
+@@ -1744,7 +1744,7 @@ lpfc_sli4_new_fcf_random_select(struct lpfc_hba *phba, uint32_t fcf_cnt)
+ 	uint32_t rand_num;
+ 
+ 	/* Get 16-bit uniform random number */
+-	rand_num = (0xFFFF & random32());
++	rand_num = 0xFFFF & prandom_u32();
+ 
+ 	/* Decision with probability 1/fcf_cnt */
+ 	if ((fcf_cnt * rand_num) < 0xFFFF)
+@@ -2380,7 +2380,7 @@ lpfc_mbx_cmpl_fcf_scan_read_fcf_rec(struct lpfc_hba *phba, LPFC_MBOXQ_t *mboxq)
+ 		phba->fcf.eligible_fcf_cnt = 1;
+ 		/* Seeding the random number generator for random selection */
+ 		seed = (uint32_t)(0xFFFFFFFF & jiffies);
+-		srandom32(seed);
++		prandom_seed(seed);
+ 	}
+ 	spin_unlock_irq(&phba->hbalock);
+ 	goto read_next_fcf;
+diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+index 83d7984..3658e9f 100644
+--- a/drivers/scsi/qla2xxx/qla_attr.c
++++ b/drivers/scsi/qla2xxx/qla_attr.c
+@@ -1933,8 +1933,11 @@ qla24xx_vport_delete(struct fc_vport *fc_vport)
+ 
+ 	/* No pending activities shall be there on the vha now */
+ 	if (ql2xextended_error_logging & ql_dbg_user)
+-		msleep(random32()%10);  /* Just to see if something falls on
+-					* the net we have placed below */
++		msleep(prandom_u32() % 10);
++		/*
++		 * Just to see if something falls on the net we have placed
++		 * below
++		 */
+ 
+ 	BUG_ON(atomic_read(&vha->vref_count));
+ 
 -- 
 1.7.11.7
 
