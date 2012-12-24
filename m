@@ -1,26 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120Ab2LXCPo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:15:44 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:38295 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab2LXCPc (ORCPT
+	id S1753133Ab2LXCQO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:16:14 -0500
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:50088 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab2LXCPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:15:32 -0500
+	Sun, 23 Dec 2012 21:15:34 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jesse Gross <jesse@nicira.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Sridhar Samudrala <sri@us.ibm.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        dev@openvswitch.org, netdev@vger.kernel.org
-Subject: [PATCH 28/29] net/: rename net_random() to prandom_u32()
-Date: Mon, 24 Dec 2012 11:14:15 +0900
-Message-Id: <1356315256-6572-29-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 29/29] remove unused net_random(), net_srandom(), random32(), and srandom32()
+Date: Mon, 24 Dec 2012 11:14:16 +0900
+Message-Id: <1356315256-6572-30-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
 References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
@@ -28,108 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more preferable function name which implies using a pseudo-random
-number generator.
+After finishing a naming transition, remove unused backward
+compatibility wrapper macros
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jesse Gross <jesse@nicira.com>
-Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 Cc: "David S. Miller" <davem@davemloft.net>
-Cc: linux-sctp@vger.kernel.org
-Cc: dev@openvswitch.org
 Cc: netdev@vger.kernel.org
 ---
- include/net/red.h         | 2 +-
- net/802/garp.c            | 2 +-
- net/openvswitch/actions.c | 2 +-
- net/rds/bind.c            | 2 +-
- net/sctp/socket.c         | 2 +-
- net/xfrm/xfrm_state.c     | 2 +-
- 6 files changed, 6 insertions(+), 6 deletions(-)
+ include/linux/net.h    | 3 ---
+ include/linux/random.h | 7 -------
+ 2 files changed, 10 deletions(-)
 
-diff --git a/include/net/red.h b/include/net/red.h
-index ef46058..168bb2f 100644
---- a/include/net/red.h
-+++ b/include/net/red.h
-@@ -303,7 +303,7 @@ static inline unsigned long red_calc_qavg(const struct red_parms *p,
+diff --git a/include/linux/net.h b/include/linux/net.h
+index aa16731..937e2bf 100644
+--- a/include/linux/net.h
++++ b/include/linux/net.h
+@@ -240,9 +240,6 @@ do {								\
+ #define net_dbg_ratelimited(fmt, ...)				\
+ 	net_ratelimited_function(pr_debug, fmt, ##__VA_ARGS__)
  
- static inline u32 red_random(const struct red_parms *p)
- {
--	return reciprocal_divide(net_random(), p->max_P_reciprocal);
-+	return reciprocal_divide(prandom_u32(), p->max_P_reciprocal);
- }
+-#define net_random()		random32()
+-#define net_srandom(seed)	srandom32((__force u32)seed)
+-
+ extern int   	     kernel_sendmsg(struct socket *sock, struct msghdr *msg,
+ 				    struct kvec *vec, size_t num, size_t len);
+ extern int   	     kernel_recvmsg(struct socket *sock, struct msghdr *msg,
+diff --git a/include/linux/random.h b/include/linux/random.h
+index d984608..2ae2840 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -29,13 +29,6 @@ u32 prandom_u32(void);
+ void prandom_bytes(void *buf, int nbytes);
+ void prandom_seed(u32 seed);
  
- static inline int red_mark_probability(const struct red_parms *p,
-diff --git a/net/802/garp.c b/net/802/garp.c
-index 8456f5d..cf7410d 100644
---- a/net/802/garp.c
-+++ b/net/802/garp.c
-@@ -397,7 +397,7 @@ static void garp_join_timer_arm(struct garp_applicant *app)
- {
- 	unsigned long delay;
+-/*
+- * These macros are preserved for backward compatibility and should be
+- * removed as soon as a transition is finished.
+- */
+-#define random32() prandom_u32()
+-#define srandom32(seed) prandom_seed(seed)
+-
+ u32 prandom_u32_state(struct rnd_state *);
+ void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
  
--	delay = (u64)msecs_to_jiffies(garp_join_time) * net_random() >> 32;
-+	delay = (u64)msecs_to_jiffies(garp_join_time) * prandom_u32() >> 32;
- 	mod_timer(&app->join_timer, jiffies + delay);
- }
- 
-diff --git a/net/openvswitch/actions.c b/net/openvswitch/actions.c
-index ac2defe..257bc36 100644
---- a/net/openvswitch/actions.c
-+++ b/net/openvswitch/actions.c
-@@ -404,7 +404,7 @@ static int sample(struct datapath *dp, struct sk_buff *skb,
- 		 a = nla_next(a, &rem)) {
- 		switch (nla_type(a)) {
- 		case OVS_SAMPLE_ATTR_PROBABILITY:
--			if (net_random() >= nla_get_u32(a))
-+			if (prandom_u32() >= nla_get_u32(a))
- 				return 0;
- 			break;
- 
-diff --git a/net/rds/bind.c b/net/rds/bind.c
-index 637bde5..7f95f4b 100644
---- a/net/rds/bind.c
-+++ b/net/rds/bind.c
-@@ -118,7 +118,7 @@ static int rds_add_bound(struct rds_sock *rs, __be32 addr, __be16 *port)
- 		rover = be16_to_cpu(*port);
- 		last = rover;
- 	} else {
--		rover = max_t(u16, net_random(), 2);
-+		rover = max_t(u16, prandom_u32(), 2);
- 		last = rover - 1;
- 	}
- 
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index 9e65758..95860aa 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -5899,7 +5899,7 @@ static long sctp_get_port_local(struct sock *sk, union sctp_addr *addr)
- 
- 		inet_get_local_port_range(&low, &high);
- 		remaining = (high - low) + 1;
--		rover = net_random() % remaining + low;
-+		rover = prandom_u32() % remaining + low;
- 
- 		do {
- 			rover++;
-diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-index 3459692..35ddaab 100644
---- a/net/xfrm/xfrm_state.c
-+++ b/net/xfrm/xfrm_state.c
-@@ -1546,7 +1546,7 @@ int xfrm_alloc_spi(struct xfrm_state *x, u32 low, u32 high)
- 	} else {
- 		u32 spi = 0;
- 		for (h=0; h<high-low+1; h++) {
--			spi = low + net_random()%(high-low+1);
-+			spi = low + prandom_u32() % (high - low + 1);
- 			x0 = xfrm_state_lookup(net, mark, &x->id.daddr, htonl(spi), x->id.proto, x->props.family);
- 			if (x0 == NULL) {
- 				x->id.spi = htonl(spi);
 -- 
 1.7.11.7
 
