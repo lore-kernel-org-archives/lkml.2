@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753197Ab2LXRF6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 12:05:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:10886 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751549Ab2LXRFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 12:05:53 -0500
-Date: Mon, 24 Dec 2012 18:05:40 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH 3/4] signalfd: add ability to choose a private or
-	shared queue
-Message-ID: <20121224170540.GB9553@redhat.com>
-References: <1356336807-5517-1-git-send-email-avagin@openvz.org> <1356336807-5517-4-git-send-email-avagin@openvz.org>
+	id S1753321Ab2LXRg0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 12:36:26 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:33309 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2LXRgZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 12:36:25 -0500
+Date: Mon, 24 Dec 2012 09:39:37 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Amit Shah <amit.shah@redhat.com>, Sasha Levin <sasha.levin@oracle.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] virtio_console: correct error message on failure of
+ debugfs_create_dir
+Message-ID: <20121224173937.GB14754@kroah.com>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
+ <1356030701-16284-13-git-send-email-sasha.levin@oracle.com>
+ <20121221075909.GA15739@amit.redhat.com>
+ <201212241155.46866.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356336807-5517-4-git-send-email-avagin@openvz.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201212241155.46866.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24, Andrey Vagin wrote:
->
->  static ssize_t signalfd_dequeue(struct signalfd_ctx *ctx, siginfo_t *info,
-> -				int nonblock)
-> +				int nonblock, int queue)
->  {
->  	ssize_t ret;
->  	DECLARE_WAITQUEUE(wait, current);
->
->  	spin_lock_irq(&current->sighand->siglock);
-> -	ret = dequeue_signal(current, &ctx->sigmask, info);
-> +	ret = do_dequeue_signal(current, &ctx->sigmask, info, queue);
+On Mon, Dec 24, 2012 at 11:55:46AM +0000, Arnd Bergmann wrote:
+> On Friday 21 December 2012, Amit Shah wrote:
+> > On (Thu) 20 Dec 2012 [14:11:21], Sasha Levin wrote:
+> > > debugfs_create_dir() returns NULL if it fails, there's little point in
+> > > calling PTR_ERR on it.
+> >
+> > debugfs_create_dir() does return an error value if debugfs is not
+> > enabled.
+> > 
+> > This check for !pdrvdata.debugfs_dir should infact use
+> > IS_ERR_OR_NULL().  Care to submit a patch for that?
+> 
+> How about we fix the stub instead to return NULL when debugfs is disabled?
 
-Hmm. queue != 0 && !nonblock ?
+No, please read debugfs.h for why I decided to not do this (i.e. we try
+to learn from our mistakes...)
 
-And in this case you should also update signalfd_poll().
+thanks,
 
-> +	if (file->f_flags & SFD_GROUP)
-> +		queue++;
-> +
-> +	if (file->f_flags & SFD_PRIVATE)
-> +		queue--;
-
-To be honest, personally I think this looks ugly. If you add an
-argumemt to dequeue_signal() it would be better to use bitmask.
-But this is minor.
-
-
-Well. Perhaps we can avoid all these complications? IIUC, all you
-need is to know if the dequeued signal is private or shared. Since
-you add SFD_RAW anyway perhaps we can report this fact instead?
-This doesn't need any changes in signal.c, signalfd_dequeue() can
-easily know which queue dequeue_signal() will use.
-
-Oleg.
-
+greg k-h
