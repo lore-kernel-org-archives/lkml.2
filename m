@@ -1,101 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab2LXWba (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 17:31:30 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:55952 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753341Ab2LXWb2 (ORCPT
+	id S1753450Ab2LXXaq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 18:30:46 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:63876 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab2LXXan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 17:31:28 -0500
-Date: Mon, 24 Dec 2012 23:31:05 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org, Ian Molton <ian@mnementh.co.uk>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 18/25] TMIO MMC: don't use [delayed_]work_pending()
-In-Reply-To: <1356141435-17340-19-git-send-email-tj@kernel.org>
-Message-ID: <Pine.LNX.4.64.1212242314420.31888@axis700.grange>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-19-git-send-email-tj@kernel.org>
+	Mon, 24 Dec 2012 18:30:43 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:uLY3ggbanh7xOlcOZPJn/fAlB2wJuYOFUUmL+X5W8jg
- EYmbY3ZxJexnTsm8IMbM3N0URCss1AgUDhH7DFh39JNmaTbnqH
- MRcWKj6XqutJsWdIo0/xd8wPZmq3D6fPUT2K1S/enoFjzP0uWR
- JMzHE/TYsbtD79kzi8W/qgj6V/UTTizggW30r+NpVVcZdPG4Cz
- hTXWcE1fC2DuiOth2ckyg8fCJNWjXT/pTLroFcAEQFTUrIq2sH
- PC+eHO59od0/qBGpparjp5XkA6Zycg9TDSR7pKt3tJtMLokOqz
- CgcMMS3azKoVyIIK//UaVrfmmGc11qnXiU/+xrrI005K3JxePr
- X8ok/lGQzTxHe/UJyTkY9+cBIwdW9cMhYm+8kxMG75VuigrnJk
- Vm5Ga0SGHuQyw==
+Date: Tue, 25 Dec 2012 00:30:42 +0100
+Message-ID: <CALS3df0FR0XD9wnzVhCMDXbS-Q2OejH2TfgYf6uL8gF4cKDRng@mail.gmail.com>
+Subject: [PATCH] nfsd: Don't overuse NFS?ERR_PERM error code
+From: Pawel Dziepak <pdziepak@quarnos.org>
+To: bfields@fieldses.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun
+From: Pawel Dziepak <pdziepak@quarnos.org>
 
-On Fri, 21 Dec 2012, Tejun Heo wrote:
+Unlike EPERM, NFS?ERR_PERM error code applies only when the operation could
+not be completed because the caller is either not the owner or not a
+privileged user. Actually, only OPEN, CREATE and SETATTR are supposed to
+ever return such error code when a problem occurs when changing or setting
+access permissions.
 
-> There's no need to test whether a (delayed) work item in pending
-> before queueing, flushing or cancelling it.  Most uses are unnecessary
-> and quite a few of them are buggy.
-> 
-> Remove unnecessary pending tests from tmio mmc.  Only compile tested.
+Generally, this patch replaces NFS?ERR_PERM with NFS?ERR_ACCESS which is a more
+appropriate error code indicating that the caller is not allowed to perform the
+requested operation.
 
-Thanks for the patch. It looks good to me. What happens below is upon mmc 
-card detection IRQs, of which there are typically several due to pin 
-debouncing, a delayed work is scheduled to verify a possibly new card 
-state (plugged in or removed). So, the code below checks, that after the 
-first of those interrupts the work is already scheduled and doesn't 
-schedule it again. IIUC, this is indeed unneeded, since 
-queue_delayed_work_on() only has any effect if the work isn't queued yet. 
-Ah, there's a nitpick - you can remove one pair of parenthesis;-) 
-Otherwise, I guess, this is an
+In case of incorrect {file,directory} names either NFS?ERR_INVAL or
+NFS4ERR_BADNAME is returned.
 
-Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Opening for write files with append-only bit set or mandatory locking enabled
+results in NFS4ERR_SHARE_DENIED.
 
-and Chris can take it (preferably, after the correction) via his queue. If 
-you give me a bit more time I can also test this, but it really looks 
-pretty obvious. Maybe Chris will prefer you to take this via your queue - 
-that's up to you two to decide.
-
-Thanks
-Guennadi
-
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> Cc: Ian Molton <ian@mnementh.co.uk>
-> Cc: linux-mmc@vger.kernel.org
-> ---
-> Please let me know how this patch should be routed.  I can take it
-> through the workqueue tree if necessary.
-> 
-> Thanks.
-> 
->  drivers/mmc/host/tmio_mmc_pio.c | 3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
-> index 50bf495..f4f18b3 100644
-> --- a/drivers/mmc/host/tmio_mmc_pio.c
-> +++ b/drivers/mmc/host/tmio_mmc_pio.c
-> @@ -573,8 +573,7 @@ static bool __tmio_mmc_card_detect_irq(struct tmio_mmc_host *host,
->  		tmio_mmc_ack_mmc_irqs(host, TMIO_STAT_CARD_INSERT |
->  			TMIO_STAT_CARD_REMOVE);
->  		if ((((ireg & TMIO_STAT_CARD_REMOVE) && mmc->card) ||
-> -		     ((ireg & TMIO_STAT_CARD_INSERT) && !mmc->card)) &&
-> -		    !work_pending(&mmc->detect.work))
-> +		     ((ireg & TMIO_STAT_CARD_INSERT) && !mmc->card)))
->  			mmc_detect_change(host->mmc, msecs_to_jiffies(100));
->  		return true;
->  	}
-> -- 
-> 1.8.0.2
-> 
-
+Signed-off-by: Pawel Dziepak <pdziepak@quarnos.org>
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ fs/nfsd/nfsfh.c |  2 +-
+ fs/nfsd/vfs.c   | 28 ++++++++++++++++------------
+ 2 files changed, 17 insertions(+), 13 deletions(-)
+
+diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+index 814afaa..b18382c 100644
+--- a/fs/nfsd/nfsfh.c
++++ b/fs/nfsd/nfsfh.c
+@@ -91,7 +91,7 @@ static __be32 nfsd_setuser_and_check_port(struct
+svc_rqst *rqstp,
+  dprintk(KERN_WARNING
+        "nfsd: request from insecure port %s!\n",
+        svc_print_addr(rqstp, buf, sizeof(buf)));
+- return nfserr_perm;
++ return nfserr_acces;
+  }
+
+  /* Set user creds for this exportpoint */
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index d586117..a9964de 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -777,7 +777,7 @@ nfsd_open(struct svc_rqst *rqstp, struct svc_fh
+*fhp, umode_t type,
+  /* Disallow write access to files with the append-only bit set
+  * or any access when mandatory locking enabled
+  */
+- err = nfserr_perm;
++ err = nfserr_share_denied;
+  if (IS_APPEND(inode) && (may_flags & NFSD_MAY_WRITE))
+  goto out;
+  /*
+@@ -924,8 +924,6 @@ nfsd_vfs_read(struct svc_rqst *rqstp, struct
+svc_fh *fhp, struct file *file,
+  __be32 err;
+  int host_err;
+
+- err = nfserr_perm;
+-
+  if (file->f_op->splice_read && rqstp->rq_splice_ok) {
+  struct splice_desc sd = {
+  .len = 0,
+@@ -1246,7 +1244,7 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+  __be32 err2;
+  int host_err;
+
+- err = nfserr_perm;
++ err = nfserr_inval;
+  if (!flen)
+  goto out;
+  err = nfserr_exist;
+@@ -1387,7 +1385,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+  int host_err;
+  __u32 v_mtime=0, v_atime=0;
+
+- err = nfserr_perm;
++ err = nfserr_inval;
+  if (!flen)
+  goto out;
+  err = nfserr_exist;
+@@ -1675,7 +1673,7 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+  err = nfserr_isdir;
+  if (S_ISDIR(tfhp->fh_dentry->d_inode->i_mode))
+  goto out;
+- err = nfserr_perm;
++ err = nfserr_inval;
+  if (!len)
+  goto out;
+  err = nfserr_exist;
+@@ -1761,8 +1759,11 @@ nfsd_rename(struct svc_rqst *rqstp, struct
+svc_fh *ffhp, char *fname, int flen,
+  if (ffhp->fh_export != tfhp->fh_export)
+  goto out;
+
+- err = nfserr_perm;
+- if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
++ err = nfserr_inval;
++ if (!flen || !tlen)
++ goto out;
++ err = nfsd_v4client(rqstp) ? nfserr_badname : nfserr_inval;
++ if (isdotent(fname, flen) || isdotent(tname, tlen))
+  goto out;
+
+  host_err = fh_want_write(ffhp);
+@@ -1850,8 +1851,11 @@ nfsd_unlink(struct svc_rqst *rqstp, struct
+svc_fh *fhp, int type,
+  __be32 err;
+  int host_err;
+
+- err = nfserr_acces;
+- if (!flen || isdotent(fname, flen))
++ err = nfserr_inval;
++ if (!flen)
++ goto out;
++ err = nfsd_v4client(rqstp) ? nfserr_badname : nfserr_inval;
++ if (isdotent(fname, flen))
+  goto out;
+  err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_REMOVE);
+  if (err)
+@@ -2120,10 +2124,10 @@ nfsd_permission(struct svc_rqst *rqstp, struct
+svc_export *exp,
+     __mnt_is_readonly(exp->ex_path.mnt))
+  return nfserr_rofs;
+  if (/* (acc & NFSD_MAY_WRITE) && */ IS_IMMUTABLE(inode))
+- return nfserr_perm;
++ return nfserr_acces;
+  }
+  if ((acc & NFSD_MAY_TRUNC) && IS_APPEND(inode))
+- return nfserr_perm;
++ return nfserr_acces;
+
+  if (acc & NFSD_MAY_LOCK) {
+  /* If we cannot rely on authentication in NLM requests,
+--
+1.7.11.7
