@@ -1,72 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab2LXVpk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 16:45:40 -0500
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:43086 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab2LXVpi (ORCPT
+	id S1753432Ab2LXWba (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 17:31:30 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:55952 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753341Ab2LXWb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 16:45:38 -0500
-From: Stefan Hasko <hasko.stevo@gmail.com>
-To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stefan Hasko <hasko.stevo@gmail.com>
-Subject: [PATCH] drivers: video: fix warnings int-to-pointer-cast
-Date: Mon, 24 Dec 2012 22:44:48 +0100
-Message-Id: <1356385488-6655-1-git-send-email-hasko.stevo@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 24 Dec 2012 17:31:28 -0500
+Date: Mon, 24 Dec 2012 23:31:05 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Tejun Heo <tj@kernel.org>
+cc: linux-kernel@vger.kernel.org, Ian Molton <ian@mnementh.co.uk>,
+        linux-mmc@vger.kernel.org
+Subject: Re: [PATCH 18/25] TMIO MMC: don't use [delayed_]work_pending()
+In-Reply-To: <1356141435-17340-19-git-send-email-tj@kernel.org>
+Message-ID: <Pine.LNX.4.64.1212242314420.31888@axis700.grange>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-19-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:uLY3ggbanh7xOlcOZPJn/fAlB2wJuYOFUUmL+X5W8jg
+ EYmbY3ZxJexnTsm8IMbM3N0URCss1AgUDhH7DFh39JNmaTbnqH
+ MRcWKj6XqutJsWdIo0/xd8wPZmq3D6fPUT2K1S/enoFjzP0uWR
+ JMzHE/TYsbtD79kzi8W/qgj6V/UTTizggW30r+NpVVcZdPG4Cz
+ hTXWcE1fC2DuiOth2ckyg8fCJNWjXT/pTLroFcAEQFTUrIq2sH
+ PC+eHO59od0/qBGpparjp5XkA6Zycg9TDSR7pKt3tJtMLokOqz
+ CgcMMS3azKoVyIIK//UaVrfmmGc11qnXiU/+xrrI005K3JxePr
+ X8ok/lGQzTxHe/UJyTkY9+cBIwdW9cMhYm+8kxMG75VuigrnJk
+ Vm5Ga0SGHuQyw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed compile warnings cast to pointer from integer of different size
+Hi Tejun
 
-Signed-off-by: Stefan Hasko <hasko.stevo@gmail.com>
+On Fri, 21 Dec 2012, Tejun Heo wrote:
+
+> There's no need to test whether a (delayed) work item in pending
+> before queueing, flushing or cancelling it.  Most uses are unnecessary
+> and quite a few of them are buggy.
+> 
+> Remove unnecessary pending tests from tmio mmc.  Only compile tested.
+
+Thanks for the patch. It looks good to me. What happens below is upon mmc 
+card detection IRQs, of which there are typically several due to pin 
+debouncing, a delayed work is scheduled to verify a possibly new card 
+state (plugged in or removed). So, the code below checks, that after the 
+first of those interrupts the work is already scheduled and doesn't 
+schedule it again. IIUC, this is indeed unneeded, since 
+queue_delayed_work_on() only has any effect if the work isn't queued yet. 
+Ah, there's a nitpick - you can remove one pair of parenthesis;-) 
+Otherwise, I guess, this is an
+
+Acked-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+and Chris can take it (preferably, after the correction) via his queue. If 
+you give me a bit more time I can also test this, but it really looks 
+pretty obvious. Maybe Chris will prefer you to take this via your queue - 
+that's up to you two to decide.
+
+Thanks
+Guennadi
+
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Ian Molton <ian@mnementh.co.uk>
+> Cc: linux-mmc@vger.kernel.org
+> ---
+> Please let me know how this patch should be routed.  I can take it
+> through the workqueue tree if necessary.
+> 
+> Thanks.
+> 
+>  drivers/mmc/host/tmio_mmc_pio.c | 3 +--
+>  1 file changed, 1 insertion(+), 2 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/tmio_mmc_pio.c b/drivers/mmc/host/tmio_mmc_pio.c
+> index 50bf495..f4f18b3 100644
+> --- a/drivers/mmc/host/tmio_mmc_pio.c
+> +++ b/drivers/mmc/host/tmio_mmc_pio.c
+> @@ -573,8 +573,7 @@ static bool __tmio_mmc_card_detect_irq(struct tmio_mmc_host *host,
+>  		tmio_mmc_ack_mmc_irqs(host, TMIO_STAT_CARD_INSERT |
+>  			TMIO_STAT_CARD_REMOVE);
+>  		if ((((ireg & TMIO_STAT_CARD_REMOVE) && mmc->card) ||
+> -		     ((ireg & TMIO_STAT_CARD_INSERT) && !mmc->card)) &&
+> -		    !work_pending(&mmc->detect.work))
+> +		     ((ireg & TMIO_STAT_CARD_INSERT) && !mmc->card)))
+>  			mmc_detect_change(host->mmc, msecs_to_jiffies(100));
+>  		return true;
+>  	}
+> -- 
+> 1.8.0.2
+> 
+
 ---
- drivers/video/arkfb.c    |    2 +-
- drivers/video/s3fb.c     |    2 +-
- drivers/video/vt8623fb.c |    2 +-
- 3 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/video/arkfb.c b/drivers/video/arkfb.c
-index 555dd4c..3e4ed96 100644
---- a/drivers/video/arkfb.c
-+++ b/drivers/video/arkfb.c
-@@ -1016,7 +1016,7 @@ static int __devinit ark_pci_probe(struct pci_dev *dev, const struct pci_device_
- 
- 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
- 
--	par->state.vgabase = (void __iomem *) vga_res.start;
-+	par->state.vgabase = (void __iomem *)(unsigned long) vga_res.start;
- 
- 	/* FIXME get memsize */
- 	regval = vga_rseq(par->state.vgabase, 0x10);
-diff --git a/drivers/video/s3fb.c b/drivers/video/s3fb.c
-index 1d00736..def0a86 100644
---- a/drivers/video/s3fb.c
-+++ b/drivers/video/s3fb.c
-@@ -1183,7 +1183,7 @@ static int __devinit s3_pci_probe(struct pci_dev *dev, const struct pci_device_i
- 
- 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
- 
--	par->state.vgabase = (void __iomem *) vga_res.start;
-+	par->state.vgabase = (void __iomem *)(unsigned long) vga_res.start;
- 
- 	/* Unlock regs */
- 	cr38 = vga_rcrt(par->state.vgabase, 0x38);
-diff --git a/drivers/video/vt8623fb.c b/drivers/video/vt8623fb.c
-index 4e74d26..2516808 100644
---- a/drivers/video/vt8623fb.c
-+++ b/drivers/video/vt8623fb.c
-@@ -729,7 +729,7 @@ static int __devinit vt8623_pci_probe(struct pci_dev *dev, const struct pci_devi
- 
- 	pcibios_bus_to_resource(dev, &vga_res, &bus_reg);
- 
--	par->state.vgabase = (void __iomem *) vga_res.start;
-+	par->state.vgabase = (void __iomem *)(unsigned long) vga_res.start;
- 
- 	/* Find how many physical memory there is on card */
- 	memsize1 = (vga_rseq(par->state.vgabase, 0x34) + 1) >> 1;
--- 
-1.7.10.4
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
