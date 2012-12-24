@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2LXFLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 00:11:44 -0500
-Received: from mga01.intel.com ([192.55.52.88]:60309 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750891Ab2LXFLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 00:11:43 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,344,1355126400"; 
-   d="scan'208";a="269293219"
-Subject: [PATCH] mfd, TWL4030: TWL4030 need select REGMAP_I2C
-From: Chuansheng Liu <chuansheng.liu@intel.com>
-To: sameo@linux.intel.com, peter.ujfalusi@ti.com
-Cc: linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 Dec 2012 22:19:56 +0800
-Message-ID: <1356358796.1688.3.camel@cliu38-desktop-build>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752534Ab2LXFWR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 00:22:17 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:60398 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102Ab2LXFWP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 00:22:15 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <viro@ZenIV.linux.org.uk>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>, <james.hogan@imgtec.com>,
+        <arnd@arndb.de>, <torvalds@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arch@vger.kernel.org>
+Subject: [PATCH] CONFIG_GENERIC_SIGALTSTACK build breakage with asm-generic/syscalls.h
+Date: Mon, 24 Dec 2012 10:51:36 +0530
+Message-ID: <1356326496-11559-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <20121221160713.GT4939@ZenIV.linux.org.uk>
+References: <20121221160713.GT4939@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For arches which include asm-generic/syscalls.h as well as newly
+introduced CONFIG_GENERIC_SIGALTSTACK, there's a build breakage due to
+conflicting prototypes of sys_sigaltstack(), due to removal of struct
+pt_regs from latter based code.
 
+----------------------->8-------------------------
+In file included from
+/home/vineetg/arc/upstream-kernel/arch/arc/include/asm/syscalls.h:25,
+                 from arch/arc/kernel/sys.c:6:
+include/asm-generic/syscalls.h:26: error: conflicting types for
+'sys_sigaltstack'
+include/linux/syscalls.h:304: note: previous declaration of
+'sys_sigaltstack' was here
+make[2]: *** [arch/arc/kernel/sys.o] Error 1
+----------------------->8-------------------------
 
-This patch fix the below build error:
-drivers/built-in.o: In function `twl_probe':
-drivers/mfd/twl-core.c:1256: undefined reference to `devm_regmap_init_i2c'
-make: *** [vmlinux] Error 1
-
-Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: james.hogan@imgtec.com
+Cc: arnd@arndb.de
+Cc: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
 ---
- drivers/mfd/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/asm-generic/syscalls.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 1c0abd4..47ad4e2 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -292,6 +292,7 @@ config TWL4030_CORE
- 	bool "Texas Instruments TWL4030/TWL5030/TWL6030/TPS659x0 Support"
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	select IRQ_DOMAIN
-+	select REGMAP_I2C
- 	help
- 	  Say yes here if you have TWL4030 / TWL6030 family chip on your board.
- 	  This core driver provides register access and IRQ handling
+diff --git a/include/asm-generic/syscalls.h b/include/asm-generic/syscalls.h
+index 58f466f..1db51b8 100644
+--- a/include/asm-generic/syscalls.h
++++ b/include/asm-generic/syscalls.h
+@@ -21,10 +21,12 @@ asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
+ 			unsigned long fd, off_t pgoff);
+ #endif
+ 
++#ifndef CONFIG_GENERIC_SIGALTSTACK
+ #ifndef sys_sigaltstack
+ asmlinkage long sys_sigaltstack(const stack_t __user *, stack_t __user *,
+ 			struct pt_regs *);
+ #endif
++#endif
+ 
+ #ifndef sys_rt_sigreturn
+ asmlinkage long sys_rt_sigreturn(struct pt_regs *regs);
 -- 
-1.7.0.4
-
-
+1.7.4.1
 
