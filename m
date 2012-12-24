@@ -1,74 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593Ab2LXMCV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 07:02:21 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:35502 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab2LXMCT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 07:02:19 -0500
-MIME-Version: 1.0
-In-Reply-To: <50D73FE1.6080907@broadcom.com>
-References: <1356210434-28435-1-git-send-email-geert@linux-m68k.org>
-	<50D73FE1.6080907@broadcom.com>
-Date: Mon, 24 Dec 2012 13:02:18 +0100
-X-Google-Sender-Auth: M1SVQyfEIoNL76FNbK6LuoOc-JI
-Message-ID: <CAMuHMdXJtmXJ65mKi4uFZb4GQuU0SBMTYmr+Rt6_QJcZnR1sUQ@mail.gmail.com>
-Subject: Re: [PATCH] brcmsmac: initialize morepending in brcms_b_recv()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arend van Spriel <arend@broadcom.com>
-Cc: Piotr Haber <phaber@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, brcm80211-dev-list@broadcom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753125Ab2LXMKg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 07:10:36 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:12358 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752125Ab2LXMK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 07:10:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,347,1355068800"; 
+   d="scan'208";a="6464029"
+From: Tang Chen <tangchen@cn.fujitsu.com>
+To: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, hpa@zytor.com,
+        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
+        yinghai@kernel.org
+Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: [PATCH v5 04/14] memory-hotplug: remove /sys/firmware/memmap/X sysfs
+Date: Mon, 24 Dec 2012 20:09:14 +0800
+Message-Id: <1356350964-13437-5-git-send-email-tangchen@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/24 20:10:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/24 20:10:14,
+	Serialize complete at 2012/12/24 20:10:14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 6:31 PM, Arend van Spriel <arend@broadcom.com> wrote:
-> On 12/22/2012 10:07 PM, Geert Uytterhoeven wrote:
->> drivers/net/wireless/brcm80211/brcmsmac/main.c: In function ‘brcms_b_recv’:
->> drivers/net/wireless/brcm80211/brcmsmac/main.c:7636: warning: ‘morepending’ may be used uninitialized in this function
->
-> Reading the code this warning seems to be invalid except when RXBND is
-> defined as zero, which would make the whole function totally bogus.
-> Would be good to have a WARN_ON(!RXBND) in brcms_b_attach().
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-I thought about the bound = false case immediately ending the loop.
-But on closer look, it seems I missed that n and bound_limit are uint, not int.
-So it's indeed unlikely to happen.
+When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+sysfs files are created. But there is no code to remove these files. The patch
+implements the function to remove them.
 
-> I don't like pleasing a compiler with unnecessary initializers but I am
-> also for builds with zero warnings. So...
->
-> Acked-by: Arend van Spriel <arend@broadcom.com>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>  drivers/net/wireless/brcm80211/brcmsmac/main.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/wireless/brcm80211/brcmsmac/main.c b/drivers/net/wireless/brcm80211/brcmsmac/main.c
->> index 17594de..5f0f444 100644
->> --- a/drivers/net/wireless/brcm80211/brcmsmac/main.c
->> +++ b/drivers/net/wireless/brcm80211/brcmsmac/main.c
->> @@ -7633,7 +7633,7 @@ brcms_b_recv(struct brcms_hardware *wlc_hw, uint fifo, bool bound)
->>
->>       uint n = 0;
->>       uint bound_limit = bound ? RXBND : -1;
->> -     bool morepending;
->> +     bool morepending = false;
->>
->>       skb_queue_head_init(&recv_frames);
+Note: The code does not free firmware_map_entry which is allocated by bootmem.
+      So the patch makes memory leak. But I think the memory leak size is
+      very samll. And it does not affect the system.
 
-Gr{oetje,eeting}s,
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+---
+ drivers/firmware/memmap.c    |   98 +++++++++++++++++++++++++++++++++++++++++-
+ include/linux/firmware-map.h |    6 +++
+ mm/memory_hotplug.c          |    5 ++-
+ 3 files changed, 106 insertions(+), 3 deletions(-)
 
-                        Geert
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index 90723e6..49be12a 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -21,6 +21,7 @@
+ #include <linux/types.h>
+ #include <linux/bootmem.h>
+ #include <linux/slab.h>
++#include <linux/mm.h>
+ 
+ /*
+  * Data types ------------------------------------------------------------------
+@@ -41,6 +42,7 @@ struct firmware_map_entry {
+ 	const char		*type;	/* type of the memory range */
+ 	struct list_head	list;	/* entry for the linked list */
+ 	struct kobject		kobj;   /* kobject for each entry */
++	unsigned int		bootmem:1; /* allocated from bootmem */
+ };
+ 
+ /*
+@@ -79,7 +81,26 @@ static const struct sysfs_ops memmap_attr_ops = {
+ 	.show = memmap_attr_show,
+ };
+ 
++
++static inline struct firmware_map_entry *
++to_memmap_entry(struct kobject *kobj)
++{
++	return container_of(kobj, struct firmware_map_entry, kobj);
++}
++
++static void release_firmware_map_entry(struct kobject *kobj)
++{
++	struct firmware_map_entry *entry = to_memmap_entry(kobj);
++
++	if (entry->bootmem)
++		/* There is no way to free memory allocated from bootmem */
++		return;
++
++	kfree(entry);
++}
++
+ static struct kobj_type memmap_ktype = {
++	.release	= release_firmware_map_entry,
+ 	.sysfs_ops	= &memmap_attr_ops,
+ 	.default_attrs	= def_attrs,
+ };
+@@ -94,6 +115,7 @@ static struct kobj_type memmap_ktype = {
+  * in firmware initialisation code in one single thread of execution.
+  */
+ static LIST_HEAD(map_entries);
++static DEFINE_SPINLOCK(map_entries_lock);
+ 
+ /**
+  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
+@@ -118,11 +140,25 @@ static int firmware_map_add_entry(u64 start, u64 end,
+ 	INIT_LIST_HEAD(&entry->list);
+ 	kobject_init(&entry->kobj, &memmap_ktype);
+ 
++	spin_lock(&map_entries_lock);
+ 	list_add_tail(&entry->list, &map_entries);
++	spin_unlock(&map_entries_lock);
+ 
+ 	return 0;
+ }
+ 
++/**
++ * firmware_map_remove_entry() - Does the real work to remove a firmware
++ * memmap entry.
++ * @entry: removed entry.
++ **/
++static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
++{
++	spin_lock(&map_entries_lock);
++	list_del(&entry->list);
++	spin_unlock(&map_entries_lock);
++}
++
+ /*
+  * Add memmap entry on sysfs
+  */
+@@ -144,6 +180,35 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
+ 	return 0;
+ }
+ 
++/*
++ * Remove memmap entry on sysfs
++ */
++static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
++{
++	kobject_put(&entry->kobj);
++}
++
++/*
++ * Search memmap entry
++ */
++
++static struct firmware_map_entry * __meminit
++firmware_map_find_entry(u64 start, u64 end, const char *type)
++{
++	struct firmware_map_entry *entry;
++
++	spin_lock(&map_entries_lock);
++	list_for_each_entry(entry, &map_entries, list)
++		if ((entry->start == start) && (entry->end == end) &&
++		    (!strcmp(entry->type, type))) {
++			spin_unlock(&map_entries_lock);
++			return entry;
++		}
++
++	spin_unlock(&map_entries_lock);
++	return NULL;
++}
++
+ /**
+  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+  * memory hotplug.
+@@ -193,9 +258,36 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
+ 	if (WARN_ON(!entry))
+ 		return -ENOMEM;
+ 
++	entry->bootmem = 1;
+ 	return firmware_map_add_entry(start, end, type, entry);
+ }
+ 
++/**
++ * firmware_map_remove() - remove a firmware mapping entry
++ * @start: Start of the memory range.
++ * @end:   End of the memory range.
++ * @type:  Type of the memory range.
++ *
++ * removes a firmware mapping entry.
++ *
++ * Returns 0 on success, or -EINVAL if no entry.
++ **/
++int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
++{
++	struct firmware_map_entry *entry;
++
++	entry = firmware_map_find_entry(start, end - 1, type);
++	if (!entry)
++		return -EINVAL;
++
++	firmware_map_remove_entry(entry);
++
++	/* remove the memmap entry */
++	remove_sysfs_fw_map_entry(entry);
++
++	return 0;
++}
++
+ /*
+  * Sysfs functions -------------------------------------------------------------
+  */
+@@ -217,8 +309,10 @@ static ssize_t type_show(struct firmware_map_entry *entry, char *buf)
+ 	return snprintf(buf, PAGE_SIZE, "%s\n", entry->type);
+ }
+ 
+-#define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
+-#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
++static inline struct memmap_attribute *to_memmap_attr(struct attribute *attr)
++{
++	return container_of(attr, struct memmap_attribute, attr);
++}
+ 
+ static ssize_t memmap_attr_show(struct kobject *kobj,
+ 				struct attribute *attr, char *buf)
+diff --git a/include/linux/firmware-map.h b/include/linux/firmware-map.h
+index 43fe52f..71d4fa7 100644
+--- a/include/linux/firmware-map.h
++++ b/include/linux/firmware-map.h
+@@ -25,6 +25,7 @@
+ 
+ int firmware_map_add_early(u64 start, u64 end, const char *type);
+ int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
++int firmware_map_remove(u64 start, u64 end, const char *type);
+ 
+ #else /* CONFIG_FIRMWARE_MEMMAP */
+ 
+@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotplug(u64 start, u64 end, const char *type)
+ 	return 0;
+ }
+ 
++static inline int firmware_map_remove(u64 start, u64 end, const char *type)
++{
++	return 0;
++}
++
+ #endif /* CONFIG_FIRMWARE_MEMMAP */
+ 
+ #endif /* _LINUX_FIRMWARE_MAP_H */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index dbb04d8..1f5b5bb 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1442,7 +1442,7 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+ 	return ret;
+ }
+ 
+-int remove_memory(u64 start, u64 size)
++int __ref remove_memory(u64 start, u64 size)
+ {
+ 	unsigned long start_pfn, end_pfn;
+ 	int ret = 0;
+@@ -1484,6 +1484,9 @@ repeat:
+ 		return ret;
+ 	}
+ 
++	/* remove memmap entry */
++	firmware_map_remove(start, start + size, "System RAM");
++
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
+-- 
+1.7.1
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
