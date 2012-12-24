@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752722Ab2LXFvo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 00:51:44 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:35954 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2LXFvm convert rfc822-to-8bit (ORCPT
+	id S1752695Ab2LXF4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 00:56:21 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:62261 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2LXF4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 00:51:42 -0500
+	Mon, 24 Dec 2012 00:56:18 -0500
 MIME-Version: 1.0
-Date: Mon, 24 Dec 2012 13:51:41 +0800
-Message-ID: <CAFFEFTXxsPRf1Rmxyih0wL4O6q8G0OFmz0iRLX0tOYedYfajHw@mail.gmail.com>
-Subject: kernel panic when running /etc/init.d/iptables restart
-From: canqun zhang <canqunzhang@gmail.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20121221145107.GA10213@ghostprotocols.net>
+References: <1356078018-31905-1-git-send-email-namhyung@kernel.org>
+ <1356078018-31905-4-git-send-email-namhyung@kernel.org> <20121221145107.GA10213@ghostprotocols.net>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Mon, 24 Dec 2012 14:55:56 +0900
+X-Google-Sender-Auth: qVluDJjbgB9VTwBg6YuhQs3_DKY
+Message-ID: <CAM9d7ch3MgBoS_qXWDho38DWr+WYqCPpOpna1+w8PgnwjYrANg@mail.gmail.com>
+Subject: Re: [PATCH 3/6] perf ui/gtk: Implement basic GTK2 annotation browser
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Pekka Enberg <penberg@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Patrick£¬
-If i start  one lxc container instance, and then in the system there
-will be two net namespaces,one is init_net namespace, the other is
-created by lxc.If running "/etc/init.d/iptables restart",the system
-will be panic. I find iptables restarting will clean init_net
-namespace firstly,then clean the net namespace created by lxc,buf
-related functions about cleaning up init_net namespace will destroy
-global variables such as nf_ct_destroy,ip_ct_attach£¬etc.So,funtions
-cleaning up  the other net namespace will be panic.
+Hi all,
 
-I fixed it up (see below) .If the system need cleaning init_net
-namespace, Ip conntrack belonging to other namespaces will be cleaned
-up firstly.
+Merry Christmas!
 
-diff -r 7884e663ef6f -r 57fd45b8a144 net/netfilter/nf_conntrack_
-core.c
---- a/net/netfilter/nf_conntrack_core.c Sun Dec 09 21:41:08 2012 +0800
-+++ b/net/netfilter/nf_conntrack_core.c Sun Dec 23 16:28:15 2012 +0800
-@@ -1122,7 +1122,22 @@
-diff -r 7884e663ef6f -r 57fd45b8a144 net/netfilter/nf_conntrack_core.c
---- a/net/netfilter/nf_conntrack_core.c Sun Dec 09 21:41:08 2012 +0800
-+++ b/net/netfilter/nf_conntrack_core.c Sun Dec 23 16:28:15 2012 +0800
-@@ -1122,7 +1122,22 @@
+On Fri, Dec 21, 2012 at 11:51 PM, Arnaldo Carvalho de Melo
+<acme@ghostprotocols.net> wrote:
+> Em Fri, Dec 21, 2012 at 05:20:15PM +0900, Namhyung Kim escreveu:
+>> Basic implementation of perf annotate on GTK2.  Currently only
+>> shows first symbol.
+>
+> I merged the first two patches in this series, but this one needs to be
+> merged with the sixth patch, so that we can try it at this point, then
+> you can add more features (patches 4 and 5) that can be tested as we
+> merge them.
 
- static void nf_conntrack_cleanup_net(struct net *net)
- {
-- i_see_dead_people:
-+       if (net == &init_net) {
-+               struct net *net_poll;
-+               rcu_read_lock();
-+               for_each_net_rcu(net_poll) {
-+                       synchronize_net();
-+               again:
-+                       nf_ct_iterate_cleanup(net_poll, kill_all, NULL);
-+                       nf_ct_release_dying_list(net_poll);
-+                       if (atomic_read(&net_poll->ct.count) != 0) {
-+                               schedule();
-+                               goto again;
-+                       }
-+               }
-+               rcu_read_unlock();
-+       }
-+i_see_dead_people:
-        nf_ct_iterate_cleanup(net, kill_all, NULL);
-        nf_ct_release_dying_list(net);
-        if (atomic_read(&net->ct.count) != 0) {
+You can apply patch 6 before 4 and 5 since it's not depends on them.
+But if you want, I'll resend a squashed patch for 3 + 6.
+
+
+> Just pushed my perf/core branch with the 2 first patches.
+
+Thanks a lot! :)
+
+-- 
+Thanks,
+Namhyung
