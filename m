@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab2LXQS6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 11:18:58 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43789 "EHLO
+	id S1753264Ab2LXQZL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 11:25:11 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46346 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752597Ab2LXQS4 (ORCPT
+	by vger.kernel.org with ESMTP id S1752597Ab2LXQZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 11:18:56 -0500
-Date: Mon, 24 Dec 2012 16:18:54 +0000
+	Mon, 24 Dec 2012 11:25:08 -0500
+Date: Mon, 24 Dec 2012 16:25:05 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regmap: irq: enable wake support by default
-Message-ID: <20121224161853.GS30837@opensource.wolfsonmicro.com>
-References: <1355926348-16100-1-git-send-email-ldewangan@nvidia.com>
+To: Inderpal Singh <inderpal.singh@linaro.org>
+Cc: linux-kernel@vger.kernel.org, sbkim73@samsung.com, lrg@ti.com,
+        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
+        patches@linaro.org
+Subject: Re: [PATCH] regulator: s5m8767: Fix probe failure due to stack
+ corruption
+Message-ID: <20121224162505.GT30837@opensource.wolfsonmicro.com>
+References: <1355282820-18364-1-git-send-email-inderpal.singh@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="cjNiBkmi8s9yAE0W"
+	protocol="application/pgp-signature"; boundary="1Dvf9Qz7hFaodvwE"
 Content-Disposition: inline
-In-Reply-To: <1355926348-16100-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1355282820-18364-1-git-send-email-inderpal.singh@linaro.org>
 X-Cookie: Your step will soil many countries.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,37 +29,38 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---cjNiBkmi8s9yAE0W
+--1Dvf9Qz7hFaodvwE
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Dec 19, 2012 at 07:42:28PM +0530, Laxman Dewangan wrote:
-> regmap-irq framework is used vastly by mfd drivers and some of
-> devices like TPS65910, TPS80036 do not support the wake base
-> register to enable wake.
+On Wed, Dec 12, 2012 at 08:57:00AM +0530, Inderpal Singh wrote:
+> The function sec_reg_read invokes regmap_read which expects unsigned int *
+> as the destination address. The existing driver is passing address of local
+> variable "val" which is u8. This causes the stack corruption and following
+> dump is observed during probe.
 
 Applied, thanks.
 
---cjNiBkmi8s9yAE0W
+--1Dvf9Qz7hFaodvwE
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQ2IBnAAoJELSic+t+oim9bEoP/3qjKwAAfVRqfSVKvZTEL6RZ
-ExXhkfEgyQ0x6QAYext6fNFpy5O/UyY13FswUlBy5wyrl6i4g3qUWiI5v+1u4m7j
-gaJpisWVBs5qYojfc7Sw6V33t5qZya55/XB7B0b3yK83UFVgLcCImhMoDg0aNQuE
-nzEwC/y7jF1Ru8V2SOgO98k3NLleeNlVokFpqaQFZUizWxYrh3mxtDdDPN9QEbEw
-E5LDsXoMffFcA/3qB1ohTARiTuzJdcKL0rrXPKYUUr3es9woki03TY3SIxb8/9G9
-EjObS+HVRjID2e3WFc6miwB/kHTZD8hEFOTlnSMBwimWzzhLsxFGErRfubyeMcbD
-nuxFgbKoYV1FGtfxQaeTtcoqlsbiq/McogdyLsDnwB7SqmJSuKLI0k5A3BP1dKYM
-CJ4XjZyKCGSWoTu/Po8ml0r+MwpBfS3qJbHG7SyehA4AOLqMxn3Zqc2cdZGJ3K/Z
-UeKXyEUj8F2oq93jG7RL+C0zKfi1iUkEtIVWKVn74hWSUAKJPmTIgD93s1teNsW7
-FoBnJQqJvlkSNzagiU69lZkks09GPW3WtS1Jxz38rHjGCJaqz9tv1YP7stFKj4uz
-/4A1DgN1MDohzMbcrElD7TRrJtXMx8iLx94rBvnNE05XTI4acOJKDto8B3qUWU94
-WAk7WNcgj1SP5Lt1K4g2
-=H29C
+iQIcBAEBAgAGBQJQ2IHNAAoJELSic+t+oim9AvoP/AqwtNeJNYSJxpg4jukdJmVl
+TSG0Yaq1Ben2O3ssTWLsVhfoHP1ViLrramIUOjTA1TbcT2jMMGFkCAYiplb9nfgS
+189uoGcz49/A1mKEgvjlFv4p8zokPBsqmth1zRyZNVEtSCYtnHsp5gSI4dqvPysT
+Y4fCAt3f//BDlb7phu/H7lpg3LaFV4GvDguWF2av/lkwAleyQWd+d6MqSYGgNMEY
+8MuCTVmc7lfGBCEqbTgSnxYSh56HEIkVe6Wl1eqk/XovP29fnIk5S/82bQr2h8xh
+ITTG6J3irmc9LHCQbfPzfWf7XHt+YHObYDnlyfaZ68SEeDnyJ60JoEwPumA2Wr1a
+OvDoTXFVHno46O53GFEQHvKoFix9ywqn1srqwAX/AqLYYZ/CqNi5acE5fdb8u9Ky
+RXDnQ/70rPw1Jm7XOXqu+EwnE9QV3jKCTOe0aIYKGGI9bZsFz1OMBH0ofJFW6c0m
+pDkeLbLP6YWAQ/bUCptfVN68LvJQ0UGZfuP1VZnnYUt+lXhikgmwKHn+uSsILqhj
+NnBi5JBXd1b5Q2lEsLCCrNbvkoOeALE32pZd6Cr0tDgfAs9tAr1rc4M4nwJRyGKO
+IafC7H6XqOFG4qQLp2uBRIv5E1amVXNjk3DAJxAaEoDEEXJXIdnQaGCMFVeqh0Kn
+0AMeD7MhG1C7/eTJbRr3
+=GnP4
 -----END PGP SIGNATURE-----
 
---cjNiBkmi8s9yAE0W--
+--1Dvf9Qz7hFaodvwE--
