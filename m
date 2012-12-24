@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab2LXOLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 09:11:46 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:34736 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab2LXOLo (ORCPT
+	id S1753188Ab2LXO00 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 09:26:26 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:36475 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752620Ab2LXO0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 09:11:44 -0500
-Date: Mon, 24 Dec 2012 22:10:17 +0800
-From: Woody Wu <narkewoody@gmail.com>
-To: anish kumar <anish198519851985@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
-Subject: Re: How kernel handle interrupts[AX88796B network controller]
-Message-ID: <20121224141017.GB2849@zuhnb712>
-References: <20121220142745.GB3578@zuhnb712>
- <CAK7N6vq07CHhhOJTgC=5H5f3Nsi_od=qGJjzu01iL1_3AvTWHg@mail.gmail.com>
- <20121221153451.GB5530@zuhnb712>
- <1356125583.1598.111.camel@anish-Inspiron-N5050>
+	Mon, 24 Dec 2012 09:26:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356125583.1598.111.camel@anish-Inspiron-N5050>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50CA8129.2020206@asianux.com>
+References: <50C85644.7020203@asianux.com>
+	<50C858AA.8080305@asianux.com>
+	<CAJ6Av5OC+2wdfhb2FExv8NM7Hsyu4_1qnCWV22di8_psw4gF4Q@mail.gmail.com>
+	<50CA8129.2020206@asianux.com>
+Date: Mon, 24 Dec 2012 08:26:22 -0600
+Message-ID: <CAJ6Av5PqZoW7s94J6MfmiN6kLzYZHH5Cv6qBA+xq65aPO0KA7g@mail.gmail.com>
+Subject: Re: [Suggestion] drivers/staging/tidspbridge: pr_err and pr_debug for
+ uninitialized buffer (name buf not initialized).
+From: Omar Ramirez Luna <omar.ramirez@copitl.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 01:33:03PM -0800, anish kumar wrote:
-> On Fri, 2012-12-21 at 23:34 +0800, Woody Wu wrote:
-> > On Thu, Dec 20, 2012 at 10:05:05AM -0800, anish singh wrote:
-> > > On Dec 20, 2012 6:30 AM, "Woody Wu" <narkewoody@gmail.com> wrote:
-> > > >
-> > > > Hi, List
-> > > >
-> > > > Where is the Kernel code that handles external interrupts? I want to
-> > > > have a look at it but haven't found out where it is.
-> > > >
-> > > > Actually, I have some basic questions about interrupt handling in Linux.
-> > > > 1. After Kernel's ISR received an interrupt, I believe it will invoke a
-> > > >    handler defined in a device driver if any. But it should be the
-> > > >    device driver's responsibility or kernel ISR's responsibility to
-> > > >    clear (or acknowledge) the interrupt?
-> > > If the interrupt in question is currently being handled then in
-> > > the case of edge triggered interrupt we just mask the interrupt,set it
-> > > pending and bail out.Once the interrupt handler completes then we check for
-> > > pending interrupt and handle it.In level triggered we don't do that.
-> > > Kerenel ISR -this is mixture of core kernel interrupt handling code + your
-> > > device driver interrupt handler(if this is chip driver which is supposed to
-> > > get one interrupt and is reponsible for calling other interrupt handlers
-> > > based on the chip register status then you do explicit masking unmasking
-> > > yourself).
-> > > If you device driver is a interrupt controller driver then you register
-> > > your driver with kernel interrupt handling code and need to write some
-> > > callbacks such as .mask,.unmask and so on.This callbacks are called at
-> > > appropiate places whenever the interrupt is raised.This interrupt is then
-> > > passed to drivers who has requested for this interrupt by calling
-> > > request_irq.
-> > > >
-> > > > 2. My device, an AX88796B network controller, asserting the interrupt
-> > > >    line in a level-triggered manner. Now I met problem with the device
-> > > that
-> > > >    might caused by the CPU interrupt mode is not set as level-triggered by
-> > > >    edge trigger.  My CPU is Samsung S3C2410, an ARM920T powered one.  Does
-> > > >    anyone know usually where and how should I do this kind of setting?
-> > > Just pass the parameter "level triggered" in request_irq in your device
-> > > driver.
-> > 
-> > Hi Sign,
-> > 
-> > I searched the interrupt.h for the all the defined flags that I can pass
-> > to the request_irq, but there is no a flag looks like "level triggered".
-> > Would you tell me what you mean the parameter "level triggered"?
-> irq_set_irq_type(info->irq, IRQ_TYPE_LEVEL_LOW)
-> 
-> include/linux/irq.h
-> IRQ_TYPE_LEVEL_HIGH          - high level triggered
-> IRQ_TYPE_LEVEL_LOW           - low level triggered
+Hi,
 
-Thanks. You saved my ass.
+On Thu, Dec 13, 2012 at 7:30 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>   also another suggestions:
+>     I built ti otmap with ti dsp bridge by arm cross-compiler under i386 platform.
+>     the version tag is next-20121213
+>     I met 2 compiling issues.
+>
+>       a: module dependency:
+>         Multifunction device drivers --> Texas Instruments TWL/4030/TWL5030.... is required for TI OTMAP.
+>         it need depend on CONFIG_REGMAP (maybe also inculde CONFIG_REGMAP*)
+>         if CONFIG_REGMAP* not defined, building will be failed.
 
-Be curious, I found the api changes from 2.6 to 3.7.  In 2.6, there are
-pair of funtions, set_irq_type and set_irq_handle (there is no
-irq_set_irq_type in 2.6).  Problem is, I cannot find something like
-irq_set_irq_handle in 3.7.  Does that mean, in 3.7, when
-irq_set_irq_type is changed, the associated flow handler is also
-changed?  In my case, the interrupt was originally assgined with a edge
-flow handler and set type as edge irq. After I, by invoking
-irq_set_irq_type, change it to level irq, I think the flow handler
-should also be changed to a level handle.  Is that happened
-automatically behind?  I search through the code, but did not find where
-is it.
+This is not related to tidspbridge, I sent a patch anyway as it looks
+to be a valid build dependency bug.
 
+>       b: version merging issue:
+>         in drivers/staging/tidspbridge/core/_tiomap.h
+>         need use "#include <mach-omap2/cm3xxx.h>" instead of "#include <mach-omap2/cm2xxx_3xxx.h>"
+>         the macro OMAP3430_CM_AUTOIDLE_PLL has already move from cm2xxx_3xxx.h to cm3xxx.h.
+>           (it seems arch/arm/mach-omap2/ is not a suitable place for including, but we have to)
+>         if not change, compiling will be failed.
 
-> > 
-> > Thanks.
-> > 
-> > > >
-> > > >
-> > > > Thanks in advance.
-> > > >
-> > > > --
-> > > > woody
-> > > > I can't go back to yesterday - because I was a different person then.
-> > > >
-> > > > _______________________________________________
-> > > > Kernelnewbies mailing list
-> > > > Kernelnewbies@kernelnewbies.org
-> > > > http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
-> > 
-> 
+Done.
 
--- 
-woody
-I can't go back to yesterday - because I was a different person then.
+Cheers,
+
+Omar
