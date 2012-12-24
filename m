@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab2LXCU7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:20:59 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:58582 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab2LXCUy (ORCPT
+	id S1752795Ab2LXCWj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:22:39 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:58453 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752577Ab2LXCWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:20:54 -0500
+	Sun, 23 Dec 2012 21:22:37 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
-Subject: [PATCH 13/29] ubifs: rename random32() to prandom_u32()
-Date: Mon, 24 Dec 2012 11:14:00 +0900
-Message-Id: <1356315256-6572-14-git-send-email-akinobu.mita@gmail.com>
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        Antonio Quartulli <ordex@autistici.org>,
+        b.a.t.m.a.n@lists.open-mesh.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 19/29] batman-adv: fix random jitter calculation
+Date: Mon, 24 Dec 2012 11:14:06 +0900
+Message-Id: <1356315256-6572-20-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
 References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
@@ -22,109 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more preferable function name which implies using a pseudo-random
-number generator.
+batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
+in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
+
+        msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+        msecs += (random32() % 2 * BATADV_JITTER);
+
+But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
+because '%' and '*' have same precedence and associativity is
+left-to-right.
+
+This adds the parentheses at the appropriate position so that it matches
+original intension.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: linux-mtd@lists.infradead.org
+Cc: Marek Lindner <lindner_marek@yahoo.de>
+Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Cc: Antonio Quartulli <ordex@autistici.org>
+Cc: b.a.t.m.a.n@lists.open-mesh.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
- fs/ubifs/debug.c      |  8 ++++----
- fs/ubifs/lpt_commit.c | 14 +++++++-------
- fs/ubifs/tnc_commit.c |  2 +-
- 3 files changed, 12 insertions(+), 12 deletions(-)
+ net/batman-adv/bat_iv_ogm.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ubifs/debug.c b/fs/ubifs/debug.c
-index 12817ff..7f60e90 100644
---- a/fs/ubifs/debug.c
-+++ b/fs/ubifs/debug.c
-@@ -2459,7 +2459,7 @@ error_dump:
+diff --git a/net/batman-adv/bat_iv_ogm.c b/net/batman-adv/bat_iv_ogm.c
+index 9f3925a..7d02ebd 100644
+--- a/net/batman-adv/bat_iv_ogm.c
++++ b/net/batman-adv/bat_iv_ogm.c
+@@ -123,7 +123,7 @@ batadv_iv_ogm_emit_send_time(const struct batadv_priv *bat_priv)
+ 	unsigned int msecs;
  
- static inline int chance(unsigned int n, unsigned int out_of)
- {
--	return !!((random32() % out_of) + 1 <= n);
-+	return !!((prandom_u32() % out_of) + 1 <= n);
+ 	msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+-	msecs += (random32() % 2 * BATADV_JITTER);
++	msecs += random32() % (2 * BATADV_JITTER);
  
- }
- 
-@@ -2477,13 +2477,13 @@ static int power_cut_emulated(struct ubifs_info *c, int lnum, int write)
- 			if (chance(1, 2)) {
- 				d->pc_delay = 1;
- 				/* Fail withing 1 minute */
--				delay = random32() % 60000;
-+				delay = prandom_u32() % 60000;
- 				d->pc_timeout = jiffies;
- 				d->pc_timeout += msecs_to_jiffies(delay);
- 				ubifs_warn("failing after %lums", delay);
- 			} else {
- 				d->pc_delay = 2;
--				delay = random32() % 10000;
-+				delay = prandom_u32() % 10000;
- 				/* Fail within 10000 operations */
- 				d->pc_cnt_max = delay;
- 				ubifs_warn("failing after %lu calls", delay);
-@@ -2563,7 +2563,7 @@ static int corrupt_data(const struct ubifs_info *c, const void *buf,
- 	unsigned int from, to, ffs = chance(1, 2);
- 	unsigned char *p = (void *)buf;
- 
--	from = random32() % (len + 1);
-+	from = prandom_u32() % (len + 1);
- 	/* Corruption may only span one max. write unit */
- 	to = min(len, ALIGN(from, c->max_write_size));
- 
-diff --git a/fs/ubifs/lpt_commit.c b/fs/ubifs/lpt_commit.c
-index 9daaeef..4b826ab 100644
---- a/fs/ubifs/lpt_commit.c
-+++ b/fs/ubifs/lpt_commit.c
-@@ -2007,28 +2007,28 @@ static int dbg_populate_lsave(struct ubifs_info *c)
- 
- 	if (!dbg_is_chk_gen(c))
- 		return 0;
--	if (random32() & 3)
-+	if (prandom_u32() & 3)
- 		return 0;
- 
- 	for (i = 0; i < c->lsave_cnt; i++)
- 		c->lsave[i] = c->main_first;
- 
- 	list_for_each_entry(lprops, &c->empty_list, list)
--		c->lsave[random32() % c->lsave_cnt] = lprops->lnum;
-+		c->lsave[prandom_u32() % c->lsave_cnt] = lprops->lnum;
- 	list_for_each_entry(lprops, &c->freeable_list, list)
--		c->lsave[random32() % c->lsave_cnt] = lprops->lnum;
-+		c->lsave[prandom_u32() % c->lsave_cnt] = lprops->lnum;
- 	list_for_each_entry(lprops, &c->frdi_idx_list, list)
--		c->lsave[random32() % c->lsave_cnt] = lprops->lnum;
-+		c->lsave[prandom_u32() % c->lsave_cnt] = lprops->lnum;
- 
- 	heap = &c->lpt_heap[LPROPS_DIRTY_IDX - 1];
- 	for (i = 0; i < heap->cnt; i++)
--		c->lsave[random32() % c->lsave_cnt] = heap->arr[i]->lnum;
-+		c->lsave[prandom_u32() % c->lsave_cnt] = heap->arr[i]->lnum;
- 	heap = &c->lpt_heap[LPROPS_DIRTY - 1];
- 	for (i = 0; i < heap->cnt; i++)
--		c->lsave[random32() % c->lsave_cnt] = heap->arr[i]->lnum;
-+		c->lsave[prandom_u32() % c->lsave_cnt] = heap->arr[i]->lnum;
- 	heap = &c->lpt_heap[LPROPS_FREE - 1];
- 	for (i = 0; i < heap->cnt; i++)
--		c->lsave[random32() % c->lsave_cnt] = heap->arr[i]->lnum;
-+		c->lsave[prandom_u32() % c->lsave_cnt] = heap->arr[i]->lnum;
- 
- 	return 1;
- }
-diff --git a/fs/ubifs/tnc_commit.c b/fs/ubifs/tnc_commit.c
-index 523bbad..52a6559 100644
---- a/fs/ubifs/tnc_commit.c
-+++ b/fs/ubifs/tnc_commit.c
-@@ -683,7 +683,7 @@ static int alloc_idx_lebs(struct ubifs_info *c, int cnt)
- 		c->ilebs[c->ileb_cnt++] = lnum;
- 		dbg_cmt("LEB %d", lnum);
- 	}
--	if (dbg_is_chk_index(c) && !(random32() & 7))
-+	if (dbg_is_chk_index(c) && !(prandom_u32() & 7))
- 		return -ENOSPC;
- 	return 0;
+ 	return jiffies + msecs_to_jiffies(msecs);
  }
 -- 
 1.7.11.7
