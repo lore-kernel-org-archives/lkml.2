@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab2LXCUT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:20:19 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:60893 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2LXCUO (ORCPT
+	id S1753114Ab2LXCUh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:20:37 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:52585 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753016Ab2LXCUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:20:14 -0500
+	Sun, 23 Dec 2012 21:20:31 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
 Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
-        James Smart <james.smart@emulex.com>,
-        Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 16/29] scsi: rename random32() to prandom_u32()
-Date: Mon, 24 Dec 2012 11:14:03 +0900
-Message-Id: <1356315256-6572-17-git-send-email-akinobu.mita@gmail.com>
+        David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org
+Subject: [PATCH 17/29] mtd: rename random32() to prandom_u32()
+Date: Mon, 24 Dec 2012 11:14:04 +0900
+Message-Id: <1356315256-6572-18-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
 References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
@@ -29,89 +26,149 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-Cc: Robert Love <robert.w.love@intel.com>
-Cc: devel@open-fcoe.org
-Cc: James Smart <james.smart@emulex.com>
-Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
-Cc: linux-driver@qlogic.com
-Cc: linux-scsi@vger.kernel.org
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: linux-mtd@lists.infradead.org
 ---
- drivers/scsi/fcoe/fcoe_ctlr.c    | 4 ++--
- drivers/scsi/lpfc/lpfc_hbadisc.c | 6 +++---
- drivers/scsi/qla2xxx/qla_attr.c  | 7 +++++--
- 3 files changed, 10 insertions(+), 7 deletions(-)
+ drivers/mtd/nand/nandsim.c          |  6 +++---
+ drivers/mtd/tests/mtd_nandecctest.c | 10 +++++-----
+ drivers/mtd/tests/mtd_stresstest.c  |  8 ++++----
+ drivers/mtd/ubi/debug.h             |  6 +++---
+ 4 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/scsi/fcoe/fcoe_ctlr.c b/drivers/scsi/fcoe/fcoe_ctlr.c
-index 4a909d7..d870ccc 100644
---- a/drivers/scsi/fcoe/fcoe_ctlr.c
-+++ b/drivers/scsi/fcoe/fcoe_ctlr.c
-@@ -2153,7 +2153,7 @@ static void fcoe_ctlr_vn_restart(struct fcoe_ctlr *fip)
+diff --git a/drivers/mtd/nand/nandsim.c b/drivers/mtd/nand/nandsim.c
+index 818b65c..4c31798 100644
+--- a/drivers/mtd/nand/nandsim.c
++++ b/drivers/mtd/nand/nandsim.c
+@@ -1476,12 +1476,12 @@ int do_read_error(struct nandsim *ns, int num)
  
- 	if (fip->probe_tries < FIP_VN_RLIM_COUNT) {
- 		fip->probe_tries++;
--		wait = random32() % FIP_VN_PROBE_WAIT;
-+		wait = prandom_u32() % FIP_VN_PROBE_WAIT;
- 	} else
- 		wait = FIP_VN_RLIM_INT;
- 	mod_timer(&fip->timer, jiffies + msecs_to_jiffies(wait));
-@@ -2786,7 +2786,7 @@ static void fcoe_ctlr_vn_timeout(struct fcoe_ctlr *fip)
- 					  fcoe_all_vn2vn, 0);
- 			fip->port_ka_time = jiffies +
- 				 msecs_to_jiffies(FIP_VN_BEACON_INT +
--					(random32() % FIP_VN_BEACON_FUZZ));
-+					(prandom_u32() % FIP_VN_BEACON_FUZZ));
- 		}
- 		if (time_before(fip->port_ka_time, next_time))
- 			next_time = fip->port_ka_time;
-diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
-index d7096ad..bfda184 100644
---- a/drivers/scsi/lpfc/lpfc_hbadisc.c
-+++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
-@@ -1732,7 +1732,7 @@ lpfc_check_pending_fcoe_event(struct lpfc_hba *phba, uint8_t unreg_fcf)
-  * use through a sequence of @fcf_cnt eligible FCF records with equal
-  * probability. To perform integer manunipulation of random numbers with
-  * size unit32_t, the lower 16 bits of the 32-bit random number returned
-- * from random32() are taken as the random random number generated.
-+ * from prandom_u32() are taken as the random random number generated.
-  *
-  * Returns true when outcome is for the newly read FCF record should be
-  * chosen; otherwise, return false when outcome is for keeping the previously
-@@ -1744,7 +1744,7 @@ lpfc_sli4_new_fcf_random_select(struct lpfc_hba *phba, uint32_t fcf_cnt)
- 	uint32_t rand_num;
+ void do_bit_flips(struct nandsim *ns, int num)
+ {
+-	if (bitflips && random32() < (1 << 22)) {
++	if (bitflips && prandom_u32() < (1 << 22)) {
+ 		int flips = 1;
+ 		if (bitflips > 1)
+-			flips = (random32() % (int) bitflips) + 1;
++			flips = (prandom_u32() % (int) bitflips) + 1;
+ 		while (flips--) {
+-			int pos = random32() % (num * 8);
++			int pos = prandom_u32() % (num * 8);
+ 			ns->buf.byte[pos / 8] ^= (1 << (pos % 8));
+ 			NS_WARN("read_page: flipping bit %d in page %d "
+ 				"reading from %d ecc: corrected=%u failed=%u\n",
+diff --git a/drivers/mtd/tests/mtd_nandecctest.c b/drivers/mtd/tests/mtd_nandecctest.c
+index ceb261f..2e6b41e 100644
+--- a/drivers/mtd/tests/mtd_nandecctest.c
++++ b/drivers/mtd/tests/mtd_nandecctest.c
+@@ -43,7 +43,7 @@ struct nand_ecc_test {
+ static void single_bit_error_data(void *error_data, void *correct_data,
+ 				size_t size)
+ {
+-	unsigned int offset = random32() % (size * BITS_PER_BYTE);
++	unsigned int offset = prandom_u32() % (size * BITS_PER_BYTE);
  
- 	/* Get 16-bit uniform random number */
--	rand_num = (0xFFFF & random32());
-+	rand_num = 0xFFFF & prandom_u32();
+ 	memcpy(error_data, correct_data, size);
+ 	__change_bit_le(offset, error_data);
+@@ -54,9 +54,9 @@ static void double_bit_error_data(void *error_data, void *correct_data,
+ {
+ 	unsigned int offset[2];
  
- 	/* Decision with probability 1/fcf_cnt */
- 	if ((fcf_cnt * rand_num) < 0xFFFF)
-@@ -2380,7 +2380,7 @@ lpfc_mbx_cmpl_fcf_scan_read_fcf_rec(struct lpfc_hba *phba, LPFC_MBOXQ_t *mboxq)
- 		phba->fcf.eligible_fcf_cnt = 1;
- 		/* Seeding the random number generator for random selection */
- 		seed = (uint32_t)(0xFFFFFFFF & jiffies);
--		srandom32(seed);
-+		prandom_seed(seed);
+-	offset[0] = random32() % (size * BITS_PER_BYTE);
++	offset[0] = prandom_u32() % (size * BITS_PER_BYTE);
+ 	do {
+-		offset[1] = random32() % (size * BITS_PER_BYTE);
++		offset[1] = prandom_u32() % (size * BITS_PER_BYTE);
+ 	} while (offset[0] == offset[1]);
+ 
+ 	memcpy(error_data, correct_data, size);
+@@ -67,7 +67,7 @@ static void double_bit_error_data(void *error_data, void *correct_data,
+ 
+ static unsigned int random_ecc_bit(size_t size)
+ {
+-	unsigned int offset = random32() % (3 * BITS_PER_BYTE);
++	unsigned int offset = prandom_u32() % (3 * BITS_PER_BYTE);
+ 
+ 	if (size == 256) {
+ 		/*
+@@ -75,7 +75,7 @@ static unsigned int random_ecc_bit(size_t size)
+ 		 * and 17th bit) in ECC code for 256 byte data block
+ 		 */
+ 		while (offset == 16 || offset == 17)
+-			offset = random32() % (3 * BITS_PER_BYTE);
++			offset = prandom_u32() % (3 * BITS_PER_BYTE);
  	}
- 	spin_unlock_irq(&phba->hbalock);
- 	goto read_next_fcf;
-diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
-index 83d7984..3658e9f 100644
---- a/drivers/scsi/qla2xxx/qla_attr.c
-+++ b/drivers/scsi/qla2xxx/qla_attr.c
-@@ -1933,8 +1933,11 @@ qla24xx_vport_delete(struct fc_vport *fc_vport)
  
- 	/* No pending activities shall be there on the vha now */
- 	if (ql2xextended_error_logging & ql_dbg_user)
--		msleep(random32()%10);  /* Just to see if something falls on
--					* the net we have placed below */
-+		msleep(prandom_u32() % 10);
-+		/*
-+		 * Just to see if something falls on the net we have placed
-+		 * below
-+		 */
+ 	return offset;
+diff --git a/drivers/mtd/tests/mtd_stresstest.c b/drivers/mtd/tests/mtd_stresstest.c
+index dc89e32..4e9fc1f 100644
+--- a/drivers/mtd/tests/mtd_stresstest.c
++++ b/drivers/mtd/tests/mtd_stresstest.c
+@@ -57,7 +57,7 @@ static int rand_eb(void)
+ 	unsigned int eb;
  
- 	BUG_ON(atomic_read(&vha->vref_count));
+ again:
+-	eb = random32();
++	eb = prandom_u32();
+ 	/* Read or write up 2 eraseblocks at a time - hence 'ebcnt - 1' */
+ 	eb %= (ebcnt - 1);
+ 	if (bbt[eb])
+@@ -69,7 +69,7 @@ static int rand_offs(void)
+ {
+ 	unsigned int offs;
+ 
+-	offs = random32();
++	offs = prandom_u32();
+ 	offs %= bufsize;
+ 	return offs;
+ }
+@@ -78,7 +78,7 @@ static int rand_len(int offs)
+ {
+ 	unsigned int len;
+ 
+-	len = random32();
++	len = prandom_u32();
+ 	len %= (bufsize - offs);
+ 	return len;
+ }
+@@ -148,7 +148,7 @@ static int do_write(void)
+ 
+ static int do_operation(void)
+ {
+-	if (random32() & 1)
++	if (prandom_u32() & 1)
+ 		return do_read();
+ 	else
+ 		return do_write();
+diff --git a/drivers/mtd/ubi/debug.h b/drivers/mtd/ubi/debug.h
+index 33f8f3b..cba89fc 100644
+--- a/drivers/mtd/ubi/debug.h
++++ b/drivers/mtd/ubi/debug.h
+@@ -86,7 +86,7 @@ static inline int ubi_dbg_is_bgt_disabled(const struct ubi_device *ubi)
+ static inline int ubi_dbg_is_bitflip(const struct ubi_device *ubi)
+ {
+ 	if (ubi->dbg.emulate_bitflips)
+-		return !(random32() % 200);
++		return !(prandom_u32() % 200);
+ 	return 0;
+ }
+ 
+@@ -100,7 +100,7 @@ static inline int ubi_dbg_is_bitflip(const struct ubi_device *ubi)
+ static inline int ubi_dbg_is_write_failure(const struct ubi_device *ubi)
+ {
+ 	if (ubi->dbg.emulate_io_failures)
+-		return !(random32() % 500);
++		return !(prandom_u32() % 500);
+ 	return 0;
+ }
+ 
+@@ -114,7 +114,7 @@ static inline int ubi_dbg_is_write_failure(const struct ubi_device *ubi)
+ static inline int ubi_dbg_is_erase_failure(const struct ubi_device *ubi)
+ {
+ 	if (ubi->dbg.emulate_io_failures)
+-		return !(random32() % 400);
++		return !(prandom_u32() % 400);
+ 	return 0;
+ }
  
 -- 
 1.7.11.7
