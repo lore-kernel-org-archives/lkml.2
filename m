@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368Ab2LXSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 13:44:16 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:41036 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2LXSoO (ORCPT
+	id S1753374Ab2LXSp3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 13:45:29 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:50810 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab2LXSp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 13:44:14 -0500
+	Mon, 24 Dec 2012 13:45:26 -0500
+Date: Mon, 24 Dec 2012 10:45:20 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 25/25] ipc: don't use [delayed_]work_pending()
+Message-ID: <20121224184520.GC11817@htj.dyndns.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-26-git-send-email-tj@kernel.org>
+ <20121221181523.0e0998e4.akpm@linux-foundation.org>
+ <20121222022210.GA30177@htj.dyndns.org>
+ <20121222110929.GA3567@liondog.tnic>
+ <20121224183334.GB11817@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <20121224100457.GA9927@liondog.tnic>
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<20121222024225.GG3468@phenom.dumpdata.com>
-	<eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
-	<20121222132419.GB2936@phenom.dumpdata.com>
-	<CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
-	<6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
-	<CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
-	<20121223184516.GC8190@liondog.tnic>
-	<171018c8-b640-4234-a25e-7040d9e21acd@email.android.com>
-	<20121224100457.GA9927@liondog.tnic>
-Date: Mon, 24 Dec 2012 10:44:12 -0800
-X-Google-Sender-Auth: dnmjtcwQviliJyI1Hq3AyK6ez_Y
-Message-ID: <CAE9FiQVwaEJ=uGyMVg33ahNorbDk0AnM83WUJAZ5CENTsgO8Ag@mail.gmail.com>
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121224183334.GB11817@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 2:04 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sun, Dec 23, 2012 at 08:54:37PM -0800, H. Peter Anvin wrote:
->> Makes sense.  Ljmpq it is.  A comment might be useful.
->
-> Yes, a LRETQ comment is definitely useful so that we know. Yinghai,
-> please add it the next time you're rebasing. Btw, which branch is the
-> current one for that patchset so that people can review and test it?
+Hello, again.
 
-for-x86-boot and it points to -v8 that does not break KGDB.
+On Mon, Dec 24, 2012 at 10:33:34AM -0800, Tejun Heo wrote:
+> I don't think we have cases where this actually matters but it could
+> be that we can add work_pending() tests to queue_work_on().  I *think*
+> that shouldn't break work scheduling semantics.  Not completely sure
+> tho.  Need to think about it more.
+
+I was confused a bit there.  We can't.  Nothing guarantees that the
+queuer sees the cleared PENDING before the work item starts execution,
+and I think ipc memory hotplug could also be broken from that.  It's
+highly unlikely to actually happen and there may be external locking
+which prevents the race from actually happening, but there's nothing
+synchronizing queueing and the execution of the work item.  Looking at
+that part of code only, it's possible that it fails to queue the work
+item after a memory hotplug event even though the previous queueing
+already started execution and processed a couple notifiers.
+
+And you can see why you don't want this type of tricky micro
+optimizations unless it's absolutely necessary and carefully
+considered.  Cold paths get much less attention and testing.  Adding
+micro optimizations to them is just a bad idea.
+
+Thanks.
+
+-- 
+tejun
