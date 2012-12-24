@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab2LXKLk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 05:11:40 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55174 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752841Ab2LXKLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 05:11:36 -0500
-Date: Mon, 24 Dec 2012 11:11:34 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: wei_wang@realsil.com.cn
-Cc: cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com
-Subject: Re: [PATCH 2/7] MFD:rtsx: Remove redundant code
-Message-ID: <20121224101134.GB6702@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wei_wang@realsil.com.cn,
-	cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
-	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-	gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com
-References: <cover.1356319097.git.wei_wang@realsil.com.cn>
- <19e2c741f89b80b9d1640ff00902b1cc3f76a171.1356319097.git.wei_wang@realsil.com.cn>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <19e2c741f89b80b9d1640ff00902b1cc3f76a171.1356319097.git.wei_wang@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752366Ab2LXKVn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 05:21:43 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:59012 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520Ab2LXKVk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 05:21:40 -0500
+From: ycnian@gmail.com
+To: bfields@fieldses.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Yanchuan Nian <ycnian@gmail.com>
+Subject: [PATCH] nfsd: Pass correct slot number to nfsd4_put_drc_mem()
+Date: Mon, 24 Dec 2012 18:11:27 +0800
+Message-Id: <1356343887-11952-1-git-send-email-ycnian@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 02:03:24PM +0800, wei_wang@realsil.com.cn wrote:
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-> ---
->  drivers/mfd/rtsx_pcr.c |    1 -
->  1 file changed, 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-> index 3a44efa..fa2c2bc 100644
-> --- a/drivers/mfd/rtsx_pcr.c
-> +++ b/drivers/mfd/rtsx_pcr.c
-> @@ -325,7 +325,6 @@ static void rtsx_pci_add_sg_tbl(struct rtsx_pcr *pcr,
->  	val = ((u64)addr << 32) | ((u64)len << 12) | option;
->  
->  	put_unaligned_le64(val, ptr);
-> -	ptr++;
->  	pcr->sgi++;
+From: Yanchuan Nian <ycnian@gmail.com>
 
-Hmm, one has to look at the whole function to understand that the ptr++
-statement is actually useless. A sentence or two as a the commit message
-wouldn't hurt, IMHO.
+In alloc_session(), numslots is the correct slot number used by the session.
+But the slot number passed to nfsd4_put_drc_mem() is the one from nfs client.
 
-Thanks.
+Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+---
+ fs/nfsd/nfs4state.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index ac8ed96..29924a0 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -905,7 +905,7 @@ static struct nfsd4_session *alloc_session(struct nfsd4_channel_attrs *fchan,
+ 
+ 	new = __alloc_session(slotsize, numslots);
+ 	if (!new) {
+-		nfsd4_put_drc_mem(slotsize, fchan->maxreqs);
++		nfsd4_put_drc_mem(slotsize, numslots);
+ 		return NULL;
+ 	}
+ 	init_forechannel_attrs(&new->se_fchannel, fchan, numslots, slotsize, nn);
 -- 
-Regards/Gruss,
-    Boris.
+1.7.4.4
 
-Sent from a fat crate under my desk. Formatting is fine.
---
