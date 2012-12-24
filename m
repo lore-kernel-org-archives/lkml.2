@@ -1,194 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab2LXCAa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:00:30 -0500
-Received: from sr-smtp.usish.com ([210.5.144.203]:49596 "EHLO
-	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab2LXCA3 convert rfc822-to-8bit (ORCPT
+	id S1752729Ab2LXCKf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:10:35 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:53987 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab2LXCKe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:00:29 -0500
-X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Dec 2012 21:00:28 EST
-From: "Jack Wang" <jack_wang@usish.com>
-To: "'Drunkard Zhang'" <gongfan193@gmail.com>,
-        "'James E.J. Bottomley'" <JBottomley@parallels.com>,
-        "'Xi Wang'" <xi.wang@gmail.com>,
-        "'Xiangliang Yu'" <yuxiangl@marvell.com>, <linux-scsi@vger.kernel.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>, <djbw@fb.com>
-References: <CAJiejCRCXgCw957to0fWhQPS69doacY9DOaQMpfyxM4bm3igQw@mail.gmail.com>
-In-Reply-To: <CAJiejCRCXgCw957to0fWhQPS69doacY9DOaQMpfyxM4bm3igQw@mail.gmail.com>
-Subject: RE: mvsas regression since 3.5
-Date: Mon, 24 Dec 2012 09:50:13 +0800
-Message-ID: <00cd01cde179$049bbc60$0dd33520$@com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Ac3gWxOnhpYzlP1cQOK8wvq+7V5cbQBHPWLQ
-Content-Language: zh-cn
+	Sun, 23 Dec 2012 21:10:34 -0500
+Date: Mon, 24 Dec 2012 13:10:23 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bill Pemberton <wfp5p@virginia.edu>
+Subject: linux-next: manual merge of the akpm tree with the
+ driver-core.current tree
+Message-Id: <20121224131023.e0433db6868d6234c7a8c195@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-[Jack Wang] 
-Do you see bug51881, which may relate to what you see
-https://bugzilla.kernel.org/show_bug.cgi?id=51881
+Today's linux-next merge of the akpm tree got a conflict in
+drivers/rtc/rtc-tegra.c between commit 9889589ba308 ("Drivers: rtc:
+remove __dev* attributes") from the driver-core.current tree and commit
+"drivers/rtc/rtc-tegra.c: convert to DT driver" from the akpm tree.
 
-btw: also correct Dan's mail address.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-I'm using Asus PIKE 6480 SAS card, whose chipset is "RAID bus
-controller: Marvell Technology Group Ltd. MV64460/64461/64462 System Controller, Revision B", with latest stable branch 3.7.1 only 1 of 8 ports works, to get others works I got to pull & plug back. While with
-3.5.7 it's all good, so it must be a regression.
+diff --cc drivers/rtc/rtc-tegra.c
+index 5ba2f75,fb62808..0000000
+--- a/drivers/rtc/rtc-tegra.c
++++ b/drivers/rtc/rtc-tegra.c
+@@@ -303,7 -303,13 +303,13 @@@ static struct rtc_class_ops tegra_rtc_o
+  	.alarm_irq_enable =3D tegra_rtc_alarm_irq_enable,
+  };
+ =20
++ static const struct of_device_id tegra_rtc_dt_match[] =3D {
++ 	{ .compatible =3D "nvidia,tegra20-rtc", },
++ 	{}
++ };
++ MODULE_DEVICE_TABLE(of, tegra_rtc_dt_match);
++=20
+ -static int __devinit tegra_rtc_probe(struct platform_device *pdev)
+ +static int tegra_rtc_probe(struct platform_device *pdev)
+  {
+  	struct tegra_rtc_info *info;
+  	struct resource *res;
 
-Here's corresponding boot time dmesg of 3.7.1 with debug compiled:
+--Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//
+Content-Type: application/pgp-signature
 
-[    5.967302] udevd[1212]: starting version 171
-[    6.568908] mvsas 0000:04:00.0: mvsas: driver version 0.8.16
-[    6.569431] mvsas 0000:04:00.0: mvsas: PCI-E x4, Bandwidth Usage: 2.5 Gbps
-[   10.980331] drivers/scsi/mvsas/mv_sas.c 1174:phy 0 attach dev info is 0
-[   10.980334] drivers/scsi/mvsas/mv_sas.c 1176:phy 0 attach sas addr is 0
-[   11.180909] drivers/scsi/mvsas/mv_sas.c 1174:phy 1 attach dev info is 0
-[   11.180912] drivers/scsi/mvsas/mv_sas.c 1176:phy 1 attach sas addr is 1
-[   11.381501] drivers/scsi/mvsas/mv_sas.c 1174:phy 2 attach dev info is 0
-[   11.381503] drivers/scsi/mvsas/mv_sas.c 1176:phy 2 attach sas addr is 2
-[   11.582085] drivers/scsi/mvsas/mv_sas.c 1174:phy 3 attach dev info is 0
-[   11.582088] drivers/scsi/mvsas/mv_sas.c 1176:phy 3 attach sas addr is 3
-[   11.782673] drivers/scsi/mvsas/mv_sas.c 1174:phy 4 attach dev info is 0
-[   11.782676] drivers/scsi/mvsas/mv_sas.c 1176:phy 4 attach sas addr is 4
-[   11.983262] drivers/scsi/mvsas/mv_sas.c 1174:phy 5 attach dev info is 800
-[   11.983265] drivers/scsi/mvsas/mv_sas.c 1176:phy 5 attach sas addr is 5
-[   12.183856] drivers/scsi/mvsas/mv_sas.c 1174:phy 6 attach dev info is 4
-[   12.183858] drivers/scsi/mvsas/mv_sas.c 1176:phy 6 attach sas addr is 6
-[   12.384438] drivers/scsi/mvsas/mv_sas.c 1174:phy 7 attach dev info is 0
-[   12.384441] drivers/scsi/mvsas/mv_sas.c 1176:phy 7 attach sas addr is 7
-[   12.384447] scsi6 : mvsas
-[   12.385479] drivers/scsi/mvsas/mv_sas.c 277:phy 0 byte dmaded.
-[   12.385482] drivers/scsi/mvsas/mv_sas.c 277:phy 1 byte dmaded.
-[   12.385488] drivers/scsi/mvsas/mv_sas.c 277:phy 2 byte dmaded.
-[   12.385491] drivers/scsi/mvsas/mv_sas.c 277:phy 3 byte dmaded.
-[   12.385494] drivers/scsi/mvsas/mv_sas.c 277:phy 4 byte dmaded.
-[   12.385497] drivers/scsi/mvsas/mv_sas.c 277:phy 5 byte dmaded.
-[   12.385500] drivers/scsi/mvsas/mv_sas.c 277:phy 6 byte dmaded.
-[   12.385503] drivers/scsi/mvsas/mv_sas.c 277:phy 7 byte dmaded.
-[   12.385614] sas: phy-6:0 added to port-6:0, phy_mask:0x1 (               0)
-[   12.385667] sas: phy-6:1 added to port-6:1, phy_mask:0x2 ( 100000000000000)
-[   12.385716] sas: phy-6:2 added to port-6:2, phy_mask:0x4 ( 200000000000000)
-[   12.385759] sas: phy-6:3 added to port-6:3, phy_mask:0x8 ( 300000000000000)
-[   12.385801] sas: phy-6:4 added to port-6:4, phy_mask:0x10 ( 400000000000000)
-[   12.385851] sas: phy-6:5 added to port-6:5, phy_mask:0x20 ( 500000000000000)
-[   12.385895] sas: phy-6:6 added to port-6:6, phy_mask:0x40 ( 600000000000000)
-[   12.385942] sas: phy-6:7 added to port-6:7, phy_mask:0x80 ( 700000000000000)
-[   12.385967] sas: DOING DISCOVERY on port 0, pid:847
-[   12.385974] sas: DONE DISCOVERY on port 0, pid:847, result:0
-[   12.385986] sas: DOING DISCOVERY on port 1, pid:847
-[   12.385991] sas: DONE DISCOVERY on port 1, pid:847, result:0
-[   12.386003] sas: DOING DISCOVERY on port 2, pid:847
-[   12.386009] sas: DONE DISCOVERY on port 2, pid:847, result:0
-[   12.386020] sas: DOING DISCOVERY on port 3, pid:847
-[   12.386029] sas: DONE DISCOVERY on port 3, pid:847, result:0
-[   12.386041] sas: DOING DISCOVERY on port 4, pid:847
-[   12.386048] sas: DONE DISCOVERY on port 4, pid:847, result:0
-[   12.386060] sas: DOING DISCOVERY on port 5, pid:847
-[   12.386066] sas: DONE DISCOVERY on port 5, pid:847, result:0
-[   12.386077] sas: DOING DISCOVERY on port 6, pid:847
-[   12.386083] sas: DONE DISCOVERY on port 6, pid:847, result:0
-[   12.386095] sas: DOING DISCOVERY on port 7, pid:847
-[   12.386101] sas: DONE DISCOVERY on port 7, pid:847, result:0
-[   12.386188] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   12.386281] sas: ata7: end_device-6:0: dev error handler
-[   12.537987] ata7.00: ATA-8: ST33000650NS, 0004, max UDMA/133
-[   12.537992] ata7.00: 5860533168 sectors, multi 0: LBA48 NCQ (depth 31/32)
-[   12.538227] drivers/scsi/mvsas/mv_sas.c 1857:port 0 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   12.538256] ata7.00: failed to get Identify Device Data, Emask 0x1
-[   12.539467] drivers/scsi/mvsas/mv_sas.c 1857:port 0 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   12.539496] ata7.00: failed to get Identify Device Data, Emask 0x1
-[   12.539504] ata7.00: configured for UDMA/133
-[   12.539611] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   12.550707] scsi 6:0:0:0: Direct-Access     ATA      ST33000650NS
-  0004 PQ: 0 ANSI: 5
-[   12.550800] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   12.550893] sas: ata7: end_device-6:0: dev error handler
-[   12.550983] sas: ata8: end_device-6:1: dev error handler
-[   12.702637] drivers/scsi/mvsas/mv_sas.c 1857:port 1 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   12.702667] ata8.00: both IDENTIFYs aborted, assuming NODEV
-[   12.702766] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   12.714341] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   12.714418] sas: ata7: end_device-6:0: dev error handler
-[   12.714435] sas: ata8: end_device-6:1: dev error handler
-[   12.714440] sas: ata9: end_device-6:2: dev error handler
-[   12.865290] drivers/scsi/mvsas/mv_sas.c 1857:port 2 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   12.865319] ata9.00: both IDENTIFYs aborted, assuming NODEV
-[   12.865423] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   12.876995] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   12.877094] sas: ata7: end_device-6:0: dev error handler
-[   12.877111] sas: ata8: end_device-6:1: dev error handler
-[   12.877118] sas: ata9: end_device-6:2: dev error handler
-[   12.877123] sas: ata10: end_device-6:3: dev error handler
-[   13.027975] drivers/scsi/mvsas/mv_sas.c 1857:port 3 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   13.028004] ata10.00: both IDENTIFYs aborted, assuming NODEV
-[   13.028098] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   13.039653] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   13.039731] sas: ata7: end_device-6:0: dev error handler
-[   13.039747] sas: ata8: end_device-6:1: dev error handler
-[   13.039754] sas: ata9: end_device-6:2: dev error handler
-[   13.039760] sas: ata10: end_device-6:3: dev error handler
-[   13.039765] sas: ata11: end_device-6:4: dev error handler
-[   13.195528] drivers/scsi/mvsas/mv_sas.c 1857:port 4 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   13.195557] ata11.00: both IDENTIFYs aborted, assuming NODEV
-[   13.195664] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   13.207297] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   13.207392] sas: ata7: end_device-6:0: dev error handler
-[   13.207409] sas: ata8: end_device-6:1: dev error handler
-[   13.207417] sas: ata9: end_device-6:2: dev error handler
-[   13.207422] sas: ata10: end_device-6:3: dev error handler
-[   13.207427] sas: ata11: end_device-6:4: dev error handler
-[   13.207432] sas: ata12: end_device-6:5: dev error handler
-[   13.360919] drivers/scsi/mvsas/mv_sas.c 1857:port 5 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   13.360949] ata12.00: both IDENTIFYs aborted, assuming NODEV
-[   13.361059] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   13.371980] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   13.372076] sas: ata7: end_device-6:0: dev error handler
-[   13.372092] sas: ata8: end_device-6:1: dev error handler
-[   13.372099] sas: ata9: end_device-6:2: dev error handler
-[   13.372105] sas: ata10: end_device-6:3: dev error handler
-[   13.372110] sas: ata11: end_device-6:4: dev error handler
-[   13.372115] sas: ata12: end_device-6:5: dev error handler
-[   13.372119] sas: ata13: end_device-6:6: dev error handler
-[   13.525785] drivers/scsi/mvsas/mv_sas.c 1857:port 6 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   13.525814] ata13.00: both IDENTIFYs aborted, assuming NODEV
-[   13.525919] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   13.537549] sas: Enter sas_scsi_recover_host busy: 0 failed: 0
-[   13.537606] sas: ata7: end_device-6:0: dev error handler
-[   13.537623] sas: ata8: end_device-6:1: dev error handler
-[   13.537630] sas: ata9: end_device-6:2: dev error handler
-[   13.537635] sas: ata10: end_device-6:3: dev error handler
-[   13.537640] sas: ata11: end_device-6:4: dev error handler
-[   13.537645] sas: ata12: end_device-6:5: dev error handler
-[   13.537650] sas: ata13: end_device-6:6: dev error handler
-[   13.537655] sas: ata14: end_device-6:7: dev error handler
-[   13.692779] drivers/scsi/mvsas/mv_sas.c 1857:port 7 slot 0 rx_desc
-20000 has error info0000000081000000.
-[   13.692808] ata14.00: both IDENTIFYs aborted, assuming NODEV
-[   13.692917] sas: --- Exit sas_scsi_recover_host: busy: 0 failed: 0 tries: 1
-[   13.704396] sd 6:0:0:0: [sde] 5860533168 512-byte logical blocks:
-(3.00 TB/2.72 TiB)
-[   13.704461] sd 6:0:0:0: [sde] Write Protect is off
-[   13.704466] sd 6:0:0:0: [sde] Mode Sense: 00 3a 00 00
-[   13.704492] sd 6:0:0:0: [sde] Write cache: enabled, read cache:
-enabled, doesn't support DPO or FUA
-[   13.704589] sd 6:0:0:0: Attached scsi generic sg4 type 0
-[   13.742800]  sde: sde1
-[   13.743201] sd 6:0:0:0: [sde] Attached SCSI disk
-[   14.848140] bio: create slab <bio-1> at 1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQ17mPAAoJEECxmPOUX5FEy4IP/1iBKElYZCl0BWOReA2Jiyp5
+2PgEKjbgFSHN6YzQt1hPWe6gwJK1onIX9/bMO1A8aukjsoAfAa/3S9JIeGt6HXts
+ycl0ugYpJGFG/RcogFYuPgiY/xKrwocJD7Bc8e5RdHOVT8+w+7zKpmy2L+3l3gpY
+AmNC+JElCfOLXrBhhIP4KRlo7qBZq7n1TZ31pPdtdeYzE8Z7Mj+8Xpc3yc3q/sG+
+xvxShww2fEdx/cjH+JB/ZuofF04UBhKf6hEevFdhZGtG9REd2Sxqgwl+XQMrkj5/
+pnoPeiD0L+8qjYdGDQrevv6tTFPS52QkR1QOFPzjsIeaj5husdg2OhKWT9RWchnt
+RqftI5+o2wVaUepHBJgtbEBgSb+HQFJ1g/jR9pkXMrFiTAfy5FesVIc0ZEwO/fnQ
+a7BOCskcs1GIDMcE/IyCW9v1NWdX8Q27sR+zUeYvcdAvN4rP7l2/Xx+dMsMYO4fA
+K9nY5DxuMiTYbPnfNciP2vGJ/Oion0da/sXd0EDkjwoD16GVyym2hshuRN2CKB1n
+udM9yI6i6AUb+aCNHXtawqKchv8hHMrE8PprvC25nJFTBPZjBEQ1dSijjHoys6fc
+m+qnsz5FlxPQ18ePXn0jpHIUlAkuhNRzWCEo+g1k0uQpOZpxDGdV2S1VMLmbATG8
+m0Y9nMk+3/zNVGAYsfzH
+=zAes
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//--
