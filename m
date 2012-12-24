@@ -1,255 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab2LXMN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 07:13:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:18900 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab2LXMKa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 07:10:30 -0500
-X-IronPort-AV: E=Sophos;i="4.84,347,1355068800"; 
-   d="scan'208";a="6464033"
-From: Tang Chen <tangchen@cn.fujitsu.com>
-To: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, tangchen@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org
-Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Subject: [PATCH v5 05/14] memory-hotplug: introduce new function arch_remove_memory() for removing page table depends on architecture
-Date: Mon, 24 Dec 2012 20:09:15 +0800
-Message-Id: <1356350964-13437-6-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/24 20:10:13,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/24 20:10:15,
-	Serialize complete at 2012/12/24 20:10:15
+	id S1752608Ab2LXM5S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 07:57:18 -0500
+Received: from antcom.de ([188.40.178.216]:59675 "EHLO chuck.antcom.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752321Ab2LXM5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 07:57:14 -0500
+Message-ID: <50D850C2.7050809@antcom.de>
+Date: Mon, 24 Dec 2012 13:55:30 +0100
+From: Roland Stigge <stigge@antcom.de>
+Organization: ANTCOM Open Source Research and Development
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+MIME-Version: 1.0
+To: Corentin Chary <corentin.chary@gmail.com>
+CC: gregkh@linuxfoundation.org, Matthew Garrett <mjg@redhat.com>,
+        "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] samsung-laptop: Set keyboard backlight initially
+References: <1356283278-5046-1-git-send-email-stigge@antcom.de> <CAHR064iQeQrQF0qrGXJoCmYny2H_H_JnV_h8OvRSmD=bGE5eYA@mail.gmail.com>
+In-Reply-To: <CAHR064iQeQrQF0qrGXJoCmYny2H_H_JnV_h8OvRSmD=bGE5eYA@mail.gmail.com>
+X-Enigmail-Version: 1.4.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wen Congyang <wency@cn.fujitsu.com>
+On 24/12/12 09:41, Corentin Chary wrote:
+> On Sun, Dec 23, 2012 at 6:21 PM, Roland Stigge <stigge@antcom.de> wrote:
+>> After boot, /sys/devices/platform/samsung/leds/samsung::kbd_backlight/brightness
+>> shows the maximum value (8) by readout, but the led is off. I need to manually
+>> set it to the respective value to have keyboard backlight.
+> 
+> If the led is set to 0, what's the value after reboot ? 0 or 8 ?
 
-For removing memory, we need to remove page table. But it depends
-on architecture. So the patch introduce arch_remove_memory() for
-removing page table. Now it only calls __remove_pages().
+Right - when writing 0 there before restart, the led value is actually 8
+after reboot, and the LED hardware is ON. This holds for both reboot and
+halt+poweron cycle.
 
-Note: __remove_pages() for some archtecuture is not implemented
-      (I don't know how to implement it for s390).
+Maybe this is related to the "#define MAX_BRIGHT 0x07" (which is unused
+in samsung-laptop.c)? A bit confusing in the code - but your question
+hints for some other bug (to be solved differently). Tell me if I can
+help somehow, here.
 
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
----
- arch/ia64/mm/init.c            |   18 ++++++++++++++++++
- arch/powerpc/mm/mem.c          |   12 ++++++++++++
- arch/s390/mm/init.c            |   12 ++++++++++++
- arch/sh/mm/init.c              |   17 +++++++++++++++++
- arch/tile/mm/init.c            |    8 ++++++++
- arch/x86/mm/init_32.c          |   12 ++++++++++++
- arch/x86/mm/init_64.c          |   15 +++++++++++++++
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |    2 ++
- 9 files changed, 97 insertions(+), 0 deletions(-)
+> What's the behavior on windows ?
 
-diff --git a/arch/ia64/mm/init.c b/arch/ia64/mm/init.c
-index 082e383..e333822 100644
---- a/arch/ia64/mm/init.c
-+++ b/arch/ia64/mm/init.c
-@@ -689,6 +689,24 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 
- 	return ret;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	struct zone *zone;
-+	int ret;
-+
-+	zone = page_zone(pfn_to_page(start_pfn));
-+	ret = __remove_pages(zone, start_pfn, nr_pages);
-+	if (ret)
-+		pr_warn("%s: Problem encountered in __remove_pages() as"
-+			" ret=%d\n", __func__,  ret);
-+
-+	return ret;
-+}
-+#endif
- #endif
- 
- /*
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 0dba506..09c6451 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -133,6 +133,18 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 
- 	return __add_pages(nid, zone, start_pfn, nr_pages);
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	struct zone *zone;
-+
-+	zone = page_zone(pfn_to_page(start_pfn));
-+	return __remove_pages(zone, start_pfn, nr_pages);
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
- 
- /*
-diff --git a/arch/s390/mm/init.c b/arch/s390/mm/init.c
-index ae672f4..49ce6bb 100644
---- a/arch/s390/mm/init.c
-+++ b/arch/s390/mm/init.c
-@@ -228,4 +228,16 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 		vmem_remove_mapping(start, size);
- 	return rc;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	/*
-+	 * There is no hardware or firmware interface which could trigger a
-+	 * hot memory remove on s390. So there is nothing that needs to be
-+	 * implemented.
-+	 */
-+	return -EBUSY;
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
-diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
-index 82cc576..1057940 100644
---- a/arch/sh/mm/init.c
-+++ b/arch/sh/mm/init.c
-@@ -558,4 +558,21 @@ int memory_add_physaddr_to_nid(u64 addr)
- EXPORT_SYMBOL_GPL(memory_add_physaddr_to_nid);
- #endif
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	struct zone *zone;
-+	int ret;
-+
-+	zone = page_zone(pfn_to_page(start_pfn));
-+	ret = __remove_pages(zone, start_pfn, nr_pages);
-+	if (unlikely(ret))
-+		pr_warn("%s: Failed, __remove_pages() == %d\n", __func__,
-+			ret);
-+
-+	return ret;
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
-diff --git a/arch/tile/mm/init.c b/arch/tile/mm/init.c
-index ef29d6c..2749515 100644
---- a/arch/tile/mm/init.c
-+++ b/arch/tile/mm/init.c
-@@ -935,6 +935,14 @@ int remove_memory(u64 start, u64 size)
- {
- 	return -EINVAL;
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	/* TODO */
-+	return -EBUSY;
-+}
-+#endif
- #endif
- 
- struct kmem_cache *pgd_cache;
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index 745d66b..3166e78 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -836,6 +836,18 @@ int arch_add_memory(int nid, u64 start, u64 size)
- 
- 	return __add_pages(nid, zone, start_pfn, nr_pages);
- }
-+
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	struct zone *zone;
-+
-+	zone = page_zone(pfn_to_page(start_pfn));
-+	return __remove_pages(zone, start_pfn, nr_pages);
-+}
-+#endif
- #endif
- 
- /*
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index e779e0b..f78509c 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -682,6 +682,21 @@ int arch_add_memory(int nid, u64 start, u64 size)
- }
- EXPORT_SYMBOL_GPL(arch_add_memory);
- 
-+#ifdef CONFIG_MEMORY_HOTREMOVE
-+int __ref arch_remove_memory(u64 start, u64 size)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long nr_pages = size >> PAGE_SHIFT;
-+	struct zone *zone;
-+	int ret;
-+
-+	zone = page_zone(pfn_to_page(start_pfn));
-+	ret = __remove_pages(zone, start_pfn, nr_pages);
-+	WARN_ON_ONCE(ret);
-+
-+	return ret;
-+}
-+#endif
- #endif /* CONFIG_MEMORY_HOTPLUG */
- 
- static struct kcore_list kcore_vsyscall;
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 8dd0950..31a563b 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -96,6 +96,7 @@ extern void __online_page_free(struct page *page);
- 
- #ifdef CONFIG_MEMORY_HOTREMOVE
- extern bool is_pageblock_removable_nolock(struct page *page);
-+extern int arch_remove_memory(u64 start, u64 size);
- #endif /* CONFIG_MEMORY_HOTREMOVE */
- 
- /* reasonably generic interface to expand the physical pages in a zone  */
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 1f5b5bb..2c5d734 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1487,6 +1487,8 @@ repeat:
- 	/* remove memmap entry */
- 	firmware_map_remove(start, start + size, "System RAM");
- 
-+	arch_remove_memory(start, size);
-+
- 	unlock_memory_hotplug();
- 
- 	return 0;
--- 
-1.7.1
+There is no windows available on this machine.
 
+Thanks,
+
+Roland
