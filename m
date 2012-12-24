@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752380Ab2LXLbH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 06:31:07 -0500
-Received: from outbound-mail03.westnet.com.au ([203.10.1.244]:38735 "EHLO
-	outbound-mail03.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751883Ab2LXLbF (ORCPT
+	id S1752566Ab2LXLz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 06:55:59 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:57640 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752125Ab2LXLz5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 06:31:05 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAEk72FB8q8rO/2dsb2JhbAANN719gxEBAQEDAThAAQULCxgJFg8JAwIBAgFFBg0BBQIBAYd8AQyicZJ0jFeEQwOfWYoB
-X-IronPort-AV: E=Sophos;i="4.84,346,1355068800"; 
-   d="scan'208";a="296843984"
-Message-ID: <50D83CF5.7090202@westnet.com.au>
-Date: Mon, 24 Dec 2012 21:31:01 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: linux-m68k@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
+	Mon, 24 Dec 2012 06:55:57 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Amit Shah <amit.shah@redhat.com>
+Subject: Re: [PATCH] virtio_console: correct error message on failure of debugfs_create_dir
+Date: Mon, 24 Dec 2012 11:55:46 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] m68k: Wire up finit_module
-References: <1356254998-13380-1-git-send-email-geert@linux-m68k.org>
-In-Reply-To: <1356254998-13380-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-13-git-send-email-sasha.levin@oracle.com> <20121221075909.GA15739@amit.redhat.com>
+In-Reply-To: <20121221075909.GA15739@amit.redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201212241155.46866.arnd@arndb.de>
+X-Provags-ID: V02:K0:E5uXOXe3cljLzTb/InG+5aJdl1a+QoQyusG8Y5yFVkk
+ h9H8VaGD2scaGp8lzPA61bIw5S8ZU3YM5fsEmF3iaynLszQBu2
+ c7TZ4IFjiREkjENE4qB+VVehe/mwYz7Qd0PrPMXJtD5uN3oEi7
+ eJeQ1dwJP6JUi/jcBXmM+5zL4POftgdafmgSBVx6zQX1XVvRg3
+ KfR/GX/glIhTV7aabtxTWnlrZL5RKQ91aMM0zJCsroPOZ+qGgC
+ D4vCONYYvGi4yzI76T/RYhyJs0iT0NKUwjyLCxDQBxqFsFUiRV
+ PF02PHNzUHjzP5crrPK9836VJH+iIeJQOF5akloIW9jogoPMrU
+ x848nMmLR4GgGXDZ5EWI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2012 07:29 PM, Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Friday 21 December 2012, Amit Shah wrote:
+> On (Thu) 20 Dec 2012 [14:11:21], Sasha Levin wrote:
+> > debugfs_create_dir() returns NULL if it fails, there's little point in
+> > calling PTR_ERR on it.
+>
+> debugfs_create_dir() does return an error value if debugfs is not
+> enabled.
+> 
+> This check for !pdrvdata.debugfs_dir should infact use
+> IS_ERR_OR_NULL().  Care to submit a patch for that?
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+How about we fix the stub instead to return NULL when debugfs is disabled?
 
-
->   arch/m68k/include/asm/unistd.h      |    2 +-
->   arch/m68k/include/uapi/asm/unistd.h |    1 +
->   arch/m68k/kernel/syscalltable.S     |    1 +
->   3 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/m68k/include/asm/unistd.h b/arch/m68k/include/asm/unistd.h
-> index 847994c..f9337f6 100644
-> --- a/arch/m68k/include/asm/unistd.h
-> +++ b/arch/m68k/include/asm/unistd.h
-> @@ -4,7 +4,7 @@
->   #include <uapi/asm/unistd.h>
->
->
-> -#define NR_syscalls		348
-> +#define NR_syscalls		349
->
->   #define __ARCH_WANT_OLD_READDIR
->   #define __ARCH_WANT_OLD_STAT
-> diff --git a/arch/m68k/include/uapi/asm/unistd.h b/arch/m68k/include/uapi/asm/unistd.h
-> index b94bfbf..625f321 100644
-> --- a/arch/m68k/include/uapi/asm/unistd.h
-> +++ b/arch/m68k/include/uapi/asm/unistd.h
-> @@ -353,5 +353,6 @@
->   #define __NR_process_vm_readv	345
->   #define __NR_process_vm_writev	346
->   #define __NR_kcmp		347
-> +#define __NR_finit_module	348
->
->   #endif /* _UAPI_ASM_M68K_UNISTD_H_ */
-> diff --git a/arch/m68k/kernel/syscalltable.S b/arch/m68k/kernel/syscalltable.S
-> index c30da5b..3f04ea0 100644
-> --- a/arch/m68k/kernel/syscalltable.S
-> +++ b/arch/m68k/kernel/syscalltable.S
-> @@ -368,4 +368,5 @@ ENTRY(sys_call_table)
->   	.long sys_process_vm_readv	/* 345 */
->   	.long sys_process_vm_writev
->   	.long sys_kcmp
-> +	.long sys_finit_module
->
->
-
+	Arnd
