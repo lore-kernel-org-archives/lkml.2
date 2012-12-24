@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264Ab2LXQZL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 11:25:11 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46346 "EHLO
+	id S1753285Ab2LXQ1a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 11:27:30 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41283 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752597Ab2LXQZI (ORCPT
+	by vger.kernel.org with ESMTP id S1752597Ab2LXQ13 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 11:25:08 -0500
-Date: Mon, 24 Dec 2012 16:25:05 +0000
+	Mon, 24 Dec 2012 11:27:29 -0500
+Date: Mon, 24 Dec 2012 16:27:27 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Inderpal Singh <inderpal.singh@linaro.org>
-Cc: linux-kernel@vger.kernel.org, sbkim73@samsung.com, lrg@ti.com,
-        kgene.kim@samsung.com, linux-samsung-soc@vger.kernel.org,
-        patches@linaro.org
-Subject: Re: [PATCH] regulator: s5m8767: Fix probe failure due to stack
- corruption
-Message-ID: <20121224162505.GT30837@opensource.wolfsonmicro.com>
-References: <1355282820-18364-1-git-send-email-inderpal.singh@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] regulator: lp3971: Convert to get_voltage_sel
+Message-ID: <20121224162726.GU30837@opensource.wolfsonmicro.com>
+References: <1355140012.6601.1.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1Dvf9Qz7hFaodvwE"
+	protocol="application/pgp-signature"; boundary="EyuBRJR0MsVMWKTf"
 Content-Disposition: inline
-In-Reply-To: <1355282820-18364-1-git-send-email-inderpal.singh@linaro.org>
+In-Reply-To: <1355140012.6601.1.camel@phoenix>
 X-Cookie: Your step will soil many countries.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -29,38 +27,37 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---1Dvf9Qz7hFaodvwE
+--EyuBRJR0MsVMWKTf
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Dec 12, 2012 at 08:57:00AM +0530, Inderpal Singh wrote:
-> The function sec_reg_read invokes regmap_read which expects unsigned int *
-> as the destination address. The existing driver is passing address of local
-> variable "val" which is u8. This causes the stack corruption and following
-> dump is observed during probe.
+On Mon, Dec 10, 2012 at 07:46:52PM +0800, Axel Lin wrote:
+> regulator_list_voltage_table() returns -EINVAL if selector >= n_voltages.
+> Thus we don't need to check if reg is greater than BUCK_TARGET_VOL_MAX_IDX in
+> lp3971_dcdc_get_voltage_sel.
 
 Applied, thanks.
 
---1Dvf9Qz7hFaodvwE
+--EyuBRJR0MsVMWKTf
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQ2IHNAAoJELSic+t+oim9AvoP/AqwtNeJNYSJxpg4jukdJmVl
-TSG0Yaq1Ben2O3ssTWLsVhfoHP1ViLrramIUOjTA1TbcT2jMMGFkCAYiplb9nfgS
-189uoGcz49/A1mKEgvjlFv4p8zokPBsqmth1zRyZNVEtSCYtnHsp5gSI4dqvPysT
-Y4fCAt3f//BDlb7phu/H7lpg3LaFV4GvDguWF2av/lkwAleyQWd+d6MqSYGgNMEY
-8MuCTVmc7lfGBCEqbTgSnxYSh56HEIkVe6Wl1eqk/XovP29fnIk5S/82bQr2h8xh
-ITTG6J3irmc9LHCQbfPzfWf7XHt+YHObYDnlyfaZ68SEeDnyJ60JoEwPumA2Wr1a
-OvDoTXFVHno46O53GFEQHvKoFix9ywqn1srqwAX/AqLYYZ/CqNi5acE5fdb8u9Ky
-RXDnQ/70rPw1Jm7XOXqu+EwnE9QV3jKCTOe0aIYKGGI9bZsFz1OMBH0ofJFW6c0m
-pDkeLbLP6YWAQ/bUCptfVN68LvJQ0UGZfuP1VZnnYUt+lXhikgmwKHn+uSsILqhj
-NnBi5JBXd1b5Q2lEsLCCrNbvkoOeALE32pZd6Cr0tDgfAs9tAr1rc4M4nwJRyGKO
-IafC7H6XqOFG4qQLp2uBRIv5E1amVXNjk3DAJxAaEoDEEXJXIdnQaGCMFVeqh0Kn
-0AMeD7MhG1C7/eTJbRr3
-=GnP4
+iQIcBAEBAgAGBQJQ2IJoAAoJELSic+t+oim9orsP/jBzfZocTkf0h6yY9tv6a2NW
+qe8oXn6aGWr3V5BkoTGGZ1Qqf1cvrpemmHQMWBFxX0Swb5+jPCF1bbX8F0hAB6ay
+AbW2OE/YuqHNWoSGLrycdgde4unzvy1NVvBcPQPKQX5tYJ0/uzYWVsMFxZUNx6M8
+YLafqoaeSbL2EH9M8TTi98288lF3c0SeXdomOIzTzyanZBv+QxyqgRYprdw29sQ+
+cCewyyzIFHlTHuTsfJgj3DrDord5KGsIChRmKyawn2lU6qQZMa8NeIkRPEyby9ph
+F26nCP3jLYK9vsw933fd32UcG/U8qv48RUzo8BOFpXX9rG0XculLMAcL8xyze50U
+A3bxBi6PbOhBblwxxe69PUS48xOouO8jcNSiqzHri5DgXFtXew1gg30JJ3swVWT5
+BjyQk8i93p2G/8MN5MPIB1I7XjJI9LABIuhQ9NQsKGjEQobbkEuxZBZh/Bc95Rz3
+LN1fb6OpNEibZlXIA1UrWino3jYj68s3B57LGgbKtVag8vRftefH7KKJW8sauv7o
+rj2EhcCMkQi9lFlUc6I8802+HjpGwZUw6uUlFI2xLq84KcVSvc7JghMS7XdjRKD7
+XHPG1J8qaP67SZJbQZ+C3RaJQV9FWb4wgOfl0nDjqnbbZX8fu3PRorxt79iIrmrl
+TQqjIS48iNwW4MQ4zcQj
+=GRre
 -----END PGP SIGNATURE-----
 
---1Dvf9Qz7hFaodvwE--
+--EyuBRJR0MsVMWKTf--
