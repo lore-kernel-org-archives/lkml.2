@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753231Ab2LXMLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 07:11:21 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:22881 "EHLO song.cn.fujitsu.com"
+	id S1753238Ab2LXMLj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 07:11:39 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:18900 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab2LXMKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753107Ab2LXMKi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Dec 2012 07:10:38 -0500
 X-IronPort-AV: E=Sophos;i="4.84,347,1355068800"; 
-   d="scan'208";a="6464041"
+   d="scan'208";a="6464040"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
         len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
@@ -21,9 +21,9 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: [PATCH v5 13/14] memory-hotplug: remove sysfs file of node
-Date: Mon, 24 Dec 2012 20:09:23 +0800
-Message-Id: <1356350964-13437-14-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v5 11/14] memory-hotplug: Integrated __remove_section() of CONFIG_SPARSEMEM_VMEMMAP.
+Date: Mon, 24 Dec 2012 20:09:21 +0800
+Message-Id: <1356350964-13437-12-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -36,150 +36,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch introduces a new function try_offline_node() to
-remove sysfs file of node when all memory sections of this
-node are removed. If some memory sections of this node are
-not removed, this function does nothing.
+Currently __remove_section for SPARSEMEM_VMEMMAP does nothing. But even if
+we use SPARSEMEM_VMEMMAP, we can unregister the memory_section.
 
+Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
 ---
- drivers/acpi/acpi_memhotplug.c |    8 ++++-
- include/linux/memory_hotplug.h |    2 +-
- mm/memory_hotplug.c            |   58 ++++++++++++++++++++++++++++++++++++++-
- 3 files changed, 63 insertions(+), 5 deletions(-)
+ mm/memory_hotplug.c |   11 -----------
+ 1 files changed, 0 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/acpi/acpi_memhotplug.c b/drivers/acpi/acpi_memhotplug.c
-index eb30e5a..9c53cc6 100644
---- a/drivers/acpi/acpi_memhotplug.c
-+++ b/drivers/acpi/acpi_memhotplug.c
-@@ -295,9 +295,11 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
- 
- static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
- {
--	int result = 0;
-+	int result = 0, nid;
- 	struct acpi_memory_info *info, *n;
- 
-+	nid = acpi_get_node(mem_device->device->handle);
-+
- 	list_for_each_entry_safe(info, n, &mem_device->res_list, list) {
- 		if (info->failed)
- 			/* The kernel does not use this memory block */
-@@ -310,7 +312,9 @@ static int acpi_memory_remove_memory(struct acpi_memory_device *mem_device)
- 			 */
- 			return -EBUSY;
- 
--		result = remove_memory(info->start_addr, info->length);
-+		if (nid < 0)
-+			nid = memory_add_physaddr_to_nid(info->start_addr);
-+		result = remove_memory(nid, info->start_addr, info->length);
- 		if (result)
- 			return result;
- 
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 2441f36..f60e728 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -242,7 +242,7 @@ extern int arch_add_memory(int nid, u64 start, u64 size);
- extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
- extern int offline_memory_block(struct memory_block *mem);
- extern bool is_memblock_offlined(struct memory_block *mem);
--extern int remove_memory(u64 start, u64 size);
-+extern int remove_memory(int nid, u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
- extern void sparse_remove_one_section(struct zone *zone, struct mem_section *ms);
 diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index a1b0632..f8a1d2f 100644
+index c12bd55..71cb656 100644
 --- a/mm/memory_hotplug.c
 +++ b/mm/memory_hotplug.c
-@@ -29,6 +29,7 @@
- #include <linux/suspend.h>
- #include <linux/mm_inline.h>
- #include <linux/firmware-map.h>
-+#include <linux/stop_machine.h>
- 
- #include <asm/tlbflush.h>
- 
-@@ -1659,7 +1660,58 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
- 	return ret;
+@@ -430,16 +430,6 @@ static int __meminit __add_section(int nid, struct zone *zone,
+ 	return register_new_memory(nid, __pfn_to_section(phys_start_pfn));
  }
  
--int __ref remove_memory(u64 start, u64 size)
-+static int check_cpu_on_node(void *data)
-+{
-+	struct pglist_data *pgdat = data;
-+	int cpu;
-+
-+	for_each_present_cpu(cpu) {
-+		if (cpu_to_node(cpu) == pgdat->node_id)
-+			/*
-+			 * the cpu on this node isn't removed, and we can't
-+			 * offline this node.
-+			 */
-+			return -EBUSY;
-+	}
-+
-+	return 0;
-+}
-+
-+/* offline the node if all memory sections of this node are removed */
-+static void try_offline_node(int nid)
-+{
-+	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
-+	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
-+	unsigned long pfn;
-+
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		unsigned long section_nr = pfn_to_section_nr(pfn);
-+
-+		if (!present_section_nr(section_nr))
-+			continue;
-+
-+		if (pfn_to_nid(pfn) != nid)
-+			continue;
-+
-+		/*
-+		 * some memory sections of this node are not removed, and we
-+		 * can't offline node now.
-+		 */
-+		return;
-+	}
-+
-+	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
-+		return;
-+
-+	/*
-+	 * all memory/cpu of this node are removed, we can offline this
-+	 * node now.
-+	 */
-+	node_set_offline(nid);
-+	unregister_one_node(nid);
-+}
-+
-+int __ref remove_memory(int nid, u64 start, u64 size)
+-#ifdef CONFIG_SPARSEMEM_VMEMMAP
+-static int __remove_section(struct zone *zone, struct mem_section *ms)
+-{
+-	/*
+-	 * XXX: Freeing memmap with vmemmap is not implement yet.
+-	 *      This should be removed later.
+-	 */
+-	return -EBUSY;
+-}
+-#else
+ static int __remove_section(struct zone *zone, struct mem_section *ms)
  {
- 	unsigned long start_pfn, end_pfn;
- 	int ret = 0;
-@@ -1706,6 +1758,8 @@ repeat:
- 
- 	arch_remove_memory(start, size);
- 
-+	try_offline_node(nid);
-+
- 	unlock_memory_hotplug();
- 
+ 	int ret = -EINVAL;
+@@ -454,7 +444,6 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
+ 	sparse_remove_one_section(zone, ms);
  	return 0;
-@@ -1715,7 +1769,7 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
- {
- 	return -EINVAL;
  }
--int remove_memory(u64 start, u64 size)
-+int remove_memory(int nid, u64 start, u64 size)
- {
- 	return -EINVAL;
- }
+-#endif
+ 
+ /*
+  * Reasonably generic function for adding memory.  It is
 -- 
 1.7.1
 
