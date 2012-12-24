@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab2LXF4V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 00:56:21 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62261 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2LXF4S (ORCPT
+	id S1752786Ab2LXGEA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 01:04:00 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:50311 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2LXGD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 00:56:18 -0500
+	Mon, 24 Dec 2012 01:03:58 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBO63JWC029299, This message is released by code: ctaloc0852
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH 1/7] MFD:rtsx: Fix typo in comment
+Date: Mon, 24 Dec 2012 14:03:19 +0800
+Message-ID: <96e414124cedf14c9783acbf6579f6ce357da2d1.1356319097.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1356319097.git.wei_wang@realsil.com.cn>
+References: <cover.1356319097.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-In-Reply-To: <20121221145107.GA10213@ghostprotocols.net>
-References: <1356078018-31905-1-git-send-email-namhyung@kernel.org>
- <1356078018-31905-4-git-send-email-namhyung@kernel.org> <20121221145107.GA10213@ghostprotocols.net>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Mon, 24 Dec 2012 14:55:56 +0900
-X-Google-Sender-Auth: qVluDJjbgB9VTwBg6YuhQs3_DKY
-Message-ID: <CAM9d7ch3MgBoS_qXWDho38DWr+WYqCPpOpna1+w8PgnwjYrANg@mail.gmail.com>
-Subject: Re: [PATCH 3/6] perf ui/gtk: Implement basic GTK2 annotation browser
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-Merry Christmas!
+Fix a misspelling word in comment
 
-On Fri, Dec 21, 2012 at 11:51 PM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Fri, Dec 21, 2012 at 05:20:15PM +0900, Namhyung Kim escreveu:
->> Basic implementation of perf annotate on GTK2.  Currently only
->> shows first symbol.
->
-> I merged the first two patches in this series, but this one needs to be
-> merged with the sixth patch, so that we can try it at this point, then
-> you can add more features (patches 4 and 5) that can be tested as we
-> merge them.
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+---
+ include/linux/mfd/rtsx_pci.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-You can apply patch 6 before 4 and 5 since it's not depends on them.
-But if you want, I'll resend a squashed patch for 3 + 6.
-
-
-> Just pushed my perf/core branch with the 2 first patches.
-
-Thanks a lot! :)
-
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 060b721..bebe9f9 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -452,7 +452,7 @@
+ #define	SD_RSP_TYPE_R6			0x01
+ #define	SD_RSP_TYPE_R7			0x01
+ 
+-/* SD_CONFIURE3 */
++/* SD_CONFIGURE3 */
+ #define	SD_RSP_80CLK_TIMEOUT_EN		0x01
+ 
+ /* Card Transfer Reset Register */
 -- 
-Thanks,
-Namhyung
+1.7.9.5
+
