@@ -1,99 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753128Ab2LXIPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 03:15:37 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:4586 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752993Ab2LXIPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 03:15:33 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH 2/4] signal: add a helper for dequeuing signals from a specified queue
-Date: Mon, 24 Dec 2012 12:13:25 +0400
-Message-Id: <1356336807-5517-3-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1356336807-5517-1-git-send-email-avagin@openvz.org>
-References: <1356336807-5517-1-git-send-email-avagin@openvz.org>
+	id S1753101Ab2LXIQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 03:16:11 -0500
+Received: from mx0b-000f0801.pphosted.com ([67.231.152.113]:38792 "EHLO
+	mx0b-000f0801.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752982Ab2LXIQJ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 03:16:09 -0500
+X-Greylist: delayed 1889 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Dec 2012 03:16:09 EST
+From: Vijay Mohan Guvva <vmohan@Brocade.com>
+To: Jim Meyering <jim@meyering.net>
+CC: Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>
+Date: Mon, 24 Dec 2012 00:43:32 -0700
+Subject: RE: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+Thread-Topic: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+Thread-Index: Ac2p5OuzEqKnlcrYRXSwZVV9B0IBVQ3uo6IQ
+Message-ID: <51BD2AE8016AE441B63F5661159C990203500EA02A@BRM-EXCH-3.corp.brocade.com>
+References: <1345481724-30108-1-git-send-email-jim@meyering.net>
+	<1345481724-30108-5-git-send-email-jim@meyering.net>
+	<B5EE62D80D50B84BB9E5174F7FCCE80A2839ABC2C4@HQ1-EXCH02.corp.brocade.com>
+	<87d32ll2nk.fsf@rho.meyering.net> <87wqytbic5.fsf@rho.meyering.net>
+ <87ipadbh1w.fsf@rho.meyering.net>
+In-Reply-To: <87ipadbh1w.fsf@rho.meyering.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2012-12-24_02:2012-12-22,2012-12-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=8 phishscore=0
+ adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
+ engine=7.0.1-1211240000 definitions=main-1212230423
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Hi Jim,
+Due to BFA_FCS_PORT_SYMBNAME_MODEL_SZ macro value of 12, we are missing some part of the model name in port/node symbolic name and seeing issues related to null termination. Mismatch between the actual model size and number of bytes copied to symbolic name is a bug. Can you please fix this by changing BFA_FCS_PORT_SYMBNAME_MODEL_SZ  to 16 and reduce os_name macro (BFA_FCS_PORT_SYMBNAME_OSINFO_SZ) to 44, so that both the issues i.e symbolic name and null termination will be fixed.
+
+Thanks,
+Vijay
+
+-----Original Message-----
+From: linux-scsi-owner@vger.kernel.org [mailto:linux-scsi-owner@vger.kernel.org] On Behalf Of Jim Meyering
+Sent: Sunday, October 14, 2012 1:51 PM
+To: Krishna Gudipati
+Cc: Andi Kleen; linux-kernel@vger.kernel.org; James E.J. Bottomley; linux-scsi@vger.kernel.org
+Subject: Re: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+
+Jim Meyering wrote:
+> Jim Meyering wrote:
+>> Krishna Gudipati wrote:
+>>>> -----Original Message-----
+>>>> From: Jim Meyering [mailto:jim@meyering.net]
+>>>> Sent: Monday, August 20, 2012 9:55 AM
+>>>> To: linux-kernel@vger.kernel.org
+>>>> Cc: Jim Meyering; Jing Huang; Krishna Gudipati; James E.J. 
+>>>> Bottomley; linux- scsi@vger.kernel.org
+>>>> Subject: [PATCH] bfa: avoid buffer overrun for 12-byte model name
+>>>>
+>>>> From: Jim Meyering <meyering@redhat.com>
+>>>>
+>>>> we use strncpy to copy a model name of length up to 15 (16, if you 
+>>>> count the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+>>>> However, strncpy does not always NUL-terminate, so whenever the 
+>>>> original model string has strlen >= 12, the following strncat reads 
+>>>> beyond end of the -
+>>>> >sym_name buffer as it attempts to find end of string.
+>>>>
+>>>> bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric) {
+>>>> 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+>>>> 	...
+>>>> 	strncpy((char *)&port_cfg->sym_name, model,
+>>>> 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+>>>> 	strncat((char *)&port_cfg->sym_name, 
+>>>> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>>>> 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+>>>> 	...
+>>>>
+>>>> bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model) {
+>>>> 	struct bfi_ioc_attr_s	*ioc_attr;
+>>>>
+>>>> 	WARN_ON(!model);
+>>>> 	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+>>>>
+>>>> BFA_ADAPTER_MODEL_NAME_LEN = 16
+>>>>
+>>>> Signed-off-by: Jim Meyering <meyering@redhat.com>
+>>>> ---
+>>>>  drivers/scsi/bfa/bfa_fcs.c | 1 +
+>>>>  1 file changed, 1 insertion(+)
+>>>>
+>>>> diff --git a/drivers/scsi/bfa/bfa_fcs.c 
+>>>> b/drivers/scsi/bfa/bfa_fcs.c index
+>>>> eaac57e..3329493 100644
+>>>> --- a/drivers/scsi/bfa/bfa_fcs.c
+>>>> +++ b/drivers/scsi/bfa/bfa_fcs.c
+>>>> @@ -713,6 +713,7 @@ bfa_fcs_fabric_psymb_init(struct 
+>>>> bfa_fcs_fabric_s
+>>>> *fabric)
+>>>>  	/* Model name/number */
+>>>>  	strncpy((char *)&port_cfg->sym_name, model,
+>>>>  		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+>>>> +	port_cfg->sym_name[BFA_FCS_PORT_SYMBNAME_MODEL_SZ - 1]
+>>>> = 0;
+>>>>  	strncat((char *)&port_cfg->sym_name, 
+>>>> BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+>>>>  		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+>>>
+>>> Nacked-by: Krishna Gudipati <kgudipat@brocade.com>
+>>>
+>>> Hi Jim,
+>>>
+>>> This model number is of length 12 bytes and the logic added here 
+>>> will reset the model last byte.
+>>> In addition strncat does not need the src to be null terminated, the 
+>>> change does not compile even.
+>>> NACK to this change.
+>>
+>> Hi Krishna,
+>>
+>> Thanks for the quick feedback and sorry the patch wasn't quite right.
+>> However, the log is accurate: there is at least a theoretical problem 
+>> when the string in "model" (a buffer of size 16 bytes) has strlen >= 12.
+>> While strncat does not require that its second argument be 
+>> NUL-terminated, the first one (the destination) must be.  Otherwise, 
+>> it has no way to determine the end of the string to which it must append the source bytes.
+>
+> Ping?
+> In case it wasn't clear, there *is* a risk of buffer overflow, which 
+> happens when strncpy makes it so strncat's destination is not NUL 
+> terminated.
+>
+> If you require support for 12-byte model numbers, then you'll have to 
+> increase the length of that buffer
+> (BFA_FCS_PORT_SYMBNAME_MODEL_SZ) to at least 13.
+>
+> I've just rebased, and thus confirmed that the patches still apply.
+>
+>> Here is a v2 patch to which I've added the requisite (char*) cast.
+>> However, this whole function is rather unreadable due to the 
+>> repetition (12 times!) of "(char *)&port_cfg->sym_name".
+>> In case someone prefers to factor out that repetition, I've appended 
+>> a larger, v3 patch to do that.
+
+Taking Andi's advice, I've made the offending code use strlcpy in place of strncpy.  More importantly, I've fixed the same bug also in the following, nearly identical function.
+
+-- >8 --
+
+Two functions have this problem:
+  bfa_fcs_fabric_psymb_init
+  bfa_fcs_fabric_nsymb_init
+They use strncpy to copy a model name of length up to 15 (16, if you count the NUL), into a buffer of size 12 (BFA_FCS_PORT_SYMBNAME_MODEL_SZ).
+However, strncpy does not always NUL-terminate, so whenever the original model string has strlen >= 12, the following strncat reads beyond end of the ->sym_name buffer as it attempts to find end of string.
+Instead, use strlcpy, which does guarantee NUL-termination.
+
+bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric) {
+	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+	...
+	strncpy((char *)&port_cfg->sym_name, model,
+		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+	...
+
+bfa_ioc_get_adapter_model(struct bfa_ioc_s *ioc, char *model) {
+	struct bfi_ioc_attr_s	*ioc_attr;
+
+	WARN_ON(!model);
+	memset((void *)model, 0, BFA_ADAPTER_MODEL_NAME_LEN);
+
+BFA_ADAPTER_MODEL_NAME_LEN = 16
+
+Signed-off-by: Jim Meyering <jim@meyering.net>
 ---
- include/linux/sched.h |  9 ++++++++-
- kernel/signal.c       | 13 +++++++++----
- 2 files changed, 17 insertions(+), 5 deletions(-)
+ drivers/scsi/bfa/bfa_fcs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 0dd42a0..de9a4bf 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -2159,7 +2159,14 @@ extern void flush_signals(struct task_struct *);
- extern void __flush_signals(struct task_struct *);
- extern void ignore_signals(struct task_struct *);
- extern void flush_signal_handlers(struct task_struct *, int force_default);
--extern int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info);
-+extern int do_dequeue_signal(struct task_struct *tsk,
-+				sigset_t *mask, siginfo_t *info, int queue);
-+
-+static inline int dequeue_signal(struct task_struct *tsk,
-+					sigset_t *mask, siginfo_t *info)
-+{
-+	return do_dequeue_signal(tsk, mask, info, 0);
-+}
- 
- static inline int dequeue_signal_lock(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
- {
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 0af8868..91bb76f2 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -597,17 +597,22 @@ static int __dequeue_signal(struct sigpending *pending, sigset_t *mask,
-  * Dequeue a signal and return the element to the caller, which is
-  * expected to free it.
-  *
-+ * @queue: dequeue from a private queue, if a value is not positive
-+ *	   dequeue from a shared queue, if a value if not negative
-+ *
-  * All callers have to hold the siglock.
-  */
--int dequeue_signal(struct task_struct *tsk, sigset_t *mask, siginfo_t *info)
-+int do_dequeue_signal(struct task_struct *tsk, sigset_t *mask,
-+					siginfo_t *info, int queue)
- {
--	int signr;
-+	int signr = 0;
- 
- 	/* We only dequeue private signals from ourselves, we don't let
- 	 * signalfd steal them
- 	 */
--	signr = __dequeue_signal(&tsk->pending, mask, info);
--	if (!signr) {
-+	if (queue <= 0)
-+		signr = __dequeue_signal(&tsk->pending, mask, info);
-+	if (!signr && queue >= 0) {
- 		signr = __dequeue_signal(&tsk->signal->shared_pending,
- 					 mask, info);
- 		/*
--- 
-1.7.11.7
+diff --git a/drivers/scsi/bfa/bfa_fcs.c b/drivers/scsi/bfa/bfa_fcs.c index d428808..c7f476c 100644
+--- a/drivers/scsi/bfa/bfa_fcs.c
++++ b/drivers/scsi/bfa/bfa_fcs.c
+@@ -837,7 +837,7 @@ bfa_fcs_fabric_psymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
 
+ 	/* Model name/number */
+-	strncpy((char *)&port_cfg->sym_name, model,
++	strlcpy((char *)&port_cfg->sym_name, model,
+ 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+ 	strncat((char *)&port_cfg->sym_name, BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+ 		sizeof(BFA_FCS_PORT_SYMBNAME_SEPARATOR));
+@@ -898,7 +898,7 @@ bfa_fcs_fabric_nsymb_init(struct bfa_fcs_fabric_s *fabric)
+ 	bfa_ioc_get_adapter_model(&fabric->fcs->bfa->ioc, model);
+
+ 	/* Model name/number */
+-	strncpy((char *)&port_cfg->node_sym_name, model,
++	strlcpy((char *)&port_cfg->node_sym_name, model,
+ 		BFA_FCS_PORT_SYMBNAME_MODEL_SZ);
+ 	strncat((char *)&port_cfg->node_sym_name,
+ 			BFA_FCS_PORT_SYMBNAME_SEPARATOR,
+--
+1.8.0.rc2
+--
+To unsubscribe from this list: send the line "unsubscribe linux-scsi" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
