@@ -1,180 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab2LXUuu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 15:50:50 -0500
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:39264 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753330Ab2LXUut (ORCPT
+	id S1753426Ab2LXUx4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 15:53:56 -0500
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:46998 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753330Ab2LXUxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 15:50:49 -0500
+	Mon, 24 Dec 2012 15:53:53 -0500
 MIME-Version: 1.0
-Date: Mon, 24 Dec 2012 21:50:48 +0100
-Message-ID: <CADpTngXfrV+DrgUjR2LEcesimieOT68Knv9jJGsR_2mRMd1w3g@mail.gmail.com>
-Subject: usb issues with 3.6.X and 3.7.X
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1356336807-5517-4-git-send-email-avagin@openvz.org>
+References: <1356336807-5517-1-git-send-email-avagin@openvz.org> <1356336807-5517-4-git-send-email-avagin@openvz.org>
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Mon, 24 Dec 2012 21:53:33 +0100
+X-Google-Sender-Auth: Qd-K1CmMi2sqayDHKiQAncO7FPc
+Message-ID: <CAHO5Pa2TY3fVs4fFNdhrRN79QkVrWhR_sxD1JoEt-wSwCSN8_A@mail.gmail.com>
+Subject: Re: [PATCH 3/4] signalfd: add ability to choose a private or shared queue
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I'm experiencing some usb-related issues with recent kernels (3.6.7
-and 3.7.1 at least.)
-Basically I have a V500 epson scanner that worked just fine with older
-kernels; since last time I used it I've changed several kernels and
-now the oldest that I have on my machine is 3.6.7.
-Recently I tried to use the usb scanner without success.
-I've read the 3.6.4 changelog because there seems to be a very similar
-issue patched,
+[CC+=linux-api]
 
-============
-commit e4e29779ec498f4905461a13b6ba58ba4f60152b
-Author: Henrik Rydberg <rydberg@euromail.se>
-Date:   Sat Oct 13 12:20:36 2012 +0200
-    usbdevfs: Fix broken scatter-gather transfer
+Andrey,
 
-    commit 014639003c77a51fc319c9fdf225e7747cb6e18d upstream.
+(Among other things, some suggested wording fixes below to improve the
+eventual commit log entry).
 
-    The handling of large output bulk transfers is broken; the same user
-    page is read over and over again. Fixed with this patch.
+On Mon, Dec 24, 2012 at 9:13 AM, Andrey Vagin <avagin@openvz.org> wrote:
+> This patch is added two flags SFD_GROUP and SFD_SHARED.
+> SFD_SHARED - read signals from a shared queue
+> SFD_PRIVATE - read signals from a private queue
 
-============
+These names and comments are not quite meaningful I find. Also, you
+use SFD_SHARED here, but the name below is SFD_GROUP. I had to read
+further to confirm what I guessed the names meant. How about these
+names and comments:
 
-But probably it is not the same issue, as I've tried with 3.7.1 and
-3.6.7; the scanner works just fine if connected to a Mac, so I can
-exclude hardware issues.
+SFD_SHARED_QUEUE - read signals from a shared (process wide) queue
+SFD_PER_THREAD_QUEUE - read signals from a per-thread queue
 
-I've tried to look at usb traffic with usbmon, but honestly it's not
-my ground :)
+> Without this flags or with both flags signals are read from both queues.
 
-Basically, the scanner takes a lot of time to be identified by iscan
-and once identified iscan claims to be unable to speak with the
-scanner.
+Without these flags
 
-If this can be useful, here comes the usbmon capture with 3.7.1:
-(it seems that some dialog happens only after 90 seconds from start,
-andh at that moment the device is recognized. Of course, on other
-laptops the scanner is identified at once)
+> This functionality is requered for dumping pending signals.
 
+"required"
 
-09edf540 0.506456 S Co:2:009:0 s 00 09 0001 0000 0000 0
-09edf540 0.506697 C Co:2:009:0 0 0
-09edf540 0.506733 S Bo:2:009:2 - 2 =
-    1b66
-     . f
-09edf540 0.507442 C Bo:2:009:2 0 2 >
-09edf540 0.507456 S Bi:2:009:1 - 4 <
-09edf540 0.508442 C Bi:2:009:1 0 1 =
-    15
-09edf540 0.508450 S Bi:2:009:1 - 42 <
-09edf540 30.508543 C Bi:2:009:1 -2 0
-08706a80 30.508563 S Bi:2:009:1 - 42 <
-08706a80 60.509511 C Bi:2:009:1 -2 0
-08706a80 60.509529 S Bi:2:009:1 - 42 <
-08706a80 90.509970 C Bi:2:009:1 -2 0
-087dd840 90.510030 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087dd840 90.510591 C Co:2:009:0 0 0
-087dd840 90.510599 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087dd840 90.510840 C Co:2:009:0 0 0
-087dd840 90.510845 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087dd840 90.511092 C Co:2:009:0 0 0
-087ddb40 90.511159 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.511341 C Co:2:009:0 0 0
-087ddb40 90.511356 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.511591 C Co:2:009:0 0 0
-087ddb40 90.511597 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.511841 C Co:2:009:0 0 0
-087ddb40 90.511950 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.512215 C Co:2:009:0 0 0
-087ddb40 90.512225 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.512465 C Co:2:009:0 0 0
-087ddb40 90.512470 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.512717 C Co:2:009:0 0 0
-087ddb40 90.512761 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.513091 C Co:2:009:0 0 0
-087ddb40 90.513101 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.513341 C Co:2:009:0 0 0
-087ddb40 90.513346 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.513591 C Co:2:009:0 0 0
-087ddb40 90.513630 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.513841 C Co:2:009:0 0 0
-087ddb40 90.513850 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.514090 C Co:2:009:0 0 0
-087ddb40 90.514096 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.514342 C Co:2:009:0 0 0
+> Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> Cc: David Howells <dhowells@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: Pavel Emelyanov <xemul@parallels.com>
+> CC: Cyrill Gorcunov <gorcunov@openvz.org>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  fs/signalfd.c                 | 25 +++++++++++++++++++------
+>  include/uapi/linux/signalfd.h |  2 ++
+>  2 files changed, 21 insertions(+), 6 deletions(-)
+>
+> diff --git a/fs/signalfd.c b/fs/signalfd.c
+> index 95f1444..a35aeda 100644
+> --- a/fs/signalfd.c
+> +++ b/fs/signalfd.c
+> @@ -170,13 +170,13 @@ static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
+>  }
+>
+>  static ssize_t signalfd_dequeue(struct signalfd_ctx *ctx, siginfo_t *info,
+> -                               int nonblock)
+> +                               int nonblock, int queue)
+>  {
+>         ssize_t ret;
+>         DECLARE_WAITQUEUE(wait, current);
+>
+>         spin_lock_irq(&current->sighand->siglock);
+> -       ret = dequeue_signal(current, &ctx->sigmask, info);
+> +       ret = do_dequeue_signal(current, &ctx->sigmask, info, queue);
+>         switch (ret) {
+>         case 0:
+>                 if (!nonblock)
+> @@ -223,14 +223,21 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
+>         bool raw = file->f_flags & SFD_RAW;
+>         ssize_t ret, total = 0;
+>         siginfo_t info;
+> +       int queue = 0;
+>
+>         count /= sizeof(struct signalfd_siginfo);
+>         if (!count)
+>                 return -EINVAL;
+>
+> +       if (file->f_flags & SFD_GROUP)
+> +               queue++;
+> +
+> +       if (file->f_flags & SFD_PRIVATE)
+> +               queue--;
+> +
+>         siginfo = (struct signalfd_siginfo __user *) buf;
+>         do {
+> -               ret = signalfd_dequeue(ctx, &info, nonblock);
+> +               ret = signalfd_dequeue(ctx, &info, nonblock, queue);
+>                 if (unlikely(ret <= 0))
+>                         break;
+>
+> @@ -274,6 +281,8 @@ static const struct file_operations signalfd_fops = {
+>         .llseek         = noop_llseek,
+>  };
+>
+> +#define SIGNAFD_FLAGS (SFD_RAW | SFD_GROUP | SFD_PRIVATE)
 
-eb0f5780 103.718860 S Co:2:009:0 s 00 09 0001 0000 0000 0
-eb0f5780 103.719113 C Co:2:009:0 0 0
-eb0f5780 103.719144 S Bo:2:009:2 - 2 =
-    1b66
-     . f
-eb0f5780 103.719612 C Bo:2:009:2 0 2 >
-eb0f5780 103.719626 S Bi:2:009:1 - 4 <
-eb0f5780 103.720612 C Bi:2:009:1 0 1 =
-    15
-31ff63c0 103.720653 S Bi:2:009:1 - 42 <
-31ff63c0 133.721562 C Bi:2:009:1 -2 0
-0861ca80 133.721579 S Bi:2:009:1 - 42 <
-0861ca80 163.721714 C Bi:2:009:1 -2 0
-eb054000 163.721733 S Bi:2:009:1 - 42 <
-eb054000 193.722675 C Bi:2:009:1 -2 0
-eb3d23c0 193.722707 S Co:2:009:0 s 02 01 0000 0081 0000 0
-eb3d23c0 193.723171 C Co:2:009:0 0 0
-eb3d23c0 193.723188 S Bo:2:009:2 - 2 =
-    1b40
-     . @
-eb3d23c0 193.724046 C Bo:2:009:2 0 2 >
-eb3d23c0 193.724055 S Bi:2:009:1 - 1 <
-eb3d23c0 193.725044 C Bi:2:009:1 0 1 =
-    15
-eb3d23c0 193.725054 S Bo:2:009:2 - 2 =
-    1b49
-     . I
-eb3d23c0 193.725169 C Bo:2:009:2 0 2 >
-eb3d23c0 193.725176 S Bi:2:009:1 - 4 <
-eb3d23c0 193.725294 C Bi:2:009:1 0 1 =
-    15
-eb3d23c0 193.725321 S Bo:2:009:2 - 2 =
-    1c46
-     . F
-eb3d23c0 193.725421 C Bo:2:009:2 0 2 >
-eb3d23c0 193.725428 S Bi:2:009:1 - 16 <
-0868d300 253.727305 C Bi:2:009:1 -2 0
-087d6a80 253.727321 S Bi:2:009:1 - 16 <
-087d6a80 283.728362 C Bi:2:009:1 -2 0
-08522240 283.728384 S Co:2:009:0 s 02 01 0000 0081 0000 0
-08522240 283.729358 C Co:2:009:0 0 0
-08522240 283.729369 S Bo:2:009:2 - 2 =
-    1c49
-     . I
-08522240 283.730234 C Bo:2:009:2 0 2 >
-08522240 283.730242 S Bi:2:009:1 - 80 <
-08522240 313.730875 C Bi:2:009:1 -2 0
-35ecc3c0 313.730896 S Bi:2:009:1 - 80 <
-35ecc3c0 343.731089 C Bi:2:009:1 -2 0
-0846d900 343.731111 S Bi:2:009:1 - 80 <
-0846d900 373.731773 C Bi:2:009:1 -2 0
-eb200180 373.731796 S Co:2:009:0 s 02 01 0000 0081 0000 0
-eb200180 373.732147 C Co:2:009:0 0 0
-eb200180 373.732160 S Bo:2:009:2 - 2 =
-    1c46
-     . F
-eb200180 373.733020 C Bo:2:009:2 0 2 >
-eb200180 373.733029 S Bi:2:009:1 - 16 <
-eb200180 403.733182 C Bi:2:009:1 -2 0
-eb054780 403.733200 S Bi:2:009:1 - 16 <
-eb054780 433.733443 C Bi:2:009:1 -2 0
-1dcbeb40 433.733463 S Bi:2:009:1 - 16 <
-1dcbeb40 463.733936 C Bi:2:009:1 -2 0
-08522240 463.733959 S Co:2:009:0 s 02 01 0000 0081 0000 0
-08522240 463.734684 C Co:2:009:0 0 0
+This name is rather obtuse. What is the purpose of grouping these
+three flags like this? Yes, I understand how you use the name below,
+but the grouping seems arbitrary.
 
-I'm available for any other information, just keep me cc'ed as I'm not
-subscribed.
+Why not have a grouping of all SFD_ 5 flags?
 
-Many thanks for any answer.
+#define SFD_ALL_FLAGS (SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW |
+SFD_GROUP | SFD_PRIVATE)
+
+And use that appropriately below.
+
+See also the comments below about individual flags.
 
 
---
-Fabio
+> +
+>  SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+>                 size_t, sizemask, int, flags)
+>  {
+> @@ -284,7 +293,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+>         BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
+>         BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
+>
+> -       if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW))
+> +       if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SIGNAFD_FLAGS))
+>                 return -EINVAL;
+>
+>         if (sizemask != sizeof(sigset_t) ||
+> @@ -308,9 +317,9 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+>                                        O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
+>                 if (ufd < 0)
+>                         kfree(ctx);
+> -               else if (flags & SFD_RAW) {
+> +               else if (flags & SIGNAFD_FLAGS) {
+>                         struct fd f = fdget(ufd);
+> -                       f.file->f_flags |= flags & SFD_RAW;
+> +                       f.file->f_flags |= flags & SIGNAFD_FLAGS;
+>                         fdput(f);
+>                 }
+>         } else {
+> @@ -322,6 +331,10 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+>                         fdput(f);
+>                         return -EINVAL;
+>                 }
+> +
+> +               f.file->f_flags = (f.file->f_flags & ~SIGNAFD_FLAGS) |
+> +                                               (flags & SIGNAFD_FLAGS);
+> +
+>                 spin_lock_irq(&current->sighand->siglock);
+>                 ctx->sigmask = sigmask;
+>                 spin_unlock_irq(&current->sighand->siglock);
+> diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
+> index bc31849..9421321 100644
+> --- a/include/uapi/linux/signalfd.h
+> +++ b/include/uapi/linux/signalfd.h
+> @@ -16,6 +16,8 @@
+>  #define SFD_CLOEXEC O_CLOEXEC
+>  #define SFD_NONBLOCK O_NONBLOCK
+>  #define SFD_RAW O_DIRECT
+> +#define SFD_GROUP O_DIRECTORY
+> +#define SFD_PRIVATE O_EXCL
+
+What's the reason for making these flags synonyms of existing O_*
+flags, as opposed to just choosing suitable numeric values. (There is
+a rationale for this, in the case of CLOEXEC and NONBLOCK, as
+indicated by the names, but that rationale doesn't extend to the three
+new flags.) Using synonyms here suggests that there's a relationship
+between SFD_RAW and O_DIRECT and so on, when there isn't.
+
+>  struct signalfd_siginfo {
+>         __u32 ssi_signo;
+> --
+> 1.7.11.7
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk Linux man-pages maintainer;
+http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface", http://blog.man7.org/
