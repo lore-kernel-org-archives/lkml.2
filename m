@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab2LXMKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 07:10:31 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:18900 "EHLO song.cn.fujitsu.com"
+	id S1753308Ab2LXMOA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 07:14:00 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:12358 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab2LXMKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 07:10:25 -0500
+	id S1752473Ab2LXMK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 07:10:29 -0500
 X-IronPort-AV: E=Sophos;i="4.84,347,1355068800"; 
-   d="scan'208";a="6464028"
+   d="scan'208";a="6464032"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
         len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
@@ -21,10 +21,12 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: [PATCH v5 00/14] memory-hotplug: hot-remove physical memory
-Date: Mon, 24 Dec 2012 20:09:10 +0800
-Message-Id: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v5 03/14] memory-hotplug: remove redundant codes
+Date: Mon, 24 Dec 2012 20:09:13 +0800
+Message-Id: <1356350964-13437-4-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
+In-Reply-To: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2012/12/24 20:10:12,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
@@ -34,119 +36,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+From: Wen Congyang <wency@cn.fujitsu.com>
 
-Here is the physical memory hot-remove patch-set based on 3.8rc-1.
+offlining memory blocks and checking whether memory blocks are offlined
+are very similar. This patch introduces a new function to remove
+redundant codes.
 
-This patch-set aims to implement physical memory hot-removing.
+Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+---
+ mm/memory_hotplug.c |  101 ++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 55 insertions(+), 46 deletions(-)
 
-The patches can free/remove the following things:
-
-  - /sys/firmware/memmap/X/{end, start, type} : [PATCH 4/14]
-  - memmap of sparse-vmemmap                  : [PATCH 6,7,8,10/14]
-  - page table of removed memory              : [RFC PATCH 7,8,10/14]
-  - node and related sysfs files              : [RFC PATCH 13-14/14]
-
-
-How to test this patchset?
-1. apply this patchset and build the kernel. MEMORY_HOTPLUG, MEMORY_HOTREMOVE,
-   ACPI_HOTPLUG_MEMORY must be selected.
-2. load the module acpi_memhotplug
-3. hotplug the memory device(it depends on your hardware)
-   You will see the memory device under the directory /sys/bus/acpi/devices/.
-   Its name is PNP0C80:XX.
-4. online/offline pages provided by this memory device
-   You can write online/offline to /sys/devices/system/memory/memoryX/state to
-   online/offline pages provided by this memory device
-5. hotremove the memory device
-   You can hotremove the memory device by the hardware, or writing 1 to
-   /sys/bus/acpi/devices/PNP0C80:XX/eject.
-
-Note: if the memory provided by the memory device is used by the kernel, it
-can't be offlined. It is not a bug.
-
-
-Changelogs from v4 to v5:
- Patch7: new patch, move pgdat_resize_lock into sparse_remove_one_section() to
-         avoid disabling irq because we need flush tlb when free pagetables.
- Patch8: new patch, pick up some common APIs that are used to free direct mapping
-         and vmemmap pagetables.
- Patch9: free direct mapping pagetables on x86_64 arch.
- Patch10: free vmemmap pagetables.
- Patch11: since freeing memmap with vmemmap has been implemented, the config
-          macro CONFIG_SPARSEMEM_VMEMMAP when defining __remove_section() is
-          no longer needed.
- Patch13: no need to modify acpi_memory_disable_device() since it was removed,
-          and add nid parameter when calling remove_memory().
-
-Changelogs from v3 to v4:
- Patch7: remove unused codes.
- Patch8: fix nr_pages that is passed to free_map_bootmem()
-
-Changelogs from v2 to v3:
- Patch9: call sync_global_pgds() if pgd is changed
- Patch10: fix a problem int the patch
-
-Changelogs from v1 to v2:
- Patch1: new patch, offline memory twice. 1st iterate: offline every non primary
-         memory block. 2nd iterate: offline primary (i.e. first added) memory
-         block.
-
- Patch3: new patch, no logical change, just remove reduntant codes.
-
- Patch9: merge the patch from wujianguo into this patch. flush tlb on all cpu
-         after the pagetable is changed.
-
- Patch12: new patch, free node_data when a node is offlined.
-
-
-Tang Chen (5):
-  memory-hotplug: move pgdat_resize_lock into
-    sparse_remove_one_section()
-  memory-hotplug: remove page table of x86_64 architecture
-  memory-hotplug: remove memmap of sparse-vmemmap
-  memory-hotplug: Integrated __remove_section() of
-    CONFIG_SPARSEMEM_VMEMMAP.
-  memory-hotplug: remove sysfs file of node
-
-Wen Congyang (5):
-  memory-hotplug: try to offline the memory twice to avoid dependence
-  memory-hotplug: remove redundant codes
-  memory-hotplug: introduce new function arch_remove_memory() for
-    removing page table depends on architecture
-  memory-hotplug: Common APIs to support page tables hot-remove
-  memory-hotplug: free node_data when a node is offlined
-
-Yasuaki Ishimatsu (4):
-  memory-hotplug: check whether all memory blocks are offlined or not
-    when removing memory
-  memory-hotplug: remove /sys/firmware/memmap/X sysfs
-  memory-hotplug: implement register_page_bootmem_info_section of
-    sparse-vmemmap
-  memory-hotplug: memory_hotplug: clear zone when removing the memory
-
- arch/arm64/mm/mmu.c                  |    3 +
- arch/ia64/mm/discontig.c             |   10 +
- arch/ia64/mm/init.c                  |   18 ++
- arch/powerpc/mm/init_64.c            |   10 +
- arch/powerpc/mm/mem.c                |   12 +
- arch/s390/mm/init.c                  |   12 +
- arch/s390/mm/vmem.c                  |   10 +
- arch/sh/mm/init.c                    |   17 ++
- arch/sparc/mm/init_64.c              |   10 +
- arch/tile/mm/init.c                  |    8 +
- arch/x86/include/asm/pgtable_types.h |    1 +
- arch/x86/mm/init_32.c                |   12 +
- arch/x86/mm/init_64.c                |  382 ++++++++++++++++++++++++++++++++
- arch/x86/mm/pageattr.c               |   47 ++--
- drivers/acpi/acpi_memhotplug.c       |    8 +-
- drivers/base/memory.c                |    6 +
- drivers/firmware/memmap.c            |   98 ++++++++-
- include/linux/bootmem.h              |    1 +
- include/linux/firmware-map.h         |    6 +
- include/linux/memory_hotplug.h       |   15 +-
- include/linux/mm.h                   |    4 +-
- mm/memory_hotplug.c                  |  406 ++++++++++++++++++++++++++++++++--
- mm/sparse.c                          |    8 +-
- 23 files changed, 1043 insertions(+), 61 deletions(-)
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index d43d97b..dbb04d8 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1381,20 +1381,14 @@ int offline_pages(unsigned long start_pfn, unsigned long nr_pages)
+ 	return __offline_pages(start_pfn, start_pfn + nr_pages, 120 * HZ);
+ }
+ 
+-int remove_memory(u64 start, u64 size)
++static int walk_memory_range(unsigned long start_pfn, unsigned long end_pfn,
++		void *arg, int (*func)(struct memory_block *, void *))
+ {
+ 	struct memory_block *mem = NULL;
+ 	struct mem_section *section;
+-	unsigned long start_pfn, end_pfn;
+ 	unsigned long pfn, section_nr;
+ 	int ret;
+-	int return_on_error = 0;
+-	int retry = 0;
+-
+-	start_pfn = PFN_DOWN(start);
+-	end_pfn = start_pfn + PFN_DOWN(size);
+ 
+-repeat:
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+ 		section_nr = pfn_to_section_nr(pfn);
+ 		if (!present_section_nr(section_nr))
+@@ -1411,22 +1405,61 @@ repeat:
+ 		if (!mem)
+ 			continue;
+ 
+-		ret = offline_memory_block(mem);
++		ret = func(mem, arg);
+ 		if (ret) {
+-			if (return_on_error) {
+-				kobject_put(&mem->dev.kobj);
+-				return ret;
+-			} else {
+-				retry = 1;
+-			}
++			kobject_put(&mem->dev.kobj);
++			return ret;
+ 		}
+ 	}
+ 
+ 	if (mem)
+ 		kobject_put(&mem->dev.kobj);
+ 
+-	if (retry) {
+-		return_on_error = 1;
++	return 0;
++}
++
++static int offline_memory_block_cb(struct memory_block *mem, void *arg)
++{
++	int *ret = arg;
++	int error = offline_memory_block(mem);
++
++	if (error != 0 && *ret == 0)
++		*ret = error;
++
++	return 0;
++}
++
++static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
++{
++	int ret = !is_memblock_offlined(mem);
++
++	if (unlikely(ret))
++		pr_warn("removing memory fails, because memory "
++			"[%#010llx-%#010llx] is onlined\n",
++			PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
++			PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1))-1);
++
++	return ret;
++}
++
++int remove_memory(u64 start, u64 size)
++{
++	unsigned long start_pfn, end_pfn;
++	int ret = 0;
++	int retry = 1;
++
++	start_pfn = PFN_DOWN(start);
++	end_pfn = start_pfn + PFN_DOWN(size);
++
++repeat:
++	walk_memory_range(start_pfn, end_pfn, &ret,
++			  offline_memory_block_cb);
++	if (ret) {
++		if (!retry)
++			return ret;
++
++		retry = 0;
++		ret = 0;
+ 		goto repeat;
+ 	}
+ 
+@@ -1444,37 +1477,13 @@ repeat:
+ 	 * memory blocks are offlined.
+ 	 */
+ 
+-	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+-		section_nr = pfn_to_section_nr(pfn);
+-		if (!present_section_nr(section_nr))
+-			continue;
+-
+-		section = __nr_to_section(section_nr);
+-		/* same memblock? */
+-		if (mem)
+-			if ((section_nr >= mem->start_section_nr) &&
+-			    (section_nr <= mem->end_section_nr))
+-				continue;
+-
+-		mem = find_memory_block_hinted(section, mem);
+-		if (!mem)
+-			continue;
+-
+-		ret = is_memblock_offlined(mem);
+-		if (!ret) {
+-			pr_warn("removing memory fails, because memory "
+-				"[%#010llx-%#010llx] is onlined\n",
+-				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
+-				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
+-
+-			kobject_put(&mem->dev.kobj);
+-			unlock_memory_hotplug();
+-			return ret;
+-		}
++	ret = walk_memory_range(start_pfn, end_pfn, NULL,
++				is_memblock_offlined_cb);
++	if (ret) {
++		unlock_memory_hotplug();
++		return ret;
+ 	}
+ 
+-	if (mem)
+-		kobject_put(&mem->dev.kobj);
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
+-- 
+1.7.1
 
