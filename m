@@ -1,127 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab2LXPvn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 10:51:43 -0500
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:40240 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752864Ab2LXPvl (ORCPT
+	id S1753260Ab2LXQJX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 11:09:23 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:62241 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab2LXQJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 10:51:41 -0500
-Message-ID: <50D879A8.5040407@linux.vnet.ibm.com>
-Date: Mon, 24 Dec 2012 21:20:00 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 24 Dec 2012 11:09:21 -0500
+Date: Tue, 25 Dec 2012 00:07:54 +0800
+From: Woody Wu <narkewoody@gmail.com>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
+Subject: Re: How kernel handle interrupts[AX88796B network controller]
+Message-ID: <20121224160754.GA3673@zuhnb712>
+References: <20121220142745.GB3578@zuhnb712>
+ <CAK7N6vq07CHhhOJTgC=5H5f3Nsi_od=qGJjzu01iL1_3AvTWHg@mail.gmail.com>
+ <20121221153451.GB5530@zuhnb712>
+ <1356125583.1598.111.camel@anish-Inspiron-N5050>
+ <20121224141017.GB2849@zuhnb712>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: tglx@linutronix.de, peterz@infradead.org, paulmck@linux.vnet.ibm.com,
-        rusty@rustcorp.com.au, mingo@kernel.org, akpm@linux-foundation.org,
-        namhyung@kernel.org, vincent.guittot@linaro.org, tj@kernel.org,
-        sbw@mit.edu, amit.kucheria@linaro.org, rostedt@goodmis.org,
-        rjw@sisk.pl, wangyun@linux.vnet.ibm.com,
-        xiaoguangrong@linux.vnet.ibm.com, nikunj@linux.vnet.ibm.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH v4 1/9] CPU hotplug: Provide APIs to prevent CPU offline
- from atomic context
-References: <20121212184849.GA26784@redhat.com> <50C8D739.6030903@linux.vnet.ibm.com> <50C9F38F.3020005@linux.vnet.ibm.com> <50D0CCB3.10105@linux.vnet.ibm.com> <20121219163900.GA18516@redhat.com> <50D2047A.1040606@linux.vnet.ibm.com> <20121219191436.GA25829@redhat.com> <50D21A5F.4040604@linux.vnet.ibm.com> <20121220134203.GB10813@redhat.com> <50D61561.7090805@linux.vnet.ibm.com> <20121223164242.GA9979@redhat.com>
-In-Reply-To: <20121223164242.GA9979@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12122415-2000-0000-0000-00000A5FC695
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121224141017.GB2849@zuhnb712>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/23/2012 10:12 PM, Oleg Nesterov wrote:
-> On 12/23, Srivatsa S. Bhat wrote:
->>
->> On 12/20/2012 07:12 PM, Oleg Nesterov wrote:
->>>
->>> We need mb() + rmb(). Plust cli/sti unless this arch has optimized
->>> this_cpu_add() like x86 (as you pointed out).
->>>
->>
->> Hey, IIUC, we actually don't need mb() in the reader!! Just an rmb() will do.
+On Mon, Dec 24, 2012 at 10:10:17PM +0800, Woody Wu wrote:
+> On Fri, Dec 21, 2012 at 01:33:03PM -0800, anish kumar wrote:
+> > On Fri, 2012-12-21 at 23:34 +0800, Woody Wu wrote:
+> > > On Thu, Dec 20, 2012 at 10:05:05AM -0800, anish singh wrote:
+> > > > On Dec 20, 2012 6:30 AM, "Woody Wu" <narkewoody@gmail.com> wrote:
+> > > > >
+> > > > > Hi, List
+> > > > >
+> > > > > Where is the Kernel code that handles external interrupts? I want to
+> > > > > have a look at it but haven't found out where it is.
+> > > > >
+> > > > > Actually, I have some basic questions about interrupt handling in Linux.
+> > > > > 1. After Kernel's ISR received an interrupt, I believe it will invoke a
+> > > > >    handler defined in a device driver if any. But it should be the
+> > > > >    device driver's responsibility or kernel ISR's responsibility to
+> > > > >    clear (or acknowledge) the interrupt?
+> > > > If the interrupt in question is currently being handled then in
+> > > > the case of edge triggered interrupt we just mask the interrupt,set it
+> > > > pending and bail out.Once the interrupt handler completes then we check for
+> > > > pending interrupt and handle it.In level triggered we don't do that.
+> > > > Kerenel ISR -this is mixture of core kernel interrupt handling code + your
+> > > > device driver interrupt handler(if this is chip driver which is supposed to
+> > > > get one interrupt and is reponsible for calling other interrupt handlers
+> > > > based on the chip register status then you do explicit masking unmasking
+> > > > yourself).
+> > > > If you device driver is a interrupt controller driver then you register
+> > > > your driver with kernel interrupt handling code and need to write some
+> > > > callbacks such as .mask,.unmask and so on.This callbacks are called at
+> > > > appropiate places whenever the interrupt is raised.This interrupt is then
+> > > > passed to drivers who has requested for this interrupt by calling
+> > > > request_irq.
+> > > > >
+> > > > > 2. My device, an AX88796B network controller, asserting the interrupt
+> > > > >    line in a level-triggered manner. Now I met problem with the device
+> > > > that
+> > > > >    might caused by the CPU interrupt mode is not set as level-triggered by
+> > > > >    edge trigger.  My CPU is Samsung S3C2410, an ARM920T powered one.  Does
+> > > > >    anyone know usually where and how should I do this kind of setting?
+> > > > Just pass the parameter "level triggered" in request_irq in your device
+> > > > driver.
+> > > 
+> > > Hi Sign,
+> > > 
+> > > I searched the interrupt.h for the all the defined flags that I can pass
+> > > to the request_irq, but there is no a flag looks like "level triggered".
+> > > Would you tell me what you mean the parameter "level triggered"?
+> > irq_set_irq_type(info->irq, IRQ_TYPE_LEVEL_LOW)
+> > 
+> > include/linux/irq.h
+> > IRQ_TYPE_LEVEL_HIGH          - high level triggered
+> > IRQ_TYPE_LEVEL_LOW           - low level triggered
 > 
-> Well. I don't think so. But when it comes to the barriers I am never sure
-> until Paul confirms my understanding ;)
+> Thanks. You saved my ass.
 > 
->> #define reader_nested_percpu()						\
->> 	     (__this_cpu_read(reader_percpu_refcnt) & READER_REFCNT_MASK)
->>
->> #define writer_active()							\
->> 				(__this_cpu_read(writer_signal))
->>
->>
->> #define READER_PRESENT		(1UL << 16)
->> #define READER_REFCNT_MASK	(READER_PRESENT - 1)
->>
->> void get_online_cpus_atomic(void)
->> {
->> 	preempt_disable();
->>
->> 	/*
->> 	 * First and foremost, make your presence known to the writer.
->> 	 */
->> 	this_cpu_add(reader_percpu_refcnt, READER_PRESENT);
->>
->> 	/*
->> 	 * If we are already using per-cpu refcounts, it is not safe to switch
->> 	 * the synchronization scheme. So continue using the refcounts.
->> 	 */
->> 	if (reader_nested_percpu()) {
->> 		this_cpu_inc(reader_percpu_refcnt);
->> 	} else {
->> 		smp_rmb();
->> 		if (unlikely(writer_active())) {
->> 			... //take hotplug_rwlock
->> 		}
->> 	}
->>
->> 	...
->>
->> 	/* Prevent reordering of any subsequent reads of cpu_online_mask. */
->> 	smp_rmb();
->> }
->>
->> The smp_rmb() before writer_active() ensures that LOAD(writer_signal) follows
->> LOAD(reader_percpu_refcnt) (at the 'if' condition). And in turn, that load is
->> automatically going to follow the STORE(reader_percpu_refcnt)
-> 
-> But why this STORE should be visible on another CPU before we LOAD(writer_signal)?
-> 
-> Lets discuss the simple and artificial example. Suppose we have
-> 
-> 	int X, Y;
-> 
-> 	int func(void)
-> 	{
-> 		X = 1;	// suppose that nobody else can change it
-> 		mb();
-> 		return Y;
-> 	}
-> 
-> Now you are saying that we can change it and avoid the costly mb():
-> 
-> 	int func(void)
-> 	{
-> 		X = 1;
-> 
-> 		if (X != 1)
-> 			BUG();
-> 	
-> 		rmb();
-> 		return Y;
-> 	}
-> 
-> I doubt. rmb() can only guarantee that the preceding LOAD's should be
-> completed. Without mb() it is possible that this CPU won't write X to
-> memory at all.
-> 
+> Be curious, I found the api changes from 2.6 to 3.7.  In 2.6, there are
+> pair of funtions, set_irq_type and set_irq_handle (there is no
+> irq_set_irq_type in 2.6).  Problem is, I cannot find something like
+> irq_set_irq_handle in 3.7.  Does that mean, in 3.7, when
+> irq_set_irq_type is changed, the associated flow handler is also
+> changed?  In my case, the interrupt was originally assgined with a edge
+> flow handler and set type as edge irq. After I, by invoking
+> irq_set_irq_type, change it to level irq, I think the flow handler
+> should also be changed to a level handle.  Is that happened
+> automatically behind?  I search through the code, but did not find where
+> is it.
 
-Oh, ok :-( Thanks for correcting me and for the detailed explanation!
-For a moment, I really thought we had it solved at last! ;-(
+Make it simple, is it necessary to also change the irq flow handler
+after changed a irq type (from edge to level)? Is yes, what's the public
+api that let user change flow handler for an irq?
 
-Regards,
-Srivatsa S. Bhat
+Thanks in advance.
 
+> 
+> 
+> > > 
+> > > Thanks.
+> > > 
+> > > > >
+> > > > >
+> > > > > Thanks in advance.
+> > > > >
+> > > > > --
+> > > > > woody
+> > > > > I can't go back to yesterday - because I was a different person then.
+> > > > >
+> > > > > _______________________________________________
+> > > > > Kernelnewbies mailing list
+> > > > > Kernelnewbies@kernelnewbies.org
+> > > > > http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+> > > 
+> > 
+> 
+> -- 
+> woody
+> I can't go back to yesterday - because I was a different person then.
+
+-- 
+woody
+I can't go back to yesterday - because I was a different person then.
