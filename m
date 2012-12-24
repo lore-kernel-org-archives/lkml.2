@@ -1,86 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab2LXE2B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 23:28:01 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:64987 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2LXE15 (ORCPT
+	id S1752782Ab2LXEcP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 23:32:15 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9190 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab2LXEcM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 23:27:57 -0500
-Message-ID: <1356323269.5656.43.camel@marge.simpson.net>
-Subject: Re: dire state of rtl driver in 3.7
-From: Mike Galbraith <bitbucket@online.de>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Norbert Preining <preining@logic.at>, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Mon, 24 Dec 2012 05:27:49 +0100
-In-Reply-To: <50D7572E.8060908@lwfinger.net>
-References: <20121222150909.GA3979@gamma.logic.tuwien.ac.at>
-	 <1356241795.5620.47.camel@marge.simpson.net>
-	 <50D7572E.8060908@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:jrSN/wx44FEDubzLYeu/B8ua4tZCJoC2px4VldtRDcI
- TwCUWi6ssLYZcsK5E7tr+eMLFnjn3PHr1VyJH5gIIgXq8x7yOV
- 3Uv264durwvWPVPMyEvbiarHnMy+2K3FYHOIaTMsOXo5zEJENl
- lufRP4u2CImhEC3XSCFqrj9m7tLlOoiR5UwXAozuHSjGgQ8p5C
- SDBaHK+SJwYPcWuyeihIJozW/zjTvWUDeYVoQXBB9jW1nm8P7S
- dOMb/Qs5JLG9IMHzGiLLMitq6kDvvpDvkRY3B7FmNz8rjiWdIG
- YHiFD/cVXgvKaZl5QvKGhtaCe9oYjr4wnD4C9IARfN9icNaEDl
- sstbDk9ltrnmh0CiT0JOFFWXGonyzWV2pyF3zajCbAoKnhj2Mx
- pE9vl+Hu/Y2XA==
+	Sun, 23 Dec 2012 23:32:12 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 23 Dec 2012 20:32:10 -0800
+From: Venu Byravarasu <vbyravarasu@nvidia.com>
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Dec 2012 10:02:05 +0530
+Subject: RE: [PATCH] usb: tegra: Removing dependency on PHY instance number
+Thread-Topic: [PATCH] usb: tegra: Removing dependency on PHY instance number
+Thread-Index: Ac3fvmSPSk2eSbGmRNSGhiP6zcsstgB0LzaQ
+Message-ID: <D958900912E20642BCBC71664EFECE3E6E1A40D477@BGMAIL02.nvidia.com>
+References: <1356073105-13043-1-git-send-email-vbyravarasu@nvidia.com>
+ <50D4CE2F.1090303@wwwdotorg.org>
+In-Reply-To: <50D4CE2F.1090303@wwwdotorg.org>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+MIME-Version: 1.0
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2012-12-23 at 13:10 -0600, Larry Finger wrote:
+> -----Original Message-----
+> From: Stephen Warren [mailto:swarren@wwwdotorg.org]
+> Sent: Saturday, December 22, 2012 2:32 AM
+> To: Venu Byravarasu
+> Cc: stern@rowland.harvard.edu; gregkh@linuxfoundation.org;
+> balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] usb: tegra: Removing dependency on PHY instance
+> number
+> 
+> On 12/20/2012 11:58 PM, Venu Byravarasu wrote:
+> > Tegra2 has two varieties of USB PHYs:
+> > Instance 0 - legacy PHY interface and
+> > Instace 1 & 2 - non-legacy standard PHY interfaces.
+> >
+> > PHY driver is using instance numbers to identify the
+> > interface type.
+> >
+> > With this patch Modified PHY driver to make use of
+> > DT property for handling this.
+> >
+> > ULPI PHY is used on USB PHY instance 1 & UTMI is
+> > used on other two instances. Hence modified PHY type
+> > detection also from instance number to the parameter
+> > passed from host driver.
+> 
+> Mostly seems fine to me; just a couple more things I noticed inline
+> below. For the record, I'd like to take this through the Tegra tree with
+> all the other Tegra-related USB patches in order to manage any
+> dependencies, with the USB maintainers' Acks. Thanks.
+> 
+> > diff --git a/drivers/usb/phy/tegra_usb_phy.c
+> b/drivers/usb/phy/tegra_usb_phy.c
+> 
+> > +struct tegra_usb_phy *tegra_usb_phy_open(struct device *dev,
+> > +	bool is_legacy_mode, void __iomem *regs, void *config,
+> > +	enum tegra_usb_phy_mode phy_mode)
+> 
+> > +	u8 index = is_legacy_mode ? 0 : 2;
+> 
+> I know this looks slightly icky, but I discussed earlier with Venu that
+> this will be replaced by reading all the parameters out of device tree,
+> as soon as this code becomes a true driver. I think the patch for that
+> is up next, or at most after a few more cleanup patches.
 
-> Note, the RTL8188CE uses rtl8192ce, while the RTL8191SE uses rtl8192se. They 
-> share the underlying plumbing in driver rtlwifi, but the rest is completely 
-> different.
+Thanks Stephen.
+As we discussed already, I'll use DT params in upcoming patches.
 
-Driver here is rtl8192se.
-
-08:00.0 0280: 10ec:8172 (rev 10)
-	Subsystem: 10ec:8181
-	Flags: bus master, fast devsel, latency 0, IRQ 17
-	I/O ports at 4000 [size=256]
-	Memory at c0900000 (32-bit, non-prefetchable) [size=16K]
-	Capabilities: [40] Power Management version 3
-	Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
-	Capabilities: [70] Express Legacy Endpoint, MSI 00
-	Capabilities: [100] Advanced Error Reporting
-	Capabilities: [140] Virtual Channel
-	Capabilities: [160] Device Serial Number 88-55-22-fe-ff-4c-e0-00
-	Kernel driver in use: rtl8192se
-
-Point was, driver state may still be dire for some hardware, but here,
-the same driver for very similar looking hardware went from useless to
-works fine.
-
-My desktop box has this thing in it, which also used to be completely
-useless with the in kernel driver, but now works (it's still useless,
-router sits on top of that box;).  Both devices now seem to work just
-fine, whereas both used to be a PITA if I wanted to use them.
-
-Bus 001 Device 004: ID 13d3:3247 IMC Networks 802.11 n/g/b Wireless LAN Adapter
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               2.00
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0 
-  bDeviceProtocol         0 
-  bMaxPacketSize0        64
-  idVendor           0x13d3 IMC Networks
-  idProduct          0x3247 802.11 n/g/b Wireless LAN Adapter
-  bcdDevice            8.01
-  iManufacturer           1 Ralink
-  iProduct                2 802.11 n WLAN
-  iSerial                 3 1.0
-
-
-
-
+> 
+> > +	phy->is_ulpi_phy = config ? true : false;
+> >
+> >  	if (!phy->config) {
+> > -		if (phy_is_ulpi(phy)) {
+> > +		if (phy->is_ulpi_phy) {
+> >  			pr_err("%s: ulpi phy configuration missing",
+> __func__);
+> >  			err = -EINVAL;
+> >  			goto err0;
+> 
+> That check will never fire now, since phy->is_ulpi_phy is calculated
+> based on whether phy->config is set. I think it's fine for now to rely
+> on the EHCI driver correctly passing config or NULL, and hence you could
+> simply delete some of this error-checking code. I imagine that when the
+> PHY driver is reworked to be an actual device rather than a utility
+> module, phy->is_ulpi_phy will be determined by the compatible value of
+> the PHY node in device tree.
+ 
+Correct, Stephen.
+Will use DT param for determining the PHY type.
