@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353Ab2LXSPP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 13:15:15 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49826 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2LXSPK (ORCPT
+	id S1753355Ab2LXSZ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 13:25:57 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:48100 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2LXSZz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 13:15:10 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        Stephen Warren <swarren@wwwdotorg.org>
-Subject: [PATCH] namei.h: include errno.h
-Date: Mon, 24 Dec 2012 11:14:58 -0700
-Message-Id: <1356372898-21272-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Mon, 24 Dec 2012 13:25:55 -0500
+Date: Mon, 24 Dec 2012 10:25:49 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-input@vger.kernel.org
+Subject: Re: [PATCH 17/25] wm97xx: don't use [delayed_]work_pending()
+Message-ID: <20121224182549.GA11817@htj.dyndns.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-18-git-send-email-tj@kernel.org>
+ <20121223095450.GA17407@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121223095450.GA17407@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This solves:
+Hello, Dmitry.
 
-In file included from fs/ext3/symlink.c:20:0:
-include/linux/namei.h: In function 'retry_estale':
-include/linux/namei.h:114:19: error: 'ESTALE' undeclared (first use in this function)
+On Sun, Dec 23, 2012 at 01:54:50AM -0800, Dmitry Torokhov wrote:
+> This is not 100% equivalent transformation as now we schedule first and
+> disable IRQ later... Anyway, I think the driver shoudl be converted to
+> threaded IRQ instead. Mark, does the patch below make any sense to you?
 
-Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
----
- include/linux/namei.h |    1 +
- 1 file changed, 1 insertion(+)
+Yeah, I think the conversion is actually broken.  There isn't anything
+which prevents work item execution racing against irq disabling.  I
+agree the right thing to do is using threaded irq handler.
 
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index e998c03..5a5ff57 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -2,6 +2,7 @@
- #define _LINUX_NAMEI_H
- 
- #include <linux/dcache.h>
-+#include <linux/errno.h>
- #include <linux/linkage.h>
- #include <linux/path.h>
- 
+Thanks!
+
 -- 
-1.7.10.4
-
+tejun
