@@ -1,88 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729Ab2LXCKf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 21:10:35 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:53987 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752302Ab2LXCKe (ORCPT
+	id S1752750Ab2LXCOf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 21:14:35 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:40613 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752302Ab2LXCOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 21:10:34 -0500
-Date: Mon, 24 Dec 2012 13:10:23 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: linux-next: manual merge of the akpm tree with the
- driver-core.current tree
-Message-Id: <20121224131023.e0433db6868d6234c7a8c195@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//"
+	Sun, 23 Dec 2012 21:14:33 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 00/29] rename random32 and net_random to prandom
+Date: Mon, 24 Dec 2012 11:13:47 +0900
+Message-Id: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit 496f2f93b1cc286f5a4f4f9acdc1e5314978683f ("random32: rename random32
+to prandom") renamed random32() and srandom32() to prandom_u32() and
+prandom_seed() respectively.  Due to the volume of existing random32()
+callers, they were preserved as backword compatibility wrapper macros.
 
-Hi Andrew,
+This patch series aims for finishing the naming transition and removing
+the backword compatibility wrapper macros.
 
-Today's linux-next merge of the akpm tree got a conflict in
-drivers/rtc/rtc-tegra.c between commit 9889589ba308 ("Drivers: rtc:
-remove __dev* attributes") from the driver-core.current tree and commit
-"drivers/rtc/rtc-tegra.c: convert to DT driver" from the akpm tree.
+The naming transition is mainly simple substitution work for random32()
+and srandom32().  Furthermore, net_random() and net_srandom() are another
+wrapper macros for random32() and srandom32().  They also should be
+renamed to prandom_* while I'm at it.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+This patch series also includes minor cleanup and bugfix which were found
+while I was working on the substitution.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Akinobu Mita (29):
+  raid6test: use prandom_bytes()
+  uuid: use prandom_bytes()
+  x86: pageattr-test: remove srandom32 call
+  x86: rename random32() to prandom_u32()
+  lib/: rename random32() to prandom_u32()
+  mm/: rename random32() to prandom_u32()
+  kernel/: rename random32() to prandom_u32()
+  drbd: rename random32() to prandom_u32()
+  infiniband: rename random32() and net_random() to prandom_u32()
+  mmc: rename random32() to prandom_u32()
+  video/uvesafb: rename random32() to prandom_u32()
+  xfs: rename random32() to prandom_u32()
+  ubifs: rename random32() to prandom_u32()
+  uwb: rename random32() to prandom_u32()
+  lguest: rename random32() to prandom_u32()
+  scsi: rename random32() to prandom_u32()
+  mtd: rename random32() to prandom_u32()
+  drivers/net: rename random32() to prandom_u32()
+  batman-adv: fix random jitter calculation
+  batman-adv: rename random32() to prandom_u32()
+  net/sunrpc: rename random32() and net_random() to prandom_u32()
+  net/sched: rename random32() and net_random() to prandom_u32()
+  net/ipv4: rename net_random() to prandom_u32()
+  net/ipv6: rename net_random() to prandom_u32()
+  net/netfilter: rename random32() and net_random() to prandom_u32()
+  net/core:  rename random32() and net_random() to prandom_u32()
+  net/core: remove duplicate statements by do-while loop
+  net/: rename net_random() to prandom_u32()
+  remove unused net_random(), net_srandom(), random32(), and
+    srandom32()
 
-diff --cc drivers/rtc/rtc-tegra.c
-index 5ba2f75,fb62808..0000000
---- a/drivers/rtc/rtc-tegra.c
-+++ b/drivers/rtc/rtc-tegra.c
-@@@ -303,7 -303,13 +303,13 @@@ static struct rtc_class_ops tegra_rtc_o
-  	.alarm_irq_enable =3D tegra_rtc_alarm_irq_enable,
-  };
- =20
-+ static const struct of_device_id tegra_rtc_dt_match[] =3D {
-+ 	{ .compatible =3D "nvidia,tegra20-rtc", },
-+ 	{}
-+ };
-+ MODULE_DEVICE_TABLE(of, tegra_rtc_dt_match);
-+=20
- -static int __devinit tegra_rtc_probe(struct platform_device *pdev)
- +static int tegra_rtc_probe(struct platform_device *pdev)
-  {
-  	struct tegra_rtc_info *info;
-  	struct resource *res;
+ arch/x86/mm/pageattr-test.c                 |  5 ++--
+ crypto/async_tx/raid6test.c                 |  9 ++-----
+ drivers/block/drbd/drbd_receiver.c          |  5 ++--
+ drivers/infiniband/core/cma.c               |  2 +-
+ drivers/infiniband/hw/cxgb3/cxio_resource.c |  4 +--
+ drivers/infiniband/hw/cxgb4/id_table.c      |  4 +--
+ drivers/infiniband/hw/mlx4/mad.c            |  2 +-
+ drivers/infiniband/ulp/ipoib/ipoib_cm.c     |  2 +-
+ drivers/lguest/page_tables.c                |  2 +-
+ drivers/mmc/core/core.c                     |  4 +--
+ drivers/mtd/nand/nandsim.c                  |  6 ++---
+ drivers/mtd/tests/mtd_nandecctest.c         | 10 +++----
+ drivers/mtd/tests/mtd_stresstest.c          |  8 +++---
+ drivers/mtd/ubi/debug.h                     |  6 ++---
+ drivers/net/ethernet/broadcom/cnic.c        |  4 +--
+ drivers/net/hamradio/baycom_epp.c           |  2 +-
+ drivers/net/hamradio/hdlcdrv.c              |  2 +-
+ drivers/net/hamradio/yam.c                  |  2 +-
+ drivers/net/wireless/mwifiex/cfg80211.c     |  4 +--
+ drivers/scsi/fcoe/fcoe_ctlr.c               |  4 +--
+ drivers/scsi/lpfc/lpfc_hbadisc.c            |  6 ++---
+ drivers/scsi/qla2xxx/qla_attr.c             |  7 +++--
+ drivers/uwb/rsv.c                           |  4 +--
+ drivers/video/uvesafb.c                     |  2 +-
+ fs/ubifs/debug.c                            |  8 +++---
+ fs/ubifs/lpt_commit.c                       | 14 +++++-----
+ fs/ubifs/tnc_commit.c                       |  2 +-
+ fs/xfs/xfs_alloc.c                          |  2 +-
+ fs/xfs/xfs_error.c                          |  2 +-
+ fs/xfs/xfs_ialloc.c                         |  2 +-
+ fs/xfs/xfs_log.c                            |  2 +-
+ include/linux/net.h                         |  3 ---
+ include/linux/random.h                      |  7 -----
+ include/net/red.h                           |  2 +-
+ kernel/rcutree.c                            |  2 +-
+ kernel/test_kprobes.c                       |  2 +-
+ lib/fault-inject.c                          |  2 +-
+ lib/list_sort.c                             |  2 +-
+ lib/uuid.c                                  |  8 +-----
+ mm/swapfile.c                               |  2 +-
+ net/802/garp.c                              |  2 +-
+ net/batman-adv/bat_iv_ogm.c                 |  4 +--
+ net/core/neighbour.c                        |  4 +--
+ net/core/pktgen.c                           | 42 ++++++++++++++---------------
+ net/core/stream.c                           |  2 +-
+ net/ipv4/devinet.c                          |  2 +-
+ net/ipv4/igmp.c                             |  6 ++---
+ net/ipv4/inet_connection_sock.c             |  2 +-
+ net/ipv4/udp.c                              |  2 +-
+ net/ipv6/addrconf.c                         |  4 +--
+ net/ipv6/ip6_flowlabel.c                    |  2 +-
+ net/ipv6/mcast.c                            |  8 +++---
+ net/netfilter/ipvs/ip_vs_conn.c             |  2 +-
+ net/netfilter/nf_conntrack_core.c           |  4 +--
+ net/netfilter/xt_statistic.c                |  2 +-
+ net/openvswitch/actions.c                   |  2 +-
+ net/rds/bind.c                              |  2 +-
+ net/sched/act_gact.c                        |  2 +-
+ net/sched/sch_choke.c                       |  2 +-
+ net/sched/sch_fq_codel.c                    |  2 +-
+ net/sched/sch_netem.c                       | 19 ++++++-------
+ net/sched/sch_sfb.c                         |  4 +--
+ net/sched/sch_sfq.c                         |  6 ++---
+ net/sctp/socket.c                           |  2 +-
+ net/sunrpc/auth_gss/gss_krb5_wrap.c         |  4 +--
+ net/sunrpc/cache.c                          |  2 +-
+ net/sunrpc/xprt.c                           |  2 +-
+ net/sunrpc/xprtsock.c                       |  2 +-
+ net/xfrm/xfrm_state.c                       |  2 +-
+ 69 files changed, 145 insertions(+), 164 deletions(-)
 
---Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//
-Content-Type: application/pgp-signature
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+-- 
+1.7.11.7
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ17mPAAoJEECxmPOUX5FEy4IP/1iBKElYZCl0BWOReA2Jiyp5
-2PgEKjbgFSHN6YzQt1hPWe6gwJK1onIX9/bMO1A8aukjsoAfAa/3S9JIeGt6HXts
-ycl0ugYpJGFG/RcogFYuPgiY/xKrwocJD7Bc8e5RdHOVT8+w+7zKpmy2L+3l3gpY
-AmNC+JElCfOLXrBhhIP4KRlo7qBZq7n1TZ31pPdtdeYzE8Z7Mj+8Xpc3yc3q/sG+
-xvxShww2fEdx/cjH+JB/ZuofF04UBhKf6hEevFdhZGtG9REd2Sxqgwl+XQMrkj5/
-pnoPeiD0L+8qjYdGDQrevv6tTFPS52QkR1QOFPzjsIeaj5husdg2OhKWT9RWchnt
-RqftI5+o2wVaUepHBJgtbEBgSb+HQFJ1g/jR9pkXMrFiTAfy5FesVIc0ZEwO/fnQ
-a7BOCskcs1GIDMcE/IyCW9v1NWdX8Q27sR+zUeYvcdAvN4rP7l2/Xx+dMsMYO4fA
-K9nY5DxuMiTYbPnfNciP2vGJ/Oion0da/sXd0EDkjwoD16GVyym2hshuRN2CKB1n
-udM9yI6i6AUb+aCNHXtawqKchv8hHMrE8PprvC25nJFTBPZjBEQ1dSijjHoys6fc
-m+qnsz5FlxPQ18ePXn0jpHIUlAkuhNRzWCEo+g1k0uQpOZpxDGdV2S1VMLmbATG8
-m0Y9nMk+3/zNVGAYsfzH
-=zAes
------END PGP SIGNATURE-----
-
---Signature=_Mon__24_Dec_2012_13_10_23_+1100__nnl.Xej4.VjOp//--
