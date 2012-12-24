@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814Ab2LXE4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 23:56:40 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56708 "EHLO mail.zytor.com"
+	id S1752860Ab2LXE4n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 23:56:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56709 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752289Ab2LXE4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752392Ab2LXE4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Dec 2012 23:56:38 -0500
 User-Agent: K-9 Mail for Android
 In-Reply-To: <20121223184516.GC8190@liondog.tnic>
@@ -15,19 +15,19 @@ Content-Type: text/plain;
 Content-Transfer-Encoding: 8bit
 Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
 From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 23 Dec 2012 20:54:37 -0800
+Date: Sun, 23 Dec 2012 20:55:14 -0800
 To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>
 CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
-Message-ID: <171018c8-b640-4234-a25e-7040d9e21acd@email.android.com>
+Message-ID: <b1b31e2e-7fd3-4477-a611-41d8d30c2eb3@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Makes sense.  Ljmpq it is.  A comment might be useful.
+Err, lretq it is.
 
 Borislav Petkov <bp@alien8.de> wrote:
 
