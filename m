@@ -1,162 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab2LXBa1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 20:30:27 -0500
-Received: from ebb05.tieto.com ([131.207.168.36]:50099 "EHLO ebb05.tieto.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab2LXBaY convert rfc822-to-8bit (ORCPT
+	id S1752723Ab2LXBrX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 20:47:23 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58434 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752281Ab2LXBrV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 20:30:24 -0500
-X-AuditID: 83cfa824-b7f276d000005083-9b-50d7b02e0826
-From: <zhenpeng.qian@tieto.com>
-To: <cjb@laptop.org>, <torvalds@linux-foundation.org>
-CC: <gregkh@suse.de>, <linux-kernel@vger.kernel.org>,
-        <devel@linuxdriverproject.org>, <linux-mmc@vger.kernel.org>
-Date: Mon, 24 Dec 2012 03:30:17 +0200
-Subject: RE: [PATCH] mmc:core:if detect mmc card remove,don't wait for req
- done
-Thread-Topic: [PATCH] mmc:core:if detect mmc card remove,don't wait for req
- done
-Thread-Index: Ac3fwrJ+vMvnag3WS/uKCYHMR/3sugBs2moA
-Message-ID: <034FBC2C8CCA484FBA5BA5FC707AC8303AD3FF0E13@EXMB02.eu.tieto.com>
-References: <034FBC2C8CCA484FBA5BA5FC707AC8303AD02F0D1E@EXMB02.eu.tieto.com>
-	<CA+55aFxbE9G+2NdA_8s1vyjrkNE5mBdYZ5Cy9tYr4AJOdvdivg@mail.gmail.com>
- <87r4mjay79.fsf@laptop.org>
-In-Reply-To: <87r4mjay79.fsf@laptop.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrEKsWRmVeSWpSXmKPExsXSfL5DS1dvw/UAg03npSy2v97IZnFx1Rpm
-	iz8/N7FaXN41h83iyP9+RotHfW/ZHdg8Dl1Zy+hxYsZvFo/maUtYPTafrvb4vEkugDWKyyYl
-	NSezLLVI3y6BK6Nz1QrWgm+qFY3LtrM2MK6R72Lk5JAQMJFoebSNFcIWk7hwbz1bFyMXh5DA
-	SkaJn1seM0E4kxkl5vzZzAxSxSYgL3HxwV4mEFtEwFTi2uYW9i5GDg5mgWKJln2OIGEWAVWJ
-	X/uWgZULCwRKHFk1hRWiPEjiwLxJzCDlIgJGEpfu1YKEeQV8JG68+MUOsWojo8SzyyvB6jkF
-	NCRO3r8PNocR6Ljvp9aArWUWEJe49WQ+E8TRAhJL9pxnhrBFJV4+/scKUS8qcad9PSNEvb7E
-	nomnWCBsbYllC18zQywWlDg58wnLBEaxWUjGzkLSMgtJyywkLQsYWVYx8qcmJRmY6pVkppbk
-	6yXn525iBEfdCpUdjGcfSB1iFOBgVOLhjZh7PUCINbGsuDL3EKMkB5OSKG/KOqAQX1J+SmVG
-	YnFGfFFpTmrxIUYJDmYlEd7/SkA53pTEyqrUonyYlDQHi5I4L/vqVQFCAumJJanZqakFqUUw
-	WRkODiUJ3uT1QI2CRanpqRVpmTklCGkmDk6Q4TxAw0+DLOYtLkjMLc5Mh8ifYlSUEucNBEkI
-	gCQySvPgemFJ8RWjONArwrzKICt4gAkVrvsV0GAmoMEiSldABpckIqSkGhhFvcuzr5Vsky3Q
-	mH3P0umjtQjj3Ws5hcG6jjPk/+/nmDLr2wmtRUdZ5z9vD/9zi8UnJXWV6ov87aXv9fdN/Hzq
-	Mk/dW77jO49f2s01/xDb3d9hyXd+xyutOxPds/asdMtcQe6S6KKHbQECx6fdKL7ygSvst9GL
-	A45ayQvms6wzCHv+rlmJK9JViaU4I9FQi7moOBEA7sTuUWUDAAA=
+	Sun, 23 Dec 2012 20:47:21 -0500
+Date: Mon, 24 Dec 2012 12:47:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Barry Song <Baohua.Song@csr.com>
+Subject: linux-next: manual merge of the pinctrl tree with the
+ driver-core.current tree
+Message-Id: <20121224124708.b0fb53a402f2a4bfdfece9c2@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Mon__24_Dec_2012_12_47_08_+1100_AbTvj0S=KGKX_X0y"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, Thanks .
+--Signature=_Mon__24_Dec_2012_12_47_08_+1100_AbTvj0S=KGKX_X0y
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Brs,
-Qian Zhenpeng
+Hi Linus,
 
+Today's linux-next merge of the pinctrl tree got a conflict in
+drivers/pinctrl/pinctrl-sirf.c between commit c2c57b329c7b ("Drivers:
+pinctrl: remove __dev* attributes") from the driver-core.current tree and
+commit 19d601d8e0a7 ("pinctrl: sirf: enable GPIO pullup/down
+configuration from dts") from the pinctrl tree.
 
------Original Message-----
-From: Chris Ball [mailto:cjb@laptop.org] 
-Sent: 2012年12月22日 5:32
-To: Linus Torvalds
-Cc: Qian Zhenpeng; Greg KH; Linux Kernel Mailing List; Linux Driver Project; linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc:core:if detect mmc card remove,don't wait for req done
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Hi,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-On Thu, Dec 20 2012, Linus Torvalds wrote:
-> On Thu, Dec 20, 2012 at 1:32 AM,  <zhenpeng.qian@tieto.com> wrote:
->>
->>         I find a bug about mmc/core/core.c, and send you a patch 
->> which I fix this bug.
->>
->>         In fact, the bug is a low probability of occurrence.
->>
->>         Hope you help me to analyze it and discuss with me.
->
-> I've added the proper people - Chris Ball and linux-mmc - to the 
-> participants list.
->
-> I also wanted to check with you: the commit message implies that this 
-> can cause an IO timeout and then a call to
-> msmsdcc_start_command_deferred() with a NULL cmd->mrq. Which I assume 
-> results in a NULL pointer dereference and Oops, but that wasn't 
-> spelled out.
->
-> Chris, please give it a look, and perhaps edit the commit message a bit.
+diff --cc drivers/pinctrl/pinctrl-sirf.c
+index c776046,30e1a38..0000000
+--- a/drivers/pinctrl/pinctrl-sirf.c
++++ b/drivers/pinctrl/pinctrl-sirf.c
+@@@ -1663,7 -1663,45 +1663,45 @@@ const struct irq_domain_ops sirfsoc_gpi
+  	.xlate =3D irq_domain_xlate_twocell,
+  };
+ =20
++ static void sirfsoc_gpio_set_pullup(const u32 *pullups)
++ {
++ 	int i, n;
++ 	const unsigned long *p =3D (const unsigned long *)pullups;
++=20
++ 	for (i =3D 0; i < SIRFSOC_GPIO_NO_OF_BANKS; i++) {
++ 		n =3D find_first_bit(p + i, BITS_PER_LONG);
++ 		while (n < BITS_PER_LONG) {
++ 			u32 offset =3D SIRFSOC_GPIO_CTRL(i, n);
++ 			u32 val =3D readl(sgpio_bank[i].chip.regs + offset);
++ 			val |=3D SIRFSOC_GPIO_CTL_PULL_MASK;
++ 			val |=3D SIRFSOC_GPIO_CTL_PULL_HIGH;
++ 			writel(val, sgpio_bank[i].chip.regs + offset);
++=20
++ 			n =3D find_next_bit(p + i, BITS_PER_LONG, n + 1);
++ 		}
++ 	}
++ }
++=20
++ static void sirfsoc_gpio_set_pulldown(const u32 *pulldowns)
++ {
++ 	int i, n;
++ 	const unsigned long *p =3D (const unsigned long *)pulldowns;
++=20
++ 	for (i =3D 0; i < SIRFSOC_GPIO_NO_OF_BANKS; i++) {
++ 		n =3D find_first_bit(p + i, BITS_PER_LONG);
++ 		while (n < BITS_PER_LONG) {
++ 			u32 offset =3D SIRFSOC_GPIO_CTRL(i, n);
++ 			u32 val =3D readl(sgpio_bank[i].chip.regs + offset);
++ 			val |=3D SIRFSOC_GPIO_CTL_PULL_MASK;
++ 			val &=3D ~SIRFSOC_GPIO_CTL_PULL_HIGH;
++ 			writel(val, sgpio_bank[i].chip.regs + offset);
++=20
++ 			n =3D find_next_bit(p + i, BITS_PER_LONG, n + 1);
++ 		}
++ 	}
++ }
++=20
+ -static int __devinit sirfsoc_gpio_probe(struct device_node *np)
+ +static int sirfsoc_gpio_probe(struct device_node *np)
+  {
+  	int i, err =3D 0;
+  	struct sirfsoc_gpio_bank *bank;
 
-Thanks, I've queued the patch for 3.8.  I edited the commit message and modified the patch: adding a check in the host driver to avoid any other blind dereferences of cmd->mrq, and skipping the unnecessary assignment to "err".  Here's the updated patch -- Qian, does it look okay to you?
+--Signature=_Mon__24_Dec_2012_12_47_08_+1100_AbTvj0S=KGKX_X0y
+Content-Type: application/pgp-signature
 
-- Chris.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBCAAGBQJQ17QcAAoJEECxmPOUX5FE6ugP/ifbTqpuBETuNFjPfLUveB46
+QiqiUbeakek6tzJWSYCBURt6V9pS2VKNV1xWjdQXN4ZCfpq7gZGJEe2nlWaVoqkP
+rs4rvsTnerLq+qvfq/0OfRUV8eUTNataIMmV9q/MQOIREaAdYJ0UrAs8DRR6X1bD
+SyUVOUb2zu2QF8gGGbU/k2ollv1tMyoaTS2oUBTDl7umUSi3bLT3GZA5eqM1DEia
+JVd1J5KJJQuLc3hOnh9TXLonDCHt1zh7fom9M85x4Pfp2Nl/KTtpnLFqaxYhiBi8
+hviyIOVS9xP/vx03Ha/WXJ71ZLHO8zTI1zHh8kjlPW5zpWwEcIeTE+WZTKLXtt4F
+Lg82am8YQG6eWlfrYpusz64odYwQE9QEAe/OGyGHoeISWNFpJWNwPpXtfHYxAIpu
+V+QSDm2AZSi2FK1NDn8vf/M9XYSHR6eatrA0Ew14yifTq5niWt244Z0NBWOiPsr3
+MdYdiBhnbk6fC32a5GDYeyoSt74LyiV4Aiu1cdiEirjChsRo4SdmfnKDvC6cQVRk
+Iq/EmRE6HZyQgT1tBDZ60lEu1bmBakfCOYcLUQoEVNiO7HtSbfjvV3r5wCM3zB5w
+gjHzl+cAznocCk+kEwrdk+mTVeW1aZZkjn4Uu3OPDaqB4tkzSkzulF+owvLPuq+f
+vOnXMh6qLmtKrp+9kziN
+=rgJi
+-----END PGP SIGNATURE-----
 
-From: Zhenpeng Qian <zhenpeng.qian@tieto.com>
-Date: Thu, 20 Dec 2012 16:20:12 +0800
-Subject: [PATCH] mmc: core: If card was removed, don't wait for request to  finish.
-
-mmc_wait_for_req() calls __mmc_start_req().  If __mmc_start_req() detects that the card's been removed, it will return -ENOMEDIUM and not wait for the request to be finished.  In this way, it can reduce io_schedule once.
-
-And if io_schedule times out and mmc_card_remove() fails, it will call
-host->ops->request (sometimes this occurs by insmod and rmmod fast), 
-host->ops->then
-will get through to msmsdcc_start_command_deferred() finally.  cmd->mrq will be NULL -- it's created in mmc_start_request() -- and a NULL deref of cmd->mrq->stop will result.
-
-This was seen in msm_sdcc.c, which dereferenced cmd->mrq blindly; also add a check to that host driver to stop this happening again in other potential cases.
-
-10 [<c06e8458>] (__dabt_svc) from [<c04c8c2c>]
-11 [<c04c8a44>] (msmsdcc_start_command_deferred) from [<c04c8c2c>]
-12 [<c04c8c2c>] (msmsdcc_start_command) from [<c04d1428>]
-13 [<c04d1428>] (msmsdcc_request) from [<c04b7c80>]
-14 [<c04b7c80>] (mmc_wait_for_req_done) from [<c04b8630>]
-15 [<c04b8630>] (mmc_wait_for_cmd) from [<c04c4980>]
-16 [<c04c4980>] (get_card_status) from [<c04c5338>]
-17 [<c04c5338>] (mmc_blk_err_check) from [<c04b8a78>]
-18 [<c04b8a78>] (mmc_start_req) from [<c04c6020>]
-19 [<c04c6020>] (mmc_blk_issue_rw_rq) from [<c04c6a1c>]
-20 [<c04c6a1c>] (mmc_blk_issue_rq) from [<c04c6c7c>]
-21 [<c04c6c7c>] (mmc_queue_thread) from [<c0091d54>]
-22 [<c0091d54>] (kthread) from [<c000f028>]
-
-Signed-off-by: Zhenpeng Qian <zhenpeng.qian@tieto.com>
-[cjb: Rewrite commit message, add msm_sdcc.c test]
-Signed-off-by: Chris Ball <cjb@laptop.org>
----
- drivers/mmc/core/core.c     |    5 +++--
- drivers/mmc/host/msm_sdcc.c |    4 ++--
- 2 files changed, 5 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c index aaed768..87edbc0 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -470,8 +470,9 @@ EXPORT_SYMBOL(mmc_start_req);
-  */
- void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)  {
--	__mmc_start_req(host, mrq);
--	mmc_wait_for_req_done(host, mrq);
-+	/* If the card's been removed, don't wait for the request. */
-+	if (!__mmc_start_req(host, mrq))
-+		mmc_wait_for_req_done(host, mrq);
- }
- EXPORT_SYMBOL(mmc_wait_for_req);
- 
-diff --git a/drivers/mmc/host/msm_sdcc.c b/drivers/mmc/host/msm_sdcc.c index 7c0af0e..056ccd0 100644
---- a/drivers/mmc/host/msm_sdcc.c
-+++ b/drivers/mmc/host/msm_sdcc.c
-@@ -468,7 +468,7 @@ msmsdcc_start_command_deferred(struct msmsdcc_host *host,
- 		host->prog_enable = true;
- 	}
- 
--	if (cmd == cmd->mrq->stop)
-+	if (cmd->mrq && (cmd == cmd->mrq->stop))
- 		*c |= MCI_CSPM_MCIABORT;
- 
- 	if (snoop_cccr_abort(cmd))
-@@ -559,7 +559,7 @@ msmsdcc_start_data(struct msmsdcc_host *host, struct mmc_data *data,  static void  msmsdcc_start_command(struct msmsdcc_host *host, struct mmc_command *cmd, u32 c)  {
--	if (cmd == cmd->mrq->stop)
-+	if (cmd->mrq && (cmd == cmd->mrq->stop))
- 		c |= MCI_CSPM_MCIABORT;
- 
- 	host->stats.cmds++;
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+--Signature=_Mon__24_Dec_2012_12_47_08_+1100_AbTvj0S=KGKX_X0y--
