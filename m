@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461Ab2LXKpZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 05:45:25 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:35199 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678Ab2LXKpX (ORCPT
+	id S1752497Ab2LXKtm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 05:49:42 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:47553 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590Ab2LXKtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 05:45:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <1356345665-8177-1-git-send-email-ldewangan@nvidia.com>
-References: <1356345665-8177-1-git-send-email-ldewangan@nvidia.com>
-Date: Mon, 24 Dec 2012 16:15:22 +0530
-Message-ID: <CAHdPZaNk=SuzWTd8z+EJqeAEq4R7nGo=2C87T1NHWdTatP-=pw@mail.gmail.com>
-Subject: Re: [PATCH V2] rtc: add RTC driver for TPS80031/TPS80032
-From: "devendra.aaru" <devendra.aaru@gmail.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: akpm@linuxfoundation.org, a.zummo@towertech.it, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Dec 2012 05:49:39 -0500
+X-Greylist: delayed 1295 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Dec 2012 05:49:39 EST
+From: ycnian@gmail.com
+To: bfields@fieldses.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Yanchuan Nian <ycnian@gmail.com>
+Subject: [PATCH] nfsd: Don't unlock the state while it's not locked
+Date: Mon, 24 Dec 2012 18:11:45 +0800
+Message-Id: <1356343905-11990-1-git-send-email-ycnian@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 4:11 PM, Laxman Dewangan <ldewangan@nvidia.com> wrote:
-> Add an RTC driver for TPS80031/TPS80032 chips by TI.
-> This driver supports:
-> - Setting and getting time and date.
-> - Setting and reading alarm time.
-> - Alarm and interrupt functionlity.
->
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> Changes from V1:
-> - remvoe the checks for alarm time whether this is past or not in set_alarm.
-> - add error prints if rtc registration failed.
-> - add include of pm.h
->
->  drivers/rtc/Kconfig        |    8 +
->  drivers/rtc/Makefile       |    1 +
->  drivers/rtc/rtc-tps80031.c |  349 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 358 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/rtc/rtc-tps80031.c
->
+From: Yanchuan Nian <ycnian@gmail.com>
 
-Thanks for taking care of the comments !
+In the procedure of CREATE_SESSION, the state is locked after
+alloc_conn_from_crses(). If the allocation fails, the function
+goes to "out_free_session", and then "out" where there is an
+unlock function.
+
+Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+
+---
+ fs/nfsd/nfs4state.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
+index 29924a0..cc41bf4 100644
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1844,11 +1844,12 @@ nfsd4_create_session(struct svc_rqst *rqstp,
+ 
+ 	/* cache solo and embedded create sessions under the state lock */
+ 	nfsd4_cache_create_session(cr_ses, cs_slot, status);
+-out:
+ 	nfs4_unlock_state();
++out:
+ 	dprintk("%s returns %d\n", __func__, ntohl(status));
+ 	return status;
+ out_free_conn:
++	nfs4_unlock_state();
+ 	free_conn(conn);
+ out_free_session:
+ 	__free_session(new);
+-- 
+1.7.4.4
+
