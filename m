@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab2LXI5D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 03:57:03 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:41643 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab2LXI5A convert rfc822-to-8bit (ORCPT
+	id S1752985Ab2LXI7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 03:59:15 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48565 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751485Ab2LXI7N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 03:57:00 -0500
+	Mon, 24 Dec 2012 03:59:13 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121223183743.0400ac93@redhat.com>
-References: <CADDKRnB=KYBuue10BnPpiRD=rrrATgxt-DfgLHmK-cqRAvJsUQ@mail.gmail.com>
-	<20121223183743.0400ac93@redhat.com>
-Date: Mon, 24 Dec 2012 09:56:59 +0100
-Message-ID: <CADDKRnB4Qz6Qiy9SC6fspf39jUVOD4VSHY97pL_YVL8T+EVzig@mail.gmail.com>
-Subject: Re: [v3.8-rc1] Multimedia regression, ioctl(17,..)-API changed ?
-From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 Dec 2012 16:59:13 +0800
+Message-ID: <CAEk7JKYFESRP2wSTzS34d5e2c5FuaW2KhzJaZYwn43j7TruFWg@mail.gmail.com>
+Subject: Clear tags in dmar.c
+From: "Li, Zhen-Hua" <lizhenhua.dev@gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/23 Mauro Carvalho Chehab <mchehab@redhat.com>:
-> Hi Jörg,
->
-> Em Sun, 23 Dec 2012 17:46:07 +0100
-> Jörg Otte <jrg.otte@gmail.com> escreveu:
->
->> With kernel v3.8 all multimedia programs under KDE4 don't work (Kubuntu 12.04).
->> They alltogether ( at least Dragonplayer (Mediaplayer), Knotify4
->> (system-sound),
->> System-Settings-Multimedia,..) are looping forever producing 100% CPU-usage
->> and must be killed.
->>
->> With kernel 3.7 there are no problems.
->
-> Do you have any other non-uvc device to test?
+In dmar.c: qi_check_fault, I think the tags should be clear when
+finished processing.
+See this patch:
 
-No I haven't.
+--- drivers/iommu/dmar.c.orig   2012-12-25 00:56:16.000000000 +0800
++++ drivers/iommu/dmar.c.new    2012-12-25 00:56:37.000000000 +0800
+@@ -759,7 +759,7 @@ static int qi_check_fault(struct intel_i
+                                        sizeof(struct qi_desc));
+                        __iommu_flush_cache(iommu, &qi->desc[index],
+                                        sizeof(struct qi_desc));
+-                       writel(DMA_FSTS_IQE, iommu->reg + DMAR_FSTS_REG);
++                       writel(~DMA_FSTS_IQE, iommu->reg + DMAR_FSTS_REG);
+                        return -EINVAL;
+                }
+        }
+@@ -775,7 +775,7 @@ static int qi_check_fault(struct intel_i
+                tail = readl(iommu->reg + DMAR_IQT_REG);
+                tail = ((tail >> DMAR_IQ_SHIFT) - 1 + QI_LENGTH) % QI_LENGTH;
 
-Thanks, Jörg
+-               writel(DMA_FSTS_ITE, iommu->reg + DMAR_FSTS_REG);
++               writel(~DMA_FSTS_ITE, iommu->reg + DMAR_FSTS_REG);
+
+                do {
+                        if (qi->desc_status[head] == QI_IN_USE)
+@@ -788,7 +788,7 @@ static int qi_check_fault(struct intel_i
+        }
+
+        if (fault & DMA_FSTS_ICE)
+-               writel(DMA_FSTS_ICE, iommu->reg + DMAR_FSTS_REG);
++               writel(~DMA_FSTS_ICE, iommu->reg + DMAR_FSTS_REG);
+
+        return 0;
+ }
