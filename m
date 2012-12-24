@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab2LXSZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 13:25:57 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:48100 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753183Ab2LXSZz (ORCPT
+	id S1753349Ab2LXScY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 13:32:24 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:54066 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753183Ab2LXScU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 13:25:55 -0500
-Date: Mon, 24 Dec 2012 10:25:49 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-input@vger.kernel.org
-Subject: Re: [PATCH 17/25] wm97xx: don't use [delayed_]work_pending()
-Message-ID: <20121224182549.GA11817@htj.dyndns.org>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-18-git-send-email-tj@kernel.org>
- <20121223095450.GA17407@core.coreip.homeip.net>
+	Mon, 24 Dec 2012 13:32:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121223095450.GA17407@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121224173937.GB14754@kroah.com>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com>
+ <1356030701-16284-13-git-send-email-sasha.levin@oracle.com>
+ <20121221075909.GA15739@amit.redhat.com> <201212241155.46866.arnd@arndb.de> <20121224173937.GB14754@kroah.com>
+From: Sasha Levin <levinsasha928@gmail.com>
+Date: Mon, 24 Dec 2012 13:24:52 -0500
+Message-ID: <CA+1xoqdd3DN6ApCnQh=8fQBvFh40O2BJPf4mAA_L17cRH8kShQ@mail.gmail.com>
+Subject: Re: [PATCH] virtio_console: correct error message on failure of debugfs_create_dir
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Amit Shah <amit.shah@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Dmitry.
+On Mon, Dec 24, 2012 at 12:39 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Mon, Dec 24, 2012 at 11:55:46AM +0000, Arnd Bergmann wrote:
+>> On Friday 21 December 2012, Amit Shah wrote:
+>> > On (Thu) 20 Dec 2012 [14:11:21], Sasha Levin wrote:
+>> > > debugfs_create_dir() returns NULL if it fails, there's little point in
+>> > > calling PTR_ERR on it.
+>> >
+>> > debugfs_create_dir() does return an error value if debugfs is not
+>> > enabled.
+>> >
+>> > This check for !pdrvdata.debugfs_dir should infact use
+>> > IS_ERR_OR_NULL().  Care to submit a patch for that?
+>>
+>> How about we fix the stub instead to return NULL when debugfs is disabled?
+>
+> No, please read debugfs.h for why I decided to not do this (i.e. we try
+> to learn from our mistakes...)
 
-On Sun, Dec 23, 2012 at 01:54:50AM -0800, Dmitry Torokhov wrote:
-> This is not 100% equivalent transformation as now we schedule first and
-> disable IRQ later... Anyway, I think the driver shoudl be converted to
-> threaded IRQ instead. Mark, does the patch below make any sense to you?
+Why won't we fix it the other way around and return an actual error
+code instead of a NULL on failure?
 
-Yeah, I think the conversion is actually broken.  There isn't anything
-which prevents work item execution racing against irq disabling.  I
-agree the right thing to do is using threaded irq handler.
 
-Thanks!
-
--- 
-tejun
+Thanks,
+Sasha
