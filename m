@@ -1,52 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753458Ab2LXXem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 18:34:42 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34701 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753377Ab2LXXek (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 18:34:40 -0500
-Message-ID: <50D8E671.3020502@zytor.com>
-Date: Mon, 24 Dec 2012 15:34:09 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753464Ab2LXXsk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 18:48:40 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:63337 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377Ab2LXXsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 18:48:38 -0500
+Date: Tue, 25 Dec 2012 07:47:14 +0800
+From: Woody Wu <narkewoody@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Porting problem: ndo_set_multicast_list removed
+Message-ID: <20121224234713.GA6756@zuhnb712>
+References: <20121224163005.GA3970@zuhnb712>
+ <1356376587.20133.9693.camel@edumazet-glaptop>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 24/27] x86: Add swiotlb force off support
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <1355814959-10573-25-git-send-email-yinghai@kernel.org> <20121222023741.GF3468@phenom.dumpdata.com> <87bodmhkns.fsf@xmission.com> <20121222031019.GA4120@phenom.dumpdata.com> <87pq22g488.fsf@xmission.com> <50D52841.9030301@zytor.com> <CAE9FiQWY+LTZkmWmDvoLmrayG+a0uScpR=YThr+hogOU7HbJ9w@mail.gmail.com>
-In-Reply-To: <CAE9FiQWY+LTZkmWmDvoLmrayG+a0uScpR=YThr+hogOU7HbJ9w@mail.gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356376587.20133.9693.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 09:11 PM, Yinghai Lu wrote:
-> On Fri, Dec 21, 2012 at 7:25 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/21/2012 07:23 PM, Eric W. Biederman wrote:
->>>
->>> In this case YH has been working on the case of loading a kernel
->>> completely above 4G, and apparently he has also been testing the case of
->>> running a kernel with no memory below 4G.
->>>
->>
->> It is worth noting that we cannot run with *no* memory below 4G -- it is
->> not possible to run SMP at least without some memory below the 1M mark.
+On Mon, Dec 24, 2012 at 11:16:27AM -0800, Eric Dumazet wrote:
+> On Tue, 2012-12-25 at 00:30 +0800, Woody Wu wrote:
+> > Hi, list
+> > 
+> > I am porting an ethernet driver from 2.6.x to 3.7.1.  I found in the new
+> > kernel, the ndo_set_multicast_list method in the net_device_ops had been
+> > removed. What's the story behind?  Can I simply ignore this method
+> > defined in an old driver?
+> > 
+> > Please also help to check the below code, is the list of the operations
+> > defined for my driver enough or not?
+> > 
+> > const struct net_device_ops ax_netdev_ops = {
+> > 	.ndo_open		= mydriver_open,
+> > 	.ndo_stop		= mydriver_close,
+> > 	.ndo_start_xmit		= mydriver_start_xmit,
+> > 	.ndo_get_stats		= mydriver_get_stats,
+> > 	/*.ndo_set_multicast_list = mydriver_set_multicast_list,*/
+> > 	.ndo_set_mac_address 	= mydriver_set_mac_address,
+> > };
+> > 
+> > Thanks in advance.
+> > 
 > 
-> yes need keep 8k or so for trampoline.
+> Take a look at :
 > 
-> but kdump only use one CPU.
+> commit afc4b13df143122f99a0eb10bfefb216c2806de0
+> Author: Jiri Pirko <jpirko@redhat.com>
+> Date:   Tue Aug 16 06:29:01 2011 +0000
+> 
+>     net: remove use of ndo_set_multicast_list in drivers
+>     
+>     replace it by ndo_set_rx_mode
+>     
+>     Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+>     Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
 > 
 
-... except we have an active request to change that, and the trampoline
-is more like 20K depending on options.
+Thanks for the info!
 
-	-hpa
-
-
+-- 
+woody
+I can't go back to yesterday - because I was a different person then.
