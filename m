@@ -1,61 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752804Ab2LXEsF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Dec 2012 23:48:05 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:38011 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab2LXEsA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 23:48:00 -0500
-Date: Mon, 24 Dec 2012 12:48:18 +0800
-From: Wang YanQing <udknight@gmail.com>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rdunlap@xenotime.net, bp@alien8.de, sakiwit@gmail.com,
-        lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-        paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de,
-        yann.morin.1998@free.fr
-Subject: Re: [PATCH] kconfig:lxdialog: remove duplicate code
-Message-ID: <20121224044818.GA3863@udknight>
-Mail-Followup-To: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
-	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-	rdunlap@xenotime.net, bp@alien8.de, sakiwit@gmail.com,
-	lacombar@gmail.com, lucas.demarchi@profusion.mobi, dave@gnu.org,
-	paul.gortmaker@windriver.com, crquan@gmail.com, bpoirier@suse.de,
-	yann.morin.1998@free.fr
-References: <20121217143751.GA16993@udknight>
- <201212171919.07368.yann.morin.1998@free.fr>
+	id S1752814Ab2LXE4k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Dec 2012 23:56:40 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56708 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752289Ab2LXE4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Dec 2012 23:56:38 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20121223184516.GC8190@liondog.tnic>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <20121222024225.GG3468@phenom.dumpdata.com> <eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com> <20121222132419.GB2936@phenom.dumpdata.com> <CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com> <6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com> <CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com> <20121223184516.GC8190@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201212171919.07368.yann.morin.1998@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 23 Dec 2012 20:54:37 -0800
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <171018c8-b640-4234-a25e-7040d9e21acd@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 17, 2012 at 07:19:07PM +0100, Yann E. MORIN wrote:
-> Wang, All,
-> 
-> On Monday 17 December 2012 Wang YanQing wrote:
-> > dialog.h has two line the same below:
-> > extern char dialog_input_result[];
-> > This patch remove one of them.
-> > 
-> > Signed-off-by: Wang YanQing <udknight@gmail.com>
-> 
-> Reviewed-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-> Tested-by: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Michal, All.
+Makes sense.  Ljmpq it is.  A comment might be useful.
 
-Hi Michal, could you consider pick up this obvious right
-patch, and consider others' three patch I sented one week
-ago? I just don't want delay them to 2013, and they can get
-more test when they appear in next tree.
-https://patchwork.kernel.org/patch/1887361/
-https://patchwork.kernel.org/patch/1894341/
-https://patchwork.kernel.org/patch/1887441/
+Borislav Petkov <bp@alien8.de> wrote:
 
-Happy christmas!
+>On Sun, Dec 23, 2012 at 10:00:26AM -0800, Yinghai Lu wrote:
+>> On Sun, Dec 23, 2012 at 6:33 AM, H. Peter Anvin <hpa@zytor.com>
+>wrote:
+>> > Explanation please?
+>>
+>> you have following change in the patch
+>> 
+>>         /* Finally jump to run C code and to be on real kernel
+>address
+>>          * Since we are running on identity-mapped space we have to
+>jump
+>>          * to the full 64bit address, this is only possible as
+>indirect
+>>          * jump.  In addition we need to ensure %cs is set so we make
+>this
+>> -        * a far return.
+>> +        * a far jump.
+>>          */
+>> -       movq    initial_code(%rip),%rax
+>>         pushq   $0              # fake return address to stop
+>unwinder
+>> -       pushq   $__KERNEL_CS    # set correct cs
+>> -       pushq   %rax            # target address in negative space
+>> -       lretq
+>> +       /* gas 2.22 is buggy and mis-assembles ljmpq */
+>> +       rex64 ljmp *initial_code(%rip)
+>> 
+>>  #ifdef CONFIG_HOTPLUG_CPU
+>>  /*
+>> 
+>> remove that change, AMD systems works again.
+>
+>Right, the original code did a RET FAR by popping CS and rIP from the
+>stack. And we did prepare the stack properly before that so it worked.
+>
+>Now, the ljmp translates to a JMP FAR:
+>
+>ffffffff8100016e:       48 ff 2d ab a5 7f 00    rex.W ljmpq
+>*0x7fa5ab(%rip)        # ffffffff817fa720 <initial_code>
+>ffffffff81000175:       66 66 2e 0f 1f 84 00    data32 nopw
+>%cs:0x0(%rax,%rax,1)
+>ffffffff8100017c:       00 00 00 00 
+>
+>and in 64-bit mode it has for an operand a 16-bit selector followed by
+>a
+>32-bit offset.
+>
+>Now, Intel SDM says also this:
+>
+>REX.W + FF /5 JMP m16:64 A Valid N.E. Jump far, absolute indirect,
+>address given in m16:64.
+>
+>And I don't think AMD supports a 64-bit offset. At least I don't see it
+>in the APM where it has only:
+>
+>JMP FAR mem16:16 FF /5 Far jump indirect, with the target specified by
+>a far
+>                      pointer in memory.
+>JMP FAR mem16:32 FF /5 Far jump indirect, with the target specified by
+>a far
+>pointer in memory.
+>
+>This is at least what I can see at a quick scan. I could ask around if
+>AMD actually supports that FF /5 with a REX.W prefix and it is not only
+>a documentation omission.
+>
+>HTH.
 
-Thanks.
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
