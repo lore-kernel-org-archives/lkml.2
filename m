@@ -1,35 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab2LXFuo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 00:50:44 -0500
-Received: from alvesta.synopsys.com ([198.182.60.77]:61166 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751145Ab2LXFun (ORCPT
+	id S1752722Ab2LXFvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 00:51:44 -0500
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:35954 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751145Ab2LXFvm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 00:50:43 -0500
-Message-ID: <50D7ED27.9050408@synopsys.com>
-Date: Mon, 24 Dec 2012 11:20:31 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Mon, 24 Dec 2012 00:51:42 -0500
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] asm-generic: uaccess: allow arch to over-ride __get_user_fn()
-References: <1353422297-29079-1-git-send-email-vgupta@synopsys.com> <1353422297-29079-2-git-send-email-vgupta@synopsys.com> <201212211943.32199.arnd@arndb.de>
-In-Reply-To: <201212211943.32199.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Date: Mon, 24 Dec 2012 13:51:41 +0800
+Message-ID: <CAFFEFTXxsPRf1Rmxyih0wL4O6q8G0OFmz0iRLX0tOYedYfajHw@mail.gmail.com>
+Subject: kernel panic when running /etc/init.d/iptables restart
+From: canqun zhang <canqunzhang@gmail.com>
+To: Patrick McHardy <kaber@trash.net>
+Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 December 2012 01:13 AM, Arnd Bergmann wrote:
-> On Tuesday 20 November 2012, Vineet.Gupta1@synopsys.com wrote:
->> From: Vineet Gupta <vgupta@synopsys.com>
->>
->> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+Hi Patrick£¬
+If i start  one lxc container instance, and then in the system there
+will be two net namespaces,one is init_net namespace, the other is
+created by lxc.If running "/etc/init.d/iptables restart",the system
+will be panic. I find iptables restarting will clean init_net
+namespace firstly,then clean the net namespace created by lxc,buf
+related functions about cleaning up init_net namespace will destroy
+global variables such as nf_ct_destroy,ip_ct_attach£¬etc.So,funtions
+cleaning up  the other net namespace will be panic.
 
-Thx,
--Vineet
+I fixed it up (see below) .If the system need cleaning init_net
+namespace, Ip conntrack belonging to other namespaces will be cleaned
+up firstly.
+
+diff -r 7884e663ef6f -r 57fd45b8a144 net/netfilter/nf_conntrack_
+core.c
+--- a/net/netfilter/nf_conntrack_core.c Sun Dec 09 21:41:08 2012 +0800
++++ b/net/netfilter/nf_conntrack_core.c Sun Dec 23 16:28:15 2012 +0800
+@@ -1122,7 +1122,22 @@
+diff -r 7884e663ef6f -r 57fd45b8a144 net/netfilter/nf_conntrack_core.c
+--- a/net/netfilter/nf_conntrack_core.c Sun Dec 09 21:41:08 2012 +0800
++++ b/net/netfilter/nf_conntrack_core.c Sun Dec 23 16:28:15 2012 +0800
+@@ -1122,7 +1122,22 @@
+
+ static void nf_conntrack_cleanup_net(struct net *net)
+ {
+- i_see_dead_people:
++       if (net == &init_net) {
++               struct net *net_poll;
++               rcu_read_lock();
++               for_each_net_rcu(net_poll) {
++                       synchronize_net();
++               again:
++                       nf_ct_iterate_cleanup(net_poll, kill_all, NULL);
++                       nf_ct_release_dying_list(net_poll);
++                       if (atomic_read(&net_poll->ct.count) != 0) {
++                               schedule();
++                               goto again;
++                       }
++               }
++               rcu_read_unlock();
++       }
++i_see_dead_people:
+        nf_ct_iterate_cleanup(net, kill_all, NULL);
+        nf_ct_release_dying_list(net);
+        if (atomic_read(&net->ct.count) != 0) {
