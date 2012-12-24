@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab2LXQk6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 11:40:58 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50618 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab2LXQkz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 11:40:55 -0500
-Message-ID: <50D88594.6060601@nvidia.com>
-Date: Mon, 24 Dec 2012 09:40:52 -0700
-From: Stephen Warren <swarren@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: Russell King <linux@arm.linux.org.uk>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
+	id S1753287Ab2LXQxf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 11:53:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:12575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752597Ab2LXQxa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 11:53:30 -0500
+Date: Mon, 24 Dec 2012 17:53:06 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Mikael Starvik <starvik@axis.com>,
-        linux-cris-kernel@axis.com, Mike Frysinger <vapier@gentoo.org>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Joshua Thompson <funaho@jurai.org>, Sam Creasey <sammy@sammy.net>,
-        Andrew Victor <linux@maxim.org.za>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Hartley Sweeten <hsweeten@visionengravers.com>,
-        Ryan Mallon <rmallon@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH V3 00/11] ARM: delete struct sys_timer
-References: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1353349867-28494-1-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 1/4] signalfd: add ability to return siginfo in a raw
+	format
+Message-ID: <20121224165306.GA9553@redhat.com>
+References: <1356336807-5517-1-git-send-email-avagin@openvz.org> <1356336807-5517-2-git-send-email-avagin@openvz.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356336807-5517-2-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/19/2012 11:30 AM, Stephen Warren wrote:
-> Russell, I'm mainly reposting this to see if you have any comments or
-> opinion, in particular on the core ARM changes.
-> 
-> The aim of this series is to remove ARM's struct sys_timer. As a pre-
-> cursor, this requires a little re-arrangement of arch_gettimeoffset and
-> associated changes to other architectures.
-> 
-> The full series can be found in git at:
+On 12/24, Andrey Vagin wrote:
+>
+> signalfd should be called with the flag SFD_RAW for that.
+>
+> signalfd_siginfo is not full for siginfo with a negative si_code.
+> copy_siginfo_to_user() is copied a full siginfo to user-space, if
+> si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
+> expanded, because it has not compatiable format with siginfo_t.
 
-(now at):
-git://git.kernel.org/pub/scm/linux/kernel/git/swarren/linux-tegra.git
-arm-timer-rework
+Yes, but otoh perhaps we should change (fix) signalfd_siginfo/copyinfo,
+its "default" case makes no sense if si_code < 0.
 
-I have put this branch into the Tegra tree's for-next branch. Once the
-holidays are over, I'll send a pull request to get this into arm-soc as
-a baseline branch for others to build on.
+> Another problem is that a constant __SI_* is removed from si_code.
+
+OK, so you add the additional put_user(kinfo->si_code). Again, in
+this case we can extend signalfd_siginfo perhaps...
+
+Anyway, the patch doesn't look right.
+
+> +static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
+> +					siginfo_t *kinfo)
+> +{
+> +	siginfo_t *uinfo = (siginfo_t *) siginfo;
+> +	int err;
+> +
+> +	BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
+> +
+> +	err = __clear_user(uinfo, sizeof(*uinfo));
+> +	err |= copy_siginfo_to_user(uinfo, kinfo);
+
+This probably needs copy_siginfo_to_user32() if is_compat_task...
+
+> +	err |= __put_user(kinfo->si_code, &uinfo->si_code);
+
+__put_user() is not safe? This allows to write to the kernel memory.
+
+> @@ -286,6 +308,11 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+>  				       O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
+>  		if (ufd < 0)
+>  			kfree(ctx);
+> +		else if (flags & SFD_RAW) {
+> +			struct fd f = fdget(ufd);
+> +			f.file->f_flags |= flags & SFD_RAW;
+
+Well, but this is racy. How we can know that fdget(ufd) still
+points to the same file created by anon_inode_getfd? Not to
+mention f.file can be NULL.
+
+Another CLONE_FILES thread can do close() right after fd_install().
+And it can also do dup3().
+
+Oleg.
+
