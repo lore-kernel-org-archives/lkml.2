@@ -1,145 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab2LXIOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 03:14:49 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:26547 "EHLO relay.sw.ru"
+	id S1753154Ab2LXIPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 03:15:09 -0500
+Received: from mga01.intel.com ([192.55.52.88]:52164 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752960Ab2LXIOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 03:14:30 -0500
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH 1/4] signalfd: add ability to return siginfo in a raw format
-Date: Mon, 24 Dec 2012 12:13:24 +0400
-Message-Id: <1356336807-5517-2-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1356336807-5517-1-git-send-email-avagin@openvz.org>
-References: <1356336807-5517-1-git-send-email-avagin@openvz.org>
+	id S1753130Ab2LXIPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 03:15:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,346,1355126400"; 
+   d="scan'208";a="266436096"
+Subject: Re: [PATCH] spi: Add the flag indicate to registe new device as
+ children of master or not.
+From: Jun Chen <jun.d.chen@intel.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, Bi Chao <chao.bi@intel.com>,
+        spi-devel-general@lists.sourceforge.net, jun.zhang@intel.com
+In-Reply-To: <20121221190618.6D6D03E0C98@localhost>
+References: <1355848174.1435.25.camel@chenjun-workstation>
+	 <20121218152623.GA26077@sirena.org.uk>
+	 <1355910243.1435.39.camel@chenjun-workstation>
+	 <20121219090416.GK4985@opensource.wolfsonmicro.com>
+	 <20121219162142.9E1123E0B72@localhost>
+	 <1356111592.731.4.camel@chenjun-workstation>
+	 <20121221190618.6D6D03E0C98@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 Dec 2012 11:16:52 -0500
+Message-ID: <1356365812.6818.24.camel@chenjun-workstation>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-signalfd should be called with the flag SFD_RAW for that.
+On Fri, 2012-12-21 at 19:06 +0000, Grant Likely wrote:
+> On Fri, 21 Dec 2012 12:39:52 -0500, Jun Chen <jun.d.chen@intel.com> wrote:
+> > On Wed, 2012-12-19 at 16:21 +0000, Grant Likely wrote:
+> > > On Wed, 19 Dec 2012 09:04:16 +0000, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+> > > > On Wed, Dec 19, 2012 at 04:44:03AM -0500, Jun Chen wrote:
+> > > > 
+> > > > > This spi_alloc_device function will be called in the spi_new_device
+> > > > > function to alloc new device as the master. But other way, it is called
+> > > > > by the of_register_spi_devices function to register new device as the
+> > > > > children of the master. I will update changlog to add it. 
+> > > > 
+> > > > But why is this a bad thing?  You've said what's happening but not why
+> > > > it's a problem.
+> > > 
+> > > spi_devices should always be children of the spi_master. If that is not
+> > > the case then it is a bug to be fixed.
+> > > 
+> > 
+> > When many boards initializing, boards will call function
+> > spi_register_board_info to create bi->board_info,Then spi driver probe
+> > to call spi_register_master to register the driver and in the function
+> > spi_match_master_to_boardinfo To create new spi device, and this cases
+> > the spi_devices are not children of the spi_master.
+> > Many drivers do these steps. If all spi_devices must be children of the
+> > spi_master, Do spi core have plan to delete this way? 
+> > Or spi core can hold this way for many drivers. 
+> 
+> Let me make sure I understand what you're saying...
+> 
+> Right now, every spi_device object is registered as a child of an
+> spi_master object.
+> 
+> With this proposed patch, spi_devices registered via spi_register_board_info
+> will be siblings of the spi_master instead of children.
+> 
+> Do I understand correctly so far?
+> 
+Yes, 
 
-signalfd_siginfo is not full for siginfo with a negative si_code.
-copy_siginfo_to_user() is copied a full siginfo to user-space, if
-si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
-expanded, because it has not compatiable format with siginfo_t.
+> The problem is that I don't understand why this change is necessary.
+> spi_devices should always be children of an spi_master, not siblings.
+> What is the problem you're trying to solve with this change?
+> 
+When spi drivers try to use the core function(spi_register_master),it
+will trigger error,because they use the function
+spi_match_master_to_boardinfo  to create new spi device as the children
+of the master.
+In the old version of spi core, the new devices are registered as
+siblings of the spi_master. My spi driver based on the old version runs
+normal.
 
-Another problem is that a constant __SI_* is removed from si_code.
-It's not a problem for ussual applications, because they expect
-a defined type of siginfo (internal logic).
-When we want to dump pending signals, we can't predict a type of
-siginfo, so we should get it from kernel.
+But after applying for this patch:
+{
+    spi: Fix device unregistration when unregistering the bus master
+    
+    Device are added as children of the bus master's parent device, but
+    spi_unregister_master() looks for devices to unregister in the bus
+    master's children. This results in the child devices not being
+    unregistered.
+    
+    Fix this by registering devices as direct children of the bus
+master.
 
-This fuctionality is required for checkpointing pending signals.
 
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Pavel Emelyanov <xemul@parallels.com>
-CC: Cyrill Gorcunov <gorcunov@openvz.org>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- fs/signalfd.c                 | 31 +++++++++++++++++++++++++++++--
- include/uapi/linux/signalfd.h |  1 +
- 2 files changed, 30 insertions(+), 2 deletions(-)
+-	spi->dev.parent = dev;
++	spi->dev.parent = &master->dev;
+}
 
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index b534869..95f1444 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -73,6 +73,21 @@ static unsigned int signalfd_poll(struct file *file, poll_table *wait)
- 	return events;
- }
- 
-+static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
-+					siginfo_t *kinfo)
-+{
-+	siginfo_t *uinfo = (siginfo_t *) siginfo;
-+	int err;
-+
-+	BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
-+
-+	err = __clear_user(uinfo, sizeof(*uinfo));
-+	err |= copy_siginfo_to_user(uinfo, kinfo);
-+	err |= __put_user(kinfo->si_code, &uinfo->si_code);
-+
-+	return err ? -EFAULT: sizeof(*uinfo);
-+}
-+
- /*
-  * Copied from copy_siginfo_to_user() in kernel/signal.c
-  */
-@@ -205,6 +220,7 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 	struct signalfd_ctx *ctx = file->private_data;
- 	struct signalfd_siginfo __user *siginfo;
- 	int nonblock = file->f_flags & O_NONBLOCK;
-+	bool raw = file->f_flags & SFD_RAW;
- 	ssize_t ret, total = 0;
- 	siginfo_t info;
- 
-@@ -217,9 +233,15 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 		ret = signalfd_dequeue(ctx, &info, nonblock);
- 		if (unlikely(ret <= 0))
- 			break;
--		ret = signalfd_copyinfo(siginfo, &info);
-+
-+		if (raw)
-+			ret = signalfd_copy_raw_info(siginfo, &info);
-+		else
-+			ret = signalfd_copyinfo(siginfo, &info);
-+
- 		if (ret < 0)
- 			break;
-+
- 		siginfo++;
- 		total += ret;
- 		nonblock = 1;
-@@ -262,7 +284,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 	BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
- 	BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
- 
--	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK))
-+	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW))
- 		return -EINVAL;
- 
- 	if (sizemask != sizeof(sigset_t) ||
-@@ -286,6 +308,11 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 				       O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
- 		if (ufd < 0)
- 			kfree(ctx);
-+		else if (flags & SFD_RAW) {
-+			struct fd f = fdget(ufd);
-+			f.file->f_flags |= flags & SFD_RAW;
-+			fdput(f);
-+		}
- 	} else {
- 		struct fd f = fdget(ufd);
- 		if (!f.file)
-diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
-index 492c6de..bc31849 100644
---- a/include/uapi/linux/signalfd.h
-+++ b/include/uapi/linux/signalfd.h
-@@ -15,6 +15,7 @@
- /* Flags for signalfd4.  */
- #define SFD_CLOEXEC O_CLOEXEC
- #define SFD_NONBLOCK O_NONBLOCK
-+#define SFD_RAW O_DIRECT
- 
- struct signalfd_siginfo {
- 	__u32 ssi_signo;
--- 
-1.7.11.7
+Then my driver will be crash.
+Maybe I have mistake on this issue, thank for your more explanation and
+detail replay. 
+
+> g.
+> 
+
 
