@@ -1,53 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab2LXM5S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 07:57:18 -0500
-Received: from antcom.de ([188.40.178.216]:59675 "EHLO chuck.antcom.de"
+	id S1752874Ab2LXNIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 08:08:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:34536 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752321Ab2LXM5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 07:57:14 -0500
-Message-ID: <50D850C2.7050809@antcom.de>
-Date: Mon, 24 Dec 2012 13:55:30 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1752125Ab2LXNIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Dec 2012 08:08:07 -0500
+Date: Mon, 24 Dec 2012 14:08:01 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: wei_wang@realsil.com.cn
+Cc: cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com
+Subject: Re: [PATCH 3/7] MFD:rtsx: Declare that the DMA address limitation is
+ 32bit explicitly
+Message-ID: <20121224130801.GC6702@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wei_wang@realsil.com.cn,
+	cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
+	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+	gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com
+References: <cover.1356319097.git.wei_wang@realsil.com.cn>
+ <af58804b4774b109fbd6022ce7cc8081990b3625.1356319097.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: gregkh@linuxfoundation.org, Matthew Garrett <mjg@redhat.com>,
-        "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] samsung-laptop: Set keyboard backlight initially
-References: <1356283278-5046-1-git-send-email-stigge@antcom.de> <CAHR064iQeQrQF0qrGXJoCmYny2H_H_JnV_h8OvRSmD=bGE5eYA@mail.gmail.com>
-In-Reply-To: <CAHR064iQeQrQF0qrGXJoCmYny2H_H_JnV_h8OvRSmD=bGE5eYA@mail.gmail.com>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <af58804b4774b109fbd6022ce7cc8081990b3625.1356319097.git.wei_wang@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/12/12 09:41, Corentin Chary wrote:
-> On Sun, Dec 23, 2012 at 6:21 PM, Roland Stigge <stigge@antcom.de> wrote:
->> After boot, /sys/devices/platform/samsung/leds/samsung::kbd_backlight/brightness
->> shows the maximum value (8) by readout, but the led is off. I need to manually
->> set it to the respective value to have keyboard backlight.
+On Mon, Dec 24, 2012 at 02:03:30PM +0800, wei_wang@realsil.com.cn wrote:
+> From: Wei WANG <wei_wang@realsil.com.cn>
 > 
-> If the led is set to 0, what's the value after reboot ? 0 or 8 ?
+> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+> ---
+>  drivers/mfd/rtsx_pcr.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+> index fa2c2bc..2ee6be5 100644
+> --- a/drivers/mfd/rtsx_pcr.c
+> +++ b/drivers/mfd/rtsx_pcr.c
+> @@ -1084,6 +1084,10 @@ static int __devinit rtsx_pci_probe(struct pci_dev *pcidev,
+>  	pci_set_master(pcidev);
+>  	synchronize_irq(pcr->irq);
+>  
+> +	ret = pci_set_dma_mask(pcidev, DMA_BIT_MASK(32));
+> +	if (ret < 0)
+> +		goto disable_irq;
 
-Right - when writing 0 there before restart, the led value is actually 8
-after reboot, and the LED hardware is ON. This holds for both reboot and
-halt+poweron cycle.
+This piece is deep down in rtsx_pci_probe() and if it fails, the _probe
+function has do to all the error unwinding on the error path. Why not
+push it up before the pci_enable_device(pcidev) call so in case it
+fails, you can save yourself all the needless unwinding?
 
-Maybe this is related to the "#define MAX_BRIGHT 0x07" (which is unused
-in samsung-laptop.c)? A bit confusing in the code - but your question
-hints for some other bug (to be solved differently). Tell me if I can
-help somehow, here.
+Oh, and ditto here, commit message is missing.
 
-> What's the behavior on windows ?
+Thanks.
 
-There is no windows available on this machine.
+-- 
+Regards/Gruss,
+    Boris.
 
-Thanks,
-
-Roland
+Sent from a fat crate under my desk. Formatting is fine.
+--
