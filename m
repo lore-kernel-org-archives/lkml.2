@@ -1,34 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab2LYQ7y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 11:59:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22382 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753921Ab2LYQ7x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 11:59:53 -0500
-Date: Tue, 25 Dec 2012 17:59:54 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH review 2/3 take 2] pidns: Stop pid allocation when init
-	dies
-Message-ID: <20121225165954.GB9066@redhat.com>
-References: <87d2y2elbi.fsf@xmission.com> <871ueiel9d.fsf@xmission.com> <20121222165438.GA19680@redhat.com> <87licm7d4n.fsf_-_@xmission.com>
+	id S1754046Ab2LYRDg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 12:03:36 -0500
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:42810 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2LYRDd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 12:03:33 -0500
+Date: Tue, 25 Dec 2012 09:03:28 -0800
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 16/25] PM / Domains: don't use [delayed_]work_pending()
+Message-ID: <20121225170328.GH10220@mtj.dyndns.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-17-git-send-email-tj@kernel.org>
+ <21556832.hKrqJSonFg@vostro.rjw.lan>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87licm7d4n.fsf_-_@xmission.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <21556832.hKrqJSonFg@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25, Eric W. Biederman wrote:
->
-> Avoid these problems by disabling the allocation of new pids in a pid
-> namespace when init dies, instead of when the last process in a pid
-> namespace is reaped.
+Hello, Rafael.
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
+On Sat, Dec 22, 2012 at 12:57:20PM +0100, Rafael J. Wysocki wrote:
+> On Friday, December 21, 2012 05:57:06 PM Tejun Heo wrote:
+> > There's no need to test whether a (delayed) work item in pending
+> > before queueing, flushing or cancelling it.  Most uses are unnecessary
+> > and quite a few of them are buggy.
+> 
+> Is the particular one you're removing from domain.c buggy?
 
+It's a bit difficult to tell without understanding the code base but
+from quick glancing it looks like it could be.  The queueing and
+actual excution don't grab the same lock, so there doesn't seem to be
+anything work_pending() returning %true for a work item which already
+started executing.  Even if the bug is there, it's likely to be very
+difficult to trigger tho, so I wouldn't consider it an urgent fix.
+
+Thanks.
+
+-- 
+tejun
