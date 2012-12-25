@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab2LYEuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 23:50:14 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:46712 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753617Ab2LYEuM (ORCPT
+	id S1753661Ab2LYEwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 23:52:41 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12739 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab2LYEwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 23:50:12 -0500
+	Mon, 24 Dec 2012 23:52:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 24 Dec 2012 20:49:35 -0800
+Message-ID: <50D9310D.8010107@nvidia.com>
+Date: Tue, 25 Dec 2012 10:22:29 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20121223133102.GA8153@liondog.tnic>
-References: <CADnq5_MJzNdWVCauZj5Z7Monmsy4gWeYP3gJaPUPwHEgqhqOYw@mail.gmail.com>
-	<20121223002507.GA12121@liondog.tnic>
-	<CADnq5_Oe=_nOrsgUZvPc82F5CFAWecx=Uiqn0CAeK+YG3ns3AA@mail.gmail.com>
-	<20121223105527.GA6230@liondog.tnic>
-	<50D6E491.3030801@ukfsn.org>
-	<20121223110730.GC6230@liondog.tnic>
-	<50D6E8A4.1030204@ukfsn.org>
-	<20121223113153.GA8918@liondog.tnic>
-	<20121223115133.GA229@x4>
-	<20121223122210.GA4460@liondog.tnic>
-	<20121223133102.GA8153@liondog.tnic>
-Date: Mon, 24 Dec 2012 21:50:11 -0700
-Message-ID: <CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com>
-Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Borislav Petkov <bp@alien8.de>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Andy Furniss <andyqos@ukfsn.org>, Alex Deucher <alexdeucher@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mike Turquette <mturquette@linaro.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] clk: debug clock tree
+References: <1355370586-6600-1-git-send-email-pgaikwad@nvidia.com> <CAPtuhThBigSQMkNDf16Fo1tddTKo=rPEydHmzep0DqtgLrB+HA@mail.gmail.com> <50CA17FB.9060606@wwwdotorg.org> <50D2A7DA.5050907@nvidia.com> <CAPtuhTgytOHGpVQ+vXQMpgFhuUo+y0H-QqpLg5cff2cdC-Rkzg@mail.gmail.com> <50D6DC4E.9020205@nvidia.com> <CAPtuhTh9h6tJehZAJtyRB6bBESAYaqeN=v+dhmoavQG1euzqdw@mail.gmail.com>
+In-Reply-To: <CAPtuhTh9h6tJehZAJtyRB6bBESAYaqeN=v+dhmoavQG1euzqdw@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 6:31 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Sun, Dec 23, 2012 at 01:22:12PM +0100, Borislav Petkov wrote:
->> Right, let me try that and report back.
+On Monday 24 December 2012 11:07 PM, Mike Turquette wrote:
+> On Sun, Dec 23, 2012 at 4:26 AM, Prashant Gaikwad <pgaikwad@nvidia.com> wrote:
+>> On Saturday 22 December 2012 04:26 AM, Mike Turquette wrote:
+>>> On Wed, Dec 19, 2012 at 11:53 PM, Prashant Gaikwad <pgaikwad@nvidia.com>
+>>> wrote:
+>>>> On Thursday 13 December 2012 11:31 PM, Stephen Warren wrote:
+>>>>> On 12/13/2012 09:27 AM, Mike Turquette wrote:
+>>>>>> On Wed, Dec 12, 2012 at 7:49 PM, Prashant Gaikwad <pgaikwad@nvidia.com>
+>>>>>> wrote:
+>>>>>>> Adds debug file "clock_tree" in /sys/kernel/debug/clk dir.
+>>>>>>> It helps to view all the clock registered in tree format.
+>>>>>>>
+>>>>>> Prashant,
+>>>>>>
+>>>>>> Thanks for submitting this.  We've been talking about having a single
+>>>>>> file for representing the tree for some time.
+>>>>>>
+>>>>>> Regarding the output format had you considered using a well known
+>>>>>> format which can be parsed using well known parsing libs?  This avoids
+>>>>>> needing a custom parser just for this one file.  JSON springs to mind
+>>>>>> as something lightweight and well-understood.
+>>>>> One advantage of the format below is that it's very easily
+>>>>> human-readable, and it's not too hard to parse (although I guess you'd
+>>>>> have to parse the indent level to get parent/child relation, which would
+>>>>> suck a bit). Is there room to provide both? Otherwise, I guess the
+>>>>> kernel could include a script to convert from JSON/whatever into the
+>>>>> format below.
+>>>>>
+>>>>>>> For example:
+>>>>>>>       clock                        enable_cnt  prepare_cnt  rate
+>>>>>>> ---------------------------------------------------------------------
+>>>>>>>     i2s0_sync                      0           0            24000000
+>>>>>>>     spdif_in_sync                  0           0            24000000
+>>>>>>>        spdif_mux                   0           0            24000000
+>>>>>>>           spdif                    0           0            24000000
+>>>>>>>              spdif_doubler         0           0            48000000
+>>>>>>>                 spdif_div          0           0            48000000
+>>>>>>>                    spdif_2x        0           0            48000000
+>>>>>
+>>>> Even I think that output must be easily human-readable. How about adding
+>>>> sysfs to switch between human-readable and machine-readable format?
+>>>> I will try come up with a implementation.
+>>>>
+>>> Do you mean a sysfs file which controls the output format?  How about
+>>> just two different files?  One can be clk-dump (machine readable) and
+>>> the other is clk-summary (human readable).
+>>
+>> It is also fine. Is this patch ok for human-readable format? or any
+>> suggestions?
+>> I will change the file name to clk-summary.
+>>
+> Prashant,
 >
-> Yep, looks like reverting the above commit fixes it - the boston.com
-> website loads just fine.
+> Yes the format seems to be agreeable for human-readable format based
+> on the feedback on the list.  Go ahead and keep the column titles and
+> the dashed lines that I commented on earlier... my comments are less
+> relevant if a separate machine-readable clk-dump file exists.
+
+Thanks Mike!!
+
+> Are you going to take a crack at JSON-formatted output for clk-dump?
+
+I will work on it.
+
+> Thanks,
+> Mike
 >
-> Thanks.
->
-> --
-> Regards/Gruss,
->     Boris.
+>>> Regards,
+>>> Mike
+>>
 
-Saw the same error and after reading this thread, reverted the
-
-Commit 2d6cc7296d4ee128ab0fa3b715f0afde511f49c2.
-
-drm/radeon: use async dma for ttm buffer moves on 6xx-SI
-
-and the problem is gone. In my case, it is a solid hang right after
-system switches to vga. I was able to login on console once or twice.
-But dmesg showed the same message reported in this thread:
-
-[   35.812085] radeon 0000:01:00.0: GPU lockup CP stall for more than 10000msec
-[   35.812091] radeon 0000:01:00.0: GPU lockup (waiting for
-0x0000000000000002 last fence id 0x0000000000000001)
-
-
-My system has:
-01:00.0 VGA compatible controller: Advanced Micro Devices [AMD] nee
-ATI RV620 [Mobility Radeon HD 3400 Series]
-
--- Shuah
