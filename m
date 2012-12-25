@@ -1,89 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754269Ab2LYWAo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 17:00:44 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:45612 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab2LYWAm (ORCPT
+	id S1754297Ab2LYWC6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 17:02:58 -0500
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:42515 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754216Ab2LYWCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 17:00:42 -0500
-Message-ID: <50DA2207.3010807@ubuntu.com>
-Date: Tue, 25 Dec 2012 22:00:39 +0000
-From: Michael Rawson <michael.rawson@ubuntu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 25 Dec 2012 17:02:55 -0500
+Date: Tue, 25 Dec 2012 23:02:48 +0100
+From: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH v3] tty: don't deadlock while flushing workqueue
+Message-ID: <20121225220248.GA5130@kibibi>
+References: <1353501542-14707-1-git-send-email-bigeasy@linutronix.de>
+ <20121121140426.1860d093@pyramind.ukuu.org.uk>
+ <20121127095357.GA3536@breakpoint.cc>
+ <20121127172249.GB24592@kroah.com>
+ <20121127180108.GA7376@linutronix.de>
+ <1354556465.2531.169.camel@thor>
+ <50BF732C.6030306@linutronix.de>
+ <20121205171140.03b6ca06@pyramind.ukuu.org.uk>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] cdrom: remove extraneous braces to comply with coding style.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20121205171140.03b6ca06@pyramind.ukuu.org.uk>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi list, Jens.
-Please note that I'm a kernel newbie, hope I'm not about to embarrass myself. :-)
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
- From https://github.com/torvalds/linux/blob/master/Documentation/CodingStyle:
+Since commit 89c8d91e31f2 ("tty: localise the lock") I see a dead lock
+in one of my dummy_hcd + g_nokia test cases. The first run was usually
+okay, the second often resulted in a splat by lockdep and the third was
+usually a dead lock.
+Lockdep complained about tty->hangup_work and tty->legacy_mutex taken
+both ways:
+| ======================================================
+| [ INFO: possible circular locking dependency detected ]
+| 3.7.0-rc6+ #204 Not tainted
+| -------------------------------------------------------
+| kworker/2:1/35 is trying to acquire lock:
+|  (&tty->legacy_mutex){+.+.+.}, at: [<c14051e6>] tty_lock_nested+0x36/0x80
+|
+| but task is already holding lock:
+|  ((&tty->hangup_work)){+.+...}, at: [<c104f6e4>] process_one_work+0x124/0x5e0
+|
+| which lock already depends on the new lock.
+|
+| the existing dependency chain (in reverse order) is:
+|
+| -> #2 ((&tty->hangup_work)){+.+...}:
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c104d82d>] flush_work+0x3d/0x240
+|        [<c12e6986>] tty_ldisc_flush_works+0x16/0x30
+|        [<c12e7861>] tty_ldisc_release+0x21/0x70
+|        [<c12e0dfc>] tty_release+0x35c/0x470
+|        [<c1105e28>] __fput+0xd8/0x270
+|        [<c1105fcd>] ____fput+0xd/0x10
+|        [<c1051dd9>] task_work_run+0xb9/0xf0
+|        [<c1002a51>] do_notify_resume+0x51/0x80
+|        [<c140550a>] work_notifysig+0x35/0x3b
+|
+| -> #1 (&tty->legacy_mutex/1){+.+...}:
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
+|        [<c14051e6>] tty_lock_nested+0x36/0x80
+|        [<c1405279>] tty_lock_pair+0x29/0x70
+|        [<c12e0bb8>] tty_release+0x118/0x470
+|        [<c1105e28>] __fput+0xd8/0x270
+|        [<c1105fcd>] ____fput+0xd/0x10
+|        [<c1051dd9>] task_work_run+0xb9/0xf0
+|        [<c1002a51>] do_notify_resume+0x51/0x80
+|        [<c140550a>] work_notifysig+0x35/0x3b
+|
+| -> #0 (&tty->legacy_mutex){+.+.+.}:
+|        [<c107f3c9>] __lock_acquire+0x1189/0x16a0
+|        [<c107fe74>] lock_acquire+0x84/0x190
+|        [<c140276c>] mutex_lock_nested+0x6c/0x2f0
+|        [<c14051e6>] tty_lock_nested+0x36/0x80
+|        [<c140523f>] tty_lock+0xf/0x20
+|        [<c12df8e4>] __tty_hangup+0x54/0x410
+|        [<c12dfcb2>] do_tty_hangup+0x12/0x20
+|        [<c104f763>] process_one_work+0x1a3/0x5e0
+|        [<c104fec9>] worker_thread+0x119/0x3a0
+|        [<c1055084>] kthread+0x94/0xa0
+|        [<c140ca37>] ret_from_kernel_thread+0x1b/0x28
+|
+|other info that might help us debug this:
+|
+|Chain exists of:
+|  &tty->legacy_mutex --> &tty->legacy_mutex/1 --> (&tty->hangup_work)
+|
+| Possible unsafe locking scenario:
+|
+|       CPU0                    CPU1
+|       ----                    ----
+|  lock((&tty->hangup_work));
+|                               lock(&tty->legacy_mutex/1);
+|                               lock((&tty->hangup_work));
+|  lock(&tty->legacy_mutex);
+|
+| *** DEADLOCK ***
 
-"Printing numbers in parentheses (%d) adds no value and should be avoided."
+Before the path mentioned tty_ldisc_release() look like this:
 
-I saw a couple of parenthesized messages in the cdrom driver I was looking at, have edited them out as a first patch.
-I intend this for the mainline branch, though given the patch content I can't see a reason why it wouldn't work elsewhere.
+|	tty_ldisc_halt(tty);
+|	tty_ldisc_flush_works(tty);
+|	tty_lock();
 
-Patch follows:
+As it can be seen, it first flushes the workqueue and then grabs the
+tty_lock. Now we grab the lock first:
 
---- linux-clean/drivers/cdrom/cdrom.c	2012-12-25 20:48:07.130718725 +0000
-+++ linux/drivers/cdrom/cdrom.c	2012-12-25 19:49:01.080357984 +0000
-@@ -1759,7 +1759,7 @@ static int dvd_do_auth(struct cdrom_devi
-  		break;
+|	tty_lock_pair(tty, o_tty);
+|	tty_ldisc_halt(tty);
+|	tty_ldisc_flush_works(tty);
 
-  	default:
--		cdinfo(CD_WARNING, "Invalid DVD key ioctl (%d)\n", ai->type);
-+		cdinfo(CD_WARNING, "Invalid DVD key ioctl %d\n", ai->type);
-  		return -ENOTTY;
-  	}
+so lockdep's complaint seems valid.
 
-@@ -1891,7 +1891,7 @@ static int dvd_read_bca(struct cdrom_dev
+The earlier version of this patch took the ldisc_mutex since the other
+user of tty_ldisc_flush_works() (tty_set_ldisc()) did this.
+Peter Hurley then said that it is should not be requried. Since it
+wasn't done earlier, I dropped this part.
+The code under tty_ldisc_kill() was executed earlier with the tty lock
+taken so it is taken again.
 
-  	s->bca.len = buf[0] << 8 | buf[1];
-  	if (s->bca.len < 12 || s->bca.len > 188) {
--		cdinfo(CD_WARNING, "Received invalid BCA length (%d)\n", s->bca.len);
-+		cdinfo(CD_WARNING, "Received invalid BCA length %d\n", s->bca.len);
-  		ret = -EIO;
-  		goto out;
-  	}
-@@ -1928,12 +1928,12 @@ static int dvd_read_manufact(struct cdro
-  	s->manufact.len = buf[0] << 8 | buf[1];
-  	if (s->manufact.len < 0) {
-  		cdinfo(CD_WARNING, "Received invalid manufacture info length"
--				   " (%d)\n", s->manufact.len);
-+				   " %d\n", s->manufact.len);
-  		ret = -EIO;
-  	} else {
-  		if (s->manufact.len > 2048) {
-  			cdinfo(CD_WARNING, "Received invalid manufacture info "
--					"length (%d): truncating to 2048\n",
-+					"length %d: truncating to 2048\n",
-  					s->manufact.len);
-  			s->manufact.len = 2048;
-  		}
-@@ -1965,7 +1965,7 @@ static int dvd_read_struct(struct cdrom_
-  		return dvd_read_manufact(cdi, s, cgc);
-  		
-  	default:
--		cdinfo(CD_WARNING, ": Invalid DVD structure read requested (%d)\n",
-+		cdinfo(CD_WARNING, ": Invalid DVD structure read requested %d\n",
-  					s->type);
-  		return -EINVAL;
-  	}
+I was able to reproduce the deadlock on v3.8-rc1, this patch fixes the
+problem in my testcase. I didn't notice any problems so far.
 
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/tty/tty_ldisc.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-"Signed-off-by: Michael Rawson <michael.rawson@ubuntu.com>"
-
-If you guys think it's unimportant, appreciated, but suggestions on a better first patch would be good too.
-Thanks for attention, criticism on submission would be appreciated.
-
-Happy Christmas (or just have a good day if not),
-
-Michael.
+diff --git a/drivers/tty/tty_ldisc.c b/drivers/tty/tty_ldisc.c
+index c578229..78f1be2 100644
+--- a/drivers/tty/tty_ldisc.c
++++ b/drivers/tty/tty_ldisc.c
+@@ -934,17 +934,17 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 	 * race with the set_ldisc code path.
+ 	 */
+ 
+-	tty_lock_pair(tty, o_tty);
+ 	tty_ldisc_halt(tty);
+-	tty_ldisc_flush_works(tty);
+-	if (o_tty) {
++	if (o_tty)
+ 		tty_ldisc_halt(o_tty);
++
++	tty_ldisc_flush_works(tty);
++	if (o_tty)
+ 		tty_ldisc_flush_works(o_tty);
+-	}
+ 
++	tty_lock_pair(tty, o_tty);
+ 	/* This will need doing differently if we need to lock */
+ 	tty_ldisc_kill(tty);
+-
+ 	if (o_tty)
+ 		tty_ldisc_kill(o_tty);
+ 
+-- 
+1.7.10.4
 
