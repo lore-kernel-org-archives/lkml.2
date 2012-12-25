@@ -1,152 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476Ab2LYAWV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 19:22:21 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60152 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753377Ab2LYAWT (ORCPT
+	id S1753472Ab2LYAh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 19:37:57 -0500
+Received: from mail-ea0-f171.google.com ([209.85.215.171]:33279 "EHLO
+	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753377Ab2LYAh4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 19:22:19 -0500
-Date: Mon, 24 Dec 2012 19:21:49 -0500
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Jesse Gross <jesse@nicira.com>,
-        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Sridhar Samudrala <sri@us.ibm.com>,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Herbert Xu <herbert@gondor.hengli.com.au>,
-        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
-        dev@openvswitch.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 28/29] net/: rename net_random() to prandom_u32()
-Message-ID: <20121225002149.GA5235@neilslaptop.think-freely.org>
-References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
- <1356315256-6572-29-git-send-email-akinobu.mita@gmail.com>
+	Mon, 24 Dec 2012 19:37:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356315256-6572-29-git-send-email-akinobu.mita@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+In-Reply-To: <1356311678.4697.2.camel@phoenix>
+References: <1356311618.4697.1.camel@phoenix>
+	<1356311678.4697.2.camel@phoenix>
+Date: Tue, 25 Dec 2012 08:37:54 +0800
+Message-ID: <CAN1soZwtFShf4mMY8+sUssAoMmqBTe9zaeLGUVCiPJ5kXxEttw@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] regulator: 88pm8607: Use apply_[reg|bit] with
+ regmap based voltage_sel operations
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 11:14:15AM +0900, Akinobu Mita wrote:
-> Use more preferable function name which implies using a pseudo-random
-> number generator.
-> 
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Jesse Gross <jesse@nicira.com>
-> Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-> Cc: Vlad Yasevich <vyasevich@gmail.com>
-> Cc: Sridhar Samudrala <sri@us.ibm.com>
-> Cc: Neil Horman <nhorman@tuxdriver.com>
-> Cc: Steffen Klassert <steffen.klassert@secunet.com>
-> Cc: Herbert Xu <herbert@gondor.apana.org.au>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: linux-sctp@vger.kernel.org
-> Cc: dev@openvswitch.org
-> Cc: netdev@vger.kernel.org
+On Mon, Dec 24, 2012 at 9:14 AM, Axel Lin <axel.lin@ingics.com> wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 > ---
->  include/net/red.h         | 2 +-
->  net/802/garp.c            | 2 +-
->  net/openvswitch/actions.c | 2 +-
->  net/rds/bind.c            | 2 +-
->  net/sctp/socket.c         | 2 +-
->  net/xfrm/xfrm_state.c     | 2 +-
->  6 files changed, 6 insertions(+), 6 deletions(-)
-> 
-I'm largely indifferent to this patch, but I kind of feel like its just churn.
-Whats the real advantage in making this change?  I grant that it clearly
-indicates the type of random number generator we're using at a given call site,
-But for those using net_random, you probably don't care too much about
-the source of your random bits.  If you did really want true random vs.
-pseudo-random data, you need to explicitly use the right call.  You're previous
-patch series did good cleanup on differentiating the different random calls, but
-this just seems like its removing what is otherwise useful indirection.
-Neil
+>  drivers/regulator/88pm8607.c |   38 ++++++--------------------------------
+>  1 file changed, 6 insertions(+), 32 deletions(-)
+>
+> diff --git a/drivers/regulator/88pm8607.c b/drivers/regulator/88pm8607.c
+> index 5c4879a..a957e8c 100644
+> --- a/drivers/regulator/88pm8607.c
+> +++ b/drivers/regulator/88pm8607.c
+> @@ -30,8 +30,6 @@ struct pm8607_regulator_info {
+>         unsigned int    *vol_table;
+>         unsigned int    *vol_suspend;
+>
+> -       int     update_reg;
+> -       int     update_bit;
+>         int     slope_double;
+>  };
+>
+> @@ -222,30 +220,6 @@ static int pm8607_list_voltage(struct regulator_dev *rdev, unsigned index)
+>         return ret;
+>  }
+>
+> -static int pm8607_set_voltage_sel(struct regulator_dev *rdev, unsigned selector)
+> -{
+> -       struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
+> -       uint8_t val;
+> -       int ret;
+> -
+> -       val = (uint8_t)(selector << (ffs(rdev->desc->vsel_mask) - 1));
+> -
+> -       ret = pm860x_set_bits(info->i2c, rdev->desc->vsel_reg,
+> -                             rdev->desc->vsel_mask, val);
+> -       if (ret)
+> -               return ret;
+> -       switch (info->desc.id) {
+> -       case PM8607_ID_BUCK1:
+> -       case PM8607_ID_BUCK2:
+> -       case PM8607_ID_BUCK3:
+> -               ret = pm860x_set_bits(info->i2c, info->update_reg,
+> -                                     1 << info->update_bit,
+> -                                     1 << info->update_bit);
+> -               break;
+> -       }
+> -       return ret;
+> -}
+> -
+>  static int pm8606_preg_enable(struct regulator_dev *rdev)
+>  {
+>         struct pm8607_regulator_info *info = rdev_get_drvdata(rdev);
+> @@ -277,7 +251,7 @@ static int pm8606_preg_is_enabled(struct regulator_dev *rdev)
+>
+>  static struct regulator_ops pm8607_regulator_ops = {
+>         .list_voltage   = pm8607_list_voltage,
+> -       .set_voltage_sel = pm8607_set_voltage_sel,
+> +       .set_voltage_sel = regulator_set_voltage_sel_regmap,
+>         .get_voltage_sel = regulator_get_voltage_sel_regmap,
+>         .enable = regulator_enable_regmap,
+>         .disable = regulator_disable_regmap,
+> @@ -314,11 +288,11 @@ static struct regulator_ops pm8606_preg_ops = {
+>                 .n_voltages = ARRAY_SIZE(vreg##_table),                 \
+>                 .vsel_reg = PM8607_##vreg,                              \
+>                 .vsel_mask = ARRAY_SIZE(vreg##_table) - 1,              \
+> +               .apply_reg = PM8607_##ureg,                             \
+> +               .apply_bit = (ubit),                                    \
+>                 .enable_reg = PM8607_##ereg,                            \
+>                 .enable_mask = 1 << (ebit),                             \
+>         },                                                              \
+> -       .update_reg     = PM8607_##ureg,                                \
+> -       .update_bit     = (ubit),                                       \
+>         .slope_double   = (0),                                          \
+>         .vol_table      = (unsigned int *)&vreg##_table,                \
+>         .vol_suspend    = (unsigned int *)&vreg##_suspend_table,        \
+> @@ -344,9 +318,9 @@ static struct regulator_ops pm8606_preg_ops = {
+>  }
+>
+>  static struct pm8607_regulator_info pm8607_regulator_info[] = {
+> -       PM8607_DVC(BUCK1, GO, 0, SUPPLIES_EN11, 0),
+> -       PM8607_DVC(BUCK2, GO, 1, SUPPLIES_EN11, 1),
+> -       PM8607_DVC(BUCK3, GO, 2, SUPPLIES_EN11, 2),
+> +       PM8607_DVC(BUCK1, GO, BIT(0), SUPPLIES_EN11, 0),
+> +       PM8607_DVC(BUCK2, GO, BIT(1), SUPPLIES_EN11, 1),
+> +       PM8607_DVC(BUCK3, GO, BIT(2), SUPPLIES_EN11, 2),
+>
+>         PM8607_LDO(1,         LDO1, 0, SUPPLIES_EN11, 3),
+>         PM8607_LDO(2,         LDO2, 0, SUPPLIES_EN11, 4),
+> --
+> 1.7.9.5
+>
+>
+>
 
-> diff --git a/include/net/red.h b/include/net/red.h
-> index ef46058..168bb2f 100644
-> --- a/include/net/red.h
-> +++ b/include/net/red.h
-> @@ -303,7 +303,7 @@ static inline unsigned long red_calc_qavg(const struct red_parms *p,
->  
->  static inline u32 red_random(const struct red_parms *p)
->  {
-> -	return reciprocal_divide(net_random(), p->max_P_reciprocal);
-> +	return reciprocal_divide(prandom_u32(), p->max_P_reciprocal);
->  }
->  
->  static inline int red_mark_probability(const struct red_parms *p,
-> diff --git a/net/802/garp.c b/net/802/garp.c
-> index 8456f5d..cf7410d 100644
-> --- a/net/802/garp.c
-> +++ b/net/802/garp.c
-> @@ -397,7 +397,7 @@ static void garp_join_timer_arm(struct garp_applicant *app)
->  {
->  	unsigned long delay;
->  
-> -	delay = (u64)msecs_to_jiffies(garp_join_time) * net_random() >> 32;
-> +	delay = (u64)msecs_to_jiffies(garp_join_time) * prandom_u32() >> 32;
->  	mod_timer(&app->join_timer, jiffies + delay);
->  }
->  
-> diff --git a/net/openvswitch/actions.c b/net/openvswitch/actions.c
-> index ac2defe..257bc36 100644
-> --- a/net/openvswitch/actions.c
-> +++ b/net/openvswitch/actions.c
-> @@ -404,7 +404,7 @@ static int sample(struct datapath *dp, struct sk_buff *skb,
->  		 a = nla_next(a, &rem)) {
->  		switch (nla_type(a)) {
->  		case OVS_SAMPLE_ATTR_PROBABILITY:
-> -			if (net_random() >= nla_get_u32(a))
-> +			if (prandom_u32() >= nla_get_u32(a))
->  				return 0;
->  			break;
->  
-> diff --git a/net/rds/bind.c b/net/rds/bind.c
-> index 637bde5..7f95f4b 100644
-> --- a/net/rds/bind.c
-> +++ b/net/rds/bind.c
-> @@ -118,7 +118,7 @@ static int rds_add_bound(struct rds_sock *rs, __be32 addr, __be16 *port)
->  		rover = be16_to_cpu(*port);
->  		last = rover;
->  	} else {
-> -		rover = max_t(u16, net_random(), 2);
-> +		rover = max_t(u16, prandom_u32(), 2);
->  		last = rover - 1;
->  	}
->  
-> diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-> index 9e65758..95860aa 100644
-> --- a/net/sctp/socket.c
-> +++ b/net/sctp/socket.c
-> @@ -5899,7 +5899,7 @@ static long sctp_get_port_local(struct sock *sk, union sctp_addr *addr)
->  
->  		inet_get_local_port_range(&low, &high);
->  		remaining = (high - low) + 1;
-> -		rover = net_random() % remaining + low;
-> +		rover = prandom_u32() % remaining + low;
->  
->  		do {
->  			rover++;
-> diff --git a/net/xfrm/xfrm_state.c b/net/xfrm/xfrm_state.c
-> index 3459692..35ddaab 100644
-> --- a/net/xfrm/xfrm_state.c
-> +++ b/net/xfrm/xfrm_state.c
-> @@ -1546,7 +1546,7 @@ int xfrm_alloc_spi(struct xfrm_state *x, u32 low, u32 high)
->  	} else {
->  		u32 spi = 0;
->  		for (h=0; h<high-low+1; h++) {
-> -			spi = low + net_random()%(high-low+1);
-> +			spi = low + prandom_u32() % (high - low + 1);
->  			x0 = xfrm_state_lookup(net, mark, &x->id.daddr, htonl(spi), x->id.proto, x->props.family);
->  			if (x0 == NULL) {
->  				x->id.spi = htonl(spi);
-> -- 
-> 1.7.11.7
-> 
-> 
+Acked-by: Haojian Zhuang <haojian.zhuang@gmail.com>
