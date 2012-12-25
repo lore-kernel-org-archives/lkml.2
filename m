@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab2LYVk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 16:40:28 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:34944 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754198Ab2LYVkZ convert rfc822-to-8bit (ORCPT
+	id S1754256Ab2LYVnW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 16:43:22 -0500
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:48377 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754215Ab2LYVnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 16:40:25 -0500
-Date: Tue, 25 Dec 2012 15:40:21 -0600
-From: Rob Landley <rob@landley.net>
-Subject: Re: Does init start with any open files?
-To: bbi5291 <bbi5291@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-References: <CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com>
-In-Reply-To: <CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com>
-	(from bbi5291@gmail.com on Tue Dec 25 01:38:09 2012)
-X-Mailer: Balsa 2.4.11
-Message-Id: <1356471621.31232.3@driftwood>
+	Tue, 25 Dec 2012 16:43:19 -0500
+X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Dec 2012 16:43:19 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20121225112657.GC2604@ritirata.org>
+References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
+	<1356315256-6572-20-git-send-email-akinobu.mita@gmail.com>
+	<20121225112657.GC2604@ritirata.org>
+Date: Wed, 26 Dec 2012 06:35:37 +0900
+Message-ID: <CAC5umyh1d9XxH2We4e2rjV-OYhbP2ObGC_iwrDeff2hphJ7TzQ@mail.gmail.com>
+Subject: Re: [PATCH 19/29] batman-adv: fix random jitter calculation
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Antonio Quartulli <ordex@autistici.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        b.a.t.m.a.n@lists.open-mesh.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25/2012 01:38:09 AM, bbi5291 wrote:
-> When the init process is created on system startup, does it have any
-> open file descriptors? If so, where do they point?
+2012/12/25 Antonio Quartulli <ordex@autistici.org>:
+> On Mon, Dec 24, 2012 at 11:14:06AM +0900, Akinobu Mita wrote:
+>> batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
+>> in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
+>>
+>>         msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+>>         msecs += (random32() % 2 * BATADV_JITTER);
+>>
+>> But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
+>> because '%' and '*' have same precedence and associativity is
+>> left-to-right.
+>>
+>> This adds the parentheses at the appropriate position so that it matches
+>> original intension.
+>>
+>> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>> Cc: Marek Lindner <lindner_marek@yahoo.de>
+>> Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+>> Cc: Antonio Quartulli <ordex@autistici.org>
+>> Cc: b.a.t.m.a.n@lists.open-mesh.org
+>> Cc: "David S. Miller" <davem@davemloft.net>
+>> Cc: netdev@vger.kernel.org
+>> ---
+>
+> Acked-by: Antonio Quartulli <ordex@autistici.org>
+>
+> But I would suggest to apply this change to net, since it is a fix.
 
-Last I checked, it worked like this:
-
-If there's a /dev/console in initramfs, stdin, stdout, and stderr will  
-point to that. If you select no initramfs, you get one with just  
-/dev/console. If you create your own initramfs and don't put  
-/dev/console in it, init gets no file descriptors and there's a line  
-about it in dmesg.
-
-Rob
+I agree.
+David, please consider to apply this patch for 3.8-rc*.
