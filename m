@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab2LYP3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 10:29:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:63259 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753861Ab2LYP3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 10:29:00 -0500
-Date: Tue, 25 Dec 2012 16:27:16 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: Re: [PATCH 1/4] signalfd: add ability to return siginfo in a raw
-	format
-Message-ID: <20121225152716.GA3198@redhat.com>
-References: <1356336807-5517-1-git-send-email-avagin@openvz.org> <1356336807-5517-2-git-send-email-avagin@openvz.org> <20121224165306.GA9553@redhat.com> <CANaxB-x=fQROdwD1OyU8=Ai9tXWm9QTSsGgfKvPbjn57ER6aZg@mail.gmail.com> <20121225143043.GA1813@redhat.com>
+	id S1753973Ab2LYPiR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 10:38:17 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:51510 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753861Ab2LYPiP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 10:38:15 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121225143043.GA1813@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1356449082-3016-1-git-send-email-js1304@gmail.com>
+References: <CAAvDA15U=KCOujRYA5k3YkvC9Z=E6fcG5hopPUJNgULYj_MAJw@mail.gmail.com>
+	<1356449082-3016-1-git-send-email-js1304@gmail.com>
+Date: Wed, 26 Dec 2012 00:30:15 +0900
+Message-ID: <CAAmzW4Nz6if==JjxLQGYwwQwKPDXfUbeioyPHWZQQFNu=xXUeQ@mail.gmail.com>
+Subject: Re: [PATCH] slub: assign refcount for kmalloc_caches
+From: JoonSoo Kim <js1304@gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Paul Hargrove <phhargrove@lbl.gov>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Joonsoo Kim <js1304@gmail.com>,
+        Christoph Lameter <cl@linux.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25, Oleg Nesterov wrote:
+2012/12/26 Joonsoo Kim <js1304@gmail.com>:
+> commit cce89f4f6911286500cf7be0363f46c9b0a12ce0('Move kmem_cache
+> refcounting to common code') moves some refcount manipulation code to
+> common code. Unfortunately, it also removed refcount assignment for
+> kmalloc_caches. So, kmalloc_caches's refcount is initially 0.
+> This makes errornous situation.
 >
-> And if we add another format we should think
-> twice.
+> Paul Hargrove report that when he create a 8-byte kmem_cache and
+> destory it, he encounter below message.
+> 'Objects remaining in kmalloc-8 on kmem_cache_close()'
+>
+> 8-byte kmem_cache merge with 8-byte kmalloc cache and refcount is
+> increased by one. So, resulting refcount is 1. When destory it, it hit
+> refcount = 0, then kmem_cache_close() is executed and error message is
+> printed.
+>
+> This patch assign initial refcount 1 to kmalloc_caches, so fix this
+> errornous situtation.
+>
+> Cc: <stable@vger.kernel.org> # v3.7
+> Cc: Christoph Lameter <cl@linux.com>
+> Reported-by: Paul Hargrove <phhargrove@lbl.gov>
+> Signed-off-by: Joonsoo Kim <js1304@gmail.com>
+>
+> diff --git a/mm/slub.c b/mm/slub.c
+> index a0d6984..321afab 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -3279,6 +3279,7 @@ static struct kmem_cache *__init create_kmalloc_cache(const char *name,
+>         if (kmem_cache_open(s, flags))
+>                 goto panic;
+>
+> +       s->refcount = 1;
+>         list_add(&s->list, &slab_caches);
+>         return s;
+>
+> --
+> 1.7.9.5
+>
 
-And btw this applies to the whole series.
-
-I guess that probably you actually need DUMP, not DEQUEUE. but the
-latter is not trivial. However, perhaps we can do this assuming that
-all other threads are sleeping and nobody can do dequeue_signal().
-Say, we can play with ppos/llseek. If *ppos is not zero,
-signalfd_dequeue() could dump the nth entry from list or return 0.
-
-Oleg.
-
+I missed some explanation.
+In v3.8-rc1, this problem is already solved.
+See create_kmalloc_cache() in mm/slab_common.c.
+So this patch is just for v3.7 stable.
