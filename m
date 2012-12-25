@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577Ab2LYEIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 23:08:14 -0500
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:48670 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753428Ab2LYEIL (ORCPT
+	id S1753587Ab2LYEKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 23:10:06 -0500
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:59272 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753490Ab2LYEKE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 23:08:11 -0500
-Date: Tue, 25 Dec 2012 13:08:40 +0900
-From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] KVM: Write protect the updated slot only when we
- start dirty logging
-Message-Id: <20121225130840.74996653.yoshikawa_takuya_b1@lab.ntt.co.jp>
-In-Reply-To: <20121224132717.GW17584@redhat.com>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	<20121218162647.009f468e.yoshikawa_takuya_b1@lab.ntt.co.jp>
-	<20121224132717.GW17584@redhat.com>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Dec 2012 23:10:04 -0500
+Date: Mon, 24 Dec 2012 22:10:00 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: USB 2.0 (EHCI) keeps crapping out (3.2.29)
+To: Logan Rathbone <loganrathbone@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+References: <50D91733.2040000@gmail.com>
+In-Reply-To: <50D91733.2040000@gmail.com> (from loganrathbone@gmail.com on
+	Mon Dec 24 21:02:11 2012)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1356408600.31232.2@driftwood>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Dec 2012 15:27:17 +0200
-Gleb Natapov <gleb@redhat.com> wrote:
+On 12/24/2012 09:02:11 PM, Logan Rathbone wrote:
+> *** NOTE:  Kindly CC me directly if you reply to list since I'm not  
+> an LKML subscriber. ***
+> 
+> Running vanilla 3.2.29 (Slackware 14.0).  I also had this issue on  
+> 2.6.37.6 and *possibly* 2.6.33.x, but I don't recall.
+> 
+> Every now and again (could be every few days, could take a couple of  
+> weeks...
+> depends.) USB 2.0 stops working.  My scanner as well as certain  
+> mass-storage
+> devices that are USB-2.0 compatible fail to function all of a sudden.
+> 
+> With the said mass storage devices, I get lots of errors like this in  
+> my logs:
+> 
+> hub 1-0:1.0: unable to enumerate USB device on port 3
 
-> > @@ -6897,7 +6897,14 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
-> >  	spin_lock(&kvm->mmu_lock);
-> >  	if (nr_mmu_pages)
-> >  		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
-> > -	kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> > +	/*
-> > +	 * Write protect all pages for dirty logging.
-> > +	 * Existing largepage mappings are destroyed here and new ones will
-> > +	 * not be created until the end of the logging.
-> > +	 */
-> > +	if ((mem->flags & KVM_MEM_LOG_DIRTY_PAGES) &&
-> > +	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES))
-> > +		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> We should not check old slot flags here or at least check that
-> old.npages is not zero. Userspace may delete a slot using old flags,
-> then, if new memslot is created with dirty log enabled, it will not be
-> protected.
+What is the _first_ error that shows up in dmesg when the failure  
+occurs?
 
-The flag, KVM_MEM_LOG_DIRTY_PAGES, is explicitely cleared when we
-delete a slot to free dirty_bitmap:
-
-	if (!npages)
-		mem->flags &= ~KVM_MEM_LOG_DIRTY_PAGES;
-
-So when old.npages is not zero, the second condition must be true.
-
-Other parts are doing "if (!slot->dirty_bitmap)" to see if the slot
-is in dirty logging mode.  If you prefer, we can do the same here.
-
-Thanks,
-	Takuya
+Rob
