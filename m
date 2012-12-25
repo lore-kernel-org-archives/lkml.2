@@ -1,88 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753839Ab2LYLHs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 06:07:48 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:58141 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab2LYLHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 06:07:45 -0500
-Date: Tue, 25 Dec 2012 12:07:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        linux-edac@vger.kernel.org
-Subject: Re: [PATCH 15/25] x86/mce: don't use [delayed_]work_pending()
-Message-ID: <20121225110742.GA7720@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Tejun Heo <tj@kernel.org>,
-	linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-	linux-edac@vger.kernel.org
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-16-git-send-email-tj@kernel.org>
+	id S1753848Ab2LYLIq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 06:08:46 -0500
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:19935
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753641Ab2LYLIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 06:08:43 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Tue, 25 Dec 2012 19:08:48 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Matt Sealey <matt@genesi-usa.com>
+CC: Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH] ehci-mxc: remove Efika MX-specific CHRGVBUS hack
+Message-ID: <20121225110845.GB14088@S2101-09.ap.freescale.net>
+References: <1356261362-8418-1-git-send-email-matt@genesi-usa.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1356141435-17340-16-git-send-email-tj@kernel.org>
+In-Reply-To: <1356261362-8418-1-git-send-email-matt@genesi-usa.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 05:57:05PM -0800, Tejun Heo wrote:
-> There's no need to test whether a (delayed) work item in pending
-> before queueing, flushing or cancelling it.  Most uses are unnecessary
-> and quite a few of them are buggy.
+On Sun, Dec 23, 2012 at 05:16:02AM -0600, Matt Sealey wrote:
+> Since Efika MX platform support (pre-devicetree) was removed from the tree
+> this code no longer has any possibility of running and clutters up the
+> driver which is being replaced by the chipidea host in the future anyway.
 > 
-> Remove unnecessary pending tests from x86/mce.  Only compile tested.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Borislav Petkov <bp@alien8.de>
-> Cc: linux-edac@vger.kernel.org
-> ---
-> Please let me know how this patch should be routed.  I can take it
-> through the workqueue tree if necessary.
-> 
-> Thanks.
-> 
->  arch/x86/kernel/cpu/mcheck/mce.c | 10 ++--------
->  1 file changed, 2 insertions(+), 8 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-> index 80dbda8..c06a736 100644
-> --- a/arch/x86/kernel/cpu/mcheck/mce.c
-> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
-> @@ -514,8 +514,7 @@ static void mce_schedule_work(void)
->  {
->  	if (!mce_ring_empty()) {
->  		struct work_struct *work = &__get_cpu_var(mce_work);
-> -		if (!work_pending(work))
-> -			schedule_work(work);
-> +		schedule_work(work);
+> Signed-off-by: Matt Sealey <matt@genesi-usa.com>
+> Tested-by: Steev Klimazewski <steev@genesi-usa.com>
+> CC: Sascha Hauer <kernel@pengutronix.de>
+> CC: Alan Stern <stern@rowland.harvard.edu>
 
-Right, just a nit. You could remove the local variable and have the
-function simply be:
+Acked-by: Shawn Guo <shawn.guo@linaro.org>
 
-static void mce_schedule_work(void)
-{
-        if (!mce_ring_empty())
-                schedule_work(&__get_cpu_var(mce_work));
-}
-
-before you send it upstream.
-
-Also, the workqueue stuff is used on Intel boxes to poke mcelog when
-there's an MCE to be reported to userspace so if Tony wants to give it a
-run...
-
-I'm fine with this being routed through your tree:
-
-Acked-by: Borislav Petkov <bp@alien8.de>
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
