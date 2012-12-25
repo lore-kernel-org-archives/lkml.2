@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754271Ab2LYVwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 16:52:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43546 "EHLO mx1.redhat.com"
+	id S1754287Ab2LYVyk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 16:54:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab2LYVwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 16:52:37 -0500
-Date: Tue, 25 Dec 2012 19:52:05 -0200
+	id S1754148Ab2LYVye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 16:54:34 -0500
+Date: Tue, 25 Dec 2012 19:54:20 -0200
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Hu Tao <hutao@cn.fujitsu.com>
 Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
@@ -21,7 +21,7 @@ Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
         Luiz Capitulino <lcapitulino@redhat.com>
 Subject: Re: [Qemu-devel] [PATCH v12 0/8] pv event to notify host when the
  guest is panicked
-Message-ID: <20121225215205.GA6222@amt.cnet>
+Message-ID: <20121225215420.GB6222@amt.cnet>
 References: <cover.1355290850.git.hutao@cn.fujitsu.com>
  <20121220075359.GF7141@localhost.localdomain>
 MIME-Version: 1.0
@@ -38,22 +38,10 @@ On Thu, Dec 20, 2012 at 03:53:59PM +0800, Hu Tao wrote:
 > 
 > Any comments?
 
-As far as i can see, items 2 and 3 of
+Did you verify possibilities listed at 
+https://lkml.org/lkml/2012/11/20/653 ?
 
-https://lkml.org/lkml/2012/11/12/588
-
-Have not been addressed.
-
-https://lkml.org/lkml/2012/11/20/653 contains discussions on those
-items.
-
-2) Format of the interface for other architectures (you can choose
-a different KVM supported architecture and write an example). It was
-your choice to choose an I/O port, which is x86 specific.
-
-3) Clear/documented management interface for the feature.
-
-Note 3 is for management, not the guest<->host interface.
+If so, a summary in the patchset would be helpful.
 
 > On Wed, Dec 12, 2012 at 02:13:43PM +0800, Hu Tao wrote:
 > > This series implements a new interface, kvm pv event, to notify host when
