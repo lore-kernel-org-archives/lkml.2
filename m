@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab2LYRIy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 12:08:54 -0500
+	id S1754163Ab2LYRJK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 12:09:10 -0500
 Received: from mga03.intel.com ([143.182.124.21]:16881 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754028Ab2LYRGh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 12:06:37 -0500
+	id S1754071Ab2LYRGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 12:06:30 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,353,1355126400"; 
-   d="scan'208";a="184664390"
+   d="scan'208";a="184664363"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 06/14] mei: kill not used BAR0 length and base variables
-Date: Tue, 25 Dec 2012 19:06:04 +0200
-Message-Id: <1356455172-31959-7-git-send-email-tomas.winkler@intel.com>
+Subject: [RESEND char-misc-next 03/14] mei: move internal host clients ids to mei_dev.h from hw.h
+Date: Tue, 25 Dec 2012 19:06:01 +0200
+Message-Id: <1356455172-31959-4-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
 References: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
@@ -23,40 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. mem_base and mem_length are not used so we can delete
-them
-2. add kdoc for mem_addr member of mei_device
+Internal clients numbers are implementation choice
+and not defined by the hardware.
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/mei_dev.h |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/misc/mei/hw.h      |    5 -----
+ drivers/misc/mei/mei_dev.h |    6 ++++++
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
+index be8ca6b..7d47366 100644
+--- a/drivers/misc/mei/hw.h
++++ b/drivers/misc/mei/hw.h
+@@ -31,11 +31,6 @@
+ #define MEI_IAMTHIF_STALL_TIMER    12  /* HPS */
+ #define MEI_IAMTHIF_READ_TIMER     10  /* HPS */
+ 
+-/*
+- * Internal Clients Number
+- */
+-#define MEI_WD_HOST_CLIENT_ID          1
+-#define MEI_IAMTHIF_HOST_CLIENT_ID     2
+ 
+ /*
+  * MEI device IDs
 diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index f0b02ba..6ea430e 100644
+index da09805..39cd289 100644
 --- a/drivers/misc/mei/mei_dev.h
 +++ b/drivers/misc/mei/mei_dev.h
-@@ -201,6 +201,7 @@ struct mei_cl {
- 
- /**
-  * struct mei_device -  MEI private device struct
-+ * @mem_addr - mem mapped base register address
-  * @hbuf_depth - depth of host(write) buffer
-  * @wr_ext_msg - buffer for hbm control responses (set in read cycle)
+@@ -72,6 +72,12 @@ extern const u8 mei_wd_state_independence_msg[3][4];
   */
-@@ -221,11 +222,7 @@ struct mei_device {
- 	 */
- 	struct list_head file_list;
- 	long open_handle_count;
--	/*
--	 * memory of device
--	 */
--	unsigned int mem_base;
--	unsigned int mem_length;
+ #define  MEI_MAX_OPEN_HANDLE_COUNT (MEI_CLIENTS_MAX - 3)
+ 
++/*
++ * Internal Clients Number
++ */
++#define MEI_WD_HOST_CLIENT_ID          1
++#define MEI_IAMTHIF_HOST_CLIENT_ID     2
 +
- 	void __iomem *mem_addr;
- 	/*
- 	 * lock for the device
+ 
+ /* File state */
+ enum file_state {
 -- 
 1.7.4.4
 
