@@ -1,34 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab2LYUvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 15:51:33 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:40781 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161Ab2LYUvb (ORCPT
+	id S1754203Ab2LYU5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 15:57:31 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:34491 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab2LYU5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 15:51:31 -0500
+	Tue, 25 Dec 2012 15:57:30 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121225112057.GC7720@liondog.tnic>
+In-Reply-To: <50D8EBB3.5040408@zytor.com>
 References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<1355814959-10573-7-git-send-email-yinghai@kernel.org>
-	<CAE9FiQXrpQtZ7Sq=xfjscKjKzZ6P89uPG0bByER8q48jEgYx_g@mail.gmail.com>
-	<50D0D6D1.70400@zytor.com>
-	<CAE9FiQV5zpTiskB_RwXT8XGNfgTGSwc3AAFqCBusq1t4-OSJHw@mail.gmail.com>
-	<50D0DB1A.5010407@zytor.com>
-	<CAE9FiQV2U+Am0zCz__6YL4CoOeie5McE9=g-L3A_udRNN1rPTw@mail.gmail.com>
-	<50D8F054.20404@zytor.com>
-	<CAE9FiQW_mjUr6F0q7PhZWCcDzZ+NJpi0-xjxvwJoZ1K+XAUjSQ@mail.gmail.com>
-	<20121225112057.GC7720@liondog.tnic>
-Date: Tue, 25 Dec 2012 12:51:29 -0800
-X-Google-Sender-Auth: lwKqRc6Y0UoP1fIlKdB2E-_D51g
-Message-ID: <CAE9FiQWDgKdfA0=6qESAzT1JSLKMht5AYtQnffGyDmECynaMpQ@mail.gmail.com>
-Subject: Re: [PATCH v7 06/27] x86, 64bit: early #PF handler set page table
+	<20121222024225.GG3468@phenom.dumpdata.com>
+	<eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
+	<20121222132419.GB2936@phenom.dumpdata.com>
+	<CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
+	<6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
+	<CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
+	<50D8EBB3.5040408@zytor.com>
+Date: Tue, 25 Dec 2012 12:57:28 -0800
+X-Google-Sender-Auth: D4Q1kNrh3rCCeEjh3dnqBjdqMJc
+Message-ID: <CAE9FiQUV8UsqAe3WJz02a9oiVw8hygyQsZzwuM782s-8hV92Nw@mail.gmail.com>
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
+ ramdisk and bzImage above 4G
 From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Jan Kiszka <jan.kiszka@web.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         linux-kernel@vger.kernel.org
@@ -37,24 +34,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25, 2012 at 3:20 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Mon, Dec 24, 2012 at 08:04:18PM -0800, Yinghai Lu wrote:
->> well, I updated for-x86-boot-v7 that stop #PF handler after
->> init_mem_mapping.
+On Mon, Dec 24, 2012 at 3:56 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/23/2012 10:00 AM, Yinghai Lu wrote:
+>> On Sun, Dec 23, 2012 at 6:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> Explanation please?
+>>>
 >>
->> it has fix for AMD system aka reverting far jmp to ret.
+>> you have following change in the patch
+>>
+>>         /* Finally jump to run C code and to be on real kernel address
+>>          * Since we are running on identity-mapped space we have to jump
+>>          * to the full 64bit address, this is only possible as indirect
+>>          * jump.  In addition we need to ensure %cs is set so we make this
+>> -        * a far return.
+>> +        * a far jump.
+>>          */
+>> -       movq    initial_code(%rip),%rax
+>>         pushq   $0              # fake return address to stop unwinder
+>> -       pushq   $__KERNEL_CS    # set correct cs
+>> -       pushq   %rax            # target address in negative space
+>> -       lretq
+>> +       /* gas 2.22 is buggy and mis-assembles ljmpq */
+>> +       rex64 ljmp *initial_code(%rip)
+>>
+>>  #ifdef CONFIG_HOTPLUG_CPU
+>>  /*
+>>
+>> remove that change, AMD systems works again.
+>>
 >
-> -v7?
->
-> You told me yesterday -v8 is the current branch. Do you have -v7 which
-> does break KGDB and -v8 which breaks it and both branches are current?
->
+> That is not an explanation.
 
--v7: stop #PF handler after init_mem_mapping, so it could break KGDB,
-if someone try to use mdump.
--v8: stop #PF handler before x86_64_start_reservations.
+what do you mean?
 
-Now both have be updated and could work with AMD platform after drop
-the change with lretq aka keep lretq.
+Konrad reported the problem, and I dig out one AMD system and
+duplicated the problem.
+and found the patch cause the problem, then add serial out in the
+file, and turns out
+that reset happen just after those lines, so I revert those lines, and
+it boots well again.
 
 Yinghai
