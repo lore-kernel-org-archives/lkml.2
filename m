@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab2LYSGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 13:06:43 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55121 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab2LYSGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 13:06:41 -0500
-Message-ID: <50D9EB2E.9000105@lwfinger.net>
-Date: Tue, 25 Dec 2012 12:06:38 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754120Ab2LYSZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 13:25:13 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:40275 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754044Ab2LYSZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 13:25:09 -0500
+Date: Tue, 25 Dec 2012 13:24:49 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>,
+        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, jlayton@redhat.com,
+        viro@zeniv.linux.org.uk
+Subject: Re: namei.h: include errno.h
+Message-ID: <20121225182449.GA7874@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Stephen Warren <swarren@wwwdotorg.org>, Jan Kara <jack@suse.cz>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Andreas Dilger <adilger.kernel@dilger.ca>,
+	Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, jlayton@redhat.com,
+	viro@zeniv.linux.org.uk
+References: <1356372898-21272-1-git-send-email-swarren@wwwdotorg.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
-Subject: Re: Regression in kernel 3.8-rc1 bisected to commit adfa79d: I now
- get many "unable to enumerate USB device" messages
-References: <Pine.LNX.4.44L0.1212251122520.32342-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1212251122520.32342-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356372898-21272-1-git-send-email-swarren@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/25/2012 10:26 AM, Alan Stern wrote:
-> On Mon, 24 Dec 2012, Larry Finger wrote:
->
->> The problem has been bisected to commit adfa79d entitled "USB: EHCI: make
->> ehci-pci a separate driver". The symptom is that my NVIDIA controller again
->> reverts to unended logging of messages of the form "hub 2-0:1.0: unable to
->> enumerate USB device on port 5".
->
-> A few more details would be helpful, such as the dmesg log (with
-> CONFIG_USB_DEBUG enabled).  As it is, I don't see how that commit could
-> cause this problem.  It should not have resulted in any changes in
-> behavior -- all it did was split up a driver that was one module into
-> two modules.
->
->> This behavior was previously fixed with commit c618759.
->
-> That commit affected the ohci-hcd driver, whereas this one affects
-> ehci-hcd.  They can't possibly be related.
+On Mon, Dec 24, 2012 at 08:14:58AM -0000, Stephen Warren wrote:
+> This solves:
+> 
+> In file included from fs/ext3/symlink.c:20:0:
+> include/linux/namei.h: In function 'retry_estale':
+> include/linux/namei.h:114:19: error: 'ESTALE' undeclared (first use in this function)
+> 
+> Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
 
-Alan,
+Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
 
-You are the expert, but I am confident of my bisection. A kernel built from 
-commit 3e02320 does not have the problem, but commit adfa79d does.
+Looks good to me.  You might want to add that this commit fixes a
+build failure regression in v3.8-rc1 which was introduced in commit
+b9d6ba94b875.
 
-The dmesg output with CONFIG_USB_DEBUG enabled is posted at
-http://susepaste.org/790689.
+Al, you want to take this, since the original commit went in via the
+VFS tree?   Or should we have Jan carry this patch?
 
-Thanks for looking at this.
-
-Larry
-
-
+    	       	      	      	  	- Ted
