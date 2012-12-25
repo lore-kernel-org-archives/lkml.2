@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123Ab2LYRGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 12:06:42 -0500
+	id S1754108Ab2LYRGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 12:06:39 -0500
 Received: from mga03.intel.com ([143.182.124.21]:16881 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754087Ab2LYRGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 12:06:35 -0500
+	id S1754031Ab2LYRGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 12:06:33 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,353,1355126400"; 
-   d="scan'208";a="184664376"
+   d="scan'208";a="184664369"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 05/14] mei: include local headers after the system ones
-Date: Tue, 25 Dec 2012 19:06:03 +0200
-Message-Id: <1356455172-31959-6-git-send-email-tomas.winkler@intel.com>
+Subject: [RESEND char-misc-next 04/14] mei: extract device dependent constants into hw-me.h
+Date: Tue, 25 Dec 2012 19:06:02 +0200
+Message-Id: <1356455172-31959-5-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
 References: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
@@ -23,132 +23,310 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-first include linux/mei.h then only local headers
-to avoid possible false dependencies
-
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/amthif.c    |    3 +--
- drivers/misc/mei/init.c      |    4 ++--
- drivers/misc/mei/interface.c |    3 ++-
- drivers/misc/mei/interrupt.c |    4 ++--
- drivers/misc/mei/iorw.c      |    4 ++--
- drivers/misc/mei/main.c      |    3 ++-
- drivers/misc/mei/wd.c        |    4 ++--
- 7 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/misc/mei/hw-me.h   |  167 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/misc/mei/hw.h      |   98 --------------------------
+ drivers/misc/mei/mei_dev.h |    2 +
+ 3 files changed, 169 insertions(+), 98 deletions(-)
+ create mode 100644 drivers/misc/mei/hw-me.h
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 77acd23..bb613f7 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -31,10 +31,9 @@
- #include <linux/jiffies.h>
- #include <linux/uaccess.h>
- 
-+#include <linux/mei.h>
- 
- #include "mei_dev.h"
--#include "hw.h"
--#include <linux/mei.h>
- #include "interface.h"
- 
- const uuid_le mei_amthi_guid  = UUID_LE(0x12f80028, 0xb4b7, 0x4b2d, 0xac,
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index c0c0b3e..08884ef 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -19,10 +19,10 @@
- #include <linux/wait.h>
- #include <linux/delay.h>
- 
-+#include <linux/mei.h>
+diff --git a/drivers/misc/mei/hw-me.h b/drivers/misc/mei/hw-me.h
+new file mode 100644
+index 0000000..a42b2a2
+--- /dev/null
++++ b/drivers/misc/mei/hw-me.h
+@@ -0,0 +1,167 @@
++/******************************************************************************
++ * Intel Management Engine Interface (Intel MEI) Linux driver
++ * Intel MEI Interface Header
++ *
++ * This file is provided under a dual BSD/GPLv2 license.  When using or
++ * redistributing this file, you may do so under either license.
++ *
++ * GPL LICENSE SUMMARY
++ *
++ * Copyright(c) 2003 - 2012 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of version 2 of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110,
++ * USA
++ *
++ * The full GNU General Public License is included in this distribution
++ * in the file called LICENSE.GPL.
++ *
++ * Contact Information:
++ *	Intel Corporation.
++ *	linux-mei@linux.intel.com
++ *	http://www.intel.com
++ *
++ * BSD LICENSE
++ *
++ * Copyright(c) 2003 - 2012 Intel Corporation. All rights reserved.
++ * All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ *
++ *  * Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ *  * Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in
++ *    the documentation and/or other materials provided with the
++ *    distribution.
++ *  * Neither the name Intel Corporation nor the names of its
++ *    contributors may be used to endorse or promote products derived
++ *    from this software without specific prior written permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
++ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
++ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
++ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
++ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
++ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
++ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
++ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
++ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
++ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ *****************************************************************************/
++#ifndef _MEI_HW_MEI_H_
++#define _MEI_HW_MEI_H_
 +
- #include "mei_dev.h"
--#include "hw.h"
- #include "interface.h"
--#include <linux/mei.h>
++/*
++ * MEI device IDs
++ */
++#define MEI_DEV_ID_82946GZ    0x2974  /* 82946GZ/GL */
++#define MEI_DEV_ID_82G35      0x2984  /* 82G35 Express */
++#define MEI_DEV_ID_82Q965     0x2994  /* 82Q963/Q965 */
++#define MEI_DEV_ID_82G965     0x29A4  /* 82P965/G965 */
++
++#define MEI_DEV_ID_82GM965    0x2A04  /* Mobile PM965/GM965 */
++#define MEI_DEV_ID_82GME965   0x2A14  /* Mobile GME965/GLE960 */
++
++#define MEI_DEV_ID_ICH9_82Q35 0x29B4  /* 82Q35 Express */
++#define MEI_DEV_ID_ICH9_82G33 0x29C4  /* 82G33/G31/P35/P31 Express */
++#define MEI_DEV_ID_ICH9_82Q33 0x29D4  /* 82Q33 Express */
++#define MEI_DEV_ID_ICH9_82X38 0x29E4  /* 82X38/X48 Express */
++#define MEI_DEV_ID_ICH9_3200  0x29F4  /* 3200/3210 Server */
++
++#define MEI_DEV_ID_ICH9_6     0x28B4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_7     0x28C4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_8     0x28D4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_9     0x28E4  /* Bearlake */
++#define MEI_DEV_ID_ICH9_10    0x28F4  /* Bearlake */
++
++#define MEI_DEV_ID_ICH9M_1    0x2A44  /* Cantiga */
++#define MEI_DEV_ID_ICH9M_2    0x2A54  /* Cantiga */
++#define MEI_DEV_ID_ICH9M_3    0x2A64  /* Cantiga */
++#define MEI_DEV_ID_ICH9M_4    0x2A74  /* Cantiga */
++
++#define MEI_DEV_ID_ICH10_1    0x2E04  /* Eaglelake */
++#define MEI_DEV_ID_ICH10_2    0x2E14  /* Eaglelake */
++#define MEI_DEV_ID_ICH10_3    0x2E24  /* Eaglelake */
++#define MEI_DEV_ID_ICH10_4    0x2E34  /* Eaglelake */
++
++#define MEI_DEV_ID_IBXPK_1    0x3B64  /* Calpella */
++#define MEI_DEV_ID_IBXPK_2    0x3B65  /* Calpella */
++
++#define MEI_DEV_ID_CPT_1      0x1C3A  /* Couger Point */
++#define MEI_DEV_ID_PBG_1      0x1D3A  /* C600/X79 Patsburg */
++
++#define MEI_DEV_ID_PPT_1      0x1E3A  /* Panther Point */
++#define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
++#define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
++
++#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
++#define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
++/*
++ * MEI HW Section
++ */
++
++/* MEI registers */
++/* H_CB_WW - Host Circular Buffer (CB) Write Window register */
++#define H_CB_WW    0
++/* H_CSR - Host Control Status register */
++#define H_CSR      4
++/* ME_CB_RW - ME Circular Buffer Read Window register (read only) */
++#define ME_CB_RW   8
++/* ME_CSR_HA - ME Control Status Host Access register (read only) */
++#define ME_CSR_HA  0xC
++
++
++/* register bits of H_CSR (Host Control Status register) */
++/* Host Circular Buffer Depth - maximum number of 32-bit entries in CB */
++#define H_CBD             0xFF000000
++/* Host Circular Buffer Write Pointer */
++#define H_CBWP            0x00FF0000
++/* Host Circular Buffer Read Pointer */
++#define H_CBRP            0x0000FF00
++/* Host Reset */
++#define H_RST             0x00000010
++/* Host Ready */
++#define H_RDY             0x00000008
++/* Host Interrupt Generate */
++#define H_IG              0x00000004
++/* Host Interrupt Status */
++#define H_IS              0x00000002
++/* Host Interrupt Enable */
++#define H_IE              0x00000001
++
++
++/* register bits of ME_CSR_HA (ME Control Status Host Access register) */
++/* ME CB (Circular Buffer) Depth HRA (Host Read Access) - host read only
++access to ME_CBD */
++#define ME_CBD_HRA        0xFF000000
++/* ME CB Write Pointer HRA - host read only access to ME_CBWP */
++#define ME_CBWP_HRA       0x00FF0000
++/* ME CB Read Pointer HRA - host read only access to ME_CBRP */
++#define ME_CBRP_HRA       0x0000FF00
++/* ME Reset HRA - host read only access to ME_RST */
++#define ME_RST_HRA        0x00000010
++/* ME Ready HRA - host read only access to ME_RDY */
++#define ME_RDY_HRA        0x00000008
++/* ME Interrupt Generate HRA - host read only access to ME_IG */
++#define ME_IG_HRA         0x00000004
++/* ME Interrupt Status HRA - host read only access to ME_IS */
++#define ME_IS_HRA         0x00000002
++/* ME Interrupt Enable HRA - host read only access to ME_IE */
++#define ME_IE_HRA         0x00000001
++
++#endif /* _MEI_HW_MEI_H_ */
+diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
+index 7d47366..ba7d06c 100644
+--- a/drivers/misc/mei/hw.h
++++ b/drivers/misc/mei/hw.h
+@@ -33,104 +33,6 @@
  
- const char *mei_dev_state_str(int state)
- {
-diff --git a/drivers/misc/mei/interface.c b/drivers/misc/mei/interface.c
-index 17d93f7..810431e 100644
---- a/drivers/misc/mei/interface.c
-+++ b/drivers/misc/mei/interface.c
-@@ -15,8 +15,9 @@
+ 
+ /*
+- * MEI device IDs
+- */
+-#define MEI_DEV_ID_82946GZ    0x2974  /* 82946GZ/GL */
+-#define MEI_DEV_ID_82G35      0x2984  /* 82G35 Express */
+-#define MEI_DEV_ID_82Q965     0x2994  /* 82Q963/Q965 */
+-#define MEI_DEV_ID_82G965     0x29A4  /* 82P965/G965 */
+-
+-#define MEI_DEV_ID_82GM965    0x2A04  /* Mobile PM965/GM965 */
+-#define MEI_DEV_ID_82GME965   0x2A14  /* Mobile GME965/GLE960 */
+-
+-#define MEI_DEV_ID_ICH9_82Q35 0x29B4  /* 82Q35 Express */
+-#define MEI_DEV_ID_ICH9_82G33 0x29C4  /* 82G33/G31/P35/P31 Express */
+-#define MEI_DEV_ID_ICH9_82Q33 0x29D4  /* 82Q33 Express */
+-#define MEI_DEV_ID_ICH9_82X38 0x29E4  /* 82X38/X48 Express */
+-#define MEI_DEV_ID_ICH9_3200  0x29F4  /* 3200/3210 Server */
+-
+-#define MEI_DEV_ID_ICH9_6     0x28B4  /* Bearlake */
+-#define MEI_DEV_ID_ICH9_7     0x28C4  /* Bearlake */
+-#define MEI_DEV_ID_ICH9_8     0x28D4  /* Bearlake */
+-#define MEI_DEV_ID_ICH9_9     0x28E4  /* Bearlake */
+-#define MEI_DEV_ID_ICH9_10    0x28F4  /* Bearlake */
+-
+-#define MEI_DEV_ID_ICH9M_1    0x2A44  /* Cantiga */
+-#define MEI_DEV_ID_ICH9M_2    0x2A54  /* Cantiga */
+-#define MEI_DEV_ID_ICH9M_3    0x2A64  /* Cantiga */
+-#define MEI_DEV_ID_ICH9M_4    0x2A74  /* Cantiga */
+-
+-#define MEI_DEV_ID_ICH10_1    0x2E04  /* Eaglelake */
+-#define MEI_DEV_ID_ICH10_2    0x2E14  /* Eaglelake */
+-#define MEI_DEV_ID_ICH10_3    0x2E24  /* Eaglelake */
+-#define MEI_DEV_ID_ICH10_4    0x2E34  /* Eaglelake */
+-
+-#define MEI_DEV_ID_IBXPK_1    0x3B64  /* Calpella */
+-#define MEI_DEV_ID_IBXPK_2    0x3B65  /* Calpella */
+-
+-#define MEI_DEV_ID_CPT_1      0x1C3A  /* Couger Point */
+-#define MEI_DEV_ID_PBG_1      0x1D3A  /* C600/X79 Patsburg */
+-
+-#define MEI_DEV_ID_PPT_1      0x1E3A  /* Panther Point */
+-#define MEI_DEV_ID_PPT_2      0x1CBA  /* Panther Point */
+-#define MEI_DEV_ID_PPT_3      0x1DBA  /* Panther Point */
+-
+-#define MEI_DEV_ID_LPT        0x8C3A  /* Lynx Point */
+-#define MEI_DEV_ID_LPT_LP     0x9C3A  /* Lynx Point LP */
+-/*
+- * MEI HW Section
+- */
+-
+-/* MEI registers */
+-/* H_CB_WW - Host Circular Buffer (CB) Write Window register */
+-#define H_CB_WW    0
+-/* H_CSR - Host Control Status register */
+-#define H_CSR      4
+-/* ME_CB_RW - ME Circular Buffer Read Window register (read only) */
+-#define ME_CB_RW   8
+-/* ME_CSR_HA - ME Control Status Host Access register (read only) */
+-#define ME_CSR_HA  0xC
+-
+-
+-/* register bits of H_CSR (Host Control Status register) */
+-/* Host Circular Buffer Depth - maximum number of 32-bit entries in CB */
+-#define H_CBD             0xFF000000
+-/* Host Circular Buffer Write Pointer */
+-#define H_CBWP            0x00FF0000
+-/* Host Circular Buffer Read Pointer */
+-#define H_CBRP            0x0000FF00
+-/* Host Reset */
+-#define H_RST             0x00000010
+-/* Host Ready */
+-#define H_RDY             0x00000008
+-/* Host Interrupt Generate */
+-#define H_IG              0x00000004
+-/* Host Interrupt Status */
+-#define H_IS              0x00000002
+-/* Host Interrupt Enable */
+-#define H_IE              0x00000001
+-
+-
+-/* register bits of ME_CSR_HA (ME Control Status Host Access register) */
+-/* ME CB (Circular Buffer) Depth HRA (Host Read Access) - host read only
+-access to ME_CBD */
+-#define ME_CBD_HRA        0xFF000000
+-/* ME CB Write Pointer HRA - host read only access to ME_CBWP */
+-#define ME_CBWP_HRA       0x00FF0000
+-/* ME CB Read Pointer HRA - host read only access to ME_CBRP */
+-#define ME_CBRP_HRA       0x0000FF00
+-/* ME Reset HRA - host read only access to ME_RST */
+-#define ME_RST_HRA        0x00000010
+-/* ME Ready HRA - host read only access to ME_RDY */
+-#define ME_RDY_HRA        0x00000008
+-/* ME Interrupt Generate HRA - host read only access to ME_IG */
+-#define ME_IG_HRA         0x00000004
+-/* ME Interrupt Status HRA - host read only access to ME_IS */
+-#define ME_IS_HRA         0x00000002
+-/* ME Interrupt Enable HRA - host read only access to ME_IE */
+-#define ME_IE_HRA         0x00000001
+-
+-/*
+  * MEI Version
   */
- 
- #include <linux/pci.h>
--#include "mei_dev.h"
- #include <linux/mei.h>
-+
-+#include "mei_dev.h"
- #include "interface.h"
- 
- 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index fe93d1c..0a020ad 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -21,9 +21,9 @@
- #include <linux/fs.h>
- #include <linux/jiffies.h>
- 
--#include "mei_dev.h"
- #include <linux/mei.h>
--#include "hw.h"
-+
-+#include "mei_dev.h"
- #include "interface.h"
- 
- 
-diff --git a/drivers/misc/mei/iorw.c b/drivers/misc/mei/iorw.c
-index eb93a1b..7ccc3d8 100644
---- a/drivers/misc/mei/iorw.c
-+++ b/drivers/misc/mei/iorw.c
-@@ -33,9 +33,9 @@
- #include <linux/uaccess.h>
- 
- 
--#include "mei_dev.h"
--#include "hw.h"
- #include <linux/mei.h>
-+
-+#include "mei_dev.h"
- #include "interface.h"
- 
- /**
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index 7751b58..da94260 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -37,8 +37,9 @@
- #include <linux/interrupt.h>
- #include <linux/miscdevice.h>
- 
--#include "mei_dev.h"
- #include <linux/mei.h>
-+
-+#include "mei_dev.h"
- #include "interface.h"
- 
- /* AMT device is a singleton on the platform */
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 9d4d4aa..9c3738a 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -21,10 +21,10 @@
- #include <linux/sched.h>
+ #define HBM_MINOR_VERSION                   0
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 39cd289..f0b02ba 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -21,7 +21,9 @@
  #include <linux/watchdog.h>
- 
-+#include <linux/mei.h>
+ #include <linux/poll.h>
+ #include <linux/mei.h>
 +
- #include "mei_dev.h"
--#include "hw.h"
- #include "interface.h"
--#include <linux/mei.h>
+ #include "hw.h"
++#include "hw-me.h"
  
- static const u8 mei_start_wd_params[] = { 0x02, 0x12, 0x13, 0x10 };
- static const u8 mei_stop_wd_params[] = { 0x02, 0x02, 0x14, 0x10 };
+ /*
+  * watch dog definition
 -- 
 1.7.4.4
 
