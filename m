@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab2LYRGw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 12:06:52 -0500
+	id S1754149Ab2LYRHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 12:07:01 -0500
 Received: from mga03.intel.com ([143.182.124.21]:41704 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754139Ab2LYRGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 12:06:50 -0500
+	id S1754091Ab2LYRG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 12:06:56 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,353,1355126400"; 
-   d="scan'208";a="184664467"
+   d="scan'208";a="184664506"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 11/14] mei: simplify preparing client host bus messages
-Date: Tue, 25 Dec 2012 19:06:09 +0200
-Message-Id: <1356455172-31959-12-git-send-email-tomas.winkler@intel.com>
+Subject: [RESEND char-misc-next 14/14] mei: move hbm responses from interrupt.c to hbm.c
+Date: Tue, 25 Dec 2012 19:06:12 +0200
+Message-Id: <1356455172-31959-15-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
 References: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
@@ -23,218 +23,496 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a new parent type mei_hbm_cl_cmd for hbm
-commands that are sent on behalf of specific ME client.
-This allows us compacting boilerplate code via mei_hbm_cl_hdr
-function
+1. Add common prefix mei_hbm_ to all handlers
+and made them static
+2. Drop now useless function  same_flow_addr
 
 Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
 ---
- drivers/misc/mei/hbm.c |  110 +++++++++++++++++++++++------------------------
- drivers/misc/mei/hw.h  |   16 +++++++
- 2 files changed, 70 insertions(+), 56 deletions(-)
+ drivers/misc/mei/hbm.c       |  189 +++++++++++++++++++++++++++++++++++++-
+ drivers/misc/mei/interrupt.c |  208 ------------------------------------------
+ drivers/misc/mei/mei_dev.h   |    9 --
+ 3 files changed, 186 insertions(+), 220 deletions(-)
 
 diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 2c4c1bb..bc36c23 100644
+index 3c99140..6b58b0a 100644
 --- a/drivers/misc/mei/hbm.c
 +++ b/drivers/misc/mei/hbm.c
-@@ -23,6 +23,42 @@
- #include "interface.h"
+@@ -59,6 +59,33 @@ bool mei_hbm_cl_addr_equal(struct mei_cl *cl, void *buf)
+ 
  
  /**
-+ * mei_hbm_cl_hdr - construct client hbm header
-+ * @cl: - client
-+ * @hbm_cmd: host bus message command
-+ * @buf: buffer for cl header
-+ * @len: buffer length
++ * is_treat_specially_client - checks if the message belongs
++ * to the file private data.
++ *
++ * @cl: private data of the file object
++ * @rs: connect response bus message
++ *
 + */
-+static inline
-+void mei_hbm_cl_hdr(struct mei_cl *cl, u8 hbm_cmd, void *buf, size_t len)
++static bool is_treat_specially_client(struct mei_cl *cl,
++		struct hbm_client_connect_response *rs)
 +{
-+	struct mei_hbm_cl_cmd *cmd = buf;
++	if (mei_hbm_cl_addr_equal(cl, rs)) {
++		if (!rs->status) {
++			cl->state = MEI_FILE_CONNECTED;
++			cl->status = 0;
 +
-+	memset(cmd, 0, len);
++		} else {
++			cl->state = MEI_FILE_DISCONNECTED;
++			cl->status = -ENODEV;
++		}
++		cl->timer_count = 0;
 +
-+	cmd->hbm_cmd = hbm_cmd;
-+	cmd->host_addr = cl->host_client_id;
-+	cmd->me_addr = cl->me_client_id;
++		return true;
++	}
++	return false;
 +}
 +
 +/**
-+ * same_disconn_addr - tells if they have the same address
-+ *
-+ * @file: private data of the file object.
-+ * @disconn: disconnection request.
-+ *
-+ * returns true if addres are same
-+ */
-+static inline
-+bool mei_hbm_cl_addr_equal(struct mei_cl *cl, void *buf)
-+{
-+	struct mei_hbm_cl_cmd *cmd = buf;
-+	return cl->host_client_id == cmd->host_addr &&
-+		cl->me_client_id == cmd->me_addr;
-+}
-+
-+
-+/**
-  * host_start_message - mei host sends start message.
+  * mei_hbm_start_req - sends start request message.
   *
   * @dev: the device structure
-@@ -144,22 +180,16 @@ int mei_host_client_enumerate(struct mei_device *dev)
- int mei_send_flow_control(struct mei_device *dev, struct mei_cl *cl)
- {
- 	struct mei_msg_hdr *mei_hdr;
--	struct hbm_flow_control *flow_ctrl;
-+	unsigned char *buf = (unsigned char *)&dev->wr_msg_buf[1];
- 	const size_t len = sizeof(struct hbm_flow_control);
- 
- 	mei_hdr = mei_hbm_hdr(&dev->wr_msg_buf[0], len);
-+	mei_hbm_cl_hdr(cl, MEI_FLOW_CONTROL_CMD, buf, len);
- 
--	flow_ctrl = (struct hbm_flow_control *)&dev->wr_msg_buf[1];
--	memset(flow_ctrl, 0, len);
--	flow_ctrl->hbm_cmd = MEI_FLOW_CONTROL_CMD;
--	flow_ctrl->host_addr = cl->host_client_id;
--	flow_ctrl->me_addr = cl->me_client_id;
--	/* FIXME: reserved !? */
--	memset(flow_ctrl->reserved, 0, sizeof(flow_ctrl->reserved));
- 	dev_dbg(&dev->pdev->dev, "sending flow control host client = %d, ME client = %d\n",
- 		cl->host_client_id, cl->me_client_id);
- 
--	return mei_write_message(dev, mei_hdr, (unsigned char *) flow_ctrl);
-+	return mei_write_message(dev, mei_hdr, buf);
+@@ -218,6 +245,66 @@ int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl)
  }
  
  /**
-@@ -173,19 +203,13 @@ int mei_send_flow_control(struct mei_device *dev, struct mei_cl *cl)
- int mei_disconnect(struct mei_device *dev, struct mei_cl *cl)
- {
- 	struct mei_msg_hdr *hdr;
--	struct hbm_client_connect_request *req;
-+	unsigned char *buf = (unsigned char *)&dev->wr_msg_buf[1];
- 	const size_t len = sizeof(struct hbm_client_connect_request);
- 
- 	hdr = mei_hbm_hdr(&dev->wr_msg_buf[0], len);
-+	mei_hbm_cl_hdr(cl, CLIENT_DISCONNECT_REQ_CMD, buf, len);
- 
--	req = (struct hbm_client_connect_request *)&dev->wr_msg_buf[1];
--	memset(req, 0, len);
--	req->hbm_cmd = CLIENT_DISCONNECT_REQ_CMD;
--	req->host_addr = cl->host_client_id;
--	req->me_addr = cl->me_client_id;
--	req->reserved = 0;
--
--	return mei_write_message(dev, hdr, (unsigned char *)req);
-+	return mei_write_message(dev, hdr, buf);
++ * add_single_flow_creds - adds single buffer credentials.
++ *
++ * @file: private data ot the file object.
++ * @flow: flow control.
++ */
++static void mei_hbm_add_single_flow_creds(struct mei_device *dev,
++				  struct hbm_flow_control *flow)
++{
++	struct mei_me_client *client;
++	int i;
++
++	for (i = 0; i < dev->me_clients_num; i++) {
++		client = &dev->me_clients[i];
++		if (client && flow->me_addr == client->client_id) {
++			if (client->props.single_recv_buf) {
++				client->mei_flow_ctrl_creds++;
++				dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single).\n",
++				    flow->me_addr);
++				dev_dbg(&dev->pdev->dev, "flow control credentials =%d.\n",
++				    client->mei_flow_ctrl_creds);
++			} else {
++				BUG();	/* error in flow control */
++			}
++		}
++	}
++}
++
++/**
++ * mei_hbm_cl_flow_control_res - flow control response from me
++ *
++ * @dev: the device structure
++ * @flow_control: flow control response bus message
++ */
++static void mei_hbm_cl_flow_control_res(struct mei_device *dev,
++		struct hbm_flow_control *flow_control)
++{
++	struct mei_cl *cl = NULL;
++	struct mei_cl *next = NULL;
++
++	if (!flow_control->host_addr) {
++		/* single receive buffer */
++		mei_hbm_add_single_flow_creds(dev, flow_control);
++		return;
++	}
++
++	/* normal connection */
++	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
++		if (mei_hbm_cl_addr_equal(cl, flow_control)) {
++			cl->mei_flow_ctrl_creds++;
++			dev_dbg(&dev->pdev->dev, "flow ctrl msg for host %d ME %d.\n",
++				flow_control->host_addr, flow_control->me_addr);
++			dev_dbg(&dev->pdev->dev, "flow control credentials = %d.\n",
++				    cl->mei_flow_ctrl_creds);
++				break;
++		}
++	}
++}
++
++
++/**
+  * mei_hbm_cl_disconnect_req - sends disconnect message to fw.
+  *
+  * @dev: the device structure
+@@ -237,6 +324,48 @@ int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl)
  }
  
  /**
-@@ -199,33 +223,13 @@ int mei_disconnect(struct mei_device *dev, struct mei_cl *cl)
- int mei_connect(struct mei_device *dev, struct mei_cl *cl)
- {
- 	struct mei_msg_hdr *hdr;
--	struct hbm_client_connect_request *req;
-+	unsigned char *buf = (unsigned char *)&dev->wr_msg_buf[1];
- 	const size_t len = sizeof(struct hbm_client_connect_request);
++ * mei_hbm_cl_disconnect_res - disconnect response from ME
++ *
++ * @dev: the device structure
++ * @rs: disconnect response bus message
++ */
++static void mei_hbm_cl_disconnect_res(struct mei_device *dev,
++		struct hbm_client_connect_response *rs)
++{
++	struct mei_cl *cl;
++	struct mei_cl_cb *pos = NULL, *next = NULL;
++
++	dev_dbg(&dev->pdev->dev,
++			"disconnect_response:\n"
++			"ME Client = %d\n"
++			"Host Client = %d\n"
++			"Status = %d\n",
++			rs->me_addr,
++			rs->host_addr,
++			rs->status);
++
++	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
++		cl = pos->cl;
++
++		if (!cl) {
++			list_del(&pos->list);
++			return;
++		}
++
++		dev_dbg(&dev->pdev->dev, "list_for_each_entry_safe in ctrl_rd_list.\n");
++		if (mei_hbm_cl_addr_equal(cl, rs)) {
++			list_del(&pos->list);
++			if (!rs->status)
++				cl->state = MEI_FILE_DISCONNECTED;
++
++			cl->status = 0;
++			cl->timer_count = 0;
++			break;
++		}
++	}
++}
++
++/**
+  * mei_hbm_cl_connect_req - send connection request to specific me client
+  *
+  * @dev: the device structure
+@@ -256,6 +385,60 @@ int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl)
+ }
  
- 	hdr = mei_hbm_hdr(&dev->wr_msg_buf[0], len);
-+	mei_hbm_cl_hdr(cl, CLIENT_CONNECT_REQ_CMD, buf, len);
+ /**
++ * mei_hbm_cl_connect_res - connect resposne from the ME
++ *
++ * @dev: the device structure
++ * @rs: connect response bus message
++ */
++static void mei_hbm_cl_connect_res(struct mei_device *dev,
++		struct hbm_client_connect_response *rs)
++{
++
++	struct mei_cl *cl;
++	struct mei_cl_cb *pos = NULL, *next = NULL;
++
++	dev_dbg(&dev->pdev->dev,
++			"connect_response:\n"
++			"ME Client = %d\n"
++			"Host Client = %d\n"
++			"Status = %d\n",
++			rs->me_addr,
++			rs->host_addr,
++			rs->status);
++
++	/* if WD or iamthif client treat specially */
++
++	if (is_treat_specially_client(&dev->wd_cl, rs)) {
++		dev_dbg(&dev->pdev->dev, "successfully connected to WD client.\n");
++		mei_watchdog_register(dev);
++
++		return;
++	}
++
++	if (is_treat_specially_client(&dev->iamthif_cl, rs)) {
++		dev->iamthif_state = MEI_IAMTHIF_IDLE;
++		return;
++	}
++	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
++
++		cl = pos->cl;
++		if (!cl) {
++			list_del(&pos->list);
++			return;
++		}
++		if (pos->fop_type == MEI_FOP_IOCTL) {
++			if (is_treat_specially_client(cl, rs)) {
++				list_del(&pos->list);
++				cl->status = 0;
++				cl->timer_count = 0;
++				break;
++			}
++		}
++	}
++}
++
++
++/**
+  * mei_client_disconnect_request - disconnect request initiated by me
+  *  host sends disoconnect response
+  *
+@@ -347,21 +530,21 @@ void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
  
--	req = (struct hbm_client_connect_request *) &dev->wr_msg_buf[1];
--	req->hbm_cmd = CLIENT_CONNECT_REQ_CMD;
--	req->host_addr = cl->host_client_id;
--	req->me_addr = cl->me_client_id;
--	req->reserved = 0;
+ 	case CLIENT_CONNECT_RES_CMD:
+ 		connect_res = (struct hbm_client_connect_response *) mei_msg;
+-		mei_client_connect_response(dev, connect_res);
++		mei_hbm_cl_connect_res(dev, connect_res);
+ 		dev_dbg(&dev->pdev->dev, "client connect response message received.\n");
+ 		wake_up(&dev->wait_recvd_msg);
+ 		break;
+ 
+ 	case CLIENT_DISCONNECT_RES_CMD:
+ 		disconnect_res = (struct hbm_client_connect_response *) mei_msg;
+-		mei_client_disconnect_response(dev, disconnect_res);
++		mei_hbm_cl_disconnect_res(dev, disconnect_res);
+ 		dev_dbg(&dev->pdev->dev, "client disconnect response message received.\n");
+ 		wake_up(&dev->wait_recvd_msg);
+ 		break;
+ 
+ 	case MEI_FLOW_CONTROL_CMD:
+ 		flow_control = (struct hbm_flow_control *) mei_msg;
+-		mei_client_flow_control_response(dev, flow_control);
++		mei_hbm_cl_flow_control_res(dev, flow_control);
+ 		dev_dbg(&dev->pdev->dev, "client flow control response message received.\n");
+ 		break;
+ 
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index eb744cc..a735c8b 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -173,214 +173,6 @@ static int _mei_irq_thread_close(struct mei_device *dev, s32 *slots,
+ 	return 0;
+ }
+ 
+-/**
+- * is_treat_specially_client - checks if the message belongs
+- * to the file private data.
+- *
+- * @cl: private data of the file object
+- * @rs: connect response bus message
+- *
+- */
+-static bool is_treat_specially_client(struct mei_cl *cl,
+-		struct hbm_client_connect_response *rs)
+-{
 -
--	return mei_write_message(dev, hdr, (unsigned char *) req);
+-	if (cl->host_client_id == rs->host_addr &&
+-	    cl->me_client_id == rs->me_addr) {
+-		if (!rs->status) {
+-			cl->state = MEI_FILE_CONNECTED;
+-			cl->status = 0;
+-
+-		} else {
+-			cl->state = MEI_FILE_DISCONNECTED;
+-			cl->status = -ENODEV;
+-		}
+-		cl->timer_count = 0;
+-
+-		return true;
+-	}
+-	return false;
 -}
 -
 -/**
-- * same_disconn_addr - tells if they have the same address
+- * mei_client_connect_response - connects to response irq routine
+- *
+- * @dev: the device structure
+- * @rs: connect response bus message
+- */
+-void mei_client_connect_response(struct mei_device *dev,
+-		struct hbm_client_connect_response *rs)
+-{
+-
+-	struct mei_cl *cl;
+-	struct mei_cl_cb *pos = NULL, *next = NULL;
+-
+-	dev_dbg(&dev->pdev->dev,
+-			"connect_response:\n"
+-			"ME Client = %d\n"
+-			"Host Client = %d\n"
+-			"Status = %d\n",
+-			rs->me_addr,
+-			rs->host_addr,
+-			rs->status);
+-
+-	/* if WD or iamthif client treat specially */
+-
+-	if (is_treat_specially_client(&(dev->wd_cl), rs)) {
+-		dev_dbg(&dev->pdev->dev, "successfully connected to WD client.\n");
+-		mei_watchdog_register(dev);
+-
+-		return;
+-	}
+-
+-	if (is_treat_specially_client(&(dev->iamthif_cl), rs)) {
+-		dev->iamthif_state = MEI_IAMTHIF_IDLE;
+-		return;
+-	}
+-	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
+-
+-		cl = pos->cl;
+-		if (!cl) {
+-			list_del(&pos->list);
+-			return;
+-		}
+-		if (pos->fop_type == MEI_FOP_IOCTL) {
+-			if (is_treat_specially_client(cl, rs)) {
+-				list_del(&pos->list);
+-				cl->status = 0;
+-				cl->timer_count = 0;
+-				break;
+-			}
+-		}
+-	}
+-}
+-
+-/**
+- * mei_client_disconnect_response - disconnects from response irq routine
+- *
+- * @dev: the device structure
+- * @rs: disconnect response bus message
+- */
+-void mei_client_disconnect_response(struct mei_device *dev,
+-				    struct hbm_client_connect_response *rs)
+-{
+-	struct mei_cl *cl;
+-	struct mei_cl_cb *pos = NULL, *next = NULL;
+-
+-	dev_dbg(&dev->pdev->dev,
+-			"disconnect_response:\n"
+-			"ME Client = %d\n"
+-			"Host Client = %d\n"
+-			"Status = %d\n",
+-			rs->me_addr,
+-			rs->host_addr,
+-			rs->status);
+-
+-	list_for_each_entry_safe(pos, next, &dev->ctrl_rd_list.list, list) {
+-		cl = pos->cl;
+-
+-		if (!cl) {
+-			list_del(&pos->list);
+-			return;
+-		}
+-
+-		dev_dbg(&dev->pdev->dev, "list_for_each_entry_safe in ctrl_rd_list.\n");
+-		if (cl->host_client_id == rs->host_addr &&
+-		    cl->me_client_id == rs->me_addr) {
+-
+-			list_del(&pos->list);
+-			if (!rs->status)
+-				cl->state = MEI_FILE_DISCONNECTED;
+-
+-			cl->status = 0;
+-			cl->timer_count = 0;
+-			break;
+-		}
+-	}
+-}
+-
+-/**
+- * same_flow_addr - tells if they have the same address.
 - *
 - * @file: private data of the file object.
-- * @disconn: disconnection request.
+- * @flow: flow control.
 - *
-- * returns !=0, same; 0,not.
+- * returns  !=0, same; 0,not.
 - */
--static int same_disconn_addr(struct mei_cl *cl,
--			     struct hbm_client_connect_request *req)
+-static int same_flow_addr(struct mei_cl *cl, struct hbm_flow_control *flow)
 -{
--	return (cl->host_client_id == req->host_addr &&
--		cl->me_client_id == req->me_addr);
-+	return mei_write_message(dev, hdr, buf);
- }
+-	return (cl->host_client_id == flow->host_addr &&
+-		cl->me_client_id == flow->me_addr);
+-}
+-
+-/**
+- * add_single_flow_creds - adds single buffer credentials.
+- *
+- * @file: private data ot the file object.
+- * @flow: flow control.
+- */
+-static void add_single_flow_creds(struct mei_device *dev,
+-				  struct hbm_flow_control *flow)
+-{
+-	struct mei_me_client *client;
+-	int i;
+-
+-	for (i = 0; i < dev->me_clients_num; i++) {
+-		client = &dev->me_clients[i];
+-		if (client && flow->me_addr == client->client_id) {
+-			if (client->props.single_recv_buf) {
+-				client->mei_flow_ctrl_creds++;
+-				dev_dbg(&dev->pdev->dev, "recv flow ctrl msg ME %d (single).\n",
+-				    flow->me_addr);
+-				dev_dbg(&dev->pdev->dev, "flow control credentials =%d.\n",
+-				    client->mei_flow_ctrl_creds);
+-			} else {
+-				BUG();	/* error in flow control */
+-			}
+-		}
+-	}
+-}
+-
+-/**
+- * mei_client_flow_control_response - flow control response irq routine
+- *
+- * @dev: the device structure
+- * @flow_control: flow control response bus message
+- */
+-void mei_client_flow_control_response(struct mei_device *dev,
+-		struct hbm_flow_control *flow_control)
+-{
+-	struct mei_cl *cl_pos = NULL;
+-	struct mei_cl *cl_next = NULL;
+-
+-	if (!flow_control->host_addr) {
+-		/* single receive buffer */
+-		add_single_flow_creds(dev, flow_control);
+-	} else {
+-		/* normal connection */
+-		list_for_each_entry_safe(cl_pos, cl_next,
+-				&dev->file_list, link) {
+-			dev_dbg(&dev->pdev->dev, "list_for_each_entry_safe in file_list\n");
+-
+-			dev_dbg(&dev->pdev->dev, "cl of host client %d ME client %d.\n",
+-			    cl_pos->host_client_id,
+-			    cl_pos->me_client_id);
+-			dev_dbg(&dev->pdev->dev, "flow ctrl msg for host %d ME %d.\n",
+-			    flow_control->host_addr,
+-			    flow_control->me_addr);
+-			if (same_flow_addr(cl_pos, flow_control)) {
+-				dev_dbg(&dev->pdev->dev, "recv ctrl msg for host  %d ME %d.\n",
+-				    flow_control->host_addr,
+-				    flow_control->me_addr);
+-				cl_pos->mei_flow_ctrl_creds++;
+-				dev_dbg(&dev->pdev->dev, "flow control credentials = %d.\n",
+-				    cl_pos->mei_flow_ctrl_creds);
+-				break;
+-			}
+-		}
+-	}
+-}
+-
  
  /**
-@@ -237,31 +241,25 @@ static int same_disconn_addr(struct mei_cl *cl,
- static void mei_client_disconnect_request(struct mei_device *dev,
- 		struct hbm_client_connect_request *disconnect_req)
- {
--	struct hbm_client_connect_response *disconnect_res;
--	struct mei_cl *pos, *next;
-+	struct mei_cl *cl, *next;
- 	const size_t len = sizeof(struct hbm_client_connect_response);
+  * _mei_hb_read - processes read related operation.
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 0ad32cc..54ddac3 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -398,15 +398,6 @@ int mei_ioctl_connect_client(struct file *file,
  
--	list_for_each_entry_safe(pos, next, &dev->file_list, link) {
--		if (same_disconn_addr(pos, disconnect_req)) {
-+	list_for_each_entry_safe(cl, next, &dev->file_list, link) {
-+		if (mei_hbm_cl_addr_equal(cl, disconnect_req)) {
- 			dev_dbg(&dev->pdev->dev, "disconnect request host client %d ME client %d.\n",
- 					disconnect_req->host_addr,
- 					disconnect_req->me_addr);
--			pos->state = MEI_FILE_DISCONNECTED;
--			pos->timer_count = 0;
--			if (pos == &dev->wd_cl)
-+			cl->state = MEI_FILE_DISCONNECTED;
-+			cl->timer_count = 0;
-+			if (cl == &dev->wd_cl)
- 				dev->wd_pending = false;
--			else if (pos == &dev->iamthif_cl)
-+			else if (cl == &dev->iamthif_cl)
- 				dev->iamthif_timer = 0;
+ int mei_start_read(struct mei_device *dev, struct mei_cl *cl);
  
- 			/* prepare disconnect response */
- 			(void)mei_hbm_hdr((u32 *)&dev->wr_ext_msg.hdr, len);
--			disconnect_res =
--				(struct hbm_client_connect_response *)
--				&dev->wr_ext_msg.data;
--			disconnect_res->hbm_cmd = CLIENT_DISCONNECT_RES_CMD;
--			disconnect_res->host_addr = pos->host_client_id;
--			disconnect_res->me_addr = pos->me_client_id;
--			disconnect_res->status = 0;
-+			mei_hbm_cl_hdr(cl, CLIENT_DISCONNECT_RES_CMD,
-+					 &dev->wr_ext_msg.data, len);
- 			break;
- 		}
- 	}
-diff --git a/drivers/misc/mei/hw.h b/drivers/misc/mei/hw.h
-index 6ebb369..cb2f556 100644
---- a/drivers/misc/mei/hw.h
-+++ b/drivers/misc/mei/hw.h
-@@ -121,6 +121,22 @@ struct mei_bus_message {
- 	u8 data[0];
- } __packed;
- 
-+/**
-+ * struct hbm_cl_cmd - client specific host bus command
-+ *	CONNECT, DISCONNECT, and FlOW CONTROL
-+ *
-+ * @hbm_cmd - bus message command header
-+ * @me_addr - address of the client in ME
-+ * @host_addr - address of the client in the driver
-+ * @data
-+ */
-+struct mei_hbm_cl_cmd {
-+	u8 hbm_cmd;
-+	u8 me_addr;
-+	u8 host_addr;
-+	u8 data;
-+};
-+
- struct hbm_version {
- 	u8 minor_version;
- 	u8 major_version;
+-
+-void mei_client_disconnect_response(struct mei_device *dev,
+-			struct hbm_client_connect_response *rs);
+-
+-void mei_client_connect_response(struct mei_device *dev,
+-		struct hbm_client_connect_response *rs);
+-
+-void mei_client_flow_control_response(struct mei_device *dev,
+-		struct hbm_flow_control *flow_control);
+ /*
+  * AMTHIF - AMT Host Interface Functions
+  */
 -- 
 1.7.4.4
 
