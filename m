@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab2LYIf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 03:35:28 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:50617 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753782Ab2LYIfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 03:35:25 -0500
-Message-ID: <50D96543.6010903@parallels.com>
-Date: Tue, 25 Dec 2012 12:35:15 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753777Ab2LYIhI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 03:37:08 -0500
+Received: from nm25-vm4.bullet.mail.ukl.yahoo.com ([217.146.177.124]:47448
+	"EHLO nm25-vm4.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753688Ab2LYIhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 03:37:06 -0500
+X-Greylist: delayed 377 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Dec 2012 03:37:05 EST
+X-Yahoo-Newman-Id: 767927.61421.bm@smtp118.mail.ukl.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: WhvlSz0VM1l3V_kS_XnR_qNxfCfXG3PPiy24AgfJKhQvpLe
+ VyNBjKQWPtvxc82A.plcGvJQUWAPNdSav1s9GLFC6jrFls9165fAXhsBwQeR
+ Iu..TXuPvtX3uxksqtqypRE78talYEUTqAP8SesnNlVv7q_pB6ywndntFBQL
+ mZEe2aZXwVgHCbDSnzJrksv2LVa2jp7TihCuBViI.MZgew1kCStVb23Q08SC
+ vOr96_0SWevrC0x9qZhYlTiUWNzWsEpysKlzAZBE9h2oO_.xa.veHD7ybf9z
+ 3NbLhfYeAm0nUxERxo2wuBFPXDFqE__ewHl1DhkcHGOKMG3MfcC9RSCgYIpj
+ 26p4M3R1x1VvHWkAHlzTEcGGamUv7tDStmMStZeGlakbXDPhf8ZCM6O3O3rM
+ sg9NZwSIds0iKGtCYGvPmESJWFkEvUyWrNG5v4lcK7W4Z3xIuiGAN7HvYmS1
+ X41wnJvo9fUtr.tre5mpX
+X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
+From: Marek Lindner <lindner_marek@yahoo.de>
+To: b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [B.A.T.M.A.N.] [PATCH] net, batman: don't crash on zero length strings in routing_algo
+Date: Tue, 25 Dec 2012 16:30:42 +0800
+User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
+Cc: Pau Koning <paukoning@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, siwu@hrz.tu-chemnitz.de,
+        Sasha Levin <sasha.levin@oracle.com>, davem@davemloft.net
+References: <1353355695-23252-1-git-send-email-sasha.levin@oracle.com> <CANiGF9_engsHHNUDnJi6+iczCdu7sBV+UuJ+Xv33pGuJxPeuAg@mail.gmail.com> <201212250336.36874.lindner_marek@yahoo.de>
+In-Reply-To: <201212250336.36874.lindner_marek@yahoo.de>
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <liuj97@gmail.com>,
-        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
-        <cl@linux.com>, <minchan.kim@gmail.com>,
-        <kosaki.motohiro@jp.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
-        <wujianguo@huawei.com>, <wency@cn.fujitsu.com>, <hpa@zytor.com>,
-        <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>, <mgorman@suse.de>,
-        <yinghai@kernel.org>, <x86@kernel.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
-        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>
-Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
- to avoid dependence
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201212251630.42980.lindner_marek@yahoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2012 04:09 PM, Tang Chen wrote:
-> From: Wen Congyang <wency@cn.fujitsu.com>
+On Tuesday, December 25, 2012 03:36:36 Marek Lindner wrote:
+> > >> > empty, this assumption is wrong:
+> > >> Why isn't this patch part of Linux 3.7? It seems to be a bugfix and it
+> > >> was sent early enough?
+> > > 
+> > > The patch received a reply mere 2 hours after it was sent. Again,
+> > > please read all mails before making noise.
+> > 
+> > Ok, leaving this problem unsolved is the correct way to handle it?
+> > Nobody is allowed to say anything?
 > 
-> memory can't be offlined when CONFIG_MEMCG is selected.
-> For example: there is a memory device on node 1. The address range
-> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
-> and memory11 under the directory /sys/devices/system/memory/.
-> 
-> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
-> when we online pages. When we online memory8, the memory stored page cgroup
-> is not provided by this memory device. But when we online memory9, the memory
-> stored page cgroup may be provided by memory8. So we can't offline memory8
-> now. We should offline the memory in the reversed order.
-> 
-> When the memory device is hotremoved, we will auto offline memory provided
-> by this memory device. But we don't know which memory is onlined first, so
-> offlining memory may fail. In such case, iterate twice to offline the memory.
-> 1st iterate: offline every non primary memory block.
-> 2nd iterate: offline primary (i.e. first added) memory block.
-> 
-> This idea is suggested by KOSAKI Motohiro.
-> 
-> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+> No, of course you are allowed "to say" something. I was simply pointing you
+> to the explanation why the patch wasn't merged yet.
 
-Maybe there is something here that I am missing - I admit that I came
-late to this one, but this really sounds like a very ugly hack, that
-really has no place in here.
+Let me add here: Feel free to do the required cleanup work and re-submit the 
+patch. Nobody stops you from doing that as well.  :-)
 
-Retrying, of course, may make sense, if we have reasonable belief that
-we may now succeed. If this is the case, you need to document - in the
-code - while is that.
-
-The memcg argument, however, doesn't really cut it. Why can't we make
-all page_cgroup allocations local to the node they are describing? If
-memcg is the culprit here, we should fix it, and not retry. If there is
-still any benefit in retrying, then we retry being very specific about why.
-
-
+Cheers,
+Marek
