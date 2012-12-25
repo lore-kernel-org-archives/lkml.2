@@ -1,93 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2LYRS4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 12:18:56 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:60785 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048Ab2LYRSy (ORCPT
+	id S1754061Ab2LYRXV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 12:23:21 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:61279 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab2LYRXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 12:18:54 -0500
+	Tue, 25 Dec 2012 12:23:18 -0500
 From: Sha Zhengju <handai.szj@gmail.com>
-To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org
-Cc: mhocko@suse.cz, akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: dchinner@redhat.com, mhocko@suse.cz, akpm@linux-foundation.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com,
+        fengguang.wu@intel.com, glommer@parallels.com,
         Sha Zhengju <handai.szj@taobao.com>
-Subject: [PATCH V3 0/8] Per-cgroup page stat accounting
-Date: Wed, 26 Dec 2012 01:18:39 +0800
-Message-Id: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+Subject: [PATCH V3 2/8] Make TestSetPageDirty and dirty page accounting in one func
+Date: Wed, 26 Dec 2012 01:22:36 +0800
+Message-Id: <1356456156-14535-1-git-send-email-handai.szj@taobao.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, list
+From: Sha Zhengju <handai.szj@taobao.com>
 
-This is V3 patch series that provide the ability for each memory cgroup to
-have independent dirty/writeback page statistics which can provide information
-for per-cgroup direct reclaim or some.
+Commit a8e7d49a(Fix race in create_empty_buffers() vs __set_page_dirty_buffers())
+extracts TestSetPageDirty from __set_page_dirty and is far away from
+account_page_dirtied. But it's better to make the two operations in one single
+function to keep modular. So in order to avoid the potential race mentioned in
+commit a8e7d49a, we can hold private_lock until __set_page_dirty completes.
+There's no deadlock between ->private_lock and ->tree_lock after confirmation.
+It's a prepare patch for following memcg dirty page accounting patches.
 
-In the first three prepare patches, we have done some cleanup and reworked vfs
-set page dirty routines to make "modify page info" and "dirty page accouting" stay
-in one function as much as possible for the sake of memcg bigger lock(test numbers
-are in the specific patch). There is no change comparing to V2.
 
-Patch 4/8 and 5/8 are acctually doing memcg dirty and writeback page accounting.
-We change lock orders of mapping->tree_lock and memcg->move_lock to prevent
-deadlock. Test numbers of previous version show that there is some performance
-decrease after patching the accouting once memcg is enabled. The reason is that
-if no memcg exists but root_mem_cgroup, all allocated pages are belonging to root memcg
-and they will go through root memcg statistics routines which brings overheads.
-So we do some optimization in patch 6/8 and 7/8: patch 6 chooses to give up accounting
-root memcg stat but changes behavior of memcg_stat_show() instead; patch 7 uses jump
-label to disable memcg page stat accounting code when not in use which is inspired by
-a similar optimization from Glauber Costa
-(memcg: make it suck faster; https://lkml.org/lkml/2012/9/25/154).
-
-On a 4g memory and 4-core i5 CPU machine, we pushing 1G data through 600M memcg
-(memory.limit_in_bytes=600M, memory.memsw.limit_in_bytes=1500M) by fio:
+Here is some test numbers that before/after this patch:
+Test steps(Mem-4g, ext4):
+drop_cache; sync
 fio (ioengine=sync/write/buffered/bs=4k/size=1g/numjobs=2/group_reporting/thread)
 
-Following is performance comparison between before/after the whole series
-(test it for 10 times and get the average numbers):
+We test it for 10 times and get the average numbers:
 Before:
-write: io=2048.0MB, bw=214527KB/s, iops=53631.2 , runt= 9880.1msec
-lat (usec): min=1 , max=1685.06K, avg=36.182, stdev=3153.97
-
+write: io=2048.0MB, bw=254117KB/s, iops=63528.9 , runt=  8279msec
+lat (usec): min=1 , max=742361 , avg=30.918, stdev=1601.02
 After:
-write: io=2048.0MB, bw=193069KB/s, iops=48266.6 , runt= 11078.6msec
-lat (usec): min=1 , max=1634.26K, avg=40.598, stdev=3135.81
+write: io=2048.0MB, bw=254044KB/s, iops=63510.3 , runt=  8274.4msec
+lat (usec): min=1 , max=856333 , avg=31.043, stdev=1769.32
 
-Note that now the impact is little(~1%).
+Note that the impact is little(<1%).
 
-Any comments are welcomed. : )
 
-Change log:
-v3 <--v2
-	1. change lock order of mapping->tree_lock and memcg->move_lock
-	2. performance optimization in 6/8 and 7/8
-v2 <-- v1:
-        1. add test numbers
-        2. some small fix and comments
+Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
+---
+ fs/buffer.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-Sha Zhengju (8):
-	memcg-remove-MEMCG_NR_FILE_MAPPED.patch
-	Make-TestSetPageDirty-and-dirty-page-accounting-in-o.patch
-	use-vfs-__set_page_dirty-interface-instead-of-doing-.patch
-	memcg-add-per-cgroup-dirty-pages-accounting.patch
-	memcg-add-per-cgroup-writeback-pages-accounting.patch
-	memcg-Don-t-account-root_mem_cgroup-page-statistics.patch
-	memcg-disable-memcg-page-stat-accounting-code-when-n.patch
-	memcg-Document-cgroup-dirty-writeback-memory-statist.patch
-
- Documentation/cgroups/memory.txt |    2 +
- fs/buffer.c                      |   37 +++++++----
- fs/ceph/addr.c                   |   20 +-----
- include/linux/buffer_head.h      |    2 +
- include/linux/memcontrol.h       |   39 ++++++++---
- mm/filemap.c                     |   10 +++
- mm/memcontrol.c                  |  134 ++++++++++++++++++++++++++++++--------
- mm/page-writeback.c              |   56 ++++++++++++++--
- mm/rmap.c                        |    4 +-
- mm/truncate.c                    |    6 ++
- 10 files changed, 235 insertions(+), 75 deletions(-)
+diff --git a/fs/buffer.c b/fs/buffer.c
+index c017a2d..3b032b9 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -609,9 +609,15 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
+  * If warn is true, then emit a warning if the page is not uptodate and has
+  * not been truncated.
+  */
+-static void __set_page_dirty(struct page *page,
++static int __set_page_dirty(struct page *page,
+ 		struct address_space *mapping, int warn)
+ {
++	if (unlikely(!mapping))
++		return !TestSetPageDirty(page);
++
++	if (TestSetPageDirty(page))
++		return 0;
++
+ 	spin_lock_irq(&mapping->tree_lock);
+ 	if (page->mapping) {	/* Race with truncate? */
+ 		WARN_ON_ONCE(warn && !PageUptodate(page));
+@@ -621,6 +627,8 @@ static void __set_page_dirty(struct page *page,
+ 	}
+ 	spin_unlock_irq(&mapping->tree_lock);
+ 	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
++
++	return 1;
+ }
+ 
+ /*
+@@ -666,11 +674,9 @@ int __set_page_dirty_buffers(struct page *page)
+ 			bh = bh->b_this_page;
+ 		} while (bh != head);
+ 	}
+-	newly_dirty = !TestSetPageDirty(page);
++	newly_dirty = __set_page_dirty(page, mapping, 1);
+ 	spin_unlock(&mapping->private_lock);
+ 
+-	if (newly_dirty)
+-		__set_page_dirty(page, mapping, 1);
+ 	return newly_dirty;
+ }
+ EXPORT_SYMBOL(__set_page_dirty_buffers);
+@@ -1125,14 +1131,8 @@ void mark_buffer_dirty(struct buffer_head *bh)
+ 			return;
+ 	}
+ 
+-	if (!test_set_buffer_dirty(bh)) {
+-		struct page *page = bh->b_page;
+-		if (!TestSetPageDirty(page)) {
+-			struct address_space *mapping = page_mapping(page);
+-			if (mapping)
+-				__set_page_dirty(page, mapping, 0);
+-		}
+-	}
++	if (!test_set_buffer_dirty(bh))
++		__set_page_dirty(bh->b_page, page_mapping(bh->b_page), 0);
+ }
+ EXPORT_SYMBOL(mark_buffer_dirty);
+ 
+-- 
+1.7.9.5
 
