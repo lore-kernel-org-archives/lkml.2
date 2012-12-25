@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab2LYDSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 22:18:42 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:56087 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab2LYDSk (ORCPT
+	id S1753548Ab2LYDYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 22:24:11 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:50105 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab2LYDYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 22:18:40 -0500
-Date: Mon, 24 Dec 2012 19:18:35 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 25/25] ipc: don't use [delayed_]work_pending()
-Message-ID: <20121225031835.GD10220@mtj.dyndns.org>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-26-git-send-email-tj@kernel.org>
- <20121221181523.0e0998e4.akpm@linux-foundation.org>
- <20121222022210.GA30177@htj.dyndns.org>
- <20121222110929.GA3567@liondog.tnic>
- <20121224183334.GB11817@htj.dyndns.org>
- <20121224185555.GA5344@liondog.tnic>
- <20121224190723.GE11817@htj.dyndns.org>
- <20121224193258.GB5344@liondog.tnic>
+	Mon, 24 Dec 2012 22:24:09 -0500
+Message-ID: <50D91A98.5090507@lwfinger.net>
+Date: Mon, 24 Dec 2012 21:16:40 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121224193258.GB5344@liondog.tnic>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Regression in kernel 3.8-rc1 bisected to commit adfa79d: I now get
+ many "unable to enumerate USB device" messages
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Borislav.
+The problem has been bisected to commit adfa79d entitled "USB: EHCI: make 
+ehci-pci a separate driver". The symptom is that my NVIDIA controller again 
+reverts to unended logging of messages of the form "hub 2-0:1.0: unable to 
+enumerate USB device on port 5".
 
-On Mon, Dec 24, 2012 at 08:32:58PM +0100, Borislav Petkov wrote:
-> Ok, understood. I have only one question: how do you make sure
-> schedule_work() is used only in cold paths?
+This behavior was previously fixed with commit c618759.
 
-Hot and cold are relative terms and unless someone is doing things
-like invoking queue_work() from high-frequency interrupt handler, the
-level of overhead from queue_work() isn't likely to matter.  The best
-way to deal with such hot paths would differ depending on the
-specifics of each hot path - ie. bouncing to workqueue from IRQ
-handler would be better handled by threaded IRQ handlers.
+Thanks,
 
-At this point, especially given how all of work_pending() users are
-way too cold for any of this to matter, I don't think we need to worry
-about this.
-
-> Btw, there's __cancel_delayed_work() which is not used anywhere and it
-> could be deleted AFAICT.
-
-Yeah, there are several interfaces which are being deprecated.
-They'll be gone in a few cycles.
-
-Thanks.
-
--- 
-tejun
+Larry
