@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051Ab2LYRG0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 12:06:26 -0500
-Received: from mga03.intel.com ([143.182.124.21]:16881 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753921Ab2LYRGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 12:06:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,353,1355126400"; 
-   d="scan'208";a="184664336"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [RESEND char-misc-next 00/14] mei: cleanups
-Date: Tue, 25 Dec 2012 19:05:58 +0200
-Message-Id: <1356455172-31959-1-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+	id S1754073Ab2LYRS4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 12:18:56 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:60785 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab2LYRSy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 12:18:54 -0500
+From: Sha Zhengju <handai.szj@gmail.com>
+To: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org
+Cc: mhocko@suse.cz, akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: [PATCH V3 0/8] Per-cgroup page stat accounting
+Date: Wed, 26 Dec 2012 01:18:39 +0800
+Message-Id: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is resned of the mei driver cleanup series
-1. Patch  'mei: use wrietl/readl instead of io wrappers' was dropped
- as suggested by Alan Cox and series was rebased
-2. Fixed some typos in the commit messages
+Hi, list
 
+This is V3 patch series that provide the ability for each memory cgroup to
+have independent dirty/writeback page statistics which can provide information
+for per-cgroup direct reclaim or some.
 
-Tomas Winkler (14):
-  mei: drop redundant length parameter from mei_write_message function
-  mei: use unified format for printing mei message header
-  mei: move internal host clients ids to mei_dev.h from hw.h
-  mei: extract device dependent constants into hw-me.h
-  mei: include local headers after the system ones
-  mei: kill not used BAR0 length and base variables
-  mei: mei_me_client is not hw API move to mei_dev.h
-  mei: move hw dependent functions to interface.c
-  mei: move host bus message handling to hbm.c
-  mei: drop nonexistent function prototype
-  mei: simplify preparing client host bus messages
-  mei: use structured buffer for the write buffer
-  mei: add common prefix to hbm function
-  mei: move hbm responses from interrupt.c to hbm.c
+In the first three prepare patches, we have done some cleanup and reworked vfs
+set page dirty routines to make "modify page info" and "dirty page accouting" stay
+in one function as much as possible for the sake of memcg bigger lock(test numbers
+are in the specific patch). There is no change comparing to V2.
 
- drivers/misc/mei/Makefile    |    1 +
- drivers/misc/mei/amthif.c    |   42 ++--
- drivers/misc/mei/hbm.c       |  631 ++++++++++++++++++++++++++++++++++++++++++
- drivers/misc/mei/hw-me.h     |  167 +++++++++++
- drivers/misc/mei/hw.h        |  125 +--------
- drivers/misc/mei/init.c      |  123 +--------
- drivers/misc/mei/interface.c |  187 +++++++------
- drivers/misc/mei/interface.h |   16 +-
- drivers/misc/mei/interrupt.c |  515 ++--------------------------------
- drivers/misc/mei/iorw.c      |    8 +-
- drivers/misc/mei/main.c      |   11 +-
- drivers/misc/mei/mei_dev.h   |  131 +++------
- drivers/misc/mei/wd.c        |   23 +-
- 13 files changed, 1037 insertions(+), 943 deletions(-)
- create mode 100644 drivers/misc/mei/hbm.c
- create mode 100644 drivers/misc/mei/hw-me.h
+Patch 4/8 and 5/8 are acctually doing memcg dirty and writeback page accounting.
+We change lock orders of mapping->tree_lock and memcg->move_lock to prevent
+deadlock. Test numbers of previous version show that there is some performance
+decrease after patching the accouting once memcg is enabled. The reason is that
+if no memcg exists but root_mem_cgroup, all allocated pages are belonging to root memcg
+and they will go through root memcg statistics routines which brings overheads.
+So we do some optimization in patch 6/8 and 7/8: patch 6 chooses to give up accounting
+root memcg stat but changes behavior of memcg_stat_show() instead; patch 7 uses jump
+label to disable memcg page stat accounting code when not in use which is inspired by
+a similar optimization from Glauber Costa
+(memcg: make it suck faster; https://lkml.org/lkml/2012/9/25/154).
 
--- 
-1.7.4.4
+On a 4g memory and 4-core i5 CPU machine, we pushing 1G data through 600M memcg
+(memory.limit_in_bytes=600M, memory.memsw.limit_in_bytes=1500M) by fio:
+fio (ioengine=sync/write/buffered/bs=4k/size=1g/numjobs=2/group_reporting/thread)
+
+Following is performance comparison between before/after the whole series
+(test it for 10 times and get the average numbers):
+Before:
+write: io=2048.0MB, bw=214527KB/s, iops=53631.2 , runt= 9880.1msec
+lat (usec): min=1 , max=1685.06K, avg=36.182, stdev=3153.97
+
+After:
+write: io=2048.0MB, bw=193069KB/s, iops=48266.6 , runt= 11078.6msec
+lat (usec): min=1 , max=1634.26K, avg=40.598, stdev=3135.81
+
+Note that now the impact is little(~1%).
+
+Any comments are welcomed. : )
+
+Change log:
+v3 <--v2
+	1. change lock order of mapping->tree_lock and memcg->move_lock
+	2. performance optimization in 6/8 and 7/8
+v2 <-- v1:
+        1. add test numbers
+        2. some small fix and comments
+
+Sha Zhengju (8):
+	memcg-remove-MEMCG_NR_FILE_MAPPED.patch
+	Make-TestSetPageDirty-and-dirty-page-accounting-in-o.patch
+	use-vfs-__set_page_dirty-interface-instead-of-doing-.patch
+	memcg-add-per-cgroup-dirty-pages-accounting.patch
+	memcg-add-per-cgroup-writeback-pages-accounting.patch
+	memcg-Don-t-account-root_mem_cgroup-page-statistics.patch
+	memcg-disable-memcg-page-stat-accounting-code-when-n.patch
+	memcg-Document-cgroup-dirty-writeback-memory-statist.patch
+
+ Documentation/cgroups/memory.txt |    2 +
+ fs/buffer.c                      |   37 +++++++----
+ fs/ceph/addr.c                   |   20 +-----
+ include/linux/buffer_head.h      |    2 +
+ include/linux/memcontrol.h       |   39 ++++++++---
+ mm/filemap.c                     |   10 +++
+ mm/memcontrol.c                  |  134 ++++++++++++++++++++++++++++++--------
+ mm/page-writeback.c              |   56 ++++++++++++++--
+ mm/rmap.c                        |    4 +-
+ mm/truncate.c                    |    6 ++
+ 10 files changed, 235 insertions(+), 75 deletions(-)
 
