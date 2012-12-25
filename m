@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab2LYVnW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 16:43:22 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:48377 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754215Ab2LYVnT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 16:43:19 -0500
-X-Greylist: delayed 462 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Dec 2012 16:43:19 EST
+	id S1754271Ab2LYVwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 16:52:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43546 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab2LYVwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 16:52:37 -0500
+Date: Tue, 25 Dec 2012 19:52:05 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Hu Tao <hutao@cn.fujitsu.com>
+Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Avi Kivity <avi@redhat.com>,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
+        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
+        Andrew Jones <drjones@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Luiz Capitulino <lcapitulino@redhat.com>
+Subject: Re: [Qemu-devel] [PATCH v12 0/8] pv event to notify host when the
+ guest is panicked
+Message-ID: <20121225215205.GA6222@amt.cnet>
+References: <cover.1355290850.git.hutao@cn.fujitsu.com>
+ <20121220075359.GF7141@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <20121225112657.GC2604@ritirata.org>
-References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
-	<1356315256-6572-20-git-send-email-akinobu.mita@gmail.com>
-	<20121225112657.GC2604@ritirata.org>
-Date: Wed, 26 Dec 2012 06:35:37 +0900
-Message-ID: <CAC5umyh1d9XxH2We4e2rjV-OYhbP2ObGC_iwrDeff2hphJ7TzQ@mail.gmail.com>
-Subject: Re: [PATCH 19/29] batman-adv: fix random jitter calculation
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Antonio Quartulli <ordex@autistici.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        b.a.t.m.a.n@lists.open-mesh.org,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121220075359.GF7141@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/25 Antonio Quartulli <ordex@autistici.org>:
-> On Mon, Dec 24, 2012 at 11:14:06AM +0900, Akinobu Mita wrote:
->> batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
->> in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
->>
->>         msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
->>         msecs += (random32() % 2 * BATADV_JITTER);
->>
->> But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
->> because '%' and '*' have same precedence and associativity is
->> left-to-right.
->>
->> This adds the parentheses at the appropriate position so that it matches
->> original intension.
->>
->> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
->> Cc: Marek Lindner <lindner_marek@yahoo.de>
->> Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
->> Cc: Antonio Quartulli <ordex@autistici.org>
->> Cc: b.a.t.m.a.n@lists.open-mesh.org
->> Cc: "David S. Miller" <davem@davemloft.net>
->> Cc: netdev@vger.kernel.org
->> ---
->
-> Acked-by: Antonio Quartulli <ordex@autistici.org>
->
-> But I would suggest to apply this change to net, since it is a fix.
+On Thu, Dec 20, 2012 at 03:53:59PM +0800, Hu Tao wrote:
+> Hi,
+> 
+> Any comments?
 
-I agree.
-David, please consider to apply this patch for 3.8-rc*.
+As far as i can see, items 2 and 3 of
+
+https://lkml.org/lkml/2012/11/12/588
+
+Have not been addressed.
+
+https://lkml.org/lkml/2012/11/20/653 contains discussions on those
+items.
+
+2) Format of the interface for other architectures (you can choose
+a different KVM supported architecture and write an example). It was
+your choice to choose an I/O port, which is x86 specific.
+
+3) Clear/documented management interface for the feature.
+
+Note 3 is for management, not the guest<->host interface.
+
+> On Wed, Dec 12, 2012 at 02:13:43PM +0800, Hu Tao wrote:
+> > This series implements a new interface, kvm pv event, to notify host when
+> > some events happen in guest. Right now there is one supported event: guest
+> > panic.
+> > 
+> > changes from v11:
+> > 
+> >   - add a new patch 'save/load cpu runstate'
+> >   - fix a bug of null-dereference when no -machine option is supplied
+> >   - reserve RUN_STATE_GUEST_PANICKED during migration
+> >   - add doc of enable_pv_event option
+> >   - disable reboot-on-panic if pv_event is on
+> > 
+> > v11: http://lists.gnu.org/archive/html/qemu-devel/2012-10/msg04361.html
+> > 
+> > Hu Tao (7):
+> >   save/load cpu runstate
+> >   update kernel headers
+> >   add a new runstate: RUN_STATE_GUEST_PANICKED
+> >   add a new qevent: QEVENT_GUEST_PANICKED
+> >   introduce a new qom device to deal with panicked event
+> >   allower the user to disable pv event support
+> >   pv event: add document to describe the usage
+> > 
+> > Wen Congyang (1):
+> >   start vm after resetting it
+> > 
+> >  block.h                          |   2 +
+> >  docs/pv-event.txt                |  17 ++++
+> >  hw/kvm/Makefile.objs             |   2 +-
+> >  hw/kvm/pv_event.c                | 197 +++++++++++++++++++++++++++++++++++++++
+> >  hw/pc_piix.c                     |  11 +++
+> >  kvm-stub.c                       |   4 +
+> >  kvm.h                            |   2 +
+> >  linux-headers/asm-x86/kvm_para.h |   1 +
+> >  linux-headers/linux/kvm_para.h   |   6 ++
+> >  migration.c                      |   7 +-
+> >  monitor.c                        |   6 +-
+> >  monitor.h                        |   1 +
+> >  qapi-schema.json                 |   6 +-
+> >  qemu-config.c                    |   4 +
+> >  qemu-options.hx                  |   3 +-
+> >  qmp.c                            |   5 +-
+> >  savevm.c                         |   1 +
+> >  sysemu.h                         |   2 +
+> >  vl.c                             |  52 ++++++++++-
+> >  19 files changed, 312 insertions(+), 17 deletions(-)
+> >  create mode 100644 docs/pv-event.txt
+> >  create mode 100644 hw/kvm/pv_event.c
+> > 
+> > -- 
+> > 1.8.0.1.240.ge8a1f5a
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
