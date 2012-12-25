@@ -1,180 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab2LYIYx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 03:24:53 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:53876 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab2LYIYu (ORCPT
+	id S1753745Ab2LYIav (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 03:30:51 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:9936 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab2LYIau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 03:24:50 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "Serge E. Hallyn" <serge@hallyn.com>
-References: <87d2y2elbi.fsf@xmission.com> <871ueiel9d.fsf@xmission.com>
-	<20121222165438.GA19680@redhat.com>
-Date: Tue, 25 Dec 2012 00:24:40 -0800
-In-Reply-To: <20121222165438.GA19680@redhat.com> (Oleg Nesterov's message of
-	"Sat, 22 Dec 2012 17:54:38 +0100")
-Message-ID: <87licm7d4n.fsf_-_@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 25 Dec 2012 03:30:50 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Tue, 25 Dec 2012 00:27:48 -0800
+Message-ID: <50D96438.3090105@nvidia.com>
+Date: Tue, 25 Dec 2012 16:30:48 +0800
+From: Wei Ni <wni@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+4FzeXbMFeYdJ1XCIJVGxfkSTHloexNZs=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.1 XMSubLong Long Subject
-	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
-	*      [score: 0.3793]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
-X-Spam-Relay-Country: 
-Subject: [PATCH review 2/3 take 2] pidns: Stop pid allocation when init dies
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: Durgadoss R <durgadoss.r@intel.com>
+CC: "rui.zhang@intel.com" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
+Subject: Re: [PATCH 3/8] Thermal: Add APIs to bind cdev to new zone structure
+References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com> <1355822977-4804-4-git-send-email-durgadoss.r@intel.com>
+In-Reply-To: <1355822977-4804-4-git-send-email-durgadoss.r@intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/18/2012 05:29 PM, Durgadoss R wrote:
+> This patch creates new APIs to add/remove a
+> cdev to/from a zone. This patch does not change
+> the old cooling device implementation.
+> 
+> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> ---
+>  drivers/thermal/thermal_sys.c |   80 +++++++++++++++++++++++++++++++++++++++++
+>  include/linux/thermal.h       |    8 +++++
+>  2 files changed, 88 insertions(+)
+> 
+> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
+> index 06d5a12..b39bf97 100644
+> --- a/drivers/thermal/thermal_sys.c
+> +++ b/drivers/thermal/thermal_sys.c
+> @@ -58,6 +58,7 @@ static LIST_HEAD(thermal_governor_list);
+>  static DEFINE_MUTEX(thermal_list_lock);
+>  static DEFINE_MUTEX(sensor_list_lock);
+>  static DEFINE_MUTEX(zone_list_lock);
+> +static DEFINE_MUTEX(cdev_list_lock);
+>  static DEFINE_MUTEX(thermal_governor_lock);
+>  
+>  #define for_each_thermal_sensor(pos) \
+> @@ -82,6 +83,9 @@ static DEFINE_MUTEX(thermal_governor_lock);
+>  		mutex_unlock(&type##_list_lock);	\
+>  	} while (0)
+>  
+> +#define for_each_cdev(pos) \
+> +	list_for_each_entry(pos, &thermal_cdev_list, node)
+> +
+>  static struct thermal_governor *__find_governor(const char *name)
+>  {
+>  	struct thermal_governor *pos;
+> @@ -462,6 +466,24 @@ static void remove_sensor_from_zone(struct thermal_zone *tz,
+>  	tz->sensor_indx--;
+>  }
+>  
+> +static void remove_cdev_from_zone(struct thermal_zone *tz,
+> +				struct thermal_cooling_device *cdev)
+> +{
+> +	int j, indx;
+> +
+> +	GET_INDEX(tz, cdev, indx, cdev);
+> +	if (indx < 0)
+> +		return;
+> +
+> +	sysfs_remove_link(&tz->device.kobj, kobject_name(&cdev->device.kobj));
+> +
+> +	/* Shift the entries in the tz->cdevs array */
+> +	for (j = indx; j < MAX_CDEVS_PER_ZONE - 1; j++)
+> +		tz->cdevs[j] = tz->cdevs[j + 1];
+> +
+> +	tz->cdev_indx--;
+> +}
+> +
+>  /* sys I/F for thermal zone */
+>  
+>  #define to_thermal_zone(_dev) \
+> @@ -1458,6 +1480,7 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
+>  	int i;
+>  	const struct thermal_zone_params *tzp;
+>  	struct thermal_zone_device *tz;
+> +	struct thermal_zone *tmp_tz;
+>  	struct thermal_cooling_device *pos = NULL;
+>  
+>  	if (!cdev)
+> @@ -1495,6 +1518,13 @@ void thermal_cooling_device_unregister(struct thermal_cooling_device *cdev)
+>  
+>  	mutex_unlock(&thermal_list_lock);
+>  
+> +	mutex_lock(&zone_list_lock);
+> +
+> +	for_each_thermal_zone(tmp_tz)
+> +		remove_cdev_from_zone(tmp_tz, cdev);
+> +
+> +	mutex_unlock(&zone_list_lock);
+> +
+>  	if (cdev->type[0])
+>  		device_remove_file(&cdev->device, &dev_attr_cdev_type);
+>  	device_remove_file(&cdev->device, &dev_attr_max_state);
+> @@ -1790,6 +1820,23 @@ exit:
+>  }
+>  EXPORT_SYMBOL(remove_thermal_zone);
+>  
+> +struct thermal_cooling_device *get_cdev_by_name(const char *name)
+> +{
+> +	struct thermal_cooling_device *pos;
+> +	struct thermal_cooling_device *cdev = NULL;
+> +
+> +	mutex_lock(&cdev_list_lock);
+> +	for_each_cdev(pos) {
+> +		if (!strnicmp(pos->type, name, THERMAL_NAME_LENGTH)) {
+> +			cdev = pos;
+> +			break;
+> +		}
+> +	}
+> +	mutex_unlock(&cdev_list_lock);
+> +	return cdev;
+> +}
+> +EXPORT_SYMBOL(get_cdev_by_name);
 
-Oleg pointed out that in a pid namespace the sequence.
-- pid 1 becomes a zombie
-- setns(thepidns), fork,...
-- reaping pid 1.
-- The injected processes exiting.
+It seems you forgot to add get_cdev_by_name() and get_sensor_by_name()
+to the include file.
 
-Can lead to processes attempting access their child reaper and
-instead following a stale pointer.
-
-That waitpid for init can return before all of the processes in
-the pid namespace have exited is also unfortunate.
-
-Avoid these problems by disabling the allocation of new pids in a pid
-namespace when init dies, instead of when the last process in a pid
-namespace is reaped.
-
-Pointed-out-by:  Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
- include/linux/pid.h           |    1 +
- include/linux/pid_namespace.h |    4 +++-
- kernel/pid.c                  |   15 ++++++++++++---
- kernel/pid_namespace.c        |    4 ++++
- 4 files changed, 20 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/pid.h b/include/linux/pid.h
-index b152d44..2381c97 100644
---- a/include/linux/pid.h
-+++ b/include/linux/pid.h
-@@ -121,6 +121,7 @@ int next_pidmap(struct pid_namespace *pid_ns, unsigned int last);
- 
- extern struct pid *alloc_pid(struct pid_namespace *ns);
- extern void free_pid(struct pid *pid);
-+extern void disable_pid_allocation(struct pid_namespace *ns);
- 
- /*
-  * ns_of_pid() returns the pid namespace in which the specified pid was
-diff --git a/include/linux/pid_namespace.h b/include/linux/pid_namespace.h
-index bf28599..215e5e3 100644
---- a/include/linux/pid_namespace.h
-+++ b/include/linux/pid_namespace.h
-@@ -21,7 +21,7 @@ struct pid_namespace {
- 	struct kref kref;
- 	struct pidmap pidmap[PIDMAP_ENTRIES];
- 	int last_pid;
--	int nr_hashed;
-+	unsigned int nr_hashed;
- 	struct task_struct *child_reaper;
- 	struct kmem_cache *pid_cachep;
- 	unsigned int level;
-@@ -42,6 +42,8 @@ struct pid_namespace {
- 
- extern struct pid_namespace init_pid_ns;
- 
-+#define PIDNS_HASH_ADDING (1U << 31)
-+
- #ifdef CONFIG_PID_NS
- static inline struct pid_namespace *get_pid_ns(struct pid_namespace *ns)
- {
-diff --git a/kernel/pid.c b/kernel/pid.c
-index 36aa02f..de9af60 100644
---- a/kernel/pid.c
-+++ b/kernel/pid.c
-@@ -270,7 +270,6 @@ void free_pid(struct pid *pid)
- 			wake_up_process(ns->child_reaper);
- 			break;
- 		case 0:
--			ns->nr_hashed = -1;
- 			schedule_work(&ns->proc_work);
- 			break;
- 		}
-@@ -319,7 +318,7 @@ struct pid *alloc_pid(struct pid_namespace *ns)
- 
- 	upid = pid->numbers + ns->level;
- 	spin_lock_irq(&pidmap_lock);
--	if (ns->nr_hashed < 0)
-+	if (!(ns->nr_hashed & PIDNS_HASH_ADDING))
- 		goto out_unlock;
- 	for ( ; upid >= pid->numbers; --upid) {
- 		hlist_add_head_rcu(&upid->pid_chain,
-@@ -342,6 +341,13 @@ out_free:
- 	goto out;
- }
- 
-+void disable_pid_allocation(struct pid_namespace *ns)
-+{
-+	spin_lock_irq(&pidmap_lock);
-+	ns->nr_hashed &= ~PIDNS_HASH_ADDING;
-+	spin_unlock_irq(&pidmap_lock);
-+}
-+
- struct pid *find_pid_ns(int nr, struct pid_namespace *ns)
- {
- 	struct hlist_node *elem;
-@@ -573,6 +579,9 @@ void __init pidhash_init(void)
- 
- void __init pidmap_init(void)
- {
-+	/* Veryify no one has done anything silly */
-+	BUILD_BUG_ON(PID_MAX_LIMIT >= PIDNS_HASH_ADDING);
-+
- 	/* bump default and minimum pid_max based on number of cpus */
- 	pid_max = min(pid_max_max, max_t(int, pid_max,
- 				PIDS_PER_CPU_DEFAULT * num_possible_cpus()));
-@@ -584,7 +593,7 @@ void __init pidmap_init(void)
- 	/* Reserve PID 0. We never call free_pidmap(0) */
- 	set_bit(0, init_pid_ns.pidmap[0].page);
- 	atomic_dec(&init_pid_ns.pidmap[0].nr_free);
--	init_pid_ns.nr_hashed = 1;
-+	init_pid_ns.nr_hashed = PIDNS_HASH_ADDING;
- 
- 	init_pid_ns.pid_cachep = KMEM_CACHE(pid,
- 			SLAB_HWCACHE_ALIGN | SLAB_PANIC);
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index fdbd0cd..c1c3dc1 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -115,6 +115,7 @@ static struct pid_namespace *create_pid_namespace(struct user_namespace *user_ns
- 	ns->level = level;
- 	ns->parent = get_pid_ns(parent_pid_ns);
- 	ns->user_ns = get_user_ns(user_ns);
-+	ns->nr_hashed = PIDNS_HASH_ADDING;
- 	INIT_WORK(&ns->proc_work, proc_cleanup_work);
- 
- 	set_bit(0, ns->pidmap[0].page);
-@@ -181,6 +182,9 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
- 	int rc;
- 	struct task_struct *task, *me = current;
- 
-+	/* Don't allow any more processes into the pid namespace */
-+	disable_pid_allocation(pid_ns);
-+
- 	/* Ignore SIGCHLD causing any terminated children to autoreap */
- 	spin_lock_irq(&me->sighand->siglock);
- 	me->sighand->action[SIGCHLD - 1].sa.sa_handler = SIG_IGN;
--- 
-1.7.5.4
+> +
+>  struct thermal_sensor *get_sensor_by_name(const char *name)
+>  {
+>  	struct thermal_sensor *pos;
+> @@ -1840,6 +1887,39 @@ exit_zone:
+>  }
+>  EXPORT_SYMBOL(add_sensor_to_zone);
+>  
+> +int add_cdev_to_zone(struct thermal_zone *tz,
+> +			struct thermal_cooling_device *cdev)
+> +{
+> +	int ret;
+> +
+> +	if (!tz || !cdev)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&zone_list_lock);
+> +
+> +	/* Ensure we are not adding the same cdev again!! */
+> +	GET_INDEX(tz, cdev, ret, cdev);
+> +	if (ret >= 0) {
+> +		ret = -EEXIST;
+> +		goto exit_zone;
+> +	}
+> +
+> +	mutex_lock(&cdev_list_lock);
+> +	ret = sysfs_create_link(&tz->device.kobj, &cdev->device.kobj,
+> +				kobject_name(&cdev->device.kobj));
+> +	if (ret)
+> +		goto exit_cdev;
+> +
+> +	tz->cdevs[tz->cdev_indx++] = cdev;
+> +
+> +exit_cdev:
+> +	mutex_unlock(&cdev_list_lock);
+> +exit_zone:
+> +	mutex_unlock(&zone_list_lock);
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(add_cdev_to_zone);
+> +
+>  /**
+>   * thermal_sensor_register - register a new thermal sensor
+>   * @name:	name of the thermal sensor
+> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> index f08f774..c4e45c7 100644
+> --- a/include/linux/thermal.h
+> +++ b/include/linux/thermal.h
+> @@ -51,6 +51,8 @@
+>  
+>  #define MAX_SENSORS_PER_ZONE		5
+>  
+> +#define MAX_CDEVS_PER_ZONE		5
+> +
+>  struct thermal_sensor;
+>  struct thermal_zone_device;
+>  struct thermal_cooling_device;
+> @@ -209,6 +211,10 @@ struct thermal_zone {
+>  	/* Sensor level information */
+>  	int sensor_indx; /* index into 'sensors' array */
+>  	struct thermal_sensor *sensors[MAX_SENSORS_PER_ZONE];
+> +
+> +	/* cdev level information */
+> +	int cdev_indx; /* index into 'cdevs' array */
+> +	struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
+>  };
+>  
+>  /* Structure that holds thermal governor information */
+> @@ -287,6 +293,8 @@ struct thermal_zone *create_thermal_zone(const char *, void *);
+>  void remove_thermal_zone(struct thermal_zone *);
+>  int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
+>  
+> +int add_cdev_to_zone(struct thermal_zone *, struct thermal_cooling_device *);
+> +
+>  #ifdef CONFIG_NET
+>  extern int thermal_generate_netlink_event(u32 orig, enum events event);
+>  #else
+> 
 
