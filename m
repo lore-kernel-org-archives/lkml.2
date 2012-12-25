@@ -1,101 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754287Ab2LYVyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 16:54:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754148Ab2LYVye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 16:54:34 -0500
-Date: Tue, 25 Dec 2012 19:54:20 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Hu Tao <hutao@cn.fujitsu.com>
-Cc: kvm list <kvm@vger.kernel.org>, qemu-devel <qemu-devel@nongnu.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Gleb Natapov <gleb@redhat.com>,
-        Blue Swirl <blauwirbel@gmail.com>, Eric Blake <eblake@redhat.com>,
-        Andrew Jones <drjones@redhat.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Luiz Capitulino <lcapitulino@redhat.com>
-Subject: Re: [Qemu-devel] [PATCH v12 0/8] pv event to notify host when the
- guest is panicked
-Message-ID: <20121225215420.GB6222@amt.cnet>
-References: <cover.1355290850.git.hutao@cn.fujitsu.com>
- <20121220075359.GF7141@localhost.localdomain>
+	id S1754269Ab2LYWAo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 17:00:44 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:45612 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab2LYWAm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 17:00:42 -0500
+Message-ID: <50DA2207.3010807@ubuntu.com>
+Date: Tue, 25 Dec 2012 22:00:39 +0000
+From: Michael Rawson <michael.rawson@ubuntu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121220075359.GF7141@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: [PATCH] cdrom: remove extraneous braces to comply with coding style.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 03:53:59PM +0800, Hu Tao wrote:
-> Hi,
-> 
-> Any comments?
+Hi list, Jens.
+Please note that I'm a kernel newbie, hope I'm not about to embarrass myself. :-)
 
-Did you verify possibilities listed at 
-https://lkml.org/lkml/2012/11/20/653 ?
+ From https://github.com/torvalds/linux/blob/master/Documentation/CodingStyle:
 
-If so, a summary in the patchset would be helpful.
+"Printing numbers in parentheses (%d) adds no value and should be avoided."
 
-> On Wed, Dec 12, 2012 at 02:13:43PM +0800, Hu Tao wrote:
-> > This series implements a new interface, kvm pv event, to notify host when
-> > some events happen in guest. Right now there is one supported event: guest
-> > panic.
-> > 
-> > changes from v11:
-> > 
-> >   - add a new patch 'save/load cpu runstate'
-> >   - fix a bug of null-dereference when no -machine option is supplied
-> >   - reserve RUN_STATE_GUEST_PANICKED during migration
-> >   - add doc of enable_pv_event option
-> >   - disable reboot-on-panic if pv_event is on
-> > 
-> > v11: http://lists.gnu.org/archive/html/qemu-devel/2012-10/msg04361.html
-> > 
-> > Hu Tao (7):
-> >   save/load cpu runstate
-> >   update kernel headers
-> >   add a new runstate: RUN_STATE_GUEST_PANICKED
-> >   add a new qevent: QEVENT_GUEST_PANICKED
-> >   introduce a new qom device to deal with panicked event
-> >   allower the user to disable pv event support
-> >   pv event: add document to describe the usage
-> > 
-> > Wen Congyang (1):
-> >   start vm after resetting it
-> > 
-> >  block.h                          |   2 +
-> >  docs/pv-event.txt                |  17 ++++
-> >  hw/kvm/Makefile.objs             |   2 +-
-> >  hw/kvm/pv_event.c                | 197 +++++++++++++++++++++++++++++++++++++++
-> >  hw/pc_piix.c                     |  11 +++
-> >  kvm-stub.c                       |   4 +
-> >  kvm.h                            |   2 +
-> >  linux-headers/asm-x86/kvm_para.h |   1 +
-> >  linux-headers/linux/kvm_para.h   |   6 ++
-> >  migration.c                      |   7 +-
-> >  monitor.c                        |   6 +-
-> >  monitor.h                        |   1 +
-> >  qapi-schema.json                 |   6 +-
-> >  qemu-config.c                    |   4 +
-> >  qemu-options.hx                  |   3 +-
-> >  qmp.c                            |   5 +-
-> >  savevm.c                         |   1 +
-> >  sysemu.h                         |   2 +
-> >  vl.c                             |  52 ++++++++++-
-> >  19 files changed, 312 insertions(+), 17 deletions(-)
-> >  create mode 100644 docs/pv-event.txt
-> >  create mode 100644 hw/kvm/pv_event.c
-> > 
-> > -- 
-> > 1.8.0.1.240.ge8a1f5a
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I saw a couple of parenthesized messages in the cdrom driver I was looking at, have edited them out as a first patch.
+I intend this for the mainline branch, though given the patch content I can't see a reason why it wouldn't work elsewhere.
+
+Patch follows:
+
+--- linux-clean/drivers/cdrom/cdrom.c	2012-12-25 20:48:07.130718725 +0000
++++ linux/drivers/cdrom/cdrom.c	2012-12-25 19:49:01.080357984 +0000
+@@ -1759,7 +1759,7 @@ static int dvd_do_auth(struct cdrom_devi
+  		break;
+
+  	default:
+-		cdinfo(CD_WARNING, "Invalid DVD key ioctl (%d)\n", ai->type);
++		cdinfo(CD_WARNING, "Invalid DVD key ioctl %d\n", ai->type);
+  		return -ENOTTY;
+  	}
+
+@@ -1891,7 +1891,7 @@ static int dvd_read_bca(struct cdrom_dev
+
+  	s->bca.len = buf[0] << 8 | buf[1];
+  	if (s->bca.len < 12 || s->bca.len > 188) {
+-		cdinfo(CD_WARNING, "Received invalid BCA length (%d)\n", s->bca.len);
++		cdinfo(CD_WARNING, "Received invalid BCA length %d\n", s->bca.len);
+  		ret = -EIO;
+  		goto out;
+  	}
+@@ -1928,12 +1928,12 @@ static int dvd_read_manufact(struct cdro
+  	s->manufact.len = buf[0] << 8 | buf[1];
+  	if (s->manufact.len < 0) {
+  		cdinfo(CD_WARNING, "Received invalid manufacture info length"
+-				   " (%d)\n", s->manufact.len);
++				   " %d\n", s->manufact.len);
+  		ret = -EIO;
+  	} else {
+  		if (s->manufact.len > 2048) {
+  			cdinfo(CD_WARNING, "Received invalid manufacture info "
+-					"length (%d): truncating to 2048\n",
++					"length %d: truncating to 2048\n",
+  					s->manufact.len);
+  			s->manufact.len = 2048;
+  		}
+@@ -1965,7 +1965,7 @@ static int dvd_read_struct(struct cdrom_
+  		return dvd_read_manufact(cdi, s, cgc);
+  		
+  	default:
+-		cdinfo(CD_WARNING, ": Invalid DVD structure read requested (%d)\n",
++		cdinfo(CD_WARNING, ": Invalid DVD structure read requested %d\n",
+  					s->type);
+  		return -EINVAL;
+  	}
+
+
+"Signed-off-by: Michael Rawson <michael.rawson@ubuntu.com>"
+
+If you guys think it's unimportant, appreciated, but suggestions on a better first patch would be good too.
+Thanks for attention, criticism on submission would be appreciated.
+
+Happy Christmas (or just have a good day if not),
+
+Michael.
+
