@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab2LYHr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 02:47:29 -0500
-Received: from mga02.intel.com ([134.134.136.20]:13249 "EHLO mga02.intel.com"
+	id S1753704Ab2LYHs4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 02:48:56 -0500
+Received: from mga14.intel.com ([143.182.124.37]:5792 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506Ab2LYHr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 02:47:27 -0500
+	id S1753506Ab2LYHsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 02:48:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,352,1355126400"; 
-   d="scan'208";a="262434306"
-Subject: [PATCH 1/2] ASoC: core: fix the memory leak in case of
- device_add() failure
+   d="scan'208";a="236445014"
+Subject: [PATCH 2/2] ASoC: core: fix the memory leak in case of
+ remove_aux_dev()
 From: Chuansheng Liu <chuansheng.liu@intel.com>
 To: broonie@opensource.wolfsonmicro.com
 Cc: lrg@ti.com, perex@perex.cz, tiwai@suse.de, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org, chuansheng.liu@intel.com
+In-Reply-To: <1356454565.21958.2.camel@cliu38-desktop-build>
+References: <1356454565.21958.2.camel@cliu38-desktop-build>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Dec 2012 00:56:05 +0800
-Message-ID: <1356454565.21958.2.camel@cliu38-desktop-build>
+Date: Wed, 26 Dec 2012 00:57:32 +0800
+Message-ID: <1356454652.21958.4.camel@cliu38-desktop-build>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -26,28 +28,35 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-After called device_initialize(), even device_add() returns
-error, we still need use the put_device() to release the reference
-to call rtd_release(), which will do the free() action.
+When probing aux_dev, initializing is as below:
+device_initialize()
+device_add()
 
+So when remove aux_dev, we need do as below:
+device_del()
+device_put()
+Otherwise, the rtd_release() will not be called.
+
+So here using device_unregister() to replace device_del(),
+like the action in soc_remove_link_dais().
 Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
 ---
- sound/soc/soc-core.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ sound/soc/soc-core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
-index 91d592f..9689411 100644
+index 9689411..2270f8f 100644
 --- a/sound/soc/soc-core.c
 +++ b/sound/soc/soc-core.c
-@@ -1255,6 +1255,8 @@ static int soc_post_component_init(struct snd_soc_card *card,
- 	INIT_LIST_HEAD(&rtd->dpcm[SNDRV_PCM_STREAM_CAPTURE].fe_clients);
- 	ret = device_add(rtd->dev);
- 	if (ret < 0) {
-+		/* calling put_device() here to free the rtd->dev */
-+		put_device(rtd->dev);
- 		dev_err(card->dev,
- 			"ASoC: failed to register runtime device: %d\n", ret);
- 		return ret;
+@@ -1556,7 +1556,7 @@ static void soc_remove_aux_dev(struct snd_soc_card *card, int num)
+ 	/* unregister the rtd device */
+ 	if (rtd->dev_registered) {
+ 		device_remove_file(rtd->dev, &dev_attr_codec_reg);
+-		device_del(rtd->dev);
++		device_unregister(rtd->dev);
+ 		rtd->dev_registered = 0;
+ 	}
+ 
 -- 
 1.7.0.4
 
