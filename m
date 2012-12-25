@@ -1,44 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab2LYNZM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 08:25:12 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:60906 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab2LYNZI (ORCPT
+	id S1753888Ab2LYNjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 08:39:23 -0500
+Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:3914 "EHLO
+	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab2LYNjV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 08:25:08 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: rth@twiddle.net, ink@jurassic.park.msu.ru, mattst88@gmail.com,
-        linux-kernel@vger.kernel.org, linux-alpha@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] alpha: Fix compile error "unused variable 'settls'
-Date: Tue, 25 Dec 2012 22:24:46 +0900
-Message-Id: <1356441886-8475-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.8.1.rc2.38.gb10c4ad
+	Tue, 25 Dec 2012 08:39:21 -0500
+Date: Tue, 25 Dec 2012 14:38:41 +0100
+Message-Id: <201212251338.qBPDcfSg026316@xs8.xs4all.nl>
+From: "Miquel van Smoorenburg" <mike@van-smoorenburg.nl>
+To: bbi5291@gmail.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Does init start with any open files?
+In-Reply-To: <CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com>
+Organization: 
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix following compile error.
-+ arch/alpha/kernel/process.c: warning: unused variable 'settls': => 253
+In article <xs4all.CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com> you write:
+>When the init process is created on system startup, does it have any
+>open file descriptors? If so, where do they point?
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/alpha/kernel/process.c | 1 -
- 1 file changed, 1 deletion(-)
+0, 1 and 2, which are connected to the console. Boot a kernel with
+"init=/bin/bash" and see for yourself.
 
-diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
-index a4dc79ba..f8d8f3b 100644
---- a/arch/alpha/kernel/process.c
-+++ b/arch/alpha/kernel/process.c
-@@ -275,7 +275,6 @@ copy_thread(unsigned long clone_flags, unsigned long usp,
- 	struct pt_regs *childregs = task_pt_regs(p);
- 	struct pt_regs *regs = current_pt_regs();
- 	struct switch_stack *childstack, *stack;
--	unsigned long settls;
- 
- 	childstack = ((struct switch_stack *) childregs) - 1;
- 	childti->pcb.ksp = (unsigned long) childstack;
--- 
-1.8.1.rc2.38.gb10c4ad
-
+Mike.
