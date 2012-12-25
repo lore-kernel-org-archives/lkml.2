@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab2LYDvq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 22:51:46 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:47089 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab2LYDvo (ORCPT
+	id S1753572Ab2LYEEW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 23:04:22 -0500
+Received: from mail-bk0-f49.google.com ([209.85.214.49]:50220 "EHLO
+	mail-bk0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428Ab2LYEEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 22:51:44 -0500
-X-AuditID: 85900ec0-d4a78b900000152f-46-50d922cd8a27
-Message-ID: <50D922C9.3020706@hitachi.com>
-Date: Tue, 25 Dec 2012 12:51:37 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Mon, 24 Dec 2012 23:04:20 -0500
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 10/25] kprobes: fix wait_for_kprobe_optimizer()
-References: <1356141435-17340-1-git-send-email-tj@kernel.org> <1356141435-17340-11-git-send-email-tj@kernel.org>
-In-Reply-To: <1356141435-17340-11-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <50D8F054.20404@zytor.com>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
+	<1355814959-10573-7-git-send-email-yinghai@kernel.org>
+	<CAE9FiQXrpQtZ7Sq=xfjscKjKzZ6P89uPG0bByER8q48jEgYx_g@mail.gmail.com>
+	<50D0D6D1.70400@zytor.com>
+	<CAE9FiQV5zpTiskB_RwXT8XGNfgTGSwc3AAFqCBusq1t4-OSJHw@mail.gmail.com>
+	<50D0DB1A.5010407@zytor.com>
+	<CAE9FiQV2U+Am0zCz__6YL4CoOeie5McE9=g-L3A_udRNN1rPTw@mail.gmail.com>
+	<50D8F054.20404@zytor.com>
+Date: Mon, 24 Dec 2012 20:04:18 -0800
+X-Google-Sender-Auth: N9CoKAks6Acu66ePTAfKojUDCqE
+Message-ID: <CAE9FiQW_mjUr6F0q7PhZWCcDzZ+NJpi0-xjxvwJoZ1K+XAUjSQ@mail.gmail.com>
+Subject: Re: [PATCH v7 06/27] x86, 64bit: early #PF handler set page table
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Jan Kiszka <jan.kiszka@web.de>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/12/22 10:57), Tejun Heo wrote:
-> wait_for_kprobe_optimizer() seems largely broken.  It uses
-> optimizer_comp which is never re-initialized, so
-> wait_for_kprobe_optimizer() will never wait for anything once
-> kprobe_optimizer() finishes all pending jobs for the first time.
-
-Thank you for fixing that!
-I must misunderstand that the DECLARE_COMPLETION() macro.
-
-> Also, aside from completion, delayed_work_pending() is %false once
-> kprobe_optimizer() starts execution and wait_for_kprobe_optimizer()
-> won't wait for it.
+On Mon, Dec 24, 2012 at 4:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/20/2012 08:56 AM, Yinghai Lu wrote:
+>>>
+>>>
+>>> So in that case, kgdb is broken and will need to be fixed up.  That
+>>> happens all the time with debugging tools.
+>>
+>>
+>> If there is a way that we can make all parties happy, we really should
+>> not break KGDB.
+>>
+>> Please reconsider to stop #PF handler in x86_64_start_kernel. in that case
+>> 1. microcode update still can use #PF handler to find microcode in
+>> ramdisk and use it.
+>> 2. kernel that is loaded above 4G, could set mapping in C instead of
+>> set that in head_64.S
+>>     and use ioremap to access zero_page
+>> 3. KGDB still can call early_trap_init early before init_mem_mapping.
+>>
 >
-> Reimplement it so that it flushes optimizing_work until
-> [un]optimizing_lists are empty.  Note that this also makes
-> optimizing_work execute immediately if someone's waiting for it, which
-> is the nicer behavior.
+> Yinghai, this is total and utter bullshit.
+>
+> We should *fix* kgdb, not pave around it.  I refuse to have kgdb be yet
+> another Xen turning random kernel internals into ABIs.
 
-I think your enhancement is reasonable and GOOD for me.
+well, I updated for-x86-boot-v7 that stop #PF handler after init_mem_mapping.
 
-Thanks again!
+it has fix for AMD system aka reverting far jmp to ret.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-
-> 
-> Only compile tested.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> ---
-> Please let me know how this patch should be routed.  I can take it
-> through the workqueue tree if necessary.
-> 
-> Thanks.
-> 
->  kernel/kprobes.c | 23 +++++++++++++++--------
->  1 file changed, 15 insertions(+), 8 deletions(-)
-> 
-> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> index 098f396..f230e81 100644
-> --- a/kernel/kprobes.c
-> +++ b/kernel/kprobes.c
-> @@ -471,7 +471,6 @@ static LIST_HEAD(unoptimizing_list);
->  
->  static void kprobe_optimizer(struct work_struct *work);
->  static DECLARE_DELAYED_WORK(optimizing_work, kprobe_optimizer);
-> -static DECLARE_COMPLETION(optimizer_comp);
->  #define OPTIMIZE_DELAY 5
->  
->  /*
-> @@ -552,8 +551,7 @@ static __kprobes void do_free_cleaned_kprobes(struct list_head *free_list)
->  /* Start optimizer after OPTIMIZE_DELAY passed */
->  static __kprobes void kick_kprobe_optimizer(void)
->  {
-> -	if (!delayed_work_pending(&optimizing_work))
-> -		schedule_delayed_work(&optimizing_work, OPTIMIZE_DELAY);
-> +	schedule_delayed_work(&optimizing_work, OPTIMIZE_DELAY);
->  }
->  
->  /* Kprobe jump optimizer */
-> @@ -592,16 +590,25 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
->  	/* Step 5: Kick optimizer again if needed */
->  	if (!list_empty(&optimizing_list) || !list_empty(&unoptimizing_list))
->  		kick_kprobe_optimizer();
-> -	else
-> -		/* Wake up all waiters */
-> -		complete_all(&optimizer_comp);
->  }
->  
->  /* Wait for completing optimization and unoptimization */
->  static __kprobes void wait_for_kprobe_optimizer(void)
->  {
-> -	if (delayed_work_pending(&optimizing_work))
-> -		wait_for_completion(&optimizer_comp);
-> +	mutex_lock(&kprobe_mutex);
-> +
-> +	while (!list_empty(&optimizing_list) || !list_empty(&unoptimizing_list)) {
-> +		mutex_unlock(&kprobe_mutex);
-> +
-> +		/* this will also make optimizing_work execute immmediately */
-> +		flush_delayed_work(&optimizing_work);
-> +		/* @optimizing_work might not have been queued yet, relax */
-> +		cpu_relax();
-> +
-> +		mutex_lock(&kprobe_mutex);
-> +	}
-> +
-> +	mutex_unlock(&kprobe_mutex);
->  }
->  
->  /* Optimize kprobe if p is ready to be optimized */
-> 
-
-
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Yinghai
