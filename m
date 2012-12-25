@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab2LYU5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 15:57:31 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:34491 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754028Ab2LYU5a (ORCPT
+	id S1754224Ab2LYVh7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 16:37:59 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:52491 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754150Ab2LYVh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 15:57:30 -0500
-MIME-Version: 1.0
-In-Reply-To: <50D8EBB3.5040408@zytor.com>
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
-	<20121222024225.GG3468@phenom.dumpdata.com>
-	<eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
-	<20121222132419.GB2936@phenom.dumpdata.com>
-	<CAE9FiQV5QqONiTdnHzsjVRTbnEfyHEE3s=-=+a49F2a5se7K+A@mail.gmail.com>
-	<6214ad82-5b7e-47f2-a9c1-98972bdee517@email.android.com>
-	<CAE9FiQV-7_wz1jCZh3qDGt6Wq_JN6b1oAyjj3+goCPFnYZ+q9Q@mail.gmail.com>
-	<50D8EBB3.5040408@zytor.com>
-Date: Tue, 25 Dec 2012 12:57:28 -0800
-X-Google-Sender-Auth: D4Q1kNrh3rCCeEjh3dnqBjdqMJc
-Message-ID: <CAE9FiQUV8UsqAe3WJz02a9oiVw8hygyQsZzwuM782s-8hV92Nw@mail.gmail.com>
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-From: Yinghai Lu <yinghai@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Dec 2012 16:37:57 -0500
+Date: Tue, 25 Dec 2012 13:37:53 -0800 (PST)
+Message-Id: <20121225.133753.1383155065923849678.davem@davemloft.net>
+To: akinobu.mita@gmail.com
+Cc: ordex@autistici.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, lindner_marek@yahoo.de,
+        siwu@hrz.tu-chemnitz.de, b.a.t.m.a.n@lists.open-mesh.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 19/29] batman-adv: fix random jitter calculation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAC5umyh1d9XxH2We4e2rjV-OYhbP2ObGC_iwrDeff2hphJ7TzQ@mail.gmail.com>
+References: <1356315256-6572-20-git-send-email-akinobu.mita@gmail.com>
+	<20121225112657.GC2604@ritirata.org>
+	<CAC5umyh1d9XxH2We4e2rjV-OYhbP2ObGC_iwrDeff2hphJ7TzQ@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 3:56 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 12/23/2012 10:00 AM, Yinghai Lu wrote:
->> On Sun, Dec 23, 2012 at 6:33 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> Explanation please?
+From: Akinobu Mita <akinobu.mita@gmail.com>
+Date: Wed, 26 Dec 2012 06:35:37 +0900
+
+> 2012/12/25 Antonio Quartulli <ordex@autistici.org>:
+>> On Mon, Dec 24, 2012 at 11:14:06AM +0900, Akinobu Mita wrote:
+>>> batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
+>>> in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
 >>>
+>>>         msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+>>>         msecs += (random32() % 2 * BATADV_JITTER);
+>>>
+>>> But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
+>>> because '%' and '*' have same precedence and associativity is
+>>> left-to-right.
+>>>
+>>> This adds the parentheses at the appropriate position so that it matches
+>>> original intension.
+>>>
+>>> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+>>> Cc: Marek Lindner <lindner_marek@yahoo.de>
+>>> Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+>>> Cc: Antonio Quartulli <ordex@autistici.org>
+>>> Cc: b.a.t.m.a.n@lists.open-mesh.org
+>>> Cc: "David S. Miller" <davem@davemloft.net>
+>>> Cc: netdev@vger.kernel.org
+>>> ---
 >>
->> you have following change in the patch
+>> Acked-by: Antonio Quartulli <ordex@autistici.org>
 >>
->>         /* Finally jump to run C code and to be on real kernel address
->>          * Since we are running on identity-mapped space we have to jump
->>          * to the full 64bit address, this is only possible as indirect
->>          * jump.  In addition we need to ensure %cs is set so we make this
->> -        * a far return.
->> +        * a far jump.
->>          */
->> -       movq    initial_code(%rip),%rax
->>         pushq   $0              # fake return address to stop unwinder
->> -       pushq   $__KERNEL_CS    # set correct cs
->> -       pushq   %rax            # target address in negative space
->> -       lretq
->> +       /* gas 2.22 is buggy and mis-assembles ljmpq */
->> +       rex64 ljmp *initial_code(%rip)
->>
->>  #ifdef CONFIG_HOTPLUG_CPU
->>  /*
->>
->> remove that change, AMD systems works again.
->>
->
-> That is not an explanation.
+>> But I would suggest to apply this change to net, since it is a fix.
+> 
+> I agree.
+> David, please consider to apply this patch for 3.8-rc*.
+> 
 
-what do you mean?
-
-Konrad reported the problem, and I dig out one AMD system and
-duplicated the problem.
-and found the patch cause the problem, then add serial out in the
-file, and turns out
-that reset happen just after those lines, so I revert those lines, and
-it boots well again.
-
-Yinghai
+All patches I should consider seriously should be properly
+reposted for review and inclusion.
