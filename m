@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab2LYSwr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 13:52:47 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56889 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754063Ab2LYSwp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 13:52:45 -0500
-Date: Tue, 25 Dec 2012 18:52:33 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>, Stephen Warren <swarren@wwwdotorg.org>,
-        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>,
-        Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, jlayton@redhat.com
-Subject: Re: namei.h: include errno.h
-Message-ID: <20121225185233.GW4939@ZenIV.linux.org.uk>
-References: <1356372898-21272-1-git-send-email-swarren@wwwdotorg.org>
- <20121225182449.GA7874@thunk.org>
+	id S1754200Ab2LYU1t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 15:27:49 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:44374 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754139Ab2LYU1q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 15:27:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>, linux-pm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 16/25] PM / Domains: don't use [delayed_]work_pending()
+Date: Tue, 25 Dec 2012 21:33:07 +0100
+Message-ID: <43765611.nGGJ409TUC@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <20121225170328.GH10220@mtj.dyndns.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org> <21556832.hKrqJSonFg@vostro.rjw.lan> <20121225170328.GH10220@mtj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121225182449.GA7874@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25, 2012 at 01:24:49PM -0500, Theodore Ts'o wrote:
-> On Mon, Dec 24, 2012 at 08:14:58AM -0000, Stephen Warren wrote:
-> > This solves:
+On Tuesday, December 25, 2012 09:03:28 AM Tejun Heo wrote:
+> Hello, Rafael.
+> 
+> On Sat, Dec 22, 2012 at 12:57:20PM +0100, Rafael J. Wysocki wrote:
+> > On Friday, December 21, 2012 05:57:06 PM Tejun Heo wrote:
+> > > There's no need to test whether a (delayed) work item in pending
+> > > before queueing, flushing or cancelling it.  Most uses are unnecessary
+> > > and quite a few of them are buggy.
 > > 
-> > In file included from fs/ext3/symlink.c:20:0:
-> > include/linux/namei.h: In function 'retry_estale':
-> > include/linux/namei.h:114:19: error: 'ESTALE' undeclared (first use in this function)
-> > 
-> > Signed-off-by: Stephen Warren <swarren@wwwdotorg.org>
+> > Is the particular one you're removing from domain.c buggy?
 > 
-> Reviewed-by: "Theodore Ts'o" <tytso@mit.edu>
-> 
-> Looks good to me.  You might want to add that this commit fixes a
-> build failure regression in v3.8-rc1 which was introduced in commit
-> b9d6ba94b875.
-> 
-> Al, you want to take this, since the original commit went in via the
-> VFS tree?   Or should we have Jan carry this patch?
+> It's a bit difficult to tell without understanding the code base but
+> from quick glancing it looks like it could be.  The queueing and
+> actual excution don't grab the same lock, so there doesn't seem to be
+> anything work_pending() returning %true for a work item which already
+> started executing.  Even if the bug is there, it's likely to be very
+> difficult to trigger tho, so I wouldn't consider it an urgent fix.
 
-Applied, will push later today...
+OK, so I'd generally prefer changelogs like this:
+
+"There's no need to test whether a (delayed) work item is pending
+before queueing, flushing or cancelling it, so remove work_pending()
+tests used in those cases."
+
+If that's fine with you, I'll queue up [16/25] and [11/25] for v3.9
+with the above as the changelog.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
