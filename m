@@ -1,169 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753835Ab2LYJbl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 04:31:41 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:3670 "EHLO
+	id S1753826Ab2LYJn6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 04:43:58 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:4100 "EHLO
 	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753813Ab2LYJbh (ORCPT
+	with ESMTP id S1753687Ab2LYJny (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 04:31:37 -0500
+	Tue, 25 Dec 2012 04:43:54 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Tue, 25 Dec 2012 01:31:32 -0800
+	by hqnvupgp08.nvidia.com on Tue, 25 Dec 2012 01:43:46 -0800
+Message-ID: <50D97553.80001@nvidia.com>
+Date: Tue, 25 Dec 2012 15:13:47 +0530
 From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <broonie@opensource.wolfsonmicro.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.co>, <lrg@ti.com>,
-        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 2/2] regulator: tps51632: add DT support
-Date: Tue, 25 Dec 2012 15:01:13 +0530
-Message-ID: <1356427873-13478-2-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1356427873-13478-1-git-send-email-ldewangan@nvidia.com>
-References: <1356427873-13478-1-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.13) Gecko/20101208 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ARM: tegra: dts: add aliases and DMA requestor for serial
+ controller
+References: <1355898671-3960-1-git-send-email-ldewangan@nvidia.com> <50D1F2CB.3090206@wwwdotorg.org> <50D2AD02.6060101@nvidia.com> <50D344E9.70305@wwwdotorg.org> <50D3E320.2090804@nvidia.com> <50D4CBB0.7080603@wwwdotorg.org> <50D614D9.8020106@nvidia.com> <50D93AB6.7040905@wwwdotorg.org>
+In-Reply-To: <50D93AB6.7040905@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add DT support for the TI TPS51632. Add device binding document also.
+On Tuesday 25 December 2012 11:03 AM, Stephen Warren wrote:
+> On 12/22/2012 01:15 PM, Laxman Dewangan wrote:
+>
+>> This way it is straight
+>> forward for the uart user to directly see the uart instance on board and
+>> decide the port number rather than going to what are other uart and
+>> their corresponding driver.
+> Still, there is some precedent in the kernel for your approach. So, I
+> guess we can go ahead with using the aliases as-is.
+>
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- .../bindings/regulator/tps51632-regulator.txt      |   27 +++++++++
- drivers/regulator/tps51632-regulator.c             |   59 ++++++++++++++++++++
- 2 files changed, 86 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/regulator/tps51632-regulator.txt
-
-diff --git a/Documentation/devicetree/bindings/regulator/tps51632-regulator.txt b/Documentation/devicetree/bindings/regulator/tps51632-regulator.txt
-new file mode 100644
-index 0000000..2f7e44a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/regulator/tps51632-regulator.txt
-@@ -0,0 +1,27 @@
-+TPS51632 Voltage regulators
-+
-+Required properties:
-+- compatible: Must be "ti,tps51632"
-+- reg: I2C slave address
-+
-+Optional properties:
-+- ti,enable-pwm-dvfs: Enable the DVFS voltage control through the PWM interface.
-+- ti,dvfs-step-20mV: The 20mV step voltage when PWM DVFS enabled. Missing this
-+	will set 10mV step voltage in PWM DVFS mode. In normal mode, the voltage
-+	step is 10mV as per datasheet.
-+
-+Any property defined as part of the core regulator binding, defined in
-+regulator.txt, can also be used.
-+
-+Example:
-+
-+	tps51632 {
-+		compatible = "ti,tps51632";
-+		reg =  <0x43>;
-+		regulator-name = "tps51632-vout";
-+		regulator-min-microvolt = <500000>;
-+		regulator-max-microvolt = <1500000>;
-+		regulator-boot-on;
-+		ti,enable-pwm-dvfs;
-+		ti,dvfs-step-20mV;
-+	};
-diff --git a/drivers/regulator/tps51632-regulator.c b/drivers/regulator/tps51632-regulator.c
-index b96fb0e..a3af9c5 100644
---- a/drivers/regulator/tps51632-regulator.c
-+++ b/drivers/regulator/tps51632-regulator.c
-@@ -28,10 +28,13 @@
- #include <linux/init.h>
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
- #include <linux/platform_device.h>
- #include <linux/regmap.h>
- #include <linux/regulator/driver.h>
- #include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/regulator/tps51632-regulator.h>
- #include <linux/slab.h>
- 
-@@ -252,6 +255,49 @@ static const struct regmap_config tps51632_regmap_config = {
- 	.cache_type		= REGCACHE_RBTREE,
- };
- 
-+#if defined(CONFIG_OF)
-+static const struct of_device_id tps51632_of_match[] = {
-+	{ .compatible = "ti,tps51632",},
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, tps51632_of_match);
-+
-+static struct tps51632_regulator_platform_data *
-+	of_get_tps51632_platform_data(struct device *dev)
-+{
-+	struct tps51632_regulator_platform_data *pdata;
-+	struct device_node *np = dev->of_node;
-+
-+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(dev, "Memory alloc failed for platform data\n");
-+		return NULL;
-+	}
-+
-+	pdata->reg_init_data = of_get_regulator_init_data(dev, dev->of_node);
-+	if (!pdata->reg_init_data) {
-+		dev_err(dev, "Not able to get OF regulator init data\n");
-+		return NULL;
-+	}
-+
-+	pdata->enable_pwm_dvfs =
-+			of_property_read_bool(np, "ti,enable-pwm-dvfs");
-+	pdata->dvfs_step_20mV = of_property_read_bool(np, "ti,dvfs-step-20mV");
-+
-+	pdata->base_voltage_uV = pdata->reg_init_data->constraints->min_uV ? :
-+					TPS51632_MIN_VOLATGE;
-+	pdata->max_voltage_uV = pdata->reg_init_data->constraints->max_uV ? :
-+					TPS51632_MAX_VOLATGE;
-+	return pdata;
-+}
-+#else
-+static struct tps51632_regulator_platform_data *
-+	of_get_tps51632_platform_data(struct device *dev)
-+{
-+	return NULL;
-+}
-+#endif
-+
- static int tps51632_probe(struct i2c_client *client,
- 				const struct i2c_device_id *id)
- {
-@@ -261,7 +307,19 @@ static int tps51632_probe(struct i2c_client *client,
- 	int ret;
- 	struct regulator_config config = { };
- 
-+	if (client->dev.of_node) {
-+		const struct of_device_id *match;
-+		match = of_match_device(of_match_ptr(tps51632_of_match),
-+				&client->dev);
-+		if (!match) {
-+			dev_err(&client->dev, "Error: No device match found\n");
-+			return -ENODEV;
-+		}
-+	}
-+
- 	pdata = client->dev.platform_data;
-+	if (!pdata && client->dev.of_node)
-+		pdata = of_get_tps51632_platform_data(&client->dev);
- 	if (!pdata) {
- 		dev_err(&client->dev, "No Platform data\n");
- 		return -EINVAL;
-@@ -350,6 +408,7 @@ static struct i2c_driver tps51632_i2c_driver = {
- 	.driver = {
- 		.name = "tps51632",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(tps51632_of_match),
- 	},
- 	.probe = tps51632_probe,
- 	.remove = tps51632_remove,
--- 
-1.7.1.1
+So can I assume this patch is fine and I need not to re-spin it for 
+removing aliases?
 
