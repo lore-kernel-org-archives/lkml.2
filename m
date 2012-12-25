@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab2LYCxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 21:53:01 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:38212 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab2LYCw7 (ORCPT
+	id S1753527Ab2LYDCR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 22:02:17 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:41001 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753385Ab2LYDCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 21:52:59 -0500
-Message-ID: <1356403969.22368.1.camel@phoenix>
-Subject: [PATCH] mfd: pcf50633: Init pcf->dev before using it
-From: Axel Lin <axel.lin@ingics.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Harald Welte <laforge@openmoko.org>, Lars-Peter Clausen <lars@metafoo.de>,
-        linux-kernel@vger.kernel.org
-Date: Tue, 25 Dec 2012 10:52:49 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 24 Dec 2012 22:02:14 -0500
+Message-ID: <50D91733.2040000@gmail.com>
+Date: Mon, 24 Dec 2012 22:02:11 -0500
+From: Logan Rathbone <loganrathbone@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: USB 2.0 (EHCI) keeps crapping out (3.2.29)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code uses pcf->dev in the dev_err call before setting it to
-&client->dev. Fix it.
+*** NOTE:  Kindly CC me directly if you reply to list since I'm not an 
+LKML subscriber. ***
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/mfd/pcf50633-core.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+Running vanilla 3.2.29 (Slackware 14.0).  I also had this issue on 
+2.6.37.6 and *possibly* 2.6.33.x, but I don't recall.
 
-diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
-index 64803f1..d115673 100644
---- a/drivers/mfd/pcf50633-core.c
-+++ b/drivers/mfd/pcf50633-core.c
-@@ -208,6 +208,8 @@ static int pcf50633_probe(struct i2c_client *client,
- 	if (!pcf)
- 		return -ENOMEM;
- 
-+	i2c_set_clientdata(client, pcf);
-+	pcf->dev = &client->dev;
- 	pcf->pdata = pdata;
- 
- 	mutex_init(&pcf->lock);
-@@ -219,9 +221,6 @@ static int pcf50633_probe(struct i2c_client *client,
- 		return ret;
- 	}
- 
--	i2c_set_clientdata(client, pcf);
--	pcf->dev = &client->dev;
--
- 	version = pcf50633_reg_read(pcf, 0);
- 	variant = pcf50633_reg_read(pcf, 1);
- 	if (version < 0 || variant < 0) {
--- 
-1.7.9.5
+Every now and again (could be every few days, could take a couple of 
+weeks... depends.) USB 2.0 stops working.  My scanner as well as certain 
+mass-storage devices that are USB-2.0 compatible fail to function all of 
+a sudden.
 
+With the said mass storage devices, I get lots of errors like this in my 
+logs:
 
+hub 1-0:1.0: unable to enumerate USB device on port 3
 
+Devices that have previously been mounted and accessed successfully 
+begin giving input/output errors when I try to ls them.
+
+rmmod'ing ehci_hcd and modprobe'ing it again resolves the issue until it 
+occurs again.
+
+It *could* be a hardware problem, but it seems odd that unloading & 
+reloading the module instantly makes it work perfectly again.
+
+Via USB 1.1/2.0 controller from circa 2002-2003.
+
+If anyone has any ideas, please let me know...
+
+logan@logancomp:~$ /sbin/lspci |grep -i usb
+00:10.0 USB controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
+Controller (rev 80)
+00:10.1 USB controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
+Controller (rev 80)
+00:10.2 USB controller: VIA Technologies, Inc. VT82xxxxx UHCI USB 1.1 
+Controller (rev 80)
+00:10.3 USB controller: VIA Technologies, Inc. USB 2.0 (rev 82)
+
+logan@logancomp:~$ cat /proc/cmdline
+auto BOOT_IMAGE=Slackware ro root=802 nohz=off highres=off 
+clocksource=jiffies acpi_enforce_resources=lax vt.default_utf8=0
