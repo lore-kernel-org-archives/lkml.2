@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab2LYCoS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Dec 2012 21:44:18 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:35012 "EHLO
+	id S1753591Ab2LYCn4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Dec 2012 21:43:56 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:34972 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab2LYCoO (ORCPT
+	with ESMTP id S1753530Ab2LYCnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Dec 2012 21:44:14 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBP2hhDN021401, This message is released by code: ctaloc0852
+	Mon, 24 Dec 2012 21:43:42 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBP2hAoR021082, This message is released by code: ctaloc0852
 From: <wei_wang@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v2 8/8] MFD:rtsx: Use macro defines to replace some variables
-Date: Tue, 25 Dec 2012 10:43:40 +0800
-Message-ID: <9df15689e28b011b5401b09d0a9282d95171dab5.1356403281.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v2 3/8] MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
+Date: Tue, 25 Dec 2012 10:43:09 +0800
+Message-ID: <7ba22b7e0e0be5a353cdfcfefbeff03a5be973c0.1356403281.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1356403281.git.wei_wang@realsil.com.cn>
 References: <cover.1356403281.git.wei_wang@realsil.com.cn>
@@ -28,76 +28,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-In function rtsx_pci_switch_clock, some variables, such as min_n, max_n,
-and max_div, are not necessary. And those assigned values look very
-obscure for others. It's more proper to use macro definitions here to
-replace these variables.
-
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/mfd/rtsx_pcr.c |   13 ++++---------
- drivers/mfd/rtsx_pcr.h |    3 +++
- 2 files changed, 7 insertions(+), 9 deletions(-)
+ drivers/mfd/rtsx_pcr.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
 diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 7632e7f..431a74c 100644
+index fa2c2bc..1dc64bb 100644
 --- a/drivers/mfd/rtsx_pcr.c
 +++ b/drivers/mfd/rtsx_pcr.c
-@@ -590,8 +590,7 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
- 		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk)
- {
- 	int err, clk;
--	u8 n, min_n, max_n, clk_divider;
--	u8 mcu_cnt, div, max_div;
-+	u8 n, clk_divider, mcu_cnt, div;
- 	u8 depth[] = {
- 		[RTSX_SSC_DEPTH_4M] = SSC_DEPTH_4M,
- 		[RTSX_SSC_DEPTH_2M] = SSC_DEPTH_2M,
-@@ -615,10 +614,6 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
- 	card_clock /= 1000000;
- 	dev_dbg(&(pcr->pci->dev), "Switch card clock to %dMHz\n", card_clock);
+@@ -1010,6 +1010,10 @@ static int __devinit rtsx_pci_probe(struct pci_dev *pcidev,
+ 		pci_name(pcidev), (int)pcidev->vendor, (int)pcidev->device,
+ 		(int)pcidev->revision);
  
--	min_n = 80;
--	max_n = 208;
--	max_div = CLK_DIV_8;
--
- 	clk = card_clock;
- 	if (!initial_mode && double_clk)
- 		clk = card_clock * 2;
-@@ -633,16 +628,16 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
- 		n = (u8)pcr->ops->conv_clk_and_div_n(clk, CLK_TO_DIV_N);
- 	else
- 		n = (u8)(clk - 2);
--	if ((clk <= 2) || (n > max_n))
-+	if ((clk <= 2) || (n > MAX_DIV_N_PCR))
- 		return -EINVAL;
- 
- 	mcu_cnt = (u8)(125/clk + 3);
- 	if (mcu_cnt > 15)
- 		mcu_cnt = 15;
- 
--	/* Make sure that the SSC clock div_n is equal or greater than min_n */
-+	/* Make sure that the SSC clock div_n is not less than MIN_DIV_N_PCR */
- 	div = CLK_DIV_1;
--	while ((n < min_n) && (div < max_div)) {
-+	while ((n < MIN_DIV_N_PCR) && (div < CLK_DIV_8)) {
- 		if (pcr->ops->conv_clk_and_div_n) {
- 			int dbl_clk = pcr->ops->conv_clk_and_div_n(n,
- 					DIV_N_TO_CLK) * 2;
-diff --git a/drivers/mfd/rtsx_pcr.h b/drivers/mfd/rtsx_pcr.h
-index 12462c1..33c210b 100644
---- a/drivers/mfd/rtsx_pcr.h
-+++ b/drivers/mfd/rtsx_pcr.h
-@@ -25,6 +25,9 @@
- 
- #include <linux/mfd/rtsx_pci.h>
- 
-+#define MIN_DIV_N_PCR		80
-+#define MAX_DIV_N_PCR		208
++	ret = pci_set_dma_mask(pcidev, DMA_BIT_MASK(32));
++	if (ret < 0)
++		return ret;
 +
- void rts5209_init_params(struct rtsx_pcr *pcr);
- void rts5229_init_params(struct rtsx_pcr *pcr);
- void rtl8411_init_params(struct rtsx_pcr *pcr);
+ 	ret = pci_enable_device(pcidev);
+ 	if (ret)
+ 		return ret;
 -- 
 1.7.9.5
 
