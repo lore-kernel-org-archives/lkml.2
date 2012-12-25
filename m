@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868Ab2LYLON (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 06:14:13 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39299 "EHLO mail.skyhub.de"
+	id S1753857Ab2LYLRp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 06:17:45 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:39333 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641Ab2LYLOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 06:14:11 -0500
-Date: Tue, 25 Dec 2012 12:14:09 +0100
+	id S1753691Ab2LYLRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 06:17:44 -0500
+Date: Tue, 25 Dec 2012 12:17:42 +0100
 From: Borislav Petkov <bp@alien8.de>
-To: wei_wang@realsil.com.cn
-Cc: cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com
-Subject: Re: [PATCH v2 8/8] MFD:rtsx: Use macro defines to replace some
- variables
-Message-ID: <20121225111409.GF7692@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, wei_wang@realsil.com.cn,
-	cjb@laptop.org, sameo@linux.intel.com, devel@linuxdriverproject.org,
-	linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-	gregkh@linuxfoundation.org, arnd@arndb.de, oakad@yahoo.com
-References: <cover.1356403281.git.wei_wang@realsil.com.cn>
- <9df15689e28b011b5401b09d0a9282d95171dab5.1356403281.git.wei_wang@realsil.com.cn>
+To: bbi5291 <bbi5291@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Does init start with any open files?
+Message-ID: <20121225111742.GB7720@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	bbi5291 <bbi5291@gmail.com>, linux-kernel@vger.kernel.org
+References: <CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <9df15689e28b011b5401b09d0a9282d95171dab5.1356403281.git.wei_wang@realsil.com.cn>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25, 2012 at 10:43:40AM +0800, wei_wang@realsil.com.cn wrote:
-> From: Wei WANG <wei_wang@realsil.com.cn>
-> 
-> In function rtsx_pci_switch_clock, some variables, such as min_n, max_n,
-> and max_div, are not necessary. And those assigned values look very
-> obscure for others. It's more proper to use macro definitions here to
-> replace these variables.
-> 
-> Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+On Tue, Dec 25, 2012 at 02:38:09AM -0500, bbi5291 wrote:
+> When the init process is created on system startup, does it have any
+> open file descriptors? If so, where do they point?
 
-Acked-by: Borislav Petkov <bp@alien8.de>
+$ tree /proc/1/fd
+/proc/1/fd
+└── 10 -> /run/initctl
+
+0 directories, 1 file
 
 -- 
 Regards/Gruss,
