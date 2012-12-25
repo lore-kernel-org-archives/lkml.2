@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab2LYFGC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 00:06:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:2436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750732Ab2LYFF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 00:05:59 -0500
-Date: Tue, 25 Dec 2012 07:05:55 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-Cc: mtosatti@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] KVM: Write protect the updated slot only when we
- start dirty logging
-Message-ID: <20121225050555.GD29007@redhat.com>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121218162647.009f468e.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121224132717.GW17584@redhat.com>
- <20121225130840.74996653.yoshikawa_takuya_b1@lab.ntt.co.jp>
+	id S1751759Ab2LYFZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 00:25:06 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:49674 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750732Ab2LYFZD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 00:25:03 -0500
+Message-ID: <50D938AC.50001@wwwdotorg.org>
+Date: Mon, 24 Dec 2012 22:25:00 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121225130840.74996653.yoshikawa_takuya_b1@lab.ntt.co.jp>
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+CC: Thierry Reding <thierry.reding@avionic-design.de>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "dev@lynxeye.de" <dev@lynxeye.de>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [PATCHv4 5/8] drm: tegra: Remove redundant host1x
+References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <1356089964-5265-6-git-send-email-tbergstrom@nvidia.com> <20121221143614.GA16167@avionic-0098.adnet.avionic-design.de> <50D55820.7030302@nvidia.com>
+In-Reply-To: <50D55820.7030302@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25, 2012 at 01:08:40PM +0900, Takuya Yoshikawa wrote:
-> On Mon, 24 Dec 2012 15:27:17 +0200
-> Gleb Natapov <gleb@redhat.com> wrote:
+On 12/21/2012 11:50 PM, Terje Bergström wrote:
+> On 21.12.2012 16:36, Thierry Reding wrote:
+>> On Fri, Dec 21, 2012 at 01:39:21PM +0200, Terje Bergstrom wrote:
+>>> +static struct platform_driver tegra_drm_platform_driver = {
+>>> +	.driver = {
+>>> +		.name = "tegradrm",
+>>
+>> This should be "tegra-drm" to match the module name.
 > 
-> > > @@ -6897,7 +6897,14 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
-> > >  	spin_lock(&kvm->mmu_lock);
-> > >  	if (nr_mmu_pages)
-> > >  		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
-> > > -	kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> > > +	/*
-> > > +	 * Write protect all pages for dirty logging.
-> > > +	 * Existing largepage mappings are destroyed here and new ones will
-> > > +	 * not be created until the end of the logging.
-> > > +	 */
-> > > +	if ((mem->flags & KVM_MEM_LOG_DIRTY_PAGES) &&
-> > > +	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES))
-> > > +		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> > We should not check old slot flags here or at least check that
-> > old.npages is not zero. Userspace may delete a slot using old flags,
-> > then, if new memslot is created with dirty log enabled, it will not be
-> > protected.
+> We've actually created two problems.
 > 
-> The flag, KVM_MEM_LOG_DIRTY_PAGES, is explicitely cleared when we
-> delete a slot to free dirty_bitmap:
-> 
-> 	if (!npages)
-> 		mem->flags &= ~KVM_MEM_LOG_DIRTY_PAGES;
-> 
-> So when old.npages is not zero, the second condition must be true.
-> 
-Right. I was looking for where it is cleared and missed that.
+> First is that the device name should match driver name which should
+> match module name. But host1x doesn't know the module name of tegradrm.
 
-> Other parts are doing "if (!slot->dirty_bitmap)" to see if the slot
-> is in dirty logging mode.  If you prefer, we can do the same here.
-> 
-Does not matter to me. If you think it will be more consistent do it.
+There's no hard requirement for the device/driver name to match the
+module name. It's good thing to do, but nothing will blow up if it don't
+(modules can use MODULE_ALIAS() to declare which drivers they expose).
 
---
-			Gleb.
+But, what's the problem with host1x knowing the driver name; the host1x
+driver and tegradrm driver are both part of the same code-base, so this
+seems trivial to achieve.
+
+> Second problem is that host1x driver creates tegradrm device even if
+> tegradrm isn't loaded to system.
+
+That's fine. If there's no driver, the device simply won't be probe()d.
+That's just like a device node existing in device tree, but the driver
+for it not being enabled in the kernel, or the relevant module not being
+inserted.
+
+> These mean that the device has to be created in tegra-drm module to have
+
+I definitely disagree here.
