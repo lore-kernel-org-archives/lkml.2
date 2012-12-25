@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab2LYLwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 06:52:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55440 "EHLO mail.skyhub.de"
+	id S1753886Ab2LYL6t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 06:58:49 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44440 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753633Ab2LYLw3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 06:52:29 -0500
-Date: Tue, 25 Dec 2012 12:52:26 +0100
+	id S1753768Ab2LYL6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 06:58:47 -0500
+Date: Tue, 25 Dec 2012 12:58:44 +0100
 From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-Message-ID: <20121225115226.GD7720@liondog.tnic>
+To: bbi5291 <bbi5291@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Does init start with any open files?
+Message-ID: <20121225115844.GG7692@liondog.tnic>
 Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org
-References: <1355814959-10573-1-git-send-email-yinghai@kernel.org>
- <20121222024225.GG3468@phenom.dumpdata.com>
- <eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com>
- <20121222132419.GB2936@phenom.dumpdata.com>
- <50D8FBF9.6050509@zytor.com>
+	bbi5291 <bbi5291@gmail.com>, linux-kernel@vger.kernel.org
+References: <CAMmfjbPKGD28070A0JvMyL02juYW5tuwNmVwrJ-1gFzkNhCuDQ@mail.gmail.com>
+ <20121225111742.GB7720@liondog.tnic>
+ <CAMmfjbNmN0pPXr-HY7qzK52YpwoSU76q1Puog951X7h099XHBA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50D8FBF9.6050509@zytor.com>
+In-Reply-To: <CAMmfjbNmN0pPXr-HY7qzK52YpwoSU76q1Puog951X7h099XHBA@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 05:06:01PM -0800, H. Peter Anvin wrote:
-> Could this be the ljmpq problem that Borislav reported
-> (Intel implemented ljmpq, AMD didn't, and I was tempted by a
-> micro-optimization which broke AMD which made it into the patchset)?
+First of all,
 
-It has to be. Just booted Yinghai's -v8 in kvm on an AMD host and it
-worked fine.
+please do not top-post. You can search the net for why top-posting is
+discouraged.
 
-With the change below it keeps rebooting like I reported earlier. I'd go
-out on a limb here and guess that the guest is triple-faulting due to an
-unhandled #GP caused by an invalid opcode or similar.
+On Tue, Dec 25, 2012 at 06:25:11AM -0500, bbi5291 wrote:
+> Well, that can't be right---I grepped the kernel source for "initctl"
+> and got no results.
 
----
-diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-index d94f6d68be2a..1842d30c96a2 100644
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -279,11 +279,8 @@ ENTRY(secondary_startup_64)
-         *      REX.W + FF /5 JMP m16:64 Jump far, absolute indirect,
-         *              address given in m16:64.
-         */
--       movq    initial_code(%rip),%rax
-        pushq   $0              # fake return address to stop unwinder
--       pushq   $__KERNEL_CS    # set correct cs
--       pushq   %rax            # target address in negative space
--       lretq
-+       rex64 ljmp *initial_code(%rip)
- 
- #ifdef CONFIG_HOTPLUG_CPU
- /*
+That's because it is a named pipe.
+
+> Besides, if you're running a shell, then init has already had time
+> to open and close whatever file descriptors it wants to. What I want
+> to know is whether init has any open file descriptors, at, say, the
+> moment its main() starts executing.
+
+You probably want to stare at init/main.c:kernel_init() and what it
+calls, and then download the sources of the init executable which is run
+on your distro, whip up a text editor and start staring at them.
+
+HTH.
 
 -- 
 Regards/Gruss,
