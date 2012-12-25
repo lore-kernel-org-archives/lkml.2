@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692Ab2LYIfJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 03:35:09 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:53381 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753623Ab2LYIfH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 03:35:07 -0500
+	id S1753808Ab2LYIf2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 03:35:28 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:50617 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753782Ab2LYIfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 03:35:25 -0500
+Message-ID: <50D96543.6010903@parallels.com>
+Date: Tue, 25 Dec 2012 12:35:15 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121224165306.GA9553@redhat.com>
-References: <1356336807-5517-1-git-send-email-avagin@openvz.org>
-	<1356336807-5517-2-git-send-email-avagin@openvz.org>
-	<20121224165306.GA9553@redhat.com>
-Date: Tue, 25 Dec 2012 12:29:25 +0400
-Message-ID: <CANaxB-x=fQROdwD1OyU8=Ai9tXWm9QTSsGgfKvPbjn57ER6aZg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] signalfd: add ability to return siginfo in a raw format
-From: Andrey Wagin <avagin@gmail.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tang Chen <tangchen@cn.fujitsu.com>
+CC: <akpm@linux-foundation.org>, <rientjes@google.com>, <liuj97@gmail.com>,
+        <len.brown@intel.com>, <benh@kernel.crashing.org>, <paulus@samba.org>,
+        <cl@linux.com>, <minchan.kim@gmail.com>,
+        <kosaki.motohiro@jp.fujitsu.com>, <isimatu.yasuaki@jp.fujitsu.com>,
+        <wujianguo@huawei.com>, <wency@cn.fujitsu.com>, <hpa@zytor.com>,
+        <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>, <mgorman@suse.de>,
+        <yinghai@kernel.org>, <x86@kernel.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-acpi@vger.kernel.org>, <linux-s390@vger.kernel.org>,
+        <linux-sh@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <cmetcalf@tilera.com>, <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
+ to avoid dependence
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/24 Oleg Nesterov <oleg@redhat.com>:
-> On 12/24, Andrey Vagin wrote:
->>
->> signalfd should be called with the flag SFD_RAW for that.
->>
->> signalfd_siginfo is not full for siginfo with a negative si_code.
->> copy_siginfo_to_user() is copied a full siginfo to user-space, if
->> si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
->> expanded, because it has not compatiable format with siginfo_t.
->
-> Yes, but otoh perhaps we should change (fix) signalfd_siginfo/copyinfo,
-> its "default" case makes no sense if si_code < 0.
+On 12/24/2012 04:09 PM, Tang Chen wrote:
+> From: Wen Congyang <wency@cn.fujitsu.com>
+> 
+> memory can't be offlined when CONFIG_MEMCG is selected.
+> For example: there is a memory device on node 1. The address range
+> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
+> and memory11 under the directory /sys/devices/system/memory/.
+> 
+> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
+> when we online pages. When we online memory8, the memory stored page cgroup
+> is not provided by this memory device. But when we online memory9, the memory
+> stored page cgroup may be provided by memory8. So we can't offline memory8
+> now. We should offline the memory in the reversed order.
+> 
+> When the memory device is hotremoved, we will auto offline memory provided
+> by this memory device. But we don't know which memory is onlined first, so
+> offlining memory may fail. In such case, iterate twice to offline the memory.
+> 1st iterate: offline every non primary memory block.
+> 2nd iterate: offline primary (i.e. first added) memory block.
+> 
+> This idea is suggested by KOSAKI Motohiro.
+> 
+> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 
-Its "default" case makes sense if a signal is sent by sigqueue(pid,sig,ptr).
+Maybe there is something here that I am missing - I admit that I came
+late to this one, but this really sounds like a very ugly hack, that
+really has no place in here.
 
-I'm afraid, we can change (fix) signalfd_copyinfo, because for
-negative si_code a whole siginfo should be copied to userspace.
-Currently if si_code is unknown, signalfd_copyinfo sets only ssi_ptr
-and that can't be changed due to backward compatibility. ssi_ptr is in
-the midle of signalfd_siginfo and a sizeof(signalfd_siginfo) is equal
-to sizeof(siginfo_t). We don't have space to copied siginfo into
-signalfd_siginfo.
+Retrying, of course, may make sense, if we have reasonable belief that
+we may now succeed. If this is the case, you need to document - in the
+code - while is that.
 
-If we want to have another format with SFD_RAW, I prefer to have
-siginfo_t instead of signalfd_siginfo. Because if si_code is negative,
-it should be siginfo_t in any case. A minor thing is that it can be
-sent back without modifications.
+The memcg argument, however, doesn't really cut it. Why can't we make
+all page_cgroup allocations local to the node they are describing? If
+memcg is the culprit here, we should fix it, and not retry. If there is
+still any benefit in retrying, then we retry being very specific about why.
 
-Oleg, thank you for the comments.
 
->
->> Another problem is that a constant __SI_* is removed from si_code.
->
-> OK, so you add the additional put_user(kinfo->si_code). Again, in
-> this case we can extend signalfd_siginfo perhaps...
->
-> Anyway, the patch doesn't look right.
->
->> +static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
->> +                                     siginfo_t *kinfo)
->> +{
->> +     siginfo_t *uinfo = (siginfo_t *) siginfo;
->> +     int err;
->> +
->> +     BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
->> +
->> +     err = __clear_user(uinfo, sizeof(*uinfo));
->> +     err |= copy_siginfo_to_user(uinfo, kinfo);
->
-> This probably needs copy_siginfo_to_user32() if is_compat_task...
->
->> +     err |= __put_user(kinfo->si_code, &uinfo->si_code);
->
-> __put_user() is not safe? This allows to write to the kernel memory.
->
->> @@ -286,6 +308,11 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->>                                      O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
->>               if (ufd < 0)
->>                       kfree(ctx);
->> +             else if (flags & SFD_RAW) {
->> +                     struct fd f = fdget(ufd);
->> +                     f.file->f_flags |= flags & SFD_RAW;
->
-> Well, but this is racy. How we can know that fdget(ufd) still
-> points to the same file created by anon_inode_getfd? Not to
-> mention f.file can be NULL.
->
-> Another CLONE_FILES thread can do close() right after fd_install().
-> And it can also do dup3().
->
-> Oleg.
->
