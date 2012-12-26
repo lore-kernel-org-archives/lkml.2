@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab2LZAvK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 19:51:10 -0500
-Received: from mail-ia0-f172.google.com ([209.85.210.172]:59167 "EHLO
-	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752705Ab2LZAvG (ORCPT
+	id S1752826Ab2LZBRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 20:17:11 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:52168 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab2LZBRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 19:51:06 -0500
+	Tue, 25 Dec 2012 20:17:07 -0500
+Message-ID: <50DA500B.5090305@gmail.com>
+Date: Wed, 26 Dec 2012 10:16:59 +0900
+From: gshark <gshark.jeong@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-In-Reply-To: <20121221114105.GP2691@gmail.com>
-References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
-	<1355937587-31730-4-git-send-email-lee.jones@linaro.org>
-	<CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
-	<20121220192441.GC14363@n2100.arm.linux.org.uk>
-	<20121220203514.GN2691@gmail.com>
-	<20121220205113.GD14363@n2100.arm.linux.org.uk>
-	<20121221091306.GO2691@gmail.com>
-	<20121221092421.GG14363@n2100.arm.linux.org.uk>
-	<20121221114105.GP2691@gmail.com>
-Date: Wed, 26 Dec 2012 01:51:05 +0100
-Message-ID: <CACRpkdZGC=f0X1wLt1QLMB=x+ba6VRDAbRcW6wR_2gvNLuGw1g@mail.gmail.com>
-Subject: Re: [PATCH 4/4 v2] net/smsc911x: Provide common clock functionality
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Robert Marklund <robert.marklund@stericsson.com>,
-        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Axel Lin <axel.lin@ingics.com>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: lp8755: Fix lp8755_regulator_init unwind code
+References: <1356401180.14680.6.camel@phoenix>
+In-Reply-To: <1356401180.14680.6.camel@phoenix>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 12:41 PM, Lee Jones <lee.jones@linaro.org> wrote:
-
-> +       if (IS_ERR(pdata->clk)) {
-> +               ret = clk_prepare_enable(pdata->clk);
-> +               if (ret < 0)
-> +                       netdev_err(ndev, "failed to enable clock %d\n", ret);
-> +       }
-
-I think you got all of these backwards now, shouldn't it be if
-(!IS_ERR(pdata->clk)) { } ...?
-
-It's late here but enlighten me if I don't get it.
-
-> +       if (IS_ERR(pdata->clk))
-> +               clk_disable_unprepare(pdata->clk);
-
-Dito.
-
-> +       /* Request clock */
-> +       pdata->clk = clk_get(&pdev->dev, NULL);
-> +       if (IS_ERR(pdata->clk))
-> +               netdev_warn(ndev, "couldn't get clock %li\n", PTR_ERR(pdata->clk));
-
-This one seems correct though.
-
-> +       /* Free clock */
-> +       if (IS_ERR(pdata->clk)) {
-> +               clk_put(pdata->clk);
-> +               pdata->clk = NULL;
-> +       }
-
-Should be !IS_ERR()
-
-Yours,
-Linus Walleij
+2012년 12월 25일 11:06, Axel Lin 쓴 글:
+> This patch also includes below cleanups:
+> Show correct regulator id in dev_err.
+> Remove __devexit_p.
+>
+> Signed-off-by: Axel Lin<axel.lin@ingics.com>
+> ---
+>   drivers/regulator/lp8755.c |    9 +++++----
+>   1 file changed, 5 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/regulator/lp8755.c b/drivers/regulator/lp8755.c
+> index dbc4d12..06a82e2 100644
+> --- a/drivers/regulator/lp8755.c
+> +++ b/drivers/regulator/lp8755.c
+> @@ -358,7 +358,9 @@ static int lp8755_regulator_init(struct lp8755_chip *pchip)
+>   		    regulator_register(&lp8755_regulators[buck_num], &rconfig);
+>   		if (IS_ERR(pchip->rdev[buck_num])) {
+>   			ret = PTR_ERR(pchip->rdev[buck_num]);
+> -			dev_err(pchip->dev, "regulator init failed: buck 0\n");
+> +			pchip->rdev[buck_num] = NULL;
+> +			dev_err(pchip->dev, "regulator init failed: buck %d\n",
+> +				buck_num);
+>   			goto err_buck;
+>   		}
+>   	}
+> @@ -367,8 +369,7 @@ static int lp8755_regulator_init(struct lp8755_chip *pchip)
+>   
+>   err_buck:
+>   	for (icnt = 0; icnt < LP8755_BUCK_MAX; icnt++)
+> -		if (pchip->rdev[icnt] != NULL)
+> -			regulator_unregister(pchip->rdev[icnt]);
+> +		regulator_unregister(pchip->rdev[icnt]);
+>   	return ret;
+>   }
+>   
+> @@ -557,7 +558,7 @@ static struct i2c_driver lp8755_i2c_driver = {
+>   		   .name = LP8755_NAME,
+>   		   },
+>   	.probe = lp8755_probe,
+> -	.remove = __devexit_p(lp8755_remove),
+> +	.remove = lp8755_remove,
+>   	.id_table = lp8755_id,
+>   };
+>   
+> -- 1.7.9.5
+Thank you Alex.
+I will check your patch and test it using my board.
