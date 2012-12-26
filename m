@@ -1,85 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab2LZGM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 01:12:27 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:58141 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751297Ab2LZGMY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 01:12:24 -0500
-X-AuditID: 9c930197-b7c5bae000000e31-9c-50da95467a23
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 20/24] nohz: Full dynticks mode
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
-	<1356028391-14427-21-git-send-email-fweisbec@gmail.com>
-Date: Wed, 26 Dec 2012 15:12:22 +0900
-In-Reply-To: <1356028391-14427-21-git-send-email-fweisbec@gmail.com> (Frederic
-	Weisbecker's message of "Thu, 20 Dec 2012 19:33:07 +0100")
-Message-ID: <87a9t1s5o9.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1752613Ab2LZGVn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 01:21:43 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:44678 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751356Ab2LZGVl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 01:21:41 -0500
+X-IronPort-AV: E=Sophos;i="4.84,355,1355068800"; 
+   d="scan'208";a="6476078"
+Message-ID: <50DA9739.3070907@cn.fujitsu.com>
+Date: Wed, 26 Dec 2012 14:20:41 +0800
+From: Tang Chen <tangchen@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v5 07/14] memory-hotplug: move pgdat_resize_lock into
+ sparse_remove_one_section()
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-8-git-send-email-tangchen@cn.fujitsu.com> <50DA7357.109@jp.fujitsu.com>
+In-Reply-To: <50DA7357.109@jp.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/26 14:21:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/26 14:21:28,
+	Serialize complete at 2012/12/26 14:21:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+On 12/26/2012 11:47 AM, Kamezawa Hiroyuki wrote:
+> (2012/12/24 21:09), Tang Chen wrote:
+>> In __remove_section(), we locked pgdat_resize_lock when calling
+>> sparse_remove_one_section(). This lock will disable irq. But we don't need
+>> to lock the whole function. If we do some work to free pagetables in
+>> free_section_usemap(), we need to call flush_tlb_all(), which need
+>> irq enabled. Otherwise the WARN_ON_ONCE() in smp_call_function_many()
+>> will be triggered.
+>>
+>> Signed-off-by: Tang Chen<tangchen@cn.fujitsu.com>
+>> Signed-off-by: Lai Jiangshan<laijs@cn.fujitsu.com>
+>> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
+> 
+> If this is a bug fix, call-trace in your log and BUGFIX or -fix- in patch title
+> will be appreciated, I think.
+> 
+> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> 
+Hi Kamezawa-san,
 
-On Thu, 20 Dec 2012 19:33:07 +0100, Frederic Weisbecker wrote:
-> When a CPU is in full dynticks mode, try to switch
-> it to nohz mode from the interrupt exit path if it is
-> running a single non-idle task.
->
-> Then restart the tick if necessary if we are enqueuing a
-> second task while the timer is stopped, so that the scheduler
-> tick is rearmed.
->
-> [TODO: Check remaining things to be done from scheduler_tick()]
->
-> [ Included build fix from Geoff Levand ]
-[snip]
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index db3d4df..f3d8f4a 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -943,6 +943,14 @@ static inline u64 steal_ticks(u64 steal)
->  static inline void inc_nr_running(struct rq *rq)
->  {
->  	rq->nr_running++;
-> +
-> +	if (rq->nr_running == 2) {
-> +		if (tick_nohz_full_cpu(rq->cpu)) {
-> +			/* Order rq->nr_running write against the IPI */
-> +			smp_wmb();
-> +			smp_send_reschedule(rq->cpu);
-> +		}
-> +	}
+Thanks for the reviewing.
 
-This block should be guarded with #ifdef CONFIG_SMP, otherwise:
+I don't think this would be a bug. It is OK to lock the whole
+sparse_remove_one_section() if no tlb flushing in free_section_usemap().
 
-  CC      kernel/sched/core.o
-In file included from /home/namhyung/project/linux/kernel/sched/core.c:85:0:
-/home/namhyung/project/linux/kernel/sched/sched.h: In function ‘inc_nr_running’:
-/home/namhyung/project/linux/kernel/sched/sched.h:960:28: error: ‘struct rq’ has no member named ‘cpu’
-/home/namhyung/project/linux/kernel/sched/sched.h:963:26: error: ‘struct rq’ has no member named ‘cpu’
+But we need to flush tlb in free_section_usemap(), so we need to take
+free_section_usemap() out of the lock. :)
+
+I add the call trace to the patch so that people could review it more
+easily.
+
+And here is the call trace for this version:
+
+[  454.796248] ------------[ cut here ]------------
+[  454.851408] WARNING: at kernel/smp.c:461
+smp_call_function_many+0xbd/0x260()
+[  454.935620] Hardware name: PRIMEQUEST 1800E
+......
+[  455.652201] Call Trace:
+[  455.681391]  [<ffffffff8106e73f>] warn_slowpath_common+0x7f/0xc0
+[  455.753151]  [<ffffffff810560a0>] ? leave_mm+0x50/0x50
+[  455.814527]  [<ffffffff8106e79a>] warn_slowpath_null+0x1a/0x20
+[  455.884208]  [<ffffffff810e7a9d>] smp_call_function_many+0xbd/0x260
+[  455.959082]  [<ffffffff810e7ecb>] smp_call_function+0x3b/0x50
+[  456.027722]  [<ffffffff810560a0>] ? leave_mm+0x50/0x50
+[  456.089098]  [<ffffffff810e7f4b>] on_each_cpu+0x3b/0xc0
+[  456.151512]  [<ffffffff81055f0c>] flush_tlb_all+0x1c/0x20
+[  456.216004]  [<ffffffff8104f8de>] remove_pagetable+0x14e/0x1d0
+[  456.285683]  [<ffffffff8104f978>] vmemmap_free+0x18/0x20
+[  456.349139]  [<ffffffff811b8797>] sparse_remove_one_section+0xf7/0x100
+[  456.427126]  [<ffffffff811c5fc2>] __remove_section+0xa2/0xb0
+[  456.494726]  [<ffffffff811c6070>] __remove_pages+0xa0/0xd0
+[  456.560258]  [<ffffffff81669c7b>] arch_remove_memory+0x6b/0xc0
+[  456.629937]  [<ffffffff8166ad28>] remove_memory+0xb8/0xf0
+[  456.694431]  [<ffffffff813e686f>] acpi_memory_device_remove+0x53/0x96
+[  456.771379]  [<ffffffff813b33c4>] acpi_device_remove+0x90/0xb2
+[  456.841059]  [<ffffffff8144b02c>] __device_release_driver+0x7c/0xf0
+[  456.915928]  [<ffffffff8144b1af>] device_release_driver+0x2f/0x50
+[  456.988719]  [<ffffffff813b4476>] acpi_bus_remove+0x32/0x6d
+[  457.055285]  [<ffffffff813b4542>] acpi_bus_trim+0x91/0x102
+[  457.120814]  [<ffffffff813b463b>] acpi_bus_hot_remove_device+0x88/0x16b
+[  457.199840]  [<ffffffff813afda7>] acpi_os_execute_deferred+0x27/0x34
+[  457.275756]  [<ffffffff81091ece>] process_one_work+0x20e/0x5c0
+[  457.345434]  [<ffffffff81091e5f>] ? process_one_work+0x19f/0x5c0
+[  457.417190]  [<ffffffff813afd80>] ?
+acpi_os_wait_events_complete+0x23/0x23
+[  457.499332]  [<ffffffff81093f6e>] worker_thread+0x12e/0x370
+[  457.565896]  [<ffffffff81093e40>] ? manage_workers+0x180/0x180
+[  457.635574]  [<ffffffff8109a09e>] kthread+0xee/0x100
+[  457.694871]  [<ffffffff810dfaf9>] ? __lock_release+0x129/0x190
+[  457.764552]  [<ffffffff81099fb0>] ? __init_kthread_worker+0x70/0x70
+[  457.839427]  [<ffffffff81690aac>] ret_from_fork+0x7c/0xb0
+[  457.903914]  [<ffffffff81099fb0>] ? __init_kthread_worker+0x70/0x70
+[  457.978784] ---[ end trace 25e85300f542aa01 ]---
+
+Thanks. :)
 
 
-Thanks,
-Namhyung
 
->  }
