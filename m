@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753876Ab2LZSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 13:44:16 -0500
-Received: from mail-da0-f49.google.com ([209.85.210.49]:45752 "EHLO
-	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2LZSoN (ORCPT
+	id S1753832Ab2LZTKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 14:10:15 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:40952 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752104Ab2LZTKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 13:44:13 -0500
-From: Dongjin Kim <tobetter@gmail.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: Dongjin Kim <tobetter@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] ARM: dts: Add EHCI device tree node for Exynos4
-Date: Thu, 27 Dec 2012 03:42:20 +0900
-Message-Id: <1356547341-23620-2-git-send-email-tobetter@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1356547341-23620-1-git-send-email-tobetter@gmail.com>
-References: <1356547341-23620-1-git-send-email-tobetter@gmail.com>
+	Wed, 26 Dec 2012 14:10:11 -0500
+Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
+ factor
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        aquini@redhat.com, walken@google.com, lwoodman@redhat.com,
+        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tom Herbert <therbert@google.com>
+In-Reply-To: <50D52E0C.6000103@redhat.com>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+	 <20121221185147.4ae48ab5@annuminas.surriel.com>
+	 <20121221185613.1f4c9523@annuminas.surriel.com>
+	 <20121222033339.GF27621@home.goodmis.org>  <50D52E0C.6000103@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Dec 2012 11:10:08 -0800
+Message-ID: <1356549008.20133.20856.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds EHCI device node on device tree for Exynos4 and defines its
-default platform data, s5p_usb_phy_init and s5p_usb_phy_exit, so that those
-function can be called from the driver.
+On Fri, 2012-12-21 at 22:50 -0500, Rik van Riel wrote:
 
-Signed-off-by: Dongjin Kim <tobetter@gmail.com>
----
- arch/arm/boot/dts/exynos4.dtsi         |    7 +++++++
- arch/arm/mach-exynos/mach-exynos4-dt.c |    9 +++++++++
- 2 files changed, 16 insertions(+)
+> I will try to run this test on a really large SMP system
+> in the lab during the break.
+> 
+> Ideally, the auto-tuning will keep the delay value large
+> enough that performance will stay flat even when there are
+> 100 CPUs contending over the same lock.
+> 
+> Maybe it turns out that the maximum allowed delay value
+> needs to be larger.  Only one way to find out...
+> 
 
-diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
-index 92bca86..df1a9f0 100644
---- a/arch/arm/boot/dts/exynos4.dtsi
-+++ b/arch/arm/boot/dts/exynos4.dtsi
-@@ -140,6 +140,13 @@
- 		status = "disabled";
- 	};
+Hi Rik
+
+I did some tests with your patches with following configuration :
+
+tc qdisc add dev eth0 root htb r2q 1000 default 3
+(to force a contention on qdisc lock, even with a multi queue net
+device)
+
+and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m 128"
+
+Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
+(24 threads), and a fast NIC (10Gbps)
+
+Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
+
+In this workload we have at least two contended spinlocks, with
+different delays. (spinlocks are not held for the same duration)
+
+It clearly defeats your assumption of a single per cpu delay being OK :
+Some cpus are spinning too long while the lock was released.
+
+We might try to use a hash on lock address, and an array of 16 different
+delays so that different spinlocks have a chance of not sharing the same
+delay.
+
+With following patch, I get 982 Mbits/s with same bench, so an increase
+of 45 % instead of a 13 % regression.
+
  
-+	ehci@12580000 {
-+		compatible = "samsung,exynos-ehci";
-+		reg = <0x12580000 0x100>;
-+		interrupts = <0 70 0>;
-+		status = "disabled";
-+	};
-+
- 	serial@13800000 {
- 		compatible = "samsung,exynos4210-uart";
- 		reg = <0x13800000 0x100>;
-diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
-index 92757ff..c8a23f0 100644
---- a/arch/arm/mach-exynos/mach-exynos4-dt.c
-+++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
-@@ -13,6 +13,7 @@
+diff --git a/arch/x86/kernel/smp.c b/arch/x86/kernel/smp.c
+index 48d2b7d..59f98f6 100644
+--- a/arch/x86/kernel/smp.c
++++ b/arch/x86/kernel/smp.c
+@@ -23,6 +23,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/cpu.h>
+ #include <linux/gfp.h>
++#include <linux/hash.h>
  
- #include <linux/of_platform.h>
- #include <linux/serial_core.h>
-+#include <linux/platform_data/usb-ehci-s5p.h>
+ #include <asm/mtrr.h>
+ #include <asm/tlbflush.h>
+@@ -113,6 +114,55 @@ static atomic_t stopping_cpu = ATOMIC_INIT(-1);
+ static bool smp_no_nmi_ipi = false;
  
- #include <asm/mach/arch.h>
- #include <asm/hardware/gic.h>
-@@ -20,9 +21,15 @@
- 
- #include <plat/cpu.h>
- #include <plat/regs-serial.h>
-+#include <plat/usb-phy.h>
- 
- #include "common.h"
- 
-+static struct s5p_ehci_platdata s5p_ehci_platdata = {
-+	.phy_init = s5p_usb_phy_init,
-+	.phy_exit = s5p_usb_phy_exit,
-+};
-+
  /*
-  * The following lookup table is used to override device names when devices
-  * are registered from device tree. This is temporarily added to enable
-@@ -80,6 +87,8 @@ static const struct of_dev_auxdata exynos4_auxdata_lookup[] __initconst = {
- 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_MDMA1, "dma-pl330.2", NULL),
- 	OF_DEV_AUXDATA("samsung,exynos4210-tmu", EXYNOS4_PA_TMU,
- 				"exynos-tmu", NULL),
-+	OF_DEV_AUXDATA("samsung,exynos-ehci", EXYNOS4_PA_EHCI,
-+				"s5p-ehci", &s5p_ehci_platdata),
- 	{},
- };
- 
--- 
-1.7.10.4
++ * Wait on a congested ticket spinlock.
++ */
++#define MIN_SPINLOCK_DELAY 1
++#define MAX_SPINLOCK_DELAY 1000
++#define DELAY_HASH_SHIFT 4
++DEFINE_PER_CPU(int [1 << DELAY_HASH_SHIFT], spinlock_delay) = { 
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++	MIN_SPINLOCK_DELAY, MIN_SPINLOCK_DELAY,
++};
++void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
++{
++	unsigned int slot = hash_32((u32)(unsigned long)lock, DELAY_HASH_SHIFT);
++	int delay = __this_cpu_read(spinlock_delay[slot]);
++
++	for (;;) {
++		int loops = delay * (__ticket_t)(inc.tail - inc.head);
++
++		while (loops--)
++			cpu_relax();
++
++		inc.head = ACCESS_ONCE(lock->tickets.head);
++
++		if (inc.head == inc.tail) {
++			/* Decrease the delay, since we may have overslept. */
++			if (delay > MIN_SPINLOCK_DELAY)
++				delay--;
++			break;
++		}
++
++		/*
++		 * The lock is still busy, the delay was not long enough.
++		 * Going through here 2.7 times will, on average, cancel
++		 * out the decrement above. Using a non-integer number
++		 * gets rid of performance artifacts and reduces oversleeping.
++		 */
++		if (delay < MAX_SPINLOCK_DELAY &&
++		    (!(inc.head & 3) == 0 || (inc.head & 7) == 1))
++			delay++;
++	}
++	__this_cpu_write(spinlock_delay[slot], delay);
++}
++
++/*
+  * this function sends a 'reschedule' IPI to another CPU.
+  * it goes straight through and wastes no time serializing
+  * anything. Worst case is that we lose a reschedule ...
+
 
