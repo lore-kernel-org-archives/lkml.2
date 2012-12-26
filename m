@@ -1,142 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314Ab2LZPvU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 10:51:20 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:50979 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab2LZPvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 10:51:17 -0500
-Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing
- cpu hotplug
-From: Eric Dumazet <erdnetdev@gmail.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-In-Reply-To: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
-References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 Dec 2012 07:51:12 -0800
-Message-ID: <1356537072.20133.20400.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753395Ab2LZQcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 11:32:52 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:16344 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752819Ab2LZQct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 11:32:49 -0500
+Date: Wed, 26 Dec 2012 17:31:12 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Vagin <avagin@parallels.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, David Howells <dhowells@redhat.com>,
+        linux-kernel@vger.kernel.org, criu@openvz.org,
+        Cyrill Gorcunov <gorcunov@openvz.org>, Andrey Wagin <avagin@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [CRIU] [PATCH 1/4] signalfd: add ability to return siginfo in
+	a raw format
+Message-ID: <20121226163112.GA6593@redhat.com>
+References: <1356336807-5517-1-git-send-email-avagin@openvz.org> <1356336807-5517-2-git-send-email-avagin@openvz.org> <20121224165306.GA9553@redhat.com> <CANaxB-x=fQROdwD1OyU8=Ai9tXWm9QTSsGgfKvPbjn57ER6aZg@mail.gmail.com> <20121225143043.GA1813@redhat.com> <20121225152716.GA3198@redhat.com> <50D9C8E9.6020602@parallels.com> <20121225165803.GA9066@redhat.com> <20121226144751.GA18767@paralelels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121226144751.GA18767@paralelels.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2012-12-26 at 15:06 +0800, Wanlong Gao wrote:
-> Add a cpu notifier to virtio-net, so that we can reset the
-> virtqueue affinity if the cpu hotplug happens. It improve
-> the performance through enabling or disabling the virtqueue
-> affinity after doing cpu hotplug.
-> 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 38 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index a6fcf15..9710cf4 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -26,6 +26,7 @@
->  #include <linux/scatterlist.h>
->  #include <linux/if_vlan.h>
->  #include <linux/slab.h>
-> +#include <linux/cpu.h>
->  
->  static int napi_weight = 128;
->  module_param(napi_weight, int, 0444);
-> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
->  module_param(csum, bool, 0444);
->  module_param(gso, bool, 0444);
->  
-> +static bool cpu_hotplug = false;
-> +
->  /* FIXME: MTU in config. */
->  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
->  #define GOOD_COPY_LEN	128
-> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->  		vi->affinity_hint_set = false;
->  }
->  
-> +static int virtnet_cpu_callback(struct notifier_block *nfb,
-> +			       unsigned long action, void *hcpu)
+On 12/26, Andrew Vagin wrote:
+>
+> On Tue, Dec 25, 2012 at 05:58:03PM +0100, Oleg Nesterov wrote:
+> > On 12/25, Pavel Emelyanov wrote:
+> > >
+> > > On 12/25/2012 07:27 PM, Oleg Nesterov wrote:
+> > > >
+> > > > I guess that probably you actually need DUMP, not DEQUEUE. but the
+> > > > latter is not trivial. However, perhaps we can do this assuming that
+> > > > all other threads are sleeping and nobody can do dequeue_signal().
+> > > > Say, we can play with ppos/llseek. If *ppos is not zero,
+> > > > signalfd_dequeue() could dump the nth entry from list or return 0.
+> > >
+> > > This would be perfect, but isn't it better to preserve the pos
+> > > semantics -- we do know size of entry we're about to copy, we can
+> > > treat pos as offset in bytes, not in elements.
+> >
+> > nr-of-records looks better (more flexible) than nr-of-bytes to me. And
+> > perhaps we can also encode private-or-shared into ppos. But I will not
+> > argue in any case.
+>
+> Oleg and Pavel, could you look at these two patches. I implemented in them,
+> what you described here.
+
+cosmetics nits below, feel free to ignore...
+
+Damn. But after I wrote this email I realized that llseek() probably can't
+work. Because peek_offset/f_pos/whatever has to be shared with all processes
+which have this file opened.
+
+Suppose that the task forks after sys_signalfd(). Now if parent or child
+do llseek this affects them both. This is insane because signalfd is
+"strange" to say at least, fork/dup/etc inherits signalfd_ctx but not the
+"source" of the data.
+
+So I think we should not use llseek. But, probably we can rely on pread() ?
+This way we can avoid the problem above, and this looks even simpler.
+
+> +int peek_signal(struct task_struct *tsk, sigset_t *mask,
+> +			siginfo_t *info, int offset, bool group)
 > +{
-> +	switch(action) {
-> +	case CPU_ONLINE:
-> +	case CPU_ONLINE_FROZEN:
-> +	case CPU_DEAD:
-> +	case CPU_DEAD_FROZEN:
-> +		cpu_hotplug = true;
-> +		break;
-> +	default:
-> +		break;
+> +	struct sigpending *pending;
+> +	struct sigqueue *q;
+> +	int i = 0, ret = 0;
+> +
+> +	if (group)
+> +		pending = &tsk->signal->shared_pending;
+> +	else
+> +		pending = &tsk->pending;
+> +
+> +	list_for_each_entry(q, &pending->list, list) {
+> +		if (sigismember(mask, q->info.si_signo))
+> +			continue;
+> +
+> +		if (i == offset) {
+> +			copy_siginfo(info, &q->info);
+> +			ret = info->si_signo;
+> +			break;
+> +		}
+> +
+> +		i++;
 > +	}
-> +	return NOTIFY_OK;
+> +
+> +	return ret;
 > +}
-> +
-> +static struct notifier_block virtnet_cpu_notifier = {
-> +	.notifier_call = virtnet_cpu_callback,
-> +};
-> +
->  static void virtnet_get_ringparam(struct net_device *dev,
->  				struct ethtool_ringparam *ring)
->  {
-> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->   */
->  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->  {
-> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> +	int txq;
-> +
-> +	if (unlikely(cpu_hotplug == true)) {
-> +		virtnet_set_affinity(netdev_priv(dev), true);
-> +		cpu_hotplug = false;
-> +	}
-> +
-> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
->  		  smp_processor_id();
->  
->  	while (unlikely(txq >= dev->real_num_tx_queues))
-> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
->  {
->  	struct virtio_device *vdev = vi->vdev;
->  
-> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
-> +
->  	virtnet_set_affinity(vi, false);
->  
->  	vdev->config->del_vqs(vdev);
-> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
->  		goto err_free;
->  
->  	virtnet_set_affinity(vi, true);
-> +
-> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
-> +	if (ret)
-> +		goto err_free;
-> +
->  	return 0;
->  
->  err_free:
 
-It looks like this patch assumes virtio_net supports a single instance.
+This helper is trivial. Any reason it should live in signal.c ? Just put
+this code into signalfd_peek(). Besides, this helps if !CONFIG_SIGNALFD.
 
-Try your patch with two instances, I am pretty sure it wont do very
-well.
+> If lseek sets a positive position, signals are taken from a shared queue.
+> If lseek sets a negative position, signals are taken from a private queue.
 
-It seems to me you need something else than a single boolean.
+Personally, I'd prefer, say,
 
-A sequence number for example should be better...
+	#define SIGNALFD_SHARED_OFFSET		big-enough-number
 
+if offset >= SIGNALFD_SHARED_OFFSET we use ->shared_pending.
+Again, I won't insist. And if we add SIGNALFD_SHARED_OFFSET
+then we should probably define SIGNALFD_PRIVATE_OFFSET as
+well for consistency.
 
+>  struct signalfd_ctx {
+>  	sigset_t sigmask;
+> +	loff_t peek_offset;
+
+Why we can't simply use ->f_pos ?
+
+> @@ -242,6 +259,13 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
+>  		if (ret < 0)
+>  			break;
+>
+> +		if (ctx->peek_offset) {
+> +			if (ctx->peek_offset > 0)
+> +				ctx->peek_offset++;
+> +			else
+> +				ctx->peek_offset--;
+
+...
+
+> +loff_t signalfd_llseek(struct file *f, loff_t offset, int whence)
+> +{
+> +	struct signalfd_ctx *ctx = f->private_data;
+> +
+> +	switch (whence) {
+> +	case SEEK_SET:
+> +		ctx->peek_offset = offset;
+> +		break;
+> +	case SEEK_CUR:
+> +		ctx->peek_offset += offset;
+
+probably you need some locking (say, f_lock) to ensure that these
+peek_offset modifications can't race with each other. If you rely
+on f_pos you only need to ensure thar signalfd_llseek() can't race
+with itself.
+
+Oleg.
 
