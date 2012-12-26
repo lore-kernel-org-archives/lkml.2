@@ -1,197 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754342Ab2LZK1b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 05:27:31 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:42882 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab2LZK12 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 05:27:28 -0500
+	id S1754353Ab2LZKnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 05:43:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:29754 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754243Ab2LZKnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 05:43:33 -0500
+Date: Wed, 26 Dec 2012 12:46:38 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Jason Wang <jasowang@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
+ hotplug
+Message-ID: <20121226104638.GA18850@redhat.com>
+References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CADpTngXfrV+DrgUjR2LEcesimieOT68Knv9jJGsR_2mRMd1w3g@mail.gmail.com>
-References: <CADpTngXfrV+DrgUjR2LEcesimieOT68Knv9jJGsR_2mRMd1w3g@mail.gmail.com>
-Date: Wed, 26 Dec 2012 11:27:27 +0100
-Message-ID: <CADpTngXm=zWfBZJAZze6ze9iaDitdqBuy8rz9qDoCCVyLysH9A@mail.gmail.com>
-Subject: Fwd: usb issues with 3.6.X and 3.7.X
-From: Fabio Coatti <fabio.coatti@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        rydberg@euromail.se
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Forgot to CC: possibly interested people, sorry.
+On Wed, Dec 26, 2012 at 03:06:54PM +0800, Wanlong Gao wrote:
+> Add a cpu notifier to virtio-net, so that we can reset the
+> virtqueue affinity if the cpu hotplug happens. It improve
+> the performance through enabling or disabling the virtqueue
+> affinity after doing cpu hotplug.
+> 
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: Jason Wang <jasowang@redhat.com>
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+
+Thanks for looking into this.
+Some comments:
+
+1. Looks like the logic in
+virtnet_set_affinity (and in virtnet_select_queue)
+will not work very well when CPU IDs are not
+consequitive. This can happen with hot unplug.
+
+Maybe we should add a VQ allocator, and defining
+a per-cpu variable specifying the VQ instead
+of using CPU ID.
 
 
----------- Forwarded message ----------
-From: Fabio Coatti <fabio.coatti@gmail.com>
-Date: 2012/12/24
-Subject: usb issues with 3.6.X and 3.7.X
-To: linux-kernel@vger.kernel.org
+2. The below code seems racy e.g. when CPU is added
+	during device init.
 
+3. using a global cpu_hotplug seems inelegant.
+In any case we should document what is the
+meaning of this variable.
 
-Hi all,
-I'm experiencing some usb-related issues with recent kernels (3.6.7
-and 3.7.1 at least.)
-Basically I have a V500 epson scanner that worked just fine with older
-kernels; since last time I used it I've changed several kernels and
-now the oldest that I have on my machine is 3.6.7.
-Recently I tried to use the usb scanner without success.
-I've read the 3.6.4 changelog because there seems to be a very similar
-issue patched,
-
-============
-commit e4e29779ec498f4905461a13b6ba58ba4f60152b
-Author: Henrik Rydberg <rydberg@euromail.se>
-Date:   Sat Oct 13 12:20:36 2012 +0200
-    usbdevfs: Fix broken scatter-gather transfer
-
-    commit 014639003c77a51fc319c9fdf225e7747cb6e18d upstream.
-
-    The handling of large output bulk transfers is broken; the same user
-    page is read over and over again. Fixed with this patch.
-
-============
-
-But probably it is not the same issue, as I've tried with 3.7.1 and
-3.6.7; the scanner works just fine if connected to a Mac, so I can
-exclude hardware issues.
-
-I've tried to look at usb traffic with usbmon, but honestly it's not
-my ground :)
-
-Basically, the scanner takes a lot of time to be identified by iscan
-and once identified iscan claims to be unable to speak with the
-scanner.
-
-If this can be useful, here comes the usbmon capture with 3.7.1:
-(it seems that some dialog happens only after 90 seconds from start,
-andh at that moment the device is recognized. Of course, on other
-laptops the scanner is identified at once)
-
-
-09edf540 0.506456 S Co:2:009:0 s 00 09 0001 0000 0000 0
-09edf540 0.506697 C Co:2:009:0 0 0
-09edf540 0.506733 S Bo:2:009:2 - 2 =
-    1b66
-     . f
-09edf540 0.507442 C Bo:2:009:2 0 2 >
-09edf540 0.507456 S Bi:2:009:1 - 4 <
-09edf540 0.508442 C Bi:2:009:1 0 1 =
-    15
-09edf540 0.508450 S Bi:2:009:1 - 42 <
-09edf540 30.508543 C Bi:2:009:1 -2 0
-08706a80 30.508563 S Bi:2:009:1 - 42 <
-08706a80 60.509511 C Bi:2:009:1 -2 0
-08706a80 60.509529 S Bi:2:009:1 - 42 <
-08706a80 90.509970 C Bi:2:009:1 -2 0
-087dd840 90.510030 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087dd840 90.510591 C Co:2:009:0 0 0
-087dd840 90.510599 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087dd840 90.510840 C Co:2:009:0 0 0
-087dd840 90.510845 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087dd840 90.511092 C Co:2:009:0 0 0
-087ddb40 90.511159 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.511341 C Co:2:009:0 0 0
-087ddb40 90.511356 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.511591 C Co:2:009:0 0 0
-087ddb40 90.511597 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.511841 C Co:2:009:0 0 0
-087ddb40 90.511950 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.512215 C Co:2:009:0 0 0
-087ddb40 90.512225 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.512465 C Co:2:009:0 0 0
-087ddb40 90.512470 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.512717 C Co:2:009:0 0 0
-087ddb40 90.512761 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.513091 C Co:2:009:0 0 0
-087ddb40 90.513101 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.513341 C Co:2:009:0 0 0
-087ddb40 90.513346 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.513591 C Co:2:009:0 0 0
-087ddb40 90.513630 S Co:2:009:0 s 00 09 0001 0000 0000 0
-087ddb40 90.513841 C Co:2:009:0 0 0
-087ddb40 90.513850 S Co:2:009:0 s 02 01 0000 0081 0000 0
-087ddb40 90.514090 C Co:2:009:0 0 0
-087ddb40 90.514096 S Co:2:009:0 s 02 01 0000 0002 0000 0
-087ddb40 90.514342 C Co:2:009:0 0 0
-
-eb0f5780 103.718860 S Co:2:009:0 s 00 09 0001 0000 0000 0
-eb0f5780 103.719113 C Co:2:009:0 0 0
-eb0f5780 103.719144 S Bo:2:009:2 - 2 =
-    1b66
-     . f
-eb0f5780 103.719612 C Bo:2:009:2 0 2 >
-eb0f5780 103.719626 S Bi:2:009:1 - 4 <
-eb0f5780 103.720612 C Bi:2:009:1 0 1 =
-    15
-31ff63c0 103.720653 S Bi:2:009:1 - 42 <
-31ff63c0 133.721562 C Bi:2:009:1 -2 0
-0861ca80 133.721579 S Bi:2:009:1 - 42 <
-0861ca80 163.721714 C Bi:2:009:1 -2 0
-eb054000 163.721733 S Bi:2:009:1 - 42 <
-eb054000 193.722675 C Bi:2:009:1 -2 0
-eb3d23c0 193.722707 S Co:2:009:0 s 02 01 0000 0081 0000 0
-eb3d23c0 193.723171 C Co:2:009:0 0 0
-eb3d23c0 193.723188 S Bo:2:009:2 - 2 =
-    1b40
-     . @
-eb3d23c0 193.724046 C Bo:2:009:2 0 2 >
-eb3d23c0 193.724055 S Bi:2:009:1 - 1 <
-eb3d23c0 193.725044 C Bi:2:009:1 0 1 =
-    15
-eb3d23c0 193.725054 S Bo:2:009:2 - 2 =
-    1b49
-     . I
-eb3d23c0 193.725169 C Bo:2:009:2 0 2 >
-eb3d23c0 193.725176 S Bi:2:009:1 - 4 <
-eb3d23c0 193.725294 C Bi:2:009:1 0 1 =
-    15
-eb3d23c0 193.725321 S Bo:2:009:2 - 2 =
-    1c46
-     . F
-eb3d23c0 193.725421 C Bo:2:009:2 0 2 >
-eb3d23c0 193.725428 S Bi:2:009:1 - 16 <
-0868d300 253.727305 C Bi:2:009:1 -2 0
-087d6a80 253.727321 S Bi:2:009:1 - 16 <
-087d6a80 283.728362 C Bi:2:009:1 -2 0
-08522240 283.728384 S Co:2:009:0 s 02 01 0000 0081 0000 0
-08522240 283.729358 C Co:2:009:0 0 0
-08522240 283.729369 S Bo:2:009:2 - 2 =
-    1c49
-     . I
-08522240 283.730234 C Bo:2:009:2 0 2 >
-08522240 283.730242 S Bi:2:009:1 - 80 <
-08522240 313.730875 C Bi:2:009:1 -2 0
-35ecc3c0 313.730896 S Bi:2:009:1 - 80 <
-35ecc3c0 343.731089 C Bi:2:009:1 -2 0
-0846d900 343.731111 S Bi:2:009:1 - 80 <
-0846d900 373.731773 C Bi:2:009:1 -2 0
-eb200180 373.731796 S Co:2:009:0 s 02 01 0000 0081 0000 0
-eb200180 373.732147 C Co:2:009:0 0 0
-eb200180 373.732160 S Bo:2:009:2 - 2 =
-    1c46
-     . F
-eb200180 373.733020 C Bo:2:009:2 0 2 >
-eb200180 373.733029 S Bi:2:009:1 - 16 <
-eb200180 403.733182 C Bi:2:009:1 -2 0
-eb054780 403.733200 S Bi:2:009:1 - 16 <
-eb054780 433.733443 C Bi:2:009:1 -2 0
-1dcbeb40 433.733463 S Bi:2:009:1 - 16 <
-1dcbeb40 463.733936 C Bi:2:009:1 -2 0
-08522240 463.733959 S Co:2:009:0 s 02 01 0000 0081 0000 0
-08522240 463.734684 C Co:2:009:0 0 0
-
-I'm available for any other information, just keep me cc'ed as I'm not
-subscribed.
-
-Many thanks for any answer.
-
-
---
-Fabio
-
-
---
-Fabio
+> ---
+>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 38 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index a6fcf15..9710cf4 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/scatterlist.h>
+>  #include <linux/if_vlan.h>
+>  #include <linux/slab.h>
+> +#include <linux/cpu.h>
+>  
+>  static int napi_weight = 128;
+>  module_param(napi_weight, int, 0444);
+> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+>  module_param(csum, bool, 0444);
+>  module_param(gso, bool, 0444);
+>  
+> +static bool cpu_hotplug = false;
+> +
+>  /* FIXME: MTU in config. */
+>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+>  #define GOOD_COPY_LEN	128
+> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>  		vi->affinity_hint_set = false;
+>  }
+>  
+> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+> +			       unsigned long action, void *hcpu)
+> +{
+> +	switch(action) {
+> +	case CPU_ONLINE:
+> +	case CPU_ONLINE_FROZEN:
+> +	case CPU_DEAD:
+> +	case CPU_DEAD_FROZEN:
+> +		cpu_hotplug = true;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block virtnet_cpu_notifier = {
+> +	.notifier_call = virtnet_cpu_callback,
+> +};
+> +
+>  static void virtnet_get_ringparam(struct net_device *dev,
+>  				struct ethtool_ringparam *ring)
+>  {
+> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>   */
+>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  {
+> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+> +	int txq;
+> +
+> +	if (unlikely(cpu_hotplug == true)) {
+> +		virtnet_set_affinity(netdev_priv(dev), true);
+> +		cpu_hotplug = false;
+> +	}
+> +
+> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+>  		  smp_processor_id();
+>  
+>  	while (unlikely(txq >= dev->real_num_tx_queues))
+> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+>  {
+>  	struct virtio_device *vdev = vi->vdev;
+>  
+> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
+> +
+>  	virtnet_set_affinity(vi, false);
+>  
+>  	vdev->config->del_vqs(vdev);
+> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
+>  		goto err_free;
+>  
+>  	virtnet_set_affinity(vi, true);
+> +
+> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
+> +	if (ret)
+> +		goto err_free;
+> +
+>  	return 0;
+>  
+>  err_free:
+> -- 
+> 1.8.0
