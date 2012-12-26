@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab2LZUbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 15:31:55 -0500
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:44907 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752261Ab2LZUbx (ORCPT
+	id S1753951Ab2LZUlK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 15:41:10 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:46873 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751812Ab2LZUlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 15:31:53 -0500
-Date: Wed, 26 Dec 2012 21:31:51 +0100 (CET)
-From: Jesper Juhl <jj@chaosbits.net>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>
-cc: Naresh Kumar Inna <naresh@chelsio.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] [SCSI] csiostor: Don't leak mem or fail to release firmware
- in csio_hw_flash_config()
-Message-ID: <alpine.LNX.2.00.1212262129490.23814@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 26 Dec 2012 15:41:08 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAE9FiQWr6-=kvrCXKEWFvUHHv6xbHKt-oAdt+VPUMphVUW4U4A@mail.gmail.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan>
+	<150695156.KNRhubloU5@vostro.rjw.lan>
+	<CAErSpo5ZpUaHzYQEpR9Jh0MbcmjHfhKUQ-EpRJH1PNCHR_qnVg@mail.gmail.com>
+	<5457615.T2WjKPXXC4@vostro.rjw.lan>
+	<CAE9FiQUBpu+rUfnvOwDUm8PTYYVfann3SyhhL4k=54EyfRSmLg@mail.gmail.com>
+	<CAErSpo5sGAEO+kcqUsjyrmn_LAzmkWm4ok0c=rBaR_ErwBX23A@mail.gmail.com>
+	<CAE9FiQWr6-=kvrCXKEWFvUHHv6xbHKt-oAdt+VPUMphVUW4U4A@mail.gmail.com>
+Date: Wed, 26 Dec 2012 12:41:05 -0800
+X-Google-Sender-Auth: xM9U5yLPo_0TPLktDQimff8Mrps
+Message-ID: <CAE9FiQVOvqqEFXcRbZt5=8e4fQgmzw03WCS=env46eYADFpXLw@mail.gmail.com>
+Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kzalloc() or csio_hw_check_fwconfig() fail we may leave the
-csio_hw_flash_config() function without freeing allocated memory or
-firmware. This should take care of the leaks.
+On Wed, Dec 26, 2012 at 12:16 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Wed, Dec 26, 2012 at 12:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> Do you have a reference for this?  I think this might have been true
+>> in the past, but I don't think it's true for any version of gcc we
+>> support for building Linux.
+>
+> http://lkml.indiana.edu/hypermail/linux/kernel/0804.3/3600.html
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/scsi/csiostor/csio_hw.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+the problem is already addressed by:
 
- Note: I'm unable to really test this, so the patch is compile tested
-       only.
+| commit f9d14250071eda9972e4c9cea745a11185952114
+| Author: Linus Torvalds <torvalds@linux-foundation.org>
+| Date:   Fri Jan 2 09:29:43 2009 -0800
+|
+|    Disallow gcc versions 4.1.{0,1}
+|
+|    These compiler versions are known to miscompile __weak functions and
+|    thus generate kernels that don't necessarily work correctly.  If a weak
+|    function is int he same compilation unit as a caller, gcc may end up
+|    inlining it, and thus binding the weak function too early.
+|
+|    See
+|
+|        http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27781
+|
+|    for details.
 
-diff --git a/drivers/scsi/csiostor/csio_hw.c b/drivers/scsi/csiostor/csio_hw.c
-index 8ecdb94..bdd78fb 100644
---- a/drivers/scsi/csiostor/csio_hw.c
-+++ b/drivers/scsi/csiostor/csio_hw.c
-@@ -2131,13 +2131,16 @@ csio_hw_flash_config(struct csio_hw *hw, u32 *fw_cfg_param, char *path)
- 		value_to_add = 4 - (cf->size % 4);
- 
- 	cfg_data = kzalloc(cf->size+value_to_add, GFP_KERNEL);
--	if (cfg_data == NULL)
--		return -ENOMEM;
-+	if (cfg_data == NULL) {
-+		ret = -ENOMEM;
-+		goto leave;
-+	}
- 
- 	memcpy((void *)cfg_data, (const void *)cf->data, cf->size);
--
--	if (csio_hw_check_fwconfig(hw, fw_cfg_param) != 0)
--		return -EINVAL;
-+	if (csio_hw_check_fwconfig(hw, fw_cfg_param) != 0) {
-+		ret = -EINVAL;
-+		goto leave;
-+	}
- 
- 	mtype = FW_PARAMS_PARAM_Y_GET(*fw_cfg_param);
- 	maddr = FW_PARAMS_PARAM_Z_GET(*fw_cfg_param) << 16;
-@@ -2149,9 +2152,9 @@ csio_hw_flash_config(struct csio_hw *hw, u32 *fw_cfg_param, char *path)
- 		strncpy(path, "/lib/firmware/" CSIO_CF_FNAME, 64);
- 	}
- 
-+leave:
- 	kfree(cfg_data);
- 	release_firmware(cf);
--
- 	return ret;
- }
- 
--- 
-1.7.1
+so it is ok to put the __weak in the same file now.
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+Yinghai
