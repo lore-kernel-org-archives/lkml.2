@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab2LZBxb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 20:53:31 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:37785 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752951Ab2LZBxY (ORCPT
+	id S1753134Ab2LZBxi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 20:53:38 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:47979 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752951Ab2LZBxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 20:53:24 -0500
-X-AuditID: cbfee61b-b7f616d00000319b-00-50da5893550a
+	Tue, 25 Dec 2012 20:53:32 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-38-50da589ae794
 From: Cho KyongHo <pullip.cho@samsung.com>
 To: "'Linux ARM Kernel'" <linux-arm-kernel@lists.infradead.org>,
         "'Linux IOMMU'" <iommu@lists.linux-foundation.org>,
@@ -19,77 +19,239 @@ Cc: "'Hyunwoong Kim'" <khw0178.kim@samsung.com>,
         "'Prathyush'" <prathyush.k@samsung.com>,
         "'Rahul Sharma'" <rahul.sharma@samsung.com>,
         "'Subash Patel'" <supash.ramaswamy@linaro.org>
-Subject: [PATCH v6 01/12] iommu/exynos: add missing cache flush for removed
- pagetable entries
-Date: Wed, 26 Dec 2012 10:53:22 +0900
-Message-id: <003401cde30b$c99d7f60$5cd87e20$%cho@samsung.com>
+Subject: [PATCH v6 02/12] iommu/exynos: always use iommu fault handler
+Date: Wed, 26 Dec 2012 10:53:29 +0900
+Message-id: <003501cde30b$cdc07520$69415f60$%cho@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=ks_c_5601-1987
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac3jC8l/G1SP7pXJRfmNlrLGHqL/1Q==
+Thread-index: Ac3jC82lFoLN8Dj6S2GS7YL9/Bztqw==
 Content-language: ko
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t8zA93JEbcCDHb/FrG4vGsOm8WM8/uY
-	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4MrYteI9S8Ftjoqd08IaGOeydzFycEgImEhcvaHaxcgJ
-	ZIpJXLi3nq2LkYtDSGAZo8TiOR2MMDWfXiWA1AgJLGKUuLPbDaLmH6PEp5nr2EESbAJaEqvn
-	HmcEsUUE7jJKvDzPA1LELPAXqOjMIbAiYYF4ia/Hn4DZLAKqEgenHWUDsXkFbCUO79vFCGEL
-	SvyYfI8FxGYWMJB4P6uPFcKWl9i85i0zxEHqEo/+6kLs0pNYeHYCI0SJiMS+F+8YIcYLSHyb
-	fIgFolxWYtMBZpBzJAS62SVOzTzIBvGwpMTBFTdYJjCKzUKyeRaSzbOQbJ6FZMUCRpZVjKKp
-	BckFxUnpuUZ6xYm5xaV56XrJ+bmbGCHxIr2DcVWDxSFGAQ5GJR5ezl83A4RYE8uKK3MPMUpw
-	MCuJ8Dp/BArxpiRWVqUW5ccXleakFh9i9AG6fCKzlGhyPjCW80riDY2NTcxMTE3MLU3NTXEI
-	K4nzNnukBAgJpCeWpGanphakFsGMY+LglGpglGVK0z2kybxoalmaRVfw1z5vh68r1yTV7rD+
-	eUDY+8+duttMV77rTp/ycfFrv2/VdQdP5trH5fM83nxiseVpV/7f22Lcmt8aqWZ81uqXFlp7
-	7Yw0a/ErHZmLZc65S38onZtQq9h7defXZFHHYA/xrqpvz+WNz5n9MHwyc2V37dOGvy0/XNwb
-	lViKMxINtZiLihMBy72qp8QCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t9jAd3JEbcCDDoWClhc3jWHzWLG+X1M
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsVy+t8zQ91ZEbcCDPYtF7O4vGsOm8WM8/uY
+	HJg8Pm+SC2CM4rJJSc3JLEst0rdL4Mo43bqMreCLQcWsDYfZGhibNboYOTkkBEwkOhc8YYew
+	xSQu3FvP1sXIxSEksIxR4uXi00AJDrCie7clQWqEBKYzSiz85QtR849R4l3jRGaQBJuAlsTq
+	uccZQWwRgbtAzed5QIqYBf4ySnw6cwhskLCAm8T/DgkQk0VAVWLGYrAor4CtxNSrHCCdvAKC
+	Ej8m32MBsZkFDCTez+pjhbDlJTavecsMcY26xKO/uhCL9CTadxxlgygRkdj34h3YASwCAhLf
+	Jh9igSiXldh0gBnkFgmBfnaJvo5JTBDfSkocXHGDZQKj2Cwkm2ch2TwLyeZZSFYsYGRZxSia
+	WpBcUJyUnmukV5yYW1yal66XnJ+7iRESLdI7GFc1WBxiFOBgVOLh5fx1M0CINbGsuDL3EKME
+	B7OSCK/zR6AQb0piZVVqUX58UWlOavEhRh+gyycyS4km5wMjOa8k3tDY2MTMxNTE3NLU3BSH
+	sJI4b7NHSoCQQHpiSWp2ampBahHMOCYOTqkGRtadnxN1FlnU7dnr2Xnp+td3bEcz8yWZzu8R
+	OLDUIrnpgdxCn7oGncuGYR4nFRJ0P05Jz2LPqngtXmESPOGNZHv4xYMmFanJa6N/yi2PeP8/
+	47HYohX3P8jvbmzlt1vAu/Tb96QjM48FylXM7W9bF7ZwySKm4mJRh33fWDlVJW55FYUd6F3i
+	r8RSnJFoqMVcVJwIAPQbrU3DAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPIsWRmVeSWpSXmKPExsVy+t9jQd1ZEbcCDE7181pc3jWHzWLG+X1M
 	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFm7FrxnqXgNkfF
-	zmlhDYxz2bsYOTgkBEwkPr1K6GLkBDLFJC7cW88GYgsJLGKUuLPbrYuRC8j+xyjxaeY6dpAE
-	m4CWxOq5xxlBbBGBu4wSL8/zgBQxC/wFKjpzCKxIWCBe4uvxJ2A2i4CqxMFpR8Gm8grYShze
-	t4sRwhaU+DH5HguIzSxgIPF+Vh8rhC0vsXnNW2aI49QlHv3VhdilJ7Hw7ARGiBIRiX0v3jFO
-	YBSYhWTSLCSTZiGZNAtJywJGllWMoqkFyQXFSem5RnrFibnFpXnpesn5uZsYwfH4THoH46oG
-	i0OMAhyMSjy8nL9uBgixJpYVV+YeYpTgYFYS4XX+CBTiTUmsrEotyo8vKs1JLT7E6AP06ERm
-	KdHkfGCqyCuJNzQ2MTOyNDKzMDIxN8chrCTO2+yREiAkkJ5YkpqdmlqQWgQzjomDU6qBcWNG
-	t6pvwP7VKSctufVVrwhUPNLW+zhfbGk63+Q+i0nuy/53C4cffHlF49C+nqgTPucmfmRtSZKT
-	S1nW4cwf/adqsW9c8Ja840+5bOxYa5PEq4Mnxj9jPvSZyXivSpGcVFy8lbV50hyD/JZPeVfe
-	V81UynhsF9fMlLNq2waxVevVrruskpmuxFKckWioxVxUnAgAWawxzfQCAAA=
+	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jFmnG5dxlbwxaBi
+	1obDbA2MzRpdjBwcEgImEvduS3YxcgKZYhIX7q1nA7GFBKYzSiz85dvFyAVk/2OUeNc4kRkk
+	wSagJbF67nFGEFtE4C6jxMvzPCBFzAJ/GSU+nTnEDjJUWMBN4n+HBIjJIqAqMWMxWJRXwFZi
+	6lUOkE5eAUGJH5PvsYDYzAIGEu9n9bFC2PISm9e8ZYa4TF3i0V9diEV6Eu07jrJBlIhI7Hvx
+	jnECo8AsJJNmIZk0C8mkWUhaFjCyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjsVn0jsY
+	VzVYHGIU4GBU4uHl/HUzQIg1say4MvcQowQHs5IIr/NHoBBvSmJlVWpRfnxRaU5q8SFGH6A3
+	JzJLiSbnA9NEXkm8obGJmZGlkZmFkYm5OQ5hJXHeZo+UACGB9MSS1OzU1ILUIphxTBycUg2M
+	C8+datjxIHHRi8WdjvFbPvYffcX8VVSnrG7P3SdVIT8XTAosM3g3U/vb0ieV5zKFLklpL45O
+	OvNxnqzVjdBYxzTdj0US9/vMdrjLnDXKZ9/7ZNJ+C1YTAYZDcVxxPwsmX/FXN2VujZlYZbVH
+	x0TpbmnYzXn9fQ+lAlLlcoI2LDV+ZXtBnkFYiaU4I9FQi7moOBEAgm+re/ICAAA=
 X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds cache flush for removed small page and large page
-entries in exynos_iommu_unmap(). Missing cache flush of removed
-page table entries can cause missing page fault interrupt when a
-master IP accesses an unmapped area.
+This commit removes fault handler definition only for exynos-iommu
+driver. Instead, always call iommu fault handler when a fault is
+generated by a System MMU. Every new iommu_domain will have a default
+fault handler and it can be overridden with iommu_set_fault_handler().
+The default fault handler also generates debugging messages and kernel
+woops.
 
 Signed-off-by: KyongHo Cho <pullip.cho@samsung.com>
 ---
- drivers/iommu/exynos-iommu.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/iommu/exynos-iommu.c | 99 ++++++++++++++++----------------------------
+ 1 file changed, 36 insertions(+), 63 deletions(-)
 
 diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
-index 7fe44f8..b96f3b9 100644
+index b96f3b9..ef7dbd1 100644
 --- a/drivers/iommu/exynos-iommu.c
 +++ b/drivers/iommu/exynos-iommu.c
-@@ -1002,6 +1002,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
+@@ -124,16 +124,6 @@ enum exynos_sysmmu_inttype {
+ 	SYSMMU_FAULTS_NUM
+ };
  
- 	if (lv2ent_small(ent)) {
- 		*ent = 0;
-+		pgtable_flush(ent, ent + 1);
- 		size = SPAGE_SIZE;
- 		priv->lv2entcnt[lv1ent_offset(iova)] += 1;
- 		goto done;
-@@ -1011,6 +1012,7 @@ static size_t exynos_iommu_unmap(struct iommu_domain *domain,
- 	BUG_ON(size < LPAGE_SIZE);
+-/*
+- * @itype: type of fault.
+- * @pgtable_base: the physical address of page table base. This is 0 if @itype
+- *                is SYSMMU_BUSERROR.
+- * @fault_addr: the device (virtual) address that the System MMU tried to
+- *             translated. This is 0 if @itype is SYSMMU_BUSERROR.
+- */
+-typedef int (*sysmmu_fault_handler_t)(enum exynos_sysmmu_inttype itype,
+-			unsigned long pgtable_base, unsigned long fault_addr);
+-
+ static unsigned short fault_reg_offset[SYSMMU_FAULTS_NUM] = {
+ 	REG_PAGE_FAULT_ADDR,
+ 	REG_AR_FAULT_ADDR,
+@@ -176,7 +166,6 @@ struct sysmmu_drvdata {
+ 	int activations;
+ 	rwlock_t lock;
+ 	struct iommu_domain *domain;
+-	sysmmu_fault_handler_t fault_handler;
+ 	unsigned long pgtable;
+ };
  
- 	memset(ent, 0, sizeof(*ent) * SPAGES_PER_LPAGE);
-+	pgtable_flush(ent, ent + SPAGES_PER_LPAGE);
+@@ -291,48 +280,23 @@ finish:
+ 	read_unlock_irqrestore(&data->lock, flags);
+ }
  
- 	size = LPAGE_SIZE;
- 	priv->lv2entcnt[lv1ent_offset(iova)] += SPAGES_PER_LPAGE;
+-static void __set_fault_handler(struct sysmmu_drvdata *data,
+-					sysmmu_fault_handler_t handler)
+-{
+-	unsigned long flags;
+-
+-	write_lock_irqsave(&data->lock, flags);
+-	data->fault_handler = handler;
+-	write_unlock_irqrestore(&data->lock, flags);
+-}
+-
+-void exynos_sysmmu_set_fault_handler(struct device *dev,
+-					sysmmu_fault_handler_t handler)
+-{
+-	struct sysmmu_drvdata *data = dev_get_drvdata(dev->archdata.iommu);
+-
+-	__set_fault_handler(data, handler);
+-}
+-
+-static int default_fault_handler(enum exynos_sysmmu_inttype itype,
+-		     unsigned long pgtable_base, unsigned long fault_addr)
++static void __show_fault_information(unsigned long *pgtable, unsigned long iova,
++				     int flags)
+ {
+ 	unsigned long *ent;
+ 
+-	if ((itype >= SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
+-		itype = SYSMMU_FAULT_UNKNOWN;
+-
+ 	pr_err("%s occurred at 0x%lx(Page table base: 0x%lx)\n",
+-			sysmmu_fault_name[itype], fault_addr, pgtable_base);
++			sysmmu_fault_name[flags], iova, __pa(pgtable));
+ 
+-	ent = section_entry(__va(pgtable_base), fault_addr);
++	ent = section_entry(pgtable, iova);
+ 	pr_err("\tLv1 entry: 0x%lx\n", *ent);
+ 
+ 	if (lv1ent_page(ent)) {
+-		ent = page_entry(ent, fault_addr);
++		ent = page_entry(ent, iova);
+ 		pr_err("\t Lv2 entry: 0x%lx\n", *ent);
+ 	}
+ 
+ 	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
+-
+-	BUG();
+-
+-	return 0;
+ }
+ 
+ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+@@ -341,7 +305,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+ 	struct sysmmu_drvdata *data = dev_id;
+ 	struct resource *irqres;
+ 	struct platform_device *pdev;
+-	enum exynos_sysmmu_inttype itype;
++	enum exynos_sysmmu_inttype itype = SYSMMU_FAULT_UNKNOWN;
+ 	unsigned long addr = -1;
+ 
+ 	int i, ret = -ENOSYS;
+@@ -357,9 +321,7 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+ 			break;
+ 	}
+ 
+-	if (i == pdev->num_resources) {
+-		itype = SYSMMU_FAULT_UNKNOWN;
+-	} else {
++	if (i < pdev->num_resources) {
+ 		itype = (enum exynos_sysmmu_inttype)
+ 			__ffs(__raw_readl(data->sfrbases[i] + REG_INT_STATUS));
+ 		if (WARN_ON(!((itype >= 0) && (itype < SYSMMU_FAULT_UNKNOWN))))
+@@ -370,25 +332,25 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
+ 	}
+ 
+ 	if (data->domain)
+-		ret = report_iommu_fault(data->domain, data->dev,
+-				addr, itype);
+-
+-	if ((ret == -ENOSYS) && data->fault_handler) {
+-		unsigned long base = data->pgtable;
+-		if (itype != SYSMMU_FAULT_UNKNOWN)
+-			base = __raw_readl(
+-					data->sfrbases[i] + REG_PT_BASE_ADDR);
+-		ret = data->fault_handler(itype, base, addr);
+-	}
+-
+-	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN))
++		ret = report_iommu_fault(data->domain, data->dev, addr, itype);
++	else
++		__show_fault_information(__va(data->pgtable), itype, addr);
++
++	if (ret == -ENOSYS)
++		pr_err("NO SYSTEM MMU FAULT HANDLER REGISTERED FOR %s\n",
++						dev_name(data->dev));
++	else if (ret < 0)
++		pr_err("SYSTEM MMU FAULT HANDLER FOR %s RETURNED ERROR, %d\n",
++						dev_name(data->dev), ret);
++	else if (itype != SYSMMU_FAULT_UNKNOWN)
+ 		__raw_writel(1 << itype, data->sfrbases[i] + REG_INT_CLEAR);
+ 	else
+-		dev_dbg(data->sysmmu, "(%s) %s is not handled.\n",
+-				data->dbgname, sysmmu_fault_name[itype]);
++		ret = -ENOSYS;
+ 
+-	if (itype != SYSMMU_FAULT_UNKNOWN)
+-		sysmmu_unblock(data->sfrbases[i]);
++	if (ret)
++		BUG();
++
++	sysmmu_unblock(data->sfrbases[i]);
+ 
+ 	read_unlock(&data->lock);
+ 
+@@ -668,8 +630,6 @@ static int exynos_sysmmu_probe(struct platform_device *pdev)
+ 	rwlock_init(&data->lock);
+ 	INIT_LIST_HEAD(&data->node);
+ 
+-	__set_fault_handler(data, &default_fault_handler);
+-
+ 	if (dev->parent)
+ 		pm_runtime_enable(dev);
+ 
+@@ -708,6 +668,17 @@ static inline void pgtable_flush(void *vastart, void *vaend)
+ 				virt_to_phys(vaend));
+ }
+ 
++static int exynos_iommu_fault_handler(struct iommu_domain *domain,
++		struct device *dev, unsigned long iova, int flags, void *token)
++{
++	struct exynos_iommu_domain *priv = domain->priv;
++
++	dev_err(dev, "System MMU Generated FAULT!\n\n");
++	__show_fault_information(priv->pgtable, iova, flags);
++
++	return -ENOSYS;
++}
++
+ static int exynos_iommu_domain_init(struct iommu_domain *domain)
+ {
+ 	struct exynos_iommu_domain *priv;
+@@ -736,6 +707,8 @@ static int exynos_iommu_domain_init(struct iommu_domain *domain)
+ 	domain->geometry.aperture_end   = ~0UL;
+ 	domain->geometry.force_aperture = true;
+ 
++	iommu_set_fault_handler(domain, &exynos_iommu_fault_handler, NULL);
++
+ 	domain->priv = priv;
+ 	return 0;
+ 
 -- 
 1.8.0
 
