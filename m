@@ -1,154 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab2LZGyC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 01:54:02 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34015 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453Ab2LZGx6 (ORCPT
+	id S1753610Ab2LZHCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 02:02:23 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43307 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab2LZHCV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 01:53:58 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50DA9ED5.4000501@jp.fujitsu.com>
-Date: Wed, 26 Dec 2012 15:53:09 +0900
-From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 26 Dec 2012 02:02:21 -0500
+X-AuditID: 9c930179-b7becae000000e51-85-50daa0fbd1c2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 20/24] nohz: Full dynticks mode
+References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
+	<1356028391-14427-21-git-send-email-fweisbec@gmail.com>
+	<87a9t1s5o9.fsf@sejong.aot.lge.com>
+Date: Wed, 26 Dec 2012 16:02:18 +0900
+In-Reply-To: <87a9t1s5o9.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
+	"Wed, 26 Dec 2012 15:12:22 +0900")
+Message-ID: <87623ps3d1.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Tang Chen <tangchen@cn.fujitsu.com>
-CC: <jiang.liu@huawei.com>, <wujianguo@huawei.com>, <hpa@zytor.com>,
-        <akpm@linux-foundation.org>, <wency@cn.fujitsu.com>,
-        <laijs@cn.fujitsu.com>, <linfeng@cn.fujitsu.com>, <yinghai@kernel.org>,
-        <rob@landley.net>, <kosaki.motohiro@jp.fujitsu.com>,
-        <minchan.kim@gmail.com>, <mgorman@suse.de>, <rientjes@google.com>,
-        <guz.fnst@cn.fujitsu.com>, <rusty@rustcorp.com.au>,
-        <lliubbo@gmail.com>, <jaegeuk.hanse@gmail.com>, <tony.luck@intel.com>,
-        <glommer@parallels.com>, <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-Subject: Re: [PATCH v4 3/6] ACPI: Restructure movablecore_map with memory
- info from SRAT.
-References: <1355904903-22699-4-git-send-email-tangchen@cn.fujitsu.com> <1355908308-24744-1-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1355908308-24744-1-git-send-email-tangchen@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tang,
+On Wed, 26 Dec 2012 15:12:22 +0900, Namhyung Kim wrote:
+> Hi Frederic,
+>
+> On Thu, 20 Dec 2012 19:33:07 +0100, Frederic Weisbecker wrote:
+>> When a CPU is in full dynticks mode, try to switch
+>> it to nohz mode from the interrupt exit path if it is
+>> running a single non-idle task.
+>>
+>> Then restart the tick if necessary if we are enqueuing a
+>> second task while the timer is stopped, so that the scheduler
+>> tick is rearmed.
+>>
+>> [TODO: Check remaining things to be done from scheduler_tick()]
+>>
+>> [ Included build fix from Geoff Levand ]
+> [snip]
+>> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+>> index db3d4df..f3d8f4a 100644
+>> --- a/kernel/sched/sched.h
+>> +++ b/kernel/sched/sched.h
+>> @@ -943,6 +943,14 @@ static inline u64 steal_ticks(u64 steal)
+>>  static inline void inc_nr_running(struct rq *rq)
+>>  {
+>>  	rq->nr_running++;
+>> +
+>> +	if (rq->nr_running == 2) {
+>> +		if (tick_nohz_full_cpu(rq->cpu)) {
+>> +			/* Order rq->nr_running write against the IPI */
+>> +			smp_wmb();
+>> +			smp_send_reschedule(rq->cpu);
+>> +		}
+>> +	}
+>
+> This block should be guarded with #ifdef CONFIG_SMP, otherwise:
 
-I don't think it can work well.
-The patch gets memory range of hotpluggable memory by
-acpi_numa_memory_affinity_init(). But it too late.
-For example, if we use log_buf_len boot options, memblock allocator
-runs before getting SRAT information. In this case, this movablecore_map
-boot option does not work well.
+Or apply something like this:
+
+
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 0cd913ed29de..8de13ca88a17 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -957,10 +957,10 @@ static inline void inc_nr_running(struct rq *rq)
+ 	rq->nr_running++;
+ 
+ 	if (rq->nr_running == 2) {
+-		if (tick_nohz_full_cpu(rq->cpu)) {
++		if (tick_nohz_full_cpu(cpu_of(rq))) {
+ 			/* Order rq->nr_running write against the IPI */
+ 			smp_wmb();
+-			smp_send_reschedule(rq->cpu);
++			smp_send_reschedule(cpu_of(rq));
+ 		}
+ 	}
+ }
+
 
 Thanks,
-Yasuaki Ishimatsu
-
-2012/12/19 18:11, Tang Chen wrote:
-> The Hot Plugable bit in SRAT flags specifys if the memory range
-> could be hotplugged.
-> 
-> If user specified movablecore_map=nn[KMG]@ss[KMG], reset
-> movablecore_map.map to the intersection of hotpluggable ranges from
-> SRAT and old movablecore_map.map.
-> Else if user specified movablecore_map=acpi, just use the hotpluggable
-> ranges from SRAT.
-> Otherwise, do nothing. The kernel will use all the memory in all nodes
-> evenly.
-> 
-> The idea "getting info from SRAT" was from Liu Jiang <jiang.liu@huawei.com>.
-> And the idea "do more limit for memblock" was from Wu Jianguo <wujianguo@huawei.com>
-> 
-> Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-> Tested-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
-> ---
->   arch/x86/mm/srat.c |   55 +++++++++++++++++++++++++++++++++++++++++++++++++--
->   1 files changed, 52 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/mm/srat.c b/arch/x86/mm/srat.c
-> index 4ddf497..a8856d2 100644
-> --- a/arch/x86/mm/srat.c
-> +++ b/arch/x86/mm/srat.c
-> @@ -146,7 +146,12 @@ int __init
->   acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
->   {
->   	u64 start, end;
-> +	u32 hotpluggable;
->   	int node, pxm;
-> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-> +	int overlap;
-> +	unsigned long start_pfn, end_pfn;
-> +#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->   
->   	if (srat_disabled())
->   		return -1;
-> @@ -157,8 +162,10 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
->   	if ((ma->flags & ACPI_SRAT_MEM_ENABLED) == 0)
->   		return -1;
->   
-> -	if ((ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE) && !save_add_info())
-> +	hotpluggable = ma->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE;
-> +	if (hotpluggable && !save_add_info())
->   		return -1;
-> +
->   	start = ma->base_address;
->   	end = start + ma->length;
->   	pxm = ma->proximity_domain;
-> @@ -178,9 +185,51 @@ acpi_numa_memory_affinity_init(struct acpi_srat_mem_affinity *ma)
->   
->   	node_set(node, numa_nodes_parsed);
->   
-> -	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx]\n",
-> +	printk(KERN_INFO "SRAT: Node %u PXM %u [mem %#010Lx-%#010Lx] %s\n",
->   	       node, pxm,
-> -	       (unsigned long long) start, (unsigned long long) end - 1);
-> +	       (unsigned long long) start, (unsigned long long) end - 1,
-> +	       hotpluggable ? "Hot Pluggable": "");
-> +
-> +#ifdef CONFIG_HAVE_MEMBLOCK_NODE_MAP
-> +	start_pfn = PFN_DOWN(start);
-> +	end_pfn = PFN_UP(end);
-> +
-> +	if (!hotpluggable) {
-> +		/* Clear the range overlapped in movablecore_map.map */
-> +		remove_movablecore_map(start_pfn, end_pfn);
-> +		goto out;
-> +	}
-> +
-> +	if (!movablecore_map.acpi) {
-> +		for (overlap = 0; overlap < movablecore_map.nr_map; overlap++) {
-> +			if (start_pfn < movablecore_map.map[overlap].end_pfn)
-> +				break;
-> +		}
-> +
-> +		/*
-> +		 * If there is no overlapped range, or the end of the overlapped
-> +		 * range is higher than end_pfn, then insert nothing.
-> +		 */
-> +		if (end_pfn <= movablecore_map.map[overlap].end_pfn)
-> +			goto out;
-> +
-> +		/*
-> +		 * Otherwise, insert the rest of this range to prevent memblock
-> +		 * from allocating memory in it.
-> +		 */
-> +		start_pfn = movablecore_map.map[overlap].end_pfn;
-> +		start = start_pfn >> PAGE_SHIFT;
-> +	}
-> +
-> +	/* If user chose to use SRAT info, insert the range anyway. */
-> +	if (insert_movablecore_map(start_pfn, end_pfn))
-> +		pr_err("movablecore_map: too many entries;"
-> +			" ignoring [mem %#010llx-%#010llx]\n",
-> +			(unsigned long long) start,
-> +			(unsigned long long) (end - 1));
-> +
-> +out:
-> +#endif /* CONFIG_HAVE_MEMBLOCK_NODE_MAP */
->   	return 0;
->   }
->   
-> 
-
-
+Namhyung
