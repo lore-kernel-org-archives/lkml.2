@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752803Ab2LZAl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 19:41:27 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:42918 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab2LZAlZ convert rfc822-to-8bit (ORCPT
+	id S1752835Ab2LZAmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 19:42:31 -0500
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:38036 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab2LZAma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 19:41:25 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linux Containers <containers@lists.linux-foundation.org>
-Cc: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jaegeuk Kim <jaegeuk.kim@samsung.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Date: Tue, 25 Dec 2012 16:41:16 -0800
-Message-ID: <87obhh63wz.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Tue, 25 Dec 2012 19:42:30 -0500
+Date: Tue, 25 Dec 2012 19:42:07 -0500
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Jesse Gross <jesse@nicira.com>,
+        Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Sridhar Samudrala <sri@us.ibm.com>,
+        Steffen Klassert <steffen.klassert@secunet.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        dev@openvswitch.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 28/29] net/: rename net_random() to prandom_u32()
+Message-ID: <20121226004207.GA21931@hmsreliant.think-freely.org>
+References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com>
+ <1356315256-6572-29-git-send-email-akinobu.mita@gmail.com>
+ <20121225002149.GA5235@neilslaptop.think-freely.org>
+ <CAC5umyhhTJWfsFtZ_5Qm_HJHy2+sx7iMgcV=T=MMKLdi50-HQw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-AID: U2FsdGVkX19CF47bfl3AdTn/7AzjZYHf0RAodQSKpEw=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.5 XMGappySubj_01 Very gappy subject
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linux Containers <containers@lists.linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [PATCH review] f2fs: Don't assign e_id in f2fs_acl_from_disk
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAC5umyhhTJWfsFtZ_5Qm_HJHy2+sx7iMgcV=T=MMKLdi50-HQw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Dec 25, 2012 at 08:47:26PM +0900, Akinobu Mita wrote:
+> 2012/12/25 Neil Horman <nhorman@tuxdriver.com>:
+> > On Mon, Dec 24, 2012 at 11:14:15AM +0900, Akinobu Mita wrote:
+> >> Use more preferable function name which implies using a pseudo-random
+> >> number generator.
+> >>
+> >> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> >> Cc: Jesse Gross <jesse@nicira.com>
+> >> Cc: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
+> >> Cc: Vlad Yasevich <vyasevich@gmail.com>
+> >> Cc: Sridhar Samudrala <sri@us.ibm.com>
+> >> Cc: Neil Horman <nhorman@tuxdriver.com>
+> >> Cc: Steffen Klassert <steffen.klassert@secunet.com>
+> >> Cc: Herbert Xu <herbert@gondor.apana.org.au>
+> >> Cc: "David S. Miller" <davem@davemloft.net>
+> >> Cc: linux-sctp@vger.kernel.org
+> >> Cc: dev@openvswitch.org
+> >> Cc: netdev@vger.kernel.org
+> >> ---
+> >>  include/net/red.h         | 2 +-
+> >>  net/802/garp.c            | 2 +-
+> >>  net/openvswitch/actions.c | 2 +-
+> >>  net/rds/bind.c            | 2 +-
+> >>  net/sctp/socket.c         | 2 +-
+> >>  net/xfrm/xfrm_state.c     | 2 +-
+> >>  6 files changed, 6 insertions(+), 6 deletions(-)
+> >>
+> > I'm largely indifferent to this patch, but I kind of feel like its just churn.
+> > Whats the real advantage in making this change?  I grant that it clearly
+> > indicates the type of random number generator we're using at a given call site,
+> > But for those using net_random, you probably don't care too much about
+> > the source of your random bits.  If you did really want true random vs.
+> > pseudo-random data, you need to explicitly use the right call.  You're previous
+> > patch series did good cleanup on differentiating the different random calls, but
+> > this just seems like its removing what is otherwise useful indirection.
+> 
+> I overlooked the importance of  net_random() indirection.
+> Thanks for the feedback. I'll leave all net_random() callers as-is in
+> the next version.
+Well, I guess I should qualify my opinion.  I find it useful personally (the
+generation of nonces in many cases can be left to most any pseudo random
+generator that the system deems is a 'good enough' balance between a fast
+generator that doesn't block on low entropy and a reasonably secure one that
+doesn't allow for easy prediction.  As those needs and factors change, its nice
+to have a set point to change them at.  If you (or anyone else has a differing
+opinion, I'm happy to listen to it.
 
-With user namespaces enabled building f2fs fails with:
 
- CC      fs/f2fs/acl.o
-fs/f2fs/acl.c: In function ‘f2fs_acl_from_disk’:
-fs/f2fs/acl.c:85:21: error: ‘struct posix_acl_entry’ has no member named ‘e_id’
-make[2]: *** [fs/f2fs/acl.o] Error 1
-make[2]: Target `__build' not remade because of errors.
+Regards
+Neil
 
-e_id is a backwards compatibility field only used for file systems
-that haven't been converted to use kuids and kgids.  When the posix
-acl tag field is neither ACL_USER nor ACL_GROUP assigning e_id is
-unnecessary.  Remove the assignment so f2fs will build with user
-namespaces enabled.
-
-Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Cc: Namjae Jeon <namjae.jeon@samsung.com>
-Cc: Amit Sahrawat <a.sahrawat@samsung.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
----
-
-Barring other feedback I will push this change to Linus with my other
-namespace bug fixes in the next day or two.
-
- fs/f2fs/acl.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/fs/f2fs/acl.c b/fs/f2fs/acl.c
-index fed74d1..e95b949 100644
---- a/fs/f2fs/acl.c
-+++ b/fs/f2fs/acl.c
-@@ -82,7 +82,6 @@ static struct posix_acl *f2fs_acl_from_disk(const char *value, size_t size)
- 		case ACL_GROUP_OBJ:
- 		case ACL_MASK:
- 		case ACL_OTHER:
--			acl->a_entries[i].e_id = ACL_UNDEFINED_ID;
- 			entry = (struct f2fs_acl_entry *)((char *)entry +
- 					sizeof(struct f2fs_acl_entry_short));
- 			break;
--- 
-1.7.5.4
-
+> 
