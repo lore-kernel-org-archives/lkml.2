@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753717Ab2LZE61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 23:58:27 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:58512 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab2LZE6Z (ORCPT
+	id S1751169Ab2LZFKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 00:10:46 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:50285 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750744Ab2LZFKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 23:58:25 -0500
-Message-ID: <50DA837A.6040301@synopsys.com>
-Date: Wed, 26 Dec 2012 10:26:26 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 26 Dec 2012 00:10:43 -0500
+X-AuditID: 9c93016f-b7b54ae000000e9e-a5-50da86d0d6d0
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stefan Beller <stefanbeller@googlemail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul Mackerras \(supporter\:PERFORMANCE EVENT...\)" 
+	<paulus@samba.org>,
+        "Ingo Molnar \(supporter\:PERFORMANCE EVENT...\
+	,commit_signer\:2\/9\=22%\)" <mingo@redhat.com>,
+        "Arnaldo Carvalho de Melo \(supporter\:PERFORMANCE EVENT... \
+	,commit_signer\:7\/9\=78%\)" <acme@ghostprotocols.net>,
+        "Stephane Eranian \(commit_signer\:2\/9\=22%\)" <eranian@google.com>,
+        "Anton Blanchard \(commit_signer\:1\/9\=11%\)" <anton@samba.org>,
+        open list <linux-kernel@vger.kernel.org>
+Illegal-Object: Syntax error in Cc: addresses found on vger.kernel.org:
+	Cc:	"Ingo Molnar \(supporter\:PERFORMANCE EVENT...\ ,commit_signer\:2\/9\=22%\)" <mingo@redhat.com>
+			^-missing character after backslash
+Subject: Re: Segfault in perf tool
+References: <50D77528.6050003@googlemail.com>
+Date: Wed, 26 Dec 2012 14:10:40 +0900
+In-Reply-To: <50D77528.6050003@googlemail.com> (Stefan Beller's message of
+	"Sun, 23 Dec 2012 22:18:32 +0100")
+Message-ID: <87zk11s8j3.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] Ensure that kernel_init_freeable() is not inlined
- into non __init code
-References: <1356072944-23800-1-git-send-email-vgupta@synopsys.com> <20121221072056.GS4939@ZenIV.linux.org.uk> <50D40E82.7000806@synopsys.com>
-In-Reply-To: <50D40E82.7000806@synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 December 2012 12:53 PM, Vineet Gupta wrote:
-> On Friday 21 December 2012 12:50 PM, Al Viro wrote:
->> On Fri, Dec 21, 2012 at 12:25:44PM +0530, Vineet Gupta wrote:
->>> Commit d6b2123802d "make sure that we always have a return path from
->>> kernel_execve()" reshuffled kernel_init()/init_post() to ensure that
->>> kernel_execve() has a caller to return to.
->>>
->>> It removed __init annotation for kernel_init() and introduced/calls a
->>> new routine kernel_init_freeable(). Latter however is inlined by any
->>> reasonable compiler (ARC gcc 4.4 in this case), causing slight code
->>> bloat.
->> Interesting...  I assumed that explicitly set different section would be
->> enough, but I'd been wrong (or the original noinline would've been pointless,
->> now that I think of it).  Consider it ACKed; I can pick it through signal.git,
->> and while it's not urgent I'd send it to Linus after -rc1, with Cc: stable.
->> Or you can send it to him yourself with my usual Acked-by - up to you.
-> 
-> Merging via your signal.git is fine.
-> 
-> Thx,
-> -Vineet
-> 
+Hi Stefan,
 
-Hi Al,
+On Sun, 23 Dec 2012 22:18:32 +0100, Stefan Beller wrote:
+> Hi,
+>
+> I get segmentation faults when running one of these commands:
+> perf report -g --sort symbol_to
+> perf report -g --sort symbol_from
+> perf report -g --sort dso_from
+> perf report -g --sort dso_to
 
-Tickled by a spurious mail from "Kbuild test robot" with this change getting
-committed into your tree (please see below, which Fengguang acknowledged as a
-script error) I took a peek at the commit and it seems the commit log is truncated
-when describing the New call chain of kernel_init. If that's too much you might
-wanna delete all of the Old vs. New Call chains or preferably restore the "New" part.
+Those sort keys are only applicable for branch filtered perf.data file
+(i.e. recorded with -j or -b option) and should not be used for others.
+I'll work on the fix soon.
 
-Sorry for the nit.
-
-Thx,
--Vineet
-
--------------->8-------------------------
-tree:   git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal.git for-linus
-head:   07570a268090d0a209d957e46d164900999c9e5b
-commit: ec21b1033ee6dce41be78c10844f6169566d9d06 [1/6] Ensure that
-kernel_init_freeable() is not inlined into non __init code
-config: x86_64-randconfig-s542 (attached as .config)
-
-Note: it may well be a FALSE warning. FWIW you are at least aware of it now.
--------------->8-------------------------
-
+Thanks,
+Namhyung
 
