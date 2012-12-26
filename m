@@ -1,160 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab2LZNWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 08:22:25 -0500
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:46486 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753077Ab2LZNWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 08:22:22 -0500
-X-Greylist: delayed 446 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Dec 2012 08:22:22 EST
+	id S1754436Ab2LZN0m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 08:26:42 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:11964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752105Ab2LZN0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 08:26:41 -0500
+Message-ID: <50DAFA8C.2030906@redhat.com>
+Date: Wed, 26 Dec 2012 21:24:28 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAN_LGv3oBE4yfdjp76RkxiuUv4PN5RLq0qa8Y5kAMp9XUQXYDQ@mail.gmail.com>
-References: <CAN_LGv3oBE4yfdjp76RkxiuUv4PN5RLq0qa8Y5kAMp9XUQXYDQ@mail.gmail.com>
-Date: Wed, 26 Dec 2012 19:14:55 +0600
-Message-ID: <CAN_LGv29fuLdERnw2j_iSAsgoBPaWtp1hLif6YYtn_MweaU0_g@mail.gmail.com>
-Subject: staging/zram: possible deadlock & typo in error message
-From: "Alexander E. Patrakov" <patrakov@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-mm-cc@laptop.org
-Content-Type: text/plain; charset=UTF-8
+To: Hillf Danton <dhillf@gmail.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        mgorman@suse.de, hughd@google.com,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        "devendra.aaru" <devendra.aaru@gmail.com>,
+        Jongman Heo <jongman.heo@samsung.com>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
+References: <535932623.34838584.1356410331076.JavaMail.root@redhat.com> <692539675.35132464.1356520940797.JavaMail.root@redhat.com> <CAJd=RBD0mjdUZA82UDv134w=TvNtgRNGXWON8CnG0FPexj7vXQ@mail.gmail.com>
+In-Reply-To: <CAJd=RBD0mjdUZA82UDv134w=TvNtgRNGXWON8CnG0FPexj7vXQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Sorry for the duplicate on linux-mm-cc, the first copy used a wrong
-address for LKML]
+On 12/26/2012 08:01 PM, Hillf Danton wrote:
+> On Wed, Dec 26, 2012 at 7:22 PM, Zhouping Liu <zliu@redhat.com> wrote:
+>> Hello everyone,
+>>
+>> The latest mainline(637704cbc95c) would trigger the following error when the system was under
+>> some pressure condition(in my testing, I used oom01 case inside LTP test suite to trigger the issue):
+>>
+>> [ 5462.920151] BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
+>> [ 5462.927991] IP: [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
+>> [ 5462.934176] PGD 0
+>> [ 5462.936191] Oops: 0000 [#2] SMP
+>> [ 5462.939428] Modules linked in: lockd sunrpc iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tabled
+>> [ 5462.984261] CPU 13
+>> [ 5462.986184] Pid: 117, comm: kswapd3 Tainted: G      D      3.8.0-rc1+ #1 Dell Inc. PowerEdge M905/0D413F
+>> [ 5462.995814] RIP: 0010:[<ffffffff811542d9>]  [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
+>> [ 5463.004411] RSP: 0018:ffff88007c97fd48  EFLAGS: 00010202
+>> [ 5463.009701] RAX: 0000000000000001 RBX: 0000000000000064 RCX: 0000000000000001
+>> [ 5463.016818] RDX: 0000000000000064 RSI: 0000000000000000 RDI: 0000000000000000
+>> [ 5463.023926] RBP: ffff88007c97fd98 R08: 0000000000000000 R09: ffff88022ffd9d80
+>> [ 5463.031033] R10: 0000000000003189 R11: 0000000000000000 R12: 00000001004ee87e
+>> [ 5463.038140] R13: 0000000000000002 R14: 0000000000000000 R15: ffff88022ffd9000
+>> [ 5463.045258] FS:  00007f3e570de740(0000) GS:ffff88022fcc0000(0000) knlGS:0000000000000000
+>> [ 5463.053317] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+>> [ 5463.059041] CR2: 0000000000000500 CR3: 00000000018dc000 CR4: 00000000000007e0
+>> [ 5463.066157] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+>> [ 5463.073276] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+>> [ 5463.080400] Process kswapd3 (pid: 117, threadinfo ffff88007c97e000, task ffff88007c981970)
+>> [ 5463.088633] Stack:
+>> [ 5463.090646]  ffff88007c97fd98 0000000000000000 ffff88007c981970 ffffffff81086080
+>> [ 5463.098090]  ffff88007c97fd68 ffff88007c97fd68 ffff88022ffd9d80 0000000000000002
+>> [ 5463.105527]  0000000000000002 0000000000000000 ffff88007c97feb8 ffffffff8114b0e3
+>> [ 5463.112998] Call Trace:
+>> [ 5463.115446]  [<ffffffff81086080>] ? wake_up_bit+0x40/0x40
+>> [ 5463.120826]  [<ffffffff8114b0e3>] kswapd+0x6c3/0xa50
+>> [ 5463.125775]  [<ffffffff8114aa20>] ? zone_reclaim+0x270/0x270
+>> [ 5463.131415]  [<ffffffff81085680>] kthread+0xc0/0xd0
+>> [ 5463.136278]  [<ffffffff810855c0>] ? kthread_create_on_node+0x120/0x120
+>> [ 5463.142786]  [<ffffffff8160a0ac>] ret_from_fork+0x7c/0xb0
+>> [ 5463.148166]  [<ffffffff810855c0>] ? kthread_create_on_node+0x120/0x120
+>> [ 5463.154668] Code: 4e 6d 88 00 48 c7 45 b8 00 00 00 00 48 83 c0 18 48 c7 45 c8 80 60 08 81 48 89 45 d0 48 89 45 d8 8b 04 b5 a0 9a cd 81 85 c0 74 0f <48> 8b 87 00 05 00 00 a8 04 0f 85 98 00 00 00 e8 b3 c3
+>> [ 5463.174097] RIP  [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
+>> [ 5463.180352]  RSP <ffff88007c97fd48>
+>> [ 5463.183824] CR2: 0000000000000500
+>> [ 5463.203717] ---[ end trace 9ff4ff9087c13a36 ]---
+>>
+>> I attached the config file, hope it can make some help.
+> Hey Zhouping,
+>
+> Can you please run with the following commit reverted?
+>
+> Hillf
+>
+>     commit cda73a10eb3f
+>     mm: do not sleep in balance_pgdat if there's no i/o congestion
 
-Hello.
+Hello Hillf,
 
-I have a single-core KVM virtual machine with 2 GB of RAM and
-linux-3.7.1 inside, and I wanted to test the ZRAM module from staging
-there. Here is how:
+Tested it with cda73a10eb3f reverted on two machines, no such issue 
+occurred again.
 
-#!/bin/sh
-
-modprobe zram
-
-echo $((5*1024*1024*1024)) > /sys/block/zram0/disksize
-mkswap /dev/zram0
-swapon /dev/zram0 -p 10 -d
-
-Here is what I found in dmesg:
-
-[    4.905544] zram: module is from the staging directory, the quality
-is unknown, you have been warned.
-[    4.907493] zram: num_devices not specified. Using default: 1
-[    4.907500] zram: Creating 1 devices ...
-[    4.917044] zram: There is little point creating a zram of greater
-than twice the size of memory since we expect a 2:1 compression ratio.
-Note that zram uses about 0.1% of the size of the disk when not in use
-so a huge zram is wasteful.
-[    4.917044]  Memory Size: 2043108 kB
-[    4.917044]  Size you selected: 5368709120 kB
-^^^ it definitely needs to divide that by 1024 in the message.
-
-[    4.917044] Continuing anyway ...
-[    4.986620] Adding 5242876k swap on /dev/zram0.  Priority:10
-extents:1 across:5242876k SS
-^^^ yes, that's what I added.
-
-And here is the lock checker spew that appeared when the machine
-started to use swap (the taint is AFAICT only from zram itself):
-
-[ 6168.672533]
-[ 6168.672592] =================================
-[ 6168.672700] [ INFO: inconsistent lock state ]
-[ 6168.672811] 3.7.1-gentoo #1 Tainted: G         C
-[ 6168.672927] ---------------------------------
-[ 6168.673042] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-R} usage.
-[ 6168.673108] kswapd0/25 [HC0[0]:SC0[0]:HE1:SE1] takes:
-[ 6168.673108]  (&zram->init_lock){+++++-}, at: [<ffffffffa00c5d14>]
-zram_make_request+0x44/0x260 [zram]
-[ 6168.673108] {RECLAIM_FS-ON-W} state was registered at:
-[ 6168.673108]   [<ffffffff810b78cf>] mark_held_locks+0x5f/0x140
-[ 6168.673108]   [<ffffffff810b80b2>] lockdep_trace_alloc+0xa2/0xe0
-[ 6168.673108]   [<ffffffff81127143>] __alloc_pages_nodemask+0x83/0xa20
-[ 6168.673108]   [<ffffffff81162ee1>] alloc_pages_current+0xb1/0x120
-[ 6168.673108]   [<ffffffff811226d9>] __get_free_pages+0x9/0x40
-[ 6168.673108]   [<ffffffff8116c2b9>] kmalloc_order_trace+0x39/0xf0
-[ 6168.673108]   [<ffffffffa00c5b56>] zram_init_device+0x76/0x1f0 [zram]
-[ 6168.673108]   [<ffffffffa00c5f1d>] zram_make_request+0x24d/0x260 [zram]
-[ 6168.673108]   [<ffffffff81340ce2>] generic_make_request+0xc2/0x100
-[ 6168.673108]   [<ffffffff81340d87>] submit_bio+0x67/0x130
-[ 6168.673108]   [<ffffffff811b4ef3>] submit_bh+0x123/0x220
-[ 6168.673108]   [<ffffffff811b8b08>] block_read_full_page+0x228/0x3d0
-[ 6168.673108]   [<ffffffff811bc3a3>] blkdev_readpage+0x13/0x20
-[ 6168.673108]   [<ffffffff8112a73a>] __do_page_cache_readahead+0x2aa/0x2b0
-[ 6168.673108]   [<ffffffff8112aa01>] force_page_cache_readahead+0x71/0xa0
-[ 6168.673108]   [<ffffffff8112adeb>] page_cache_sync_readahead+0x3b/0x40
-[ 6168.673108]   [<ffffffff8111f7b8>] generic_file_aio_read+0x4f8/0x740
-[ 6168.673108]   [<ffffffff811bba4c>] blkdev_aio_read+0x4c/0x80
-[ 6168.673108]   [<ffffffff811839f2>] do_sync_read+0xa2/0xe0
-[ 6168.673108]   [<ffffffff81184153>] vfs_read+0xc3/0x180
-[ 6168.673108]   [<ffffffff8118426a>] sys_read+0x5a/0xa0
-[ 6168.673108]   [<ffffffff81652469>] system_call_fastpath+0x16/0x1b
-[ 6168.673108] irq event stamp: 55013
-[ 6168.673108] hardirqs last  enabled at (55013): [<ffffffff810b7c04>]
-debug_check_no_locks_freed+0xa4/0x190
-[ 6168.673108] hardirqs last disabled at (55012): [<ffffffff810b7bad>]
-debug_check_no_locks_freed+0x4d/0x190
-[ 6168.673108] softirqs last  enabled at (54648): [<ffffffff8105df3e>]
-__do_softirq+0x14e/0x290
-[ 6168.673108] softirqs last disabled at (54625): [<ffffffff816536fc>]
-call_softirq+0x1c/0x30
-[ 6168.673108]
-[ 6168.673108] other info that might help us debug this:
-[ 6168.673108]  Possible unsafe locking scenario:
-[ 6168.673108]
-[ 6168.673108]        CPU0
-[ 6168.673108]        ----
-[ 6168.673108]   lock(&zram->init_lock);
-[ 6168.673108]   <Interrupt>
-[ 6168.673108]     lock(&zram->init_lock);
-[ 6168.673108]
-[ 6168.673108]  *** DEADLOCK ***
-[ 6168.673108]
-[ 6168.673108] no locks held by kswapd0/25.
-[ 6168.673108]
-[ 6168.673108] stack backtrace:
-[ 6168.673108] Pid: 25, comm: kswapd0 Tainted: G         C   3.7.1-gentoo #1
-[ 6168.673108] Call Trace:
-[ 6168.673108]  [<ffffffff810b4467>] print_usage_bug+0x247/0x2e0
-[ 6168.673108]  [<ffffffff810b4834>] mark_lock+0x334/0x630
-[ 6168.673108]  [<ffffffff810bf49d>] ? __module_text_address+0xd/0x70
-[ 6168.673108]  [<ffffffff810b511e>] __lock_acquire+0x5ee/0x1ee0
-[ 6168.673108]  [<ffffffff810c4d5e>] ? is_module_text_address+0x2e/0x60
-[ 6168.673108]  [<ffffffff810b0ec3>] ? __bfs+0x23/0x290
-[ 6168.673108]  [<ffffffff81077020>] ? __kernel_text_address+0x40/0x70
-[ 6168.673108]  [<ffffffff810b7052>] lock_acquire+0x92/0x140
-[ 6168.673108]  [<ffffffffa00c5d14>] ? zram_make_request+0x44/0x260 [zram]
-[ 6168.673108]  [<ffffffff816481e2>] down_read+0x42/0x60
-[ 6168.673108]  [<ffffffffa00c5d14>] ? zram_make_request+0x44/0x260 [zram]
-[ 6168.673108]  [<ffffffffa00c5d14>] zram_make_request+0x44/0x260 [zram]
-[ 6168.673108]  [<ffffffff81127cce>] ? test_set_page_writeback+0x5e/0x190
-[ 6168.673108]  [<ffffffff8164ac75>] ? _raw_spin_unlock_irqrestore+0x65/0x80
-[ 6168.673108]  [<ffffffff81340ce2>] generic_make_request+0xc2/0x100
-[ 6168.673108]  [<ffffffff81340d87>] submit_bio+0x67/0x130
-[ 6168.673108]  [<ffffffff81127d85>] ? test_set_page_writeback+0x115/0x190
-[ 6168.673108]  [<ffffffff81159599>] swap_writepage+0x1a9/0x230
-[ 6168.673108]  [<ffffffff810b78cf>] ? mark_held_locks+0x5f/0x140
-[ 6168.673108]  [<ffffffff81647e05>] ? __mutex_unlock_slowpath+0x105/0x180
-[ 6168.673108]  [<ffffffff810b7abd>] ? trace_hardirqs_on_caller+0x10d/0x1a0
-[ 6168.673108]  [<ffffffff810b7b5d>] ? trace_hardirqs_on+0xd/0x10
-[ 6168.673108]  [<ffffffff81134e6e>] shmem_writepage+0x2ae/0x2f0
-[ 6168.673108]  [<ffffffff811317e2>] shrink_page_list+0x742/0x9b0
-[ 6168.673108]  [<ffffffff81131fa7>] shrink_inactive_list+0x167/0x460
-[ 6168.673108]  [<ffffffff8113271c>] ? shrink_lruvec+0x13c/0x5c0
-[ 6168.673108]  [<ffffffff81132a84>] shrink_lruvec+0x4a4/0x5c0
-[ 6168.673108]  [<ffffffff81132c14>] shrink_zone+0x74/0xa0
-[ 6168.673108]  [<ffffffff81133fbf>] balance_pgdat+0x5ff/0x7e0
-[ 6168.673108]  [<ffffffff81134344>] kswapd+0x1a4/0x490
-[ 6168.673108]  [<ffffffff8107aaa0>] ? wake_up_bit+0x40/0x40
-[ 6168.673108]  [<ffffffff8164ac87>] ? _raw_spin_unlock_irqrestore+0x77/0x80
-[ 6168.673108]  [<ffffffff811341a0>] ? balance_pgdat+0x7e0/0x7e0
-[ 6168.673108]  [<ffffffff8107a2d6>] kthread+0xd6/0xe0
-[ 6168.673108]  [<ffffffff8107a200>] ? __init_kthread_worker+0x70/0x70
-[ 6168.673108]  [<ffffffff816523bc>] ret_from_fork+0x7c/0xb0
-[ 6168.673108]  [<ffffffff8107a200>] ? __init_kthread_worker+0x70/0x70
-
--- 
-Alexander E. Patrakov
+Thanks,
+Zhouping
