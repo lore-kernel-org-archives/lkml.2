@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380Ab2LZRjC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 12:39:02 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:41090 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab2LZRi7 (ORCPT
+	id S1753430Ab2LZRn7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 12:43:59 -0500
+Received: from mail.openrapids.net ([64.15.138.104]:44653 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752287Ab2LZRnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 12:38:59 -0500
+	Wed, 26 Dec 2012 12:43:55 -0500
+X-Greylist: delayed 633 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Dec 2012 12:43:55 EST
+Date: Wed, 26 Dec 2012 12:33:18 -0500
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-kernel@vger.kernel.org, lttng-dev@lists.lttng.org,
+        rp@svcs.cs.pdx.edu, libc-alpha@sourceware.org
+Subject: [RFC PATCH Userspace RCU] Discourage use of pthread_atfork() for
+	call_rcu handlers
+Message-ID: <20121226173318.GA22298@Krystal>
 MIME-Version: 1.0
-In-Reply-To: <87zk11s8j3.fsf@sejong.aot.lge.com>
-References: <50D77528.6050003@googlemail.com>
-	<87zk11s8j3.fsf@sejong.aot.lge.com>
-Date: Wed, 26 Dec 2012 18:38:58 +0100
-Message-ID: <CABPqkBTS57_KeEVw76M0_XmZONFvRZX9a9jOeddjTGJKTwbkNw@mail.gmail.com>
-Subject: Re: Segfault in perf tool
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Stefan Beller <stefanbeller@googlemail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul Mackerras (supporter:PERFORMANCE EVENT...)" <paulus@samba.org>,
-        "Ingo Molnar (supporter:PERFORMANCE EVENT...,commit_signer:2/9=22%)" 
-	<mingo@redhat.com>,
-        "Arnaldo Carvalho de Melo (supporter:PERFORMANCE EVENT... 
-	,commit_signer:7/9=78%)" <acme@ghostprotocols.net>,
-        "Anton Blanchard (commit_signer:1/9=11%)" <anton@samba.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 6:10 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Hi Stefan,
->
-> On Sun, 23 Dec 2012 22:18:32 +0100, Stefan Beller wrote:
->> Hi,
->>
->> I get segmentation faults when running one of these commands:
->> perf report -g --sort symbol_to
->> perf report -g --sort symbol_from
->> perf report -g --sort dso_from
->> perf report -g --sort dso_to
->
-> Those sort keys are only applicable for branch filtered perf.data file
-> (i.e. recorded with -j or -b option) and should not be used for others.
+Discourage use of glibc pthread_atfork() for call_rcu handlers due to
+its inappropriate assumptions about single-threadedness while pthread
+atfork handlers are executing. This results in hangs within the glibc
+memory allocator.
+    
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+diff --git a/README b/README
+index 83330ea..2d29c1d 100644
+--- a/README
++++ b/README
+@@ -273,7 +273,20 @@ Interaction with fork()
+ 	must invoke call_rcu_before_fork() before the fork() and
+ 	call_rcu_after_fork_parent() after the fork().  The child
+ 	process must invoke call_rcu_after_fork_child().
+-	These three APIs are suitable for passing to pthread_atfork().
++	Even though these three APIs are suitable for passing to
++	pthread_atfork(), use of pthread_atfork() is *STRONGLY
++	DISCOURAGED* for programs calling the glibc memory allocator
++	(malloc(), calloc(), free(), ...) within call_rcu callbacks.
++	This is due to limitations in the way glibc memory allocator
++	handles calls to the memory allocator from concurrent threads
++	while the pthread_atfork() handlers are executing.
++	Combining e.g.:
++	* call to free() from callbacks executed within call_rcu worker
++	  threads,
++	* executing call_rcu atfork handlers within the glibc pthread
++	  atfork mechanism,
++	will sometimes trigger interesting process hangs. This usually
++	hangs on a memory allocator lock within glibc.
+ 
+ Thread Local Storage (TLS)
+ 
 
-That's true. Should print an error and not segfault.
-
-> I'll work on the fix soon.
->
-Thanks.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
