@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab2LYXsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 18:48:21 -0500
-Received: from infernal.debian.net ([176.28.9.132]:50499 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab2LYXsS (ORCPT
+	id S1752753Ab2LZAJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 19:09:58 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:57221 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752618Ab2LZAJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 18:48:18 -0500
-X-Greylist: delayed 1452 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Dec 2012 18:48:18 EST
-Date: Wed, 26 Dec 2012 00:24:01 +0100
-From: Andreas Bombe <aeb@debian.org>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] [SCSI] sd: When no media present ignore WCE in
- suspend/shutdown
-Message-ID: <20121225232401.GA19299@amos.fritz.box>
+	Tue, 25 Dec 2012 19:09:54 -0500
+From: "Yann E. MORIN" <yann.morin.1998@free.fr>
+Organization: BZH lan
+To: linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] kconfig:lxdialog: remove duplicate code
+Date: Wed, 26 Dec 2012 01:09:48 +0100
+User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
+Cc: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
+        linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
+        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
+        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
+        bpoirier@suse.de
+References: <20121217143751.GA16993@udknight> <20121224044818.GA3863@udknight> <201212251921.52405.yann.morin.1998@free.fr>
+In-Reply-To: <201212251921.52405.yann.morin.1998@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212260109.49002.yann.morin.1998@free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the WCE flag is set for a drive, sd_shutdown() and sd_suspend() try
-to send a SYNCHRONIZE_CACHE command to that drive. This is not
-meaningful when no media are present and causes errors with devices
-where the media are the actual command processing devices, such as SATA
-attached RDX docks where the removable cartridges contain hard disks.
+Wang, All,
 
-In the RDX case, the WCE bit is set when a cartridge is inserted and not
-reset when it is removed. Suspending the computer afterwards will not be
-possible unless a cartridge is inserted since otherwise the
-SYNCHRONIZE_CACHE command will fail causing sd_suspend() to return an
-error.
+On Tuesday 25 December 2012 Yann E. MORIN wrote:
+> On Monday 24 December 2012 Wang YanQing wrote:
+[--SNIP--]
+> > and consider others' three patch I sented one week
+> > ago? I just don't want delay them to 2013, and they can get
+> > more test when they appear in next tree.
+> > https://patchwork.kernel.org/patch/1887361/
+> > https://patchwork.kernel.org/patch/1894341/
+> > https://patchwork.kernel.org/patch/1887441/
+[--SNIP--]
+> Wang, I've queued them here, and will push them again to Michal, after
+> the holidays season is over.
 
-Signed-off-by: Andreas Bombe <aeb@debian.org>
----
+I've started gathering kconfig-related patches suitable for post-3.8 there:
+    git://gitorious.org/linux-kconfig/linux-kconfig.git yem-kconfig-for-next
 
-Ok, this patch makes the problem go away, but I'm not sure whether this
-is right solution. I also don't know whether SATA RDX docks are sort of
-a special case in this regard.
+They are browseable there:
+    https://www.gitorious.org/linux-kconfig/linux-kconfig/commits/yem-kconfig-for-next
 
-I can think of two other solutions:
-1. Also skip the sd_start_stop_device() call. The device for the RDX
-   dock isn't managed so I can't test.
-2. Clear the WCE flag when media are removed and leave sd_shutdown() /
-   sd_suspend() alone.
+I'll send a proper pull-request to Michal in a litle while.
 
-The final patch would then also be Cc: stable, I don't know how far back
-this goes but at least 3.7 is affected.
+Note: the autoritative tree for kconfig is Michal's. I'm only doing this
+gathering of patches in an attempt to not forget any, and to make Michal's
+life easier, if he finds it usefull to pull from there.
 
+Branches in that tree are based off Michal's branches, and so will be
+rebased accordingly.
 
- drivers/scsi/sd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Regards,
+Yann E. MORIN.
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 7992635..723512e 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -3048,7 +3048,7 @@ static void sd_shutdown(struct device *dev)
- 	if (pm_runtime_suspended(dev))
- 		goto exit;
- 
--	if (sdkp->WCE) {
-+	if (sdkp->WCE && sdkp->media_present) {
- 		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
- 		sd_sync_cache(sdkp);
- 	}
-@@ -3070,7 +3070,7 @@ static int sd_suspend(struct device *dev)
- 	if (!sdkp)
- 		return 0;	/* this can happen */
- 
--	if (sdkp->WCE) {
-+	if (sdkp->WCE && sdkp->media_present) {
- 		sd_printk(KERN_NOTICE, sdkp, "Synchronizing SCSI cache\n");
- 		ret = sd_sync_cache(sdkp);
- 		if (ret)
 -- 
-1.7.10.4
+.-----------------.--------------------.------------------.--------------------.
+|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
+| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
+| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
+| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
+'------------------------------^-------^------------------^--------------------'
+
