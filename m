@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753668Ab2LZEb0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 23:31:26 -0500
-Received: from 1.21jiggawatts.net ([173.203.126.100]:51041 "EHLO
-	1.21jiggawatts.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112Ab2LZEbZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 23:31:25 -0500
-X-Greylist: delayed 624 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Dec 2012 23:31:25 EST
-Message-ID: <50DA7B10.9030807@1.21jiggawatts.net>
-Date: Wed, 26 Dec 2012 15:20:32 +1100
-From: Thomas Karpiniec <tk@1.21jiggawatts.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1753708Ab2LZEdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 23:33:36 -0500
+Received: from ares07.inai.de ([5.9.24.206]:39524 "EHLO ares07.inai.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753244Ab2LZEdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 23:33:33 -0500
+Date: Wed, 26 Dec 2012 05:33:31 +0100 (CET)
+From: Jan Engelhardt <jengelh@inai.de>
+To: Dave Chinner <david@fromorbit.com>
+cc: Andreas Dilger <adilger@dilger.ca>, ys <sickamd@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] vfs: update atimes over one day in the past or future
+In-Reply-To: <20121218211451.GE15182@dastard>
+Message-ID: <alpine.LNX.2.01.1212260530580.20128@nerf07.vanv.qr>
+References: <50CC9663.4010200@gmail.com> <20121216021508.GG9806@dastard> <60E209F1-F797-42C2-9F41-43BF7839B2A3@dilger.ca> <20121218211451.GE15182@dastard>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-To: alsa-devel@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH] Prevent loss of state between MIDI subscriptions
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A MIDI input parser is unnecessarily reset whenever a new subscription 
-is created.
 
-This is a particular problem with the Novation Launchpad, which sends a 
-single NOTEON command, then a series of notes indefinitely unless a 
-control button is pressed or it is power cycled. If a user application 
-restarts and resubscribes, the parser no longer knows that it is 
-receiving NOTEONs and fails to pass on new input.
+On Tuesday 2012-12-18 22:14, Dave Chinner wrote:
+>
+>> >> CC: stable@vger.kernel.org
+>> >> ---
+>> >> fs/inode.c | 7 ++++---
+>> >> 1 ??????????????????????????? 4 ???(+)????????? 3 ???(-)
+>> > 
+>> > There's something wrong with the character encoding you are using...
+>> 
+>> Chinese locale, but probably doesn't matter since text below "---" isn't in the commit anyway?
+>
+>Yup, but it doesn't inspire confidence that the patch is going to be
+>clean when multiple encodings appear in the one message...
 
-Signed-off-by: Thomas Karpiniec <tk@1.21jiggawatts.net>
----
-  sound/core/seq/seq_midi.c |    1 -
-  1 file changed, 1 deletion(-)
+Multiple encodings are not much of a problem. Lack of specifying them,
+as happened with that attachment, is.
 
-diff --git a/sound/core/seq/seq_midi.c b/sound/core/seq/seq_midi.c
-index 64069db..1a977df 100644
---- a/sound/core/seq/seq_midi.c
-+++ b/sound/core/seq/seq_midi.c
-@@ -200,7 +200,6 @@ static int midisynth_subscribe(void *private_data, 
-struct snd_seq_port_subscribe
-  		snd_rawmidi_kernel_release(&msynth->input_rfile);
-  		return err;
-  	}
--	snd_midi_event_reset_encode(msynth->parser);
-  	runtime->event = snd_midi_input_event;
-  	runtime->private_data = msynth;
-  	snd_rawmidi_kernel_read(msynth->input_rfile.input, NULL, 0);
--- 
-1.7.10.4
+That's another reason why inline patches work better, because the
+main message part has the encoding set most of the time :)
