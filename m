@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751191Ab2LZVnE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 16:43:04 -0500
-Received: from mail-ye0-f171.google.com ([209.85.213.171]:50137 "EHLO
-	mail-ye0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab2LZVm7 (ORCPT
+	id S1751246Ab2LZVtp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 16:49:45 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:49155 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab2LZVtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 16:42:59 -0500
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Dec 2012 16:42:59 EST
-From: Amit Daniel Kachhap <amit.daniel@samsung.com>
-To: linux-pm@lists.linux-foundation.org
-Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH] cpufreq: exynos: Add the missing cpufreq_cpu_put function
-Date: Wed, 26 Dec 2012 13:35:34 -0800
-Message-Id: <1356557734-15640-1-git-send-email-amit.daniel@samsung.com>
-X-Mailer: git-send-email 1.7.5.4
+	Wed, 26 Dec 2012 16:49:43 -0500
+Date: Wed, 26 Dec 2012 22:49:40 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: netfilter@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        coreteam@netfilter.org, netfilter-devel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jay Schulist <jschlst@samba.org>, Harald Welte <laforge@gnumonks.org>
+Subject: [PATCH] netfilter: Don't leak 'exp' in ctnetlink_create_expect()
+Message-ID: <alpine.LNX.2.00.1212262246390.23814@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the missing cpufreq_cpu_put function needed for
-returning the cpufreq policy instance.
+'if ((!help) && (!cda[CTA_EXPECT_TIMEOUT]))' then we should remember
+to free 'exp' that was allocated by 'nf_ct_expect_alloc()' by jumping
+to the 'err_out' label rather than the 'out' label in
+ctnetlink_create_expect().
+This patch should get rid of the leak.
 
-Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/cpufreq/exynos-cpufreq.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ net/netfilter/nf_conntrack_netlink.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
-index 7012ea8..a2b7adc 100644
---- a/drivers/cpufreq/exynos-cpufreq.c
-+++ b/drivers/cpufreq/exynos-cpufreq.c
-@@ -208,6 +208,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
- 	}
- out:
- 	mutex_unlock(&cpufreq_lock);
-+	cpufreq_cpu_put(policy);
- 
- 	return NOTIFY_OK;
- }
+ note: compile tested only.
+
+diff --git a/net/netfilter/nf_conntrack_netlink.c b/net/netfilter/nf_conntrack_netlink.c
+index 4e078cd..627b0e5 100644
+--- a/net/netfilter/nf_conntrack_netlink.c
++++ b/net/netfilter/nf_conntrack_netlink.c
+@@ -2624,7 +2624,7 @@ ctnetlink_create_expect(struct net *net, u16 zone,
+ 	if (!help) {
+ 		if (!cda[CTA_EXPECT_TIMEOUT]) {
+ 			err = -EINVAL;
+-			goto out;
++			goto err_out;
+ 		}
+ 		exp->timeout.expires =
+ 		  jiffies + ntohl(nla_get_be32(cda[CTA_EXPECT_TIMEOUT])) * HZ;
 -- 
-1.7.5.4
+1.7.1
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
