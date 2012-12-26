@@ -1,89 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab2LZKor (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 05:44:47 -0500
-Received: from mail-da0-f53.google.com ([209.85.210.53]:60122 "EHLO
-	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab2LZKoq (ORCPT
+	id S1754335Ab2LZKwe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 05:52:34 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9247 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab2LZKwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 05:44:46 -0500
-Date: Wed, 26 Dec 2012 02:44:43 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: David Woodhouse <dwmw2@infradead.org>
-cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        tglx@linutronix.de, "H. Peter Anvin" <hpa@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/build] x86: Default to ARCH= x86 to avoid overriding
- CONFIG_64BIT
-In-Reply-To: <1356511396.7010.13.camel@shinybook.infradead.org>
-Message-ID: <alpine.DEB.2.00.1212260228200.10166@chino.kir.corp.google.com>
-References: <1356040315.3198.51.camel@shinybook.infradead.org> <tip-ffee0de411fd4f74f3b788892eeb075abbf26c52@git.kernel.org> <alpine.DEB.2.00.1212252222450.24528@chino.kir.corp.google.com> <1356511396.7010.13.camel@shinybook.infradead.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 26 Dec 2012 05:52:32 -0500
+Message-ID: <50DAD696.8050400@huawei.com>
+Date: Wed, 26 Dec 2012 18:51:02 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tejun Heo <tj@kernel.org>
+CC: <paul@paulmenage.org>, <glommer@parallels.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <peterz@infradead.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
+        <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1354138460-19286-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Dec 2012, David Woodhouse wrote:
-
-> > arch/x86/built-in.o: In function `hpet_setup_msi_irq':
-> > hpet.c:(.text+0x34638): undefined reference to `arch_setup_hpet_msi'
-> > hpet.c:(.text+0x34651): undefined reference to `destroy_irq'
-> > arch/x86/built-in.o: In function `hpet_msi_capability_lookup':
-> > hpet.c:(.text+0x347ff): undefined reference to `create_irq_nr'
-> > arch/x86/built-in.o:(.data+0xd1c): undefined reference to `native_setup_msi_irqs'
-> > arch/x86/built-in.o:(.data+0xd20): undefined reference to `native_teardown_msi_irq'
-> > drivers/built-in.o: In function `dmar_set_interrupt':
-> > (.text+0x89eec0): undefined reference to `create_irq'
-> > drivers/built-in.o: In function `dmar_set_interrupt':
-> > (.text+0x89ef0b): undefined reference to `arch_setup_dmar_msi'
-> > drivers/built-in.o: In function `dmar_set_interrupt':
-> > (.text+0x89ef44): undefined reference to `destroy_irq'
-> > drivers/built-in.o: In function `free_dmar_iommu':
-> > (.text+0x8a6ae8): undefined reference to `destroy_irq'
-> > 
-> > These functions require CONFIG_X86_IO_APIC, which is only possible with 
-> > X86_64 or X86_32_NON_STANDARD.  CONFIG_HPET_TIMER, however, can be enabled 
-> > with X86_32, and CONFIG_DMAR_TABLE can be enabled with any X86 via 
-> > CONFIG_INTEL_IOMMU.
+On 2012/11/29 5:34, Tejun Heo wrote:
+> Hello, guys.
 > 
-> I don't think it can have created them, surely? They must have existed
-> already when building with ARCH=x86. And probably with ARCH=i386 too?
-
-I'm sure it's a 32-bit issue, nothing has changed recently in auto-latest 
-related to these subsystems and I'm sure it's just because my randconfig 
-builds were exposed to this combination solely because of this patch.
-
-> I'll take a further look in more detail, but at first glance it doesn't
-> seem correct to describe them as bugs caused by this patch; merely bugs
-> that this patch helped us to *find*.
+> Depending on cgroup core locking - cgroup_mutex - is messy and makes
+> cgroup prone to locking dependency problems.  The current code already
+> has lock dependency loop - memcg nests get_online_cpus() inside
+> cgroup_mutex.  cpuset the other way around.
 > 
-> Please could you provide the .config file?
+> Regardless of the locking details, whatever is protecting cgroup has
+> inherently to be something outer to most other locking constructs.
+> cgroup calls into a lot of major subsystems which in turn have to
+> perform subsystem-specific locking.  Trying to nest cgroup
+> synchronization inside other locks isn't something which can work
+> well.
+> 
+> cgroup now has enough API to allow subsystems to implement their own
+> locking and cgroup_mutex is scheduled to be made private to cgroup
+> core.  This patchset makes cpuset implement its own locking instead of
+> relying on cgroup_mutex.
+> 
+> cpuset is rather nasty in this respect.  Some of it seems to have come
+> from the implementation history - cgroup core grew out of cpuset - but
+> big part stems from cpuset's need to migrate tasks to an ancestor
+> cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
+> memory).
+> 
+> This patchset decouples cpuset locking from cgroup_mutex.  After the
+> patchset, cpuset uses cpuset-specific cpuset_mutex instead of
+> cgroup_mutex.  This also removes the lockdep warning triggered during
+> cpu offlining (see 0009).
+> 
+> Note that this leaves memcg as the only external user of cgroup_mutex.
+> Michal, Kame, can you guys please convert memcg to use its own locking
+> too?
+> 
+> This patchset contains the following thirteen patches.
+> 
+>  0001-cpuset-remove-unused-cpuset_unlock.patch
+>  0002-cpuset-remove-fast-exit-path-from-remove_tasks_in_em.patch
+>  0003-cpuset-introduce-css_on-offline.patch
+>  0004-cpuset-introduce-CS_ONLINE.patch
+>  0005-cpuset-introduce-cpuset_for_each_child.patch
+>  0006-cpuset-cleanup-cpuset-_can-_attach.patch
+>  0007-cpuset-drop-async_rebuild_sched_domains.patch
+>  0008-cpuset-reorganize-CPU-memory-hotplug-handling.patch
+>  0009-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch
+>  0010-cpuset-make-CPU-memory-hotplug-propagation-asynchron.patch
+>  0011-cpuset-pin-down-cpus-and-mems-while-a-task-is-being-.patch
+>  0012-cpuset-schedule-hotplug-propagation-from-cpuset_atta.patch
+>  0013-cpuset-replace-cgroup_mutex-locking-with-cpuset-inte.patch
+> 
+> 0001-0006 are prep patches.
+> 
+> 0007-0009 make cpuset nest get_online_cpus() inside cgroup_mutex, not
+> the other way around.
+> 
+> 0010-0012 plug holes which would be exposed by switching to
+> cpuset-specific locking.
+> 
+> 0013 replaces cgroup_mutex with cpuset_mutex.
+> 
+> This patchset is on top of cgroup/for-3.8 (fddfb02ad0) and also
+> available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-locking
+> 
+> diffstat follows.
+> 
+>  kernel/cpuset.c |  750 +++++++++++++++++++++++++++++++-------------------------
+>  1 file changed, 423 insertions(+), 327 deletions(-)
 > 
 
-Attached.
+I reverted 38d7bee9d24adf4c95676a3dc902827c72930ebb ("cpuset: use N_MEMORY instead N_HIGH_MEMORY")
+and applied this patchset against 3.8-rc1.
 
-> >  When I do "make randconfig" and uname -m is x86_64, I expect 
-> > CONFIG_64BIT to always be set.  This commit makes this random for all x86 
-> > so that "make randconfig" may result in a 32-bit build.  That should be 
-> > the behavior for "make ARCH=i386 randconfig" but not "make randconfig" on 
-> > a 64-bit machine.
-> 
-> We've had this bizarre "I don't really want randconfig to be random"
-> conversation before. If don't want randconfig to be random, you can use
-> $KCONFIG_ALLCONFIG to override anything you like. Or, for the specific
-> case of CONFIG_64BIT on x86, you can use ARCH=i386 or ARCH=x86_64 to
-> override just that one option.
-> 
+I created a cpuset which has cpuset.cpus=1, and I forked a few cpu-hog tasks
+and moved them to this cpuset, and the final operations was offlining cpu1.
+It stucked.
 
-If it were truly random then it would be generating sparc configs, hppa 
-configs, etc.  Randconfig has always generated random configurations for 
-the underlying architecture (just like you respect the architecture with 
-defconfig with your patch), the fact that it's been unified into a single 
-x86 architecture changes the behavior of plain old "make randconfig".  I 
-certainly understand how to override that with ARCH=x86_64.  However, the 
-reverse can also be said: make the same adjustment for randconfig that you 
-made for defconfig so the old behavior is maintained and allow users on 
-x86_64 to do "make ARCH=i386 randconfig" for 32-bit builds.
+The only processes in D state are kworker threads:
+
+# cat /proc/6/stack
+
+[<ffffffff81062be1>] wait_rcu_gp+0x51/0x60
+[<ffffffff810d18f6>] synchronize_sched+0x36/0x50
+[<ffffffff810b1b84>] cgroup_attach_task+0x144/0x1a0
+[<ffffffff810b737d>] cpuset_do_move_task+0x2d/0x40
+[<ffffffff810b3887>] cgroup_scan_tasks+0x1a7/0x270
+[<ffffffff810b9080>] cpuset_propagate_hotplug_workfn+0x130/0x360
+[<ffffffff8105d9d3>] process_one_work+0x1c3/0x3c0
+[<ffffffff81060e3a>] worker_thread+0x13a/0x400
+[<ffffffff8106613e>] kthread+0xce/0xe0
+[<ffffffff8144166c>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+# cat /proc/80/stack
+
+[<ffffffff81060015>] flush_workqueue+0x185/0x460
+[<ffffffff810b8b90>] cpuset_hotplug_workfn+0x2f0/0x5b0
+[<ffffffff8105d9d3>] process_one_work+0x1c3/0x3c0
+[<ffffffff81060e3a>] worker_thread+0x13a/0x400
+[<ffffffff8106613e>] kthread+0xce/0xe0
+[<ffffffff8144166c>] ret_from_fork+0x7c/0xb0
+[<ffffffffffffffff>] 0xffffffffffffffff
+
+
+After a while. dmesg:
+
+[  222.290677] smpboot: CPU 1 is now offline
+[  222.292405] smpboot: Booting Node 0 Processor 1 APIC 0x2
+[  229.383324] smpboot: CPU 1 is now offline
+[  229.385415] smpboot: Booting Node 0 Processor 1 APIC 0x2
+[  231.715738] smpboot: CPU 1 is now offline
+[  231.717657] smpboot: Booting Node 0 Processor 1 APIC 0x2
+[  287.773881] smpboot: CPU 1 is now offline
+[  287.789983] smpboot: Booting Node 0 Processor 1 APIC 0x2
+[  343.248988] INFO: rcu_sched self-detected stall on CPU { 4}  (t=5250 jiffies g=1650 c=1649 q=2683)
+[  343.248998] Pid: 7861, comm: test3.sh Not tainted 3.8.0-rc1-0.7-default+ #6
+[  343.249000] Call Trace:
+[  343.249002]  <IRQ>  [<ffffffff810d11b9>] rcu_check_callbacks+0x249/0x770
+[  343.249018]  [<ffffffff8109c150>] ? tick_nohz_handler+0xc0/0xc0
+[  343.249021]  [<ffffffff8109c150>] ? tick_nohz_handler+0xc0/0xc0
+[  343.249028]  [<ffffffff810521f6>] update_process_times+0x46/0x90
+[  343.249031]  [<ffffffff8109bf9f>] tick_sched_handle+0x3f/0x50
+[  343.249034]  [<ffffffff8109c1a4>] tick_sched_timer+0x54/0x90
+[  343.249037]  [<ffffffff8106a99f>] __run_hrtimer+0xcf/0x1d0
+[  343.249040]  [<ffffffff8106ace7>] hrtimer_interrupt+0xe7/0x220
+[  343.249048]  [<ffffffff81443279>] smp_apic_timer_interrupt+0x69/0x99
+[  343.249051]  [<ffffffff81442332>] apic_timer_interrupt+0x72/0x80
+[  343.249053]  <EOI>  [<ffffffff81439320>] ? retint_restore_args+0x13/0x13
+[  343.249062]  [<ffffffff8106fa60>] ? task_nice+0x20/0x20
+[  343.249066]  [<ffffffff814224aa>] ? _cpu_down+0x19a/0x2e0
+[  343.249069]  [<ffffffff8142262e>] cpu_down+0x3e/0x60
+[  343.249072]  [<ffffffff81426635>] store_online+0x75/0xe0
+[  343.249076]  [<ffffffff812fc450>] dev_attr_store+0x20/0x30
+[  343.249082]  [<ffffffff811d6b07>] sysfs_write_file+0xc7/0x140
+[  343.249087]  [<ffffffff811671bb>] vfs_write+0xcb/0x130
+[  343.249090]  [<ffffffff81167a31>] sys_write+0x61/0xa0
+[  343.249093]  [<ffffffff81441719>] system_call_fastpath+0x16/0x1b
+[  406.164733] INFO: rcu_sched self-detected stall on CPU { 4}  (t=21003 jiffies g=1650 c=1649 q=9248)
+[  406.164741] Pid: 7861, comm: test3.sh Not tainted 3.8.0-rc1-0.7-default+ #6
+[  406.164743] Call Trace:
+[  406.164744]  <IRQ>  [<ffffffff810d11b9>] rcu_check_callbacks+0x249/0x770
+[  406.164753]  [<ffffffff8109c150>] ? tick_nohz_handler+0xc0/0xc0
+[  406.164756]  [<ffffffff8109c150>] ? tick_nohz_handler+0xc0/0xc0
+[  406.164760]  [<ffffffff810521f6>] update_process_times+0x46/0x90
+[  406.164763]  [<ffffffff8109bf9f>] tick_sched_handle+0x3f/0x50
+[  406.164766]  [<ffffffff8109c1a4>] tick_sched_timer+0x54/0x90
+[  406.164769]  [<ffffffff8106a99f>] __run_hrtimer+0xcf/0x1d0
+[  406.164771]  [<ffffffff8106ace7>] hrtimer_interrupt+0xe7/0x220
+[  406.164777]  [<ffffffff81443279>] smp_apic_timer_interrupt+0x69/0x99
+[  406.164780]  [<ffffffff81442332>] apic_timer_interrupt+0x72/0x80
+[  406.164781]  <EOI>  [<ffffffff814224aa>] ? _cpu_down+0x19a/0x2e0
+[  406.164787]  [<ffffffff814224aa>] ? _cpu_down+0x19a/0x2e0
+[  406.164790]  [<ffffffff8142262e>] cpu_down+0x3e/0x60
+[  406.164792]  [<ffffffff81426635>] store_online+0x75/0xe0
+[  406.164795]  [<ffffffff812fc450>] dev_attr_store+0x20/0x30
+[  406.164799]  [<ffffffff811d6b07>] sysfs_write_file+0xc7/0x140
+[  406.164802]  [<ffffffff811671bb>] vfs_write+0xcb/0x130
+[  406.164805]  [<ffffffff81167a31>] sys_write+0x61/0xa0
+[  406.164808]  [<ffffffff81441719>] system_call_fastpath+0x16/0x1b
+
+I did the same thing without this patchset, and everthing's fine.
+
