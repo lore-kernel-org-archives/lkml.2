@@ -1,66 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753044Ab2LZBx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 20:53:29 -0500
-Received: from intranet.asianux.com ([58.214.24.6]:8951 "EHLO
-	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab2LZBxZ (ORCPT
+	id S1752981Ab2LZCKY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 21:10:24 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:50572 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab2LZCKW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 20:53:25 -0500
-X-Spam-Score: -100.8
-Message-ID: <50DA58CA.2060700@asianux.com>
-Date: Wed, 26 Dec 2012 09:54:18 +0800
-From: Chen Gang <gang.chen@asianux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 25 Dec 2012 21:10:22 -0500
 MIME-Version: 1.0
-To: Omar Ramirez Luna <omar.ramirez@copitl.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg KH <gregkh@linuxfoundation.org>
-Subject: Re: [Suggestion] drivers/staging/tidspbridge: strcpy and strncpy,
- src length checking issue.
-References: <50CAA1F2.9000003@asianux.com> <50CFD786.5010101@asianux.com> <CAJ6Av5NtM06aTsGzE+4cYH-TM2fkN3Ek0f=OuR=_abDtta1FDA@mail.gmail.com>
-In-Reply-To: <CAJ6Av5NtM06aTsGzE+4cYH-TM2fkN3Ek0f=OuR=_abDtta1FDA@mail.gmail.com>
+In-Reply-To: <1356486933.16178.144.camel@kjgkr>
+References: <1356145725-19940-1-git-send-email-linkinjeon@gmail.com>
+	<1356486933.16178.144.camel@kjgkr>
+Date: Wed, 26 Dec 2012 11:10:21 +0900
+Message-ID: <CAKYAXd_-c4Mh0hQHBiNDVOrWmq=TVXEuoaWd1hzrA70t9p6=ag@mail.gmail.com>
+Subject: Re: [PATCH 1/5] f2fs: Introduce some information prints in the mount path
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2012年12月24日 22:27, Omar Ramirez Luna 写道:
-> Hi Gchen,
-> 
-> On Mon, Dec 17, 2012 at 8:40 PM, Chen Gang <gang.chen@asianux.com> wrote:
->> Hello Omar Ramirez Luna:
+2012/12/26, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
+> Hi,
+Hi Jaegeuk.
+>
+> Could you make them follow the file system convention?
+> Something like "F2FS: blah blah~".
+Yes,  I agree.
+
+>
+> Otherwise, how about adding a debugging function to express the prefix?
+Okay, I will send you the patches included your suggestion.
+
+Thanks.
+> Thanks,
+>
+> 2012-12-22 (토), 12:08 +0900, Namjae Jeon:
+>> From: Namjae Jeon <namjae.jeon@samsung.com>
 >>
->>   excuse me to bother you (maybe you are busy in these days).
->>   please help checking this suggestion when you have free time.
-> 
-> Yes, I'm checking your suggestions, I was a little busy last week, for
-> the compile breaks I had a patch but I was waiting for them to show on
-> staging 3.8-rc1.
-> 
-
-  ok, I should wait for some days, at least.
-
-  :-)
-
->> By the way:
->>   this week, I need work for 2 patches which relative with usb sub-system.
->>   if still get no reply for tidspbridge until next week.
->>     I should work for it, it is my duty (since I have provided 'suggestion' to it).
->>     "work for it" means:
->>        if tidspbridge is still useful
->>          I need construct relative environments for unit test.
->>          then provide relative patches.
->>        else (useless)
->>          I need delete it from Open Source.
->>          (since it can not pass compiling, and no response from *@ti.com, it almost means useless)
-> 
-> Please DON'T assume it's useless if you don't get replies from @ti.com .
-
-  ok.
-
--- 
-Chen Gang
-
-Asianux Corporation
+>> Added few informative prints in the mount path, to convey proper error
+>> in case of mount failure.
+>>
+>> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+>> Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+>> ---
+>>  fs/f2fs/super.c |   46 ++++++++++++++++++++++++++++++++++++----------
+>>  1 file changed, 36 insertions(+), 10 deletions(-)
+>>
+>> diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+>> index cf0ffb8..86f8549 100644
+>> --- a/fs/f2fs/super.c
+>> +++ b/fs/f2fs/super.c
+>> @@ -342,19 +342,29 @@ static int sanity_check_raw_super(struct
+>> f2fs_super_block *raw_super)
+>>  {
+>>  	unsigned int blocksize;
+>>
+>> -	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic))
+>> +	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic)) {
+>> +		pr_info("Magic Mismatch, valid(0x%x) - read(0x%x)\n",
+>> +			F2FS_SUPER_MAGIC, le32_to_cpu(raw_super->magic));
+>>  		return 1;
+>> +	}
+>>
+>>  	/* Currently, support only 4KB block size */
+>>  	blocksize = 1 << le32_to_cpu(raw_super->log_blocksize);
+>> -	if (blocksize != PAGE_CACHE_SIZE)
+>> +	if (blocksize != PAGE_CACHE_SIZE) {
+>> +		pr_info("Not valid blocksize (%u), supports only 4KB\n",
+>> +			blocksize);
+>>  		return 1;
+>> +	}
+>>  	if (le32_to_cpu(raw_super->log_sectorsize) !=
+>> -					F2FS_LOG_SECTOR_SIZE)
+>> +					F2FS_LOG_SECTOR_SIZE) {
+>> +		pr_info("Not valid log sectorsize\n");
+>>  		return 1;
+>> +	}
+>>  	if (le32_to_cpu(raw_super->log_sectors_per_block) !=
+>> -					F2FS_LOG_SECTORS_PER_BLOCK)
+>> +					F2FS_LOG_SECTORS_PER_BLOCK) {
+>> +			pr_info("Not valid log sectors per block\n");
+>>  		return 1;
+>> +	}
+>>  	return 0;
+>>  }
+>>
+>> @@ -415,13 +425,16 @@ static int f2fs_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>  		return -ENOMEM;
+>>
+>>  	/* set a temporary block size */
+>> -	if (!sb_set_blocksize(sb, F2FS_BLKSIZE))
+>> +	if (!sb_set_blocksize(sb, F2FS_BLKSIZE)) {
+>> +		pr_err("unable to set blocksize\n");
+>>  		goto free_sbi;
+>> +	}
+>>
+>>  	/* read f2fs raw super block */
+>>  	raw_super_buf = sb_bread(sb, 0);
+>>  	if (!raw_super_buf) {
+>>  		err = -EIO;
+>> +		pr_err("unable to read superblock\n");
+>>  		goto free_sbi;
+>>  	}
+>>  	raw_super = (struct f2fs_super_block *)
+>> @@ -443,8 +456,10 @@ static int f2fs_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>  		goto free_sb_buf;
+>>
+>>  	/* sanity checking of raw super */
+>> -	if (sanity_check_raw_super(raw_super))
+>> +	if (sanity_check_raw_super(raw_super)) {
+>> +		pr_err("Not a valid F2FS filesystem\n");
+>>  		goto free_sb_buf;
+>> +	}
+>>
+>>  	sb->s_maxbytes = max_file_size(le32_to_cpu(raw_super->log_blocksize));
+>>  	sb->s_max_links = F2FS_LINK_MAX;
+>> @@ -478,18 +493,23 @@ static int f2fs_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>  	/* get an inode for meta space */
+>>  	sbi->meta_inode = f2fs_iget(sb, F2FS_META_INO(sbi));
+>>  	if (IS_ERR(sbi->meta_inode)) {
+>> +		pr_err("Failed to read F2FS meta data inode\n");
+>>  		err = PTR_ERR(sbi->meta_inode);
+>>  		goto free_sb_buf;
+>>  	}
+>>
+>>  	err = get_valid_checkpoint(sbi);
+>> -	if (err)
+>> +	if (err) {
+>> +		pr_err("Failed to get valid F2FS checkpoint\n");
+>>  		goto free_meta_inode;
+>> +	}
+>>
+>>  	/* sanity checking of checkpoint */
+>>  	err = -EINVAL;
+>> -	if (sanity_check_ckpt(raw_super, sbi->ckpt))
+>> +	if (sanity_check_ckpt(raw_super, sbi->ckpt)) {
+>> +		pr_err("Not a valid F2FS checkpoint\n");
+>>  		goto free_cp;
+>> +	}
+>>
+>>  	sbi->total_valid_node_count =
+>>  				le32_to_cpu(sbi->ckpt->valid_node_count);
+>> @@ -511,17 +531,22 @@ static int f2fs_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>
+>>  	/* setup f2fs internal modules */
+>>  	err = build_segment_manager(sbi);
+>> -	if (err)
+>> +	if (err) {
+>> +		pr_err("Failed to initialize F2FS segment manager\n");
+>>  		goto free_sm;
+>> +	}
+>>  	err = build_node_manager(sbi);
+>> -	if (err)
+>> +	if (err) {
+>> +		pr_err("Failed to initialize F2FS node manager\n");
+>>  		goto free_nm;
+>> +	}
+>>
+>>  	build_gc_manager(sbi);
+>>
+>>  	/* get an inode for node space */
+>>  	sbi->node_inode = f2fs_iget(sb, F2FS_NODE_INO(sbi));
+>>  	if (IS_ERR(sbi->node_inode)) {
+>> +		pr_err("Failed to read node inode\n");
+>>  		err = PTR_ERR(sbi->node_inode);
+>>  		goto free_nm;
+>>  	}
+>> @@ -534,6 +559,7 @@ static int f2fs_fill_super(struct super_block *sb,
+>> void *data, int silent)
+>>  	/* read root inode and dentry */
+>>  	root = f2fs_iget(sb, F2FS_ROOT_INO(sbi));
+>>  	if (IS_ERR(root)) {
+>> +		pr_err("Failed to read root inode\n");
+>>  		err = PTR_ERR(root);
+>>  		goto free_node_inode;
+>>  	}
+>
+> --
+> Jaegeuk Kim
+> Samsung
+>
