@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab2LZBXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 20:23:53 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:62511 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab2LZBXv (ORCPT
+	id S1752905Ab2LZBvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 20:51:41 -0500
+Received: from intranet.asianux.com ([58.214.24.6]:22512 "EHLO
+	intranet.asianux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752705Ab2LZBvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 20:23:51 -0500
-Date: Tue, 25 Dec 2012 20:23:45 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/25] PM / Domains: don't use [delayed_]work_pending()
-Message-ID: <20121226012345.GJ10220@mtj.dyndns.org>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <21556832.hKrqJSonFg@vostro.rjw.lan>
- <20121225170328.GH10220@mtj.dyndns.org>
- <43765611.nGGJ409TUC@vostro.rjw.lan>
+	Tue, 25 Dec 2012 20:51:39 -0500
+X-Spam-Score: -100.8
+Message-ID: <50DA585F.7000806@asianux.com>
+Date: Wed, 26 Dec 2012 09:52:31 +0800
+From: Chen Gang <gang.chen@asianux.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <43765611.nGGJ409TUC@vostro.rjw.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Omar Ramirez Luna <omar.ramirez@copitl.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Suggestion] drivers/staging/tidspbridge: pr_err and pr_debug
+ for uninitialized buffer (name buf not initialized).
+References: <50C85644.7020203@asianux.com> <50C858AA.8080305@asianux.com> <CAJ6Av5OC+2wdfhb2FExv8NM7Hsyu4_1qnCWV22di8_psw4gF4Q@mail.gmail.com> <50CA8129.2020206@asianux.com> <CAJ6Av5PqZoW7s94J6MfmiN6kLzYZHH5Cv6qBA+xq65aPO0KA7g@mail.gmail.com>
+In-Reply-To: <CAJ6Av5PqZoW7s94J6MfmiN6kLzYZHH5Cv6qBA+xq65aPO0KA7g@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Tue, Dec 25, 2012 at 09:33:07PM +0100, Rafael J. Wysocki wrote:
-> OK, so I'd generally prefer changelogs like this:
+于 2012年12月24日 22:26, Omar Ramirez Luna 写道:
+> Hi,
 > 
-> "There's no need to test whether a (delayed) work item is pending
-> before queueing, flushing or cancelling it, so remove work_pending()
-> tests used in those cases."
+> On Thu, Dec 13, 2012 at 7:30 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>>   also another suggestions:
+>>     I built ti otmap with ti dsp bridge by arm cross-compiler under i386 platform.
+>>     the version tag is next-20121213
+>>     I met 2 compiling issues.
+>>
+>>       a: module dependency:
+>>         Multifunction device drivers --> Texas Instruments TWL/4030/TWL5030.... is required for TI OTMAP.
+>>         it need depend on CONFIG_REGMAP (maybe also inculde CONFIG_REGMAP*)
+>>         if CONFIG_REGMAP* not defined, building will be failed.
 > 
-> If that's fine with you, I'll queue up [16/25] and [11/25] for v3.9
-> with the above as the changelog.
+> This is not related to tidspbridge, I sent a patch anyway as it looks
+> to be a valid build dependency bug.
+> 
 
-Sure thing.  Please go ahead.
 
-Thanks.
+   thank you.
+
+   :-)
 
 -- 
-tejun
+Chen Gang
+
+Asianux Corporation
