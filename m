@@ -1,73 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753116Ab2LZClS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 21:41:18 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:46519 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752858Ab2LZClQ (ORCPT
+	id S1753233Ab2LZCl1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 21:41:27 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37813 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753162Ab2LZClW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 21:41:16 -0500
+	Tue, 25 Dec 2012 21:41:22 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50DA62CE.30604@jp.fujitsu.com>
+Date: Wed, 26 Dec 2012 11:37:02 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com>
-References: <20121116192606.11799.35711.stgit@localhost.localdomain>
-	<CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com>
-	<20121121125310.00625f55@pyramind.ukuu.org.uk>
-	<CA+5PVA5iQwYOcoSYtLOoRBHaTNJANdv+X-C78474n3SzZg_m9w@mail.gmail.com>
-	<CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com>
-Date: Wed, 26 Dec 2012 10:41:14 +0800
-Message-ID: <CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com>
-Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Josh Boyer <jwboyer@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <florianSchandinat@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, sanjay@google.com,
+        Paul Turner <pjt@google.com>, David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Subject: Re: [RFC v4 0/3] Support volatile for anonymous range
+References: <1355813274-571-1-git-send-email-minchan@kernel.org>
+In-Reply-To: <1355813274-571-1-git-send-email-minchan@kernel.org>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 12:08 AM, Sasha Levin <levinsasha928@gmail.com> wrote:
-> On Tue, Dec 18, 2012 at 10:20 AM, Josh Boyer <jwboyer@gmail.com> wrote:
->> On Wed, Nov 21, 2012 at 7:53 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>> On Wed, 21 Nov 2012 07:45:45 -0500
->>> Josh Boyer <jwboyer@gmail.com> wrote:
->>>
->>>> On Fri, Nov 16, 2012 at 2:27 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->>>> >
->>>> > [The fb maintainer appears to be absent at the moment].
->>>> >
->>>> > This is needed to fix a pile of lockdep splats that now show up because console_lock()
->>>> > is being properly audited. Hugh Dickins and Sasha Levin have tested it and both reports
->>>> > all looks good. This is probably not the whole story - the entire fb layer has locking
->>>> > confusion problems that were previously hidden but it seems to get the ones people hit
->>>> > in testing. This hopefully explains a few of the weird fb hangs that have been floating
->>>> > around forever.
->>>> >
->>>> > From: Alan Cox <alan@linux.intel.com>
->>>> >
->>>> > Adjust the console layer to allow a take over call where the caller already
->>>> > holds the locks. Make the fb layer lock in order.
->>>> >
->>>> > This s partly a band aid, the fb layer is terminally confused about the
->>>> > locking rules it uses for its notifiers it seems.
->>>> >
->>>> > Signed-off-by: Alan Cox <alan@linux.intel.com>
->>>>
->>>> Should this eventually get into the stable trees?
->>>
->>> Thats a question I'm not sure about at this point. I think the bug is
->>> real but not caught by the lock checker in older trees but I've not
->>> investigated.
->>
->> So... this patch seems to still be twisting in the wind.  It should
->> probably be headed into 3.8 at this point, shouldn't it?
->
-> Indeed it should. I'm seeing the original warnings in 3.8-rc1 and have
-> to carry this patch to avoid them.
+(2012/12/18 15:47), Minchan Kim wrote:
+> This is still RFC because we need more input from user-space
+> people and discussion about interface/reclaim policy of volatile
+> pages and I want to expand this concept to tmpfs volatile range
+> if it is possbile without big performance drop of anonymous volatile
+> rnage (Let's define our term. anon volatile VS tmpfs volatile? John?)
+> 
+> NOTE: I didn't consider THP/KSM so for test, you should disable them.
+> 
+> I hope more inputs from user-space allocator people and test patch
+> with their allocator because it might need design change of arena
+> management for getting real vaule.
+> 
+> Changelog from v4
+> 
+>   * Add new system call mvolatile/mnovolatile
+>   * Add sigbus when user try to access volatile range
+>   * Rebased on v3.7
+>   * Applied bug fix from John Stultz, Thanks!
+> 
+> Changelog from v3
+> 
+>   * Removing madvise(addr, length, MADV_NOVOLATILE).
+>   * add vmstat about the number of discarded volatile pages
+>   * discard volatile pages without promotion in reclaim path
+> 
+> This is based on v3.7
+> 
+> - What's the mvolatile(addr, length)?
+> 
+>    It's a hint that user deliver to kernel so kernel can *discard*
+>    pages in a range anytime.
+> 
 
-This patch can fix the following warning we saw?
-http://lkml.org/lkml/2012/12/22/53
+This can work against both of PRIVATE and SHARED mapping  ?
 
-I will give it a try.
+What happens at fork() ? VOLATILE ranges are copied ?
+
+
+> - What happens if user access page(ie, virtual address) discarded
+>    by kernel?
+> 
+>    The user can encounter SIGBUS.
+> 
+> - What should user do for avoding SIGBUS?
+>    He should call mnovolatie(addr, length) before accessing the range
+>    which was called by mvolatile.
+> 
+Will mnovolatile() return whether the range is discarded or not ?
+
+What the user should do in signal handler ?
+Can the all expected opereations be done in signal-safe manner ?
+(IOW, can user do enough job easily without taking any locks in userland ?)
+
+> - What happens if user access page(ie, virtual address) doesn't
+>    discarded by kernel?
+> 
+>    The user can see old data without page fault.
+> 
+
+What happens when ther user calls mvolatile() against mlock()'d range or
+calling mlock() against mvolatile()'d range ?
+
+Hm, by the way, the user need to attach pages to the process by causing page-fault
+(as you do by memset()) before calling mvolatile() ?
+
+I think your approach is interesting, anyway.
+
+Thanks,
+-Kame
+
+
+> - What's different with madvise(DONTNEED)?
+> 
+>    System call semantic
+> 
+>    DONTNEED makes sure user always can see zero-fill pages after
+>    he calls madvise while mvolatile can see old data or encounter
+>    SIGBUS.
+> 
+>    Internal implementation
+> 
+>    The madvise(DONTNEED) should zap all mapped pages in range so
+>    overhead is increased linearly with the number of mapped pages.
+>    Even, if user access zapped pages as write mode, page fault +
+>    page allocation + memset should be happened.
+> 
+>    The mvolatile just marks the flag in a range(ie, VMA) instead of
+>    zapping all of pte in the vma so it doesn't touch ptes any more.
+> 
+> - What's the benefit compared to DONTNEED?
+> 
+>    1. The system call overhead is smaller because mvolatile just marks
+>       the flag to VMA instead of zapping all the page in a range so
+>       overhead should be very small.
+> 
+>    2. It has a chance to eliminate overheads (ex, zapping pte + page fault
+>       + page allocation + memset(PAGE_SIZE)) if memory pressure isn't
+>       severe.
+> 
+>    3. It has a potential to zap all ptes and free the pages if memory
+>       pressure is severe so reclaim overhead could be disappear - TODO
+> 
+> - Isn't there any drawback?
+> 
+>    Madvise(DONTNEED) doesn't need exclusive mmap_sem so concurrent page
+>    fault of other threads could be allowed. But m[no]volatile needs
+>    exclusive mmap_sem so other thread would be blocked if they try to
+>    access not-yet-mapped pages. That's why I design m[no]volatile
+>    overhead should be small as far as possible.
+> 
+>    It could suffer from max rss usage increasement because madvise(DONTNEED)
+>    deallocates pages instantly when the system call is issued while mvoatile
+>    delays it until memory pressure happens so if memory pressure is severe by
+>    max rss incresement, system would suffer. First of all, allocator needs
+>    some balance logic for that or kernel might handle it by zapping pages
+>    although user calls mvolatile if memory pressure is severe.
+>    The problem is how we know memory pressure is severe.
+>    One of solution is to see kswapd is active or not. Another solution is
+>    Anton's mempressure so allocator can handle it.
+> 
+> - What's for targetting?
+> 
+>    Firstly, user-space allocator like ptmalloc, tcmalloc or heap management
+>    of virtual machine like Dalvik. Also, it comes in handy for embedded
+>    which doesn't have swap device so they can't reclaim anonymous pages.
+>    By discarding instead of swapout, it could be used in the non-swap system.
+>    For it, we have to age anon lru list although we don't have swap because
+>    I don't want to discard volatile pages by top priority when memory pressure
+>    happens as volatile in this patch means "We don't need to swap out because
+>    user can handle the situation which data are disappear suddenly", NOT
+>    "They are useless so hurry up to reclaim them". So I want to apply same
+>    aging rule of nomal pages to them.
+> 
+>    Anonymous page background aging of non-swap system would be a trade-off
+>    for getting good feature. Even, we had done it two years ago until merge
+>    [1] and I believe gain of this patch will beat loss of anon lru aging's
+>    overead once all of allocator start to use madvise.
+>    (This patch doesn't include background aging in case of non-swap system
+>    but it's trivial if we decide)
+> 
+>    As another choice, we can zap the range like madvise(DONTNEED) when mvolatile
+>    is called if we don't have swap space.
+> 
+> - Stupid performance test
+>    I attach test program/script which are utter crap and I don't expect
+>    current smart allocator never have done it so we need more practical data
+>    with real allocator.
+> 
+>    KVM - 8 core, 2G
+> 
+> VOLATILE test
+> 13.16user 7.58system 0:06.04elapsed 343%CPU (0avgtext+0avgdata 2624096maxresident)k
+> 0inputs+0outputs (0major+164050minor)pagefaults 0swaps
+> 
+> DONTNEED test
+> 23.30user 228.92system 0:33.10elapsed 762%CPU (0avgtext+0avgdata 213088maxresident)k
+> 0inputs+0outputs (0major+16384210minor)pagefaults 0swaps
+> 
+>    x86-64 - 12 core, 2G
+> 
+> VOLATILE test
+> 33.38user 0.44system 0:02.87elapsed 1178%CPU (0avgtext+0avgdata 3935008maxresident)k
+> 0inputs+0outputs (0major+245989minor)pagefaults 0swaps
+> 
+> DONTNEED test
+> 28.02user 41.25system 0:05.80elapsed 1192%CPU (0avgtext+0avgdata 387776maxresident)k
+> 
+> [1] 74e3f3c3, vmscan: prevent background aging of anon page in no swap system
+> 
+> Any comments are welcome!
+> 
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Cc: Arun Sharma <asharma@fb.com>
+> Cc: sanjay@google.com
+> Cc: Paul Turner <pjt@google.com>
+> CC: David Rientjes <rientjes@google.com>
+> Cc: John Stultz <john.stultz@linaro.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Robert Love <rlove@google.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@linux.vnet.ibm.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Dave Chinner <david@fromorbit.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: Mike Hommey <mh@glandium.org>
+> Cc: Taras Glek <tglek@mozilla.com>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Minchan Kim (3):
+>    Introduce new system call mvolatile
+>    Discard volatile page
+>    add PGVOLATILE vmstat count
+> 
+>   arch/x86/syscalls/syscall_64.tbl |    3 +-
+>   include/linux/mm.h               |    1 +
+>   include/linux/mm_types.h         |    2 +
+>   include/linux/rmap.h             |    3 +
+>   include/linux/syscalls.h         |    2 +
+>   include/linux/vm_event_item.h    |    2 +-
+>   mm/Makefile                      |    4 +-
+>   mm/huge_memory.c                 |    9 +-
+>   mm/ksm.c                         |    3 +-
+>   mm/memory.c                      |    2 +
+>   mm/migrate.c                     |    6 +-
+>   mm/mlock.c                       |    5 +-
+>   mm/mmap.c                        |    2 +-
+>   mm/mvolatile.c                   |  396 ++++++++++++++++++++++++++++++++++++++
+>   mm/rmap.c                        |   97 +++++++++-
+>   mm/vmscan.c                      |    4 +
+>   mm/vmstat.c                      |    1 +
+>   17 files changed, 527 insertions(+), 15 deletions(-)
+>   create mode 100644 mm/mvolatile.c
+> 
+> ================== 8< =============================
+> 
+> #define _GNU_SOURCE
+> #include <stdio.h>
+> #include <pthread.h>
+> #include <sched.h>
+> #include <sys/mman.h>
+> #include <sys/types.h>
+> #include <stdlib.h>
+> #include <string.h>
+> #include <unistd.h>
+> #include <sys/syscall.h>
+> 
+> #define SYS_mvolatile 313
+> #define SYS_mnovolatile 314
+> 
+> #define ALLOC_SIZE (8 << 20)
+> #define MAP_SIZE  (ALLOC_SIZE * 10)
+> #define PAGE_SIZE (1 << 12)
+> #define RETRY 100
+> 
+> pthread_barrier_t barrier;
+> int mode;
+> #define VOLATILE_MODE 1
+> 
+> static int mvolatile(void *addr, size_t length)
+> {
+> 	return syscall(SYS_mvolatile, addr, length);
+> }
+> 
+> static int mnovolatile(void *addr, size_t length)
+> {
+> 	return syscall(SYS_mnovolatile, addr, length);
+> }
+> 
+> void *thread_entry(void *data)
+> {
+> 	unsigned long i;
+> 	cpu_set_t set;
+> 	int cpu = *(int*)data;
+> 	void *mmap_area;
+> 	int retry = RETRY;
+> 
+> 	CPU_ZERO(&set);
+> 	CPU_SET(cpu, &set);
+> 	sched_setaffinity(0, sizeof(set), &set);
+> 
+> 	mmap(NULL, PAGE_SIZE, PROT_NONE, MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+> 	mmap_area = mmap(NULL, MAP_SIZE, PROT_READ|PROT_WRITE,
+> 					MAP_PRIVATE|MAP_ANONYMOUS, 0, 0);
+> 	if (mmap_area == MAP_FAILED) {
+> 		fprintf(stderr, "Fail to mmap [%d]\n", *(int*)data);
+> 		exit(1);
+> 	}
+> 
+> 	pthread_barrier_wait(&barrier);
+> 
+> 	while(retry--) {
+> 		if (mode == VOLATILE_MODE) {
+> 			mvolatile(mmap_area, MAP_SIZE);
+> 			for (i = 0; i < MAP_SIZE; i+= ALLOC_SIZE) {
+> 				mnovolatile(mmap_area + i, ALLOC_SIZE);
+> 				memset(mmap_area + i, i, ALLOC_SIZE);
+> 				mvolatile(mmap_area + i, ALLOC_SIZE);
+> 			}
+> 		} else {
+> 			for (i = 0; i < MAP_SIZE; i += ALLOC_SIZE) {
+> 				memset(mmap_area + i, i, ALLOC_SIZE);
+> 				madvise(mmap_area + i, ALLOC_SIZE, MADV_DONTNEED);
+> 			}
+> 		}
+> 	}
+> 	return NULL;
+> }
+> 
+> int main(int argc, char *argv[])
+> {
+> 	int i, nr_thread;
+> 	int *data;
+> 
+> 	if (argc < 3)
+> 		return 1;
+> 
+> 	nr_thread = atoi(argv[1]);
+> 	mode = atoi(argv[2]);
+> 
+> 	pthread_t *thread = malloc(sizeof(pthread_t) * nr_thread);
+> 	data = malloc(sizeof(int) * nr_thread);
+> 	pthread_barrier_init(&barrier, NULL, nr_thread);
+> 
+> 	for (i = 0; i < nr_thread; i++) {
+> 		data[i] = i;
+> 		if (pthread_create(&thread[i], NULL, thread_entry, &data[i])) {
+> 			perror("Fail to create thread\n");
+> 			exit(1);
+> 		}
+> 	}
+> 
+> 	for (i = 0; i < nr_thread; i++) {
+> 		if (pthread_join(thread[i], NULL))
+> 			perror("Fail to join thread\n");
+> 		printf("[%d] thread done\n", i);
+> 	}
+> 
+> 	return 0;
+> }
+> 
+
+
