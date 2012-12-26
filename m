@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab2LZSoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 13:44:20 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:62935 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624Ab2LZSoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753876Ab2LZSoQ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 26 Dec 2012 13:44:16 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:45752 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830Ab2LZSoN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 13:44:13 -0500
 From: Dongjin Kim <tobetter@gmail.com>
 To: linux-samsung-soc@vger.kernel.org
-Cc: Dongjin Kim <tobetter@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] USB: ehci-s5p: Add to get interrupt from DT
-Date: Thu, 27 Dec 2012 03:42:21 +0900
-Message-Id: <1356547341-23620-3-git-send-email-tobetter@gmail.com>
+Cc: Dongjin Kim <tobetter@gmail.com>, Russell King <linux@arm.linux.org.uk>,
+        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: dts: Add EHCI device tree node for Exynos4
+Date: Thu, 27 Dec 2012 03:42:20 +0900
+Message-Id: <1356547341-23620-2-git-send-email-tobetter@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1356547341-23620-1-git-send-email-tobetter@gmail.com>
 References: <1356547341-23620-1-git-send-email-tobetter@gmail.com>
@@ -22,41 +24,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch support to get interrupt resource from device tree as well as
-platform device if ehci node is defined in device tree and it's irq is
-described.
+This patch adds EHCI device node on device tree for Exynos4 and defines its
+default platform data, s5p_usb_phy_init and s5p_usb_phy_exit, so that those
+function can be called from the driver.
 
 Signed-off-by: Dongjin Kim <tobetter@gmail.com>
 ---
- drivers/usb/host/ehci-s5p.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/exynos4.dtsi         |    7 +++++++
+ arch/arm/mach-exynos/mach-exynos4-dt.c |    9 +++++++++
+ 2 files changed, 16 insertions(+)
 
-diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
-index 319dcfa..0fc5e5e 100644
---- a/drivers/usb/host/ehci-s5p.c
-+++ b/drivers/usb/host/ehci-s5p.c
-@@ -16,6 +16,7 @@
- #include <linux/of.h>
- #include <linux/platform_device.h>
- #include <linux/of_gpio.h>
-+#include <linux/of_irq.h>
- #include <linux/platform_data/usb-ehci-s5p.h>
- #include <plat/usb-phy.h>
+diff --git a/arch/arm/boot/dts/exynos4.dtsi b/arch/arm/boot/dts/exynos4.dtsi
+index 92bca86..df1a9f0 100644
+--- a/arch/arm/boot/dts/exynos4.dtsi
++++ b/arch/arm/boot/dts/exynos4.dtsi
+@@ -140,6 +140,13 @@
+ 		status = "disabled";
+ 	};
  
-@@ -156,7 +157,12 @@ static int s5p_ehci_probe(struct platform_device *pdev)
- 		goto fail_io;
- 	}
- 
--	irq = platform_get_irq(pdev, 0);
-+	if (pdev->dev.of_node)
-+		irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
-+	else {
-+		irq = platform_get_irq(pdev, 0);
-+	}
++	ehci@12580000 {
++		compatible = "samsung,exynos-ehci";
++		reg = <0x12580000 0x100>;
++		interrupts = <0 70 0>;
++		status = "disabled";
++	};
 +
- 	if (!irq) {
- 		dev_err(&pdev->dev, "Failed to get IRQ\n");
- 		err = -ENODEV;
+ 	serial@13800000 {
+ 		compatible = "samsung,exynos4210-uart";
+ 		reg = <0x13800000 0x100>;
+diff --git a/arch/arm/mach-exynos/mach-exynos4-dt.c b/arch/arm/mach-exynos/mach-exynos4-dt.c
+index 92757ff..c8a23f0 100644
+--- a/arch/arm/mach-exynos/mach-exynos4-dt.c
++++ b/arch/arm/mach-exynos/mach-exynos4-dt.c
+@@ -13,6 +13,7 @@
+ 
+ #include <linux/of_platform.h>
+ #include <linux/serial_core.h>
++#include <linux/platform_data/usb-ehci-s5p.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/hardware/gic.h>
+@@ -20,9 +21,15 @@
+ 
+ #include <plat/cpu.h>
+ #include <plat/regs-serial.h>
++#include <plat/usb-phy.h>
+ 
+ #include "common.h"
+ 
++static struct s5p_ehci_platdata s5p_ehci_platdata = {
++	.phy_init = s5p_usb_phy_init,
++	.phy_exit = s5p_usb_phy_exit,
++};
++
+ /*
+  * The following lookup table is used to override device names when devices
+  * are registered from device tree. This is temporarily added to enable
+@@ -80,6 +87,8 @@ static const struct of_dev_auxdata exynos4_auxdata_lookup[] __initconst = {
+ 	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_MDMA1, "dma-pl330.2", NULL),
+ 	OF_DEV_AUXDATA("samsung,exynos4210-tmu", EXYNOS4_PA_TMU,
+ 				"exynos-tmu", NULL),
++	OF_DEV_AUXDATA("samsung,exynos-ehci", EXYNOS4_PA_EHCI,
++				"s5p-ehci", &s5p_ehci_platdata),
+ 	{},
+ };
+ 
 -- 
 1.7.10.4
 
