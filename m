@@ -1,72 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab2LZAJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 19:09:58 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:57221 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab2LZAJy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 19:09:54 -0500
-From: "Yann E. MORIN" <yann.morin.1998@free.fr>
-Organization: BZH lan
-To: linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kconfig:lxdialog: remove duplicate code
-Date: Wed, 26 Dec 2012 01:09:48 +0100
-User-Agent: KMail/1.13.5 (Linux/3.6.11-treguer; KDE/4.4.5; x86_64; ; )
-Cc: Wang YanQing <udknight@gmail.com>, mmarek@suse.cz,
-        linux-kernel@vger.kernel.org, rdunlap@xenotime.net, bp@alien8.de,
-        sakiwit@gmail.com, lacombar@gmail.com, lucas.demarchi@profusion.mobi,
-        dave@gnu.org, paul.gortmaker@windriver.com, crquan@gmail.com,
-        bpoirier@suse.de
-References: <20121217143751.GA16993@udknight> <20121224044818.GA3863@udknight> <201212251921.52405.yann.morin.1998@free.fr>
-In-Reply-To: <201212251921.52405.yann.morin.1998@free.fr>
+	id S1752735Ab2LZAdx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 19:33:53 -0500
+Received: from mga01.intel.com ([192.55.52.88]:53094 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752618Ab2LZAdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Dec 2012 19:33:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,354,1355126400"; 
+   d="asc'?scan'208";a="266912831"
+Date: Wed, 26 Dec 2012 02:34:35 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-mips@linux-mips.org
+Subject: Re: 3.8-rc1 build failure with MIPS/SPARSEMEM
+Message-ID: <20121226003434.GA27760@otc-wbsnb-06>
+References: <20121222122757.GB6847@blackmetal.musicnaut.iki.fi>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212260109.49002.yann.morin.1998@free.fr>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mP3DRpeJDSE+ciuQ"
+Content-Disposition: inline
+In-Reply-To: <20121222122757.GB6847@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wang, All,
 
-On Tuesday 25 December 2012 Yann E. MORIN wrote:
-> On Monday 24 December 2012 Wang YanQing wrote:
-[--SNIP--]
-> > and consider others' three patch I sented one week
-> > ago? I just don't want delay them to 2013, and they can get
-> > more test when they appear in next tree.
-> > https://patchwork.kernel.org/patch/1887361/
-> > https://patchwork.kernel.org/patch/1894341/
-> > https://patchwork.kernel.org/patch/1887441/
-[--SNIP--]
-> Wang, I've queued them here, and will push them again to Michal, after
-> the holidays season is over.
+--mP3DRpeJDSE+ciuQ
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I've started gathering kconfig-related patches suitable for post-3.8 there:
-    git://gitorious.org/linux-kconfig/linux-kconfig.git yem-kconfig-for-next
+On Sat, Dec 22, 2012 at 02:27:57PM +0200, Aaro Koskinen wrote:
+> Hi,
+>=20
+> It looks like commit 816422ad76474fed8052b6f7b905a054d082e59a
+> (asm-generic, mm: pgtable: consolidate zero page helpers) broke
+> MIPS/SPARSEMEM build in 3.8-rc1:
+>=20
+>   CHK     include/generated/uapi/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   Checking missing-syscalls for N32
+>   CC      arch/mips/kernel/asm-offsets.s
+> In file included from /home/aaro/git/linux/arch/mips/include/asm/pgtable.=
+h:388:0,
+>                  from include/linux/mm.h:44,
+>                  from arch/mips/kernel/asm-offsets.c:14:
+> include/asm-generic/pgtable.h: In function 'my_zero_pfn':
+> include/asm-generic/pgtable.h:462:9: error: implicit declaration of funct=
+ion 'page_to_section' [-Werror=3Dimplicit-function-declaration]
+> In file included from arch/mips/kernel/asm-offsets.c:14:0:
+> include/linux/mm.h: At top level:
+> include/linux/mm.h:708:29: error: conflicting types for 'page_to_section'
+> In file included from /home/aaro/git/linux/arch/mips/include/asm/pgtable.=
+h:388:0,
+>                  from include/linux/mm.h:44,
+>                  from arch/mips/kernel/asm-offsets.c:14:
+> include/asm-generic/pgtable.h:462:9: note: previous implicit declaration =
+of 'page_to_section' was here
+> cc1: some warnings being treated as errors
+> make[1]: *** [arch/mips/kernel/asm-offsets.s] Error 1
+> make: *** [archprepare] Error 2
 
-They are browseable there:
-    https://www.gitorious.org/linux-kconfig/linux-kconfig/commits/yem-kconfig-for-next
+The patch below works for me. Could you try?
 
-I'll send a proper pull-request to Michal in a litle while.
+=46rom a123a406fdc3aee7ca0eae04b6b4a231872dbb51 Mon Sep 17 00:00:00 2001
+=46rom: "Kirill A. Shutemov" <kirill@shutemov.name>
+Date: Wed, 26 Dec 2012 03:19:55 +0300
+Subject: [PATCH] asm-generic, mm: pgtable: convert my_zero_pfn() to macros =
+to
+ fix build
+MIME-Version: 1.0
+Content-Type: text/plain; charset=3DUTF-8
+Content-Transfer-Encoding: 8bit
 
-Note: the autoritative tree for kconfig is Michal's. I'm only doing this
-gathering of patches in an attempt to not forget any, and to make Michal's
-life easier, if he finds it usefull to pull from there.
+On MIPS if SPARSEMEM is enabled we've got this:
 
-Branches in that tree are based off Michal's branches, and so will be
-rebased accordingly.
+In file included from /home/kas/git/public/linux/arch/mips/include/asm/pgta=
+ble.h:552,
+                 from include/linux/mm.h:44,
+                 from arch/mips/kernel/asm-offsets.c:14:
+include/asm-generic/pgtable.h: In function =E2=80=98my_zero_pfn=E2=80=99:
+include/asm-generic/pgtable.h:466: error: implicit declaration of function =
+=E2=80=98page_to_section=E2=80=99
+In file included from arch/mips/kernel/asm-offsets.c:14:
+include/linux/mm.h: At top level:
+include/linux/mm.h:738: error: conflicting types for =E2=80=98page_to_secti=
+on=E2=80=99
+include/asm-generic/pgtable.h:466: note: previous implicit declaration of =
+=E2=80=98page_to_section=E2=80=99 was here
 
-Regards,
-Yann E. MORIN.
+Due header files inter-dependencies, the only way I see to fix it is
+convert my_zero_pfn() for __HAVE_COLOR_ZERO_PAGE to macros.
 
--- 
-.-----------------.--------------------.------------------.--------------------.
-|  Yann E. MORIN  | Real-Time Embedded | /"\ ASCII RIBBON | Erics' conspiracy: |
-| +33 662 376 056 | Software  Designer | \ / CAMPAIGN     |  ___               |
-| +33 223 225 172 `------------.-------:  X  AGAINST      |  \e/  There is no  |
-| http://ymorin.is-a-geek.org/ | _/*\_ | / \ HTML MAIL    |   v   conspiracy.  |
-'------------------------------^-------^------------------^--------------------'
+Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+---
+ include/asm-generic/pgtable.h | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
+index 701beab..5cf680a 100644
+--- a/include/asm-generic/pgtable.h
++++ b/include/asm-generic/pgtable.h
+@@ -461,10 +461,8 @@ static inline int is_zero_pfn(unsigned long pfn)
+ 	return offset_from_zero_pfn <=3D (zero_page_mask >> PAGE_SHIFT);
+ }
+=20
+-static inline unsigned long my_zero_pfn(unsigned long addr)
+-{
+-	return page_to_pfn(ZERO_PAGE(addr));
+-}
++#define my_zero_pfn(addr)	page_to_pfn(ZERO_PAGE(addr))
++
+ #else
+ static inline int is_zero_pfn(unsigned long pfn)
+ {
+--=20
+1.8.0.2
+
+--=20
+ Kirill A. Shutemov
+
+--mP3DRpeJDSE+ciuQ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ2kYaAAoJEAd+omnVudOMDEgP/iUqZr7TalBS0Wz0s0kXnF6Q
+fZkCIZInO98chygGuCZWo/3OggufeaLopnhDazJN4jSkxPwLDWTGlcIJCSZh4vNK
+hc/ojg3UOb28u9gRDQDDoPxrzIFFIKZTZXb6NAE3nVsv/3xNy3lNRwnPxUIwmnjY
+cGyV37H6Eofi4E5d/MEIvoO/DbfBy8Aa4ZJ2/aasbbJE2o0jnvaL9Wji1zJfCj+X
+ZD3dUvchrddzSzkL0K7KJ4If2euCIy1xiiIm6hQgCio9BXHTNzgj2mwkBwWe0JSl
+KMYXSGbwv5FrAa8r4wdWW/VxIQavXZtaO05zkGsLe1wdLStJ/Z4YKZoBbvX6YU4V
+IbDd0Zg230pO7Rf0dsdCUfJE43kUFresPV88rTlYKjhM8nKqVUSpHeROTtePZUBX
+fbgUT1QLXMWgGnCljiPWxQtm5tHunHIycZwIO7N8sq+f42IxSOMQG6j4Z3KCR/iG
+MT0c4RYFpsSvdy5DPvSY75kdPzQDjK/VQta7SEMWp1URpISOQ8yZyAp0XrhhUwXu
+4Kfiig+pp0QNkvtO7TNJCxHxQVkKn8u2YWj7+KS6P7IMp8bgY8FVdBSNf3VTH6d9
+2/iL4Dblezjabc3esav4wW5Wirpe2/GZzEa3nK2dlJm7QTPlZbaM5P3FdFvGAIBK
+wvYS/w1LURzEbwIEz/zT
+=1Y63
+-----END PGP SIGNATURE-----
+
+--mP3DRpeJDSE+ciuQ--
