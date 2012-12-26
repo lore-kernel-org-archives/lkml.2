@@ -1,133 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab2LZHG4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 02:06:56 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:22238 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751972Ab2LZHGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 02:06:54 -0500
-X-IronPort-AV: E=Sophos;i="4.84,355,1355068800"; 
-   d="scan'208";a="6476827"
-From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jason Wang <jasowang@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu hotplug
-Date: Wed, 26 Dec 2012 15:06:54 +0800
-Message-Id: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
-X-Mailer: git-send-email 1.8.0
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/26 15:06:41,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/26 15:06:41,
-	Serialize complete at 2012/12/26 15:06:41
+	id S1753851Ab2LZHNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 02:13:44 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:37960 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab2LZHNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 02:13:42 -0500
+Date: Wed, 26 Dec 2012 08:13:38 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "devendra.aaru" <devendra.aaru@gmail.com>
+Cc: jongman.heo@samsung.com, linux-kernel@vger.kernel.org,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [3.8-rc1+] BUG: unable to handle kernel NULL pointer
+ dereference, wait_iff_congested+0x45/0xdd
+Message-ID: <20121226071338.GA11555@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"devendra.aaru" <devendra.aaru@gmail.com>, jongman.heo@samsung.com,
+	linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>
+References: <27934635.301401356500288241.JavaMail.weblogic@epml05>
+ <CAHdPZaMGtDGW-yBULuTkJxMSUXLZRQd22S-bsFG-jqR+5LyB6A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CAHdPZaMGtDGW-yBULuTkJxMSUXLZRQd22S-bsFG-jqR+5LyB6A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a cpu notifier to virtio-net, so that we can reset the
-virtqueue affinity if the cpu hotplug happens. It improve
-the performance through enabling or disabling the virtqueue
-affinity after doing cpu hotplug.
++ linux-mm.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Jason Wang <jasowang@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: netdev@vger.kernel.org
-Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
----
- drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 38 insertions(+), 1 deletion(-)
+There's that kswapd deal again.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a6fcf15..9710cf4 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -26,6 +26,7 @@
- #include <linux/scatterlist.h>
- #include <linux/if_vlan.h>
- #include <linux/slab.h>
-+#include <linux/cpu.h>
- 
- static int napi_weight = 128;
- module_param(napi_weight, int, 0444);
-@@ -34,6 +35,8 @@ static bool csum = true, gso = true;
- module_param(csum, bool, 0444);
- module_param(gso, bool, 0444);
- 
-+static bool cpu_hotplug = false;
-+
- /* FIXME: MTU in config. */
- #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
- #define GOOD_COPY_LEN	128
-@@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- 		vi->affinity_hint_set = false;
- }
- 
-+static int virtnet_cpu_callback(struct notifier_block *nfb,
-+			       unsigned long action, void *hcpu)
-+{
-+	switch(action) {
-+	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
-+	case CPU_DEAD:
-+	case CPU_DEAD_FROZEN:
-+		cpu_hotplug = true;
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block virtnet_cpu_notifier = {
-+	.notifier_call = virtnet_cpu_callback,
-+};
-+
- static void virtnet_get_ringparam(struct net_device *dev,
- 				struct ethtool_ringparam *ring)
- {
-@@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
-  */
- static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
- {
--	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-+	int txq;
-+
-+	if (unlikely(cpu_hotplug == true)) {
-+		virtnet_set_affinity(netdev_priv(dev), true);
-+		cpu_hotplug = false;
-+	}
-+
-+	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
- 		  smp_processor_id();
- 
- 	while (unlikely(txq >= dev->real_num_tx_queues))
-@@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
- {
- 	struct virtio_device *vdev = vi->vdev;
- 
-+	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
-+
- 	virtnet_set_affinity(vi, false);
- 
- 	vdev->config->del_vqs(vdev);
-@@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
- 		goto err_free;
- 
- 	virtnet_set_affinity(vi, true);
-+
-+	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
-+	if (ret)
-+		goto err_free;
-+
- 	return 0;
- 
- err_free:
+On Wed, Dec 26, 2012 at 11:12:45AM +0530, devendra.aaru wrote:
+> Hello,
+> 
+> On Wed, Dec 26, 2012 at 11:08 AM, Jongman Heo <jongman.heo@samsung.com> wrote:
+> >
+> > Hi,
+> >
+> > During SVN checkout (means heavy I/O), I hit this kernel BUG with current linus git (637704cb : Merge branch 'i2c-embedded/for-next'), in my VMWare Linux guest.
+> >
+> i can too with the make -j144 on kernel source code, attached the .config.
+> 
+> > [ 9141.015123] BUG: unable to handle kernel NULL pointer dereference at 00000280
+> > [ 9141.017870] IP: [<c04ba69c>] wait_iff_congested+0x45/0xdd
+> > [ 9141.034799] *pde = 00000000
+> > [ 9141.034803] Oops: 0000 [#1] SMP
+> > [ 9141.044282] Modules linked in: vmwgfx ttm drm
+> > [ 9141.044331] Pid: 42, comm: kswapd0 Not tainted 3.8.0-rc1+ #120 VMware, Inc. VMware Virtual Platform/440BX Desktop Reference Platform
+> > [ 9141.044334] EIP: 0060:[<c04ba69c>] EFLAGS: 00010202 CPU: 3
+> > [ 9141.044342] EIP is at wait_iff_congested+0x45/0xdd
+> > [ 9141.044343] EAX: 00000001 EBX: 00000000 ECX: 00000000 EDX: 00000000
+> > [ 9141.044345] ESI: 0000001e EDI: f633fec0 EBP: f633fecc ESP: f633fea8
+> > [ 9141.044347]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+> > [ 9141.044348] CR0: 8005003b CR2: 00000280 CR3: 33ab7000 CR4: 000007d0
+> > [ 9141.045817] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+> > [ 9141.045834] DR6: ffff0ff0 DR7: 00000400
+> > [ 9141.045836] Process kswapd0 (pid: 42, ti=f633e000 task=f6331920 task.ti=f633e000)
+> > [ 9141.045838] Stack:
+> > [ 9141.045839]  002889e6 00000000 f6331920 c04462a2 f633feb8 f633feb8 c0beba54 c0bead00
+> > [ 9141.045844]  00000003 f633ff68 c04b3ffb 00000002 00000000 000086d1 f6331920 f633ff58
+> > [ 9141.045849]  00000000 f6331920 00037b92 00000000 00000045 00000000 00000038 00000001
+> > [ 9141.045854] Call Trace:
+> > [ 9141.045934]  [<c04462a2>] ? remove_wait_queue+0x27/0x27
+> > [ 9141.045939]  [<c04b3ffb>] kswapd+0x5ef/0x705
+> > [ 9141.045942]  [<c04462a2>] ? remove_wait_queue+0x27/0x27
+> > [ 9141.045945]  [<c0445cbc>] kthread+0x6b/0x70
+> > [ 9141.045947]  [<c04b3a0c>] ? shrink_lruvec+0x492/0x492
+> > [ 9141.083149]  [<c0907637>] ret_from_kernel_thread+0x1b/0x28
+> > [ 9141.083166]  [<c0445c51>] ? kthread_freezable_should_stop+0x36/0x36
+> > [ 9141.083169] Code: 89 45 dc 31 c0 f3 ab 64 a1 58 66 c7 c0 89 45 e4 8d 45 ec 89 45 ec 89 45 f0 8b 04 95 24 2b cf c0 c7 45 e8 a2 62 44 c0 85 c0 74 0a <8b> 83 80 02 00 00 a8 04 75 1b e8 e9 6f 44 00 a1 40 9a b8 c0 8b
+> > [ 9141.089753] EIP: [<c04ba69c>] wait_iff_congested+0x45/0xdd SS:ESP 0068:f633fea8
+> > [ 9141.089764] CR2: 0000000000000280
+> > [ 9141.090296] ---[ end trace 58a34900f079b57e ]---
+
+
+
 -- 
-1.8.0
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
