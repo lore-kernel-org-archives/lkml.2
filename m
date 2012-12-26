@@ -1,80 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754110Ab2LZKB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 05:01:56 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:40528 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753821Ab2LZKBz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 05:01:55 -0500
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-To: rafael.j.wysocki@intel.com
-Cc: rja@sgi.com, linux-pm@vger.kernel.org, pdeschrijver@nvidia.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cpuidle - fix lock contention in the idle path
-Date: Wed, 26 Dec 2012 11:01:48 +0100
-Message-Id: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754146Ab2LZKGq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 05:06:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17382 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753967Ab2LZKGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 05:06:44 -0500
+Message-ID: <50DACC26.7050409@redhat.com>
+Date: Wed, 26 Dec 2012 18:06:30 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
+ hotplug
+References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
-a lock in the cpuidle_get_cpu_driver function. This function
-is used in the idle_call function.
+On 12/26/2012 03:06 PM, Wanlong Gao wrote:
+> Add a cpu notifier to virtio-net, so that we can reset the
+> virtqueue affinity if the cpu hotplug happens. It improve
+> the performance through enabling or disabling the virtqueue
+> affinity after doing cpu hotplug.
 
-The problem is the contention with a large number of cpus because
-they try to access the idle routine at the same time.
+Hi Wanlong:
 
-The lock could be safely removed because of how is used the
-cpuidle api. The cpuidle_register_driver is called first but
-until the cpuidle_register_device is not called we don't
-enter in the cpuidle idle call function because the device
-is not enabled.
+Thanks for looking at this.
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: Jason Wang <jasowang@redhat.com>
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> ---
+>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>  1 file changed, 38 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index a6fcf15..9710cf4 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/scatterlist.h>
+>  #include <linux/if_vlan.h>
+>  #include <linux/slab.h>
+> +#include <linux/cpu.h>
+>  
+>  static int napi_weight = 128;
+>  module_param(napi_weight, int, 0444);
+> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+>  module_param(csum, bool, 0444);
+>  module_param(gso, bool, 0444);
+>  
+> +static bool cpu_hotplug = false;
+> +
+>  /* FIXME: MTU in config. */
+>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+>  #define GOOD_COPY_LEN	128
+> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>  		vi->affinity_hint_set = false;
+>  }
+>  
+> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+> +			       unsigned long action, void *hcpu)
+> +{
+> +	switch(action) {
+> +	case CPU_ONLINE:
+> +	case CPU_ONLINE_FROZEN:
+> +	case CPU_DEAD:
+> +	case CPU_DEAD_FROZEN:
+> +		cpu_hotplug = true;
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block virtnet_cpu_notifier = {
+> +	.notifier_call = virtnet_cpu_callback,
+> +};
+> +
+>  static void virtnet_get_ringparam(struct net_device *dev,
+>  				struct ethtool_ringparam *ring)
+>  {
+> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>   */
+>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+>  {
+> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+> +	int txq;
+> +
+> +	if (unlikely(cpu_hotplug == true)) {
+> +		virtnet_set_affinity(netdev_priv(dev), true);
+> +		cpu_hotplug = false;
+> +	}
+> +
 
-The cpuidle_unregister_driver function, leading the a NULL driver,
-is not called before the cpuidle_unregister_device.
+Why don't you just do this in callback?
 
-This is how is used the cpuidle api from the different drivers.
-
-However, a cleanup around the lock and a proper refcounting
-mechanism should be used to ensure the consistency in the api,
-like cpuidle_unregister_driver should failed if its refcounting
-is not 0.
-
-These modifications will need some code reorganization and rewrite
-which does not fit with a fix.
-
-The following patch is a hot fix by returning to the initial behavior
-by removing the lock when getting the driver.
-
-Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
----
- drivers/cpuidle/driver.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
-
-diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-index 3af841f..c2b281a 100644
---- a/drivers/cpuidle/driver.c
-+++ b/drivers/cpuidle/driver.c
-@@ -235,16 +235,10 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
-  */
- struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
- {
--	struct cpuidle_driver *drv;
--
- 	if (!dev)
- 		return NULL;
- 
--	spin_lock(&cpuidle_driver_lock);
--	drv = __cpuidle_get_cpu_driver(dev->cpu);
--	spin_unlock(&cpuidle_driver_lock);
--
--	return drv;
-+	return __cpuidle_get_cpu_driver(dev->cpu);
- }
- EXPORT_SYMBOL_GPL(cpuidle_get_cpu_driver);
- 
--- 
-1.7.9.5
+btw. Does qemu/kvm support cpu-hotplug now?
+> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+>  		  smp_processor_id();
+>  
+>  	while (unlikely(txq >= dev->real_num_tx_queues))
+> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+>  {
+>  	struct virtio_device *vdev = vi->vdev;
+>  
+> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
+> +
+>  	virtnet_set_affinity(vi, false);
+>  
+>  	vdev->config->del_vqs(vdev);
+> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
+>  		goto err_free;
+>  
+>  	virtnet_set_affinity(vi, true);
+> +
+> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
+> +	if (ret)
+> +		goto err_free;
+> +
+>  	return 0;
+>  
+>  err_free:
 
