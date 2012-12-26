@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521Ab2LZQs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 11:48:29 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:54863 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753390Ab2LZQs0 (ORCPT
+	id S1753380Ab2LZRjC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 12:39:02 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:41090 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab2LZRi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 11:48:26 -0500
-Date: Wed, 26 Dec 2012 11:48:25 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Fabio Coatti <fabio.coatti@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
-        <rydberg@euromail.se>
-Subject: Re: Fwd: usb issues with 3.6.X and 3.7.X
-In-Reply-To: <CADpTngXm=zWfBZJAZze6ze9iaDitdqBuy8rz9qDoCCVyLysH9A@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1212261146300.15906-100000@netrider.rowland.org>
+	Wed, 26 Dec 2012 12:38:59 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <87zk11s8j3.fsf@sejong.aot.lge.com>
+References: <50D77528.6050003@googlemail.com>
+	<87zk11s8j3.fsf@sejong.aot.lge.com>
+Date: Wed, 26 Dec 2012 18:38:58 +0100
+Message-ID: <CABPqkBTS57_KeEVw76M0_XmZONFvRZX9a9jOeddjTGJKTwbkNw@mail.gmail.com>
+Subject: Re: Segfault in perf tool
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Stefan Beller <stefanbeller@googlemail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul Mackerras (supporter:PERFORMANCE EVENT...)" <paulus@samba.org>,
+        "Ingo Molnar (supporter:PERFORMANCE EVENT...,commit_signer:2/9=22%)" 
+	<mingo@redhat.com>,
+        "Arnaldo Carvalho de Melo (supporter:PERFORMANCE EVENT... 
+	,commit_signer:7/9=78%)" <acme@ghostprotocols.net>,
+        "Anton Blanchard (commit_signer:1/9=11%)" <anton@samba.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Dec 2012, Fabio Coatti wrote:
+On Wed, Dec 26, 2012 at 6:10 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Hi Stefan,
+>
+> On Sun, 23 Dec 2012 22:18:32 +0100, Stefan Beller wrote:
+>> Hi,
+>>
+>> I get segmentation faults when running one of these commands:
+>> perf report -g --sort symbol_to
+>> perf report -g --sort symbol_from
+>> perf report -g --sort dso_from
+>> perf report -g --sort dso_to
+>
+> Those sort keys are only applicable for branch filtered perf.data file
+> (i.e. recorded with -j or -b option) and should not be used for others.
 
-> Hi all,
-> I'm experiencing some usb-related issues with recent kernels (3.6.7
-> and 3.7.1 at least.)
-> Basically I have a V500 epson scanner that worked just fine with older
-> kernels; since last time I used it I've changed several kernels and
-> now the oldest that I have on my machine is 3.6.7.
-> Recently I tried to use the usb scanner without success.
+That's true. Should print an error and not segfault.
 
-> I've tried to look at usb traffic with usbmon, but honestly it's not
-> my ground :)
-
-Can you get an equivalent usbmon trace from an earlier working kernel?
-Comparing the two would be useful.
-
-Alan Stern
-
+> I'll work on the fix soon.
+>
+Thanks.
