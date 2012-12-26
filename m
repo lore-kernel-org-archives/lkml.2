@@ -1,73 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab2LZJMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 04:12:09 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:59673 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab2LZJMF (ORCPT
+	id S1754110Ab2LZKB4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 05:01:56 -0500
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:40528 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753821Ab2LZKBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 04:12:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1356509836.28255.4.camel@joe-AO722>
-References: <1356145725-19940-1-git-send-email-linkinjeon@gmail.com>
-	<1356486933.16178.144.camel@kjgkr>
-	<CAKYAXd_-c4Mh0hQHBiNDVOrWmq=TVXEuoaWd1hzrA70t9p6=ag@mail.gmail.com>
-	<1356488089.28255.1.camel@joe-AO722>
-	<CAKYAXd_1VjQAVyGkvLKqy1ceE8rKCz1cRuoWg+RgSEF-M_OFEA@mail.gmail.com>
-	<1356509836.28255.4.camel@joe-AO722>
-Date: Wed, 26 Dec 2012 18:12:03 +0900
-Message-ID: <CAKYAXd_ujxCEsLgHRu+xjZgf8yeP+CYanDv6feWJDCM89t1X8Q@mail.gmail.com>
-Subject: Re: [PATCH 1/5] f2fs: Introduce some information prints in the mount path
-From: Namjae Jeon <linkinjeon@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: jaegeuk.kim@samsung.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Amit Sahrawat <a.sahrawat@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Dec 2012 05:01:55 -0500
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: rafael.j.wysocki@intel.com
+Cc: rja@sgi.com, linux-pm@vger.kernel.org, pdeschrijver@nvidia.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] cpuidle - fix lock contention in the idle path
+Date: Wed, 26 Dec 2012 11:01:48 +0100
+Message-Id: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2012/12/26, Joe Perches <joe@perches.com>:
-> On Wed, 2012-12-26 at 13:22 +0900, Namjae Jeon wrote:
->> 2012/12/26, Joe Perches <joe@perches.com>:
->> > On Wed, 2012-12-26 at 11:10 +0900, Namjae Jeon wrote:
->> >> 2012/12/26, Jaegeuk Kim <jaegeuk.kim@samsung.com>:
->> >> > Could you make them follow the file system convention?
->> >> > Something like "F2FS: blah blah~".
->> >> Yes,  I agree.
->> >> > Otherwise, how about adding a debugging function to express the
->> >> > prefix?
->> >> Okay, I will send you the patches included your suggestion.
->> > Add
->> > #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
->> > before any #include
->> Hi Joe.
->
-> Hello Namjae
->
->> I think we can have debugging message function for f2fs similar to
->> ext4/fat like fat_msg, ext4_msg.
->> It is one time change but in the future it will allow more convenience
->> to use that way.
->> What is your opinion ?
->>
->> Or is that we have to to use pr_xxx function for error print instead
->> of own print debug function ?
->
-> Sure, make your own f2fs_dbg function/macro when
-> and if you have an object you want to pass along
-> with the format and args
->
-> something like:
->
-> fs2fs_printk(struct fs2fs_handle *f2h, const char *fmt, ...)
->
-> Otherwise, just use pr_debug/pr_<level>(fmt, ...)
-Okay, Thanks for reply!
+The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
+a lock in the cpuidle_get_cpu_driver function. This function
+is used in the idle_call function.
 
->
-> cheers, Joe
->
->
+The problem is the contention with a large number of cpus because
+they try to access the idle routine at the same time.
+
+The lock could be safely removed because of how is used the
+cpuidle api. The cpuidle_register_driver is called first but
+until the cpuidle_register_device is not called we don't
+enter in the cpuidle idle call function because the device
+is not enabled.
+
+The cpuidle_unregister_driver function, leading the a NULL driver,
+is not called before the cpuidle_unregister_device.
+
+This is how is used the cpuidle api from the different drivers.
+
+However, a cleanup around the lock and a proper refcounting
+mechanism should be used to ensure the consistency in the api,
+like cpuidle_unregister_driver should failed if its refcounting
+is not 0.
+
+These modifications will need some code reorganization and rewrite
+which does not fit with a fix.
+
+The following patch is a hot fix by returning to the initial behavior
+by removing the lock when getting the driver.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/driver.c |    8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
+
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 3af841f..c2b281a 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -235,16 +235,10 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
+  */
+ struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
+ {
+-	struct cpuidle_driver *drv;
+-
+ 	if (!dev)
+ 		return NULL;
+ 
+-	spin_lock(&cpuidle_driver_lock);
+-	drv = __cpuidle_get_cpu_driver(dev->cpu);
+-	spin_unlock(&cpuidle_driver_lock);
+-
+-	return drv;
++	return __cpuidle_get_cpu_driver(dev->cpu);
+ }
+ EXPORT_SYMBOL_GPL(cpuidle_get_cpu_driver);
+ 
+-- 
+1.7.9.5
+
