@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753756Ab2LZEsr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 23:48:47 -0500
-Received: from 1.21jiggawatts.net ([173.203.126.100]:49573 "EHLO
-	1.21jiggawatts.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185Ab2LZEsm (ORCPT
+	id S1753717Ab2LZE61 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 23:58:27 -0500
+Received: from hermes.synopsys.com ([198.182.44.81]:58512 "EHLO
+	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753000Ab2LZE6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 23:48:42 -0500
-Date: Wed, 26 Dec 2012 15:53:55 +1100
-From: Thomas Karpiniec <tk@1.21jiggawatts.net>
-To: alsa-devel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Prevent loss of state between MIDI subscriptions
-Message-ID: <20121226045355.GB13024@1.21jiggawatts.net>
-References: <50DA7B10.9030807@1.21jiggawatts.net>
+	Tue, 25 Dec 2012 23:58:25 -0500
+Message-ID: <50DA837A.6040301@synopsys.com>
+Date: Wed, 26 Dec 2012 10:26:26 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50DA7B10.9030807@1.21jiggawatts.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] Ensure that kernel_init_freeable() is not inlined
+ into non __init code
+References: <1356072944-23800-1-git-send-email-vgupta@synopsys.com> <20121221072056.GS4939@ZenIV.linux.org.uk> <50D40E82.7000806@synopsys.com>
+In-Reply-To: <50D40E82.7000806@synopsys.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies for the linewrap. This will be better:
+On Friday 21 December 2012 12:53 PM, Vineet Gupta wrote:
+> On Friday 21 December 2012 12:50 PM, Al Viro wrote:
+>> On Fri, Dec 21, 2012 at 12:25:44PM +0530, Vineet Gupta wrote:
+>>> Commit d6b2123802d "make sure that we always have a return path from
+>>> kernel_execve()" reshuffled kernel_init()/init_post() to ensure that
+>>> kernel_execve() has a caller to return to.
+>>>
+>>> It removed __init annotation for kernel_init() and introduced/calls a
+>>> new routine kernel_init_freeable(). Latter however is inlined by any
+>>> reasonable compiler (ARC gcc 4.4 in this case), causing slight code
+>>> bloat.
+>> Interesting...  I assumed that explicitly set different section would be
+>> enough, but I'd been wrong (or the original noinline would've been pointless,
+>> now that I think of it).  Consider it ACKed; I can pick it through signal.git,
+>> and while it's not urgent I'd send it to Linus after -rc1, with Cc: stable.
+>> Or you can send it to him yourself with my usual Acked-by - up to you.
+> 
+> Merging via your signal.git is fine.
+> 
+> Thx,
+> -Vineet
+> 
 
-A MIDI input parser is unnecessarily reset whenever a new subscription 
-is created.
+Hi Al,
 
-This is a particular problem with the Novation Launchpad, which sends a 
-single NOTEON command, then a series of notes indefinitely unless a 
-control button is pressed or it is power cycled. If a user application 
-restarts and resubscribes, the parser no longer knows that it is 
-receiving NOTEONs and fails to pass on new input.
+Tickled by a spurious mail from "Kbuild test robot" with this change getting
+committed into your tree (please see below, which Fengguang acknowledged as a
+script error) I took a peek at the commit and it seems the commit log is truncated
+when describing the New call chain of kernel_init. If that's too much you might
+wanna delete all of the Old vs. New Call chains or preferably restore the "New" part.
 
-Signed-off-by: Thomas Karpiniec <tk@1.21jiggawatts.net>
----
- sound/core/seq/seq_midi.c |    1 -
- 1 file changed, 1 deletion(-)
+Sorry for the nit.
 
-diff --git a/sound/core/seq/seq_midi.c b/sound/core/seq/seq_midi.c
-index 64069db..1a977df 100644
---- a/sound/core/seq/seq_midi.c
-+++ b/sound/core/seq/seq_midi.c
-@@ -200,7 +200,6 @@ static int midisynth_subscribe(void *private_data, struct snd_seq_port_subscribe
- 		snd_rawmidi_kernel_release(&msynth->input_rfile);
- 		return err;
- 	}
--	snd_midi_event_reset_encode(msynth->parser);
- 	runtime->event = snd_midi_input_event;
- 	runtime->private_data = msynth;
- 	snd_rawmidi_kernel_read(msynth->input_rfile.input, NULL, 0);
--- 
-1.7.10.4
+Thx,
+-Vineet
+
+-------------->8-------------------------
+tree:   git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal.git for-linus
+head:   07570a268090d0a209d957e46d164900999c9e5b
+commit: ec21b1033ee6dce41be78c10844f6169566d9d06 [1/6] Ensure that
+kernel_init_freeable() is not inlined into non __init code
+config: x86_64-randconfig-s542 (attached as .config)
+
+Note: it may well be a FALSE warning. FWIW you are at least aware of it now.
+-------------->8-------------------------
+
+
