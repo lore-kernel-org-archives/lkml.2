@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab2LZWJL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 17:09:11 -0500
-Received: from mail.us.es ([193.147.175.20]:60243 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751350Ab2LZWJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 17:09:06 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus1 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16120. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-98.0/7.5):. 
- Processed in 1.855231 secs); 26 Dec 2012 22:09:04 -0000
-X-Envelope-From: pneira@us.es
-Date: Wed, 26 Dec 2012 23:09:02 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: netfilter@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, coreteam@netfilter.org,
-        netfilter-devel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, Jay Schulist <jschlst@samba.org>,
-        Harald Welte <laforge@gnumonks.org>
-Subject: Re: [PATCH] netfilter: Don't leak 'exp' in
- ctnetlink_create_expect()
-Message-ID: <20121226220902.GA30981@1984>
-References: <alpine.LNX.2.00.1212262246390.23814@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1212262246390.23814@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751384Ab2LZWOR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 17:14:17 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:35433 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab2LZWOO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 17:14:14 -0500
+Date: Wed, 26 Dec 2012 14:13:50 -0800 (PST)
+Message-Id: <20121226.141350.999199516661256197.davem@davemloft.net>
+To: akinobu.mita@gmail.com
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        lindner_marek@yahoo.de, siwu@hrz.tu-chemnitz.de, ordex@autistici.org,
+        b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [PATCH] batman-adv: fix random jitter calculation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1356525130-2688-1-git-send-email-akinobu.mita@gmail.com>
+References: <1356525130-2688-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 10:49:40PM +0100, Jesper Juhl wrote:
-> 'if ((!help) && (!cda[CTA_EXPECT_TIMEOUT]))' then we should remember
-> to free 'exp' that was allocated by 'nf_ct_expect_alloc()' by jumping
-> to the 'err_out' label rather than the 'out' label in
-> ctnetlink_create_expect().
-> This patch should get rid of the leak.
+From: Akinobu Mita <akinobu.mita@gmail.com>
+Date: Wed, 26 Dec 2012 21:32:10 +0900
 
-Applied, thanks Jesper.
+> batadv_iv_ogm_emit_send_time() attempts to calculates a random integer
+> in the range of 'orig_interval +- BATADV_JITTER' by the below lines.
+> 
+>         msecs = atomic_read(&bat_priv->orig_interval) - BATADV_JITTER;
+>         msecs += (random32() % 2 * BATADV_JITTER);
+> 
+> But it actually gets 'orig_interval' or 'orig_interval - BATADV_JITTER'
+> because '%' and '*' have same precedence and associativity is
+> left-to-right.
+> 
+> This adds the parentheses at the appropriate position so that it matches
+> original intension.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Acked-by: Antonio Quartulli <ordex@autistici.org>
+
+Applied, thanks.
