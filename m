@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753951Ab2LZUlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 15:41:10 -0500
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:46873 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812Ab2LZUlI (ORCPT
+	id S1754045Ab2LZUne (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 15:43:34 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60218
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751537Ab2LZUna (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 15:41:08 -0500
+	Wed, 26 Dec 2012 15:43:30 -0500
+Message-ID: <50DB616D.50607@kernel.dk>
+Date: Wed, 26 Dec 2012 21:43:25 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWr6-=kvrCXKEWFvUHHv6xbHKt-oAdt+VPUMphVUW4U4A@mail.gmail.com>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan>
-	<150695156.KNRhubloU5@vostro.rjw.lan>
-	<CAErSpo5ZpUaHzYQEpR9Jh0MbcmjHfhKUQ-EpRJH1PNCHR_qnVg@mail.gmail.com>
-	<5457615.T2WjKPXXC4@vostro.rjw.lan>
-	<CAE9FiQUBpu+rUfnvOwDUm8PTYYVfann3SyhhL4k=54EyfRSmLg@mail.gmail.com>
-	<CAErSpo5sGAEO+kcqUsjyrmn_LAzmkWm4ok0c=rBaR_ErwBX23A@mail.gmail.com>
-	<CAE9FiQWr6-=kvrCXKEWFvUHHv6xbHKt-oAdt+VPUMphVUW4U4A@mail.gmail.com>
-Date: Wed, 26 Dec 2012 12:41:05 -0800
-X-Google-Sender-Auth: xM9U5yLPo_0TPLktDQimff8Mrps
-Message-ID: <CAE9FiQVOvqqEFXcRbZt5=8e4fQgmzw03WCS=env46eYADFpXLw@mail.gmail.com>
-Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
-From: Yinghai Lu <yinghai@kernel.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: majianpeng <majianpeng@gmail.com>
+CC: Shaohua Li <shli@kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: Remove should_sort judgement when flush blk_plug.
+References: <201212251726591128681@gmail.com>
+In-Reply-To: <201212251726591128681@gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 12:16 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Dec 26, 2012 at 12:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> Do you have a reference for this?  I think this might have been true
->> in the past, but I don't think it's true for any version of gcc we
->> support for building Linux.
->
-> http://lkml.indiana.edu/hypermail/linux/kernel/0804.3/3600.html
+On 2012-12-25 10:27, majianpeng wrote:
+> In commit 975927b942c932,it add blk_rq_pos to sort rq when flushing.
+> Although this commit was used for the situation which blk_plug handled
+> multi devices on the same time like md device.
+> I think there must be some situations like this but only single
+> device.
+> So remove the should_sort judgement.
+> Because the parameter should_sort is only for this purpose,it can delete
+> should_sort from blk_plug.
 
-the problem is already addressed by:
+Agree with the patch. It does not make sense to have ->should_sort and
+not set it for all the conditions that the list_sort() compare now
+checks for.
 
-| commit f9d14250071eda9972e4c9cea745a11185952114
-| Author: Linus Torvalds <torvalds@linux-foundation.org>
-| Date:   Fri Jan 2 09:29:43 2009 -0800
-|
-|    Disallow gcc versions 4.1.{0,1}
-|
-|    These compiler versions are known to miscompile __weak functions and
-|    thus generate kernels that don't necessarily work correctly.  If a weak
-|    function is int he same compilation unit as a caller, gcc may end up
-|    inlining it, and thus binding the weak function too early.
-|
-|    See
-|
-|        http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27781
-|
-|    for details.
+Applied for 3.9, thanks.
 
-so it is ok to put the __weak in the same file now.
+-- 
+Jens Axboe
 
-Yinghai
