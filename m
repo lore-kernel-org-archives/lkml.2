@@ -1,91 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab2LZN0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 08:26:42 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:11964 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752105Ab2LZN0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 08:26:41 -0500
-Message-ID: <50DAFA8C.2030906@redhat.com>
-Date: Wed, 26 Dec 2012 21:24:28 +0800
-From: Zhouping Liu <zliu@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753968Ab2LZNqf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 08:46:35 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1552 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab2LZNqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 08:46:34 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 26 Dec 2012 05:46:33 -0800
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+To: <mturquette@linaro.org>, <swarren@wwwdotorg.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Prashant Gaikwad <pgaikwad@nvidia.com>
+Subject: [PATCH 1/2] clk: Add debug clk summary
+Date: Wed, 26 Dec 2012 19:16:22 +0530
+Message-ID: <1356529583-19535-1-git-send-email-pgaikwad@nvidia.com>
+X-Mailer: git-send-email 1.7.4.1
+X-NVConfidentiality: public
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        mgorman@suse.de, hughd@google.com,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        "devendra.aaru" <devendra.aaru@gmail.com>,
-        Jongman Heo <jongman.heo@samsung.com>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
-References: <535932623.34838584.1356410331076.JavaMail.root@redhat.com> <692539675.35132464.1356520940797.JavaMail.root@redhat.com> <CAJd=RBD0mjdUZA82UDv134w=TvNtgRNGXWON8CnG0FPexj7vXQ@mail.gmail.com>
-In-Reply-To: <CAJd=RBD0mjdUZA82UDv134w=TvNtgRNGXWON8CnG0FPexj7vXQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2012 08:01 PM, Hillf Danton wrote:
-> On Wed, Dec 26, 2012 at 7:22 PM, Zhouping Liu <zliu@redhat.com> wrote:
->> Hello everyone,
->>
->> The latest mainline(637704cbc95c) would trigger the following error when the system was under
->> some pressure condition(in my testing, I used oom01 case inside LTP test suite to trigger the issue):
->>
->> [ 5462.920151] BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
->> [ 5462.927991] IP: [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
->> [ 5462.934176] PGD 0
->> [ 5462.936191] Oops: 0000 [#2] SMP
->> [ 5462.939428] Modules linked in: lockd sunrpc iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack ebtable_filter ebtables ip6table_filter ip6_tables iptable_filter ip_tabled
->> [ 5462.984261] CPU 13
->> [ 5462.986184] Pid: 117, comm: kswapd3 Tainted: G      D      3.8.0-rc1+ #1 Dell Inc. PowerEdge M905/0D413F
->> [ 5462.995814] RIP: 0010:[<ffffffff811542d9>]  [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
->> [ 5463.004411] RSP: 0018:ffff88007c97fd48  EFLAGS: 00010202
->> [ 5463.009701] RAX: 0000000000000001 RBX: 0000000000000064 RCX: 0000000000000001
->> [ 5463.016818] RDX: 0000000000000064 RSI: 0000000000000000 RDI: 0000000000000000
->> [ 5463.023926] RBP: ffff88007c97fd98 R08: 0000000000000000 R09: ffff88022ffd9d80
->> [ 5463.031033] R10: 0000000000003189 R11: 0000000000000000 R12: 00000001004ee87e
->> [ 5463.038140] R13: 0000000000000002 R14: 0000000000000000 R15: ffff88022ffd9000
->> [ 5463.045258] FS:  00007f3e570de740(0000) GS:ffff88022fcc0000(0000) knlGS:0000000000000000
->> [ 5463.053317] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [ 5463.059041] CR2: 0000000000000500 CR3: 00000000018dc000 CR4: 00000000000007e0
->> [ 5463.066157] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->> [ 5463.073276] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->> [ 5463.080400] Process kswapd3 (pid: 117, threadinfo ffff88007c97e000, task ffff88007c981970)
->> [ 5463.088633] Stack:
->> [ 5463.090646]  ffff88007c97fd98 0000000000000000 ffff88007c981970 ffffffff81086080
->> [ 5463.098090]  ffff88007c97fd68 ffff88007c97fd68 ffff88022ffd9d80 0000000000000002
->> [ 5463.105527]  0000000000000002 0000000000000000 ffff88007c97feb8 ffffffff8114b0e3
->> [ 5463.112998] Call Trace:
->> [ 5463.115446]  [<ffffffff81086080>] ? wake_up_bit+0x40/0x40
->> [ 5463.120826]  [<ffffffff8114b0e3>] kswapd+0x6c3/0xa50
->> [ 5463.125775]  [<ffffffff8114aa20>] ? zone_reclaim+0x270/0x270
->> [ 5463.131415]  [<ffffffff81085680>] kthread+0xc0/0xd0
->> [ 5463.136278]  [<ffffffff810855c0>] ? kthread_create_on_node+0x120/0x120
->> [ 5463.142786]  [<ffffffff8160a0ac>] ret_from_fork+0x7c/0xb0
->> [ 5463.148166]  [<ffffffff810855c0>] ? kthread_create_on_node+0x120/0x120
->> [ 5463.154668] Code: 4e 6d 88 00 48 c7 45 b8 00 00 00 00 48 83 c0 18 48 c7 45 c8 80 60 08 81 48 89 45 d0 48 89 45 d8 8b 04 b5 a0 9a cd 81 85 c0 74 0f <48> 8b 87 00 05 00 00 a8 04 0f 85 98 00 00 00 e8 b3 c3
->> [ 5463.174097] RIP  [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
->> [ 5463.180352]  RSP <ffff88007c97fd48>
->> [ 5463.183824] CR2: 0000000000000500
->> [ 5463.203717] ---[ end trace 9ff4ff9087c13a36 ]---
->>
->> I attached the config file, hope it can make some help.
-> Hey Zhouping,
->
-> Can you please run with the following commit reverted?
->
-> Hillf
->
->     commit cda73a10eb3f
->     mm: do not sleep in balance_pgdat if there's no i/o congestion
+Adds debug file "clk_summary" in /sys/kernel/debug/clk dir.
+It helps to view all the clock registered in human-readable format.
 
-Hello Hillf,
+For example:
+   clock                        enable_cnt  prepare_cnt  rate
+---------------------------------------------------------------------
+ i2s0_sync                      0           0            24000000
+ spdif_in_sync                  0           0            24000000
+    spdif_mux                   0           0            24000000
+       spdif                    0           0            24000000
+          spdif_doubler         0           0            48000000
+             spdif_div          0           0            48000000
+                spdif_2x        0           0            48000000
+ clk_32k                        2           2            32768
+    blink_override              1           1            32768
+       blink                    1           1            32768
+ clk_m                          2           2            12000000
+    clk_out_3_mux               0           0            12000000
+       clk_out_3                0           0            12000000
+    pll_ref                     3           3            12000000
+       pll_e_mux                0           0            12000000
+          pll_e                 0           0            100000000
+             cml0               0           0            100000000
+             cml1               0           0            100000000
+             pciex              0           0            100000000
+       pll_d2                   0           0            1000000
+          pll_d2_out0           0           0            500000
+       pll_d                    0           0            1000000
+          pll_d_out0            0           0            500000
+             dsib_mux           0           0            500000
+                dsib            0           0            500000
+             dsia               0           0            500000
 
-Tested it with cda73a10eb3f reverted on two machines, no such issue 
-occurred again.
+Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
+---
+ drivers/clk/clk.c |   67 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 67 insertions(+), 0 deletions(-)
 
-Thanks,
-Zhouping
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 56e4495e..d79c088 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -34,6 +34,67 @@ static struct dentry *rootdir;
+ static struct dentry *orphandir;
+ static int inited = 0;
+ 
++static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
++{
++	if (!c)
++		return;
++
++	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu",
++		   level * 3 + 1, "",
++		   30 - level * 3, c->name,
++		   c->enable_count, c->prepare_count, c->rate);
++	seq_printf(s, "\n");
++}
++
++static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
++				     int level)
++{
++	struct clk *child;
++	struct hlist_node *tmp;
++
++	if (!c)
++		return;
++
++	clk_summary_show_one(s, c, level);
++
++	hlist_for_each_entry(child, tmp, &c->children, child_node)
++		clk_summary_show_subtree(s, child, level + 1);
++}
++
++static int clk_summary_show(struct seq_file *s, void *data)
++{
++	struct clk *c;
++	struct hlist_node *tmp;
++
++	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate\n");
++	seq_printf(s, "---------------------------------------------------------------------\n");
++
++	mutex_lock(&prepare_lock);
++
++	hlist_for_each_entry(c, tmp, &clk_root_list, child_node)
++		clk_summary_show_subtree(s, c, 0);
++
++	hlist_for_each_entry(c, tmp, &clk_orphan_list, child_node)
++		clk_summary_show_subtree(s, c, 0);
++
++	mutex_unlock(&prepare_lock);
++
++	return 0;
++}
++
++
++static int clk_summary_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, clk_summary_show, inode->i_private);
++}
++
++static const struct file_operations clk_summary_fops = {
++	.open		= clk_summary_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
+ /* caller must hold prepare_lock */
+ static int clk_debug_create_one(struct clk *clk, struct dentry *pdentry)
+ {
+@@ -167,12 +228,18 @@ static int __init clk_debug_init(void)
+ {
+ 	struct clk *clk;
+ 	struct hlist_node *tmp;
++	struct dentry *d;
+ 
+ 	rootdir = debugfs_create_dir("clk", NULL);
+ 
+ 	if (!rootdir)
+ 		return -ENOMEM;
+ 
++	d = debugfs_create_file("clk_summary", S_IRUGO, rootdir, NULL,
++				&clk_summary_fops);
++	if (!d)
++		return -ENOMEM;
++
+ 	orphandir = debugfs_create_dir("orphans", rootdir);
+ 
+ 	if (!orphandir)
+-- 
+1.7.4.1
+
