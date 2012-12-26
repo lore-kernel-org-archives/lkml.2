@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655Ab2LZXN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 18:13:59 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:36068 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab2LZXN4 (ORCPT
+	id S1751629Ab2LZXbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 18:31:47 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:39012 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751226Ab2LZXbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 18:13:56 -0500
-Date: Wed, 26 Dec 2012 15:13:55 -0800 (PST)
-Message-Id: <20121226.151355.2215825989495032073.davem@davemloft.net>
-To: paolo.valente@unimore.it
-Cc: jhs@mojatatu.com, shemminger@vyatta.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, rizzo@iet.unipi.it, fchecconi@gmail.com
-Subject: Re: [PATCH BUGFIX] pkt_sched: fix little service anomalies and
- possible crashes of qfq+
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1355938266-18459-1-git-send-email-paolo.valente@unimore.it>
-References: <1355938266-18459-1-git-send-email-paolo.valente@unimore.it>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Dec 2012 18:31:45 -0500
+Date: Wed, 26 Dec 2012 15:31:41 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Zach Brown <zab@redhat.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/26] aio: remove retry-based AIO
+Message-ID: <20121226233141.GC20185@google.com>
+References: <CAJd=RBBAcZXKZZSrMuzm963ie81oGjHzYgyogtr2SPW2E0E_0w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAJd=RBBAcZXKZZSrMuzm963ie81oGjHzYgyogtr2SPW2E0E_0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paolo valente <paolo.valente@unimore.it>
-Date: Wed, 19 Dec 2012 18:31:06 +0100
+On Wed, Dec 19, 2012 at 08:04:11PM +0800, Hillf Danton wrote:
+> >@@ -52,15 +46,6 @@ struct kioctx;
+> >  * not ask the method again -- ki_retry must ensure forward progress.
+> >  * aio_complete() must be called once and only once in the future, multiple
+> >  * calls may result in undefined behaviour.
+> >- *
+> >- * If ki_retry returns -EIOCBRETRY it has made a promise that kick_iocb()
+> >- * will be called on the kiocb pointer in the future.  This may happen
+> >- * through generic helpers that associate kiocb->ki_wait with a wait
+> >- * queue head that ki_retry uses via current->io_wait.  It can also happen
+> >- * with custom tracking and manual calls to kick_iocb(), though that is
+> >- * discouraged.  In either case, kick_iocb() must be called once and only
+> >- * once.  ki_retry must ensure forward progress, the AIO core will wait
+> >- * indefinitely for kick_iocb() to be called.
+> >  */
+> > struct kiocb {
+> > 	struct list_head	ki_run_list;
+> 
+> Then you can also erase ki_run_list if no longer used.
 
-> +	/*
-> +	 * The next assignment may let
-> +	 * agg->initial_budget > agg->budgetmax
-> +	 * hold, but this does not cause any harm
-> +	 */
-
-Please format comments in the networking:
-
-	/* Like
-	 * this.
-	 */
-
-and
-
-	/*
-	 * Never
-	 * like this.
-	 */
-
-I know this file is full of exceptions, but that error is to be
-corrected rather than expanded.
-
-> +	/*
-> +	 * If lmax is lowered, through qfq_change_class, for a class
-> +	 * owning pending packets with larger size than the new value of lmax,
-> +	 * then the following condition may hold.
-> +	 */
-
-Likewise.
-
-And I'm not applying this until someone familiar with this code
-does some review of this patch.  These are seriously non-trivial
-changes.
+Thanks, fixed that and also the comments you pointed out.
