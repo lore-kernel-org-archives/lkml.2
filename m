@@ -1,305 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab2LZW3r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 17:29:47 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:45499 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750983Ab2LZW3q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 17:29:46 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
-Date: Wed, 26 Dec 2012 23:35:08 +0100
-Message-ID: <3773945.VhvRYnl41d@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <CAErSpo71E9421Nb6=9Xwq+jwtUmYEHH6TDbJmrsYgouYo=5ZyA@mail.gmail.com>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <5457615.T2WjKPXXC4@vostro.rjw.lan> <CAErSpo71E9421Nb6=9Xwq+jwtUmYEHH6TDbJmrsYgouYo=5ZyA@mail.gmail.com>
+	id S1751355Ab2LZWac (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 17:30:32 -0500
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:55656 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750789Ab2LZWa2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 17:30:28 -0500
+Date: Wed, 26 Dec 2012 23:30:26 +0100 (CET)
+From: Jesper Juhl <jj@chaosbits.net>
+To: David Rientjes <rientjes@google.com>
+cc: David Woodhouse <dwmw2@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, tglx@linutronix.de,
+        "H. Peter Anvin" <hpa@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/build] x86: Default to ARCH= x86 to avoid overriding
+ CONFIG_64BIT
+In-Reply-To: <alpine.DEB.2.00.1212261343210.20193@chino.kir.corp.google.com>
+Message-ID: <alpine.LNX.2.00.1212262323410.23814@swampdragon.chaosbits.net>
+References: <1356040315.3198.51.camel@shinybook.infradead.org> <tip-ffee0de411fd4f74f3b788892eeb075abbf26c52@git.kernel.org> <alpine.DEB.2.00.1212252222450.24528@chino.kir.corp.google.com> <1356511396.7010.13.camel@shinybook.infradead.org>
+ <alpine.DEB.2.00.1212260228200.10166@chino.kir.corp.google.com> <1356525527.7010.34.camel@shinybook.infradead.org> <alpine.DEB.2.00.1212261343210.20193@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1050518996-1356561026=:23814"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 26, 2012 11:14:22 AM Bjorn Helgaas wrote:
-> On Tue, Dec 25, 2012 at 3:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Subject: PCI / ACPI: Set root bridge ACPI handle in advance
-> >
-> > The ACPI handles of PCI root bridges need to be known to
-> > acpi_bind_one(), so that it can create the appropriate
-> > "firmware_node" and "physical_node" files for them, but currently
-> > the way it gets to know those handles is not exactly straightforward
-> > (to put it lightly).
-> >
-> > This is how it works, roughly:
-> >
-> >   1. acpi_bus_scan() finds the handle of a PCI root bridge,
-> >      creates a struct acpi_device object for it and passes that
-> >      object to acpi_pci_root_add().
-> >
-> >   2. acpi_pci_root_add() creates a struct acpi_pci_root object,
-> >      populates its "device" field with its argument's address
-> >      (device->handle is the ACPI handle found in step 1).
-> >
-> >   3. The struct acpi_pci_root object created in step 2 is passed
-> >      to pci_acpi_scan_root() and used to get resources that are
-> >      passed to pci_create_root_bus().
-> >
-> >   4. pci_create_root_bus() creates a struct pci_host_bridge object
-> >      and passes its "dev" member to device_register().
-> >
-> >   5. platform_notify(), which for systems with ACPI is set to
-> >      acpi_platform_notify(), is called.
-> >
-> > So far, so good.  Now it starts to be "interesting".
-> >
-> >   6. acpi_find_bridge_device() is used to find the ACPI handle of
-> >      the given device (which is the PCI root bridge) and executes
-> >      acpi_pci_find_root_bridge(), among other things, for the
-> >      given device object.
-> >
-> >   7. acpi_pci_find_root_bridge() uses the name (sic!) of the given
-> >      device object to extract the segment and bus numbers of the PCI
-> >      root bridge and passes them to acpi_get_pci_rootbridge_handle().
-> >
-> >   8. acpi_get_pci_rootbridge_handle() browses the list of ACPI PCI
-> >      root bridges and finds the one that matches the given segment
-> >      and bus numbers.  Its handle is then used to initialize the
-> >      ACPI handle of the PCI root bridge's device object by
-> >      acpi_bind_one().  However, this is *exactly* the ACPI handle we
-> >      started with in step 1.
-> >
-> > Needless to say, this is quite embarassing, but it may be avoided
-> > thanks to commit f3fd0c8 (ACPI: Allow ACPI handles of devices to be
-> > initialized in advance), which makes it possible to initialize the
-> > ACPI handle of a device before passing it to device_register().
-> >
-> > Accordingly, add a new __weak routine, pcibios_root_bridge_prepare(),
-> > defaulting to an empty implementation that can be replaced by the
-> > interested architecutres (x86 and ia64 at the moment) with functions
-> > that will set the root bridge's ACPI handle before its dev member is
-> > passed to device_register().  Make both x86 and ia64 provide such
-> > implementations of pcibios_root_bridge_prepare() and remove
-> > acpi_pci_find_root_bridge() and acpi_get_pci_rootbridge_handle() that aren't
-> > necessary any more.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > ---
-> >
-> > Bjorn,
-> >
-> > Since you didn't like the implementation used in the previous patch, here's
-> > an alternative one using a __weak function.
-> >
-> > I don't really strongly prefer any of them.  The advantage of the present one
-> > is that it changes fewer files and directly affects fewer architectures.  The
-> > disadvantage of it is the addition of the __weak "callback".
-> >
-> > I wonder what the maintainers of the architectures in question (Peter, Tony)
-> > think.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--8323328-1050518996-1356561026=:23814
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Wed, 26 Dec 2012, David Rientjes wrote:
+
+> On Wed, 26 Dec 2012, David Woodhouse wrote:
 > 
-> I like this one much better because it doesn't change any of the PCI
-> interfaces (pci_create_root_bus()).
+> > > I'm sure it's a 32-bit issue, nothing has changed recently in auto-latest 
+> > > related to these subsystems and I'm sure it's just because my randconfig 
+> > > builds were exposed to this combination solely because of this patch.
+> > 
+> > Hm, that's an unexpected benefit of this patch. I didn't think it would
+> > noticeably improve 'make randconfig' coverage of configs without
+> > CONFIG_64BIT, because I thought enough people were doing such tests
+> > already. But evidently I was wrong.
+> > 
 > 
-> I don't see __weak as a disadvantage.  We need some way of having
-> arch-specific hooks, and I don't think __weak is uglier than the other
-> techniques, e.g., #ifdefs.  The original patch uses ACPI_HANDLE_SET()
-> in generic code and uses #ifdefs to define ACPI_HANDLE_SET() to
-> nothing on non-ACPI architectures.
+> I do quite a bit of automated config and boot tests to try out 
+> combinations that others may not have tested when developing their code; 
+> staging branches such as in tip are interesting to try because they 
+> haven't yet reached Linus and it's helpful to catch breakages before it 
+> reaches mainline.
+> 
+> > We introduced 'make randconfig' as a tool to generate meaningless
+> > configs just to test various permutations — to ensure that we got our
+> > dependencies right both in Kconfig and the code itself. It was
+> > artificially limiting its test coverage and thus we were failing to
+> > discover real bugs. Now I've fixed that problem, and 'make randconfig'
+> > is actually random and is thus doing its job even better than before.
+> > Yay!
+> > 
+> 
+> Umm, you're saying that is legitimate for "make randconfig" done on a 
+> 32-bit machine to generate 64-bit configurations?  The resulting kernel 
+> cannot be booted.  In the past, "make randconfig" would always generate a 
+> kernel that _should_ boot on that machine unless there was an underlying 
+> bug that should be fixed.
+> 
+...
 
-OK
+Why would you assume a bootable kernel from 'randconfig'? I don't and 
+never have. If we stick to X86, then you may get a kernel config without 
+x387/emulator support - try to boot boot that on a 486sx. You may also get 
+a config that does not contain the filesystem(s) you use, or without the 
+driver for your main HD. You may also be out of luck with graphics 
+drivers or support for your mouse/keyboard combo. etc etc.
 
-> Acked-by: Bjorn Helgaas <bhelgaas@google.com>
+In my view, randconfig was never about building bootable kernels, but all 
+about building possible kernel config combinations - that may or may not 
+boot on any given system.  The point was only to test that some 
+combination of options did in fact build (if it also boots then all the 
+better, but that was never part of the goal; as I saw it).
 
-Thanks!
+I may be wrong, but that was/is my expectations for 'randconfig'.
 
-Peter, Tony, is this version fine with you?
-
-Rafael
-
-
-> > ---
-> >  arch/ia64/pci/pci.c     |    8 ++++++++
-> >  arch/x86/pci/acpi.c     |    9 +++++++++
-> >  drivers/acpi/pci_root.c |   18 ------------------
-> >  drivers/pci/pci-acpi.c  |   19 -------------------
-> >  drivers/pci/probe.c     |   16 ++++++++++++++++
-> >  include/acpi/acpi_bus.h |    1 -
-> >  include/linux/pci.h     |    2 ++
-> >  7 files changed, 35 insertions(+), 38 deletions(-)
-> >
-> > Index: linux/drivers/pci/probe.c
-> > ===================================================================
-> > --- linux.orig/drivers/pci/probe.c
-> > +++ linux/drivers/pci/probe.c
-> > @@ -1632,6 +1632,18 @@ unsigned int pci_scan_child_bus(struct p
-> >         return max;
-> >  }
-> >
-> > +/**
-> > + * pcibios_root_bridge_prepare - Platform-specific host bridge setup.
-> > + * @bridge: Host bridge to set up.
-> > + *
-> > + * Default empty implementation.  Replace with an architecture-specific setup
-> > + * routine, if necessary.
-> > + */
-> > +int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
-> > +{
-> > +       return 0;
-> > +}
-> > +
-> >  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-> >                 struct pci_ops *ops, void *sysdata, struct list_head *resources)
-> >  {
-> > @@ -1665,6 +1677,10 @@ struct pci_bus *pci_create_root_bus(stru
-> >         bridge->dev.parent = parent;
-> >         bridge->dev.release = pci_release_bus_bridge_dev;
-> >         dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-> > +       error = pcibios_root_bridge_prepare(bridge);
-> > +       if (error)
-> > +               goto bridge_dev_reg_err;
-> > +
-> >         error = device_register(&bridge->dev);
-> >         if (error)
-> >                 goto bridge_dev_reg_err;
-> > Index: linux/include/linux/pci.h
-> > ===================================================================
-> > --- linux.orig/include/linux/pci.h
-> > +++ linux/include/linux/pci.h
-> > @@ -378,6 +378,8 @@ void pci_set_host_bridge_release(struct
-> >                      void (*release_fn)(struct pci_host_bridge *),
-> >                      void *release_data);
-> >
-> > +int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
-> > +
-> >  /*
-> >   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
-> >   * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
-> > Index: linux/arch/x86/pci/acpi.c
-> > ===================================================================
-> > --- linux.orig/arch/x86/pci/acpi.c
-> > +++ linux/arch/x86/pci/acpi.c
-> > @@ -593,6 +593,15 @@ struct pci_bus * __devinit pci_acpi_scan
-> >         return bus;
-> >  }
-> >
-> > +int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
-> > +{
-> > +       struct pci_sysdata *sd = bridge->bus->sysdata;
-> > +       struct pci_root_info *info = container_of(sd, struct pci_root_info, sd);
-> > +
-> > +       ACPI_HANDLE_SET(&bridge->dev, info->bridge->handle);
-> > +       return 0;
-> > +}
-> > +
-> >  int __init pci_acpi_init(void)
-> >  {
-> >         struct pci_dev *dev = NULL;
-> > Index: linux/arch/ia64/pci/pci.c
-> > ===================================================================
-> > --- linux.orig/arch/ia64/pci/pci.c
-> > +++ linux/arch/ia64/pci/pci.c
-> > @@ -396,6 +396,14 @@ out1:
-> >         return NULL;
-> >  }
-> >
-> > +int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
-> > +{
-> > +       struct pci_controller *controller = bridge->bus->sysdata;
-> > +
-> > +       ACPI_HANDLE_SET(&bridge->dev, controller->acpi_handle);
-> > +       return 0;
-> > +}
-> > +
-> >  static int __devinit is_valid_resource(struct pci_dev *dev, int idx)
-> >  {
-> >         unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
-> > Index: linux/drivers/pci/pci-acpi.c
-> > ===================================================================
-> > --- linux.orig/drivers/pci/pci-acpi.c
-> > +++ linux/drivers/pci/pci-acpi.c
-> > @@ -302,24 +302,6 @@ static int acpi_pci_find_device(struct d
-> >         return 0;
-> >  }
-> >
-> > -static int acpi_pci_find_root_bridge(struct device *dev, acpi_handle *handle)
-> > -{
-> > -       int num;
-> > -       unsigned int seg, bus;
-> > -
-> > -       /*
-> > -        * The string should be the same as root bridge's name
-> > -        * Please look at 'pci_scan_bus_parented'
-> > -        */
-> > -       num = sscanf(dev_name(dev), "pci%04x:%02x", &seg, &bus);
-> > -       if (num != 2)
-> > -               return -ENODEV;
-> > -       *handle = acpi_get_pci_rootbridge_handle(seg, bus);
-> > -       if (!*handle)
-> > -               return -ENODEV;
-> > -       return 0;
-> > -}
-> > -
-> >  static void pci_acpi_setup(struct device *dev)
-> >  {
-> >         struct pci_dev *pci_dev = to_pci_dev(dev);
-> > @@ -378,7 +360,6 @@ static void pci_acpi_cleanup(struct devi
-> >  static struct acpi_bus_type acpi_pci_bus = {
-> >         .bus = &pci_bus_type,
-> >         .find_device = acpi_pci_find_device,
-> > -       .find_bridge = acpi_pci_find_root_bridge,
-> >         .setup = pci_acpi_setup,
-> >         .cleanup = pci_acpi_cleanup,
-> >  };
-> > Index: linux/drivers/acpi/pci_root.c
-> > ===================================================================
-> > --- linux.orig/drivers/acpi/pci_root.c
-> > +++ linux/drivers/acpi/pci_root.c
-> > @@ -107,24 +107,6 @@ void acpi_pci_unregister_driver(struct a
-> >  }
-> >  EXPORT_SYMBOL(acpi_pci_unregister_driver);
-> >
-> > -acpi_handle acpi_get_pci_rootbridge_handle(unsigned int seg, unsigned int bus)
-> > -{
-> > -       struct acpi_pci_root *root;
-> > -       acpi_handle handle = NULL;
-> > -
-> > -       mutex_lock(&acpi_pci_root_lock);
-> > -       list_for_each_entry(root, &acpi_pci_roots, node)
-> > -               if ((root->segment == (u16) seg) &&
-> > -                   (root->secondary.start == (u16) bus)) {
-> > -                       handle = root->device->handle;
-> > -                       break;
-> > -               }
-> > -       mutex_unlock(&acpi_pci_root_lock);
-> > -       return handle;
-> > -}
-> > -
-> > -EXPORT_SYMBOL_GPL(acpi_get_pci_rootbridge_handle);
-> > -
-> >  /**
-> >   * acpi_is_root_bridge - determine whether an ACPI CA node is a PCI root bridge
-> >   * @handle - the ACPI CA node in question.
-> > Index: linux/include/acpi/acpi_bus.h
-> > ===================================================================
-> > --- linux.orig/include/acpi/acpi_bus.h
-> > +++ linux/include/acpi/acpi_bus.h
-> > @@ -443,7 +443,6 @@ struct acpi_pci_root {
-> >  /* helper */
-> >  acpi_handle acpi_get_child(acpi_handle, u64);
-> >  int acpi_is_root_bridge(acpi_handle);
-> > -acpi_handle acpi_get_pci_rootbridge_handle(unsigned int, unsigned int);
-> >  struct acpi_pci_root *acpi_pci_find_root(acpi_handle handle);
-> >  #define DEVICE_ACPI_HANDLE(dev) ((acpi_handle)ACPI_HANDLE(dev))
-> >
-> >
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-1050518996-1356561026=:23814--
