@@ -1,150 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754353Ab2LZKnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 05:43:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:29754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754243Ab2LZKnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 05:43:33 -0500
-Date: Wed, 26 Dec 2012 12:46:38 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Jason Wang <jasowang@redhat.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
- hotplug
-Message-ID: <20121226104638.GA18850@redhat.com>
-References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+	id S1754348Ab2LZKor (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 05:44:47 -0500
+Received: from mail-da0-f53.google.com ([209.85.210.53]:60122 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab2LZKoq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 05:44:46 -0500
+Date: Wed, 26 Dec 2012 02:44:43 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: David Woodhouse <dwmw2@infradead.org>
+cc: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/build] x86: Default to ARCH= x86 to avoid overriding
+ CONFIG_64BIT
+In-Reply-To: <1356511396.7010.13.camel@shinybook.infradead.org>
+Message-ID: <alpine.DEB.2.00.1212260228200.10166@chino.kir.corp.google.com>
+References: <1356040315.3198.51.camel@shinybook.infradead.org> <tip-ffee0de411fd4f74f3b788892eeb075abbf26c52@git.kernel.org> <alpine.DEB.2.00.1212252222450.24528@chino.kir.corp.google.com> <1356511396.7010.13.camel@shinybook.infradead.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 03:06:54PM +0800, Wanlong Gao wrote:
-> Add a cpu notifier to virtio-net, so that we can reset the
-> virtqueue affinity if the cpu hotplug happens. It improve
-> the performance through enabling or disabling the virtqueue
-> affinity after doing cpu hotplug.
+On Wed, 26 Dec 2012, David Woodhouse wrote:
+
+> > arch/x86/built-in.o: In function `hpet_setup_msi_irq':
+> > hpet.c:(.text+0x34638): undefined reference to `arch_setup_hpet_msi'
+> > hpet.c:(.text+0x34651): undefined reference to `destroy_irq'
+> > arch/x86/built-in.o: In function `hpet_msi_capability_lookup':
+> > hpet.c:(.text+0x347ff): undefined reference to `create_irq_nr'
+> > arch/x86/built-in.o:(.data+0xd1c): undefined reference to `native_setup_msi_irqs'
+> > arch/x86/built-in.o:(.data+0xd20): undefined reference to `native_teardown_msi_irq'
+> > drivers/built-in.o: In function `dmar_set_interrupt':
+> > (.text+0x89eec0): undefined reference to `create_irq'
+> > drivers/built-in.o: In function `dmar_set_interrupt':
+> > (.text+0x89ef0b): undefined reference to `arch_setup_dmar_msi'
+> > drivers/built-in.o: In function `dmar_set_interrupt':
+> > (.text+0x89ef44): undefined reference to `destroy_irq'
+> > drivers/built-in.o: In function `free_dmar_iommu':
+> > (.text+0x8a6ae8): undefined reference to `destroy_irq'
+> > 
+> > These functions require CONFIG_X86_IO_APIC, which is only possible with 
+> > X86_64 or X86_32_NON_STANDARD.  CONFIG_HPET_TIMER, however, can be enabled 
+> > with X86_32, and CONFIG_DMAR_TABLE can be enabled with any X86 via 
+> > CONFIG_INTEL_IOMMU.
 > 
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> I don't think it can have created them, surely? They must have existed
+> already when building with ARCH=x86. And probably with ARCH=i386 too?
 
-Thanks for looking into this.
-Some comments:
+I'm sure it's a 32-bit issue, nothing has changed recently in auto-latest 
+related to these subsystems and I'm sure it's just because my randconfig 
+builds were exposed to this combination solely because of this patch.
 
-1. Looks like the logic in
-virtnet_set_affinity (and in virtnet_select_queue)
-will not work very well when CPU IDs are not
-consequitive. This can happen with hot unplug.
-
-Maybe we should add a VQ allocator, and defining
-a per-cpu variable specifying the VQ instead
-of using CPU ID.
-
-
-2. The below code seems racy e.g. when CPU is added
-	during device init.
-
-3. using a global cpu_hotplug seems inelegant.
-In any case we should document what is the
-meaning of this variable.
-
-> ---
->  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
->  1 file changed, 38 insertions(+), 1 deletion(-)
+> I'll take a further look in more detail, but at first glance it doesn't
+> seem correct to describe them as bugs caused by this patch; merely bugs
+> that this patch helped us to *find*.
 > 
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index a6fcf15..9710cf4 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -26,6 +26,7 @@
->  #include <linux/scatterlist.h>
->  #include <linux/if_vlan.h>
->  #include <linux/slab.h>
-> +#include <linux/cpu.h>
->  
->  static int napi_weight = 128;
->  module_param(napi_weight, int, 0444);
-> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
->  module_param(csum, bool, 0444);
->  module_param(gso, bool, 0444);
->  
-> +static bool cpu_hotplug = false;
-> +
->  /* FIXME: MTU in config. */
->  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
->  #define GOOD_COPY_LEN	128
-> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->  		vi->affinity_hint_set = false;
->  }
->  
-> +static int virtnet_cpu_callback(struct notifier_block *nfb,
-> +			       unsigned long action, void *hcpu)
-> +{
-> +	switch(action) {
-> +	case CPU_ONLINE:
-> +	case CPU_ONLINE_FROZEN:
-> +	case CPU_DEAD:
-> +	case CPU_DEAD_FROZEN:
-> +		cpu_hotplug = true;
-> +		break;
-> +	default:
-> +		break;
-> +	}
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block virtnet_cpu_notifier = {
-> +	.notifier_call = virtnet_cpu_callback,
-> +};
-> +
->  static void virtnet_get_ringparam(struct net_device *dev,
->  				struct ethtool_ringparam *ring)
->  {
-> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->   */
->  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->  {
-> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> +	int txq;
-> +
-> +	if (unlikely(cpu_hotplug == true)) {
-> +		virtnet_set_affinity(netdev_priv(dev), true);
-> +		cpu_hotplug = false;
-> +	}
-> +
-> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
->  		  smp_processor_id();
->  
->  	while (unlikely(txq >= dev->real_num_tx_queues))
-> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
->  {
->  	struct virtio_device *vdev = vi->vdev;
->  
-> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
-> +
->  	virtnet_set_affinity(vi, false);
->  
->  	vdev->config->del_vqs(vdev);
-> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
->  		goto err_free;
->  
->  	virtnet_set_affinity(vi, true);
-> +
-> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
-> +	if (ret)
-> +		goto err_free;
-> +
->  	return 0;
->  
->  err_free:
-> -- 
-> 1.8.0
+> Please could you provide the .config file?
+> 
+
+Attached.
+
+> >  When I do "make randconfig" and uname -m is x86_64, I expect 
+> > CONFIG_64BIT to always be set.  This commit makes this random for all x86 
+> > so that "make randconfig" may result in a 32-bit build.  That should be 
+> > the behavior for "make ARCH=i386 randconfig" but not "make randconfig" on 
+> > a 64-bit machine.
+> 
+> We've had this bizarre "I don't really want randconfig to be random"
+> conversation before. If don't want randconfig to be random, you can use
+> $KCONFIG_ALLCONFIG to override anything you like. Or, for the specific
+> case of CONFIG_64BIT on x86, you can use ARCH=i386 or ARCH=x86_64 to
+> override just that one option.
+> 
+
+If it were truly random then it would be generating sparc configs, hppa 
+configs, etc.  Randconfig has always generated random configurations for 
+the underlying architecture (just like you respect the architecture with 
+defconfig with your patch), the fact that it's been unified into a single 
+x86 architecture changes the behavior of plain old "make randconfig".  I 
+certainly understand how to override that with ARCH=x86_64.  However, the 
+reverse can also be said: make the same adjustment for randconfig that you 
+made for defconfig so the old behavior is maintained and allow users on 
+x86_64 to do "make ARCH=i386 randconfig" for 32-bit builds.
