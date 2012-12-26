@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab2LZDbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Dec 2012 22:31:53 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53205 "EHLO
+	id S1753536Ab2LZDiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Dec 2012 22:38:12 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52740 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242Ab2LZDbt (ORCPT
+	with ESMTP id S1752858Ab2LZDiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Dec 2012 22:31:49 -0500
+	Tue, 25 Dec 2012 22:38:07 -0500
 X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50DA6F5A.2070601@jp.fujitsu.com>
-Date: Wed, 26 Dec 2012 12:30:34 +0900
+Message-ID: <50DA70E0.3050704@jp.fujitsu.com>
+Date: Wed, 26 Dec 2012 12:37:04 +0900
 From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -25,10 +25,10 @@ CC: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: Re: [PATCH v5 04/14] memory-hotplug: remove /sys/firmware/memmap/X
- sysfs
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-5-git-send-email-tangchen@cn.fujitsu.com>
-In-Reply-To: <1356350964-13437-5-git-send-email-tangchen@cn.fujitsu.com>
+Subject: Re: [PATCH v5 05/14] memory-hotplug: introduce new function arch_remove_memory()
+ for removing page table depends on architecture
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-6-git-send-email-tangchen@cn.fujitsu.com>
+In-Reply-To: <1356350964-13437-6-git-send-email-tangchen@cn.fujitsu.com>
 Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,50 +36,20 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 (2012/12/24 21:09), Tang Chen wrote:
-> From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> From: Wen Congyang <wency@cn.fujitsu.com>
 > 
-> When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
-> sysfs files are created. But there is no code to remove these files. The patch
-> implements the function to remove them.
+> For removing memory, we need to remove page table. But it depends
+> on architecture. So the patch introduce arch_remove_memory() for
+> removing page table. Now it only calls __remove_pages().
 > 
-> Note: The code does not free firmware_map_entry which is allocated by bootmem.
->        So the patch makes memory leak. But I think the memory leak size is
->        very samll. And it does not affect the system.
+> Note: __remove_pages() for some archtecuture is not implemented
+>        (I don't know how to implement it for s390).
 > 
 > Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-> ---
->   drivers/firmware/memmap.c    |   98 +++++++++++++++++++++++++++++++++++++++++-
->   include/linux/firmware-map.h |    6 +++
->   mm/memory_hotplug.c          |    5 ++-
->   3 files changed, 106 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
-> index 90723e6..49be12a 100644
-> --- a/drivers/firmware/memmap.c
-> +++ b/drivers/firmware/memmap.c
-> @@ -21,6 +21,7 @@
->   #include <linux/types.h>
->   #include <linux/bootmem.h>
->   #include <linux/slab.h>
-> +#include <linux/mm.h>
->   
->   /*
->    * Data types ------------------------------------------------------------------
-> @@ -41,6 +42,7 @@ struct firmware_map_entry {
->   	const char		*type;	/* type of the memory range */
->   	struct list_head	list;	/* entry for the linked list */
->   	struct kobject		kobj;   /* kobject for each entry */
-> +	unsigned int		bootmem:1; /* allocated from bootmem */
->   };
 
-Can't we detect from which the object is allocated from, slab or bootmem ?
+Then, remove code will be symetric to add codes.
 
-Hm, for example,
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-    PageReserved(virt_to_page(address_of_obj)) ?
-    PageSlab(virt_to_page(address_of_obj)) ?
 
-Thanks,
--Kame
 
