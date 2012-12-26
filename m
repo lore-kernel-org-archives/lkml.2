@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753706Ab2LZSmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 13:42:33 -0500
-Received: from usmamail.tilera.com ([12.216.194.151]:52791 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab2LZSmb (ORCPT
+	id S1754036Ab2LZSoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 13:44:20 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:62935 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624Ab2LZSoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 13:42:31 -0500
-Message-ID: <50DB4514.6090706@tilera.com>
-Date: Wed, 26 Dec 2012 13:42:28 -0500
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Simon Marchi <simon.marchi@polymtl.ca>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] arch/tile: Call tracehook_report_syscall_{entry,exit}
- in syscall trace
-References: <1356153672-17545-1-git-send-email-simon.marchi@polymtl.ca>
-In-Reply-To: <1356153672-17545-1-git-send-email-simon.marchi@polymtl.ca>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Dec 2012 13:44:16 -0500
+From: Dongjin Kim <tobetter@gmail.com>
+To: linux-samsung-soc@vger.kernel.org
+Cc: Dongjin Kim <tobetter@gmail.com>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] USB: ehci-s5p: Add to get interrupt from DT
+Date: Thu, 27 Dec 2012 03:42:21 +0900
+Message-Id: <1356547341-23620-3-git-send-email-tobetter@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1356547341-23620-1-git-send-email-tobetter@gmail.com>
+References: <1356547341-23620-1-git-send-email-tobetter@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/22/2012 12:21 AM, Simon Marchi wrote:
-> Call tracehook functions for syscall tracing.
->
-> The check for TIF_SYSCALL_TRACE was removed, because the same check is
-> done right before in the assembly file.
->
-> Signed-off-by: Simon Marchi <simon.marchi@polymtl.ca>
->
+This patch support to get interrupt resource from device tree as well as
+platform device if ehci node is defined in device tree and it's irq is
+described.
 
-I've taken this one, and patch 3/3 in this series, into the tile tree (and pushed it up to linux-next).  I fixed up ptrace.h to adjust the declarations for the modified functions.
+Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+---
+ drivers/usb/host/ehci-s5p.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-As Al Viro pointed out, patch 2/3 is already present in v3.8-rc1.
-
-Thanks!
-
+diff --git a/drivers/usb/host/ehci-s5p.c b/drivers/usb/host/ehci-s5p.c
+index 319dcfa..0fc5e5e 100644
+--- a/drivers/usb/host/ehci-s5p.c
++++ b/drivers/usb/host/ehci-s5p.c
+@@ -16,6 +16,7 @@
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/of_gpio.h>
++#include <linux/of_irq.h>
+ #include <linux/platform_data/usb-ehci-s5p.h>
+ #include <plat/usb-phy.h>
+ 
+@@ -156,7 +157,12 @@ static int s5p_ehci_probe(struct platform_device *pdev)
+ 		goto fail_io;
+ 	}
+ 
+-	irq = platform_get_irq(pdev, 0);
++	if (pdev->dev.of_node)
++		irq = irq_of_parse_and_map(pdev->dev.of_node, 0);
++	else {
++		irq = platform_get_irq(pdev, 0);
++	}
++
+ 	if (!irq) {
+ 		dev_err(&pdev->dev, "Failed to get IRQ\n");
+ 		err = -ENODEV;
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+1.7.10.4
 
