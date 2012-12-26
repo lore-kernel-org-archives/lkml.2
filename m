@@ -1,99 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab2LZHCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 02:02:23 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:43307 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab2LZHCV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 02:02:21 -0500
-X-AuditID: 9c930179-b7becae000000e51-85-50daa0fbd1c2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 20/24] nohz: Full dynticks mode
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
-	<1356028391-14427-21-git-send-email-fweisbec@gmail.com>
-	<87a9t1s5o9.fsf@sejong.aot.lge.com>
-Date: Wed, 26 Dec 2012 16:02:18 +0900
-In-Reply-To: <87a9t1s5o9.fsf@sejong.aot.lge.com> (Namhyung Kim's message of
-	"Wed, 26 Dec 2012 15:12:22 +0900")
-Message-ID: <87623ps3d1.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+	id S1753837Ab2LZHG4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 02:06:56 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:22238 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab2LZHGy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 02:06:54 -0500
+X-IronPort-AV: E=Sophos;i="4.84,355,1355068800"; 
+   d="scan'208";a="6476827"
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu hotplug
+Date: Wed, 26 Dec 2012 15:06:54 +0800
+Message-Id: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.0
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/26 15:06:41,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/26 15:06:41,
+	Serialize complete at 2012/12/26 15:06:41
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Dec 2012 15:12:22 +0900, Namhyung Kim wrote:
-> Hi Frederic,
->
-> On Thu, 20 Dec 2012 19:33:07 +0100, Frederic Weisbecker wrote:
->> When a CPU is in full dynticks mode, try to switch
->> it to nohz mode from the interrupt exit path if it is
->> running a single non-idle task.
->>
->> Then restart the tick if necessary if we are enqueuing a
->> second task while the timer is stopped, so that the scheduler
->> tick is rearmed.
->>
->> [TODO: Check remaining things to be done from scheduler_tick()]
->>
->> [ Included build fix from Geoff Levand ]
-> [snip]
->> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->> index db3d4df..f3d8f4a 100644
->> --- a/kernel/sched/sched.h
->> +++ b/kernel/sched/sched.h
->> @@ -943,6 +943,14 @@ static inline u64 steal_ticks(u64 steal)
->>  static inline void inc_nr_running(struct rq *rq)
->>  {
->>  	rq->nr_running++;
->> +
->> +	if (rq->nr_running == 2) {
->> +		if (tick_nohz_full_cpu(rq->cpu)) {
->> +			/* Order rq->nr_running write against the IPI */
->> +			smp_wmb();
->> +			smp_send_reschedule(rq->cpu);
->> +		}
->> +	}
->
-> This block should be guarded with #ifdef CONFIG_SMP, otherwise:
+Add a cpu notifier to virtio-net, so that we can reset the
+virtqueue affinity if the cpu hotplug happens. It improve
+the performance through enabling or disabling the virtqueue
+affinity after doing cpu hotplug.
 
-Or apply something like this:
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Jason Wang <jasowang@redhat.com>
+Cc: virtualization@lists.linux-foundation.org
+Cc: netdev@vger.kernel.org
+Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+---
+ drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 38 insertions(+), 1 deletion(-)
 
-
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 0cd913ed29de..8de13ca88a17 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -957,10 +957,10 @@ static inline void inc_nr_running(struct rq *rq)
- 	rq->nr_running++;
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index a6fcf15..9710cf4 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -26,6 +26,7 @@
+ #include <linux/scatterlist.h>
+ #include <linux/if_vlan.h>
+ #include <linux/slab.h>
++#include <linux/cpu.h>
  
- 	if (rq->nr_running == 2) {
--		if (tick_nohz_full_cpu(rq->cpu)) {
-+		if (tick_nohz_full_cpu(cpu_of(rq))) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			smp_send_reschedule(cpu_of(rq));
- 		}
- 	}
+ static int napi_weight = 128;
+ module_param(napi_weight, int, 0444);
+@@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+ module_param(csum, bool, 0444);
+ module_param(gso, bool, 0444);
+ 
++static bool cpu_hotplug = false;
++
+ /* FIXME: MTU in config. */
+ #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+ #define GOOD_COPY_LEN	128
+@@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+ 		vi->affinity_hint_set = false;
  }
+ 
++static int virtnet_cpu_callback(struct notifier_block *nfb,
++			       unsigned long action, void *hcpu)
++{
++	switch(action) {
++	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
++	case CPU_DEAD:
++	case CPU_DEAD_FROZEN:
++		cpu_hotplug = true;
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block virtnet_cpu_notifier = {
++	.notifier_call = virtnet_cpu_callback,
++};
++
+ static void virtnet_get_ringparam(struct net_device *dev,
+ 				struct ethtool_ringparam *ring)
+ {
+@@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+  */
+ static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+ {
+-	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
++	int txq;
++
++	if (unlikely(cpu_hotplug == true)) {
++		virtnet_set_affinity(netdev_priv(dev), true);
++		cpu_hotplug = false;
++	}
++
++	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+ 		  smp_processor_id();
+ 
+ 	while (unlikely(txq >= dev->real_num_tx_queues))
+@@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+ {
+ 	struct virtio_device *vdev = vi->vdev;
+ 
++	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
++
+ 	virtnet_set_affinity(vi, false);
+ 
+ 	vdev->config->del_vqs(vdev);
+@@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
+ 		goto err_free;
+ 
+ 	virtnet_set_affinity(vi, true);
++
++	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
++	if (ret)
++		goto err_free;
++
+ 	return 0;
+ 
+ err_free:
+-- 
+1.8.0
 
-
-Thanks,
-Namhyung
