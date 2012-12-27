@@ -1,176 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab2L0Lzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 06:55:33 -0500
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:4898 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab2L0Lz3 (ORCPT
+	id S1752669Ab2L0MBI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 07:01:08 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:49888 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752196Ab2L0MBF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 06:55:29 -0500
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Kirill Smelkov <kirr@navytux.spb.ru>
-Subject: Re: [PATCH] [media] vivi: Constify structures
-Date: Thu, 27 Dec 2012 12:55:11 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1356535783-24173-1-git-send-email-kirr@navytux.spb.ru>
-In-Reply-To: <1356535783-24173-1-git-send-email-kirr@navytux.spb.ru>
+	Thu, 27 Dec 2012 07:01:05 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212271255.11159.hverkuil@xs4all.nl>
+In-Reply-To: <50DB7A83.3010508@gmail.com>
+References: <1356524912-4736-1-git-send-email-gautam.vivek@samsung.com>
+	<1356524912-4736-2-git-send-email-gautam.vivek@samsung.com>
+	<50DB7A83.3010508@gmail.com>
+Date: Thu, 27 Dec 2012 17:31:02 +0530
+Message-ID: <CAFp+6iEUNjZewY1b3T-eCHeiZrouxYGPXtxHuNvJdi+UEKTNjg@mail.gmail.com>
+Subject: Re: [PATCH v4] usb: phy: samsung: Add support to set pmu isolation
+From: Vivek Gautam <gautamvivek1987@gmail.com>
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: Vivek Gautam <gautam.vivek@samsung.com>, l.majewski@samsung.com,
+        linux-samsung-soc@vger.kernel.org, p.paneri@samsung.com,
+        gregkh@linuxfoundation.org, devicetree-discuss@lists.ozlabs.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org, balbi@ti.com,
+        kyungmin.park@samsung.com, kgene.kim@samsung.com, ben-linux@fluff.org,
+        broonie@opensource.wolfsonmicro.com,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed December 26 2012 16:29:43 Kirill Smelkov wrote:
-> Most of *_ops and other structures in vivi.c were already declared const
-> but some have not. Constify and code/data will take less space:
-> 
->     $ size drivers/media/platform/vivi.o
->               text    data     bss     dec     hex filename
->     before:  12569     248       8   12825    3219 drivers/media/platform/vivi.o
->     after:   12308      20       8   12336    3030 drivers/media/platform/vivi.o
-> 
-> i.e. vivi.o is now ~500 bytes less.
-> 
-> Signed-off-by: Kirill Smelkov <kirr@navytux.spb.ru>
-> ---
->  drivers/media/platform/vivi.c | 26 +++++++++++++-------------
->  1 file changed, 13 insertions(+), 13 deletions(-)
-> 
-> diff --git a/drivers/media/platform/vivi.c b/drivers/media/platform/vivi.c
-> index ec65089..bed04e1 100644
-> --- a/drivers/media/platform/vivi.c
-> +++ b/drivers/media/platform/vivi.c
-> @@ -91,13 +91,13 @@ static const struct v4l2_fract
->     ------------------------------------------------------------------*/
->  
->  struct vivi_fmt {
-> -	char  *name;
-> +	const char  *name;
+Hi Sylwester,
 
-Just use one space before '*' since it no longer lines up to anything.
 
->  	u32   fourcc;          /* v4l2 format id */
->  	u8    depth;
->  	bool  is_yuv;
->  };
->  
-> -static struct vivi_fmt formats[] = {
-> +static const struct vivi_fmt formats[] = {
->  	{
->  		.name     = "4:2:2, packed, YUYV",
->  		.fourcc   = V4L2_PIX_FMT_YUYV,
-> @@ -164,9 +164,9 @@ static struct vivi_fmt formats[] = {
->  	},
->  };
->  
-> -static struct vivi_fmt *__get_format(u32 pixelformat)
-> +static const struct vivi_fmt *__get_format(u32 pixelformat)
->  {
-> -	struct vivi_fmt *fmt;
-> +	const struct vivi_fmt *fmt;
->  	unsigned int k;
->  
->  	for (k = 0; k < ARRAY_SIZE(formats); k++) {
-> @@ -181,7 +181,7 @@ static struct vivi_fmt *__get_format(u32 pixelformat)
->  	return &formats[k];
->  }
->  
-> -static struct vivi_fmt *get_format(struct v4l2_format *f)
-> +static const struct vivi_fmt *get_format(struct v4l2_format *f)
->  {
->  	return __get_format(f->fmt.pix.pixelformat);
->  }
-> @@ -191,7 +191,7 @@ struct vivi_buffer {
->  	/* common v4l buffer stuff -- must be first */
->  	struct vb2_buffer	vb;
->  	struct list_head	list;
-> -	struct vivi_fmt        *fmt;
-> +	struct vivi_fmt const  *fmt;
->  };
->  
->  struct vivi_dmaqueue {
-> @@ -250,7 +250,7 @@ struct vivi_dev {
->  	int			   input;
->  
->  	/* video capture */
-> -	struct vivi_fmt            *fmt;
-> +	struct vivi_fmt const      *fmt;
+On Thu, Dec 27, 2012 at 4:00 AM, Sylwester Nawrocki
+<sylvester.nawrocki@gmail.com> wrote:
+> On 12/26/2012 01:28 PM, Vivek Gautam wrote:
+>>
+>> Adding support to parse device node data in order to get
+>> required properties to set pmu isolation for usb-phy.
+>>
+>> Signed-off-by: Vivek Gautam<gautam.vivek@samsung.com>
+>> ---
+>>   .../devicetree/bindings/usb/samsung-usbphy.txt     |   31 ++++
+>>   drivers/usb/phy/samsung-usbphy.c                   |  145
+>> +++++++++++++++++---
+>>   2 files changed, 155 insertions(+), 21 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
+>> b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
+>> index 7b26e2d..6b873fd 100644
+>> --- a/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
+>> +++ b/Documentation/devicetree/bindings/usb/samsung-usbphy.txt
+>> @@ -9,3 +9,34 @@ Required properties:
+>>   - compatible : should be "samsung,exynos4210-usbphy"
+>>   - reg : base physical address of the phy registers and length of memory
+>> mapped
+>>         region.
+>> +
+>> +Optional properties:
+>> +- #address-cells: should be '1' when usbphy node has a child node with
+>> 'reg'
+>> +                 property.
+>> +- #size-cells: should be '1' when usbphy node has a child node with 'reg'
+>> +              property.
+>> +
+>> +- The child node 'usbphy-pmu' to the node usbphy should provide the
+>> following
+>> +  information required by usb-phy controller to enable/disable the phy.
+>> +   - reg : base physical address of PHY control register in PMU which
+>> +           enables/disables the phy controller.
+>> +           The size of this register is the total sum of size of all
+>> phy-control
+>> +           registers that the SoC has. For example, the size will be
+>> +           '0x4' in case we have only one phy-control register (like in
+>> S3C64XX) or
+>> +           '0x8' in case we have two phy-control registers (like in
+>> Exynos4210)
+>> +           and so on.
+>> +
+>> +Example:
+>> + - Exysno4210
+>
+>
+> s/Exysno/Exynos
+>
+Sure will amend this.
+>
+>> +
+>> +       usbphy@125B0000 {
+>> +               #address-cells =<1>;
+>> +               #size-cells =<1>;
+>> +               compatible = "samsung,exynos4210-usbphy";
+>> +               reg =<0x125B0000 0x100>;
+>> +
+>> +               usbphy-pmu {
+>> +                       /* USB device and host PHY_CONTROL registers */
+>> +                       reg =<0x10020704 0x8>;
+>> +               };
+>> +       };
+>> diff --git a/drivers/usb/phy/samsung-usbphy.c
+>> b/drivers/usb/phy/samsung-usbphy.c
+>> index 5c5e1bb5..b9f4f42 100644
+>> --- a/drivers/usb/phy/samsung-usbphy.c
+>> +++ b/drivers/usb/phy/samsung-usbphy.c
+>> @@ -60,20 +60,42 @@
+>>   #define MHZ (1000*1000)
+>>   #endif
+>>
+>> +#define S3C64XX_USBPHY_ENABLE                  (0x1<<  16)
+>> +#define EXYNOS_USBPHY_ENABLE                   (0x1<<  0)
+>> +
+>>   enum samsung_cpu_type {
+>>         TYPE_S3C64XX,
+>>         TYPE_EXYNOS4210,
+>>   };
+>>
+>>   /*
+>> + * struct samsung_usbphy_drvdata - driver data for various SoC variants
+>> + * @cpu_type: machine identifier
+>> + * @devphy_en_mask: device phy enable mask for PHY CONTROL register
+>> + *
+>> + *     Here we have a separate mask for device type phy.
+>> + *     Having different masks for host and device type phy helps
+>> + *     in setting independent masks in case of SoCs like S5PV210,
+>> + *     in which PHY0 and PHY1 enable bits belong to same register
+>> + *     placed at [0] and [1] respectively.
+>
+>
+> "and are placed at positions 0 and 1 respectively" ?
+>
+Ok, will change this.
+>
+>> + *     Although for newer SoCs like exynos these bits belong to
+>> + *     different registers altogether placed at [0].
+>> + */
+>> +struct samsung_usbphy_drvdata {
+>> +       int cpu_type;
+>> +       int devphy_en_mask;
+>> +};
+>> +
+>> +/*
+>>    * struct samsung_usbphy - transceiver driver state
+>>    * @phy: transceiver structure
+>>    * @plat: platform data
+>>    * @dev: The parent device supplied to the probe function
+>>    * @clk: usb phy clock
+>>    * @regs: usb phy register memory base
+>> + * @phyctrl_pmureg: usb device phy-control pmu register memory base
+>
+>
+> nit: Perhaps we could just call it "pmureg' ?
+>
+Sure we can use the name 'pmureg'.
+>
+>>    * @ref_clk_freq: reference clock frequency selection
+>> - * @cpu_type: machine identifier
+>> + * @drv_data: driver data available for different cpu types
+>
+>
+> Actually it's for different SoCs, not CPUs, right ?
+>
+Right, will change this.
 
-'const' should be before 'struct' for consistency reasons.
+>
+>>    */
+>>   struct samsung_usbphy {
+>>         struct usb_phy  phy;
+>> @@ -81,12 +103,67 @@ struct samsung_usbphy {
+>>         struct device   *dev;
+>>         struct clk      *clk;
+>>         void __iomem    *regs;
+>> +       void __iomem    *phyctrl_pmureg;
+>>         int             ref_clk_freq;
+>> -       int             cpu_type;
+>> +       const struct samsung_usbphy_drvdata *drv_data;
+>>   };
+>>
+>>   #define phy_to_sphy(x)                container_of((x), struct
+>> samsung_usbphy, phy)
+>>
+>> +static int samsung_usbphy_parse_dt_param(struct samsung_usbphy *sphy)
+>
+>
+> nit: s/samsung_usbphy_parse_dt_param/samsung_usbphy_parse_dt ?
+>
+Ok, will change this.
+>
+>> +{
+>> +       struct device_node *usbphy_pmu;
+>> +       u32 reg[2];
+>> +       int ret;
+>> +
+>> +       if (!sphy->dev->of_node) {
+>> +               dev_err(sphy->dev, "Can't get usb-phy node\n");
+>> +               return -ENODEV;
+>
+>
+> The function is called only when dev->of_node is not NULL, so this path
+> is never executed, AFAICS. I would just drop this redundant check.
+>
+Yes, thanks for pointing out. I missed that. Will remove this check.
 
->  	struct v4l2_fract          timeperframe;
->  	unsigned int               width, height;
->  	struct vb2_queue	   vb_vidq;
-> @@ -297,7 +297,7 @@ struct bar_std {
->  
->  /* Maximum number of bars are 10 - otherwise, the input print code
->     should be modified */
-> -static struct bar_std bars[] = {
-> +static const struct bar_std bars[] = {
->  	{	/* Standard ITU-R color bar sequence */
->  		{ COLOR_WHITE, COLOR_AMBER, COLOR_CYAN, COLOR_GREEN,
->  		  COLOR_MAGENTA, COLOR_RED, COLOR_BLUE, COLOR_BLACK, COLOR_BLACK }
-> @@ -926,7 +926,7 @@ static void vivi_unlock(struct vb2_queue *vq)
->  }
->  
->  
-> -static struct vb2_ops vivi_video_qops = {
-> +static const struct vb2_ops vivi_video_qops = {
->  	.queue_setup		= queue_setup,
->  	.buf_prepare		= buffer_prepare,
->  	.buf_queue		= buffer_queue,
-> @@ -957,7 +957,7 @@ static int vidioc_querycap(struct file *file, void  *priv,
->  static int vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
->  					struct v4l2_fmtdesc *f)
->  {
-> -	struct vivi_fmt *fmt;
-> +	struct vivi_fmt const *fmt;
+>
+>> +       }
+>> +
+>> +       usbphy_pmu = of_get_child_by_name(sphy->dev->of_node,
+>> "usbphy-pmu");
+>> +       if (!usbphy_pmu)
+>> +               dev_warn(sphy->dev, "Can't get usb-phy pmu control
+>> node\n");
+>
+>
+>> +       ret = of_property_read_u32_array(usbphy_pmu, "reg", reg,
+>>
+>> +                                               ARRAY_SIZE(reg));
+>> +       if (!ret)
+>> +               sphy->phyctrl_pmureg = ioremap(reg[0], reg[1]);
+>
+>
+> I don't think this is correct. reg is not really an array of u32 type,
+> it's an array of address/size tuples. I thought you would use of_iomap()
+> here. Any reason why you didn't do so ? It would also make it easier to
+> handle multiple address/size pairs if required.
+>
+True we should in fact be using of_iomap. Will change this accordingly.
 
-Ditto.
+>
+>> +
+>> +       of_node_put(usbphy_pmu);
+>> +
+>> +       if (IS_ERR_OR_NULL(sphy->phyctrl_pmureg)) {
+>
+>
+> When is sphy->phyctrl_pmureg assigned a ERR_PTR() value ? Wouldn't it
+> be enough to simply check for NULL ?
+>
+Yes, true no error returned here, will check this against NULL.
 
->  
->  	if (f->index >= ARRAY_SIZE(formats))
->  		return -EINVAL;
-> @@ -993,7 +993,7 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
->  			struct v4l2_format *f)
->  {
->  	struct vivi_dev *dev = video_drvdata(file);
-> -	struct vivi_fmt *fmt;
-> +	struct vivi_fmt const *fmt;
+>
+>> +               dev_err(sphy->dev, "Can't get usb-phy pmu control
+>> register\n");
+>> +               return -ENODEV;
+>> +       }
+>> +
+>> +       return 0;
+>> +}
+>> +
+>> +/*
+>> + * Set isolation here for phy.
+>> + * SOCs control this by controlling corresponding PMU registers
+>> + */
+>> +static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, int
+>> on)
+>> +{
+>> +       u32 reg;
+>> +       int en_mask;
+>> +
+>> +       if (!sphy->phyctrl_pmureg) {
+>> +               dev_warn(sphy->dev, "Can't set pmu isolation\n");
+>> +               return;
+>> +       }
+>> +
+>> +       reg = readl(sphy->phyctrl_pmureg);
+>
+>
+> To make it more generic maybe it's worth to store an offset to the actual
+> register somewhere, e.g. in the driver_data struct ? This function is
+> supposed to handle both device and host PHYs, isn't it ?
+>
+True we can make put an offset for host and device PHYs.
+So we iomap the memory base address of the first register (i.e. device
+PHY in exynos4210),
+and then use an offset for other register (i.e.host PHY). Right?
 
-Ditto.
+>> +       en_mask = sphy->drv_data->devphy_en_mask;
+>> +
+>> +       if (on)
+>> +               writel(reg&  ~en_mask, sphy->phyctrl_pmureg);
+>>
+>> +       else
+>> +               writel(reg | en_mask, sphy->phyctrl_pmureg);
+>
+>
+> nit: This could be also written as:
+>
+>         reg = on ? reg & ~mask : reg | mask;
+>         writel(reg, sphy->phyctrl_pmureg);
 
->  
->  	fmt = get_format(f);
->  	if (!fmt) {
-> @@ -1102,7 +1102,7 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
->  static int vidioc_enum_frameintervals(struct file *file, void *priv,
->  					     struct v4l2_frmivalenum *fival)
->  {
-> -	struct vivi_fmt *fmt;
-> +	struct vivi_fmt const *fmt;
+Sure will amend this.
 
-Ditto.
 
->  
->  	if (fival->index)
->  		return -EINVAL;
-> @@ -1330,7 +1330,7 @@ static const struct v4l2_ioctl_ops vivi_ioctl_ops = {
->  	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
->  };
->  
-> -static struct video_device vivi_template = {
-> +static const struct video_device vivi_template = {
->  	.name		= "vivi",
->  	.fops           = &vivi_fops,
->  	.ioctl_ops 	= &vivi_ioctl_ops,
-> 
-
-Regards,
-
-	Hans
+-- 
+Thanks & Regards
+Vivek
