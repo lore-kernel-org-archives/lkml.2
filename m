@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752791Ab2L0Nxz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 08:53:55 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:44572 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293Ab2L0Nxw (ORCPT
+	id S1752797Ab2L0N6V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 08:58:21 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:61585 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752446Ab2L0N6U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 08:53:52 -0500
+	Thu, 27 Dec 2012 08:58:20 -0500
+X-Originating-IP: 108.223.40.66
+Date: Thu, 27 Dec 2012 05:58:25 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Subject: [GIT PULL] hwmon patches for 3.8-rc2
+Message-ID: <20121227135825.GA9302@roeck-us.net>
 MIME-Version: 1.0
-In-Reply-To: <1354568322-29029-24-git-send-email-koverstreet@google.com>
-References: <1354568322-29029-1-git-send-email-koverstreet@google.com>
-	<1354568322-29029-24-git-send-email-koverstreet@google.com>
-Date: Thu, 27 Dec 2012 14:47:49 +0100
-Message-ID: <CAJAFBLAh81+hC=FRMMSBhP=RrwsHEW8i3PgxakqyAEPapcQaSw@mail.gmail.com>
-Subject: Re: [PATCH 23/26] Generic dynamic per cpu refcounting
-From: Fubo Chen <fubo.chen@gmail.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZPt4rx8FFjLCG7dd"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 9:58 PM, Kent Overstreet <koverstreet@google.com> wrote:
-> +#define pr_fmt(fmt) "%s: " fmt "\n", __func__
 
-Dynamic debug already allows to insert the function name. Please
-consider leaving this line out entirely and move the "\n" to the end
-of individual printed lines.
+--ZPt4rx8FFjLCG7dd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> +#define PCPU_REF_PTR		0
-> +#define PCPU_REF_NONE		1
-> +#define PCPU_REF_DYING		2
-> +#define PCPU_REF_DEAD		3
+Hi Linus,
 
-Why has "define" been used here instead of an enum ? Using "define"
-prevents the compiler to verify whether all possible values have been
-handled in a switch statement.
+Please pull hwmon patches for Linux 3.8-rc2 from signed tag:
 
-> +#define REF_STATUS(count)	((unsigned long) count & PCPU_STATUS_MASK)
-
-Please leave out the cast in the above expression. It prevents that
-the compiler performs type checking on "count". Also, why is
-REF_STATUS() a define and not an inline function ?
-
-> +struct percpu_ref {
-> +       atomic64_t              count;
-> +       unsigned __percpu       *pcpu_count;
-> +};
-
-pcpu_count can either be a jiffies value (unsigned long) or a pointer
-to unsigned __percpu. So please consider using a union here. Has this
-code been checked with sparse ? I'm afraid that the above structure
-definition will confuse sparse a lot.
-
-> +	if (now - last <= HZ << PCPU_STATUS_BITS) {
-
-Please consider changing "HZ" into a symbolic name that makes it clear
-that this value is the threshold in jiffies above which the switch is
-made from a single atomic_t refcount to the per-cpu refcounting
-scheme.
-
-> +void __percpu_ref_get(struct percpu_ref *ref, bool alloc)
-> +{
-> +	unsigned __percpu *pcpu_count;
-> +	uint64_t v;
-> +
-> +	pcpu_count = rcu_dereference(ref->pcpu_count);
-> +
-> +	if (REF_STATUS(pcpu_count) == PCPU_REF_PTR) {
-> +		__this_cpu_inc(*pcpu_count);
-> +	} else {
-> +		v = atomic64_add_return(1 + (1ULL << PCPU_COUNT_BITS),
-> +					&ref->count);
-> +
-> +		if (!(v >> PCPU_COUNT_BITS) &&
-> +		    REF_STATUS(pcpu_count) == PCPU_REF_NONE && alloc)
-> +			percpu_ref_alloc(ref, pcpu_count);
-> +	}
-> +}
-
-What will happen if another thread invokes percpu_ref_kill() after the
-above rcu_dereference() call finished but before REF_STATUS() got
-invoked ? Can that percpu_ref_kill() finish before
-__this_cpu_inc(*pcpu_count) gets invoked ?
-Documentation/RCU/checklist.txt says: "All RCU list-traversal
-primitives, which include rcu_dereference(),
-list_for_each_entry_rcu(), and list_for_each_safe_rcu(), must be
-either within an RCU read-side critical section or must be protected
-by appropriate update-side locks."
-
-> +int percpu_ref_kill(struct percpu_ref *ref)
-
-The meaning of the return value of this function has not been documented.
+    git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git hwmon-for-linus
 
 Thanks,
+Guenter
+------
 
-Fubo.
+The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+
+  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging.git tags/hwmon-for-linus
+
+for you to fetch changes up to 86266ca0e23b2b8e7e38edda1675cd085a9abc14:
+
+  hwmon: (emc6w201) Fix DIV_ROUND_CLOSEST problem with unsigned divisors (2012-12-22 02:16:40 -0800)
+
+----------------------------------------------------------------
+Report i2c errors to userspace in lm73 driver
+Fix problem with DIV_ROUND_CLOSEST and unsigned divisors in emc6w201 driver
+
+----------------------------------------------------------------
+Chris Verges (1):
+      hwmon: (lm73} Detect and report i2c bus errors
+
+Guenter Roeck (1):
+      hwmon: (emc6w201) Fix DIV_ROUND_CLOSEST problem with unsigned divisors
+
+ drivers/hwmon/emc6w201.c |    2 +-
+ drivers/hwmon/lm73.c     |   16 +++++++++++-----
+ 2 files changed, 12 insertions(+), 6 deletions(-)
+
+--ZPt4rx8FFjLCG7dd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ3FQBAAoJEMsfJm/On5mB/QgP/0h4HGPtK/IbpXTX4ZrXfmga
+6LWcHHCl4xS/I948gOIiPREvvC6Lqp3OMQRZuFDsZsOgC3O7P9dahTxAaqN+WwB1
+UbosY+S6hqiMmxI1XKPbtlxZq/ZTTIRcPdGg+Z8VqafarNHR2WYYsYPDlimzxOh2
+HPcoTx4THX5oa1tJsrVNyJeKakAm+RuKMA7dtBdIRZ5Jq0SnsfaC+o4I5VQQ8tJD
+X0mlthskniYBxzhQpk40BPo9oKqX7t352czpmj61Og45nu68ZjyPxu950ztT2CA+
+rUmvkVvzc9KVF2iq6qorbUQxKZg9xC0EXSpr8Tc7LRdzRSfKAetjEhcjv0qVZ9KU
+6Rfvet1W4adm869Z3g+WWr5aFkgiTF6N5pZzd0LtirpWGl80tNNCvG8KsgWs5QQz
+4BNHQwyD1+iCw4GD0+XLLwG+lRbyaPFgQb5VFWNen2T0FFZJYoF5/7WJYdnGjb7m
+RgLp3IbO9aOtQ3bWUQFYxF/8yu6fW8e+IE6r0/g3Clq3mRzvRxrRHDWaPHjSaq+S
+LxVJRE/ERDolQxxV9q2BamL8EesU1u8E7+g9NbxQRnC5CrEN0gg9DBLinD08cVwU
+e37v1Yo3gQvmS2x0aiU08ytRFxh6KJoT5/BKFuGRUXnda0AEVNWBT9LPM1AXjp4P
+MUPjT98u0WDmSJ+7GARa
+=liQD
+-----END PGP SIGNATURE-----
+
+--ZPt4rx8FFjLCG7dd--
