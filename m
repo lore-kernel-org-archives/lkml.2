@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338Ab2L0CFR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:05:17 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:56035 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab2L0CAf (ORCPT
+	id S1752358Ab2L0CFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:05:21 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:55582 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab2L0CAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:00:35 -0500
+	Wed, 26 Dec 2012 21:00:38 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
         jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
         tytso@mit.edu
-Subject: [PATCH 08/32] aio: Move private stuff out of aio.h
-Date: Wed, 26 Dec 2012 17:59:45 -0800
-Message-Id: <1356573611-18590-9-git-send-email-koverstreet@google.com>
+Subject: [PATCH 10/32] aio: do fget() after aio_get_req()
+Date: Wed, 26 Dec 2012 17:59:47 -0800
+Message-Id: <1356573611-18590-11-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
@@ -23,169 +23,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+aio_get_req() will fail if we have the maximum number of requests
+outstanding, which depending on the application may not be uncommon. So
+avoid doing an unnecessary fget().
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/usb/gadget/inode.c |  1 +
- fs/aio.c                   | 61 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/aio.h        | 61 ----------------------------------------------
- 3 files changed, 62 insertions(+), 61 deletions(-)
+ fs/aio.c | 22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 2a3f001..7640e01 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -25,6 +25,7 @@
- #include <linux/slab.h>
- #include <linux/poll.h>
- #include <linux/mmu_context.h>
-+#include <linux/aio.h>
- 
- #include <linux/device.h>
- #include <linux/moduleparam.h>
 diff --git a/fs/aio.c b/fs/aio.c
-index e1d4084..8fcea98 100644
+index 868ac0a..db6cb02 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -45,6 +45,67 @@
- #define dprintk(x...)	do { ; } while (0)
- #endif
+@@ -584,6 +584,8 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
+ {
+ 	assert_spin_locked(&ctx->ctx_lock);
  
-+#define AIO_RING_MAGIC			0xa10a10a1
-+#define AIO_RING_COMPAT_FEATURES	1
-+#define AIO_RING_INCOMPAT_FEATURES	0
-+struct aio_ring {
-+	unsigned	id;	/* kernel internal index number */
-+	unsigned	nr;	/* number of io_events */
-+	unsigned	head;
-+	unsigned	tail;
-+
-+	unsigned	magic;
-+	unsigned	compat_features;
-+	unsigned	incompat_features;
-+	unsigned	header_length;	/* size of aio_ring */
-+
-+
-+	struct io_event		io_events[0];
-+}; /* 128 bytes + ring size */
-+
-+#define AIO_RING_PAGES	8
-+struct aio_ring_info {
-+	unsigned long		mmap_base;
-+	unsigned long		mmap_size;
-+
-+	struct page		**ring_pages;
-+	spinlock_t		ring_lock;
-+	long			nr_pages;
-+
-+	unsigned		nr, tail;
-+
-+	struct page		*internal_pages[AIO_RING_PAGES];
-+};
-+
-+static inline unsigned aio_ring_avail(struct aio_ring_info *info,
-+					struct aio_ring *ring)
-+{
-+	return (ring->head + info->nr - 1 - ring->tail) % info->nr;
-+}
-+
-+struct kioctx {
-+	atomic_t		users;
-+	int			dead;
-+
-+	/* This needs improving */
-+	unsigned long		user_id;
-+	struct hlist_node	list;
-+
-+	wait_queue_head_t	wait;
-+
-+	spinlock_t		ctx_lock;
-+
-+	int			reqs_active;
-+	struct list_head	active_reqs;	/* used for cancellation */
-+
-+	/* sys_io_setup currently limits this to an unsigned int */
-+	unsigned		max_reqs;
-+
-+	struct aio_ring_info	ring_info;
-+
-+	struct rcu_head		rcu_head;
-+};
-+
- /*------ sysctl variables----*/
- static DEFINE_SPINLOCK(aio_nr_lock);
- unsigned long aio_nr;		/* current system wide number of aio requests */
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 615d55a..7b1eb23 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -103,67 +103,6 @@ static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
- 		};
++	if (req->ki_filp)
++		fput(req->ki_filp);
+ 	if (req->ki_eventfd != NULL)
+ 		eventfd_ctx_put(req->ki_eventfd);
+ 	if (req->ki_dtor)
+@@ -602,9 +604,6 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
+  */
+ static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ {
+-	pr_debug("(%p): f_count=%ld\n",
+-		 req, atomic_long_read(&req->ki_filp->f_count));
+-
+ 	assert_spin_locked(&ctx->ctx_lock);
+ 
+ 	req->ki_users--;
+@@ -615,8 +614,6 @@ static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ 	req->ki_cancel = NULL;
+ 	req->ki_retry = NULL;
+ 
+-	fput(req->ki_filp);
+-	req->ki_filp = NULL;
+ 	really_put_req(ctx, req);
  }
  
--#define AIO_RING_MAGIC			0xa10a10a1
--#define AIO_RING_COMPAT_FEATURES	1
--#define AIO_RING_INCOMPAT_FEATURES	0
--struct aio_ring {
--	unsigned	id;	/* kernel internal index number */
--	unsigned	nr;	/* number of io_events */
--	unsigned	head;
--	unsigned	tail;
+@@ -1264,7 +1261,6 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 			 bool compat)
+ {
+ 	struct kiocb *req;
+-	struct file *file;
+ 	ssize_t ret;
+ 
+ 	/* enforce forwards compatibility on users */
+@@ -1283,16 +1279,16 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 		return -EINVAL;
+ 	}
+ 
+-	file = fget(iocb->aio_fildes);
+-	if (unlikely(!file))
+-		return -EBADF;
 -
--	unsigned	magic;
--	unsigned	compat_features;
--	unsigned	incompat_features;
--	unsigned	header_length;	/* size of aio_ring */
--
--
--	struct io_event		io_events[0];
--}; /* 128 bytes + ring size */
--
--#define AIO_RING_PAGES	8
--struct aio_ring_info {
--	unsigned long		mmap_base;
--	unsigned long		mmap_size;
--
--	struct page		**ring_pages;
--	spinlock_t		ring_lock;
--	long			nr_pages;
--
--	unsigned		nr, tail;
--
--	struct page		*internal_pages[AIO_RING_PAGES];
--};
--
--static inline unsigned aio_ring_avail(struct aio_ring_info *info,
--					struct aio_ring *ring)
--{
--	return (ring->head + info->nr - 1 - ring->tail) % info->nr;
--}
--
--struct kioctx {
--	atomic_t		users;
--	int			dead;
--
--	/* This needs improving */
--	unsigned long		user_id;
--	struct hlist_node	list;
--
--	wait_queue_head_t	wait;
--
--	spinlock_t		ctx_lock;
--
--	int			reqs_active;
--	struct list_head	active_reqs;	/* used for cancellation */
--
--	/* sys_io_setup currently limits this to an unsigned int */
--	unsigned		max_reqs;
--
--	struct aio_ring_info	ring_info;
--
--	struct rcu_head		rcu_head;
--};
--
- /* prototypes */
- #ifdef CONFIG_AIO
- extern ssize_t wait_on_sync_kiocb(struct kiocb *iocb);
+ 	req = aio_get_req(ctx, batch);  /* returns with 2 references to req */
+-	if (unlikely(!req)) {
+-		fput(file);
++	if (unlikely(!req))
+ 		return -EAGAIN;
++
++	req->ki_filp = fget(iocb->aio_fildes);
++	if (unlikely(!req->ki_filp)) {
++		ret = -EBADF;
++		goto out_put_req;
+ 	}
+-	req->ki_filp = file;
++
+ 	if (iocb->aio_flags & IOCB_FLAG_RESFD) {
+ 		/*
+ 		 * If the IOCB_FLAG_RESFD flag of aio_flags is set, get an
 -- 
 1.7.12
 
