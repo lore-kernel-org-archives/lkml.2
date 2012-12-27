@@ -1,94 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752164Ab2L0DL5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 22:11:57 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:42562 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751460Ab2L0DLy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 22:11:54 -0500
-X-IronPort-AV: E=Sophos;i="4.84,360,1355068800"; 
-   d="scan'208";a="6482701"
-Message-ID: <50DBBC40.6040700@cn.fujitsu.com>
-Date: Thu, 27 Dec 2012 11:10:56 +0800
-From: Tang Chen <tangchen@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1752121Ab2L0D3P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 22:29:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41479 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751738Ab2L0D3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 22:29:12 -0500
+Message-ID: <50DBC07B.7060303@redhat.com>
+Date: Thu, 27 Dec 2012 11:28:59 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
-        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
-        cl@linux.com, minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
-        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
-        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
-        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v5 02/14] memory-hotplug: check whether all memory blocks
- are offlined or not when removing memory
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-3-git-send-email-tangchen@cn.fujitsu.com> <50DA6AB3.2030608@jp.fujitsu.com>
-In-Reply-To: <50DA6AB3.2030608@jp.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/27 11:11:38,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/27 11:11:40,
-	Serialize complete at 2012/12/27 11:11:40
+To: gaowanlong@cn.fujitsu.com
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
+ hotplug
+References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com> <50DACC26.7050409@redhat.com> <50DACF22.5090707@cn.fujitsu.com>
+In-Reply-To: <50DACF22.5090707@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2012 11:10 AM, Kamezawa Hiroyuki wrote:
-> (2012/12/24 21:09), Tang Chen wrote:
->> From: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
+On 12/26/2012 06:19 PM, Wanlong Gao wrote:
+> On 12/26/2012 06:06 PM, Jason Wang wrote:
+>> On 12/26/2012 03:06 PM, Wanlong Gao wrote:
+>>> Add a cpu notifier to virtio-net, so that we can reset the
+>>> virtqueue affinity if the cpu hotplug happens. It improve
+>>> the performance through enabling or disabling the virtqueue
+>>> affinity after doing cpu hotplug.
+>> Hi Wanlong:
 >>
->> We remove the memory like this:
->> 1. lock memory hotplug
->> 2. offline a memory block
->> 3. unlock memory hotplug
->> 4. repeat 1-3 to offline all memory blocks
->> 5. lock memory hotplug
->> 6. remove memory(TODO)
->> 7. unlock memory hotplug
->>
->> All memory blocks must be offlined before removing memory. But we don't hold
->> the lock in the whole operation. So we should check whether all memory blocks
->> are offlined before step6. Otherwise, kernel maybe panicked.
->>
->> Signed-off-by: Wen Congyang<wency@cn.fujitsu.com>
->> Signed-off-by: Yasuaki Ishimatsu<isimatu.yasuaki@jp.fujitsu.com>
-> 
-> Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> a nitpick below.
-> 
->> +
->> +	for (pfn = start_pfn; pfn<  end_pfn; pfn += PAGES_PER_SECTION) {
-> 
-> I prefer adding mem = NULL at the start of this for().
+>> Thanks for looking at this.
+>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+>>> Cc: Jason Wang <jasowang@redhat.com>
+>>> Cc: virtualization@lists.linux-foundation.org
+>>> Cc: netdev@vger.kernel.org
+>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>>> ---
+>>>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>>>  1 file changed, 38 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>>> index a6fcf15..9710cf4 100644
+>>> --- a/drivers/net/virtio_net.c
+>>> +++ b/drivers/net/virtio_net.c
+>>> @@ -26,6 +26,7 @@
+>>>  #include <linux/scatterlist.h>
+>>>  #include <linux/if_vlan.h>
+>>>  #include <linux/slab.h>
+>>> +#include <linux/cpu.h>
+>>>  
+>>>  static int napi_weight = 128;
+>>>  module_param(napi_weight, int, 0444);
+>>> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+>>>  module_param(csum, bool, 0444);
+>>>  module_param(gso, bool, 0444);
+>>>  
+>>> +static bool cpu_hotplug = false;
+>>> +
+>>>  /* FIXME: MTU in config. */
+>>>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+>>>  #define GOOD_COPY_LEN	128
+>>> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>>>  		vi->affinity_hint_set = false;
+>>>  }
+>>>  
+>>> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+>>> +			       unsigned long action, void *hcpu)
+>>> +{
+>>> +	switch(action) {
+>>> +	case CPU_ONLINE:
+>>> +	case CPU_ONLINE_FROZEN:
+>>> +	case CPU_DEAD:
+>>> +	case CPU_DEAD_FROZEN:
+>>> +		cpu_hotplug = true;
+>>> +		break;
+>>> +	default:
+>>> +		break;
+>>> +	}
+>>> +	return NOTIFY_OK;
+>>> +}
+>>> +
+>>> +static struct notifier_block virtnet_cpu_notifier = {
+>>> +	.notifier_call = virtnet_cpu_callback,
+>>> +};
+>>> +
+>>>  static void virtnet_get_ringparam(struct net_device *dev,
+>>>  				struct ethtool_ringparam *ring)
+>>>  {
+>>> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>>>   */
+>>>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+>>>  {
+>>> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+>>> +	int txq;
+>>> +
+>>> +	if (unlikely(cpu_hotplug == true)) {
+>>> +		virtnet_set_affinity(netdev_priv(dev), true);
+>>> +		cpu_hotplug = false;
+>>> +	}
+>>> +
+>> Why don't you just do this in callback?
+> Callback can just give us a "hcpu", can't get the virtnet_info from callback. Am I missing something?
 
-Hi Kamezawa-san,
+Well, I think you can just embed the notifier block into virtnet_info,
+then use something like container_of in the callback to make the
+notifier per device. This also solve the concern of Eric.
+>> btw. Does qemu/kvm support cpu-hotplug now?
+> From http://www.linux-kvm.org/page/CPUHotPlug, I saw that qemu-kvm can support hotplug
+> but failed to merge to qemu.git, right?
 
-Added, thanks. :)
+Not sure, I just try latest qemu, it even does not have a cpu_set command.
 
-> 
->> +		section_nr = pfn_to_section_nr(pfn);
->> +		if (!present_section_nr(section_nr))
->> +			continue;
->> +
->> +		section = __nr_to_section(section_nr);
->> +		/* same memblock? */
->> +		if (mem)
->> +			if ((section_nr>= mem->start_section_nr)&&
->> +			    (section_nr<= mem->end_section_nr))
->> +				continue;
->> +
-> 
+Thanks
+>
 > Thanks,
-> -Kame
-> 
-> 
-> 
+> Wanlong Gao
+>
 
