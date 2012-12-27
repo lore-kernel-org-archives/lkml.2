@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab2L0O4e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 09:56:34 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:36938 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752980Ab2L0O40 (ORCPT
+	id S1753159Ab2L0O4m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 09:56:42 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:56996 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753056Ab2L0O4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 09:56:26 -0500
+	Thu, 27 Dec 2012 09:56:34 -0500
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 2/5] cpufreq: star/stop cpufreq timers on cpu hotplug
-Date: Thu, 27 Dec 2012 15:55:39 +0100
-Message-Id: <1356620142-8680-3-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 5/5] cpufreq: ondemand: use all CPUs in update_sampling_rate
+Date: Thu, 27 Dec 2012 15:55:42 +0100
+Message-Id: <1356620142-8680-6-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
@@ -22,106 +22,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a CPU notifier to start and stop individual core timers on CPU
-hotplug events when running on CPUs with SW coordinated frequency.
+Modify update_sampling_rate() to check, and eventually immediately
+schedule, all CPU's do_dbs_timer delayed work.
+
+This is required in case of software coordinated CPUs, as we now have a
+separate delayed work for each CPU.
 
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/cpufreq/cpufreq_governor.c | 51 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+ drivers/cpufreq/cpufreq_ondemand.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
-index b0e4506..e881250 100644
---- a/drivers/cpufreq/cpufreq_governor.c
-+++ b/drivers/cpufreq/cpufreq_governor.c
-@@ -25,9 +25,12 @@
- #include <linux/tick.h>
- #include <linux/types.h>
- #include <linux/workqueue.h>
-+#include <linux/cpu.h>
- 
- #include "cpufreq_governor.h"
- 
-+static DEFINE_PER_CPU(struct dbs_data *, cpu_cur_dbs);
-+
- static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
- {
- 	u64 idle_time;
-@@ -185,6 +188,46 @@ static inline void dbs_timer_exit(struct cpu_dbs_common_info *cdbs)
- 	cancel_delayed_work_sync(&cdbs->work);
- }
- 
-+static int __cpuinit cpu_callback(struct notifier_block *nfb,
-+		unsigned long action, void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+	struct device *cpu_dev = get_cpu_device(cpu);
-+	struct dbs_data *dbs_data = per_cpu(cpu_cur_dbs, cpu);
-+	struct cpu_dbs_common_info *cpu_cdbs = dbs_data->get_cpu_cdbs(cpu);
-+	unsigned int sampling_rate;
-+
-+	if (dbs_data->governor == GOV_CONSERVATIVE) {
-+		struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
-+		sampling_rate = cs_tuners->sampling_rate;
-+	} else {
-+		struct od_dbs_tuners *od_tuners = dbs_data->tuners;
-+		sampling_rate = od_tuners->sampling_rate;
-+	}
-+
-+	if (cpu_dev) {
-+		switch (action) {
-+		case CPU_ONLINE:
-+		case CPU_ONLINE_FROZEN:
-+		case CPU_DOWN_FAILED:
-+		case CPU_DOWN_FAILED_FROZEN:
-+			dbs_timer_init(dbs_data, cpu_cdbs,
-+					sampling_rate, cpu);
-+			break;
-+		case CPU_DOWN_PREPARE:
-+		case CPU_DOWN_PREPARE_FROZEN:
-+			dbs_timer_exit(cpu_cdbs);
-+			break;
-+		}
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block __refdata ondemand_cpu_notifier = {
-+	.notifier_call = cpu_callback,
-+};
-+
- int cpufreq_governor_dbs(struct dbs_data *dbs_data,
- 		struct cpufreq_policy *policy, unsigned int event)
- {
-@@ -296,7 +339,11 @@ second_time:
- 				j_cdbs = dbs_data->get_cpu_cdbs(j);
- 				dbs_timer_init(dbs_data, j_cdbs,
- 					       *sampling_rate, j);
-+
-+				per_cpu(cpu_cur_dbs, j) = dbs_data;
- 			}
-+
-+			register_hotcpu_notifier(&ondemand_cpu_notifier);
- 		} else {
- 			dbs_timer_init(dbs_data, cpu_cdbs, *sampling_rate, cpu);
+diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
+index 13ceb3c..1017b90 100644
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -326,7 +326,7 @@ static void update_sampling_rate(unsigned int new_rate)
+ 			cpufreq_cpu_put(policy);
+ 			continue;
  		}
-@@ -307,11 +354,15 @@ second_time:
- 			cs_dbs_info->enable = 0;
+-		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
++		dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
+ 		cpufreq_cpu_put(policy);
  
- 		if (dbs_sw_coordinated_cpus(cpu_cdbs)) {
-+			unregister_hotcpu_notifier(&ondemand_cpu_notifier);
-+
- 			for_each_cpu(j, policy->cpus) {
- 				struct cpu_dbs_common_info *j_cdbs;
+ 		mutex_lock(&dbs_info->cdbs.timer_mutex);
+@@ -345,8 +345,7 @@ static void update_sampling_rate(unsigned int new_rate)
+ 			cancel_delayed_work_sync(&dbs_info->cdbs.work);
+ 			mutex_lock(&dbs_info->cdbs.timer_mutex);
  
- 				j_cdbs = dbs_data->get_cpu_cdbs(j);
- 				dbs_timer_exit(j_cdbs);
-+
-+				per_cpu(cpu_cur_dbs, j) = NULL;
- 			}
- 		} else {
- 			dbs_timer_exit(cpu_cdbs);
+-			schedule_delayed_work_on(dbs_info->cdbs.cpu,
+-					&dbs_info->cdbs.work,
++			schedule_delayed_work_on(cpu, &dbs_info->cdbs.work,
+ 					usecs_to_jiffies(new_rate));
+ 
+ 		}
 -- 
 1.7.12.1
 
