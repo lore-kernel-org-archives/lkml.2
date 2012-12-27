@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab2L0CAf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:00:35 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:52068 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab2L0CA2 (ORCPT
+	id S1752004Ab2L0CAm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:00:42 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:52629 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938Ab2L0CAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:00:28 -0500
+	Wed, 26 Dec 2012 21:00:35 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
-Cc: Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
-        Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 02/32] aio: remove dead code from aio.h
-Date: Wed, 26 Dec 2012 17:59:39 -0800
-Message-Id: <1356573611-18590-3-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu
+Subject: [PATCH 07/32] aio: kiocb_cancel()
+Date: Wed, 26 Dec 2012 17:59:44 -0800
+Message-Id: <1356573611-18590-8-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
@@ -23,72 +23,138 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+Minor refactoring, to get rid of some duplicated code
 
-Signed-off-by: Zach Brown <zab@redhat.com>
+v2: Fix return value for NULL kiocb, so it matches old code; change
+synchronization to use xchg() instead of a bit in ki_flags, so we can
+get rid of ki_flags.
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- include/linux/aio.h | 24 ------------------------
- 1 file changed, 24 deletions(-)
+ fs/aio.c | 79 +++++++++++++++++++++++++++++++++++-----------------------------
+ 1 file changed, 43 insertions(+), 36 deletions(-)
 
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 31ff6db..b46a09f 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -9,44 +9,22 @@
+diff --git a/fs/aio.c b/fs/aio.c
+index 0b85822..e1d4084 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -217,6 +217,29 @@ static inline void put_ioctx(struct kioctx *kioctx)
+ 		__put_ioctx(kioctx);
+ }
  
- #include <linux/atomic.h>
++static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
++			struct io_event *res)
++{
++	int (*cancel)(struct kiocb *, struct io_event *);
++	int ret = -EINVAL;
++
++	cancel = kiocb->ki_cancel;
++	kiocbSetCancelled(kiocb);
++	if (cancel) {
++		kiocb->ki_users++;
++		spin_unlock_irq(&ctx->ctx_lock);
++
++		memset(res, 0, sizeof(*res));
++		res->obj = (u64) kiocb->ki_obj.user;
++		res->data = kiocb->ki_user_data;
++		ret = cancel(kiocb, res);
++
++		spin_lock_irq(&ctx->ctx_lock);
++	}
++
++	return ret;
++}
++
+ /* ioctx_alloc
+  *	Allocates and initializes an ioctx.  Returns an ERR_PTR if it failed.
+  */
+@@ -287,25 +310,19 @@ out_freectx:
+  */
+ static void kill_ctx(struct kioctx *ctx)
+ {
+-	int (*cancel)(struct kiocb *, struct io_event *);
+ 	struct task_struct *tsk = current;
+ 	DECLARE_WAITQUEUE(wait, tsk);
+ 	struct io_event res;
++	struct kiocb *req;
  
--#define AIO_MAXSEGS		4
--#define AIO_KIOGRP_NR_ATOMIC	8
--
- struct kioctx;
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 	ctx->dead = 1;
+ 	while (!list_empty(&ctx->active_reqs)) {
+-		struct list_head *pos = ctx->active_reqs.next;
+-		struct kiocb *iocb = list_kiocb(pos);
+-		list_del_init(&iocb->ki_list);
+-		cancel = iocb->ki_cancel;
+-		kiocbSetCancelled(iocb);
+-		if (cancel) {
+-			iocb->ki_users++;
+-			spin_unlock_irq(&ctx->ctx_lock);
+-			cancel(iocb, &res);
+-			spin_lock_irq(&ctx->ctx_lock);
+-		}
++		req = list_first_entry(&ctx->active_reqs,
++					struct kiocb, ki_list);
++
++		list_del_init(&req->ki_list);
++		kiocb_cancel(ctx, req, &res);
+ 	}
  
--/* Notes on cancelling a kiocb:
-- *	If a kiocb is cancelled, aio_complete may return 0 to indicate 
-- *	that cancel has not yet disposed of the kiocb.  All cancel 
-- *	operations *must* call aio_put_req to dispose of the kiocb 
-- *	to guard against races with the completion code.
-- */
--#define KIOCB_C_CANCELLED	0x01
--#define KIOCB_C_COMPLETE	0x02
--
- #define KIOCB_SYNC_KEY		(~0U)
+ 	if (!ctx->reqs_active)
+@@ -1409,7 +1426,7 @@ static struct kiocb *lookup_kiocb(struct kioctx *ctx, struct iocb __user *iocb,
+ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		struct io_event __user *, result)
+ {
+-	int (*cancel)(struct kiocb *iocb, struct io_event *res);
++	struct io_event res;
+ 	struct kioctx *ctx;
+ 	struct kiocb *kiocb;
+ 	u32 key;
+@@ -1424,32 +1441,22 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
+ 		return -EINVAL;
  
- /* ki_flags bits */
--/*
-- * This may be used for cancel/retry serialization in the future, but
-- * for now it's unused and we probably don't want modules to even
-- * think they can use it.
-- */
--/* #define KIF_LOCKED		0 */
- #define KIF_KICKED		1
- #define KIF_CANCELLED		2
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ret = -EAGAIN;
++
+ 	kiocb = lookup_kiocb(ctx, iocb, key);
+-	if (kiocb && kiocb->ki_cancel) {
+-		cancel = kiocb->ki_cancel;
+-		kiocb->ki_users ++;
+-		kiocbSetCancelled(kiocb);
+-	} else
+-		cancel = NULL;
++	if (kiocb)
++		ret = kiocb_cancel(ctx, kiocb, &res);
++	else
++		ret = -EINVAL;
++
+ 	spin_unlock_irq(&ctx->ctx_lock);
  
--#define kiocbTryLock(iocb)	test_and_set_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbTryKick(iocb)	test_and_set_bit(KIF_KICKED, &(iocb)->ki_flags)
+-	if (NULL != cancel) {
+-		struct io_event tmp;
+-		pr_debug("calling cancel\n");
+-		memset(&tmp, 0, sizeof(tmp));
+-		tmp.obj = (u64)(unsigned long)kiocb->ki_obj.user;
+-		tmp.data = kiocb->ki_user_data;
+-		ret = cancel(kiocb, &tmp);
+-		if (!ret) {
+-			/* Cancellation succeeded -- copy the result
+-			 * into the user's buffer.
+-			 */
+-			if (copy_to_user(result, &tmp, sizeof(tmp)))
+-				ret = -EFAULT;
+-		}
+-	} else
+-		ret = -EINVAL;
++	if (!ret) {
++		/* Cancellation succeeded -- copy the result
++		 * into the user's buffer.
++		 */
++		if (copy_to_user(result, &res, sizeof(res)))
++			ret = -EFAULT;
++	}
  
--#define kiocbSetLocked(iocb)	set_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbSetKicked(iocb)	set_bit(KIF_KICKED, &(iocb)->ki_flags)
- #define kiocbSetCancelled(iocb)	set_bit(KIF_CANCELLED, &(iocb)->ki_flags)
+ 	put_ioctx(ctx);
  
--#define kiocbClearLocked(iocb)	clear_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbClearKicked(iocb)	clear_bit(KIF_KICKED, &(iocb)->ki_flags)
- #define kiocbClearCancelled(iocb)	clear_bit(KIF_CANCELLED, &(iocb)->ki_flags)
- 
--#define kiocbIsLocked(iocb)	test_bit(KIF_LOCKED, &(iocb)->ki_flags)
- #define kiocbIsKicked(iocb)	test_bit(KIF_KICKED, &(iocb)->ki_flags)
- #define kiocbIsCancelled(iocb)	test_bit(KIF_CANCELLED, &(iocb)->ki_flags)
- 
-@@ -207,8 +185,6 @@ struct kioctx {
- };
- 
- /* prototypes */
--extern unsigned aio_max_size;
--
- #ifdef CONFIG_AIO
- extern ssize_t wait_on_sync_kiocb(struct kiocb *iocb);
- extern int aio_put_req(struct kiocb *iocb);
 -- 
 1.7.12
 
