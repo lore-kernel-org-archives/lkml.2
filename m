@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752343Ab2L0CGG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:06:06 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:64653 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752287Ab2L0CF7 (ORCPT
+	id S1752392Ab2L0CGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:06:09 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:56673 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab2L0CF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:05:59 -0500
-From: Michal Nazarewicz <mpn@google.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cma: use unsigned type for count argument
-In-Reply-To: <alpine.DEB.2.00.1212261755450.4150@chino.kir.corp.google.com>
-Organization: Google Inc
-References: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com> <20121220153525.97841100.akpm@linux-foundation.org> <alpine.DEB.2.00.1212201557270.13223@chino.kir.corp.google.com> <xa1tip7u14tq.fsf@mina86.com> <alpine.DEB.2.00.1212261755450.4150@chino.kir.corp.google.com>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-PGP: 50751FF4
-X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
-Date: Thu, 27 Dec 2012 03:05:49 +0100
-Message-ID: <xa1tzk10ntaa.fsf@mina86.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+	Wed, 26 Dec 2012 21:05:58 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 05/32] char: add aio_{read,write} to /dev/{null,zero}
+Date: Wed, 26 Dec 2012 17:59:42 -0800
+Message-Id: <1356573611-18590-6-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+From: Zach Brown <zab@redhat.com>
 
-> On Sat, 22 Dec 2012, Michal Nazarewicz wrote:
->> So I think just adding the following, should be sufficient to make
->> everyone happy:
->>=20
->> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous=
-.c
->> index e34e3e0..e91743b 100644
->> --- a/drivers/base/dma-contiguous.c
->> +++ b/drivers/base/dma-contiguous.c
->> @@ -320,7 +320,7 @@ struct page *dma_alloc_from_contiguous(struct device=
- *dev, unsigned int count,
->>  	pr_debug("%s(cma %p, count %u, align %u)\n", __func__, (void *)cma,
->>  		 count, align);
->>=20=20
->> -	if (!count)
->> +	if (!count || count > INT_MAX)
->>  		return NULL;
->>=20=20
->>  	mask =3D (1 << align) - 1;
->
-On Thu, Dec 27 2012, David Rientjes <rientjes@google.com> wrote:
-> How is this different than leaving the formal to have a signed type, i.e.=
-=20
-> drop your patch, and testing for count <=3D 0 instead?
+These are handy for measuring the cost of the aio infrastructure with
+operations that do very little and complete immediately.
 
-Not much different I guess.  I don't have strong opinions to be honest,
-except that I feel unsigned is the proper type to use, on top of which
-I think bitmap_set() should use unsigned, so in case anyone ever bothers
-to change it, CMA will be ready. :P
+Signed-off-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ drivers/char/mem.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
---=20
-Best regards,                                         _     _
-.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
-..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
- (o o)
-ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
---=-=-=
-Content-Type: multipart/signed; boundary="==-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 0537903..968ae6e 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -627,6 +627,18 @@ static ssize_t write_null(struct file *file, const char __user *buf,
+ 	return count;
+ }
+ 
++static ssize_t aio_read_null(struct kiocb *iocb, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t pos)
++{
++	return 0;
++}
++
++static ssize_t aio_write_null(struct kiocb *iocb, const struct iovec *iov,
++			      unsigned long nr_segs, loff_t pos)
++{
++	return iov_length(iov, nr_segs);
++}
++
+ static int pipe_to_null(struct pipe_inode_info *info, struct pipe_buffer *buf,
+ 			struct splice_desc *sd)
+ {
+@@ -670,6 +682,24 @@ static ssize_t read_zero(struct file *file, char __user *buf,
+ 	return written ? written : -EFAULT;
+ }
+ 
++static ssize_t aio_read_zero(struct kiocb *iocb, const struct iovec *iov,
++			     unsigned long nr_segs, loff_t pos)
++{
++	size_t written = 0;
++	unsigned long i;
++	ssize_t ret;
++
++	for (i = 0; i < nr_segs; i++) {
++		ret = read_zero(iocb->ki_filp, iov[i].iov_base, iov[i].iov_len,
++				&pos);
++		if (ret < 0)
++			break;
++		written += ret;
++	}
++
++	return written ? written : -EFAULT;
++}
++
+ static int mmap_zero(struct file *file, struct vm_area_struct *vma)
+ {
+ #ifndef CONFIG_MMU
+@@ -738,6 +768,7 @@ static int open_port(struct inode * inode, struct file * filp)
+ #define full_lseek      null_lseek
+ #define write_zero	write_null
+ #define read_full       read_zero
++#define aio_write_zero	aio_write_null
+ #define open_mem	open_port
+ #define open_kmem	open_mem
+ #define open_oldmem	open_mem
+@@ -766,6 +797,8 @@ static const struct file_operations null_fops = {
+ 	.llseek		= null_lseek,
+ 	.read		= read_null,
+ 	.write		= write_null,
++	.aio_read	= aio_read_null,
++	.aio_write	= aio_write_null,
+ 	.splice_write	= splice_write_null,
+ };
+ 
+@@ -782,6 +815,8 @@ static const struct file_operations zero_fops = {
+ 	.llseek		= zero_lseek,
+ 	.read		= read_zero,
+ 	.write		= write_zero,
++	.aio_read	= aio_read_zero,
++	.aio_write	= aio_write_zero,
+ 	.mmap		= mmap_zero,
+ };
+ 
+-- 
+1.7.12
 
---==-=-=
-Content-Type: text/plain
-
-
---==-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ26z9AAoJECBgQBJQdR/0FLsP+wXrMoNqTvrzcm44rlE94pb9
-J4dpiQH2rSHTWsR3xfdwmoupgrL2WnLb5PRz6tfvf69bdWRhlkmz5OTR1sld95Mi
-pB/bwmhdaSknDx8qufJCoaqTAlMD328RBktU8vvpSxZwQZJbqA2sod2lHT4La+aT
-38mGGfIWhOHEKNZlgqm91DLOkwptHn0NPCs4udfEMC3lWiTfpp78KOeFM7OPeb4W
-GiiunyocX/Y2oez09X63JvFBVFopx0l3rtKbAKAiKW/QRnfgEsshDg/t4rWKnILY
-3l+EZBTBsuYaWSaPcgtWZtu04fkOqVF6Dq8lrqw+HjfIvmh8x9X+M7srIwxhR773
-rIENo0XVC6dbov0qvuMd9VlnMhQl1vf9n5UIFGTSnjIpY6rn8puOoXNHCUj8YahN
-ZMrQxzK7pdJ+yroW/3iaqDjgOyqdNE9sbJ34dM5bGW64cuTxsr5o8iiPD6Vj1oa1
-ShY0Xx8V2+J2LQGRHUGIywXu2E499JbIQv/LLDPKm0SWLdANRrGn6TfcD0644Qp2
-PM/2cff5xC7PfOxpLipeagJ/RuZRmxZsGcu2gfgXG4wUZJ2ej43qSBmqQQ1Q5hjv
-aXdqvgM5q0cHT/yjO2Oe0IwTjl4V1RTQJgrsGIzak3GnjVZaVYbcGcKmDU/gLVSK
-3TRe56LEL6ILhJPJnxh2
-=gJWR
------END PGP SIGNATURE-----
---==-=-=--
-
---=-=-=--
