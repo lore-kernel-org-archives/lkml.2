@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab2L0JMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 04:12:33 -0500
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:45445 "EHLO
+	id S1752624Ab2L0JMx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 04:12:53 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:59226 "EHLO
 	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab2L0JM3 (ORCPT
+	with ESMTP id S1752305Ab2L0JMd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 04:12:29 -0500
-X-AuditID: 9c93016f-b7b54ae000000e9e-0f-50dc10fb99a1
+	Thu, 27 Dec 2012 04:12:33 -0500
+X-AuditID: 9c93016f-b7b54ae000000e9e-1c-50dc10fc4de3
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
@@ -15,9 +15,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
         David Ahern <dsahern@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
         Namhyung Kim <namhyung.kim@lge.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 01/10] perf sort: Move misplaced sort entry functions
-Date: Thu, 27 Dec 2012 18:11:38 +0900
-Message-Id: <1356599507-14226-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/10] perf report: Update documentation for sort keys
+Date: Thu, 27 Dec 2012 18:11:47 +0900
+Message-Id: <1356599507-14226-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
 References: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
@@ -28,205 +28,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung.kim@lge.com>
 
-Some functions are misplaced along with other entries.  Move them to a
-right place so that it can be found together with related functions.
-
-No functional change intended.
+Add description of sort keys to the perf-report document and also add
+missing cpu and srcline keys to the command line help string.
 
 Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/sort.c | 119 +++++++++++++++++++++++++------------------------
- 1 file changed, 60 insertions(+), 59 deletions(-)
+ tools/perf/Documentation/perf-report.txt | 38 +++++++++++++++++++++++++++++---
+ tools/perf/builtin-report.c              |  4 ++--
+ 2 files changed, 37 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index dbaded90312c..ce5d40456c07 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -97,6 +97,16 @@ static int hist_entry__comm_snprintf(struct hist_entry *self, char *bf,
- 	return repsep_snprintf(bf, size, "%*s", width, self->thread->comm);
- }
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index f4d91bebd59d..848a0dcb6dfd 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -57,11 +57,44 @@ OPTIONS
  
-+struct sort_entry sort_comm = {
-+	.se_header	= "Command",
-+	.se_cmp		= sort__comm_cmp,
-+	.se_collapse	= sort__comm_collapse,
-+	.se_snprintf	= hist_entry__comm_snprintf,
-+	.se_width_idx	= HISTC_COMM,
-+};
+ -s::
+ --sort=::
+-	Sort by key(s): pid, comm, dso, symbol, parent, srcline.
++	Sort histogram entries by given key(s) - multiple keys can be specified
++	in CSV format.  Following sort keys are available:
++	pid, comm, dso, symbol, parent, cpu, srcline.
 +
-+/* --sort dso */
++	Each key has following meaning:
 +
- static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- {
- 	struct dso *dso_l = map_l ? map_l->dso : NULL;
-@@ -117,22 +127,38 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- 	return strcmp(dso_name_l, dso_name_r);
- }
- 
--struct sort_entry sort_comm = {
--	.se_header	= "Command",
--	.se_cmp		= sort__comm_cmp,
--	.se_collapse	= sort__comm_collapse,
--	.se_snprintf	= hist_entry__comm_snprintf,
--	.se_width_idx	= HISTC_COMM,
--};
--
--/* --sort dso */
--
- static int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- {
- 	return _sort__dso_cmp(left->ms.map, right->ms.map);
- }
- 
-+static int _hist_entry__dso_snprintf(struct map *map, char *bf,
-+				     size_t size, unsigned int width)
-+{
-+	if (map && map->dso) {
-+		const char *dso_name = !verbose ? map->dso->short_name :
-+			map->dso->long_name;
-+		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
-+	}
++	- comm: command (name) of the task which can be read via /proc/<pid>/comm
++	- pid: command and tid of the task
++	- dso: name of library or module executed at the time of sample
++	- symbol: name of function executed at the time of sample
++	- parent: name of function matched to the parent regex filter. Unmatched
++	entries are displayed as "[other]".
++	- cpu: cpu number the task ran at the time of sample
++	- srcline: filename and line number executed at the time of sample.  The
++	DWARF debuggin info must be provided.
 +
-+	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
-+}
++	By default, comm, dso and symbol keys are used.
++	(i.e. --sort comm,dso,symbol)
 +
-+static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
-+				    size_t size, unsigned int width)
-+{
-+	return _hist_entry__dso_snprintf(self->ms.map, bf, size, width);
-+}
++	If --branch-stack option is used, following sort keys are also
++	available:
++	dso_from, dso_to, symbol_from, symbol_to, mispredict.
 +
-+struct sort_entry sort_dso = {
-+	.se_header	= "Shared Object",
-+	.se_cmp		= sort__dso_cmp,
-+	.se_snprintf	= hist_entry__dso_snprintf,
-+	.se_width_idx	= HISTC_DSO,
-+};
++	- dso_from: name of library or module branched from
++	- dso_to: name of library or module branched to
++	- symbol_from: name of function branched from
++	- symbol_to: name of function branched to
++	- mispredict: "N" for predicted branch, "Y" for mispredicted branch
 +
-+/* --sort symbol */
++	And default sort keys are changed to comm, dso_from, symbol_from, dso_to
++	and symbol_to, see '--branch-stack'.
  
- static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
- 			      u64 ip_l, u64 ip_r)
-@@ -149,22 +175,24 @@ static int64_t _sort__sym_cmp(struct symbol *sym_l, struct symbol *sym_r,
- 	return (int64_t)(ip_r - ip_l);
- }
+ -p::
+ --parent=<regex>::
+-        regex filter to identify parent, see: '--sort parent'
++        A regex filter to identify parent. The parent is a caller of this
++	function and searched through the callchain, thus it requires callchain
++	information recorded. The pattern is in the exteneded regex format and
++	defaults to "\^sys_|^do_page_fault", see '--sort parent'.
  
--static int _hist_entry__dso_snprintf(struct map *map, char *bf,
--				     size_t size, unsigned int width)
-+static int64_t
-+sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	if (map && map->dso) {
--		const char *dso_name = !verbose ? map->dso->short_name :
--			map->dso->long_name;
--		return repsep_snprintf(bf, size, "%-*s", width, dso_name);
--	}
-+	u64 ip_l, ip_r;
+ -x::
+ --exclude-other::
+@@ -74,7 +107,6 @@ OPTIONS
  
--	return repsep_snprintf(bf, size, "%-*s", width, "[unknown]");
--}
-+	if (!left->ms.sym && !right->ms.sym)
-+		return right->level - left->level;
- 
--static int hist_entry__dso_snprintf(struct hist_entry *self, char *bf,
--				    size_t size, unsigned int width)
--{
--	return _hist_entry__dso_snprintf(self->ms.map, bf, size, width);
-+	if (!left->ms.sym || !right->ms.sym)
-+		return cmp_null(left->ms.sym, right->ms.sym);
-+
-+	if (left->ms.sym == right->ms.sym)
-+		return 0;
-+
-+	ip_l = left->ms.sym->start;
-+	ip_r = right->ms.sym->start;
-+
-+	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
- }
- 
- static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
-@@ -195,14 +223,6 @@ static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 	return ret;
- }
- 
+ -t::
+ --field-separator=::
 -
--struct sort_entry sort_dso = {
--	.se_header	= "Shared Object",
--	.se_cmp		= sort__dso_cmp,
--	.se_snprintf	= hist_entry__dso_snprintf,
--	.se_width_idx	= HISTC_DSO,
--};
--
- static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
- 				    size_t size,
- 				    unsigned int width __maybe_unused)
-@@ -211,27 +231,6 @@ static int hist_entry__sym_snprintf(struct hist_entry *self, char *bf,
- 					 self->level, bf, size, width);
- }
- 
--/* --sort symbol */
--static int64_t
--sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
--{
--	u64 ip_l, ip_r;
--
--	if (!left->ms.sym && !right->ms.sym)
--		return right->level - left->level;
--
--	if (!left->ms.sym || !right->ms.sym)
--		return cmp_null(left->ms.sym, right->ms.sym);
--
--	if (left->ms.sym == right->ms.sym)
--		return 0;
--
--	ip_l = left->ms.sym->start;
--	ip_r = right->ms.sym->start;
--
--	return _sort__sym_cmp(left->ms.sym, right->ms.sym, ip_l, ip_r);
--}
--
- struct sort_entry sort_sym = {
- 	.se_header	= "Symbol",
- 	.se_cmp		= sort__sym_cmp,
-@@ -343,6 +342,8 @@ struct sort_entry sort_cpu = {
- 	.se_width_idx	= HISTC_CPU,
- };
- 
-+/* sort keys for branch stacks */
-+
- static int64_t
- sort__dso_from_cmp(struct hist_entry *left, struct hist_entry *right)
- {
-@@ -357,13 +358,6 @@ static int hist_entry__dso_from_snprintf(struct hist_entry *self, char *bf,
- 					 bf, size, width);
- }
- 
--struct sort_entry sort_dso_from = {
--	.se_header	= "Source Shared Object",
--	.se_cmp		= sort__dso_from_cmp,
--	.se_snprintf	= hist_entry__dso_from_snprintf,
--	.se_width_idx	= HISTC_DSO_FROM,
--};
--
- static int64_t
- sort__dso_to_cmp(struct hist_entry *left, struct hist_entry *right)
- {
-@@ -423,6 +417,13 @@ static int hist_entry__sym_to_snprintf(struct hist_entry *self, char *bf,
- 
- }
- 
-+struct sort_entry sort_dso_from = {
-+	.se_header	= "Source Shared Object",
-+	.se_cmp		= sort__dso_from_cmp,
-+	.se_snprintf	= hist_entry__dso_from_snprintf,
-+	.se_width_idx	= HISTC_DSO_FROM,
-+};
-+
- struct sort_entry sort_dso_to = {
- 	.se_header	= "Target Shared Object",
- 	.se_cmp		= sort__dso_to_cmp,
+ 	Use a special separator character and don't pad with spaces, replacing
+ 	all occurrences of this separator in symbol names (and other output)
+ 	with a '.' character, that thus it's the only non valid separator.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 13cdf61c4f82..47a864478543 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -595,8 +595,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_BOOLEAN(0, "stdio", &report.use_stdio,
+ 		    "Use the stdio interface"),
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+-		   "sort by key(s): pid, comm, dso, symbol, parent, dso_to,"
+-		   " dso_from, symbol_to, symbol_from, mispredict"),
++		   "sort by key(s): pid, comm, dso, symbol, parent, cpu, srcline,"
++		   " dso_to, dso_from, symbol_to, symbol_from, mispredict"),
+ 	OPT_BOOLEAN(0, "showcpuutilization", &symbol_conf.show_cpu_utilization,
+ 		    "Show sample percentage for different cpu modes"),
+ 	OPT_STRING('p', "parent", &parent_pattern, "regex",
 -- 
 1.7.11.7
 
