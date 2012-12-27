@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960Ab2L0Sy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 13:54:28 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57881 "EHLO mail.zytor.com"
+	id S1752940Ab2L0TDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 14:03:55 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:41082 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752770Ab2L0Sy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 13:54:27 -0500
-Message-ID: <50DC9935.6000201@zytor.com>
-Date: Thu, 27 Dec 2012 10:53:41 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751963Ab2L0TDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 14:03:53 -0500
+Date: Thu, 27 Dec 2012 20:03:51 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, mm: add generic kernel/ident mapping helper
+Message-ID: <20121227190351.GA10819@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20121227185126.GA10207@x1.alien8.de>
 MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: andrew.cooper3@citrix.com, ebiederm@xmission.com, jbeulich@suse.com,
-        konrad.wilk@oracle.com, maxim.uvarov@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, vgoyal@redhat.com, x86@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v3 09/11] x86/xen/enlighten: Add init and crash kexec/kdump
- hooks
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-4-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-5-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-6-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-7-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-8-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-9-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-10-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1356574740-6806-10-git-send-email-daniel.kiper@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121227185126.GA10207@x1.alien8.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2012 06:18 PM, Daniel Kiper wrote:
-> Add init and crash kexec/kdump hooks.
->
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> ---
->   arch/x86/xen/enlighten.c |   11 +++++++++++
->   1 files changed, 11 insertions(+), 0 deletions(-)
+On Thu, Dec 27, 2012 at 07:51:26PM +0100, Borislav Petkov wrote:
+> > commit bb3cda32f9586e13c5d3dde6c83a914bb2d7f87f
+> > Author: Yinghai Lu <yinghai@kernel.org>
+> > Date:   Mon Dec 24 18:00:21 2012 -0800
+> > 
+> >     x86, mm: add generic kernel/ident mapping helper
+> >     
+> >     It is simple version for kernel_physical_mapping_init.
+> >     it will work to build one page table that will be put effectiv later.
 
-On the general issue of hooks:
+Forgot to ask: what does "put effectiv later" mean?
 
-Hooks need their pre- and postsemantics extremely ewell documented, let 
-they end up being an impossible roadblock to development.
+* will be effectively put to use later
 
-	-hpa
+* will effectively be put, i.e. dropped later
+
+* we will switch to using it later
+
+* ...
+
+Thanks.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Regards/Gruss,
+Boris.
