@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339Ab2L0RfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 12:35:12 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:39459 "EHLO
+	id S1753354Ab2L0RlZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 12:41:25 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52993 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751245Ab2L0RfK (ORCPT
+	by vger.kernel.org with ESMTP id S1751748Ab2L0RlX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 12:35:10 -0500
-Date: Thu, 27 Dec 2012 17:35:08 +0000
+	Thu, 27 Dec 2012 12:41:23 -0500
+Date: Thu, 27 Dec 2012 17:41:20 +0000
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] regulator: max8997: Remove set_voltage_time_sel
- setting for max8997_ldo_ops
-Message-ID: <20121227173508.GJ5005@opensource.wolfsonmicro.com>
-References: <1356510519.16892.3.camel@phoenix>
+To: Andrey Smirnov <andrew.smirnov@gmail.com>
+Cc: andrey.smirnov@convergeddevices.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Add "no-bus" configuration for regmap API
+Message-ID: <20121227174120.GK5005@opensource.wolfsonmicro.com>
+References: <1356083238-6932-1-git-send-email-andrew.smirnov@gmail.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j/HO4hzKTNbM1mOX"
+	protocol="application/pgp-signature"; boundary="Qgd2S+2VS1hsWwXW"
 Content-Disposition: inline
-In-Reply-To: <1356510519.16892.3.camel@phoenix>
+In-Reply-To: <1356083238-6932-1-git-send-email-andrew.smirnov@gmail.com>
 X-Cookie: You will be awarded some great honor.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,36 +26,39 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---j/HO4hzKTNbM1mOX
+--Qgd2S+2VS1hsWwXW
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Wed, Dec 26, 2012 at 04:28:39PM +0800, Axel Lin wrote:
-> max8997_set_voltage_ldobuck_time_sel() returns 0 for all LDOs.
-> Thus remove set_voltage_time_sel setting for max8997_ldo_ops.
+On Fri, Dec 21, 2012 at 01:47:15AM -0800, Andrey Smirnov wrote:
+> This patch proposes extension to the API that was suggested by Mark in
+> the following thread:
+> http://article.gmane.org/gmane.linux.kernel/1383734
 
-Applied both, thanks.
+This needs rebasing against v3.8-rc1.  Please also add regmap: to the
+subject line - missing that means that things are more likely to get
+missed or looked at slowly.
 
---j/HO4hzKTNbM1mOX
+--Qgd2S+2VS1hsWwXW
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQ3IbAAAoJELSic+t+oim94RYP/Rq3VHwEhOFRozHoye7lxp/S
-MrHktua8aeoNAAHFOTThIl2DEeJI5VoPl5CnXJM6Hnm9kMXMpHymJY9Eu4Czh1/b
-2av/BjPZdbWvvvQ3yvz/DGoqYzdb/PtzZ+aDh8BNdWZruOhQP/tRV8bEEg3zgCo+
-kUFTuNJJH/kgEmIjbnJ3usuy5zClgvxlLATW4dUUgTPuSE4Kp/iGijop/vuMTeRP
-RF5b7GlksKyLFC57M/k9RYFnsusCf/Uh6UWA7Ueg6se94AekIhBTeMs9F0dPa5RP
-u2215tHa0OBUGHK7yWXgKqiySDnmSIREIwPMGOGkmwKisaijiWAO+IaKFSSevNI+
-h5JUyLGag+9lquC3iE0gi2dPZs0+gG87sNKwWvWfJmvDHCyEQcFJxrezexWJzti0
-FqLU6ft7jsjSHWgIFI3PGxFCllUFsmZdiddi2CDjT24O1QjfmeGjYoypFlPSHvbr
-+rET0RmlDGxAk0G85/hxwDHEiiXyq7v3Y59jJJFxjMV20rVIXyOM0nJqP9OXlIO+
-Mp+mu3rTL8NKxJcpeMxuY6XQwIIGZGaqGAlKZxl0LPYQeeVr4iEMIRYgTUotNWAp
-q4q6TRfw+Q7YVOPXtGgKbc11RMFXJWDetyl2YeEjmzNBKhhsSd7Pux+BHrYxFEqF
-kdZMW65xvZIHlMMg4rBx
-=kYpV
+iQIcBAEBAgAGBQJQ3Ig5AAoJELSic+t+oim9LcUP/RFCWOCJZdrCvk0CKupjhQ29
+w1eYerIDYI1eYpCEtBeES3viciaSrT/20CcLVOZWNAZcD5O+OC+01a5mo6y/dK8u
+LREtIxoKPAXlNkHVfsb4yJGdH0OsjPYW8GBoWiNmXIDvUEdRnsu4pbwE+z+oYhOh
+MOAEQyUB5c8zqWO+Is2LoWg0xrACk8uyinGsJMfekoRqlEG7dxNySOYKOOGiZH/1
+Xokfq+0n5NrvS9utUxWq4Fzg21NhAeXGF1B9K3DgRynJ5lzw2MSXTyz9x+rDi/0A
+8PcD9wjqB1NlC4GP2hyBdzg0EtFldoM5fRWSTUcdhXmLgxPuetDq2VueofSrRRAT
+BSF42mXVyuecPfNl7TuJyIXZf4UCcirN3v1SNf5M9r5OgxGCi8Kra3LorwGNFKs0
+DhcgJkfqvT9gTYkHT6Rd8ZmfI+NuP79uDXAhfONZFj4rKBA+R9zkBeubjJHQ47PS
+IU/FMwWzkZ/XOp2flZrs97VmrXOgCx+7kDLLpDRYlVqfhD0AG12RgCZmWeUxkCof
+1Jh5+WAbZzsc2nvLRHQ9e9HHhsUiVcCxe5GspARnNXjRMZwHmfDDLZJVDmPz9HmL
+1nQzf70akph4MNzqjGIccWlCGhMCOIVoU92/xiTZeHB3cX2VJ9Zs+fAh25ispUP9
+s/A1z0kAP90+6DbtsdK8
+=o51/
 -----END PGP SIGNATURE-----
 
---j/HO4hzKTNbM1mOX--
+--Qgd2S+2VS1hsWwXW--
