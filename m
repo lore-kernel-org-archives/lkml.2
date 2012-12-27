@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab2L0B7X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 20:59:23 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:59265 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956Ab2L0B7U (ORCPT
+	id S1751929Ab2L0CAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:00:32 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:38100 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab2L0CA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 20:59:20 -0500
-Date: Wed, 26 Dec 2012 17:59:18 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Michal Nazarewicz <mpn@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cma: use unsigned type for count argument
-In-Reply-To: <xa1tip7u14tq.fsf@mina86.com>
-Message-ID: <alpine.DEB.2.00.1212261755450.4150@chino.kir.corp.google.com>
-References: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com> <20121220153525.97841100.akpm@linux-foundation.org> <alpine.DEB.2.00.1212201557270.13223@chino.kir.corp.google.com> <xa1tip7u14tq.fsf@mina86.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 26 Dec 2012 21:00:27 -0500
+From: Kent Overstreet <koverstreet@google.com>
+To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Cc: Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 01/32] mm: remove old aio use_mm() comment
+Date: Wed, 26 Dec 2012 17:59:38 -0800
+Message-Id: <1356573611-18590-2-git-send-email-koverstreet@google.com>
+X-Mailer: git-send-email 1.7.12
+In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Dec 2012, Michal Nazarewicz wrote:
+From: Zach Brown <zab@redhat.com>
 
-> So I think just adding the following, should be sufficient to make
-> everyone happy:
-> 
-> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
-> index e34e3e0..e91743b 100644
-> --- a/drivers/base/dma-contiguous.c
-> +++ b/drivers/base/dma-contiguous.c
-> @@ -320,7 +320,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, unsigned int count,
->  	pr_debug("%s(cma %p, count %u, align %u)\n", __func__, (void *)cma,
->  		 count, align);
->  
-> -	if (!count)
-> +	if (!count || count > INT_MAX)
->  		return NULL;
->  
->  	mask = (1 << align) - 1;
+use_mm() is used in more places than just aio.  There's no need to
+mention callers when describing the function.
 
-How is this different than leaving the formal to have a signed type, i.e. 
-drop your patch, and testing for count <= 0 instead?
+Signed-off-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Kent Overstreet <koverstreet@google.com>
+---
+ mm/mmu_context.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/mm/mmu_context.c b/mm/mmu_context.c
+index 3dcfaf4..8a8cd02 100644
+--- a/mm/mmu_context.c
++++ b/mm/mmu_context.c
+@@ -14,9 +14,6 @@
+  * use_mm
+  *	Makes the calling kernel thread take on the specified
+  *	mm context.
+- *	Called by the retry thread execute retries within the
+- *	iocb issuer's mm context, so that copy_from/to_user
+- *	operations work seamlessly for aio.
+  *	(Note: this routine is intended to be called only
+  *	from a kernel thread context)
+  */
+-- 
+1.7.12
+
