@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046Ab2L0CAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:00:47 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:53909 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751968Ab2L0CAh (ORCPT
+	id S1752089Ab2L0CA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:00:59 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:53711 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab2L0CAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:00:37 -0500
+	Wed, 26 Dec 2012 21:00:54 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
 Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
         jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
         tytso@mit.edu
-Subject: [PATCH 09/32] aio: dprintk() -> pr_debug()
-Date: Wed, 26 Dec 2012 17:59:46 -0800
-Message-Id: <1356573611-18590-10-git-send-email-koverstreet@google.com>
+Subject: [PATCH 22/32] aio: percpu reqs_available
+Date: Wed, 26 Dec 2012 18:00:01 -0800
+Message-Id: <1356573611-18590-25-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
@@ -23,216 +23,231 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+See the previous patch for why we want to do this - this basically
+implements a per cpu allocator for reqs_available that doesn't actually
+allocate anything.
+
+Note that we need to increase the size of the ringbuffer we allocate,
+since a single thread won't necessarily be able to use all the
+reqs_available slots - some (up to about half) might be on other per cpu
+lists, unavailable for the current thread.
+
+We size the ringbuffer based on the nr_events userspace passed to
+io_setup(), so this is a slight behaviour change - but nr_events wasn't
+being used as a hard limit before, it was being rounded up to the next
+page before so this doesn't change the actual semantics.
+
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- fs/aio.c | 57 ++++++++++++++++++++++++---------------------------------
- 1 file changed, 24 insertions(+), 33 deletions(-)
+ fs/aio.c | 92 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 85 insertions(+), 7 deletions(-)
 
 diff --git a/fs/aio.c b/fs/aio.c
-index 8fcea98..868ac0a 100644
+index d384eb2..e415b33 100644
 --- a/fs/aio.c
 +++ b/fs/aio.c
-@@ -8,6 +8,8 @@
-  *
-  *	See ../COPYING for licensing terms.
-  */
-+#define pr_fmt(fmt) "%s: " fmt, __func__
+@@ -26,6 +26,7 @@
+ #include <linux/mm.h>
+ #include <linux/mman.h>
+ #include <linux/mmu_context.h>
++#include <linux/percpu.h>
+ #include <linux/slab.h>
+ #include <linux/timer.h>
+ #include <linux/aio.h>
+@@ -59,6 +60,10 @@ struct aio_ring {
+ 
+ #define AIO_RING_PAGES	8
+ 
++struct kioctx_cpu {
++	unsigned		reqs_available;
++};
 +
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/errno.h>
-@@ -18,8 +20,6 @@
- #include <linux/backing-dev.h>
- #include <linux/uio.h>
+ struct kioctx {
+ 	atomic_t		users;
+ 	atomic_t		dead;
+@@ -67,6 +72,10 @@ struct kioctx {
+ 	unsigned long		user_id;
+ 	struct hlist_node	list;
  
--#define DEBUG 0
--
- #include <linux/sched.h>
- #include <linux/fs.h>
- #include <linux/file.h>
-@@ -39,12 +39,6 @@
- #include <asm/kmap_types.h>
- #include <asm/uaccess.h>
++	struct __percpu kioctx_cpu *cpu;
++
++	unsigned		req_batch;
++
+ 	unsigned		nr;
  
--#if DEBUG > 1
--#define dprintk		printk
--#else
--#define dprintk(x...)	do { ; } while (0)
--#endif
--
- #define AIO_RING_MAGIC			0xa10a10a1
- #define AIO_RING_COMPAT_FEATURES	1
- #define AIO_RING_INCOMPAT_FEATURES	0
-@@ -124,7 +118,7 @@ static int __init aio_setup(void)
- 	kiocb_cachep = KMEM_CACHE(kiocb, SLAB_HWCACHE_ALIGN|SLAB_PANIC);
- 	kioctx_cachep = KMEM_CACHE(kioctx,SLAB_HWCACHE_ALIGN|SLAB_PANIC);
+ 	/* sys_io_setup currently limits this to an unsigned int */
+@@ -149,6 +158,9 @@ static int aio_setup_ring(struct kioctx *ctx)
+ 	unsigned long size;
+ 	int nr_pages;
  
--	pr_debug("aio_setup: sizeof(struct page) = %d\n", (int)sizeof(struct page));
-+	pr_debug("sizeof(struct page) = %zu\n", sizeof(struct page));
++	nr_events = max(nr_events, num_possible_cpus() * 4);
++	nr_events *= 2;
++
+ 	/* Compensate for the ring buffer's head/tail overlap entry */
+ 	nr_events += 2;	/* 1 is required, 2 for good luck */
  
- 	return 0;
- }
-@@ -178,7 +172,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	}
- 
- 	info->mmap_size = nr_pages * PAGE_SIZE;
--	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
-+	pr_debug("attempting mmap of %lu bytes\n", info->mmap_size);
- 	down_write(&mm->mmap_sem);
- 	info->mmap_base = do_mmap_pgoff(NULL, 0, info->mmap_size, 
- 					PROT_READ|PROT_WRITE,
-@@ -190,7 +184,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 		return -EAGAIN;
- 	}
- 
--	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
-+	pr_debug("mmap address: 0x%08lx\n", info->mmap_base);
- 	info->nr_pages = get_user_pages(current, mm, info->mmap_base, nr_pages, 
- 					1, 0, info->ring_pages, NULL);
- 	up_write(&mm->mmap_sem);
-@@ -262,7 +256,7 @@ static void __put_ioctx(struct kioctx *ctx)
- 		aio_nr -= nr_events;
- 		spin_unlock(&aio_nr_lock);
- 	}
--	pr_debug("__put_ioctx: freeing %p\n", ctx);
-+	pr_debug("freeing %p\n", ctx);
- 	call_rcu(&ctx->rcu_head, ctx_rcu_free);
+@@ -255,6 +267,8 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
+ static void free_ioctx_rcu(struct rcu_head *head)
+ {
+ 	struct kioctx *ctx = container_of(head, struct kioctx, rcu_head);
++
++	free_percpu(ctx->cpu);
+ 	kmem_cache_free(kioctx_cachep, ctx);
  }
  
-@@ -351,7 +345,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
- 	spin_unlock(&mm->ioctx_lock);
+@@ -268,7 +282,7 @@ static void free_ioctx(struct kioctx *ctx)
+ 	struct aio_ring *ring;
+ 	struct io_event res;
+ 	struct kiocb *req;
+-	unsigned head, avail;
++	unsigned cpu, head, avail;
  
--	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
-+	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		ctx, ctx->user_id, mm, ctx->ring_info.nr);
- 	return ctx;
+ 	spin_lock_irq(&ctx->ctx_lock);
  
-@@ -360,7 +354,7 @@ out_cleanup:
+@@ -282,6 +296,13 @@ static void free_ioctx(struct kioctx *ctx)
+ 
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
++	for_each_possible_cpu(cpu) {
++		struct kioctx_cpu *kcpu = per_cpu_ptr(ctx->cpu, cpu);
++
++		atomic_add(kcpu->reqs_available, &ctx->reqs_available);
++		kcpu->reqs_available = 0;
++	}
++
+ 	ring = kmap_atomic(ctx->ring_pages[0]);
+ 	head = ring->head;
+ 	kunmap_atomic(ring);
+@@ -357,10 +378,16 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ 
+ 	INIT_LIST_HEAD(&ctx->active_reqs);
+ 
+-	if (aio_setup_ring(ctx) < 0)
++	ctx->cpu = alloc_percpu(struct kioctx_cpu);
++	if (!ctx->cpu)
+ 		goto out_freectx;
+ 
++	if (aio_setup_ring(ctx) < 0)
++		goto out_freepcpu;
++
+ 	atomic_set(&ctx->reqs_available, ctx->nr);
++	ctx->req_batch = ctx->nr / (num_possible_cpus() * 4);
++	BUG_ON(!ctx->req_batch);
+ 
+ 	/* limit the number of system wide aios */
+ 	spin_lock(&aio_nr_lock);
+@@ -384,6 +411,8 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
+ out_cleanup:
+ 	err = -EAGAIN;
  	aio_free_ring(ctx);
++out_freepcpu:
++	free_percpu(ctx->cpu);
  out_freectx:
  	kmem_cache_free(kioctx_cachep, ctx);
--	dprintk("aio: error allocating ioctx %d\n", err);
-+	pr_debug("error allocating ioctx %d\n", err);
- 	return ERR_PTR(err);
+ 	pr_debug("error allocating ioctx %d\n", err);
+@@ -482,6 +511,52 @@ void exit_aio(struct mm_struct *mm)
+ 	}
  }
  
-@@ -608,8 +602,8 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
-  */
- static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
++static void put_reqs_available(struct kioctx *ctx, unsigned nr)
++{
++	struct kioctx_cpu *kcpu;
++
++	preempt_disable();
++	kcpu = this_cpu_ptr(ctx->cpu);
++
++	kcpu->reqs_available += nr;
++	while (kcpu->reqs_available >= ctx->req_batch * 2) {
++		kcpu->reqs_available -= ctx->req_batch;
++		atomic_add(ctx->req_batch, &ctx->reqs_available);
++	}
++
++	preempt_enable();
++}
++
++static bool get_reqs_available(struct kioctx *ctx)
++{
++	struct kioctx_cpu *kcpu;
++	bool ret = false;
++
++	preempt_disable();
++	kcpu = this_cpu_ptr(ctx->cpu);
++
++	if (!kcpu->reqs_available) {
++		int old, avail = atomic_read(&ctx->reqs_available);
++
++		do {
++			if (avail < ctx->req_batch)
++				goto out;
++
++			old = avail;
++			avail = atomic_cmpxchg(&ctx->reqs_available,
++					       avail, avail - ctx->req_batch);
++		} while (avail != old);
++
++		kcpu->reqs_available += ctx->req_batch;
++	}
++
++	ret = true;
++	kcpu->reqs_available--;
++out:
++	preempt_enable();
++	return ret;
++}
++
+ /* aio_get_req
+  *	Allocate a slot for an aio request.  Increments the ki_users count
+  * of the kioctx so that the kioctx stays around until all requests are
+@@ -496,7 +571,7 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
  {
--	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
--		req, atomic_long_read(&req->ki_filp->f_count));
-+	pr_debug("(%p): f_count=%ld\n",
-+		 req, atomic_long_read(&req->ki_filp->f_count));
+ 	struct kiocb *req;
  
- 	assert_spin_locked(&ctx->ctx_lock);
+-	if (atomic_dec_if_positive(&ctx->reqs_available) <= 0)
++	if (!get_reqs_available(ctx))
+ 		return NULL;
  
-@@ -720,9 +714,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	event->res = res;
- 	event->res2 = res2;
+ 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
+@@ -505,10 +580,9 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
  
--	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
--		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
--		res, res2);
-+	pr_debug("%p[%lu]: %p: %p %Lx %lx %lx\n",
-+		 ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
-+		 res, res2);
- 
- 	/* after flagging the request as done, we
- 	 * must never even look at it again
-@@ -778,9 +772,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 	int ret = 0;
- 
- 	ring = kmap_atomic(info->ring_pages[0]);
--	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
--		 (unsigned long)ring->head, (unsigned long)ring->tail,
--		 (unsigned long)ring->nr);
-+	pr_debug("h%u t%u m%u\n", ring->head, ring->tail, ring->nr);
- 
- 	if (ring->head == ring->tail)
- 		goto out;
-@@ -801,8 +793,7 @@ static int aio_read_evt(struct kioctx *ioctx, struct io_event *ent)
- 
- out:
- 	kunmap_atomic(ring);
--	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
--		 (unsigned long)ring->head, (unsigned long)ring->tail);
-+	pr_debug("%d  h%u t%u\n", ret, ring->head, ring->tail);
- 	return ret;
+ 	atomic_set(&req->ki_users, 2);
+ 	req->ki_ctx = ctx;
+-
+ 	return req;
+ out_put:
+-	atomic_inc(&ctx->reqs_available);
++	put_reqs_available(ctx, 1);
+ 	return NULL;
  }
  
-@@ -865,13 +856,13 @@ static int read_events(struct kioctx *ctx,
- 		if (unlikely(ret <= 0))
- 			break;
+@@ -597,6 +671,10 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ 	 */
+ 	if (unlikely(xchg(&iocb->ki_cancel,
+ 			  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
++		/*
++		 * Can't use the percpu reqs_available here - could race with
++		 * free_ioctx()
++		 */
+ 		atomic_inc(&ctx->reqs_available);
+ 		/* Still need the wake_up in case free_ioctx is waiting */
+ 		goto put_rq;
+@@ -737,7 +815,7 @@ static int aio_read_events_ring(struct kioctx *ctx,
  
--		dprintk("read event: %Lx %Lx %Lx %Lx\n",
--			ent.data, ent.obj, ent.res, ent.res2);
-+		pr_debug("%Lx %Lx %Lx %Lx\n",
-+			 ent.data, ent.obj, ent.res, ent.res2);
+ 	pr_debug("%d  h%u t%u\n", ret, head, ctx->tail);
  
- 		/* Could we split the check in two? */
- 		ret = -EFAULT;
- 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			dprintk("aio: lost an event due to EFAULT.\n");
-+			pr_debug("lost an event due to EFAULT.\n");
- 			break;
- 		}
- 		ret = 0;
-@@ -934,7 +925,7 @@ static int read_events(struct kioctx *ctx,
+-	atomic_add(ret, &ctx->reqs_available);
++	put_reqs_available(ctx, ret);
+ out:
+ 	mutex_unlock(&ctx->ring_lock);
  
- 		ret = -EFAULT;
- 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
--			dprintk("aio: lost an event due to EFAULT.\n");
-+			pr_debug("lost an event due to EFAULT.\n");
- 			break;
- 		}
+@@ -1156,7 +1234,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
+ 	return 0;
  
-@@ -965,7 +956,7 @@ static void io_destroy(struct kioctx *ioctx)
- 	hlist_del_rcu(&ioctx->list);
- 	spin_unlock(&mm->ioctx_lock);
- 
--	dprintk("aio_release(%p)\n", ioctx);
-+	pr_debug("(%p)\n", ioctx);
- 	if (likely(!was_dead))
- 		put_ioctx(ioctx);	/* twice for the list */
- 
-@@ -1258,7 +1249,7 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 			kiocb->ki_retry = aio_fsync;
- 		break;
- 	default:
--		dprintk("EINVAL: io_submit: no operation provided\n");
-+		pr_debug("EINVAL: no operation provided\n");
- 		ret = -EINVAL;
- 	}
- 
-@@ -1278,7 +1269,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 
- 	/* enforce forwards compatibility on users */
- 	if (unlikely(iocb->aio_reserved1 || iocb->aio_reserved2)) {
--		pr_debug("EINVAL: io_submit: reserve field set\n");
-+		pr_debug("EINVAL: reserve field set\n");
- 		return -EINVAL;
- 	}
- 
-@@ -1319,7 +1310,7 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 
- 	ret = put_user(req->ki_key, &user_iocb->aio_key);
- 	if (unlikely(ret)) {
--		dprintk("EFAULT: aio_key\n");
-+		pr_debug("EFAULT: aio_key\n");
- 		goto out_put_req;
- 	}
- 
-@@ -1400,7 +1391,7 @@ long do_io_submit(aio_context_t ctx_id, long nr,
- 
- 	ctx = lookup_ioctx(ctx_id);
- 	if (unlikely(!ctx)) {
--		pr_debug("EINVAL: io_submit: invalid context id\n");
-+		pr_debug("EINVAL: invalid context id\n");
- 		return -EINVAL;
- 	}
- 
+ out_put_req:
+-	atomic_inc(&ctx->reqs_available);
++	put_reqs_available(ctx, 1);
+ 	aio_put_req(req);	/* drop extra ref to req */
+ 	aio_put_req(req);	/* drop i/o ref to req */
+ 	return ret;
 -- 
 1.7.12
 
