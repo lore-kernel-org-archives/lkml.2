@@ -1,127 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab2L0PbK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 10:31:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62523 "EHLO mx1.redhat.com"
+	id S1752969Ab2L0Pmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 10:42:49 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:52154 "EHLO mxout2.iskon.hr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686Ab2L0PbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 10:31:08 -0500
-Date: Thu, 27 Dec 2012 16:30:20 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrey Wagin <avagin@gmail.com>
-Cc: Andrew Vagin <avagin@parallels.com>, Pavel Emelyanov <xemul@parallels.com>,
-        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
-        criu@openvz.org, Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>
-Subject: Re: [CRIU] [PATCH 1/4] signalfd: add ability to return siginfo in
-	a raw format
-Message-ID: <20121227153020.GA1864@redhat.com>
-References: <1356336807-5517-2-git-send-email-avagin@openvz.org> <20121224165306.GA9553@redhat.com> <CANaxB-x=fQROdwD1OyU8=Ai9tXWm9QTSsGgfKvPbjn57ER6aZg@mail.gmail.com> <20121225143043.GA1813@redhat.com> <20121225152716.GA3198@redhat.com> <50D9C8E9.6020602@parallels.com> <20121225165803.GA9066@redhat.com> <20121226144751.GA18767@paralelels.com> <20121226163112.GA6593@redhat.com> <20121227143626.GA15154@gmail.com>
+	id S1752686Ab2L0Pmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 10:42:47 -0500
+X-Remote-IP: 213.191.128.133
+Date: Thu, 27 Dec 2012 16:42:39 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121227143626.GA15154@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Hillf Danton <dhillf@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <50D24AF3.1050809@iskon.hr> <50D24CD9.8070507@iskon.hr> <CAJd=RBCQN1GxOUCwGPXL27d_q8hv50uHK5LhDnsv7mdv_2Usaw@mail.gmail.com>
+In-Reply-To: <CAJd=RBCQN1GxOUCwGPXL27d_q8hv50uHK5LhDnsv7mdv_2Usaw@mail.gmail.com>
+X-Spam-Score: ##
+Message-ID: <50DC6C6F.6050703@iskon.hr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o congestion
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121227 #8894572, check: 20121227 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40781 [Dec 27 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27, Andrey Wagin wrote:
+On 21.12.2012 12:51, Hillf Danton wrote:
+> On Thu, Dec 20, 2012 at 7:25 AM, Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
+>>   static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>>                                                          int *classzone_idx)
+>>   {
+>> -       int all_zones_ok;
+>> +       struct zone *unbalanced_zone;
 >
-> On Wed, Dec 26, 2012 at 05:31:12PM +0100, Oleg Nesterov wrote:
-> >
-> > So I think we should not use llseek. But, probably we can rely on pread() ?
-> > This way we can avoid the problem above, and this looks even simpler.
+> nit: less hunks if not erase that mark
 >
-> Yes. It is a good idea. A new patch is attached to this email. I
-> implemented pread for signalfd and fixed all your previous comments.
->
-> +static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
-> +				siginfo_t *info, unsigned long ppos)
-> +{
-> +	struct sigpending *pending;
-> +	struct sigqueue *q;
-> +	bool group = 0;
-> +	loff_t seq, i;
-> +	int ret = 0;
-> +
-> +	if (ppos < SIGNALFD_PRIVATE_OFFSET)
-> +		return -EINVAL;
-> +
-> +	if (ppos >= SIGNALFD_SHARED_OFFSET) {
-> +		seq = ppos - SIGNALFD_SHARED_OFFSET;
-> +		group = 1;
-> +	} else
-> +		seq = ppos - SIGNALFD_PRIVATE_OFFSET;
-> +
-> +	spin_lock_irq(&current->sighand->siglock);
-> +
-> +	if (group)
-> +		pending = &current->signal->shared_pending;
-> +	else
-> +		pending = &current->pending;
+> Hillf
 
-Oh, this looks overcomplicated. Why do you need "bool group" ? Just do
+This one left unanswered and forgotten because I didn't understand what 
+you meant. Could you elaborate?
 
-	if (ppos > SHARED) {
-		seq = ppos - SHARED;
-		pending = &current->signal->shared_pending;
-	} else if (ppos > PRIVATE) {
-		seq = ppos - PRIVATE;
-		pending = &current->pending;
-	} else {
-		return -EINVAL;
-	}
-
-	spin_lock_irq(&current->sighand->siglock);
-	...
-
-note also I made the PRIVATE/SHARED checks more symmetric, but this is minor.
-
-In fact I think "loff_t i" is not needed as well. You can check --seq == 0
-instead in the loop below, but this is up to you.
-
-> @@ -230,7 +274,11 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
->
->  	siginfo = (struct signalfd_siginfo __user *) buf;
->  	do {
-> -		ret = signalfd_dequeue(ctx, &info, nonblock);
-> +		if (*ppos == 0)
-> +			ret = signalfd_dequeue(ctx, &info, nonblock);
-> +		else
-> +			ret = signalfd_peek(ctx, &info, *ppos);
-
-I think it would be better to pass ppos, not *ppos, because ...
-
-> +		if (*ppos)
-> +			(*ppos)++;
-
-in this case we can update *ppos in signalfd_peek() and simplify the
-code a bit.
-
-Compared to the previous version it is "safe" to change *ppos even if
-copy_to_user() fails, *ppos will be "lost" anyway after we return.
-
-> @@ -321,6 +372,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
->  		}
->
->  		file->f_flags |= flags & SFD_RAW;
-> +		file->f_mode |= FMODE_PREAD;
->
->  		fd_install(ufd, file);
-
-Hmm. Looks like it is based on other patches I didnt see...
-
-But I don't understand how FMODE_PREAD connects to this patch, we need
-this flag set even for regular sys_read() ???
-
-> +#define SIGNALFD_SHARED_OFFSET (1LL << 62)
-
-OK... this assumes we are not going to add more SIGNAL_*_OFFSET's, and
-probably this is true...
-
-Oleg.
-
+-- 
+Zlatko
