@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2L0CIY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:08:24 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:34992 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab2L0CIT (ORCPT
+	id S1752481Ab2L0CIn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:08:43 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:38532 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab2L0CIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:08:19 -0500
+	Wed, 26 Dec 2012 21:08:21 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu
-Subject: [PATCH 19/32] aio: Kill struct aio_ring_info
-Date: Wed, 26 Dec 2012 17:59:58 -0800
-Message-Id: <1356573611-18590-22-git-send-email-koverstreet@google.com>
+Cc: Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Kent Overstreet <koverstreet@google.com>
+Subject: [PATCH 03/32] gadget: remove only user of aio retry
+Date: Wed, 26 Dec 2012 17:59:40 -0800
+Message-Id: <1356573611-18590-4-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
@@ -23,379 +23,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct aio_ring_info was kind of odd, the only place it's used is where
-it's embedded in struct kioctx - there's no real need for it.
+From: Zach Brown <zab@redhat.com>
 
-The next patch rearranges struct kioctx and puts various things on their
-own cachelines - getting rid of struct aio_ring_info now makes that
-reordering a bit clearer.
+This removes the only in-tree user of aio retry.  This will let us
+remove the retry code from the aio core.
 
+Removing retry is relatively easy as the USB gadget wasn't using it to
+retry IOs at all.  It always fully submitted the IO in the context of
+the initial io_submit() call.  It only used the AIO retry facility to
+get the submitter's mm context for copying the result of a read back to
+user space.  This is easy to implement with use_mm() and a work struct,
+much like kvm does with async_pf_execute() for get_user_pages().
+
+Signed-off-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- fs/aio.c | 149 ++++++++++++++++++++++++++++++---------------------------------
- 1 file changed, 71 insertions(+), 78 deletions(-)
+ drivers/usb/gadget/inode.c | 38 +++++++++++++++++++++++++++++---------
+ 1 file changed, 29 insertions(+), 9 deletions(-)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 5ca383e..96fbd6b 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -58,18 +58,6 @@ struct aio_ring {
- }; /* 128 bytes + ring size */
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index 76494ca..2a3f001 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -24,6 +24,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/poll.h>
++#include <linux/mmu_context.h>
  
- #define AIO_RING_PAGES	8
--struct aio_ring_info {
--	unsigned long		mmap_base;
--	unsigned long		mmap_size;
--
--	struct page		**ring_pages;
--	struct mutex		ring_lock;
--	long			nr_pages;
--
--	unsigned		nr, tail;
--
--	struct page		*internal_pages[AIO_RING_PAGES];
--};
- 
- struct kioctx {
- 	atomic_t		users;
-@@ -86,12 +74,27 @@ struct kioctx {
- 	atomic_t		reqs_active;
- 	struct list_head	active_reqs;	/* used for cancellation */
- 
-+	unsigned		nr;
-+
- 	/* sys_io_setup currently limits this to an unsigned int */
- 	unsigned		max_reqs;
- 
--	struct aio_ring_info	ring_info;
-+	unsigned long		mmap_base;
-+	unsigned long		mmap_size;
-+
-+	struct page		**ring_pages;
-+	long			nr_pages;
- 
--	spinlock_t		completion_lock;
-+	struct {
-+		struct mutex	ring_lock;
-+	} ____cacheline_aligned;
-+
-+	struct {
-+		unsigned	tail;
-+		spinlock_t	completion_lock;
-+	} ____cacheline_aligned;
-+
-+	struct page		*internal_pages[AIO_RING_PAGES];
- 
- 	struct rcu_head		rcu_head;
- 	struct work_struct	rcu_work;
-@@ -123,26 +126,21 @@ __initcall(aio_setup);
- 
- static void aio_free_ring(struct kioctx *ctx)
- {
--	struct aio_ring_info *info = &ctx->ring_info;
- 	long i;
- 
--	for (i=0; i<info->nr_pages; i++)
--		put_page(info->ring_pages[i]);
-+	for (i = 0; i < ctx->nr_pages; i++)
-+		put_page(ctx->ring_pages[i]);
- 
--	if (info->mmap_size) {
--		vm_munmap(info->mmap_base, info->mmap_size);
--	}
-+	if (ctx->mmap_size)
-+		vm_munmap(ctx->mmap_base, ctx->mmap_size);
- 
--	if (info->ring_pages && info->ring_pages != info->internal_pages)
--		kfree(info->ring_pages);
--	info->ring_pages = NULL;
--	info->nr = 0;
-+	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages)
-+		kfree(ctx->ring_pages);
+ #include <linux/device.h>
+ #include <linux/moduleparam.h>
+@@ -514,6 +515,9 @@ static long ep_ioctl(struct file *fd, unsigned code, unsigned long value)
+ struct kiocb_priv {
+ 	struct usb_request	*req;
+ 	struct ep_data		*epdata;
++	struct kiocb 		*iocb;
++	struct mm_struct 	*mm;
++	struct work_struct	work;
+ 	void			*buf;
+ 	const struct iovec	*iv;
+ 	unsigned long		nr_segs;
+@@ -541,15 +545,12 @@ static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
+ 	return value;
  }
  
- static int aio_setup_ring(struct kioctx *ctx)
+-static ssize_t ep_aio_read_retry(struct kiocb *iocb)
++static ssize_t ep_copy_to_user(struct kiocb_priv *priv)
  {
- 	struct aio_ring *ring;
--	struct aio_ring_info *info = &ctx->ring_info;
- 	unsigned nr_events = ctx->max_reqs;
- 	struct mm_struct *mm = current->mm;
- 	unsigned long size;
-@@ -160,42 +158,42 @@ static int aio_setup_ring(struct kioctx *ctx)
+-	struct kiocb_priv	*priv = iocb->private;
+ 	ssize_t			len, total;
+ 	void			*to_copy;
+ 	int			i;
  
- 	nr_events = (PAGE_SIZE * nr_pages - sizeof(struct aio_ring)) / sizeof(struct io_event);
- 
--	info->nr = 0;
--	info->ring_pages = info->internal_pages;
-+	ctx->nr = 0;
-+	ctx->ring_pages = ctx->internal_pages;
- 	if (nr_pages > AIO_RING_PAGES) {
--		info->ring_pages = kcalloc(nr_pages, sizeof(struct page *), GFP_KERNEL);
--		if (!info->ring_pages)
-+		ctx->ring_pages = kcalloc(nr_pages, sizeof(struct page *), GFP_KERNEL);
-+		if (!ctx->ring_pages)
- 			return -ENOMEM;
- 	}
- 
--	info->mmap_size = nr_pages * PAGE_SIZE;
--	pr_debug("attempting mmap of %lu bytes\n", info->mmap_size);
-+	ctx->mmap_size = nr_pages * PAGE_SIZE;
-+	pr_debug("attempting mmap of %lu bytes\n", ctx->mmap_size);
- 	down_write(&mm->mmap_sem);
--	info->mmap_base = do_mmap_pgoff(NULL, 0, info->mmap_size, 
--					PROT_READ|PROT_WRITE,
--					MAP_ANONYMOUS|MAP_PRIVATE, 0);
--	if (IS_ERR((void *)info->mmap_base)) {
-+	ctx->mmap_base = do_mmap_pgoff(NULL, 0, ctx->mmap_size,
-+				       PROT_READ|PROT_WRITE,
-+				       MAP_ANONYMOUS|MAP_PRIVATE, 0);
-+	if (IS_ERR((void *)ctx->mmap_base)) {
- 		up_write(&mm->mmap_sem);
--		info->mmap_size = 0;
-+		ctx->mmap_size = 0;
- 		aio_free_ring(ctx);
- 		return -EAGAIN;
- 	}
- 
--	pr_debug("mmap address: 0x%08lx\n", info->mmap_base);
--	info->nr_pages = get_user_pages(current, mm, info->mmap_base, nr_pages, 
--					1, 0, info->ring_pages, NULL);
-+	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
-+	ctx->nr_pages = get_user_pages(current, mm, ctx->mmap_base, nr_pages,
-+				       1, 0, ctx->ring_pages, NULL);
- 	up_write(&mm->mmap_sem);
- 
--	if (unlikely(info->nr_pages != nr_pages)) {
-+	if (unlikely(ctx->nr_pages != nr_pages)) {
- 		aio_free_ring(ctx);
- 		return -EAGAIN;
- 	}
- 
--	ctx->user_id = info->mmap_base;
-+	ctx->user_id = ctx->mmap_base;
- 
--	info->nr = nr_events;		/* trusted copy */
-+	ctx->nr = nr_events;		/* trusted copy */
- 
--	ring = kmap_atomic(info->ring_pages[0]);
-+	ring = kmap_atomic(ctx->ring_pages[0]);
- 	ring->nr = nr_events;	/* user copy */
- 	ring->id = ctx->user_id;
- 	ring->head = ring->tail = 0;
-@@ -204,7 +202,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	ring->incompat_features = AIO_RING_INCOMPAT_FEATURES;
- 	ring->header_length = sizeof(struct aio_ring);
- 	kunmap_atomic(ring);
--	flush_dcache_page(info->ring_pages[0]);
-+	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	return 0;
- }
-@@ -264,7 +262,6 @@ static void free_ioctx_rcu(struct rcu_head *head)
-  */
- static void free_ioctx(struct kioctx *ctx)
- {
--	struct aio_ring_info *info = &ctx->ring_info;
- 	struct aio_ring *ring;
- 	struct io_event res;
- 	struct kiocb *req;
-@@ -282,18 +279,18 @@ static void free_ioctx(struct kioctx *ctx)
- 
- 	spin_unlock_irq(&ctx->ctx_lock);
- 
--	ring = kmap_atomic(info->ring_pages[0]);
-+	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
- 	kunmap_atomic(ring);
- 
- 	while (atomic_read(&ctx->reqs_active) > 0) {
--		wait_event(ctx->wait, head != info->tail);
-+		wait_event(ctx->wait, head != ctx->tail);
- 
--		avail = (head < info->tail ? info->tail : info->nr) - head;
-+		avail = (head < ctx->tail ? ctx->tail : ctx->nr) - head;
- 
- 		atomic_sub(avail, &ctx->reqs_active);
- 		head += avail;
--		head %= info->nr;
-+		head %= ctx->nr;
- 	}
- 
- 	WARN_ON(atomic_read(&ctx->reqs_active) < 0);
-@@ -352,7 +349,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	atomic_set(&ctx->dead, 0);
- 	spin_lock_init(&ctx->ctx_lock);
- 	spin_lock_init(&ctx->completion_lock);
--	mutex_init(&ctx->ring_info.ring_lock);
-+	mutex_init(&ctx->ring_lock);
- 	init_waitqueue_head(&ctx->wait);
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
-@@ -376,7 +373,7 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	spin_unlock(&mm->ioctx_lock);
- 
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
--		ctx, ctx->user_id, mm, ctx->ring_info.nr);
-+		 ctx, ctx->user_id, mm, ctx->nr);
- 	return ctx;
- 
- out_cleanup:
-@@ -471,7 +468,7 @@ void exit_aio(struct mm_struct *mm)
- 		 * just set it to 0; aio_free_ring() is the only
- 		 * place that uses ->mmap_size, so it's safe.
- 		 */
--		ctx->ring_info.mmap_size = 0;
-+		ctx->mmap_size = 0;
- 
- 		if (!atomic_xchg(&ctx->dead, 1)) {
- 			hlist_del_rcu(&ctx->list);
-@@ -494,10 +491,10 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx)
- {
- 	struct kiocb *req;
- 
--	if (atomic_read(&ctx->reqs_active) >= ctx->ring_info.nr)
-+	if (atomic_read(&ctx->reqs_active) >= ctx->nr)
- 		return NULL;
- 
--	if (atomic_inc_return(&ctx->reqs_active) > ctx->ring_info.nr)
-+	if (atomic_inc_return(&ctx->reqs_active) > ctx->nr)
- 		goto out_put;
- 
- 	req = kmem_cache_alloc(kiocb_cachep, GFP_KERNEL|__GFP_ZERO);
-@@ -558,7 +555,6 @@ static struct kioctx *lookup_ioctx(unsigned long ctx_id)
- void aio_complete(struct kiocb *iocb, long res, long res2)
- {
- 	struct kioctx	*ctx = iocb->ki_ctx;
--	struct aio_ring_info	*info;
- 	struct aio_ring	*ring;
- 	struct io_event	*ev_page, *event;
- 	unsigned long	flags;
-@@ -579,8 +575,6 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 		return;
- 	}
- 
--	info = &ctx->ring_info;
+-	/* we "retry" to get the right mm context for this: */
 -
- 	/*
- 	 * Take rcu_read_lock() in case the kioctx is being destroyed, as we
- 	 * need to issue a wakeup after decrementing reqs_active.
-@@ -613,13 +607,13 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	 */
- 	spin_lock_irqsave(&ctx->completion_lock, flags);
- 
--	tail = info->tail;
-+	tail = ctx->tail;
- 	pos = tail + AIO_EVENTS_OFFSET;
- 
--	if (++tail >= info->nr)
-+	if (++tail >= ctx->nr)
- 		tail = 0;
- 
--	ev_page = kmap_atomic(info->ring_pages[pos / AIO_EVENTS_PER_PAGE]);
-+	ev_page = kmap_atomic(ctx->ring_pages[pos / AIO_EVENTS_PER_PAGE]);
- 	event = ev_page + pos % AIO_EVENTS_PER_PAGE;
- 
- 	event->obj = (u64)(unsigned long)iocb->ki_obj.user;
-@@ -628,7 +622,7 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	event->res2 = res2;
- 
- 	kunmap_atomic(ev_page);
--	flush_dcache_page(info->ring_pages[pos / AIO_EVENTS_PER_PAGE]);
-+	flush_dcache_page(ctx->ring_pages[pos / AIO_EVENTS_PER_PAGE]);
- 
- 	pr_debug("%p[%u]: %p: %p %Lx %lx %lx\n",
- 		 ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
-@@ -639,12 +633,12 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	 */
- 	smp_wmb();	/* make event visible before updating tail */
- 
--	info->tail = tail;
-+	ctx->tail = tail;
- 
--	ring = kmap_atomic(info->ring_pages[0]);
-+	ring = kmap_atomic(ctx->ring_pages[0]);
- 	ring->tail = tail;
- 	kunmap_atomic(ring);
--	flush_dcache_page(info->ring_pages[0]);
-+	flush_dcache_page(ctx->ring_pages[0]);
- 
- 	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
-@@ -684,33 +678,32 @@ EXPORT_SYMBOL(aio_complete);
- static int aio_read_events_ring(struct kioctx *ctx,
- 				struct io_event __user *event, long nr)
- {
--	struct aio_ring_info *info = &ctx->ring_info;
- 	struct aio_ring *ring;
- 	unsigned head, pos;
- 	int ret = 0, copy_ret;
- 
--	if (!mutex_trylock(&info->ring_lock)) {
-+	if (!mutex_trylock(&ctx->ring_lock)) {
- 		__set_current_state(TASK_RUNNING);
--		mutex_lock(&info->ring_lock);
-+		mutex_lock(&ctx->ring_lock);
- 	}
- 
--	ring = kmap_atomic(info->ring_pages[0]);
-+	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
- 	kunmap_atomic(ring);
- 
--	pr_debug("h%u t%u m%u\n", head, info->tail, info->nr);
-+	pr_debug("h%u t%u m%u\n", head, ctx->tail, ctx->nr);
- 
--	if (head == info->tail)
-+	if (head == ctx->tail)
- 		goto out;
- 
- 	__set_current_state(TASK_RUNNING);
- 
- 	while (ret < nr) {
--		unsigned i = (head < info->tail ? info->tail : info->nr) - head;
-+		unsigned i = (head < ctx->tail ? ctx->tail : ctx->nr) - head;
- 		struct io_event *ev;
- 		struct page *page;
- 
--		if (head == info->tail)
-+		if (head == ctx->tail)
+ 	/* copy stuff into user buffers */
+ 	total = priv->actual;
+ 	len = 0;
+@@ -569,9 +570,26 @@ static ssize_t ep_aio_read_retry(struct kiocb *iocb)
+ 		if (total == 0)
  			break;
- 
- 		i = min_t(int, i, nr - ret);
-@@ -718,7 +711,7 @@ static int aio_read_events_ring(struct kioctx *ctx,
- 			  ((head + AIO_EVENTS_OFFSET) % AIO_EVENTS_PER_PAGE));
- 
- 		pos = head + AIO_EVENTS_OFFSET;
--		page = info->ring_pages[pos / AIO_EVENTS_PER_PAGE];
-+		page = ctx->ring_pages[pos / AIO_EVENTS_PER_PAGE];
- 		pos %= AIO_EVENTS_PER_PAGE;
- 
- 		ev = kmap(page);
-@@ -732,19 +725,19 @@ static int aio_read_events_ring(struct kioctx *ctx,
- 
- 		ret += i;
- 		head += i;
--		head %= info->nr;
-+		head %= ctx->nr;
  	}
- 
--	ring = kmap_atomic(info->ring_pages[0]);
-+	ring = kmap_atomic(ctx->ring_pages[0]);
- 	ring->head = head;
- 	kunmap_atomic(ring);
--	flush_dcache_page(info->ring_pages[0]);
-+	flush_dcache_page(ctx->ring_pages[0]);
- 
--	pr_debug("%d  h%u t%u\n", ret, head, info->tail);
-+	pr_debug("%d  h%u t%u\n", ret, head, ctx->tail);
- 
- 	atomic_sub(ret, &ctx->reqs_active);
- out:
--	mutex_unlock(&info->ring_lock);
-+	mutex_unlock(&ctx->ring_lock);
- 
- 	return ret;
++
++	return len;
++}
++
++static void ep_user_copy_worker(struct work_struct *work)
++{
++	struct kiocb_priv *priv = container_of(work, struct kiocb_priv, work);
++	struct mm_struct *mm = priv->mm;
++	struct kiocb *iocb = priv->iocb;
++	size_t ret;
++
++	use_mm(mm);
++	ret = ep_copy_to_user(priv);
++	unuse_mm(mm);
++
++	/* completing the iocb can drop the ctx and mm, don't touch mm after */
++	aio_complete(iocb, ret, ret);
++
+ 	kfree(priv->buf);
+ 	kfree(priv);
+-	return len;
  }
+ 
+ static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
+@@ -597,14 +615,14 @@ static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
+ 		aio_complete(iocb, req->actual ? req->actual : req->status,
+ 				req->status);
+ 	} else {
+-		/* retry() won't report both; so we hide some faults */
++		/* ep_copy_to_user() won't report both; we hide some faults */
+ 		if (unlikely(0 != req->status))
+ 			DBG(epdata->dev, "%s fault %d len %d\n",
+ 				ep->name, req->status, req->actual);
+ 
+ 		priv->buf = req->buf;
+ 		priv->actual = req->actual;
+-		kick_iocb(iocb);
++		schedule_work(&priv->work);
+ 	}
+ 	spin_unlock(&epdata->dev->lock);
+ 
+@@ -634,8 +652,10 @@ fail:
+ 		return value;
+ 	}
+ 	iocb->private = priv;
++	priv->iocb = iocb;
+ 	priv->iv = iv;
+ 	priv->nr_segs = nr_segs;
++	INIT_WORK(&priv->work, ep_user_copy_worker);
+ 
+ 	value = get_ready_ep(iocb->ki_filp->f_flags, epdata);
+ 	if (unlikely(value < 0)) {
+@@ -647,6 +667,7 @@ fail:
+ 	get_ep(epdata);
+ 	priv->epdata = epdata;
+ 	priv->actual = 0;
++	priv->mm = current->mm; /* mm teardown waits for iocbs in exit_aio() */
+ 
+ 	/* each kiocb is coupled to one usb_request, but we can't
+ 	 * allocate or submit those if the host disconnected.
+@@ -675,7 +696,7 @@ fail:
+ 		kfree(priv);
+ 		put_ep(epdata);
+ 	} else
+-		value = (iv ? -EIOCBRETRY : -EIOCBQUEUED);
++		value = -EIOCBQUEUED;
+ 	return value;
+ }
+ 
+@@ -693,7 +714,6 @@ ep_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 	if (unlikely(!buf))
+ 		return -ENOMEM;
+ 
+-	iocb->ki_retry = ep_aio_read_retry;
+ 	return ep_aio_rwtail(iocb, buf, iocb->ki_left, epdata, iov, nr_segs);
+ }
+ 
 -- 
 1.7.12
 
