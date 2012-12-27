@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751833Ab2L0AcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 19:32:04 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:33646 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab2L0AcA (ORCPT
+	id S1751699Ab2L0Aqb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 19:46:31 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:47430 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750918Ab2L0Aq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 19:32:00 -0500
+	Wed, 26 Dec 2012 19:46:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
-	<535932623.34838584.1356410331076.JavaMail.root@redhat.com>
-	<CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
-Date: Thu, 27 Dec 2012 03:31:59 +0300
-Message-ID: <CAA1sL1TNq5QiA_6A9+qNjndr0dRL37hhhHgvvLLqr6tgj7CgOw@mail.gmail.com>
-Subject: Re: kernel BUG at mm/huge_memory.c:1798!
-From: Alexander Beregalov <a.beregalov@gmail.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, mgorman@suse.de,
-        hughd@google.com, Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20121127064618.GM25516@redhat.com>
+References: <F9E001219150CB45BEDC82A650F360C90146F4DA@G4W3208.americas.hpqcorp.net>
+ <20121120134104.GI27378@stefanha-thinkpad.redhat.com> <F9E001219150CB45BEDC82A650F360C90147066B@G4W3208.americas.hpqcorp.net>
+ <20121126234612.GC10634@amt.cnet> <20121127064618.GM25516@redhat.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 26 Dec 2012 17:46:05 -0700
+Message-ID: <CAErSpo6c-_Wy0doXKhuFvZs=S+_taDAk7b7893vOX3VihuvhRA@mail.gmail.com>
+Subject: Re: [Qemu-devel] [PATCH 0/4] AER-KVM: Error containment of PCI
+ pass-thru devices assigned to KVM guests
+To: Gleb Natapov <gleb@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>,
+        "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 December 2012 16:05, Hillf Danton <dhillf@gmail.com> wrote:
-> On Tue, Dec 25, 2012 at 12:38 PM, Zhouping Liu <zliu@redhat.com> wrote:
->> Hello all,
+On Mon, Nov 26, 2012 at 11:46 PM, Gleb Natapov <gleb@redhat.com> wrote:
+> On Mon, Nov 26, 2012 at 09:46:12PM -0200, Marcelo Tosatti wrote:
+>> On Tue, Nov 20, 2012 at 02:09:46PM +0000, Pandarathil, Vijaymohan R wrote:
+>> >
+>> >
+>> > > -----Original Message-----
+>> > > From: Stefan Hajnoczi [mailto:stefanha@gmail.com]
+>> > > Sent: Tuesday, November 20, 2012 5:41 AM
+>> > > To: Pandarathil, Vijaymohan R
+>> > > Cc: kvm@vger.kernel.org; linux-pci@vger.kernel.org; qemu-devel@nongnu.org;
+>> > > linux-kernel@vger.kernel.org
+>> > > Subject: Re: [PATCH 0/4] AER-KVM: Error containment of PCI pass-thru
+>> > > devices assigned to KVM guests
+>> > >
+>> > > On Tue, Nov 20, 2012 at 06:31:48AM +0000, Pandarathil, Vijaymohan R wrote:
+>> > > > Add support for error containment when a PCI pass-thru device assigned to
+>> > > a KVM
+>> > > > guest encounters an error. This is for PCIe devices/drivers that support
+>> > > AER
+>> > > > functionality. When the OS is notified of an error in a device either
+>> > > > through the firmware first approach or through an interrupt handled by
+>> > > the AER
+>> > > > root port driver, concerned subsystems are notified by invoking callbacks
+>> > > > registered by these subsystems. The device is also marked as tainted till
+>> > > the
+>> > > > corresponding driver recovery routines are successful.
+>> > > >
+>> > > > KVM module registers for a notification of such errors. In the KVM
+>> > > callback
+>> > > > routine, a global counter is incremented to keep track of the error
+>> > > > notification. Before each CPU enters guest mode to execute guest code,
+>> > > > appropriate checks are done to see if the impacted device belongs to the
+>> > > guest
+>> > > > or not. If the device belongs to the guest, qemu hypervisor for the guest
+>> > > is
+>> > > > informed and the guest is immediately brought down, thus preventing or
+>> > > > minimizing chances of any bad data being written out by the guest driver
+>> > > > after the device has encountered an error.
+>> > >
+>> > > I'm surprised that the hypervisor would shut down the guest when PCIe
+>> > > AER kicks in for a pass-through device.  Shouldn't we pass the AER event
+>> > > into the guest and deal with it there?
+>> >
+>> > Agreed. That would be the ideal behavior and is planned in a future patch.
+>> > Lack of control over the capabilities/type of the OS/drivers running in
+>> > the guest is also a concern in passing along the event to the guest.
+>> >
+>> > My understanding is that in the current implementation of Linux/KVM, these
+>> > errors are not handled at all and can potentially cause a guest hang or
+>> > crash or even data corruption depending on the implementation of the guest
+>> > driver for the device. As a first step, these patches make the behavior
+>> > better by doing error containment with a predictable behavior when such
+>> > errors occur.
 >>
->> I found the below kernel bug using latest mainline(637704cbc95),
->> my hardware has 2 numa nodes, and it's easy to reproduce the issue
->> using LTP test case: "# ./mmap10 -a -s -c 200":
->
-> Can you test with 5a505085f0 and 4fc3f1d66b1 reverted?
->
+>> For both ACPI notifications and Linux PCI AER driver there is a way for
+>> the PCI driver to receive a notification, correct?
+>>
+>> Can just have virt/kvm/assigned-dev.c code register such a notifier (as
+>> a "PCI driver") and then perform appropriate action?
+>>
+>> Also the semantics of "tainted driver" is not entirely clear.
+>>
+>> Is there any reason for not having this feature for VFIO only, as KVM
+>> device assigment is being phased out?
+>>
+> Exactly. We shouldn't add checks to guest entry code and introduce new
+> userspace ABI to add minor feature to deprecated code. New userspace ABI
+> means that QEMU changes are needed, so the feature will be fully functional
+> only with latest QEMU which is capable of using VFIO anyway.
 
-Hello,
-does it look like the same problem?
+I'm ignoring these patches for now.  Please address the review
+comments if you think we still need to do something here.
 
-mapcount 0 page_mapcount 1
-------------[ cut here ]------------
-kernel BUG at mm/huge_memory.c:1798!
-invalid opcode: 0000 [#1] PREEMPT SMP
-Modules linked in: r8169 radeon cfbfillrect cfbimgblt cfbcopyarea
-i2c_algo_bit backlight drm_kms_helper ttm drm agpgart
-CPU 3
-Pid: 15825, comm: firefox Not tainted 3.8.0-rc1-00004-g637704c #1
-Gigabyte Technology Co., Ltd. P35-DS3/P35-DS3
-RIP: 0010:[<ffffffff810e89c9>]  [<ffffffff810e89c9>] split_huge_page+0x739/0x7a0
-RSP: 0018:ffff880193b43b78  EFLAGS: 00010297
-RAX: 0000000000000001 RBX: ffffea0002fd0000 RCX: ffffffff8175e078
-RDX: 000000000000003e RSI: ffffea0002fd0000 RDI: 0000000000000246
-RBP: ffff880193b43c48 R08: 000000000000ffff R09: 0000000000000000
-R10: 00000000000002d5 R11: 0000000000000000 R12: 0000000000000000
-R13: ffff880173533464 R14: 00007f0973000000 R15: ffffea0002fd0000
-FS:  00007f09b8db6740(0000) GS:ffff88019fd80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007ff210e78008 CR3: 0000000195379000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process firefox (pid: 15825, threadinfo ffff880193b42000, task ffff880198af9f90)
-Stack:
- 0000000000000000 ffff880193b43e1c 0000000000000000 0000000000000019
- ffff880193b43c08 ffff880100000000 ffff88017af80180 ffff880100000000
- ffff880173533400 ffff880198af9f90 000000009fc91540 ffff88017af801b0
-Call Trace:
- [<ffffffff810e9d74>] __split_huge_page_pmd+0xe4/0x280
- [<ffffffff810a9b9e>] ? free_hot_cold_page_list+0x3e/0x60
- [<ffffffff810c22cd>] unmap_single_vma+0x77d/0x820
- [<ffffffff810c2c14>] zap_page_range+0xa4/0xe0
- [<ffffffff813d9846>] ? sys_recvfrom+0xd6/0x120
- [<ffffffff810bfa7d>] sys_madvise+0x31d/0x660
- [<ffffffff81482b2d>] system_call_fastpath+0x1a/0x1f
-Code: 83 39 00 f3 90 49 8b 45 00 a9 00 00 80 00 75 f3 41 ff 84 24 44
-e0 ff ff f0 41 0f ba 6d 00 17 19 c0 85 c0 0f 84 d7 fa ff ff eb c8 <0f>
-0b 8b 53 18 8b 75 9c ff c2 48 c7 c7 60 95 5c 81 31 c0 e8 ac
-RIP  [<ffffffff810e89c9>] split_huge_page+0x739/0x7a0
- RSP <ffff880193b43b78>
+Bjorn
