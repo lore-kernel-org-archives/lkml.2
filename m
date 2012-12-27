@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752969Ab2L0Pmt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 10:42:49 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:52154 "EHLO mxout2.iskon.hr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686Ab2L0Pmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 10:42:47 -0500
-X-Remote-IP: 213.191.128.133
-Date: Thu, 27 Dec 2012 16:42:39 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1753051Ab2L0Pqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 10:46:45 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:39974 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752804Ab2L0Pql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 10:46:41 -0500
+Message-ID: <50DC6D5D.30806@lwfinger.net>
+Date: Thu, 27 Dec 2012 09:46:37 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <50D24AF3.1050809@iskon.hr> <50D24CD9.8070507@iskon.hr> <CAJd=RBCQN1GxOUCwGPXL27d_q8hv50uHK5LhDnsv7mdv_2Usaw@mail.gmail.com>
-In-Reply-To: <CAJd=RBCQN1GxOUCwGPXL27d_q8hv50uHK5LhDnsv7mdv_2Usaw@mail.gmail.com>
-X-Spam-Score: ##
-Message-ID: <50DC6C6F.6050703@iskon.hr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org
+Subject: Re: Regression in kernel 3.8-rc1 bisected to commit adfa79d: I now
+ get many "unable to enumerate USB device" messages
+References: <Pine.LNX.4.44L0.1212262251280.25450-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1212262251280.25450-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Subject: Re: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o congestion
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121227 #8894572, check: 20121227 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40781 [Dec 27 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.12.2012 12:51, Hillf Danton wrote:
-> On Thu, Dec 20, 2012 at 7:25 AM, Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
->>   static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
->>                                                          int *classzone_idx)
->>   {
->> -       int all_zones_ok;
->> +       struct zone *unbalanced_zone;
+On 12/26/2012 09:56 PM, Alan Stern wrote:
+> This looks like a matter of getting modules to load in the right order.
+> Apparently your OHCI controller doesn't work right if the EHCI driver
+> isn't present.  Before the troublesome commit, this meant ehci-hcd had
+> to be loaded before ohci-hcd.  Now it means ehci-hcd and ehci-pci both
+> have to be loaded before ohci-hcd.
 >
-> nit: less hunks if not erase that mark
+> In the dmesg log you provided, ehci-hcd was loaded before ohci-hcd but
+> ehci-pci was loaded after.  Of course, when everything is built into
+> the kernel (not as modules) then questions of loading order don't
+> arise.
 >
-> Hillf
+> You can test this hypothesis by booting a kernel without that commit
+> and blacklisting ehci-hcd, so that it doesn't get loaded automatically.
+> See if the errors start to come, and see if they stop when you load
+> ehci-hcd manually.
 
-This one left unanswered and forgotten because I didn't understand what 
-you meant. Could you elaborate?
+I could not do exactly the experiment that you wanted, as ehci-hcd was loaded 
+even though it was blacklisted. Rather than solve that problem, I generated a 
+kernel from just before commit adfa79d with ohci-hcd built in and ehci-hcd as a 
+module. This one generated the errors, but they stopped when ehci-hcd loaded. I 
+also tested a 3.8-rc1 kernel with ehci-hcd and ehcd-pci built in and ohci-hcd as 
+a module. No errors for that one. Your hypothesis looks correct.
 
--- 
-Zlatko
+I hope there is some way to force ehci-pci to load as soon as ehci-hcd is 
+loaded, and before ohci-hcd loads, but if there is not, I know how to prevent 
+the errors on my system even though this solution won't help the users of distro 
+kernels. At least this time the errors stop once all 3 modules are loaded, and 
+the number of error outputs is limited.
+
+Thanks,
+
+Larry
+
