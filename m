@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752392Ab2L0CGJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:06:09 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:56673 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752307Ab2L0CF6 (ORCPT
+	id S1752408Ab2L0CGQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:06:16 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:35185 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000Ab2L0CGL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:05:58 -0500
+	Wed, 26 Dec 2012 21:06:11 -0500
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Dec 2012 21:06:10 EST
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
-Cc: Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
-        Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 05/32] char: add aio_{read,write} to /dev/{null,zero}
-Date: Wed, 26 Dec 2012 17:59:42 -0800
-Message-Id: <1356573611-18590-6-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu
+Subject: [PATCH 17/32] aio: Change reqs_active to include unreaped completions
+Date: Wed, 26 Dec 2012 17:59:56 -0800
+Message-Id: <1356573611-18590-20-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
@@ -23,90 +24,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+The aio code tries really hard to avoid having to deal with the
+completion ringbuffer overflowing. To do that, it has to keep track of
+the number of outstanding kiocbs, and the number of completions
+currently in the ringbuffer - and it's got to check that every time we
+allocate a kiocb. Ouch.
 
-These are handy for measuring the cost of the aio infrastructure with
-operations that do very little and complete immediately.
+But - we can improve this quite a bit if we just change reqs_active to
+mean "number of outstanding requests and unreaped completions" - that
+means kiocb allocation doesn't have to look at the ringbuffer, which is
+a fairly significant win.
 
-Signed-off-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Kent Overstreet <koverstreet@google.com>
 ---
- drivers/char/mem.c | 35 +++++++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ fs/aio.c | 38 +++++++++++++++++++++++++-------------
+ 1 file changed, 25 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/char/mem.c b/drivers/char/mem.c
-index 0537903..968ae6e 100644
---- a/drivers/char/mem.c
-+++ b/drivers/char/mem.c
-@@ -627,6 +627,18 @@ static ssize_t write_null(struct file *file, const char __user *buf,
- 	return count;
- }
+diff --git a/fs/aio.c b/fs/aio.c
+index 276c6ea..b1be0cf 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -71,12 +71,6 @@ struct aio_ring_info {
+ 	struct page		*internal_pages[AIO_RING_PAGES];
+ };
  
-+static ssize_t aio_read_null(struct kiocb *iocb, const struct iovec *iov,
-+			     unsigned long nr_segs, loff_t pos)
-+{
-+	return 0;
-+}
-+
-+static ssize_t aio_write_null(struct kiocb *iocb, const struct iovec *iov,
-+			      unsigned long nr_segs, loff_t pos)
-+{
-+	return iov_length(iov, nr_segs);
-+}
-+
- static int pipe_to_null(struct pipe_inode_info *info, struct pipe_buffer *buf,
- 			struct splice_desc *sd)
+-static inline unsigned aio_ring_avail(struct aio_ring_info *info,
+-					struct aio_ring *ring)
+-{
+-	return (ring->head + info->nr - 1 - ring->tail) % info->nr;
+-}
+-
+ struct kioctx {
+ 	atomic_t		users;
+ 	atomic_t		dead;
+@@ -270,8 +264,11 @@ static void free_ioctx_rcu(struct rcu_head *head)
+  */
+ static void free_ioctx(struct kioctx *ctx)
  {
-@@ -670,6 +682,24 @@ static ssize_t read_zero(struct file *file, char __user *buf,
- 	return written ? written : -EFAULT;
- }
++	struct aio_ring_info *info = &ctx->ring_info;
++	struct aio_ring *ring;
+ 	struct io_event res;
+ 	struct kiocb *req;
++	unsigned head, avail;
  
-+static ssize_t aio_read_zero(struct kiocb *iocb, const struct iovec *iov,
-+			     unsigned long nr_segs, loff_t pos)
-+{
-+	size_t written = 0;
-+	unsigned long i;
-+	ssize_t ret;
+ 	spin_lock_irq(&ctx->ctx_lock);
+ 
+@@ -285,7 +282,21 @@ static void free_ioctx(struct kioctx *ctx)
+ 
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+-	wait_event(ctx->wait, !atomic_read(&ctx->reqs_active));
++	ring = kmap_atomic(info->ring_pages[0]);
++	head = ring->head;
++	kunmap_atomic(ring);
 +
-+	for (i = 0; i < nr_segs; i++) {
-+		ret = read_zero(iocb->ki_filp, iov[i].iov_base, iov[i].iov_len,
-+				&pos);
-+		if (ret < 0)
-+			break;
-+		written += ret;
++	while (atomic_read(&ctx->reqs_active) > 0) {
++		wait_event(ctx->wait, head != info->tail);
++
++		avail = (head < info->tail ? info->tail : info->nr) - head;
++
++		atomic_sub(avail, &ctx->reqs_active);
++		head += avail;
++		head %= info->nr;
 +	}
 +
-+	return written ? written : -EFAULT;
-+}
-+
- static int mmap_zero(struct file *file, struct vm_area_struct *vma)
- {
- #ifndef CONFIG_MMU
-@@ -738,6 +768,7 @@ static int open_port(struct inode * inode, struct file * filp)
- #define full_lseek      null_lseek
- #define write_zero	write_null
- #define read_full       read_zero
-+#define aio_write_zero	aio_write_null
- #define open_mem	open_port
- #define open_kmem	open_mem
- #define open_oldmem	open_mem
-@@ -766,6 +797,8 @@ static const struct file_operations null_fops = {
- 	.llseek		= null_lseek,
- 	.read		= read_null,
- 	.write		= write_null,
-+	.aio_read	= aio_read_null,
-+	.aio_write	= aio_write_null,
- 	.splice_write	= splice_write_null,
- };
++	WARN_ON(atomic_read(&ctx->reqs_active) < 0);
  
-@@ -782,6 +815,8 @@ static const struct file_operations zero_fops = {
- 	.llseek		= zero_lseek,
- 	.read		= read_zero,
- 	.write		= write_zero,
-+	.aio_read	= aio_read_zero,
-+	.aio_write	= aio_write_zero,
- 	.mmap		= mmap_zero,
- };
+ 	aio_free_ring(ctx);
+ 
+@@ -534,7 +545,6 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
+ 	unsigned short allocated, to_alloc;
+ 	long avail;
+ 	struct kiocb *req, *n;
+-	struct aio_ring *ring;
+ 
+ 	to_alloc = min(batch->count, KIOCB_BATCH_SIZE);
+ 	for (allocated = 0; allocated < to_alloc; allocated++) {
+@@ -549,9 +559,8 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
+ 		goto out;
+ 
+ 	spin_lock_irq(&ctx->ctx_lock);
+-	ring = kmap_atomic(ctx->ring_info.ring_pages[0]);
+ 
+-	avail = aio_ring_avail(&ctx->ring_info, ring) - atomic_read(&ctx->reqs_active);
++	avail = ctx->ring_info.nr - atomic_read(&ctx->reqs_active);
+ 	BUG_ON(avail < 0);
+ 	if (avail < allocated) {
+ 		/* Trim back the number of requests. */
+@@ -566,7 +575,6 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
+ 	batch->count -= allocated;
+ 	atomic_add(allocated, &ctx->reqs_active);
+ 
+-	kunmap_atomic(ring);
+ 	spin_unlock_irq(&ctx->ctx_lock);
+ 
+ out:
+@@ -673,8 +681,11 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ 	 * when the event got cancelled.
+ 	 */
+ 	if (unlikely(xchg(&iocb->ki_cancel,
+-			  KIOCB_CANCELLED) == KIOCB_CANCELLED))
++			  KIOCB_CANCELLED) == KIOCB_CANCELLED)) {
++		atomic_dec(&ctx->reqs_active);
++		/* Still need the wake_up in case free_ioctx is waiting */
+ 		goto put_rq;
++	}
+ 
+ 	/*
+ 	 * Add a completion event to the ring buffer. Must be done holding
+@@ -731,7 +742,6 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
+ put_rq:
+ 	/* everything turned out well, dispose of the aiocb. */
+ 	aio_put_req(iocb);
+-	atomic_dec(&ctx->reqs_active);
+ 
+ 	/*
+ 	 * We have to order our ring_info tail store above and test
+@@ -812,6 +822,8 @@ static int aio_read_events_ring(struct kioctx *ctx,
+ 	flush_dcache_page(info->ring_pages[0]);
+ 
+ 	pr_debug("%d  h%u t%u\n", ret, head, info->tail);
++
++	atomic_sub(ret, &ctx->reqs_active);
+ out:
+ 	mutex_unlock(&info->ring_lock);
  
 -- 
 1.7.12
