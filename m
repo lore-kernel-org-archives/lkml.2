@@ -1,140 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752146Ab2L0JUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 04:20:52 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:52549 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab2L0JUt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 04:20:49 -0500
+	id S1752287Ab2L0JaZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 04:30:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:45302 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751841Ab2L0JaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 04:30:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,361,1355126400"; 
+   d="scan'208";a="267402683"
+Date: Thu, 27 Dec 2012 11:33:51 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miles J Penner <miles.j.penner@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Tushar N Dave <tushar.n.dave@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
+Subject: Re: [PATCH 0/3] Thunderbolt workarounds
+Message-ID: <20121227093351.GH20026@intel.com>
+References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <CAErSpo6QWZfZ9YQAXkDOPvqBrwhS4wEzrxiUSAi7myVfoDGaKA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20121227002646.GC24604@n2100.arm.linux.org.uk>
-References: <1356524912-4736-1-git-send-email-gautam.vivek@samsung.com>
-	<1356524912-4736-2-git-send-email-gautam.vivek@samsung.com>
-	<20121227002646.GC24604@n2100.arm.linux.org.uk>
-Date: Thu, 27 Dec 2012 14:50:47 +0530
-Message-ID: <CAFp+6iHWnXzkTgGkacHM7fQ6mC61N-0JFjoH_p-PzkGDNZCHNA@mail.gmail.com>
-Subject: Re: [PATCH v4] usb: phy: samsung: Add support to set pmu isolation
-From: Vivek Gautam <gautamvivek1987@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        l.majewski@samsung.com, linux-samsung-soc@vger.kernel.org,
-        heiko@sntech.de, p.paneri@samsung.com, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        balbi@ti.com, dianders@chromium.org, grant.likely@secretlab.ca,
-        kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        thomas.abraham@linaro.org, ben-linux@fluff.org,
-        sylvester.nawrocki@gmail.com, t.figa@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAErSpo6QWZfZ9YQAXkDOPvqBrwhS4wEzrxiUSAi7myVfoDGaKA@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On Wed, Dec 26, 2012 at 05:50:42PM -0700, Bjorn Helgaas wrote:
+> On Thu, Dec 13, 2012 at 12:25 PM, Kirill A. Shutemov
+> <kirill.shutemov@linux.intel.com> wrote:
+> > From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+> >
+> > I had chance to test two PC setups with Thunderbolt: Acer Aspire S5 and
+> > Intel DZ77RE-75K motherboard. Unfortunately, both of them are broken in
+> > different ways.
+> >
+> > This patchset contains workarounds for the issues.
+> >
+> > Kirill A. Shutemov (3):
+> >   PCI Hotplug: workaround for Thunderbolt on Acer Aspire S5
+> >   PCI Hotplug: convert acpiphp_hp_work to use delayed work
+> >   PCI Hotplug: workaround for Thunderbolt on Intel DZ77RE-75K
+> >     motherboard
+> >
+> >  drivers/pci/hotplug/acpi_pcihp.c   |   13 +++++++++++++
+> >  drivers/pci/hotplug/acpiphp_glue.c |   33 +++++++++++++++++++++++++--------
+> >  2 files changed, 38 insertions(+), 8 deletions(-)
+> 
+> I'm ignoring these for now.  [1/3] has a hardcoded BIOS path that I
+> don't think is the right approach and [3/3] has a timeout issue to be
+> addressed.  [2/3] might be worthwhile by itself, but I'd rather merge
+> a complete solution when it's ready.
 
-
-On Thu, Dec 27, 2012 at 5:56 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Dec 26, 2012 at 05:58:32PM +0530, Vivek Gautam wrote:
->> +     if (!ret)
->> +             sphy->phyctrl_pmureg = ioremap(reg[0], reg[1]);
->> +
->> +     of_node_put(usbphy_pmu);
->> +
->> +     if (IS_ERR_OR_NULL(sphy->phyctrl_pmureg)) {
->
-> No.  Learn what the error return values are from functions.  Using the
-> wrong ones is buggy.  ioremap() only ever returns NULL on error.  You
-> must check against NULL, and not use the IS_ERR stuff.
->
-True, i should have checked the things. :-(
-ioremap() won't return error. Will amend this to check against NULL.
-
->> +/*
->> + * Set isolation here for phy.
->> + * SOCs control this by controlling corresponding PMU registers
->> + */
->> +static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, int on)
->> +{
->> +     u32 reg;
->> +     int en_mask;
->> +
->> +     if (!sphy->phyctrl_pmureg) {
->> +             dev_warn(sphy->dev, "Can't set pmu isolation\n");
->> +             return;
->> +     }
->> +
->> +     reg = readl(sphy->phyctrl_pmureg);
->> +
->> +     en_mask = sphy->drv_data->devphy_en_mask;
->> +
->> +     if (on)
->> +             writel(reg & ~en_mask, sphy->phyctrl_pmureg);
->> +     else
->> +             writel(reg | en_mask, sphy->phyctrl_pmureg);
->
-> What guarantees that this read-modify-write sequence of this register safe?
-> And, btw, this can't be optimised very well because of the barrier inside
-> writel().  This would be better:
->
->         if (on)
->                 reg &= ~en_mask;
->         else
->                 reg |= en_mask;
->
->         writel(reg, sphy->phyctrl_pmureg);
->
-Sure will amend this.
-A similar way suggested by Sylwester in the earlier mail in this thread:
-
-reg = on ? reg & ~mask : reg | mask;
-writel(reg, sphy->phyctrl_pmureg);
-
-Does this look fine ?
-
->> +static inline struct samsung_usbphy_drvdata
->> +*samsung_usbphy_get_driver_data(struct platform_device *pdev)
->>  {
->>       if (pdev->dev.of_node) {
->>               const struct of_device_id *match;
->>               match = of_match_node(samsung_usbphy_dt_match,
->>                                                       pdev->dev.of_node);
->> -             return (int) match->data;
->> +             return (struct samsung_usbphy_drvdata *) match->data;
->
-> match->data is a const void pointer.  Is there a reason you need this
-> cast here?  What if you made the returned pointer from this function
-> also const and fixed up all its users (no user should modify this
-> data.)
->
-Right, we won't need this cast since match->data is a void pointer.
-Will also make the returned pointer const.
-
->>  #ifdef CONFIG_OF
->>  static const struct of_device_id samsung_usbphy_dt_match[] = {
->>       {
->>               .compatible = "samsung,s3c64xx-usbphy",
->> -             .data = (void *)TYPE_S3C64XX,
->> +             .data = (void *)&usbphy_s3c64xx,
->
-> Why do you need this cast?
->
-True we don't need this cast. Will remove this one.
-
->>       }, {
->>               .compatible = "samsung,exynos4210-usbphy",
->> -             .data = (void *)TYPE_EXYNOS4210,
->> +             .data = (void *)&usbphy_exynos4,
->
-> Ditto.
-
-True we don't need this cast. Will remove this one.
-
-Thanks for the review :-)
-
-
--- 
-Regards
-Vivek
+OK. We'll rework the series with Kirill and submit a better solution.
