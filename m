@@ -1,159 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752606Ab2L0LtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 06:49:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58446 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004Ab2L0LtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 06:49:06 -0500
-Date: Thu, 27 Dec 2012 13:51:53 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
- hotplug
-Message-ID: <20121227115153.GC20595@redhat.com>
-References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
- <20121226104638.GA18850@redhat.com>
- <50DBC1B8.9050406@redhat.com>
+	id S1752679Ab2L0Lzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 06:55:33 -0500
+Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:4898 "EHLO
+	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752146Ab2L0Lz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 06:55:29 -0500
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Kirill Smelkov <kirr@navytux.spb.ru>
+Subject: Re: [PATCH] [media] vivi: Constify structures
+Date: Thu, 27 Dec 2012 12:55:11 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7.0-rc1-tschai; KDE/4.8.4; x86_64; ; )
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <1356535783-24173-1-git-send-email-kirr@navytux.spb.ru>
+In-Reply-To: <1356535783-24173-1-git-send-email-kirr@navytux.spb.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50DBC1B8.9050406@redhat.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212271255.11159.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 11:34:16AM +0800, Jason Wang wrote:
-> On 12/26/2012 06:46 PM, Michael S. Tsirkin wrote:
-> > On Wed, Dec 26, 2012 at 03:06:54PM +0800, Wanlong Gao wrote:
-> >> Add a cpu notifier to virtio-net, so that we can reset the
-> >> virtqueue affinity if the cpu hotplug happens. It improve
-> >> the performance through enabling or disabling the virtqueue
-> >> affinity after doing cpu hotplug.
-> >>
-> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> >> Cc: Jason Wang <jasowang@redhat.com>
-> >> Cc: virtualization@lists.linux-foundation.org
-> >> Cc: netdev@vger.kernel.org
-> >> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> > Thanks for looking into this.
-> > Some comments:
-> >
-> > 1. Looks like the logic in
-> > virtnet_set_affinity (and in virtnet_select_queue)
-> > will not work very well when CPU IDs are not
-> > consequitive. This can happen with hot unplug.
-> >
-> > Maybe we should add a VQ allocator, and defining
-> > a per-cpu variable specifying the VQ instead
-> > of using CPU ID.
+On Wed December 26 2012 16:29:43 Kirill Smelkov wrote:
+> Most of *_ops and other structures in vivi.c were already declared const
+> but some have not. Constify and code/data will take less space:
 > 
-> Yes, and generate the affinity hint based on the mapping. Btw, what does
-> VQ allocator means here?
+>     $ size drivers/media/platform/vivi.o
+>               text    data     bss     dec     hex filename
+>     before:  12569     248       8   12825    3219 drivers/media/platform/vivi.o
+>     after:   12308      20       8   12336    3030 drivers/media/platform/vivi.o
+> 
+> i.e. vivi.o is now ~500 bytes less.
+> 
+> Signed-off-by: Kirill Smelkov <kirr@navytux.spb.ru>
+> ---
+>  drivers/media/platform/vivi.c | 26 +++++++++++++-------------
+>  1 file changed, 13 insertions(+), 13 deletions(-)
+> 
+> diff --git a/drivers/media/platform/vivi.c b/drivers/media/platform/vivi.c
+> index ec65089..bed04e1 100644
+> --- a/drivers/media/platform/vivi.c
+> +++ b/drivers/media/platform/vivi.c
+> @@ -91,13 +91,13 @@ static const struct v4l2_fract
+>     ------------------------------------------------------------------*/
+>  
+>  struct vivi_fmt {
+> -	char  *name;
+> +	const char  *name;
 
-Some logic to generate CPU to VQ mapping.
+Just use one space before '*' since it no longer lines up to anything.
 
-> >
-> >
-> > 2. The below code seems racy e.g. when CPU is added
-> > 	during device init.
-> >
-> > 3. using a global cpu_hotplug seems inelegant.
-> > In any case we should document what is the
-> > meaning of this variable.
-> >
-> >> ---
-> >>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
-> >>  1 file changed, 38 insertions(+), 1 deletion(-)
-> >>
-> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> >> index a6fcf15..9710cf4 100644
-> >> --- a/drivers/net/virtio_net.c
-> >> +++ b/drivers/net/virtio_net.c
-> >> @@ -26,6 +26,7 @@
-> >>  #include <linux/scatterlist.h>
-> >>  #include <linux/if_vlan.h>
-> >>  #include <linux/slab.h>
-> >> +#include <linux/cpu.h>
-> >>  
-> >>  static int napi_weight = 128;
-> >>  module_param(napi_weight, int, 0444);
-> >> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
-> >>  module_param(csum, bool, 0444);
-> >>  module_param(gso, bool, 0444);
-> >>  
-> >> +static bool cpu_hotplug = false;
-> >> +
-> >>  /* FIXME: MTU in config. */
-> >>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
-> >>  #define GOOD_COPY_LEN	128
-> >> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
-> >>  		vi->affinity_hint_set = false;
-> >>  }
-> >>  
-> >> +static int virtnet_cpu_callback(struct notifier_block *nfb,
-> >> +			       unsigned long action, void *hcpu)
-> >> +{
-> >> +	switch(action) {
-> >> +	case CPU_ONLINE:
-> >> +	case CPU_ONLINE_FROZEN:
-> >> +	case CPU_DEAD:
-> >> +	case CPU_DEAD_FROZEN:
-> >> +		cpu_hotplug = true;
-> >> +		break;
-> >> +	default:
-> >> +		break;
-> >> +	}
-> >> +	return NOTIFY_OK;
-> >> +}
-> >> +
-> >> +static struct notifier_block virtnet_cpu_notifier = {
-> >> +	.notifier_call = virtnet_cpu_callback,
-> >> +};
-> >> +
-> >>  static void virtnet_get_ringparam(struct net_device *dev,
-> >>  				struct ethtool_ringparam *ring)
-> >>  {
-> >> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
-> >>   */
-> >>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
-> >>  {
-> >> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> >> +	int txq;
-> >> +
-> >> +	if (unlikely(cpu_hotplug == true)) {
-> >> +		virtnet_set_affinity(netdev_priv(dev), true);
-> >> +		cpu_hotplug = false;
-> >> +	}
-> >> +
-> >> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> >>  		  smp_processor_id();
-> >>  
-> >>  	while (unlikely(txq >= dev->real_num_tx_queues))
-> >> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
-> >>  {
-> >>  	struct virtio_device *vdev = vi->vdev;
-> >>  
-> >> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
-> >> +
-> >>  	virtnet_set_affinity(vi, false);
-> >>  
-> >>  	vdev->config->del_vqs(vdev);
-> >> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
-> >>  		goto err_free;
-> >>  
-> >>  	virtnet_set_affinity(vi, true);
-> >> +
-> >> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
-> >> +	if (ret)
-> >> +		goto err_free;
-> >> +
-> >>  	return 0;
-> >>  
-> >>  err_free:
-> >> -- 
-> >> 1.8.0
+>  	u32   fourcc;          /* v4l2 format id */
+>  	u8    depth;
+>  	bool  is_yuv;
+>  };
+>  
+> -static struct vivi_fmt formats[] = {
+> +static const struct vivi_fmt formats[] = {
+>  	{
+>  		.name     = "4:2:2, packed, YUYV",
+>  		.fourcc   = V4L2_PIX_FMT_YUYV,
+> @@ -164,9 +164,9 @@ static struct vivi_fmt formats[] = {
+>  	},
+>  };
+>  
+> -static struct vivi_fmt *__get_format(u32 pixelformat)
+> +static const struct vivi_fmt *__get_format(u32 pixelformat)
+>  {
+> -	struct vivi_fmt *fmt;
+> +	const struct vivi_fmt *fmt;
+>  	unsigned int k;
+>  
+>  	for (k = 0; k < ARRAY_SIZE(formats); k++) {
+> @@ -181,7 +181,7 @@ static struct vivi_fmt *__get_format(u32 pixelformat)
+>  	return &formats[k];
+>  }
+>  
+> -static struct vivi_fmt *get_format(struct v4l2_format *f)
+> +static const struct vivi_fmt *get_format(struct v4l2_format *f)
+>  {
+>  	return __get_format(f->fmt.pix.pixelformat);
+>  }
+> @@ -191,7 +191,7 @@ struct vivi_buffer {
+>  	/* common v4l buffer stuff -- must be first */
+>  	struct vb2_buffer	vb;
+>  	struct list_head	list;
+> -	struct vivi_fmt        *fmt;
+> +	struct vivi_fmt const  *fmt;
+>  };
+>  
+>  struct vivi_dmaqueue {
+> @@ -250,7 +250,7 @@ struct vivi_dev {
+>  	int			   input;
+>  
+>  	/* video capture */
+> -	struct vivi_fmt            *fmt;
+> +	struct vivi_fmt const      *fmt;
+
+'const' should be before 'struct' for consistency reasons.
+
+>  	struct v4l2_fract          timeperframe;
+>  	unsigned int               width, height;
+>  	struct vb2_queue	   vb_vidq;
+> @@ -297,7 +297,7 @@ struct bar_std {
+>  
+>  /* Maximum number of bars are 10 - otherwise, the input print code
+>     should be modified */
+> -static struct bar_std bars[] = {
+> +static const struct bar_std bars[] = {
+>  	{	/* Standard ITU-R color bar sequence */
+>  		{ COLOR_WHITE, COLOR_AMBER, COLOR_CYAN, COLOR_GREEN,
+>  		  COLOR_MAGENTA, COLOR_RED, COLOR_BLUE, COLOR_BLACK, COLOR_BLACK }
+> @@ -926,7 +926,7 @@ static void vivi_unlock(struct vb2_queue *vq)
+>  }
+>  
+>  
+> -static struct vb2_ops vivi_video_qops = {
+> +static const struct vb2_ops vivi_video_qops = {
+>  	.queue_setup		= queue_setup,
+>  	.buf_prepare		= buffer_prepare,
+>  	.buf_queue		= buffer_queue,
+> @@ -957,7 +957,7 @@ static int vidioc_querycap(struct file *file, void  *priv,
+>  static int vidioc_enum_fmt_vid_cap(struct file *file, void  *priv,
+>  					struct v4l2_fmtdesc *f)
+>  {
+> -	struct vivi_fmt *fmt;
+> +	struct vivi_fmt const *fmt;
+
+Ditto.
+
+>  
+>  	if (f->index >= ARRAY_SIZE(formats))
+>  		return -EINVAL;
+> @@ -993,7 +993,7 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
+>  			struct v4l2_format *f)
+>  {
+>  	struct vivi_dev *dev = video_drvdata(file);
+> -	struct vivi_fmt *fmt;
+> +	struct vivi_fmt const *fmt;
+
+Ditto.
+
+>  
+>  	fmt = get_format(f);
+>  	if (!fmt) {
+> @@ -1102,7 +1102,7 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
+>  static int vidioc_enum_frameintervals(struct file *file, void *priv,
+>  					     struct v4l2_frmivalenum *fival)
+>  {
+> -	struct vivi_fmt *fmt;
+> +	struct vivi_fmt const *fmt;
+
+Ditto.
+
+>  
+>  	if (fival->index)
+>  		return -EINVAL;
+> @@ -1330,7 +1330,7 @@ static const struct v4l2_ioctl_ops vivi_ioctl_ops = {
+>  	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
+>  };
+>  
+> -static struct video_device vivi_template = {
+> +static const struct video_device vivi_template = {
+>  	.name		= "vivi",
+>  	.fops           = &vivi_fops,
+>  	.ioctl_ops 	= &vivi_ioctl_ops,
+> 
+
+Regards,
+
+	Hans
