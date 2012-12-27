@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000Ab2L0WPs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 17:15:48 -0500
-Received: from casper.infradead.org ([85.118.1.10]:57356 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab2L0WPr (ORCPT
+	id S1752004Ab2L0WVe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 17:21:34 -0500
+Received: from mail-bk0-f54.google.com ([209.85.214.54]:42242 "EHLO
+	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751532Ab2L0WVd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 17:15:47 -0500
-Date: Thu, 27 Dec 2012 20:15:12 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>, kernel@pengutronix.de,
-        p.zabel@pengutronix.de, javier.martin@vista-silicon.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [media] coda: Fix build due to iram.h rename
-Message-ID: <20121227201512.0a5c5828@infradead.org>
-In-Reply-To: <20121217093714.GI26326@pengutronix.de>
-References: <1352898282-21576-1-git-send-email-fabio.estevam@freescale.com>
-	<20121217093714.GI26326@pengutronix.de>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 27 Dec 2012 17:21:33 -0500
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: Dove: move CuBox led pinctrl to gpio-leds node
+Date: Thu, 27 Dec 2012 23:21:10 +0100
+Message-Id: <1356646870-2903-1-git-send-email-sebastian.hesselbarth@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 17 Dec 2012 10:37:14 +0100
-Sascha Hauer <s.hauer@pengutronix.de> escreveu:
+gpio-leds has support for pinctrl allocation, make use of it.
 
-> On Wed, Nov 14, 2012 at 11:04:42AM -0200, Fabio Estevam wrote:
-> > commit c045e3f13 (ARM: imx: include iram.h rather than mach/iram.h) changed the
-> > location of iram.h, which causes the following build error when building the coda
-> > driver:
-> > 
-> > drivers/media/platform/coda.c:27:23: error: mach/iram.h: No such file or directory
-> > drivers/media/platform/coda.c: In function 'coda_probe':
-> > drivers/media/platform/coda.c:2000: error: implicit declaration of function 'iram_alloc'
-> > drivers/media/platform/coda.c:2001: warning: assignment makes pointer from integer without a cast
-> > drivers/media/platform/coda.c: In function 'coda_remove':
-> > drivers/media/platform/coda.c:2024: error: implicit declaration of function 'iram_free
-> > 
-> > Since the content of iram.h is not imx specific, move it to include/linux/iram.h
-> > instead.
-> 
-> Generally we need a fix for this, but:
-> 
-> > diff --git a/arch/arm/mach-imx/iram.h b/include/linux/iram.h
-> > similarity index 100%
-> > rename from arch/arm/mach-imx/iram.h
-> > rename to include/linux/iram.h
-> 
-> We shouldn't introduce a file include/linux/iram.h which is purely i.MX
-> specific. The name is far too generic. I would rather suggest
-> include/linux/platform_data/imx-iram.h (Although it's not exactly
-> platform_data, so I'm open for better suggestions).
-> 
-> As a side note this i.MX specific iram stuff (hopefully) is obsolete
-> after the next merge window as Philip already has patches for a generic
-> iram allocator which didn't make it into this merge window.
+Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+---
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org
+---
+ arch/arm/boot/dts/dove-cubox.dts |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Hi Sasha,
+diff --git a/arch/arm/boot/dts/dove-cubox.dts b/arch/arm/boot/dts/dove-cubox.dts
+index cdee96f..bed5b62 100644
+--- a/arch/arm/boot/dts/dove-cubox.dts
++++ b/arch/arm/boot/dts/dove-cubox.dts
+@@ -17,6 +17,9 @@
+ 
+ 	leds {
+ 		compatible = "gpio-leds";
++		pinctrl-0 = <&pmx_gpio_18>;
++		pinctrl-names = "default";
++
+ 		power {
+ 			label = "Power";
+ 			gpios = <&gpio0 18 1>;
+@@ -47,7 +50,7 @@
+ };
+ 
+ &pinctrl {
+-	pinctrl-0 = <&pmx_gpio_12 &pmx_gpio_18>;
++	pinctrl-0 = <&pmx_gpio_12>;
+ 	pinctrl-names = "default";
+ 
+ 	pmx_gpio_12: pmx-gpio-12 {
+-- 
+1.7.10.4
 
-This compilation breakage seems to still be happening.
-
-Just tested here with arm32 "allmodconfig", on a tree based on Linus one,
-with -next and -media patches applied on it:
-
-drivers/media//platform/coda.c:27:23: fatal error: mach/iram.h: No such file or directory
-compilation terminated.
-
-I don't mind how this would be named, but this should be fixed somehow ;)
-
-Regards,
-Mauro
