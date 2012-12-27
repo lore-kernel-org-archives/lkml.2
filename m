@@ -1,314 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752328Ab2L0CFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:05:12 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:62286 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab2L0CAj (ORCPT
+	id S1752343Ab2L0CGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:06:06 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:64653 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab2L0CF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:00:39 -0500
-From: Kent Overstreet <koverstreet@google.com>
-To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu
-Subject: [PATCH 11/32] aio: Make aio_put_req() lockless
-Date: Wed, 26 Dec 2012 17:59:48 -0800
-Message-Id: <1356573611-18590-12-git-send-email-koverstreet@google.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+	Wed, 26 Dec 2012 21:05:59 -0500
+From: Michal Nazarewicz <mpn@google.com>
+To: David Rientjes <rientjes@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cma: use unsigned type for count argument
+In-Reply-To: <alpine.DEB.2.00.1212261755450.4150@chino.kir.corp.google.com>
+Organization: Google Inc
+References: <52fd3c7b677ff01f1cd6d54e38a567b463ec1294.1355938871.git.mina86@mina86.com> <20121220153525.97841100.akpm@linux-foundation.org> <alpine.DEB.2.00.1212201557270.13223@chino.kir.corp.google.com> <xa1tip7u14tq.fsf@mina86.com> <alpine.DEB.2.00.1212261755450.4150@chino.kir.corp.google.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.3.50.1 (x86_64-unknown-linux-gnu)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-PGP: 50751FF4
+X-PGP-FP: AC1F 5F5C D418 88F8 CC84 5858 2060 4012 5075 1FF4
+Date: Thu, 27 Dec 2012 03:05:49 +0100
+Message-ID: <xa1tzk10ntaa.fsf@mina86.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Freeing a kiocb needed to touch the kioctx for three things:
+--=-=-=
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
- * Pull it off the reqs_active list
- * Decrementing reqs_active
- * Issuing a wakeup, if the kioctx was in the process of being freed.
+> On Sat, 22 Dec 2012, Michal Nazarewicz wrote:
+>> So I think just adding the following, should be sufficient to make
+>> everyone happy:
+>>=20
+>> diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous=
+.c
+>> index e34e3e0..e91743b 100644
+>> --- a/drivers/base/dma-contiguous.c
+>> +++ b/drivers/base/dma-contiguous.c
+>> @@ -320,7 +320,7 @@ struct page *dma_alloc_from_contiguous(struct device=
+ *dev, unsigned int count,
+>>  	pr_debug("%s(cma %p, count %u, align %u)\n", __func__, (void *)cma,
+>>  		 count, align);
+>>=20=20
+>> -	if (!count)
+>> +	if (!count || count > INT_MAX)
+>>  		return NULL;
+>>=20=20
+>>  	mask =3D (1 << align) - 1;
+>
+On Thu, Dec 27 2012, David Rientjes <rientjes@google.com> wrote:
+> How is this different than leaving the formal to have a signed type, i.e.=
+=20
+> drop your patch, and testing for count <=3D 0 instead?
 
-This patch moves these to aio_complete(), for a couple reasons:
+Not much different I guess.  I don't have strong opinions to be honest,
+except that I feel unsigned is the proper type to use, on top of which
+I think bitmap_set() should use unsigned, so in case anyone ever bothers
+to change it, CMA will be ready. :P
 
- * aio_complete() already has to issue the wakeup, so if we drop the
-   kioctx refcount before aio_complete does its wakeup we don't have to
-   do it twice.
- * aio_complete currently has to take the kioctx lock, so it makes sense
-   for it to pull the kiocb off the reqs_active list too.
- * A later patch is going to change reqs_active to include unreaped
-   completions - this will mean allocating a kiocb doesn't have to look
-   at the ringbuffer. So taking the decrement of reqs_active out of
-   kiocb_free() is useful prep work for that patch.
+--=20
+Best regards,                                         _     _
+.o. | Liege of Serenely Enlightened Majesty of      o' \,=3D./ `o
+..o | Computer Science,  Micha=C5=82 =E2=80=9Cmina86=E2=80=9D Nazarewicz   =
+ (o o)
+ooo +----<email/xmpp: mpn@google.com>--------------ooO--(_)--Ooo--
+--=-=-=
+Content-Type: multipart/signed; boundary="==-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 
-This doesn't really affect cancellation, since existing (usb) code that
-implements a cancel function still calls aio_complete() - we just have
-to make sure that aio_complete does the necessary teardown for cancelled
-kiocbs.
+--==-=-=
+Content-Type: text/plain
 
-It does affect code paths where we free kiocbs that were never
-submitted; they need to decrement reqs_active and pull the kiocb off the
-reqs_active list. This occurs in two places: kiocb_batch_free(), which
-is going away in a later patch, and the error path in io_submit_one.
 
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- fs/aio.c            | 85 +++++++++++++++++++++--------------------------------
- include/linux/aio.h |  4 +--
- 2 files changed, 35 insertions(+), 54 deletions(-)
+--==-=-=
+Content-Type: application/pgp-signature
 
-diff --git a/fs/aio.c b/fs/aio.c
-index db6cb02..37eac67 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -89,7 +89,7 @@ struct kioctx {
- 
- 	spinlock_t		ctx_lock;
- 
--	int			reqs_active;
-+	atomic_t		reqs_active;
- 	struct list_head	active_reqs;	/* used for cancellation */
- 
- 	/* sys_io_setup currently limits this to an unsigned int */
-@@ -247,7 +247,7 @@ static void ctx_rcu_free(struct rcu_head *head)
- static void __put_ioctx(struct kioctx *ctx)
- {
- 	unsigned nr_events = ctx->max_reqs;
--	BUG_ON(ctx->reqs_active);
-+	BUG_ON(atomic_read(&ctx->reqs_active));
- 
- 	aio_free_ring(ctx);
- 	if (nr_events) {
-@@ -281,7 +281,7 @@ static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb,
- 	cancel = kiocb->ki_cancel;
- 	kiocbSetCancelled(kiocb);
- 	if (cancel) {
--		kiocb->ki_users++;
-+		atomic_inc(&kiocb->ki_users);
- 		spin_unlock_irq(&ctx->ctx_lock);
- 
- 		memset(res, 0, sizeof(*res));
-@@ -380,12 +380,12 @@ static void kill_ctx(struct kioctx *ctx)
- 		kiocb_cancel(ctx, req, &res);
- 	}
- 
--	if (!ctx->reqs_active)
-+	if (!atomic_read(&ctx->reqs_active))
- 		goto out;
- 
- 	add_wait_queue(&ctx->wait, &wait);
- 	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
--	while (ctx->reqs_active) {
-+	while (atomic_read(&ctx->reqs_active)) {
- 		spin_unlock_irq(&ctx->ctx_lock);
- 		io_schedule();
- 		set_task_state(tsk, TASK_UNINTERRUPTIBLE);
-@@ -403,9 +403,9 @@ out:
-  */
- ssize_t wait_on_sync_kiocb(struct kiocb *iocb)
- {
--	while (iocb->ki_users) {
-+	while (atomic_read(&iocb->ki_users)) {
- 		set_current_state(TASK_UNINTERRUPTIBLE);
--		if (!iocb->ki_users)
-+		if (!atomic_read(&iocb->ki_users))
- 			break;
- 		io_schedule();
- 	}
-@@ -435,7 +435,7 @@ void exit_aio(struct mm_struct *mm)
- 			printk(KERN_DEBUG
- 				"exit_aio:ioctx still alive: %d %d %d\n",
- 				atomic_read(&ctx->users), ctx->dead,
--				ctx->reqs_active);
-+				atomic_read(&ctx->reqs_active));
- 		/*
- 		 * We don't need to bother with munmap() here -
- 		 * exit_mmap(mm) is coming and it'll unmap everything.
-@@ -450,11 +450,11 @@ void exit_aio(struct mm_struct *mm)
- }
- 
- /* aio_get_req
-- *	Allocate a slot for an aio request.  Increments the users count
-+ *	Allocate a slot for an aio request.  Increments the ki_users count
-  * of the kioctx so that the kioctx stays around until all requests are
-  * complete.  Returns NULL if no requests are free.
-  *
-- * Returns with kiocb->users set to 2.  The io submit code path holds
-+ * Returns with kiocb->ki_users set to 2.  The io submit code path holds
-  * an extra reference while submitting the i/o.
-  * This prevents races between the aio code path referencing the
-  * req (after submitting it) and aio_complete() freeing the req.
-@@ -468,7 +468,7 @@ static struct kiocb *__aio_get_req(struct kioctx *ctx)
- 		return NULL;
- 
- 	req->ki_flags = 0;
--	req->ki_users = 2;
-+	atomic_set(&req->ki_users, 2);
- 	req->ki_key = 0;
- 	req->ki_ctx = ctx;
- 	req->ki_cancel = NULL;
-@@ -509,9 +509,9 @@ static void kiocb_batch_free(struct kioctx *ctx, struct kiocb_batch *batch)
- 		list_del(&req->ki_batch);
- 		list_del(&req->ki_list);
- 		kmem_cache_free(kiocb_cachep, req);
--		ctx->reqs_active--;
-+		atomic_dec(&ctx->reqs_active);
- 	}
--	if (unlikely(!ctx->reqs_active && ctx->dead))
-+	if (unlikely(!atomic_read(&ctx->reqs_active) && ctx->dead))
- 		wake_up_all(&ctx->wait);
- 	spin_unlock_irq(&ctx->ctx_lock);
- }
-@@ -542,7 +542,7 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
- 	spin_lock_irq(&ctx->ctx_lock);
- 	ring = kmap_atomic(ctx->ring_info.ring_pages[0]);
- 
--	avail = aio_ring_avail(&ctx->ring_info, ring) - ctx->reqs_active;
-+	avail = aio_ring_avail(&ctx->ring_info, ring) - atomic_read(&ctx->reqs_active);
- 	BUG_ON(avail < 0);
- 	if (avail < allocated) {
- 		/* Trim back the number of requests. */
-@@ -557,7 +557,7 @@ static int kiocb_batch_refill(struct kioctx *ctx, struct kiocb_batch *batch)
- 	batch->count -= allocated;
- 	list_for_each_entry(req, &batch->head, ki_batch) {
- 		list_add(&req->ki_list, &ctx->active_reqs);
--		ctx->reqs_active++;
-+		atomic_inc(&ctx->reqs_active);
- 	}
- 
- 	kunmap_atomic(ring);
-@@ -580,10 +580,8 @@ static inline struct kiocb *aio_get_req(struct kioctx *ctx,
- 	return req;
- }
- 
--static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
-+static void kiocb_free(struct kiocb *req)
- {
--	assert_spin_locked(&ctx->ctx_lock);
--
- 	if (req->ki_filp)
- 		fput(req->ki_filp);
- 	if (req->ki_eventfd != NULL)
-@@ -593,40 +591,12 @@ static inline void really_put_req(struct kioctx *ctx, struct kiocb *req)
- 	if (req->ki_iovec != &req->ki_inline_vec)
- 		kfree(req->ki_iovec);
- 	kmem_cache_free(kiocb_cachep, req);
--	ctx->reqs_active--;
--
--	if (unlikely(!ctx->reqs_active && ctx->dead))
--		wake_up_all(&ctx->wait);
- }
- 
--/* __aio_put_req
-- *	Returns true if this put was the last user of the request.
-- */
--static void __aio_put_req(struct kioctx *ctx, struct kiocb *req)
--{
--	assert_spin_locked(&ctx->ctx_lock);
--
--	req->ki_users--;
--	BUG_ON(req->ki_users < 0);
--	if (likely(req->ki_users))
--		return;
--	list_del(&req->ki_list);		/* remove from active_reqs */
--	req->ki_cancel = NULL;
--	req->ki_retry = NULL;
--
--	really_put_req(ctx, req);
--}
--
--/* aio_put_req
-- *	Returns true if this put was the last user of the kiocb,
-- *	false if the request is still in use.
-- */
- void aio_put_req(struct kiocb *req)
- {
--	struct kioctx *ctx = req->ki_ctx;
--	spin_lock_irq(&ctx->ctx_lock);
--	__aio_put_req(ctx, req);
--	spin_unlock_irq(&ctx->ctx_lock);
-+	if (atomic_dec_and_test(&req->ki_users))
-+		kiocb_free(req);
- }
- EXPORT_SYMBOL(aio_put_req);
- 
-@@ -675,9 +645,9 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	 *  - the sync task helpfully left a reference to itself in the iocb
- 	 */
- 	if (is_sync_kiocb(iocb)) {
--		BUG_ON(iocb->ki_users != 1);
-+		BUG_ON(atomic_read(&iocb->ki_users) != 1);
- 		iocb->ki_user_data = res;
--		iocb->ki_users = 0;
-+		atomic_set(&iocb->ki_users, 0);
- 		wake_up_process(iocb->ki_obj.tsk);
- 		return;
- 	}
-@@ -692,6 +662,8 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 	 */
- 	spin_lock_irqsave(&ctx->ctx_lock, flags);
- 
-+	list_del(&iocb->ki_list); /* remove from active_reqs */
-+
- 	/*
- 	 * cancelled requests don't get events, userland was given one
- 	 * when the event got cancelled.
-@@ -738,7 +710,8 @@ void aio_complete(struct kiocb *iocb, long res, long res2)
- 
- put_rq:
- 	/* everything turned out well, dispose of the aiocb. */
--	__aio_put_req(ctx, iocb);
-+	aio_put_req(iocb);
-+	atomic_dec(&ctx->reqs_active);
- 
- 	/*
- 	 * We have to order our ring_info tail store above and test
-@@ -903,7 +876,7 @@ static int read_events(struct kioctx *ctx,
- 				break;
- 			/* Try to only show up in io wait if there are ops
- 			 *  in flight */
--			if (ctx->reqs_active)
-+			if (atomic_read(&ctx->reqs_active))
- 				io_schedule();
- 			else
- 				schedule();
-@@ -1362,6 +1335,14 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
- 	return 0;
- 
- out_put_req:
-+	spin_lock_irq(&ctx->ctx_lock);
-+	list_del(&req->ki_list);
-+	spin_unlock_irq(&ctx->ctx_lock);
-+
-+	atomic_dec(&ctx->reqs_active);
-+	if (unlikely(!atomic_read(&ctx->reqs_active) && ctx->dead))
-+		wake_up_all(&ctx->wait);
-+
- 	aio_put_req(req);	/* drop extra ref to req */
- 	aio_put_req(req);	/* drop i/o ref to req */
- 	return ret;
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index 7b1eb23..1e728f0 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -49,7 +49,7 @@ struct kioctx;
-  */
- struct kiocb {
- 	unsigned long		ki_flags;
--	int			ki_users;
-+	atomic_t		ki_users;
- 	unsigned		ki_key;		/* id of this request */
- 
- 	struct file		*ki_filp;
-@@ -96,7 +96,7 @@ static inline bool is_sync_kiocb(struct kiocb *kiocb)
- static inline void init_sync_kiocb(struct kiocb *kiocb, struct file *filp)
- {
- 	*kiocb = (struct kiocb) {
--			.ki_users = 1,
-+			.ki_users = ATOMIC_INIT(1),
- 			.ki_key = KIOCB_SYNC_KEY,
- 			.ki_filp = filp,
- 			.ki_obj.tsk = current,
--- 
-1.7.12
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQ26z9AAoJECBgQBJQdR/0FLsP+wXrMoNqTvrzcm44rlE94pb9
+J4dpiQH2rSHTWsR3xfdwmoupgrL2WnLb5PRz6tfvf69bdWRhlkmz5OTR1sld95Mi
+pB/bwmhdaSknDx8qufJCoaqTAlMD328RBktU8vvpSxZwQZJbqA2sod2lHT4La+aT
+38mGGfIWhOHEKNZlgqm91DLOkwptHn0NPCs4udfEMC3lWiTfpp78KOeFM7OPeb4W
+GiiunyocX/Y2oez09X63JvFBVFopx0l3rtKbAKAiKW/QRnfgEsshDg/t4rWKnILY
+3l+EZBTBsuYaWSaPcgtWZtu04fkOqVF6Dq8lrqw+HjfIvmh8x9X+M7srIwxhR773
+rIENo0XVC6dbov0qvuMd9VlnMhQl1vf9n5UIFGTSnjIpY6rn8puOoXNHCUj8YahN
+ZMrQxzK7pdJ+yroW/3iaqDjgOyqdNE9sbJ34dM5bGW64cuTxsr5o8iiPD6Vj1oa1
+ShY0Xx8V2+J2LQGRHUGIywXu2E499JbIQv/LLDPKm0SWLdANRrGn6TfcD0644Qp2
+PM/2cff5xC7PfOxpLipeagJ/RuZRmxZsGcu2gfgXG4wUZJ2ej43qSBmqQQ1Q5hjv
+aXdqvgM5q0cHT/yjO2Oe0IwTjl4V1RTQJgrsGIzak3GnjVZaVYbcGcKmDU/gLVSK
+3TRe56LEL6ILhJPJnxh2
+=gJWR
+-----END PGP SIGNATURE-----
+--==-=-=--
+
+--=-=-=--
