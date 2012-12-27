@@ -1,58 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128Ab2L0Win (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 17:38:43 -0500
-Received: from mail-da0-f45.google.com ([209.85.210.45]:60693 "EHLO
-	mail-da0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593Ab2L0Wik (ORCPT
+	id S1752230Ab2L0Wiy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 17:38:54 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:54984 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827Ab2L0Wim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 17:38:40 -0500
-Date: Thu, 27 Dec 2012 14:38:38 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Liu Hui-R64343 <r64343@freescale.com>
-cc: Mel Gorman <mgorman@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad
- address
-In-Reply-To: <AD13664F485EE54694E29A7F9D5BE1AF4D35F3@039-SN2MPN1-021.039d.mgd.msft.net>
-Message-ID: <alpine.DEB.2.00.1212271435250.18214@chino.kir.corp.google.com>
-References: <AD13664F485EE54694E29A7F9D5BE1AF4D35F3@039-SN2MPN1-021.039d.mgd.msft.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 27 Dec 2012 17:38:42 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.DEB.2.00.1212271428520.18214@chino.kir.corp.google.com>
+References: <1356293711-23864-1-git-send-email-sasha.levin@oracle.com>
+	<1356293711-23864-2-git-send-email-sasha.levin@oracle.com>
+	<alpine.DEB.2.00.1212271423210.18214@chino.kir.corp.google.com>
+	<CAOJsxLH4RzWdxdVXyn+eFc56JfJtije2jK1eWaBYVaoZSHuUBA@mail.gmail.com>
+	<alpine.DEB.2.00.1212271428520.18214@chino.kir.corp.google.com>
+Date: Fri, 28 Dec 2012 00:38:40 +0200
+X-Google-Sender-Auth: tVv6Jc_KNnKZdpFCwb-P4iVpIcU
+Message-ID: <CAOJsxLFMVFEjBmcQYCUFzdyAuHRY_J7wmRo2im_Zy0xmOLtP=Q@mail.gmail.com>
+Subject: Re: [PATCH 2/3] mm, bootmem: panic in bootmem alloc functions even if
+ slab is available
+From: Pekka Enberg <penberg@kernel.org>
+To: David Rientjes <rientjes@google.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        Joonsoo Kim <js1304@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Dec 2012, Liu Hui-R64343 wrote:
+On Fri, Dec 28, 2012 at 12:31 AM, David Rientjes <rientjes@google.com> wrote:
+> On Fri, 28 Dec 2012, Pekka Enberg wrote:
+>
+>> On Sun, 23 Dec 2012, Sasha Levin wrote:
+>> >> diff --git a/mm/bootmem.c b/mm/bootmem.c
+>> >> index 1324cd7..198a92f 100644
+>> >> --- a/mm/bootmem.c
+>> >> +++ b/mm/bootmem.c
+>> >> @@ -763,9 +763,6 @@ void * __init ___alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+>> >>  void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+>> >>                                  unsigned long align, unsigned long goal)
+>> >>  {
+>> >> -     if (WARN_ON_ONCE(slab_is_available()))
+>> >> -             return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+>> >> -
+>> >>       return  ___alloc_bootmem_node(pgdat, size, align, goal, 0);
+>> >>  }
+>>
+>> I'm not sure what Sasha's patch is trying to do here but the fall-back
+>> is there simply to let the caller know it's calling the bootmem
+>> allocator *too late*. That is, the slab allocator is already up and
+>> running so you're expected to use that.
+>>
+>
+> The __alloc_bootmem_node() variant is intended to panic rather than return
+> NULL so there are callers that do not check the return value.  I'm
+> suggesting rather than removing the fallback to the slab allocator to
+> check the return value and panic() here if kzalloc_node() returns NULL.
+> The __alloc_bootmem_node_nopanic() variant needs not be changed.
 
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index c4bc5ac..d3cb27f 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -732,8 +732,10 @@ int sysctl_compact_memory;
->  int sysctl_compaction_handler(struct ctl_table *table, int write,
->                         void __user *buffer, size_t *length, loff_t *ppos)
->  {
-> -       if (write)
-> -               return compact_nodes();
-> +       if (write) {
-> +               compact_nodes();
-> +               return *length;
-> +       }
-> 
->         return 0;
->  }
-
-No need to return the length at all, simply change compact_nodes() to 
-return void, remove the return value, and do
-
-	if (write)
-		compact_nodes();
-	return 0;
-
-and it should be fixed.  Could you write a changelog that shows the before 
-and after behavior (not necessarily the implementation), sign-off the 
-patch as described in Documentation/SubmittingPatches, running 
-scripts/get_maintainer.pl on your new patch file, and sending it to 
-all addresses that are listed?
+Makes sense. Dropping the fallback completely just makes it more
+difficult to find early boot bugs where the bootmem allocator is
+called too late.
