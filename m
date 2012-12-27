@@ -1,105 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab2L0VMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 16:12:49 -0500
-Received: from mail-ia0-f175.google.com ([209.85.210.175]:59895 "EHLO
-	mail-ia0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2L0VMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 16:12:47 -0500
+	id S1751863Ab2L0VUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 16:20:23 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:46697 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751161Ab2L0VUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 16:20:19 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Thu, 27 Dec 2012 22:25:42 +0100
+Message-ID: <4375785.YNzAUSLvur@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <2210460.jSt1aAvsCj@vostro.rjw.lan>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <1723076.byQgAGE2K7@vostro.rjw.lan> <2210460.jSt1aAvsCj@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-Date: Thu, 27 Dec 2012 18:12:46 -0300
-Message-ID: <CALF0-+VQKxu7_-=aJeW-FxmM4fdVX1nBE7AA5-0d9SRgRqqM1g@mail.gmail.com>
-Subject: Re: [PATCH 01/23] uvc: Replace memcpy with struct assignment
-From: Ezequiel Garcia <elezegarcia@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Cc: Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Ezequiel Garcia <elezegarcia@gmail.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro,
+On Thursday, December 27, 2012 02:31:09 PM Rafael J. Wysocki wrote:
+> On Thursday, December 27, 2012 01:47:22 PM Rafael J. Wysocki wrote:
+> > On Wednesday, December 26, 2012 04:10:32 PM Yinghai Lu wrote:
+> > > On Wed, Dec 26, 2012 at 2:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > > On Wednesday, December 26, 2012 12:41:05 PM Yinghai Lu wrote:
+> > > >> On Wed, Dec 26, 2012 at 12:16 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > > >> > On Wed, Dec 26, 2012 at 12:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > > >> >> Do you have a reference for this?  I think this might have been true
+> > > >> >> in the past, but I don't think it's true for any version of gcc we
+> > > >> >> support for building Linux.
+> > > >> >
+> > > >> > http://lkml.indiana.edu/hypermail/linux/kernel/0804.3/3600.html
+> > > >>
+> > > >> the problem is already addressed by:
+> > > >>
+> > > >> | commit f9d14250071eda9972e4c9cea745a11185952114
+> > > >> | Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > > >> | Date:   Fri Jan 2 09:29:43 2009 -0800
+> > > >> |
+> > > >> |    Disallow gcc versions 4.1.{0,1}
+> > > >> |
+> > > >> |    These compiler versions are known to miscompile __weak functions and
+> > > >> |    thus generate kernels that don't necessarily work correctly.  If a weak
+> > > >> |    function is int he same compilation unit as a caller, gcc may end up
+> > > >> |    inlining it, and thus binding the weak function too early.
+> > > >> |
+> > > >> |    See
+> > > >> |
+> > > >> |        http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27781
+> > > >> |
+> > > >> |    for details.
+> > > >>
+> > > >> so it is ok to put the __weak in the same file now.
+> > > >
+> > > > Cool, thanks for checking and for the ACK!
+> > > 
+> > > wait, we have some problem on systems that root bus is not exported via DSDT ...
+> > > 
+> > > one of my nehalem system that have uncore cpu devices are not exported via ACPI.
+> > > 
+> > > also there will be problem that system is booting with acpi=off.
+> > > 
+> > > 
+> > > +int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+> > > +{
+> > > +       struct pci_sysdata *sd = bridge->bus->sysdata;
+> > > +       struct pci_root_info *info = container_of(sd, struct pci_root_info, sd);
+> > > +
+> > > +       ACPI_HANDLE_SET(&bridge->dev, info->bridge->handle);
+> > > +       return 0;
+> > > +}
+> > > 
+> > > will get wrong info...via sd... as their sd is standalone
+> > 
+> > Yes, it will be called in all code paths leading to acpi_create_root_bus(),
+> > not only the ones started by pci_acpi_scan_root().  Well, too bad.
+> 
+> s/acpi_create_root_bus/pci_create_root_bus/
+> 
+> Sorry.
+> 
+> > By the way, that illustrates nicely why I generally have concerns about __weak
+> > stuff and similar tricks.
+> > 
+> > Bjorn, I had tried to use the approach you suggested, but it didn't work.
+> > I thought about fixing that, but everything I could come up with turned out to
+> > be too complicated, so I'm inclined to use the previous version after all:
+> > 
+> > https://patchwork.kernel.org/patch/1889221/
+> > 
+> > that has been acked by Yinghai, Greg and Peter already.
 
-On Tue, Oct 23, 2012 at 4:57 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> This kind of memcpy() is error-prone. Its replacement with a struct
-> assignment is prefered because it's type-safe and much easier to read.
->
-> Found by coccinelle. Hand patched and reviewed.
-> Tested by compilation only.
->
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> identifier struct_name;
-> struct struct_name to;
-> struct struct_name from;
-> expression E;
-> @@
-> -memcpy(&(to), &(from), E);
-> +to = from;
-> // </smpl>
->
-> Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> ---
->  drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/media/usb/uvc/uvc_v4l2.c b/drivers/media/usb/uvc/uvc_v4l2.c
-> index f00db30..4fc8737 100644
-> --- a/drivers/media/usb/uvc/uvc_v4l2.c
-> +++ b/drivers/media/usb/uvc/uvc_v4l2.c
-> @@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct uvc_streaming *stream,
->                 goto done;
->         }
->
-> -       memcpy(&stream->ctrl, &probe, sizeof probe);
-> +       stream->ctrl = probe;
->         stream->cur_format = format;
->         stream->cur_frame = frame;
->
-> @@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
->                 return -EBUSY;
->         }
->
-> -       memcpy(&probe, &stream->ctrl, sizeof probe);
-> +       probe = stream->ctrl;
->         probe.dwFrameInterval =
->                 uvc_try_frame_interval(stream->cur_frame, interval);
->
-> @@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
->                 return ret;
->         }
->
-> -       memcpy(&stream->ctrl, &probe, sizeof probe);
-> +       stream->ctrl = probe;
->         mutex_unlock(&stream->mutex);
->
->         /* Return the actual frame period. */
-> --
-> 1.7.4.4
->
-
-It seems you've marked this one as "Changes requested" [1].
-However, Laurent didn't request any change,
-but just pointed out we missed one memcpy replacement candidate.
-
-I believe it's safe to apply the patch (together with the other 20 patches)
-and we can fix the missing spot in another patch.
+I think I know how to avoid the __weak thing without doing what the first
+version did.  I'll post a new version of the patch shortly.
 
 Thanks,
+Rafael
+
 
 -- 
-    Ezequiel
-
-[1] http://patchwork.linuxtv.org/patch/15142/
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
