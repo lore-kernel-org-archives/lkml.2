@@ -1,413 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab2L0HBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 02:01:51 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:53570 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab2L0HBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 02:01:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
-References: <1355822977-4804-1-git-send-email-durgadoss.r@intel.com>
-	<1355822977-4804-5-git-send-email-durgadoss.r@intel.com>
-Date: Thu, 27 Dec 2012 15:01:47 +0800
-Message-ID: <CAJLyvQwBvPx4Kp8coEuuACwRMwHG+b3rX=kuxqz4gu6rt-Ex3g@mail.gmail.com>
-Subject: Re: [PATCH 4/8] Thermal: Add Thermal_trip sysfs node
-From: Hongbo Zhang <hongbo.zhang@linaro.org>
-To: Durgadoss R <durgadoss.r@intel.com>
-Cc: rui.zhang@intel.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, wni@nvidia.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751471Ab2L0Hnp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 02:43:45 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:35958 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750980Ab2L0Hnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 02:43:43 -0500
+X-IronPort-AV: E=Sophos;i="4.84,361,1355068800"; 
+   d="scan'208";a="6485959"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: guz.fnst@cn.fujitsu.com, tangchen@cn.fujitsu.com, laijs@cn.fujitsu.com,
+        wency@cn.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        Lin Feng <linfeng@cn.fujitsu.com>
+Subject: [PATCH] pci-sysfs: replace mutex_lock with mutex_trylock to avoid potential deadlock situation
+Date: Thu, 27 Dec 2012 15:42:57 +0800
+Message-Id: <1356594177-29453-1-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/27 15:43:27,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/27 15:43:28,
+	Serialize complete at 2012/12/27 15:43:28
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 December 2012 17:29, Durgadoss R <durgadoss.r@intel.com> wrote:
-> This patch adds a thermal_trip directory under
-> /sys/class/thermal/zoneX. This directory contains
-> the trip point values for sensors bound to this
-> zone.
->
-> Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
-> ---
->  drivers/thermal/thermal_sys.c |  237 ++++++++++++++++++++++++++++++++++++++++-
->  include/linux/thermal.h       |   37 +++++++
->  2 files changed, 272 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/thermal/thermal_sys.c b/drivers/thermal/thermal_sys.c
-> index b39bf97..29ec073 100644
-> --- a/drivers/thermal/thermal_sys.c
-> +++ b/drivers/thermal/thermal_sys.c
-> @@ -448,6 +448,22 @@ static void thermal_zone_device_check(struct work_struct *work)
->         thermal_zone_device_update(tz);
->  }
->
-> +static int get_sensor_indx_by_kobj(struct thermal_zone *tz, const char *name)
-> +{
-> +       int i, indx = -EINVAL;
-> +
-> +       mutex_lock(&sensor_list_lock);
-> +       for (i = 0; i < tz->sensor_indx; i++) {
-> +               if (!strnicmp(name, kobject_name(tz->kobj_trip[i]),
-> +                       THERMAL_NAME_LENGTH)) {
-> +                       indx = i;
-> +                       break;
-> +               }
-> +       }
-> +       mutex_unlock(&sensor_list_lock);
-> +       return indx;
-> +}
-> +
->  static void remove_sensor_from_zone(struct thermal_zone *tz,
->                                 struct thermal_sensor *ts)
->  {
-> @@ -459,9 +475,15 @@ static void remove_sensor_from_zone(struct thermal_zone *tz,
->
->         sysfs_remove_link(&tz->device.kobj, kobject_name(&ts->device.kobj));
->
-> +       /* Delete this sensor's trip Kobject */
-> +       kobject_del(tz->kobj_trip[indx]);
-> +
->         /* Shift the entries in the tz->sensors array */
-> -       for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++)
-> +       for (j = indx; j < MAX_SENSORS_PER_ZONE - 1; j++) {
->                 tz->sensors[j] = tz->sensors[j + 1];
-> +               tz->sensor_trip[j] = tz->sensor_trip[j + 1];
-> +               tz->kobj_trip[j] = tz->kobj_trip[j + 1];
-> +       }
->
->         tz->sensor_indx--;
->  }
-> @@ -875,6 +897,120 @@ policy_show(struct device *dev, struct device_attribute *devattr, char *buf)
->         return sprintf(buf, "%s\n", tz->governor->name);
->  }
->
-> +static ssize_t
-> +active_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-> +{
-> +       int i, indx, ret = 0;
-> +       struct thermal_zone *tz;
-> +       struct device *dev;
-> +
-> +       /* In this function, for
-> +        * /sys/class/thermal/zoneX/thermal_trip/sensorY:
-> +        * attr                 points to sysfs node 'active'
-> +        * kobj                 points to sensorY
-> +        * kobj->parent         points to thermal_trip
-> +        * kobj->parent->parent points to zoneX
-> +        */
-> +
-> +       /* Get the zone pointer */
-> +       dev = container_of(kobj->parent->parent, struct device, kobj);
-> +       tz = to_zone(dev);
-> +       if (!tz)
-> +               return -EINVAL;
-> +
-> +       /*
-> +        * We need this because in the sysfs tree, 'sensorY' is
-> +        * not really the sensor pointer. It just has the name
-> +        * 'sensorY'; whereas 'zoneX' is actually the zone pointer.
-> +        * This means container_of(kobj, struct device, kobj) will not
-> +        * provide the actual sensor pointer.
-> +        */
-> +       indx = get_sensor_indx_by_kobj(tz, kobject_name(kobj));
-> +       if (indx < 0)
-> +               return indx;
-> +
-> +       if (tz->sensor_trip[indx]->num_active_trips <= 0)
-> +               return sprintf(buf, "<Not available>\n");
-> +
-> +       ret += sprintf(buf, "0x%x", tz->sensor_trip[indx]->active_trip_mask);
-> +       for (i = 0; i < tz->sensor_trip[indx]->num_active_trips; i++) {
-> +               ret += sprintf(buf + ret, " %d",
-> +                       tz->sensor_trip[indx]->active_trips[i]);
-> +       }
-> +
-> +       ret += sprintf(buf + ret, "\n");
-> +       return ret;
-> +}
-> +
-> +static ssize_t
-> +ptrip_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-> +{
-> +       int i, indx, ret = 0;
-> +       struct thermal_zone *tz;
-> +       struct device *dev;
-> +
-> +       /* Get the zone pointer */
-> +       dev = container_of(kobj->parent->parent, struct device, kobj);
-> +       tz = to_zone(dev);
-> +       if (!tz)
-> +               return -EINVAL;
-> +
-> +       indx = get_sensor_indx_by_kobj(tz, kobject_name(kobj));
-> +       if (indx < 0)
-> +               return indx;
-> +
-> +       if (tz->sensor_trip[indx]->num_passive_trips <= 0)
-> +               return sprintf(buf, "<Not available>\n");
-> +
-> +       for (i = 0; i < tz->sensor_trip[indx]->num_passive_trips; i++) {
-> +               ret += sprintf(buf + ret, "%d ",
-> +                       tz->sensor_trip[indx]->passive_trips[i]);
-> +       }
-> +
-> +       ret += sprintf(buf + ret, "\n");
-> +       return ret;
-> +}
-> +
-> +static ssize_t
-> +hot_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-> +{
-> +       int indx;
-> +       struct thermal_zone *tz;
-> +       struct device *dev;
-> +
-> +       /* Get the zone pointer */
-> +       dev = container_of(kobj->parent->parent, struct device, kobj);
-> +       tz = to_zone(dev);
-> +       if (!tz)
-> +               return -EINVAL;
-> +
-> +       indx = get_sensor_indx_by_kobj(tz, kobject_name(kobj));
-> +       if (indx < 0)
-> +               return indx;
-> +
-> +       return sprintf(buf, "%d\n", tz->sensor_trip[indx]->hot);
-> +}
-> +
-> +static ssize_t
-> +critical_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-> +{
-> +       int indx;
-> +       struct thermal_zone *tz;
-> +       struct device *dev;
-> +
-> +       /* Get the zone pointer */
-> +       dev = container_of(kobj->parent->parent, struct device, kobj);
-> +       tz = to_zone(dev);
-> +       if (!tz)
-> +               return -EINVAL;
-> +
-> +       indx = get_sensor_indx_by_kobj(tz, kobject_name(kobj));
-> +       if (indx < 0)
-> +               return indx;
-> +
-> +       return sprintf(buf, "%d\n", tz->sensor_trip[indx]->crit);
-> +}
-> +
->  static DEVICE_ATTR(type, 0444, type_show, NULL);
->  static DEVICE_ATTR(temp, 0444, temp_show, NULL);
->  static DEVICE_ATTR(mode, 0644, mode_show, mode_store);
-> @@ -885,7 +1021,27 @@ static DEVICE_ATTR(policy, S_IRUGO | S_IWUSR, policy_show, policy_store);
->  static DEVICE_ATTR(sensor_name, 0444, sensor_name_show, NULL);
->  static DEVICE_ATTR(temp_input, 0444, sensor_temp_show, NULL);
->
-> -static DEVICE_ATTR(zone_name, 0444, zone_name_show, NULL);
-> +/* Thermal zone attributes */
-> +static DEVICE_ATTR(zone_name, S_IRUGO, zone_name_show, NULL);
-> +
-> +/* Thermal trip attributes */
-> +static struct kobj_attribute active_attr = __ATTR_RO(active);
-> +/* TODO: rename this to passive while removing old code */
-> +static struct kobj_attribute passive_attr = __ATTR_RO(ptrip);
-> +static struct kobj_attribute hot_attr = __ATTR_RO(hot);
-> +static struct kobj_attribute crit_attr = __ATTR_RO(critical);
-> +
-> +static struct attribute *trip_attrs[] = {
-> +                       &active_attr.attr,
-> +                       &passive_attr.attr,
-> +                       &hot_attr.attr,
-> +                       &crit_attr.attr,
-> +                       NULL,
-> +                       };
-> +
-> +static struct attribute_group trip_attr_group = {
-> +                       .attrs = trip_attrs,
-> +                       };
->
->  /* sys I/F for cooling device */
->  #define to_cooling_device(_dev)        \
-> @@ -1770,12 +1926,19 @@ struct thermal_zone *create_thermal_zone(const char *name, void *devdata)
->         if (ret)
->                 goto exit_unregister;
->
-> +       tz->kobj_thermal_trip = kobject_create_and_add("thermal_trip",
-> +                                       &tz->device.kobj);
-> +       if (!tz->kobj_thermal_trip)
-> +               goto exit_name;
-> +
->         /* Add this zone to the global list of thermal zones */
->         mutex_lock(&zone_list_lock);
->         list_add_tail(&tz->node, &thermal_zone_list);
->         mutex_unlock(&zone_list_lock);
->         return tz;
->
-> +exit_name:
-> +       device_remove_file(&tz->device, &dev_attr_zone_name);
->  exit_unregister:
->         device_unregister(&tz->device);
->  exit_idr:
-> @@ -1789,6 +1952,7 @@ EXPORT_SYMBOL(create_thermal_zone);
->  void remove_thermal_zone(struct thermal_zone *tz)
->  {
->         struct thermal_zone *pos, *next;
-> +       int i;
->         bool found = false;
->
->         if (!tz)
-> @@ -1809,6 +1973,33 @@ void remove_thermal_zone(struct thermal_zone *tz)
->
->         device_remove_file(&tz->device, &dev_attr_zone_name);
->
-> +       /* Just for ease of usage */
-> +       i = tz->sensor_indx;
-> +
-> +       while (--i >= 0) {
-> +               /* Remove /sys/class/thermal/zoneX/sensorY */
-> +               sysfs_remove_link(&tz->device.kobj,
-> +                               kobject_name(&tz->sensors[i]->device.kobj));
-> +
-> +               /* Remove /sys/class/thermal/zoneX/thermal_trip/sensorY */
-> +               if (tz->kobj_trip[i]) {
-> +                       sysfs_remove_group(tz->kobj_trip[i], &trip_attr_group);
-> +                       kobject_del(tz->kobj_trip[i]);
-> +               }
-> +       }
-> +
-> +       /* Remove /sys/class/thermal/zoneX/thermal_trip */
-> +       kobject_del(tz->kobj_thermal_trip);
-> +
-> +       /* Release the cdevs attached to this zone */
-> +       i = tz->cdev_indx;
-> +
-> +       while (--i >= 0) {
-> +               /* Remove /sys/class/thermal/zoneX/cooling_deviceY */
-> +               sysfs_remove_link(&tz->device.kobj,
-> +                               kobject_name(&tz->cdevs[i]->device.kobj));
-> +       }
-> +
->         release_idr(&thermal_zone_idr, &thermal_idr_lock, tz->id);
->         idr_destroy(&tz->idr);
->
-> @@ -1920,6 +2111,48 @@ exit_zone:
->  }
->  EXPORT_SYMBOL(add_cdev_to_zone);
->
-> +int add_sensor_trip_info(struct thermal_zone *tz, struct thermal_sensor *ts,
-> +                       struct thermal_trip_point *trip)
-> +{
-> +       int indx, ret = -EINVAL;
-> +
-> +       if (!tz || !ts || !trip)
-> +               return ret;
-> +
-> +       mutex_lock(&zone_list_lock);
-> +
-> +       GET_INDEX(tz, ts, indx, sensor);
-> +       if (indx < 0)
-> +               goto exit_indx;
-> +
-> +       /* Create kobj for /sys/class/thermal/zoneX/thermal_trip/sensorY */
-> +       tz->kobj_trip[indx] = kobject_create_and_add(
-> +                                       kobject_name(&ts->device.kobj),
-> +                                       tz->kobj_thermal_trip);
-> +       if (!tz->kobj_trip[indx]) {
-> +               ret = -ENOMEM;
-> +               goto exit_indx;
-> +       }
-> +
-> +       ret = sysfs_create_group(tz->kobj_trip[indx], &trip_attr_group);
-> +       if (ret) {
-> +               dev_err(&tz->device, "sysfs_create_group failed:%d\n", ret);
-> +               goto exit_kobj;
-> +       }
-> +
-> +       tz->sensor_trip[indx] = trip;
-> +       mutex_unlock(&zone_list_lock);
-> +       return 0;
-> +
-> +exit_kobj:
-> +       kobject_del(tz->kobj_trip[indx]);
-> +       tz->kobj_trip[indx] = NULL;
-> +exit_indx:
-> +       mutex_unlock(&zone_list_lock);
-> +       return ret;
-> +}
-> +EXPORT_SYMBOL(add_sensor_trip_info);
-> +
->  /**
->   * thermal_sensor_register - register a new thermal sensor
->   * @name:      name of the thermal sensor
-> diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> index c4e45c7..8372f05 100644
-> --- a/include/linux/thermal.h
-> +++ b/include/linux/thermal.h
-> @@ -158,6 +158,30 @@ struct thermal_attr {
->         char name[THERMAL_NAME_LENGTH];
->  };
->
-> +/*
-> + * This structure defines the trip points for a sensor.
-> + * The actual values for these trip points come from
-> + * platform characterization. The thermal governors
-> + * (either kernel or user space) may take appropriate
-> + * actions when the sensors reach these trip points.
-> + * See Documentation/thermal/sysfs-api2.txt for more details.
-> + *
-> + * As of now, For a particular sensor, we support:
-> + * a) 1 hot trip point
-> + * b) 1 critical trip point
-> + * c) 'n' passive trip points
-> + * d) 'm' active trip points
-> + */
-Durgadoss,
-Currently the newly introduced governors don't treat passive/active
-differently, what is the idea about this when you rebase governors to
-new thermal zone/sensors? handle the passive/active differently or
-eliminate the difference?
+There is a potential deadlock situation when we manipulate the pci-sysfs user
+interfaces from different bus hierarchy simultaneously, described as following:
 
-> +struct thermal_trip_point {
-> +       int hot;
-> +       int crit;
-> +       int num_passive_trips;
-> +       int *passive_trips;
-> +       int num_active_trips;
-> +       int *active_trips;
-> +       int active_trip_mask;
-> +};
-> +
->  struct thermal_sensor {
->         char name[THERMAL_NAME_LENGTH];
->         int id;
-> @@ -215,6 +239,16 @@ struct thermal_zone {
->         /* cdev level information */
->         int cdev_indx; /* index into 'cdevs' array */
->         struct thermal_cooling_device *cdevs[MAX_CDEVS_PER_ZONE];
-> +
-> +       /*
-> +        * Thermal sensors trip information:
-> +        * kobj_thermal_trip: /sys/class/thermal/zoneX/thermal_trip
-> +        * kobj_trip: /sys/class/thermal/zoneX/thermal_trip/sensorY
-> +        * sensor_trip: trip point information for each sensor
-> +        */
-> +       struct kobject *kobj_thermal_trip;
-> +       struct kobject *kobj_trip[MAX_SENSORS_PER_ZONE];
-> +       struct thermal_trip_point *sensor_trip[MAX_SENSORS_PER_ZONE];
->  };
->
->  /* Structure that holds thermal governor information */
-> @@ -295,6 +329,9 @@ int add_sensor_to_zone(struct thermal_zone *, struct thermal_sensor *);
->
->  int add_cdev_to_zone(struct thermal_zone *, struct thermal_cooling_device *);
->
-> +int add_sensor_trip_info(struct thermal_zone *, struct thermal_sensor *,
-> +                       struct thermal_trip_point *);
-> +
->  #ifdef CONFIG_NET
->  extern int thermal_generate_netlink_event(u32 orig, enum events event);
->  #else
-> --
-> 1.7.9.5
->
+path1: sysfs remove device:             | path2: sysfs rescan device: 
+sysfs_schedule_callback_work()          | sysfs_write_file() 
+  remove_callback()                     |   flush_write_buffer()
+*1* mutex_lock(&pci_remove_rescan_mutex)|*2*  sysfs_get_active(attr_sd) 
+      ...                               |     dev_attr_store() 
+        device_remove_file()            |       dev_rescan_store()
+          ...                           |*4*      mutex_lock(&pci_remove_rescan_mutex)
+*3*       sysfs_deactivate(sd)          |     ...
+            wait_for_completion()       |*5*  sysfs_put_active(attr_sd)
+*6* mutex_unlock(&pci_remove_rescan_mutex)
+
+If path1 firstly holds the pci_remove_rescan_mutex at *1*, then another path 
+called path2 actived and runs to *2* before path1 runs to *3*, we now runs
+to a deadlock situation:
+Path1 holds the mutex waiting path2 to decrease sysfs_dirent's s_active
+counter at *5*, but path2 is blocked at *4* when trying to get the 
+pci_remove_rescan_mutex. The mutex won't be put by path1 until it reach
+*6*, but it's now blocked at *3*.
+
+The circumvented approach is to avoid manipulating(remove/scan) the pci-tree at 
+the same time. If we find someone else is manipulating the pci-tree we simply
+abort current operation without touching the pci-tree concurrently.
+
+*dmesg ifno*:
+(snip)
+1000e 0000:1c:00.0: eth9: Intel(R) PRO/1000 Network Connection
+sd 13:2:0:0: [sdb] Attached SCSI disk
+e1000e 0000:1c:00.0: eth9: MAC: 0, PHY: 4, PBA No: D50228-005
+e1000e 0000:1c:00.1: Disabling ASPM  L1
+e1000e 0000:1c:00.1: Interrupt Throttling Rate (ints/sec) set to dynamic conservative mode
+e1000e 0000:1c:00.1: irq 143 for MSI/MSI-X
+e1000e 0000:1c:00.1: eth10: (PCI Express:2.5GT/s:Width x4) 00:15:17:cd:96:bf
+e1000e 0000:1c:00.1: eth10: Intel(R) PRO/1000 Network Connection
+e1000e 0000:1c:00.1: eth10: MAC: 0, PHY: 4, PBA No: D50228-005
+INFO: task bash:62982 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bash            D 0000000000000000     0 62982  62978 0x00000080
+ ffff88038b277db8 0000000000000082 ffff88038b277fd8 0000000000013940
+ ffff88038b276010 0000000000013940 0000000000013940 0000000000013940
+ ffff88038b277fd8 0000000000013940 ffff880377449e30 ffff8806e822c670
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff8151bd6e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff8151a4e3>] __mutex_lock_slowpath+0xd3/0x150
+ [<ffffffff8151a3eb>] mutex_lock+0x2b/0x50
+ [<ffffffff812821dc>] dev_rescan_store+0x5c/0x80
+ [<ffffffff81341800>] dev_attr_store+0x20/0x30
+ [<ffffffff811e3eef>] sysfs_write_file+0xef/0x170
+ [<ffffffff81173d08>] vfs_write+0xc8/0x190
+ [<ffffffff81173ed1>] sys_write+0x51/0x90
+ [<ffffffff81524b29>] system_call_fastpath+0x16/0x1b
+INFO: task bash:64141 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+bash            D ffffffff81610460     0 64141  64136 0x00000080
+ ffff8803540e9db8 0000000000000086 ffff8803540e9fd8 0000000000013940
+ ffff8803540e8010 0000000000013940 0000000000013940 0000000000013940
+ ffff8803540e9fd8 0000000000013940 ffff8807db338a10 ffff8806f09abc60
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff8151bd6e>] schedule_preempt_disabled+0xe/0x10
+ [<ffffffff8151a4e3>] __mutex_lock_slowpath+0xd3/0x150
+ [<ffffffff8151a3eb>] mutex_lock+0x2b/0x50
+ [<ffffffff812821dc>] dev_rescan_store+0x5c/0x80
+ [<ffffffff81341800>] dev_attr_store+0x20/0x30
+ [<ffffffff811e3eef>] sysfs_write_file+0xef/0x170
+ [<ffffffff81173d08>] vfs_write+0xc8/0x190
+ [<ffffffff81173ed1>] sys_write+0x51/0x90
+ [<ffffffff81524b29>] system_call_fastpath+0x16/0x1b
+INFO: task kworker/u:3:64451 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+kworker/u:3     D ffffffff81610460     0 64451      2 0x00000080
+ ffff8807d51b7a30 0000000000000046 ffff8807d51b7fd8 0000000000013940
+ ffff8807d51b6010 0000000000013940 0000000000013940 0000000000013940
+ ffff8807d51b7fd8 0000000000013940 ffff8807db339420 ffff88037744b250
+Call Trace:
+ [<ffffffff8151ba79>] schedule+0x29/0x70
+ [<ffffffff81519ded>] schedule_timeout+0x19d/0x220
+ [<ffffffff81165f92>] ? __slab_free+0x1f2/0x2f0
+ [<ffffffff8151b8fe>] wait_for_common+0x11e/0x190
+ [<ffffffff8108a6e0>] ? try_to_wake_up+0x2c0/0x2c0
+ [<ffffffff8151ba4d>] wait_for_completion+0x1d/0x20
+ [<ffffffff811e53e8>] sysfs_addrm_finish+0xb8/0xd0
+ [<ffffffff811e4320>] ? sysfs_schedule_callback+0x1e0/0x1e0
+ [<ffffffff811e33f0>] sysfs_hash_and_remove+0x60/0xb0
+ [<ffffffff811e43c9>] sysfs_remove_file+0x39/0x50
+ [<ffffffff81342cb7>] device_remove_file+0x17/0x20
+ [<ffffffff8134505c>] bus_remove_device+0xdc/0x180
+ [<ffffffff81342eb0>] device_del+0x120/0x1d0
+ [<ffffffff81342f82>] device_unregister+0x22/0x60
+ [<ffffffff8127ade4>] pci_stop_bus_device+0x94/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127ad90>] pci_stop_bus_device+0x40/0xa0
+ [<ffffffff8127af66>] pci_stop_and_remove_bus_device+0x16/0x30
+ [<ffffffff81282359>] remove_callback+0x29/0x40
+ [<ffffffff811e4344>] sysfs_schedule_callback_work+0x24/0x70
+ [<ffffffff81070009>] process_one_work+0x179/0x4b0
+ [<ffffffff8107210e>] worker_thread+0x12e/0x330
+ [<ffffffff81071fe0>] ? manage_workers+0x110/0x110
+ [<ffffffff8107705e>] kthread+0x9e/0xb0
+ [<ffffffff81525bc4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81076fc0>] ? kthread_freezable_should_stop+0x70/0x70
+ [<ffffffff81525bc0>] ? gs_change+0x13/0x13
+
+Reported-by: Taku Izumi <izumi.taku@jp.fujitsu.com> 
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
+---
+ drivers/pci/pci-sysfs.c |   42 ++++++++++++++++++++++++++----------------
+ 1 files changed, 26 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 05b78b1..d2efbb0 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -295,10 +295,13 @@ static ssize_t bus_rescan_store(struct bus_type *bus, const char *buf,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
+-		while ((b = pci_find_next_bus(b)) != NULL)
+-			pci_rescan_bus(b);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		if (mutex_trylock(&pci_remove_rescan_mutex)) {
++			while ((b = pci_find_next_bus(b)) != NULL)
++				pci_rescan_bus(b);
++			mutex_unlock(&pci_remove_rescan_mutex);
++		} else {
++			return 0;
++		}
+ 	}
+ 	return count;
+ }
+@@ -319,9 +322,12 @@ dev_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
+-		pci_rescan_bus(pdev->bus);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		if (mutex_trylock(&pci_remove_rescan_mutex)) {
++			pci_rescan_bus(pdev->bus);
++			mutex_unlock(&pci_remove_rescan_mutex);
++		} else {
++			return 0;
++		}
+ 	}
+ 	return count;
+ }
+@@ -330,9 +336,10 @@ static void remove_callback(struct device *dev)
+ {
+ 	struct pci_dev *pdev = to_pci_dev(dev);
+ 
+-	mutex_lock(&pci_remove_rescan_mutex);
+-	pci_stop_and_remove_bus_device(pdev);
+-	mutex_unlock(&pci_remove_rescan_mutex);
++	if (mutex_trylock(&pci_remove_rescan_mutex)) {
++		pci_stop_and_remove_bus_device(pdev);
++		mutex_unlock(&pci_remove_rescan_mutex);
++	}
+ }
+ 
+ static ssize_t
+@@ -366,12 +373,15 @@ dev_bus_rescan_store(struct device *dev, struct device_attribute *attr,
+ 		return -EINVAL;
+ 
+ 	if (val) {
+-		mutex_lock(&pci_remove_rescan_mutex);
+-		if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
+-			pci_rescan_bus_bridge_resize(bus->self);
+-		else
+-			pci_rescan_bus(bus);
+-		mutex_unlock(&pci_remove_rescan_mutex);
++		if (mutex_trylock(&pci_remove_rescan_mutex)) {
++			if (!pci_is_root_bus(bus) && list_empty(&bus->devices))
++				pci_rescan_bus_bridge_resize(bus->self);
++			else
++				pci_rescan_bus(bus);
++			mutex_unlock(&pci_remove_rescan_mutex);
++		} else {
++			return 0;
++		}
+ 	}
+ 	return count;
+ }
+-- 
+1.7.1
+
