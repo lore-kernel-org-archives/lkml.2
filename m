@@ -1,102 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab2L0MmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 07:42:01 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:46133 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab2L0Ml7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 07:41:59 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
-Date: Thu, 27 Dec 2012 13:47:22 +0100
-Message-ID: <1723076.byQgAGE2K7@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <CAE9FiQWpAvgam3t7isFcZOz+OEe4D4QJxBbqcbiqMJVwJz=-8A@mail.gmail.com>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <6257154.ucqGyPHqkg@vostro.rjw.lan> <CAE9FiQWpAvgam3t7isFcZOz+OEe4D4QJxBbqcbiqMJVwJz=-8A@mail.gmail.com>
+	id S1752698Ab2L0MnC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 07:43:02 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:58025 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216Ab2L0MnB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 07:43:01 -0500
+Message-ID: <50DC422E.3070801@ahsoftware.de>
+Date: Thu, 27 Dec 2012 13:42:22 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Vincent Palatin <vpalatin@chromium.org>, rtc-linux@googlegroups.com,
+        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@KARO-electronics.de>
+Subject: Re: [rtc-linux] [PATCH] rtc: recycle id when unloading a rtc driver
+References: <1343951605-25722-1-git-send-email-vpalatin@chromium.org> <20121218164659.a3d3655a.akpm@linux-foundation.org> <50D16EA3.8040803@ahsoftware.de> <20121218234543.786a2211.akpm@linux-foundation.org> <50D1730D.7010108@ahsoftware.de> <20121219002722.87438a08.akpm@linux-foundation.org> <50D180E6.3010305@ahsoftware.de>
+In-Reply-To: <50D180E6.3010305@ahsoftware.de>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 26, 2012 04:10:32 PM Yinghai Lu wrote:
-> On Wed, Dec 26, 2012 at 2:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Wednesday, December 26, 2012 12:41:05 PM Yinghai Lu wrote:
-> >> On Wed, Dec 26, 2012 at 12:16 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> > On Wed, Dec 26, 2012 at 12:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> >> >> Do you have a reference for this?  I think this might have been true
-> >> >> in the past, but I don't think it's true for any version of gcc we
-> >> >> support for building Linux.
-> >> >
-> >> > http://lkml.indiana.edu/hypermail/linux/kernel/0804.3/3600.html
-> >>
-> >> the problem is already addressed by:
-> >>
-> >> | commit f9d14250071eda9972e4c9cea745a11185952114
-> >> | Author: Linus Torvalds <torvalds@linux-foundation.org>
-> >> | Date:   Fri Jan 2 09:29:43 2009 -0800
-> >> |
-> >> |    Disallow gcc versions 4.1.{0,1}
-> >> |
-> >> |    These compiler versions are known to miscompile __weak functions and
-> >> |    thus generate kernels that don't necessarily work correctly.  If a weak
-> >> |    function is int he same compilation unit as a caller, gcc may end up
-> >> |    inlining it, and thus binding the weak function too early.
-> >> |
-> >> |    See
-> >> |
-> >> |        http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27781
-> >> |
-> >> |    for details.
-> >>
-> >> so it is ok to put the __weak in the same file now.
-> >
-> > Cool, thanks for checking and for the ACK!
-> 
-> wait, we have some problem on systems that root bus is not exported via DSDT ...
-> 
-> one of my nehalem system that have uncore cpu devices are not exported via ACPI.
-> 
-> also there will be problem that system is booting with acpi=off.
-> 
-> 
-> +int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
-> +{
-> +       struct pci_sysdata *sd = bridge->bus->sysdata;
-> +       struct pci_root_info *info = container_of(sd, struct pci_root_info, sd);
-> +
-> +       ACPI_HANDLE_SET(&bridge->dev, info->bridge->handle);
-> +       return 0;
-> +}
-> 
-> will get wrong info...via sd... as their sd is standalone
+Am 19.12.2012 09:55, schrieb Alexander Holler:
 
-Yes, it will be called in all code paths leading to acpi_create_root_bus(),
-not only the ones started by pci_acpi_scan_root().  Well, too bad.
+> Unlikely, as I've worked hard to get one of the first drivers for
+> pluggable RTCs into the kernel. ;)
 
-By the way, that illustrates nicely why I generally have concerns about __weak
-stuff and similar tricks.
+BTW. maybe you could have a look at the patch for that:
 
-Bjorn, I had tried to use the approach you suggested, but it didn't work.
-I thought about fixing that, but everything I could come up with turned out to
-be too complicated, so I'm inclined to use the previous version after all:
+https://lkml.org/lkml/2012/12/15/64
 
-https://patchwork.kernel.org/patch/1889221/
+It should already be in your mailbox.
 
-that has been acked by Yinghai, Greg and Peter already.
+I had to move the driver (on maintainer request) from the iio subsystem 
+to the rtc subsystem and even if Jonathon Cameron would feed the smal 
+patch-series through iio into the kernel, an OK from one of the RTC 
+maintainers (or you) is needed.
+
+As the v5 of that patch suggests, it was already reviewed (by Lars-Peter 
+Clausen) and should be in a good state.
 
 Thanks,
-Rafael
 
+Alexander
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
