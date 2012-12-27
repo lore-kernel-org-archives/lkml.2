@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab2L0Jvn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 04:51:43 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:47199 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab2L0Jvl (ORCPT
+	id S1752166Ab2L0JwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 04:52:14 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44509 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243Ab2L0JwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 04:51:41 -0500
+	Thu, 27 Dec 2012 04:52:13 -0500
+X-AuditID: 9c930179-b7becae000000e51-a8-50dc1a4b824c
+From: Namhyung Kim <namhyung@kernel.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Namhyung Kim <namhyung.kim@lge.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Fredereic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH 2/2] tracing: Use sched_clock_cpu for trace_clock_global
+References: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
+	<1356576585-28782-2-git-send-email-namhyung@kernel.org>
+Date: Thu, 27 Dec 2012 18:52:10 +0900
+In-Reply-To: <1356576585-28782-2-git-send-email-namhyung@kernel.org> (Namhyung
+	Kim's message of "Thu, 27 Dec 2012 11:49:45 +0900")
+Message-ID: <87wqw3rfed.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20121227082724.GA11775@zuhnb712.ap.bm.net>
-References: <20121227082724.GA11775@zuhnb712.ap.bm.net>
-Date: Thu, 27 Dec 2012 10:51:40 +0100
-X-Google-Sender-Auth: -zm_ffBeIEKQiycwgMzbpV4_lf0
-Message-ID: <CAMuHMdWbyrDaaV5TWiEafEpjuscoGKXKKYzNBw_CSSWYLbNaPQ@mail.gmail.com>
-Subject: Re: What does ISA/PCI really mean to ARM architecture?
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Woody Wu <narkewoody@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 9:27 AM, Woody Wu <narkewoody@gmail.com> wrote:
-> Can a peripheral chip that claims to be ISA or PCI device be used in a
-> ARM based embedded system?  For these kind of chips, I only concern
-> about the planar kind of devices, means they are not on a dedicated
-> expansion card.
+On Thu, 27 Dec 2012 11:49:45 +0900, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
 >
-> From hardware point of view, to attach a ISA or PCI planar chip, is
-> there any requirement need to fulfill on a ARM bard?
+> For systems have unstable sched_clock, all cpu_clock() does is enable/
+> disable local irq during call to sched_clock().  And for stable systems
+
+Oops, I meant s/sched_clock/scheck_clock_cpu/.
+
+Thanks,
+Namhyung
+
+
+> they are same.
 >
-> From Linux driver point of view, what are needed to support an ISA or
-> PCI driver in ARM architecture?  More important, is ISA or PCI device a
-> platform device?  If not, how to add these kind of devices in my board
-> definition?
-
-An ISA device is typically a platform device. For ARM, which uses device trees,
-this means you define it in the device tree.
-
-A PCI device is not a platform device, as devices on a PCI bus can be
-probed automatically. The PCI host bridge is typically a platform device,
-though, so it it should be in your device tree.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> As in trace_clock_global(), we already does it for local irq, calling
+> sched_clock_cpu() directly would be appropriate.
+>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Fredereic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/trace/trace_clock.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
+> index 394783531cbb..795f077978a8 100644
+> --- a/kernel/trace/trace_clock.c
+> +++ b/kernel/trace/trace_clock.c
+> @@ -86,7 +86,7 @@ u64 notrace trace_clock_global(void)
+>  	local_irq_save(flags);
+>  
+>  	this_cpu = raw_smp_processor_id();
+> -	now = cpu_clock(this_cpu);
+> +	now = sched_clock_cpu(this_cpu);
+>  	/*
+>  	 * If in an NMI context then dont risk lockups and return the
+>  	 * cpu_clock() time:
