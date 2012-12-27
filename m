@@ -1,127 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291Ab2L0RDe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 12:03:34 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44713 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752749Ab2L0RDc (ORCPT
+	id S1753308Ab2L0RK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 12:10:58 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:57448 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab2L0RKz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 12:03:32 -0500
-Message-ID: <1356627803.17740.11.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH] [stable-resend] regulator: core: if voltage scaling
- fails, restore original voltage values
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Paolo Pisati <paolo.pisati@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Date: Thu, 27 Dec 2012 18:03:23 +0100
-In-Reply-To: <1355786618-12691-1-git-send-email-paolo.pisati@canonical.com>
-References: <20121217154512.GI4985@opensource.wolfsonmicro.com>
-	 <1355786618-12691-1-git-send-email-paolo.pisati@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-OcfZUkz0IlhetDlK3WXS"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 151.217.219.247
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 27 Dec 2012 12:10:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <1356626802.5433.34.camel@anish-Inspiron-N5050>
+References: <20121227082724.GA11775@zuhnb712.ap.bm.net>
+	<CAKON4OwtPJYRp=FevsX5NLzohX=iLxf2FS0dG4hmdpcGayBy8Q@mail.gmail.com>
+	<1356626802.5433.34.camel@anish-Inspiron-N5050>
+Date: Thu, 27 Dec 2012 12:10:54 -0500
+Message-ID: <CAKON4Ozx6N0v6AQ-60poN+cuCFxPEfW9JQ8OXL==8TxaeUyGmA@mail.gmail.com>
+Subject: Re: What does ISA/PCI really mean to ARM architecture?
+From: "jonsmirl@gmail.com" <jonsmirl@gmail.com>
+To: anish kumar <anish198519851985@gmail.com>
+Cc: Woody Wu <narkewoody@gmail.com>, kernelnewbies@kernelnewbies.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 27, 2012 at 11:46 AM, anish kumar
+<anish198519851985@gmail.com> wrote:
+> On Thu, 2012-12-27 at 11:22 -0500, jonsmirl@gmail.com wrote:
+>> On Thu, Dec 27, 2012 at 3:27 AM, Woody Wu <narkewoody@gmail.com> wrote:
+>> > Hi, list
+>> >
+>> > I know this might be a very basic question.  But I really don't clear at
+>> > it.
+>> >
+>> > Can a peripheral chip that claims to be ISA or PCI device be used in a
+>> > ARM based embedded system?  For these kind of chips, I only concern
+>> > about the planar kind of devices, means they are not on a dedicated
+>> > expansion card.
+>> >
+>> > From hardware point of view, to attach a ISA or PCI planar chip, is
+>> > there any requirement need to fulfill on a ARM board?
+>>
+>> See if your ARM CPU has an interface for SRAM (in addition to DRAM).
+>> You can use a SRAM chip select to access ISA type devices. But you may
+> Would you mind explaining this in detail?
 
---=-OcfZUkz0IlhetDlK3WXS
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+The old ISA bus is very similar to modern SRAM interfaces.  Address
+latch enable + R/W + data strobe. Not DRAM interfaces which are
+different.  See if your CPU supports attaching SRAM and then look at
+the timing diagrams.  You can probably make it work with some logic
+glue.
 
-On Tue, 2012-12-18 at 00:23 +0100, Paolo Pisati wrote:
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Paolo Pisati <paolo.pisati@canonical.com>
-> Tested-by: Robert Nelson <robertcnelson@gmail.com>
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>> need additional buffers/latches to do this.
+>>
+>> Another solution is to attach you peripherals using USB. Almost all
+> Connect using USB what does this mean?
 
-Since this is not in Linus's tree, it is too early to request it be
-applied to stable trees.  If it has gone into Mark's tree without the
-'cc: stable' then it is probably too late to add that.  You'll need to
-send a request after Linus has merged it.
+Find the peripheral function you are looking for in a a chip with USB
+device support. Most ARM CPUs have USB host support. Pick chips with
+on-chip PHY support.
 
-Ben.
+>> embedded wifi chips are attached this way. The USB connectors aren't
+>> required, you can route USB around on your PCB. USB hub chips are
+>> $0.35 if you need more ports.  USB Ethernet chips are available.
+>>
+>> Other options include SPI/I2C. It is worthwhile to investigate these
+> Only chips which support SPI/I2C can be used but ISA/PCI is completely
+> orthogonal to this AFAIK.
 
-> ---
->  drivers/regulator/core.c |   16 ++++++++++++++--
->  1 file changed, 14 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> index e872c8b..c347fd0 100644
-> --- a/drivers/regulator/core.c
-> +++ b/drivers/regulator/core.c
-> @@ -2250,6 +2250,7 @@ int regulator_set_voltage(struct regulator *regulat=
-or, int min_uV, int max_uV)
->  {
->  	struct regulator_dev *rdev =3D regulator->rdev;
->  	int ret =3D 0;
-> +	int old_min_uV, old_max_uV;
-> =20
->  	mutex_lock(&rdev->mutex);
-> =20
-> @@ -2271,18 +2272,29 @@ int regulator_set_voltage(struct regulator *regul=
-ator, int min_uV, int max_uV)
->  	ret =3D regulator_check_voltage(rdev, &min_uV, &max_uV);
->  	if (ret < 0)
->  		goto out;
-> +=09
-> +	/* restore original values in case of error */
-> +	old_min_uV =3D regulator->min_uV;
-> +	old_max_uV =3D regulator->max_uV;
->  	regulator->min_uV =3D min_uV;
->  	regulator->max_uV =3D max_uV;
-> =20
->  	ret =3D regulator_check_consumers(rdev, &min_uV, &max_uV);
->  	if (ret < 0)
-> -		goto out;
-> +		goto out2;
-> =20
->  	ret =3D _regulator_do_set_voltage(rdev, min_uV, max_uV);
-> -
-> +	if (ret < 0)
-> +		goto out2;
-> +=09
->  out:
->  	mutex_unlock(&rdev->mutex);
->  	return ret;
-> +out2:
-> +	regulator->min_uV =3D old_min_uV;
-> +	regulator->max_uV =3D old_max_uV;
-> +	mutex_unlock(&rdev->mutex);
-> +	return ret;
->  }
->  EXPORT_SYMBOL_GPL(regulator_set_voltage);
-> =20
+Instead of trying to hook up an ISA chip, go look for the same
+function in a SPI/I2C/USB chip.  Almost every peripheral function is
+available with many interface choices. Pick one that is more
+compatible with your host CPU.
 
---=20
-Ben Hutchings
-The world is coming to an end.	Please log off.
+>> serial solutions before doing a parallel solution. Parallel buses eat
+>> up a lot of PCB space.
+>>
+>>
+>> >
+>> > From Linux driver point of view, what are needed to support an ISA or
+>> > PCI driver in ARM architecture?  More important, is ISA or PCI device a
+>> > platform device?  If not, how to add these kind of devices in my board
+>> > definition?
+>> >
+>> > I know my question might not be reasonable enough, if I messed concepts,
+>> > please sort me out.
+>> >
+>> >
+>> > Thanks in advance.
+>> >
+>> >
+>> > --
+>> > woody
+>> > I can't go back to yesterday - because I was a different person then.
+>> > --
+>> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> > the body of a message to majordomo@vger.kernel.org
+>> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> > Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>>
+>>
+>> --
+>> Jon Smirl
+>> jonsmirl@gmail.com
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
 
---=-OcfZUkz0IlhetDlK3WXS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIVAwUAUNx/W+e/yOyVhhEJAQq+OQ//ScAwDPaoQJXNRW8Qdo0x/WPQ22HdPjdy
-rP8z54QQPyGY25q5jL4MoblgD8uH7hPi5C/PxWjbdTyFfMKUsJq6PVsk4NR61kMl
-s63PROy4ojjz5SyarqkjFOXErYi8QfcTBh3ERiVxnDLUGbYguGnRfvNIgiM4/esb
-zOnOiujGze3VFLTeFrpBtIllxsmCYgkk6vsYQbyANtcqPJ26ImolZFuLqfjZwM5j
-EFtT4lqre0+SWQpHUHdW9VW6VZn3V5RNUMRJM7s3hXy6PK6JW9/NkG5KPFWofcza
-zrJT4NNrLYAk5ryndD9MFRJG6q7Ey1azhWTmsQM0SADkTHShObTZf2xcxjNy/R9P
-Rsjkg+ZU/7l+TPcAIsuirCyjbUIHCFS8g5leCNq7HIoDTUfPh8TaKRQZ98aAQIOC
-nU4NA95GQGoHQafTQlB3dr/yP2YsMGb5ME879z1qoZion7NucGgXpTYIJl91R3HY
-SM9se8ROabzjvYKH8O58LBrIKYEljruQqXEOvCqK86CxFvCDvQd8FxukIWKL5XI6
-olj2B12FG8InybOBsfPOdSK0QvhIcdFTwNSsYGyUhtmtl5rIa1v38X/1SLMM21qr
-OND5+wj3l1IyRR6d2rsGJ+Dt5B/cPtHEITNWTDlRnZcY6A1LbqJalmSQ0B8gbZnB
-ljM4oA77hy8=
-=405L
------END PGP SIGNATURE-----
-
---=-OcfZUkz0IlhetDlK3WXS--
+--
+Jon Smirl
+jonsmirl@gmail.com
