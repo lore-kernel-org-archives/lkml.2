@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab2L0EDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 23:03:11 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:52388 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751743Ab2L0EDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 23:03:09 -0500
-Message-ID: <50DBC856.6030208@zytor.com>
-Date: Wed, 26 Dec 2012 20:02:30 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752629Ab2L0E32 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 23:29:28 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:54660 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab2L0E3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 23:29:25 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Containers <containers@lists.linux-foundation.org>
+References: <50DBC2E0.3040908@huawei.com>
+Date: Wed, 26 Dec 2012 20:29:15 -0800
+In-Reply-To: <50DBC2E0.3040908@huawei.com> (Li Zefan's message of "Thu, 27 Dec
+	2012 11:39:12 +0800")
+Message-ID: <87vcbo15k4.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: andrew.cooper3@citrix.com, ebiederm@xmission.com, jbeulich@suse.com,
-        konrad.wilk@oracle.com, maxim.uvarov@oracle.com, mingo@redhat.com,
-        tglx@linutronix.de, vgoyal@redhat.com, x86@kernel.org,
-        kexec@lists.infradead.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xensource.com
-Subject: Re: [PATCH v3 00/11] xen: Initial kexec/kdump implementation
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+rCea7Ej6CfKt8V2ctHGf4hrLggmVkN1Q=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0019]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Li Zefan <lizefan@huawei.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] userns: Allow unprivileged reboot
+X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2012 06:18 PM, Daniel Kiper wrote:
-> Hi,
+Li Zefan <lizefan@huawei.com> writes:
+
+> In a container with its own pid namespace and user namespace, rebooting
+> the system won't reboot the host, but terminate all the processes in
+> it and thus have the container shutdown, so it's safe.
 >
-> This set of patches contains initial kexec/kdump implementation for Xen v3.
-> Currently only dom0 is supported, however, almost all infrustructure
-> required for domU support is ready.
->
-> Jan Beulich suggested to merge Xen x86 assembler code with baremetal x86 code.
-> This could simplify and reduce a bit size of kernel code. However, this solution
-> requires some changes in baremetal x86 code. First of all code which establishes
-> transition page table should be moved back from machine_kexec_$(BITS).c to
-> relocate_kernel_$(BITS).S. Another important thing which should be changed in that
-> case is format of page_list array. Xen kexec hypercall requires to alternate physical
-> addresses with virtual ones. These and other required stuff have not been done in that
-> version because I am not sure that solution will be accepted by kexec/kdump maintainers.
-> I hope that this email spark discussion about that topic.
->
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-I want a detailed list of the constraints that this assumes and 
-therefore imposes on the native implementation as a result of this.  We 
-have had way too many patches where Xen PV hacks effectively nailgun 
-arbitrary, and sometimes poor, design decisions in place and now we 
-can't fix them.
+Applied to my development tree.  It will eventaully make it to my
+for-next branch.
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Eric
