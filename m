@@ -1,106 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699Ab2L0Aqb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 19:46:31 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:47430 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750918Ab2L0Aq3 (ORCPT
+	id S1751538Ab2L0AvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 19:51:07 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:56602 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab2L0AvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 19:46:29 -0500
+	Wed, 26 Dec 2012 19:51:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121127064618.GM25516@redhat.com>
-References: <F9E001219150CB45BEDC82A650F360C90146F4DA@G4W3208.americas.hpqcorp.net>
- <20121120134104.GI27378@stefanha-thinkpad.redhat.com> <F9E001219150CB45BEDC82A650F360C90147066B@G4W3208.americas.hpqcorp.net>
- <20121126234612.GC10634@amt.cnet> <20121127064618.GM25516@redhat.com>
+In-Reply-To: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
+References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Dec 2012 17:46:05 -0700
-Message-ID: <CAErSpo6c-_Wy0doXKhuFvZs=S+_taDAk7b7893vOX3VihuvhRA@mail.gmail.com>
-Subject: Re: [Qemu-devel] [PATCH 0/4] AER-KVM: Error containment of PCI
- pass-thru devices assigned to KVM guests
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>,
-        "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>,
-        Stefan Hajnoczi <stefanha@gmail.com>,
+Date: Wed, 26 Dec 2012 17:50:42 -0700
+Message-ID: <CAErSpo6QWZfZ9YQAXkDOPvqBrwhS4wEzrxiUSAi7myVfoDGaKA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] Thunderbolt workarounds
+To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+        Miles J Penner <miles.j.penner@intel.com>,
+        John Ronciak <john.ronciak@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Tushar N Dave <tushar.n.dave@intel.com>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 11:46 PM, Gleb Natapov <gleb@redhat.com> wrote:
-> On Mon, Nov 26, 2012 at 09:46:12PM -0200, Marcelo Tosatti wrote:
->> On Tue, Nov 20, 2012 at 02:09:46PM +0000, Pandarathil, Vijaymohan R wrote:
->> >
->> >
->> > > -----Original Message-----
->> > > From: Stefan Hajnoczi [mailto:stefanha@gmail.com]
->> > > Sent: Tuesday, November 20, 2012 5:41 AM
->> > > To: Pandarathil, Vijaymohan R
->> > > Cc: kvm@vger.kernel.org; linux-pci@vger.kernel.org; qemu-devel@nongnu.org;
->> > > linux-kernel@vger.kernel.org
->> > > Subject: Re: [PATCH 0/4] AER-KVM: Error containment of PCI pass-thru
->> > > devices assigned to KVM guests
->> > >
->> > > On Tue, Nov 20, 2012 at 06:31:48AM +0000, Pandarathil, Vijaymohan R wrote:
->> > > > Add support for error containment when a PCI pass-thru device assigned to
->> > > a KVM
->> > > > guest encounters an error. This is for PCIe devices/drivers that support
->> > > AER
->> > > > functionality. When the OS is notified of an error in a device either
->> > > > through the firmware first approach or through an interrupt handled by
->> > > the AER
->> > > > root port driver, concerned subsystems are notified by invoking callbacks
->> > > > registered by these subsystems. The device is also marked as tainted till
->> > > the
->> > > > corresponding driver recovery routines are successful.
->> > > >
->> > > > KVM module registers for a notification of such errors. In the KVM
->> > > callback
->> > > > routine, a global counter is incremented to keep track of the error
->> > > > notification. Before each CPU enters guest mode to execute guest code,
->> > > > appropriate checks are done to see if the impacted device belongs to the
->> > > guest
->> > > > or not. If the device belongs to the guest, qemu hypervisor for the guest
->> > > is
->> > > > informed and the guest is immediately brought down, thus preventing or
->> > > > minimizing chances of any bad data being written out by the guest driver
->> > > > after the device has encountered an error.
->> > >
->> > > I'm surprised that the hypervisor would shut down the guest when PCIe
->> > > AER kicks in for a pass-through device.  Shouldn't we pass the AER event
->> > > into the guest and deal with it there?
->> >
->> > Agreed. That would be the ideal behavior and is planned in a future patch.
->> > Lack of control over the capabilities/type of the OS/drivers running in
->> > the guest is also a concern in passing along the event to the guest.
->> >
->> > My understanding is that in the current implementation of Linux/KVM, these
->> > errors are not handled at all and can potentially cause a guest hang or
->> > crash or even data corruption depending on the implementation of the guest
->> > driver for the device. As a first step, these patches make the behavior
->> > better by doing error containment with a predictable behavior when such
->> > errors occur.
->>
->> For both ACPI notifications and Linux PCI AER driver there is a way for
->> the PCI driver to receive a notification, correct?
->>
->> Can just have virt/kvm/assigned-dev.c code register such a notifier (as
->> a "PCI driver") and then perform appropriate action?
->>
->> Also the semantics of "tainted driver" is not entirely clear.
->>
->> Is there any reason for not having this feature for VFIO only, as KVM
->> device assigment is being phased out?
->>
-> Exactly. We shouldn't add checks to guest entry code and introduce new
-> userspace ABI to add minor feature to deprecated code. New userspace ABI
-> means that QEMU changes are needed, so the feature will be fully functional
-> only with latest QEMU which is capable of using VFIO anyway.
+On Thu, Dec 13, 2012 at 12:25 PM, Kirill A. Shutemov
+<kirill.shutemov@linux.intel.com> wrote:
+> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+>
+> I had chance to test two PC setups with Thunderbolt: Acer Aspire S5 and
+> Intel DZ77RE-75K motherboard. Unfortunately, both of them are broken in
+> different ways.
+>
+> This patchset contains workarounds for the issues.
+>
+> Kirill A. Shutemov (3):
+>   PCI Hotplug: workaround for Thunderbolt on Acer Aspire S5
+>   PCI Hotplug: convert acpiphp_hp_work to use delayed work
+>   PCI Hotplug: workaround for Thunderbolt on Intel DZ77RE-75K
+>     motherboard
+>
+>  drivers/pci/hotplug/acpi_pcihp.c   |   13 +++++++++++++
+>  drivers/pci/hotplug/acpiphp_glue.c |   33 +++++++++++++++++++++++++--------
+>  2 files changed, 38 insertions(+), 8 deletions(-)
 
-I'm ignoring these patches for now.  Please address the review
-comments if you think we still need to do something here.
+I'm ignoring these for now.  [1/3] has a hardcoded BIOS path that I
+don't think is the right approach and [3/3] has a timeout issue to be
+addressed.  [2/3] might be worthwhile by itself, but I'd rather merge
+a complete solution when it's ready.
 
 Bjorn
