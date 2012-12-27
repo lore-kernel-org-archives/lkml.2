@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab2L0ML4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 07:11:56 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:59541 "HELO
-	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752700Ab2L0MLx (ORCPT
+	id S1752838Ab2L0MMH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 07:12:07 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:38174 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab2L0MMD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 07:11:53 -0500
-From: Andreas Larsson <andreas@gaisler.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Rob Herring <rob.herring@calxeda.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        devicetree-discuss@lists.ozlabs.org,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        software@gaisler.com
-Subject: [PATCH 6/6] of_spi: Initialize cs_gpios and cs_gpio with -EEXIST
-Date: Thu, 27 Dec 2012 13:10:47 +0100
-Message-Id: <1356610247-11491-7-git-send-email-andreas@gaisler.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1356610247-11491-1-git-send-email-andreas@gaisler.com>
-References: <1356610247-11491-1-git-send-email-andreas@gaisler.com>
+	Thu, 27 Dec 2012 07:12:03 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAA1sL1TNq5QiA_6A9+qNjndr0dRL37hhhHgvvLLqr6tgj7CgOw@mail.gmail.com>
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
+	<535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+	<CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+	<CAA1sL1TNq5QiA_6A9+qNjndr0dRL37hhhHgvvLLqr6tgj7CgOw@mail.gmail.com>
+Date: Thu, 27 Dec 2012 20:12:02 +0800
+Message-ID: <CAJd=RBALzGQrrOpJri+AbVg6b_MyWW=rFG-3vb+6w_6YZ59BEA@mail.gmail.com>
+Subject: Re: kernel BUG at mm/huge_memory.c:1798!
+From: Hillf Danton <dhillf@gmail.com>
+To: Alexander Beregalov <a.beregalov@gmail.com>
+Cc: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, mgorman@suse.de,
+        hughd@google.com, Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Holes in the cs-gpios DT phandle list is supposed to mark that native
-chipselects is to be used. The value returned from of_get_named_gpio_flags in
-this case is -EEXIST. By initializing cs_gpios and cs_gpio with -EEXIST, this
-and only this errno will indicate to a spi controller driver that a native
-chipselect is to be used.
+On Thu, Dec 27, 2012 at 8:31 AM, Alexander Beregalov
+<a.beregalov@gmail.com> wrote:
+> On 25 December 2012 16:05, Hillf Danton <dhillf@gmail.com> wrote:
+>> On Tue, Dec 25, 2012 at 12:38 PM, Zhouping Liu <zliu@redhat.com> wrote:
+>>> Hello all,
+>>>
+>>> I found the below kernel bug using latest mainline(637704cbc95),
+>>> my hardware has 2 numa nodes, and it's easy to reproduce the issue
+>>> using LTP test case: "# ./mmap10 -a -s -c 200":
+>>
+>> Can you test with 5a505085f0 and 4fc3f1d66b1 reverted?
+>>
+>
+> Hello,
+> does it look like the same problem?
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
- drivers/spi/spi.c       |    4 ++--
- include/linux/spi/spi.h |    7 +++++--
- 2 files changed, 7 insertions(+), 4 deletions(-)
+Yes, it is, and thank you for reporting the oops.
 
-diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
-index 6f1b717..7494bad 100644
---- a/drivers/spi/spi.c
-+++ b/drivers/spi/spi.c
-@@ -334,7 +334,7 @@ struct spi_device *spi_alloc_device(struct spi_master *master)
- 	spi->dev.parent = &master->dev;
- 	spi->dev.bus = &spi_bus_type;
- 	spi->dev.release = spidev_release;
--	spi->cs_gpio = -EINVAL;
-+	spi->cs_gpio = -EEXIST;
- 	device_initialize(&spi->dev);
- 	return spi;
- }
-@@ -1097,7 +1097,7 @@ static int of_spi_register_master(struct spi_master *master)
- 	}
- 
- 	for (i = 0; i < master->num_chipselect; i++)
--		cs[i] = -EINVAL;
-+		cs[i] = -EEXIST;
- 
- 	for (i = 0; i < nb; i++)
- 		cs[i] = of_get_named_gpio_flags(np, "cs-gpios", i, &flags[i]);
-diff --git a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-index 96b1055..0701882 100644
---- a/include/linux/spi/spi.h
-+++ b/include/linux/spi/spi.h
-@@ -58,7 +58,8 @@ extern struct bus_type spi_bus_type;
-  * @modalias: Name of the driver to use with this device, or an alias
-  *	for that name.  This appears in the sysfs "modalias" attribute
-  *	for driver coldplugging, and in uevents used for hotplugging
-- * @cs_gpio: Negative or gpio for chip select.
-+ * @cs_gpio: Negative or gpio for chip select.  Set to -EEXIST when chipselect
-+ *	should be handled natively by the controller driver
-  * @cs_gpio_flags: of_gpio_flags corresponding to cs_gpio
-  *
-  * A @spi_device is used to interchange data between an SPI slave
-@@ -262,7 +263,9 @@ static inline void spi_unregister_driver(struct spi_driver *sdrv)
-  * @unprepare_transfer_hardware: there are currently no more messages on the
-  *	queue so the subsystem notifies the driver that it may relax the
-  *	hardware by issuing this call
-- * @cs_gpios: possible array of negative values or gpios for chip selects
-+ * @cs_gpios: possible array of negative values or gpios for chip selects.  A
-+ *	chipselect that should be handled natively by the controller driver is
-+ *	set to -EEXIST.
-  * @cs_gpio_flags: possible array of of_gpio_flags corresponding to cs_gpios
-  *
-  * Each SPI master controller can communicate with one or more @spi_device
--- 
-1.7.0.4
+Hillf
 
+[  588.143072] mapcount 0 page_mapcount 3
+[  588.147471] ------------[ cut here ]------------
+[  588.152856] kernel BUG at mm/huge_memory.c:1798!
+>
+> mapcount 0 page_mapcount 1
+> ------------[ cut here ]------------
+> kernel BUG at mm/huge_memory.c:1798!
+
+
+> invalid opcode: 0000 [#1] PREEMPT SMP
+> Modules linked in: r8169 radeon cfbfillrect cfbimgblt cfbcopyarea
+> i2c_algo_bit backlight drm_kms_helper ttm drm agpgart
+> CPU 3
+> Pid: 15825, comm: firefox Not tainted 3.8.0-rc1-00004-g637704c #1
+> Gigabyte Technology Co., Ltd. P35-DS3/P35-DS3
+> RIP: 0010:[<ffffffff810e89c9>]  [<ffffffff810e89c9>] split_huge_page+0x739/0x7a0
+> RSP: 0018:ffff880193b43b78  EFLAGS: 00010297
+> RAX: 0000000000000001 RBX: ffffea0002fd0000 RCX: ffffffff8175e078
+> RDX: 000000000000003e RSI: ffffea0002fd0000 RDI: 0000000000000246
+> RBP: ffff880193b43c48 R08: 000000000000ffff R09: 0000000000000000
+> R10: 00000000000002d5 R11: 0000000000000000 R12: 0000000000000000
+> R13: ffff880173533464 R14: 00007f0973000000 R15: ffffea0002fd0000
+> FS:  00007f09b8db6740(0000) GS:ffff88019fd80000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00007ff210e78008 CR3: 0000000195379000 CR4: 00000000000007e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process firefox (pid: 15825, threadinfo ffff880193b42000, task ffff880198af9f90)
+> Stack:
+>  0000000000000000 ffff880193b43e1c 0000000000000000 0000000000000019
+>  ffff880193b43c08 ffff880100000000 ffff88017af80180 ffff880100000000
+>  ffff880173533400 ffff880198af9f90 000000009fc91540 ffff88017af801b0
+> Call Trace:
+>  [<ffffffff810e9d74>] __split_huge_page_pmd+0xe4/0x280
+>  [<ffffffff810a9b9e>] ? free_hot_cold_page_list+0x3e/0x60
+>  [<ffffffff810c22cd>] unmap_single_vma+0x77d/0x820
+>  [<ffffffff810c2c14>] zap_page_range+0xa4/0xe0
+>  [<ffffffff813d9846>] ? sys_recvfrom+0xd6/0x120
+>  [<ffffffff810bfa7d>] sys_madvise+0x31d/0x660
+>  [<ffffffff81482b2d>] system_call_fastpath+0x1a/0x1f
+> Code: 83 39 00 f3 90 49 8b 45 00 a9 00 00 80 00 75 f3 41 ff 84 24 44
+> e0 ff ff f0 41 0f ba 6d 00 17 19 c0 85 c0 0f 84 d7 fa ff ff eb c8 <0f>
+> 0b 8b 53 18 8b 75 9c ff c2 48 c7 c7 60 95 5c 81 31 c0 e8 ac
+> RIP  [<ffffffff810e89c9>] split_huge_page+0x739/0x7a0
+>  RSP <ffff880193b43b78>
