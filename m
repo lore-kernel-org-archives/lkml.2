@@ -1,41 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab2L0NHg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 08:07:36 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:46182 "EHLO hydra.sisk.pl"
+	id S1752763Ab2L0NLd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 08:11:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9050 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab2L0NHe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 08:07:34 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Mark Langsdorf <mark.langsdorf@calxeda.com>
-Cc: linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/6 v8] cpufreq: add support for Calxeda ECX-1000 (highbank)
-Date: Thu, 27 Dec 2012 14:12:58 +0100
-Message-ID: <2705062.NIaFfcLb3a@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <1354726121-17190-1-git-send-email-mark.langsdorf@calxeda.com>
-References: <1351631056-25938-1-git-send-email-mark.langsdorf@calxeda.com> <1354726121-17190-1-git-send-email-mark.langsdorf@calxeda.com>
+	id S1752046Ab2L0NLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 08:11:31 -0500
+Date: Thu, 27 Dec 2012 15:14:42 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] vhost_net: correct error hanlding in
+ vhost_net_set_backend()
+Message-ID: <20121227131442.GF20595@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356590360-32770-2-git-send-email-jasowang@redhat.com>
+ <1356590360-32770-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, December 05, 2012 10:48:35 AM Mark Langsdorf wrote:
-> This patch series adds cpufreq support for the Calxeda
-> ECX-1000 (highbank) SoCs. The EnergyCore Management Engine (ECME) on
-> the ECX-1000 manages the voltage for the part and communications with
-> Linux through a pl320 mailbox. clk notifications are used to control
-> when to send messages to the ECME.
+On Thu, Dec 27, 2012 at 02:39:19PM +0800, Jason Wang wrote:
+> Fix the leaking of oldubufs and fd refcnt when fail to initialized used ring.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/vhost/net.c |   14 +++++++++++---
+>  1 files changed, 11 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+> index ebd08b2..629d6b5 100644
+> --- a/drivers/vhost/net.c
+> +++ b/drivers/vhost/net.c
+> @@ -834,8 +834,10 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>  		vhost_net_enable_vq(n, vq);
+>  
+>  		r = vhost_init_used(vq);
+> -		if (r)
+> -			goto err_vq;
+> +		if (r) {
+> +			sock = NULL;
+> +			goto err_used;
+> +		}
+>  
+>  		n->tx_packets = 0;
+>  		n->tx_zcopy_err = 0;
+> @@ -859,8 +861,14 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>  	mutex_unlock(&n->dev.mutex);
+>  	return 0;
+>  
+> +err_used:
+> +	if (oldubufs)
+> +		vhost_ubuf_put_and_wait(oldubufs);
+> +	if (oldsock)
+> +		fput(oldsock->file);
+>  err_ubufs:
+> -	fput(sock->file);
+> +	if (sock)
+> +		fput(sock->file);
+>  err_vq:
+>  	mutex_unlock(&vq->mutex);
+>  err:
 
-If you want me to handle this, can you please resend the whole patchset (with
-all of the comments addressed, if possible)?
+I think it's a real bug, but I don't see how the fix
+makes sense.
+We are returning an error, so we ideally
+revert to the state before the faulty
+operation. So this should put sock and ubufs,
+not oldsock/oldubufs.
 
-Rafael
+
+The best way is probably to change
+vhost_init_used so that it gets private data
+pointer as a parameter.
+
+We can then call it before ubuf alloc.
+You can then add err_used right after err_ubufs
+with no extra logic.
+
+
 
 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+MST
