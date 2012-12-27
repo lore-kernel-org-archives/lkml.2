@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465Ab2L0XTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 18:19:53 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:29313 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab2L0XTv convert rfc822-to-8bit (ORCPT
+	id S1752419Ab2L0XVJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 18:21:09 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:65008 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751877Ab2L0XVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 18:19:51 -0500
-MIME-Version: 1.0
-Message-ID: <71b94237-c365-47ba-8d75-5ee1d8caee73@default>
-Date: Thu, 27 Dec 2012 15:19:24 -0800 (PST)
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: <hpa@zytor.com>
-Cc: <kexec@lists.infradead.org>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <tglx@linutronix.de>,
-        <ebiederm@xmission.com>, <maxim.uvarov@oracle.com>,
-        <andrew.cooper3@citrix.com>, <jbeulich@suse.com>, <mingo@redhat.com>,
-        <x86@kernel.org>, <virtualization@lists.linux-foundation.org>,
-        <vgoyal@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition page
- table PGD, PUD, PMD and PTE
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 27 Dec 2012 18:21:08 -0500
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH 0/4] arm: vt8500: Add new models and remove single-platform.
+Date: Fri, 28 Dec 2012 12:20:48 +1300
+Message-Id: <1356650452-16559-1-git-send-email-linux@prisktech.co.nz>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmm... this code is being redone at the moment... this might conflict.
+Hi Arnd/Olaf,
 
-Is this available somewhere? May I have a look at it?
+These patches should be pretty self explanatory.
 
-Daniel
+#1 - Adds support for WM8750 and WM8850.
+#2 - Remove the single-platform Kconfig options.
+#3 - Move the early debug code so it can be used for multiplatform.
+#4 - Cleanup the unused headers in arch/arm/mach-vt8500/include.
 
-PS I am on holiday until 02/01/2013 and I could not
-   have access to my email box. Please be patient.
-   At worst case I will send reply when I will be
-   back at office.
+Tony Prisk (4):
+  arm: vt8500: Add support for Wondermedia WM8750/WM8850
+  arm: vt8500: Remove single platform Kconfig options
+  arm: vt8500: Convert debug-macro.S to be multiplatform friendly
+  arm: vt8500: Remove remaining mach includes
+
+ Documentation/devicetree/bindings/arm/vt8500.txt |    8 +++++
+ arch/arm/Kconfig                                 |   16 ----------
+ arch/arm/Kconfig.debug                           |    8 +++++
+ arch/arm/mach-vt8500/Kconfig                     |   26 +++++++++++++--
+ arch/arm/mach-vt8500/include/mach/debug-macro.S  |   31 ------------------
+ arch/arm/mach-vt8500/include/mach/timex.h        |   26 ---------------
+ arch/arm/mach-vt8500/include/mach/uncompress.h   |   37 ----------------------
+ arch/arm/mach-vt8500/vt8500.c                    |    2 ++
+ 8 files changed, 41 insertions(+), 113 deletions(-)
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/debug-macro.S
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/timex.h
+ delete mode 100644 arch/arm/mach-vt8500/include/mach/uncompress.h
+
+-- 
+1.7.9.5
+
