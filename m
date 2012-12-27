@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2L0TJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 14:09:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751748Ab2L0TJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 14:09:38 -0500
-Message-ID: <50DC9CE1.9030709@redhat.com>
-Date: Thu, 27 Dec 2012 14:09:21 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753042Ab2L0TPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 14:15:33 -0500
+Received: from mail.parknet.co.jp ([210.171.160.6]:57382 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab2L0TPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 14:15:31 -0500
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide stable pages during write
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+	<20121213080811.23360.98131.stgit@blackbox.djwong.org>
+Date: Fri, 28 Dec 2012 04:14:49 +0900
+In-Reply-To: <20121213080811.23360.98131.stgit@blackbox.djwong.org> (Darrick
+	J. Wong's message of "Thu, 13 Dec 2012 00:08:11 -0800")
+Message-ID: <877go3z4ra.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
 MIME-Version: 1.0
-To: Jan Beulich <jbeulich@suse.com>
-CC: eric.dumazet@gmail.com, rostedt@goodmis.org, therbert@google.com,
-        walken@google.com, jeremy@goop.org, tglx@linutronix.de,
-        aquini@redhat.com, lwoodman@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
- factor
-References: <20121221184940.103c31ad@annuminas.surriel.com> <20121221185147.4ae48ab5@annuminas.surriel.com> <20121221185613.1f4c9523@annuminas.surriel.com> <20121222033339.GF27621@home.goodmis.org> <50D52E0C.6000103@redhat.com> <1356549008.20133.20856.camel@edumazet-glaptop> <50DB5531.90500@redhat.com> <CANN689HeTk0jNJb4sF_0t714MvFnU0vLw0=JeXYRUwMx8GDnXQ@mail.gmail.com> <1356618448.30414.948.camel@edumazet-glaptop> <50DC5CC0.6010003@redhat.com> <50DC9662020000780009210D@nat28.tlf.novell.com>
-In-Reply-To: <50DC9662020000780009210D@nat28.tlf.novell.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2012 01:41 PM, Jan Beulich wrote:
->>>> Rik van Riel <riel@redhat.com> 12/27/12 4:01 PM >>>
->> On 12/27/2012 09:27 AM, Eric Dumazet wrote:
->>> So the hash sounds good to me, because the hash key could mix both lock
->>> address and caller IP ( __builtin_return_address(1) in
->>> ticket_spin_lock_wait())
->>
->> The lock acquisition time depends on the holder of the lock,
->> and what the CPUs ahead of us in line will do with the lock,
->> not on the caller IP of the spinner.
->
-> The lock holder could supply its __builtin_return_address(0) for use
-> in eventual hashing.
->
-> Also, with all of this - did you evaluate the alternative of using
-> monitor/mwait instead?
+"Darrick J. Wong" <darrick.wong@oracle.com> writes:
 
-How much bus traffic do monitor/mwait cause behind the scenes?
+> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+> index 780d4c6..0144fbb 100644
+> --- a/include/uapi/linux/fs.h
+> +++ b/include/uapi/linux/fs.h
+> @@ -69,6 +69,7 @@ struct inodes_stat_t {
+>  #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
+>  #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
+>  #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
+> +#define MS_SNAP_STABLE	256	/* Snapshot pages during writeback, if needed */
+>  #define MS_NOATIME	1024	/* Do not update access times. */
+>  #define MS_NODIRATIME	2048	/* Do not update directory access times */
+>  #define MS_BIND		4096
 
+I think this flag should be separated into "FS provide stable page" and
+"FS needs bounce buffer for stable page".
+
+My fs (I guess btrfs also) provides stable page by better way, and
+doesn't need to wait writeback flags too. What needs is just to avoid
+those stable page stuff.
+
+Thanks.
 -- 
-All rights reversed
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
