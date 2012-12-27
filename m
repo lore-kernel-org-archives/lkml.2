@@ -1,54 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898Ab2L0VcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 16:32:13 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44846 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161Ab2L0VcL (ORCPT
+	id S1751969Ab2L0Vmf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 16:42:35 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:44680 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417Ab2L0Vmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 16:32:11 -0500
-Date: Thu, 27 Dec 2012 13:32:09 -0800 (PST)
-Message-Id: <20121227.133209.1785109551425933956.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: Larry.Finger@lwfinger.net, linville@tuxdriver.com,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] forcedeth: Fix WARNINGS that result when DMA mapping
- is not checked
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1356642209.30414.1411.camel@edumazet-glaptop>
-References: <1356638715.30414.1349.camel@edumazet-glaptop>
-	<50DCB1D9.50906@lwfinger.net>
-	<1356642209.30414.1411.camel@edumazet-glaptop>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Dec 2012 16:42:33 -0500
+Date: Thu, 27 Dec 2012 13:40:29 -0800
+From: "Darrick J. Wong" <darrick.wong@oracle.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: axboe@kernel.dk, lucho@ionkov.net, jack@suse.cz, ericvh@gmail.com,
+        viro@zeniv.linux.org.uk, rminnich@sandia.gov, tytso@mit.edu,
+        martin.petersen@oracle.com, neilb@suse.de, david@fromorbit.com,
+        Zheng Liu <gnehzuil.liu@gmail.com>, linux-kernel@vger.kernel.org,
+        hch@infradead.org, linux-fsdevel@vger.kernel.org,
+        adilger.kernel@dilger.ca, bharrosh@panasas.com, jlayton@samba.org,
+        v9fs-developer@lists.sourceforge.net, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 4/4] block: Optionally snapshot page contents to provide
+ stable pages during write
+Message-ID: <20121227210543.GA20103@blackbox.djwong.org>
+References: <20121213080740.23360.16346.stgit@blackbox.djwong.org>
+ <20121213080811.23360.98131.stgit@blackbox.djwong.org>
+ <877go3z4ra.fsf@devron.myhome.or.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <877go3z4ra.fsf@devron.myhome.or.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Thu, 27 Dec 2012 13:03:29 -0800
+On Fri, Dec 28, 2012 at 04:14:49AM +0900, OGAWA Hirofumi wrote:
+> "Darrick J. Wong" <darrick.wong@oracle.com> writes:
+> 
+> > diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+> > index 780d4c6..0144fbb 100644
+> > --- a/include/uapi/linux/fs.h
+> > +++ b/include/uapi/linux/fs.h
+> > @@ -69,6 +69,7 @@ struct inodes_stat_t {
+> >  #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
+> >  #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
+> >  #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
+> > +#define MS_SNAP_STABLE	256	/* Snapshot pages during writeback, if needed */
+> >  #define MS_NOATIME	1024	/* Do not update access times. */
+> >  #define MS_NODIRATIME	2048	/* Do not update directory access times */
+> >  #define MS_BIND		4096
+> 
+> I think this flag should be separated into "FS provide stable page" and
+> "FS needs bounce buffer for stable page".
+> 
+> My fs (I guess btrfs also) provides stable page by better way, and
+> doesn't need to wait writeback flags too. What needs is just to avoid
+> those stable page stuff.
 
-> On Thu, 2012-12-27 at 14:38 -0600, Larry Finger wrote:
->> On 12/27/2012 02:05 PM, Eric Dumazet wrote:
->> > On Thu, 2012-12-27 at 13:42 -0600, Larry Finger wrote:
-> 
->> >> +		if (pci_dma_mapping_error(np->pci_dev,
->> >> +					  np->put_tx_ctx->dma))
->> >> +			return NETDEV_TX_BUSY;
->> >
->> > Really this is not going to work very well : caller will call this in a
->> > loop.
->> 
->> Any suggestions on what value should be returned, or does the caller need to be 
->> modified?
-> 
-> NETDEV_TX_BUSY is really obsolete
-> 
-> Documentation/networking/driver.txt
-> 
-> In case of mapping error, I would drop the packet.
+How does your fs (are we talking about vfat?) provide stable pages?
 
-Agreed.
+btrfs creates its own bdi and doesn't set the "stable pages required" flag, so
+it already skips all the stable page stuff.
+
+--D
+> 
+> Thanks.
+> -- 
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
