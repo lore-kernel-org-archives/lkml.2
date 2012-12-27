@@ -1,155 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752368Ab2L0De2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 22:34:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33063 "EHLO mx1.redhat.com"
+	id S1752593Ab2L0Deu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 22:34:50 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:52223 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab2L0DeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 22:34:25 -0500
-Message-ID: <50DBC1B8.9050406@redhat.com>
-Date: Thu, 27 Dec 2012 11:34:16 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752484Ab2L0Der (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 22:34:47 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
+References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com> <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
- hotplug
-References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com> <20121226104638.GA18850@redhat.com>
-In-Reply-To: <20121226104638.GA18850@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition page table PGD, PUD, PMD and PTE
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 26 Dec 2012 19:33:37 -0800
+To: Daniel Kiper <daniel.kiper@oracle.com>, andrew.cooper3@citrix.com,
+        ebiederm@xmission.com, jbeulich@suse.com, konrad.wilk@oracle.com,
+        maxim.uvarov@oracle.com, mingo@redhat.com, tglx@linutronix.de,
+        vgoyal@redhat.com, x86@kernel.org, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xensource.com
+Message-ID: <083de527-84b0-4450-8e89-055103305afa@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/26/2012 06:46 PM, Michael S. Tsirkin wrote:
-> On Wed, Dec 26, 2012 at 03:06:54PM +0800, Wanlong Gao wrote:
->> Add a cpu notifier to virtio-net, so that we can reset the
->> virtqueue affinity if the cpu hotplug happens. It improve
->> the performance through enabling or disabling the virtqueue
->> affinity after doing cpu hotplug.
->>
->> Cc: Rusty Russell <rusty@rustcorp.com.au>
->> Cc: "Michael S. Tsirkin" <mst@redhat.com>
->> Cc: Jason Wang <jasowang@redhat.com>
->> Cc: virtualization@lists.linux-foundation.org
->> Cc: netdev@vger.kernel.org
->> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> Thanks for looking into this.
-> Some comments:
->
-> 1. Looks like the logic in
-> virtnet_set_affinity (and in virtnet_select_queue)
-> will not work very well when CPU IDs are not
-> consequitive. This can happen with hot unplug.
->
-> Maybe we should add a VQ allocator, and defining
-> a per-cpu variable specifying the VQ instead
-> of using CPU ID.
+Hmm... this code is being redone at the moment... this might conflict.
 
-Yes, and generate the affinity hint based on the mapping. Btw, what does
-VQ allocator means here?
->
->
-> 2. The below code seems racy e.g. when CPU is added
-> 	during device init.
->
-> 3. using a global cpu_hotplug seems inelegant.
-> In any case we should document what is the
-> meaning of this variable.
->
->> ---
->>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
->>  1 file changed, 38 insertions(+), 1 deletion(-)
->>
->> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
->> index a6fcf15..9710cf4 100644
->> --- a/drivers/net/virtio_net.c
->> +++ b/drivers/net/virtio_net.c
->> @@ -26,6 +26,7 @@
->>  #include <linux/scatterlist.h>
->>  #include <linux/if_vlan.h>
->>  #include <linux/slab.h>
->> +#include <linux/cpu.h>
->>  
->>  static int napi_weight = 128;
->>  module_param(napi_weight, int, 0444);
->> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
->>  module_param(csum, bool, 0444);
->>  module_param(gso, bool, 0444);
->>  
->> +static bool cpu_hotplug = false;
->> +
->>  /* FIXME: MTU in config. */
->>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
->>  #define GOOD_COPY_LEN	128
->> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->>  		vi->affinity_hint_set = false;
->>  }
->>  
->> +static int virtnet_cpu_callback(struct notifier_block *nfb,
->> +			       unsigned long action, void *hcpu)
->> +{
->> +	switch(action) {
->> +	case CPU_ONLINE:
->> +	case CPU_ONLINE_FROZEN:
->> +	case CPU_DEAD:
->> +	case CPU_DEAD_FROZEN:
->> +		cpu_hotplug = true;
->> +		break;
->> +	default:
->> +		break;
->> +	}
->> +	return NOTIFY_OK;
->> +}
->> +
->> +static struct notifier_block virtnet_cpu_notifier = {
->> +	.notifier_call = virtnet_cpu_callback,
->> +};
->> +
->>  static void virtnet_get_ringparam(struct net_device *dev,
->>  				struct ethtool_ringparam *ring)
->>  {
->> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->>   */
->>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->>  {
->> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
->> +	int txq;
->> +
->> +	if (unlikely(cpu_hotplug == true)) {
->> +		virtnet_set_affinity(netdev_priv(dev), true);
->> +		cpu_hotplug = false;
->> +	}
->> +
->> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
->>  		  smp_processor_id();
->>  
->>  	while (unlikely(txq >= dev->real_num_tx_queues))
->> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
->>  {
->>  	struct virtio_device *vdev = vi->vdev;
->>  
->> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
->> +
->>  	virtnet_set_affinity(vi, false);
->>  
->>  	vdev->config->del_vqs(vdev);
->> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
->>  		goto err_free;
->>  
->>  	virtnet_set_affinity(vi, true);
->> +
->> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
->> +	if (ret)
->> +		goto err_free;
->> +
->>  	return 0;
->>  
->>  err_free:
->> -- 
->> 1.8.0
+Daniel Kiper <daniel.kiper@oracle.com> wrote:
 
+>Some implementations (e.g. Xen PVOPS) could not use part of identity
+>page table
+>to construct transition page table. It means that they require separate
+>PUDs,
+>PMDs and PTEs for virtual and physical (identity) mapping. To satisfy
+>that
+>requirement add extra pointer to PGD, PUD, PMD and PTE and align
+>existing code.
+>
+>Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+>---
+> arch/x86/include/asm/kexec.h       |   10 +++++++---
+> arch/x86/kernel/machine_kexec_64.c |   12 ++++++------
+> 2 files changed, 13 insertions(+), 9 deletions(-)
+>
+>diff --git a/arch/x86/include/asm/kexec.h
+>b/arch/x86/include/asm/kexec.h
+>index 6080d26..cedd204 100644
+>--- a/arch/x86/include/asm/kexec.h
+>+++ b/arch/x86/include/asm/kexec.h
+>@@ -157,9 +157,13 @@ struct kimage_arch {
+> };
+> #else
+> struct kimage_arch {
+>-	pud_t *pud;
+>-	pmd_t *pmd;
+>-	pte_t *pte;
+>+	pgd_t *pgd;
+>+	pud_t *pud0;
+>+	pud_t *pud1;
+>+	pmd_t *pmd0;
+>+	pmd_t *pmd1;
+>+	pte_t *pte0;
+>+	pte_t *pte1;
+> };
+> #endif
+> 
+>diff --git a/arch/x86/kernel/machine_kexec_64.c
+>b/arch/x86/kernel/machine_kexec_64.c
+>index b3ea9db..976e54b 100644
+>--- a/arch/x86/kernel/machine_kexec_64.c
+>+++ b/arch/x86/kernel/machine_kexec_64.c
+>@@ -137,9 +137,9 @@ out:
+> 
+> static void free_transition_pgtable(struct kimage *image)
+> {
+>-	free_page((unsigned long)image->arch.pud);
+>-	free_page((unsigned long)image->arch.pmd);
+>-	free_page((unsigned long)image->arch.pte);
+>+	free_page((unsigned long)image->arch.pud0);
+>+	free_page((unsigned long)image->arch.pmd0);
+>+	free_page((unsigned long)image->arch.pte0);
+> }
+> 
+> static int init_transition_pgtable(struct kimage *image, pgd_t *pgd)
+>@@ -157,7 +157,7 @@ static int init_transition_pgtable(struct kimage
+>*image, pgd_t *pgd)
+> 		pud = (pud_t *)get_zeroed_page(GFP_KERNEL);
+> 		if (!pud)
+> 			goto err;
+>-		image->arch.pud = pud;
+>+		image->arch.pud0 = pud;
+> 		set_pgd(pgd, __pgd(__pa(pud) | _KERNPG_TABLE));
+> 	}
+> 	pud = pud_offset(pgd, vaddr);
+>@@ -165,7 +165,7 @@ static int init_transition_pgtable(struct kimage
+>*image, pgd_t *pgd)
+> 		pmd = (pmd_t *)get_zeroed_page(GFP_KERNEL);
+> 		if (!pmd)
+> 			goto err;
+>-		image->arch.pmd = pmd;
+>+		image->arch.pmd0 = pmd;
+> 		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+> 	}
+> 	pmd = pmd_offset(pud, vaddr);
+>@@ -173,7 +173,7 @@ static int init_transition_pgtable(struct kimage
+>*image, pgd_t *pgd)
+> 		pte = (pte_t *)get_zeroed_page(GFP_KERNEL);
+> 		if (!pte)
+> 			goto err;
+>-		image->arch.pte = pte;
+>+		image->arch.pte0 = pte;
+> 		set_pmd(pmd, __pmd(__pa(pte) | _KERNPG_TABLE));
+> 	}
+> 	pte = pte_offset_kernel(pmd, vaddr);
+
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
