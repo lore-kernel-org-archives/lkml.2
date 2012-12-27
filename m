@@ -1,51 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751759Ab2L0AOs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 19:14:48 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:62819 "EHLO
+	id S1751748Ab2L0AVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 19:21:39 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:64750 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab2L0AOm (ORCPT
+	with ESMTP id S1751593Ab2L0AVh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 19:14:42 -0500
+	Wed, 26 Dec 2012 19:21:37 -0500
 From: Tony Prisk <linux@prisktech.co.nz>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 1/3] clk: vt8500: Fix error in PLL calculations on non-exact match.
-Date: Thu, 27 Dec 2012 13:14:29 +1300
-Message-Id: <1356567272-3420-2-git-send-email-linux@prisktech.co.nz>
+To: Alessandro Zummo <a.zummo@towertech.it>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        rtc-linux@googlegroups.com, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH fix-3.8] rtc: vt8500: Correct handling of CR_24H bitfield
+Date: Thu, 27 Dec 2012 13:21:34 +1300
+Message-Id: <1356567694-3657-1-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1356567272-3420-1-git-send-email-linux@prisktech.co.nz>
-References: <1356567272-3420-1-git-send-email-linux@prisktech.co.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a PLL frequency calculation is performed and a non-exact match
-is found the wrong multiplier and divisors are returned.
+Control register bitfield for 12H/24H mode is handled incorrectly.
+Setting CR_24H actually enables 12H mode. This patch renames the
+define and changes the initialization code to correctly set
+24H mode.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/clk/clk-vt8500.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-vt8500.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-index fe25570..0cb26be 100644
---- a/drivers/clk/clk-vt8500.c
-+++ b/drivers/clk/clk-vt8500.c
-@@ -361,9 +361,9 @@ static void wm8650_find_pll_bits(unsigned long rate, unsigned long parent_rate,
- 	/* if we got here, it wasn't an exact match */
- 	pr_warn("%s: requested rate %lu, found rate %lu\n", __func__, rate,
- 							rate - best_err);
--	*multiplier = mul;
--	*divisor1 = div1;
--	*divisor2 = div2;
-+	*multiplier = best_mul;
-+	*divisor1 = best_div1;
-+	*divisor2 = best_div2;
- }
+diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
+index 14e2d8c..387edf6 100644
+--- a/drivers/rtc/rtc-vt8500.c
++++ b/drivers/rtc/rtc-vt8500.c
+@@ -70,7 +70,7 @@
+ 				| ALARM_SEC_BIT)
  
- static int vtwm_pll_set_rate(struct clk_hw *hw, unsigned long rate,
+ #define VT8500_RTC_CR_ENABLE	(1 << 0)	/* Enable RTC */
+-#define VT8500_RTC_CR_24H	(1 << 1)	/* 24h time format */
++#define VT8500_RTC_CR_12H	(1 << 1)	/* 12h time format */
+ #define VT8500_RTC_CR_SM_ENABLE	(1 << 2)	/* Enable periodic irqs */
+ #define VT8500_RTC_CR_SM_SEC	(1 << 3)	/* 0: 1Hz/60, 1: 1Hz */
+ #define VT8500_RTC_CR_CALIB	(1 << 4)	/* Enable calibration */
+@@ -247,7 +247,7 @@ static int __devinit vt8500_rtc_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	/* Enable RTC and set it to 24-hour mode */
+-	writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H,
++	writel(VT8500_RTC_CR_ENABLE,
+ 	       vt8500_rtc->regbase + VT8500_RTC_CR);
+ 
+ 	vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
 -- 
 1.7.9.5
 
