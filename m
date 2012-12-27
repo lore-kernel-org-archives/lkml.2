@@ -1,191 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab2L0RU0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 12:20:26 -0500
-Received: from mail.parknet.co.jp ([210.171.160.6]:57355 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916Ab2L0RUY (ORCPT
+	id S1753271Ab2L0R3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 12:29:10 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54108 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751245Ab2L0R3J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 12:20:24 -0500
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        bug-track@fisher-privat.net
-Subject: [PATCH 2/2] fat: mark fs as dirty on mount and clean on umount
-References: <87pq1vza3y.fsf@devron.myhome.or.jp>
-Date: Fri, 28 Dec 2012 02:20:20 +0900
-In-Reply-To: <87pq1vza3y.fsf@devron.myhome.or.jp> (OGAWA Hirofumi's message of
-	"Fri, 28 Dec 2012 02:19:13 +0900")
-Message-ID: <87han7za23.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3.50 (gnu/linux)
+	Thu, 27 Dec 2012 12:29:09 -0500
+Date: Thu, 27 Dec 2012 17:29:06 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] [PATCH] regulator: 88pm8607: Update update_bit for
+ BUCK2 in pm8607_set_voltage_sel
+Message-ID: <20121227172906.GH5005@opensource.wolfsonmicro.com>
+References: <1356311618.4697.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ZOudaV4lSIjFTlHv"
+Content-Disposition: inline
+In-Reply-To: <1356311618.4697.1.camel@phoenix>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-From: Oleksij Rempel <bug-track@fisher-privat.net>
+--ZOudaV4lSIjFTlHv
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-There is no documented methods to mark FAT as dirty. Unofficially MS
-started to use reserved Byte in boot sector for this purpose,
-at least since Win 2000. With Win 7 user is warned if fs is dirty
-and asked to clean it.
-Different versions of Win, handle it in different ways,
-but always have same meaning:
-- Win 2000 and XP, set it on write operations and
-  remove it after operation was finnished
-- Win 7, set dirty flag on first write and remove it on umount.
+On Mon, Dec 24, 2012 at 09:13:38AM +0800, Axel Lin wrote:
+> BUCK2 has the update_bit setting, but current code does not set update_bit
+> in pm8607_set_voltage_sel.
 
-We will do it as fallow:
-- set dirty flag on mount. If fs was initially dirty, warn user,
-  remember it and do not do any changes to boot sector.
-- clean it on umount. If fs was initially dirty, leave it dirty.
-- do not do any thing if fs mounted read-only.
-- TODO: leave fs dirty if we found some error after mount.
+Applied both, thanks.
 
-patch history:
-- v2. do not warn on read-only. Some style fixes.
-- v3. make fat_set_state static.
-- v4. add "force" variable to fat_set_state and use it on remount ro to rw.
+--ZOudaV4lSIjFTlHv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Signed-off-by: Oleksij Rempel <bug-track@fisher-privat.net>
-Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
----
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
- fs/fat/fat.h                  |    2 +
- fs/fat/inode.c                |   66 +++++++++++++++++++++++++++++++++++++++++
- include/uapi/linux/msdos_fs.h |    2 +
- 3 files changed, 70 insertions(+)
+iQIcBAEBAgAGBQJQ3IVaAAoJELSic+t+oim9i4UP/jkdIGpCHPf/2bQqzoUTPEeS
+DNZ30XkT5b/s2OlkjnAeJyT/ViHS2injAdvPYPaNsY+gK3wdo4oipFa30jXFNlSB
+LNsaRZ19QC3Ls0mLBCyy3vuR1DbNccQiG+Dr6446HUkYKqDv0U3AL2NM+YpwMvj6
+kKFdYY2JnNG88WIi7oqmx63BwA1mdnILeBElenygMFj4463fmOQinFI8n98k+2ht
+rsqSYkCM9bkWSRb1WhIkHyKpBF/GSJRO/sC2DedRsSsdo7hmyyWc9znh9Hen8d/I
+5bheqzlkZq/0xsdUkkr7UxWl3ruHEurBPhhZ6jdJfUawLeBInlmq54Z0Q9mLtSYv
+CfAseZEOeaXUHaPB6cIU85Ly5QeDOiII+k8AKAXMrw+k7rPJVagttztnDJgd+2rZ
+6MmEgtwdtcSS8ZqdWE1a1bnxCR+e0TF2Ycmz0S0UDhepHza4YqJh/S05pFFBHTLq
+/KWSaEomz7PgIrI/nmMD9egjigJF1gj0qd1H11+ZFNZDoxbNRwKI1/jAnUWdE3jY
+BBRspUsbXEn0Kpil77I0X5bs/jMioGyuLa0oKX2O5SgaYGX7jyyCNH/V5mieC6rz
++1emtcgCJdr17M90ENie94lVEgq0HK7zYrP8d81fmUcRtyDiaep2u6l1gUfDUmXv
+3uUNhB/+dX9ZD7nAq345
+=BiAi
+-----END PGP SIGNATURE-----
 
-diff -puN fs/fat/fat.h~fat-check-dirty-2 fs/fat/fat.h
---- linux/fs/fat/fat.h~fat-check-dirty-2	2012-12-28 02:17:42.000000000 +0900
-+++ linux-hirofumi/fs/fat/fat.h	2012-12-28 02:17:42.000000000 +0900
-@@ -95,6 +95,8 @@ struct msdos_sb_info {
- 
- 	spinlock_t dir_hash_lock;
- 	struct hlist_head dir_hashtable[FAT_HASH_SIZE];
-+
-+	unsigned int dirty;           /* fs state before mount */
- };
- 
- #define FAT_CACHE_VALID	0	/* special case for valid cache */
-diff -puN fs/fat/inode.c~fat-check-dirty-2 fs/fat/inode.c
---- linux/fs/fat/inode.c~fat-check-dirty-2	2012-12-28 02:17:42.000000000 +0900
-+++ linux-hirofumi/fs/fat/inode.c	2012-12-28 02:17:42.000000000 +0900
-@@ -488,10 +488,59 @@ static void fat_evict_inode(struct inode
- 	fat_detach(inode);
- }
- 
-+static void fat_set_state(struct super_block *sb,
-+			unsigned int set, unsigned int force)
-+{
-+	struct buffer_head *bh;
-+	struct fat_boot_sector *b;
-+	struct msdos_sb_info *sbi = sb->s_fs_info;
-+
-+	/* do not change any thing if mounted read only */
-+	if ((sb->s_flags & MS_RDONLY) && !force)
-+		return;
-+
-+	/* do not change state if fs was dirty */
-+	if (sbi->dirty) {
-+		/* warn only on set (mount). */
-+		if (set)
-+			fat_msg(sb, KERN_WARNING, "Volume was not properly "
-+				"unmounted. Some data may be corrupt. "
-+				"Please run fsck.");
-+		return;
-+	}
-+
-+	bh = sb_bread(sb, 0);
-+	if (bh == NULL) {
-+		fat_msg(sb, KERN_ERR, "unable to read boot sector "
-+			"to mark fs as dirty");
-+		return;
-+	}
-+
-+	b = (struct fat_boot_sector *) bh->b_data;
-+
-+	if (sbi->fat_bits == 32) {
-+		if (set)
-+			b->fat32.state |= FAT_STATE_DIRTY;
-+		else
-+			b->fat32.state &= ~FAT_STATE_DIRTY;
-+	} else /* fat 16 and 12 */ {
-+		if (set)
-+			b->fat16.state |= FAT_STATE_DIRTY;
-+		else
-+			b->fat16.state &= ~FAT_STATE_DIRTY;
-+	}
-+
-+	mark_buffer_dirty(bh);
-+	sync_dirty_buffer(bh);
-+	brelse(bh);
-+}
-+
- static void fat_put_super(struct super_block *sb)
- {
- 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
- 
-+	fat_set_state(sb, 0, 0);
-+
- 	iput(sbi->fsinfo_inode);
- 	iput(sbi->fat_inode);
- 
-@@ -566,8 +615,18 @@ static void __exit fat_destroy_inodecach
- 
- static int fat_remount(struct super_block *sb, int *flags, char *data)
- {
-+	int new_rdonly;
- 	struct msdos_sb_info *sbi = MSDOS_SB(sb);
- 	*flags |= MS_NODIRATIME | (sbi->options.isvfat ? 0 : MS_NOATIME);
-+
-+	/* make sure we update state on remount. */
-+	new_rdonly = *flags & MS_RDONLY;
-+	if (new_rdonly != (sb->s_flags & MS_RDONLY)) {
-+		if (new_rdonly)
-+			fat_set_state(sb, 0, 0);
-+		else
-+			fat_set_state(sb, 1, 1);
-+	}
- 	return 0;
- }
- 
-@@ -1362,6 +1421,12 @@ int fat_fill_super(struct super_block *s
- 	if (sbi->fat_bits != 32)
- 		sbi->fat_bits = (total_clusters > MAX_FAT12) ? 16 : 12;
- 
-+	/* some OSes set FAT_STATE_DIRTY and clean it on unmount. */
-+	if (sbi->fat_bits == 32)
-+		sbi->dirty = b->fat32.state & FAT_STATE_DIRTY;
-+	else /* fat 16 or 12 */
-+		sbi->dirty = b->fat16.state & FAT_STATE_DIRTY;
-+
- 	/* check that FAT table does not overflow */
- 	fat_clusters = sbi->fat_length * sb->s_blocksize * 8 / sbi->fat_bits;
- 	total_clusters = min(total_clusters, fat_clusters - FAT_START_ENT);
-@@ -1456,6 +1521,7 @@ int fat_fill_super(struct super_block *s
- 					"the device does not support discard");
- 	}
- 
-+	fat_set_state(sb, 1, 0);
- 	return 0;
- 
- out_invalid:
-diff -puN include/uapi/linux/msdos_fs.h~fat-check-dirty-2 include/uapi/linux/msdos_fs.h
---- linux/include/uapi/linux/msdos_fs.h~fat-check-dirty-2	2012-12-28 02:17:42.000000000 +0900
-+++ linux-hirofumi/include/uapi/linux/msdos_fs.h	2012-12-28 02:17:42.000000000 +0900
-@@ -87,6 +87,8 @@
- #define IS_FSINFO(x)	(le32_to_cpu((x)->signature1) == FAT_FSINFO_SIG1 \
- 			 && le32_to_cpu((x)->signature2) == FAT_FSINFO_SIG2)
- 
-+#define FAT_STATE_DIRTY 0x01
-+
- struct __fat_dirent {
- 	long		d_ino;
- 	__kernel_off_t	d_off;
-_
-
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+--ZOudaV4lSIjFTlHv--
