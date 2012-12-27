@@ -1,114 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753334Ab2L0TmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 14:42:22 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:55533 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753065Ab2L0TmU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 14:42:20 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: linville@tuxdriver.com, davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] forcedeth: Fix WARNINGS that result when DMA mapping is not checked
-Date: Thu, 27 Dec 2012 13:42:07 -0600
-Message-Id: <1356637327-4884-1-git-send-email-Larry.Finger@lwfinger.net>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753197Ab2L0Tn6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 14:43:58 -0500
+Received: from norkia.v3.sk ([91.210.183.14]:55439 "EHLO norkia.v3.sk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752647Ab2L0Tn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 14:43:56 -0500
+X-Greylist: delayed 1196 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Dec 2012 14:43:56 EST
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Dan Williams <djbw@fb.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org,
+        Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH 1/2] dma: mv_xor: use proper dma memory management functions
+Date: Thu, 27 Dec 2012 20:23:47 +0100
+Message-Id: <1356636228-23096-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 3.8-rc1, the first call of pci_map_single() that is not checked
-with a corresponding pci_dma_mapping_error() call results in a warning
-with a splat as follows:
+Caught by self-check with DMA_API_DEBUG:
+WARNING: at lib/dma-debug.c:878 check_unmap+0x37c/0x748()
+mv_xor mv_xor.0: DMA-API: device driver frees DMA memory with wrong function [device address=0x000000001f3a1a40] [size=2000 bytes] [mapped as single] [unmapped as page]
 
-WARNING: at lib/dma-debug.c:933 check_unmap+0x480/0x950()
-Hardware name: HP Pavilion dv2700 Notebook PC
-forcedeth 0000:00:0a.0: DMA-API: device driver failed to check
- map error[device address=0x00000000b176e002] [size=90 bytes] [mapped as single]
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
 ---
- drivers/net/ethernet/nvidia/forcedeth.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ drivers/dma/mv_xor.c |   22 +++++++++++++++-------
+ 1 files changed, 15 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 653487d..de39cf2 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -1821,6 +1821,11 @@ static int nv_alloc_rx(struct net_device *dev)
- 							     skb->data,
- 							     skb_tailroom(skb),
- 							     PCI_DMA_FROMDEVICE);
-+			if (pci_dma_mapping_error(np->pci_dev,
-+						  np->put_rx_ctx->dma)) {
-+				dev_kfree_skb_any(skb);
-+				goto packet_dropped;
-+			}
- 			np->put_rx_ctx->dma_len = skb_tailroom(skb);
- 			np->put_rx.orig->buf = cpu_to_le32(np->put_rx_ctx->dma);
- 			wmb();
-@@ -1830,6 +1835,7 @@ static int nv_alloc_rx(struct net_device *dev)
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
- 		} else {
-+packet_dropped:
- 			u64_stats_update_begin(&np->swstats_rx_syncp);
- 			np->stat_rx_dropped++;
- 			u64_stats_update_end(&np->swstats_rx_syncp);
-@@ -1856,6 +1862,11 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
- 							     skb->data,
- 							     skb_tailroom(skb),
- 							     PCI_DMA_FROMDEVICE);
-+			if (pci_dma_mapping_error(np->pci_dev,
-+						  np->put_rx_ctx->dma)) {
-+				dev_kfree_skb_any(skb);
-+				goto packet_dropped;
-+			}
- 			np->put_rx_ctx->dma_len = skb_tailroom(skb);
- 			np->put_rx.ex->bufhigh = cpu_to_le32(dma_high(np->put_rx_ctx->dma));
- 			np->put_rx.ex->buflow = cpu_to_le32(dma_low(np->put_rx_ctx->dma));
-@@ -1866,6 +1877,7 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
- 		} else {
-+packet_dropped:
- 			u64_stats_update_begin(&np->swstats_rx_syncp);
- 			np->stat_rx_dropped++;
- 			u64_stats_update_end(&np->swstats_rx_syncp);
-@@ -2217,6 +2229,9 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
- 		np->put_tx_ctx->dma = pci_map_single(np->pci_dev, skb->data + offset, bcnt,
- 						PCI_DMA_TODEVICE);
-+		if (pci_dma_mapping_error(np->pci_dev,
-+					  np->put_tx_ctx->dma))
-+			return NETDEV_TX_BUSY;
- 		np->put_tx_ctx->dma_len = bcnt;
- 		np->put_tx_ctx->dma_single = 1;
- 		put_tx->buf = cpu_to_le32(np->put_tx_ctx->dma);
-@@ -2337,6 +2352,9 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 		bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
- 		np->put_tx_ctx->dma = pci_map_single(np->pci_dev, skb->data + offset, bcnt,
- 						PCI_DMA_TODEVICE);
-+		if (pci_dma_mapping_error(np->pci_dev,
-+					  np->put_tx_ctx->dma))
-+			return NETDEV_TX_BUSY;
- 		np->put_tx_ctx->dma_len = bcnt;
- 		np->put_tx_ctx->dma_single = 1;
- 		put_tx->bufhigh = cpu_to_le32(dma_high(np->put_tx_ctx->dma));
-@@ -5003,6 +5021,11 @@ static int nv_loopback_test(struct net_device *dev)
- 	test_dma_addr = pci_map_single(np->pci_dev, tx_skb->data,
- 				       skb_tailroom(tx_skb),
- 				       PCI_DMA_FROMDEVICE);
-+	if (pci_dma_mapping_error(np->pci_dev,
-+				  test_dma_addr)) {
-+		dev_kfree_skb_any(tx_skb);
-+		goto out;
-+	}
- 	pkt_data = skb_put(tx_skb, pkt_len);
- 	for (i = 0; i < pkt_len; i++)
- 		pkt_data[i] = (u8)(i & 0xff);
+diff --git a/drivers/dma/mv_xor.c b/drivers/dma/mv_xor.c
+index ac71f55..39387df 100644
+--- a/drivers/dma/mv_xor.c
++++ b/drivers/dma/mv_xor.c
+@@ -306,9 +306,7 @@ mv_xor_run_tx_complete_actions(struct mv_xor_desc_slot *desc,
+ 			desc->async_tx.callback(
+ 				desc->async_tx.callback_param);
+ 
+-		/* unmap dma addresses
+-		 * (unmap_single vs unmap_page?)
+-		 */
++		/* unmap dma addresses */
+ 		if (desc->group_head && desc->unmap_len) {
+ 			struct mv_xor_desc_slot *unmap = desc->group_head;
+ 			struct device *dev = mv_chan_to_devp(mv_chan);
+@@ -327,7 +325,11 @@ mv_xor_run_tx_complete_actions(struct mv_xor_desc_slot *desc,
+ 					dir = DMA_BIDIRECTIONAL;
+ 				else
+ 					dir = DMA_FROM_DEVICE;
+-				dma_unmap_page(dev, dest, len, dir);
++
++				if (flags & DMA_COMPL_DEST_UNMAP_SINGLE)
++					dma_unmap_single(dev, dest, len, dir);
++				else
++					dma_unmap_page(dev, dest, len, dir);
+ 			}
+ 
+ 			if (!(flags & DMA_COMPL_SKIP_SRC_UNMAP)) {
+@@ -336,8 +338,12 @@ mv_xor_run_tx_complete_actions(struct mv_xor_desc_slot *desc,
+ 								    src_cnt);
+ 					if (addr == dest)
+ 						continue;
+-					dma_unmap_page(dev, addr, len,
+-						       DMA_TO_DEVICE);
++					if (flags & DMA_COMPL_SRC_UNMAP_SINGLE)
++						dma_unmap_single(dev, addr, len,
++							       DMA_TO_DEVICE);
++					else
++						dma_unmap_page(dev, addr, len,
++							       DMA_TO_DEVICE);
+ 				}
+ 			}
+ 			desc->group_head = NULL;
+@@ -938,7 +944,9 @@ static int mv_xor_memcpy_self_test(struct mv_xor_chan *mv_chan)
+ 				 MV_XOR_TEST_SIZE, DMA_TO_DEVICE);
+ 
+ 	tx = mv_xor_prep_dma_memcpy(dma_chan, dest_dma, src_dma,
+-				    MV_XOR_TEST_SIZE, 0);
++				    MV_XOR_TEST_SIZE,
++				    DMA_COMPL_SRC_UNMAP_SINGLE |
++				    DMA_COMPL_DEST_UNMAP_SINGLE);
+ 	cookie = mv_xor_tx_submit(tx);
+ 	mv_xor_issue_pending(dma_chan);
+ 	async_tx_ack(tx);
 -- 
-1.7.10.4
+1.7.1
 
