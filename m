@@ -1,136 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561Ab2L0DoQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 22:44:16 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:37729 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751743Ab2L0DoN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 22:44:13 -0500
-Date: Wed, 26 Dec 2012 19:44:11 -0800 (PST)
-Message-Id: <20121226.194411.495144165867210013.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752503Ab2L0DuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 22:50:08 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:47305 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751743Ab2L0DuH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 22:50:07 -0500
+X-IronPort-AV: E=Sophos;i="4.84,360,1355068800"; 
+   d="scan'208";a="6483020"
+Message-ID: <50DBC3E2.4090804@cn.fujitsu.com>
+Date: Thu, 27 Dec 2012 11:43:30 +0800
+From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Reply-To: gaowanlong@cn.fujitsu.com
+Organization: Fujitsu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Jason Wang <jasowang@redhat.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        imammedo@redhat.com
+Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
+ hotplug
+References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com> <50DACC26.7050409@redhat.com> <50DACF22.5090707@cn.fujitsu.com> <50DBC07B.7060303@redhat.com>
+In-Reply-To: <50DBC07B.7060303@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/27 11:42:29,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/27 11:49:53,
+	Serialize complete at 2012/12/27 11:49:53
 Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/27/2012 11:28 AM, Jason Wang wrote:
+> On 12/26/2012 06:19 PM, Wanlong Gao wrote:
+>> On 12/26/2012 06:06 PM, Jason Wang wrote:
+>>> On 12/26/2012 03:06 PM, Wanlong Gao wrote:
+>>>> Add a cpu notifier to virtio-net, so that we can reset the
+>>>> virtqueue affinity if the cpu hotplug happens. It improve
+>>>> the performance through enabling or disabling the virtqueue
+>>>> affinity after doing cpu hotplug.
+>>> Hi Wanlong:
+>>>
+>>> Thanks for looking at this.
+>>>> Cc: Rusty Russell <rusty@rustcorp.com.au>
+>>>> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+>>>> Cc: Jason Wang <jasowang@redhat.com>
+>>>> Cc: virtualization@lists.linux-foundation.org
+>>>> Cc: netdev@vger.kernel.org
+>>>> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+>>>> ---
+>>>>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+>>>>  1 file changed, 38 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+>>>> index a6fcf15..9710cf4 100644
+>>>> --- a/drivers/net/virtio_net.c
+>>>> +++ b/drivers/net/virtio_net.c
+>>>> @@ -26,6 +26,7 @@
+>>>>  #include <linux/scatterlist.h>
+>>>>  #include <linux/if_vlan.h>
+>>>>  #include <linux/slab.h>
+>>>> +#include <linux/cpu.h>
+>>>>  
+>>>>  static int napi_weight = 128;
+>>>>  module_param(napi_weight, int, 0444);
+>>>> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+>>>>  module_param(csum, bool, 0444);
+>>>>  module_param(gso, bool, 0444);
+>>>>  
+>>>> +static bool cpu_hotplug = false;
+>>>> +
+>>>>  /* FIXME: MTU in config. */
+>>>>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+>>>>  #define GOOD_COPY_LEN	128
+>>>> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>>>>  		vi->affinity_hint_set = false;
+>>>>  }
+>>>>  
+>>>> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+>>>> +			       unsigned long action, void *hcpu)
+>>>> +{
+>>>> +	switch(action) {
+>>>> +	case CPU_ONLINE:
+>>>> +	case CPU_ONLINE_FROZEN:
+>>>> +	case CPU_DEAD:
+>>>> +	case CPU_DEAD_FROZEN:
+>>>> +		cpu_hotplug = true;
+>>>> +		break;
+>>>> +	default:
+>>>> +		break;
+>>>> +	}
+>>>> +	return NOTIFY_OK;
+>>>> +}
+>>>> +
+>>>> +static struct notifier_block virtnet_cpu_notifier = {
+>>>> +	.notifier_call = virtnet_cpu_callback,
+>>>> +};
+>>>> +
+>>>>  static void virtnet_get_ringparam(struct net_device *dev,
+>>>>  				struct ethtool_ringparam *ring)
+>>>>  {
+>>>> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+>>>>   */
+>>>>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+>>>>  {
+>>>> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+>>>> +	int txq;
+>>>> +
+>>>> +	if (unlikely(cpu_hotplug == true)) {
+>>>> +		virtnet_set_affinity(netdev_priv(dev), true);
+>>>> +		cpu_hotplug = false;
+>>>> +	}
+>>>> +
+>>> Why don't you just do this in callback?
+>> Callback can just give us a "hcpu", can't get the virtnet_info from callback. Am I missing something?
+> 
+> Well, I think you can just embed the notifier block into virtnet_info,
+> then use something like container_of in the callback to make the
+> notifier per device. This also solve the concern of Eric.
 
-1) GRE tunnel drivers don't set the transport header properly, they
-   also blindly deref the inner protocol ipv4 and needs some checks.
-   Fixes from Isaku Yamahata.
+Yeah, thank you very much for your suggestion. I'll try it.
 
-2) Fix sleeps while atomic in netdevice rename code, from Eric
-   Dumazet.
+>>> btw. Does qemu/kvm support cpu-hotplug now?
+>> From http://www.linux-kvm.org/page/CPUHotPlug, I saw that qemu-kvm can support hotplug
+>> but failed to merge to qemu.git, right?
+> 
+> Not sure, I just try latest qemu, it even does not have a cpu_set command.
 
-3) Fix double-spinlock in solos-pci driver, from Dan Carpenter.
+Adding Igor to CC,
 
-4) More ARP bug fixes.  Fix lockdep splat in arp_solicit() and
-   then the bug accidently added by that fix.  From Eric Dumazet
-   and Cong Wang.
+As I know, hotplug support is cleaned from qemu, and Igor want to rework it but not been completed?
+I'm not sure about that, Igor, could you send out your tech-preview-patches?
 
-5) Remove some __dev* annotations that slipped back in, as well
-   as all HOTPLUG references.  From Greg KH
+Thanks,
+Wanlong Gao
 
-6) RDS protocol uses wrong interfaces to access scatter-gather
-   elements, causing a regression.  From Mike Marciniszyn.
+> 
+> Thanks
+>>
+>> Thanks,
+>> Wanlong Gao
+>>
+> 
+> 
 
-7) Fix build error in cpts driver, from Richard Cochran.
-
-8) Fix arithmetic in packet scheduler, from Stefan Hasko.
-
-9) Similarly, fix association during calculation of random
-   backoff in batman-adv.  From Akinobu Mita.
-
-Please pull, thanks a lot!
-
-The following changes since commit c4271c6e37c32105492cbbed35f45330cb327b94:
-
-  NFS: Kill fscache warnings when mounting without -ofsc (2012-12-21 08:32:09 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to ae782bb16c35ce27512beeda9be6024c88f85b08:
-
-  ipv6/ip6_gre: set transport header correctly (2012-12-26 15:19:56 -0800)
-
-----------------------------------------------------------------
-Akinobu Mita (1):
-      batman-adv: fix random jitter calculation
-
-Cong Wang (1):
-      arp: fix a regression in arp_solicit()
-
-Dan Carpenter (1):
-      solos-pci: double lock in geos_gpio_store()
-
-Eric Dumazet (5):
-      ip_gre: fix possible use after free
-      net: devnet_rename_seq should be a seqcount
-      tuntap: dont use a private kmem_cache
-      ipv4: arp: fix a lockdep splat in arp_solicit()
-      tcp: should drop incoming frames without ACK flag set
-
-Gao feng (1):
-      bridge: call br_netpoll_disable in br_add_if
-
-Greg KH (2):
-      Drivers: network: more __dev* removal
-      CONFIG_HOTPLUG removal from networking core
-
-Isaku Yamahata (3):
-      ip_gre: make ipgre_tunnel_xmit() not parse network header as IP unconditionally
-      ipv4/ip_gre: set transport header correctly to gre header
-      ipv6/ip6_gre: set transport header correctly
-
-Li Zefan (1):
-      netprio_cgroup: define sk_cgrp_prioidx only if NETPRIO_CGROUP is enabled
-
-Marciniszyn, Mike (2):
-      IB/rds: Correct ib_api use with gs_dma_address/sg_dma_len
-      IB/rds: suppress incompatible protocol when version is known
-
-Richard Cochran (2):
-      cpts: fix build error by removing useless code.
-      cpts: fix a run time warn_on.
-
-Stefan Hasko (1):
-      net: sched: integer overflow fix
-
-Yan Burman (1):
-      net/vxlan: Use the underlying device index when joining/leaving multicast groups
-
- drivers/atm/solos-pci.c                     |  2 +-
- drivers/net/ethernet/marvell/mvmdio.c       |  6 +++---
- drivers/net/ethernet/marvell/mvneta.c       | 19 +++++++++----------
- drivers/net/ethernet/ti/cpts.c              |  3 +--
- drivers/net/ethernet/ti/cpts.h              |  1 -
- drivers/net/tun.c                           | 24 +++---------------------
- drivers/net/vxlan.c                         |  6 ++++--
- drivers/net/wireless/rtlwifi/rtl8723ae/sw.c |  2 +-
- include/linux/netdevice.h                   |  2 +-
- include/net/sock.h                          |  2 +-
- net/batman-adv/bat_iv_ogm.c                 |  2 +-
- net/bridge/br_if.c                          |  8 +++++---
- net/core/dev.c                              | 18 +++++++++---------
- net/core/net-sysfs.c                        |  4 ----
- net/core/sock.c                             |  4 ++--
- net/ipv4/arp.c                              | 10 ++++------
- net/ipv4/ip_gre.c                           | 13 ++++++++++---
- net/ipv4/tcp_input.c                        | 14 ++++++++++----
- net/ipv6/ip6_gre.c                          |  3 +--
- net/rds/ib_cm.c                             | 11 +++++------
- net/rds/ib_recv.c                           |  9 ++++++---
- net/sched/sch_htb.c                         |  2 +-
- net/wireless/reg.c                          |  7 -------
- net/wireless/sysfs.c                        |  4 ----
- 24 files changed, 78 insertions(+), 98 deletions(-)
