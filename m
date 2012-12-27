@@ -1,167 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab2L0QOQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 11:14:16 -0500
-Received: from nm18-vm7.bullet.mail.gq1.yahoo.com ([98.136.217.222]:22643 "EHLO
-	nm18-vm7.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752999Ab2L0QOM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 11:14:12 -0500
-X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Dec 2012 11:14:12 EST
-X-Yahoo-Newman-Id: 739210.72341.bm@smtp222.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: aW6.nm0VM1m8DaqtIGMPvHiY8fbHI14nW.3DGR_4xKGAYFZ
- gXIXoKq35UAYMIVnArGUeLqH_mPzJQyRq126jdatA8euXeoBreH9xerKPp0K
- df4EoxzUcVOv6.JoN6CEaBkSdLQVCUa0iMQZwjHkCeTm_thAC0vKBLll9HX5
- i4Ju0T2nXcLERnWhdRpXbhWzzidG3kagAe.Ta2k3Dm11uwjck33ozaL57JVP
- o5hrDQNgkK.SsYs3TTaje.GXnfXxdGcXFVjccepTSpHP9OP0PT48xFJT9FC_
- 3HDF2EHRl6H2XkF8i9rySiK4A0K5gFpMSVhO7vNp4WZS8ruslznEBS_u_sqK
- SubYCpKPfyzMEdZrJrvDYcluy6Axq4Gwb.lLLaGbIrX2y5PtOm1O7tq5pC.x
- 8c53elw5NgtzltndMWYZRDgp0rjlriPoYLtJUYQWgyyO4f4NPbyFBrl1luu7
- G0oeCeB._S.0.GVg-
-X-Yahoo-SMTP: Zybq.GKswBCVR5oJTLrx1T39m2F9FA--
-Message-ID: <50DC7287.1080302@yahoo.ca>
-Date: Thu, 27 Dec 2012 11:08:39 -0500
-From: Alex Xu <alex_y_xu@yahoo.ca>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753255Ab2L0QOt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 11:14:49 -0500
+Received: from mout.gmx.net ([212.227.15.19]:54220 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752999Ab2L0QOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 11:14:46 -0500
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18twpE+Y1MtVkfXGEdnr50W/pRVmB+LnY89fhAqjy
+	B+QrDWTMyIHwqC
+Message-ID: <50DC73F3.6020605@gmx.de>
+Date: Thu, 27 Dec 2012 17:14:43 +0100
+From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Hillf Danton <dhillf@gmail.com>
-CC: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, mgorman@suse.de,
-        hughd@google.com, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: kernel BUG at mm/huge_memory.c:1798!
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com> <535932623.34838584.1356410331076.JavaMail.root@redhat.com> <CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
-In-Reply-To: <CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: UML process hangs
 X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/12/12 07:05 AM, Hillf Danton wrote:
-> On Tue, Dec 25, 2012 at 12:38 PM, Zhouping Liu <zliu@redhat.com> wrote:
->> Hello all,
->>
->> I found the below kernel bug using latest mainline(637704cbc95),
->> my hardware has 2 numa nodes, and it's easy to reproduce the issue
->> using LTP test case: "# ./mmap10 -a -s -c 200":
-> 
-> Can you test with 5a505085f0 and 4fc3f1d66b1 reverted?
-> 
-> Hillf
->
+Sometimes my user mode linux image just hangs.
 
-(for people from mailing lists, please cc me when replying)
+Attaching a GDB to the "linux" process (which itself occupies 100% of a CPU core), gives :
 
-Same thing?
+...
+Loaded symbols for /lib/libnss_files.so.2
+0x0805f24c in from_irq_stack (nested=0) at arch/um/kernel/irq.c:462
+462             current->stack = to;
+(gdb) cont
+Continuing.
 
-mapcount 0 page_mapcount 1
-------------[ cut here ]------------
-kernel BUG at mm/huge_memory.c:1798!
-invalid opcode: 0000 [#1] SMP
-Modules linked in: usb_storage wacom
-CPU 3
-Pid: 1287, comm: thunderbird Not tainted 3.8.0-rc1+ #5 HP-Pavilion
-AU992AA-ABL e9262f/Indio
-RIP: 0010:[<ffffffff810c12c0>]  [<ffffffff810c12c0>] 0xffffffff810c12c0
-RSP: 0018:ffff880216887c58  EFLAGS: 00010297
-RAX: 0000000000000001 RBX: ffffea00065d0000 RCX: 0000000000000038
-RDX: 000000000000002c RSI: 0000000000000046 RDI: ffffffff818e9e34
-RBP: ffff880216887cd8 R08: 000000000000000a R09: 0000000000000000
-R10: 0000000000000272 R11: 0000000000000271 R12: ffff880203fbad10
-R13: 00007f1160e00000 R14: 0000000000000000 R15: ffffea00065d0000
-FS:  00007f1180fca740(0000) GS:ffff88022fd80000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 00007fca86e18000 CR3: 00000002168e3000 CR4: 00000000000007e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process thunderbird (pid: 1287, threadinfo ffff880216886000, task
-ffff8802259c4380)
-Stack:
- ffff880216887c68 ffffffff8145f284 ffff880216887cb8 ffff8801f9c24ac0
- 00000000065d0000 ffff8801f9c24af0 0000000000000000 ffff880216887cf8
- 0000000000000000 00000007f1160e00 0000000000000000 ffffea00065d0000
-Call Trace:
- [<ffffffff8145f284>] ? 0xffffffff8145f284
- [<ffffffff810c2310>] 0xffffffff810c2310
- [<ffffffff810a69ea>] 0xffffffff810a69ea
- [<ffffffff8106bbd8>] ? 0xffffffff8106bbd8
- [<ffffffff810a7710>] 0xffffffff810a7710
- [<ffffffff810a4a1d>] 0xffffffff810a4a1d
- [<ffffffff8106e062>] ? 0xffffffff8106e062
- [<ffffffff810adf84>] ? 0xffffffff810adf84
- [<ffffffff81460952>] 0xffffffff81460952
-Code: 6d 81 31 c0 8b 75 c4 83 c2 01 e8 c4 94 39 00 e9 83 fb ff ff 0f 0b
-0f 0b 0f 0b f3 90 48 8b 03 a9 00 00 80 00 75 f4 e9 b6 fb ff ff <0f> 0b
-0f 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 49 89 d1 48
-RIP  [<ffffffff810c12c0>] 0xffffffff810c12c0
- RSP <ffff880216887c58>
----[ end trace 0d442da0022ecdd1 ]---
+Program received signal SIGSEGV, Segmentation fault.
+0x0805f24c in from_irq_stack (nested=0) at arch/um/kernel/irq.c:462
+462             current->stack = to;
+(gdb) bt
+#0  0x0805f24c in from_irq_stack (nested=0) at arch/um/kernel/irq.c:462
+#1  0x0807176d in hard_handler (sig=<optimized out>, si=0x8402b0c <cpu0_irqstack+2828>, p=0x8402b8c <cpu0_irqstack+2956>)
+    at arch/um/os-Linux/signal.c:175
+#2  <signal handler called>
+#3  get_symbol_pos (addr=134759253, symbolsize=0x387ba170, offset=0x387ba16c) at kernel/kallsyms.c:219
+#4  0x080b732e in kallsyms_lookup (addr=134759253, symbolsize=0x387ba170, offset=0x387ba16c, modname=0x387ba168, namebuf=0x387ba1a1 "")
+    at kernel/kallsyms.c:295
+#5  0x080b73c7 in __sprint_symbol (buffer=0x387ba1a1 "", address=134759253, symbol_offset=0, add_offset=1) at kernel/kallsyms.c:354
+#6  0x080b757a in sprint_symbol (buffer=0x387ba1a1 "", address=134759253) at kernel/kallsyms.c:385
+#7  0x0826a207 in symbol_string (buf=0x84cefc3 <textbuf.24807+35> "---\n", 
+    end=0x84cf380 <cont> "Netdevice 0 (72:ef:3d:5d:d3:db) : xes 6 to 9)e...No, enabling workaround", ptr=<optimized out>, ext=83 'S', spec=...)
+    at lib/vsprintf.c:545
+#8  0x0826ac1d in pointer (fmt=<optimized out>, buf=0x84cefc3 <textbuf.24807+35> "---\n", end=<optimized out>, ptr=0x8084355 <local_bh_enable+69>, 
+    spec=...) at lib/vsprintf.c:1062
+#9  0x0826a948 in vsnprintf (buf=0x84cefa0 <textbuf.24807> "\001\064WARNING: at kernel/softirq.c:160 ---\n", size=992, fmt=0x83b3066 "pS()\n", 
+    args=0x387ba3a0 "UC\b\b") at lib/vsprintf.c:1450
+#10 0x0826af37 in vscnprintf (buf=0x84cefa0 <textbuf.24807> "\001\064WARNING: at kernel/softirq.c:160 ---\n", size=992, 
+    fmt=0x83b3051 "\001\064WARNING: at %s:%d %pS()\n", args=0x387ba394 "H1;\b\240") at lib/vsprintf.c:1559
+#11 0x0807edb8 in vprintk_emit (facility=0, level=-1, dict=0x0, dictlen=0, fmt=0x83b3051 "\001\064WARNING: at %s:%d %pS()\n", 
+    args=0x387ba394 "H1;\b\240") at kernel/printk.c:1547
+#12 0x0833e3ed in printk (fmt=0x83b3051 "\001\064WARNING: at %s:%d %pS()\n") at kernel/printk.c:1689
+#13 0x0807d3f0 in warn_slowpath_common (file=0x83b3148 "kernel/softirq.c", line=160, caller=<optimized out>, taint=9, args=0x0) at kernel/panic.c:413
+#14 0x0807d4d3 in warn_slowpath_null (file=0x83b3148 "kernel/softirq.c", line=160) at kernel/panic.c:454
+#15 0x08084355 in _local_bh_enable_ip (ip=<optimized out>) at kernel/softirq.c:160
+#16 local_bh_enable () at kernel/softirq.c:187
+#17 0x082ada10 in rcu_read_unlock_bh () at include/linux/rcupdate.h:827
+#18 dev_queue_xmit (skb=0x385e76c0) at net/core/dev.c:2735
+#19 0x082cfe42 in neigh_hh_output (skb=<optimized out>, hh=<optimized out>) at include/net/neighbour.h:356
+#20 dst_neigh_output (skb=0x385e76c0, n=0x3868a800, dst=<optimized out>) at include/net/dst.h:412
+#21 ip_finish_output2 (skb=0x385e76c0) at net/ipv4/ip_output.c:201
+#22 ip_finish_output (skb=<optimized out>) at net/ipv4/ip_output.c:234
+#23 0x082cfee3 in ip_output (skb=0x385e76c0) at net/ipv4/ip_output.c:307
+#24 0x082ceec3 in dst_output (skb=0x385e76c0) at include/net/dst.h:449
+#25 ip_local_out (skb=0x385e76c0) at net/ipv4/ip_output.c:110
+#26 0x082cf06e in ip_build_and_send_pkt (skb=0x385e76c0, sk=0x38690a00, saddr=1174448320, daddr=4261456064, opt=0x0) at net/ipv4/ip_output.c:162
+#27 0x082ebb1a in tcp_v4_conn_request (sk=0x38690a00, skb=0x385e7300) at net/ipv4/tcp_ipv4.c:1646
+#28 0x082e2c6c in tcp_rcv_state_process (sk=0x38690a00, skb=0x385e7300, th=0x35477762, len=40) at net/ipv4/tcp_input.c:5942
+#29 0x082e9957 in tcp_v4_do_rcv (sk=0x38690a00, skb=0x385e7300) at net/ipv4/tcp_ipv4.c:1888
+#30 0x082ec4ce in tcp_v4_rcv (skb=0x385e7300) at net/ipv4/tcp_ipv4.c:2028
+#31 0x082cb65e in ip_local_deliver_finish (skb=0x385e7300) at net/ipv4/ip_input.c:225
+---Type <return> to continue, or q <return> to quit--- 
+#32 ip_local_deliver (skb=0x385e7300) at net/ipv4/ip_input.c:263
+#33 0x082cbb6a in dst_input (skb=0x385e7300) at include/net/dst.h:455
+#34 ip_rcv_finish (skb=0x385e7300) at net/ipv4/ip_input.c:373
+#35 ip_rcv (skb=<optimized out>, dev=0x384f2000, pt=0x8425b60 <ip_packet_type>, orig_dev=0x384f2000) at net/ipv4/ip_input.c:451
+#36 0x082ab000 in __netif_receive_skb (skb=0x385e7300) at net/core/dev.c:3456
+#37 0x082ab0c9 in process_backlog (napi=0x84284c0 <softnet_data+64>, quota=1) at net/core/dev.c:3925
+#38 0x082ae7a2 in net_rx_action (h=0x84cfc4c <softirq_vec+12>) at net/core/dev.c:4083
+#39 0x08084192 in __do_softirq () at kernel/softirq.c:247
+#40 0x080842f6 in do_softirq () at kernel/softirq.c:295
+#41 0x080844fd in invoke_softirq () at kernel/softirq.c:329
+#42 irq_exit () at kernel/softirq.c:348
+#43 0x0805ee5a in do_IRQ (irq=5, regs=0x387ba820) at arch/um/kernel/irq.c:295
+#44 0x0805eed5 in sigio_handler (sig=29, unused_si=0x0, regs=0x387ba820) at arch/um/kernel/irq.c:53
+#45 0x08071ab8 in sig_handler_common (sig=29, si=0x0, mc=0x0) at arch/um/os-Linux/signal.c:44
+#46 0x080719db in unblock_signals () at arch/um/os-Linux/signal.c:282
+#47 0x08071b5e in set_signals (enable=1) at arch/um/os-Linux/signal.c:302
+#48 0x080842fe in arch_local_irq_restore (flags=1) at /home/tfoerste/devel/linux/arch/um/include/asm/irqflags.h:16
+#49 do_softirq () at kernel/softirq.c:297
+#50 0x08084397 in _local_bh_enable_ip (ip=<optimized out>) at kernel/softirq.c:176
+#51 local_bh_enable () at kernel/softirq.c:187
+#52 0x082cfe64 in rcu_read_unlock_bh () at include/linux/rcupdate.h:827
+#53 ip_finish_output2 (skb=0x388240b0) at net/ipv4/ip_output.c:203
+#54 ip_finish_output (skb=<optimized out>) at net/ipv4/ip_output.c:234
+#55 0x082cfee3 in ip_output (skb=0x388240b0) at net/ipv4/ip_output.c:307
+#56 0x082ceec3 in dst_output (skb=0x388240b0) at include/net/dst.h:449
+#57 ip_local_out (skb=0x388240b0) at net/ipv4/ip_output.c:110
+#58 0x082cf37d in ip_queue_xmit (skb=0x388240b0, fl=0x386915c8) at net/ipv4/ip_output.c:403
+#59 0x082e5257 in tcp_transmit_skb (sk=0x38691400, skb=0x388240b0, clone_it=<optimized out>, gfp_mask=32) at net/ipv4/tcp_output.c:1106
+#60 0x082e5c6c in tcp_write_xmit (sk=0x38691400, mss_now=1448, nonagle=1, push_one=0, gfp=32) at net/ipv4/tcp_output.c:2029
+#61 0x082e5e48 in __tcp_push_pending_frames (sk=0x38691400, cur_mss=1448, nonagle=1) at net/ipv4/tcp_output.c:2068
+#62 0x082d7854 in tcp_push (nonagle=<optimized out>, mss_now=1448, flags=64, sk=0x38691400) at net/ipv4/tcp.c:636
+#63 tcp_sendmsg (iocb=0x387bad68, sk=0x38691400, msg=0x387bad20, size=826) at net/ipv4/tcp.c:1225
+#64 0x082fa983 in inet_sendmsg (iocb=0x387bad68, sock=0x3816a180, msg=0x387bad20, size=826) at net/ipv4/af_inet.c:784
+#65 0x0829b47c in __sock_sendmsg_nosec (size=<optimized out>, msg=0x387bad20, sock=0x3816a180, iocb=0x387bad68) at net/socket.c:628
+#66 __sock_sendmsg (size=<optimized out>, msg=0x387bad20, sock=0x3816a180, iocb=0x387bad68) at net/socket.c:636
+#67 do_sock_write (nr_segs=2, iov=0x387bae18, iocb=0x387bad68, msg=0x387bad20, file=<optimized out>) at net/socket.c:974
+#68 sock_aio_write (iocb=0x387bad68, iov=0x387bae18, nr_segs=2, pos=0) at net/socket.c:989
+#69 0x081003a6 in do_sync_readv_writev (filp=0x387b0280, iov=0x387bae18, nr_segs=2, len=826, ppos=0x387bae94, fn=0x829b360 <sock_aio_write>)
+    at fs/read_write.c:572
+#70 0x0810066f in do_readv_writev (type=1, file=0x387b0280, uvector=<optimized out>, nr_segs=2, pos=0x387bae94) at fs/read_write.c:730
+---Type <return> to continue, or q <return> to quit---
+#71 0x08100813 in vfs_writev (file=0x387b0280, vec=0x4b510bd0, vlen=2, pos=0x387bae94) at fs/read_write.c:768
+#72 0x08100920 in sys_writev (fd=13, vec=0x4b510bd0, vlen=2) at fs/read_write.c:800
+#73 0x08062ab2 in handle_syscall (r=0x3874b590) at arch/um/kernel/skas/syscall.c:35
+#74 0x08074efd in handle_trap (local_using_sysemu=<optimized out>, regs=0x3874b590, pid=11862) at arch/um/os-Linux/skas/process.c:193
+#75 userspace (regs=0x3874b590) at arch/um/os-Linux/skas/process.c:426
+#76 0x0805f7cc in fork_handler () at arch/um/kernel/process.c:160
+#77 0x00000000 in ?? ()
 
-I don't have KALLSYMS, so after running through ksymoops:
 
->>RIP; ffffffff810c12c0 <split_huge_page+600/610>   <=====
+This happens since a loong time, the GDB trace above is from 3.8-rc1.
+Any hints or tips ?
 
->>RBX; ffffea00065d0000 <phys_startup_64+ffffea00055d0000/ffffffff80000000>
->>RDI; ffffffff818e9e34 <logbuf_lock+0/4>
->>RBP; ffff880216887cd8 <phys_startup_64+ffff880215887cd8/ffffffff80000000>
->>R12; ffff880203fbad10 <phys_startup_64+ffff880202fbad10/ffffffff80000000>
->>R13; 00007f1160e00000 <phys_startup_64+7f115fe00000/ffffffff80000000>
->>R15; ffffea00065d0000 <phys_startup_64+ffffea00055d0000/ffffffff80000000>
-
-Trace; ffffffff8145f284 <schedule+24/70>
-Trace; ffffffff810c2310 <__split_huge_page_pmd+b0/1b0>
-Trace; ffffffff810a69ea <unmap_single_vma+25a/700>
-Trace; ffffffff8106bbd8 <futex_wake+108/130>
-Trace; ffffffff810a7710 <zap_page_range+90/d0>
-Trace; ffffffff810a4a1d <sys_madvise+25d/690>
-Trace; ffffffff8106e062 <sys_futex+142/1a0>
-Trace; ffffffff810adf84 <vm_munmap+54/70>
-Trace; ffffffff81460952 <system_call_fastpath+16/1b>
-
-Code;  ffffffff810c1295 <split_huge_page+5d5/610>
-0000000000000000 <_RIP>:
-Code;  ffffffff810c1295 <split_huge_page+5d5/610>
-   0:   6d                        insl   (%dx),%es:(%rdi)
-Code;  ffffffff810c1296 <split_huge_page+5d6/610>
-   1:   81 31 c0 8b 75 c4         xorl   $0xc4758bc0,(%rcx)
-Code;  ffffffff810c129c <split_huge_page+5dc/610>
-   7:   83 c2 01                  add    $0x1,%edx
-Code;  ffffffff810c129f <split_huge_page+5df/610>
-   a:   e8 c4 94 39 00            callq  3994d3 <_RIP+0x3994d3>
-Code;  ffffffff810c12a4 <split_huge_page+5e4/610>
-   f:   e9 83 fb ff ff            jmpq   fffffffffffffb97
-<_RIP+0xfffffffffffffb97>
-Code;  ffffffff810c12a9 <split_huge_page+5e9/610>
-  14:   0f 0b                     ud2
-Code;  ffffffff810c12ab <split_huge_page+5eb/610>
-  16:   0f 0b                     ud2
-Code;  ffffffff810c12ad <split_huge_page+5ed/610>
-  18:   0f 0b                     ud2
-Code;  ffffffff810c12af <split_huge_page+5ef/610>
-  1a:   f3 90                     pause
-Code;  ffffffff810c12b1 <split_huge_page+5f1/610>
-  1c:   48 8b 03                  mov    (%rbx),%rax
-Code;  ffffffff810c12b4 <split_huge_page+5f4/610>
-  1f:   a9 00 00 80 00            test   $0x800000,%eax
-Code;  ffffffff810c12b9 <split_huge_page+5f9/610>
-  24:   75 f4                     jne    1a <_RIP+0x1a>
-Code;  ffffffff810c12bb <split_huge_page+5fb/610>
-  26:   e9 b6 fb ff ff            jmpq   fffffffffffffbe1
-<_RIP+0xfffffffffffffbe1>
-Code;  ffffffff810c12c0 <split_huge_page+600/610>   <=====
-  2b:   0f 0b                     ud2       <=====
-Code;  ffffffff810c12c2 <split_huge_page+602/610>
-  2d:   0f 0b                     ud2
-Code;  ffffffff810c12c4 <split_huge_page+604/610>
-  2f:   66 66 66 2e 0f 1f 84      data32 data32 nopw %cs:0x0(%rax,%rax,1)
-Code;  ffffffff810c12cb <split_huge_page+60b/610>
-  36:   00 00 00 00 00
-Code;  ffffffff810c12d0 <do_huge_pmd_wp_page+0/840>
-  3b:   55                        push   %rbp
-Code;  ffffffff810c12d1 <do_huge_pmd_wp_page+1/840>
-  3c:   49 89 d1                  mov    %rdx,%r9
-Code;  ffffffff810c12d4 <do_huge_pmd_wp_page+4/840>
-  3f:   48                        rex.W
+-- 
+MfG/Sincerely
+Toralf Förster
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
