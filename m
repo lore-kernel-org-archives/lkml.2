@@ -1,107 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752473Ab2L0LVz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 06:21:55 -0500
-Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:38251
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751841Ab2L0LVx convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 06:21:53 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
-From: Liu Hui-R64343 <r64343@freescale.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "mgorman@suse.de" <mgorman@suse.de>
-Subject: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad address
-Thread-Topic: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad
- address
-Thread-Index: Ac3kJF/a6SI7D+iJS5WtP6F+qKZUbA==
-Date: Thu, 27 Dec 2012 11:21:48 +0000
-Message-ID: <AD13664F485EE54694E29A7F9D5BE1AF4D35F3@039-SN2MPN1-021.039d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.64]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752606Ab2L0LtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 06:49:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58446 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752004Ab2L0LtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 06:49:06 -0500
+Date: Thu, 27 Dec 2012 13:51:53 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: Wanlong Gao <gaowanlong@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [RFC PATCH] virtio-net: reset virtqueue affinity when doing cpu
+ hotplug
+Message-ID: <20121227115153.GC20595@redhat.com>
+References: <1356505614-16683-1-git-send-email-gaowanlong@cn.fujitsu.com>
+ <20121226104638.GA18850@redhat.com>
+ <50DBC1B8.9050406@redhat.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50DBC1B8.9050406@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I met one error when does the following command:
+On Thu, Dec 27, 2012 at 11:34:16AM +0800, Jason Wang wrote:
+> On 12/26/2012 06:46 PM, Michael S. Tsirkin wrote:
+> > On Wed, Dec 26, 2012 at 03:06:54PM +0800, Wanlong Gao wrote:
+> >> Add a cpu notifier to virtio-net, so that we can reset the
+> >> virtqueue affinity if the cpu hotplug happens. It improve
+> >> the performance through enabling or disabling the virtqueue
+> >> affinity after doing cpu hotplug.
+> >>
+> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> >> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> >> Cc: Jason Wang <jasowang@redhat.com>
+> >> Cc: virtualization@lists.linux-foundation.org
+> >> Cc: netdev@vger.kernel.org
+> >> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> > Thanks for looking into this.
+> > Some comments:
+> >
+> > 1. Looks like the logic in
+> > virtnet_set_affinity (and in virtnet_select_queue)
+> > will not work very well when CPU IDs are not
+> > consequitive. This can happen with hot unplug.
+> >
+> > Maybe we should add a VQ allocator, and defining
+> > a per-cpu variable specifying the VQ instead
+> > of using CPU ID.
+> 
+> Yes, and generate the affinity hint based on the mapping. Btw, what does
+> VQ allocator means here?
 
-sh/$ echo 1 > /proc/sys/vm/compact_memory
-sh/$ sh: write error: Bad address
+Some logic to generate CPU to VQ mapping.
 
-After using strace, I find the following:
-...
-write(1, "1\n", 2)                              = 3
-write(1, "", 4294967295)                = -1 EFAULT (Bad address)
-write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
-) = 31
-
->From the code, we can see it will return COMPACT_COMPLETE = 3 always when write.
-
-/* Compact all nodes in the system */
-static int compact_nodes(void)
-{
-        int nid;
-
-        /* Flush pending updates to the LRU lists */
-        lru_add_drain_all();
-
-        for_each_online_node(nid)
-                compact_node(nid);
-
-        return COMPACT_COMPLETE;
-}
-
-/* The written value is actually unused, all memory is compacted */
-int sysctl_compact_memory;
-
-/* This is the entry point for compacting all nodes via /proc/sys/vm */
-int sysctl_compaction_handler(struct ctl_table *table, int write,
-                        void __user *buffer, size_t *length, loff_t *ppos)
-{
-        if (write)
-                return compact_nodes();
-
-        return 0;
-}
-
-I think we can't simply return COMPACT_COMPLETE, instead, we need return *length.
-
-The following patch can fix this issue:
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index c4bc5ac..d3cb27f 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -732,8 +732,10 @@ int sysctl_compact_memory;
- int sysctl_compaction_handler(struct ctl_table *table, int write,
-                        void __user *buffer, size_t *length, loff_t *ppos)
- {
--       if (write)
--               return compact_nodes();
-+       if (write) {
-+               compact_nodes();
-+               return *length;
-+       }
-
-        return 0;
- }
-
-
-Anyone can comment on it? Thanks a lot.
-
-Happy Holiday.
-
-Best Regards,
-Jason Liu
-
-
-
+> >
+> >
+> > 2. The below code seems racy e.g. when CPU is added
+> > 	during device init.
+> >
+> > 3. using a global cpu_hotplug seems inelegant.
+> > In any case we should document what is the
+> > meaning of this variable.
+> >
+> >> ---
+> >>  drivers/net/virtio_net.c | 39 ++++++++++++++++++++++++++++++++++++++-
+> >>  1 file changed, 38 insertions(+), 1 deletion(-)
+> >>
+> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> >> index a6fcf15..9710cf4 100644
+> >> --- a/drivers/net/virtio_net.c
+> >> +++ b/drivers/net/virtio_net.c
+> >> @@ -26,6 +26,7 @@
+> >>  #include <linux/scatterlist.h>
+> >>  #include <linux/if_vlan.h>
+> >>  #include <linux/slab.h>
+> >> +#include <linux/cpu.h>
+> >>  
+> >>  static int napi_weight = 128;
+> >>  module_param(napi_weight, int, 0444);
+> >> @@ -34,6 +35,8 @@ static bool csum = true, gso = true;
+> >>  module_param(csum, bool, 0444);
+> >>  module_param(gso, bool, 0444);
+> >>  
+> >> +static bool cpu_hotplug = false;
+> >> +
+> >>  /* FIXME: MTU in config. */
+> >>  #define MAX_PACKET_LEN (ETH_HLEN + VLAN_HLEN + ETH_DATA_LEN)
+> >>  #define GOOD_COPY_LEN	128
+> >> @@ -1041,6 +1044,26 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+> >>  		vi->affinity_hint_set = false;
+> >>  }
+> >>  
+> >> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+> >> +			       unsigned long action, void *hcpu)
+> >> +{
+> >> +	switch(action) {
+> >> +	case CPU_ONLINE:
+> >> +	case CPU_ONLINE_FROZEN:
+> >> +	case CPU_DEAD:
+> >> +	case CPU_DEAD_FROZEN:
+> >> +		cpu_hotplug = true;
+> >> +		break;
+> >> +	default:
+> >> +		break;
+> >> +	}
+> >> +	return NOTIFY_OK;
+> >> +}
+> >> +
+> >> +static struct notifier_block virtnet_cpu_notifier = {
+> >> +	.notifier_call = virtnet_cpu_callback,
+> >> +};
+> >> +
+> >>  static void virtnet_get_ringparam(struct net_device *dev,
+> >>  				struct ethtool_ringparam *ring)
+> >>  {
+> >> @@ -1131,7 +1154,14 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
+> >>   */
+> >>  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
+> >>  {
+> >> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+> >> +	int txq;
+> >> +
+> >> +	if (unlikely(cpu_hotplug == true)) {
+> >> +		virtnet_set_affinity(netdev_priv(dev), true);
+> >> +		cpu_hotplug = false;
+> >> +	}
+> >> +
+> >> +	txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
+> >>  		  smp_processor_id();
+> >>  
+> >>  	while (unlikely(txq >= dev->real_num_tx_queues))
+> >> @@ -1248,6 +1278,8 @@ static void virtnet_del_vqs(struct virtnet_info *vi)
+> >>  {
+> >>  	struct virtio_device *vdev = vi->vdev;
+> >>  
+> >> +	unregister_hotcpu_notifier(&virtnet_cpu_notifier);
+> >> +
+> >>  	virtnet_set_affinity(vi, false);
+> >>  
+> >>  	vdev->config->del_vqs(vdev);
+> >> @@ -1372,6 +1404,11 @@ static int init_vqs(struct virtnet_info *vi)
+> >>  		goto err_free;
+> >>  
+> >>  	virtnet_set_affinity(vi, true);
+> >> +
+> >> +	ret = register_hotcpu_notifier(&virtnet_cpu_notifier);
+> >> +	if (ret)
+> >> +		goto err_free;
+> >> +
+> >>  	return 0;
+> >>  
+> >>  err_free:
+> >> -- 
+> >> 1.8.0
