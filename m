@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751830Ab2L0BOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 20:14:38 -0500
-Received: from mout.gmx.net ([212.227.15.19]:58931 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751333Ab2L0BOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 20:14:36 -0500
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1/EGVIjZjbEoTZTq+ciQ3Ui+iJVqdaBQQ5KhyKazU
-	w3iMjc4wjAukDG
-Message-ID: <50DB9FA7.1090402@gmx.de>
-Date: Thu, 27 Dec 2012 01:08:55 +0000
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121027 Icedove/3.0.11
+	id S1751789Ab2L0Bd3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 20:33:29 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:61944 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab2L0Bd1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Dec 2012 20:33:27 -0500
 MIME-Version: 1.0
-To: Tony Prisk <linux@prisktech.co.nz>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org
-Subject: Re: [PATCH fix-3.8] video: vt8500: Fix X crash when initializing
- framebuffer.
-References: <1356567943-3836-1-git-send-email-linux@prisktech.co.nz>
-In-Reply-To: <1356567943-3836-1-git-send-email-linux@prisktech.co.nz>
+In-Reply-To: <20121205163019.GC28556@liondog.tnic>
+References: <20121204210305.4515.91100.stgit@grignak.americas.hpqcorp.net>
+ <20121204210312.4515.13415.stgit@grignak.americas.hpqcorp.net>
+ <20121205143202.GD2364@liondog.tnic> <A961433CDFF2F640A2866803152E61F9516F279F@G4W3219.americas.hpqcorp.net>
+ <20121205163019.GC28556@liondog.tnic>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 26 Dec 2012 18:33:04 -0700
+Message-ID: <CAErSpo4j5k6uQJHV1sMdOqosVNVygehfXB+y7bB7uH14B6vG8w@mail.gmail.com>
+Subject: Re: [PATCH v7 2/3] aerdrv: Enhanced AER logging
+To: Borislav Petkov <bp@alien8.de>, "Ortiz, Lance E" <lance.oritz@hp.com>,
+        "bhelgaas@google.com" <bhelgaas@google.com>,
+        "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
+        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/27/2012 12:25 AM, Tony Prisk wrote:
-> This patch adds support for .fb_check_var which is required when
-> X attempts to initialize the framebuffer. The only supported
-> resolution is the native resolution of the LCD panel, so we test
-> against the resolution supplied from the DT panel definition.
+On Wed, Dec 5, 2012 at 9:30 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Dec 05, 2012 at 04:14:14PM +0000, Ortiz, Lance E wrote:
+>> I removed the prefix argument because it was never used by its caller
+>> and never set. The reason I added the prefix variable and set it to
+>> NULL was to help in breaking up the patch and adding it would help the
+>> intermittent patch build without changing too much code. I knew I was
+>> actually going to use the variable in patch 3.
+>
+> No, the correct way to do that is to keep all changes that belong
+> logically together in a single patch for ease of reviewing and avoid
+> breakages. And in your case this should be pretty easy: simply move all
+> the 'prefix' touching code to patch #3 and you're done, AFAICT.
 
-Nack. As far as I understand this driver behaves as it is supposed to do
-according to drivers/video/skeletonfb.c. The frambuffer code seems to do
-what is documented as well. If the X driver cannot cope with a different
-var set than requested it needs to be fixed anyway as check_var is
-always allowed to alter the parameters requested.
-Strange, I thought I already saw X complaining about this when I added
-30bpp mode to viafb.
+Lance, you didn't add all the "prefix" stuff in AER, but since you're
+touching it, I think things will make more sense if you clean it up at
+the same time.  There are a lot of printk() calls there that should be
+converted to dev_printk().
 
+I think I see why it was done that way -- it sticks either
+KERN_WARNING or KERN_ERR at the beginning of the prefix, then uses
+plain printk() later.  I guess that means you only have to pass around
+the prefix argument, rather than both a "level" and a "struct pci_dev
+*".  But I think it will be simpler overall to pass both and take
+advantage of dev_printk() and stop emulating it.
 
-Best regards,
-
-Florian Tobias Schandinat
-
-
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-> ---
->  drivers/video/wm8505fb.c |   25 +++++++++++++++++++++++++
->  1 file changed, 25 insertions(+)
-> 
-> diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-> index 77539c1..c84e376 100644
-> --- a/drivers/video/wm8505fb.c
-> +++ b/drivers/video/wm8505fb.c
-> @@ -41,10 +41,18 @@
->  
->  #define to_wm8505fb_info(__info) container_of(__info, \
->  						struct wm8505fb_info, fb)
-> +
-> +struct lcd_params {
-> +	u32 pixel_width;
-> +	u32 pixel_height;
-> +	u32 color_depth;
-> +};
-> +
->  struct wm8505fb_info {
->  	struct fb_info		fb;
->  	void __iomem		*regbase;
->  	unsigned int		contrast;
-> +	struct lcd_params	lcd_params;
->  };
->  
->  
-> @@ -248,8 +256,21 @@ static int wm8505fb_blank(int blank, struct fb_info *info)
->  	return 0;
->  }
->  
-> +static int wm8505fb_check_var(struct fb_var_screeninfo *var,
-> +			      struct fb_info *info)
-> +{
-> +	struct wm8505fb_info *fbi = to_wm8505fb_info(info);
-> +        if (!fbi) return -EINVAL;
-> +
-> +	if (info->var.bits_per_pixel != fbi->lcd_params.color_depth) return -EINVAL;
-> +	if (info->var.xres != fbi->lcd_params.pixel_width) return -EINVAL;
-> +	if (info->var.yres != fbi->lcd_params.pixel_height) return -EINVAL;
-> +	return 0;
-> +}
-> +
->  static struct fb_ops wm8505fb_ops = {
->  	.owner		= THIS_MODULE,
-> +	.fb_check_var	= wm8505fb_check_var,
->  	.fb_set_par	= wm8505fb_set_par,
->  	.fb_setcolreg	= wm8505fb_setcolreg,
->  	.fb_fillrect	= wmt_ge_fillrect,
-> @@ -354,6 +375,10 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
->  		goto failed_free_res;
->  	}
->  
-> +	fbi->lcd_params.pixel_width = of_mode.xres;
-> +	fbi->lcd_params.pixel_height = of_mode.yres;
-> +	fbi->lcd_params.color_depth = bpp;
-> +
->  	of_mode.vmode = FB_VMODE_NONINTERLACED;
->  	fb_videomode_to_var(&fbi->fb.var, &of_mode);
->  
-
+Bjorn
