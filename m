@@ -1,110 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab2L0A1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 19:27:22 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37034 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751434Ab2L0A1U (ORCPT
+	id S1751833Ab2L0AcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 19:32:04 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:33646 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab2L0AcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 19:27:20 -0500
-Date: Thu, 27 Dec 2012 00:26:46 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: linux-usb@vger.kernel.org, l.majewski@samsung.com,
-        linux-samsung-soc@vger.kernel.org, heiko@sntech.de,
-        p.paneri@samsung.com, gregkh@linuxfoundation.org,
-        devicetree-discuss@lists.ozlabs.org,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        balbi@ti.com, dianders@chromium.org, grant.likely@secretlab.ca,
-        kyungmin.park@samsung.com, kgene.kim@samsung.com,
-        thomas.abraham@linaro.org, ben-linux@fluff.org,
-        sylvester.nawrocki@gmail.com, t.figa@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v4] usb: phy: samsung: Add support to set pmu isolation
-Message-ID: <20121227002646.GC24604@n2100.arm.linux.org.uk>
-References: <1356524912-4736-1-git-send-email-gautam.vivek@samsung.com> <1356524912-4736-2-git-send-email-gautam.vivek@samsung.com>
+	Wed, 26 Dec 2012 19:32:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356524912-4736-2-git-send-email-gautam.vivek@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
+	<535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+	<CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+Date: Thu, 27 Dec 2012 03:31:59 +0300
+Message-ID: <CAA1sL1TNq5QiA_6A9+qNjndr0dRL37hhhHgvvLLqr6tgj7CgOw@mail.gmail.com>
+Subject: Re: kernel BUG at mm/huge_memory.c:1798!
+From: Alexander Beregalov <a.beregalov@gmail.com>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, mgorman@suse.de,
+        hughd@google.com, Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 05:58:32PM +0530, Vivek Gautam wrote:
-> +	if (!ret)
-> +		sphy->phyctrl_pmureg = ioremap(reg[0], reg[1]);
-> +
-> +	of_node_put(usbphy_pmu);
-> +
-> +	if (IS_ERR_OR_NULL(sphy->phyctrl_pmureg)) {
+On 25 December 2012 16:05, Hillf Danton <dhillf@gmail.com> wrote:
+> On Tue, Dec 25, 2012 at 12:38 PM, Zhouping Liu <zliu@redhat.com> wrote:
+>> Hello all,
+>>
+>> I found the below kernel bug using latest mainline(637704cbc95),
+>> my hardware has 2 numa nodes, and it's easy to reproduce the issue
+>> using LTP test case: "# ./mmap10 -a -s -c 200":
+>
+> Can you test with 5a505085f0 and 4fc3f1d66b1 reverted?
+>
 
-No.  Learn what the error return values are from functions.  Using the
-wrong ones is buggy.  ioremap() only ever returns NULL on error.  You
-must check against NULL, and not use the IS_ERR stuff.
+Hello,
+does it look like the same problem?
 
-> +/*
-> + * Set isolation here for phy.
-> + * SOCs control this by controlling corresponding PMU registers
-> + */
-> +static void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, int on)
-> +{
-> +	u32 reg;
-> +	int en_mask;
-> +
-> +	if (!sphy->phyctrl_pmureg) {
-> +		dev_warn(sphy->dev, "Can't set pmu isolation\n");
-> +		return;
-> +	}
-> +
-> +	reg = readl(sphy->phyctrl_pmureg);
-> +
-> +	en_mask = sphy->drv_data->devphy_en_mask;
-> +
-> +	if (on)
-> +		writel(reg & ~en_mask, sphy->phyctrl_pmureg);
-> +	else
-> +		writel(reg | en_mask, sphy->phyctrl_pmureg);
-
-What guarantees that this read-modify-write sequence of this register safe?
-And, btw, this can't be optimised very well because of the barrier inside
-writel().  This would be better:
-
-	if (on)
-		reg &= ~en_mask;
-	else
-		reg |= en_mask;
-
-	writel(reg, sphy->phyctrl_pmureg);
-
-> +static inline struct samsung_usbphy_drvdata
-> +*samsung_usbphy_get_driver_data(struct platform_device *pdev)
->  {
->  	if (pdev->dev.of_node) {
->  		const struct of_device_id *match;
->  		match = of_match_node(samsung_usbphy_dt_match,
->  							pdev->dev.of_node);
-> -		return (int) match->data;
-> +		return (struct samsung_usbphy_drvdata *) match->data;
-
-match->data is a const void pointer.  Is there a reason you need this
-cast here?  What if you made the returned pointer from this function
-also const and fixed up all its users (no user should modify this
-data.)
-
->  #ifdef CONFIG_OF
->  static const struct of_device_id samsung_usbphy_dt_match[] = {
->  	{
->  		.compatible = "samsung,s3c64xx-usbphy",
-> -		.data = (void *)TYPE_S3C64XX,
-> +		.data = (void *)&usbphy_s3c64xx,
-
-Why do you need this cast?
-
->  	}, {
->  		.compatible = "samsung,exynos4210-usbphy",
-> -		.data = (void *)TYPE_EXYNOS4210,
-> +		.data = (void *)&usbphy_exynos4,
-
-Ditto.
+mapcount 0 page_mapcount 1
+------------[ cut here ]------------
+kernel BUG at mm/huge_memory.c:1798!
+invalid opcode: 0000 [#1] PREEMPT SMP
+Modules linked in: r8169 radeon cfbfillrect cfbimgblt cfbcopyarea
+i2c_algo_bit backlight drm_kms_helper ttm drm agpgart
+CPU 3
+Pid: 15825, comm: firefox Not tainted 3.8.0-rc1-00004-g637704c #1
+Gigabyte Technology Co., Ltd. P35-DS3/P35-DS3
+RIP: 0010:[<ffffffff810e89c9>]  [<ffffffff810e89c9>] split_huge_page+0x739/0x7a0
+RSP: 0018:ffff880193b43b78  EFLAGS: 00010297
+RAX: 0000000000000001 RBX: ffffea0002fd0000 RCX: ffffffff8175e078
+RDX: 000000000000003e RSI: ffffea0002fd0000 RDI: 0000000000000246
+RBP: ffff880193b43c48 R08: 000000000000ffff R09: 0000000000000000
+R10: 00000000000002d5 R11: 0000000000000000 R12: 0000000000000000
+R13: ffff880173533464 R14: 00007f0973000000 R15: ffffea0002fd0000
+FS:  00007f09b8db6740(0000) GS:ffff88019fd80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007ff210e78008 CR3: 0000000195379000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process firefox (pid: 15825, threadinfo ffff880193b42000, task ffff880198af9f90)
+Stack:
+ 0000000000000000 ffff880193b43e1c 0000000000000000 0000000000000019
+ ffff880193b43c08 ffff880100000000 ffff88017af80180 ffff880100000000
+ ffff880173533400 ffff880198af9f90 000000009fc91540 ffff88017af801b0
+Call Trace:
+ [<ffffffff810e9d74>] __split_huge_page_pmd+0xe4/0x280
+ [<ffffffff810a9b9e>] ? free_hot_cold_page_list+0x3e/0x60
+ [<ffffffff810c22cd>] unmap_single_vma+0x77d/0x820
+ [<ffffffff810c2c14>] zap_page_range+0xa4/0xe0
+ [<ffffffff813d9846>] ? sys_recvfrom+0xd6/0x120
+ [<ffffffff810bfa7d>] sys_madvise+0x31d/0x660
+ [<ffffffff81482b2d>] system_call_fastpath+0x1a/0x1f
+Code: 83 39 00 f3 90 49 8b 45 00 a9 00 00 80 00 75 f3 41 ff 84 24 44
+e0 ff ff f0 41 0f ba 6d 00 17 19 c0 85 c0 0f 84 d7 fa ff ff eb c8 <0f>
+0b 8b 53 18 8b 75 9c ff c2 48 c7 c7 60 95 5c 81 31 c0 e8 ac
+RIP  [<ffffffff810e89c9>] split_huge_page+0x739/0x7a0
+ RSP <ffff880193b43b78>
