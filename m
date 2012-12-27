@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab2L0BEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 20:04:31 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:46640 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333Ab2L0BE3 (ORCPT
+	id S1751805Ab2L0BIB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 20:08:01 -0500
+Received: from casper.infradead.org ([85.118.1.10]:55171 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab2L0BIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 20:04:29 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Containers <containers@lists.linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-fsdevel@vger.kernel.org>,
-        Oleg Nesterov <oleg@redhat.com>
-Date: Wed, 26 Dec 2012 17:04:19 -0800
-Message-ID: <87han82tm4.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 26 Dec 2012 20:08:00 -0500
+Message-ID: <50DB9FA5.6070704@infradead.org>
+Date: Wed, 26 Dec 2012 17:08:53 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1+9IKdW5omrzjtrarDIw8Qnk2e320axMKU=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa05 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  2.2 XMSubMetaSxObfu_03 Obfuscated Sexy Noun-People
-	*  1.6 XMSubMetaSx_00 1+ Sexy Words
-X-Spam-DCC: XMission; sa05 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Linus Torvalds <torvalds@linux-foundation.org>
-X-Spam-Relay-Country: 
-Subject: [GIT PULL] namespace fixes for v3.8-rc2
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+To: David Woodhouse <dwmw2@infradead.org>
+CC: David Rientjes <rientjes@google.com>,
+        Sasha Levin <levinsasha928@gmail.com>, Michal Marek <mmarek@suse.cz>,
+        Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        tglx@linutronix.de, "H. Peter Anvin" <hpa@linux.intel.com>,
+        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip] config: Add 'make kvmconfig'
+References: <1356040315.3198.51.camel@shinybook.infradead.org>  <tip-ffee0de411fd4f74f3b788892eeb075abbf26c52@git.kernel.org>  <alpine.DEB.2.00.1212252222450.24528@chino.kir.corp.google.com> <1356564746.7010.56.camel@shinybook.infradead.org>
+In-Reply-To: <1356564746.7010.56.camel@shinybook.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 12/26/12 15:32, David Woodhouse wrote:
+> On Tue, 2012-12-25 at 22:32 -0800, David Rientjes wrote:
+>>
+>> This creates quite a few build failures on auto-latest:
+>>
+>> arch/x86/built-in.o: In function `hpet_setup_msi_irq':
+>> hpet.c:(.text+0x34638): undefined reference to `arch_setup_hpet_msi'
+>> hpet.c:(.text+0x34651): undefined reference to `destroy_irq'
+>> arch/x86/built-in.o: In function `hpet_msi_capability_lookup':
+>> hpet.c:(.text+0x347ff): undefined reference to `create_irq_nr'
+>> arch/x86/built-in.o:(.data+0xd1c): undefined reference to `native_setup_msi_irqs'
+>> arch/x86/built-in.o:(.data+0xd20): undefined reference to `native_teardown_msi_irq'
 
-Linus,
+I reported these build errors in linux-next on Nov. 7, 2011 !!!
 
-Please pull the for-linus git tree from:
+> This one is actually caused by commit 3b08ed026 (config: Add 'make
+> kvmconfig'), which selects PCI_MSI even on a 32-bit config where it's
+> invalid to do so.
+> 
+> Ew, that commit seems like a *completely* wrong-headed idea. That abuse
+> of 'select' is just begging for this kind of breakage. We have other
+> ways to merge configs and turn certain options on, without doing it this
+> way.
 
-   git://git.kernel.org:/pub/scm/linux/kernel/git/ebiederm/user-namespace.git for-linus
+but I didn't diagnose the problem.  Thanks for that.
 
-   HEAD: 48c6d1217e3dc743e7d3ad9b9def8d4810d13a85 f2fs: Don't assign e_id in f2fs_acl_from_disk
+Yes, 'make kvmconfig' takes liberties and shortcuts.  :(
 
-   This tree is against v3.8-rc1
-
-This tree includes two bug fixes for problems Oleg spotted on his review
-of the recent pid namespace work.  A small fix to not enable bottom
-halves with irqs disabled, and a trivial build fix for f2fs with user
-namespaces enabled.
-
-Eric W. Biederman (4):
-      pidns: Outlaw thread creation after unshare(CLONE_NEWPID)
-      pidns: Stop pid allocation when init dies
-      proc: Allow proc_free_inum to be called from any context
-      f2fs: Don't assign e_id in f2fs_acl_from_disk
-
- fs/f2fs/acl.c                 |    1 -
- fs/proc/generic.c             |   13 +++++++------
- include/linux/pid.h           |    1 +
- include/linux/pid_namespace.h |    4 +++-
- kernel/fork.c                 |    8 ++++++++
- kernel/pid.c                  |   15 ++++++++++++---
- kernel/pid_namespace.c        |    4 ++++
- 7 files changed, 35 insertions(+), 11 deletions(-)
+-- 
+~Randy
