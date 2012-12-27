@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751538Ab2L0AvH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 19:51:07 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:56602 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750980Ab2L0AvF (ORCPT
+	id S1751715Ab2L0BB4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 20:01:56 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:32854 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab2L0BBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 19:51:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
-References: <1355412708-20046-1-git-send-email-kirill.shutemov@linux.intel.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 26 Dec 2012 17:50:42 -0700
-Message-ID: <CAErSpo6QWZfZ9YQAXkDOPvqBrwhS4wEzrxiUSAi7myVfoDGaKA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Thunderbolt workarounds
-To: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miles J Penner <miles.j.penner@intel.com>,
-        John Ronciak <john.ronciak@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Tushar N Dave <tushar.n.dave@intel.com>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Dec 2012 20:01:53 -0500
+From: Daniel Kurtz <djkurtz@chromium.org>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        marcheu@chromium.org, Daniel Kurtz <djkurtz@chromium.org>
+Subject: [PATCH] drm: make frame duration time calculation more precise
+Date: Thu, 27 Dec 2012 09:01:46 +0800
+Message-Id: <1356570106-2263-1-git-send-email-djkurtz@chromium.org>
+X-Mailer: git-send-email 1.7.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 13, 2012 at 12:25 PM, Kirill A. Shutemov
-<kirill.shutemov@linux.intel.com> wrote:
-> From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
->
-> I had chance to test two PC setups with Thunderbolt: Acer Aspire S5 and
-> Intel DZ77RE-75K motherboard. Unfortunately, both of them are broken in
-> different ways.
->
-> This patchset contains workarounds for the issues.
->
-> Kirill A. Shutemov (3):
->   PCI Hotplug: workaround for Thunderbolt on Acer Aspire S5
->   PCI Hotplug: convert acpiphp_hp_work to use delayed work
->   PCI Hotplug: workaround for Thunderbolt on Intel DZ77RE-75K
->     motherboard
->
->  drivers/pci/hotplug/acpi_pcihp.c   |   13 +++++++++++++
->  drivers/pci/hotplug/acpiphp_glue.c |   33 +++++++++++++++++++++++++--------
->  2 files changed, 38 insertions(+), 8 deletions(-)
+It is a bit more precise to compute the total number of pixels first and
+then divide, rather than multiplying the line pixel count by the
+already-rounded line duration.
 
-I'm ignoring these for now.  [1/3] has a hardcoded BIOS path that I
-don't think is the right approach and [3/3] has a timeout issue to be
-addressed.  [2/3] might be worthwhile by itself, but I'd rather merge
-a complete solution when it's ready.
+Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+---
+ drivers/gpu/drm/drm_irq.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Bjorn
+diff --git a/drivers/gpu/drm/drm_irq.c b/drivers/gpu/drm/drm_irq.c
+index 19c01ca..05c91e0 100644
+--- a/drivers/gpu/drm/drm_irq.c
++++ b/drivers/gpu/drm/drm_irq.c
+@@ -505,6 +505,7 @@ void drm_calc_timestamping_constants(struct drm_crtc *crtc)
+ 
+ 	/* Valid dotclock? */
+ 	if (dotclock > 0) {
++		int frame_size;
+ 		/* Convert scanline length in pixels and video dot clock to
+ 		 * line duration, frame duration and pixel duration in
+ 		 * nanoseconds:
+@@ -512,7 +513,10 @@ void drm_calc_timestamping_constants(struct drm_crtc *crtc)
+ 		pixeldur_ns = (s64) div64_u64(1000000000, dotclock);
+ 		linedur_ns  = (s64) div64_u64(((u64) crtc->hwmode.crtc_htotal *
+ 					      1000000000), dotclock);
+-		framedur_ns = (s64) crtc->hwmode.crtc_vtotal * linedur_ns;
++		frame_size = crtc->hwmode.crtc_htotal *
++				crtc->hwmode.crtc_vtotal;
++		framedur_ns = (s64) div64_u64((u64) frame_size * 1000000000,
++					      dotclock);
+ 	} else
+ 		DRM_ERROR("crtc %d: Can't calculate constants, dotclock = 0!\n",
+ 			  crtc->base.id);
+-- 
+1.7.7.3
+
