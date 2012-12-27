@@ -1,80 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab2L0QKI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 11:10:08 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:44364 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752999Ab2L0QKH (ORCPT
+	id S1753241Ab2L0QOQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 11:14:16 -0500
+Received: from nm18-vm7.bullet.mail.gq1.yahoo.com ([98.136.217.222]:22643 "EHLO
+	nm18-vm7.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752999Ab2L0QOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 11:10:07 -0500
-Message-ID: <1356624598.17740.4.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [v3.2-v3.4 stable version][PATCH 1/2] ring-buffer: Fix NULL
- pointer if rb_set_head_page() fails
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>
-Date: Thu, 27 Dec 2012 17:09:58 +0100
-In-Reply-To: <1355337871.17101.340.camel@gandalf.local.home>
-References: <1355337871.17101.340.camel@gandalf.local.home>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Km+zNjG+ahu0FC0AlFa9"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 151.217.210.143
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Thu, 27 Dec 2012 11:14:12 -0500
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Dec 2012 11:14:12 EST
+X-Yahoo-Newman-Id: 739210.72341.bm@smtp222.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: aW6.nm0VM1m8DaqtIGMPvHiY8fbHI14nW.3DGR_4xKGAYFZ
+ gXIXoKq35UAYMIVnArGUeLqH_mPzJQyRq126jdatA8euXeoBreH9xerKPp0K
+ df4EoxzUcVOv6.JoN6CEaBkSdLQVCUa0iMQZwjHkCeTm_thAC0vKBLll9HX5
+ i4Ju0T2nXcLERnWhdRpXbhWzzidG3kagAe.Ta2k3Dm11uwjck33ozaL57JVP
+ o5hrDQNgkK.SsYs3TTaje.GXnfXxdGcXFVjccepTSpHP9OP0PT48xFJT9FC_
+ 3HDF2EHRl6H2XkF8i9rySiK4A0K5gFpMSVhO7vNp4WZS8ruslznEBS_u_sqK
+ SubYCpKPfyzMEdZrJrvDYcluy6Axq4Gwb.lLLaGbIrX2y5PtOm1O7tq5pC.x
+ 8c53elw5NgtzltndMWYZRDgp0rjlriPoYLtJUYQWgyyO4f4NPbyFBrl1luu7
+ G0oeCeB._S.0.GVg-
+X-Yahoo-SMTP: Zybq.GKswBCVR5oJTLrx1T39m2F9FA--
+Message-ID: <50DC7287.1080302@yahoo.ca>
+Date: Thu, 27 Dec 2012 11:08:39 -0500
+From: Alex Xu <alex_y_xu@yahoo.ca>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Hillf Danton <dhillf@gmail.com>
+CC: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, mgorman@suse.de,
+        hughd@google.com, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: kernel BUG at mm/huge_memory.c:1798!
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com> <535932623.34838584.1356410331076.JavaMail.root@redhat.com> <CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+In-Reply-To: <CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 25/12/12 07:05 AM, Hillf Danton wrote:
+> On Tue, Dec 25, 2012 at 12:38 PM, Zhouping Liu <zliu@redhat.com> wrote:
+>> Hello all,
+>>
+>> I found the below kernel bug using latest mainline(637704cbc95),
+>> my hardware has 2 numa nodes, and it's easy to reproduce the issue
+>> using LTP test case: "# ./mmap10 -a -s -c 200":
+> 
+> Can you test with 5a505085f0 and 4fc3f1d66b1 reverted?
+> 
+> Hillf
+>
 
---=-Km+zNjG+ahu0FC0AlFa9
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+(for people from mailing lists, please cc me when replying)
 
-On Wed, 2012-12-12 at 13:44 -0500, Steven Rostedt wrote:
-> The function rb_set_head_page() searches the list of ring buffer
-> pages for a the page that has the HEAD page flag set. If it does
-> not find it, it will do a WARN_ON(), disable the ring buffer and
-> return NULL, as this should never happen.
->=20
-> But if this bug happens to happen, not all callers of this function
-> can handle a NULL pointer being returned from it. That needs to be
-> fixed.
->=20
-> Cc: stable@vger.kernel.org # 3.0+
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[...]
+Same thing?
 
-Queued up for 3.2, thanks.
+mapcount 0 page_mapcount 1
+------------[ cut here ]------------
+kernel BUG at mm/huge_memory.c:1798!
+invalid opcode: 0000 [#1] SMP
+Modules linked in: usb_storage wacom
+CPU 3
+Pid: 1287, comm: thunderbird Not tainted 3.8.0-rc1+ #5 HP-Pavilion
+AU992AA-ABL e9262f/Indio
+RIP: 0010:[<ffffffff810c12c0>]  [<ffffffff810c12c0>] 0xffffffff810c12c0
+RSP: 0018:ffff880216887c58  EFLAGS: 00010297
+RAX: 0000000000000001 RBX: ffffea00065d0000 RCX: 0000000000000038
+RDX: 000000000000002c RSI: 0000000000000046 RDI: ffffffff818e9e34
+RBP: ffff880216887cd8 R08: 000000000000000a R09: 0000000000000000
+R10: 0000000000000272 R11: 0000000000000271 R12: ffff880203fbad10
+R13: 00007f1160e00000 R14: 0000000000000000 R15: ffffea00065d0000
+FS:  00007f1180fca740(0000) GS:ffff88022fd80000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007fca86e18000 CR3: 00000002168e3000 CR4: 00000000000007e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process thunderbird (pid: 1287, threadinfo ffff880216886000, task
+ffff8802259c4380)
+Stack:
+ ffff880216887c68 ffffffff8145f284 ffff880216887cb8 ffff8801f9c24ac0
+ 00000000065d0000 ffff8801f9c24af0 0000000000000000 ffff880216887cf8
+ 0000000000000000 00000007f1160e00 0000000000000000 ffffea00065d0000
+Call Trace:
+ [<ffffffff8145f284>] ? 0xffffffff8145f284
+ [<ffffffff810c2310>] 0xffffffff810c2310
+ [<ffffffff810a69ea>] 0xffffffff810a69ea
+ [<ffffffff8106bbd8>] ? 0xffffffff8106bbd8
+ [<ffffffff810a7710>] 0xffffffff810a7710
+ [<ffffffff810a4a1d>] 0xffffffff810a4a1d
+ [<ffffffff8106e062>] ? 0xffffffff8106e062
+ [<ffffffff810adf84>] ? 0xffffffff810adf84
+ [<ffffffff81460952>] 0xffffffff81460952
+Code: 6d 81 31 c0 8b 75 c4 83 c2 01 e8 c4 94 39 00 e9 83 fb ff ff 0f 0b
+0f 0b 0f 0b f3 90 48 8b 03 a9 00 00 80 00 75 f4 e9 b6 fb ff ff <0f> 0b
+0f 0b 66 66 66 2e 0f 1f 84 00 00 00 00 00 55 49 89 d1 48
+RIP  [<ffffffff810c12c0>] 0xffffffff810c12c0
+ RSP <ffff880216887c58>
+---[ end trace 0d442da0022ecdd1 ]---
 
-Ben.
+I don't have KALLSYMS, so after running through ksymoops:
 
---=20
-Ben Hutchings
-The world is coming to an end.	Please log off.
+>>RIP; ffffffff810c12c0 <split_huge_page+600/610>   <=====
 
---=-Km+zNjG+ahu0FC0AlFa9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+>>RBX; ffffea00065d0000 <phys_startup_64+ffffea00055d0000/ffffffff80000000>
+>>RDI; ffffffff818e9e34 <logbuf_lock+0/4>
+>>RBP; ffff880216887cd8 <phys_startup_64+ffff880215887cd8/ffffffff80000000>
+>>R12; ffff880203fbad10 <phys_startup_64+ffff880202fbad10/ffffffff80000000>
+>>R13; 00007f1160e00000 <phys_startup_64+7f115fe00000/ffffffff80000000>
+>>R15; ffffea00065d0000 <phys_startup_64+ffffea00055d0000/ffffffff80000000>
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Trace; ffffffff8145f284 <schedule+24/70>
+Trace; ffffffff810c2310 <__split_huge_page_pmd+b0/1b0>
+Trace; ffffffff810a69ea <unmap_single_vma+25a/700>
+Trace; ffffffff8106bbd8 <futex_wake+108/130>
+Trace; ffffffff810a7710 <zap_page_range+90/d0>
+Trace; ffffffff810a4a1d <sys_madvise+25d/690>
+Trace; ffffffff8106e062 <sys_futex+142/1a0>
+Trace; ffffffff810adf84 <vm_munmap+54/70>
+Trace; ffffffff81460952 <system_call_fastpath+16/1b>
 
-iQIVAwUAUNxy1ue/yOyVhhEJAQrAxg/+JEMhd4Rpbrk1kjgmO+w0P4fo/KLHlxFl
-531ihJK7mqk7aGnr5Ejyd0nDg67OryyueiYTjW6aUax3+sqPK28Ue9kNLo9dsywW
-9d8VN8REQDvQcoE7vtu3lp+3WBvGQmFP3mnunzSUcXLyadRUmAjdn3YmYbaUWaDi
-zsMgcf/omNjraYWd9E8lk0Ir03sE29utP2L0kW69qNNwuEotnhDUcAI/w5lHsWho
-GV1BfCJWu8SkoJs5nZCHB+ZfzzkoeOt8dLeg8ogITXv4iOyYNKKDddA1ue5lhhxC
-1bSgvLj40HeVn64gc5JFKsxakq9qBUsIUse8glWFFVjM/ioozp/FkRRWZYqjTc33
-4qdoYWElG5WrmY9O6u8MNPgi4scTZM9tybKhQEV+9R18I2xyXJhiMCzTNL+8x/h2
-RdKEUSgVUy5SHvXQ1RdVj+b7tNp7eUu/faBHFUXxihZMzTCxPDtJagBYH0EQPRZC
-KzBRUHeKRF93HF4aufJxW8jec1dLwDcXKQiCFHp0tatx+2MEAevvaH237kxcDGPB
-4T71MjGCiVamMIvChtal9Qfdckg2J1e53yvAcG4JPwZx0i3YXDF5nKjNhaGvpMRA
-/M1YdVlyTsOMHTsJGdI0iOm9zeA8OJ4jBjXv+7d8IgBVUwQths84UgXKnGFwvE80
-CsUW+6td7YQ=
-=dRpk
------END PGP SIGNATURE-----
-
---=-Km+zNjG+ahu0FC0AlFa9--
+Code;  ffffffff810c1295 <split_huge_page+5d5/610>
+0000000000000000 <_RIP>:
+Code;  ffffffff810c1295 <split_huge_page+5d5/610>
+   0:   6d                        insl   (%dx),%es:(%rdi)
+Code;  ffffffff810c1296 <split_huge_page+5d6/610>
+   1:   81 31 c0 8b 75 c4         xorl   $0xc4758bc0,(%rcx)
+Code;  ffffffff810c129c <split_huge_page+5dc/610>
+   7:   83 c2 01                  add    $0x1,%edx
+Code;  ffffffff810c129f <split_huge_page+5df/610>
+   a:   e8 c4 94 39 00            callq  3994d3 <_RIP+0x3994d3>
+Code;  ffffffff810c12a4 <split_huge_page+5e4/610>
+   f:   e9 83 fb ff ff            jmpq   fffffffffffffb97
+<_RIP+0xfffffffffffffb97>
+Code;  ffffffff810c12a9 <split_huge_page+5e9/610>
+  14:   0f 0b                     ud2
+Code;  ffffffff810c12ab <split_huge_page+5eb/610>
+  16:   0f 0b                     ud2
+Code;  ffffffff810c12ad <split_huge_page+5ed/610>
+  18:   0f 0b                     ud2
+Code;  ffffffff810c12af <split_huge_page+5ef/610>
+  1a:   f3 90                     pause
+Code;  ffffffff810c12b1 <split_huge_page+5f1/610>
+  1c:   48 8b 03                  mov    (%rbx),%rax
+Code;  ffffffff810c12b4 <split_huge_page+5f4/610>
+  1f:   a9 00 00 80 00            test   $0x800000,%eax
+Code;  ffffffff810c12b9 <split_huge_page+5f9/610>
+  24:   75 f4                     jne    1a <_RIP+0x1a>
+Code;  ffffffff810c12bb <split_huge_page+5fb/610>
+  26:   e9 b6 fb ff ff            jmpq   fffffffffffffbe1
+<_RIP+0xfffffffffffffbe1>
+Code;  ffffffff810c12c0 <split_huge_page+600/610>   <=====
+  2b:   0f 0b                     ud2       <=====
+Code;  ffffffff810c12c2 <split_huge_page+602/610>
+  2d:   0f 0b                     ud2
+Code;  ffffffff810c12c4 <split_huge_page+604/610>
+  2f:   66 66 66 2e 0f 1f 84      data32 data32 nopw %cs:0x0(%rax,%rax,1)
+Code;  ffffffff810c12cb <split_huge_page+60b/610>
+  36:   00 00 00 00 00
+Code;  ffffffff810c12d0 <do_huge_pmd_wp_page+0/840>
+  3b:   55                        push   %rbp
+Code;  ffffffff810c12d1 <do_huge_pmd_wp_page+1/840>
+  3c:   49 89 d1                  mov    %rdx,%r9
+Code;  ffffffff810c12d4 <do_huge_pmd_wp_page+4/840>
+  3f:   48                        rex.W
