@@ -1,26 +1,25 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2LWUWz (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 23 Dec 2012 15:22:55 -0500
-Received: from host4-151-static.41-88-b.business.telecomitalia.it ([88.41.151.4]:55440
+	id S1752776Ab2L0NcC (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 27 Dec 2012 08:32:02 -0500
+Received: from host4-151-static.41-88-b.business.telecomitalia.it ([88.41.151.4]:38918
 	"EHLO mail.klik.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752573Ab2LWUWv (ORCPT
+	with ESMTP id S1752205Ab2L0NcA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Dec 2012 15:22:51 -0500
-X-Greylist: delayed 1021 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Dec 2012 15:22:50 EST
+	Thu, 27 Dec 2012 08:32:00 -0500
 X-Spam-Flag: NO
-X-Spam-Score: 4.837
+X-Spam-Score: 4.84
 Reply-To: <worldcashloanfinance1@gmail.com>
 From: "WORLD  FINANCE LOAN" <annethapowell01@gmail.com>
 Subject: World Finance Loan 3% Interest Rate Per Annum
-Date: Sun, 23 Dec 2012 21:52:36 +0200
+Date: Thu, 27 Dec 2012 14:58:21 +0200
 MIME-Version: 1.0
 Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_0037_01C2A9A6.31DD428E"
+	boundary="----=_NextPart_000_0110_01C2A9A6.633EDF38"
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2600.0000
 X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20121223204552.6F1BD258191@mail.klik.it>
+Message-Id: <20121227135035.45DE7258307@mail.klik.it>
 To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,14 +27,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a multi-part message in MIME format.
 
-------=_NextPart_000_0037_01C2A9A6.31DD428E
+------=_NextPart_000_0110_01C2A9A6.633EDF38
 Content-Type: text/plain;
 	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
 
 KINDLY VIEW THE ATTACHED FILE FOR MORE DETAILS.
 
-------=_NextPart_000_0037_01C2A9A6.31DD428E
+------=_NextPart_000_0110_01C2A9A6.633EDF38
 Content-Type: application/msword;
 	name="WORLD  FINANCE LOAN (Pty) 3% LOAN OFFER.doc"
 Content-Transfer-Encoding: base64
@@ -669,4 +668,4 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
 
-------=_NextPart_000_0037_01C2A9A6.31DD428E--
+------=_NextPart_000_0110_01C2A9A6.633EDF38--
