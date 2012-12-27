@@ -1,166 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab2L0CIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:08:43 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:38532 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab2L0CIV (ORCPT
+	id S1751869Ab2L0CA2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:00:28 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:61254 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab2L0CA0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:08:21 -0500
+	Wed, 26 Dec 2012 21:00:26 -0500
 From: Kent Overstreet <koverstreet@google.com>
 To: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org
-Cc: Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
-        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
-        Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH 03/32] gadget: remove only user of aio retry
-Date: Wed, 26 Dec 2012 17:59:40 -0800
-Message-Id: <1356573611-18590-4-git-send-email-koverstreet@google.com>
+Cc: Kent Overstreet <koverstreet@google.com>, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu
+Subject: [PATCH 00/32] AIO performance improvements/cleanups, v3
+Date: Wed, 26 Dec 2012 17:59:37 -0800
+Message-Id: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@redhat.com>
+Last posting: http://article.gmane.org/gmane.linux.kernel.aio.general/3242
 
-This removes the only in-tree user of aio retry.  This will let us
-remove the retry code from the aio core.
+As before, changes should mostly be noted in the patch descriptions. 
 
-Removing retry is relatively easy as the USB gadget wasn't using it to
-retry IOs at all.  It always fully submitted the IO in the context of
-the initial io_submit() call.  It only used the AIO retry facility to
-get the submitter's mm context for copying the result of a read back to
-user space.  This is easy to implement with use_mm() and a work struct,
-much like kvm does with async_pf_execute() for get_user_pages().
+Some random bits:
+ * flush_dcache_page() patch is new
+ * Rewrote the aio_read_evt() stuff again
+ * Fixed a few comments
+ * Included some more patches, notably the batch completion stuff
 
-Signed-off-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Kent Overstreet <koverstreet@google.com>
----
- drivers/usb/gadget/inode.c | 38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
+My git repo has Jens' aio/dio patches on top of this stuff. As of the
+latest version, I'm seeing a couple percent better throughput with the
+ring buffer, and I think Jens was seeing a couple percent better with
+his linked list approach - at this point I think the difference is
+noise, we're both testing with fairly crappy drivers.
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index 76494ca..2a3f001 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -24,6 +24,7 @@
- #include <linux/sched.h>
- #include <linux/slab.h>
- #include <linux/poll.h>
-+#include <linux/mmu_context.h>
- 
- #include <linux/device.h>
- #include <linux/moduleparam.h>
-@@ -514,6 +515,9 @@ static long ep_ioctl(struct file *fd, unsigned code, unsigned long value)
- struct kiocb_priv {
- 	struct usb_request	*req;
- 	struct ep_data		*epdata;
-+	struct kiocb 		*iocb;
-+	struct mm_struct 	*mm;
-+	struct work_struct	work;
- 	void			*buf;
- 	const struct iovec	*iv;
- 	unsigned long		nr_segs;
-@@ -541,15 +545,12 @@ static int ep_aio_cancel(struct kiocb *iocb, struct io_event *e)
- 	return value;
- }
- 
--static ssize_t ep_aio_read_retry(struct kiocb *iocb)
-+static ssize_t ep_copy_to_user(struct kiocb_priv *priv)
- {
--	struct kiocb_priv	*priv = iocb->private;
- 	ssize_t			len, total;
- 	void			*to_copy;
- 	int			i;
- 
--	/* we "retry" to get the right mm context for this: */
--
- 	/* copy stuff into user buffers */
- 	total = priv->actual;
- 	len = 0;
-@@ -569,9 +570,26 @@ static ssize_t ep_aio_read_retry(struct kiocb *iocb)
- 		if (total == 0)
- 			break;
- 	}
-+
-+	return len;
-+}
-+
-+static void ep_user_copy_worker(struct work_struct *work)
-+{
-+	struct kiocb_priv *priv = container_of(work, struct kiocb_priv, work);
-+	struct mm_struct *mm = priv->mm;
-+	struct kiocb *iocb = priv->iocb;
-+	size_t ret;
-+
-+	use_mm(mm);
-+	ret = ep_copy_to_user(priv);
-+	unuse_mm(mm);
-+
-+	/* completing the iocb can drop the ctx and mm, don't touch mm after */
-+	aio_complete(iocb, ret, ret);
-+
- 	kfree(priv->buf);
- 	kfree(priv);
--	return len;
- }
- 
- static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
-@@ -597,14 +615,14 @@ static void ep_aio_complete(struct usb_ep *ep, struct usb_request *req)
- 		aio_complete(iocb, req->actual ? req->actual : req->status,
- 				req->status);
- 	} else {
--		/* retry() won't report both; so we hide some faults */
-+		/* ep_copy_to_user() won't report both; we hide some faults */
- 		if (unlikely(0 != req->status))
- 			DBG(epdata->dev, "%s fault %d len %d\n",
- 				ep->name, req->status, req->actual);
- 
- 		priv->buf = req->buf;
- 		priv->actual = req->actual;
--		kick_iocb(iocb);
-+		schedule_work(&priv->work);
- 	}
- 	spin_unlock(&epdata->dev->lock);
- 
-@@ -634,8 +652,10 @@ fail:
- 		return value;
- 	}
- 	iocb->private = priv;
-+	priv->iocb = iocb;
- 	priv->iv = iv;
- 	priv->nr_segs = nr_segs;
-+	INIT_WORK(&priv->work, ep_user_copy_worker);
- 
- 	value = get_ready_ep(iocb->ki_filp->f_flags, epdata);
- 	if (unlikely(value < 0)) {
-@@ -647,6 +667,7 @@ fail:
- 	get_ep(epdata);
- 	priv->epdata = epdata;
- 	priv->actual = 0;
-+	priv->mm = current->mm; /* mm teardown waits for iocbs in exit_aio() */
- 
- 	/* each kiocb is coupled to one usb_request, but we can't
- 	 * allocate or submit those if the host disconnected.
-@@ -675,7 +696,7 @@ fail:
- 		kfree(priv);
- 		put_ep(epdata);
- 	} else
--		value = (iv ? -EIOCBRETRY : -EIOCBQUEUED);
-+		value = -EIOCBQUEUED;
- 	return value;
- }
- 
-@@ -693,7 +714,6 @@ ep_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	if (unlikely(!buf))
- 		return -ENOMEM;
- 
--	iocb->ki_retry = ep_aio_read_retry;
- 	return ep_aio_rwtail(iocb, buf, iocb->ki_left, epdata, iov, nr_segs);
- }
- 
+Patch series is on top of v3.7, git repo is at
+http://evilpiepirate.org/git/linux-bcache.git aio-upstream
+
+
+Kent Overstreet (27):
+  aio: Kill return value of aio_complete()
+  aio: kiocb_cancel()
+  aio: Move private stuff out of aio.h
+  aio: dprintk() -> pr_debug()
+  aio: do fget() after aio_get_req()
+  aio: Make aio_put_req() lockless
+  aio: Refcounting cleanup
+  wait: Add wait_event_hrtimeout()
+  aio: Make aio_read_evt() more efficient, convert to hrtimers
+  aio: Use flush_dcache_page()
+  aio: Use cancellation list lazily
+  aio: Change reqs_active to include unreaped completions
+  aio: Kill batch allocation
+  aio: Kill struct aio_ring_info
+  aio: Give shared kioctx fields their own cachelines
+  aio: reqs_active -> reqs_available
+  aio: percpu reqs_available
+  Generic dynamic per cpu refcounting
+  aio: Percpu ioctx refcount
+  aio: use xchg() instead of completion_lock
+  aio: Don't include aio.h in sched.h
+  aio: Kill ki_key
+  aio: Kill ki_retry
+  block, aio: Batch completion for bios/kiocbs
+  virtio-blk: Convert to batch completion
+  mtip32xx: Convert to batch completion
+  aio: Smoosh struct kiocb
+
+Zach Brown (5):
+  mm: remove old aio use_mm() comment
+  aio: remove dead code from aio.h
+  gadget: remove only user of aio retry
+  aio: remove retry-based AIO
+  char: add aio_{read,write} to /dev/{null,zero}
+
+ arch/s390/hypfs/inode.c                      |    1 +
+ block/blk-core.c                             |   34 +-
+ block/blk-flush.c                            |    2 +-
+ block/blk.h                                  |    3 +-
+ block/scsi_ioctl.c                           |    1 +
+ drivers/block/mtip32xx/mtip32xx.c            |   68 +-
+ drivers/block/mtip32xx/mtip32xx.h            |    8 +-
+ drivers/block/swim3.c                        |    2 +-
+ drivers/block/virtio_blk.c                   |   31 +-
+ drivers/char/mem.c                           |   36 +
+ drivers/infiniband/hw/ipath/ipath_file_ops.c |    1 +
+ drivers/infiniband/hw/qib/qib_file_ops.c     |    2 +-
+ drivers/md/dm.c                              |    2 +-
+ drivers/staging/android/logger.c             |    1 +
+ drivers/usb/gadget/inode.c                   |   42 +-
+ fs/9p/vfs_addr.c                             |    1 +
+ fs/afs/write.c                               |    1 +
+ fs/aio.c                                     | 1766 +++++++++++---------------
+ fs/bio.c                                     |   52 +-
+ fs/block_dev.c                               |    1 +
+ fs/btrfs/file.c                              |    1 +
+ fs/btrfs/inode.c                             |    1 +
+ fs/ceph/file.c                               |    1 +
+ fs/compat.c                                  |    1 +
+ fs/direct-io.c                               |   21 +-
+ fs/ecryptfs/file.c                           |    1 +
+ fs/ext2/inode.c                              |    1 +
+ fs/ext3/inode.c                              |    1 +
+ fs/ext4/file.c                               |    1 +
+ fs/ext4/indirect.c                           |    1 +
+ fs/ext4/inode.c                              |    1 +
+ fs/ext4/page-io.c                            |    1 +
+ fs/fat/inode.c                               |    1 +
+ fs/fuse/dev.c                                |    1 +
+ fs/fuse/file.c                               |    1 +
+ fs/gfs2/aops.c                               |    1 +
+ fs/gfs2/file.c                               |    1 +
+ fs/hfs/inode.c                               |    1 +
+ fs/hfsplus/inode.c                           |    1 +
+ fs/jfs/inode.c                               |    1 +
+ fs/nilfs2/inode.c                            |    2 +-
+ fs/ntfs/file.c                               |    1 +
+ fs/ntfs/inode.c                              |    1 +
+ fs/ocfs2/aops.h                              |    2 +
+ fs/ocfs2/dlmglue.c                           |    2 +-
+ fs/ocfs2/inode.h                             |    2 +
+ fs/pipe.c                                    |    1 +
+ fs/read_write.c                              |   35 +-
+ fs/reiserfs/inode.c                          |    1 +
+ fs/ubifs/file.c                              |    1 +
+ fs/udf/inode.c                               |    1 +
+ fs/xfs/xfs_aops.c                            |    1 +
+ fs/xfs/xfs_file.c                            |    1 +
+ include/linux/aio.h                          |  242 +---
+ include/linux/bio.h                          |   36 +-
+ include/linux/blk_types.h                    |   11 +-
+ include/linux/blkdev.h                       |   12 +-
+ include/linux/cgroup.h                       |    1 +
+ include/linux/errno.h                        |    1 -
+ include/linux/percpu-refcount.h              |   29 +
+ include/linux/sched.h                        |    2 -
+ include/linux/wait.h                         |   86 ++
+ kernel/fork.c                                |    1 +
+ kernel/printk.c                              |    1 +
+ kernel/ptrace.c                              |    1 +
+ lib/Makefile                                 |    2 +-
+ lib/percpu-refcount.c                        |  164 +++
+ mm/mmu_context.c                             |    3 -
+ mm/page_io.c                                 |    1 +
+ mm/shmem.c                                   |    1 +
+ mm/swap.c                                    |    1 +
+ security/keys/internal.h                     |    2 +
+ security/keys/keyctl.c                       |    1 +
+ sound/core/pcm_native.c                      |    2 +-
+ 74 files changed, 1350 insertions(+), 1396 deletions(-)
+ create mode 100644 include/linux/percpu-refcount.h
+ create mode 100644 lib/percpu-refcount.c
+
 -- 
 1.7.12
 
