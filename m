@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab2L0Cqm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Dec 2012 21:46:42 -0500
+	id S1752624Ab2L0CrG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Dec 2012 21:47:06 -0500
 Received: from router-fw.net-space.pl ([89.174.63.77]:37610 "EHLO
 	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062Ab2L0Cp1 (ORCPT
+	with ESMTP id S1751953Ab2L0CpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Dec 2012 21:45:27 -0500
+	Wed, 26 Dec 2012 21:45:25 -0500
 X-Greylist: delayed 1365 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Dec 2012 21:45:22 EST
 From: Daniel Kiper <daniel.kiper@oracle.com>
 To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
@@ -17,11 +17,11 @@ To: andrew.cooper3@citrix.com, ebiederm@xmission.com, hpa@zytor.com,
         virtualization@lists.linux-foundation.org,
         xen-devel@lists.xensource.com
 Cc: Daniel Kiper <daniel.kiper@oracle.com>
-Subject: [PATCH v3 08/11] x86/xen: Add kexec/kdump Kconfig and makefile rules
-Date: Thu, 27 Dec 2012 03:18:57 +0100
-Message-Id: <1356574740-6806-9-git-send-email-daniel.kiper@oracle.com>
+Subject: [PATCH v3 10/11] drivers/xen: Export vmcoreinfo through sysfs
+Date: Thu, 27 Dec 2012 03:18:59 +0100
+Message-Id: <1356574740-6806-11-git-send-email-daniel.kiper@oracle.com>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1356574740-6806-8-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1356574740-6806-10-git-send-email-daniel.kiper@oracle.com>
 References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
  <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
  <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
@@ -30,57 +30,95 @@ References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
  <1356574740-6806-6-git-send-email-daniel.kiper@oracle.com>
  <1356574740-6806-7-git-send-email-daniel.kiper@oracle.com>
  <1356574740-6806-8-git-send-email-daniel.kiper@oracle.com>
-X-Bogosity: No, spamicity=0.499592
+ <1356574740-6806-9-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-10-git-send-email-daniel.kiper@oracle.com>
+X-Bogosity: No, spamicity=0.193071
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add kexec/kdump Kconfig and makefile rules.
+Export vmcoreinfo through sysfs.
 
 Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
 ---
- arch/x86/Kconfig      |    3 +++
- arch/x86/xen/Kconfig  |    1 +
- arch/x86/xen/Makefile |    3 +++
- 3 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/xen/sys-hypervisor.c |   42 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 41 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 79795af..e2746c4 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1600,6 +1600,9 @@ config KEXEC_JUMP
- 	  Jump between original kernel and kexeced kernel and invoke
- 	  code in physical address mode via KEXEC
+diff --git a/drivers/xen/sys-hypervisor.c b/drivers/xen/sys-hypervisor.c
+index 96453f8..9dd290c 100644
+--- a/drivers/xen/sys-hypervisor.c
++++ b/drivers/xen/sys-hypervisor.c
+@@ -368,6 +368,41 @@ static void xen_properties_destroy(void)
+ 	sysfs_remove_group(hypervisor_kobj, &xen_properties_group);
+ }
  
-+config KEXEC_FIRMWARE
-+	def_bool n
++#ifdef CONFIG_KEXEC_FIRMWARE
++static ssize_t vmcoreinfo_show(struct hyp_sysfs_attr *attr, char *buffer)
++{
++	return sprintf(buffer, "%lx %lx\n", xen_vmcoreinfo_maddr,
++						xen_vmcoreinfo_max_size);
++}
 +
- config PHYSICAL_START
- 	hex "Physical address where the kernel is loaded" if (EXPERT || CRASH_DUMP)
- 	default "0x1000000"
-diff --git a/arch/x86/xen/Kconfig b/arch/x86/xen/Kconfig
-index 131dacd..8469c1c 100644
---- a/arch/x86/xen/Kconfig
-+++ b/arch/x86/xen/Kconfig
-@@ -7,6 +7,7 @@ config XEN
- 	select PARAVIRT
- 	select PARAVIRT_CLOCK
- 	select XEN_HAVE_PVMMU
-+	select KEXEC_FIRMWARE if KEXEC
- 	depends on X86_64 || (X86_32 && X86_PAE && !X86_VISWS)
- 	depends on X86_TSC
- 	help
-diff --git a/arch/x86/xen/Makefile b/arch/x86/xen/Makefile
-index 96ab2c0..99952d7 100644
---- a/arch/x86/xen/Makefile
-+++ b/arch/x86/xen/Makefile
-@@ -22,3 +22,6 @@ obj-$(CONFIG_PARAVIRT_SPINLOCKS)+= spinlock.o
- obj-$(CONFIG_XEN_DEBUG_FS)	+= debugfs.o
- obj-$(CONFIG_XEN_DOM0)		+= apic.o vga.o
- obj-$(CONFIG_SWIOTLB_XEN)	+= pci-swiotlb-xen.o
-+obj-$(CONFIG_KEXEC_FIRMWARE)	+= kexec.o
-+obj-$(CONFIG_KEXEC_FIRMWARE)	+= machine_kexec_$(BITS).o
-+obj-$(CONFIG_KEXEC_FIRMWARE)	+= relocate_kernel_$(BITS).o
++HYPERVISOR_ATTR_RO(vmcoreinfo);
++
++static int __init xen_vmcoreinfo_init(void)
++{
++	if (!xen_vmcoreinfo_max_size)
++		return 0;
++
++	return sysfs_create_file(hypervisor_kobj, &vmcoreinfo_attr.attr);
++}
++
++static void xen_vmcoreinfo_destroy(void)
++{
++	if (!xen_vmcoreinfo_max_size)
++		return;
++
++	sysfs_remove_file(hypervisor_kobj, &vmcoreinfo_attr.attr);
++}
++#else
++static int __init xen_vmcoreinfo_init(void)
++{
++	return 0;
++}
++
++static void xen_vmcoreinfo_destroy(void)
++{
++}
++#endif
++
+ static int __init hyper_sysfs_init(void)
+ {
+ 	int ret;
+@@ -390,9 +425,14 @@ static int __init hyper_sysfs_init(void)
+ 	ret = xen_properties_init();
+ 	if (ret)
+ 		goto prop_out;
++	ret = xen_vmcoreinfo_init();
++	if (ret)
++		goto vmcoreinfo_out;
+ 
+ 	goto out;
+ 
++vmcoreinfo_out:
++	xen_properties_destroy();
+ prop_out:
+ 	xen_sysfs_uuid_destroy();
+ uuid_out:
+@@ -407,12 +447,12 @@ out:
+ 
+ static void __exit hyper_sysfs_exit(void)
+ {
++	xen_vmcoreinfo_destroy();
+ 	xen_properties_destroy();
+ 	xen_compilation_destroy();
+ 	xen_sysfs_uuid_destroy();
+ 	xen_sysfs_version_destroy();
+ 	xen_sysfs_type_destroy();
+-
+ }
+ module_init(hyper_sysfs_init);
+ module_exit(hyper_sysfs_exit);
 -- 
 1.5.6.5
 
