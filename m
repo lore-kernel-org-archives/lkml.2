@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab2L0NLd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 08:11:33 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9050 "EHLO mx1.redhat.com"
+	id S1752730Ab2L0NZr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 08:25:47 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:46219 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752046Ab2L0NLb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 08:11:31 -0500
-Date: Thu, 27 Dec 2012 15:14:42 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] vhost_net: correct error hanlding in
- vhost_net_set_backend()
-Message-ID: <20121227131442.GF20595@redhat.com>
+	id S1752166Ab2L0NZq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 08:25:46 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Alternative][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Thu, 27 Dec 2012 14:31:09 +0100
+Message-ID: <2210460.jSt1aAvsCj@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <1723076.byQgAGE2K7@vostro.rjw.lan>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <CAE9FiQWpAvgam3t7isFcZOz+OEe4D4QJxBbqcbiqMJVwJz=-8A@mail.gmail.com> <1723076.byQgAGE2K7@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356590360-32770-2-git-send-email-jasowang@redhat.com>
- <1356590360-32770-1-git-send-email-jasowang@redhat.com>
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 02:39:19PM +0800, Jason Wang wrote:
-> Fix the leaking of oldubufs and fd refcnt when fail to initialized used ring.
+On Thursday, December 27, 2012 01:47:22 PM Rafael J. Wysocki wrote:
+> On Wednesday, December 26, 2012 04:10:32 PM Yinghai Lu wrote:
+> > On Wed, Dec 26, 2012 at 2:36 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > > On Wednesday, December 26, 2012 12:41:05 PM Yinghai Lu wrote:
+> > >> On Wed, Dec 26, 2012 at 12:16 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > >> > On Wed, Dec 26, 2012 at 12:10 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> > >> >> Do you have a reference for this?  I think this might have been true
+> > >> >> in the past, but I don't think it's true for any version of gcc we
+> > >> >> support for building Linux.
+> > >> >
+> > >> > http://lkml.indiana.edu/hypermail/linux/kernel/0804.3/3600.html
+> > >>
+> > >> the problem is already addressed by:
+> > >>
+> > >> | commit f9d14250071eda9972e4c9cea745a11185952114
+> > >> | Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > >> | Date:   Fri Jan 2 09:29:43 2009 -0800
+> > >> |
+> > >> |    Disallow gcc versions 4.1.{0,1}
+> > >> |
+> > >> |    These compiler versions are known to miscompile __weak functions and
+> > >> |    thus generate kernels that don't necessarily work correctly.  If a weak
+> > >> |    function is int he same compilation unit as a caller, gcc may end up
+> > >> |    inlining it, and thus binding the weak function too early.
+> > >> |
+> > >> |    See
+> > >> |
+> > >> |        http://gcc.gnu.org/bugzilla/show_bug.cgi?id=27781
+> > >> |
+> > >> |    for details.
+> > >>
+> > >> so it is ok to put the __weak in the same file now.
+> > >
+> > > Cool, thanks for checking and for the ACK!
+> > 
+> > wait, we have some problem on systems that root bus is not exported via DSDT ...
+> > 
+> > one of my nehalem system that have uncore cpu devices are not exported via ACPI.
+> > 
+> > also there will be problem that system is booting with acpi=off.
+> > 
+> > 
+> > +int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+> > +{
+> > +       struct pci_sysdata *sd = bridge->bus->sysdata;
+> > +       struct pci_root_info *info = container_of(sd, struct pci_root_info, sd);
+> > +
+> > +       ACPI_HANDLE_SET(&bridge->dev, info->bridge->handle);
+> > +       return 0;
+> > +}
+> > 
+> > will get wrong info...via sd... as their sd is standalone
 > 
-> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> ---
->  drivers/vhost/net.c |   14 +++++++++++---
->  1 files changed, 11 insertions(+), 3 deletions(-)
+> Yes, it will be called in all code paths leading to acpi_create_root_bus(),
+> not only the ones started by pci_acpi_scan_root().  Well, too bad.
+
+s/acpi_create_root_bus/pci_create_root_bus/
+
+Sorry.
+
+> By the way, that illustrates nicely why I generally have concerns about __weak
+> stuff and similar tricks.
 > 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index ebd08b2..629d6b5 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -834,8 +834,10 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->  		vhost_net_enable_vq(n, vq);
->  
->  		r = vhost_init_used(vq);
-> -		if (r)
-> -			goto err_vq;
-> +		if (r) {
-> +			sock = NULL;
-> +			goto err_used;
-> +		}
->  
->  		n->tx_packets = 0;
->  		n->tx_zcopy_err = 0;
-> @@ -859,8 +861,14 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->  	mutex_unlock(&n->dev.mutex);
->  	return 0;
->  
-> +err_used:
-> +	if (oldubufs)
-> +		vhost_ubuf_put_and_wait(oldubufs);
-> +	if (oldsock)
-> +		fput(oldsock->file);
->  err_ubufs:
-> -	fput(sock->file);
-> +	if (sock)
-> +		fput(sock->file);
->  err_vq:
->  	mutex_unlock(&vq->mutex);
->  err:
+> Bjorn, I had tried to use the approach you suggested, but it didn't work.
+> I thought about fixing that, but everything I could come up with turned out to
+> be too complicated, so I'm inclined to use the previous version after all:
+> 
+> https://patchwork.kernel.org/patch/1889221/
+> 
+> that has been acked by Yinghai, Greg and Peter already.
 
-I think it's a real bug, but I don't see how the fix
-makes sense.
-We are returning an error, so we ideally
-revert to the state before the faulty
-operation. So this should put sock and ubufs,
-not oldsock/oldubufs.
-
-
-The best way is probably to change
-vhost_init_used so that it gets private data
-pointer as a parameter.
-
-We can then call it before ubuf alloc.
-You can then add err_used right after err_ubufs
-with no extra logic.
-
-
+Thanks,
+Rafael
 
 
 -- 
-MST
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
