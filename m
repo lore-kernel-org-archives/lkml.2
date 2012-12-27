@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753159Ab2L0O4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 09:56:42 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:56996 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab2L0O4e (ORCPT
+	id S1753233Ab2L0O5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 09:57:32 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:49785 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab2L0O43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 09:56:34 -0500
+	Thu, 27 Dec 2012 09:56:29 -0500
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org
 Cc: Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 5/5] cpufreq: ondemand: use all CPUs in update_sampling_rate
-Date: Thu, 27 Dec 2012 15:55:42 +0100
-Message-Id: <1356620142-8680-6-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 3/5] cpufreq: ondemand: call dbs_check_cpu only when necessary
+Date: Thu, 27 Dec 2012 15:55:40 +0100
+Message-Id: <1356620142-8680-4-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1356620142-8680-1-git-send-email-fabio.baltieri@linaro.org>
@@ -22,40 +22,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify update_sampling_rate() to check, and eventually immediately
-schedule, all CPU's do_dbs_timer delayed work.
-
-This is required in case of software coordinated CPUs, as we now have a
-separate delayed work for each CPU.
+Modify ondemand timer to not resample CPU utilization if recently
+sampled from another SW coordinated core.
 
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/cpufreq/cpufreq_ondemand.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/cpufreq/cpufreq_governor.c |  3 ++
+ drivers/cpufreq/cpufreq_governor.h |  1 +
+ drivers/cpufreq/cpufreq_ondemand.c | 58 +++++++++++++++++++++++++++++++-------
+ 3 files changed, 52 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/cpufreq/cpufreq_governor.c b/drivers/cpufreq/cpufreq_governor.c
+index e881250..e5a3711 100644
+--- a/drivers/cpufreq/cpufreq_governor.c
++++ b/drivers/cpufreq/cpufreq_governor.c
+@@ -333,6 +333,9 @@ second_time:
+ 		mutex_unlock(&dbs_data->mutex);
+ 
+ 		if (dbs_sw_coordinated_cpus(cpu_cdbs)) {
++			/* Initiate timer time stamp */
++			cpu_cdbs->time_stamp = ktime_get();
++
+ 			for_each_cpu(j, policy->cpus) {
+ 				struct cpu_dbs_common_info *j_cdbs;
+ 
+diff --git a/drivers/cpufreq/cpufreq_governor.h b/drivers/cpufreq/cpufreq_governor.h
+index 5bf6fb8..aaf073d 100644
+--- a/drivers/cpufreq/cpufreq_governor.h
++++ b/drivers/cpufreq/cpufreq_governor.h
+@@ -82,6 +82,7 @@ struct cpu_dbs_common_info {
+ 	 * the governor or limits.
+ 	 */
+ 	struct mutex timer_mutex;
++	ktime_t time_stamp;
+ };
+ 
+ struct od_cpu_dbs_info_s {
 diff --git a/drivers/cpufreq/cpufreq_ondemand.c b/drivers/cpufreq/cpufreq_ondemand.c
-index 13ceb3c..1017b90 100644
+index 93bb56d..13ceb3c 100644
 --- a/drivers/cpufreq/cpufreq_ondemand.c
 +++ b/drivers/cpufreq/cpufreq_ondemand.c
-@@ -326,7 +326,7 @@ static void update_sampling_rate(unsigned int new_rate)
- 			cpufreq_cpu_put(policy);
- 			continue;
+@@ -216,23 +216,23 @@ static void od_check_cpu(int cpu, unsigned int load_freq)
+ 	}
+ }
+ 
+-static void od_dbs_timer(struct work_struct *work)
++static void od_timer_update(struct od_cpu_dbs_info_s *dbs_info, bool sample,
++			    struct delayed_work *dw)
+ {
+-	struct od_cpu_dbs_info_s *dbs_info =
+-		container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
+ 	unsigned int cpu = dbs_info->cdbs.cpu;
+ 	int delay, sample_type = dbs_info->sample_type;
+ 
+-	mutex_lock(&dbs_info->cdbs.timer_mutex);
+-
+ 	/* Common NORMAL_SAMPLE setup */
+ 	dbs_info->sample_type = OD_NORMAL_SAMPLE;
+ 	if (sample_type == OD_SUB_SAMPLE) {
+ 		delay = dbs_info->freq_lo_jiffies;
+-		__cpufreq_driver_target(dbs_info->cdbs.cur_policy,
+-			dbs_info->freq_lo, CPUFREQ_RELATION_H);
++		if (sample)
++			__cpufreq_driver_target(dbs_info->cdbs.cur_policy,
++						dbs_info->freq_lo,
++						CPUFREQ_RELATION_H);
+ 	} else {
+-		dbs_check_cpu(&od_dbs_data, cpu);
++		if (sample)
++			dbs_check_cpu(&od_dbs_data, cpu);
+ 		if (dbs_info->freq_lo) {
+ 			/* Setup timer for SUB_SAMPLE */
+ 			dbs_info->sample_type = OD_SUB_SAMPLE;
+@@ -243,11 +243,49 @@ static void od_dbs_timer(struct work_struct *work)
  		}
--		dbs_info = &per_cpu(od_cpu_dbs_info, policy->cpu);
-+		dbs_info = &per_cpu(od_cpu_dbs_info, cpu);
- 		cpufreq_cpu_put(policy);
+ 	}
  
- 		mutex_lock(&dbs_info->cdbs.timer_mutex);
-@@ -345,8 +345,7 @@ static void update_sampling_rate(unsigned int new_rate)
- 			cancel_delayed_work_sync(&dbs_info->cdbs.work);
- 			mutex_lock(&dbs_info->cdbs.timer_mutex);
+-	schedule_delayed_work_on(smp_processor_id(), &dbs_info->cdbs.work,
+-			delay);
++	schedule_delayed_work_on(smp_processor_id(), dw, delay);
++}
++
++static void od_timer_coordinated(struct od_cpu_dbs_info_s *dbs_info_local,
++				 struct delayed_work *dw)
++{
++	struct od_cpu_dbs_info_s *dbs_info;
++	ktime_t time_now;
++	s64 delta_us;
++	bool sample = true;
++
++	/* use leader CPU's dbs_info */
++	dbs_info = &per_cpu(od_cpu_dbs_info, dbs_info_local->cdbs.cpu);
++	mutex_lock(&dbs_info->cdbs.timer_mutex);
++
++	time_now = ktime_get();
++	delta_us = ktime_us_delta(time_now, dbs_info->cdbs.time_stamp);
++
++	/* Do nothing if we recently have sampled */
++	if (delta_us < (s64)(od_tuners.sampling_rate / 2))
++		sample = false;
++	else
++		dbs_info->cdbs.time_stamp = time_now;
++
++	od_timer_update(dbs_info, sample, dw);
+ 	mutex_unlock(&dbs_info->cdbs.timer_mutex);
+ }
  
--			schedule_delayed_work_on(dbs_info->cdbs.cpu,
--					&dbs_info->cdbs.work,
-+			schedule_delayed_work_on(cpu, &dbs_info->cdbs.work,
- 					usecs_to_jiffies(new_rate));
++static void od_dbs_timer(struct work_struct *work)
++{
++	struct delayed_work *dw = to_delayed_work(work);
++	struct od_cpu_dbs_info_s *dbs_info =
++		container_of(work, struct od_cpu_dbs_info_s, cdbs.work.work);
++
++	if (dbs_sw_coordinated_cpus(&dbs_info->cdbs)) {
++		od_timer_coordinated(dbs_info, dw);
++	} else {
++		mutex_lock(&dbs_info->cdbs.timer_mutex);
++		od_timer_update(dbs_info, true, dw);
++		mutex_unlock(&dbs_info->cdbs.timer_mutex);
++	}
++}
++
+ /************************** sysfs interface ************************/
  
- 		}
+ static ssize_t show_sampling_rate_min(struct kobject *kobj,
 -- 
 1.7.12.1
 
