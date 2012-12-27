@@ -1,100 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752448Ab2L0LOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 06:14:49 -0500
-Received: from saturn.retrosnub.co.uk ([178.18.118.26]:39510 "EHLO
-	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab2L0LOq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 06:14:46 -0500
-Message-ID: <50DC2D9E.3030006@kernel.org>
-Date: Thu, 27 Dec 2012 11:14:38 +0000
-From: Jonathan Cameron <jic23@kernel.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752473Ab2L0LVz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 06:21:55 -0500
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:38251
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751841Ab2L0LVx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 06:21:53 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
+From: Liu Hui-R64343 <r64343@freescale.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "mgorman@suse.de" <mgorman@suse.de>
+Subject: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad address
+Thread-Topic: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad
+ address
+Thread-Index: Ac3kJF/a6SI7D+iJS5WtP6F+qKZUbA==
+Date: Thu, 27 Dec 2012 11:21:48 +0000
+Message-ID: <AD13664F485EE54694E29A7F9D5BE1AF4D35F3@039-SN2MPN1-021.039d.mgd.msft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.64]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: (max1363) Fix probe error path
-References: <1356330298-11443-1-git-send-email-linux@roeck-us.net>
-In-Reply-To: <1356330298-11443-1-git-send-email-linux@roeck-us.net>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/24/2012 06:24 AM, Guenter Roeck wrote:
-> Instantiating the driver with no available regulator results in:
-> 
-> [39711.686393] i2c i2c-7: new_device: Instantiated device max1139 at 0x35
-> [39711.688687] BUG: unable to handle kernel paging request at fffffffffffffe13
-> [39711.688734] IP: [<ffffffff813e835b>] regulator_disable+0x1b/0x80
-> [39711.688788] PGD 1c0e067 PUD 1c0f067 PMD 0
-> [39711.688835] Oops: 0000 [#1] SMP
-> 
-> Caused by bad probe error path. Fix it.
-Oops.
-> 
-> Driver should also not attempt to free the interrupt in its error path if
-> none was allocated. Fix that problem as well.
-> 
-> Finally, testing if the regulator was allocated is not necessary in the
-> remove function, since the probe function bails out if this is the case.
-> Remove that check.
-> 
-Thanks Guenter. Added to the fixes-togreg branch of
-git://git.kernel.org/pub/scm/linux/kernel/git/jic23/iio.git
+I met one error when does the following command:
 
-Might be the new year before I send Greg the pull request.
+sh/$ echo 1 > /proc/sys/vm/compact_memory
+sh/$ sh: write error: Bad address
 
-Jonathan
+After using strace, I find the following:
+...
+write(1, "1\n", 2)                              = 3
+write(1, "", 4294967295)                = -1 EFAULT (Bad address)
+write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
+) = 31
 
-> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> ---
->  drivers/iio/adc/max1363.c |   13 ++++++-------
->  1 file changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/iio/adc/max1363.c b/drivers/iio/adc/max1363.c
-> index 1e84b5b..31f3485 100644
-> --- a/drivers/iio/adc/max1363.c
-> +++ b/drivers/iio/adc/max1363.c
-> @@ -1605,19 +1605,20 @@ static int __devinit max1363_probe(struct i2c_client *client,
->  
->  	return 0;
->  error_free_irq:
-> -	free_irq(st->client->irq, indio_dev);
-> +	if (client->irq)
-> +		free_irq(st->client->irq, indio_dev);
->  error_uninit_buffer:
->  	iio_buffer_unregister(indio_dev);
->  error_cleanup_buffer:
->  	max1363_buffer_cleanup(indio_dev);
->  error_free_available_scan_masks:
->  	kfree(indio_dev->available_scan_masks);
-> -error_unregister_map:
-> -	iio_map_array_unregister(indio_dev, client->dev.platform_data);
->  error_disable_reg:
->  	regulator_disable(st->reg);
->  error_put_reg:
->  	regulator_put(st->reg);
-> +error_unregister_map:
-> +	iio_map_array_unregister(indio_dev, client->dev.platform_data);
->  error_free_device:
->  	iio_device_free(indio_dev);
->  error_out:
-> @@ -1635,10 +1636,8 @@ static int __devexit max1363_remove(struct i2c_client *client)
->  	iio_buffer_unregister(indio_dev);
->  	max1363_buffer_cleanup(indio_dev);
->  	kfree(indio_dev->available_scan_masks);
-> -	if (!IS_ERR(st->reg)) {
-> -		regulator_disable(st->reg);
-> -		regulator_put(st->reg);
-> -	}
-> +	regulator_disable(st->reg);
-> +	regulator_put(st->reg);
->  	iio_map_array_unregister(indio_dev, client->dev.platform_data);
->  	iio_device_free(indio_dev);
->  
-> 
+>From the code, we can see it will return COMPACT_COMPLETE = 3 always when write.
+
+/* Compact all nodes in the system */
+static int compact_nodes(void)
+{
+        int nid;
+
+        /* Flush pending updates to the LRU lists */
+        lru_add_drain_all();
+
+        for_each_online_node(nid)
+                compact_node(nid);
+
+        return COMPACT_COMPLETE;
+}
+
+/* The written value is actually unused, all memory is compacted */
+int sysctl_compact_memory;
+
+/* This is the entry point for compacting all nodes via /proc/sys/vm */
+int sysctl_compaction_handler(struct ctl_table *table, int write,
+                        void __user *buffer, size_t *length, loff_t *ppos)
+{
+        if (write)
+                return compact_nodes();
+
+        return 0;
+}
+
+I think we can't simply return COMPACT_COMPLETE, instead, we need return *length.
+
+The following patch can fix this issue:
+
+diff --git a/mm/compaction.c b/mm/compaction.c
+index c4bc5ac..d3cb27f 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -732,8 +732,10 @@ int sysctl_compact_memory;
+ int sysctl_compaction_handler(struct ctl_table *table, int write,
+                        void __user *buffer, size_t *length, loff_t *ppos)
+ {
+-       if (write)
+-               return compact_nodes();
++       if (write) {
++               compact_nodes();
++               return *length;
++       }
+
+        return 0;
+ }
+
+
+Anyone can comment on it? Thanks a lot.
+
+Happy Holiday.
+
+Best Regards,
+Jason Liu
+
+
+
