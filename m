@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2L0OTf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 09:19:35 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:61381 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752629Ab2L0OTc (ORCPT
+	id S1752845Ab2L0O1e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 09:27:34 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:35954 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752629Ab2L0O1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 09:19:32 -0500
-Subject: Re: What does ISA/PCI really mean to ARM architecture?
-From: anish kumar <anish198519851985@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, Woody Wu <narkewoody@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAMuHMdWbyrDaaV5TWiEafEpjuscoGKXKKYzNBw_CSSWYLbNaPQ@mail.gmail.com>
-References: <20121227082724.GA11775@zuhnb712.ap.bm.net>
-	 <CAMuHMdWbyrDaaV5TWiEafEpjuscoGKXKKYzNBw_CSSWYLbNaPQ@mail.gmail.com>
+	Thu, 27 Dec 2012 09:27:32 -0500
+Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
+ factor
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, aquini@redhat.com, lwoodman@redhat.com,
+        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tom Herbert <therbert@google.com>
+In-Reply-To: <CANN689HeTk0jNJb4sF_0t714MvFnU0vLw0=JeXYRUwMx8GDnXQ@mail.gmail.com>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+	 <20121221185147.4ae48ab5@annuminas.surriel.com>
+	 <20121221185613.1f4c9523@annuminas.surriel.com>
+	 <20121222033339.GF27621@home.goodmis.org> <50D52E0C.6000103@redhat.com>
+	 <1356549008.20133.20856.camel@edumazet-glaptop> <50DB5531.90500@redhat.com>
+	 <CANN689HeTk0jNJb4sF_0t714MvFnU0vLw0=JeXYRUwMx8GDnXQ@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 Dec 2012 19:49:19 +0530
-Message-ID: <1356617960.5433.32.camel@anish-Inspiron-N5050>
+Date: Thu, 27 Dec 2012 06:27:28 -0800
+Message-ID: <1356618448.30414.948.camel@edumazet-glaptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-27 at 10:51 +0100, Geert Uytterhoeven wrote:
-> On Thu, Dec 27, 2012 at 9:27 AM, Woody Wu <narkewoody@gmail.com> wrote:
-> > Can a peripheral chip that claims to be ISA or PCI device be used in a
-> > ARM based embedded system?  For these kind of chips, I only concern
-> > about the planar kind of devices, means they are not on a dedicated
-> > expansion card.
-> >
-> > From hardware point of view, to attach a ISA or PCI planar chip, is
-> > there any requirement need to fulfill on a ARM bard?
-arm AFAIK is only used in embedded system but ISA/PCI buses are
-generally part of 'big systems' and most of the times it refers to x86
-PC.
-> >
-> > From Linux driver point of view, what are needed to support an ISA or
-> > PCI driver in ARM architecture?  More important, is ISA or PCI device a
-> > platform device?  If not, how to add these kind of devices in my board
-> > definition?
-AFAIK, Platform device is just a way to add a particular driver whose
-probe can't be called at runtime.Mostly platform device is part of
-system on chip.
-PCI devices probe function will be called by the PCI bus as and when it
-detects any activity on the bus.So you don't need PCI device to be  a
-platform device.
+On Wed, 2012-12-26 at 22:07 -0800, Michel Lespinasse wrote:
+
+> If we go with per-spinlock tunings, I feel we'll most likely want to
+> add an associative cache in order to avoid the 1/16 chance (~6%) of
+> getting 595Mbit/s instead of 982Mbit/s when there is a hash collision.
 > 
-> An ISA device is typically a platform device. For ARM, which uses device trees,
-Don't know much about ISA device to comment on this but people familiar
-with this can enlighten us as to the reason why it is platform device in
-detail.
-> this means you define it in the device tree.
-> 
-> A PCI device is not a platform device, as devices on a PCI bus can be
-> probed automatically. The PCI host bridge is typically a platform device,
-> though, so it it should be in your device tree.
-> 
-> Gr{oetje,eeting}s,
-> 
->                         Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
->                                 -- Linus Torvalds
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I would still prefer if we could make up something that didn't require
+> per-spinlock tunings, but it's not clear if that'll work. At least we
+> now know of a simple enough workload to figure it out :)
+
+Even with a per spinlock tuning, we can find workloads where holding
+time depends on the context.
+
+For example, complex qdisc hierarchy typically use different times on
+enqueue and dequeue operations.
+
+So the hash sounds good to me, because the hash key could mix both lock
+address and caller IP ( __builtin_return_address(1) in
+ticket_spin_lock_wait())
+
+
+
 
 
