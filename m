@@ -1,69 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752466Ab2L1ATX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 19:19:23 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:48537 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2L1ATV convert rfc822-to-8bit (ORCPT
+	id S1752555Ab2L1AXa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:23:30 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:54069 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2L1AX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 19:19:21 -0500
-MIME-Version: 1.0
-Message-ID: <2f3acfe3-c608-43d8-b76a-6ba69a872692@default>
-Date: Thu, 27 Dec 2012 16:18:56 -0800 (PST)
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: <ebiederm@xmission.com>
-Cc: <kexec@lists.infradead.org>, <xen-devel@lists.xensource.com>,
-        <konrad.wilk@oracle.com>, <tglx@linutronix.de>,
-        <maxim.uvarov@oracle.com>, <andrew.cooper3@citrix.com>,
-        <hpa@zytor.com>, <jbeulich@suse.com>, <mingo@redhat.com>,
-        <x86@kernel.org>, <virtualization@lists.linux-foundation.org>,
-        <vgoyal@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 01/11] kexec: introduce kexec firmware support
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	Thu, 27 Dec 2012 19:23:27 -0500
+Message-ID: <1356654196.3387.2.camel@phoenix>
+Subject: [PATCH RESEND] regulator: lp3972: Convert to get_voltage_sel
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Fri, 28 Dec 2012 08:23:16 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Daniel Kiper <daniel.kiper@oracle.com> writes:
->
-> > Some kexec/kdump implementations (e.g. Xen PVOPS) could not use default
-> > Linux infrastructure and require some support from firmware and/or hypervisor.
-> > To cope with that problem kexec firmware infrastructure was introduced.
-> > It allows a developer to use all kexec/kdump features of given firmware
-> > or hypervisor.
->
-> As this stands this patch is wrong.
->
-> You need to pass an additional flag from userspace through /sbin/kexec
-> that says load the kexec image in the firmware.  A global variable here
-> is not ok.
->
-> As I understand it you are loading a kexec on xen panic image.  Which
-> is semantically different from a kexec on linux panic image.  It is not
-> ok to do have a silly global variable kexec_use_firmware.
+regulator_list_voltage_table() returns -EINVAL if selector >= n_voltages.
+Thus we don't need to check if reg is greater than LP3972_BUCK_VOL_MAX_IDX in
+lp3972_[ldo|dcdc]_get_voltage_sel.
 
-Earlier we agreed that /sbin/kexec should call kexec syscall with
-special flag. However, during work on Xen kexec/kdump v3 patch
-I stated that this is insufficient because e.g. crash_kexec()
-should execute different code in case of use of firmware support too.
-Sadly syscall does not save this flag anywhere. Additionally, I stated
-that kernel itself has the best knowledge which code path should be
-used (firmware or plain Linux). If this decision will be left to userspace
-then simple kexec syscall could crash system at worst case (e.g. when
-plain Linux kexec will be used in case when firmware kaxec should be used).
-However, if you wish I could add this flag to syscall. Additionally, I could
-add function which enables firmware support and then kexec_use_firmware
-variable will be global only in kexec.c module.
+LP3972_BUCK_VOL_MIN_IDX and LP3972_BUCK_VOL_MAX_IDX are not used, remove them.
 
-> Furthermore it is not ok to have a conditional
-> code outside of header files.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+Hi Mark,
+This patch was sent on https://lkml.org/lkml/2012/12/10/283 ,
+and you replied it's applied.
+But it seems not (yet) in regulator tree, so I resend it.
 
-I agree but how to dispatch execution e.g. in crash_kexec()
-if we would like (I suppose) compile kexec firmware
-support conditionally?
+Axel
+ drivers/regulator/lp3972.c |   22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
 
-Daniel
+diff --git a/drivers/regulator/lp3972.c b/drivers/regulator/lp3972.c
+index 69c42c3..0baabcf 100644
+--- a/drivers/regulator/lp3972.c
++++ b/drivers/regulator/lp3972.c
+@@ -165,8 +165,6 @@ static const int buck_base_addr[] = {
+ #define LP3972_BUCK_VOL_ENABLE_REG(x) (buck_vol_enable_addr[x])
+ #define LP3972_BUCK_VOL1_REG(x) (buck_base_addr[x])
+ #define LP3972_BUCK_VOL_MASK 0x1f
+-#define LP3972_BUCK_VOL_MIN_IDX(x) ((x) ? 0x01 : 0x00)
+-#define LP3972_BUCK_VOL_MAX_IDX(x) ((x) ? 0x19 : 0x1f)
+ 
+ static int lp3972_i2c_read(struct i2c_client *i2c, char reg, int count,
+ 	u16 *dest)
+@@ -257,7 +255,7 @@ static int lp3972_ldo_disable(struct regulator_dev *dev)
+ 				mask, 0);
+ }
+ 
+-static int lp3972_ldo_get_voltage(struct regulator_dev *dev)
++static int lp3972_ldo_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	struct lp3972 *lp3972 = rdev_get_drvdata(dev);
+ 	int ldo = rdev_get_id(dev) - LP3972_LDO1;
+@@ -267,7 +265,7 @@ static int lp3972_ldo_get_voltage(struct regulator_dev *dev)
+ 	reg = lp3972_reg_read(lp3972, LP3972_LDO_VOL_CONTR_REG(ldo));
+ 	val = (reg >> LP3972_LDO_VOL_CONTR_SHIFT(ldo)) & mask;
+ 
+-	return dev->desc->volt_table[val];
++	return val;
+ }
+ 
+ static int lp3972_ldo_set_voltage_sel(struct regulator_dev *dev,
+@@ -314,7 +312,7 @@ static struct regulator_ops lp3972_ldo_ops = {
+ 	.is_enabled = lp3972_ldo_is_enabled,
+ 	.enable = lp3972_ldo_enable,
+ 	.disable = lp3972_ldo_disable,
+-	.get_voltage = lp3972_ldo_get_voltage,
++	.get_voltage_sel = lp3972_ldo_get_voltage_sel,
+ 	.set_voltage_sel = lp3972_ldo_set_voltage_sel,
+ };
+ 
+@@ -353,24 +351,16 @@ static int lp3972_dcdc_disable(struct regulator_dev *dev)
+ 	return val;
+ }
+ 
+-static int lp3972_dcdc_get_voltage(struct regulator_dev *dev)
++static int lp3972_dcdc_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	struct lp3972 *lp3972 = rdev_get_drvdata(dev);
+ 	int buck = rdev_get_id(dev) - LP3972_DCDC1;
+ 	u16 reg;
+-	int val;
+ 
+ 	reg = lp3972_reg_read(lp3972, LP3972_BUCK_VOL1_REG(buck));
+ 	reg &= LP3972_BUCK_VOL_MASK;
+-	if (reg <= LP3972_BUCK_VOL_MAX_IDX(buck))
+-		val = dev->desc->volt_table[reg];
+-	else {
+-		val = 0;
+-		dev_warn(&dev->dev, "chip reported incorrect voltage value."
+-				    " reg = %d\n", reg);
+-	}
+ 
+-	return val;
++	return reg;
+ }
+ 
+ static int lp3972_dcdc_set_voltage_sel(struct regulator_dev *dev,
+@@ -402,7 +392,7 @@ static struct regulator_ops lp3972_dcdc_ops = {
+ 	.is_enabled = lp3972_dcdc_is_enabled,
+ 	.enable = lp3972_dcdc_enable,
+ 	.disable = lp3972_dcdc_disable,
+-	.get_voltage = lp3972_dcdc_get_voltage,
++	.get_voltage_sel = lp3972_dcdc_get_voltage_sel,
+ 	.set_voltage_sel = lp3972_dcdc_set_voltage_sel,
+ };
+ 
+-- 
+1.7.9.5
+
+
+
