@@ -1,133 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab2L1D0G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 22:26:06 -0500
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:65113 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2L1D0E (ORCPT
+	id S1753322Ab2L1D0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 22:26:47 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:60846 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab2L1D0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 22:26:04 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-To: linville@tuxdriver.com, davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, Larry Finger <Larry.Finger@lwfinger.net>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH V2] forcedeth: Fix WARNINGS that result when DMA mapping is not checked
-Date: Thu, 27 Dec 2012 21:25:41 -0600
-Message-Id: <1356665141-4498-1-git-send-email-Larry.Finger@lwfinger.net>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 27 Dec 2012 22:26:45 -0500
+Date: Thu, 27 Dec 2012 19:30:11 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        khoroshilov@ispras.ru
+Subject: Re: Linux 3.8-rc1 (mei driver BROKEN)
+Message-ID: <20121228033011.GA26616@kroah.com>
+References: <CA+icZUVRrAcNy2_JsYAS5Ff=c6tthHHB=rj3eHPFcwUh5APiug@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+icZUVRrAcNy2_JsYAS5Ff=c6tthHHB=rj3eHPFcwUh5APiug@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 3.8-rc1, the first call of pci_map_single() that is not checked
-with a corresponding pci_dma_mapping_error() call results in a warning
-with a splat as follows:
+On Fri, Dec 28, 2012 at 02:04:23AM +0100, Sedat Dilek wrote:
+> Hi Linus,
+> 
+> I am not sure if Greg is on holidays as his char-misc GIT tree didn't
+> get updated the last days.
 
-WARNING: at lib/dma-debug.c:933 check_unmap+0x480/0x950()
-Hardware name: HP Pavilion dv2700 Notebook PC
-forcedeth 0000:00:0a.0: DMA-API: device driver failed to check
- map error[device address=0x00000000b176e002] [size=90 bytes] [mapped as single]
+Yes, I'm supposed to be on vacation until the 7th.
 
-Reviewed-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
+> The MEI driver causes here a serious regression requiring a hard cold
+> start of the machine I am working on.
+> A fix "mei: fix mismatch in mutex unlock-lock in mei_amthif_read()"
+> was already sent to LKML [1] and fixes the issue for me.
+> 
+> Can you push that a bit?
 
-V1 => V2: Replaced dev_kfree_skb_any() calls with kfree_skb() in RX
-	  Changed TX mapping errors to drop packet, update drop count
-	  and return NETDEV_TX_OK
----
+These patches are in my "to-apply" queue, which I will get to Linus in
+time for 3.8-final, so there's no rush on your end needed.
 
- drivers/net/ethernet/nvidia/forcedeth.c |   35 +++++++++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+thanks,
 
-diff --git a/drivers/net/ethernet/nvidia/forcedeth.c b/drivers/net/ethernet/nvidia/forcedeth.c
-index 653487d..87fa591 100644
---- a/drivers/net/ethernet/nvidia/forcedeth.c
-+++ b/drivers/net/ethernet/nvidia/forcedeth.c
-@@ -1821,6 +1821,11 @@ static int nv_alloc_rx(struct net_device *dev)
- 							     skb->data,
- 							     skb_tailroom(skb),
- 							     PCI_DMA_FROMDEVICE);
-+			if (pci_dma_mapping_error(np->pci_dev,
-+						  np->put_rx_ctx->dma)) {
-+				kfree_skb(skb);
-+				goto packet_dropped;
-+			}
- 			np->put_rx_ctx->dma_len = skb_tailroom(skb);
- 			np->put_rx.orig->buf = cpu_to_le32(np->put_rx_ctx->dma);
- 			wmb();
-@@ -1830,6 +1835,7 @@ static int nv_alloc_rx(struct net_device *dev)
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
- 		} else {
-+packet_dropped:
- 			u64_stats_update_begin(&np->swstats_rx_syncp);
- 			np->stat_rx_dropped++;
- 			u64_stats_update_end(&np->swstats_rx_syncp);
-@@ -1856,6 +1862,11 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
- 							     skb->data,
- 							     skb_tailroom(skb),
- 							     PCI_DMA_FROMDEVICE);
-+			if (pci_dma_mapping_error(np->pci_dev,
-+						  np->put_rx_ctx->dma)) {
-+				kfree_skb(skb);
-+				goto packet_dropped;
-+			}
- 			np->put_rx_ctx->dma_len = skb_tailroom(skb);
- 			np->put_rx.ex->bufhigh = cpu_to_le32(dma_high(np->put_rx_ctx->dma));
- 			np->put_rx.ex->buflow = cpu_to_le32(dma_low(np->put_rx_ctx->dma));
-@@ -1866,6 +1877,7 @@ static int nv_alloc_rx_optimized(struct net_device *dev)
- 			if (unlikely(np->put_rx_ctx++ == np->last_rx_ctx))
- 				np->put_rx_ctx = np->first_rx_ctx;
- 		} else {
-+packet_dropped:
- 			u64_stats_update_begin(&np->swstats_rx_syncp);
- 			np->stat_rx_dropped++;
- 			u64_stats_update_end(&np->swstats_rx_syncp);
-@@ -2217,6 +2229,15 @@ static netdev_tx_t nv_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
- 		np->put_tx_ctx->dma = pci_map_single(np->pci_dev, skb->data + offset, bcnt,
- 						PCI_DMA_TODEVICE);
-+		if (pci_dma_mapping_error(np->pci_dev,
-+					  np->put_tx_ctx->dma)) {
-+			/* on DMA mapping error - drop the packet */
-+			kfree_skb(skb);
-+			u64_stats_update_begin(&np->swstats_tx_syncp);
-+			np->stat_tx_dropped++;
-+			u64_stats_update_end(&np->swstats_tx_syncp);
-+			return NETDEV_TX_OK;
-+		}
- 		np->put_tx_ctx->dma_len = bcnt;
- 		np->put_tx_ctx->dma_single = 1;
- 		put_tx->buf = cpu_to_le32(np->put_tx_ctx->dma);
-@@ -2337,6 +2358,15 @@ static netdev_tx_t nv_start_xmit_optimized(struct sk_buff *skb,
- 		bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
- 		np->put_tx_ctx->dma = pci_map_single(np->pci_dev, skb->data + offset, bcnt,
- 						PCI_DMA_TODEVICE);
-+		if (pci_dma_mapping_error(np->pci_dev,
-+					  np->put_tx_ctx->dma)) {
-+			/* on DMA mapping error - drop the packet */
-+			kfree_skb(skb);
-+			u64_stats_update_begin(&np->swstats_tx_syncp);
-+			np->stat_tx_dropped++;
-+			u64_stats_update_end(&np->swstats_tx_syncp);
-+			return NETDEV_TX_OK;
-+		}
- 		np->put_tx_ctx->dma_len = bcnt;
- 		np->put_tx_ctx->dma_single = 1;
- 		put_tx->bufhigh = cpu_to_le32(dma_high(np->put_tx_ctx->dma));
-@@ -5003,6 +5033,11 @@ static int nv_loopback_test(struct net_device *dev)
- 	test_dma_addr = pci_map_single(np->pci_dev, tx_skb->data,
- 				       skb_tailroom(tx_skb),
- 				       PCI_DMA_FROMDEVICE);
-+	if (pci_dma_mapping_error(np->pci_dev,
-+				  test_dma_addr)) {
-+		dev_kfree_skb_any(tx_skb);
-+		goto out;
-+	}
- 	pkt_data = skb_put(tx_skb, pkt_len);
- 	for (i = 0; i < pkt_len; i++)
- 		pkt_data[i] = (u8)(i & 0xff);
--- 
-1.7.10.4
-
+greg k-h
