@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab2L1TXj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:23:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55728 "EHLO
+	id S1754823Ab2L1TXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:23:43 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55707 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932484Ab2L1TT5 (ORCPT
+	by vger.kernel.org with ESMTP id S932470Ab2L1TT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:57 -0500
-Message-Id: <20121228190335.879473774@decadent.org.uk>
+Message-Id: <20121228190336.275683941@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:58 +0100
+Date: Fri, 28 Dec 2012 20:04:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Ball <cjb@laptop.org>
-Subject: [ 028/173] Revert misapplied "mmc: sh-mmcif: avoid oops on spurious interrupts"
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 030/173] powerpc: fix wii_memory_fixups() compile error on 3.0.y  tree
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,32 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Ball <cjb@laptop.org>
+From: Shuah Khan <shuah.khan@hp.com>
 
-commit 6984f3c31bb57cb7491dbec1be44b74bd00f4648 upstream.
+Fix wii_memory_fixups() the following compile error on 3.0.y tree with
+wii_defconfig on 3.0.y tree.
 
-This reverts commit 8464dd52d3198dd05, which was a misapplied debugging
-version of the patch, not the final patch itself.
+  CC      arch/powerpc/platforms/embedded6xx/wii.o
+arch/powerpc/platforms/embedded6xx/wii.c: In function ‘wii_memory_fixups’:
+arch/powerpc/platforms/embedded6xx/wii.c:88:2: error: format ‘%llx’ expects argument of type ‘long long unsigned int’, but argument 2 has type ‘phys_addr_t’ [-Werror=format]
+arch/powerpc/platforms/embedded6xx/wii.c:88:2: error: format ‘%llx’ expects argument of type ‘long long unsigned int’, but argument 3 has type ‘phys_addr_t’ [-Werror=format]
+arch/powerpc/platforms/embedded6xx/wii.c:90:2: error: format ‘%llx’ expects argument of type ‘long long unsigned int’, but argument 2 has type ‘phys_addr_t’ [-Werror=format]
+arch/powerpc/platforms/embedded6xx/wii.c:90:2: error: format ‘%llx’ expects argument of type ‘long long unsigned int’, but argument 3 has type ‘phys_addr_t’ [-Werror=format]
+cc1: all warnings being treated as errors
+make[2]: *** [arch/powerpc/platforms/embedded6xx/wii.o] Error 1
+make[1]: *** [arch/powerpc/platforms/embedded6xx] Error 2
+make: *** [arch/powerpc/platforms] Error 2
 
-Signed-off-by: Chris Ball <cjb@laptop.org>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mmc/host/sh_mmcif.c |    4 ----
- 1 file changed, 4 deletions(-)
+ arch/powerpc/platforms/embedded6xx/wii.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/drivers/mmc/host/sh_mmcif.c
-+++ b/drivers/mmc/host/sh_mmcif.c
-@@ -1003,10 +1003,6 @@ static irqreturn_t sh_mmcif_intr(int irq
- 		host->sd_error = true;
- 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
- 	}
--	if (host->state == STATE_IDLE) {
--		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
--		return IRQ_HANDLED;
--	}
- 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE))
- 		complete(&host->intr_wait);
- 	else
+diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+index 1b5dc1a..daf793b 100644
+--- a/arch/powerpc/platforms/embedded6xx/wii.c
++++ b/arch/powerpc/platforms/embedded6xx/wii.c
+@@ -85,9 +85,11 @@ void __init wii_memory_fixups(void)
+ 	wii_hole_start = p[0].base + p[0].size;
+ 	wii_hole_size = p[1].base - wii_hole_start;
+ 
+-	pr_info("MEM1: <%08llx %08llx>\n", p[0].base, p[0].size);
++	pr_info("MEM1: <%08llx %08llx>\n",
++		(unsigned long long) p[0].base, (unsigned long long) p[0].size);
+ 	pr_info("HOLE: <%08lx %08lx>\n", wii_hole_start, wii_hole_size);
+-	pr_info("MEM2: <%08llx %08llx>\n", p[1].base, p[1].size);
++	pr_info("MEM2: <%08llx %08llx>\n",
++		(unsigned long long) p[1].base, (unsigned long long) p[1].size);
+ 
+ 	p[0].size += wii_hole_size + p[1].size;
+ 
 
 
