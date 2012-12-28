@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab2L1TSi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55321 "EHLO
+	id S932216Ab2L1TlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:41:21 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55350 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932135Ab2L1TSe (ORCPT
+	by vger.kernel.org with ESMTP id S932153Ab2L1TSh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:34 -0500
-Message-Id: <20121228190351.205426503@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:37 -0500
+Message-Id: <20121228190350.765365454@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:10 +0100
+Date: Fri, 28 Dec 2012 20:05:08 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 100/173] Bluetooth: Add missing lock nesting notation
+        Aaron Lu <aaron.lu@intel.com>,
+        Phillip Wood <phillip.wood@dunelm.org.uk>,
+        Szymon Janc <szymon@janc.net.pl>, Dutra Julio <dutra.julio@gmail.com>,
+        Alan Cox <alan@linux.intel.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 098/173] libata: set dma_mode to 0xff in reset
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,64 +30,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit dc2a0e20fbc85a71c63aa4330b496fda33f6bf80 upstream.
+commit 5416912af75de9cba5d1c75b99a7888b0bbbd2fb upstream.
 
-This patch fixes the following report, it happens when accepting rfcomm
-connections:
+ata_device->dma_mode's initial value is zero, which is not a valid dma
+mode, but ata_dma_enabled will return true for this value. This patch
+sets dma_mode to 0xff in reset function, so that ata_dma_enabled will
+not return true for this case, or it will cause problem for pata_acpi.
 
-[  228.165378] =============================================
-[  228.165378] [ INFO: possible recursive locking detected ]
-[  228.165378] 3.7.0-rc1-00536-gc1d5dc4 #120 Tainted: G        W
-[  228.165378] ---------------------------------------------
-[  228.165378] bluetoothd/1341 is trying to acquire lock:
-[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
-[<ffffffffa0000aa0>] bt_accept_dequeue+0xa0/0x180 [bluetooth]
-[  228.165378]
-[  228.165378] but task is already holding lock:
-[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
-[<ffffffffa0205118>] rfcomm_sock_accept+0x58/0x2d0 [rfcomm]
-[  228.165378]
-[  228.165378] other info that might help us debug this:
-[  228.165378]  Possible unsafe locking scenario:
-[  228.165378]
-[  228.165378]        CPU0
-[  228.165378]        ----
-[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
-[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
-[  228.165378]
-[  228.165378]  *** DEADLOCK ***
-[  228.165378]
-[  228.165378]  May be due to missing lock nesting notation
+The corrsponding bugzilla page is at:
+https://bugzilla.kernel.org/show_bug.cgi?id=49151
 
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Reported-by: Phillip Wood <phillip.wood@dunelm.org.uk>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Tested-by: Szymon Janc <szymon@janc.net.pl>
+Tested-by: Dutra Julio <dutra.julio@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- net/bluetooth/rfcomm/sock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/ata/libata-core.c |    1 +
+ drivers/ata/libata-eh.c   |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
-index 4ddef57..ce3f665 100644
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -467,7 +467,7 @@ static int rfcomm_sock_accept(struct socket *sock, struct socket *newsock, int f
- 	long timeo;
- 	int err = 0;
+diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
+index caffe73..583f26d 100644
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -2559,6 +2559,7 @@ int ata_bus_probe(struct ata_port *ap)
+ 		 * bus as we may be talking too fast.
+ 		 */
+ 		dev->pio_mode = XFER_PIO_0;
++		dev->dma_mode = 0xff;
  
--	lock_sock(sk);
-+	lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
+ 		/* If the controller has a pio mode setup function
+ 		 * then use it to set the chipset to rights. Don't
+diff --git a/drivers/ata/libata-eh.c b/drivers/ata/libata-eh.c
+index e60437c..bf039b0 100644
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -2657,6 +2657,7 @@ int ata_eh_reset(struct ata_link *link, int classify,
+ 		 * bus as we may be talking too fast.
+ 		 */
+ 		dev->pio_mode = XFER_PIO_0;
++		dev->dma_mode = 0xff;
  
- 	if (sk->sk_type != SOCK_STREAM) {
- 		err = -EINVAL;
-@@ -504,7 +504,7 @@ static int rfcomm_sock_accept(struct socket *sock, struct socket *newsock, int f
- 
- 		release_sock(sk);
- 		timeo = schedule_timeout(timeo);
--		lock_sock(sk);
-+		lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	remove_wait_queue(sk_sleep(sk), &wait);
+ 		/* If the controller has a pio mode setup function
+ 		 * then use it to set the chipset to rights. Don't
 
 
