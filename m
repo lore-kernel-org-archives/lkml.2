@@ -1,135 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab2L1TR4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55113 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754171Ab2L1TRq (ORCPT
+	id S1754702Ab2L1Tsa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:48:30 -0500
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:47636
+	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754549Ab2L1TRy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:46 -0500
-Message-Id: <20121228190359.164025133@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:55 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 145/173] SGI-XP: handle non-fatal traps
-In-Reply-To: <20121228190330.025298996@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.217.219.220
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 28 Dec 2012 14:17:54 -0500
+X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT002.namprd05.prod.outlook.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: PS-2(zz98dI936eIzz1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>
+Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+Thread-Topic: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+Thread-Index: AQHN5RiGq5ZUqF9Ep0mmn4k4iukZYZgue5kAgAAXSYCAAALxAA==
+Date: Fri, 28 Dec 2012 19:17:43 +0000
+Message-ID: <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
+References: <1356712001-12198-1-git-send-email-jlee@suse.com>
+	 <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
+	 <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com>
+In-Reply-To: <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.255.84.4]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <BA7ACE77748F6D48B373E12EF12E6ED0@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBSJmWXf026268
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-12-28 at 11:07 -0800, H. Peter Anvin wrote:
+> We do have such machines, which is why this change has been reverted twice already.  I believe we should stick to the priority scheme I proposed a few weeks ago.
 
-------------------
-
-From: Robin Holt <holt@sgi.com>
-
-commit 891348ca0f66206f1dc0e30d63757e3df1ae2d15 upstream.
-
-We found a user code which was raising a divide-by-zero trap.  That trap
-would lead to XPC connections between system-partitions being torn down
-due to the die_chain notifier callouts it received.
-
-This also revealed a different issue where multiple callers into
-xpc_die_deactivate() would all attempt to do the disconnect in parallel
-which would sometimes lock up but often overwhelm the console on very
-large machines as each would print at least one line of output at the
-end of the deactivate.
-
-I reviewed all the users of the die_chain notifier and changed the code
-to ignore the notifier callouts for reasons which will not actually lead
-to a system to continue on to call die().
-
-[akpm@linux-foundation.org: fix ia64]
-Signed-off-by: Robin Holt <holt@sgi.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/misc/sgi-xp/xpc_main.c |   34 ++++++++++++++++++++++++++++++++--
- 1 file changed, 32 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/misc/sgi-xp/xpc_main.c b/drivers/misc/sgi-xp/xpc_main.c
-index 8d082b4..d971817 100644
---- a/drivers/misc/sgi-xp/xpc_main.c
-+++ b/drivers/misc/sgi-xp/xpc_main.c
-@@ -53,6 +53,10 @@
- #include <linux/kthread.h>
- #include "xpc.h"
- 
-+#ifdef CONFIG_X86_64
-+#include <asm/traps.h>
-+#endif
-+
- /* define two XPC debug device structures to be used with dev_dbg() et al */
- 
- struct device_driver xpc_dbg_name = {
-@@ -1079,6 +1083,9 @@ xpc_system_reboot(struct notifier_block *nb, unsigned long event, void *unused)
- 	return NOTIFY_DONE;
- }
- 
-+/* Used to only allow one cpu to complete disconnect */
-+static unsigned int xpc_die_disconnecting;
-+
- /*
-  * Notify other partitions to deactivate from us by first disengaging from all
-  * references to our memory.
-@@ -1092,6 +1099,9 @@ xpc_die_deactivate(void)
- 	long keep_waiting;
- 	long wait_to_print;
- 
-+	if (cmpxchg(&xpc_die_disconnecting, 0, 1))
-+		return;
-+
- 	/* keep xpc_hb_checker thread from doing anything (just in case) */
- 	xpc_exiting = 1;
- 
-@@ -1159,7 +1169,7 @@ xpc_die_deactivate(void)
-  * about the lack of a heartbeat.
-  */
- static int
--xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
-+xpc_system_die(struct notifier_block *nb, unsigned long event, void *_die_args)
- {
- #ifdef CONFIG_IA64		/* !!! temporary kludge */
- 	switch (event) {
-@@ -1191,7 +1201,27 @@ xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
- 		break;
- 	}
- #else
--	xpc_die_deactivate();
-+	struct die_args *die_args = _die_args;
-+
-+	switch (event) {
-+	case DIE_TRAP:
-+		if (die_args->trapnr == X86_TRAP_DF)
-+			xpc_die_deactivate();
-+
-+		if (((die_args->trapnr == X86_TRAP_MF) ||
-+		     (die_args->trapnr == X86_TRAP_XF)) &&
-+		    !user_mode_vm(die_args->regs))
-+			xpc_die_deactivate();
-+
-+		break;
-+	case DIE_INT3:
-+	case DIE_DEBUG:
-+		break;
-+	case DIE_OOPS:
-+	case DIE_GPF:
-+	default:
-+		xpc_die_deactivate();
-+	}
- #endif
- 
- 	return NOTIFY_DONE;
-
-
+I seem to have missed that discussion, and couldn't find it after a
+brief search. Got a pointer?
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
