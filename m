@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984Ab2L1TQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:16:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54831 "EHLO
+	id S1754680Ab2L1T5z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:57:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54900 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754045Ab2L1TQk (ORCPT
+	by vger.kernel.org with ESMTP id S1754256Ab2L1TQz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:40 -0500
-Message-Id: <20121228190330.315115164@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:55 -0500
+Message-Id: <20121228190331.341180069@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:31 +0100
+Date: Fri, 28 Dec 2012 20:03:36 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [ 001/173] Revert "device_cgroup: fix RCU usage"
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Chris Wilson <chris@hchris-wilson.co.uk>,
+        Keith Packard <keithp@keithp.com>, Sean Finney <seanius@seanius.net>,
+        Soren Hansen <soren@linux2go.dk>,
+        Hernando Torque <sirius@sonnenkinder.org>,
+        Mike Lothian <mike@fireburn.co.uk>, Dave Airlie <airlied@redhat.com>
+Subject: [ 006/173] drm: give up on edid retries when i2c bus is not responding
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -26,42 +32,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Eugeni Dodonov <eugeni.dodonov@intel.com>
 
-This reverts commit c5ee58688baa98bc3a4f6095a1acf6fd7fd9e967,
-which was commit 201e72acb2d3821e2de9ce6091e98859c316b29a upstream.
+commit 9292f37e1f5c79400254dca46f83313488093825 upstream.
 
-Herton Ronaldo Krzesinski pointed out that the race condition this
-dealt with does not exist in 3.2.y.
+This allows to avoid talking to a non-responding bus repeatedly until we
+finally timeout after 15 attempts. We can do this by catching the -ENXIO
+error, provided by i2c_algo_bit:bit_doAddress call.
 
+Within the bit_doAddress we already try 3 times to get the edid data, so
+if the routine tells us that bus is not responding, it is mostly pointless
+to keep re-trying those attempts over and over again until we reach final
+number of retries.
+
+This change should fix https://bugs.freedesktop.org/show_bug.cgi?id=41059
+and improve overall edid detection timing by 10-30% in most cases, and by
+a much larger margin in case of phantom outputs (up to 30x in one worst
+case).
+
+Timing results for i915-powered machines for 'time xrandr' command:
+Machine 1: from 0.840s to 0.290s
+Machine 2: from 0.315s to 0.280s
+Machine 3: from +/- 4s to 0.184s
+
+Timing results for HD5770 with 'time xrandr' command:
+Machine 4: from 3.210s to 1.060s
+
+Reviewed-by: Chris Wilson <chris@hchris-wilson.co.uk>
+Reviewed-by: Keith Packard <keithp@keithp.com>
+Tested-by: Sean Finney <seanius@seanius.net>
+Tested-by: Soren Hansen <soren@linux2go.dk>
+Tested-by: Hernando Torque <sirius@sonnenkinder.org>
+Tested-by: Mike Lothian <mike@fireburn.co.uk>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41059
+Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/device_cgroup.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/drm_edid.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/security/device_cgroup.c b/security/device_cgroup.c
-index 92e24bb..4450fbe 100644
---- a/security/device_cgroup.c
-+++ b/security/device_cgroup.c
-@@ -202,8 +202,8 @@ static void devcgroup_destroy(struct cgroup_subsys *ss,
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index ece03fc..54a4efa 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -266,6 +266,11 @@ drm_do_probe_ddc_edid(struct i2c_adapter *adapter, unsigned char *buf,
+ 			}
+ 		};
+ 		ret = i2c_transfer(adapter, msgs, 2);
++		if (ret == -ENXIO) {
++			DRM_DEBUG_KMS("drm: skipping non-existent adapter %s\n",
++					adapter->name);
++			break;
++		}
+ 	} while (ret != 2 && --retries);
  
- 	dev_cgroup = cgroup_to_devcgroup(cgroup);
- 	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
--		list_del_rcu(&wh->list);
--		kfree_rcu(wh, rcu);
-+		list_del(&wh->list);
-+		kfree(wh);
- 	}
- 	kfree(dev_cgroup);
- }
-@@ -278,7 +278,7 @@ static int may_access_whitelist(struct dev_cgroup *c,
- {
- 	struct dev_whitelist_item *whitem;
- 
--	list_for_each_entry_rcu(whitem, &c->whitelist, list) {
-+	list_for_each_entry(whitem, &c->whitelist, list) {
- 		if (whitem->type & DEV_ALL)
- 			return 1;
- 		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
+ 	return ret == 2 ? 0 : -1;
 
 
