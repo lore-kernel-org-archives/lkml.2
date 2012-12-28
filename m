@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab2L1TRU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:20 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54974 "EHLO
+	id S1754513Ab2L1TR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:17:27 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55026 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754369Ab2L1TRI (ORCPT
+	by vger.kernel.org with ESMTP id S1754483Ab2L1TRV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:08 -0500
-Message-Id: <20121228190401.556203496@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:21 -0500
+Message-Id: <20121228190401.272715699@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:06:12 +0100
+Date: Fri, 28 Dec 2012 20:06:10 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [ 162/173] i82975x_edac: Fix dimm label initialization
+        Jiri Slaby <jslaby@suse.cz>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        Nobin Mathew <nobin.mathew@gmail.com>,
+        Robert Hancock <hancockr@shaw.ca>, Arnd Bergmann <arnd@arndb.de>,
+        David Altobelli <david.altobelli@hp.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 160/173] MISC: hpilo, remove pci_disable_device
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,80 +32,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 479696840239e0cc43efb3c917bdcad2174d2215 upstream.
+commit bcdee04ea7ae0406ae69094f6df1aacb66a69a0b upstream.
 
-The driver has only 4 hardcoded labels, but allows much more memory.
-Fix it by removing the hardcoded logic, using snprintf() instead.
+pci_disable_device(pdev) used to be in pci remove function. But this
+PCI device has two functions with interrupt lines connected to a
+single pin. The other one is a USB host controller. So when we disable
+the PIN there e.g. by rmmod hpilo, the controller stops working. It is
+because the interrupt link is disabled in ACPI since it is not
+refcounted yet. See acpi_pci_link_free_irq called from
+acpi_pci_irq_disable.
 
-[   19.833972] general protection fault: 0000 [#1] SMP
-[   19.837733] Modules linked in: i82975x_edac(+) edac_core firewire_ohci firewire_core crc_itu_t nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
-[   19.837733] CPU 0
-[   19.837733] Pid: 390, comm: udevd Not tainted 3.6.1-1.fc17.x86_64.debug #1 Dell Inc.                 Precision WorkStation 390    /0MY510
-[   19.837733] RIP: 0010:[<ffffffff813463a8>]  [<ffffffff813463a8>] strncpy+0x18/0x30
-[   19.837733] RSP: 0018:ffff880078535b68  EFLAGS: 00010202
-[   19.837733] RAX: ffff880069fa9708 RBX: ffff880078588000 RCX: ffff880069fa9708
-[   19.837733] RDX: 000000000000001f RSI: 5f706f5f63616465 RDI: ffff880069fa9708
-[   19.837733] RBP: ffff880078535b68 R08: ffff880069fa9727 R09: 000000000000fffe
-[   19.837733] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
-[   19.837733] R13: 0000000000000000 R14: ffff880069fa9290 R15: ffff880079624a80
-[   19.837733] FS:  00007f3de01ee840(0000) GS:ffff88007c400000(0000) knlGS:0000000000000000
-[   19.837733] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[   19.837733] CR2: 00007f3de00b9000 CR3: 0000000078dbc000 CR4: 00000000000007f0
-[   19.837733] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   19.837733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   19.837733] Process udevd (pid: 390, threadinfo ffff880078534000, task ffff880079642450)
-[   19.837733] Stack:
-[   19.837733]  ffff880078535c18 ffffffffa017c6b8 00040000816d627f ffff880079624a88
-[   19.837733]  ffffc90004cd6000 ffff880079624520 ffff88007ac21148 0000000000000000
-[   19.837733]  0000000000000000 0004000000000000 feda000078535bc8 ffffffff810d696d
-[   19.837733] Call Trace:
-[   19.837733]  [<ffffffffa017c6b8>] i82975x_init_one+0x2e6/0x3e6 [i82975x_edac]
-...
+It is not the best solution whatsoever, but as a workaround until the
+ACPI irq link refcounting is sorted out this should fix the reported
+errors.
 
-Fix bug reported at:
-	https://bugzilla.redhat.com/show_bug.cgi?id=848149
-And, very likely:
-	https://bbs.archlinux.org/viewtopic.php?id=148033
-	https://bugzilla.kernel.org/show_bug.cgi?id=47171
+References: https://lkml.org/lkml/2008/11/4/535
 
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use csrow->channels[chan].label not csrow->channels[chan]->dimm->label]
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Grant Grundler <grundler@parisc-linux.org>
+Cc: Nobin Mathew <nobin.mathew@gmail.com>
+Cc: Robert Hancock <hancockr@shaw.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: David Altobelli <david.altobelli@hp.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/edac/i82975x_edac.c |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ drivers/misc/hpilo.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/drivers/edac/i82975x_edac.c
-+++ b/drivers/edac/i82975x_edac.c
-@@ -355,10 +355,6 @@ static enum dev_type i82975x_dram_type(v
- static void i82975x_init_csrows(struct mem_ctl_info *mci,
- 		struct pci_dev *pdev, void __iomem *mch_window)
- {
--	static const char *labels[4] = {
--							"DIMM A1", "DIMM A2",
--							"DIMM B1", "DIMM B2"
--						};
- 	struct csrow_info *csrow;
- 	unsigned long last_cumul_size;
- 	u8 value;
-@@ -399,9 +395,10 @@ static void i82975x_init_csrows(struct m
- 		 *   [0-3] for dual-channel; i.e. csrow->nr_channels = 2
- 		 */
- 		for (chan = 0; chan < csrow->nr_channels; chan++)
--			strncpy(csrow->channels[chan].label,
--					labels[(index >> 1) + (chan * 2)],
--					EDAC_MC_LABEL_LEN);
-+
-+			snprintf(csrow->channels[chan].label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
-+				 (chan == 0) ? 'A' : 'B',
-+				 index);
- 
- 		if (cumul_size == last_cumul_size)
- 			continue;	/* not populated */
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -735,7 +735,14 @@ static void ilo_remove(struct pci_dev *p
+ 	free_irq(pdev->irq, ilo_hw);
+ 	ilo_unmap_device(pdev, ilo_hw);
+ 	pci_release_regions(pdev);
+-	pci_disable_device(pdev);
++	/*
++	 * pci_disable_device(pdev) used to be here. But this PCI device has
++	 * two functions with interrupt lines connected to a single pin. The
++	 * other one is a USB host controller. So when we disable the PIN here
++	 * e.g. by rmmod hpilo, the controller stops working. It is because
++	 * the interrupt link is disabled in ACPI since it is not refcounted
++	 * yet. See acpi_pci_link_free_irq called from acpi_pci_irq_disable.
++	 */
+ 	kfree(ilo_hw);
+ 	ilo_hwdev[(minor / MAX_CCB)] = 0;
+ }
+@@ -820,7 +827,7 @@ unmap:
+ free_regions:
+ 	pci_release_regions(pdev);
+ disable:
+-	pci_disable_device(pdev);
++/*	pci_disable_device(pdev);  see comment in ilo_remove */
+ free:
+ 	kfree(ilo_hw);
+ out:
 
 
