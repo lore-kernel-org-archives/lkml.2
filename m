@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932147Ab2L1TkF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:40:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55373 "EHLO
+	id S932243Ab2L1Tkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:40:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55371 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932204Ab2L1TSo (ORCPT
+	by vger.kernel.org with ESMTP id S932187Ab2L1TSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:44 -0500
-Message-Id: <20121228190349.521173875@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:43 -0500
+Message-Id: <20121228190349.717575619@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:02 +0100
+Date: Fri, 28 Dec 2012 20:05:03 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Alex Williamson <alex.williamson@redhat.com>,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 092/173] ACPI / video: Add "Asus UL30VT" to ACPI video detect blacklist
+Subject: [ 093/173] ACPI / PNP: Do not crash due to stale pointer use during system
+ resume
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,43 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit d0c2ce16bec0afa6013b4c5220ca4c9c67210215 upstream.
+commit a6b5e88c0e42093b9057856f35770966c8c591e3 upstream.
 
-The ACPI video driver can't control backlight correctly on
-Asus UL30VT.  Vendor driver (asus-laptop) can work.  This patch is to
-add "Asus UL30VT" to ACPI video detect blacklist in order to use
-asus-laptop for video control on the "Asus UL30VT" rather than ACPI
-video driver.
+During resume from system suspend the 'data' field of
+struct pnp_dev in pnpacpi_set_resources() may be a stale pointer,
+due to removal of the associated ACPI device node object in the
+previous suspend-resume cycle.  This happens, for example, if a
+dockable machine is booted in the docking station and then suspended
+and resumed and suspended again.  If that happens,
+pnpacpi_build_resource_template() called from pnpacpi_set_resources()
+attempts to use that pointer and crashes.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=32592
-Reported-by: Alex Williamson <alex.williamson@redhat.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+However, pnpacpi_set_resources() actually checks the device's ACPI
+handle, attempts to find the ACPI device node object attached to it
+and returns an error code if that fails, so in fact it knows what the
+correct value of dev->data should be.  Use this observation to update
+dev->data with the correct value if necessary and dump a call trace
+if that's the case (once).
+
+We still need to fix the root cause of this issue, but preventing
+systems from crashing because of it is an improvement too.
+
+Reported-and-tested-by: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=51071
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/video_detect.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/pnp/pnpacpi/core.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/acpi/video_detect.c b/drivers/acpi/video_detect.c
-index b728880..4ac2593 100644
---- a/drivers/acpi/video_detect.c
-+++ b/drivers/acpi/video_detect.c
-@@ -156,6 +156,14 @@ static struct dmi_system_id video_detect_dmi_table[] = {
- 		DMI_MATCH(DMI_BOARD_NAME, "X360"),
- 		},
- 	},
-+	{
-+	.callback = video_detect_force_vendor,
-+	.ident = "Asus UL30VT",
-+	.matches = {
-+		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "UL30VT"),
-+		},
-+	},
- 	{ },
- };
+diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+index 26b5d4b..ec8e914 100644
+--- a/drivers/pnp/pnpacpi/core.c
++++ b/drivers/pnp/pnpacpi/core.c
+@@ -95,6 +95,9 @@ static int pnpacpi_set_resources(struct pnp_dev *dev)
+ 		return -ENODEV;
+ 	}
  
++	if (WARN_ON_ONCE(acpi_dev != dev->data))
++		dev->data = acpi_dev;
++
+ 	ret = pnpacpi_build_resource_template(dev, &buffer);
+ 	if (ret)
+ 		return ret;
 
 
