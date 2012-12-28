@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab2L1Ulf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:41:35 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:38547 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754062Ab2L1Ulc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:41:32 -0500
-Message-ID: <50DE03D8.9030902@zytor.com>
-Date: Fri, 28 Dec 2012 12:40:56 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Matthew Garrett <matthew.garrett@nebula.com>
-CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        Len Brown <lenb@kernel.org>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-References: <1356712001-12198-1-git-send-email-jlee@suse.com>  <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>  <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com> <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
-In-Reply-To: <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754820Ab2L1Ul7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:41:59 -0500
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:37300 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab2L1Ul4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 15:41:56 -0500
+X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 15:41:56 EST
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 05/24] cfq-iosched: Get rid of unnecessary local variable
+Date: Fri, 28 Dec 2012 12:35:27 -0800
+Message-Id: <1356726946-26037-6-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1356726946-26037-1-git-send-email-tj@kernel.org>
+References: <1356726946-26037-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2012 11:17 AM, Matthew Garrett wrote:
-> On Fri, 2012-12-28 at 11:07 -0800, H. Peter Anvin wrote:
->> We do have such machines, which is why this change has been reverted twice already.  I believe we should stick to the priority scheme I proposed a few weeks ago.
->
-> I seem to have missed that discussion, and couldn't find it after a
-> brief search. Got a pointer?
->
+From: Vivek Goyal <vgoyal@redhat.com>
 
-Looks like it was a non-public distribution ... anyway, what I wrote was:
+Use of local varibale "n" seems to be unnecessary. Remove it. This brings
+it inline with function __cfq_group_st_add(), which is also doing the
+similar operation of adding a group to a rb tree.
 
-> I suspect that what we *should* do looks like:
->
-> 1. If ACPI exports a Time and Alarm Device (ACPI000E) the use it;
-> 2. If ACPI exports an PC/AT device (PNP0B00/1/2) then use it(*);
-> 3. If we have an EFI RTC use it;
-> 4. Probe for a PC/AT RTC device.
->
-> I'm unsure what the ordering of 1 & 2 should be.  The ACPI device has
-> the advantage that it contains time zone information, which is important
-> for Windows interoperability, and at least optionally supports
-> millisecond resolution; there is no way to even export "this is where
-> you find time zone information" (since we're dealing with an RTC with
-> embedded CMOS, there is storage available, it is just a matter of
-> telling the OS how to find it) for the PNP0B0x devices.
->
-> The TAD is also guaranteed to map 1:1 to the EFI RTC.
->
-> 	-hpa
+No functionality change here.
 
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Acked-by: Jeff Moyer <jmoyer@redhat.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ block/cfq-iosched.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index e34e142..5ad4cae 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -1658,8 +1658,6 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	cfqq->service_tree = st;
+ 	p = &st->rb.rb_node;
+ 	while (*p) {
+-		struct rb_node **n;
+-
+ 		parent = *p;
+ 		__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
+ 
+@@ -1667,13 +1665,11 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 		 * sort by key, that represents service time.
+ 		 */
+ 		if (time_before(rb_key, __cfqq->rb_key))
+-			n = &(*p)->rb_left;
++			p = &parent->rb_left;
+ 		else {
+-			n = &(*p)->rb_right;
++			p = &parent->rb_right;
+ 			left = 0;
+ 		}
+-
+-		p = n;
+ 	}
+ 
+ 	if (left)
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.8.0.2
 
