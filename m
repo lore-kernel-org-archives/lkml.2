@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932264Ab2L1TS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:57 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55319 "EHLO
+	id S932342Ab2L1ThY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:37:24 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55410 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932131Ab2L1TSd (ORCPT
+	by vger.kernel.org with ESMTP id S932258Ab2L1TS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:33 -0500
-Message-Id: <20121228190351.622779670@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:57 -0500
+Message-Id: <20121228190346.129347293@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:12 +0100
+Date: Fri, 28 Dec 2012 20:04:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [ 102/173] ALSA: usb-audio: Fix missing autopm for MIDI input
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 076/173] nfsd: fix v4 reply caching
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,220 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit f5f165418cabf2218eb466c0e94693b8b1aee88b upstream.
+commit 57d276d71aef7d8305ff002a070cb98deb2edced upstream.
 
-The commit [88a8516a: ALSA: usbaudio: implement USB autosuspend] added
-the support of autopm for USB MIDI output, but it didn't take the MIDI
-input into account.
+Very embarassing: 1091006c5eb15cba56785bd5b498a8d0b9546903 "nfsd: turn
+on reply cache for NFSv4" missed a line, effectively leaving the reply
+cache off in the v4 case.  I thought I'd tested that, but I guess not.
 
-This patch adds the following for fixing the autopm:
-- Manage the URB start at the first MIDI input stream open, instead of
-  the time of instance creation
-- Move autopm code to the common substream_open()
-- Make snd_usbmidi_input_start/_stop() more robust and add the running
-  state check
+This time, wrote a pynfs test to confirm it works.
 
-Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
-Tested-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/usb/midi.c |   88 ++++++++++++++++++++++++++++--------------------------
- 1 file changed, 46 insertions(+), 42 deletions(-)
+ fs/nfsd/nfssvc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/sound/usb/midi.c b/sound/usb/midi.c
-index c0054ee..34b9bb7 100644
---- a/sound/usb/midi.c
-+++ b/sound/usb/midi.c
-@@ -126,8 +126,10 @@ struct snd_usb_midi {
- 		struct snd_usb_midi_in_endpoint *in;
- 	} endpoints[MIDI_MAX_ENDPOINTS];
- 	unsigned long input_triggered;
--	unsigned int opened;
-+	bool autopm_reference;
-+	unsigned int opened[2];
- 	unsigned char disconnected;
-+	unsigned char input_running;
- 
- 	struct snd_kcontrol *roland_load_ctl;
- };
-@@ -149,7 +151,6 @@ struct snd_usb_midi_out_endpoint {
- 		struct snd_usb_midi_out_endpoint* ep;
- 		struct snd_rawmidi_substream *substream;
- 		int active;
--		bool autopm_reference;
- 		uint8_t cable;		/* cable number << 4 */
- 		uint8_t state;
- #define STATE_UNKNOWN	0
-@@ -1034,36 +1035,58 @@ static void update_roland_altsetting(struct snd_usb_midi* umidi)
- 	snd_usbmidi_input_start(&umidi->list);
- }
- 
--static void substream_open(struct snd_rawmidi_substream *substream, int open)
-+static int substream_open(struct snd_rawmidi_substream *substream, int dir,
-+			  int open)
- {
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct snd_kcontrol *ctl;
-+	int err;
- 
- 	down_read(&umidi->disc_rwsem);
- 	if (umidi->disconnected) {
- 		up_read(&umidi->disc_rwsem);
--		return;
-+		return open ? -ENODEV : 0;
+diff --git a/fs/nfsd/nfssvc.c b/fs/nfsd/nfssvc.c
+index 2013aa00..30d3784 100644
+--- a/fs/nfsd/nfssvc.c
++++ b/fs/nfsd/nfssvc.c
+@@ -640,7 +640,7 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
  	}
  
- 	mutex_lock(&umidi->mutex);
- 	if (open) {
--		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
--			ctl = umidi->roland_load_ctl;
--			ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
--			snd_ctl_notify(umidi->card,
-+		if (!umidi->opened[0] && !umidi->opened[1]) {
-+			err = usb_autopm_get_interface(umidi->iface);
-+			umidi->autopm_reference = err >= 0;
-+			if (err < 0 && err != -EACCES) {
-+				mutex_unlock(&umidi->mutex);
-+				up_read(&umidi->disc_rwsem);
-+				return -EIO;
-+			}
-+			if (umidi->roland_load_ctl) {
-+				ctl = umidi->roland_load_ctl;
-+				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-+				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
--			update_roland_altsetting(umidi);
-+				update_roland_altsetting(umidi);
-+			}
- 		}
-+		umidi->opened[dir]++;
-+		if (umidi->opened[1])
-+			snd_usbmidi_input_start(&umidi->list);
- 	} else {
--		if (--umidi->opened == 0 && umidi->roland_load_ctl) {
--			ctl = umidi->roland_load_ctl;
--			ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
--			snd_ctl_notify(umidi->card,
-+		umidi->opened[dir]--;
-+		if (!umidi->opened[1])
-+			snd_usbmidi_input_stop(&umidi->list);
-+		if (!umidi->opened[0] && !umidi->opened[1]) {
-+			if (umidi->roland_load_ctl) {
-+				ctl = umidi->roland_load_ctl;
-+				ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
-+				snd_ctl_notify(umidi->card,
- 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
-+			}
-+			if (umidi->autopm_reference)
-+				usb_autopm_put_interface(umidi->iface);
- 		}
- 	}
- 	mutex_unlock(&umidi->mutex);
- 	up_read(&umidi->disc_rwsem);
-+	return 0;
- }
- 
- static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
-@@ -1071,7 +1094,6 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
- 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
- 	struct usbmidi_out_port* port = NULL;
- 	int i, j;
--	int err;
- 
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
- 		if (umidi->endpoints[i].out)
-@@ -1085,33 +1107,14 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
- 		return -ENXIO;
- 	}
- 
--	down_read(&umidi->disc_rwsem);
--	if (umidi->disconnected) {
--		up_read(&umidi->disc_rwsem);
--		return -ENODEV;
--	}
--	err = usb_autopm_get_interface(umidi->iface);
--	port->autopm_reference = err >= 0;
--	up_read(&umidi->disc_rwsem);
--	if (err < 0 && err != -EACCES)
--		return -EIO;
- 	substream->runtime->private_data = port;
- 	port->state = STATE_UNKNOWN;
--	substream_open(substream, 1);
--	return 0;
-+	return substream_open(substream, 0, 1);
- }
- 
- static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
- {
--	struct snd_usb_midi* umidi = substream->rmidi->private_data;
--	struct usbmidi_out_port *port = substream->runtime->private_data;
--
--	substream_open(substream, 0);
--	down_read(&umidi->disc_rwsem);
--	if (!umidi->disconnected && port->autopm_reference)
--		usb_autopm_put_interface(umidi->iface);
--	up_read(&umidi->disc_rwsem);
--	return 0;
-+	return substream_open(substream, 0, 0);
- }
- 
- static void snd_usbmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
-@@ -1164,14 +1167,12 @@ static void snd_usbmidi_output_drain(struct snd_rawmidi_substream *substream)
- 
- static int snd_usbmidi_input_open(struct snd_rawmidi_substream *substream)
- {
--	substream_open(substream, 1);
--	return 0;
-+	return substream_open(substream, 1, 1);
- }
- 
- static int snd_usbmidi_input_close(struct snd_rawmidi_substream *substream)
- {
--	substream_open(substream, 0);
--	return 0;
-+	return substream_open(substream, 1, 0);
- }
- 
- static void snd_usbmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
-@@ -2080,12 +2081,15 @@ void snd_usbmidi_input_stop(struct list_head* p)
- 	unsigned int i, j;
- 
- 	umidi = list_entry(p, struct snd_usb_midi, list);
-+	if (!umidi->input_running)
-+		return;
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
- 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
- 		if (ep->in)
- 			for (j = 0; j < INPUT_URBS; ++j)
- 				usb_kill_urb(ep->in->urbs[j]);
- 	}
-+	umidi->input_running = 0;
- }
- 
- static void snd_usbmidi_input_start_ep(struct snd_usb_midi_in_endpoint* ep)
-@@ -2110,8 +2114,11 @@ void snd_usbmidi_input_start(struct list_head* p)
- 	int i;
- 
- 	umidi = list_entry(p, struct snd_usb_midi, list);
-+	if (umidi->input_running || !umidi->opened[1])
-+		return;
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
- 		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
-+	umidi->input_running = 1;
- }
- 
- /*
-@@ -2250,9 +2257,6 @@ int snd_usbmidi_create(struct snd_card *card,
- 	}
- 
- 	list_add_tail(&umidi->list, midi_list);
--
--	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
--		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
- 	return 0;
+ 	/* Store reply in cache. */
+-	nfsd_cache_update(rqstp, proc->pc_cachetype, statp + 1);
++	nfsd_cache_update(rqstp, rqstp->rq_cachetype, statp + 1);
+ 	return 1;
  }
  
 
