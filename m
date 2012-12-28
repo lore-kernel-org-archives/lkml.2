@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599Ab2L1T5f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:57:35 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54930 "EHLO
+	id S1753984Ab2L1TQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:16:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54831 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754313Ab2L1TRC (ORCPT
+	by vger.kernel.org with ESMTP id S1754045Ab2L1TQk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:02 -0500
-Message-Id: <20121228190402.792026365@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:40 -0500
+Message-Id: <20121228190330.315115164@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:06:21 +0100
+Date: Fri, 28 Dec 2012 20:03:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 171/173] staging: vt6656: 64bit fixes: key.c/h change unsigned long to u32
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [ 001/173] Revert "device_cgroup: fix RCU usage"
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,90 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit c0d05b305b00c698b0a8c1b3d46c9380bce9db45 upstream.
+This reverts commit c5ee58688baa98bc3a4f6095a1acf6fd7fd9e967,
+which was commit 201e72acb2d3821e2de9ce6091e98859c316b29a upstream.
 
-Fixes long issues.
+Herton Ronaldo Krzesinski pointed out that the race condition this
+dealt with does not exist in 3.2.y.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/vt6656/key.c |    6 +++---
- drivers/staging/vt6656/key.h |    8 ++++----
- 2 files changed, 7 insertions(+), 7 deletions(-)
+ security/device_cgroup.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/vt6656/key.c b/drivers/staging/vt6656/key.c
-index 617fda1..bf24adb 100644
---- a/drivers/staging/vt6656/key.c
-+++ b/drivers/staging/vt6656/key.c
-@@ -223,7 +223,7 @@ BOOL KeybSetKey(
-     PSKeyManagement pTable,
-     PBYTE           pbyBSSID,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -675,7 +675,7 @@ BOOL KeybSetDefaultKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -791,7 +791,7 @@ BOOL KeybSetAllGroupKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-diff --git a/drivers/staging/vt6656/key.h b/drivers/staging/vt6656/key.h
-index f749c7a..bd35d39 100644
---- a/drivers/staging/vt6656/key.h
-+++ b/drivers/staging/vt6656/key.h
-@@ -58,7 +58,7 @@
- typedef struct tagSKeyItem
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 92e24bb..4450fbe 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -202,8 +202,8 @@ static void devcgroup_destroy(struct cgroup_subsys *ss,
+ 
+ 	dev_cgroup = cgroup_to_devcgroup(cgroup);
+ 	list_for_each_entry_safe(wh, tmp, &dev_cgroup->whitelist, list) {
+-		list_del_rcu(&wh->list);
+-		kfree_rcu(wh, rcu);
++		list_del(&wh->list);
++		kfree(wh);
+ 	}
+ 	kfree(dev_cgroup);
+ }
+@@ -278,7 +278,7 @@ static int may_access_whitelist(struct dev_cgroup *c,
  {
-     BOOL        bKeyValid;
--    unsigned long       uKeyLength;
-+	u32 uKeyLength;
-     BYTE        abyKey[MAX_KEY_LEN];
-     QWORD       KeyRSC;
-     DWORD       dwTSC47_16;
-@@ -107,7 +107,7 @@ BOOL KeybSetKey(
-     PSKeyManagement pTable,
-     PBYTE           pbyBSSID,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -146,7 +146,7 @@ BOOL KeybSetDefaultKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
-@@ -156,7 +156,7 @@ BOOL KeybSetAllGroupKey(
-     void *pDeviceHandler,
-     PSKeyManagement pTable,
-     DWORD           dwKeyIndex,
--    unsigned long           uKeyLength,
-+	u32 uKeyLength,
-     PQWORD          pKeyRSC,
-     PBYTE           pbyKey,
-     BYTE            byKeyDecMode
+ 	struct dev_whitelist_item *whitem;
+ 
+-	list_for_each_entry_rcu(whitem, &c->whitelist, list) {
++	list_for_each_entry(whitem, &c->whitelist, list) {
+ 		if (whitem->type & DEV_ALL)
+ 			return 1;
+ 		if ((refwh->type & DEV_BLOCK) && !(whitem->type & DEV_BLOCK))
 
 
