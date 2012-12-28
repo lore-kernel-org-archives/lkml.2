@@ -1,145 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab2L1A4M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 19:56:12 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:46997 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774Ab2L1A4J (ORCPT
+	id S1752898Ab2L1A5W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:57:22 -0500
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:37201 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab2L1A5S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 19:56:09 -0500
+	Thu, 27 Dec 2012 19:57:18 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <50DCEB01.3060903@iskon.hr>
-References: <CA+icZUV_CdAvq1nmOVZeLSAu0mZj+BO0T++REc6U1hevt50hXA@mail.gmail.com>
-	<50DCDC21.6080303@iskon.hr>
-	<CA+icZUX2g0R46QNFpntA1r6E3wu0HNhBjk+Kjm581aUBgM6VKA@mail.gmail.com>
-	<50DCDEE5.9000700@iskon.hr>
-	<CA+icZUUXbCCtPaimG6hKsSUQTmnoMAZHsd_nrn7eityepqYUkQ@mail.gmail.com>
-	<50DCE8C8.8050103@iskon.hr>
-	<CA+icZUWDPux3QAzQ85ntfUTHMr5m3Ueo-zjfnoGGxi=VrB9_7A@mail.gmail.com>
-	<50DCEB01.3060903@iskon.hr>
-Date: Fri, 28 Dec 2012 01:56:08 +0100
-Message-ID: <CA+icZUWMrZSh_0Lc3kGXsjMYZeBhuJx7ia6rs+CyW=yFb7bdxQ@mail.gmail.com>
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <50DCE160.2040707@zytor.com>
+References: <20121227182232.GA10054@x1.alien8.de>
+	<CAE9FiQXpAB_AFtHF_NN7yr2iP2OOLgMir8MNvYUUc15k83_3zg@mail.gmail.com>
+	<50DCE160.2040707@zytor.com>
+Date: Thu, 27 Dec 2012 16:57:17 -0800
+X-Google-Sender-Auth: dQ0H8X_bSkWklJXl5Y-x4N6jwDc
+Message-ID: <CAE9FiQV2+AaGjyQBD=f8kKWDucbcnrk_UNHPi3Y=HtQCuYcYAQ@mail.gmail.com>
+Subject: Re: [PATCH] x86, realmode: set real_mode permissions early
+From: Yinghai Lu <yinghai@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 1:42 AM, Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
-> On 28.12.2012 01:37, Sedat Dilek wrote:
+On Thu, Dec 27, 2012 at 4:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 12/27/2012 03:56 PM, Yinghai Lu wrote:
+>>>
+>>>
+>>> I'm looking at this patch in the -v8 branch: you need to update the
+>>> comment above that function to say that trampoline code needs to be
+>>> marked X now earlier.
 >>
->> On Fri, Dec 28, 2012 at 1:33 AM, Zlatko Calusic <zlatko.calusic@iskon.hr>
->> wrote:
->>>
->>> On 28.12.2012 01:24, Sedat Dilek wrote:
->>>>
->>>>
->>>> On Fri, Dec 28, 2012 at 12:51 AM, Zlatko Calusic
->>>> <zlatko.calusic@iskon.hr> wrote:
->>>>>
->>>>>
->>>>> On 28.12.2012 00:42, Sedat Dilek wrote:
->>>>>>
->>>>>>
->>>>>>
->>>>>> On Fri, Dec 28, 2012 at 12:39 AM, Zlatko Calusic
->>>>>> <zlatko.calusic@iskon.hr> wrote:
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> On 28.12.2012 00:30, Sedat Dilek wrote:
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>> Hi Zlatko,
->>>>>>>>
->>>>>>>> I am not sure if I hit the same problem as described in this thread.
->>>>>>>>
->>>>>>>> Under heavy load, while building a customized toolchain for the
->>>>>>>> Freetz
->>>>>>>> router project I got a BUG || NULL pointer derefence || kswapd ||
->>>>>>>> zone_balanced || pgdat_balanced() etc. (details see my screenshot).
->>>>>>>>
->>>>>>>> I will try your patch from [1] ***only*** on top of my last
->>>>>>>> Linux-v3.8-rc1 GIT setup (post-v3.8-rc1 mainline + some net-fixes).
->>>>>>>>
->>>>>>>
->>>>>>> Yes, that's the same bug. It should be fixed with my latest patch, so
->>>>>>> I'd
->>>>>>> appreciate you testing it, to be on the safe side this time. There
->>>>>>> should
->>>>>>> be
->>>>>>> no difference if you apply it to anything newer than 3.8-rc1, so go
->>>>>>> for
->>>>>>> it.
->>>>>>> Thanks!
->>>>>>>
->>>>>>
->>>>>> Not sure how I can really reproduce this bug as one build worked fine
->>>>>> within my last v3.8-rc1 kernel.
->>>>>> I increased the parallel-make-jobs-number from "4" to "8" to stress a
->>>>>> bit harder.
->>>>>> Just building right now... and will report.
->>>>>>
->>>>>> If you have any test-case (script or whatever), please let me/us know.
->>>>>>
->>>>>
->>>>> Unfortunately not, I haven't reproduced it yet on my machines. But it
->>>>> seems
->>>>> that bug will hit only under heavy memory pressure. When close to OOM,
->>>>> or
->>>>> possibly with lots of writing to disk. It's also possible that
->>>>> fragmentation
->>>>> of memory zones could provoke it, that means testing it for a longer
->>>>> time.
->>>>>
->>>>
->>>> I tested successfully by doing simultaneously...
->>>> - building Freetz with 8 parallel make-jobs
->>>> - building Linux GIT with 1 make-job
->>>> - 9 tabs open in firefox
->>>> - In one tab I ran YouTube music video
->>>> - etc.
->>>>
->>>> I am reading [1] and [2] where another user reports success by reverting
->>>> this...
->>>>
->>>> commit cda73a10eb3f493871ed39f468db50a65ebeddce
->>>> "mm: do not sleep in balance_pgdat if there's no i/o congestion"
->>>>
->>>> BTW, this machine has also 4GiB RAM (Ubuntu/precise AMD64).
->>>>
->>>> Feel free to add a "Reported-by/Tested-by" if you think this is a
->>>> positive report.
->>>>
->>>
->>> Thanks for the testing! And keep running it in case something interesting
->>> pops up. ;)
->>>
->>> No need to revert cda73a10eb because it fixes another bug. And the patch
->>> you're now running fixes the new bug I introduced with a combination of
->>> my
->>> latest 2 patches. Nah, it gets complicated... :)
->>>
->>> But, at least I found the culprit and as soon as Linus applies the fix,
->>> everything will be hunky dory again, at least on this front. :P
->>>
 >>
->> I am not subscribed to LKML and linux-mm,,,
->> Do you have a patch with a proper subject and descriptive text? URL?
+>> Not sure if we really need to add such comment in the code.
+>>
+>> Peter, what is your idea about this?
 >>
 >
-> Soon to follow. I'd appreciate Zhouping Liu testing it too, though.
+> It would be good to note why the early_initcall is the right phase.
+>
 
-I understand, but I want to push your patch with a proper subject-line
-as a pending patch with reference to patchwork, so...
+How about:
 
-- Sedat -
-
-> --
-> Zlatko
+---
+Trampoline will be executed by APs with SMP,
+So we need to set it EXEC in do_pre_smp_initcalls and it is early_initcall.
+---
