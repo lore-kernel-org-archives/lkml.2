@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932420Ab2L1TTj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:19:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55585 "EHLO
+	id S932440Ab2L1TTo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:19:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55589 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932396Ab2L1TTc (ORCPT
+	by vger.kernel.org with ESMTP id S932397Ab2L1TTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:32 -0500
-Message-Id: <20121228190340.573255522@decadent.org.uk>
+Message-Id: <20121228190340.291003035@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:20 +0100
+Date: Fri, 28 Dec 2012 20:04:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 050/173] USB: fix endpoint-disabling for failed config changes
+        Will Deacon <will.deacon@arm.com>, Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [ 049/173] ARM: mm: use pteval_t to represent page protection values
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,104 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 36caff5d795429c572443894e8789c2150dd796b upstream.
+commit 864aa04cd02979c2c755cb28b5f4fe56039171c0 upstream.
 
-This patch (as1631) fixes a bug that shows up when a config change
-fails for a device under an xHCI controller.  The controller needs to
-be told to disable the endpoints that have been enabled for the new
-config.  The existing code does this, but before storing the
-information about which endpoints were enabled!  As a result, any
-second attempt to install the new config is doomed to fail because
-xhci-hcd will refuse to enable an endpoint that is already enabled.
+When updating the page protection map after calculating the user_pgprot
+value, the base protection map is temporarily stored in an unsigned long
+type, causing truncation of the protection bits when LPAE is enabled.
+This effectively means that calls to mprotect() will corrupt the upper
+page attributes, clearing the XN bit unconditionally.
 
-The patch optimistically initializes the new endpoints' device
-structures before asking the device to switch to the new config.  If
-the request fails then the endpoint information is already stored, so
-we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
-trouble.  The rest of the error path is slightly more complex now; we
-have to disable the new interfaces and call put_device() rather than
-simply deallocating them.
+This patch uses pteval_t to store the intermediate protection values,
+preserving the upper bits for 64-bit descriptors.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+Acked-by: Nicolas Pitre <nico@linaro.org>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/message.c |   54 +++++++++++++++++++++++++-------------------
- 1 file changed, 31 insertions(+), 23 deletions(-)
+ arch/arm/mm/mmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/core/message.c
-+++ b/drivers/usb/core/message.c
-@@ -1770,28 +1770,8 @@ free_interfaces:
- 		goto free_interfaces;
+--- a/arch/arm/mm/mmu.c
++++ b/arch/arm/mm/mmu.c
+@@ -475,7 +475,7 @@ static void __init build_mem_type_table(
  	}
  
--	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
--			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
--			      NULL, 0, USB_CTRL_SET_TIMEOUT);
--	if (ret < 0) {
--		/* All the old state is gone, so what else can we do?
--		 * The device is probably useless now anyway.
--		 */
--		cp = NULL;
--	}
--
--	dev->actconfig = cp;
--	if (!cp) {
--		usb_set_device_state(dev, USB_STATE_ADDRESS);
--		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
--		mutex_unlock(hcd->bandwidth_mutex);
--		usb_autosuspend_device(dev);
--		goto free_interfaces;
--	}
--	mutex_unlock(hcd->bandwidth_mutex);
--	usb_set_device_state(dev, USB_STATE_CONFIGURED);
--
--	/* Initialize the new interface structures and the
-+	/*
-+	 * Initialize the new interface structures and the
- 	 * hc/hcd/usbcore interface/endpoint state.
- 	 */
- 	for (i = 0; i < nintf; ++i) {
-@@ -1835,6 +1815,35 @@ free_interfaces:
+ 	for (i = 0; i < 16; i++) {
+-		unsigned long v = pgprot_val(protection_map[i]);
++		pteval_t v = pgprot_val(protection_map[i]);
+ 		protection_map[i] = __pgprot(v | user_pgprot);
  	}
- 	kfree(new_interfaces);
  
-+	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-+			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
-+			      NULL, 0, USB_CTRL_SET_TIMEOUT);
-+	if (ret < 0 && cp) {
-+		/*
-+		 * All the old state is gone, so what else can we do?
-+		 * The device is probably useless now anyway.
-+		 */
-+		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
-+		for (i = 0; i < nintf; ++i) {
-+			usb_disable_interface(dev, cp->interface[i], true);
-+			put_device(&cp->interface[i]->dev);
-+			cp->interface[i] = NULL;
-+		}
-+		cp = NULL;
-+	}
-+
-+	dev->actconfig = cp;
-+	mutex_unlock(hcd->bandwidth_mutex);
-+
-+	if (!cp) {
-+		usb_set_device_state(dev, USB_STATE_ADDRESS);
-+
-+		/* Leave LPM disabled while the device is unconfigured. */
-+		usb_autosuspend_device(dev);
-+		return ret;
-+	}
-+	usb_set_device_state(dev, USB_STATE_CONFIGURED);
-+
- 	if (cp->string == NULL &&
- 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
- 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
 
 
