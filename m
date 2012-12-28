@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab2L1Tv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:51:28 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55085 "EHLO
+	id S1754709Ab2L1Tvl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:51:41 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55087 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754566Ab2L1TRn (ORCPT
+	by vger.kernel.org with ESMTP id S1754563Ab2L1TRn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:17:43 -0500
-Message-Id: <20121228190357.789446077@decadent.org.uk>
+Message-Id: <20121228190358.751846960@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:45 +0100
+Date: Fri, 28 Dec 2012 20:05:52 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 135/173] i2400m: add Intel 6150 device IDs
+        "Woodhouse, David" <david.woodhouse@intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Ravi Murty <Ravi.Murty@intel.com>, Sudeep Dutt <sudeep.dutt@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 142/173] intel-iommu: Free old page tables before creating superpage
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,57 +30,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: "Woodhouse, David" <david.woodhouse@intel.com>
 
-commit 999a7c5776a0ed2133645fa7e008bec05bda9254 upstream.
+commit 6491d4d02893d9787ba67279595990217177b351 upstream.
 
-Add device IDs for WiMAX function of Intel 6150 cards.
+The dma_pte_free_pagetable() function will only free a page table page
+if it is asked to free the *entire* 2MiB range that it covers. So if a
+page table page was used for one or more small mappings, it's likely to
+end up still present in the page tables... but with no valid PTEs.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This was fine when we'd only be repopulating it with 4KiB PTEs anyway
+but the same virtual address range can end up being reused for a
+*large-page* mapping. And in that case were were trying to insert the
+large page into the second-level page table, and getting a complaint
+from the sanity check in __domain_mapping() because there was already a
+corresponding entry. This was *relatively* harmless; it led to a memory
+leak of the old page table page, but no other ill-effects.
+
+Fix it by calling dma_pte_clear_range (hopefully redundant) and
+dma_pte_free_pagetable() before setting up the new large page.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Ravi Murty <Ravi.Murty@intel.com>
+Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wimax/i2400m/i2400m-usb.h |    3 +++
- drivers/net/wimax/i2400m/usb.c        |    6 ++++++
- 2 files changed, 9 insertions(+)
+ drivers/iommu/intel-iommu.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wimax/i2400m/i2400m-usb.h b/drivers/net/wimax/i2400m/i2400m-usb.h
-index 6650fde..9f1e947 100644
---- a/drivers/net/wimax/i2400m/i2400m-usb.h
-+++ b/drivers/net/wimax/i2400m/i2400m-usb.h
-@@ -152,6 +152,9 @@ enum {
- 	/* Device IDs */
- 	USB_DEVICE_ID_I6050 = 0x0186,
- 	USB_DEVICE_ID_I6050_2 = 0x0188,
-+	USB_DEVICE_ID_I6150 = 0x07d6,
-+	USB_DEVICE_ID_I6150_2 = 0x07d7,
-+	USB_DEVICE_ID_I6150_3 = 0x07d9,
- 	USB_DEVICE_ID_I6250 = 0x0187,
- };
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 0badfa4..9476c1b 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1827,10 +1827,17 @@ static int __domain_mapping(struct dmar_domain *domain, unsigned long iov_pfn,
+ 			if (!pte)
+ 				return -ENOMEM;
+ 			/* It is large page*/
+-			if (largepage_lvl > 1)
++			if (largepage_lvl > 1) {
+ 				pteval |= DMA_PTE_LARGE_PAGE;
+-			else
++				/* Ensure that old small page tables are removed to make room
++				   for superpage, if they exist. */
++				dma_pte_clear_range(domain, iov_pfn,
++						    iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++				dma_pte_free_pagetable(domain, iov_pfn,
++						       iov_pfn + lvl_to_nr_pages(largepage_lvl) - 1);
++			} else {
+ 				pteval &= ~(uint64_t)DMA_PTE_LARGE_PAGE;
++			}
  
-diff --git a/drivers/net/wimax/i2400m/usb.c b/drivers/net/wimax/i2400m/usb.c
-index 713d033..080f363 100644
---- a/drivers/net/wimax/i2400m/usb.c
-+++ b/drivers/net/wimax/i2400m/usb.c
-@@ -510,6 +510,9 @@ int i2400mu_probe(struct usb_interface *iface,
- 	switch (id->idProduct) {
- 	case USB_DEVICE_ID_I6050:
- 	case USB_DEVICE_ID_I6050_2:
-+	case USB_DEVICE_ID_I6150:
-+	case USB_DEVICE_ID_I6150_2:
-+	case USB_DEVICE_ID_I6150_3:
- 	case USB_DEVICE_ID_I6250:
- 		i2400mu->i6050 = 1;
- 		break;
-@@ -759,6 +762,9 @@ static
- struct usb_device_id i2400mu_id_table[] = {
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6050_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_2) },
-+	{ USB_DEVICE(0x8087, USB_DEVICE_ID_I6150_3) },
- 	{ USB_DEVICE(0x8086, USB_DEVICE_ID_I6250) },
- 	{ USB_DEVICE(0x8086, 0x0181) },
- 	{ USB_DEVICE(0x8086, 0x1403) },
+ 		}
+ 		/* We don't need lock here, nobody else
 
 
