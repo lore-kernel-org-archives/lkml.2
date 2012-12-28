@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab2L1Tqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:46:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55194 "EHLO
+	id S932072Ab2L1Trm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:47:42 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55172 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754676Ab2L1TSJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754656Ab2L1TSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:09 -0500
-Message-Id: <20121228190355.014489357@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:01 -0500
+Message-Id: <20121228190356.817518151@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:28 +0100
+Date: Fri, 28 Dec 2012 20:05:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 118/173] ath9k_hw: Fix signal strength / channel noise reporting
+        NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 128/173] NFS: avoid NULL dereference in nfs_destroy_server
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,50 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: NeilBrown <neilb@suse.de>
 
-commit b7c0c238898d200e80487516e2b67aba2a522cc0 upstream.
+commit f259613a1e4b44a0cf85a5dafd931be96ee7c9e5 upstream.
 
-While AR_PHY_CCA_NOM_VAL_* does contain the expected internal noise floor
-for a chip measured in clean air, it refers to the lowest expected reading.
+In rare circumstances, nfs_clone_server() of a v2 or v3 server can get
+an error between setting server->destory (to nfs_destroy_server), and
+calling nfs_start_lockd (which will set server->nlm_host).
 
-Depending on the frequency, this measurement can vary by about 6db, thus
-causing a higher reported channel noise and signal strength.
+If this happens, nfs_clone_server will call nfs_free_server which
+will call nfs_destroy_server and thence nlmclnt_done(NULL).  This
+causes the NULL to be dereferenced.
 
-Factor in the 6db offset when converting internal noisefloor to channel noise.
+So add a guard to only call nlmclnt_done() if ->nlm_host is not NULL.
 
-This patch makes the reported values more accurate for all chips without
-affecting NF calibration behavior.
+The other guards there are irrelevant as nlm_host can only be non-NULL
+if one of these flags are set - so remove those tests.  (Thanks to Trond
+for this suggestion).
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This is suitable for any stable kernel since 2.6.25.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/calib.c |    1 +
- drivers/net/wireless/ath/ath9k/calib.h |    3 +++
- 2 files changed, 4 insertions(+)
+ fs/nfs/client.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/calib.c
-+++ b/drivers/net/wireless/ath/ath9k/calib.c
-@@ -69,6 +69,7 @@ s16 ath9k_hw_getchan_noise(struct ath_hw
- 
- 	if (chan && chan->noisefloor) {
- 		s8 delta = chan->noisefloor -
-+			   ATH9K_NF_CAL_NOISE_THRESH -
- 			   ath9k_hw_get_default_nf(ah, chan);
- 		if (delta > 0)
- 			noise += delta;
---- a/drivers/net/wireless/ath/ath9k/calib.h
-+++ b/drivers/net/wireless/ath/ath9k/calib.h
-@@ -22,6 +22,9 @@
- #define AR_PHY_CCA_FILTERWINDOW_LENGTH_INIT     3
- #define AR_PHY_CCA_FILTERWINDOW_LENGTH          5
- 
-+/* Internal noise floor can vary by about 6db depending on the frequency */
-+#define ATH9K_NF_CAL_NOISE_THRESH		6
-+
- #define NUM_NF_READINGS       6
- #define ATH9K_NF_CAL_HIST_MAX 5
+diff --git a/fs/nfs/client.c b/fs/nfs/client.c
+index c285e0a..9f3c664 100644
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -615,8 +615,7 @@ EXPORT_SYMBOL_GPL(nfs_create_rpc_client);
+  */
+ static void nfs_destroy_server(struct nfs_server *server)
+ {
+-	if (!(server->flags & NFS_MOUNT_LOCAL_FLOCK) ||
+-			!(server->flags & NFS_MOUNT_LOCAL_FCNTL))
++	if (server->nlm_host)
+ 		nlmclnt_done(server->nlm_host);
+ }
  
 
 
