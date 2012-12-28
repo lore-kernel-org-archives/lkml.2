@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab2L1CmK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 21:42:10 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:47864 "EHLO
+	id S1753446Ab2L1CmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 21:42:06 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:47855 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2L1CmH (ORCPT
+	with ESMTP id S1753046Ab2L1CmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 21:42:07 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBS2fZfW002385, This message is released by code: ctaloc0852
+	Thu, 27 Dec 2012 21:42:02 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBS2fTTU002355, This message is released by code: ctaloc0852
 From: <wei_wang@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v3 4/8] MFD:rtsx: Add callback function switch_output_voltage
-Date: Fri, 28 Dec 2012 10:41:34 +0800
-Message-ID: <4739adb4f025eaa41def711796832023025cd33a.1356662293.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v3 3/8] MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
+Date: Fri, 28 Dec 2012 10:41:28 +0800
+Message-ID: <cd92be49bee917165009311d62e10a5f60a85a48.1356662293.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1356662293.git.wei_wang@realsil.com.cn>
 References: <cover.1356662293.git.wei_wang@realsil.com.cn>
@@ -28,205 +28,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-Different card reader has different method to switch output voltage,
-add this callback to let the card reader implement its individual switch
-function.
+Realtek PCIe card reader only supports 32bit DMA
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/mfd/rtl8411.c        |   16 ++++++++++++++++
- drivers/mfd/rts5209.c        |   20 ++++++++++++++++++++
- drivers/mfd/rts5229.c        |   20 ++++++++++++++++++++
- drivers/mfd/rtsx_pcr.c       |    9 +++++++++
- include/linux/mfd/rtsx_pci.h |   24 ++++++++++++++++++++----
- 5 files changed, 85 insertions(+), 4 deletions(-)
+ drivers/mfd/rtsx_pcr.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
-index 89f046c..5058ba8 100644
---- a/drivers/mfd/rtl8411.c
-+++ b/drivers/mfd/rtl8411.c
-@@ -112,6 +112,21 @@ static int rtl8411_card_power_off(struct rtsx_pcr *pcr, int card)
- 			BPP_LDO_POWB, BPP_LDO_SUSPEND);
- }
- 
-+static int rtl8411_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-+{
-+	u8 mask, val;
-+
-+	mask = (BPP_REG_TUNED18 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_MASK;
-+	if (voltage == OUTPUT_3V3)
-+		val = (BPP_ASIC_3V3 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_3V3;
-+	else if (voltage == OUTPUT_1V8)
-+		val = (BPP_ASIC_1V8 << BPP_TUNED18_SHIFT_8411) | BPP_PAD_1V8;
-+	else
-+		return -EINVAL;
-+
-+	return rtsx_pci_write_register(pcr, LDO_CTL, mask, val);
-+}
-+
- static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
- {
- 	unsigned int card_exist;
-@@ -172,6 +187,7 @@ static const struct pcr_ops rtl8411_pcr_ops = {
- 	.disable_auto_blink = rtl8411_disable_auto_blink,
- 	.card_power_on = rtl8411_card_power_on,
- 	.card_power_off = rtl8411_card_power_off,
-+	.switch_output_voltage = rtl8411_switch_output_voltage,
- 	.cd_deglitch = rtl8411_cd_deglitch,
- };
- 
-diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
-index 283a4f1..ba74de8 100644
---- a/drivers/mfd/rts5209.c
-+++ b/drivers/mfd/rts5209.c
-@@ -144,6 +144,25 @@ static int rts5209_card_power_off(struct rtsx_pcr *pcr, int card)
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
- 
-+static int rts5209_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-+{
-+	int err;
-+
-+	if (voltage == OUTPUT_3V3) {
-+		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
-+		if (err < 0)
-+			return err;
-+	} else if (voltage == OUTPUT_1V8) {
-+		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
-+		if (err < 0)
-+			return err;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static const struct pcr_ops rts5209_pcr_ops = {
- 	.extra_init_hw = rts5209_extra_init_hw,
- 	.optimize_phy = rts5209_optimize_phy,
-@@ -153,6 +172,7 @@ static const struct pcr_ops rts5209_pcr_ops = {
- 	.disable_auto_blink = rts5209_disable_auto_blink,
- 	.card_power_on = rts5209_card_power_on,
- 	.card_power_off = rts5209_card_power_off,
-+	.switch_output_voltage = rts5209_switch_output_voltage,
- 	.cd_deglitch = NULL,
- };
- 
-diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
-index b9dbab2..ec1747a 100644
---- a/drivers/mfd/rts5229.c
-+++ b/drivers/mfd/rts5229.c
-@@ -114,6 +114,25 @@ static int rts5229_card_power_off(struct rtsx_pcr *pcr, int card)
- 	return rtsx_pci_send_cmd(pcr, 100);
- }
- 
-+static int rts5229_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-+{
-+	int err;
-+
-+	if (voltage == OUTPUT_3V3) {
-+		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
-+		if (err < 0)
-+			return err;
-+	} else if (voltage == OUTPUT_1V8) {
-+		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
-+		if (err < 0)
-+			return err;
-+	} else {
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
- static const struct pcr_ops rts5229_pcr_ops = {
- 	.extra_init_hw = rts5229_extra_init_hw,
- 	.optimize_phy = rts5229_optimize_phy,
-@@ -123,6 +142,7 @@ static const struct pcr_ops rts5229_pcr_ops = {
- 	.disable_auto_blink = rts5229_disable_auto_blink,
- 	.card_power_on = rts5229_card_power_on,
- 	.card_power_off = rts5229_card_power_off,
-+	.switch_output_voltage = rts5229_switch_output_voltage,
- 	.cd_deglitch = NULL,
- };
- 
 diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 1dc64bb..99e12b8 100644
+index fa2c2bc..1dc64bb 100644
 --- a/drivers/mfd/rtsx_pcr.c
 +++ b/drivers/mfd/rtsx_pcr.c
-@@ -702,6 +702,15 @@ int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card)
- }
- EXPORT_SYMBOL_GPL(rtsx_pci_card_power_off);
+@@ -1010,6 +1010,10 @@ static int __devinit rtsx_pci_probe(struct pci_dev *pcidev,
+ 		pci_name(pcidev), (int)pcidev->vendor, (int)pcidev->device,
+ 		(int)pcidev->revision);
  
-+int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage)
-+{
-+	if (pcr->ops->switch_output_voltage)
-+		return pcr->ops->switch_output_voltage(pcr, voltage);
++	ret = pci_set_dma_mask(pcidev, DMA_BIT_MASK(32));
++	if (ret < 0)
++		return ret;
 +
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(rtsx_pci_switch_output_voltage);
-+
- unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr)
- {
- 	unsigned int val;
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index bebe9f9..2e3e2e0 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -158,10 +158,9 @@
- #define SG_TRANS_DATA		(0x02 << 4)
- #define SG_LINK_DESC		(0x03 << 4)
- 
--/* SD bank voltage */
--#define SD_IO_3V3		0
--#define SD_IO_1V8		1
--
-+/* Output voltage */
-+#define OUTPUT_3V3		0
-+#define OUTPUT_1V8		1
- 
- /* Card Clock Enable Register */
- #define SD_CLK_EN			0x04
-@@ -201,6 +200,20 @@
- #define CHANGE_CLK			0x01
- 
- /* LDO_CTL */
-+#define BPP_ASIC_1V7			0x00
-+#define BPP_ASIC_1V8			0x01
-+#define BPP_ASIC_1V9			0x02
-+#define BPP_ASIC_2V0			0x03
-+#define BPP_ASIC_2V7			0x04
-+#define BPP_ASIC_2V8			0x05
-+#define BPP_ASIC_3V2			0x06
-+#define BPP_ASIC_3V3			0x07
-+#define BPP_REG_TUNED18			0x07
-+#define BPP_TUNED18_SHIFT_8402		5
-+#define BPP_TUNED18_SHIFT_8411		4
-+#define BPP_PAD_MASK			0x04
-+#define BPP_PAD_3V3			0x04
-+#define BPP_PAD_1V8			0x00
- #define BPP_LDO_POWB			0x03
- #define BPP_LDO_ON			0x00
- #define BPP_LDO_SUSPEND			0x02
-@@ -688,6 +701,8 @@ struct pcr_ops {
- 	int		(*disable_auto_blink)(struct rtsx_pcr *pcr);
- 	int		(*card_power_on)(struct rtsx_pcr *pcr, int card);
- 	int		(*card_power_off)(struct rtsx_pcr *pcr, int card);
-+	int		(*switch_output_voltage)(struct rtsx_pcr *pcr,
-+						u8 voltage);
- 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
- };
- 
-@@ -783,6 +798,7 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
- 		u8 ssc_depth, bool initial_mode, bool double_clk, bool vpclk);
- int rtsx_pci_card_power_on(struct rtsx_pcr *pcr, int card);
- int rtsx_pci_card_power_off(struct rtsx_pcr *pcr, int card);
-+int rtsx_pci_switch_output_voltage(struct rtsx_pcr *pcr, u8 voltage);
- unsigned int rtsx_pci_card_exist(struct rtsx_pcr *pcr);
- void rtsx_pci_complete_unfinished_transfer(struct rtsx_pcr *pcr);
- 
+ 	ret = pci_enable_device(pcidev);
+ 	if (ret)
+ 		return ret;
 -- 
 1.7.9.5
 
