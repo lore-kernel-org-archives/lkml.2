@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab2L1TtW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:49:22 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55124 "EHLO
+	id S1754736Ab2L1Ttr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:49:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55102 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754591Ab2L1TRs (ORCPT
+	by vger.kernel.org with ESMTP id S1754576Ab2L1TRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:48 -0500
-Message-Id: <20121228190358.490261729@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:47 -0500
+Message-Id: <20121228190359.027230786@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:50 +0100
+Date: Fri, 28 Dec 2012 20:05:54 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Corey Minyard <cminyard@mvista.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Mikael Starvik <starvik@axis.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
+        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 140/173] CRIS: fix I/O macros
+Subject: [ 144/173] exec: do not leave bprm->interp on stack
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,80 +29,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Corey Minyard <cminyard@mvista.com>
+From: Kees Cook <keescook@chromium.org>
 
-commit c24bf9b4cc6a0f330ea355d73bfdf1dae7e63a05 upstream.
+commit b66c5984017533316fd1951770302649baf1aa33 upstream.
 
-The inb/outb macros for CRIS are broken from a number of points of view,
-missing () around parameters and they have an unprotected if statement
-in them.  This was breaking the compile of IPMI on CRIS and thus I was
-being annoyed by build regressions, so I fixed them.
+If a series of scripts are executed, each triggering module loading via
+unprintable bytes in the script header, kernel stack contents can leak
+into the command line.
 
-Plus I don't think they would have worked at all, since the data values
-were missing "&" and the outsl had a "3" instead of a "4" for the size.
->From what I can tell, this stuff is not used at all, so this can't be
-any more broken than it was before, anyway.
+Normally execution of binfmt_script and binfmt_misc happens recursively.
+However, when modules are enabled, and unprintable bytes exist in the
+bprm->buf, execution will restart after attempting to load matching
+binfmt modules.  Unfortunately, the logic in binfmt_script and
+binfmt_misc does not expect to get restarted.  They leave bprm->interp
+pointing to their local stack.  This means on restart bprm->interp is
+left pointing into unused stack memory which can then be copied into the
+userspace argv areas.
 
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Cc: Jesper Nilsson <jesper.nilsson@axis.com>
-Cc: Mikael Starvik <starvik@axis.com>
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+After additional study, it seems that both recursion and restart remains
+the desirable way to handle exec with scripts, misc, and modules.  As
+such, we need to protect the changes to interp.
+
+This changes the logic to require allocation for any changes to the
+bprm->interp.  To avoid adding a new kmalloc to every exec, the default
+value is left as-is.  Only when passing through binfmt_script or
+binfmt_misc does an allocation take place.
+
+For a proof of concept, see DoTest.sh from:
+
+   http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: halfdog <me@halfdog.net>
+Cc: P J P <ppandit@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/cris/include/asm/io.h |   39 +++++++++++++++++++++++++++++++++------
- 1 file changed, 33 insertions(+), 6 deletions(-)
+ fs/binfmt_misc.c        |    5 ++++-
+ fs/binfmt_script.c      |    4 +++-
+ fs/exec.c               |   15 +++++++++++++++
+ include/linux/binfmts.h |    1 +
+ 4 files changed, 23 insertions(+), 2 deletions(-)
 
-diff --git a/arch/cris/include/asm/io.h b/arch/cris/include/asm/io.h
-index 32567bc..ac12ae2 100644
---- a/arch/cris/include/asm/io.h
-+++ b/arch/cris/include/asm/io.h
-@@ -133,12 +133,39 @@ static inline void writel(unsigned int b, volatile void __iomem *addr)
- #define insb(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,1,count) : 0)
- #define insw(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,2,count) : 0)
- #define insl(port,addr,count) (cris_iops ? cris_iops->read_io(port,addr,4,count) : 0)
--#define outb(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,1,1)
--#define outw(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,2,1)
--#define outl(data,port) if (cris_iops) cris_iops->write_io(port,(void*)(unsigned)data,4,1)
--#define outsb(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,1,count)
--#define outsw(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,2,count)
--#define outsl(port,addr,count) if(cris_iops) cris_iops->write_io(port,(void*)addr,3,count)
-+static inline void outb(unsigned char data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 1, 1);
-+}
-+static inline void outw(unsigned short data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 2, 1);
-+}
-+static inline void outl(unsigned int data, unsigned int port)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *) &data, 4, 1);
-+}
-+static inline void outsb(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 1, count);
-+}
-+static inline void outsw(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 2, count);
-+}
-+static inline void outsl(unsigned int port, const void *addr,
-+			 unsigned long count)
-+{
-+	if (cris_iops)
-+		cris_iops->write_io(port, (void *)addr, 4, count);
-+}
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index 9be335f..0c8869f 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -172,7 +172,10 @@ static int load_misc_binary(struct linux_binprm *bprm)
+ 		goto _error;
+ 	bprm->argc ++;
  
+-	bprm->interp = iname;	/* for binfmt_script */
++	/* Update interp in case binfmt_script needs it. */
++	retval = bprm_change_interp(iname, bprm);
++	if (retval < 0)
++		goto _error;
+ 
+ 	interp_file = open_exec (iname);
+ 	retval = PTR_ERR (interp_file);
+diff --git a/fs/binfmt_script.c b/fs/binfmt_script.c
+index 1610a91..5027a3e 100644
+--- a/fs/binfmt_script.c
++++ b/fs/binfmt_script.c
+@@ -80,7 +80,9 @@ static int load_script(struct linux_binprm *bprm)
+ 	retval = copy_strings_kernel(1, &i_name, bprm);
+ 	if (retval) return retval; 
+ 	bprm->argc++;
+-	bprm->interp = interp;
++	retval = bprm_change_interp(interp, bprm);
++	if (retval < 0)
++		return retval;
+ 
+ 	/*
+ 	 * OK, now restart the process with the interpreter's dentry.
+diff --git a/fs/exec.c b/fs/exec.c
+index d8e1191..237d534 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1175,9 +1175,24 @@ void free_bprm(struct linux_binprm *bprm)
+ 		mutex_unlock(&current->signal->cred_guard_mutex);
+ 		abort_creds(bprm->cred);
+ 	}
++	/* If a binfmt changed the interp, free it. */
++	if (bprm->interp != bprm->filename)
++		kfree(bprm->interp);
+ 	kfree(bprm);
+ }
+ 
++int bprm_change_interp(char *interp, struct linux_binprm *bprm)
++{
++	/* If a binfmt changed the interp, free it first. */
++	if (bprm->interp != bprm->filename)
++		kfree(bprm->interp);
++	bprm->interp = kstrdup(interp, GFP_KERNEL);
++	if (!bprm->interp)
++		return -ENOMEM;
++	return 0;
++}
++EXPORT_SYMBOL(bprm_change_interp);
++
  /*
-  * Convert a physical pointer to a virtual kernel pointer for /dev/mem
+  * install the new credentials for this executable
+  */
+diff --git a/include/linux/binfmts.h b/include/linux/binfmts.h
+index a4c2b56..bdf3965 100644
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -112,6 +112,7 @@ extern int setup_arg_pages(struct linux_binprm * bprm,
+ 			   unsigned long stack_top,
+ 			   int executable_stack);
+ extern int bprm_mm_init(struct linux_binprm *bprm);
++extern int bprm_change_interp(char *interp, struct linux_binprm *bprm);
+ extern int copy_strings_kernel(int argc, const char *const *argv,
+ 			       struct linux_binprm *bprm);
+ extern int prepare_bprm_creds(struct linux_binprm *bprm);
 
 
