@@ -1,81 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932184Ab2L1TSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55326 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab2L1TSe (ORCPT
+	id S932233Ab2L1Tky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:40:54 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:51094 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932170Ab2L1Tks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:34 -0500
-Message-Id: <20121228190349.925265935@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:04 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Steven Rostedt <srostedt@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 094/173] ring-buffer: Fix NULL pointer if rb_set_head_page() fails
-In-Reply-To: <20121228190330.025298996@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.217.219.220
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 28 Dec 2012 14:40:48 -0500
+From: Dmitry Voytik <dvv.kernel@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Stephen Boyd <sboyd@codeaurora.org>, dvv.kernel@gmail.com,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: [PATCH] nconf: add vi-style command keys for the menu navigation
+Date: Fri, 28 Dec 2012 23:40:07 +0400
+Message-Id: <1356723607-17027-1-git-send-email-dvv.kernel@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <20121228185108.GA13644@voyt-hp>
+References: <20121228185108.GA13644@voyt-hp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+Add alternative vi-style keys for the menu navigation:
+<j>/<k> for down/up navigation, <C-f>/<C-b> for
+page down/up, <g>/<G> for first/last menu item selection
+and <l> for entering to a submenu.
 
-------------------
-
-From: Steven Rostedt <srostedt@redhat.com>
-
-commit 54f7be5b831254199522523ccab4c3d954bbf576 upstream.
-
-The function rb_set_head_page() searches the list of ring buffer
-pages for a the page that has the HEAD page flag set. If it does
-not find it, it will do a WARN_ON(), disable the ring buffer and
-return NULL, as this should never happen.
-
-But if this bug happens to happen, not all callers of this function
-can handle a NULL pointer being returned from it. That needs to be
-fixed.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
 ---
- kernel/trace/ring_buffer.c |    9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ scripts/kconfig/nconf.c |   29 ++++++++++++++++++++++-------
+ 1 file changed, 22 insertions(+), 7 deletions(-)
 
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -2683,7 +2683,7 @@ unsigned long ring_buffer_oldest_event_t
- 	unsigned long flags;
- 	struct ring_buffer_per_cpu *cpu_buffer;
- 	struct buffer_page *bpage;
--	unsigned long ret;
-+	unsigned long ret = 0;
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index ce93e87..632447b 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -13,6 +13,8 @@
+ #include "nconf.h"
+ #include <ctype.h>
  
- 	if (!cpumask_test_cpu(cpu, buffer->cpumask))
- 		return 0;
-@@ -2698,7 +2698,8 @@ unsigned long ring_buffer_oldest_event_t
- 		bpage = cpu_buffer->reader_page;
- 	else
- 		bpage = rb_set_head_page(cpu_buffer);
--	ret = bpage->page->time_stamp;
-+	if (bpage)
-+		ret = bpage->page->time_stamp;
- 	raw_spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
- 
- 	return ret;
-@@ -3005,6 +3006,8 @@ rb_get_reader_page(struct ring_buffer_pe
- 	 * Splice the empty reader page into the list around the head.
- 	 */
- 	reader = rb_set_head_page(cpu_buffer);
-+	if (!reader)
-+		goto out;
- 	cpu_buffer->reader_page->list.next = rb_list_head(reader->list.next);
- 	cpu_buffer->reader_page->list.prev = reader->list.prev;
- 
-
++#define KEY_CONTROL(k) ((k) & 0x1f)
++
+ static const char nconf_readme[] = N_(
+ "Overview\n"
+ "--------\n"
+@@ -38,10 +40,10 @@ static const char nconf_readme[] = N_(
+ "\n"
+ "Menus\n"
+ "----------\n"
+-"o  Use the Up/Down arrow keys (cursor keys) to highlight the item\n"
+-"   you wish to change use <Enter> or <Space>. Goto submenu by \n"
+-"   pressing <Enter> of <right-arrow>. Use <Esc> or <left-arrow> to go back.\n"
+-"   Submenus are designated by \"--->\".\n"
++"o  Use the Up/Down arrow keys (cursor keys) or <j>/<k> to highlight\n"
++"   the item you wish to change use <Enter> or <Space>. Goto submenu by\n"
++"   pressing <Enter>, <right-arrow> or <l>. Use <Esc> or <left-arrow>\n"
++"   to go back. Submenus are designated by \"--->\".\n"
+ "\n"
+ "   Searching: pressing '/' triggers interactive search mode.\n"
+ "              nconfig performs a case insensitive search for the string\n"
+@@ -51,8 +53,8 @@ static const char nconf_readme[] = N_(
+ "              match string. Pressing either '/' again or ESC exits\n"
+ "              search mode. All other keys behave normally.\n"
+ "\n"
+-"   You may also use the <PAGE UP> and <PAGE DOWN> keys to scroll\n"
+-"   unseen options into view.\n"
++"   You may also use the <PAGE UP> (<C-b>) and <PAGE DOWN> (<C-f>) keys\n"
++"   to scroll unseen options into view.\n"
+ "\n"
+ "o  To exit a menu use the just press <ESC> <F5> <F8> or <left-arrow>.\n"
+ "\n"
+@@ -1116,21 +1118,27 @@ static void conf(struct menu *menu)
+ 				break;
+ 			switch (res) {
+ 			case KEY_DOWN:
++			case 'j':
+ 				menu_driver(curses_menu, REQ_DOWN_ITEM);
+ 				break;
+ 			case KEY_UP:
++			case 'k':
+ 				menu_driver(curses_menu, REQ_UP_ITEM);
+ 				break;
+ 			case KEY_NPAGE:
++			case KEY_CONTROL('f'):
+ 				menu_driver(curses_menu, REQ_SCR_DPAGE);
+ 				break;
+ 			case KEY_PPAGE:
++			case KEY_CONTROL('b'):
+ 				menu_driver(curses_menu, REQ_SCR_UPAGE);
+ 				break;
+ 			case KEY_HOME:
++			case 'g':
+ 				menu_driver(curses_menu, REQ_FIRST_ITEM);
+ 				break;
+ 			case KEY_END:
++			case 'G':
+ 				menu_driver(curses_menu, REQ_LAST_ITEM);
+ 				break;
+ 			case 'h':
+@@ -1141,7 +1149,7 @@ static void conf(struct menu *menu)
+ 			if (res == 10 || res == 27 ||
+ 				res == 32 || res == 'n' || res == 'y' ||
+ 				res == KEY_LEFT || res == KEY_RIGHT ||
+-				res == 'm')
++				res == 'm' || res == 'l')
+ 				break;
+ 			refresh_all_windows(main_window);
+ 		}
+@@ -1170,6 +1178,7 @@ static void conf(struct menu *menu)
+ 			else if (item_is_tag('m'))
+ 				conf(submenu);
+ 			break;
++		case 'l':
+ 		case KEY_RIGHT:
+ 		case 10: /* ENTER WAS PRESSED */
+ 			switch (item_tag()) {
+@@ -1301,21 +1310,27 @@ static void conf_choice(struct menu *menu)
+ 				break;
+ 			switch (res) {
+ 			case KEY_DOWN:
++			case 'j':
+ 				menu_driver(curses_menu, REQ_DOWN_ITEM);
+ 				break;
+ 			case KEY_UP:
++			case 'k':
+ 				menu_driver(curses_menu, REQ_UP_ITEM);
+ 				break;
+ 			case KEY_NPAGE:
++			case KEY_CONTROL('f'):
+ 				menu_driver(curses_menu, REQ_SCR_DPAGE);
+ 				break;
+ 			case KEY_PPAGE:
++			case KEY_CONTROL('b'):
+ 				menu_driver(curses_menu, REQ_SCR_UPAGE);
+ 				break;
+ 			case KEY_HOME:
++			case 'g':
+ 				menu_driver(curses_menu, REQ_FIRST_ITEM);
+ 				break;
+ 			case KEY_END:
++			case 'G':
+ 				menu_driver(curses_menu, REQ_LAST_ITEM);
+ 				break;
+ 			case 'h':
+-- 
+1.7.9.5
 
