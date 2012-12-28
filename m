@@ -1,135 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755056Ab2L1UnQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:43:16 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:54721 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448Ab2L1UnN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:43:13 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 17/24] blkcg: implement blkcg_policy->on/offline_pd_fn() and blkcg_gq->online
-Date: Fri, 28 Dec 2012 12:35:39 -0800
-Message-Id: <1356726946-26037-18-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1356726946-26037-1-git-send-email-tj@kernel.org>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+	id S1754475Ab2L1UnD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:43:03 -0500
+Received: from mout.gmx.net ([212.227.15.18]:63367 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167Ab2L1UnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 15:43:01 -0500
+X-Authenticated: #41721828
+X-Provags-ID: V01U2FsdGVkX18zp1VU2W0z+3eO2xmugan8kzyP6CSLEvNm+/IjiR
+	SfAyRL8638sRRj
+Date: Fri, 28 Dec 2012 21:42:53 +0100
+From: Jonathan =?utf-8?Q?Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        anish singh <anish198519851985@gmail.com>,
+        amit mehta <gmate.amit@gmail.com>,
+        Henrique Rodrigues <henriquesilvar@gmail.com>,
+        kishore kumar <kishoreopen@gmail.com>,
+        Jonathan Neusch??fer <j.neuschaefer@gmx.net>,
+        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+Subject: Re: how to look for source code in kernel
+Message-ID: <20121228204252.GA3005@debian.debian>
+References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
+ <20121227184034.GA2982@debian.debian>
+ <CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
+ <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
+ <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
+ <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
+ <87a9syhbma.fsf@xmission.com>
+ <20121228160927.GY4939@ZenIV.linux.org.uk>
+ <87d2xuez32.fsf@xmission.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87d2xuez32.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add two blkcg_policy methods, ->online_pd_fn() and ->offline_pd_fn(),
-which are invoked as the policy_data gets activated and deactivated
-while holding both blkcg and q locks.
+On Fri, Dec 28, 2012 at 11:49:53AM -0800, Eric W. Biederman wrote:
+> Al Viro <viro@ZenIV.linux.org.uk> writes:
+> 
+> > On Thu, Dec 27, 2012 at 11:36:13PM -0800, Eric W. Biederman wrote:
+> >> But then I am probably peculiar keeping an index of the source code in
+> >> my head.  When I need to look for something and I don't know where to
+> >> find it I do.
+> >> 
+> >> git-ls-files | xargs fgrep 'struct f2fs_inode'
+> >
+> > What's wrong with git grep?
+> 
+> I haven't learned it yet.  git-ls-files is a lot better than find
+> speed wise so is very much worth doing.    I haven't a clue if
+> there is an advantage to git-grep, over just knowing find, xargs, and
+> grep.
 
-Also, add blkcg_gq->online bool, which is set and cleared as the
-blkcg_gq gets activated and deactivated.  This flag also is toggled
-while holding both blkcg and q locks.
+Brevity.
 
-These will be used to implement hierarchical stats.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- block/blk-cgroup.c | 21 ++++++++++++++++++++-
- block/blk-cgroup.h |  7 +++++++
- 2 files changed, 27 insertions(+), 1 deletion(-)
-
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 3a8de32..4d625d2 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -182,7 +182,7 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 				    struct blkcg_gq *new_blkg)
- {
- 	struct blkcg_gq *blkg;
--	int ret;
-+	int i, ret;
- 
- 	WARN_ON_ONCE(!rcu_read_lock_held());
- 	lockdep_assert_held(q->queue_lock);
-@@ -218,7 +218,15 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	if (likely(!ret)) {
- 		hlist_add_head_rcu(&blkg->blkcg_node, &blkcg->blkg_list);
- 		list_add(&blkg->q_node, &q->blkg_list);
-+
-+		for (i = 0; i < BLKCG_MAX_POLS; i++) {
-+			struct blkcg_policy *pol = blkcg_policy[i];
-+
-+			if (blkg->pd[i] && pol->pd_online_fn)
-+				pol->pd_online_fn(blkg);
-+		}
- 	}
-+	blkg->online = true;
- 	spin_unlock(&blkcg->lock);
- 
- 	if (!ret)
-@@ -291,6 +299,7 @@ EXPORT_SYMBOL_GPL(blkg_lookup_create);
- static void blkg_destroy(struct blkcg_gq *blkg)
- {
- 	struct blkcg *blkcg = blkg->blkcg;
-+	int i;
- 
- 	lockdep_assert_held(blkg->q->queue_lock);
- 	lockdep_assert_held(&blkcg->lock);
-@@ -299,6 +308,14 @@ static void blkg_destroy(struct blkcg_gq *blkg)
- 	WARN_ON_ONCE(list_empty(&blkg->q_node));
- 	WARN_ON_ONCE(hlist_unhashed(&blkg->blkcg_node));
- 
-+	for (i = 0; i < BLKCG_MAX_POLS; i++) {
-+		struct blkcg_policy *pol = blkcg_policy[i];
-+
-+		if (blkg->pd[i] && pol->pd_offline_fn)
-+			pol->pd_offline_fn(blkg);
-+	}
-+	blkg->online = false;
-+
- 	radix_tree_delete(&blkcg->blkg_tree, blkg->q->id);
- 	list_del_init(&blkg->q_node);
- 	hlist_del_init_rcu(&blkg->blkcg_node);
-@@ -956,6 +973,8 @@ void blkcg_deactivate_policy(struct request_queue *q,
- 		/* grab blkcg lock too while removing @pd from @blkg */
- 		spin_lock(&blkg->blkcg->lock);
- 
-+		if (pol->pd_offline_fn)
-+			pol->pd_offline_fn(blkg);
- 		if (pol->pd_exit_fn)
- 			pol->pd_exit_fn(blkg);
- 
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 40f5b97..678e89e 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -106,12 +106,17 @@ struct blkcg_gq {
- 	/* reference count */
- 	int				refcnt;
- 
-+	/* is this blkg online? protected by both blkcg and q locks */
-+	bool				online;
-+
- 	struct blkg_policy_data		*pd[BLKCG_MAX_POLS];
- 
- 	struct rcu_head			rcu_head;
- };
- 
- typedef void (blkcg_pol_init_pd_fn)(struct blkcg_gq *blkg);
-+typedef void (blkcg_pol_online_pd_fn)(struct blkcg_gq *blkg);
-+typedef void (blkcg_pol_offline_pd_fn)(struct blkcg_gq *blkg);
- typedef void (blkcg_pol_exit_pd_fn)(struct blkcg_gq *blkg);
- typedef void (blkcg_pol_reset_pd_stats_fn)(struct blkcg_gq *blkg);
- 
-@@ -124,6 +129,8 @@ struct blkcg_policy {
- 
- 	/* operations */
- 	blkcg_pol_init_pd_fn		*pd_init_fn;
-+	blkcg_pol_online_pd_fn		*pd_online_fn;
-+	blkcg_pol_offline_pd_fn		*pd_offline_fn;
- 	blkcg_pol_exit_pd_fn		*pd_exit_fn;
- 	blkcg_pol_reset_pd_stats_fn	*pd_reset_stats_fn;
- };
--- 
-1.8.0.2
-
+Jonathan
