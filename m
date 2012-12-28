@@ -1,148 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab2L1Tky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:40:54 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:51094 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab2L1Tks (ORCPT
+	id S932156Ab2L1TSi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:18:38 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55321 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932135Ab2L1TSe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:40:48 -0500
-From: Dmitry Voytik <dvv.kernel@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, dvv.kernel@gmail.com,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: [PATCH] nconf: add vi-style command keys for the menu navigation
-Date: Fri, 28 Dec 2012 23:40:07 +0400
-Message-Id: <1356723607-17027-1-git-send-email-dvv.kernel@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <20121228185108.GA13644@voyt-hp>
-References: <20121228185108.GA13644@voyt-hp>
+	Fri, 28 Dec 2012 14:18:34 -0500
+Message-Id: <20121228190351.205426503@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 28 Dec 2012 20:05:10 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 100/173] Bluetooth: Add missing lock nesting notation
+In-Reply-To: <20121228190330.025298996@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.217.219.220
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add alternative vi-style keys for the menu navigation:
-<j>/<k> for down/up navigation, <C-f>/<C-b> for
-page down/up, <g>/<G> for first/last menu item selection
-and <l> for entering to a submenu.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Dmitry Voytik <dvv.kernel@gmail.com>
+------------------
+
+From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+
+commit dc2a0e20fbc85a71c63aa4330b496fda33f6bf80 upstream.
+
+This patch fixes the following report, it happens when accepting rfcomm
+connections:
+
+[  228.165378] =============================================
+[  228.165378] [ INFO: possible recursive locking detected ]
+[  228.165378] 3.7.0-rc1-00536-gc1d5dc4 #120 Tainted: G        W
+[  228.165378] ---------------------------------------------
+[  228.165378] bluetoothd/1341 is trying to acquire lock:
+[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
+[<ffffffffa0000aa0>] bt_accept_dequeue+0xa0/0x180 [bluetooth]
+[  228.165378]
+[  228.165378] but task is already holding lock:
+[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
+[<ffffffffa0205118>] rfcomm_sock_accept+0x58/0x2d0 [rfcomm]
+[  228.165378]
+[  228.165378] other info that might help us debug this:
+[  228.165378]  Possible unsafe locking scenario:
+[  228.165378]
+[  228.165378]        CPU0
+[  228.165378]        ----
+[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
+[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
+[  228.165378]
+[  228.165378]  *** DEADLOCK ***
+[  228.165378]
+[  228.165378]  May be due to missing lock nesting notation
+
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- scripts/kconfig/nconf.c |   29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ net/bluetooth/rfcomm/sock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index ce93e87..632447b 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -13,6 +13,8 @@
- #include "nconf.h"
- #include <ctype.h>
+diff --git a/net/bluetooth/rfcomm/sock.c b/net/bluetooth/rfcomm/sock.c
+index 4ddef57..ce3f665 100644
+--- a/net/bluetooth/rfcomm/sock.c
++++ b/net/bluetooth/rfcomm/sock.c
+@@ -467,7 +467,7 @@ static int rfcomm_sock_accept(struct socket *sock, struct socket *newsock, int f
+ 	long timeo;
+ 	int err = 0;
  
-+#define KEY_CONTROL(k) ((k) & 0x1f)
-+
- static const char nconf_readme[] = N_(
- "Overview\n"
- "--------\n"
-@@ -38,10 +40,10 @@ static const char nconf_readme[] = N_(
- "\n"
- "Menus\n"
- "----------\n"
--"o  Use the Up/Down arrow keys (cursor keys) to highlight the item\n"
--"   you wish to change use <Enter> or <Space>. Goto submenu by \n"
--"   pressing <Enter> of <right-arrow>. Use <Esc> or <left-arrow> to go back.\n"
--"   Submenus are designated by \"--->\".\n"
-+"o  Use the Up/Down arrow keys (cursor keys) or <j>/<k> to highlight\n"
-+"   the item you wish to change use <Enter> or <Space>. Goto submenu by\n"
-+"   pressing <Enter>, <right-arrow> or <l>. Use <Esc> or <left-arrow>\n"
-+"   to go back. Submenus are designated by \"--->\".\n"
- "\n"
- "   Searching: pressing '/' triggers interactive search mode.\n"
- "              nconfig performs a case insensitive search for the string\n"
-@@ -51,8 +53,8 @@ static const char nconf_readme[] = N_(
- "              match string. Pressing either '/' again or ESC exits\n"
- "              search mode. All other keys behave normally.\n"
- "\n"
--"   You may also use the <PAGE UP> and <PAGE DOWN> keys to scroll\n"
--"   unseen options into view.\n"
-+"   You may also use the <PAGE UP> (<C-b>) and <PAGE DOWN> (<C-f>) keys\n"
-+"   to scroll unseen options into view.\n"
- "\n"
- "o  To exit a menu use the just press <ESC> <F5> <F8> or <left-arrow>.\n"
- "\n"
-@@ -1116,21 +1118,27 @@ static void conf(struct menu *menu)
- 				break;
- 			switch (res) {
- 			case KEY_DOWN:
-+			case 'j':
- 				menu_driver(curses_menu, REQ_DOWN_ITEM);
- 				break;
- 			case KEY_UP:
-+			case 'k':
- 				menu_driver(curses_menu, REQ_UP_ITEM);
- 				break;
- 			case KEY_NPAGE:
-+			case KEY_CONTROL('f'):
- 				menu_driver(curses_menu, REQ_SCR_DPAGE);
- 				break;
- 			case KEY_PPAGE:
-+			case KEY_CONTROL('b'):
- 				menu_driver(curses_menu, REQ_SCR_UPAGE);
- 				break;
- 			case KEY_HOME:
-+			case 'g':
- 				menu_driver(curses_menu, REQ_FIRST_ITEM);
- 				break;
- 			case KEY_END:
-+			case 'G':
- 				menu_driver(curses_menu, REQ_LAST_ITEM);
- 				break;
- 			case 'h':
-@@ -1141,7 +1149,7 @@ static void conf(struct menu *menu)
- 			if (res == 10 || res == 27 ||
- 				res == 32 || res == 'n' || res == 'y' ||
- 				res == KEY_LEFT || res == KEY_RIGHT ||
--				res == 'm')
-+				res == 'm' || res == 'l')
- 				break;
- 			refresh_all_windows(main_window);
- 		}
-@@ -1170,6 +1178,7 @@ static void conf(struct menu *menu)
- 			else if (item_is_tag('m'))
- 				conf(submenu);
- 			break;
-+		case 'l':
- 		case KEY_RIGHT:
- 		case 10: /* ENTER WAS PRESSED */
- 			switch (item_tag()) {
-@@ -1301,21 +1310,27 @@ static void conf_choice(struct menu *menu)
- 				break;
- 			switch (res) {
- 			case KEY_DOWN:
-+			case 'j':
- 				menu_driver(curses_menu, REQ_DOWN_ITEM);
- 				break;
- 			case KEY_UP:
-+			case 'k':
- 				menu_driver(curses_menu, REQ_UP_ITEM);
- 				break;
- 			case KEY_NPAGE:
-+			case KEY_CONTROL('f'):
- 				menu_driver(curses_menu, REQ_SCR_DPAGE);
- 				break;
- 			case KEY_PPAGE:
-+			case KEY_CONTROL('b'):
- 				menu_driver(curses_menu, REQ_SCR_UPAGE);
- 				break;
- 			case KEY_HOME:
-+			case 'g':
- 				menu_driver(curses_menu, REQ_FIRST_ITEM);
- 				break;
- 			case KEY_END:
-+			case 'G':
- 				menu_driver(curses_menu, REQ_LAST_ITEM);
- 				break;
- 			case 'h':
--- 
-1.7.9.5
+-	lock_sock(sk);
++	lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
+ 
+ 	if (sk->sk_type != SOCK_STREAM) {
+ 		err = -EINVAL;
+@@ -504,7 +504,7 @@ static int rfcomm_sock_accept(struct socket *sock, struct socket *newsock, int f
+ 
+ 		release_sock(sk);
+ 		timeo = schedule_timeout(timeo);
+-		lock_sock(sk);
++		lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+ 	remove_wait_queue(sk_sleep(sk), &wait);
+
 
