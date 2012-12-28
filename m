@@ -1,153 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab2L1R4f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 12:56:35 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:60814 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab2L1R4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 12:56:32 -0500
-Date: Fri, 28 Dec 2012 21:56:27 +0400
-From: Vasily Kulikov <segoon@openwall.com>
-To: Containers <containers@lists.linux-foundation.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serge.hallyn@canonical.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
-Message-ID: <20121228175627.GA7683@cachalot>
+	id S1753992Ab2L1SNZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 13:13:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36896 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753851Ab2L1SNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 13:13:23 -0500
+Date: Fri, 28 Dec 2012 19:13:10 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] uprobes: Rationalize the usage of filter_chain()
+Message-ID: <20121228181310.GA6138@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121228181252.GA6120@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently there is completely no limiting in number of user namespaces
-created by unprivileged users.  One can freely create thousands of
-user_ns'es and exhaust kernel memory without even bumping in
-RLIMIT_NPROC or similar.
+filter_chain() was added into install_breakpoint/remove_breakpoint to
+simplify the initial changes but this is sub-optimal.
 
-Even more -- it allows user to overflow kernel stack theoretically
-allowing user to overwrite some important kernel data.  The problem is
-that free_user_ns() may also free its parent user_namespace recursively
-calling free_user_ns().  As kernel stack is very limited, it leads to
-kernel stack overflow.
+This patch shifts the callsite to the callers, register_for_each_vma()
+and uprobe_mmap(). This way:
 
-The code needs several checks.  First, noone should be able to create
-user_ns of arbitrary depth.  Besides kernel stack overflow one could
-create too big depth to DoS processes belonging to other users by
-forcing them to loop a long time in cap_capable called from some
-ns_capable() (e.g. in case one does smth like "ls -R /proc").  Second,
-non-privileged users must not be able to overlimit some count of
-namespaces to not be able to exhaust kernel memory.
+- It will be easier to add the new arguments. This is the main reason,
+  we can do more optimizations later.
 
-The included patch is a basic fix for both or them.  Both values are
-hardcoded here to 100 max depth and 1000 max in total.  I'm not sure how
-better to make them configurable.  Looks like it needs some sysctl value
-like kernel.max_user_ns_per_user, but also something more configurable
-like new rlimit'ish limit may be created for user_ns needs.  E.g. in
-case root wants one user to contain hundreds of private containers
-(container owner user), but he doesn't want anybody to fill the kernel
-with hundreds of containers multiplied by number of system users (equals
-to thousands).
+- register_for_each_vma(is_register => true) can be optimized, we only
+  need to consult the new consumer. The previous consumers were already
+  asked when they called uprobe_register().
 
-I'm not sure how it is an approved way for user_ns.  Eric?
+This patch also moves the MMF_HAS_UPROBES check from remove_breakpoint(),
+this allows to avoid the potentionally costly filter_chain(). Note that
+register_for_each_vma(is_register => false) doesn't really need to take
+>consumer_rwsem, but I don't think it makes sense to optimize this and
+introduce filter_chain_lockless().
 
-A related issue which is NOT FIXED HERE is limits for all resources
-available for containerized pseudo roots.  E.g. I succeeded creating
-thousands of veth network devices without problems by a non-root user,
-there seems no limit in number of network devices.  I suspect it is
-possible to setup routing and net_ns'es the way it will be very
-time-consuming for kernel to handle IP packets inside of ksoftirq, which
-is not counted as this user scheduler time.   I suppose the issue is not
-veth-specific, almost all newly available for unprivileged users code
-pathes are vulnerable to DoS attacks.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/events/uprobes.c |   44 +++++++++++++++++++++-----------------------
+ 1 files changed, 21 insertions(+), 23 deletions(-)
 
-Signed-off-by: Vasily Kulikov <segoon@openwall.com>
--- 
- include/linux/sched.h   |    3 +++
- kernel/user_namespace.c |   26 ++++++++++++++++++++++++++
- 2 files changed, 29 insertions(+)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 206bb08..479940e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -706,6 +706,9 @@ struct user_struct {
- #ifdef CONFIG_EPOLL
- 	atomic_long_t epoll_watches; /* The number of file descriptors currently watched */
- #endif
-+#ifdef CONFIG_USER_NS
-+	atomic_t user_namespaces; /* How many user_ns does this user created? */
-+#endif
- #ifdef CONFIG_POSIX_MQUEUE
- 	/* protected by mq_lock	*/
- 	unsigned long mq_bytes;	/* How many bytes can be allocated to mqueue? */
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 2b042c4..a52c4e8 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -45,6 +45,16 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
- 	cred->user_ns = user_ns;
+diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+index 105ac0d..60b0a90 100644
+--- a/kernel/events/uprobes.c
++++ b/kernel/events/uprobes.c
+@@ -579,6 +579,11 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
+ 	return ret;
  }
  
-+static long get_user_ns_depth(struct user_namespace *ns)
++static inline bool consumer_filter(struct uprobe_consumer *uc)
 +{
-+	long depth;
-+
-+	for (depth = 1; ns != &init_user_ns; ns = ns->parent)
-+		depth++;
-+
-+	return depth;
++	return true; /* TODO: !uc->filter || uc->filter(...) */
 +}
 +
- /*
-  * Create a new user namespace, deriving the creator from the user in the
-  * passed credentials, and replacing that user with the new root user for the
-@@ -56,6 +66,7 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
- int create_user_ns(struct cred *new)
+ static bool filter_chain(struct uprobe *uprobe)
  {
- 	struct user_namespace *ns, *parent_ns = new->user_ns;
-+	struct user_struct *user = current->cred->user;
- 	kuid_t owner = new->euid;
- 	kgid_t group = new->egid;
+ 	struct uprobe_consumer *uc;
+@@ -586,8 +591,7 @@ static bool filter_chain(struct uprobe *uprobe)
+ 
+ 	down_read(&uprobe->consumer_rwsem);
+ 	for (uc = uprobe->consumers; uc; uc = uc->next) {
+-		/* TODO: ret = uc->filter(...) */
+-		ret = true;
++		ret = consumer_filter(uc);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -603,15 +607,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ 	bool first_uprobe;
  	int ret;
-@@ -68,6 +79,18 @@ int create_user_ns(struct cred *new)
- 	    !kgid_has_mapping(parent_ns, group))
- 		return -EPERM;
  
-+	/* Too long user_ns chains, might overflow kernel stack on kref_put() */
-+	if (get_user_ns_depth(parent_ns) > 100)
-+		return -ENOMEM;
-+
-+	atomic_inc(&user->user_namespaces);
-+	/* FIXME: probably it's better to configure the number
-+	 *        instead of hardcoding 1000 */
-+	if (atomic_read(&user->user_namespaces) > 1000) {
-+		atomic_dec(&user->user_namespaces);
-+		return -ENOMEM;
-+	}
-+
- 	ns = kmem_cache_zalloc(user_ns_cachep, GFP_KERNEL);
- 	if (!ns)
- 		return -ENOMEM;
-@@ -108,10 +131,13 @@ void free_user_ns(struct kref *kref)
+-	/*
+-	 * If probe is being deleted, unregister thread could be done with
+-	 * the vma-rmap-walk through. Adding a probe now can be fatal since
+-	 * nobody will be able to cleanup. But in this case filter_chain()
+-	 * must return false, all consumers have gone away.
+-	 */
+-	if (!filter_chain(uprobe))
+-		return 0;
+-
+ 	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
+ 	if (ret)
+ 		return ret;
+@@ -636,12 +631,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+ static int
+ remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
  {
- 	struct user_namespace *parent, *ns =
- 		container_of(kref, struct user_namespace, kref);
-+	struct user_struct *user = find_user(ns->owner);
- 
- 	parent = ns->parent;
- 	proc_free_inum(ns->proc_inum);
- 	kmem_cache_free(user_ns_cachep, ns);
-+	if (user)
-+		atomic_dec(&user->user_namespaces);
- 	put_user_ns(parent);
+-	if (!test_bit(MMF_HAS_UPROBES, &mm->flags))
+-		return 0;
+-
+-	if (filter_chain(uprobe))
+-		return 0;
+-
+ 	set_bit(MMF_RECALC_UPROBES, &mm->flags);
+ 	return set_orig_insn(&uprobe->arch, mm, vaddr);
  }
- EXPORT_SYMBOL(free_user_ns);
-
+@@ -781,10 +770,14 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+ 		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
+ 			goto unlock;
+ 
+-		if (is_register)
+-			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
+-		else
+-			err |= remove_breakpoint(uprobe, mm, info->vaddr);
++		if (is_register) {
++			/* consult only the "caller", new consumer. */
++			if (consumer_filter(uprobe->consumers))
++				err = install_breakpoint(uprobe, mm, vma, info->vaddr);
++		} else if (test_bit(MMF_HAS_UPROBES, &mm->flags)) {
++			if (!filter_chain(uprobe))
++				err |= remove_breakpoint(uprobe, mm, info->vaddr);
++		}
+ 
+  unlock:
+ 		up_write(&mm->mmap_sem);
+@@ -968,9 +961,14 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 
+ 	mutex_lock(uprobes_mmap_hash(inode));
+ 	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
+-
++	/*
++	 * We can race with uprobe_unregister(), this uprobe can be already
++	 * removed. But in this case filter_chain() must return false, all
++	 * consumers have gone away.
++	 */
+ 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+-		if (!fatal_signal_pending(current)) {
++		if (!fatal_signal_pending(current) &&
++		    filter_chain(uprobe)) {
+ 			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+ 			install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
+ 		}
 -- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
+1.5.5.1
+
