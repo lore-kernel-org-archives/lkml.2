@@ -1,63 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab2L1UuP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:50:15 -0500
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:52647
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752689Ab2L1UuL (ORCPT
+	id S1754221Ab2L1VOv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 16:14:51 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:46391 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab2L1VOs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:50:11 -0500
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: PS-3(zz98dI936eI1432Izz1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        Len Brown <lenb@kernel.org>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-Thread-Topic: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-Thread-Index: AQHN5RiGq5ZUqF9Ep0mmn4k4iukZYZgue5kAgAAXSYCAAALxAIAAF0EAgAACcwA=
-Date: Fri, 28 Dec 2012 20:49:42 +0000
-Message-ID: <E99CBA9F97C3D149AA6B19ED2E277C9B01921638@BY2PRD0510MB365.namprd05.prod.outlook.com>
-References: <1356712001-12198-1-git-send-email-jlee@suse.com>
-	  <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	  <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com>
-	 <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	 <50DE03D8.9030902@zytor.com>
-In-Reply-To: <50DE03D8.9030902@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <9EDF03C4EA3D1145A83AE3B9CD3CC21B@namprd05.prod.outlook.com>
-MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+	Fri, 28 Dec 2012 16:14:48 -0500
+Subject: Re: [PATCH v2] lib: cpu_rmap: avoid flushing all workqueues
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Decotigny <decot@googlers.com>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+In-Reply-To: <d1d3f42dff1837cd43e67f954c51eb9d1f91b4ba.1356721114.git.decot@googlers.com>
+References: <cover.1356721114.git.decot@googlers.com>
+	 <d1d3f42dff1837cd43e67f954c51eb9d1f91b4ba.1356721114.git.decot@googlers.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 Dec 2012 13:14:44 -0800
+Message-ID: <1356729284.21409.889.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBSKoJ4s026932
 
-On Fri, 2012-12-28 at 12:40 -0800, H. Peter Anvin wrote:
+On Fri, 2012-12-28 at 11:03 -0800, David Decotigny wrote:
+> In some cases, free_irq_cpu_rmap() is called while holding a lock
+> (eg. rtnl). This can lead to deadlocks, because it invokes
+> flush_scheduled_work() which ends up waiting for whole system
+> workqueue to flush, but some pending works might try to acquire the
+> lock we are already holding.
+> 
+> This commit uses reference-counting to replace
+> irq_run_affinity_notifiers(). It also removes
+> irq_run_affinity_notifiers() altogether.
+> 
+> Signed-off-by: David Decotigny <decot@googlers.com>
+> ---
+>  include/linux/cpu_rmap.h  |   13 ++++---------
+>  include/linux/interrupt.h |    5 -----
+>  lib/cpu_rmap.c            |   47 +++++++++++++++++++++++++++++++++++++++------
+>  3 files changed, 45 insertions(+), 20 deletions(-)
+> 
+> diff --git a/include/linux/cpu_rmap.h b/include/linux/cpu_rmap.h
+> index ac3bbb5..3be2813 100644
+> --- a/include/linux/cpu_rmap.h
+> +++ b/include/linux/cpu_rmap.h
+> @@ -13,9 +13,11 @@
+>  #include <linux/cpumask.h>
+>  #include <linux/gfp.h>
+>  #include <linux/slab.h>
+> +#include <linux/kref.h>
+>  
+>  /**
+>   * struct cpu_rmap - CPU affinity reverse-map
+> + * @refcount: kref for object
+>   * @size: Number of objects to be reverse-mapped
+>   * @used: Number of objects added
+>   * @obj: Pointer to array of object pointers
+> @@ -23,6 +25,7 @@
+>   *      based on affinity masks
+>   */
+>  struct cpu_rmap {
+> +	struct kref	refcount;
+>  	u16		size, used;
+>  	void		**obj;
+>  	struct {
+> @@ -33,15 +36,7 @@ struct cpu_rmap {
+>  #define CPU_RMAP_DIST_INF 0xffff
+>  
+>  extern struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags);
+> -
+> -/**
+> - * free_cpu_rmap - free CPU affinity reverse-map
+> - * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
+> - */
+> -static inline void free_cpu_rmap(struct cpu_rmap *rmap)
+> -{
+> -	kfree(rmap);
+> -}
+> +extern void free_cpu_rmap(struct cpu_rmap *rmap);
+>  
+>  extern int cpu_rmap_add(struct cpu_rmap *rmap, void *obj);
+>  extern int cpu_rmap_update(struct cpu_rmap *rmap, u16 index,
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 5e4e617..5fa5afe 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -268,11 +268,6 @@ struct irq_affinity_notify {
+>  extern int
+>  irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify);
+>  
+> -static inline void irq_run_affinity_notifiers(void)
+> -{
+> -	flush_scheduled_work();
+> -}
+> -
+>  #else /* CONFIG_SMP */
+>  
+>  static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+> diff --git a/lib/cpu_rmap.c b/lib/cpu_rmap.c
+> index 145dec5..bb5d0af 100644
+> --- a/lib/cpu_rmap.c
+> +++ b/lib/cpu_rmap.c
+> @@ -45,6 +45,7 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
+>  	if (!rmap)
+>  		return NULL;
+>  
+> +	kref_init(&rmap->refcount);
+>  	rmap->obj = (void **)((char *)rmap + obj_offset);
+>  
+>  	/* Initially assign CPUs to objects on a rota, since we have
+> @@ -63,6 +64,26 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
+>  }
+>  EXPORT_SYMBOL(alloc_cpu_rmap);
+>  
+> +/**
+> + * reclaim_cpu_rmap - internal reclaiming helper called from kref_put
+> + * @ref: kref to struct cpu_rmap
+> + */
+> +static void reclaim_cpu_rmap(struct kref *ref)
 
-> > I suspect that what we *should* do looks like:
-> >
-> > 1. If ACPI exports a Time and Alarm Device (ACPI000E) the use it;
-> > 2. If ACPI exports an PC/AT device (PNP0B00/1/2) then use it(*);
-> > 3. If we have an EFI RTC use it;
-> > 4. Probe for a PC/AT RTC device.
+Could be named cpu_rmap_free()
 
-In terms of ordering, 3 should probably come before 2 - but that depends
-on us actually fixing the issues that are preventing some of these calls
-from working. As far as wallclock time goes, EFI is going to be
-available to us before we've parsed the DSDT to determine whether
-there's any ACPI devices, so we'll almost certainly end up having to use
-it at at least some point during boot. Otherwise, agreed.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+(and alloc_cpu_rmap() should be renamed as cpu_rmap_alloc()
+
+> +{
+> +	struct cpu_rmap *rmap = container_of(ref, struct cpu_rmap, refcount);
+> +	kfree(rmap);
+> +}
+> +
+> +/**
+> + * free_cpu_rmap - free CPU affinity reverse-map
+> + * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
+> + */
+> +void free_cpu_rmap(struct cpu_rmap *rmap)
+
+This could be named : cpu_rmap_put()
+
+> +{
+> +	kref_put(&rmap->refcount, reclaim_cpu_rmap);
+> +}
+> +EXPORT_SYMBOL(free_cpu_rmap);
+
+It seems this function could be static, and not exported.
+
+> +
+>  /* Reevaluate nearest object for given CPU, comparing with the given
+>   * neighbours at the given distance.
+>   */
+> @@ -197,8 +218,7 @@ struct irq_glue {
+>   * free_irq_cpu_rmap - free a CPU affinity reverse-map used for IRQs
+>   * @rmap: Reverse-map allocated with alloc_irq_cpu_map(), or %NULL
+>   *
+> - * Must be called in process context, before freeing the IRQs, and
+> - * without holding any locks required by global workqueue items.
+> + * Must be called in process context, before freeing the IRQs.
+>   */
+>  void free_irq_cpu_rmap(struct cpu_rmap *rmap)
+>  {
+> @@ -212,12 +232,18 @@ void free_irq_cpu_rmap(struct cpu_rmap *rmap)
+>  		glue = rmap->obj[index];
+>  		irq_set_affinity_notifier(glue->notify.irq, NULL);
+>  	}
+> -	irq_run_affinity_notifiers();
+>  
+> -	kfree(rmap);
+> +	free_cpu_rmap(rmap);
+>  }
+>  EXPORT_SYMBOL(free_irq_cpu_rmap);
+>  
+> +/**
+> + * irq_cpu_rmap_notify - callback for IRQ subsystem when IRQ affinity updated
+> + * @notify: struct irq_affinity_notify passed by irq/manage.c
+> + * @mask: cpu mask for new SMP affinity
+> + *
+> + * This is executed in workqueue context.
+> + */
+>  static void
+>  irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
+>  {
+> @@ -230,16 +256,22 @@ irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
+>  		pr_warning("irq_cpu_rmap_notify: update failed: %d\n", rc);
+>  }
+>  
+> +/**
+> + * irq_cpu_rmap_release - reclaiming callback for IRQ subsystem
+> + * @ref: kref to struct irq_affinity_notify passed by irq/manage.c
+> + */
+>  static void irq_cpu_rmap_release(struct kref *ref)
+>  {
+>  	struct irq_glue *glue =
+>  		container_of(ref, struct irq_glue, notify.kref);
+> +
+> +	kref_put(&glue->rmap->refcount, reclaim_cpu_rmap);
+
+	cpu_rmap_put(glue->rmap);
+
+>  	kfree(glue);
+>  }
+>  
+>  /**
+>   * irq_cpu_rmap_add - add an IRQ to a CPU affinity reverse-map
+> - * @rmap: The reverse-map
+> + * @rmap: The per-IRQ reverse-map
+>   * @irq: The IRQ number
+>   *
+>   * This adds an IRQ affinity notifier that will update the reverse-map
+> @@ -259,9 +291,12 @@ int irq_cpu_rmap_add(struct cpu_rmap *rmap, int irq)
+>  	glue->notify.release = irq_cpu_rmap_release;
+>  	glue->rmap = rmap;
+>  	glue->index = cpu_rmap_add(rmap, glue);
+> +	kref_get(&rmap->refcount);
+>  	rc = irq_set_affinity_notifier(irq, &glue->notify);
+> -	if (rc)
+> +	if (rc) {
+> +		kref_put(&rmap->refcount, reclaim_cpu_rmap);
+
+		cpu_rmap_put(rmap);
+
+>  		kfree(glue);
+> +	}
+>  	return rc;
+>  }
+>  EXPORT_SYMBOL(irq_cpu_rmap_add);
+
+I personally don't like kref abstraction, especially when used without
+wrapper :
+
+kref_put(&rmap->refcount, reclaim_cpu_rmap);
+
+Its cleaner to have instead :
+
+cpu_rmap_put(rmap);
+
+
+
+
