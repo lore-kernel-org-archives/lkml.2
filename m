@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab2L1CmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 21:42:06 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:47855 "EHLO
+	id S1753490Ab2L1CmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 21:42:17 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:47871 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753046Ab2L1CmC (ORCPT
+	with ESMTP id S1753046Ab2L1CmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 21:42:02 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBS2fTTU002355, This message is released by code: ctaloc0852
+	Thu, 27 Dec 2012 21:42:12 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBS2feih002405, This message is released by code: ctaloc0852
 From: <wei_wang@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v3 3/8] MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
-Date: Fri, 28 Dec 2012 10:41:28 +0800
-Message-ID: <cd92be49bee917165009311d62e10a5f60a85a48.1356662293.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v3 5/8] MMC:rtsx: Using callback function to switch output voltage
+Date: Fri, 28 Dec 2012 10:41:40 +0800
+Message-ID: <e476d1ca39d478b533510581077f8f365227fa1a.1356662294.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1356662293.git.wei_wang@realsil.com.cn>
 References: <cover.1356662293.git.wei_wang@realsil.com.cn>
@@ -28,28 +28,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-Realtek PCIe card reader only supports 32bit DMA
+Different card reader has different method to switch output voltage, so
+we have to use the callback function provided by MFD driver to switch
+output pad voltage.
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
 ---
- drivers/mfd/rtsx_pcr.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++-------------------------
+ 1 file changed, 5 insertions(+), 25 deletions(-)
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index fa2c2bc..1dc64bb 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -1010,6 +1010,10 @@ static int __devinit rtsx_pci_probe(struct pci_dev *pcidev,
- 		pci_name(pcidev), (int)pcidev->vendor, (int)pcidev->device,
- 		(int)pcidev->revision);
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index 571915d..f74b5ad 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -1060,26 +1060,6 @@ static int sd_wait_voltage_stable_2(struct realtek_pci_sdmmc *host)
+ 	return 0;
+ }
  
-+	ret = pci_set_dma_mask(pcidev, DMA_BIT_MASK(32));
-+	if (ret < 0)
-+		return ret;
-+
- 	ret = pci_enable_device(pcidev);
- 	if (ret)
- 		return ret;
+-static int sd_change_bank_voltage(struct realtek_pci_sdmmc *host, u8 voltage)
+-{
+-	struct rtsx_pcr *pcr = host->pcr;
+-	int err;
+-
+-	if (voltage == SD_IO_3V3) {
+-		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
+-		if (err < 0)
+-			return err;
+-	} else if (voltage == SD_IO_1V8) {
+-		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
+-		if (err < 0)
+-			return err;
+-	} else {
+-		return -EINVAL;
+-	}
+-
+-	return 0;
+-}
+-
+ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+ {
+ 	struct realtek_pci_sdmmc *host = mmc_priv(mmc);
+@@ -1098,11 +1078,11 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+ 	rtsx_pci_start_run(pcr);
+ 
+ 	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
+-		voltage = SD_IO_3V3;
++		voltage = OUTPUT_3V3;
+ 	else
+-		voltage = SD_IO_1V8;
++		voltage = OUTPUT_1V8;
+ 
+-	if (voltage == SD_IO_1V8) {
++	if (voltage == OUTPUT_1V8) {
+ 		err = rtsx_pci_write_register(pcr,
+ 				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
+ 		if (err < 0)
+@@ -1113,11 +1093,11 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
+ 			goto out;
+ 	}
+ 
+-	err = sd_change_bank_voltage(host, voltage);
++	err = rtsx_pci_switch_output_voltage(pcr, voltage);
+ 	if (err < 0)
+ 		goto out;
+ 
+-	if (voltage == SD_IO_1V8) {
++	if (voltage == OUTPUT_1V8) {
+ 		err = sd_wait_voltage_stable_2(host);
+ 		if (err < 0)
+ 			goto out;
 -- 
 1.7.9.5
 
