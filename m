@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab2L1TRq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:46 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55066 "EHLO
+	id S1754833Ab2L1Tug (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:50:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55099 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754171Ab2L1TRj (ORCPT
+	by vger.kernel.org with ESMTP id S1754575Ab2L1TRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:39 -0500
-Message-Id: <20121228190359.714358948@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:46 -0500
+Message-Id: <20121228190358.198601318@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:59 +0100
+Date: Fri, 28 Dec 2012 20:05:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jani Nikula <jani.nikula@intel.com>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: [ 149/173] drm/i915: do not default to 18 bpp for eDP if missing from VBT
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 138/173] proc: pid/status: show all supplementary groups
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,81 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit 9a30a61f3516871c5c638fd7c025fbaa11ddf7fe upstream.
+commit 8d238027b87e654be552eabdf492042a34c5c300 upstream.
 
-commit 500a8cc466a24e2fbc4c86ef9c6467ae2ffdeb0c
-Author: Zhenyu Wang <zhenyuw@linux.intel.com>
-Date:   Wed Jan 13 11:19:52 2010 +0800
+We display a list of supplementary group for each process in
+/proc/<pid>/status.  However, we show only the first 32 groups, not all of
+them.
 
-    drm/i915: parse eDP panel color depth from VBT block
+Although this is rare, but sometimes processes do have more than 32
+supplementary groups, and this kernel limitation breaks user-space apps
+that rely on the group list in /proc/<pid>/status.
 
-originally introduced parsing bpp for eDP from VBT, with a default of 18
-bpp if the eDP BIOS data block is not present. Turns out that default seems
-to break the Macbook Pro with retina display, as noted in
+Number 32 comes from the internal NGROUPS_SMALL macro which defines the
+length for the internal kernel "small" groups buffer.  There is no
+apparent reason to limit to this value.
 
-commit 4344b813f105a19f793f1fd93ad775b784648b95
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Fri Aug 10 11:10:20 2012 +0200
+This patch removes the 32 groups printing limit.
 
-    drm/i915: ignore eDP bpc settings from vbt
+The Linux kernel limits the amount of supplementary groups by NGROUPS_MAX,
+which is currently set to 65536.  And this is the maximum count of groups
+we may possibly print.
 
-Since we can't ignore bpc settings from VBT completely after all, get rid
-of the default. Do not clamp eDP to 18 bpp by default if the eDP BDB is
-missing from VBT.
-
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Tested-by: Henrik Rydberg <rydberg@euromail.se>
-[danvet: paste in the updated commit message from irc.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_bios.c    |   11 ++---------
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 2 files changed, 3 insertions(+), 10 deletions(-)
+ fs/proc/array.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
-index 0ed6baf..56846ed 100644
---- a/drivers/gpu/drm/i915/intel_bios.c
-+++ b/drivers/gpu/drm/i915/intel_bios.c
-@@ -499,12 +499,8 @@ parse_edp(struct drm_i915_private *dev_priv, struct bdb_header *bdb)
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -204,7 +204,7 @@ static inline void task_state(struct seq
+ 	group_info = cred->group_info;
+ 	task_unlock(p);
  
- 	edp = find_section(bdb, BDB_EDP);
- 	if (!edp) {
--		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
--			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
--				      "supported, assume %dbpp panel color "
--				      "depth.\n",
--				      dev_priv->edp.bpp);
--		}
-+		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
-+			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
- 		return;
- 	}
+-	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
++	for (g = 0; g < group_info->ngroups; g++)
+ 		seq_printf(m, "%d ", GROUP_AT(group_info, g));
+ 	put_cred(cred);
  
-@@ -657,9 +653,6 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
- 	dev_priv->lvds_use_ssc = 1;
- 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
- 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
--
--	/* eDP data */
--	dev_priv->edp.bpp = 18;
- }
- 
- static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 4154bcd..b426d44 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -3845,7 +3845,7 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
- 			/* Use VBT settings if we have an eDP panel */
- 			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
- 
--			if (edp_bpc < display_bpc) {
-+			if (edp_bpc && edp_bpc < display_bpc) {
- 				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
- 				display_bpc = edp_bpc;
- 			}
 
 
