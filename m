@@ -1,96 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753077Ab2L1Bck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:32:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38916 "EHLO mx1.redhat.com"
+	id S1752776Ab2L1BpK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:45:10 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:51478 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab2L1Bcc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:32:32 -0500
-From: Petr Holasek <pholasek@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>,
-        Petr Holasek <pholasek@redhat.com>
-Subject: [PATCH v7 2/2] Documentation: add sysfs ABI documentation for ksm
-Date: Fri, 28 Dec 2012 02:32:17 +0100
-Message-Id: <1356658337-12540-2-git-send-email-pholasek@redhat.com>
-In-Reply-To: <1356658337-12540-1-git-send-email-pholasek@redhat.com>
-References: <20121224050817.GA25749@kroah.com>
- <1356658337-12540-1-git-send-email-pholasek@redhat.com>
+	id S1751871Ab2L1BpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 20:45:05 -0500
+Date: Fri, 28 Dec 2012 01:45:03 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Andreas Voellmy <andreas.voellmy@yale.edu>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>
+Subject: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20121228014503.GA5017@dcvr.yhbt.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds sysfs documentation for Kernel Samepage Merging (KSM)
-including new merge_across_nodes knob.
+I'm finding ppoll() unexpectedly stuck when waiting for POLLIN on a
+local TCP socket.  The isolated code below can reproduces the issue
+after many minutes (<1 hour).  It might be easier to reproduce on
+a busy system while disk I/O is happening.
 
-Signed-off-by: Petr Holasek <pholasek@redhat.com>
----
- Documentation/ABI/testing/sysfs-kernel-mm-ksm | 51 +++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-mm-ksm
+This may also be related to an epoll-related issue reported
+by Andreas Voellmy:
+http://thread.gmane.org/gmane.linux.kernel/1408782/
 
-diff --git a/Documentation/ABI/testing/sysfs-kernel-mm-ksm b/Documentation/ABI/testing/sysfs-kernel-mm-ksm
-new file mode 100644
-index 0000000..44384ae
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-kernel-mm-ksm
-@@ -0,0 +1,51 @@
-+What:		/sys/kernel/mm/ksm
-+Date:		September 2009
-+Contact:	Linux memory management mailing list <linux-mm@kvack.org>
-+Description:	/sys/kernel/mm/ksm contains interface of Kernel Samepage
-+		Merging (KSM)
-+
-+What:		/sys/kernel/mm/ksm/full_scans
-+What:		/sys/kernel/mm/ksm/pages_shared
-+What:		/sys/kernel/mm/ksm/pages_sharing
-+What:		/sys/kernel/mm/ksm/pages_to_scan
-+What:		/sys/kernel/mm/ksm/pages_unshared
-+What:		/sys/kernel/mm/ksm/pages_volatile
-+What:		/sys/kernel/mm/ksm/run
-+What:		/sys/kernel/mm/ksm/sleep_millisecs
-+Date:		September 2009
-+Contact:	Linux memory management mailing list <linux-mm@kvack.org>
-+Description:	Kernel Samepage Merging daemon sysfs interface
-+
-+		full_scans: how many times all mergeable areas have been
-+		scanned.
-+
-+		pages_shared: how many shared pages are being used.
-+
-+		pages_sharing: how many more sites are sharing them i.e. how
-+		much saved.
-+
-+		pages_to_scan: how many present pages to scan before ksmd goes
-+		to sleep.
-+
-+		pages_unshared: how many pages unique but repeatedly checked
-+		for merging.
-+
-+		pages_volatile: how many pages changing too fast to be placed
-+		in a tree.
-+
-+		run: write 0 to disable ksm, read 0 while ksm is disabled.
-+			write 1 to run ksm, read 1 while ksm is running.
-+			write 2 to disable ksm and unmerge all its pages.
-+
-+		sleep_millisecs: how many milliseconds ksm should sleep between
-+		scans.
-+
-+		See Documentation/vm/ksm.txt for more information.
-+
-+What:		/sys/kernel/mm/ksm/merge_across_nodes
-+Date:		December 2012
-+Contact:	Linux memory management mailing list <linux-mm@kvack.org>
-+Description:	Control merging pages across different NUMA nodes.
-+
-+		When it is set to 0 only pages from the same node are merged,
-+		otherwise pages from all nodes can be merged together (default).
+My example involves a 3 thread data flow between two pairs
+of (4) sockets:
+
+	 send_loop ->   recv_loop(recv_send)   -> recv_loop(recv_only)
+	 pair_a[1] -> (pair_a[0] -> pair_b[1]) -> pair_b[0]
+
+At least 3.7 and 3.7.1 are affected.
+
+I have tcp_low_latency=1 set, I will try 0 later
+
+The last progress message I got was after receiving 2942052597760
+bytes on fd=7 (out of 64-bit ULONG_MAX / 2)
+
+strace:
+
+3644  sendto(4, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 16384, 0, NULL, 0 <unfinished ...>
+3643  sendto(6, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 16384, 0, NULL, 0 <unfinished ...>
+3642  ppoll([{fd=7, events=POLLIN}], 1, NULL, NULL, 8 <unfinished ...>
+3641  futex(0x7f23ed8129d0, FUTEX_WAIT, 3644, NULL <unfinished ...>
+
+The first and last lines of the strace are expected:
+
++ 3644	sendto(4) is blocked because 3643 is blocked on sendto(fd=6)
+  and not able to call recv().
++ 3641 is the main thread calling pthread_join
+
+What is unexpected is the tid=3643 and tid=3642 interaction.  As confirmed
+by lsof below, fd=6 is sending to wake up fd=7, but ppoll(fd=7) seems
+to not be waking up.
+
+lsof:
+toosleepy 3641   ew    4u  IPv4  12405      0t0     TCP localhost:55904->localhost:33249 (ESTABLISHED)
+toosleepy 3641   ew    5u  IPv4  12406      0t0     TCP localhost:33249->localhost:55904 (ESTABLISHED)
+toosleepy 3641   ew    6u  IPv4  12408      0t0     TCP localhost:48777->localhost:33348 (ESTABLISHED)
+toosleepy 3641   ew    7u  IPv4  12409      0t0     TCP localhost:33348->localhost:48777 (ESTABLISHED)
+
+System info: Linux 3.7.1 x86_64 SMP PREEMPT
+AMD Phenom(tm) II X4 945 Processor (4 cores)
+Nothing interesting in dmesg, iptables rules are empty.
+
+I have not yet been able to reproduce the issue using UNIX sockets,
+only TCP, but you can run:
+
+  ./toosleepy unix
+
+...to test with UNIX sockets intead of TCP.
+
+The following code is also available via git://bogomips.org/toosleepy
+gcc -o toosleepy -O2 -Wall -lpthread toosleepy.c
+-------------------------------- 8< ------------------------------------
+#define _GNU_SOURCE
+#include <poll.h>
+#include <sys/ioctl.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/tcp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <limits.h>
+
+struct receiver {
+	int rfd;
+	int sfd;
+};
+
+/* blocking sender */
+static void * send_loop(void *fdp)
+{
+	int fd = *(int *)fdp;
+	char buf[16384];
+	ssize_t s;
+	size_t sent = 0;
+	size_t max = (size_t)ULONG_MAX / 2;
+
+	while (sent < max) {
+		s = send(fd, buf, sizeof(buf), 0);
+		if (s > 0)
+			sent += s;
+		if (s == -1)
+			assert(errno == EINTR);
+	}
+	dprintf(2, "%d done sending: %zu\n", fd, sent);
+	close(fd);
+	return NULL;
+}
+
+/* non-blocking receiver, using ppoll */
+static void * recv_loop(void *p)
+{
+	const struct receiver *rcvr = p;
+	char buf[16384];
+	nfds_t nfds = 1;
+	struct pollfd fds;
+	int rc;
+	ssize_t r, s;
+	size_t received = 0;
+	size_t sent = 0;
+
+	for (;;) {
+		r = recv(rcvr->rfd, buf, sizeof(buf), 0);
+		if (r == 0) {
+			break;
+		} else if (r == -1) {
+			assert(errno == EAGAIN);
+
+			fds.fd = rcvr->rfd;
+			fds.events = POLLIN;
+			errno = 0;
+			rc = ppoll(&fds, nfds, NULL, NULL);
+			assert(rc == 1);
+		} else {
+			assert(r > 0);
+			received += r;
+			if (rcvr->sfd >= 0) {
+				s = send(rcvr->sfd, buf, sizeof(buf), 0);
+				if (s > 0)
+					sent += s;
+				if (s == -1)
+					assert(errno == EINTR);
+			} else {
+				/* just burn some cycles */
+				write(-1, buf, sizeof(buf));
+			}
+		}
+		if ((received % (sizeof(buf) * sizeof(buf) * 16) == 0))
+			dprintf(2, " %d progress: %zu\n",
+			        rcvr->rfd, received);
+	}
+	dprintf(2, "%d got: %zu\n", rcvr->rfd, received);
+	if (rcvr->sfd >= 0) {
+		dprintf(2, "%d sent: %zu\n", rcvr->sfd, sent);
+		close(rcvr->sfd);
+	}
+
+	return NULL;
+}
+
+static void tcp_socketpair(int sv[2], int accept_flags)
+{
+	struct sockaddr_in addr;
+	socklen_t addrlen = sizeof(addr);
+	int l = socket(PF_INET, SOCK_STREAM, 0);
+	int c = socket(PF_INET, SOCK_STREAM, 0);
+	int a;
+
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_port = 0;
+	assert(0 == bind(l, (struct sockaddr*)&addr, addrlen));
+	assert(0 == listen(l, 1024));
+	assert(0 == getsockname(l, (struct sockaddr *)&addr, &addrlen));
+	assert(0 == connect(c, (struct sockaddr *)&addr, addrlen));
+	a = accept4(l, NULL, NULL, accept_flags);
+	assert(a >= 0);
+	close(l);
+	sv[0] = a;
+	sv[1] = c;
+}
+
+int main(int argc, char *argv[])
+{
+	int pair_a[2];
+	int pair_b[2];
+	pthread_t s, rs, r;
+	struct receiver recv_only;
+	struct receiver recv_send;
+
+	if (argc == 2 && strcmp(argv[1], "unix") == 0) {
+		int val;
+		assert(0 == socketpair(AF_UNIX, SOCK_STREAM, 0, pair_a));
+		assert(0 == socketpair(AF_UNIX, SOCK_STREAM, 0, pair_b));
+		/* only make the receiver non-blocking */
+		val = 1;
+		assert(0 == ioctl(pair_a[0], FIONBIO, &val));
+		val = 1;
+		assert(0 == ioctl(pair_b[0], FIONBIO, &val));
+	} else {
+		tcp_socketpair(pair_a, SOCK_NONBLOCK);
+		tcp_socketpair(pair_b, SOCK_NONBLOCK);
+	}
+
+	recv_send.rfd = pair_a[0];
+	recv_send.sfd = pair_b[1];
+	recv_only.rfd = pair_b[0];
+	recv_only.sfd = -1;
+
+	/*
+	 * data flow:
+	 * send_loop ->   recv_loop(recv_send)   -> recv_loop(recv_only)
+	 * pair_a[1] -> (pair_a[0] -> pair_b[1]) -> pair_b[0]
+	 */
+	assert(0 == pthread_create(&r, NULL, recv_loop, &recv_only));
+	assert(0 == pthread_create(&rs, NULL, recv_loop, &recv_send));
+	assert(0 == pthread_create(&s, NULL, send_loop, &pair_a[1]));
+	assert(0 == pthread_join(s, NULL));
+	assert(0 == pthread_join(rs, NULL));
+	assert(0 == pthread_join(r, NULL));
+
+	return 0;
+}
+-------------------------------- 8< ------------------------------------
+Any help/suggestions/test patches would be greatly appreciated.
+Thanks for reading!
+
 -- 
-1.7.11.7
-
+Eric Wong
