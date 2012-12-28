@@ -1,79 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab2L1Ro5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 12:44:57 -0500
-Received: from mail-vb0-f42.google.com ([209.85.212.42]:38570 "EHLO
-	mail-vb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782Ab2L1Ro4 (ORCPT
+	id S1753955Ab2L1R4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 12:56:35 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:60814 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753782Ab2L1R4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 12:44:56 -0500
-From: cdall@cs.columbia.edu
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: cl@linux.com, Christoffer Dall <cdall@cs.columbia.edu>,
-        Steve Capper <steve.capper@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH v2] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
-Date: Fri, 28 Dec 2012 12:18:35 -0500
-Message-Id: <1356715115-32435-1-git-send-email-cdall@cs.columbia.edu>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1356714442-27028-1-git-send-email-cdall@cs.columbia.edu>
-References: <1356714442-27028-1-git-send-email-cdall@cs.columbia.edu>
+	Fri, 28 Dec 2012 12:56:32 -0500
+Date: Fri, 28 Dec 2012 21:56:27 +0400
+From: Vasily Kulikov <segoon@openwall.com>
+To: Containers <containers@lists.linux-foundation.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
+Message-ID: <20121228175627.GA7683@cachalot>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoffer Dall <cdall@cs.columbia.edu>
+Currently there is completely no limiting in number of user namespaces
+created by unprivileged users.  One can freely create thousands of
+user_ns'es and exhaust kernel memory without even bumping in
+RLIMIT_NPROC or similar.
 
-Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
-(PageHead) is true, for tail pages.  This breaks cache cleaning on some
-ARM systems, and may cause other bugs.
+Even more -- it allows user to overflow kernel stack theoretically
+allowing user to overwrite some important kernel data.  The problem is
+that free_user_ns() may also free its parent user_namespace recursively
+calling free_user_ns().  As kernel stack is very limited, it leads to
+kernel stack overflow.
 
-This patch makes sure PageHead is only true for head pages and PageTail
-is only true for tail pages, and neither is true for non-compound pages.
+The code needs several checks.  First, noone should be able to create
+user_ns of arbitrary depth.  Besides kernel stack overflow one could
+create too big depth to DoS processes belonging to other users by
+forcing them to loop a long time in cap_capable called from some
+ns_capable() (e.g. in case one does smth like "ls -R /proc").  Second,
+non-privileged users must not be able to overlimit some count of
+namespaces to not be able to exhaust kernel memory.
 
-Cc: Steve Capper <steve.capper@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
----
+The included patch is a basic fix for both or them.  Both values are
+hardcoded here to 100 max depth and 1000 max in total.  I'm not sure how
+better to make them configurable.  Looks like it needs some sysctl value
+like kernel.max_user_ns_per_user, but also something more configurable
+like new rlimit'ish limit may be created for user_ns needs.  E.g. in
+case root wants one user to contain hundreds of private containers
+(container owner user), but he doesn't want anybody to fill the kernel
+with hundreds of containers multiplied by number of system users (equals
+to thousands).
 
-Changes since v1:
- - Andrea's e-mail address was misspelled
+I'm not sure how it is an approved way for user_ns.  Eric?
 
- include/linux/page-flags.h |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+A related issue which is NOT FIXED HERE is limits for all resources
+available for containerized pseudo roots.  E.g. I succeeded creating
+thousands of veth network devices without problems by a non-root user,
+there seems no limit in number of network devices.  I suspect it is
+possible to setup routing and net_ns'es the way it will be very
+time-consuming for kernel to handle IP packets inside of ksoftirq, which
+is not counted as this user scheduler time.   I suppose the issue is not
+veth-specific, almost all newly available for unprivileged users code
+pathes are vulnerable to DoS attacks.
 
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index b5d1384..70473da 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -362,7 +362,7 @@ static inline void ClearPageCompound(struct page *page)
-  * pages on the LRU and/or pagecache.
-  */
- TESTPAGEFLAG(Compound, compound)
--__PAGEFLAG(Head, compound)
-+__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
+Signed-off-by: Vasily Kulikov <segoon@openwall.com>
+-- 
+ include/linux/sched.h   |    3 +++
+ kernel/user_namespace.c |   26 ++++++++++++++++++++++++++
+ 2 files changed, 29 insertions(+)
+
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 206bb08..479940e 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -706,6 +706,9 @@ struct user_struct {
+ #ifdef CONFIG_EPOLL
+ 	atomic_long_t epoll_watches; /* The number of file descriptors currently watched */
+ #endif
++#ifdef CONFIG_USER_NS
++	atomic_t user_namespaces; /* How many user_ns does this user created? */
++#endif
+ #ifdef CONFIG_POSIX_MQUEUE
+ 	/* protected by mq_lock	*/
+ 	unsigned long mq_bytes;	/* How many bytes can be allocated to mqueue? */
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 2b042c4..a52c4e8 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -45,6 +45,16 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
+ 	cred->user_ns = user_ns;
+ }
  
- /*
-  * PG_reclaim is used in combination with PG_compound to mark the
-@@ -374,8 +374,14 @@ __PAGEFLAG(Head, compound)
-  * PG_compound & PG_reclaim	=> Tail page
-  * PG_compound & ~PG_reclaim	=> Head page
-  */
-+#define PG_head_mask ((1L << PG_compound))
- #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
- 
-+static inline int PageHead(struct page *page)
++static long get_user_ns_depth(struct user_namespace *ns)
 +{
-+	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
++	long depth;
++
++	for (depth = 1; ns != &init_user_ns; ns = ns->parent)
++		depth++;
++
++	return depth;
 +}
 +
- static inline int PageTail(struct page *page)
+ /*
+  * Create a new user namespace, deriving the creator from the user in the
+  * passed credentials, and replacing that user with the new root user for the
+@@ -56,6 +66,7 @@ static void set_cred_user_ns(struct cred *cred, struct user_namespace *user_ns)
+ int create_user_ns(struct cred *new)
  {
- 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
--- 
-1.7.9.5
+ 	struct user_namespace *ns, *parent_ns = new->user_ns;
++	struct user_struct *user = current->cred->user;
+ 	kuid_t owner = new->euid;
+ 	kgid_t group = new->egid;
+ 	int ret;
+@@ -68,6 +79,18 @@ int create_user_ns(struct cred *new)
+ 	    !kgid_has_mapping(parent_ns, group))
+ 		return -EPERM;
+ 
++	/* Too long user_ns chains, might overflow kernel stack on kref_put() */
++	if (get_user_ns_depth(parent_ns) > 100)
++		return -ENOMEM;
++
++	atomic_inc(&user->user_namespaces);
++	/* FIXME: probably it's better to configure the number
++	 *        instead of hardcoding 1000 */
++	if (atomic_read(&user->user_namespaces) > 1000) {
++		atomic_dec(&user->user_namespaces);
++		return -ENOMEM;
++	}
++
+ 	ns = kmem_cache_zalloc(user_ns_cachep, GFP_KERNEL);
+ 	if (!ns)
+ 		return -ENOMEM;
+@@ -108,10 +131,13 @@ void free_user_ns(struct kref *kref)
+ {
+ 	struct user_namespace *parent, *ns =
+ 		container_of(kref, struct user_namespace, kref);
++	struct user_struct *user = find_user(ns->owner);
+ 
+ 	parent = ns->parent;
+ 	proc_free_inum(ns->proc_inum);
+ 	kmem_cache_free(user_ns_cachep, ns);
++	if (user)
++		atomic_dec(&user->user_namespaces);
+ 	put_user_ns(parent);
+ }
+ EXPORT_SYMBOL(free_user_ns);
 
+-- 
+Vasily Kulikov
+http://www.openwall.com - bringing security into open computing environments
