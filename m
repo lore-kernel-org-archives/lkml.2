@@ -1,62 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496Ab2L1A3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 19:29:55 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47615 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2L1A3w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 19:29:52 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50DCE7C0.8070407@jp.fujitsu.com>
-Date: Fri, 28 Dec 2012 09:28:48 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752652Ab2L1AdT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:33:19 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:55244 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751236Ab2L1AdQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 19:33:16 -0500
+X-Remote-IP: 213.191.128.133
+Date: Fri, 28 Dec 2012 01:33:12 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v5 14/14] memory-hotplug: free node_data when a node is
- offlined
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-15-git-send-email-tangchen@cn.fujitsu.com> <50DA7533.6060407@jp.fujitsu.com> <50DC3C26.6060308@cn.fujitsu.com>
-In-Reply-To: <50DC3C26.6060308@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: sedat.dilek@gmail.com
+CC: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+References: <CA+icZUV_CdAvq1nmOVZeLSAu0mZj+BO0T++REc6U1hevt50hXA@mail.gmail.com> <50DCDC21.6080303@iskon.hr> <CA+icZUX2g0R46QNFpntA1r6E3wu0HNhBjk+Kjm581aUBgM6VKA@mail.gmail.com> <50DCDEE5.9000700@iskon.hr> <CA+icZUUXbCCtPaimG6hKsSUQTmnoMAZHsd_nrn7eityepqYUkQ@mail.gmail.com>
+In-Reply-To: <CA+icZUUXbCCtPaimG6hKsSUQTmnoMAZHsd_nrn7eityepqYUkQ@mail.gmail.com>
+Message-ID: <50DCE8C8.8050103@iskon.hr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121227 #8899382, check: 20121228 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40796 [Dec 28 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/12/27 21:16), Wen Congyang wrote:
-> At 12/26/2012 11:55 AM, Kamezawa Hiroyuki Wrote:
->> (2012/12/24 21:09), Tang Chen wrote:
->>> From: Wen Congyang <wency@cn.fujitsu.com>
+On 28.12.2012 01:24, Sedat Dilek wrote:
+> On Fri, Dec 28, 2012 at 12:51 AM, Zlatko Calusic
+> <zlatko.calusic@iskon.hr> wrote:
+>> On 28.12.2012 00:42, Sedat Dilek wrote:
 >>>
->>> We call hotadd_new_pgdat() to allocate memory to store node_data. So we
->>> should free it when removing a node.
+>>> On Fri, Dec 28, 2012 at 12:39 AM, Zlatko Calusic
+>>> <zlatko.calusic@iskon.hr> wrote:
+>>>>
+>>>> On 28.12.2012 00:30, Sedat Dilek wrote:
+>>>>>
+>>>>>
+>>>>> Hi Zlatko,
+>>>>>
+>>>>> I am not sure if I hit the same problem as described in this thread.
+>>>>>
+>>>>> Under heavy load, while building a customized toolchain for the Freetz
+>>>>> router project I got a BUG || NULL pointer derefence || kswapd ||
+>>>>> zone_balanced || pgdat_balanced() etc. (details see my screenshot).
+>>>>>
+>>>>> I will try your patch from [1] ***only*** on top of my last
+>>>>> Linux-v3.8-rc1 GIT setup (post-v3.8-rc1 mainline + some net-fixes).
+>>>>>
+>>>>
+>>>> Yes, that's the same bug. It should be fixed with my latest patch, so I'd
+>>>> appreciate you testing it, to be on the safe side this time. There should
+>>>> be
+>>>> no difference if you apply it to anything newer than 3.8-rc1, so go for
+>>>> it.
+>>>> Thanks!
+>>>>
 >>>
->>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
+>>> Not sure how I can really reproduce this bug as one build worked fine
+>>> within my last v3.8-rc1 kernel.
+>>> I increased the parallel-make-jobs-number from "4" to "8" to stress a
+>>> bit harder.
+>>> Just building right now... and will report.
+>>>
+>>> If you have any test-case (script or whatever), please let me/us know.
+>>>
 >>
->> I'm sorry but is it safe to remove pgdat ? All zone cache and zonelists are
->> properly cleared/rebuilded in synchronous way ? and No threads are visinting
->> zone in vmscan.c ?
-> 
-> We have rebuilt zonelists when a zone has no memory after offlining some pages.
-> 
+>> Unfortunately not, I haven't reproduced it yet on my machines. But it seems
+>> that bug will hit only under heavy memory pressure. When close to OOM, or
+>> possibly with lots of writing to disk. It's also possible that fragmentation
+>> of memory zones could provoke it, that means testing it for a longer time.
+>>
+>
+> I tested successfully by doing simultaneously...
+> - building Freetz with 8 parallel make-jobs
+> - building Linux GIT with 1 make-job
+> - 9 tabs open in firefox
+> - In one tab I ran YouTube music video
+> - etc.
+>
+> I am reading [1] and [2] where another user reports success by reverting this...
+>
+> commit cda73a10eb3f493871ed39f468db50a65ebeddce
+> "mm: do not sleep in balance_pgdat if there's no i/o congestion"
+>
+> BTW, this machine has also 4GiB RAM (Ubuntu/precise AMD64).
+>
+> Feel free to add a "Reported-by/Tested-by" if you think this is a
+> positive report.
+>
 
-How do you guarantee that the address of pgdat/zone is not on stack of any kernel
-threads or other kernel objects without reference counting or other syncing method ?
+Thanks for the testing! And keep running it in case something 
+interesting pops up. ;)
 
+No need to revert cda73a10eb because it fixes another bug. And the patch 
+you're now running fixes the new bug I introduced with a combination of 
+my latest 2 patches. Nah, it gets complicated... :)
+
+But, at least I found the culprit and as soon as Linus applies the fix, 
+everything will be hunky dory again, at least on this front. :P
 
 Thanks,
--Kame
-
-
+-- 
+Zlatko
