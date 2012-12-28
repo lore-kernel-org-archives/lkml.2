@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab2L0X7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 18:59:24 -0500
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:34212 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab2L0X7V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 18:59:21 -0500
+	id S1752311Ab2L1ABz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:01:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:59637 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750944Ab2L1ABy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 19:01:54 -0500
+Message-ID: <50DCE160.2040707@zytor.com>
+Date: Thu, 27 Dec 2012 16:01:36 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121227190351.GA10819@x1.alien8.de>
-References: <20121227185126.GA10207@x1.alien8.de>
-	<20121227190351.GA10819@x1.alien8.de>
-Date: Thu, 27 Dec 2012 15:59:20 -0800
-X-Google-Sender-Auth: Ozl_KCVJeXuLwrxdGD0cqxhmKpU
-Message-ID: <CAE9FiQXWpbee0F-RD_OrxV_JRh-yoO1pcf5qDa+9_qONrCGhPg@mail.gmail.com>
-Subject: Re: [PATCH] x86, mm: add generic kernel/ident mapping helper
-From: Yinghai Lu <yinghai@kernel.org>
-To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, realmode: set real_mode permissions early
+References: <20121227182232.GA10054@x1.alien8.de> <CAE9FiQXpAB_AFtHF_NN7yr2iP2OOLgMir8MNvYUUc15k83_3zg@mail.gmail.com>
+In-Reply-To: <CAE9FiQXpAB_AFtHF_NN7yr2iP2OOLgMir8MNvYUUc15k83_3zg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 11:03 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Dec 27, 2012 at 07:51:26PM +0100, Borislav Petkov wrote:
->> > commit bb3cda32f9586e13c5d3dde6c83a914bb2d7f87f
->> > Author: Yinghai Lu <yinghai@kernel.org>
->> > Date:   Mon Dec 24 18:00:21 2012 -0800
->> >
->> >     x86, mm: add generic kernel/ident mapping helper
->> >
->> >     It is simple version for kernel_physical_mapping_init.
->> >     it will work to build one page table that will be put effectiv later.
+On 12/27/2012 03:56 PM, Yinghai Lu wrote:
+>>
+>> I'm looking at this patch in the -v8 branch: you need to update the
+>> comment above that function to say that trampoline code needs to be
+>> marked X now earlier.
 >
-> Forgot to ask: what does "put effectiv later" mean?
+> Not sure if we really need to add such comment in the code.
+>
+> Peter, what is your idea about this?
+>
 
- * we will switch to using it later
+It would be good to note why the early_initcall is the right phase.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
