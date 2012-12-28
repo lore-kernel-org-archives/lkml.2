@@ -1,152 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab2L1As3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 19:48:29 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:42348 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752399Ab2L1As0 convert rfc822-to-8bit (ORCPT
+	id S1752839Ab2L1AtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:49:11 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:52256 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752399Ab2L1AtJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 19:48:26 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=q7+uXjkiWmAUKhsp5jt
-	wS+K6lKFj6hnkyvWdkrhygTchmjVtnXlw2+2pWQl96unDPfPnVZ2K4mTgll+K8dY
-	ICIEwjQwHBs/+vNN9y6IYSRh4kISulFJSLNnWwiMKqF+bsCT7DgCi72jFBAmFJTt
-	C/ojelsdZffzJQYsXCDd37KA=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.0.3
-Date: Thu, 27 Dec 2012 16:48:23 -0800
-Message-ID: <7v8v8jknmw.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 49513960-5088-11E2-9603-F0CE2E706CDE-77302942!b-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Dec 2012 19:49:09 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-7a-50dcec832080
+Message-id: <1356655735.16178.179.camel@kjgkr>
+Subject: Re: [PATCH] f2fs: add missing pretech.h include
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Namjae Jeon <namjae.jeon@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Date: Fri, 28 Dec 2012 09:48:55 +0900
+In-reply-to: <20121227143424.GB3223@osiris>
+References: <20121227143032.GA3223@osiris> <20121227143424.GB3223@osiris>
+Organization: samsung
+Content-type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature"; boundary="=-tXSm30HEE4bMcFX7t027"
+X-Mailer: Evolution 3.2.3-0ubuntu6
+MIME-version: 1.0
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpjleLIzCtJLcpLzFFi42I5/e+ZkW7zmzsBBh92Wlvs2XuSxeLyrjls
+	DkwenzfJBTBGcdmkpOZklqUW6dslcGXM/XCCpWAaX8WONbeZGhgv8XQxcnJICJhInP54kRHC
+	FpO4cG89WxcjF4eQwDJGifld+5lgil4sP88EkZjOKHH39i4WCOc1o8STH6/YQap4BfQk2l8d
+	BOsQFrCQ2PD+G2sXIwcHm4C2xOb9BiBhIQFFibf774KFRUDKrzmChJkFMiQ+rX4ENoVFQFVi
+	8cHzYFM4gTp3b5/JCNHqKbHo0k42EJtfQFTiZOsnRojeKolr31+xQNypJLG7vRPqGkGJH5Pv
+	sUDMFJD4NvkQC8haCQFZiU0HmEGulxC4xi6x8MImqB8lJQ6uuMEygVF8FpKxs5CMgohrSrRu
+	/80OYWtLLFv4mhnCtpVYt+49VI2NxKarCxghbHmJ7W/nMC9gZF/FKJpakFxQnJSea6RXnJhb
+	XJqXrpecn7uJERKT0jsYVzVYHGIU4GBU4uFd1HMnQIg1say4MvcQowrQnEcbVl9glGLJy89L
+	VRLhXXIVKM2bklhZlVqUH19UmpNafIgxGejTicxSosn5wDSSVxJvaGxsYmZiamJuaWpuSpqw
+	kjhvs0dKgJBAemJJanZqakFqEcwWJg5OqQbGptl2ArO/55S7fdu2b1rolrPzkyfX37vwodj9
+	zUybmCtKvbUavRJSJcsf/FYwcXJhe7pw0Qy/HxPmGX2sPPXb3fPC4qCCtw6bmDvMLtUx3ly7
+	zWq91meL8JPN0bZz00XSwwUiZl7eUH5v510eGffOk78r3x69vEitrvxG7QKuqaI1s5aeSPr2
+	S4mlOCPRUIu5qDgRAAQYmRgZAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKKsWRmVeSWpSXmKPExsVy+t9jQd3mN3cCDD4dNrPYs/cki8XlXXPY
+	HJg8Pm+SC2CMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
+	0HXLzAEaraRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGPMmPvhBEvBNL6K
+	HWtuMzUwXuLpYuTkkBAwkXix/DwThC0mceHeerYuRi4OIYHpjBJ3b+9igXBeM0o8+fGKHaSK
+	V0BPov3VQbAOYQELiQ3vv7F2MXJwsAloS2zebwASFhJQlHi7/y5YWASk/JojSJhZIEPi0+pH
+	YFNYBFQlFh+E2MsJ1Ll7+0xGiFZPiUWXdrKB2PwCohInWz8xQvRWSVz7/ooF4k4lid3tnVDX
+	CEr8mHyPZQKj4CwkZbOQpCDimhKt23+zQ9jaEssWvmaGsG0l1q17D1VjI7Hp6gJGCFteYvvb
+	OcwLGNlXMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgRH/DPpHYyrGiwOMQpwMCrx8C7quRMg
+	xJpYVlyZe4hRBWjOow2rLzBKseTl56UqifAuuQqU5k1JrKxKLcqPLyrNSS0+xJgMDI2JzFKi
+	yfnAJJVXEm9obGJmZGlkZmFkYm5OmrCSOG+zR0qAkEB6YklqdmpqQWoRzBYmDk6pBsZ8fbaJ
+	f08/EDKu+tPZ9be5V6yL7d/lZh7Hji0sHd529ZsZ5j2r3hG7bd//a49ivIuV0zYphTJYJu4J
+	+RskHmpSa9rnW/4/+pWTXU/FBMH/31SvpfzbXPNzGXeZU11kdsiFE3Zyrkf1ZN57Xa7bc+rU
+	h8Yd5/bOzH/xwjiK/3tI8bw9zBv95imxFGckGmoxFxUnAgAEaIe+SAMAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest maintenance release Git v1.8.0.3 is now available at
-the usual places.
 
-This is primarily to down-merge documentation updates that have been
-accumulating to the 'master' front for the upcoming 1.8.1 to the
-maintenance series.
+--=-tXSm30HEE4bMcFX7t027
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-The release tarballs are found at:
+2012-12-27 (=EB=AA=A9), 15:34 +0100, Heiko Carstens:
+> On Thu, Dec 27, 2012 at 03:30:32PM +0100, Heiko Carstens wrote:
+> > From aa027f06dfb5b2fd27d6f92391d8340df671e82b Mon Sep 17 00:00:00 2001
+> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > Date: Thu, 27 Dec 2012 15:22:27 +0100
+> > Subject: [PATCH] f2fs: add missing pretech.h include
+>=20
+> That should have been "prefetch.h", obviously...
+> At least the patch is correct.
 
-    http://code.google.com/p/git-core/downloads/list
+Hi,
+This was fixed by Geert Uytterhoeven before.
+I'm supposed to push other bug fixes with this to linus today.
+Anyway, thank you very much. :)
 
-and their SHA-1 checksums are:
+--=20
+Jaegeuk Kim
+Samsung
 
-b1695f28448c00e61e110b3c7bcd66c8047ef176  git-1.8.0.3.tar.gz
-83c46b62e0c3979c5ef77a407ca41507658b5726  git-htmldocs-1.8.0.3.tar.gz
-63df55f90b9c6c11dd827ce1880b5b5fdf79c1c1  git-manpages-1.8.0.3.tar.gz
+--=-tXSm30HEE4bMcFX7t027
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Also the following public repositories all have a copy of the v1.8.0.3
-tag and the maint branch that the tag points at:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
+iQIcBAABAgAGBQJQ3Ox3AAoJEEAUqH6CSFDSiSIP/RcYhLjhOpxcmJj9hgmHoEDO
+96d9C5Nrmvsv0ibe0yDnwLRLzkWyYaVOWwpLKCWDiISHUeH/CGRp41riZM3dAZjB
+ZEKsyRgMQ/jlaRFNw3h+jvIrS/6JhasYaE41FjxAd2gdcwFlAamFp6IG40JzQs4/
+YThRtV3RKCeXC7keeZwlzxOqp/SIzBvP7xJDQnlIjCami+ZvzMY17TIZ7sR06mQL
+SkmoFsMbcmZk4xobmNR6YhhRDljHxSznEMDNiJw1uSdPzLTi6TyH4CjtohaQ24Ud
+67dvnq0d80geFz2uZlyLIiWIIKOZXT/E5IC0RmHGCCq0yBPZNZEocrIpVFom57SP
+ahzkCKDadbQMDJ/cjkXNGtJA5+LitPBS8CN0+iBTIex1OAlOOZy7mzTj+qVW3ypm
+sG4ux+DXRO7SOpXeoCZ8fVG8xRG98m/wIUvZeDn0uWd8JoYRrm16copDX6+Qlrd9
+lK4PCM4umrMfxFCgbsRk+c/HSuuYcTD8sC6le6ZH7t4rxeyHw2knxY1sIXCuh8HO
+aO3SuX9IABzqXkjX/KTgNo+b/9u0poLBcgI9FE1rctkor5C1RHmy0CaVbVAQsJXS
+X48iqu+UgLKznIV37WtCcpMi4mM46CIbo4dqDqscMTIxUwPoPgwk+5QN8iJ9U0bv
+31yaaWscuiEgZK+qzD4N
+=mD4g
+-----END PGP SIGNATURE-----
 
-Git v1.8.0.3 Release Notes
-==========================
-
-Fixes since v1.8.0.2
---------------------
-
- * "git log -p -S<string>" did not apply the textconv filter while
-   looking for the <string>.
-
- * In the documentation, some invalid example e-mail addresses were
-   formatted into mailto: links.
-
-Also contains many documentation updates backported from the 'master'
-branch that is preparing for the upcoming 1.8.1 release.
-
-----------------------------------------------------------------
-
-Changes since v1.8.0.2 are as follows:
-
-Adam Spiers (2):
-      SubmittingPatches: add convention of prefixing commit messages
-      Documentation: move support for old compilers to CodingGuidelines
-
-Anders Kaseorg (1):
-      git-prompt: Document GIT_PS1_DESCRIBE_STYLE
-
-Chris Rorvick (2):
-      Documentation/git-checkout.txt: clarify usage
-      Documentation/git-checkout.txt: document 70c9ac2 behavior
-
-Gunnlaugur Þór Briem (1):
-      Document git-svn fetch --log-window-size parameter
-
-Jeff King (7):
-      pickaxe: hoist empty needle check
-      pickaxe: use textconv for -S counting
-      .mailmap: match up some obvious names/emails
-      .mailmap: fix broken entry for Martin Langhoff
-      .mailmap: normalize emails for Jeff King
-      .mailmap: normalize emails for Linus Torvalds
-      contrib: update stats/mailmap script
-
-John Keeping (1):
-      Documentation: don't link to example mail addresses
-
-Junio C Hamano (6):
-      fetch --tags: clarify documentation
-      README: it does not matter who the current maintainer is
-      t7004: do not create unneeded gpghome/gpg.conf when GPG is not used
-      Documentation: Describe "git diff <blob> <blob>" separately
-      git(1): show link to contributor summary page
-      Git 1.8.0.3
-
-Krzysztof Mazur (1):
-      doc: git-reset: make "<mode>" optional
-
-Manlio Perillo (1):
-      git.txt: add missing info about --git-dir command-line option
-
-Matthew Daley (1):
-      Fix sizeof usage in get_permutations
-
-Max Horn (1):
-      git-remote-helpers.txt: document invocation before input format
-
-Nguyễn Thái Ngọc Duy (1):
-      index-format.txt: clarify what is "invalid"
-
-Ramkumar Ramachandra (1):
-      Documentation: move diff.wordRegex from config.txt to diff-config.txt
-
-Sebastian Leske (4):
-      git-svn: Document branches with at-sign(@).
-      git-svn: Recommend use of structure options.
-      git-svn: Expand documentation for --follow-parent
-      git-svn: Note about tags.
-
-Sitaram Chamarty (1):
-      clarify -M without % symbol in diff-options
-
-Stefano Lattarini (1):
-      README: Git is released under the GPLv2, not just "the GPL"
-
-Thomas Ackermann (8):
-      Split over-long synopsis in git-fetch-pack.txt into several lines
-      Shorten two over-long lines in git-bisect-lk2009.txt by abbreviating some sha1
-      Change headline of technical/send-pack-pipeline.txt to not confuse its content with content from git-send-pack.txt
-      Documentation/technical: convert plain text files to asciidoc
-      Documentation/howto: convert plain text files to asciidoc
-      Documentation: build html for all files in technical and howto
-      Remove misleading date from api-index-skel.txt
-      Sort howto documents in howto-index.txt
-
-Tom Jones (1):
-      Add -S, --gpg-sign option to manpage of "git commit"
+--=-tXSm30HEE4bMcFX7t027--
 
