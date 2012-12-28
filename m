@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab2L1Tb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:31:56 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55523 "EHLO
+	id S932438Ab2L1TcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:32:01 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55526 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932355Ab2L1TTU (ORCPT
+	by vger.kernel.org with ESMTP id S932356Ab2L1TTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:20 -0500
-Message-Id: <20121228190342.521911603@decadent.org.uk>
+Message-Id: <20121228190341.837221372@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:29 +0100
+Date: Fri, 28 Dec 2012 20:04:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kevin McKinney <klmckinney1@gmail.com>,
-        Muhammad Minhazul Haque <mdminhazulhaque@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 059/173] Staging: bcm: Add two products and remove an existing product.
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        A Sh <smr.ash1991@gmail.com>
+Subject: [ 056/173] xhci: Extend Fresco Logic MSI quirk.
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,56 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kevin McKinney <klmckinney1@gmail.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 4f29ef050848245f7c180b95ccf67dfcd76b1fd8 upstream.
+commit bba18e33f25072ebf70fd8f7f0cdbf8cdb59a746 upstream.
 
-This patch adds two new products and modifies
-the device id table to include them. In addition,
-product of 0xbccd - BCM_USB_PRODUCT_ID_SM250 is
-removed because Beceem, ZTE, Sprint use this id
-for block devices.
+Ali reports that plugging a device into the Fresco Logic xHCI host with
+PCI device ID 1400 produces an IRQ error:
 
-Reported-by: Muhammad Minhazul Haque <mdminhazulhaque@gmail.com>
-Signed-off-by: Kevin McKinney <klmckinney1@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+ do_IRQ: 3.176 No irq handler for vector (irq -1)
+
+Other early Fresco Logic host revisions don't support MSI, even though
+their PCI config space claims they do.  Extend the quirk to disabling
+MSI to this chipset revision.  Also enable the short transfer quirk,
+since it's likely this revision also has that quirk, and it should be
+harmless to enable.
+
+04:00.0 0c03: 1b73:1400 (rev 01) (prog-if 30 [XHCI])
+        Subsystem: 1d5c:1000
+        Physical Slot: 3
+        Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx+
+        Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+        Latency: 0, Cache Line Size: 64 bytes
+        Interrupt: pin A routed to IRQ 51
+        Region 0: Memory at d4600000 (32-bit, non-prefetchable) [size=64K]
+        Capabilities: [50] Power Management version 3
+                Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA PME(D0+,D1-,D2-,D3hot+,D3cold-)
+                Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+        Capabilities: [68] MSI: Enable+ Count=1/1 Maskable- 64bit+
+                Address: 00000000feeff00c  Data: 41b1
+        Capabilities: [80] Express (v1) Endpoint, MSI 00
+                DevCap: MaxPayload 128 bytes, PhantFunc 0, Latency L0s <2us, L1 <32us
+                        ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
+                DevCtl: Report errors: Correctable- Non-Fatal- Fatal- Unsupported-
+                        RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
+                        MaxPayload 128 bytes, MaxReadReq 512 bytes
+                DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
+                LnkCap: Port #0, Speed 2.5GT/s, Width x1, ASPM L0s L1, Latency L0 unlimited, L1 unlimited
+                        ClockPM- Surprise- LLActRep- BwNot-
+                LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk+
+                        ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
+                LnkSta: Speed 2.5GT/s, Width x1, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
+        Kernel driver in use: xhci_hcd
+
+This patch should be backported to stable kernels as old as 2.6.36, that
+contain the commit f5182b4155b9d686c5540a6822486400e34ddd98 "xhci:
+Disable MSI for some Fresco Logic hosts."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: A Sh <smr.ash1991@gmail.com>
+Tested-by: A Sh <smr.ash1991@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/bcm/InterfaceInit.c |    3 ++-
- drivers/staging/bcm/InterfaceInit.h |    2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-pci.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/bcm/InterfaceInit.c
-+++ b/drivers/staging/bcm/InterfaceInit.c
-@@ -4,11 +4,12 @@ static struct usb_device_id InterfaceUsb
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3B) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_T3L) },
--	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_SM250) },
-+	{ USB_DEVICE(BCM_USB_VENDOR_ID_T3, BCM_USB_PRODUCT_ID_SYM) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_226) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_FOXCONN, BCM_USB_PRODUCT_ID_1901) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_TU25) },
- 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_226) },
-+	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_326) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, InterfaceUsbtable);
---- a/drivers/staging/bcm/InterfaceInit.h
-+++ b/drivers/staging/bcm/InterfaceInit.h
-@@ -8,11 +8,11 @@
- #define BCM_USB_PRODUCT_ID_T3 	0x0300
- #define BCM_USB_PRODUCT_ID_T3B 	0x0210
- #define BCM_USB_PRODUCT_ID_T3L 	0x0220
--#define BCM_USB_PRODUCT_ID_SM250 	0xbccd
- #define BCM_USB_PRODUCT_ID_SYM  0x15E
- #define BCM_USB_PRODUCT_ID_1901 0xe017
- #define BCM_USB_PRODUCT_ID_226	0x0132 /* not sure if this is valid */
- #define BCM_USB_PRODUCT_ID_ZTE_226 0x172
-+#define BCM_USB_PRODUCT_ID_ZTE_326 0x173 /* ZTE AX326 */
- #define BCM_USB_PRODUCT_ID_ZTE_TU25 0x0007
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 8345d7c..dcb72f7 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -29,6 +29,7 @@
+ /* Device for a quirk */
+ #define PCI_VENDOR_ID_FRESCO_LOGIC	0x1b73
+ #define PCI_DEVICE_ID_FRESCO_LOGIC_PDK	0x1000
++#define PCI_DEVICE_ID_FRESCO_LOGIC_FL1400	0x1400
  
- #define BCM_USB_MINOR_BASE 		192
+ #define PCI_VENDOR_ID_ETRON		0x1b6f
+ #define PCI_DEVICE_ID_ASROCK_P67	0x7023
+@@ -58,8 +59,10 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
+ 
+ 	/* Look for vendor-specific quirks */
+ 	if (pdev->vendor == PCI_VENDOR_ID_FRESCO_LOGIC &&
+-			pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK) {
+-		if (pdev->revision == 0x0) {
++			(pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK ||
++			 pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_FL1400)) {
++		if (pdev->device == PCI_DEVICE_ID_FRESCO_LOGIC_PDK &&
++				pdev->revision == 0x0) {
+ 			xhci->quirks |= XHCI_RESET_EP_QUIRK;
+ 			xhci_dbg(xhci, "QUIRK: Fresco Logic xHC needs configure"
+ 					" endpoint cmd after reset endpoint\n");
 
 
