@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab2L1Tpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:45:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55210 "EHLO
+	id S932161Ab2L1Tpo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:45:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55213 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754680Ab2L1TSK (ORCPT
+	by vger.kernel.org with ESMTP id S1754681Ab2L1TSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:18:10 -0500
-Message-Id: <20121228190356.959748601@decadent.org.uk>
+Message-Id: <20121228190356.045338256@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:39 +0100
+Date: Fri, 28 Dec 2012 20:05:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yi Zou <yi.zou@intel.com>, Open-FCoE <devel@open-fcoe.org>,
-        "Nicholas A. Bellinger" <nab@risingtidesystems.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [ 129/173] target/tcm_fc: fix the lockdep warning due to inconsistent lock
- state
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Soeren Moch <smoch@web.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>
+Subject: [ 123/173] mm: dmapool: use provided gfp flags for all dma_alloc_coherent()
+ calls
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,143 +31,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yi Zou <yi.zou@intel.com>
+From: Marek Szyprowski <m.szyprowski@samsung.com>
 
-commit 9f4ad44b264f8bb61ffdd607148215566568430d upstream.
+commit 387870f2d6d679746020fa8e25ef786ff338dc98 upstream.
 
-The lockdep warning below is in theory correct but it will be in really weird
-rare situation that ends up that deadlock since the tcm fc session is hashed
-based the rport id. Nonetheless, the complaining below is about rcu callback
-that does the transport_deregister_session() is happening in softirq, where
-transport_register_session() that happens earlier is not. This triggers the
-lockdep warning below. So, just fix this to make lockdep happy by disabling
-the soft irq before calling transport_register_session() in ft_prli.
+dmapool always calls dma_alloc_coherent() with GFP_ATOMIC flag,
+regardless the flags provided by the caller. This causes excessive
+pruning of emergency memory pools without any good reason. Additionaly,
+on ARM architecture any driver which is using dmapools will sooner or
+later  trigger the following error:
+"ERROR: 256 KiB atomic DMA coherent pool is too small!
+Please increase it with coherent_pool= kernel parameter!".
+Increasing the coherent pool size usually doesn't help much and only
+delays such error, because all GFP_ATOMIC DMA allocations are always
+served from the special, very limited memory pool.
 
-BTW, this was found in FCoE VN2VN over two VMs, couple of create and destroy
-would get this triggered.
+This patch changes the dmapool code to correctly use gfp flags provided
+by the dmapool caller.
 
-v1: was enforcing register to be in softirq context which was not righ. See,
-http://www.spinics.net/lists/target-devel/msg03614.html
-
-v2: following comments from Roland&Nick (thanks), it seems we don't have to
-do transport_deregister_session() in rcu callback, so move it into ft_sess_free()
-but still do kfree() of the corresponding ft_sess struct in rcu callback to
-make sure the ft_sess is not freed till the rcu callback.
-
-...
-[ 1328.370592] scsi2 : FCoE Driver
-[ 1328.383429] fcoe: No FDMI support.
-[ 1328.384509] host2: libfc: Link up on port (000000)
-[ 1328.934229] host2: Assigned Port ID 00a292
-[ 1357.232132] host2: rport 00a393: Remove port
-[ 1357.232568] host2: rport 00a393: Port sending LOGO from Ready state
-[ 1357.233692] host2: rport 00a393: Delete port
-[ 1357.234472] host2: rport 00a393: work event 3
-[ 1357.234969] host2: rport 00a393: callback ev 3
-[ 1357.235979] host2: rport 00a393: Received a LOGO response closed
-[ 1357.236706] host2: rport 00a393: work delete
-[ 1357.237481]
-[ 1357.237631] =================================
-[ 1357.238064] [ INFO: inconsistent lock state ]
-[ 1357.238450] 3.7.0-rc7-yikvm+ #3 Tainted: G           O
-[ 1357.238450] ---------------------------------
-[ 1357.238450] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-[ 1357.238450] ksoftirqd/0/3 [HC0[0]:SC1[1]:HE0:SE0] takes:
-[ 1357.238450]  (&(&se_tpg->session_lock)->rlock){+.?...}, at: [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450] {SOFTIRQ-ON-W} state was registered at:
-[ 1357.238450]   [<ffffffff810834f5>] mark_held_locks+0x6d/0x95
-[ 1357.238450]   [<ffffffff8108364a>] trace_hardirqs_on_caller+0x12d/0x197
-[ 1357.238450]   [<ffffffff810836c1>] trace_hardirqs_on+0xd/0xf
-[ 1357.238450]   [<ffffffff8149caba>] _raw_spin_unlock_irq+0x2d/0x45
-[ 1357.238450]   [<ffffffffa01e8d10>] __transport_register_session+0xb8/0x122 [target_core_mod]
-[ 1357.238450]   [<ffffffffa01e8dbe>] transport_register_session+0x44/0x5a [target_core_mod]
-[ 1357.238450]   [<ffffffffa018e32c>] ft_prli+0x1e3/0x275 [tcm_fc]
-[ 1357.238450]   [<ffffffffa0160e8d>] fc_rport_recv_req+0x95e/0xdc5 [libfc]
-[ 1357.238450]   [<ffffffffa015be88>] fc_lport_recv_els_req+0xc4/0xd5 [libfc]
-[ 1357.238450]   [<ffffffffa015c778>] fc_lport_recv_req+0x12f/0x18f [libfc]
-[ 1357.238450]   [<ffffffffa015a6d7>] fc_exch_recv+0x8ba/0x981 [libfc]
-[ 1357.238450]   [<ffffffffa0176d7a>] fcoe_percpu_receive_thread+0x47a/0x4e2 [fcoe]
-[ 1357.238450]   [<ffffffff810549f1>] kthread+0xb1/0xb9
-[ 1357.238450]   [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
-[ 1357.238450] irq event stamp: 275411
-[ 1357.238450] hardirqs last  enabled at (275410): [<ffffffff810bb6a0>] rcu_process_callbacks+0x229/0x42a
-[ 1357.238450] hardirqs last disabled at (275411): [<ffffffff8149c2f7>] _raw_spin_lock_irqsave+0x22/0x8e
-[ 1357.238450] softirqs last  enabled at (275394): [<ffffffff8103d669>] __do_softirq+0x246/0x26f
-[ 1357.238450] softirqs last disabled at (275399): [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
-[ 1357.238450]
-[ 1357.238450] other info that might help us debug this:
-[ 1357.238450]  Possible unsafe locking scenario:
-[ 1357.238450]
-[ 1357.238450]        CPU0
-[ 1357.238450]        ----
-[ 1357.238450]   lock(&(&se_tpg->session_lock)->rlock);
-[ 1357.238450]   <Interrupt>
-[ 1357.238450]     lock(&(&se_tpg->session_lock)->rlock);
-[ 1357.238450]
-[ 1357.238450]  *** DEADLOCK ***
-[ 1357.238450]
-[ 1357.238450] no locks held by ksoftirqd/0/3.
-[ 1357.238450]
-[ 1357.238450] stack backtrace:
-[ 1357.238450] Pid: 3, comm: ksoftirqd/0 Tainted: G           O 3.7.0-rc7-yikvm+ #3
-[ 1357.238450] Call Trace:
-[ 1357.238450]  [<ffffffff8149399a>] print_usage_bug+0x1f5/0x206
-[ 1357.238450]  [<ffffffff8100da59>] ? save_stack_trace+0x2c/0x49
-[ 1357.238450]  [<ffffffff81082aae>] ? print_irq_inversion_bug.part.14+0x1ae/0x1ae
-[ 1357.238450]  [<ffffffff81083336>] mark_lock+0x106/0x258
-[ 1357.238450]  [<ffffffff81084e34>] __lock_acquire+0x2e7/0xe53
-[ 1357.238450]  [<ffffffff8102903d>] ? pvclock_clocksource_read+0x48/0xb4
-[ 1357.238450]  [<ffffffff810ba6a3>] ? rcu_process_gp_end+0xc0/0xc9
-[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffff81085ef1>] lock_acquire+0x119/0x143
-[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffff8149c329>] _raw_spin_lock_irqsave+0x54/0x8e
-[ 1357.238450]  [<ffffffffa01eacd4>] ? transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffffa01eacd4>] transport_deregister_session+0x41/0x148 [target_core_mod]
-[ 1357.238450]  [<ffffffff810bb6a0>] ? rcu_process_callbacks+0x229/0x42a
-[ 1357.238450]  [<ffffffffa018ddc5>] ft_sess_rcu_free+0x17/0x24 [tcm_fc]
-[ 1357.238450]  [<ffffffffa018ddae>] ? ft_sess_free+0x1b/0x1b [tcm_fc]
-[ 1357.238450]  [<ffffffff810bb6d7>] rcu_process_callbacks+0x260/0x42a
-[ 1357.238450]  [<ffffffff8103d55d>] __do_softirq+0x13a/0x26f
-[ 1357.238450]  [<ffffffff8149b34e>] ? __schedule+0x65f/0x68e
-[ 1357.238450]  [<ffffffff8103d6bb>] run_ksoftirqd+0x29/0x62
-[ 1357.238450]  [<ffffffff8105c83c>] smpboot_thread_fn+0x1a5/0x1aa
-[ 1357.238450]  [<ffffffff8105c697>] ? smpboot_unregister_percpu_thread+0x47/0x47
-[ 1357.238450]  [<ffffffff810549f1>] kthread+0xb1/0xb9
-[ 1357.238450]  [<ffffffff8149b49d>] ? wait_for_common+0xbb/0x10a
-[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
-[ 1357.238450]  [<ffffffff814a40ec>] ret_from_fork+0x7c/0xb0
-[ 1357.238450]  [<ffffffff81054940>] ? __init_kthread_worker+0x59/0x59
-[ 1417.440099]  rport-2:0-0: blocked FC remote port time out: removing rport
-
-Signed-off-by: Yi Zou <yi.zou@intel.com>
-Cc: Open-FCoE <devel@open-fcoe.org>
-Cc: Nicholas A. Bellinger <nab@risingtidesystems.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Reported-by: Soeren Moch <smoch@web.de>
+Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+Tested-by: Andrew Lunn <andrew@lunn.ch>
+Tested-by: Soeren Moch <smoch@web.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/dmapool.c |   31 +++++++------------------------
+ 1 file changed, 7 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
-index 9585010..12d6fa2 100644
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -430,7 +430,6 @@ static void ft_sess_rcu_free(struct rcu_head *rcu)
- {
- 	struct ft_sess *sess = container_of(rcu, struct ft_sess, rcu);
+diff --git a/mm/dmapool.c b/mm/dmapool.c
+index c5ab33b..da1b0f0 100644
+--- a/mm/dmapool.c
++++ b/mm/dmapool.c
+@@ -50,7 +50,6 @@ struct dma_pool {		/* the pool */
+ 	size_t allocation;
+ 	size_t boundary;
+ 	char name[32];
+-	wait_queue_head_t waitq;
+ 	struct list_head pools;
+ };
  
--	transport_deregister_session(sess->se_sess);
- 	kfree(sess);
+@@ -62,8 +61,6 @@ struct dma_page {		/* cacheable header for 'allocation' bytes */
+ 	unsigned int offset;
+ };
+ 
+-#define	POOL_TIMEOUT_JIFFIES	((100 /* msec */ * HZ) / 1000)
+-
+ static DEFINE_MUTEX(pools_lock);
+ 
+ static ssize_t
+@@ -172,7 +169,6 @@ struct dma_pool *dma_pool_create(const char *name, struct device *dev,
+ 	retval->size = size;
+ 	retval->boundary = boundary;
+ 	retval->allocation = allocation;
+-	init_waitqueue_head(&retval->waitq);
+ 
+ 	if (dev) {
+ 		int ret;
+@@ -227,7 +223,6 @@ static struct dma_page *pool_alloc_page(struct dma_pool *pool, gfp_t mem_flags)
+ 		memset(page->vaddr, POOL_POISON_FREED, pool->allocation);
+ #endif
+ 		pool_initialise_page(pool, page);
+-		list_add(&page->page_list, &pool->page_list);
+ 		page->in_use = 0;
+ 		page->offset = 0;
+ 	} else {
+@@ -315,30 +310,21 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+ 	might_sleep_if(mem_flags & __GFP_WAIT);
+ 
+ 	spin_lock_irqsave(&pool->lock, flags);
+- restart:
+ 	list_for_each_entry(page, &pool->page_list, page_list) {
+ 		if (page->offset < pool->allocation)
+ 			goto ready;
+ 	}
+-	page = pool_alloc_page(pool, GFP_ATOMIC);
+-	if (!page) {
+-		if (mem_flags & __GFP_WAIT) {
+-			DECLARE_WAITQUEUE(wait, current);
+ 
+-			__set_current_state(TASK_UNINTERRUPTIBLE);
+-			__add_wait_queue(&pool->waitq, &wait);
+-			spin_unlock_irqrestore(&pool->lock, flags);
++	/* pool_alloc_page() might sleep, so temporarily drop &pool->lock */
++	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-			schedule_timeout(POOL_TIMEOUT_JIFFIES);
++	page = pool_alloc_page(pool, mem_flags);
++	if (!page)
++		return NULL;
+ 
+-			spin_lock_irqsave(&pool->lock, flags);
+-			__remove_wait_queue(&pool->waitq, &wait);
+-			goto restart;
+-		}
+-		retval = NULL;
+-		goto done;
+-	}
++	spin_lock_irqsave(&pool->lock, flags);
+ 
++	list_add(&page->page_list, &pool->page_list);
+  ready:
+ 	page->in_use++;
+ 	offset = page->offset;
+@@ -348,7 +334,6 @@ void *dma_pool_alloc(struct dma_pool *pool, gfp_t mem_flags,
+ #ifdef	DMAPOOL_DEBUG
+ 	memset(retval, POOL_POISON_ALLOCATED, pool->size);
+ #endif
+- done:
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 	return retval;
  }
- 
-@@ -438,6 +437,7 @@ static void ft_sess_free(struct kref *kref)
- {
- 	struct ft_sess *sess = container_of(kref, struct ft_sess, kref);
- 
-+	transport_deregister_session(sess->se_sess);
- 	call_rcu(&sess->rcu, ft_sess_rcu_free);
- }
- 
+@@ -435,8 +420,6 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
+ 	page->in_use--;
+ 	*(int *)vaddr = page->offset;
+ 	page->offset = offset;
+-	if (waitqueue_active(&pool->waitq))
+-		wake_up_locked(&pool->waitq);
+ 	/*
+ 	 * Resist a temptation to do
+ 	 *    if (!is_page_busy(page)) pool_free_page(pool, page);
 
 
