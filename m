@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab2L1UCP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:02:15 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54846 "EHLO
+	id S1754949Ab2L1UCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:02:13 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54834 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754105Ab2L1TQm (ORCPT
+	by vger.kernel.org with ESMTP id S1754065Ab2L1TQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:16:42 -0500
-Message-Id: <20121228190331.121306419@decadent.org.uk>
+Message-Id: <20121228190330.714022970@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:35 +0100
+Date: Fri, 28 Dec 2012 20:03:33 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Seth Heasley <seth.heasley@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 005/173] ALSA: hda - Add Lynx Point HD Audio Controller DeviceIDs
+        Petr Matousek <pmatouse@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [ 003/173] KVM: x86: invalid opcode oops on SET_SREGS with OSXSAVE bit set
+ (CVE-2012-4461)
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,41 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Seth Heasley <seth.heasley@intel.com>
+From: Petr Matousek <pmatouse@redhat.com>
 
-commit 8bc039a1e15a72da8426b84293723fb7181f0b5e upstream.
+commit 6d1068b3a98519247d8ba4ec85cd40ac136dbdf9 upstream.
 
-This patch adds the HD Audio DeviceIDs for the Intel Lynx Point PCH.
+On hosts without the XSAVE support unprivileged local user can trigger
+oops similar to the one below by setting X86_CR4_OSXSAVE bit in guest
+cr4 register using KVM_SET_SREGS ioctl and later issuing KVM_RUN
+ioctl.
 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+invalid opcode: 0000 [#2] SMP
+Modules linked in: tun ip6table_filter ip6_tables ebtable_nat ebtables
+...
+Pid: 24935, comm: zoog_kvm_monito Tainted: G      D      3.2.0-3-686-pae
+EIP: 0060:[<f8b9550c>] EFLAGS: 00210246 CPU: 0
+EIP is at kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm]
+EAX: 00000001 EBX: 000f387e ECX: 00000000 EDX: 00000000
+ESI: 00000000 EDI: 00000000 EBP: ef5a0060 ESP: d7c63e70
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process zoog_kvm_monito (pid: 24935, ti=d7c62000 task=ed84a0c0
+task.ti=d7c62000)
+Stack:
+ 00000001 f70a1200 f8b940a9 ef5a0060 00000000 00200202 f8769009 00000000
+ ef5a0060 000f387e eda5c020 8722f9c8 00015bae 00000000 ed84a0c0 ed84a0c0
+ c12bf02d 0000ae80 ef7f8740 fffffffb f359b740 ef5a0060 f8b85dc1 0000ae80
+Call Trace:
+ [<f8b940a9>] ? kvm_arch_vcpu_ioctl_set_sregs+0x2fe/0x308 [kvm]
+...
+ [<c12bfb44>] ? syscall_call+0x7/0xb
+Code: 89 e8 e8 14 ee ff ff ba 00 00 04 00 89 e8 e8 98 48 ff ff 85 c0 74
+1e 83 7d 48 00 75 18 8b 85 08 07 00 00 31 c9 8b 95 0c 07 00 00 <0f> 01
+d1 c7 45 48 01 00 00 00 c7 45 1c 01 00 00 00 0f ae f0 89
+EIP: [<f8b9550c>] kvm_arch_vcpu_ioctl_run+0x92a/0xd13 [kvm] SS:ESP
+0068:d7c63e70
+
+QEMU first retrieves the supported features via KVM_GET_SUPPORTED_CPUID
+and then sets them later. So guest's X86_FEATURE_XSAVE should be masked
+out on hosts without X86_FEATURE_XSAVE, making kvm_set_cr4 with
+X86_CR4_OSXSAVE fail. Userspaces that allow specifying guest cpuid with
+X86_FEATURE_XSAVE even on hosts that do not support it, might be
+susceptible to this attack from inside the guest as well.
+
+Allow setting X86_CR4_OSXSAVE bit only if host has XSAVE support.
+
+Signed-off-by: Petr Matousek <pmatouse@redhat.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+[bwh: Backported to 3.2: both functions are in arch/x86/kvm/x86.c]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/hda/hda_intel.c |    5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index d3bd3e7..e354c16 100644
---- a/sound/pci/hda/hda_intel.c
-+++ b/sound/pci/hda/hda_intel.c
-@@ -148,6 +148,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
- 			 "{Intel, PCH},"
- 			 "{Intel, CPT},"
- 			 "{Intel, PPT},"
-+			 "{Intel, LPT},"
- 			 "{Intel, PBG},"
- 			 "{Intel, SCH},"
- 			 "{ATI, SB450},"
-@@ -3001,6 +3002,10 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
- 	{ PCI_DEVICE(0x8086, 0x1e20),
- 	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
- 	  AZX_DCAPS_BUFSIZE},
-+	/* Lynx Point */
-+	{ PCI_DEVICE(0x8086, 0x8c20),
-+	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_SCH_SNOOP |
-+	  AZX_DCAPS_BUFSIZE},
- 	/* SCH */
- 	{ PCI_DEVICE(0x8086, 0x811b),
- 	  .driver_data = AZX_DRIVER_SCH | AZX_DCAPS_SCH_SNOOP |
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -578,6 +578,9 @@ static bool guest_cpuid_has_xsave(struct
+ {
+ 	struct kvm_cpuid_entry2 *best;
+ 
++	if (!static_cpu_has(X86_FEATURE_XSAVE))
++		return 0;
++
+ 	best = kvm_find_cpuid_entry(vcpu, 1, 0);
+ 	return best && (best->ecx & bit(X86_FEATURE_XSAVE));
+ }
+@@ -6149,6 +6152,9 @@ int kvm_arch_vcpu_ioctl_set_sregs(struct
+ 	int pending_vec, max_bits, idx;
+ 	struct desc_ptr dt;
+ 
++	if (!guest_cpuid_has_xsave(vcpu) && (sregs->cr4 & X86_CR4_OSXSAVE))
++		return -EINVAL;
++
+ 	dt.size = sregs->idt.limit;
+ 	dt.address = sregs->idt.base;
+ 	kvm_x86_ops->set_idt(vcpu, &dt);
 
 
