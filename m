@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932231Ab2L1TSv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:51 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55330 "EHLO
+	id S932218Ab2L1TSr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:18:47 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55329 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932144Ab2L1TSe (ORCPT
+	by vger.kernel.org with ESMTP id S932146Ab2L1TSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:34 -0500
-Message-Id: <20121228190351.852950981@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:35 -0500
+Message-Id: <20121228190350.580424248@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:13 +0100
+Date: Fri, 28 Dec 2012 20:05:07 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Zhang Rui <rui.zhang@intel.com>, Stefan Nagy <public@stefan-nagy.at>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 103/173] ACPI / video: ignore BIOS initial backlight value for HP Folio
- 13-2000
+        Ari Pollak <ari@scvngr.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 097/173] HID: Add Apple wireless keyboard 2011 ANSI to special driver list
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,52 +27,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 129ff8f8d58297b04f47b5d6fad81aa2d08404e1 upstream.
+commit f9af7b9edccb87d4d80b58687ab63e58f3b64c4c upstream.
 
-Or else the laptop will boot with a dimmed screen.
+Commit 0a97e1e9f9a6 ('HID: apple: Add Apple wireless keyboard 2011 ANSI PID')
+did not update the special driver list in hid-core.c, so hid-generic may
+still bind to this device.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=51141
-Tested-by: Stefan Nagy <public@stefan-nagy.at>
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: Ari Pollak <ari@scvngr.com>
+References: http://bugs.debian.org/694546
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- drivers/acpi/video.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/hid/hid-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 0230cb6..ac9a69c 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -389,6 +389,12 @@ static int __init video_set_bqc_offset(const struct dmi_system_id *d)
- 	return 0;
- }
- 
-+static int video_ignore_initial_backlight(const struct dmi_system_id *d)
-+{
-+	use_bios_initial_backlight = 0;
-+	return 0;
-+}
-+
- static struct dmi_system_id video_dmi_table[] __initdata = {
- 	/*
- 	 * Broken _BQC workaround http://bugzilla.kernel.org/show_bug.cgi?id=13121
-@@ -433,6 +439,14 @@ static struct dmi_system_id video_dmi_table[] __initdata = {
- 		DMI_MATCH(DMI_PRODUCT_NAME, "Aspire 7720"),
- 		},
- 	},
-+	{
-+	 .callback = video_ignore_initial_backlight,
-+	 .ident = "HP Folio 13-2000",
-+	 .matches = {
-+		DMI_MATCH(DMI_BOARD_VENDOR, "Hewlett-Packard"),
-+		DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13 - 2000 Notebook PC"),
-+		},
-+	},
- 	{}
- };
- 
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index f4109fd..52146db 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1538,6 +1538,7 @@ static const struct hid_device_id hid_have_special_driver[] = {
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS) },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI) },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY) },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY) },
 
 
