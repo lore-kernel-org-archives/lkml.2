@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab2L1Tdb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:33:31 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55508 "EHLO
+	id S932362Ab2L1Tdv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:33:51 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55500 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932316Ab2L1TTO (ORCPT
+	by vger.kernel.org with ESMTP id S932311Ab2L1TTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:14 -0500
-Message-Id: <20121228190343.385449351@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:12 -0500
+Message-Id: <20121228190344.381296076@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:33 +0100
+Date: Fri, 28 Dec 2012 20:04:38 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [ 063/173] ftrace: Clear bits properly in reset_iter_read()
+        Jeff Cook <jeff@deserettechnology.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 068/173] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,36 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Jeff Cook <jeff@deserettechnology.com>
 
-commit 70f77b3f7ec010ff9624c1f2e39a81babc9e2429 upstream.
+commit 1ee3ff6110c16acfc915a79b1e3feb5013c41e75 upstream.
 
-There is a typo here where '&' is used instead of '|' and it turns the
-statement into a noop.  The original code is equivalent to:
+Vendor-specific ID for BCM20702A0.
+Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
+Deluxe.
 
-	iter->flags &= ~((1 << 2) & (1 << 4));
+T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0b05 ProdID=17b5 Rev=01.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=94DBC98AC113
+C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
 
-Link: http://lkml.kernel.org/r/20120609161027.GD6488@elgon.mountain
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jeff Cook <jeff@deserettechnology.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/ftrace.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/bluetooth/btusb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 9dcf15d..51b7159 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2437,7 +2437,7 @@ static void reset_iter_read(struct ftrace_iterator *iter)
- {
- 	iter->pos = 0;
- 	iter->func_pos = 0;
--	iter->flags &= ~(FTRACE_ITER_PRINTALL & FTRACE_ITER_HASH);
-+	iter->flags &= ~(FTRACE_ITER_PRINTALL | FTRACE_ITER_HASH);
- }
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index debda27..5693b9b 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -96,6 +96,7 @@ static struct usb_device_id btusb_table[] = {
+ 	{ USB_DEVICE(0x0c10, 0x0000) },
  
- static void *t_start(struct seq_file *m, loff_t *pos)
+ 	/* Broadcom BCM20702A0 */
++	{ USB_DEVICE(0x0b05, 0x17b5) },
+ 	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
 
 
