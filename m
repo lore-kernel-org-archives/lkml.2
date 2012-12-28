@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab2L1TSM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55187 "EHLO
+	id S1754885Ab2L1Tog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:44:36 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55214 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754675Ab2L1TSH (ORCPT
+	by vger.kernel.org with ESMTP id S1754682Ab2L1TSL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:07 -0500
-Message-Id: <20121228190355.631059385@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:11 -0500
+Message-Id: <20121228190357.379548075@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:31 +0100
+Date: Fri, 28 Dec 2012 20:05:42 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 121/173] nfsd: avoid permission checks on EXCLUSIVE_CREATE replay
+        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
+        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [ 132/173] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,86 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Brown <neilb@suse.de>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit 7007c90fb9fef593b4aeaeee57e6a6754276c97c upstream.
+commit 8add1ecb81f541ef2fcb0b85a5470ad9ecfb4a84 upstream.
 
-With NFSv4, if we create a file then open it we explicit avoid checking
-the permissions on the file during the open because the fact that we
-created it ensures we should be allow to open it (the create and the
-open should appear to be a single operation).
+When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
+And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
+empty function but attempt to actually disable the nonboot cpus. Since
+system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
+disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
+poweroff failure.
 
-However if the reply to an EXCLUSIVE create gets lots and the client
-resends the create, the current code will perform the permission check -
-because it doesn't realise that it did the open already..
-
-This patch should fix this.
-
-Note that I haven't actually seen this cause a problem.  I was just
-looking at the code trying to figure out a different EXCLUSIVE open
-related issue, and this looked wrong.
-
-(Fix confirmed with pynfs 4.0 test OPEN4--bfields)
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bfields: use OWNER_OVERRIDE and update for 4.1]
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use current_fh as file handle in do_open_lookup()]
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Signed-off-by: Hongliang Tao <taohl@lemote.com>
+Signed-off-by: Hua Yan <yanh@lemote.com>
+Cc: Yong Zhang <yong.zhang@windriver.com>
+Cc: linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/4211/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4proc.c |    8 +++++---
- fs/nfsd/vfs.c      |   10 ++++++++--
- 2 files changed, 13 insertions(+), 5 deletions(-)
+ arch/mips/kernel/process.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -193,6 +193,7 @@ static __be32
- do_open_lookup(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
- {
- 	struct svc_fh resfh;
-+	int accmode;
- 	__be32 status;
- 
- 	fh_init(&resfh, NFS4_FHSIZE);
-@@ -252,9 +253,10 @@ do_open_lookup(struct svc_rqst *rqstp, s
- 	/* set reply cache */
- 	fh_copy_shallow(&open->op_openowner->oo_owner.so_replay.rp_openfh,
- 			&resfh.fh_handle);
--	if (!open->op_created)
--		status = do_open_permission(rqstp, current_fh, open,
--					    NFSD_MAY_NOP);
-+	accmode = NFSD_MAY_NOP;
-+	if (open->op_created)
-+		accmode |= NFSD_MAY_OWNER_OVERRIDE;
-+	status = do_open_permission(rqstp, current_fh, open, accmode);
- 
- out:
- 	fh_put(&resfh);
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -1458,13 +1458,19 @@ do_nfsd_create(struct svc_rqst *rqstp, s
- 		case NFS3_CREATE_EXCLUSIVE:
- 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
- 			    && dchild->d_inode->i_atime.tv_sec == v_atime
--			    && dchild->d_inode->i_size  == 0 )
-+			    && dchild->d_inode->i_size  == 0 ) {
-+				if (created)
-+					*created = 1;
- 				break;
-+			}
- 		case NFS4_CREATE_EXCLUSIVE4_1:
- 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
- 			    && dchild->d_inode->i_atime.tv_sec == v_atime
--			    && dchild->d_inode->i_size  == 0 )
-+			    && dchild->d_inode->i_size  == 0 ) {
-+				if (created)
-+					*created = 1;
- 				goto set_attr;
-+			}
- 			 /* fallthru */
- 		case NFS3_CREATE_GUARDED:
- 			err = nfserr_exist;
+--- a/arch/mips/kernel/process.c
++++ b/arch/mips/kernel/process.c
+@@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
+ 			}
+ 		}
+ #ifdef CONFIG_HOTPLUG_CPU
+-		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
+-		    (system_state == SYSTEM_RUNNING ||
+-		     system_state == SYSTEM_BOOTING))
++		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
+ 			play_dead();
+ #endif
+ 		tick_nohz_restart_sched_tick();
 
 
