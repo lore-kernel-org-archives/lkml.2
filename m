@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab2L1Ul7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:41:59 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37300 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab2L1Ul4 (ORCPT
+	id S1754687Ab2L1UmG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:42:06 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:38098 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab2L1UmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:41:56 -0500
-X-Greylist: delayed 345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 15:41:56 EST
+	Fri, 28 Dec 2012 15:42:00 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/24] cfq-iosched: Get rid of unnecessary local variable
-Date: Fri, 28 Dec 2012 12:35:27 -0800
-Message-Id: <1356726946-26037-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 09/24] blkcg: cosmetic updates to blkg_create()
+Date: Fri, 28 Dec 2012 12:35:31 -0800
+Message-Id: <1356726946-26037-10-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1356726946-26037-1-git-send-email-tj@kernel.org>
 References: <1356726946-26037-1-git-send-email-tj@kernel.org>
@@ -23,50 +22,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
+* Rename out_* labels to err_*.
 
-Use of local varibale "n" seems to be unnecessary. Remove it. This brings
-it inline with function __cfq_group_st_add(), which is also doing the
-similar operation of adding a group to a rb tree.
+* Do ERR_PTR() conversion once in the error return path.
 
-No functionality change here.
+This patch is cosmetic and to prepare for the hierarchy support.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/cfq-iosched.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ block/blk-cgroup.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index e34e142..5ad4cae 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1658,8 +1658,6 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	cfqq->service_tree = st;
- 	p = &st->rb.rb_node;
- 	while (*p) {
--		struct rb_node **n;
--
- 		parent = *p;
- 		__cfqq = rb_entry(parent, struct cfq_queue, rb_node);
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 2012754..18ae480 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -187,16 +187,16 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
  
-@@ -1667,13 +1665,11 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 		 * sort by key, that represents service time.
- 		 */
- 		if (time_before(rb_key, __cfqq->rb_key))
--			n = &(*p)->rb_left;
-+			p = &parent->rb_left;
- 		else {
--			n = &(*p)->rb_right;
-+			p = &parent->rb_right;
- 			left = 0;
- 		}
--
--		p = n;
+ 	/* blkg holds a reference to blkcg */
+ 	if (!css_tryget(&blkcg->css)) {
+-		blkg = ERR_PTR(-EINVAL);
+-		goto out_free;
++		ret = -EINVAL;
++		goto err_free_blkg;
  	}
  
- 	if (left)
+ 	/* allocate */
+ 	if (!new_blkg) {
+ 		new_blkg = blkg_alloc(blkcg, q, GFP_ATOMIC);
+ 		if (unlikely(!new_blkg)) {
+-			blkg = ERR_PTR(-ENOMEM);
+-			goto out_put;
++			ret = -ENOMEM;
++			goto err_put_css;
+ 		}
+ 	}
+ 	blkg = new_blkg;
+@@ -213,12 +213,11 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
+ 	if (!ret)
+ 		return blkg;
+ 
+-	blkg = ERR_PTR(ret);
+-out_put:
++err_put_css:
+ 	css_put(&blkcg->css);
+-out_free:
++err_free_blkg:
+ 	blkg_free(new_blkg);
+-	return blkg;
++	return ERR_PTR(ret);
+ }
+ 
+ /**
 -- 
 1.8.0.2
 
