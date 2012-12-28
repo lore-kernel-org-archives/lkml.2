@@ -1,99 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab2L1TVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:21:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55719 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932480Ab2L1TT7 (ORCPT
+	id S932488Ab2L1TWA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:22:00 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:39906 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753857Ab2L1TV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:59 -0500
-Message-Id: <20121228190334.425365762@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:51 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dan Carpenter <dan.carpenter@oracle.com>, Milo <Milo.Kim@ti.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 021/173] drivers/leds/leds-lp5521.c: fix lp5521_read() error handling
-In-Reply-To: <20121228190330.025298996@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.217.219.220
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 28 Dec 2012 14:21:57 -0500
+Date: Fri, 28 Dec 2012 19:21:52 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Vasily Kulikov <segoon@openwall.com>
+Cc: kernel-hardening@lists.openwall.com,
+        Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
+Message-ID: <20121228192152.GA4939@ZenIV.linux.org.uk>
+References: <20121228175627.GA7683@cachalot>
+ <20121228184334.GZ4939@ZenIV.linux.org.uk>
+ <20121228190435.GA8690@cachalot>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121228190435.GA8690@cachalot>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Dec 28, 2012 at 11:04:35PM +0400, Vasily Kulikov wrote:
 
-------------------
+> > I'm sorry, but this is not a solution.  Kernel is not x86-only; there are
+> > architectures with far bigger minimal stack frame size.  E.g. on sparc64
+> > every fucking stack frame is at least 176 bytes.  So your 100 calls deep
+> > call chain will happily overflow the damn stack all by itself - kernel
+> > stack on sparc64 is 16Kb total, including struct thread_info living there.
+> 
+> Understood.  How to properly fix it then?  Looks like there are quite
+> many kernel structures which may reference other structures which
+> indirectly reference each other via kref, IOW it is not user_ns specific
+> issue.  With unprivileged user_ns the way it should be freed must be
+> somehow changed.
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
-
-commit 5bc9ad774c063f6b41965e7314f2c26aa5e465a0 upstream.
-
-Gcc 4.6.2 complains that:
-
-  drivers/leds/leds-lp5521.c: In function `lp5521_load_program':
-  drivers/leds/leds-lp5521.c:214:21: warning: `mode' may be used uninitialized in this function [-Wuninitialized]
-  drivers/leds/leds-lp5521.c: In function `lp5521_probe':
-  drivers/leds/leds-lp5521.c:788:5: warning: `buf' may be used uninitialized in this function [-Wuninitialized]
-  drivers/leds/leds-lp5521.c:740:6: warning: `ret' may be used uninitialized in this function [-Wuninitialized]
-
-These are real problems if lp5521_read() returns an error.  When that
-happens we should handle it, instead of ignoring it or doing a bitwise
-OR with all the other error codes and continuing.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Milo <Milo.Kim@ti.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Cc: Bryan Wu <bryan.wu@canonical.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- drivers/leds/leds-lp5521.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index 410a723..2381562 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -193,9 +193,14 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
- 
- 	/* move current engine to direct mode and remember the state */
- 	ret = lp5521_set_engine_mode(eng, LP5521_CMD_DIRECT);
-+	if (ret)
-+		return ret;
-+
- 	/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
- 	usleep_range(1000, 2000);
--	ret |= lp5521_read(client, LP5521_REG_OP_MODE, &mode);
-+	ret = lp5521_read(client, LP5521_REG_OP_MODE, &mode);
-+	if (ret)
-+		return ret;
- 
- 	/* For loading, all the engines to load mode */
- 	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
-@@ -211,8 +216,7 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
- 				LP5521_PROG_MEM_SIZE,
- 				pattern);
- 
--	ret |= lp5521_write(client, LP5521_REG_OP_MODE, mode);
--	return ret;
-+	return lp5521_write(client, LP5521_REG_OP_MODE, mode);
- }
- 
- static int lp5521_set_led_current(struct lp5521_chip *chip, int led, u8 curr)
-@@ -785,7 +789,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 	 * LP5521_REG_ENABLE register will not have any effect - strange!
- 	 */
- 	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
--	if (buf != LP5521_REG_R_CURR_DEFAULT) {
-+	if (ret || buf != LP5521_REG_R_CURR_DEFAULT) {
- 		dev_err(&client->dev, "error in resetting chip\n");
- 		goto fail2;
- 	}
-
-
+	There are many damn good reasons why kref should *not* be used without
+thinking.  It's been oversold as easy solution to all refcounting problems;
+it isn't one.  Don't use it here.
