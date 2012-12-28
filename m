@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab2L1T6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:58:15 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54893 "EHLO
+	id S1754631Ab2L1T6v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:58:51 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54887 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754241Ab2L1TQy (ORCPT
+	by vger.kernel.org with ESMTP id S1754236Ab2L1TQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:54 -0500
-Message-Id: <20121228190333.590051364@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:52 -0500
+Message-Id: <20121228190332.337998711@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:47 +0100
+Date: Fri, 28 Dec 2012 20:03:41 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Dave Martin <dave.martin@linaro.org>,
-        =?ISO-8859-15?q?M=C3=A5ns=20Rullg=C3=A5rd?= 
-	<mans.rullgard@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 017/173] ARM: 7566/1: vfp: fix save and restore when running on pre-VFPv3 and
- CONFIG_VFPv3 set
+        Tejun Heo <tj@kernel.org>, Xiaotian Feng <xtfeng@gmail.com>,
+        Shuah Khan <shuah.khan@hp.com>
+Subject: [ 011/173] workqueue: convert BUG_ON()s in __queue_delayed_work() to
+ WARN_ON_ONCE()s
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,111 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Walmsley <paul@pwsan.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
+commit fc4b514f2727f74a4587c31db87e0e93465518c3 upstream.
 
-After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
-saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
-started crashing during boot with omap2plus_defconfig:
+8852aac25e ("workqueue: mod_delayed_work_on() shouldn't queue timer on
+0 delay") unexpectedly uncovered a very nasty abuse of delayed_work in
+megaraid - it allocated work_struct, casted it to delayed_work and
+then pass that into queue_delayed_work().
 
-[    3.875122] mmcblk0: mmc0:e624 SD04G 3.69 GiB
-[    3.915954]  mmcblk0: p1
-[    4.086639] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
-[    4.093719] Modules linked in:
-[    4.096954] CPU: 0    Not tainted  (3.6.0-02232-g759e00b #570)
-[    4.103149] PC is at vfp_reload_hw+0x1c/0x44
-[    4.107666] LR is at __und_usr_fault_32+0x0/0x8
+Previously, this was okay because 0 @delay short-circuited to
+queue_work() before doing anything with delayed_work.  8852aac25e
+moved 0 @delay test into __queue_delayed_work() after sanity check on
+delayed_work making megaraid trigger BUG_ON().
 
-It turns out that the context save/restore fix unmasked a latent bug
-in commit 5aaf254409f8d58229107b59507a8235b715a960 ("ARM: 6203/1: Make
-VFPv3 usable on ARMv6").  When CONFIG_VFPv3 is set, but the kernel is
-booted on a pre-VFPv3 core, the code attempts to save and restore the
-d16-d31 VFP registers.  These are only present on non-D16 VFPv3+, so
-this results in an undefined instruction exception.  The code didn't
-crash before commit 846a136 because the save and restore code was
-only touching d0-d15, present on all VFP.
+Although megaraid is already fixed by c1d390d8e6 ("megaraid: fix
+BUG_ON() from incorrect use of delayed work"), this patch converts
+BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s so that such
+abusers, if there are more, trigger warning but don't crash the
+machine.
 
-Fix by implementing a request from Russell King to add a new HWCAP
-flag that affirmatively indicates the presence of the d16-d31
-registers:
-
-   http://marc.info/?l=linux-arm-kernel&m=135013547905283&w=2
-
-and some feedback from Måns to clarify the name of the HWCAP flag.
-
-Signed-off-by: Paul Walmsley <paul@pwsan.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Dave Martin <dave.martin@linaro.org>
-Cc: Måns Rullgård <mans.rullgard@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[bwh: Backported to 3.2: adjust filename]
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+[Shuah Khan: This change is back-ported from upstream change that
+ converted BUG_ON()s in __queue_delayed_work() to WARN_ON_ONCE()s.]
+Tested on Stable Trees: 3.0.x, 3.4.x, 3.6.x
+Signed-off-by: Shuah Khan <shuah.khan@hp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/arch/arm/include/asm/vfpmacros.h
-+++ b/arch/arm/include/asm/vfpmacros.h
-@@ -27,9 +27,9 @@
- #if __LINUX_ARM_ARCH__ <= 6
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
--	tst	\tmp, #HWCAP_VFPv3D16
--	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
--	addne	\base, \base, #32*4		    @ step over unused register space
-+	tst	\tmp, #HWCAP_VFPD32
-+	ldcnel	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
-+	addeq	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
- 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
-@@ -51,9 +51,9 @@
- #if __LINUX_ARM_ARCH__ <= 6
- 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
- 	ldr	\tmp, [\tmp, #0]
--	tst	\tmp, #HWCAP_VFPv3D16
--	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
--	addne	\base, \base, #32*4		    @ step over unused register space
-+	tst	\tmp, #HWCAP_VFPD32
-+	stcnel	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
-+	addeq	\base, \base, #32*4		    @ step over unused register space
- #else
- 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
- 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
---- a/arch/arm/include/asm/hwcap.h
-+++ b/arch/arm/include/asm/hwcap.h
-@@ -18,11 +18,12 @@
- #define HWCAP_THUMBEE	(1 << 11)
- #define HWCAP_NEON	(1 << 12)
- #define HWCAP_VFPv3	(1 << 13)
--#define HWCAP_VFPv3D16	(1 << 14)
-+#define HWCAP_VFPv3D16	(1 << 14)	/* also set for VFPv4-D16 */
- #define HWCAP_TLS	(1 << 15)
- #define HWCAP_VFPv4	(1 << 16)
- #define HWCAP_IDIVA	(1 << 17)
- #define HWCAP_IDIVT	(1 << 18)
-+#define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
- #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
+ kernel/workqueue.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1146,8 +1146,8 @@ int queue_delayed_work_on(int cpu, struc
+ 	if (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) {
+ 		unsigned int lcpu;
  
- #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
---- a/arch/arm/vfp/vfpmodule.c
-+++ b/arch/arm/vfp/vfpmodule.c
-@@ -610,11 +610,14 @@ static int __init vfp_init(void)
- 			elf_hwcap |= HWCAP_VFPv3;
+-		BUG_ON(timer_pending(timer));
+-		BUG_ON(!list_empty(&work->entry));
++		WARN_ON_ONCE(timer_pending(timer));
++		WARN_ON_ONCE(!list_empty(&work->entry));
  
- 			/*
--			 * Check for VFPv3 D16. CPUs in this configuration
--			 * only have 16 x 64bit registers.
-+			 * Check for VFPv3 D16 and VFPv4 D16.  CPUs in
-+			 * this configuration only have 16 x 64bit
-+			 * registers.
- 			 */
- 			if (((fmrx(MVFR0) & MVFR0_A_SIMD_MASK)) == 1)
--				elf_hwcap |= HWCAP_VFPv3D16;
-+				elf_hwcap |= HWCAP_VFPv3D16; /* also v4-D16 */
-+			else
-+				elf_hwcap |= HWCAP_VFPD32;
- 		}
- #endif
- 		/*
+ 		timer_stats_timer_set_start_info(&dwork->timer);
+ 
 
 
