@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753614Ab2L1Nnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 08:43:33 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:47985 "EHLO mxout2.iskon.hr"
+	id S1753668Ab2L1ONN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 09:13:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:2073 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753393Ab2L1Nnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 08:43:32 -0500
-X-Remote-IP: 213.191.128.133
-Date: Fri, 28 Dec 2012 14:43:24 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S1753563Ab2L1ONK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 09:13:10 -0500
+Date: Fri, 28 Dec 2012 15:12:49 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrey Wagin <avagin@gmail.com>
+Cc: Andrew Vagin <avagin@parallels.com>, Pavel Emelyanov <xemul@parallels.com>,
+        David Howells <dhowells@redhat.com>, linux-kernel@vger.kernel.org,
+        criu@openvz.org, Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [CRIU] [PATCH 1/4] signalfd: add ability to return siginfo in
+	a raw format
+Message-ID: <20121228141249.GA24229@redhat.com>
+References: <CANaxB-x=fQROdwD1OyU8=Ai9tXWm9QTSsGgfKvPbjn57ER6aZg@mail.gmail.com> <20121225143043.GA1813@redhat.com> <20121225152716.GA3198@redhat.com> <50D9C8E9.6020602@parallels.com> <20121225165803.GA9066@redhat.com> <20121226144751.GA18767@paralelels.com> <20121226163112.GA6593@redhat.com> <20121227143626.GA15154@gmail.com> <20121227153020.GA1864@redhat.com> <CANaxB-x8k-c+gkeUJ1LovxSdWHJZggt0POPQxEotmuQvcXeicg@mail.gmail.com>
 MIME-Version: 1.0
-To: Zhouping Liu <zliu@redhat.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        mgorman@suse.de, hughd@google.com,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hillf Danton <dhillf@gmail.com>, sedat.dilek@gmail.com
-References: <1828895463.36547216.1356662710202.JavaMail.root@redhat.com> <50DD5FD9.2080303@redhat.com>
-In-Reply-To: <50DD5FD9.2080303@redhat.com>
-X-Spam-Score: ##
-Message-ID: <50DDA1FC.8030608@iskon.hr>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20121228 #8908331, check: 20121228 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 40824 [Dec 28 2012]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANaxB-x8k-c+gkeUJ1LovxSdWHJZggt0POPQxEotmuQvcXeicg@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.12.2012 10:01, Zhouping Liu wrote:
-> On 12/28/2012 10:45 AM, Zhouping Liu wrote:
->>> Thank you for the report Zhouping!
->>>
->>> Would you be so kind to test the following patch and report results?
->>> Apply the patch to the latest mainline.
->> Hello Zlatko,
->>
->> I have tested the below patch(applied it on mainline directly),
->> but IMO, I'd like to say it maybe don't fix the issue completely.
+On 12/27, Andrey Wagin wrote:
 >
-> Hi Zlatko,
+> 2012/12/27 Oleg Nesterov <oleg@redhat.com>:
+> > On 12/27, Andrey Wagin wrote:
+> >>
+> >> On Wed, Dec 26, 2012 at 05:31:12PM +0100, Oleg Nesterov wrote:
+> >> >
+> >> > So I think we should not use llseek. But, probably we can rely on pread() ?
+> >> > This way we can avoid the problem above, and this looks even simpler.
+> >>
+> >> Yes. It is a good idea. A new patch is attached to this email. I
+> >> implemented pread for signalfd and fixed all your previous comments.
+> >>
+> ...
+> > I think it would be better to pass ppos, not *ppos, because ...
+> >
+> >> +             if (*ppos)
+> >> +                     (*ppos)++;
+> >
+> > in this case we can update *ppos in signalfd_peek() and simplify the
+> > code a bit.
+> >
+> > Compared to the previous version it is "safe" to change *ppos even if
+> > copy_to_user() fails, *ppos will be "lost" anyway after we return.
 >
-> I re-tested it on another machine, which has 60+ Gb RAM and 4 numa nodes,
-> without your patch, it's easy to reproduce the 'NULL pointer' error,
-> after applying your patch, I couldn't reproduce the issue any more.
->
-> depending on the above, it implied that your patch fixed the issue.
->
+> Yes. But ppos is updated, because pread() reads all siginfo-s from a queue,
+> which fit in a buffer starting with the initial ppos.
 
-Yes, that's exactly what I expected. Just wanted to doublecheck this 
-time. Live and learn. ;)
+Can't understand. And I guess you misunderstood.
 
-> but in my last mail, I tested it on two machines, which caused hung task
-> with your patch,
-> so I'm confusing is it your patch block some oom-killer performance? if
-> it's not, your patch is good for me.
+I meant, we can update *ppos in signalfd_peek() _and_ we can do this
+unconditionally even if copy_to_user() failed.
+
+> >> @@ -321,6 +372,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+> >>               }
+> >>
+> >>               file->f_flags |= flags & SFD_RAW;
+> >> +             file->f_mode |= FMODE_PREAD;
+> >>
+> >>               fd_install(ufd, file);
+> >
+> > Hmm. Looks like it is based on other patches I didnt see...
+> >
+> > But I don't understand how FMODE_PREAD connects to this patch, we need
+> > this flag set even for regular sys_read() ???
 >
+> It doesn't need for sys_read(), but this patch is about pread() and
+> sys_pread() checks it.
+>
+> SYSCALL_DEFINE(pread64)(unsigned int fd, char __user *buf,
+>                         size_t count, loff_t pos)
+> {
+> ....
+>         if (f.file) {
+>                 ret = -ESPIPE;
+>                 if (f.file->f_mode & FMODE_PREAD)
+>                         ret = vfs_read(f.file, buf, count, &pos);
 
- From what I know, the patch shouldn't have much influence on the oom 
-killer, if any. But, as all those subsystems are closely interconnected, 
-both oom & vmscan code is mm after all, there could be some 
-interference. Is the hung-task issue repeatable?
--- 
-Zlatko
+And sys_read() checks it too, that was my point.
+
+So either this code was already broken before this patch, or FMODE_PREAD
+is already set and you do not need this chunk.
+
+Oleg.
+
