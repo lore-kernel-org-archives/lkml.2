@@ -1,64 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138Ab2L1KKW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 05:10:22 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:38801 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752111Ab2L1KKT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 05:10:19 -0500
-X-Sasl-enc: XvyXnF/dnqpfa42MQESafAa/3RpMpKVZW76+kezzzQam 1356689417
-Date: Fri, 28 Dec 2012 08:10:13 -0200
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Richard Hartmann <richih.mailinglist@gmail.com>
-Cc: ibm-acpi-devel@lists.sourceforge.net, ibm-acpi@hmh.eng.br,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [ibm-acpi-devel] [PATCH] drivers/platform/x86/thinkpad_acpi.c:
- Handle HKEY event 0x6040
-Message-ID: <20121228101013.GA15327@khazad-dum.debian.net>
-References: <1356543973-18459-1-git-send-email-richih.mailinglist@gmail.com>
- <20121227103843.GB7894@khazad-dum.debian.net>
- <CAD77+gTj+EvuOTU9SZBXOv92YmBdy3EgH9vHwypeFtAJY6+Eyw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAD77+gTj+EvuOTU9SZBXOv92YmBdy3EgH9vHwypeFtAJY6+Eyw@mail.gmail.com>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753482Ab2L1KYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 05:24:23 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:9330 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab2L1KYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 05:24:14 -0500
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Andrey Vagin <avagin@openvz.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH 2/3] signalfd: add ability to return siginfo in a raw format (v2)
+Date: Fri, 28 Dec 2012 14:23:00 +0400
+Message-Id: <1356690181-1796-3-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1356690181-1796-1-git-send-email-avagin@openvz.org>
+References: <1356690181-1796-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 Dec 2012, Richard Hartmann wrote:
-> On Thu, Dec 27, 2012 at 11:38 AM, Henrique de Moraes Holschuh <
-> hmh@hmh.eng.br> wrote:
-> 
-> > /* fallthrough */
-> >
-> [...]
-> 
-> > and letting it proceed to the TP_HKEY_EV_KEY_NUMLOCK block.
-> >
-> 
-> OK.
-> 
-> 
-> Also, do we have any confirmed reports about the lid switch
-> > causing event 0x6040?  It doesn't look right... the comment
-> > might need to be updated.
-> >
-> 
-> I could not reproduce it on my X220. Would you prefer even stronger wording
-> or should I get of it entirely?
+signalfd should be called with the flag SFD_RAW for that.
 
-If you cannot reproduce it, we can shalk it up to user error or to corrected
-firmware bug, so you can remove any mention of lid open/close to event
-6040...
+signalfd_siginfo is not full for siginfo with a negative si_code.
+copy_siginfo_to_user() is copied a full siginfo to user-space, if
+si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
+expanded, because it has not compatible format with siginfo_t.
 
+Another problem is that a constant __SI_* is removed from si_code.
+It's not a problem for usual applications, because they expect
+a defined type of siginfo (internal logic).
+When we want to dump pending signals, we can't predict a type of
+siginfo, so we should get it from kernel.
+
+The main idea of the raw format is that it should be enough for
+restoring exactly the same siginfo for the current process.
+
+This functionality is required for checkpointing pending signals.
+
+v2: fix a race condition during setting file flags
+    copy_siginfo_to_user32() if is_compat_task
+
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+CC: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ fs/signalfd.c                 | 64 +++++++++++++++++++++++++++++++++++++++----
+ include/uapi/linux/signalfd.h |  1 +
+ 2 files changed, 60 insertions(+), 5 deletions(-)
+
+diff --git a/fs/signalfd.c b/fs/signalfd.c
+index b534869..4439a81 100644
+--- a/fs/signalfd.c
++++ b/fs/signalfd.c
+@@ -30,6 +30,7 @@
+ #include <linux/signalfd.h>
+ #include <linux/syscalls.h>
+ #include <linux/proc_fs.h>
++#include <linux/compat.h>
+ 
+ void signalfd_cleanup(struct sighand_struct *sighand)
+ {
+@@ -74,6 +75,38 @@ static unsigned int signalfd_poll(struct file *file, poll_table *wait)
+ }
+ 
+ /*
++ * Copy a whole siginfo into users spaces.
++ * The main idea of this format is that it should be enough
++ * for restoring siginfo back into the kernel.
++ */
++static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
++					siginfo_t *kinfo)
++{
++	siginfo_t *uinfo = (siginfo_t *) siginfo;
++	int err;
++
++	BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
++
++	err = __clear_user(uinfo, sizeof(*uinfo));
++
++#ifdef CONFIG_COMPAT
++	if (unlikely(is_compat_task())) {
++		compat_siginfo_t *compat_uinfo = (compat_siginfo_t *) siginfo;
++
++		err |= copy_siginfo_to_user32(compat_uinfo, kinfo);
++		err |= put_user(kinfo->si_code, &compat_uinfo->si_code);
++
++		return err ? -EFAULT: sizeof(*compat_uinfo);
++	}
++#endif
++
++	err |= copy_siginfo_to_user(uinfo, kinfo);
++	err |= put_user(kinfo->si_code, &uinfo->si_code);
++
++	return err ? -EFAULT: sizeof(*uinfo);
++}
++
++/*
+  * Copied from copy_siginfo_to_user() in kernel/signal.c
+  */
+ static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
+@@ -205,6 +238,7 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
+ 	struct signalfd_ctx *ctx = file->private_data;
+ 	struct signalfd_siginfo __user *siginfo;
+ 	int nonblock = file->f_flags & O_NONBLOCK;
++	bool raw = file->f_flags & SFD_RAW;
+ 	ssize_t ret, total = 0;
+ 	siginfo_t info;
+ 
+@@ -217,7 +251,12 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
+ 		ret = signalfd_dequeue(ctx, &info, nonblock);
+ 		if (unlikely(ret <= 0))
+ 			break;
+-		ret = signalfd_copyinfo(siginfo, &info);
++
++		if (raw)
++			ret = signalfd_copy_raw_info(siginfo, &info);
++		else
++			ret = signalfd_copyinfo(siginfo, &info);
++
+ 		if (ret < 0)
+ 			break;
+ 		siginfo++;
+@@ -262,7 +301,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+ 	BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
+ 	BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
+ 
+-	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK))
++	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW))
+ 		return -EINVAL;
+ 
+ 	if (sizemask != sizeof(sigset_t) ||
+@@ -272,20 +311,35 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+ 	signotset(&sigmask);
+ 
+ 	if (ufd == -1) {
++		struct file *file;
+ 		ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
+ 		if (!ctx)
+ 			return -ENOMEM;
+ 
+ 		ctx->sigmask = sigmask;
+ 
++		ufd = get_unused_fd_flags(flags);
++		if (ufd < 0) {
++			kfree(ctx);
++			goto out;
++		}
++
+ 		/*
+ 		 * When we call this, the initialization must be complete, since
+ 		 * anon_inode_getfd() will install the fd.
+ 		 */
+-		ufd = anon_inode_getfd("[signalfd]", &signalfd_fops, ctx,
++		file = anon_inode_getfile("[signalfd]", &signalfd_fops, ctx,
+ 				       O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
+-		if (ufd < 0)
++		if (IS_ERR(file)) {
++			put_unused_fd(ufd);
++			ufd = PTR_ERR(file);
+ 			kfree(ctx);
++			goto out;
++		}
++
++		file->f_flags |= flags & SFD_RAW;
++
++		fd_install(ufd, file);
+ 	} else {
+ 		struct fd f = fdget(ufd);
+ 		if (!f.file)
+@@ -302,7 +356,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+ 		wake_up(&current->sighand->signalfd_wqh);
+ 		fdput(f);
+ 	}
+-
++out:
+ 	return ufd;
+ }
+ 
+diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
+index 492c6de..bc31849 100644
+--- a/include/uapi/linux/signalfd.h
++++ b/include/uapi/linux/signalfd.h
+@@ -15,6 +15,7 @@
+ /* Flags for signalfd4.  */
+ #define SFD_CLOEXEC O_CLOEXEC
+ #define SFD_NONBLOCK O_NONBLOCK
++#define SFD_RAW O_DIRECT
+ 
+ struct signalfd_siginfo {
+ 	__u32 ssi_signo;
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+1.7.11.7
+
