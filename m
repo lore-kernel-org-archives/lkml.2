@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754923Ab2L1Tqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:46:48 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55186 "EHLO
+	id S932163Ab2L1Tqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:46:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55193 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754674Ab2L1TSH (ORCPT
+	by vger.kernel.org with ESMTP id S1754561Ab2L1TSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:07 -0500
-Message-Id: <20121228190355.829404859@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:09 -0500
+Message-Id: <20121228190354.590117309@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:32 +0100
+Date: Fri, 28 Dec 2012 20:05:26 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Gregory Greenman <gregory.greenman@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 122/173] iwlwifi: dont handle masked interrupt
+        Gabor Juhos <juhosg@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 116/173] ath9k: ar9003: fix OTP register offsets for AR9340
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,75 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Gabor Juhos <juhosg@openwrt.org>
 
-commit 25a172655f837bdb032e451f95441bb4acec51bb upstream.
+commit b3cd8021379306c0be6932e4d3b4b01efc681769 upstream.
 
-This can lead to a panic if the driver isn't ready to
-handle them. Since our interrupt line is shared, we can get
-an interrupt at any time (and CONFIG_DEBUG_SHIRQ checks
-that even when the interrupt is being freed).
+Trying to access the OTP memory on the AR9340
+causes a data bus error like this:
 
-If the op_mode has gone away, we musn't call it. To avoid
-this the transport disables the interrupts when the hw is
-stopped and the op_mode is leaving.
-If there is an event that would cause an interrupt the INTA
-register is updated regardless of the enablement of the
-interrupts: even if the interrupts are disabled, the INTA
-will be changed, but the device won't issue an interrupt.
-But the ISR can be called at any time, so we ought ignore
-the value in the INTA otherwise we can call the op_mode
-after it was freed.
+  Data bus error, epc == 86e84164, ra == 86e84164
+  Oops[#1]:
+  Cpu 0
+  $ 0   : 00000000 00000061 deadc0de 00000000
+  $ 4   : b8115f18 00015f18 00000007 00000004
+  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
+  $12   : 7c7c3c7c 001f0041 00000000 7c7c7c3c
+  $16   : 86ee0000 00015f18 00000000 00000007
+  $20   : 00000004 00000064 00000004 86d71c44
+  $24   : 00000000 86e6ca00
+  $28   : 86d70000 86d71b20 86ece0c0 86e84164
+  Hi    : 00000000
+  Lo    : 00000064
+  epc   : 86e84164 ath9k_hw_wait+0x58/0xb0 [ath9k_hw]
+      Tainted: G           O
+  ra    : 86e84164 ath9k_hw_wait+0x58/0xb0 [ath9k_hw]
+  Status: 1100d403    KERNEL EXL IE
+  Cause : 4080801c
+  PrId  : 0001974c (MIPS 74Kc)
+  Modules linked in: ath9k(O+) ath9k_common(O) ath9k_hw(O) ath(O) ar934x_nfc
+  mac80211(O) usbcore usb_common scsi_mod nls_base nand nand_ecc nand_ids
+  crc_ccitt cfg80211(O) compat(O) arc4 aes_generic crypto_blkcipher cryptomgr
+  aead crypto_hash crypto_algapi ledtrig_timer ledtrig_default_on leds_gpio
+  Process insmod (pid: 459, threadinfo=86d70000, task=87942140, tls=779ac440)
+  Stack : 802fb500 000200da 804db150 804e0000 87816130 86ee0000 00010000 86d71b88
+          86d71bc0 00000004 00000003 86e9fcd0 80305300 0002c0d0 86e74c50 800b4c20
+          000003e8 00000001 00000000 86ee0000 000003ff 86e9fd64 80305300 80123938
+          fffffffc 00000004 000058bc 00000000 86ea0000 86ee0000 000001ff 878d6000
+          99999999 86e9fdc0 86ee0fcc 86e9e664 0000c0d0 86ee0000 0000700000007000
+          ...
+  Call Trace:
+  [<86e84164>] ath9k_hw_wait+0x58/0xb0 [ath9k_hw]
+  [<86e9fcd0>] ath9k_hw_setup_statusring+0x16b8/0x1c7c [ath9k_hw]
 
-I found this bug when the op_mode_start failed, and called
-iwl_trans_stop_hw(trans, true). Then I played with the
-RFKILL button, and removed the module.
-While removing the module, the IRQ is freed, and the ISR is
-called (CONFIG_DEBUG_SHIRQ enabled). Panic.
+  Code: 0000a812  0040f809  00000000 <00531024> 1054000b  24020001  0c05b5dc  2404000a  26520001
 
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Reviewed-by: Gregory Greenman <gregory.greenman@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Pass bus(trans), not trans, to iwl_{read,write}32()]
+The cause of the error is that the OTP register
+offsets are different on the AR9340 than the
+actually used values.
+
+Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c |   12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
-@@ -1263,12 +1263,20 @@ static irqreturn_t iwl_isr(int irq, void
- 	 *    back-to-back ISRs and sporadic interrupts from our NIC.
- 	 * If we have something to service, the tasklet will re-enable ints.
- 	 * If we *don't* have something, we'll re-enable before leaving here. */
--	inta_mask = iwl_read32(bus(trans), CSR_INT_MASK);  /* just for debug */
-+	inta_mask = iwl_read32(bus(trans), CSR_INT_MASK);
- 	iwl_write32(bus(trans), CSR_INT_MASK, 0x00000000);
+diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
+index 41b1a75..54ba42f 100644
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
+@@ -68,13 +68,13 @@
+ #define AR9300_BASE_ADDR 0x3ff
+ #define AR9300_BASE_ADDR_512 0x1ff
  
- 	/* Discover which interrupts are active/pending */
- 	inta = iwl_read32(bus(trans), CSR_INT);
+-#define AR9300_OTP_BASE			0x14000
+-#define AR9300_OTP_STATUS		0x15f18
++#define AR9300_OTP_BASE			(AR_SREV_9340(ah) ? 0x30000 : 0x14000)
++#define AR9300_OTP_STATUS		(AR_SREV_9340(ah) ? 0x30018 : 0x15f18)
+ #define AR9300_OTP_STATUS_TYPE		0x7
+ #define AR9300_OTP_STATUS_VALID		0x4
+ #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
+ #define AR9300_OTP_STATUS_SM_BUSY	0x1
+-#define AR9300_OTP_READ_DATA		0x15f1c
++#define AR9300_OTP_READ_DATA		(AR_SREV_9340(ah) ? 0x3001c : 0x15f1c)
  
-+	if (inta & (~inta_mask)) {
-+		IWL_DEBUG_ISR(trans,
-+			      "We got a masked interrupt (0x%08x)...Ack and ignore\n",
-+			      inta & (~inta_mask));
-+		iwl_write32(bus(trans), CSR_INT, inta & (~inta_mask));
-+		inta &= inta_mask;
-+	}
-+
- 	/* Ignore interrupt if there's nothing in NIC to service.
- 	 * This may be due to IRQ shared with another device,
- 	 * or due to sporadic interrupts thrown from our NIC. */
-@@ -1349,7 +1357,7 @@ irqreturn_t iwl_isr_ict(int irq, void *d
- 	 * If we have something to service, the tasklet will re-enable ints.
- 	 * If we *don't* have something, we'll re-enable before leaving here.
- 	 */
--	inta_mask = iwl_read32(bus(trans), CSR_INT_MASK);  /* just for debug */
-+	inta_mask = iwl_read32(bus(trans), CSR_INT_MASK);
- 	iwl_write32(bus(trans), CSR_INT_MASK, 0x00000000);
- 
- 
+ enum targetPowerHTRates {
+ 	HT_TARGET_RATE_0_8_16,
 
 
