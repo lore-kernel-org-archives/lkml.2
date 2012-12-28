@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab2L1TRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:08 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54943 "EHLO
+	id S1754525Ab2L1T4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:56:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54982 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754345Ab2L1TRF (ORCPT
+	by vger.kernel.org with ESMTP id S1754345Ab2L1TRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:05 -0500
-Message-Id: <20121228190352.097882544@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:09 -0500
+Message-Id: <20121228190401.136910932@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:14 +0100
+Date: Fri, 28 Dec 2012 20:06:09 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andreas Hartmann <andihartmann@01019freenet.de>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU subframe fails
+        Johannes Berg <johannes.berg@intel.com>,
+        Shuah Khan <shuah.khan@hp.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [ 159/173] iwlwifi: handle DMA mapping failures
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,58 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andreas Hartmann <andihartmann@01019freenet.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01f upstream.
+commit 7c34158231b2eda8dcbd297be2bb1559e69cb433 upstream.
 
-There are connection stalls or very poor throughputs with rt2800
-hardware using 802.11n in AP mode since patch "mac80211: retry sending
-failed BAR frames later instead of tearing down aggr"[1][2].
+The RX replenish code doesn't handle DMA mapping failures,
+which will cause issues if there actually is a failure. This
+was reported by Shuah Khan who found a DMA mapping framework
+warning ("device driver failed to check map error").
 
-Since rt2800 hardware is not able to correctly report the tx status of
-BAR frames, this patch removes as workaround the existing error handling
-on AP side, which lets mac80211 send a BAR when an AMPDU subframe fails.
-
-As a result, most wifi clients (aside from Intel STAs on Windows)
-instead will timeout now the reorder buffer and request the lost frame
-again.
-
-The correct solution would be, to tear down BA session on AP side.
-
-This patch was born on the basis of "[RFT] rt2x00: Tear down BA
-session on QoS frame failure"[3].
-
-Thanks to Helmut Schaa for his support!
-
-[1] http://thread.gmane.org/gmane.linux.kernel.wireless.general/83297/focus=83304
-[2] http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commit;h=f0425beda4d404a6e751439b562100b902ba9c98
-[3] http://thread.gmane.org/gmane.linux.drivers.rt2x00.user/569
-
-Signed-off-by: Andreas Hartmann <andihartmann@01019freenet.de>
-Acked-by: Helmut Schaa <helmut.schaa@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Shuah Khan <shuah.khan@hp.com>
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[bwh: Backported to 3.2:
+ - Adjust filename, context, indentation
+ - Use bus(trans) instead of trans where necessary
+ - Use hw_params(trans).rx_page_order instead of trans_pcie->rx_page_order]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rt2x00/rt2x00dev.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
-index 90cc5e7..dd87d41 100644
---- a/drivers/net/wireless/rt2x00/rt2x00dev.c
-+++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
-@@ -391,9 +391,10 @@ void rt2x00lib_txdone(struct queue_entry *entry,
- 		tx_info->flags |= IEEE80211_TX_STAT_AMPDU;
- 		tx_info->status.ampdu_len = 1;
- 		tx_info->status.ampdu_ack_len = success ? 1 : 0;
--
--		if (!success)
--			tx_info->flags |= IEEE80211_TX_STAT_AMPDU_NO_BACK;
-+		/*
-+		 * TODO: Need to tear down BA session here
-+		 * if not successful.
-+		 */
- 	}
+--- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
++++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-rx.c
+@@ -311,6 +311,14 @@ static void iwlagn_rx_allocate(struct iw
+ 		rxb->page_dma = dma_map_page(bus(trans)->dev, page, 0,
+ 				PAGE_SIZE << hw_params(trans).rx_page_order,
+ 				DMA_FROM_DEVICE);
++		if (dma_mapping_error(bus(trans)->dev, rxb->page_dma)) {
++			rxb->page = NULL;
++			spin_lock_irqsave(&rxq->lock, flags);
++			list_add(&rxb->list, &rxq->rx_used);
++			spin_unlock_irqrestore(&rxq->lock, flags);
++			__free_pages(page, hw_params(trans).rx_page_order);
++			return;
++		}
+ 		/* dma address must be no more than 36 bits */
+ 		BUG_ON(rxb->page_dma & ~DMA_BIT_MASK(36));
+ 		/* and also 256 byte aligned! */
+@@ -489,8 +497,19 @@ static void iwl_rx_handle(struct iwl_tra
+ 				0, PAGE_SIZE <<
+ 				    hw_params(trans).rx_page_order,
+ 				DMA_FROM_DEVICE);
+-			list_add_tail(&rxb->list, &rxq->rx_free);
+-			rxq->free_count++;
++			if (dma_mapping_error(bus(trans)->dev, rxb->page_dma)) {
++				/*
++				 * free the page(s) as well to not break
++				 * the invariant that the items on the used
++				 * list have no page(s)
++				 */
++				__free_pages(rxb->page, hw_params(trans).rx_page_order);
++				rxb->page = NULL;
++				list_add_tail(&rxb->list, &rxq->rx_used);
++			} else {
++				list_add_tail(&rxb->list, &rxq->rx_free);
++				rxq->free_count++;
++			}
+ 		} else
+ 			list_add_tail(&rxb->list, &rxq->rx_used);
  
- 	if (rate_flags & IEEE80211_TX_RC_USE_RTS_CTS) {
 
 
