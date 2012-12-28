@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932404Ab2L1TTc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:19:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55529 "EHLO
+	id S932420Ab2L1TTj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:19:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55585 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932357Ab2L1TTV (ORCPT
+	by vger.kernel.org with ESMTP id S932396Ab2L1TTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:21 -0500
-Message-Id: <20121228190342.079170874@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:32 -0500
+Message-Id: <20121228190340.573255522@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:27 +0100
+Date: Fri, 28 Dec 2012 20:04:20 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Alexis R. Cortes" <alexis.cortes@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 057/173] usb: host: xhci: Stricter conditional for Z1 system models for
- Compliance Mode Patch
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 050/173] USB: fix endpoint-disabling for failed config changes
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,37 +29,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Alexis R. Cortes" <alexis.cortes@ti.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit b0e4e606ff6ff26da0f60826e75577b56ba4e463 upstream.
+commit 36caff5d795429c572443894e8789c2150dd796b upstream.
 
-This minor patch creates a more stricter conditional for the Z1 sytems for applying
-the Compliance Mode Patch, this to avoid the quirk to be applied to models that
-contain a "Z1" in their dmi product string but are different from Z1 systems.
+This patch (as1631) fixes a bug that shows up when a config change
+fails for a device under an xHCI controller.  The controller needs to
+be told to disable the endpoints that have been enabled for the new
+config.  The existing code does this, but before storing the
+information about which endpoints were enabled!  As a result, any
+second attempt to install the new config is doomed to fail because
+xhci-hcd will refuse to enable an endpoint that is already enabled.
 
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+The patch optimistically initializes the new endpoints' device
+structures before asking the device to switch to the new config.  If
+the request fails then the endpoint information is already stored, so
+we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
+trouble.  The rest of the error path is slightly more complex now; we
+have to disable the new interfaces and call put_device() rather than
+simply deallocating them.
 
-Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/message.c |   54 +++++++++++++++++++++++++-------------------
+ 1 file changed, 31 insertions(+), 23 deletions(-)
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 2e29f2f..09987d5 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -480,7 +480,7 @@ static bool compliance_mode_recovery_timer_quirk_check(void)
- 	if (strstr(dmi_product_name, "Z420") ||
- 			strstr(dmi_product_name, "Z620") ||
- 			strstr(dmi_product_name, "Z820") ||
--			strstr(dmi_product_name, "Z1"))
-+			strstr(dmi_product_name, "Z1 Workstation"))
- 		return true;
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1770,28 +1770,8 @@ free_interfaces:
+ 		goto free_interfaces;
+ 	}
  
- 	return false;
+-	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+-			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+-			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+-	if (ret < 0) {
+-		/* All the old state is gone, so what else can we do?
+-		 * The device is probably useless now anyway.
+-		 */
+-		cp = NULL;
+-	}
+-
+-	dev->actconfig = cp;
+-	if (!cp) {
+-		usb_set_device_state(dev, USB_STATE_ADDRESS);
+-		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		mutex_unlock(hcd->bandwidth_mutex);
+-		usb_autosuspend_device(dev);
+-		goto free_interfaces;
+-	}
+-	mutex_unlock(hcd->bandwidth_mutex);
+-	usb_set_device_state(dev, USB_STATE_CONFIGURED);
+-
+-	/* Initialize the new interface structures and the
++	/*
++	 * Initialize the new interface structures and the
+ 	 * hc/hcd/usbcore interface/endpoint state.
+ 	 */
+ 	for (i = 0; i < nintf; ++i) {
+@@ -1835,6 +1815,35 @@ free_interfaces:
+ 	}
+ 	kfree(new_interfaces);
+ 
++	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
++			      NULL, 0, USB_CTRL_SET_TIMEOUT);
++	if (ret < 0 && cp) {
++		/*
++		 * All the old state is gone, so what else can we do?
++		 * The device is probably useless now anyway.
++		 */
++		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
++		for (i = 0; i < nintf; ++i) {
++			usb_disable_interface(dev, cp->interface[i], true);
++			put_device(&cp->interface[i]->dev);
++			cp->interface[i] = NULL;
++		}
++		cp = NULL;
++	}
++
++	dev->actconfig = cp;
++	mutex_unlock(hcd->bandwidth_mutex);
++
++	if (!cp) {
++		usb_set_device_state(dev, USB_STATE_ADDRESS);
++
++		/* Leave LPM disabled while the device is unconfigured. */
++		usb_autosuspend_device(dev);
++		return ret;
++	}
++	usb_set_device_state(dev, USB_STATE_CONFIGURED);
++
+ 	if (cp->string == NULL &&
+ 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
 
 
