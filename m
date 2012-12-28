@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466Ab2L1TcF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:32:05 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55521 "EHLO
+	id S932368Ab2L1Tbx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:31:53 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55531 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932350Ab2L1TTT (ORCPT
+	by vger.kernel.org with ESMTP id S932358Ab2L1TTV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:19 -0500
-Message-Id: <20121228190342.730742230@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:21 -0500
+Message-Id: <20121228190342.293540028@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:30 +0100
+Date: Fri, 28 Dec 2012 20:04:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [ 060/173] rcu: Fix batch-limit size problem
+        Kevin McKinney <klmckinney1@gmail.com>,
+        Rinat Camalov <richman1000000d@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 058/173] Staging: bcm: Create and initialize new device id in InterfaceInit
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,65 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Kevin McKinney <klmckinney1@gmail.com>
 
-commit 878d7439d0f45a95869e417576774673d1fa243f upstream.
+commit e66fc1fba248738d32f3b64508f9ef1176d9e767 upstream.
 
-Commit 29c00b4a1d9e27 (rcu: Add event-tracing for RCU callback
-invocation) added a regression in rcu_do_batch()
+This patch create and initalizes a new device
+id of 0x172 as reported by Rinat Camalov
+<richman1000000d@gmail.com>. In addition, a
+comment is added to the potential invalid
+existing device id.
 
-Under stress, RCU is supposed to allow to process all items in queue,
-instead of a batch of 10 items (blimit), but an integer overflow makes
-the effective limit being 1.  So, unless there is frequent idle periods
-(during which RCU ignores batch limits), RCU can be forced into a
-state where it cannot keep up with the callback-generation rate,
-eventually resulting in OOM.
-
-This commit therefore converts a few variables in rcu_do_batch() from
-int to long to fix this problem, along with the module parameters
-controlling the batch limits.
-
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Module parameters remain hidden from sysfs]
+Reported-by: Rinat Camalov <richman1000000d@gmail.com>
+Signed-off-by: Kevin McKinney <klmckinney1@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/rcutree.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ drivers/staging/bcm/InterfaceInit.c |    1 +
+ drivers/staging/bcm/InterfaceInit.h |    3 ++-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -202,13 +202,13 @@ DEFINE_PER_CPU(struct rcu_dynticks, rcu_
+--- a/drivers/staging/bcm/InterfaceInit.c
++++ b/drivers/staging/bcm/InterfaceInit.c
+@@ -8,6 +8,7 @@ static struct usb_device_id InterfaceUsb
+ 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_226) },
+ 	{ USB_DEVICE(BCM_USB_VENDOR_ID_FOXCONN, BCM_USB_PRODUCT_ID_1901) },
+ 	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_TU25) },
++	{ USB_DEVICE(BCM_USB_VENDOR_ID_ZTE, BCM_USB_PRODUCT_ID_ZTE_226) },
+ 	{ }
  };
- #endif /* #ifdef CONFIG_NO_HZ */
+ MODULE_DEVICE_TABLE(usb, InterfaceUsbtable);
+--- a/drivers/staging/bcm/InterfaceInit.h
++++ b/drivers/staging/bcm/InterfaceInit.h
+@@ -11,7 +11,8 @@
+ #define BCM_USB_PRODUCT_ID_SM250 	0xbccd
+ #define BCM_USB_PRODUCT_ID_SYM  0x15E
+ #define BCM_USB_PRODUCT_ID_1901 0xe017
+-#define BCM_USB_PRODUCT_ID_226  0x0132
++#define BCM_USB_PRODUCT_ID_226	0x0132 /* not sure if this is valid */
++#define BCM_USB_PRODUCT_ID_ZTE_226 0x172
+ #define BCM_USB_PRODUCT_ID_ZTE_TU25 0x0007
  
--static int blimit = 10;		/* Maximum callbacks per rcu_do_batch. */
--static int qhimark = 10000;	/* If this many pending, ignore blimit. */
--static int qlowmark = 100;	/* Once only this many pending, use blimit. */
--
--module_param(blimit, int, 0);
--module_param(qhimark, int, 0);
--module_param(qlowmark, int, 0);
-+static long blimit = 10;	/* Maximum callbacks per rcu_do_batch. */
-+static long qhimark = 10000;	/* If this many pending, ignore blimit. */
-+static long qlowmark = 100;	/* Once only this many pending, use blimit. */
-+
-+module_param(blimit, long, 0);
-+module_param(qhimark, long, 0);
-+module_param(qlowmark, long, 0);
- 
- int rcu_cpu_stall_suppress __read_mostly;
- module_param(rcu_cpu_stall_suppress, int, 0644);
-@@ -1260,7 +1260,7 @@ static void rcu_do_batch(struct rcu_stat
- {
- 	unsigned long flags;
- 	struct rcu_head *next, *list, **tail;
--	int bl, count;
-+	long bl, count;
- 
- 	/* If no callbacks are ready, just return.*/
- 	if (!cpu_has_callbacks_ready_to_invoke(rdp)) {
+ #define BCM_USB_MINOR_BASE 		192
 
 
