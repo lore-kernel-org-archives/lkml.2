@@ -1,44 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753840Ab2L1QJg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 11:09:36 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:39404 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753685Ab2L1QJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 11:09:34 -0500
-Date: Fri, 28 Dec 2012 16:09:27 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: anish singh <anish198519851985@gmail.com>,
-        amit mehta <gmate.amit@gmail.com>,
-        Henrique Rodrigues <henriquesilvar@gmail.com>,
-        kishore kumar <kishoreopen@gmail.com>,
-        Jonathan Neusch??fer <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
-Subject: Re: how to look for source code in kernel
-Message-ID: <20121228160927.GY4939@ZenIV.linux.org.uk>
-References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
- <20121227184034.GA2982@debian.debian>
- <CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
- <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
- <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
- <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
- <87a9syhbma.fsf@xmission.com>
+	id S1753837Ab2L1QOz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 11:14:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:21934 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753685Ab2L1QOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 11:14:54 -0500
+Date: Fri, 28 Dec 2012 17:14:36 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, criu@openvz.org,
+        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: Re: [PATCH 2/3] signalfd: add ability to return siginfo in a raw
+	format (v2)
+Message-ID: <20121228161436.GA30459@redhat.com>
+References: <1356690181-1796-1-git-send-email-avagin@openvz.org> <1356690181-1796-3-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87a9syhbma.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1356690181-1796-3-git-send-email-avagin@openvz.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 11:36:13PM -0800, Eric W. Biederman wrote:
-> But then I am probably peculiar keeping an index of the source code in
-> my head.  When I need to look for something and I don't know where to
-> find it I do.
-> 
-> git-ls-files | xargs fgrep 'struct f2fs_inode'
+On 12/28, Andrey Vagin wrote:
+>
+> signalfd should be called with the flag SFD_RAW for that.
+>
+> signalfd_siginfo is not full for siginfo with a negative si_code.
+> copy_siginfo_to_user() is copied a full siginfo to user-space, if
+> si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
+> expanded, because it has not compatible format with siginfo_t.
+>
+> Another problem is that a constant __SI_* is removed from si_code.
+> It's not a problem for usual applications, because they expect
+> a defined type of siginfo (internal logic).
+> When we want to dump pending signals, we can't predict a type of
+> siginfo, so we should get it from kernel.
+>
+> The main idea of the raw format is that it should be enough for
+> restoring exactly the same siginfo for the current process.
+>
+> This functionality is required for checkpointing pending signals.
 
-What's wrong with git grep?
+And this should be used along with pread().
+
+I won't argue, but perhaps we should simply postulate that pread()
+always dumps siginfo in raw format and avoid the new flag?
+
+> @@ -272,20 +311,35 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+>  	signotset(&sigmask);
+>  
+>  	if (ufd == -1) {
+> +		struct file *file;
+>  		ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
+>  		if (!ctx)
+>  			return -ENOMEM;
+>  
+>  		ctx->sigmask = sigmask;
+>  
+> +		ufd = get_unused_fd_flags(flags);
+> +		if (ufd < 0) {
+> +			kfree(ctx);
+> +			goto out;
+> +		}
+> +
+>  		/*
+>  		 * When we call this, the initialization must be complete, since
+>  		 * anon_inode_getfd() will install the fd.
+>  		 */
+> -		ufd = anon_inode_getfd("[signalfd]", &signalfd_fops, ctx,
+> +		file = anon_inode_getfile("[signalfd]", &signalfd_fops, ctx,
+>  				       O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
+> -		if (ufd < 0)
+> +		if (IS_ERR(file)) {
+> +			put_unused_fd(ufd);
+> +			ufd = PTR_ERR(file);
+>  			kfree(ctx);
+> +			goto out;
+> +		}
+> +
+> +		file->f_flags |= flags & SFD_RAW;
+> +
+> +		fd_install(ufd, file);
+
+And this is needed because we want to set more bits in f_flags/f_mode.
+
+I am wondering if we can change anon_inode_getfd/getfile somehow so
+that the user can pass more flags...
+
+Or. Currently fops->open() is never used if this file_operations is used
+by anon_inode_get*. So perhaps we can change anon_inode_getfile() to call
+fops->open() if it is not zero before return?
+
+OK, this is almost off-topic, please ignore.
+
+Oleg.
+
