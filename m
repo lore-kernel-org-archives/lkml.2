@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab2L1Tug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:50:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55099 "EHLO
+	id S1754696Ab2L1Tuc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:50:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55101 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754575Ab2L1TRq (ORCPT
+	by vger.kernel.org with ESMTP id S1754577Ab2L1TRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:17:46 -0500
-Message-Id: <20121228190358.198601318@decadent.org.uk>
+Message-Id: <20121228190357.928699673@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:48 +0100
+Date: Fri, 28 Dec 2012 20:05:46 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 138/173] proc: pid/status: show all supplementary groups
+        Peter Popovec <popovec@oko.fei.tuke.sk>,
+        Peter Popovec <popovec@fei.tuke.sk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 136/173] Input: walkera0701 - fix crash on startup
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,49 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+From: Peter Popovec <popovec@oko.fei.tuke.sk>
 
-commit 8d238027b87e654be552eabdf492042a34c5c300 upstream.
+commit a455e2985f57e2a71566bb8850094af38b2c932d upstream.
 
-We display a list of supplementary group for each process in
-/proc/<pid>/status.  However, we show only the first 32 groups, not all of
-them.
+The driver's timer must be set up before enabling IRQ handler, otherwise
+bad things may happen.
 
-Although this is rare, but sometimes processes do have more than 32
-supplementary groups, and this kernel limitation breaks user-space apps
-that rely on the group list in /proc/<pid>/status.
-
-Number 32 comes from the internal NGROUPS_SMALL macro which defines the
-length for the internal kernel "small" groups buffer.  There is no
-apparent reason to limit to this value.
-
-This patch removes the 32 groups printing limit.
-
-The Linux kernel limits the amount of supplementary groups by NGROUPS_MAX,
-which is currently set to 65536.  And this is the maximum count of groups
-we may possibly print.
-
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: adjust context]
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Peter Popovec <popovec@fei.tuke.sk>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/proc/array.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/input/joystick/walkera0701.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -204,7 +204,7 @@ static inline void task_state(struct seq
- 	group_info = cred->group_info;
- 	task_unlock(p);
+diff --git a/drivers/input/joystick/walkera0701.c b/drivers/input/joystick/walkera0701.c
+index 4dfa1ee..f8f892b 100644
+--- a/drivers/input/joystick/walkera0701.c
++++ b/drivers/input/joystick/walkera0701.c
+@@ -196,6 +196,7 @@ static void walkera0701_close(struct input_dev *dev)
+ 	struct walkera_dev *w = input_get_drvdata(dev);
  
--	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
-+	for (g = 0; g < group_info->ngroups; g++)
- 		seq_printf(m, "%d ", GROUP_AT(group_info, g));
- 	put_cred(cred);
+ 	parport_disable_irq(w->parport);
++	hrtimer_cancel(&w->timer);
+ }
  
+ static int walkera0701_connect(struct walkera_dev *w, int parport)
+@@ -224,6 +225,9 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
+ 	if (parport_claim(w->pardevice))
+ 		goto init_err1;
+ 
++	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	w->timer.function = timer_handler;
++
+ 	w->input_dev = input_allocate_device();
+ 	if (!w->input_dev)
+ 		goto init_err2;
+@@ -254,8 +258,6 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
+ 	if (err)
+ 		goto init_err3;
+ 
+-	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	w->timer.function = timer_handler;
+ 	return 0;
+ 
+  init_err3:
+@@ -271,7 +273,6 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
+ 
+ static void walkera0701_disconnect(struct walkera_dev *w)
+ {
+-	hrtimer_cancel(&w->timer);
+ 	input_unregister_device(w->input_dev);
+ 	parport_release(w->pardevice);
+ 	parport_unregister_device(w->pardevice);
 
 
