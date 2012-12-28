@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab2L1TT3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:19:29 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55527 "EHLO
+	id S932374Ab2L1TTZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:19:25 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55499 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932277Ab2L1TTU (ORCPT
+	by vger.kernel.org with ESMTP id S932272Ab2L1TTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:20 -0500
-Message-Id: <20121228190341.621376713@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:11 -0500
+Message-Id: <20121228190344.171670402@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:25 +0100
+Date: Fri, 28 Dec 2012 20:04:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julius Werner <jwerner@chromium.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 055/173] xhci: fix null-pointer dereference when destroying half-built
- segment rings
+        Marcos Chaparro <marcos@mrkindustries.com.ar>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 067/173] Bluetooth: ath3k: Add support for VAIO VPCEH [0489:e027]
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,67 +28,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Marcos Chaparro <marcos@mrkindustries.com.ar>
 
-commit 68e5254adb88bede68285f11fb442a4d34fb550c upstream.
+commit acd9454433e28c1a365d8b069813c35c1c3a8ac3 upstream.
 
-xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
-the tail to head at the end (forming a ring). When it bails out for OOM
-reasons half-way through, it tries to destroy its half-built list with
-xhci_free_segments_for_ring(), even though it is not a ring yet. This
-causes a null-pointer dereference upon hitting the last element.
+Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the
+devices list.
+Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth
+device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth
+[0cf3:3005].
 
-Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
-the output parameters to be valid upon this kind of OOM failure, and
-calls xhci_ring_free() on them. Since the (incomplete) list/ring should
-already be destroyed in that case, this would lead to a use after free.
+T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e027 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-This patch fixes those issues by having xhci_alloc_segments_for_ring()
-destroy its half-built, non-circular list manually and destroying the
-invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
-
-This patch should be backported to kernels as old as 2.6.31, that
-contains the commit 0ebbab37422315a5d0cb29792271085bafdf38c0 "USB: xhci:
-Ring allocation and initialization."
-
-A separate patch will need to be developed for kernels older than 3.4,
-since the ring allocation code was refactored in that kernel.
-
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Since segment allocation is done directly in xhci_ring_alloc(), walk
-   the list starting from ring->first_seg when freeing]
+Signed-off-by: Marcos Chaparro <marcos@mrkindustries.com.ar>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/drivers/usb/host/xhci-mem.c
-+++ b/drivers/usb/host/xhci-mem.c
-@@ -178,8 +178,15 @@ static struct xhci_ring *xhci_ring_alloc
- 		struct xhci_segment	*next;
+ drivers/bluetooth/ath3k.c |    1 +
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index fc2de55..b00000e 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3304) },
+ 	{ USB_DEVICE(0x0930, 0x0215) },
+ 	{ USB_DEVICE(0x0489, 0xE03D) },
++	{ USB_DEVICE(0x0489, 0xE027) },
  
- 		next = xhci_segment_alloc(xhci, flags);
--		if (!next)
-+		if (!next) {
-+			prev = ring->first_seg;
-+			while (prev) {
-+				next = prev->next;
-+				xhci_segment_free(xhci, prev);
-+				prev = next;
-+			}
- 			goto fail;
-+		}
- 		xhci_link_segments(xhci, prev, next, link_trbs, isoc);
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index debda27..ee82f2f 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -124,6 +124,7 @@ static struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
++	{ USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
  
- 		prev = next;
-@@ -199,7 +206,7 @@ static struct xhci_ring *xhci_ring_alloc
- 	return ring;
- 
- fail:
--	xhci_ring_free(xhci, ring);
-+	kfree(ring);
- 	return NULL;
- }
- 
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
 
 
