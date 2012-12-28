@@ -1,40 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755026Ab2L1WBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 17:01:30 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:39748 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754282Ab2L1WB2 (ORCPT
+	id S1754360Ab2L1WDp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 17:03:45 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:40467 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab2L1WDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 17:01:28 -0500
+	Fri, 28 Dec 2012 17:03:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <1356714442-27028-1-git-send-email-cdall@cs.columbia.edu>
-References: <1356714442-27028-1-git-send-email-cdall@cs.columbia.edu>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 28 Dec 2012 14:01:06 -0800
-X-Google-Sender-Auth: ilary0VN_VhznrJ9l9lVtjHvU0o
-Message-ID: <CA+55aFzaQqe4YEqfJVxwUPW8RyrwZKGzQz6ieFKO_UU=yrnPVA@mail.gmail.com>
-Subject: Re: [PATCH] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
-To: c.dall@virtualopensystems.com
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        Steve Capper <steve.capper@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Andrea Arcangeli <arcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20121228130734.GB13224@x1.alien8.de>
+References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
+	<20121227184034.GA2982@debian.debian>
+	<CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
+	<CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
+	<CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
+	<CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
+	<87a9syhbma.fsf@xmission.com>
+	<20121228130734.GB13224@x1.alien8.de>
+Date: Fri, 28 Dec 2012 23:03:40 +0100
+X-Google-Sender-Auth: Q8YNXwYmtFOIpOQqCCescSUS6ho
+Message-ID: <CAMuHMdVo67RrcencMOTJSL_=fGjDFBtczRpvW6D8QbVxNy-t3g@mail.gmail.com>
+Subject: Re: how to look for source code in kernel
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Borislav Petkov <bp@alien8.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        anish singh <anish198519851985@gmail.com>,
+        amit mehta <gmate.amit@gmail.com>,
+        Henrique Rodrigues <henriquesilvar@gmail.com>,
+        kishore kumar <kishoreopen@gmail.com>,
+        =?UTF-8?Q?Jonathan_Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
+        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 9:07 AM,  <c.dall@virtualopensystems.com> wrote:
-> From: Christoffer Dall <cdall@cs.columbia.edu>
+On Fri, Dec 28, 2012 at 2:07 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Dec 27, 2012 at 11:36:13PM -0800, Eric W. Biederman wrote:
+>> git-ls-files | xargs fgrep 'struct f2fs_inode'
+>>
+>> That returns instantly and tells me where to look.  If you can do an
+>> instant brute force search what is the point of an index?
 >
-> Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
-> (PageHead) is true, for tail pages.  This breaks cache cleaning on some
-> ARM systems, and may cause other bugs.
+> Not if you're using a lame-ass laptop with a rotating disk:
+>
+> $ time git ls-files | xargs grep -E 'struct mce\W*{'
+> arch/x86/include/uapi/asm/mce.h:struct mce {
+> arch/x86/kernel/cpu/mcheck/mce.c:               if (!final || memcmp(m, final, sizeof(struct mce))) {
+>
+> real    2m48.415s
+> user    0m2.388s
+> sys     0m15.668s
 
-So this already got committed earlier as commit ad4b3fb7ff99 ("mm: Fix
-PageHead when !CONFIG_PAGEFLAGS_EXTENDED")
+That's the first run. Now everything is in the buffer cache (assumed you have
+enough RAM), and try again...
 
-                    Linus
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
