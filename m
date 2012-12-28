@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab2L1D1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 22:27:54 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:61580 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab2L1D1v (ORCPT
+	id S1753246Ab2L1Dfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 22:35:33 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:43036 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab2L1Dfb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 22:27:51 -0500
+	Thu, 27 Dec 2012 22:35:31 -0500
+Date: Thu, 27 Dec 2012 21:35:27 -0600
+From: Rob Landley <rob@landley.net>
+Subject: Re: Minimum toolchain requirements?
+To: Shaun Ruffell <sruffell@digium.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+References: <1355523910.18402.9@driftwood>
+	<20121227200933.GC14257@digium.com>
+In-Reply-To: <20121227200933.GC14257@digium.com> (from sruffell@digium.com
+	on Thu Dec 27 14:09:33 2012)
+X-Mailer: Balsa 2.4.11
+Message-Id: <1356665727.31232.15@driftwood>
 MIME-Version: 1.0
-In-Reply-To: <CAFFEFTWWNQ_NKw840mQ3gTfB9XR44EXb_=Ft4o+UoHwxv13VRg@mail.gmail.com>
-References: <CAFFEFTXxsPRf1Rmxyih0wL4O6q8G0OFmz0iRLX0tOYedYfajHw@mail.gmail.com>
-	<50D93B43.8060303@cn.fujitsu.com>
-	<CAFFEFTULzSysz+JCBC==VtKD8u1KO6EZnSdQ5XWM7um-zs9_pg@mail.gmail.com>
-	<50D965F9.7090007@cn.fujitsu.com>
-	<CAFFEFTWWNQ_NKw840mQ3gTfB9XR44EXb_=Ft4o+UoHwxv13VRg@mail.gmail.com>
-Date: Fri, 28 Dec 2012 11:27:50 +0800
-Message-ID: <CAFFEFTVXVV09jqje_02WaAGuHkuiYjNreEuJw=2OCOujgnjcUA@mail.gmail.com>
-Subject: Re: kernel panic when running /etc/init.d/iptables restart
-From: canqun zhang <canqunzhang@gmail.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Patrick McHardy <kaber@trash.net>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii; DelSp=Yes; Format=Flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
-As discussed above,if the host machine create several linux
-containers, there will be several  net namespaces.Resources with "nf
-conntrack" are registered or unregistered on the first net
-namespace(init_net),But init_net is not unregistered lastly,so
-cleanuping other net namespaces  will triger painic.
-If net namespaces are created  with the order of 1,2,...n,they should
-be cleaned with the order of n,...2,1,so in this case init_net will be
-unregistered lastly.
-I fixed it up (see below)
+On 12/27/2012 02:09:33 PM, Shaun Ruffell wrote:
+> Hi Rob,
+> 
+> On Fri, Dec 14, 2012 at 04:25:10PM -0600, Rob Landley wrote:
+> > Although the README and Documentation/Changes both say the kernel
+> > builds with gcc 3.2, this is no loner the case. In reality the new
+> > 3.7 kernel no longer builds under unpatched gcc 4.2.1 (the last
+> > GPLv2 release).
+> >
+> > Building for i686 breaks with
+> > "arch/x86/kernel/cpu/perf_event_p6.c:22: error:
+> > p6_hw_cache_event_ids causes a section type conflict" (trivial
+> > workaround: patch kernel so CONFIG_BROKEN_RODATA defaults to y).
+> 
+> I came across your email while searching for a solution to the above
+> build error.
+> 
+> In addition to setting CONFIG_BROKEN_RODATA=y, Jan Beulich sent a
+> patch [1] to LKML that also fixes this build problem for me.
+> 
+> [1] https://lkml.org/lkml/2012/11/23/308
+> 
+> It doesn't appear to have hit Linus' tree yet though, but with luck
+> someone will pick it up before 3.8 final.
+> 
+> Cheers,
+> Shaun
 
-diff -r 6a1a258923f5 -r 2667e89e6f50 net/core/net_namespace.c
---- a/net/core/net_namespace.c  Fri Dec 28 11:01:17 2012 +0800
-+++ b/net/core/net_namespace.c  Fri Dec 28 11:05:12 2012 +0800
-@@ -450,7 +450,7 @@
+Having it in 3.7.x would be nice too. Copying stable.
 
-        list_del(&ops->list);
-        for_each_net(net)
--               list_add_tail(&net->exit_list, &net_exit_list);
-+              list_add(&net->exit_list, &net_exit_list);
-        ops_exit_list(ops, &net_exit_list);
-        ops_free_list(ops, &net_exit_list);
- }
+Thanks,
 
-2012/12/25 canqun zhang <canqunzhang@gmail.com>:
-> Thanks for your suggestion,i will modify this patch and take tests.
->
-> 2012/12/25 Gao feng <gaofeng@cn.fujitsu.com>:
->> On 2012/12/25 15:25, canqun zhang wrote:
->>> Hi Gao feng
->>> The stack information is as follows. The kenel will panic because the
->>> nf_ct_destroy is NULL.
->>>
->>> Reproduction:
->>> (1) starting a lxc container
->>> (2) iptables -t nat -A POSTROUTING -s 10.48.254.18 -o eth1 -j
->>> MASQUERADE (run it on host machine)
->>> (3) /etc/ini.d/iptables save (run it on host machine)
->>> (4)/etc/init.d/iptables restart (run it on host machine)
->>>
->>
->> Thanks!
->> It seems that nf_conntrack_l[3,4]proto_unregister doesn't make sure
->> nf_conns of the proto being destroyed.
->>
->> If I'm right, there is another problem even your fix this panic problem.
->> the l3,14proto will be unregistered before all of it's nf_conns being destroyed.
->> So even nf_ct_destroy is not NULL,in destroy_conntrack we are not able to
->> find the right l4proto,the l4proto->destroy will be incorrect.resources will
->> not be released correctly.
->>
->> So I think the root problem is we do register/unregister, set/unset both on the
->> first net (init_net), Maybe it's better to do register set on the first net, and
->> do unregister unset on the last net.
+Rob
