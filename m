@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482Ab2L1KYX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 05:24:23 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:9330 "EHLO relay.sw.ru"
+	id S1753435Ab2L1KYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 05:24:19 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:39419 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab2L1KYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 05:24:14 -0500
+	id S1752120Ab2L1KYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 05:24:13 -0500
 From: Andrey Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: criu@openvz.org, linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Andrey Vagin <avagin@openvz.org>,
+        Andrey Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
         Alexander Viro <viro@zeniv.linux.org.uk>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        David Howells <dhowells@redhat.com>, Dave Jones <davej@redhat.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH 2/3] signalfd: add ability to return siginfo in a raw format (v2)
-Date: Fri, 28 Dec 2012 14:23:00 +0400
-Message-Id: <1356690181-1796-3-git-send-email-avagin@openvz.org>
+Subject: [PATCH 3/3] signalfd: add ability to read siginfo-s without dequeuing signals (v3)
+Date: Fri, 28 Dec 2012 14:23:01 +0400
+Message-Id: <1356690181-1796-4-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1356690181-1796-1-git-send-email-avagin@openvz.org>
 References: <1356690181-1796-1-git-send-email-avagin@openvz.org>
@@ -27,182 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-signalfd should be called with the flag SFD_RAW for that.
+pread(fd, buf, size, pos) with non-zero pos returns siginfo-s
+without dequeuing signals.
 
-signalfd_siginfo is not full for siginfo with a negative si_code.
-copy_siginfo_to_user() is copied a full siginfo to user-space, if
-si_code is negative.  signalfd_copyinfo() doesn't do that and can't be
-expanded, because it has not compatible format with siginfo_t.
+A sequence number and a queue are encoded in pos.
 
-Another problem is that a constant __SI_* is removed from si_code.
-It's not a problem for usual applications, because they expect
-a defined type of siginfo (internal logic).
-When we want to dump pending signals, we can't predict a type of
-siginfo, so we should get it from kernel.
+pos = seq + SFD_*_OFFSET
 
-The main idea of the raw format is that it should be enough for
-restoring exactly the same siginfo for the current process.
+seq is a sequence number of a signal in a queue.
+
+SFD_PER_THREAD_QUEUE_OFFSET - read signals from a per-thread queue.
+SFD_SHARED_QUEUE_OFFSET - read signals from a shared (process wide) queue.
 
 This functionality is required for checkpointing pending signals.
 
-v2: fix a race condition during setting file flags
-    copy_siginfo_to_user32() if is_compat_task
+v2: llseek() can't be used here, because peek_offset/f_pos/whatever
+has to be shared with all processes which have this file opened.
 
+Suppose that the task forks after sys_signalfd(). Now if parent or child
+do llseek this affects them both. This is insane because signalfd is
+"strange" to say at least, fork/dup/etc inherits signalfd_ctx but not
+the" source" of the data. // Oleg Nesterov
+
+v3: minor cleanup
+
+Cc: Oleg Nesterov <oleg@redhat.com>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: David Howells <dhowells@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>
 Cc: Michael Kerrisk <mtk.manpages@gmail.com>
 Cc: Pavel Emelyanov <xemul@parallels.com>
 CC: Cyrill Gorcunov <gorcunov@openvz.org>
 Signed-off-by: Andrey Vagin <avagin@openvz.org>
 ---
- fs/signalfd.c                 | 64 +++++++++++++++++++++++++++++++++++++++----
- include/uapi/linux/signalfd.h |  1 +
- 2 files changed, 60 insertions(+), 5 deletions(-)
+ fs/signalfd.c                 | 44 ++++++++++++++++++++++++++++++++++++++++++-
+ include/uapi/linux/signalfd.h |  5 +++++
+ 2 files changed, 48 insertions(+), 1 deletion(-)
 
 diff --git a/fs/signalfd.c b/fs/signalfd.c
-index b534869..4439a81 100644
+index 4439a81..86eb130 100644
 --- a/fs/signalfd.c
 +++ b/fs/signalfd.c
-@@ -30,6 +30,7 @@
- #include <linux/signalfd.h>
- #include <linux/syscalls.h>
- #include <linux/proc_fs.h>
-+#include <linux/compat.h>
+@@ -51,6 +51,43 @@ struct signalfd_ctx {
+ 	sigset_t sigmask;
+ };
  
- void signalfd_cleanup(struct sighand_struct *sighand)
- {
-@@ -74,6 +75,38 @@ static unsigned int signalfd_poll(struct file *file, poll_table *wait)
- }
- 
- /*
-+ * Copy a whole siginfo into users spaces.
-+ * The main idea of this format is that it should be enough
-+ * for restoring siginfo back into the kernel.
-+ */
-+static int signalfd_copy_raw_info(struct signalfd_siginfo __user *siginfo,
-+					siginfo_t *kinfo)
++static ssize_t signalfd_peek(struct signalfd_ctx *ctx,
++				siginfo_t *info, loff_t *ppos)
 +{
-+	siginfo_t *uinfo = (siginfo_t *) siginfo;
-+	int err;
++	struct sigpending *pending;
++	struct sigqueue *q;
++	loff_t seq;
++	int ret = 0;
 +
-+	BUILD_BUG_ON(sizeof(siginfo_t) != sizeof(struct signalfd_siginfo));
++	spin_lock_irq(&current->sighand->siglock);
 +
-+	err = __clear_user(uinfo, sizeof(*uinfo));
-+
-+#ifdef CONFIG_COMPAT
-+	if (unlikely(is_compat_task())) {
-+		compat_siginfo_t *compat_uinfo = (compat_siginfo_t *) siginfo;
-+
-+		err |= copy_siginfo_to_user32(compat_uinfo, kinfo);
-+		err |= put_user(kinfo->si_code, &compat_uinfo->si_code);
-+
-+		return err ? -EFAULT: sizeof(*compat_uinfo);
++	if (*ppos >= SFD_SHARED_QUEUE_OFFSET) {
++		pending = &current->signal->shared_pending;
++		seq = *ppos - SFD_SHARED_QUEUE_OFFSET;
++	} else {
++		pending = &current->pending;
++		seq = *ppos - SFD_PER_THREAD_QUEUE_OFFSET;
 +	}
-+#endif
 +
-+	err |= copy_siginfo_to_user(uinfo, kinfo);
-+	err |= put_user(kinfo->si_code, &uinfo->si_code);
++	list_for_each_entry(q, &pending->list, list) {
++		if (sigismember(&ctx->sigmask, q->info.si_signo))
++			continue;
 +
-+	return err ? -EFAULT: sizeof(*uinfo);
++		if (seq-- == 0) {
++			copy_siginfo(info, &q->info);
++			ret = info->si_signo;
++			break;
++		}
++	}
++
++	spin_unlock_irq(&current->sighand->siglock);
++
++	if (ret)
++		(*ppos)++;
++
++	return ret;
 +}
 +
-+/*
-  * Copied from copy_siginfo_to_user() in kernel/signal.c
-  */
- static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
-@@ -205,6 +238,7 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 	struct signalfd_ctx *ctx = file->private_data;
- 	struct signalfd_siginfo __user *siginfo;
- 	int nonblock = file->f_flags & O_NONBLOCK;
-+	bool raw = file->f_flags & SFD_RAW;
- 	ssize_t ret, total = 0;
- 	siginfo_t info;
+ static int signalfd_release(struct inode *inode, struct file *file)
+ {
+ 	kfree(file->private_data);
+@@ -248,7 +285,11 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
  
-@@ -217,7 +251,12 @@ static ssize_t signalfd_read(struct file *file, char __user *buf, size_t count,
- 		ret = signalfd_dequeue(ctx, &info, nonblock);
+ 	siginfo = (struct signalfd_siginfo __user *) buf;
+ 	do {
+-		ret = signalfd_dequeue(ctx, &info, nonblock);
++		if (*ppos == 0)
++			ret = signalfd_dequeue(ctx, &info, nonblock);
++		else
++			ret = signalfd_peek(ctx, &info, ppos);
++
  		if (unlikely(ret <= 0))
  			break;
--		ret = signalfd_copyinfo(siginfo, &info);
-+
-+		if (raw)
-+			ret = signalfd_copy_raw_info(siginfo, &info);
-+		else
-+			ret = signalfd_copyinfo(siginfo, &info);
-+
- 		if (ret < 0)
- 			break;
- 		siginfo++;
-@@ -262,7 +301,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 	BUILD_BUG_ON(SFD_CLOEXEC != O_CLOEXEC);
- 	BUILD_BUG_ON(SFD_NONBLOCK != O_NONBLOCK);
  
--	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK))
-+	if (flags & ~(SFD_CLOEXEC | SFD_NONBLOCK | SFD_RAW))
- 		return -EINVAL;
+@@ -338,6 +379,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
+ 		}
  
- 	if (sizemask != sizeof(sigset_t) ||
-@@ -272,20 +311,35 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 	signotset(&sigmask);
+ 		file->f_flags |= flags & SFD_RAW;
++		file->f_mode |= FMODE_PREAD;
  
- 	if (ufd == -1) {
-+		struct file *file;
- 		ctx = kmalloc(sizeof(*ctx), GFP_KERNEL);
- 		if (!ctx)
- 			return -ENOMEM;
- 
- 		ctx->sigmask = sigmask;
- 
-+		ufd = get_unused_fd_flags(flags);
-+		if (ufd < 0) {
-+			kfree(ctx);
-+			goto out;
-+		}
-+
- 		/*
- 		 * When we call this, the initialization must be complete, since
- 		 * anon_inode_getfd() will install the fd.
- 		 */
--		ufd = anon_inode_getfd("[signalfd]", &signalfd_fops, ctx,
-+		file = anon_inode_getfile("[signalfd]", &signalfd_fops, ctx,
- 				       O_RDWR | (flags & (O_CLOEXEC | O_NONBLOCK)));
--		if (ufd < 0)
-+		if (IS_ERR(file)) {
-+			put_unused_fd(ufd);
-+			ufd = PTR_ERR(file);
- 			kfree(ctx);
-+			goto out;
-+		}
-+
-+		file->f_flags |= flags & SFD_RAW;
-+
-+		fd_install(ufd, file);
+ 		fd_install(ufd, file);
  	} else {
- 		struct fd f = fdget(ufd);
- 		if (!f.file)
-@@ -302,7 +356,7 @@ SYSCALL_DEFINE4(signalfd4, int, ufd, sigset_t __user *, user_mask,
- 		wake_up(&current->sighand->signalfd_wqh);
- 		fdput(f);
- 	}
--
-+out:
- 	return ufd;
- }
- 
 diff --git a/include/uapi/linux/signalfd.h b/include/uapi/linux/signalfd.h
-index 492c6de..bc31849 100644
+index bc31849..0953785 100644
 --- a/include/uapi/linux/signalfd.h
 +++ b/include/uapi/linux/signalfd.h
-@@ -15,6 +15,7 @@
- /* Flags for signalfd4.  */
- #define SFD_CLOEXEC O_CLOEXEC
+@@ -17,6 +17,11 @@
  #define SFD_NONBLOCK O_NONBLOCK
-+#define SFD_RAW O_DIRECT
+ #define SFD_RAW O_DIRECT
  
++/* Read signals from a shared (process wide) queue */
++#define SFD_SHARED_QUEUE_OFFSET (1LL << 62)
++/* Read signals from a per-thread queue */
++#define SFD_PER_THREAD_QUEUE_OFFSET 1
++
  struct signalfd_siginfo {
  	__u32 ssi_signo;
+ 	__s32 ssi_errno;
 -- 
 1.7.11.7
 
