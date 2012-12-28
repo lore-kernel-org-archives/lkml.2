@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab2L1TRR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:17 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54932 "EHLO
+	id S1754479Ab2L1TRU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:17:20 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54974 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754325Ab2L1TRF (ORCPT
+	by vger.kernel.org with ESMTP id S1754369Ab2L1TRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:05 -0500
-Message-Id: <20121228190402.520617408@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:08 -0500
+Message-Id: <20121228190401.556203496@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:06:19 +0100
+Date: Fri, 28 Dec 2012 20:06:12 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 169/173] staging: vt6656: 64 bit fixes : correct all type sizes
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: [ 162/173] i82975x_edac: Fix dimm label initialization
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,46 +27,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-commit 7730492855a2f9c828599bcd8d62760f96d319e4 upstream.
+commit 479696840239e0cc43efb3c917bdcad2174d2215 upstream.
 
-After this patch all BYTE/WORD/DWORD types can be replaced with the appropriate u sizes.
+The driver has only 4 hardcoded labels, but allows much more memory.
+Fix it by removing the hardcoded logic, using snprintf() instead.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[   19.833972] general protection fault: 0000 [#1] SMP
+[   19.837733] Modules linked in: i82975x_edac(+) edac_core firewire_ohci firewire_core crc_itu_t nouveau mxm_wmi wmi video i2c_algo_bit drm_kms_helper ttm drm i2c_core
+[   19.837733] CPU 0
+[   19.837733] Pid: 390, comm: udevd Not tainted 3.6.1-1.fc17.x86_64.debug #1 Dell Inc.                 Precision WorkStation 390    /0MY510
+[   19.837733] RIP: 0010:[<ffffffff813463a8>]  [<ffffffff813463a8>] strncpy+0x18/0x30
+[   19.837733] RSP: 0018:ffff880078535b68  EFLAGS: 00010202
+[   19.837733] RAX: ffff880069fa9708 RBX: ffff880078588000 RCX: ffff880069fa9708
+[   19.837733] RDX: 000000000000001f RSI: 5f706f5f63616465 RDI: ffff880069fa9708
+[   19.837733] RBP: ffff880078535b68 R08: ffff880069fa9727 R09: 000000000000fffe
+[   19.837733] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000003
+[   19.837733] R13: 0000000000000000 R14: ffff880069fa9290 R15: ffff880079624a80
+[   19.837733] FS:  00007f3de01ee840(0000) GS:ffff88007c400000(0000) knlGS:0000000000000000
+[   19.837733] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   19.837733] CR2: 00007f3de00b9000 CR3: 0000000078dbc000 CR4: 00000000000007f0
+[   19.837733] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   19.837733] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   19.837733] Process udevd (pid: 390, threadinfo ffff880078534000, task ffff880079642450)
+[   19.837733] Stack:
+[   19.837733]  ffff880078535c18 ffffffffa017c6b8 00040000816d627f ffff880079624a88
+[   19.837733]  ffffc90004cd6000 ffff880079624520 ffff88007ac21148 0000000000000000
+[   19.837733]  0000000000000000 0004000000000000 feda000078535bc8 ffffffff810d696d
+[   19.837733] Call Trace:
+[   19.837733]  [<ffffffffa017c6b8>] i82975x_init_one+0x2e6/0x3e6 [i82975x_edac]
+...
+
+Fix bug reported at:
+	https://bugzilla.redhat.com/show_bug.cgi?id=848149
+And, very likely:
+	https://bbs.archlinux.org/viewtopic.php?id=148033
+	https://bugzilla.kernel.org/show_bug.cgi?id=47171
+
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Use csrow->channels[chan].label not csrow->channels[chan]->dimm->label]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/vt6656/ttype.h |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ drivers/edac/i82975x_edac.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
-index 0f70562c..dfbf747 100644
---- a/drivers/staging/vt6656/ttype.h
-+++ b/drivers/staging/vt6656/ttype.h
-@@ -44,9 +44,9 @@ typedef int             BOOL;
+--- a/drivers/edac/i82975x_edac.c
++++ b/drivers/edac/i82975x_edac.c
+@@ -355,10 +355,6 @@ static enum dev_type i82975x_dram_type(v
+ static void i82975x_init_csrows(struct mem_ctl_info *mci,
+ 		struct pci_dev *pdev, void __iomem *mch_window)
+ {
+-	static const char *labels[4] = {
+-							"DIMM A1", "DIMM A2",
+-							"DIMM B1", "DIMM B2"
+-						};
+ 	struct csrow_info *csrow;
+ 	unsigned long last_cumul_size;
+ 	u8 value;
+@@ -399,9 +395,10 @@ static void i82975x_init_csrows(struct m
+ 		 *   [0-3] for dual-channel; i.e. csrow->nr_channels = 2
+ 		 */
+ 		for (chan = 0; chan < csrow->nr_channels; chan++)
+-			strncpy(csrow->channels[chan].label,
+-					labels[(index >> 1) + (chan * 2)],
+-					EDAC_MC_LABEL_LEN);
++
++			snprintf(csrow->channels[chan].label, EDAC_MC_LABEL_LEN, "DIMM %c%d",
++				 (chan == 0) ? 'A' : 'B',
++				 index);
  
- /****** Simple typedefs  ***************************************************/
- 
--typedef unsigned char   BYTE;           //  8-bit
--typedef unsigned short  WORD;           // 16-bit
--typedef unsigned long   DWORD;          // 32-bit
-+typedef u8 BYTE;
-+typedef u16 WORD;
-+typedef u32 DWORD;
- 
- // QWORD is for those situation that we want
- // an 8-byte-aligned 8 byte long structure
-@@ -62,8 +62,8 @@ typedef UQuadWord       QWORD;          // 64-bit
- 
- /****** Common pointer types ***********************************************/
- 
--typedef unsigned long   ULONG_PTR;      // 32-bit
--typedef unsigned long   DWORD_PTR;      // 32-bit
-+typedef u32 ULONG_PTR;
-+typedef u32 DWORD_PTR;
- 
- // boolean pointer
- 
+ 		if (cumul_size == last_cumul_size)
+ 			continue;	/* not populated */
 
 
