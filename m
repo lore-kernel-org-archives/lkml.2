@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914Ab2L1BE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:04:26 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:39219 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab2L1BEY (ORCPT
+	id S1752945Ab2L1BEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:04:43 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:52475 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2L1BEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:04:24 -0500
+	Thu, 27 Dec 2012 20:04:42 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50DCF00B.5040100@jp.fujitsu.com>
+Date: Fri, 28 Dec 2012 10:04:11 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Fri, 28 Dec 2012 02:04:23 +0100
-Message-ID: <CA+icZUVRrAcNy2_JsYAS5Ff=c6tthHHB=rj3eHPFcwUh5APiug@mail.gmail.com>
-Subject: Re: Linux 3.8-rc1 (mei driver BROKEN)
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>, khoroshilov@ispras.ru
-Content-Type: text/plain; charset=UTF-8
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, akpm@linux-foundation.org, gthelen@google.com,
+        fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 6/8] memcg: Don't account root_mem_cgroup page statistics
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456447-14740-1-git-send-email-handai.szj@taobao.com>
+In-Reply-To: <1356456447-14740-1-git-send-email-handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+(2012/12/26 2:27), Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> If memcg is enabled and no non-root memcg exists, all allocated pages
+> belongs to root_mem_cgroup and go through root memcg statistics routines
+> which brings some overheads. So for the sake of performance, we can give
+> up accounting stats of root memcg for MEM_CGROUP_STAT_FILE_MAPPED/FILE_DIRTY
+> /WRITEBACK and instead we pay special attention while showing root
+> memcg numbers in memcg_stat_show(): as we don't account root memcg stats
+> anymore, the root_mem_cgroup->stat numbers are actually 0. But because of
+> hierachy, figures of root_mem_cgroup may just represent numbers of pages
+> used by its own tasks(not belonging to any other child cgroup). So here we
+> fake these root numbers by using stats of global state and all other memcg.
+> That is for root memcg:
+> 	nr(MEM_CGROUP_STAT_FILE_MAPPED) = global_page_state(NR_FILE_MAPPED) -
+>                                sum_of_all_memcg(MEM_CGROUP_STAT_FILE_MAPPED);
+> Dirty/Writeback pages accounting are in the similar way.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
 
-I am not sure if Greg is on holidays as his char-misc GIT tree didn't
-get updated the last days.
+isn't it better to use mem_cgroup_is_root() call rather than
+direct comparison (memcg == root_mem_cgroup) ?
 
-The MEI driver causes here a serious regression requiring a hard cold
-start of the machine I am working on.
-A fix "mei: fix mismatch in mutex unlock-lock in mei_amthif_read()"
-was already sent to LKML [1] and fixes the issue for me.
+Anyway, Ack to this approach. 
 
-Can you push that a bit?
-Feel free to add any credits.
+Thanks,
+-Kame
 
-Regards,
-- Sedat -
-
-[1] https://patchwork.kernel.org/patch/1904801/
