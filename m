@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab2L1TWo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:22:44 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55723 "EHLO
+	id S1754804Ab2L1TXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:23:39 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55728 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932491Ab2L1TT6 (ORCPT
+	by vger.kernel.org with ESMTP id S932484Ab2L1TT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:58 -0500
-Message-Id: <20121228190335.473377595@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:57 -0500
+Message-Id: <20121228190335.879473774@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:56 +0100
+Date: Fri, 28 Dec 2012 20:03:58 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [ 026/173] i7300_edac: Fix error flag testing
+        Chris Ball <cjb@laptop.org>
+Subject: [ 028/173] Revert misapplied "mmc: sh-mmcif: avoid oops on spurious interrupts"
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +27,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: Chris Ball <cjb@laptop.org>
 
-commit 7e06b7a3333f5c7a0cec12aff20d39c5c87c0795 upstream.
+commit 6984f3c31bb57cb7491dbec1be44b74bd00f4648 upstream.
 
-* Right-shift the values in GET_FBD_FAT_IDX and GET_FBD_NF_IDX, so
-  that the callers get the result they expect.
-* Fix definition of FERR_FAT_FBD_ERR_MASK.
-* Call GET_FBD_NF_IDX, not GET_FBD_FAT_IDX, when operating on
-  register FERR_NF_FBD. We were lucky they have the same definition.
+This reverts commit 8464dd52d3198dd05, which was a misapplied debugging
+version of the patch, not the final patch itself.
 
-This fixes kernel bug #44131:
-https://bugzilla.kernel.org/show_bug.cgi?id=44131
-
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/edac/i7300_edac.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mmc/host/sh_mmcif.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
-index a09d066..9d669cd 100644
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -197,8 +197,8 @@ static const char *ferr_fat_fbd_name[] = {
- 	[0]  = "Memory Write error on non-redundant retry or "
- 	       "FBD configuration Write error on retry",
- };
--#define GET_FBD_FAT_IDX(fbderr)	(fbderr & (3 << 28))
--#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 3))
-+#define GET_FBD_FAT_IDX(fbderr)	(((fbderr) >> 28) & 3)
-+#define FERR_FAT_FBD_ERR_MASK ((1 << 0) | (1 << 1) | (1 << 2) | (1 << 22))
- 
- #define FERR_NF_FBD	0xa0
- static const char *ferr_nf_fbd_name[] = {
-@@ -225,7 +225,7 @@ static const char *ferr_nf_fbd_name[] = {
- 	[1]  = "Aliased Uncorrectable Non-Mirrored Demand Data ECC",
- 	[0]  = "Uncorrectable Data ECC on Replay",
- };
--#define GET_FBD_NF_IDX(fbderr)	(fbderr & (3 << 28))
-+#define GET_FBD_NF_IDX(fbderr)	(((fbderr) >> 28) & 3)
- #define FERR_NF_FBD_ERR_MASK ((1 << 24) | (1 << 23) | (1 << 22) | (1 << 21) |\
- 			      (1 << 18) | (1 << 17) | (1 << 16) | (1 << 15) |\
- 			      (1 << 14) | (1 << 13) | (1 << 11) | (1 << 10) |\
-@@ -464,7 +464,7 @@ static void i7300_process_fbd_error(struct mem_ctl_info *mci)
- 		errnum = find_first_bit(&errors,
- 					ARRAY_SIZE(ferr_nf_fbd_name));
- 		specific = GET_ERR_FROM_TABLE(ferr_nf_fbd_name, errnum);
--		branch = (GET_FBD_FAT_IDX(error_reg) == 2) ? 1 : 0;
-+		branch = (GET_FBD_NF_IDX(error_reg) == 2) ? 1 : 0;
- 
- 		pci_read_config_dword(pvt->pci_dev_16_1_fsb_addr_map,
- 			REDMEMA, &syndrome);
+--- a/drivers/mmc/host/sh_mmcif.c
++++ b/drivers/mmc/host/sh_mmcif.c
+@@ -1003,10 +1003,6 @@ static irqreturn_t sh_mmcif_intr(int irq
+ 		host->sd_error = true;
+ 		dev_dbg(&host->pd->dev, "int err state = %08x\n", state);
+ 	}
+-	if (host->state == STATE_IDLE) {
+-		dev_info(&host->pd->dev, "Spurious IRQ status 0x%x", state);
+-		return IRQ_HANDLED;
+-	}
+ 	if (state & ~(INT_CMD12RBE | INT_CMD12CRE))
+ 		complete(&host->intr_wait);
+ 	else
 
 
