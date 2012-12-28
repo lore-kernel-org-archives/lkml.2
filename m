@@ -1,124 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab2L1CAr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 21:00:47 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:54714 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751673Ab2L1CAq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 21:00:46 -0500
+	id S1753053Ab2L1CQr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 21:16:47 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:46601 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752758Ab2L1CQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 21:16:45 -0500
+X-Remote-IP: 213.191.128.133
+Date: Fri, 28 Dec 2012 03:16:38 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1356659666.9202.4.camel@kjgkr>
-References: <1356659666.9202.4.camel@kjgkr>
-Date: Fri, 28 Dec 2012 03:00:44 +0100
-Message-ID: <CA+icZUWXMJ9oEgNDsJ=syBn8MmLL=hVhBKUqUs=GM4ZMHrgQaA@mail.gmail.com>
-Subject: Re: [GIT PULL] f2fs fixes for 3.8-rc2
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: jaegeuk.kim@samsung.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>,
-        "Linux FS DEV, Mailing List" <linux-fsdevel@vger.kernel.org>,
-        "Linux F2FS DEV, Mailing List" 
-	<linux-f2fs-devel@lists.sourceforge.net>
-Content-Type: text/plain; charset=UTF-8
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhouping Liu <zliu@redhat.com>, Sedat Dilek <sedat.dilek@gmail.com>
+References: <50D24AF3.1050809@iskon.hr> <20121220111208.GD10819@suse.de> <20121220125802.23e9b22d.akpm@linux-foundation.org> <50D601C9.9060803@iskon.hr> <50D71166.6030608@iskon.hr> <50DB129E.7010000@iskon.hr>
+In-Reply-To: <50DB129E.7010000@iskon.hr>
+Message-ID: <50DD0106.7040001@iskon.hr>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+Subject: [PATCH] mm: fix null pointer dereference in wait_iff_congested()
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121228 #8901209, check: 20121228 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40800 [Dec 28 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like you didn't S-o-b-ed all patches in your tree (see Leon's or
-Geert's patch).
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
 
-- Sedat -
+The unintended consequence of commit 4ae0a48b is that
+wait_iff_congested() can now be called with NULL struct zone*
+producing kernel oops like this:
 
-On Fri, Dec 28, 2012 at 2:54 AM, Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
-> Hi Linus,
->
-> Please pull the following patches for bug fixes on the f2fs file system.
-> Thank you very much.
->
-> --
-> Jaegeuk Kim
-> Samsung
->
-> The following changes since commit
-> 637704cbc95c02d18741b4a6e7a5d2397f8b28ce:
->
->   Merge branch 'i2c-embedded/for-next' of
-> git://git.pengutronix.de/git/wsa/linux (2012-12-23 09:48:33 -0800)
->
-> are available in the git repository at:
->
->
->   git://git.kernel.org/pub/scm/linux/kernel/git/jaegeuk/f2fs.git
-> tags/for-linus
->
-> for you to fetch changes up to 782c92d129775840cf9c1ad334f0722df9c76dc0:
->
->   f2fs: unify string length declarations and usage (2012-12-28 09:57:55
-> +0900)
->
-> ----------------------------------------------------------------
-> f2fs: bug fixes for 3.8-rc2
->
-> This patch-set includes two major bug fixes:
-> - incorrect IUsed provided by *df -i*, and
-> - lookup failure of parent inodes in corner cases.
->
-> [Other Bug Fixes]
-> - Fix error handling routines
-> - Trigger recovery process correctly
-> - Resolve build failures due to missing header files
->
-> [Etc]
-> - Add a MAINTAINERS entry for f2fs
-> - Fix and clean up variables, functions, and equations
-> - Avoid warnings during compilation
->
-> ----------------------------------------------------------------
-> Geert Uytterhoeven (1):
->       f2fs: add missing #include <linux/prefetch.h>
->
-> Jaegeuk Kim (11):
->       f2fs: remove set_page_dirty for atomic f2fs_end_io_write
->       f2fs: fix wrong calculation on f_files in statfs
->       f2fs: fix handling errors got by f2fs_write_inode
->       f2fs: should recover orphan and fsync data
->       f2fs: do f2fs_balance_fs in front of dir operations
->       f2fs: invalidate the node page if allocation is failed
->       f2fs: return a default value for non-void function
->       f2fs: add MAINTAINERS entry
->       f2fs: fix equation of has_not_enough_free_secs()
->       f2fs: clean up the start_bidx_of_node function
->       f2fs: clean up unused variables and return values
->
-> Leon Romanovsky (1):
->       f2fs: unify string length declarations and usage
->
-> Namjae Jeon (5):
->       f2fs: fix up f2fs_get_parent issue to retrieve correct parent
-> inode number
->       f2fs: handle error from f2fs_iget_nowait
->       f2fs: remove unneeded initialization of nr_dirty in
-> dirty_seglist_info
->       f2fs: fix fsync_inode list addition logic and avoid invalid access
-> to memory
->       f2fs: remove unneeded variable from f2fs_sync_fs
->
->  MAINTAINERS        | 10 ++++++++++
->  fs/f2fs/data.c     |  1 +
->  fs/f2fs/dir.c      | 16 +++++++++-------
->  fs/f2fs/f2fs.h     |  2 +-
->  fs/f2fs/file.c     | 10 ++++++----
->  fs/f2fs/gc.c       | 34 +++++++++++-----------------------
->  fs/f2fs/hash.c     | 18 +++++++++++-------
->  fs/f2fs/inode.c    |  1 +
->  fs/f2fs/namei.c    | 34 +++++++++++++++++-----------------
->  fs/f2fs/node.c     | 37 ++++++++++++++-----------------------
->  fs/f2fs/recovery.c | 10 +++++++---
->  fs/f2fs/segment.c  | 46 ++++++----------------------------------------
->  fs/f2fs/segment.h  | 15 ++++++++++++++-
->  fs/f2fs/super.c    | 15 ++++++---------
->  fs/f2fs/xattr.c    |  5 +++--
->  15 files changed, 117 insertions(+), 137 deletions(-)
->
+BUG: unable to handle kernel NULL pointer dereference
+IP: [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
+
+This trivial patch fixes it.
+
+Reported-by: Zhouping Liu <zliu@redhat.com>
+Reported-and-tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
+---
+ mm/vmscan.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 02bcfa3..e55ce55 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2782,7 +2782,7 @@ loop_again:
+ 		if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
+ 			if (has_under_min_watermark_zone)
+ 				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+-			else
++			else if (unbalanced_zone)
+ 				wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
+ 		}
+ 
+-- 
+1.8.1.rc3
+
+-- 
+Zlatko
