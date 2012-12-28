@@ -1,44 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752709Ab2L1BHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:07:23 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57043 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab2L1BHV (ORCPT
+	id S1752753Ab2L1BIN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:08:13 -0500
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:40283 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab2L1BIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:07:21 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50DCF0B1.4060000@jp.fujitsu.com>
-Date: Fri, 28 Dec 2012 10:06:57 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Thu, 27 Dec 2012 20:08:12 -0500
 MIME-Version: 1.0
-To: Sha Zhengju <handai.szj@gmail.com>
-CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        mhocko@suse.cz, akpm@linux-foundation.org, gthelen@google.com,
-        fengguang.wu@intel.com, glommer@parallels.com,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 7/8] memcg: disable memcg page stat accounting code
- when not in use
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456477-14780-1-git-send-email-handai.szj@taobao.com>
-In-Reply-To: <1356456477-14780-1-git-send-email-handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAD0Gp_YYu+LQr1rKResm_v3pYd+1M5G9kee7e4RJ1TUML7kq_g@mail.gmail.com>
+References: <CAD0Gp_YYu+LQr1rKResm_v3pYd+1M5G9kee7e4RJ1TUML7kq_g@mail.gmail.com>
+From: Mulyadi Santosa <mulyadi.santosa@gmail.com>
+Date: Fri, 28 Dec 2012 08:07:31 +0700
+Message-ID: <CAGdaadbgEpagiT0hR1nDpSm--TKGUpFLdQikZ_qGkxi_82+BCA@mail.gmail.com>
+Subject: Re: Bad magic number and
+To: sham pavman <shampavman.cg@gmail.com>
+Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/12/26 2:27), Sha Zhengju wrote:
-> From: Sha Zhengju <handai.szj@taobao.com>
-> 
-> It's inspired by a similar optimization from Glauber Costa
-> (memcg: make it suck faster; https://lkml.org/lkml/2012/9/25/154).
-> Here we use jump label to patch the memcg page stat accounting code
-> in or out when not used. when the first non-root memcg comes to
-> life the code is patching in otherwise it is out.
-> 
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+Hi...
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Dec 26, 2012 at 12:19 PM, sham pavman <shampavman.cg@gmail.com> wrote:
+> <SNIP>
+>  mkfs -t ext4 /dev/sdb
+> mke2fs 1.42 (29-Nov-2011)
 
+try using mkfs.ext4 instead....
 
+-- 
+regards,
+
+Mulyadi Santosa
+Freelance Linux trainer and consultant
+
+blog: the-hydra.blogspot.com
+training: mulyaditraining.blogspot.com
