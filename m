@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753870Ab2L1RNH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 12:13:07 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:60776 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753716Ab2L1RNF (ORCPT
+	id S1753906Ab2L1RZx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 12:25:53 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:57484 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693Ab2L1RZv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 12:13:05 -0500
-X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 12:13:05 EST
-From: c.dall@virtualopensystems.com
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Cc: cl@linux.com, Christoffer Dall <cdall@cs.columbia.edu>,
-        Steve Capper <steve.capper@arm.com>, Will Deacon <will.deacon@arm.com>,
-        Andrea Arcangeli <arcange@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
-Date: Fri, 28 Dec 2012 12:07:22 -0500
-Message-Id: <1356714442-27028-1-git-send-email-cdall@cs.columbia.edu>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 28 Dec 2012 12:25:51 -0500
+Date: Fri, 28 Dec 2012 18:25:28 +0100
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@redhat.com, hpa@zytor.com, yanmin_zhang@intel.linux.com,
+        ShuoX Liu <shuox.liu@intel.com>
+Subject: Re: [PATCH] perf/x86: Enable Intel Lincroft/Penwell/Cloverview Atom
+ support
+Message-ID: <20121228172528.GA1669@fancy-poultry.org>
+References: <1356713324-12442-1-git-send-email-shuox.liu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356713324-12442-1-git-send-email-shuox.liu@intel.com>
+Organization: private site
+OpenPGP: id=BBAD7AE7; url=http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.21+112 (de974f67eba3) (2011-07-01)
+X-Provags-ID: V02:K0:VkexW0ivS6B3Cr+FDwU5PD40uaWMgD+h3xeAt0wcRsi
+ SIKYt/RsNt98VpAPlWI0/tmXgRYGcwSvdgAin+Iy26lM/1wTHS
+ 5qwndCAufnAxh2Obf9Uk+Tl8qqdVien7lAjNWWI8UBMjMH8zHS
+ ZL9B4BJ2OTAffD+4o/VfD9yaRaBRlA5rKmJ21kj1svx4kAEl8V
+ MDxx+r8EnYWxZegwnJKBbkDVJEyEFrXG2PJA/eqlSX2vHpkFoa
+ RkWRss5ih3t/ZA0sV6sPxH9w11IqceuOygiFt18n4kxJhYlTmx
+ Bw494Jw1jMIMhmQeX+bBh9tz05unagKv61BkAMjrXDD2Qmq5sS
+ CvZpxcWORh4/Z9nAYsQDOsQ2qL78grUcglON0mEku
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoffer Dall <cdall@cs.columbia.edu>
+On 28.12.2012, shuox.liu@intel.com wrote: 
 
-Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
-(PageHead) is true, for tail pages.  This breaks cache cleaning on some
-ARM systems, and may cause other bugs.
-
-This patch makes sure PageHead is only true for head pages and PageTail
-is only true for tail pages, and neither is true for non-compound pages.
-
-Cc: Steve Capper <steve.capper@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Andrea Arcangeli <arcange@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Christoph Lameter <cl@linux.com>
-Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
----
- include/linux/page-flags.h |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
-index b5d1384..70473da 100644
---- a/include/linux/page-flags.h
-+++ b/include/linux/page-flags.h
-@@ -362,7 +362,7 @@ static inline void ClearPageCompound(struct page *page)
-  * pages on the LRU and/or pagecache.
-  */
- TESTPAGEFLAG(Compound, compound)
--__PAGEFLAG(Head, compound)
-+__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
- 
- /*
-  * PG_reclaim is used in combination with PG_compound to mark the
-@@ -374,8 +374,14 @@ __PAGEFLAG(Head, compound)
-  * PG_compound & PG_reclaim	=> Tail page
-  * PG_compound & ~PG_reclaim	=> Head page
-  */
-+#define PG_head_mask ((1L << PG_compound))
- #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
- 
-+static inline int PageHead(struct page *page)
-+{
-+	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
-+}
-+
- static inline int PageTail(struct page *page)
- {
- 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
--- 
-1.7.9.5
+>  	case 54: /* Cedariew */
+                         ^
+Just a typo, but while you're at it..
 
