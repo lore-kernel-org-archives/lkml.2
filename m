@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab2L1TVi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:21:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55732 "EHLO
+	id S932554Ab2L1TVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:21:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55719 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932492Ab2L1TT7 (ORCPT
+	by vger.kernel.org with ESMTP id S932480Ab2L1TT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:59 -0500
-Message-Id: <20121228190334.613933196@decadent.org.uk>
+Message-Id: <20121228190334.425365762@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:52 +0100
+Date: Fri, 28 Dec 2012 20:03:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [ 022/173] scsi: aha152x: Fix sparse warning and make printing pointer address
- more portable.
+        Dan Carpenter <dan.carpenter@oracle.com>, Milo <Milo.Kim@ti.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Bryan Wu <bryan.wu@canonical.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 021/173] drivers/leds/leds-lp5521.c: fix lp5521_read() error handling
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,37 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit b631cf1f899f9d2e449884dbccc34940637c639f upstream.
+commit 5bc9ad774c063f6b41965e7314f2c26aa5e465a0 upstream.
 
-This is to change use of "0x%08x" in favour of "%p" as per ../Documentation/printk-formats.txt,
-which also takes care about the following warning during compilation time:
+Gcc 4.6.2 complains that:
 
-  drivers/scsi/aha152x.c: In function ‘get_command’:
-  drivers/scsi/aha152x.c:2987: warning: cast from pointer to integer of different size
+  drivers/leds/leds-lp5521.c: In function `lp5521_load_program':
+  drivers/leds/leds-lp5521.c:214:21: warning: `mode' may be used uninitialized in this function [-Wuninitialized]
+  drivers/leds/leds-lp5521.c: In function `lp5521_probe':
+  drivers/leds/leds-lp5521.c:788:5: warning: `buf' may be used uninitialized in this function [-Wuninitialized]
+  drivers/leds/leds-lp5521.c:740:6: warning: `ret' may be used uninitialized in this function [-Wuninitialized]
 
-Signed-off-by: Krzysztof Wilczynski <krzysztof.wilczynski@linux.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+These are real problems if lp5521_read() returns an error.  When that
+happens we should handle it, instead of ignoring it or doing a bitwise
+OR with all the other error codes and continuing.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Milo <Milo.Kim@ti.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Cc: Bryan Wu <bryan.wu@canonical.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/aha152x.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/leds/leds-lp5521.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/aha152x.c b/drivers/scsi/aha152x.c
-index 19a3694..dd4547b 100644
---- a/drivers/scsi/aha152x.c
-+++ b/drivers/scsi/aha152x.c
-@@ -2984,8 +2984,8 @@ static int get_command(char *pos, Scsi_Cmnd * ptr)
- 	char *start = pos;
- 	int i;
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index 410a723..2381562 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -193,9 +193,14 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
  
--	SPRINTF("0x%08x: target=%d; lun=%d; cmnd=( ",
--		(unsigned int) ptr, ptr->device->id, ptr->device->lun);
-+	SPRINTF("%p: target=%d; lun=%d; cmnd=( ",
-+		ptr, ptr->device->id, ptr->device->lun);
+ 	/* move current engine to direct mode and remember the state */
+ 	ret = lp5521_set_engine_mode(eng, LP5521_CMD_DIRECT);
++	if (ret)
++		return ret;
++
+ 	/* Mode change requires min 500 us delay. 1 - 2 ms  with margin */
+ 	usleep_range(1000, 2000);
+-	ret |= lp5521_read(client, LP5521_REG_OP_MODE, &mode);
++	ret = lp5521_read(client, LP5521_REG_OP_MODE, &mode);
++	if (ret)
++		return ret;
  
- 	for (i = 0; i < COMMAND_SIZE(ptr->cmnd[0]); i++)
- 		SPRINTF("0x%02x ", ptr->cmnd[i]);
+ 	/* For loading, all the engines to load mode */
+ 	lp5521_write(client, LP5521_REG_OP_MODE, LP5521_CMD_DIRECT);
+@@ -211,8 +216,7 @@ static int lp5521_load_program(struct lp5521_engine *eng, const u8 *pattern)
+ 				LP5521_PROG_MEM_SIZE,
+ 				pattern);
+ 
+-	ret |= lp5521_write(client, LP5521_REG_OP_MODE, mode);
+-	return ret;
++	return lp5521_write(client, LP5521_REG_OP_MODE, mode);
+ }
+ 
+ static int lp5521_set_led_current(struct lp5521_chip *chip, int led, u8 curr)
+@@ -785,7 +789,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
+ 	 * LP5521_REG_ENABLE register will not have any effect - strange!
+ 	 */
+ 	ret = lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
+-	if (buf != LP5521_REG_R_CURR_DEFAULT) {
++	if (ret || buf != LP5521_REG_R_CURR_DEFAULT) {
+ 		dev_err(&client->dev, "error in resetting chip\n");
+ 		goto fail2;
+ 	}
 
 
