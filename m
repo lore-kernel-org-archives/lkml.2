@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750971Ab2L1FRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 00:17:06 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:60464 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750821Ab2L1FRA (ORCPT
+	id S1750963Ab2L1FUJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 00:20:09 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42147 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab2L1FUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 00:17:00 -0500
-Message-ID: <50DD2B34.9070905@linaro.org>
-Date: Fri, 28 Dec 2012 10:46:36 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 28 Dec 2012 00:20:07 -0500
+X-Greylist: delayed 479 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 00:20:07 EST
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: patches@linaro.org, Chas Williams <chas@cmf.nrl.navy.mil>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [PATCH 10/14] atm: Removed redundant check on unsigned variable
-References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org> <1353048646-10935-11-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1353048646-10935-11-git-send-email-tushar.behera@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
+References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
+	<20121227184034.GA2982@debian.debian>
+	<CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
+	<CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
+Date: Fri, 28 Dec 2012 10:42:05 +0530
+Message-ID: <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
+Subject: Re: how to look for source code in kernel
+From: amit mehta <gmate.amit@gmail.com>
+To: anish singh <anish198519851985@gmail.com>
+Cc: Henrique Rodrigues <henriquesilvar@gmail.com>,
+        kishore kumar <kishoreopen@gmail.com>,
+        =?UTF-8?Q?Jonathan_Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
+        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping.
+>>> On Thu, Dec 27, 2012 at 11:01:52PM +0530, kishore kumar wrote:
+>>> > can anybody tell me how to look into source code, as most are hidden in
+>>> > kernel.
+>>>
+>>> You can find the Linux source code at http://kernel.org/ .
+> for browsing the code unfortunately there is no good tool as in windows we
+> have source insight.We can use wine in linux but that sucks.
+Funny you say that!
+Never heard of cscope, ctags ?
 
-On 11/16/2012 12:20 PM, Tushar Behera wrote:
-> No need to check whether unsigned variable is less than 0.
-> 
-> CC: Chas Williams <chas@cmf.nrl.navy.mil>
-> CC: linux-atm-general@lists.sourceforge.net
-> CC: netdev@vger.kernel.org
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> ---
->  drivers/atm/fore200e.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/atm/fore200e.c b/drivers/atm/fore200e.c
-> index 361f5ae..fdd3fe7 100644
-> --- a/drivers/atm/fore200e.c
-> +++ b/drivers/atm/fore200e.c
-> @@ -972,7 +972,7 @@ int bsq_audit(int where, struct host_bsq* bsq, int scheme, int magn)
->  		   where, scheme, magn, buffer->index, buffer->scheme);
->  	}
->  
-> -	if ((buffer->index < 0) || (buffer->index >= fore200e_rx_buf_nbr[ scheme ][ magn ])) {
-> +	if (buffer->index >= fore200e_rx_buf_nbr[ scheme ][ magn ]) {
->  	    printk(FORE200E "bsq_audit(%d): queue %d.%d, out of range buffer index = %ld !\n",
->  		   where, scheme, magn, buffer->index);
->  	}
-> 
-
-
--- 
-Tushar Behera
+-Amit
