@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab2L1TTZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:19:25 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55499 "EHLO
+	id S932392Ab2L1Tac (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:30:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55567 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932272Ab2L1TTL (ORCPT
+	by vger.kernel.org with ESMTP id S932272Ab2L1TT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:11 -0500
-Message-Id: <20121228190344.171670402@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:26 -0500
+Message-Id: <20121228190343.166661855@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:37 +0100
+Date: Fri, 28 Dec 2012 20:04:32 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcos Chaparro <marcos@mrkindustries.com.ar>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 067/173] Bluetooth: ath3k: Add support for VAIO VPCEH [0489:e027]
+        Anton Blanchard <anton@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [ 062/173] powerpc: Fix CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n build
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,74 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcos Chaparro <marcos@mrkindustries.com.ar>
+From: Anton Blanchard <anton@samba.org>
 
-commit acd9454433e28c1a365d8b069813c35c1c3a8ac3 upstream.
+commit 11ee7e99f35ecb15f59b21da6a82d96d2cd3fcc8 upstream.
 
-Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the
-devices list.
-Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth
-device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth
-[0cf3:3005].
+If we build a kernel with CONFIG_RELOCATABLE=y CONFIG_CRASH_DUMP=n,
+the kernel fails when we run at a non zero offset. It turns out
+we were incorrectly wrapping some of the relocatable kernel code
+with CONFIG_CRASH_DUMP.
 
-T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=0489 ProdID=e027 Rev= 0.01
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-
-Signed-off-by: Marcos Chaparro <marcos@mrkindustries.com.ar>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/bluetooth/ath3k.c |    1 +
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 2 insertions(+)
+ arch/powerpc/kernel/head_64.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index fc2de55..b00000e 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -67,6 +67,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x13d3, 0x3304) },
- 	{ USB_DEVICE(0x0930, 0x0215) },
- 	{ USB_DEVICE(0x0489, 0xE03D) },
-+	{ USB_DEVICE(0x0489, 0xE027) },
+diff --git a/arch/powerpc/kernel/head_64.S b/arch/powerpc/kernel/head_64.S
+index 694e3fa..11a4df9 100644
+--- a/arch/powerpc/kernel/head_64.S
++++ b/arch/powerpc/kernel/head_64.S
+@@ -422,7 +422,7 @@ _STATIC(__after_prom_start)
+ 	tovirt(r6,r6)			/* on booke, we already run at PAGE_OFFSET */
+ #endif
  
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03F0, 0x311D) },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index debda27..ee82f2f 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -124,6 +124,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
- 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
-+	{ USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
- 
- 	/* Atheros AR9285 Malbec with sflash firmware */
- 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
+-#ifdef CONFIG_CRASH_DUMP
++#ifdef CONFIG_RELOCATABLE
+ /*
+  * Check if the kernel has to be running as relocatable kernel based on the
+  * variable __run_at_load, if it is set the kernel is treated as relocatable
 
 
