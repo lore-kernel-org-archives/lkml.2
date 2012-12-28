@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab2L1AQV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 19:16:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53839 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751504Ab2L1AQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 19:16:19 -0500
-Date: Thu, 27 Dec 2012 21:49:37 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Julia.Lawall@lip6.fr, kernel-janitors@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Peter Senna Tschudin <peter.senna@gmail.com>
-Subject: Re: [PATCH 01/23] uvc: Replace memcpy with struct assignment
-Message-ID: <20121227214937.6276e2a3@redhat.com>
-In-Reply-To: <CALF0-+VQKxu7_-=aJeW-FxmM4fdVX1nBE7AA5-0d9SRgRqqM1g@mail.gmail.com>
-References: <1351022246-8201-1-git-send-email-elezegarcia@gmail.com>
-	<CALF0-+VQKxu7_-=aJeW-FxmM4fdVX1nBE7AA5-0d9SRgRqqM1g@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752466Ab2L1ATX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:19:23 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:48537 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab2L1ATV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 19:19:21 -0500
+MIME-Version: 1.0
+Message-ID: <2f3acfe3-c608-43d8-b76a-6ba69a872692@default>
+Date: Thu, 27 Dec 2012 16:18:56 -0800 (PST)
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: <ebiederm@xmission.com>
+Cc: <kexec@lists.infradead.org>, <xen-devel@lists.xensource.com>,
+        <konrad.wilk@oracle.com>, <tglx@linutronix.de>,
+        <maxim.uvarov@oracle.com>, <andrew.cooper3@citrix.com>,
+        <hpa@zytor.com>, <jbeulich@suse.com>, <mingo@redhat.com>,
+        <x86@kernel.org>, <virtualization@lists.linux-foundation.org>,
+        <vgoyal@redhat.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 01/11] kexec: introduce kexec firmware support
+X-Mailer: Zimbra on Oracle Beehive
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, 27 Dec 2012 18:12:46 -0300
-Ezequiel Garcia <elezegarcia@gmail.com> escreveu:
+> Daniel Kiper <daniel.kiper@oracle.com> writes:
+>
+> > Some kexec/kdump implementations (e.g. Xen PVOPS) could not use default
+> > Linux infrastructure and require some support from firmware and/or hypervisor.
+> > To cope with that problem kexec firmware infrastructure was introduced.
+> > It allows a developer to use all kexec/kdump features of given firmware
+> > or hypervisor.
+>
+> As this stands this patch is wrong.
+>
+> You need to pass an additional flag from userspace through /sbin/kexec
+> that says load the kexec image in the firmware.  A global variable here
+> is not ok.
+>
+> As I understand it you are loading a kexec on xen panic image.  Which
+> is semantically different from a kexec on linux panic image.  It is not
+> ok to do have a silly global variable kexec_use_firmware.
 
-> Mauro,
-> 
-> On Tue, Oct 23, 2012 at 4:57 PM, Ezequiel Garcia <elezegarcia@gmail.com> wrote:
-> > This kind of memcpy() is error-prone. Its replacement with a struct
-> > assignment is prefered because it's type-safe and much easier to read.
-> >
-> > Found by coccinelle. Hand patched and reviewed.
-> > Tested by compilation only.
-> >
-> > A simplified version of the semantic match that finds this problem is as
-> > follows: (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > @@
-> > identifier struct_name;
-> > struct struct_name to;
-> > struct struct_name from;
-> > expression E;
-> > @@
-> > -memcpy(&(to), &(from), E);
-> > +to = from;
-> > // </smpl>
-> >
-> > Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-> > Signed-off-by: Peter Senna Tschudin <peter.senna@gmail.com>
-> > Signed-off-by: Ezequiel Garcia <elezegarcia@gmail.com>
-> > ---
-> >  drivers/media/usb/uvc/uvc_v4l2.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/drivers/media/usb/uvc/uvc_v4l2.c b/drivers/media/usb/uvc/uvc_v4l2.c
-> > index f00db30..4fc8737 100644
-> > --- a/drivers/media/usb/uvc/uvc_v4l2.c
-> > +++ b/drivers/media/usb/uvc/uvc_v4l2.c
-> > @@ -314,7 +314,7 @@ static int uvc_v4l2_set_format(struct uvc_streaming *stream,
-> >                 goto done;
-> >         }
-> >
-> > -       memcpy(&stream->ctrl, &probe, sizeof probe);
-> > +       stream->ctrl = probe;
-> >         stream->cur_format = format;
-> >         stream->cur_frame = frame;
-> >
-> > @@ -386,7 +386,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
-> >                 return -EBUSY;
-> >         }
-> >
-> > -       memcpy(&probe, &stream->ctrl, sizeof probe);
-> > +       probe = stream->ctrl;
-> >         probe.dwFrameInterval =
-> >                 uvc_try_frame_interval(stream->cur_frame, interval);
-> >
-> > @@ -397,7 +397,7 @@ static int uvc_v4l2_set_streamparm(struct uvc_streaming *stream,
-> >                 return ret;
-> >         }
-> >
-> > -       memcpy(&stream->ctrl, &probe, sizeof probe);
-> > +       stream->ctrl = probe;
-> >         mutex_unlock(&stream->mutex);
-> >
-> >         /* Return the actual frame period. */
-> > --
-> > 1.7.4.4
-> >
-> 
-> It seems you've marked this one as "Changes requested" [1].
-> However, Laurent didn't request any change,
-> but just pointed out we missed one memcpy replacement candidate.
-> 
-> I believe it's safe to apply the patch (together with the other 20 patches)
-> and we can fix the missing spot in another patch.
+Earlier we agreed that /sbin/kexec should call kexec syscall with
+special flag. However, during work on Xen kexec/kdump v3 patch
+I stated that this is insufficient because e.g. crash_kexec()
+should execute different code in case of use of firmware support too.
+Sadly syscall does not save this flag anywhere. Additionally, I stated
+that kernel itself has the best knowledge which code path should be
+used (firmware or plain Linux). If this decision will be left to userspace
+then simple kexec syscall could crash system at worst case (e.g. when
+plain Linux kexec will be used in case when firmware kaxec should be used).
+However, if you wish I could add this flag to syscall. Additionally, I could
+add function which enables firmware support and then kexec_use_firmware
+variable will be global only in kexec.c module.
 
-The other patches got applied already. Well just do whatever Laurent asked you
-and re-submit this one ;)
+> Furthermore it is not ok to have a conditional
+> code outside of header files.
 
-Regards,
-Mauro
+I agree but how to dispatch execution e.g. in crash_kexec()
+if we would like (I suppose) compile kexec firmware
+support conditionally?
+
+Daniel
