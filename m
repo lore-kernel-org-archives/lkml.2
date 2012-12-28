@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab2L1UjU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:39:20 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:64583 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754460Ab2L1UgW (ORCPT
+	id S1754980Ab2L1Ujo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:39:44 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:60676 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab2L1UgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:36:22 -0500
+	Fri, 28 Dec 2012 15:36:17 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 10/24] blkcg: make blkcg_gq's hierarchical
-Date: Fri, 28 Dec 2012 12:35:32 -0800
-Message-Id: <1356726946-26037-11-git-send-email-tj@kernel.org>
+Subject: [PATCH 08/24] blkcg: reorganize blkg_lookup_create() and friends
+Date: Fri, 28 Dec 2012 12:35:30 -0800
+Message-Id: <1356726946-26037-9-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1356726946-26037-1-git-send-email-tj@kernel.org>
 References: <1356726946-26037-1-git-send-email-tj@kernel.org>
@@ -22,148 +22,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently a child blkg (blkcg_gq) can be created even if its parent
-doesn't exist.  ie. Given a blkg, it's not guaranteed that its
-ancestors will exist.  This makes it difficult to implement proper
-hierarchy support for blkcg policies.
+Reorganize such that
 
-Always create blkgs recursively and make a child blkg hold a reference
-to its parent.  blkg->parent is added so that finding the parent is
-easy.  blkcg_parent() is also added in the process.
+* __blkg_lookup() takes bool param @update_hint to determine whether
+  to update hint.
 
-This change can be visible to userland.  e.g. while issuing IO in a
-nested cgroup didn't affect the ancestors at all, now it will
-initialize all ancestor blkgs and zero stats for the request_queue
-will always appear on them.  While this is userland visible, this
-shouldn't cause any functional difference.
+* __blkg_lookup_create() no longer performs lookup before trying to
+  create.  Renamed to blkg_create().
+
+* blkg_lookup_create() now performs lookup and then invokes
+  blkg_create() if lookup fails.
+
+* root_blkg creation in blkcg_activate_policy() updated accordingly.
+  Note that blkcg_activate_policy() no longer updates lookup hint if
+  root_blkg already exists.
+
+Except for the last lookup hint bit which is immaterial, this is pure
+reorganization and doesn't introduce any visible behavior change.
+This is to prepare for proper hierarchy support.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Acked-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c | 42 +++++++++++++++++++++++++++++++++++++-----
- block/blk-cgroup.h | 18 ++++++++++++++++++
- 2 files changed, 55 insertions(+), 5 deletions(-)
+ block/blk-cgroup.c | 75 +++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 52 insertions(+), 23 deletions(-)
 
 diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 18ae480..942f344 100644
+index 7ef747b..2012754 100644
 --- a/block/blk-cgroup.c
 +++ b/block/blk-cgroup.c
-@@ -201,7 +201,16 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	}
- 	blkg = new_blkg;
+@@ -126,7 +126,7 @@ err_free:
+ }
  
--	/* insert */
-+	/* link parent and insert */
-+	if (blkcg_parent(blkcg)) {
-+		blkg->parent = __blkg_lookup(blkcg_parent(blkcg), q, false);
-+		if (WARN_ON_ONCE(!blkg->parent)) {
-+			blkg = ERR_PTR(-EINVAL);
-+			goto err_put_css;
-+		}
-+		blkg_get(blkg->parent);
-+	}
-+
- 	spin_lock(&blkcg->lock);
- 	ret = radix_tree_insert(&blkcg->blkg_tree, q->id, blkg);
- 	if (likely(!ret)) {
-@@ -213,6 +222,10 @@ static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
- 	if (!ret)
+ static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
+-				      struct request_queue *q)
++				      struct request_queue *q, bool update_hint)
+ {
+ 	struct blkcg_gq *blkg;
+ 
+@@ -135,14 +135,19 @@ static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
  		return blkg;
  
-+	/* @blkg failed fully initialized, use the usual release path */
-+	blkg_put(blkg);
-+	return ERR_PTR(ret);
-+
- err_put_css:
- 	css_put(&blkcg->css);
- err_free_blkg:
-@@ -226,8 +239,9 @@ err_free_blkg:
-  * @q: request_queue of interest
-  *
-  * Lookup blkg for the @blkcg - @q pair.  If it doesn't exist, try to
-- * create one.  This function should be called under RCU read lock and
-- * @q->queue_lock.
-+ * create one.  blkg creation is performed recursively from blkcg_root such
-+ * that all non-root blkg's have access to the parent blkg.  This function
-+ * should be called under RCU read lock and @q->queue_lock.
-  *
-  * Returns pointer to the looked up or created blkg on success, ERR_PTR()
-  * value on error.  If @q is dead, returns ERR_PTR(-EINVAL).  If @q is not
-@@ -252,7 +266,23 @@ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
- 	if (blkg)
- 		return blkg;
- 
--	return blkg_create(blkcg, q, NULL);
-+	/*
-+	 * Create blkgs walking down from blkcg_root to @blkcg, so that all
-+	 * non-root blkgs have access to their parents.
-+	 */
-+	while (true) {
-+		struct blkcg *pos = blkcg;
-+		struct blkcg *parent = blkcg_parent(blkcg);
-+
-+		while (parent && !__blkg_lookup(parent, q, false)) {
-+			pos = parent;
-+			parent = blkcg_parent(parent);
+ 	/*
+-	 * Hint didn't match.  Look up from the radix tree.  Note that we
+-	 * may not be holding queue_lock and thus are not sure whether
+-	 * @blkg from blkg_tree has already been removed or not, so we
+-	 * can't update hint to the lookup result.  Leave it to the caller.
++	 * Hint didn't match.  Look up from the radix tree.  Note that the
++	 * hint can only be updated under queue_lock as otherwise @blkg
++	 * could have already been removed from blkg_tree.  The caller is
++	 * responsible for grabbing queue_lock if @update_hint.
+ 	 */
+ 	blkg = radix_tree_lookup(&blkcg->blkg_tree, q->id);
+-	if (blkg && blkg->q == q)
++	if (blkg && blkg->q == q) {
++		if (update_hint) {
++			lockdep_assert_held(q->queue_lock);
++			rcu_assign_pointer(blkcg->blkg_hint, blkg);
 +		}
-+
-+		blkg = blkg_create(pos, q, NULL);
-+		if (pos == blkcg || IS_ERR(blkg))
-+			return blkg;
+ 		return blkg;
 +	}
+ 
+ 	return NULL;
+ }
+@@ -162,7 +167,7 @@ struct blkcg_gq *blkg_lookup(struct blkcg *blkcg, struct request_queue *q)
+ 
+ 	if (unlikely(blk_queue_bypass(q)))
+ 		return NULL;
+-	return __blkg_lookup(blkcg, q);
++	return __blkg_lookup(blkcg, q, false);
+ }
+ EXPORT_SYMBOL_GPL(blkg_lookup);
+ 
+@@ -170,9 +175,9 @@ EXPORT_SYMBOL_GPL(blkg_lookup);
+  * If @new_blkg is %NULL, this function tries to allocate a new one as
+  * necessary using %GFP_ATOMIC.  @new_blkg is always consumed on return.
+  */
+-static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+-					     struct request_queue *q,
+-					     struct blkcg_gq *new_blkg)
++static struct blkcg_gq *blkg_create(struct blkcg *blkcg,
++				    struct request_queue *q,
++				    struct blkcg_gq *new_blkg)
+ {
+ 	struct blkcg_gq *blkg;
+ 	int ret;
+@@ -180,13 +185,6 @@ static struct blkcg_gq *__blkg_lookup_create(struct blkcg *blkcg,
+ 	WARN_ON_ONCE(!rcu_read_lock_held());
+ 	lockdep_assert_held(q->queue_lock);
+ 
+-	/* lookup and update hint on success, see __blkg_lookup() for details */
+-	blkg = __blkg_lookup(blkcg, q);
+-	if (blkg) {
+-		rcu_assign_pointer(blkcg->blkg_hint, blkg);
+-		goto out_free;
+-	}
+-
+ 	/* blkg holds a reference to blkcg */
+ 	if (!css_tryget(&blkcg->css)) {
+ 		blkg = ERR_PTR(-EINVAL);
+@@ -223,16 +221,39 @@ out_free:
+ 	return blkg;
+ }
+ 
++/**
++ * blkg_lookup_create - lookup blkg, try to create one if not there
++ * @blkcg: blkcg of interest
++ * @q: request_queue of interest
++ *
++ * Lookup blkg for the @blkcg - @q pair.  If it doesn't exist, try to
++ * create one.  This function should be called under RCU read lock and
++ * @q->queue_lock.
++ *
++ * Returns pointer to the looked up or created blkg on success, ERR_PTR()
++ * value on error.  If @q is dead, returns ERR_PTR(-EINVAL).  If @q is not
++ * dead and bypassing, returns ERR_PTR(-EBUSY).
++ */
+ struct blkcg_gq *blkg_lookup_create(struct blkcg *blkcg,
+ 				    struct request_queue *q)
+ {
++	struct blkcg_gq *blkg;
++
++	WARN_ON_ONCE(!rcu_read_lock_held());
++	lockdep_assert_held(q->queue_lock);
++
+ 	/*
+ 	 * This could be the first entry point of blkcg implementation and
+ 	 * we shouldn't allow anything to go through for a bypassing queue.
+ 	 */
+ 	if (unlikely(blk_queue_bypass(q)))
+ 		return ERR_PTR(blk_queue_dying(q) ? -EINVAL : -EBUSY);
+-	return __blkg_lookup_create(blkcg, q, NULL);
++
++	blkg = __blkg_lookup(blkcg, q, true);
++	if (blkg)
++		return blkg;
++
++	return blkg_create(blkcg, q, NULL);
  }
  EXPORT_SYMBOL_GPL(blkg_lookup_create);
  
-@@ -321,8 +351,10 @@ static void blkg_rcu_free(struct rcu_head *rcu_head)
- 
- void __blkg_release(struct blkcg_gq *blkg)
+@@ -777,7 +798,7 @@ int blkcg_activate_policy(struct request_queue *q,
+ 			  const struct blkcg_policy *pol)
  {
--	/* release the extra blkcg reference this blkg has been holding */
-+	/* release the blkcg and parent blkg refs this blkg has been holding */
- 	css_put(&blkg->blkcg->css);
-+	if (blkg->parent)
-+		blkg_put(blkg->parent);
+ 	LIST_HEAD(pds);
+-	struct blkcg_gq *blkg;
++	struct blkcg_gq *blkg, *new_blkg;
+ 	struct blkg_policy_data *pd, *n;
+ 	int cnt = 0, ret;
+ 	bool preloaded;
+@@ -786,19 +807,27 @@ int blkcg_activate_policy(struct request_queue *q,
+ 		return 0;
  
- 	/*
- 	 * A group is freed in rcu manner. But having an rcu lock does not
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 2459730..b26ed58 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -94,8 +94,13 @@ struct blkcg_gq {
- 	struct list_head		q_node;
- 	struct hlist_node		blkcg_node;
- 	struct blkcg			*blkcg;
-+
-+	/* all non-root blkcg_gq's are guaranteed to have access to parent */
-+	struct blkcg_gq			*parent;
-+
- 	/* request allocation list for this blkcg-q pair */
- 	struct request_list		rl;
-+
- 	/* reference count */
- 	int				refcnt;
+ 	/* preallocations for root blkg */
+-	blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
+-	if (!blkg)
++	new_blkg = blkg_alloc(&blkcg_root, q, GFP_KERNEL);
++	if (!new_blkg)
+ 		return -ENOMEM;
  
-@@ -181,6 +186,19 @@ static inline struct blkcg *bio_blkcg(struct bio *bio)
- }
+ 	preloaded = !radix_tree_preload(GFP_KERNEL);
  
- /**
-+ * blkcg_parent - get the parent of a blkcg
-+ * @blkcg: blkcg of interest
-+ *
-+ * Return the parent blkcg of @blkcg.  Can be called anytime.
-+ */
-+static inline struct blkcg *blkcg_parent(struct blkcg *blkcg)
-+{
-+	struct cgroup *pcg = blkcg->css.cgroup->parent;
-+
-+	return pcg ? cgroup_to_blkcg(pcg) : NULL;
-+}
-+
-+/**
-  * blkg_to_pdata - get policy private data
-  * @blkg: blkg of interest
-  * @pol: policy of interest
+ 	blk_queue_bypass_start(q);
+ 
+-	/* make sure the root blkg exists and count the existing blkgs */
++	/*
++	 * Make sure the root blkg exists and count the existing blkgs.  As
++	 * @q is bypassing at this point, blkg_lookup_create() can't be
++	 * used.  Open code it.
++	 */
+ 	spin_lock_irq(q->queue_lock);
+ 
+ 	rcu_read_lock();
+-	blkg = __blkg_lookup_create(&blkcg_root, q, blkg);
++	blkg = __blkg_lookup(&blkcg_root, q, false);
++	if (blkg)
++		blkg_free(new_blkg);
++	else
++		blkg = blkg_create(&blkcg_root, q, new_blkg);
+ 	rcu_read_unlock();
+ 
+ 	if (preloaded)
 -- 
 1.8.0.2
 
