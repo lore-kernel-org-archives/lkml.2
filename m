@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992Ab2L1SNZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 13:13:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36896 "EHLO mx1.redhat.com"
+	id S1754018Ab2L1SNf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 13:13:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40272 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753851Ab2L1SNX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 13:13:23 -0500
-Date: Fri, 28 Dec 2012 19:13:10 +0100
+	id S1753851Ab2L1SNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 13:13:31 -0500
+Date: Fri, 28 Dec 2012 19:13:14 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,8 +14,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
         Josh Stone <jistone@redhat.com>,
         "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] uprobes: Rationalize the usage of filter_chain()
-Message-ID: <20121228181310.GA6138@redhat.com>
+Subject: [PATCH 2/2] uprobes: Reintroduce uprobe_consumer->filter()
+Message-ID: <20121228181314.GA6141@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,118 +25,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-filter_chain() was added into install_breakpoint/remove_breakpoint to
-simplify the initial changes but this is sub-optimal.
+Finally add uprobe_consumer->filter() and change consumer_filter()
+to actually call this method.
 
-This patch shifts the callsite to the callers, register_for_each_vma()
-and uprobe_mmap(). This way:
+Note that ->filter() accepts mm_struct, not task_struct. Because:
 
-- It will be easier to add the new arguments. This is the main reason,
-  we can do more optimizations later.
+	1. We do not have for_each_mm_user(mm, task).
 
-- register_for_each_vma(is_register => true) can be optimized, we only
-  need to consult the new consumer. The previous consumers were already
-  asked when they called uprobe_register().
+	2. Even if we implement for_each_mm_user(), ->filter() can
+	   use it itself.
 
-This patch also moves the MMF_HAS_UPROBES check from remove_breakpoint(),
-this allows to avoid the potentionally costly filter_chain(). Note that
-register_for_each_vma(is_register => false) doesn't really need to take
->consumer_rwsem, but I don't think it makes sense to optimize this and
-introduce filter_chain_lockless().
+	3. It is not clear who will actually need this interface to
+	   do the "nontrivial" filtering.
+
+Another argument is "enum uprobe_filter_ctx", consumer->filter() can
+use it to figure out why/where it was called. For example, perhaps
+we can add UPROBE_FILTER_PRE_REGISTER used by build_map_info() to
+quickly "nack" the unwanted mm's. In this case consumer should know
+that it is called under ->i_mmap_mutex.
+
+See the previous discussion at http://marc.info/?t=135214229700002
+Perhaps we should pass more arguments, vma/vaddr?
+
+Note: this patch obviously can't help to filter out the child created
+by fork(), this will be addressed later.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/events/uprobes.c |   44 +++++++++++++++++++++-----------------------
- 1 files changed, 21 insertions(+), 23 deletions(-)
+ include/linux/uprobes.h |    9 +++++++++
+ kernel/events/uprobes.c |   18 +++++++++++-------
+ 2 files changed, 20 insertions(+), 7 deletions(-)
 
+diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
+index 83742b9..c2df693 100644
+--- a/include/linux/uprobes.h
++++ b/include/linux/uprobes.h
+@@ -35,8 +35,17 @@ struct inode;
+ # include <asm/uprobes.h>
+ #endif
+ 
++enum uprobe_filter_ctx {
++	UPROBE_FILTER_REGISTER,
++	UPROBE_FILTER_UNREGISTER,
++	UPROBE_FILTER_MMAP,
++};
++
+ struct uprobe_consumer {
+ 	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
++	bool (*filter)(struct uprobe_consumer *self,
++				enum uprobe_filter_ctx ctx,
++				struct mm_struct *mm);
+ 
+ 	struct uprobe_consumer *next;
+ };
 diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 105ac0d..60b0a90 100644
+index 60b0a90..e2ebb6f 100644
 --- a/kernel/events/uprobes.c
 +++ b/kernel/events/uprobes.c
-@@ -579,6 +579,11 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
+@@ -579,19 +579,21 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
  	return ret;
  }
  
-+static inline bool consumer_filter(struct uprobe_consumer *uc)
-+{
-+	return true; /* TODO: !uc->filter || uc->filter(...) */
-+}
-+
- static bool filter_chain(struct uprobe *uprobe)
+-static inline bool consumer_filter(struct uprobe_consumer *uc)
++static inline bool consumer_filter(struct uprobe_consumer *uc,
++				   enum uprobe_filter_ctx ctx, struct mm_struct *mm)
+ {
+-	return true; /* TODO: !uc->filter || uc->filter(...) */
++	return !uc->filter || uc->filter(uc, ctx, mm);
+ }
+ 
+-static bool filter_chain(struct uprobe *uprobe)
++static bool filter_chain(struct uprobe *uprobe,
++			 enum uprobe_filter_ctx ctx, struct mm_struct *mm)
  {
  	struct uprobe_consumer *uc;
-@@ -586,8 +591,7 @@ static bool filter_chain(struct uprobe *uprobe)
+ 	bool ret = false;
  
  	down_read(&uprobe->consumer_rwsem);
  	for (uc = uprobe->consumers; uc; uc = uc->next) {
--		/* TODO: ret = uc->filter(...) */
--		ret = true;
-+		ret = consumer_filter(uc);
+-		ret = consumer_filter(uc);
++		ret = consumer_filter(uc, ctx, mm);
  		if (ret)
  			break;
  	}
-@@ -603,15 +607,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- 	bool first_uprobe;
- 	int ret;
+@@ -772,10 +774,12 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
  
--	/*
--	 * If probe is being deleted, unregister thread could be done with
--	 * the vma-rmap-walk through. Adding a probe now can be fatal since
--	 * nobody will be able to cleanup. But in this case filter_chain()
--	 * must return false, all consumers have gone away.
--	 */
--	if (!filter_chain(uprobe))
--		return 0;
--
- 	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
- 	if (ret)
- 		return ret;
-@@ -636,12 +631,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
- static int
- remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
- {
--	if (!test_bit(MMF_HAS_UPROBES, &mm->flags))
--		return 0;
--
--	if (filter_chain(uprobe))
--		return 0;
--
- 	set_bit(MMF_RECALC_UPROBES, &mm->flags);
- 	return set_orig_insn(&uprobe->arch, mm, vaddr);
- }
-@@ -781,10 +770,14 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
- 		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
- 			goto unlock;
+ 		if (is_register) {
+ 			/* consult only the "caller", new consumer. */
+-			if (consumer_filter(uprobe->consumers))
++			if (consumer_filter(uprobe->consumers,
++					UPROBE_FILTER_REGISTER, mm))
+ 				err = install_breakpoint(uprobe, mm, vma, info->vaddr);
+ 		} else if (test_bit(MMF_HAS_UPROBES, &mm->flags)) {
+-			if (!filter_chain(uprobe))
++			if (!filter_chain(uprobe,
++					UPROBE_FILTER_UNREGISTER, mm))
+ 				err |= remove_breakpoint(uprobe, mm, info->vaddr);
+ 		}
  
--		if (is_register)
--			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
--		else
--			err |= remove_breakpoint(uprobe, mm, info->vaddr);
-+		if (is_register) {
-+			/* consult only the "caller", new consumer. */
-+			if (consumer_filter(uprobe->consumers))
-+				err = install_breakpoint(uprobe, mm, vma, info->vaddr);
-+		} else if (test_bit(MMF_HAS_UPROBES, &mm->flags)) {
-+			if (!filter_chain(uprobe))
-+				err |= remove_breakpoint(uprobe, mm, info->vaddr);
-+		}
- 
-  unlock:
- 		up_write(&mm->mmap_sem);
-@@ -968,9 +961,14 @@ int uprobe_mmap(struct vm_area_struct *vma)
- 
- 	mutex_lock(uprobes_mmap_hash(inode));
- 	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
--
-+	/*
-+	 * We can race with uprobe_unregister(), this uprobe can be already
-+	 * removed. But in this case filter_chain() must return false, all
-+	 * consumers have gone away.
-+	 */
+@@ -968,7 +972,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
+ 	 */
  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
--		if (!fatal_signal_pending(current)) {
-+		if (!fatal_signal_pending(current) &&
-+		    filter_chain(uprobe)) {
+ 		if (!fatal_signal_pending(current) &&
+-		    filter_chain(uprobe)) {
++		    filter_chain(uprobe, UPROBE_FILTER_MMAP, vma->vm_mm)) {
  			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
  			install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
  		}
