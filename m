@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab2L1T6S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:58:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54881 "EHLO
+	id S1754489Ab2L1T6P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:58:15 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54893 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754213Ab2L1TQx (ORCPT
+	by vger.kernel.org with ESMTP id S1754241Ab2L1TQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:53 -0500
-Message-Id: <20121228190332.753245391@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:54 -0500
+Message-Id: <20121228190333.590051364@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:43 +0100
+Date: Fri, 28 Dec 2012 20:03:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Guenter Roeck <linux@roeck-us.net>, Fenghua Yu <fenghua.yu@intel.com>,
-        "R, Durgadoss" <durgadoss.r@intel.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [ 013/173] hwmon: (coretemp) Add support for Atom D2000 and N2000 series CPU
- models
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Dave Martin <dave.martin@linaro.org>,
+        =?ISO-8859-15?q?M=C3=A5ns=20Rullg=C3=A5rd?= 
+	<mans.rullgard@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 017/173] ARM: 7566/1: vfp: fix save and restore when running on pre-VFPv3 and
+ CONFIG_VFPv3 set
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,59 +33,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Guenter Roeck <linux@roeck-us.net>
+From: Paul Walmsley <paul@pwsan.com>
 
-commit 5592906f8b01282ea3c2acaf641fd067ad4bb3dc upstream.
+commit 39141ddfb63a664f26d3f42f64ee386e879b492c upstream.
 
-Document the Atom series D2000 and N2000 (Cedar Trail) as being supported.
-List and set TjMax for those series.
+After commit 846a136881b8f73c1f74250bf6acfaa309cab1f2 ("ARM: vfp: fix
+saving d16-d31 vfp registers on v6+ kernels"), the OMAP 2430SDP board
+started crashing during boot with omap2plus_defconfig:
 
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: "R, Durgadoss" <durgadoss.r@intel.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+[    3.875122] mmcblk0: mmc0:e624 SD04G 3.69 GiB
+[    3.915954]  mmcblk0: p1
+[    4.086639] Internal error: Oops - undefined instruction: 0 [#1] SMP ARM
+[    4.093719] Modules linked in:
+[    4.096954] CPU: 0    Not tainted  (3.6.0-02232-g759e00b #570)
+[    4.103149] PC is at vfp_reload_hw+0x1c/0x44
+[    4.107666] LR is at __und_usr_fault_32+0x0/0x8
+
+It turns out that the context save/restore fix unmasked a latent bug
+in commit 5aaf254409f8d58229107b59507a8235b715a960 ("ARM: 6203/1: Make
+VFPv3 usable on ARMv6").  When CONFIG_VFPv3 is set, but the kernel is
+booted on a pre-VFPv3 core, the code attempts to save and restore the
+d16-d31 VFP registers.  These are only present on non-D16 VFPv3+, so
+this results in an undefined instruction exception.  The code didn't
+crash before commit 846a136 because the save and restore code was
+only touching d0-d15, present on all VFP.
+
+Fix by implementing a request from Russell King to add a new HWCAP
+flag that affirmatively indicates the presence of the d16-d31
+registers:
+
+   http://marc.info/?l=linux-arm-kernel&m=135013547905283&w=2
+
+and some feedback from Måns to clarify the name of the HWCAP flag.
+
+Signed-off-by: Paul Walmsley <paul@pwsan.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Dave Martin <dave.martin@linaro.org>
+Cc: Måns Rullgård <mans.rullgard@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/hwmon/coretemp |    5 ++++-
- drivers/hwmon/coretemp.c     |    3 +++
- 2 files changed, 7 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/hwmon/coretemp b/Documentation/hwmon/coretemp
-index f6aed440..71d83d2 100644
---- a/Documentation/hwmon/coretemp
-+++ b/Documentation/hwmon/coretemp
-@@ -7,7 +7,8 @@ Supported chips:
-     CPUID: family 0x6, models 0xe (Pentium M DC), 0xf (Core 2 DC 65nm),
-                               0x16 (Core 2 SC 65nm), 0x17 (Penryn 45nm),
-                               0x1a (Nehalem), 0x1c (Atom), 0x1e (Lynnfield),
--                              0x26 (Tunnel Creek Atom), 0x27 (Medfield Atom)
-+                              0x26 (Tunnel Creek Atom), 0x27 (Medfield Atom),
-+                              0x36 (Cedar Trail Atom)
-     Datasheet: Intel 64 and IA-32 Architectures Software Developer's Manual
-                Volume 3A: System Programming Guide
-                http://softwarecommunity.intel.com/Wiki/Mobility/720.htm
-@@ -68,6 +69,8 @@ Process		Processor					TjMax(C)
+--- a/arch/arm/include/asm/vfpmacros.h
++++ b/arch/arm/include/asm/vfpmacros.h
+@@ -27,9 +27,9 @@
+ #if __LINUX_ARM_ARCH__ <= 6
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+-	tst	\tmp, #HWCAP_VFPv3D16
+-	ldceql	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
+-	addne	\base, \base, #32*4		    @ step over unused register space
++	tst	\tmp, #HWCAP_VFPD32
++	ldcnel	p11, cr0, [\base],#32*4		    @ FLDMIAD \base!, {d16-d31}
++	addeq	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+ 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
+@@ -51,9 +51,9 @@
+ #if __LINUX_ARM_ARCH__ <= 6
+ 	ldr	\tmp, =elf_hwcap		    @ may not have MVFR regs
+ 	ldr	\tmp, [\tmp, #0]
+-	tst	\tmp, #HWCAP_VFPv3D16
+-	stceql	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
+-	addne	\base, \base, #32*4		    @ step over unused register space
++	tst	\tmp, #HWCAP_VFPD32
++	stcnel	p11, cr0, [\base],#32*4		    @ FSTMIAD \base!, {d16-d31}
++	addeq	\base, \base, #32*4		    @ step over unused register space
+ #else
+ 	VFPFMRX	\tmp, MVFR0			    @ Media and VFP Feature Register 0
+ 	and	\tmp, \tmp, #MVFR0_A_SIMD_MASK	    @ A_SIMD field
+--- a/arch/arm/include/asm/hwcap.h
++++ b/arch/arm/include/asm/hwcap.h
+@@ -18,11 +18,12 @@
+ #define HWCAP_THUMBEE	(1 << 11)
+ #define HWCAP_NEON	(1 << 12)
+ #define HWCAP_VFPv3	(1 << 13)
+-#define HWCAP_VFPv3D16	(1 << 14)
++#define HWCAP_VFPv3D16	(1 << 14)	/* also set for VFPv4-D16 */
+ #define HWCAP_TLS	(1 << 15)
+ #define HWCAP_VFPv4	(1 << 16)
+ #define HWCAP_IDIVA	(1 << 17)
+ #define HWCAP_IDIVT	(1 << 18)
++#define HWCAP_VFPD32	(1 << 19)	/* set if VFP has 32 regs (not 16) */
+ #define HWCAP_IDIV	(HWCAP_IDIVA | HWCAP_IDIVT)
  
- 32nm		Atom Processors
- 		Z2460						90
-+		D2700/2550/2500					100
-+		N2850/2800/2650/2600				100
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+--- a/arch/arm/vfp/vfpmodule.c
++++ b/arch/arm/vfp/vfpmodule.c
+@@ -610,11 +610,14 @@ static int __init vfp_init(void)
+ 			elf_hwcap |= HWCAP_VFPv3;
  
- 45nm		Xeon Processors 5400 Quad-Core
- 		X5492, X5482, X5472, X5470, X5460, X5450	85
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index 495add5..42c2f43 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -224,6 +224,9 @@ static int __cpuinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id,
- 			tjmax = 90000;
- 
- 		pci_dev_put(host_bridge);
-+	} else if (c->x86_model == 0x36) {
-+		usemsr_ee = 0;
-+		tjmax = 100000;
- 	}
- 
- 	if (c->x86_model > 0xe && usemsr_ee) {
+ 			/*
+-			 * Check for VFPv3 D16. CPUs in this configuration
+-			 * only have 16 x 64bit registers.
++			 * Check for VFPv3 D16 and VFPv4 D16.  CPUs in
++			 * this configuration only have 16 x 64bit
++			 * registers.
+ 			 */
+ 			if (((fmrx(MVFR0) & MVFR0_A_SIMD_MASK)) == 1)
+-				elf_hwcap |= HWCAP_VFPv3D16;
++				elf_hwcap |= HWCAP_VFPv3D16; /* also v4-D16 */
++			else
++				elf_hwcap |= HWCAP_VFPD32;
+ 		}
+ #endif
+ 		/*
 
 
