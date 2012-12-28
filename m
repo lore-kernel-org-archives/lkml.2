@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab2L1TNf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:13:35 -0500
-Received: from e24smtp03.br.ibm.com ([32.104.18.24]:40502 "EHLO
-	e24smtp03.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753844Ab2L1TNd (ORCPT
+	id S1754140Ab2L1TNl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:13:41 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:54979 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979Ab2L1TNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:13:33 -0500
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-To: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org, shangw@linux.vnet.ibm.com, paulus@samba.org,
-        bhelgaas@google.com,
-        Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Subject: [PATCH 1/2] EEH/OF: checking for CONFIG_EEH is not needed
-Date: Fri, 28 Dec 2012 17:13:18 -0200
-Message-Id: <1356721999-25159-1-git-send-email-cascardo@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20121228120616.GB21831@oc0268524204.ibm.com>
-References: <20121228120616.GB21831@oc0268524204.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12122819-9254-0000-0000-00000B38F303
+	Fri, 28 Dec 2012 14:13:34 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121228114720.GB12363@x1.alien8.de>
+References: <20121227185126.GA10207@x1.alien8.de>
+	<CAE9FiQWekAOMedzr8Pj3d2O1g3KrN_Fd4F_D4SGz=gOTBZF8sA@mail.gmail.com>
+	<20121228114720.GB12363@x1.alien8.de>
+Date: Fri, 28 Dec 2012 11:13:32 -0800
+X-Google-Sender-Auth: KJF3Ekn_SGguJ2aN9lQTXoTYDL4
+Message-ID: <CAE9FiQW9-VQ-1x9Pn3-EkCVRQJEeQdxu-mvPsbm1OmMpdQy9qw@mail.gmail.com>
+Subject: Re: [PATCH] x86, mm: add generic kernel/ident mapping helper
+From: Yinghai Lu <yinghai@kernel.org>
+To: Borislav Petkov <bp@alien8.de>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functions used are already defined as empty inline functions for the
-case where EEH is disabled.
+On Fri, Dec 28, 2012 at 3:47 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Thu, Dec 27, 2012 at 04:34:03PM -0800, Yinghai Lu wrote:
+>> do you like to name it with kernel_ident_mapping_info ?
+>
+> We have already kernel_ident_mapping_init so the first three words are
+> already the same. Besides, you're differentiating between kernel mapping
+> or ident mapping so ident_mapping_info is not that suitable too. Maybe
+> x86_mapping_info since it is x86-specific?
 
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
----
- arch/powerpc/kernel/of_platform.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+ok, will use x86_mapping_info.
 
-diff --git a/arch/powerpc/kernel/of_platform.c b/arch/powerpc/kernel/of_platform.c
-index 2049f2d..c5fc6b2 100644
---- a/arch/powerpc/kernel/of_platform.c
-+++ b/arch/powerpc/kernel/of_platform.c
-@@ -71,10 +71,8 @@ static int __devinit of_pci_phb_probe(struct platform_device *dev)
- 	eeh_dev_phb_init_dynamic(phb);
- 
- 	/* Register devices with EEH */
--#ifdef CONFIG_EEH
- 	if (dev->dev.of_node->child)
- 		eeh_add_device_tree_early(dev->dev.of_node);
--#endif /* CONFIG_EEH */
- 
- 	/* Scan the bus */
- 	pcibios_scan_phb(phb);
-@@ -88,9 +86,7 @@ static int __devinit of_pci_phb_probe(struct platform_device *dev)
- 	pcibios_claim_one_bus(phb->bus);
- 
- 	/* Finish EEH setup */
--#ifdef CONFIG_EEH
- 	eeh_add_device_tree_late(phb->bus);
--#endif
- 
- 	/* Add probed PCI devices to the device model */
- 	pci_bus_add_devices(phb->bus);
--- 
-1.7.1
+Thanks a lot.
 
+Yinghai
