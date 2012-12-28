@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab2L1UAZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:00:25 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:44760 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754199Ab2L1UAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:00:22 -0500
-Message-ID: <1356724821.31130.19.camel@joe-AO722>
-Subject: Re: [PATCH] get_maintainer.pl: Find maintainers for removed files
-From: Joe Perches <joe@perches.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Date: Fri, 28 Dec 2012 12:00:21 -0800
-In-Reply-To: <1356722870-18325-1-git-send-email-geert@linux-m68k.org>
-References: <1356722870-18325-1-git-send-email-geert@linux-m68k.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754507Ab2L1UAA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:00:00 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54872 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754194Ab2L1TQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 14:16:50 -0500
+Message-Id: <20121228190334.014647549@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 28 Dec 2012 20:03:49 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Masanari Iida <standby24x7@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 019/173] drivers/leds/leds-lp5521.c: fix typo
+In-Reply-To: <20121228190330.025298996@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.217.219.220
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-28 at 20:27 +0100, Geert Uytterhoeven wrote:
-> For removed files, get_maintainer.pl doesn't find any maintainers (besides
-> the default linux-kernel@vger.kernel.org), as it only looks at the "+++"
-> lines, which are "/dev/null" for removals.
-> Fix this by extending the parsing to the "---" lines.
-[]
-> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-[]
-> @@ -433,7 +433,7 @@ foreach my $file (@ARGV) {
->  
->  	while (<$patch>) {
->  	    my $patch_line = $_;
-> -	    if (m/^\+\+\+\s+(\S+)/) {
-> +	    if (m/^\+\+\+\s+(\S+)/ or m/^---\s+(\S+)/) {
->  		my $filename = $1;
->  		$filename =~ s@^[^/]*/@@;
->  		$filename =~ s@\n@@;
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-OK, but this would now match any keyword in a deleted filename.
+------------------
+
+From: Masanari Iida <standby24x7@gmail.com>
+
+commit 3a2fd4a14112452eb5c1a079ac8b3f4842762afe upstream.
+
+"reseting" -> "resetting"
+
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/leds/leds-lp5521.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index d62a798..c42c8f0 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -694,7 +694,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
+ 	 */
+ 	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
+ 	if (buf != LP5521_REG_R_CURR_DEFAULT) {
+-		dev_err(&client->dev, "error in reseting chip\n");
++		dev_err(&client->dev, "error in resetting chip\n");
+ 		goto fail2;
+ 	}
+ 	usleep_range(10000, 20000);
 
 
