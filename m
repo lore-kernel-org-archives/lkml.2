@@ -1,134 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab2L1LnZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 06:43:25 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:35832 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604Ab2L1LnW (ORCPT
+	id S1753472Ab2L1LpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 06:45:11 -0500
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:48053
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752604Ab2L1LpI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 06:43:22 -0500
-X-AuditID: cbfee61a-b7fa66d0000004cf-08-50dd85d8c486
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-samsung-soc@vger.kernel.org
-Cc: w.sang@pengutronix.de, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, devicetree-discuss@lists.ozlabs.org,
-        naveenkrishna.ch@gmail.com, kgene.kim@samsung.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/2] arm: exynos5: Add HS-I2C device tree platform information
-Date: Fri, 28 Dec 2012 17:10:51 +0530
-Message-id: <1356694851-1345-2-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1356694851-1345-1-git-send-email-ch.naveen@samsung.com>
-References: <1356694851-1345-1-git-send-email-ch.naveen@samsung.com>
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsWyRsSkVvdG690Ag6ntOhaXd81hs5hxfh+T
-	A5PH501yAYxRXDYpqTmZZalF+nYJXBlfuq+zFZzir/g73aWBcQNPFyMnh4SAicSe5wvYIWwx
-	iQv31rN1MXJxCAksZZSYM3ESG0zRrIb/UIlFjBKnF11mgnB6mCRe3+wFq2ITMJM4uGg12CgR
-	AVWJz20gY7k4mAWuMUrMfbKLESQhLOAn0XhxO1gDC1DRx4k7gIo4OHgFXCRaNkqCmBICChJz
-	JtmAVHAKuErM/nWcBcQWAqrYNWMdVKeAxLfJh1ggymUlNh1gBtkkIXCbTeLDuRWsEEdLShxc
-	cYNlAqPwAkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxiBoXj63zOpHYwrGywOMQpwMCrx
-	8C7suRMgxJpYVlyZe4hRgoNZSYS3r/lugBBvSmJlVWpRfnxRaU5q8SFGH6BLJjJLiSbnA+Mk
-	ryTe0NjE3NTY1NLIyMzUFIewkjhvs0dKgJBAemJJanZqakFqEcw4Jg5OqQbGuhlrn3bvlZx6
-	UHDXpKWzjCY/fvvEZUVH7qLI9FqtMIaHMqv/98/3O6yt5+nUc9dJ1e7DllMm8bt6fJUF36VV
-	xRVvOdgsrbcvkiNSoiDRePGZlvmrOleuV49RWSf8zeTaQ/8d6w8fDU89dbX/zPa3wq/K3xuk
-	nzA7lJY0Ze7pU1/U9729skJfVImlOCPRUIu5qDgRAB5gITRyAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42I5/e+xgO6N1rsBBvM3K1pc3jWHzWLG+X1M
-	DkwenzfJBTBGNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE
-	6Lpl5gCNVlIoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmfOm+zlZwir/i
-	73SXBsYNPF2MnBwSAiYSsxr+s0HYYhIX7q0Hsrk4hAQWMUqcXnSZCcLpYZJ4fbMXrIpNwEzi
-	4KLV7CC2iICqxOe2BewgRcwC1xgl5j7ZxQiSEBbwk2i8uB2sgQWo6OPEHUBFHBy8Ai4SLRsl
-	QUwJAQWJOZNsQCo4BVwlZv86zgJiCwFV7Jqxjm0CI+8CRoZVjKKpBckFxUnpuYZ6xYm5xaV5
-	6XrJ+bmbGMGB/kxqB+PKBotDjAIcjEo8vAt77gQIsSaWFVfmHmKU4GBWEuHta74bIMSbklhZ
-	lVqUH19UmpNafIjRB+imicxSosn5wCjMK4k3NDYxNzU2tTSxMDGzxCGsJM7b7JESICSQnliS
-	mp2aWpBaBDOOiYNTqoHRgctt8lvVhGMHmO7UrQxUYX6z9z7Psb8+D3uZjeJlzVIuXfBbxPH9
-	a13DU519V6sYLgorrvPLDb9gw3TlU5SpyzbP1OhAdePFjSty9i5+HPuwhUm8fN+5i2fj098b
-	/Tvp++vX+Q9TeHNfy6ofWrg08QfT3FmtqaE6Siur3366MlEjxLz26PxmJZbijERDLeai4kQA
-	x6p6aKECAAA=
-X-CFilter-Loop: Reflected
+	Fri, 28 Dec 2012 06:45:08 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VS-4(zz98dI936eI1432I1447Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
+X-FB-DOMAIN-IP-MATCH: fail
+Date: Fri, 28 Dec 2012 19:45:26 +0800
+From: Shawn Guo <shawn.guo@linaro.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Maciej Rutecki <maciej.rutecki@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Cong Wang <xiyou.wangcong@gmail.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [REGRESSION][3.8.-rc1][ INFO: possible circular locking
+ dependency detected ]
+Message-ID: <20121228114525.GD19447@S2101-09.ap.freescale.net>
+References: <201212221628.26640.maciej.rutecki@gmail.com>
+ <20121226023435.GE25478@S2101-09.ap.freescale.net>
+ <20121227083618.GA9775@S2101-09.ap.freescale.net>
+ <1356613404.16896.4.camel@thor.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1356613404.16896.4.camel@thor.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: sigmatel.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds HS-I2C device tree platform information in
-exynos5.dtsi and exynos5-smdk5250.
+On Thu, Dec 27, 2012 at 08:03:24AM -0500, Peter Hurley wrote:
+> On Thu, 2012-12-27 at 16:36 +0800, Shawn Guo wrote:
+> > On Wed, Dec 26, 2012 at 10:34:39AM +0800, Shawn Guo wrote:
+> > > It seems that I'm running into the same locking issue.  My setup is:
+> > > 
+> > > - i.MX28 (ARM)
+> > > - v3.8-rc1
+> > > - mxs_defconfig
+> >   - The warning is seen when LCD is blanking
+> > > 
+> > 
+> > The warning disappears after reverting patch daee779 (console: implement
+> > lockdep support for console_lock).  Is it suggesting that the mxs
+> > frame buffer driver (drivers/video/mxsfb.c) is doing something bad?
+> > 
+> > Shawn
+> > 
+> > > 
+> > > [  602.229899] ======================================================
+> > > [  602.229905] [ INFO: possible circular locking dependency detected ]
+> > > [  602.229926] 3.8.0-rc1-00003-gde4ae7f #767 Not tainted
+> > > [  602.229933] -------------------------------------------------------
+> > > [  602.229951] kworker/0:1/21 is trying to acquire lock:
+> > > [  602.230037]  ((fb_notifier_list).rwsem){.+.+.+}, at: [<c0041f34>] __blocking_notifier_call_chain+0x2c/0x60
+> 
+> You want this patch https://patchwork.kernel.org/patch/1757061/
+> 
+Thanks for the pointer, Peter.  It does fix the problem for me.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
- arch/arm/boot/dts/exynos5250-smdk5250.dts |   16 +++++++++++++++
- arch/arm/boot/dts/exynos5250.dtsi         |   32 +++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+)
-
-diff --git a/arch/arm/boot/dts/exynos5250-smdk5250.dts b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-index 942d576..b7fba59 100644
---- a/arch/arm/boot/dts/exynos5250-smdk5250.dts
-+++ b/arch/arm/boot/dts/exynos5250-smdk5250.dts
-@@ -108,6 +108,22 @@
- 		};
- 	};
- 
-+	hsi2c@12C50000 {
-+		status = "disabled";
-+	};
-+
-+	hsi2c@12D00000 {
-+		status = "disabled";
-+	};
-+
-+	hsi2c@12D50000 {
-+		status = "disabled";
-+	};
-+
-+	hsi2c@12DE0000 {
-+		status = "disabled";
-+	};
-+
- 	dwmmc0@12200000 {
- 		num-slots = <1>;
- 		supports-highspeed;
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 45799e8..a10c089 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -213,6 +213,38 @@
-                 #size-cells = <0>;
- 	};
- 
-+	hsi2c@12C50000 {
-+		compatible = "samsung,exynos5-hsi2c";
-+		reg = <0x12C50000 0x1000>;
-+		interrupts = <0 56 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
-+	hsi2c@12D00000 {
-+		compatible = "samsung,exynos5-hsi2c";
-+		reg = <0x12D00000 0x1000>;
-+		interrupts = <0 57 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
-+	hsi2c@12D50000 {
-+		compatible = "samsung,exynos5-hsi2c";
-+		reg = <0x12D50000 0x1000>;
-+		interrupts = <0 58 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
-+	hsi2c@12DE0000 {
-+		compatible = "samsung,exynos5-hsi2c";
-+		reg = <0x12DE0000 0x1000>;
-+		interrupts = <0 59 0>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+
- 	spi_0: spi@12d20000 {
- 		compatible = "samsung,exynos4210-spi";
- 		reg = <0x12d20000 0x100>;
--- 
-1.7.9.5
+Shawn
 
