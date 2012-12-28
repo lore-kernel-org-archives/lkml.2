@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730Ab2L1TSS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:18 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55180 "EHLO
+	id S1754699Ab2L1TSM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:18:12 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55187 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754586Ab2L1TSF (ORCPT
+	by vger.kernel.org with ESMTP id S1754675Ab2L1TSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:05 -0500
-Message-Id: <20121228190357.092665294@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:07 -0500
+Message-Id: <20121228190355.631059385@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:40 +0100
+Date: Fri, 28 Dec 2012 20:05:31 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Huang Shijie <b32955@freescale.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [ 130/173] mtd: nand: gpmi: reset BCH earlier, too, to avoid NAND startup
- problems
+        Neil Brown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 121/173] nfsd: avoid permission checks on EXCLUSIVE_CREATE replay
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,45 +27,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <w.sang@pengutronix.de>
+From: Neil Brown <neilb@suse.de>
 
-commit 6f2a6a52560ad8d85710aabd92b7a3239b3a6b07 upstream.
+commit 7007c90fb9fef593b4aeaeee57e6a6754276c97c upstream.
 
-It could happen (1 out of 100 times) that NAND did not start up
-correctly after warm rebooting, so the kernel could not find the UBI or
-DMA timed out due to a stalled BCH. When resetting BCH together with
-GPMI, the issue could not be observed anymore (after 10000+ reboots). We
-probably need the consistent state already before sending any command to
-NAND, even when no ECC is needed. I chose to keep the extra reset for
-BCH when changing the flash layout to be on the safe side.
+With NFSv4, if we create a file then open it we explicit avoid checking
+the permissions on the file during the open because the fact that we
+created it ensures we should be allow to open it (the create and the
+open should appear to be a single operation).
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+However if the reply to an EXCLUSIVE create gets lots and the client
+resends the create, the current code will perform the permission check -
+because it doesn't realise that it did the open already..
+
+This patch should fix this.
+
+Note that I haven't actually seen this cause a problem.  I was just
+looking at the code trying to figure out a different EXCLUSIVE open
+related issue, and this looked wrong.
+
+(Fix confirmed with pynfs 4.0 test OPEN4--bfields)
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+[bfields: use OWNER_OVERRIDE and update for 4.1]
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Use current_fh as file handle in do_open_lookup()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/mtd/nand/gpmi-nand/gpmi-lib.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/nfsd/nfs4proc.c |    8 +++++---
+ fs/nfsd/vfs.c      |   10 ++++++++--
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-index 1585c5b..d84699c 100644
---- a/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-+++ b/drivers/mtd/nand/gpmi-nand/gpmi-lib.c
-@@ -165,6 +165,15 @@ int gpmi_init(struct gpmi_nand_data *this)
- 	if (ret)
- 		goto err_out;
+--- a/fs/nfsd/nfs4proc.c
++++ b/fs/nfsd/nfs4proc.c
+@@ -193,6 +193,7 @@ static __be32
+ do_open_lookup(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
+ {
+ 	struct svc_fh resfh;
++	int accmode;
+ 	__be32 status;
  
-+	/*
-+	 * Reset BCH here, too. We got failures otherwise :(
-+	 * See later BCH reset for explanation of MX23 handling
-+	 */
-+	ret = gpmi_reset_block(r->bch_regs, GPMI_IS_MX23(this));
-+	if (ret)
-+		goto err_out;
-+
-+
- 	/* Choose NAND mode. */
- 	writel(BM_GPMI_CTRL1_GPMI_MODE, r->gpmi_regs + HW_GPMI_CTRL1_CLR);
+ 	fh_init(&resfh, NFS4_FHSIZE);
+@@ -252,9 +253,10 @@ do_open_lookup(struct svc_rqst *rqstp, s
+ 	/* set reply cache */
+ 	fh_copy_shallow(&open->op_openowner->oo_owner.so_replay.rp_openfh,
+ 			&resfh.fh_handle);
+-	if (!open->op_created)
+-		status = do_open_permission(rqstp, current_fh, open,
+-					    NFSD_MAY_NOP);
++	accmode = NFSD_MAY_NOP;
++	if (open->op_created)
++		accmode |= NFSD_MAY_OWNER_OVERRIDE;
++	status = do_open_permission(rqstp, current_fh, open, accmode);
  
+ out:
+ 	fh_put(&resfh);
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -1458,13 +1458,19 @@ do_nfsd_create(struct svc_rqst *rqstp, s
+ 		case NFS3_CREATE_EXCLUSIVE:
+ 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
+ 			    && dchild->d_inode->i_atime.tv_sec == v_atime
+-			    && dchild->d_inode->i_size  == 0 )
++			    && dchild->d_inode->i_size  == 0 ) {
++				if (created)
++					*created = 1;
+ 				break;
++			}
+ 		case NFS4_CREATE_EXCLUSIVE4_1:
+ 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
+ 			    && dchild->d_inode->i_atime.tv_sec == v_atime
+-			    && dchild->d_inode->i_size  == 0 )
++			    && dchild->d_inode->i_size  == 0 ) {
++				if (created)
++					*created = 1;
+ 				goto set_attr;
++			}
+ 			 /* fallthru */
+ 		case NFS3_CREATE_GUARDED:
+ 			err = nfserr_exist;
 
 
