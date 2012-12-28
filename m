@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751016Ab2L1FZP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 00:25:15 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:36058 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab2L1FZM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 00:25:12 -0500
-X-Greylist: delayed 371 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 00:25:12 EST
+	id S1751219Ab2L1Fb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 00:31:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750872Ab2L1Fby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 00:31:54 -0500
+Message-ID: <50DD2EC5.8010308@redhat.com>
+Date: Fri, 28 Dec 2012 13:31:49 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
-References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
-	<20121227184034.GA2982@debian.debian>
-	<CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
-	<CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
-	<CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
-Date: Fri, 28 Dec 2012 10:49:00 +0530
-Message-ID: <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
-Subject: Re: how to look for source code in kernel
-From: anish singh <anish198519851985@gmail.com>
-To: amit mehta <gmate.amit@gmail.com>
-Cc: Henrique Rodrigues <henriquesilvar@gmail.com>,
-        kishore kumar <kishoreopen@gmail.com>,
-        =?UTF-8?Q?Jonathan_Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
-Content-Type: text/plain; charset=UTF-8
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] vhost_net: correct error hanlding in vhost_net_set_backend()
+References: <20121227131442.GF20595@redhat.com>
+In-Reply-To: <20121227131442.GF20595@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 10:42 AM, amit mehta <gmate.amit@gmail.com> wrote:
->>>> On Thu, Dec 27, 2012 at 11:01:52PM +0530, kishore kumar wrote:
->>>> > can anybody tell me how to look into source code, as most are hidden in
->>>> > kernel.
->>>>
->>>> You can find the Linux source code at http://kernel.org/ .
->> for browsing the code unfortunately there is no good tool as in windows we
->> have source insight.We can use wine in linux but that sucks.
-> Funny you say that!
-> Never heard of cscope, ctags ?
-It is not as convenient as source insight or is it?
+On 12/27/2012 09:14 PM, Michael S. Tsirkin wrote:
+> On Thu, Dec 27, 2012 at 02:39:19PM +0800, Jason Wang wrote:
+>> Fix the leaking of oldubufs and fd refcnt when fail to initialized used ring.
+>>
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/vhost/net.c |   14 +++++++++++---
+>>  1 files changed, 11 insertions(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index ebd08b2..629d6b5 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -834,8 +834,10 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>>  		vhost_net_enable_vq(n, vq);
+>>  
+>>  		r = vhost_init_used(vq);
+>> -		if (r)
+>> -			goto err_vq;
+>> +		if (r) {
+>> +			sock = NULL;
+>> +			goto err_used;
+>> +		}
+>>  
+>>  		n->tx_packets = 0;
+>>  		n->tx_zcopy_err = 0;
+>> @@ -859,8 +861,14 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>>  	mutex_unlock(&n->dev.mutex);
+>>  	return 0;
+>>  
+>> +err_used:
+>> +	if (oldubufs)
+>> +		vhost_ubuf_put_and_wait(oldubufs);
+>> +	if (oldsock)
+>> +		fput(oldsock->file);
+>>  err_ubufs:
+>> -	fput(sock->file);
+>> +	if (sock)
+>> +		fput(sock->file);
+>>  err_vq:
+>>  	mutex_unlock(&vq->mutex);
+>>  err:
+> I think it's a real bug, but I don't see how the fix
+> makes sense.
+> We are returning an error, so we ideally
+> revert to the state before the faulty
+> operation. So this should put sock and ubufs,
+> not oldsock/oldubufs.
+
+Agree.
 >
-> -Amit
+> The best way is probably to change
+> vhost_init_used so that it gets private data
+> pointer as a parameter.
+>
+> We can then call it before ubuf alloc.
+> You can then add err_used right after err_ubufs
+> with no extra logic.
+>
+
+Make more sense, thanks.
+>
+>
+
