@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754360Ab2L1WDp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 17:03:45 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:40467 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753969Ab2L1WDm (ORCPT
+	id S1754431Ab2L1WP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 17:15:27 -0500
+Received: from mail-vb0-f41.google.com ([209.85.212.41]:48690 "EHLO
+	mail-vb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753969Ab2L1WPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 17:03:42 -0500
+	Fri, 28 Dec 2012 17:15:25 -0500
 MIME-Version: 1.0
-In-Reply-To: <20121228130734.GB13224@x1.alien8.de>
-References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
-	<20121227184034.GA2982@debian.debian>
-	<CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
-	<CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
-	<CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
-	<CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
-	<87a9syhbma.fsf@xmission.com>
-	<20121228130734.GB13224@x1.alien8.de>
-Date: Fri, 28 Dec 2012 23:03:40 +0100
-X-Google-Sender-Auth: Q8YNXwYmtFOIpOQqCCescSUS6ho
-Message-ID: <CAMuHMdVo67RrcencMOTJSL_=fGjDFBtczRpvW6D8QbVxNy-t3g@mail.gmail.com>
-Subject: Re: how to look for source code in kernel
+In-Reply-To: <20120814151704.GA17668@localhost>
+References: <20120814151704.GA17668@localhost>
+Date: Fri, 28 Dec 2012 23:15:23 +0100
+X-Google-Sender-Auth: vw6v2VwtZbjpsBtnZ6_svMFi6aM
+Message-ID: <CAMuHMdU4aa0qLJVR1X=eKMN6TTuuE3JqVrCVSXrMB3AEpgcf1g@mail.gmail.com>
+Subject: Re: [PATCH] mn10300: select generic atomic64_t support
 From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Borislav Petkov <bp@alien8.de>,
+To: Fengguang Wu <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        anish singh <anish198519851985@gmail.com>,
-        amit mehta <gmate.amit@gmail.com>,
-        Henrique Rodrigues <henriquesilvar@gmail.com>,
-        kishore kumar <kishoreopen@gmail.com>,
-        =?UTF-8?Q?Jonathan_Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+        linux-am33-list@redhat.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 2:07 PM, Borislav Petkov <bp@alien8.de> wrote:
-> On Thu, Dec 27, 2012 at 11:36:13PM -0800, Eric W. Biederman wrote:
->> git-ls-files | xargs fgrep 'struct f2fs_inode'
->>
->> That returns instantly and tells me where to look.  If you can do an
->> instant brute force search what is the point of an index?
+On Tue, Aug 14, 2012 at 5:17 PM, Fengguang Wu <fengguang.wu@intel.com> wrote:
+> Rationals from Eric:
 >
-> Not if you're using a lame-ass laptop with a rotating disk:
+> So I just looked a little deeper and it appears architectures that do
+> not support atomic64_t are broken.
 >
-> $ time git ls-files | xargs grep -E 'struct mce\W*{'
-> arch/x86/include/uapi/asm/mce.h:struct mce {
-> arch/x86/kernel/cpu/mcheck/mce.c:               if (!final || memcmp(m, final, sizeof(struct mce))) {
+> The generic atomic64 support came in 2009 to support the perf subsystem
+> with the expectation that all architectures would implement atomic64
+> support.
 >
-> real    2m48.415s
-> user    0m2.388s
-> sys     0m15.668s
+> Furthermore upon inspection of the kernel atomic64_t is used in a fair
+> number of places beyond the performance counters:
+>
+> block/blk-cgroup.c
+> drivers/acpi/apei/
+> drivers/block/rbd.c
+> drivers/crypto/nx/nx.h
+> drivers/gpu/drm/radeon/radeon.h
+> drivers/infiniband/hw/ipath/
+> drivers/infiniband/hw/qib/
+> drivers/staging/octeon/
+> fs/xfs/
+> include/linux/perf_event.h
+> include/net/netfilter/nf_conntrack_acct.h
+> kernel/events/
+> kernel/trace/
+> net/mac80211/key.h
+> net/rds/
+>
+> The block control group, infiniband, xfs, crypto, 802.11, netfilter.
+> Nothing quite so fundamental as fs/namespace.c but definitely in
+> multiplatform-code that should work, and is already broken on those
+> architecutres.
+>
+> Looking at the implementation of atomic64_add_return in lib/atomic64.c
+> the code looks as efficient as these kinds of things get.
+>
+> Which leads me to the conclusion that we need atomic64 support on all
+> architectures.
+>
+> CC: "Eric W. Biederman" <ebiederm@xmission.com>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 
-That's the first run. Now everything is in the buffer cache (assumed you have
-enough RAM), and try again...
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+
+> ---
+>  arch/mn10300/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+>
+> --- linux.orig/arch/mn10300/Kconfig     2012-08-03 15:36:21.391560778 +0800
+> +++ linux/arch/mn10300/Kconfig  2012-08-14 22:53:14.751795832 +0800
+> @@ -8,6 +8,7 @@ config MN10300
+>         select HAVE_ARCH_KGDB
+>         select HAVE_NMI_WATCHDOG if MN10300_WD_TIMER
+>         select GENERIC_CLOCKEVENTS
+> +       select GENERIC_ATOMIC64
+>
+>  config AM33_2
+>         def_bool n
 
 Gr{oetje,eeting}s,
 
