@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932333Ab2L1TgT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:36:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55426 "EHLO
+	id S932320Ab2L1Tgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:36:48 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55424 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932208Ab2L1TTB (ORCPT
+	by vger.kernel.org with ESMTP id S932268Ab2L1TTA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:01 -0500
-Message-Id: <20121228190346.726168963@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:00 -0500
+Message-Id: <20121228190347.142261146@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:49 +0100
+Date: Fri, 28 Dec 2012 20:04:51 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Markus Becker <mab@comnets.uni-bremen.de>,
+        Martin Teichmann <lkb.teichmann@gmail.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 079/173] USB: cp210x: add Virtenio Preon32 device id
+Subject: [ 081/173] USB: ftdi_sio: Add support for Newport AGILIS motor drivers
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,28 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Becker <mab@comnets.uni-bremen.de>
+From: Martin Teichmann <lkb.teichmann@gmail.com>
 
-commit 356fe44f4b8ece867bdb9876b1854d7adbef9de2 upstream.
+commit d7e14b375b40c04cd735b115713043b69a2c68ac upstream.
 
-Signed-off-by: Markus Becker <mab@comnets.uni-bremen.de>
+The Newport AGILIS model AG-UC8 compact piezo motor controller
+(http://search.newport.com/?q=*&x2=sku&q2=AG-UC8)
+is yet another device using an FTDI USB-to-serial chip. It works
+fine with the ftdi_sio driver when adding
+
+  options ftdi-sio product=0x3000 vendor=0x104d
+
+to modprobe.d. udevadm reports "Newport" as the manufacturer,
+and "Agilis" as the product name.
+
+Signed-off-by: Martin Teichmann <lkb.teichmann@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 2858d8a..f14736f 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -113,6 +113,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x8477) }, /* Balluff RFID */
- 	{ USB_DEVICE(0x10C4, 0x85EA) }, /* AC-Services IBUS-IF */
- 	{ USB_DEVICE(0x10C4, 0x85EB) }, /* AC-Services CIS-IBUS */
-+	{ USB_DEVICE(0x10C4, 0x85F8) }, /* Virtenio Preon32 */
- 	{ USB_DEVICE(0x10C4, 0x8664) }, /* AC-Services CAN-IF */
- 	{ USB_DEVICE(0x10C4, 0x8665) }, /* AC-Services OBD-IF */
- 	{ USB_DEVICE(0x10C4, 0xEA60) }, /* Silicon Labs factory default */
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index e1203bd..0a373b3 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -191,6 +191,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_THROTTLE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GATEWAY_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OPENDCC_GBM_PID) },
++	{ USB_DEVICE(NEWPORT_VID, NEWPORT_AGILIS_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 57c12ef..049b6e7 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -752,6 +752,12 @@
+ #define TTI_VID			0x103E	/* Vendor Id */
+ #define TTI_QL355P_PID		0x03E8	/* TTi QL355P power supply */
+ 
++/*
++ * Newport Cooperation (www.newport.com)
++ */
++#define NEWPORT_VID			0x104D
++#define NEWPORT_AGILIS_PID		0x3000
++
+ /* Interbiometrics USB I/O Board */
+ /* Developed for Interbiometrics by Rudolf Gugler */
+ #define INTERBIOMETRICS_VID              0x1209
 
 
