@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab2L1TSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:33 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55295 "EHLO
+	id S932284Ab2L1TTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:19:03 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55322 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932065Ab2L1TSZ (ORCPT
+	by vger.kernel.org with ESMTP id S932134Ab2L1TSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:25 -0500
-Message-Id: <20121228190352.275951519@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:35 -0500
+Message-Id: <20121228190351.406809372@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:15 +0100
+Date: Fri, 28 Dec 2012 20:05:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [ 105/173] mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
+        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [ 101/173] ALSA: usb-audio: Avoid autopm calls after disconnection
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,74 +27,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 5b632fe85ec82e5c43740b52e74c66df50a37db3 upstream.
+commit 59866da9e4ae54819e3c4e0a8f426bdb0c2ef993 upstream.
 
-Commit f0425beda4d404a6e751439b562100b902ba9c98 "mac80211: retry sending
-failed BAR frames later instead of tearing down aggr" caused regression
-on rt2x00 hardware (connection hangs). This regression was fixed by
-commit be03d4a45c09ee5100d3aaaedd087f19bc20d01 "rt2x00: Don't let
-mac80211 send a BAR when an AMPDU subframe fails". But the latter
-commit caused yet another problem reported in
-https://bugzilla.kernel.org/show_bug.cgi?id=42828#c22
+Add a similar protection against the disconnection race and the
+invalid use of usb instance after disconnection, as well as we've done
+for the USB audio PCM.
 
-After long discussion in this thread:
-http://mid.gmane.org/20121018075615.GA18212@redhat.com
-and testing various alternative solutions, which failed on one or other
-setup, we have no other good fix for the issues like just revert both
-mentioned earlier commits.
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51201
 
-To do not affect other hardware which benefit from commit
-f0425beda4d404a6e751439b562100b902ba9c98, instead of reverting it,
-introduce flag that when used will restore mac80211 behaviour before
-the commit.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-[replaced link with mid.gmane.org that has message-id]
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[bwh: Backported to 3.2: adjust context]
+Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/net/mac80211.h |    5 +++++
- net/mac80211/status.c  |    6 +++++-
- 2 files changed, 10 insertions(+), 1 deletion(-)
+ sound/usb/midi.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1128,6 +1128,10 @@ enum sta_notify_cmd {
-  * @IEEE80211_HW_TX_AMPDU_SETUP_IN_HW: The device handles TX A-MPDU session
-  *	setup strictly in HW. mac80211 should not attempt to do this in
-  *	software.
-+ *
-+ * @IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL: On this hardware TX BA session
-+ *	should be tear down once BAR frame will not be acked.
-+ *
-  */
- enum ieee80211_hw_flags {
- 	IEEE80211_HW_HAS_RATE_CONTROL			= 1<<0,
-@@ -1154,6 +1158,7 @@ enum ieee80211_hw_flags {
- 	IEEE80211_HW_SUPPORTS_PER_STA_GTK		= 1<<21,
- 	IEEE80211_HW_AP_LINK_PS				= 1<<22,
- 	IEEE80211_HW_TX_AMPDU_SETUP_IN_HW		= 1<<23,
-+	IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL		= 1<<26,
- };
+diff --git a/sound/usb/midi.c b/sound/usb/midi.c
+index eeefbce..c0054ee 100644
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -116,6 +116,7 @@ struct snd_usb_midi {
+ 	struct list_head list;
+ 	struct timer_list error_timer;
+ 	spinlock_t disc_lock;
++	struct rw_semaphore disc_rwsem;
+ 	struct mutex mutex;
+ 	u32 usb_id;
+ 	int next_midi_device;
+@@ -1038,6 +1039,12 @@ static void substream_open(struct snd_rawmidi_substream *substream, int open)
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
  
- /**
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -429,7 +429,11 @@ void ieee80211_tx_status(struct ieee8021
- 				       IEEE80211_BAR_CTRL_TID_INFO_MASK) >>
- 				      IEEE80211_BAR_CTRL_TID_INFO_SHIFT;
- 
--				ieee80211_set_bar_pending(sta, tid, ssn);
-+				if (local->hw.flags &
-+				    IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL)
-+					ieee80211_stop_tx_ba_session(&sta->sta, tid);
-+				else
-+					ieee80211_set_bar_pending(sta, tid, ssn);
- 			}
++	down_read(&umidi->disc_rwsem);
++	if (umidi->disconnected) {
++		up_read(&umidi->disc_rwsem);
++		return;
++	}
++
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+ 		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
+@@ -1056,6 +1063,7 @@ static void substream_open(struct snd_rawmidi_substream *substream, int open)
  		}
+ 	}
+ 	mutex_unlock(&umidi->mutex);
++	up_read(&umidi->disc_rwsem);
+ }
  
+ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+@@ -1076,8 +1084,15 @@ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+ 		snd_BUG();
+ 		return -ENXIO;
+ 	}
++
++	down_read(&umidi->disc_rwsem);
++	if (umidi->disconnected) {
++		up_read(&umidi->disc_rwsem);
++		return -ENODEV;
++	}
+ 	err = usb_autopm_get_interface(umidi->iface);
+ 	port->autopm_reference = err >= 0;
++	up_read(&umidi->disc_rwsem);
+ 	if (err < 0 && err != -EACCES)
+ 		return -EIO;
+ 	substream->runtime->private_data = port;
+@@ -1092,8 +1107,10 @@ static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
+ 	struct usbmidi_out_port *port = substream->runtime->private_data;
+ 
+ 	substream_open(substream, 0);
+-	if (port->autopm_reference)
++	down_read(&umidi->disc_rwsem);
++	if (!umidi->disconnected && port->autopm_reference)
+ 		usb_autopm_put_interface(umidi->iface);
++	up_read(&umidi->disc_rwsem);
+ 	return 0;
+ }
+ 
+@@ -1403,9 +1420,12 @@ void snd_usbmidi_disconnect(struct list_head* p)
+ 	 * a timer may submit an URB. To reliably break the cycle
+ 	 * a flag under lock must be used
+ 	 */
++	down_write(&umidi->disc_rwsem);
+ 	spin_lock_irq(&umidi->disc_lock);
+ 	umidi->disconnected = 1;
+ 	spin_unlock_irq(&umidi->disc_lock);
++	up_write(&umidi->disc_rwsem);
++
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
+ 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
+ 		if (ep->out)
+@@ -2117,6 +2137,7 @@ int snd_usbmidi_create(struct snd_card *card,
+ 	umidi->usb_protocol_ops = &snd_usbmidi_standard_ops;
+ 	init_timer(&umidi->error_timer);
+ 	spin_lock_init(&umidi->disc_lock);
++	init_rwsem(&umidi->disc_rwsem);
+ 	mutex_init(&umidi->mutex);
+ 	umidi->usb_id = USB_ID(le16_to_cpu(umidi->dev->descriptor.idVendor),
+ 			       le16_to_cpu(umidi->dev->descriptor.idProduct));
 
 
