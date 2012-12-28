@@ -1,80 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab2L1Djd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 22:39:33 -0500
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:61411 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753125Ab2L1Djb (ORCPT
+	id S1753294Ab2L1EEl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 23:04:41 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:35246 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab2L1EEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 22:39:31 -0500
-X-Greylist: delayed 700 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Dec 2012 22:39:31 EST
+	Thu, 27 Dec 2012 23:04:39 -0500
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 50.43.39.152
+Date: Thu, 27 Dec 2012 20:04:30 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: David Decotigny <decot@googlers.com>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH v1] lib: cpu_rmap: avoid flushing all workqueues
+Message-ID: <20121228040430.GA10244@leaf>
+References: <cover.1356635879.git.decot@googlers.com>
+ <82b0a7204d5cb4032b02f731a956ee9923ff150c.1356635879.git.decot@googlers.com>
 MIME-Version: 1.0
-In-Reply-To: <50D965F9.7090007@cn.fujitsu.com>
-References: <CAFFEFTXxsPRf1Rmxyih0wL4O6q8G0OFmz0iRLX0tOYedYfajHw@mail.gmail.com>
-	<50D93B43.8060303@cn.fujitsu.com>
-	<CAFFEFTULzSysz+JCBC==VtKD8u1KO6EZnSdQ5XWM7um-zs9_pg@mail.gmail.com>
-	<50D965F9.7090007@cn.fujitsu.com>
-Date: Fri, 28 Dec 2012 11:39:30 +0800
-Message-ID: <CAFFEFTUM51h4+51qR+jJ8kRKcY_K3HpQ8pM2baTT4_9K9SxBoQ@mail.gmail.com>
-Subject: Re: kernel panic when running /etc/init.d/iptables restart
-From: canqun zhang <canqunzhang@gmail.com>
-To: Gao feng <gaofeng@cn.fujitsu.com>
-Cc: Patrick McHardy <kaber@trash.net>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <82b0a7204d5cb4032b02f731a956ee9923ff150c.1356635879.git.decot@googlers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all
-As discussed above,if the host machine create several linux
-containers, there will be several  net namespaces.Resources with "nf
-conntrack" are registered or unregistered on the first net
-namespace(init_net),But init_net is not unregistered lastly,so
-cleanuping other net namespaces  will triger painic.
-If net namespaces are created  with the order of 1,2,...n,they should
-be cleaned with the order of n,...2,1,so in this case init_net will be
-unregistered lastly.
-I fixed it up (see below)
+On Thu, Dec 27, 2012 at 11:24:34AM -0800, David Decotigny wrote:
+> In some cases, free_irq_cpu_rmap() is called while holding a lock
+> (eg. rtnl). This can lead to deadlocks, because it invokes
+> flush_scheduled_work() which ends up waiting for whole system
+> workqueue to flush, but some pending works might try to acquire the
+> lock we are already holding.
+> 
+> This commit uses reference-counting to replace
+> irq_run_affinity_notifiers(). It also removes
+> irq_run_affinity_notifiers() altogether.
+> 
+> Signed-off-by: David Decotigny <decot@googlers.com>
 
-diff -r 6a1a258923f5 -r 2667e89e6f50 net/core/net_namespace.c
---- a/net/core/net_namespace.c  Fri Dec 28 11:01:17 2012 +0800
-+++ b/net/core/net_namespace.c  Fri Dec 28 11:05:12 2012 +0800
-@@ -450,7 +450,7 @@
+A couple of comments below; with those addressed,
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-        list_del(&ops->list);
-        for_each_net(net)
--               list_add_tail(&net->exit_list, &net_exit_list);
-+              list_add(&net->exit_list, &net_exit_list);
-        ops_exit_list(ops, &net_exit_list);
-        ops_free_list(ops, &net_exit_list);
- }
+>  include/linux/cpu_rmap.h  |   13 ++++--------
+>  include/linux/interrupt.h |    5 -----
+>  lib/cpu_rmap.c            |   48 +++++++++++++++++++++++++++++++++++++++------
+>  3 files changed, 46 insertions(+), 20 deletions(-)
+> 
+> diff --git a/include/linux/cpu_rmap.h b/include/linux/cpu_rmap.h
+> index ac3bbb5..3be2813 100644
+> --- a/include/linux/cpu_rmap.h
+> +++ b/include/linux/cpu_rmap.h
+> @@ -13,9 +13,11 @@
+>  #include <linux/cpumask.h>
+>  #include <linux/gfp.h>
+>  #include <linux/slab.h>
+> +#include <linux/kref.h>
+>  
+>  /**
+>   * struct cpu_rmap - CPU affinity reverse-map
+> + * @refcount: kref for object
+>   * @size: Number of objects to be reverse-mapped
+>   * @used: Number of objects added
+>   * @obj: Pointer to array of object pointers
+> @@ -23,6 +25,7 @@
+>   *      based on affinity masks
+>   */
+>  struct cpu_rmap {
+> +	struct kref	refcount;
+>  	u16		size, used;
+>  	void		**obj;
+>  	struct {
+> @@ -33,15 +36,7 @@ struct cpu_rmap {
+>  #define CPU_RMAP_DIST_INF 0xffff
+>  
+>  extern struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags);
+> -
+> -/**
+> - * free_cpu_rmap - free CPU affinity reverse-map
+> - * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
+> - */
+> -static inline void free_cpu_rmap(struct cpu_rmap *rmap)
+> -{
+> -	kfree(rmap);
+> -}
+> +extern void free_cpu_rmap(struct cpu_rmap *rmap);
+>  
+>  extern int cpu_rmap_add(struct cpu_rmap *rmap, void *obj);
+>  extern int cpu_rmap_update(struct cpu_rmap *rmap, u16 index,
+> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> index 5e4e617..5fa5afe 100644
+> --- a/include/linux/interrupt.h
+> +++ b/include/linux/interrupt.h
+> @@ -268,11 +268,6 @@ struct irq_affinity_notify {
+>  extern int
+>  irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify);
+>  
+> -static inline void irq_run_affinity_notifiers(void)
+> -{
+> -	flush_scheduled_work();
+> -}
+> -
+>  #else /* CONFIG_SMP */
+>  
+>  static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
+> diff --git a/lib/cpu_rmap.c b/lib/cpu_rmap.c
+> index 145dec5..295cbf8 100644
+> --- a/lib/cpu_rmap.c
+> +++ b/lib/cpu_rmap.c
+> @@ -45,6 +45,7 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
+>  	if (!rmap)
+>  		return NULL;
+>  
+> +	kref_init(&rmap->refcount);
+>  	rmap->obj = (void **)((char *)rmap + obj_offset);
+>  
+>  	/* Initially assign CPUs to objects on a rota, since we have
+> @@ -63,6 +64,26 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
+>  }
+>  EXPORT_SYMBOL(alloc_cpu_rmap);
+>  
+> +/**
+> + * reclaim_cpu_rmap - internal reclaiming helper called from kref_put
+> + * @ref: kref to struct cpu_rmap
+> + */
+> +static void reclaim_cpu_rmap(struct kref *ref)
+> +{
+> +	struct cpu_rmap *rmap = container_of(ref, struct cpu_rmap, refcount);
+> +	kfree(rmap);
+> +}
+> +
+> +/**
+> + * free_cpu_rmap - free CPU affinity reverse-map
+> + * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
+> + */
+> +void free_cpu_rmap(struct cpu_rmap *rmap)
+> +{
+> +	kref_put(&rmap->refcount, reclaim_cpu_rmap);
+> +}
+> +EXPORT_SYMBOL(free_cpu_rmap);
+> +
+>  /* Reevaluate nearest object for given CPU, comparing with the given
+>   * neighbours at the given distance.
+>   */
+> @@ -197,8 +218,7 @@ struct irq_glue {
+>   * free_irq_cpu_rmap - free a CPU affinity reverse-map used for IRQs
+>   * @rmap: Reverse-map allocated with alloc_irq_cpu_map(), or %NULL
+>   *
+> - * Must be called in process context, before freeing the IRQs, and
+> - * without holding any locks required by global workqueue items.
+> + * Must be called in process context, before freeing the IRQs.
+>   */
+>  void free_irq_cpu_rmap(struct cpu_rmap *rmap)
+>  {
+> @@ -212,12 +232,18 @@ void free_irq_cpu_rmap(struct cpu_rmap *rmap)
+>  		glue = rmap->obj[index];
+>  		irq_set_affinity_notifier(glue->notify.irq, NULL);
+>  	}
+> -	irq_run_affinity_notifiers();
+>  
+> -	kfree(rmap);
+> +	kref_put(&rmap->refcount, reclaim_cpu_rmap);
 
-2012/12/25 Gao feng <gaofeng@cn.fujitsu.com>:
-> On 2012/12/25 15:25, canqun zhang wrote:
->> Hi Gao feng
->> The stack information is as follows. The kenel will panic because the
->> nf_ct_destroy is NULL.
->>
->> Reproduction:
->> (1) starting a lxc container
->> (2) iptables -t nat -A POSTROUTING -s 10.48.254.18 -o eth1 -j
->> MASQUERADE (run it on host machine)
->> (3) /etc/ini.d/iptables save (run it on host machine)
->> (4)/etc/init.d/iptables restart (run it on host machine)
->>
->
-> Thanks!
-> It seems that nf_conntrack_l[3,4]proto_unregister doesn't make sure
-> nf_conns of the proto being destroyed.
->
-> If I'm right, there is another problem even your fix this panic problem.
-> the l3,14proto will be unregistered before all of it's nf_conns being destroyed.
-> So even nf_ct_destroy is not NULL,in destroy_conntrack we are not able to
-> find the right l4proto,the l4proto->destroy will be incorrect.resources will
-> not be released correctly.
->
-> So I think the root problem is we do register/unregister, set/unset both on the
-> first net (init_net), Maybe it's better to do register set on the first net, and
-> do unregister unset on the last net.
+This should call free_cpu_rmap, rather than duplicating its body.
+
+>  }
+>  EXPORT_SYMBOL(free_irq_cpu_rmap);
+>  
+> +/**
+> + * irq_cpu_rmap_notify - callback for IRQ subsystem when IRQ affinity updated
+> + * @notify: struct irq_affinity_notify passed by irq/manage.c
+> + * @mask: cpu mask for new SMP affinity
+> + *
+> + * This is executed in workqueue context.
+> + */
+>  static void
+>  irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
+>  {
+> @@ -230,16 +256,23 @@ irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
+>  		pr_warning("irq_cpu_rmap_notify: update failed: %d\n", rc);
+>  }
+>  
+> +/**
+> + * irq_cpu_rmap_release - reclaiming callback for IRQ subsystem
+> + * @ref: kref to struct irq_affinity_notify passed by irq/manage.c
+> + */
+>  static void irq_cpu_rmap_release(struct kref *ref)
+>  {
+>  	struct irq_glue *glue =
+>  		container_of(ref, struct irq_glue, notify.kref);
+> +	struct cpu_rmap *rmap = glue->rmap;
+> +
+>  	kfree(glue);
+> +	kref_put(&rmap->refcount, reclaim_cpu_rmap);
+
+Likewise, but also, why not call free_cpu_rmap(glue->rmap) before
+kfree(glue) so you don't need the local copy?
+
+>  }
+>  
+>  /**
+>   * irq_cpu_rmap_add - add an IRQ to a CPU affinity reverse-map
+> - * @rmap: The reverse-map
+> + * @rmap: The per-IRQ reverse-map
+>   * @irq: The IRQ number
+>   *
+>   * This adds an IRQ affinity notifier that will update the reverse-map
+> @@ -259,9 +292,12 @@ int irq_cpu_rmap_add(struct cpu_rmap *rmap, int irq)
+>  	glue->notify.release = irq_cpu_rmap_release;
+>  	glue->rmap = rmap;
+>  	glue->index = cpu_rmap_add(rmap, glue);
+> +	kref_get(&rmap->refcount);
+>  	rc = irq_set_affinity_notifier(irq, &glue->notify);
+> -	if (rc)
+> +	if (rc) {
+>  		kfree(glue);
+> +		kref_put(&rmap->refcount, reclaim_cpu_rmap);
+
+Likewise.
+
+> +	}
+>  	return rc;
+>  }
+>  EXPORT_SYMBOL(irq_cpu_rmap_add);
+> -- 
+> 1.7.10.2.5.g20d7bc9
+> 
