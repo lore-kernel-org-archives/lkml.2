@@ -1,202 +1,742 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab2L1BYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:24:47 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:50658 "EHLO
+	id S1752952Ab2L1B3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:29:32 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:55655 "EHLO
 	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752695Ab2L1BYq (ORCPT
+	with ESMTP id S1751236Ab2L1B3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:24:46 -0500
+	Thu, 27 Dec 2012 20:29:30 -0500
 From: Tony Prisk <linux@prisktech.co.nz>
-To: Mike Turquette <mturquette@linaro.org>
+To: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] clk: vt8500: Add support for WM8750/WM8850 PLL clocks
-Date: Fri, 28 Dec 2012 14:24:41 +1300
-Message-Id: <1356657882-18218-1-git-send-email-linux@prisktech.co.nz>
+        linux-i2c@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
+Subject: [PATCH] i2c: vt8500: Add support for Wondermedia I2C master-mode
+Date: Fri, 28 Dec 2012 14:29:26 +1300
+Message-Id: <1356658166-18688-1-git-send-email-linux@prisktech.co.nz>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the new PLL module found in WM8750 and
-WM8850 SoCs.
+This patch adds support for the I2C controller found on Wondermedia
+SoCs.
+
+Due to the lack of pinmux support, GPIO pin alternate functions are
+configured by machine's compatible property, as are pullups.
 
 Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 ---
- drivers/clk/clk-vt8500.c |  102 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 100 insertions(+), 2 deletions(-)
+ .../devicetree/bindings/i2c/i2c-vt8500.txt         |   24 +
+ drivers/i2c/busses/Kconfig                         |    7 +
+ drivers/i2c/busses/Makefile                        |    1 +
+ drivers/i2c/busses/i2c-wmt.c                       |  636 ++++++++++++++++++++
+ 4 files changed, 668 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-vt8500.txt
+ create mode 100644 drivers/i2c/busses/i2c-wmt.c
 
-diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-index fe25570..d3fefa4 100644
---- a/drivers/clk/clk-vt8500.c
-+++ b/drivers/clk/clk-vt8500.c
-@@ -41,6 +41,7 @@ struct clk_device {
- 
- #define PLL_TYPE_VT8500		0
- #define PLL_TYPE_WM8650		1
-+#define PLL_TYPE_WM8750		2
- 
- struct clk_pll {
- 	struct clk_hw	hw;
-@@ -298,6 +299,16 @@ static __init void vtwm_device_clk_init(struct device_node *node)
- #define WM8650_BITS_TO_VAL(m, d1, d2)					\
- 				((d2 << 13) | (d1 << 10) | (m & 0x3FF))
- 
-+/* Helper macros for PLL_WM8750 */
-+#define WM8750_PLL_MUL(x)	(((x >> 16) & 0xFF) + 1)
-+#define WM8750_PLL_DIV(x)	((((x >> 8) & 1) + 1) * (1 << (x & 7)))
+diff --git a/Documentation/devicetree/bindings/i2c/i2c-vt8500.txt b/Documentation/devicetree/bindings/i2c/i2c-vt8500.txt
+new file mode 100644
+index 0000000..94a425e
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/i2c-vt8500.txt
+@@ -0,0 +1,24 @@
++* Wondermedia I2C Controller
 +
-+#define WM8750_BITS_TO_FREQ(r, m, d1, d2)				\
-+				(r * (m+1) / ((d1+1) * (1 << d2)))
++Required properties :
 +
-+#define WM8750_BITS_TO_VAL(f, m, d1, d2)				\
-+		((f << 24) | ((m - 1) << 16) | ((d1 - 1) << 8) | d2)
++ - compatible : should be "wm,wm8505-i2c"
++ - reg : Offset and length of the register set for the device
++ - interrupts : <IRQ> where IRQ is the interrupt number
++ - clocks : phandle to the I2C clock source
 +
++Optional properties :
++
++ - clock-frequency : desired I2C bus clock frequency in Hz.
++	Valid values are 100000 and 400000.
++	Default to 100000 if not specified, or invalid value.
++
++Example :
++
++	i2c_0: i2c@d8280000 {
++		compatible = "wm,wm8505-i2c";
++		reg = <0xd8280000 0x1000>;
++		interrupts = <19>;
++		clocks = <&clki2c0>;
++		clock-frequency = <400000>;
++	};
+diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+index bdca511..41270fa 100644
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -700,6 +700,13 @@ config I2C_VERSATILE
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-versatile.
  
- static void vt8500_find_pll_bits(unsigned long rate, unsigned long parent_rate,
- 				u32 *multiplier, u32 *prediv)
-@@ -366,11 +377,82 @@ static void wm8650_find_pll_bits(unsigned long rate, unsigned long parent_rate,
- 	*divisor2 = div2;
- }
- 
-+static u32 wm8750_get_filter(u32 parent_rate, u32 divisor1)
++config I2C_WMT
++	tristate "Wondermedia I2C Controller support"
++	depends on ARCH_VT8500
++	help
++	  If you say yes to this option, support will be included for the
++	  I2C controllers found in Wondermedia SoCs.
++
+ config I2C_OCTEON
+ 	tristate "Cavium OCTEON I2C bus support"
+ 	depends on CPU_CAVIUM_OCTEON
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 6181f3f..dce6299 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -69,6 +69,7 @@ obj-$(CONFIG_I2C_SIRF)		+= i2c-sirf.o
+ obj-$(CONFIG_I2C_STU300)	+= i2c-stu300.o
+ obj-$(CONFIG_I2C_TEGRA)		+= i2c-tegra.o
+ obj-$(CONFIG_I2C_VERSATILE)	+= i2c-versatile.o
++obj-$(CONFIG_I2C_WMT)		+= i2c-wmt.o
+ obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
+ obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
+ obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
+diff --git a/drivers/i2c/busses/i2c-wmt.c b/drivers/i2c/busses/i2c-wmt.c
+new file mode 100644
+index 0000000..07d86e3
+--- /dev/null
++++ b/drivers/i2c/busses/i2c-wmt.c
+@@ -0,0 +1,636 @@
++/*
++ *  Wondermedia I2C Master Mode Driver
++ *
++ *  Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
++ *
++ *  Derived from GPL licensed source:
++ *  - Copyright (C) 2008 WonderMedia Technologies, Inc.
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License version 2 as
++ *  published by the Free Software Foundation
++ */
++
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_i2c.h>
++#include <linux/of_irq.h>
++#include <linux/platform_device.h>
++
++#define REG_CR		0x00
++#define REG_TCR		0x02
++#define REG_CSR		0x04
++#define REG_ISR		0x06
++#define REG_IMR		0x08
++#define REG_CDR		0x0A
++#define REG_TR		0x0C
++#define REG_MCR		0x0E
++#define REG_SLAVE_CR	0x10
++#define REG_SLAVE_SR	0x12
++#define REG_SLAVE_ISR	0x14
++#define REG_SLAVE_IMR	0x16
++#define REG_SLAVE_DR	0x18
++#define REG_SLAVE_TR	0x1A
++
++/* REG_CR Bit fields */
++#define CR_TX_NEXT_ACK		0x0000
++#define CR_ENABLE		0x0001
++#define CR_TX_NEXT_NO_ACK	0x0002
++#define CR_TX_END		0x0004
++#define CR_CPU_RDY		0x0008
++#define SLAV_MODE_SEL		0x8000
++
++/* REG_TCR Bit fields */
++#define TCR_STANDARD_MODE	0x0000
++#define TCR_MASTER_WRITE	0x0000
++#define TCR_HS_MODE		0x2000
++#define TCR_MASTER_READ		0x4000
++#define TCR_FAST_MODE		0x8000
++#define TCR_SLAVE_ADDR_MASK	0x007F
++
++/* REG_ISR Bit fields */
++#define ISR_NACK_ADDR		0x0001
++#define ISR_BYTE_END		0x0002
++#define ISR_SCL_TIMEOUT		0x0004
++#define ISR_WRITE_ALL		0x0007
++
++/* REG_IMR Bit fields */
++#define IMR_ENABLE_ALL		0x0007
++
++/* REG_CSR Bit fields */
++#define CSR_RCV_NOT_ACK		0x0001
++#define CSR_RCV_ACK_MASK	0x0001
++#define CSR_READY_MASK		0x0002
++
++#define I2C_MODE_STANDARD	0
++#define I2C_MODE_FAST		1
++
++
++
++struct wmt_i2c_dev {
++	struct i2c_adapter	adapter;
++	struct completion	complete;
++	struct device		*dev;
++	void __iomem		*base;
++	struct clk		*clk;
++	int			mode;
++	int			irq;
++	u16			cmd_status;
++};
++
++static int wmt_i2c_wait_bus_not_busy(struct wmt_i2c_dev *i2c_dev)
 +{
-+	/* calculate frequency (MHz) after pre-divisor */
-+	u32 freq = (parent_rate / 1000000) / (divisor1 + 1);
++	u16 val;
++	int i;
++	int ret = 0;
 +
-+	if ((freq < 10) || (freq > 200))
-+		pr_warn("%s: PLL recommended input frequency 10..200Mhz (requested %d Mhz)\n",
-+				__func__, freq);
++	for (i = 0; i < 10000000; i++) {
++		val = readw(i2c_dev->base + REG_CSR);
++		if (val & CSR_READY_MASK)
++			break;
 +
-+	if (freq >= 166)
-+		return 7;
-+	else if (freq >= 104)
-+		return 6;
-+	else if (freq >= 65)
-+		return 5;
-+	else if (freq >= 42)
-+		return 4;
-+	else if (freq >= 26)
-+		return 3;
-+	else if (freq >= 16)
-+		return 2;
-+	else if (freq >= 10)
-+		return 1;
++		udelay(1);
++	}
++	if (i >= 9999999)
++		ret = -EBUSY;
++
++	return ret;
++}
++
++static int wmt_check_status(struct wmt_i2c_dev *i2c_dev)
++{
++	int ret = 0;
++
++	if (i2c_dev->cmd_status & ISR_NACK_ADDR)
++		ret = -EIO;
++
++	if (i2c_dev->cmd_status & ISR_SCL_TIMEOUT)
++		ret = -ETIMEDOUT;
++
++	return ret;
++}
++
++static int wmt_i2c_write(struct i2c_adapter *adap, struct i2c_msg *pmsg,
++						   int restart, int last)
++{
++	struct wmt_i2c_dev *i2c_dev = i2c_get_adapdata(adap);
++	u16 val;
++	u16 tcr_val;
++	int ret;
++	int wait_result;
++	u32 xfer_len = 0;
++
++	if (pmsg->len < 0)
++		return -EINVAL;
++
++	if (restart == 0) {
++		ret = wmt_i2c_wait_bus_not_busy(i2c_dev);
++		if (ret < 0)
++			return ret;
++	}
++
++	if (pmsg->len == 0)
++		writew(0, i2c_dev->base + REG_CDR);
++	else
++		writew(pmsg->buf[0] & 0xFF, i2c_dev->base + REG_CDR);
++
++	if (restart == 0) {
++		val = readw(i2c_dev->base + REG_CR);
++		val &= ~CR_TX_END;
++		writew(val, i2c_dev->base + REG_CR);
++
++		val = readw(i2c_dev->base + REG_CR);
++		val |= CR_CPU_RDY;
++		writew(val, i2c_dev->base + REG_CR);
++	}
++
++	init_completion(&i2c_dev->complete);
++
++	if (i2c_dev->mode == I2C_MODE_STANDARD)
++		tcr_val = TCR_STANDARD_MODE;
++	else
++		tcr_val = TCR_FAST_MODE;
++
++	tcr_val |= (TCR_MASTER_WRITE | (pmsg->addr & TCR_SLAVE_ADDR_MASK));
++
++	writew(tcr_val, i2c_dev->base + REG_TCR);
++
++	if (restart == 1) {
++		val = readw(i2c_dev->base + REG_CR);
++		val |= CR_CPU_RDY;
++		writew(val, i2c_dev->base + REG_CR);
++	}
++
++	ret = 0;
++
++	for (;;) {
++		wait_result = wait_for_completion_interruptible_timeout(
++				&i2c_dev->complete, 500 * HZ / 1000);
++
++		if (wait_result == 0) {
++			dev_dbg(i2c_dev->dev, "wait timeout (tx)\n");
++			ret = -ETIMEDOUT;
++			break;
++		}
++
++		ret = wmt_check_status(i2c_dev);
++		if (ret)
++			break;
++
++		xfer_len++;
++
++		val = readw(i2c_dev->base + REG_CSR);
++		if ((val & CSR_RCV_ACK_MASK) == CSR_RCV_NOT_ACK) {
++			dev_dbg(i2c_dev->dev, "write RCV NACK error\n");
++			ret = -EIO;
++			break;
++		}
++
++		if (pmsg->len == 0) {
++			val = CR_TX_END | CR_CPU_RDY | CR_ENABLE;
++			writew(val, i2c_dev->base + REG_CR);
++			break;
++		}
++
++		if (pmsg->len > xfer_len) {
++			writew(pmsg->buf[xfer_len] & 0xFF, i2c_dev->base +
++								REG_CDR);
++			writew(CR_CPU_RDY | CR_ENABLE, i2c_dev->base + REG_CR);
++		} else if (pmsg->len == xfer_len) {
++			if (last != 1)
++				writew(CR_ENABLE, i2c_dev->base + REG_CR);
++			break;
++		} else {
++			dev_dbg(i2c_dev->dev, "unknown error (tx)\n");
++			ret = -EIO;
++			break;
++		}
++	}
++
++	return ret;
++}
++
++static int wmt_i2c_read(struct i2c_adapter *adap, struct i2c_msg *pmsg,
++						  int restart, int last)
++{
++	struct wmt_i2c_dev *i2c_dev = i2c_get_adapdata(adap);
++	u16 val;
++	u16 tcr_val;
++	int ret;
++	int wait_result;
++	u32 xfer_len = 0;
++
++	if (pmsg->len <= 0)
++		return -EINVAL;
++
++	if (restart == 0) {
++		ret = wmt_i2c_wait_bus_not_busy(i2c_dev);
++		if (ret < 0)
++			return ret;
++	}
++
++	val = readw(i2c_dev->base + REG_CR);
++	val &= ~CR_TX_END;
++	writew(val, i2c_dev->base + REG_CR);
++
++	val = readw(i2c_dev->base + REG_CR);
++	val &= ~CR_TX_NEXT_NO_ACK;
++	writew(val, i2c_dev->base + REG_CR);
++
++	if (restart == 0) {
++		val = readw(i2c_dev->base + REG_CR);
++		val |= CR_CPU_RDY;
++		writew(val, i2c_dev->base + REG_CR);
++	}
++
++	if (pmsg->len == 1) {
++		val = readw(i2c_dev->base + REG_CR);
++		val |= CR_TX_NEXT_NO_ACK;
++		writew(val, i2c_dev->base + REG_CR);
++	}
++
++	init_completion(&i2c_dev->complete);
++
++	if (i2c_dev->mode == I2C_MODE_STANDARD)
++		tcr_val = TCR_STANDARD_MODE;
++	else
++		tcr_val = TCR_FAST_MODE;
++
++	tcr_val |= TCR_MASTER_READ | (pmsg->addr & TCR_SLAVE_ADDR_MASK);
++
++	writew(tcr_val, i2c_dev->base + REG_TCR);
++
++	if (restart == 1) {
++		val = readw(i2c_dev->base + REG_CR);
++		val |= CR_CPU_RDY;
++		writew(val, i2c_dev->base + REG_CR);
++	}
++
++	ret = 0;
++
++	for (;;) {
++		wait_result = wait_for_completion_interruptible_timeout(
++				&i2c_dev->complete, 500 * HZ / 1000);
++
++		if (wait_result == 0) {
++			dev_dbg(i2c_dev->dev, "wait timeout (tx)\n");
++			ret = -ETIMEDOUT;
++			break;
++		}
++
++		ret = wmt_check_status(i2c_dev);
++		if (ret)
++			break;
++
++		pmsg->buf[xfer_len] = readw(i2c_dev->base + REG_CDR) >> 8;
++		xfer_len++;
++
++		if (pmsg->len > xfer_len) {
++			if (pmsg->len - 1 == xfer_len) {
++				val = readw(i2c_dev->base + REG_CR);
++				val |= (CR_TX_NEXT_NO_ACK | CR_CPU_RDY);
++				writew(val, i2c_dev->base + REG_CR);
++			} else {
++				val = readw(i2c_dev->base + REG_CR);
++				val |= CR_CPU_RDY;
++				writew(val, i2c_dev->base + REG_CR);
++			}
++		} else if (pmsg->len == xfer_len) {
++			break;
++		} else {
++			ret = -EIO;
++			break;
++		}
++	}
++
++	return ret;
++}
++
++static int wmt_i2c_xfer(struct i2c_adapter *adap,
++			struct i2c_msg msgs[],
++			int num)
++{
++	struct i2c_msg *pmsg;
++	int i;
++	int ret = 0;
++	int is_last;
++	int restart;
++
++	for (i = 0; ret >= 0 && i < num; i++) {
++		is_last = ((i + 1) == num);
++		restart = (i != 0);
++
++		pmsg = &msgs[i];
++		if (pmsg->flags & I2C_M_NOSTART)
++			restart = 1;
++		if (pmsg->flags & I2C_M_RD)
++			ret = wmt_i2c_read(adap, pmsg, restart, is_last);
++		else
++			ret = wmt_i2c_write(adap, pmsg, restart, is_last);
++	}
++
++	if (ret < 0)
++		return ret;
++	else
++		return i;
++}
++
++static u32 wmt_i2c_func(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
++}
++
++static const struct i2c_algorithm wmt_i2c_algo = {
++	.master_xfer	= wmt_i2c_xfer,
++	.functionality	= wmt_i2c_func,
++};
++
++static irqreturn_t wmt_i2c_isr(int irq, void *data)
++{
++	struct wmt_i2c_dev *i2c_dev = data;
++
++	/* save the status and write-clear it */
++	i2c_dev->cmd_status = readw(i2c_dev->base + REG_ISR);
++	writew(i2c_dev->cmd_status, i2c_dev->base + REG_ISR);
++
++	complete(&i2c_dev->complete);
++
++	return IRQ_HANDLED;
++}
++
++/*
++ * Due to a lack of pinmux functionality we need to manually configure
++ * the GPIO pullup. Once pinmux is implemented, this function should be
++ * removed. Pullup's are not available on vt8500 or wm8505 so we skip.
++ */
++static int wmt_i2c_setup_gpio(struct wmt_i2c_dev *i2c_dev)
++{
++	struct device_node *np;
++	void __iomem *gpio_base;
++	int nr = i2c_dev->adapter.nr;
++	u8 val;
++	u8 mask;
++
++	/* VT8500 - has external pullups so no configuration required. */
++	if (of_machine_is_compatible("via,vt8500"))
++		return 0;
++
++	/*
++	 * WM8505 - has external pullups but we need to config the alt func
++	 * WM8650 - has programmable pullups + alt func
++	 * WM8850 - has programmable pullups + alt func
++	 */
++	if (of_machine_is_compatible("wm,wm8505")) {
++		np = of_find_compatible_node(NULL, NULL, "wm,wm8505-gpio");
++		if (!np) {
++			dev_err(i2c_dev->dev, "GPIO required for WM8505 i2c\n");
++			return -EINVAL;
++		}
++	} else if (of_machine_is_compatible("wm,wm8650") ||
++		   of_machine_is_compatible("wm,wm8850")) {
++		np = of_find_compatible_node(NULL, NULL, "wm,wm8650-gpio");
++		if (!np) {
++			dev_err(i2c_dev->dev, "GPIO required for WM8650 i2c\n");
++			return -EINVAL;
++		}
++	} else {
++		/* If we don't know what machine, assume its configured */
++		dev_warn(i2c_dev->dev, "unrecognised machine\n");
++		return 0;
++	}
++
++	gpio_base = of_iomap(np, 0);
++	if (!gpio_base) {
++		dev_err(i2c_dev->dev, "failed to map gpio memory\n");
++		return -ENOMEM;
++	}
++
++	if (of_machine_is_compatible("wm,wm8505")) {
++		if (nr == 0) {
++			/* Set gpio pins to alt function */
++			val = readb(gpio_base + 0x500);
++			writeb(val & 0xFC, gpio_base + 0x500);
++		}
++	} else if (of_machine_is_compatible("wm,wm8650")) {
++		if (nr == 0) {
++			/* set gpio pins to alt function */
++			val = readb(gpio_base + 0x55);
++			val &= ~(BIT(0) | BIT(1));
++			writeb(val, gpio_base + 0x55);
++
++			/* enable pull */
++			val = readb(gpio_base + 0x495);
++			val |= (BIT(0) | BIT(1));
++			writeb(val, gpio_base + 0x495);
++
++			/* set pulled-up */
++			val = readb(gpio_base + 0x4D5);
++			val |= (BIT(0) | BIT(1));
++			writeb(val, gpio_base + 0x4D5);
++		} else if (nr == 1) {
++			/* set gpio pins to alt function */
++			val = readb(gpio_base + 0x49);
++			val &= ~(BIT(4) | BIT(5));
++			writeb(val, gpio_base + 0x49);
++
++			/* enable pull */
++			val = readb(gpio_base + 0x489);
++			val |= (BIT(4) | BIT(5));
++			writeb(val, gpio_base + 0x489);
++
++			/* set pulled-up */
++			val = readb(gpio_base + 0x4C9);
++			val |= (BIT(4) | BIT(5));
++			writeb(val, gpio_base + 0x4C9);
++		}
++	} else if (of_machine_is_compatible("wm,wm8850")) {
++		if ((nr >= 0) && (nr <= 2)) {
++			mask = 0x03 << (nr << 1);
++	
++			/* set gpio pins to alt function */
++			val = readb(gpio_base + 0x55);
++			val &= ~mask;
++			writeb(val, gpio_base + 0x55);
++
++			/* enable pull */
++			val = readb(gpio_base + 0x495);
++			val |= mask;
++			writeb(val, gpio_base + 0x495);
++
++			/* set pulled-up */
++			val = readb(gpio_base + 0x4D5);
++			val |= mask;
++			writeb(val, gpio_base + 0x4D5);
++		}
++	}
++
++
++	iounmap(gpio_base);
 +
 +	return 0;
 +}
 +
-+static void wm8750_find_pll_bits(unsigned long rate, unsigned long parent_rate,
-+				u32 *filter, u32 *multiplier, u32 *divisor1, u32 *divisor2)
++static int wmt_i2c_reset_hardware(struct wmt_i2c_dev *i2c_dev)
 +{
-+	u32 mul, div1, div2;
-+	u32 best_mul, best_div1, best_div2;
-+	unsigned long tclk, rate_err, best_err;
++	int err;
 +
-+	best_err = (unsigned long)-1;
++	err = clk_prepare_enable(i2c_dev->clk);
++	if (err) {
++		dev_err(i2c_dev->dev, "failed to enable clock\n");
++		return err;
++	}
 +
-+	/* Find the closest match (lower or equal to requested) */
-+	for (div1 = 1; div1 >= 0; div1--)
-+		for (div2 = 7; div2 >= 0; div2--)
-+			for (mul = 0; mul <= 255; mul++) {
-+				tclk = parent_rate * (mul + 1) / ((div1 + 1) * (1 << div2));
-+				if (tclk > rate)
-+					continue;
-+				/* error will always be +ve */
-+				rate_err = rate - tclk;
-+				if (rate_err == 0) {
-+					*filter = wm8750_get_filter(parent_rate, div1);
-+					*multiplier = mul;
-+					*divisor1 = div1;
-+					*divisor2 = div2;
-+					return;
-+				}
++	err = clk_set_rate(i2c_dev->clk, 20000000);
++	if (err) {
++		dev_err(i2c_dev->dev, "failed to set clock = 20Mhz\n");
++		return err;
++	}
 +
-+				if (rate_err < best_err) {
-+					best_err = rate_err;
-+					best_mul = mul;
-+					best_div1 = div1;
-+					best_div2 = div2;
-+				}
-+			}
++	err = wmt_i2c_setup_gpio(i2c_dev);
++	if (err)
++		return err;
 +
-+	/* if we got here, it wasn't an exact match */
-+	pr_warn("%s: requested rate %lu, found rate %lu\n", __func__, rate,
-+							rate - best_err);
++	writew(0, i2c_dev->base + REG_CR);
++	writew(12, i2c_dev->base + REG_MCR);
++	writew(ISR_WRITE_ALL, i2c_dev->base + REG_ISR);
++	writew(IMR_ENABLE_ALL, i2c_dev->base + REG_IMR);
++	writew(CR_ENABLE, i2c_dev->base + REG_CR);
++	readw(i2c_dev->base + REG_CSR);		/* read clear */
++	writew(ISR_WRITE_ALL, i2c_dev->base + REG_ISR);
 +
-+	*filter = wm8750_get_filter(parent_rate, best_div1);
-+	*multiplier = best_mul;
-+	*divisor1 = best_div1;
-+	*divisor2 = best_div2;
++	if (i2c_dev->mode == I2C_MODE_STANDARD)
++		writew(0x8064, i2c_dev->base + REG_TR);
++	else
++		writew(0x8019, i2c_dev->base + REG_TR);
++
++	return 0;
 +}
 +
- static int vtwm_pll_set_rate(struct clk_hw *hw, unsigned long rate,
- 				unsigned long parent_rate)
- {
- 	struct clk_pll *pll = to_clk_pll(hw);
--	u32 mul, div1, div2;
-+	u32 filter, mul, div1, div2;
- 	u32 pll_val;
- 	unsigned long flags = 0;
- 
-@@ -385,6 +467,9 @@ static int vtwm_pll_set_rate(struct clk_hw *hw, unsigned long rate,
- 		wm8650_find_pll_bits(rate, parent_rate, &mul, &div1, &div2);
- 		pll_val = WM8650_BITS_TO_VAL(mul, div1, div2);
- 		break;
-+	case PLL_TYPE_WM8750:
-+		wm8750_find_pll_bits(rate, parent_rate, &filter, &mul, &div1, &div2);
-+		pll_val = WM8750_BITS_TO_VAL(filter, mul, div1, div2);
- 	default:
- 		pr_err("%s: invalid pll type\n", __func__);
- 		return 0;
-@@ -405,7 +490,7 @@ static long vtwm_pll_round_rate(struct clk_hw *hw, unsigned long rate,
- 				unsigned long *prate)
- {
- 	struct clk_pll *pll = to_clk_pll(hw);
--	u32 mul, div1, div2;
-+	u32 filter, mul, div1, div2;
- 	long round_rate;
- 
- 	switch (pll->type) {
-@@ -417,6 +502,9 @@ static long vtwm_pll_round_rate(struct clk_hw *hw, unsigned long rate,
- 		wm8650_find_pll_bits(rate, *prate, &mul, &div1, &div2);
- 		round_rate = WM8650_BITS_TO_FREQ(*prate, mul, div1, div2);
- 		break;
-+	case PLL_TYPE_WM8750:
-+		wm8750_find_pll_bits(rate, *prate, &filter, &mul, &div1, &div2);
-+		round_rate = WM8750_BITS_TO_FREQ(*prate, mul, div1, div2);
- 	default:
- 		round_rate = 0;
- 	}
-@@ -440,6 +528,10 @@ static unsigned long vtwm_pll_recalc_rate(struct clk_hw *hw,
- 		pll_freq = parent_rate * WM8650_PLL_MUL(pll_val);
- 		pll_freq /= WM8650_PLL_DIV(pll_val);
- 		break;
-+	case PLL_TYPE_WM8750:
-+		pll_freq = parent_rate * WM8750_PLL_MUL(pll_val);
-+		pll_freq /= WM8750_PLL_DIV(pll_val);
-+		break;
- 	default:
- 		pll_freq = 0;
- 	}
-@@ -508,10 +600,16 @@ static void __init wm8650_pll_init(struct device_node *node)
- 	vtwm_pll_clk_init(node, PLL_TYPE_WM8650);
- }
- 
-+static void __init wm8750_pll_init(struct device_node *node)
++static int wmt_i2c_probe(struct platform_device *pdev)
 +{
-+	vtwm_pll_clk_init(node, PLL_TYPE_WM8750);
++	struct device_node	*np = pdev->dev.of_node;
++	struct wmt_i2c_dev	*i2c_dev;
++	struct i2c_adapter	*adap;
++	struct resource		*res;
++	int err;
++	u32 clk_rate;
++
++	if (!np) {
++		dev_err(&pdev->dev, "device node not found\n");
++		return -ENODEV;
++	}
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev, "no memory resource defined\n");
++		return -ENODEV;
++	}
++
++	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
++	if (!i2c_dev) {
++		dev_err(&pdev->dev, "device memory allocation failed\n");
++		return -ENOMEM;
++	}
++
++	i2c_dev->base = devm_request_and_ioremap(&pdev->dev, res);
++	if (!i2c_dev->base) {
++		dev_err(&pdev->dev, "memory region unavailable\n");
++		return -ENOMEM;
++	}
++
++	i2c_dev->irq = irq_of_parse_and_map(np, 0);
++	if (!i2c_dev->irq) {
++		dev_err(&pdev->dev, "irq missing or invalid\n");
++		return -EINVAL;
++	}
++
++	i2c_dev->clk = of_clk_get(np, 0);
++	if (IS_ERR(i2c_dev->clk)) {
++		dev_err(&pdev->dev, "unable to request clock\n");
++		return PTR_ERR(i2c_dev->clk);
++	}
++
++	i2c_dev->mode = I2C_MODE_STANDARD;
++	err = of_property_read_u32(np, "clock-frequency", &clk_rate);
++	if ((!err) && (clk_rate == 400000))
++		i2c_dev->mode = I2C_MODE_FAST;
++
++	i2c_dev->dev = &pdev->dev;
++
++	err = devm_request_irq(&pdev->dev, i2c_dev->irq, wmt_i2c_isr, 0,
++							"i2c", i2c_dev);
++	if (err) {
++		dev_err(&pdev->dev, "failed to request irq %i\n", i2c_dev->irq);
++		return err;
++	}
++
++	adap = &i2c_dev->adapter;
++	i2c_set_adapdata(adap, i2c_dev);
++	strlcpy(adap->name, "WMT I2C adapter", sizeof(adap->name));
++	adap->owner		= THIS_MODULE;
++	adap->class		= I2C_CLASS_HWMON;
++	adap->algo		= &wmt_i2c_algo;
++	adap->dev.parent	= &pdev->dev;
++	adap->dev.of_node	= pdev->dev.of_node;
++	adap->nr		= of_alias_get_id(pdev->dev.of_node, "i2c");
++
++	err = wmt_i2c_reset_hardware(i2c_dev);
++	if (err) {
++		dev_err(&pdev->dev, "error initializing hardware\n");
++		return err;
++	}
++
++	if (adap->nr < 0)
++		err = i2c_add_adapter(adap);
++	else
++		err = i2c_add_numbered_adapter(adap);
++
++	if (err) {
++		dev_err(&pdev->dev, "failed to add adapter\n");
++		return err;
++	}
++
++	platform_set_drvdata(pdev, i2c_dev);
++
++	of_i2c_register_devices(adap);
++
++	return 0;
 +}
 +
- static const __initconst struct of_device_id clk_match[] = {
- 	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
- 	{ .compatible = "via,vt8500-pll-clock", .data = vt8500_pll_init, },
- 	{ .compatible = "wm,wm8650-pll-clock", .data = wm8650_pll_init, },
-+	{ .compatible = "wm,wm8750-pll-clock", .data = wm8750_pll_init, },
- 	{ .compatible = "via,vt8500-device-clock",
- 					.data = vtwm_device_clk_init, },
- 	{ /* sentinel */ }
++static int wmt_i2c_remove(struct platform_device *pdev)
++{
++	struct wmt_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
++
++	i2c_del_adapter(&i2c_dev->adapter);
++
++	return 0;
++}
++
++static struct of_device_id wmt_i2c_dt_ids[] = {
++	{ .compatible = "wm,wm8505-i2c" },
++	{ /* Sentinel */ },
++};
++
++static struct platform_driver wmt_i2c_driver = {
++	.probe		= wmt_i2c_probe,
++	.remove		= wmt_i2c_remove,
++	.driver		= {
++		.name	= "wmt-i2c",
++		.owner	= THIS_MODULE,
++		.of_match_table = wmt_i2c_dt_ids,
++	},
++};
++
++module_platform_driver(wmt_i2c_driver);
++
++MODULE_DESCRIPTION("Wondermedia I2C master-mode bus adapter");
++MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
++MODULE_LICENSE("GPL v2");
++MODULE_DEVICE_TABLE(of, wmt_i2c_dt_ids);
 -- 
 1.7.9.5
 
