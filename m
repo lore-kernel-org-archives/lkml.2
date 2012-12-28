@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932163Ab2L1Tqj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:46:39 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55193 "EHLO
+	id S1754850Ab2L1Tqh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:46:37 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55194 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754561Ab2L1TSJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754676Ab2L1TSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:18:09 -0500
-Message-Id: <20121228190354.590117309@decadent.org.uk>
+Message-Id: <20121228190355.014489357@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:26 +0100
+Date: Fri, 28 Dec 2012 20:05:28 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Gabor Juhos <juhosg@openwrt.org>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 116/173] ath9k: ar9003: fix OTP register offsets for AR9340
+Subject: [ 118/173] ath9k_hw: Fix signal strength / channel noise reporting
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,80 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit b3cd8021379306c0be6932e4d3b4b01efc681769 upstream.
+commit b7c0c238898d200e80487516e2b67aba2a522cc0 upstream.
 
-Trying to access the OTP memory on the AR9340
-causes a data bus error like this:
+While AR_PHY_CCA_NOM_VAL_* does contain the expected internal noise floor
+for a chip measured in clean air, it refers to the lowest expected reading.
 
-  Data bus error, epc == 86e84164, ra == 86e84164
-  Oops[#1]:
-  Cpu 0
-  $ 0   : 00000000 00000061 deadc0de 00000000
-  $ 4   : b8115f18 00015f18 00000007 00000004
-  $ 8   : 00000001 7c7c3c7c 7c7c7c7c 7c7c7c7c
-  $12   : 7c7c3c7c 001f0041 00000000 7c7c7c3c
-  $16   : 86ee0000 00015f18 00000000 00000007
-  $20   : 00000004 00000064 00000004 86d71c44
-  $24   : 00000000 86e6ca00
-  $28   : 86d70000 86d71b20 86ece0c0 86e84164
-  Hi    : 00000000
-  Lo    : 00000064
-  epc   : 86e84164 ath9k_hw_wait+0x58/0xb0 [ath9k_hw]
-      Tainted: G           O
-  ra    : 86e84164 ath9k_hw_wait+0x58/0xb0 [ath9k_hw]
-  Status: 1100d403    KERNEL EXL IE
-  Cause : 4080801c
-  PrId  : 0001974c (MIPS 74Kc)
-  Modules linked in: ath9k(O+) ath9k_common(O) ath9k_hw(O) ath(O) ar934x_nfc
-  mac80211(O) usbcore usb_common scsi_mod nls_base nand nand_ecc nand_ids
-  crc_ccitt cfg80211(O) compat(O) arc4 aes_generic crypto_blkcipher cryptomgr
-  aead crypto_hash crypto_algapi ledtrig_timer ledtrig_default_on leds_gpio
-  Process insmod (pid: 459, threadinfo=86d70000, task=87942140, tls=779ac440)
-  Stack : 802fb500 000200da 804db150 804e0000 87816130 86ee0000 00010000 86d71b88
-          86d71bc0 00000004 00000003 86e9fcd0 80305300 0002c0d0 86e74c50 800b4c20
-          000003e8 00000001 00000000 86ee0000 000003ff 86e9fd64 80305300 80123938
-          fffffffc 00000004 000058bc 00000000 86ea0000 86ee0000 000001ff 878d6000
-          99999999 86e9fdc0 86ee0fcc 86e9e664 0000c0d0 86ee0000 0000700000007000
-          ...
-  Call Trace:
-  [<86e84164>] ath9k_hw_wait+0x58/0xb0 [ath9k_hw]
-  [<86e9fcd0>] ath9k_hw_setup_statusring+0x16b8/0x1c7c [ath9k_hw]
+Depending on the frequency, this measurement can vary by about 6db, thus
+causing a higher reported channel noise and signal strength.
 
-  Code: 0000a812  0040f809  00000000 <00531024> 1054000b  24020001  0c05b5dc  2404000a  26520001
+Factor in the 6db offset when converting internal noisefloor to channel noise.
 
-The cause of the error is that the OTP register
-offsets are different on the AR9340 than the
-actually used values.
+This patch makes the reported values more accurate for all chips without
+affecting NF calibration behavior.
 
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/net/wireless/ath/ath9k/calib.c |    1 +
+ drivers/net/wireless/ath/ath9k/calib.h |    3 +++
+ 2 files changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-index 41b1a75..54ba42f 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.h
-@@ -68,13 +68,13 @@
- #define AR9300_BASE_ADDR 0x3ff
- #define AR9300_BASE_ADDR_512 0x1ff
+--- a/drivers/net/wireless/ath/ath9k/calib.c
++++ b/drivers/net/wireless/ath/ath9k/calib.c
+@@ -69,6 +69,7 @@ s16 ath9k_hw_getchan_noise(struct ath_hw
  
--#define AR9300_OTP_BASE			0x14000
--#define AR9300_OTP_STATUS		0x15f18
-+#define AR9300_OTP_BASE			(AR_SREV_9340(ah) ? 0x30000 : 0x14000)
-+#define AR9300_OTP_STATUS		(AR_SREV_9340(ah) ? 0x30018 : 0x15f18)
- #define AR9300_OTP_STATUS_TYPE		0x7
- #define AR9300_OTP_STATUS_VALID		0x4
- #define AR9300_OTP_STATUS_ACCESS_BUSY	0x2
- #define AR9300_OTP_STATUS_SM_BUSY	0x1
--#define AR9300_OTP_READ_DATA		0x15f1c
-+#define AR9300_OTP_READ_DATA		(AR_SREV_9340(ah) ? 0x3001c : 0x15f1c)
+ 	if (chan && chan->noisefloor) {
+ 		s8 delta = chan->noisefloor -
++			   ATH9K_NF_CAL_NOISE_THRESH -
+ 			   ath9k_hw_get_default_nf(ah, chan);
+ 		if (delta > 0)
+ 			noise += delta;
+--- a/drivers/net/wireless/ath/ath9k/calib.h
++++ b/drivers/net/wireless/ath/ath9k/calib.h
+@@ -22,6 +22,9 @@
+ #define AR_PHY_CCA_FILTERWINDOW_LENGTH_INIT     3
+ #define AR_PHY_CCA_FILTERWINDOW_LENGTH          5
  
- enum targetPowerHTRates {
- 	HT_TARGET_RATE_0_8_16,
++/* Internal noise floor can vary by about 6db depending on the frequency */
++#define ATH9K_NF_CAL_NOISE_THRESH		6
++
+ #define NUM_NF_READINGS       6
+ #define ATH9K_NF_CAL_HIST_MAX 5
+ 
 
 
