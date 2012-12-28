@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab2L1TaB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:30:01 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55582 "EHLO
+	id S932387Ab2L1TT3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:19:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55527 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932389Ab2L1TTb (ORCPT
+	by vger.kernel.org with ESMTP id S932277Ab2L1TTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:31 -0500
-Message-Id: <20121228190341.201180702@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:20 -0500
+Message-Id: <20121228190341.621376713@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:23 +0100
+Date: Fri, 28 Dec 2012 20:04:25 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        David Binderman <dcb314@hotmail.com>
-Subject: [ 053/173] xhci: Fix conditional check in bandwidth calculation.
+        Julius Werner <jwerner@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 055/173] xhci: fix null-pointer dereference when destroying half-built
+ segment rings
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,53 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 392a07ae3316f2b90b39ce41e66d6f6b5c95de90 upstream.
+commit 68e5254adb88bede68285f11fb442a4d34fb550c upstream.
 
-David reports that at drivers/usb/host/xhci.c:2257:
+xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
+the tail to head at the end (forming a ring). When it bails out for OOM
+reasons half-way through, it tries to destroy its half-built list with
+xhci_free_segments_for_ring(), even though it is not a ring yet. This
+causes a null-pointer dereference upon hitting the last element.
 
-static bool xhci_is_sync_in_ep(unsigned int ep_type)
-{
-    return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
-}
+Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
+the output parameters to be valid upon this kind of OOM failure, and
+calls xhci_ring_free() on them. Since the (incomplete) list/ring should
+already be destroyed in that case, this would lead to a use after free.
 
-The static analyser cppcheck says
+This patch fixes those issues by having xhci_alloc_segments_for_ring()
+destroy its half-built, non-circular list manually and destroying the
+invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
 
-[linux-3.7-rc2/drivers/usb/host/xhci.c:2257]: (style) Redundant condition: If ep_type == 5, the comparison ep_type != 7 is always true.
+This patch should be backported to kernels as old as 2.6.31, that
+contains the commit 0ebbab37422315a5d0cb29792271085bafdf38c0 "USB: xhci:
+Ring allocation and initialization."
 
-Maybe the original programmer intention was something like
+A separate patch will need to be developed for kernels older than 3.4,
+since the ring allocation code was refactored in that kernel.
 
-static bool xhci_is_sync_in_ep(unsigned int ep_type)
-{
-    return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
-}
-
-Fix this.
-
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 2b69899934c63b7b9432568584fb4c4a2924f40c "xhci: USB
-3.0 BW checking."
-
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: David Binderman <dcb314@hotmail.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Since segment allocation is done directly in xhci_ring_alloc(), walk
+   the list starting from ring->first_seg when freeing]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 1ca0f3a..2e29f2f 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2255,7 +2255,7 @@ static bool xhci_is_async_ep(unsigned int ep_type)
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -178,8 +178,15 @@ static struct xhci_ring *xhci_ring_alloc
+ 		struct xhci_segment	*next;
  
- static bool xhci_is_sync_in_ep(unsigned int ep_type)
- {
--	return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
-+	return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
+ 		next = xhci_segment_alloc(xhci, flags);
+-		if (!next)
++		if (!next) {
++			prev = ring->first_seg;
++			while (prev) {
++				next = prev->next;
++				xhci_segment_free(xhci, prev);
++				prev = next;
++			}
+ 			goto fail;
++		}
+ 		xhci_link_segments(xhci, prev, next, link_trbs, isoc);
+ 
+ 		prev = next;
+@@ -199,7 +206,7 @@ static struct xhci_ring *xhci_ring_alloc
+ 	return ring;
+ 
+ fail:
+-	xhci_ring_free(xhci, ring);
++	kfree(ring);
+ 	return NULL;
  }
  
- static unsigned int xhci_get_ss_bw_consumed(struct xhci_bw_info *ep_bw)
 
 
