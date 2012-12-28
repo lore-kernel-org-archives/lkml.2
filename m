@@ -1,90 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321Ab2L1GHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 01:07:21 -0500
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:39778
-	"EHLO db3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751092Ab2L1GHT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 01:07:19 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zz98dI9371I154dI542I1432I4015Izz1de0h1202h1e76h1d1ah1d2ahzz8275dhz2dh2a8h668h839h8e2h8e3h946hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
-From: Liu Hui-R64343 <r64343@freescale.com>
-To: David Rientjes <rientjes@google.com>
-CC: Mel Gorman <mgorman@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad
- address
-Thread-Topic: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad
- address
-Thread-Index: Ac3kJF/a6SI7D+iJS5WtP6F+qKZUbAAXonEAAA+XjfA=
-Date: Fri, 28 Dec 2012 06:07:13 +0000
-Message-ID: <AD13664F485EE54694E29A7F9D5BE1AF4D5027@039-SN2MPN1-021.039d.mgd.msft.net>
-References: <AD13664F485EE54694E29A7F9D5BE1AF4D35F3@039-SN2MPN1-021.039d.mgd.msft.net>
- <alpine.DEB.2.00.1212271435250.18214@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1212271435250.18214@chino.kir.corp.google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.64]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1751449Ab2L1GHo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 01:07:44 -0500
+Received: from es1036.belits.com ([64.58.22.200]:39796 "EHLO es1036.belits.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab2L1GHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 01:07:41 -0500
+X-Greylist: delayed 1793 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 01:07:41 EST
+Date: Thu, 27 Dec 2012 21:37:22 -0800 (PST)
+From: Alex Belits <abelits@phobos.illtel.denver.co.us>
+To: anish singh <anish198519851985@gmail.com>
+cc: amit mehta <gmate.amit@gmail.com>,
+        Henrique Rodrigues <henriquesilvar@gmail.com>,
+        kishore kumar <kishoreopen@gmail.com>,
+        =?UTF-8?Q?Jonathan_Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
+        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
+Subject: Re: how to look for source code in kernel
+In-Reply-To: <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1212272137010.15278@mercury>
+References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com> <20121227184034.GA2982@debian.debian> <CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com> <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
+ <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com> <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: David Rientjes [mailto:rientjes@google.com]
->Sent: Friday, December 28, 2012 6:39 AM
->To: Liu Hui-R64343
->Cc: Mel Gorman; linux-kernel@vger.kernel.org
->Subject: Re: echo 1 > /proc/sys/vm/compact_memory -> sh: write error: Bad
->address
->
->On Thu, 27 Dec 2012, Liu Hui-R64343 wrote:
->
->> diff --git a/mm/compaction.c b/mm/compaction.c index c4bc5ac..d3cb27f
->> 100644
->> --- a/mm/compaction.c
->> +++ b/mm/compaction.c
->> @@ -732,8 +732,10 @@ int sysctl_compact_memory;  int
->> sysctl_compaction_handler(struct ctl_table *table, int write,
->>                         void __user *buffer, size_t *length, loff_t
->> *ppos)  {
->> -       if (write)
->> -               return compact_nodes();
->> +       if (write) {
->> +               compact_nodes();
->> +               return *length;
->> +       }
->>
->>         return 0;
->>  }
->
->No need to return the length at all, simply change compact_nodes() to return
->void, remove the return value, and do
->
->	if (write)
->		compact_nodes();
->	return 0;
->
->and it should be fixed. 
+On Fri, 28 Dec 2012, anish singh wrote:
 
-Yes,  this works. Thanks,
+>>> have source insight.We can use wine in linux but that sucks.
+>> Funny you say that!
+>> Never heard of cscope, ctags ?
+> It is not as convenient as source insight or is it?
 
-> Could you write a changelog that shows the before
->and after behavior (not necessarily the implementation), sign-off the patch
->as described in Documentation/SubmittingPatches, running
->scripts/get_maintainer.pl on your new patch file, and sending it to all
->addresses that are listed?
+There is also LXR.
 
-OK, I will send out the patch as you suggested.
-
-Happy holiday.
-
-Jason Liu
-
+If it's not good enough for you, then don't look at it.
