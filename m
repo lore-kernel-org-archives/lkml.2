@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab2L1Tog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:44:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55214 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754682Ab2L1TSL (ORCPT
+	id S1754928Ab2L1Tom (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:44:42 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:57378 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754682Ab2L1Tog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:11 -0500
-Message-Id: <20121228190357.379548075@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:42 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Huacai Chen <chenhc@lemote.com>, Hongliang Tao <taohl@lemote.com>,
-        Hua Yan <yanh@lemote.com>, Yong Zhang <yong.zhang@windriver.com>,
-        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: [ 132/173] MIPS: Fix poweroff failure when HOTPLUG_CPU configured.
-In-Reply-To: <20121228190330.025298996@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.217.219.220
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Fri, 28 Dec 2012 14:44:36 -0500
+MIME-Version: 1.0
+In-Reply-To: <20121228193613.GB4939@ZenIV.linux.org.uk>
+References: <1356722870-18325-1-git-send-email-geert@linux-m68k.org>
+	<20121228193613.GB4939@ZenIV.linux.org.uk>
+Date: Fri, 28 Dec 2012 20:44:35 +0100
+X-Google-Sender-Auth: C3eKU00lukDCiFgV9G_R7JfZBJs
+Message-ID: <CAMuHMdWPVJr=v0ByKD1FMyWn=c_cmUaSHSFq6AiD_wi1oVeWHw@mail.gmail.com>
+Subject: Re: [PATCH] get_maintainer.pl: Find maintainers for removed files
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Joe Perches <joe@perches.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Dec 28, 2012 at 8:36 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Fri, Dec 28, 2012 at 08:27:50PM +0100, Geert Uytterhoeven wrote:
+>> For removed files, get_maintainer.pl doesn't find any maintainers (besides
+>> the default linux-kernel@vger.kernel.org), as it only looks at the "+++"
+>> lines, which are "/dev/null" for removals.
+>> Fix this by extending the parsing to the "---" lines.
+>>
+>> E.g. for the two line test patch below the real score maintainers will now
+>> be found:
+>
+> *snort*
+>
+> I'm afraid that finding anybody matching that description would reqiure
+> a functioning time machine.  AFAICT, arch/score has been orphaned for
+> several years.
 
-------------------
+;-)
 
-From: Huacai Chen <chenhc@lemote.com>
+Sorry, I meant the maintainers listed in MAINTAINERS.
 
-commit 8add1ecb81f541ef2fcb0b85a5470ad9ecfb4a84 upstream.
+Gr{oetje,eeting}s,
 
-When poweroff machine, kernel_power_off() call disable_nonboot_cpus().
-And if we have HOTPLUG_CPU configured, disable_nonboot_cpus() is not an
-empty function but attempt to actually disable the nonboot cpus. Since
-system state is SYSTEM_POWER_OFF, play_dead() won't be called and thus
-disable_nonboot_cpus() hangs. Therefore, we make this patch to avoid
-poweroff failure.
+                        Geert
 
-Signed-off-by: Huacai Chen <chenhc@lemote.com>
-Signed-off-by: Hongliang Tao <taohl@lemote.com>
-Signed-off-by: Hua Yan <yanh@lemote.com>
-Cc: Yong Zhang <yong.zhang@windriver.com>
-Cc: linux-mips@linux-mips.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Fuxin Zhang <zhangfx@lemote.com>
-Cc: Zhangjin Wu <wuzhangjin@gmail.com>
-Patchwork: https://patchwork.linux-mips.org/patch/4211/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- arch/mips/kernel/process.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
---- a/arch/mips/kernel/process.c
-+++ b/arch/mips/kernel/process.c
-@@ -72,9 +72,7 @@ void __noreturn cpu_idle(void)
- 			}
- 		}
- #ifdef CONFIG_HOTPLUG_CPU
--		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map) &&
--		    (system_state == SYSTEM_RUNNING ||
--		     system_state == SYSTEM_BOOTING))
-+		if (!cpu_online(cpu) && !cpu_isset(cpu, cpu_callin_map))
- 			play_dead();
- #endif
- 		tick_nohz_restart_sched_tick();
-
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
