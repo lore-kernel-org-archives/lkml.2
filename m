@@ -1,742 +1,449 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab2L1B3c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:29:32 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:55655 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2L1B3a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:29:30 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Ben Dooks <ben-linux@fluff.org>, Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] i2c: vt8500: Add support for Wondermedia I2C master-mode
-Date: Fri, 28 Dec 2012 14:29:26 +1300
-Message-Id: <1356658166-18688-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753003Ab2L1Bcd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:32:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:13767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752695Ab2L1Bca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 20:32:30 -0500
+From: Petr Holasek <pholasek@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>,
+        Petr Holasek <pholasek@redhat.com>
+Subject: [PATCH v7 1/2] KSM: numa awareness sysfs knob
+Date: Fri, 28 Dec 2012 02:32:16 +0100
+Message-Id: <1356658337-12540-1-git-send-email-pholasek@redhat.com>
+In-Reply-To: <20121224050817.GA25749@kroah.com>
+References: <20121224050817.GA25749@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the I2C controller found on Wondermedia
-SoCs.
+Introduces new sysfs boolean knob /sys/kernel/mm/ksm/merge_across_nodes
+which control merging pages across different numa nodes.
+When it is set to zero only pages from the same node are merged,
+otherwise pages from all nodes can be merged together (default behavior).
 
-Due to the lack of pinmux support, GPIO pin alternate functions are
-configured by machine's compatible property, as are pullups.
+Typical use-case could be a lot of KVM guests on NUMA machine
+and cpus from more distant nodes would have significant increase
+of access latency to the merged ksm page. Sysfs knob was choosen
+for higher variability when some users still prefers higher amount
+of saved physical memory regardless of access latency.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Every numa node has its own stable & unstable trees because of faster
+searching and inserting. Changing of merge_across_nodes value is possible
+only when there are not any ksm shared pages in system.
+
+I've tested this patch on numa machines with 2, 4 and 8 nodes and
+measured speed of memory access inside of KVM guests with memory pinned
+to one of nodes with this benchmark:
+
+http://pholasek.fedorapeople.org/alloc_pg.c
+
+Population standard deviations of access times in percentage of average
+were following:
+
+merge_across_nodes=1
+2 nodes 1.4%
+4 nodes 1.6%
+8 nodes	1.7%
+
+merge_across_nodes=0
+2 nodes	1%
+4 nodes	0.32%
+8 nodes	0.018%
+
+RFC: https://lkml.org/lkml/2011/11/30/91
+v1: https://lkml.org/lkml/2012/1/23/46
+v2: https://lkml.org/lkml/2012/6/29/105
+v3: https://lkml.org/lkml/2012/9/14/550
+v4: https://lkml.org/lkml/2012/9/23/137
+v5: https://lkml.org/lkml/2012/12/10/540
+v6: https://lkml.org/lkml/2012/12/23/154
+
+Changelog:
+
+v2: Andrew's objections were reflected:
+	- value of merge_nodes can't be changed while there are some ksm
+	pages in system
+	- merge_nodes sysfs entry appearance depends on CONFIG_NUMA
+	- more verbose documentation
+	- added some performance testing results
+
+v3:	- more verbose documentation
+	- fixed race in merge_nodes store function
+	- introduced share_all debugging knob proposed by Andrew
+	- minor cleanups
+
+v4:	- merge_nodes was renamed to merge_across_nodes
+	- share_all debug knob was dropped
+	- get_kpfn_nid helper
+	- fixed page migration behaviour
+
+v5:	- unstable node's nid presence depends on CONFIG_NUMA
+	- fixed oops appearing when stable nodes were removed from tree
+	- roots of stable trees are initialized properly
+	- fixed unstable page migration issue
+
+v6:	- fixed oops caused by stable_nodes appended to wrong tree
+	- KSM_RUN_MERGE test removed
+
+v7:	- added sysfs ABI documentation for KSM
+
+Signed-off-by: Petr Holasek <pholasek@redhat.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Acked-by: Rik van Riel <riel@redhat.com>
 ---
- .../devicetree/bindings/i2c/i2c-vt8500.txt         |   24 +
- drivers/i2c/busses/Kconfig                         |    7 +
- drivers/i2c/busses/Makefile                        |    1 +
- drivers/i2c/busses/i2c-wmt.c                       |  636 ++++++++++++++++++++
- 4 files changed, 668 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-vt8500.txt
- create mode 100644 drivers/i2c/busses/i2c-wmt.c
+ Documentation/vm/ksm.txt |   7 +++
+ mm/ksm.c                 | 151 +++++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 139 insertions(+), 19 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/i2c/i2c-vt8500.txt b/Documentation/devicetree/bindings/i2c/i2c-vt8500.txt
-new file mode 100644
-index 0000000..94a425e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/i2c/i2c-vt8500.txt
-@@ -0,0 +1,24 @@
-+* Wondermedia I2C Controller
-+
-+Required properties :
-+
-+ - compatible : should be "wm,wm8505-i2c"
-+ - reg : Offset and length of the register set for the device
-+ - interrupts : <IRQ> where IRQ is the interrupt number
-+ - clocks : phandle to the I2C clock source
-+
-+Optional properties :
-+
-+ - clock-frequency : desired I2C bus clock frequency in Hz.
-+	Valid values are 100000 and 400000.
-+	Default to 100000 if not specified, or invalid value.
-+
-+Example :
-+
-+	i2c_0: i2c@d8280000 {
-+		compatible = "wm,wm8505-i2c";
-+		reg = <0xd8280000 0x1000>;
-+		interrupts = <19>;
-+		clocks = <&clki2c0>;
-+		clock-frequency = <400000>;
-+	};
-diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index bdca511..41270fa 100644
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -700,6 +700,13 @@ config I2C_VERSATILE
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called i2c-versatile.
+diff --git a/Documentation/vm/ksm.txt b/Documentation/vm/ksm.txt
+index b392e49..25cc89b 100644
+--- a/Documentation/vm/ksm.txt
++++ b/Documentation/vm/ksm.txt
+@@ -58,6 +58,13 @@ sleep_millisecs  - how many milliseconds ksmd should sleep before next scan
+                    e.g. "echo 20 > /sys/kernel/mm/ksm/sleep_millisecs"
+                    Default: 20 (chosen for demonstration purposes)
  
-+config I2C_WMT
-+	tristate "Wondermedia I2C Controller support"
-+	depends on ARCH_VT8500
-+	help
-+	  If you say yes to this option, support will be included for the
-+	  I2C controllers found in Wondermedia SoCs.
++merge_across_nodes - specifies if pages from different numa nodes can be merged.
++                   When set to 0, ksm merges only pages which physically
++                   reside in the memory area of same NUMA node. It brings
++                   lower latency to access to shared page. Value can be
++                   changed only when there is no ksm shared pages in system.
++                   Default: 1
 +
- config I2C_OCTEON
- 	tristate "Cavium OCTEON I2C bus support"
- 	depends on CPU_CAVIUM_OCTEON
-diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index 6181f3f..dce6299 100644
---- a/drivers/i2c/busses/Makefile
-+++ b/drivers/i2c/busses/Makefile
-@@ -69,6 +69,7 @@ obj-$(CONFIG_I2C_SIRF)		+= i2c-sirf.o
- obj-$(CONFIG_I2C_STU300)	+= i2c-stu300.o
- obj-$(CONFIG_I2C_TEGRA)		+= i2c-tegra.o
- obj-$(CONFIG_I2C_VERSATILE)	+= i2c-versatile.o
-+obj-$(CONFIG_I2C_WMT)		+= i2c-wmt.o
- obj-$(CONFIG_I2C_OCTEON)	+= i2c-octeon.o
- obj-$(CONFIG_I2C_XILINX)	+= i2c-xiic.o
- obj-$(CONFIG_I2C_XLR)		+= i2c-xlr.o
-diff --git a/drivers/i2c/busses/i2c-wmt.c b/drivers/i2c/busses/i2c-wmt.c
-new file mode 100644
-index 0000000..07d86e3
---- /dev/null
-+++ b/drivers/i2c/busses/i2c-wmt.c
-@@ -0,0 +1,636 @@
+ run              - set 0 to stop ksmd from running but keep merged pages,
+                    set 1 to run ksmd e.g. "echo 1 > /sys/kernel/mm/ksm/run",
+                    set 2 to stop ksmd and unmerge all pages currently merged,
+diff --git a/mm/ksm.c b/mm/ksm.c
+index 5157385..d1e1041 100644
+--- a/mm/ksm.c
++++ b/mm/ksm.c
+@@ -36,6 +36,7 @@
+ #include <linux/hash.h>
+ #include <linux/freezer.h>
+ #include <linux/oom.h>
++#include <linux/numa.h>
+ 
+ #include <asm/tlbflush.h>
+ #include "internal.h"
+@@ -139,6 +140,9 @@ struct rmap_item {
+ 	struct mm_struct *mm;
+ 	unsigned long address;		/* + low bits used for flags below */
+ 	unsigned int oldchecksum;	/* when unstable */
++#ifdef CONFIG_NUMA
++	unsigned int nid;
++#endif
+ 	union {
+ 		struct rb_node node;	/* when node of unstable tree */
+ 		struct {		/* when listed from stable tree */
+@@ -153,8 +157,8 @@ struct rmap_item {
+ #define STABLE_FLAG	0x200	/* is listed from the stable tree */
+ 
+ /* The stable and unstable tree heads */
+-static struct rb_root root_stable_tree = RB_ROOT;
+-static struct rb_root root_unstable_tree = RB_ROOT;
++static struct rb_root root_unstable_tree[MAX_NUMNODES];
++static struct rb_root root_stable_tree[MAX_NUMNODES];
+ 
+ #define MM_SLOTS_HASH_SHIFT 10
+ #define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
+@@ -189,6 +193,9 @@ static unsigned int ksm_thread_pages_to_scan = 100;
+ /* Milliseconds ksmd should sleep between batches */
+ static unsigned int ksm_thread_sleep_millisecs = 20;
+ 
++/* Zeroed when merging across nodes is not allowed */
++static unsigned int ksm_merge_across_nodes = 1;
++
+ #define KSM_RUN_STOP	0
+ #define KSM_RUN_MERGE	1
+ #define KSM_RUN_UNMERGE	2
+@@ -447,10 +454,25 @@ out:		page = NULL;
+ 	return page;
+ }
+ 
 +/*
-+ *  Wondermedia I2C Master Mode Driver
-+ *
-+ *  Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ *
-+ *  Derived from GPL licensed source:
-+ *  - Copyright (C) 2008 WonderMedia Technologies, Inc.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation
++ * This helper is used for getting right index into array of tree roots.
++ * When merge_across_nodes knob is set to 1, there are only two rb-trees for
++ * stable and unstable pages from all nodes with roots in index 0. Otherwise,
++ * every node has its own stable and unstable tree.
 + */
-+
-+#include <linux/clk.h>
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_i2c.h>
-+#include <linux/of_irq.h>
-+#include <linux/platform_device.h>
-+
-+#define REG_CR		0x00
-+#define REG_TCR		0x02
-+#define REG_CSR		0x04
-+#define REG_ISR		0x06
-+#define REG_IMR		0x08
-+#define REG_CDR		0x0A
-+#define REG_TR		0x0C
-+#define REG_MCR		0x0E
-+#define REG_SLAVE_CR	0x10
-+#define REG_SLAVE_SR	0x12
-+#define REG_SLAVE_ISR	0x14
-+#define REG_SLAVE_IMR	0x16
-+#define REG_SLAVE_DR	0x18
-+#define REG_SLAVE_TR	0x1A
-+
-+/* REG_CR Bit fields */
-+#define CR_TX_NEXT_ACK		0x0000
-+#define CR_ENABLE		0x0001
-+#define CR_TX_NEXT_NO_ACK	0x0002
-+#define CR_TX_END		0x0004
-+#define CR_CPU_RDY		0x0008
-+#define SLAV_MODE_SEL		0x8000
-+
-+/* REG_TCR Bit fields */
-+#define TCR_STANDARD_MODE	0x0000
-+#define TCR_MASTER_WRITE	0x0000
-+#define TCR_HS_MODE		0x2000
-+#define TCR_MASTER_READ		0x4000
-+#define TCR_FAST_MODE		0x8000
-+#define TCR_SLAVE_ADDR_MASK	0x007F
-+
-+/* REG_ISR Bit fields */
-+#define ISR_NACK_ADDR		0x0001
-+#define ISR_BYTE_END		0x0002
-+#define ISR_SCL_TIMEOUT		0x0004
-+#define ISR_WRITE_ALL		0x0007
-+
-+/* REG_IMR Bit fields */
-+#define IMR_ENABLE_ALL		0x0007
-+
-+/* REG_CSR Bit fields */
-+#define CSR_RCV_NOT_ACK		0x0001
-+#define CSR_RCV_ACK_MASK	0x0001
-+#define CSR_READY_MASK		0x0002
-+
-+#define I2C_MODE_STANDARD	0
-+#define I2C_MODE_FAST		1
-+
-+
-+
-+struct wmt_i2c_dev {
-+	struct i2c_adapter	adapter;
-+	struct completion	complete;
-+	struct device		*dev;
-+	void __iomem		*base;
-+	struct clk		*clk;
-+	int			mode;
-+	int			irq;
-+	u16			cmd_status;
-+};
-+
-+static int wmt_i2c_wait_bus_not_busy(struct wmt_i2c_dev *i2c_dev)
++static inline int get_kpfn_nid(unsigned long kpfn)
 +{
-+	u16 val;
-+	int i;
-+	int ret = 0;
-+
-+	for (i = 0; i < 10000000; i++) {
-+		val = readw(i2c_dev->base + REG_CSR);
-+		if (val & CSR_READY_MASK)
-+			break;
-+
-+		udelay(1);
-+	}
-+	if (i >= 9999999)
-+		ret = -EBUSY;
-+
-+	return ret;
-+}
-+
-+static int wmt_check_status(struct wmt_i2c_dev *i2c_dev)
-+{
-+	int ret = 0;
-+
-+	if (i2c_dev->cmd_status & ISR_NACK_ADDR)
-+		ret = -EIO;
-+
-+	if (i2c_dev->cmd_status & ISR_SCL_TIMEOUT)
-+		ret = -ETIMEDOUT;
-+
-+	return ret;
-+}
-+
-+static int wmt_i2c_write(struct i2c_adapter *adap, struct i2c_msg *pmsg,
-+						   int restart, int last)
-+{
-+	struct wmt_i2c_dev *i2c_dev = i2c_get_adapdata(adap);
-+	u16 val;
-+	u16 tcr_val;
-+	int ret;
-+	int wait_result;
-+	u32 xfer_len = 0;
-+
-+	if (pmsg->len < 0)
-+		return -EINVAL;
-+
-+	if (restart == 0) {
-+		ret = wmt_i2c_wait_bus_not_busy(i2c_dev);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	if (pmsg->len == 0)
-+		writew(0, i2c_dev->base + REG_CDR);
-+	else
-+		writew(pmsg->buf[0] & 0xFF, i2c_dev->base + REG_CDR);
-+
-+	if (restart == 0) {
-+		val = readw(i2c_dev->base + REG_CR);
-+		val &= ~CR_TX_END;
-+		writew(val, i2c_dev->base + REG_CR);
-+
-+		val = readw(i2c_dev->base + REG_CR);
-+		val |= CR_CPU_RDY;
-+		writew(val, i2c_dev->base + REG_CR);
-+	}
-+
-+	init_completion(&i2c_dev->complete);
-+
-+	if (i2c_dev->mode == I2C_MODE_STANDARD)
-+		tcr_val = TCR_STANDARD_MODE;
-+	else
-+		tcr_val = TCR_FAST_MODE;
-+
-+	tcr_val |= (TCR_MASTER_WRITE | (pmsg->addr & TCR_SLAVE_ADDR_MASK));
-+
-+	writew(tcr_val, i2c_dev->base + REG_TCR);
-+
-+	if (restart == 1) {
-+		val = readw(i2c_dev->base + REG_CR);
-+		val |= CR_CPU_RDY;
-+		writew(val, i2c_dev->base + REG_CR);
-+	}
-+
-+	ret = 0;
-+
-+	for (;;) {
-+		wait_result = wait_for_completion_interruptible_timeout(
-+				&i2c_dev->complete, 500 * HZ / 1000);
-+
-+		if (wait_result == 0) {
-+			dev_dbg(i2c_dev->dev, "wait timeout (tx)\n");
-+			ret = -ETIMEDOUT;
-+			break;
-+		}
-+
-+		ret = wmt_check_status(i2c_dev);
-+		if (ret)
-+			break;
-+
-+		xfer_len++;
-+
-+		val = readw(i2c_dev->base + REG_CSR);
-+		if ((val & CSR_RCV_ACK_MASK) == CSR_RCV_NOT_ACK) {
-+			dev_dbg(i2c_dev->dev, "write RCV NACK error\n");
-+			ret = -EIO;
-+			break;
-+		}
-+
-+		if (pmsg->len == 0) {
-+			val = CR_TX_END | CR_CPU_RDY | CR_ENABLE;
-+			writew(val, i2c_dev->base + REG_CR);
-+			break;
-+		}
-+
-+		if (pmsg->len > xfer_len) {
-+			writew(pmsg->buf[xfer_len] & 0xFF, i2c_dev->base +
-+								REG_CDR);
-+			writew(CR_CPU_RDY | CR_ENABLE, i2c_dev->base + REG_CR);
-+		} else if (pmsg->len == xfer_len) {
-+			if (last != 1)
-+				writew(CR_ENABLE, i2c_dev->base + REG_CR);
-+			break;
-+		} else {
-+			dev_dbg(i2c_dev->dev, "unknown error (tx)\n");
-+			ret = -EIO;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int wmt_i2c_read(struct i2c_adapter *adap, struct i2c_msg *pmsg,
-+						  int restart, int last)
-+{
-+	struct wmt_i2c_dev *i2c_dev = i2c_get_adapdata(adap);
-+	u16 val;
-+	u16 tcr_val;
-+	int ret;
-+	int wait_result;
-+	u32 xfer_len = 0;
-+
-+	if (pmsg->len <= 0)
-+		return -EINVAL;
-+
-+	if (restart == 0) {
-+		ret = wmt_i2c_wait_bus_not_busy(i2c_dev);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	val = readw(i2c_dev->base + REG_CR);
-+	val &= ~CR_TX_END;
-+	writew(val, i2c_dev->base + REG_CR);
-+
-+	val = readw(i2c_dev->base + REG_CR);
-+	val &= ~CR_TX_NEXT_NO_ACK;
-+	writew(val, i2c_dev->base + REG_CR);
-+
-+	if (restart == 0) {
-+		val = readw(i2c_dev->base + REG_CR);
-+		val |= CR_CPU_RDY;
-+		writew(val, i2c_dev->base + REG_CR);
-+	}
-+
-+	if (pmsg->len == 1) {
-+		val = readw(i2c_dev->base + REG_CR);
-+		val |= CR_TX_NEXT_NO_ACK;
-+		writew(val, i2c_dev->base + REG_CR);
-+	}
-+
-+	init_completion(&i2c_dev->complete);
-+
-+	if (i2c_dev->mode == I2C_MODE_STANDARD)
-+		tcr_val = TCR_STANDARD_MODE;
-+	else
-+		tcr_val = TCR_FAST_MODE;
-+
-+	tcr_val |= TCR_MASTER_READ | (pmsg->addr & TCR_SLAVE_ADDR_MASK);
-+
-+	writew(tcr_val, i2c_dev->base + REG_TCR);
-+
-+	if (restart == 1) {
-+		val = readw(i2c_dev->base + REG_CR);
-+		val |= CR_CPU_RDY;
-+		writew(val, i2c_dev->base + REG_CR);
-+	}
-+
-+	ret = 0;
-+
-+	for (;;) {
-+		wait_result = wait_for_completion_interruptible_timeout(
-+				&i2c_dev->complete, 500 * HZ / 1000);
-+
-+		if (wait_result == 0) {
-+			dev_dbg(i2c_dev->dev, "wait timeout (tx)\n");
-+			ret = -ETIMEDOUT;
-+			break;
-+		}
-+
-+		ret = wmt_check_status(i2c_dev);
-+		if (ret)
-+			break;
-+
-+		pmsg->buf[xfer_len] = readw(i2c_dev->base + REG_CDR) >> 8;
-+		xfer_len++;
-+
-+		if (pmsg->len > xfer_len) {
-+			if (pmsg->len - 1 == xfer_len) {
-+				val = readw(i2c_dev->base + REG_CR);
-+				val |= (CR_TX_NEXT_NO_ACK | CR_CPU_RDY);
-+				writew(val, i2c_dev->base + REG_CR);
-+			} else {
-+				val = readw(i2c_dev->base + REG_CR);
-+				val |= CR_CPU_RDY;
-+				writew(val, i2c_dev->base + REG_CR);
-+			}
-+		} else if (pmsg->len == xfer_len) {
-+			break;
-+		} else {
-+			ret = -EIO;
-+			break;
-+		}
-+	}
-+
-+	return ret;
-+}
-+
-+static int wmt_i2c_xfer(struct i2c_adapter *adap,
-+			struct i2c_msg msgs[],
-+			int num)
-+{
-+	struct i2c_msg *pmsg;
-+	int i;
-+	int ret = 0;
-+	int is_last;
-+	int restart;
-+
-+	for (i = 0; ret >= 0 && i < num; i++) {
-+		is_last = ((i + 1) == num);
-+		restart = (i != 0);
-+
-+		pmsg = &msgs[i];
-+		if (pmsg->flags & I2C_M_NOSTART)
-+			restart = 1;
-+		if (pmsg->flags & I2C_M_RD)
-+			ret = wmt_i2c_read(adap, pmsg, restart, is_last);
-+		else
-+			ret = wmt_i2c_write(adap, pmsg, restart, is_last);
-+	}
-+
-+	if (ret < 0)
-+		return ret;
-+	else
-+		return i;
-+}
-+
-+static u32 wmt_i2c_func(struct i2c_adapter *adap)
-+{
-+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
-+}
-+
-+static const struct i2c_algorithm wmt_i2c_algo = {
-+	.master_xfer	= wmt_i2c_xfer,
-+	.functionality	= wmt_i2c_func,
-+};
-+
-+static irqreturn_t wmt_i2c_isr(int irq, void *data)
-+{
-+	struct wmt_i2c_dev *i2c_dev = data;
-+
-+	/* save the status and write-clear it */
-+	i2c_dev->cmd_status = readw(i2c_dev->base + REG_ISR);
-+	writew(i2c_dev->cmd_status, i2c_dev->base + REG_ISR);
-+
-+	complete(&i2c_dev->complete);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/*
-+ * Due to a lack of pinmux functionality we need to manually configure
-+ * the GPIO pullup. Once pinmux is implemented, this function should be
-+ * removed. Pullup's are not available on vt8500 or wm8505 so we skip.
-+ */
-+static int wmt_i2c_setup_gpio(struct wmt_i2c_dev *i2c_dev)
-+{
-+	struct device_node *np;
-+	void __iomem *gpio_base;
-+	int nr = i2c_dev->adapter.nr;
-+	u8 val;
-+	u8 mask;
-+
-+	/* VT8500 - has external pullups so no configuration required. */
-+	if (of_machine_is_compatible("via,vt8500"))
++	if (ksm_merge_across_nodes)
 +		return 0;
++	else
++		return pfn_to_nid(kpfn);
++}
 +
+ static void remove_node_from_stable_tree(struct stable_node *stable_node)
+ {
+ 	struct rmap_item *rmap_item;
+ 	struct hlist_node *hlist;
++	int nid;
+ 
+ 	hlist_for_each_entry(rmap_item, hlist, &stable_node->hlist, hlist) {
+ 		if (rmap_item->hlist.next)
+@@ -462,7 +484,9 @@ static void remove_node_from_stable_tree(struct stable_node *stable_node)
+ 		cond_resched();
+ 	}
+ 
+-	rb_erase(&stable_node->node, &root_stable_tree);
++	nid = get_kpfn_nid(stable_node->kpfn);
++
++	rb_erase(&stable_node->node, &root_stable_tree[nid]);
+ 	free_stable_node(stable_node);
+ }
+ 
+@@ -560,7 +584,12 @@ static void remove_rmap_item_from_tree(struct rmap_item *rmap_item)
+ 		age = (unsigned char)(ksm_scan.seqnr - rmap_item->address);
+ 		BUG_ON(age > 1);
+ 		if (!age)
+-			rb_erase(&rmap_item->node, &root_unstable_tree);
++#ifdef CONFIG_NUMA
++			rb_erase(&rmap_item->node,
++					&root_unstable_tree[rmap_item->nid]);
++#else
++			rb_erase(&rmap_item->node, &root_unstable_tree[0]);
++#endif
+ 
+ 		ksm_pages_unshared--;
+ 		rmap_item->address &= PAGE_MASK;
+@@ -996,8 +1025,9 @@ static struct page *try_to_merge_two_pages(struct rmap_item *rmap_item,
+  */
+ static struct page *stable_tree_search(struct page *page)
+ {
+-	struct rb_node *node = root_stable_tree.rb_node;
++	struct rb_node *node;
+ 	struct stable_node *stable_node;
++	int nid;
+ 
+ 	stable_node = page_stable_node(page);
+ 	if (stable_node) {			/* ksm page forked */
+@@ -1005,6 +1035,9 @@ static struct page *stable_tree_search(struct page *page)
+ 		return page;
+ 	}
+ 
++	nid = get_kpfn_nid(page_to_pfn(page));
++	node = root_stable_tree[nid].rb_node;
++
+ 	while (node) {
+ 		struct page *tree_page;
+ 		int ret;
+@@ -1039,10 +1072,16 @@ static struct page *stable_tree_search(struct page *page)
+  */
+ static struct stable_node *stable_tree_insert(struct page *kpage)
+ {
+-	struct rb_node **new = &root_stable_tree.rb_node;
++	int nid;
++	unsigned long kpfn;
++	struct rb_node **new;
+ 	struct rb_node *parent = NULL;
+ 	struct stable_node *stable_node;
+ 
++	kpfn = page_to_pfn(kpage);
++	nid = get_kpfn_nid(kpfn);
++	new = &root_stable_tree[nid].rb_node;
++
+ 	while (*new) {
+ 		struct page *tree_page;
+ 		int ret;
+@@ -1076,11 +1115,11 @@ static struct stable_node *stable_tree_insert(struct page *kpage)
+ 		return NULL;
+ 
+ 	rb_link_node(&stable_node->node, parent, new);
+-	rb_insert_color(&stable_node->node, &root_stable_tree);
++	rb_insert_color(&stable_node->node, &root_stable_tree[nid]);
+ 
+ 	INIT_HLIST_HEAD(&stable_node->hlist);
+ 
+-	stable_node->kpfn = page_to_pfn(kpage);
++	stable_node->kpfn = kpfn;
+ 	set_page_stable_node(kpage, stable_node);
+ 
+ 	return stable_node;
+@@ -1104,10 +1143,15 @@ static
+ struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
+ 					      struct page *page,
+ 					      struct page **tree_pagep)
+-
+ {
+-	struct rb_node **new = &root_unstable_tree.rb_node;
++	struct rb_node **new;
++	struct rb_root *root;
+ 	struct rb_node *parent = NULL;
++	int nid;
++
++	nid = get_kpfn_nid(page_to_pfn(page));
++	root = &root_unstable_tree[nid];
++	new = &root->rb_node;
+ 
+ 	while (*new) {
+ 		struct rmap_item *tree_rmap_item;
+@@ -1128,6 +1172,18 @@ struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
+ 			return NULL;
+ 		}
+ 
++		/*
++		 * If tree_page has been migrated to another NUMA node, it
++		 * will be flushed out and put into the right unstable tree
++		 * next time: only merge with it if merge_across_nodes.
++		 * Just notice, we don't have similar problem for PageKsm
++		 * because their migration is disabled now. (62b61f611e)
++		 */
++		if (!ksm_merge_across_nodes && page_to_nid(tree_page) != nid) {
++			put_page(tree_page);
++			return NULL;
++		}
++
+ 		ret = memcmp_pages(page, tree_page);
+ 
+ 		parent = *new;
+@@ -1145,8 +1201,11 @@ struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
+ 
+ 	rmap_item->address |= UNSTABLE_FLAG;
+ 	rmap_item->address |= (ksm_scan.seqnr & SEQNR_MASK);
++#ifdef CONFIG_NUMA
++	rmap_item->nid = nid;
++#endif
+ 	rb_link_node(&rmap_item->node, parent, new);
+-	rb_insert_color(&rmap_item->node, &root_unstable_tree);
++	rb_insert_color(&rmap_item->node, root);
+ 
+ 	ksm_pages_unshared++;
+ 	return NULL;
+@@ -1160,6 +1219,13 @@ struct rmap_item *unstable_tree_search_insert(struct rmap_item *rmap_item,
+ static void stable_tree_append(struct rmap_item *rmap_item,
+ 			       struct stable_node *stable_node)
+ {
++#ifdef CONFIG_NUMA
 +	/*
-+	 * WM8505 - has external pullups but we need to config the alt func
-+	 * WM8650 - has programmable pullups + alt func
-+	 * WM8850 - has programmable pullups + alt func
++	 * Usually rmap_item->nid is already set correctly,
++	 * but it may be wrong after switching merge_across_nodes.
 +	 */
-+	if (of_machine_is_compatible("wm,wm8505")) {
-+		np = of_find_compatible_node(NULL, NULL, "wm,wm8505-gpio");
-+		if (!np) {
-+			dev_err(i2c_dev->dev, "GPIO required for WM8505 i2c\n");
-+			return -EINVAL;
++	rmap_item->nid = get_kpfn_nid(stable_node->kpfn);
++#endif
+ 	rmap_item->head = stable_node;
+ 	rmap_item->address |= STABLE_FLAG;
+ 	hlist_add_head(&rmap_item->hlist, &stable_node->hlist);
+@@ -1289,6 +1355,7 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
+ 	struct mm_slot *slot;
+ 	struct vm_area_struct *vma;
+ 	struct rmap_item *rmap_item;
++	int nid;
+ 
+ 	if (list_empty(&ksm_mm_head.mm_list))
+ 		return NULL;
+@@ -1307,7 +1374,8 @@ static struct rmap_item *scan_get_next_rmap_item(struct page **page)
+ 		 */
+ 		lru_add_drain_all();
+ 
+-		root_unstable_tree = RB_ROOT;
++		for (nid = 0; nid < nr_node_ids; nid++)
++			root_unstable_tree[nid] = RB_ROOT;
+ 
+ 		spin_lock(&ksm_mmlist_lock);
+ 		slot = list_entry(slot->mm_list.next, struct mm_slot, mm_list);
+@@ -1782,15 +1850,19 @@ static struct stable_node *ksm_check_stable_tree(unsigned long start_pfn,
+ 						 unsigned long end_pfn)
+ {
+ 	struct rb_node *node;
++	int nid;
+ 
+-	for (node = rb_first(&root_stable_tree); node; node = rb_next(node)) {
+-		struct stable_node *stable_node;
++	for (nid = 0; nid < nr_node_ids; nid++)
++		for (node = rb_first(&root_stable_tree[nid]); node;
++				node = rb_next(node)) {
++			struct stable_node *stable_node;
++
++			stable_node = rb_entry(node, struct stable_node, node);
++			if (stable_node->kpfn >= start_pfn &&
++			    stable_node->kpfn < end_pfn)
++				return stable_node;
 +		}
-+	} else if (of_machine_is_compatible("wm,wm8650") ||
-+		   of_machine_is_compatible("wm,wm8850")) {
-+		np = of_find_compatible_node(NULL, NULL, "wm,wm8650-gpio");
-+		if (!np) {
-+			dev_err(i2c_dev->dev, "GPIO required for WM8650 i2c\n");
-+			return -EINVAL;
-+		}
-+	} else {
-+		/* If we don't know what machine, assume its configured */
-+		dev_warn(i2c_dev->dev, "unrecognised machine\n");
-+		return 0;
-+	}
-+
-+	gpio_base = of_iomap(np, 0);
-+	if (!gpio_base) {
-+		dev_err(i2c_dev->dev, "failed to map gpio memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	if (of_machine_is_compatible("wm,wm8505")) {
-+		if (nr == 0) {
-+			/* Set gpio pins to alt function */
-+			val = readb(gpio_base + 0x500);
-+			writeb(val & 0xFC, gpio_base + 0x500);
-+		}
-+	} else if (of_machine_is_compatible("wm,wm8650")) {
-+		if (nr == 0) {
-+			/* set gpio pins to alt function */
-+			val = readb(gpio_base + 0x55);
-+			val &= ~(BIT(0) | BIT(1));
-+			writeb(val, gpio_base + 0x55);
-+
-+			/* enable pull */
-+			val = readb(gpio_base + 0x495);
-+			val |= (BIT(0) | BIT(1));
-+			writeb(val, gpio_base + 0x495);
-+
-+			/* set pulled-up */
-+			val = readb(gpio_base + 0x4D5);
-+			val |= (BIT(0) | BIT(1));
-+			writeb(val, gpio_base + 0x4D5);
-+		} else if (nr == 1) {
-+			/* set gpio pins to alt function */
-+			val = readb(gpio_base + 0x49);
-+			val &= ~(BIT(4) | BIT(5));
-+			writeb(val, gpio_base + 0x49);
-+
-+			/* enable pull */
-+			val = readb(gpio_base + 0x489);
-+			val |= (BIT(4) | BIT(5));
-+			writeb(val, gpio_base + 0x489);
-+
-+			/* set pulled-up */
-+			val = readb(gpio_base + 0x4C9);
-+			val |= (BIT(4) | BIT(5));
-+			writeb(val, gpio_base + 0x4C9);
-+		}
-+	} else if (of_machine_is_compatible("wm,wm8850")) {
-+		if ((nr >= 0) && (nr <= 2)) {
-+			mask = 0x03 << (nr << 1);
-+	
-+			/* set gpio pins to alt function */
-+			val = readb(gpio_base + 0x55);
-+			val &= ~mask;
-+			writeb(val, gpio_base + 0x55);
-+
-+			/* enable pull */
-+			val = readb(gpio_base + 0x495);
-+			val |= mask;
-+			writeb(val, gpio_base + 0x495);
-+
-+			/* set pulled-up */
-+			val = readb(gpio_base + 0x4D5);
-+			val |= mask;
-+			writeb(val, gpio_base + 0x4D5);
-+		}
-+	}
-+
-+
-+	iounmap(gpio_base);
-+
-+	return 0;
+ 
+-		stable_node = rb_entry(node, struct stable_node, node);
+-		if (stable_node->kpfn >= start_pfn &&
+-		    stable_node->kpfn < end_pfn)
+-			return stable_node;
+-	}
+ 	return NULL;
+ }
+ 
+@@ -1937,6 +2009,40 @@ static ssize_t run_store(struct kobject *kobj, struct kobj_attribute *attr,
+ }
+ KSM_ATTR(run);
+ 
++#ifdef CONFIG_NUMA
++static ssize_t merge_across_nodes_show(struct kobject *kobj,
++				struct kobj_attribute *attr, char *buf)
++{
++	return sprintf(buf, "%u\n", ksm_merge_across_nodes);
 +}
 +
-+static int wmt_i2c_reset_hardware(struct wmt_i2c_dev *i2c_dev)
++static ssize_t merge_across_nodes_store(struct kobject *kobj,
++				   struct kobj_attribute *attr,
++				   const char *buf, size_t count)
 +{
 +	int err;
++	unsigned long knob;
 +
-+	err = clk_prepare_enable(i2c_dev->clk);
-+	if (err) {
-+		dev_err(i2c_dev->dev, "failed to enable clock\n");
-+		return err;
-+	}
-+
-+	err = clk_set_rate(i2c_dev->clk, 20000000);
-+	if (err) {
-+		dev_err(i2c_dev->dev, "failed to set clock = 20Mhz\n");
-+		return err;
-+	}
-+
-+	err = wmt_i2c_setup_gpio(i2c_dev);
++	err = kstrtoul(buf, 10, &knob);
 +	if (err)
 +		return err;
-+
-+	writew(0, i2c_dev->base + REG_CR);
-+	writew(12, i2c_dev->base + REG_MCR);
-+	writew(ISR_WRITE_ALL, i2c_dev->base + REG_ISR);
-+	writew(IMR_ENABLE_ALL, i2c_dev->base + REG_IMR);
-+	writew(CR_ENABLE, i2c_dev->base + REG_CR);
-+	readw(i2c_dev->base + REG_CSR);		/* read clear */
-+	writew(ISR_WRITE_ALL, i2c_dev->base + REG_ISR);
-+
-+	if (i2c_dev->mode == I2C_MODE_STANDARD)
-+		writew(0x8064, i2c_dev->base + REG_TR);
-+	else
-+		writew(0x8019, i2c_dev->base + REG_TR);
-+
-+	return 0;
-+}
-+
-+static int wmt_i2c_probe(struct platform_device *pdev)
-+{
-+	struct device_node	*np = pdev->dev.of_node;
-+	struct wmt_i2c_dev	*i2c_dev;
-+	struct i2c_adapter	*adap;
-+	struct resource		*res;
-+	int err;
-+	u32 clk_rate;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "device node not found\n");
-+		return -ENODEV;
-+	}
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "no memory resource defined\n");
-+		return -ENODEV;
-+	}
-+
-+	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
-+	if (!i2c_dev) {
-+		dev_err(&pdev->dev, "device memory allocation failed\n");
-+		return -ENOMEM;
-+	}
-+
-+	i2c_dev->base = devm_request_and_ioremap(&pdev->dev, res);
-+	if (!i2c_dev->base) {
-+		dev_err(&pdev->dev, "memory region unavailable\n");
-+		return -ENOMEM;
-+	}
-+
-+	i2c_dev->irq = irq_of_parse_and_map(np, 0);
-+	if (!i2c_dev->irq) {
-+		dev_err(&pdev->dev, "irq missing or invalid\n");
++	if (knob > 1)
 +		return -EINVAL;
++
++	mutex_lock(&ksm_thread_mutex);
++	if (ksm_merge_across_nodes != knob) {
++		if (ksm_pages_shared)
++			err = -EBUSY;
++		else
++			ksm_merge_across_nodes = knob;
 +	}
++	mutex_unlock(&ksm_thread_mutex);
 +
-+	i2c_dev->clk = of_clk_get(np, 0);
-+	if (IS_ERR(i2c_dev->clk)) {
-+		dev_err(&pdev->dev, "unable to request clock\n");
-+		return PTR_ERR(i2c_dev->clk);
-+	}
-+
-+	i2c_dev->mode = I2C_MODE_STANDARD;
-+	err = of_property_read_u32(np, "clock-frequency", &clk_rate);
-+	if ((!err) && (clk_rate == 400000))
-+		i2c_dev->mode = I2C_MODE_FAST;
-+
-+	i2c_dev->dev = &pdev->dev;
-+
-+	err = devm_request_irq(&pdev->dev, i2c_dev->irq, wmt_i2c_isr, 0,
-+							"i2c", i2c_dev);
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to request irq %i\n", i2c_dev->irq);
-+		return err;
-+	}
-+
-+	adap = &i2c_dev->adapter;
-+	i2c_set_adapdata(adap, i2c_dev);
-+	strlcpy(adap->name, "WMT I2C adapter", sizeof(adap->name));
-+	adap->owner		= THIS_MODULE;
-+	adap->class		= I2C_CLASS_HWMON;
-+	adap->algo		= &wmt_i2c_algo;
-+	adap->dev.parent	= &pdev->dev;
-+	adap->dev.of_node	= pdev->dev.of_node;
-+	adap->nr		= of_alias_get_id(pdev->dev.of_node, "i2c");
-+
-+	err = wmt_i2c_reset_hardware(i2c_dev);
-+	if (err) {
-+		dev_err(&pdev->dev, "error initializing hardware\n");
-+		return err;
-+	}
-+
-+	if (adap->nr < 0)
-+		err = i2c_add_adapter(adap);
-+	else
-+		err = i2c_add_numbered_adapter(adap);
-+
-+	if (err) {
-+		dev_err(&pdev->dev, "failed to add adapter\n");
-+		return err;
-+	}
-+
-+	platform_set_drvdata(pdev, i2c_dev);
-+
-+	of_i2c_register_devices(adap);
-+
-+	return 0;
++	return err ? err : count;
 +}
++KSM_ATTR(merge_across_nodes);
++#endif
 +
-+static int wmt_i2c_remove(struct platform_device *pdev)
-+{
-+	struct wmt_i2c_dev *i2c_dev = platform_get_drvdata(pdev);
+ static ssize_t pages_shared_show(struct kobject *kobj,
+ 				 struct kobj_attribute *attr, char *buf)
+ {
+@@ -1991,6 +2097,9 @@ static struct attribute *ksm_attrs[] = {
+ 	&pages_unshared_attr.attr,
+ 	&pages_volatile_attr.attr,
+ 	&full_scans_attr.attr,
++#ifdef CONFIG_NUMA
++	&merge_across_nodes_attr.attr,
++#endif
+ 	NULL,
+ };
+ 
+@@ -2004,11 +2113,15 @@ static int __init ksm_init(void)
+ {
+ 	struct task_struct *ksm_thread;
+ 	int err;
++	int nid;
+ 
+ 	err = ksm_slab_init();
+ 	if (err)
+ 		goto out;
+ 
++	for (nid = 0; nid < nr_node_ids; nid++)
++		root_stable_tree[nid] = RB_ROOT;
 +
-+	i2c_del_adapter(&i2c_dev->adapter);
-+
-+	return 0;
-+}
-+
-+static struct of_device_id wmt_i2c_dt_ids[] = {
-+	{ .compatible = "wm,wm8505-i2c" },
-+	{ /* Sentinel */ },
-+};
-+
-+static struct platform_driver wmt_i2c_driver = {
-+	.probe		= wmt_i2c_probe,
-+	.remove		= wmt_i2c_remove,
-+	.driver		= {
-+		.name	= "wmt-i2c",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = wmt_i2c_dt_ids,
-+	},
-+};
-+
-+module_platform_driver(wmt_i2c_driver);
-+
-+MODULE_DESCRIPTION("Wondermedia I2C master-mode bus adapter");
-+MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, wmt_i2c_dt_ids);
+ 	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
+ 	if (IS_ERR(ksm_thread)) {
+ 		printk(KERN_ERR "ksm: creating kthread failed\n");
 -- 
-1.7.9.5
+1.7.11.7
 
