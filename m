@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab2L1Teh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:34:37 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55476 "EHLO
+	id S932444Ab2L1Te4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:34:56 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55470 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932294Ab2L1TTI (ORCPT
+	by vger.kernel.org with ESMTP id S932134Ab2L1TTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:08 -0500
-Message-Id: <20121228190344.804172822@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:07 -0500
+Message-Id: <20121228190345.474011072@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:40 +0100
+Date: Fri, 28 Dec 2012 20:04:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [ 070/173] drm: fix documentation for drm_crtc_set_mode()
+        Paulo Zanoni <paulo.r.zanoni@intel.com>,
+        Damien Lespiau <damien.lespiau@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 073/173] drm/i915: make the panel fitter work on pipes B and C on IVB
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,33 +29,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Paulo Zanoni <paulo.r.zanoni@intel.com>
 
-commit 4c9287c6009b37754c42e0ba73a4cc79de92d8f8 upstream.
+commit 13888d78c664a1f61d7b09d282f5916993827a40 upstream.
 
-x and y parameters are offsets, not width/height
+I actually found this problem on Haswell, but then discovered Ivy
+Bridge also has it by reading the spec.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+I don't have the hardware to test this.
+
+Signed-off-by: Paulo Zanoni <paulo.r.zanoni@intel.com>
+Reviewed-by: Damien Lespiau <damien.lespiau@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/drm_crtc_helper.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/i915_reg.h      |    2 ++
+ drivers/gpu/drm/i915/intel_display.c |    6 +++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
-index 7105168..b04cf53 100644
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -346,8 +346,8 @@ drm_crtc_prepare_encoders(struct drm_device *dev)
-  * drm_crtc_set_mode - set a mode
-  * @crtc: CRTC to program
-  * @mode: mode to use
-- * @x: width of mode
-- * @y: height of mode
-+ * @x: horizontal offset into the surface
-+ * @y: vertical offset into the surface
-  *
-  * LOCKING:
-  * Caller must hold mode config lock.
+diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_reg.h
+index 5aba146..97fbd9d 100644
+--- a/drivers/gpu/drm/i915/i915_reg.h
++++ b/drivers/gpu/drm/i915/i915_reg.h
+@@ -3339,6 +3339,8 @@
+ #define _PFA_CTL_1               0x68080
+ #define _PFB_CTL_1               0x68880
+ #define  PF_ENABLE              (1<<31)
++#define  PF_PIPE_SEL_MASK_IVB	(3<<29)
++#define  PF_PIPE_SEL_IVB(pipe)	((pipe)<<29)
+ #define  PF_FILTER_MASK		(3<<23)
+ #define  PF_FILTER_PROGRAMMED	(0<<23)
+ #define  PF_FILTER_MED_3x3	(1<<23)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index e233541..c2ef6cd 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3387,7 +3387,11 @@ static void ironlake_crtc_enable(struct drm_crtc *crtc)
+ 		 * as some pre-programmed values are broken,
+ 		 * e.g. x201.
+ 		 */
+-		I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
++		if (IS_IVYBRIDGE(dev))
++			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3 |
++						 PF_PIPE_SEL_IVB(pipe));
++		else
++			I915_WRITE(PF_CTL(pipe), PF_ENABLE | PF_FILTER_MED_3x3);
+ 		I915_WRITE(PF_WIN_POS(pipe), dev_priv->pch_pf_pos);
+ 		I915_WRITE(PF_WIN_SZ(pipe), dev_priv->pch_pf_size);
+ 	}
 
 
