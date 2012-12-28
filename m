@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab2L1Taw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:30:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55540 "EHLO
+	id S932453Ab2L1TbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:31:19 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55535 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932362Ab2L1TTY (ORCPT
+	by vger.kernel.org with ESMTP id S932359Ab2L1TTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:19:24 -0500
-Message-Id: <20121228190343.573357993@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:22 -0500
+Message-Id: <20121228190341.420202006@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:34 +0100
+Date: Fri, 28 Dec 2012 20:04:24 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kamil Iskra <kamil@iskra.name>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 064/173] ACPI / battery: Correct battery capacity values on Thinkpads
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Chintan Mehta <chintan.mehta@sibridgetech.com>,
+        Shimmer Huang <shimmering.h@gmail.com>,
+        Bhavik Kothari <bhavik.kothari@sibridgetech.com>
+Subject: [ 054/173] xHCI: Fix TD Size calculation on 1.0 hosts.
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,220 +30,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kamil Iskra <kamil@iskra.name>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 4000e626156935dfb626321ce09cae2c833eabbb upstream.
+commit 4525c0a10dff7ad3669763c28016c7daffc3900e upstream.
 
-Add a quirk to correctly report battery capacity on 2010 and 2011
-Lenovo Thinkpad models.
+The xHCI 1.0 specification made a change to the TD Size field in TRBs.
+The value is now the number of packets that remain to be sent in the TD,
+not including this TRB.  The TD Size value for the last TRB in a TD must
+always be zero.
 
-The affected models that I tested (x201, t410, t410s, and x220)
-exhibit a problem where, when battery capacity reporting unit is mAh,
-the values being reported are wrong.  Pre-2010 and 2012 models appear
-to always report in mWh and are thus unaffected.  Also, in mid-2012
-Lenovo issued a BIOS update for the 2011 models that fixes the issue
-(tested on x220 with a post-1.29 BIOS).  No such update is available
-for the 2010 models, so those still need this patch.
+The xHCI function xhci_v1_0_td_remainder() attempts to calculate this,
+but it gets it wrong.  First, it erroneously reuses the old
+xhci_td_remainder function, which will right shift the value by 10.  The
+xHCI 1.0 spec as of June 2011 says nothing about right shifting by 10.
+Second, it does not set the TD size for the last TRB in a TD to zero.
 
-Problem description: for some reason, the affected Thinkpads switch
-the reporting unit between mAh and mWh; generally, mAh is used when a
-laptop is plugged in and mWh when it's unplugged, although a
-suspend/resume or rmmod/modprobe is needed for the switch to take
-effect.  The values reported in mAh are *always* wrong.  This does
-not appear to be a kernel regression; I believe that the values were
-never reported correctly.  I tested back to kernel 2.6.34, with
-multiple machines and BIOS versions.
+Third, it uses roundup instead of DIV_ROUND_UP.  The total packet count
+is supposed to be the total number of bytes in this TD, divided by the
+max packet size, rounded up.  DIV_ROUND_UP is the right function to use
+in that case.
 
-Simply plugging a laptop into mains before turning it on is enough to
-reproduce the problem.  Here's a sample /proc/acpi/battery/BAT0/info
-from Thinkpad x220 (before a BIOS update) with a 4-cell battery:
+With the old code, a TD on an endpoint with max packet size 1024 would
+be set up like so:
+TRB 1, TRB length = 600 bytes, TD size = 0
+TRB 1, TRB length = 200 bytes, TD size = 0
+TRB 1, TRB length = 100 bytes, TD size = 0
 
-present:                 yes
-design capacity:         2886 mAh
-last full capacity:      2909 mAh
-battery technology:      rechargeable
-design voltage:          14800 mV
-design capacity warning: 145 mAh
-design capacity low:     13 mAh
-cycle count:              0
-capacity granularity 1:  1 mAh
-capacity granularity 2:  1 mAh
-model number:            42T4899
-serial number:           21064
-battery type:            LION
-OEM info:                SANYO
+With the new code, the TD would be set up like this:
+TRB 1, TRB length = 600 bytes, TD size = 1
+TRB 1, TRB length = 200 bytes, TD size = 1
+TRB 1, TRB length = 100 bytes, TD size = 0
 
-Once the laptop switches the unit to mWh (unplug from mains, suspend,
-resume), the output changes to:
+This commit should be backported to kernels as old as 3.0, that contain
+the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0: Update TD
+size field format."
 
-present:                 yes
-design capacity:         28860 mWh
-last full capacity:      29090 mWh
-battery technology:      rechargeable
-design voltage:          14800 mV
-design capacity warning: 1454 mWh
-design capacity low:     200 mWh
-cycle count:              0
-capacity granularity 1:  1 mWh
-capacity granularity 2:  1 mWh
-model number:            42T4899
-serial number:           21064
-battery type:            LION
-OEM info:                SANYO
-
-Can you see how the values for "design capacity", etc., differ by a
-factor of 10 instead of 14.8 (the design voltage of this battery)?
-On the battery itself it says: 14.8V, 1.95Ah, 29Wh, so clearly the
-values reported in mWh are correct and the ones in mAh are not.
-
-My guess is that this problem has been around ever since those
-machines were released, but because the most common Thinkpad
-batteries are rated at 10.8V, the error (8%) is small enough that it
-simply hasn't been noticed or at least nobody could be bothered to
-look into it.
-
-My patch works around the problem by adjusting the incorrectly
-reported mAh values by "10000 / design_voltage".  The patch also has
-code to figure out if it should be activated or not.  It only
-activates on Lenovo Thinkpads, only when the unit is mAh, and, as an
-extra precaution, only when the battery capacity reported through
-ACPI does not match what is reported through DMI (I've never
-encountered a machine where the first two conditions would be true
-but the last would not, but better safe than sorry).
-
-I've been using this patch for close to a year on several systems
-without any problems.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=41062
-Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Chintan Mehta <chintan.mehta@sibridgetech.com>
+Reported-by: Shimmer Huang <shimmering.h@gmail.com>
+Tested-by: Bhavik Kothari <bhavik.kothari@sibridgetech.com>
+Tested-by: Shimmer Huang <shimmering.h@gmail.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/battery.c |   77 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
+ drivers/usb/host/xhci-ring.c |   32 +++++++++++++++++++-------------
+ 1 file changed, 19 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index 45e3e17..7efaeaa 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -34,6 +34,7 @@
- #include <linux/dmi.h>
- #include <linux/slab.h>
- #include <linux/suspend.h>
-+#include <asm/unaligned.h>
- 
- #ifdef CONFIG_ACPI_PROCFS_POWER
- #include <linux/proc_fs.h>
-@@ -95,6 +96,18 @@ enum {
- 	ACPI_BATTERY_ALARM_PRESENT,
- 	ACPI_BATTERY_XINFO_PRESENT,
- 	ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY,
-+	/* On Lenovo Thinkpad models from 2010 and 2011, the power unit
-+	   switches between mWh and mAh depending on whether the system
-+	   is running on battery or not.  When mAh is the unit, most
-+	   reported values are incorrect and need to be adjusted by
-+	   10000/design_voltage.  Verified on x201, t410, t410s, and x220.
-+	   Pre-2010 and 2012 models appear to always report in mWh and
-+	   are thus unaffected (tested with t42, t61, t500, x200, x300,
-+	   and x230).  Also, in mid-2012 Lenovo issued a BIOS update for
-+	   the 2011 models that fixes the issue (tested on x220 with a
-+	   post-1.29 BIOS), but as of Nov. 2012, no such update is
-+	   available for the 2010 models.  */
-+	ACPI_BATTERY_QUIRK_THINKPAD_MAH,
- };
- 
- struct acpi_battery {
-@@ -438,6 +451,21 @@ static int acpi_battery_get_info(struct acpi_battery *battery)
- 	kfree(buffer.pointer);
- 	if (test_bit(ACPI_BATTERY_QUIRK_PERCENTAGE_CAPACITY, &battery->flags))
- 		battery->full_charge_capacity = battery->design_capacity;
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
-+	    battery->power_unit && battery->design_voltage) {
-+		battery->design_capacity = battery->design_capacity *
-+		    10000 / battery->design_voltage;
-+		battery->full_charge_capacity = battery->full_charge_capacity *
-+		    10000 / battery->design_voltage;
-+		battery->design_capacity_warning =
-+		    battery->design_capacity_warning *
-+		    10000 / battery->design_voltage;
-+		/* Curiously, design_capacity_low, unlike the rest of them,
-+		   is correct.  */
-+		/* capacity_granularity_* equal 1 on the systems tested, so
-+		   it's impossible to tell if they would need an adjustment
-+		   or not if their values were higher.  */
-+	}
- 	return result;
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 77f1ace..cbb44b7 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -3071,11 +3071,11 @@ static u32 xhci_td_remainder(unsigned int remainder)
  }
  
-@@ -486,6 +514,11 @@ static int acpi_battery_get_state(struct acpi_battery *battery)
- 	    && battery->capacity_now >= 0 && battery->capacity_now <= 100)
- 		battery->capacity_now = (battery->capacity_now *
- 				battery->full_charge_capacity) / 100;
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags) &&
-+	    battery->power_unit && battery->design_voltage) {
-+		battery->capacity_now = battery->capacity_now *
-+		    10000 / battery->design_voltage;
-+	}
- 	return result;
- }
- 
-@@ -595,6 +628,24 @@ static void sysfs_remove_battery(struct acpi_battery *battery)
- 	mutex_unlock(&battery->sysfs_lock);
- }
- 
-+static void find_battery(const struct dmi_header *dm, void *private)
-+{
-+	struct acpi_battery *battery = (struct acpi_battery *)private;
-+	/* Note: the hardcoded offsets below have been extracted from
-+	   the source code of dmidecode.  */
-+	if (dm->type == DMI_ENTRY_PORTABLE_BATTERY && dm->length >= 8) {
-+		const u8 *dmi_data = (const u8 *)(dm + 1);
-+		int dmi_capacity = get_unaligned((const u16 *)(dmi_data + 6));
-+		if (dm->length >= 18)
-+			dmi_capacity *= dmi_data[17];
-+		if (battery->design_capacity * battery->design_voltage / 1000
-+		    != dmi_capacity &&
-+		    battery->design_capacity * 10 == dmi_capacity)
-+			set_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
-+				&battery->flags);
-+	}
-+}
-+
  /*
-  * According to the ACPI spec, some kinds of primary batteries can
-  * report percentage battery remaining capacity directly to OS.
-@@ -620,6 +671,32 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
- 		battery->capacity_now = (battery->capacity_now *
- 				battery->full_charge_capacity) / 100;
- 	}
-+
-+	if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH, &battery->flags))
-+		return ;
-+
-+	if (battery->power_unit && dmi_name_in_vendors("LENOVO")) {
-+		const char *s;
-+		s = dmi_get_system_info(DMI_PRODUCT_VERSION);
-+		if (s && !strnicmp(s, "ThinkPad", 8)) {
-+			dmi_walk(find_battery, battery);
-+			if (test_bit(ACPI_BATTERY_QUIRK_THINKPAD_MAH,
-+				     &battery->flags) &&
-+			    battery->design_voltage) {
-+				battery->design_capacity =
-+				    battery->design_capacity *
-+				    10000 / battery->design_voltage;
-+				battery->full_charge_capacity =
-+				    battery->full_charge_capacity *
-+				    10000 / battery->design_voltage;
-+				battery->design_capacity_warning =
-+				    battery->design_capacity_warning *
-+				    10000 / battery->design_voltage;
-+				battery->capacity_now = battery->capacity_now *
-+				    10000 / battery->design_voltage;
-+			}
-+		}
-+	}
+- * For xHCI 1.0 host controllers, TD size is the number of packets remaining in
+- * the TD (*not* including this TRB).
++ * For xHCI 1.0 host controllers, TD size is the number of max packet sized
++ * packets remaining in the TD (*not* including this TRB).
+  *
+  * Total TD packet count = total_packet_count =
+- *     roundup(TD size in bytes / wMaxPacketSize)
++ *     DIV_ROUND_UP(TD size in bytes / wMaxPacketSize)
+  *
+  * Packets transferred up to and including this TRB = packets_transferred =
+  *     rounddown(total bytes transferred including this TRB / wMaxPacketSize)
+@@ -3083,15 +3083,16 @@ static u32 xhci_td_remainder(unsigned int remainder)
+  * TD size = total_packet_count - packets_transferred
+  *
+  * It must fit in bits 21:17, so it can't be bigger than 31.
++ * The last TRB in a TD must have the TD size set to zero.
+  */
+-
+ static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
+-		unsigned int total_packet_count, struct urb *urb)
++		unsigned int total_packet_count, struct urb *urb,
++		unsigned int num_trbs_left)
+ {
+ 	int packets_transferred;
+ 
+ 	/* One TRB with a zero-length data packet. */
+-	if (running_total == 0 && trb_buff_len == 0)
++	if (num_trbs_left == 0 || (running_total == 0 && trb_buff_len == 0))
+ 		return 0;
+ 
+ 	/* All the TRB queueing functions don't count the current TRB in
+@@ -3100,7 +3101,9 @@ static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
+ 	packets_transferred = (running_total + trb_buff_len) /
+ 		usb_endpoint_maxp(&urb->ep->desc);
+ 
+-	return xhci_td_remainder(total_packet_count - packets_transferred);
++	if ((total_packet_count - packets_transferred) > 31)
++		return 31 << 17;
++	return (total_packet_count - packets_transferred) << 17;
  }
  
- static int acpi_battery_update(struct acpi_battery *battery)
+ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+@@ -3127,7 +3130,7 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 
+ 	num_trbs = count_sg_trbs_needed(xhci, urb);
+ 	num_sgs = urb->num_mapped_sgs;
+-	total_packet_count = roundup(urb->transfer_buffer_length,
++	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
+ 			usb_endpoint_maxp(&urb->ep->desc));
+ 
+ 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
+@@ -3210,7 +3213,8 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 					running_total);
+ 		} else {
+ 			remainder = xhci_v1_0_td_remainder(running_total,
+-					trb_buff_len, total_packet_count, urb);
++					trb_buff_len, total_packet_count, urb,
++					num_trbs - 1);
+ 		}
+ 		length_field = TRB_LEN(trb_buff_len) |
+ 			remainder |
+@@ -3318,7 +3322,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 	start_cycle = ep_ring->cycle_state;
+ 
+ 	running_total = 0;
+-	total_packet_count = roundup(urb->transfer_buffer_length,
++	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
+ 			usb_endpoint_maxp(&urb->ep->desc));
+ 	/* How much data is in the first TRB? */
+ 	addr = (u64) urb->transfer_dma;
+@@ -3364,7 +3368,8 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 					running_total);
+ 		} else {
+ 			remainder = xhci_v1_0_td_remainder(running_total,
+-					trb_buff_len, total_packet_count, urb);
++					trb_buff_len, total_packet_count, urb,
++					num_trbs - 1);
+ 		}
+ 		length_field = TRB_LEN(trb_buff_len) |
+ 			remainder |
+@@ -3627,7 +3632,7 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 		addr = start_addr + urb->iso_frame_desc[i].offset;
+ 		td_len = urb->iso_frame_desc[i].length;
+ 		td_remain_len = td_len;
+-		total_packet_count = roundup(td_len,
++		total_packet_count = DIV_ROUND_UP(td_len,
+ 				usb_endpoint_maxp(&urb->ep->desc));
+ 		/* A zero-length transfer still involves at least one packet. */
+ 		if (total_packet_count == 0)
+@@ -3706,7 +3711,8 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
+ 			} else {
+ 				remainder = xhci_v1_0_td_remainder(
+ 						running_total, trb_buff_len,
+-						total_packet_count, urb);
++						total_packet_count, urb,
++						(trbs_per_td - j - 1));
+ 			}
+ 			length_field = TRB_LEN(trb_buff_len) |
+ 				remainder |
 
 
