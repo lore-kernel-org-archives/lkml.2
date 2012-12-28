@@ -1,281 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab2L1UgF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:36:05 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:64965 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752501Ab2L1Uf6 (ORCPT
+	id S1754365Ab2L1UlA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:41:00 -0500
+Received: from jacques.telenet-ops.be ([195.130.132.50]:38925 "EHLO
+	jacques.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab2L1Uk7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:35:58 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 01/24] cfq-iosched: Properly name all references to IO class
-Date: Fri, 28 Dec 2012 12:35:23 -0800
-Message-Id: <1356726946-26037-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1356726946-26037-1-git-send-email-tj@kernel.org>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+	Fri, 28 Dec 2012 15:40:59 -0500
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: [PATCH] mips: Export min_low_pfn if CONFIG_FLATMEM
+Date: Fri, 28 Dec 2012 21:40:56 +0100
+Message-Id: <1356727256-3172-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
+If CONFIG_FLATMEM=y on MIPS, pfn_valid() (and thus virt_addr_valid()) uses
+min_low_pfn. However, min_low_pfn is not exported by the generic bootmem
+code.
 
-Currently CFQ has three IO classes, RT, BE and IDLE. At many a places we
-are calling workloads belonging to these classes as "prio". This gets
-very confusing as one starts to associate it with ioprio.
+As of commit e52a29326462badd9ceec90a9eb2ac2a8550e02e ("aoe: avoid races
+between device destruction and discovery"), aoeblk_open() uses
+virt_addr_valid(), causing a link error in the modular case:
 
-So this patch just does bunch of renaming so that reading code becomes
-easier. All reference to RT, BE and IDLE workload are done using keyword
-"class" and all references to subclass, SYNC, SYNC-IDLE, ASYNC are made
-using keyword "type".
+    ERROR: "min_low_pfn" [drivers/block/aoe/aoe.ko] undefined!
 
-This makes me feel much better while I am reading the code. There is no
-functionality change due to this patch.
+Add a custom export to fix this, just like is done for ia64 in
+arch/ia64/kernel/ia64_ksyms.c.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 ---
- block/cfq-iosched.c | 67 +++++++++++++++++++++++++++--------------------------
- 1 file changed, 34 insertions(+), 33 deletions(-)
+http://kisskb.ellerman.id.au/kisskb/buildresult/7864918/
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index e62e920..7646dfd 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -155,7 +155,7 @@ struct cfq_queue {
-  * First index in the service_trees.
-  * IDLE is handled separately, so it has negative index
-  */
--enum wl_prio_t {
-+enum wl_class_t {
- 	BE_WORKLOAD = 0,
- 	RT_WORKLOAD = 1,
- 	IDLE_WORKLOAD = 2,
-@@ -250,7 +250,7 @@ struct cfq_group {
- 
- 	unsigned long saved_workload_slice;
- 	enum wl_type_t saved_workload;
--	enum wl_prio_t saved_serving_prio;
-+	enum wl_class_t saved_serving_class;
- 
- 	/* number of requests that are on the dispatch list or inside driver */
- 	int dispatched;
-@@ -280,7 +280,7 @@ struct cfq_data {
- 	/*
- 	 * The priority currently being served
- 	 */
--	enum wl_prio_t serving_prio;
-+	enum wl_class_t serving_class;
- 	enum wl_type_t serving_type;
- 	unsigned long workload_expires;
- 	struct cfq_group *serving_group;
-@@ -354,16 +354,16 @@ struct cfq_data {
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd);
- 
- static struct cfq_rb_root *service_tree_for(struct cfq_group *cfqg,
--					    enum wl_prio_t prio,
-+					    enum wl_class_t class,
- 					    enum wl_type_t type)
- {
- 	if (!cfqg)
- 		return NULL;
- 
--	if (prio == IDLE_WORKLOAD)
-+	if (class == IDLE_WORKLOAD)
- 		return &cfqg->service_tree_idle;
- 
--	return &cfqg->service_trees[prio][type];
-+	return &cfqg->service_trees[class][type];
- }
- 
- enum cfqq_state_flags {
-@@ -732,7 +732,7 @@ static inline bool iops_mode(struct cfq_data *cfqd)
- 		return false;
- }
- 
--static inline enum wl_prio_t cfqq_prio(struct cfq_queue *cfqq)
-+static inline enum wl_class_t cfqq_class(struct cfq_queue *cfqq)
- {
- 	if (cfq_class_idle(cfqq))
- 		return IDLE_WORKLOAD;
-@@ -751,16 +751,16 @@ static enum wl_type_t cfqq_type(struct cfq_queue *cfqq)
- 	return SYNC_WORKLOAD;
- }
- 
--static inline int cfq_group_busy_queues_wl(enum wl_prio_t wl,
-+static inline int cfq_group_busy_queues_wl(enum wl_class_t wl_class,
- 					struct cfq_data *cfqd,
- 					struct cfq_group *cfqg)
- {
--	if (wl == IDLE_WORKLOAD)
-+	if (wl_class == IDLE_WORKLOAD)
- 		return cfqg->service_tree_idle.count;
- 
--	return cfqg->service_trees[wl][ASYNC_WORKLOAD].count
--		+ cfqg->service_trees[wl][SYNC_NOIDLE_WORKLOAD].count
--		+ cfqg->service_trees[wl][SYNC_WORKLOAD].count;
-+	return cfqg->service_trees[wl_class][ASYNC_WORKLOAD].count
-+		+ cfqg->service_trees[wl_class][SYNC_NOIDLE_WORKLOAD].count
-+		+ cfqg->service_trees[wl_class][SYNC_WORKLOAD].count;
- }
- 
- static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
-@@ -1304,7 +1304,7 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 		cfqg->saved_workload_slice = cfqd->workload_expires
- 						- jiffies;
- 		cfqg->saved_workload = cfqd->serving_type;
--		cfqg->saved_serving_prio = cfqd->serving_prio;
-+		cfqg->saved_serving_class = cfqd->serving_class;
- 	} else
- 		cfqg->saved_workload_slice = 0;
- 
-@@ -1616,7 +1616,7 @@ static void cfq_service_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	int left;
- 	int new_cfqq = 1;
- 
--	service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
-+	service_tree = service_tree_for(cfqq->cfqg, cfqq_class(cfqq),
- 						cfqq_type(cfqq));
- 	if (cfq_class_idle(cfqq)) {
- 		rb_key = CFQ_IDLE_DELAY;
-@@ -2030,8 +2030,8 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
- 				   struct cfq_queue *cfqq)
- {
- 	if (cfqq) {
--		cfq_log_cfqq(cfqd, cfqq, "set_active wl_prio:%d wl_type:%d",
--				cfqd->serving_prio, cfqd->serving_type);
-+		cfq_log_cfqq(cfqd, cfqq, "set_active wl_class:%d wl_type:%d",
-+				cfqd->serving_class, cfqd->serving_type);
- 		cfqg_stats_update_avg_queue_size(cfqq->cfqg);
- 		cfqq->slice_start = 0;
- 		cfqq->dispatch_start = jiffies;
-@@ -2118,7 +2118,7 @@ static inline void cfq_slice_expired(struct cfq_data *cfqd, bool timed_out)
- static struct cfq_queue *cfq_get_next_queue(struct cfq_data *cfqd)
- {
- 	struct cfq_rb_root *service_tree =
--		service_tree_for(cfqd->serving_group, cfqd->serving_prio,
-+		service_tree_for(cfqd->serving_group, cfqd->serving_class,
- 					cfqd->serving_type);
- 
- 	if (!cfqd->rq_queued)
-@@ -2285,7 +2285,7 @@ static struct cfq_queue *cfq_close_cooperator(struct cfq_data *cfqd,
- 
- static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- {
--	enum wl_prio_t prio = cfqq_prio(cfqq);
-+	enum wl_class_t wl_class = cfqq_class(cfqq);
- 	struct cfq_rb_root *service_tree = cfqq->service_tree;
- 
- 	BUG_ON(!service_tree);
-@@ -2295,7 +2295,7 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 		return false;
- 
- 	/* We never do for idle class queues. */
--	if (prio == IDLE_WORKLOAD)
-+	if (wl_class == IDLE_WORKLOAD)
- 		return false;
- 
- 	/* We do for queues that were marked with idle window flag. */
-@@ -2495,7 +2495,7 @@ static void cfq_setup_merge(struct cfq_queue *cfqq, struct cfq_queue *new_cfqq)
- }
- 
- static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
--				struct cfq_group *cfqg, enum wl_prio_t prio)
-+			struct cfq_group *cfqg, enum wl_class_t wl_class)
- {
- 	struct cfq_queue *queue;
- 	int i;
-@@ -2505,7 +2505,7 @@ static enum wl_type_t cfq_choose_wl(struct cfq_data *cfqd,
- 
- 	for (i = 0; i <= SYNC_WORKLOAD; ++i) {
- 		/* select the one with lowest rb_key */
--		queue = cfq_rb_first(service_tree_for(cfqg, prio, i));
-+		queue = cfq_rb_first(service_tree_for(cfqg, wl_class, i));
- 		if (queue &&
- 		    (!key_valid || time_before(queue->rb_key, lowest_key))) {
- 			lowest_key = queue->rb_key;
-@@ -2523,20 +2523,20 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	unsigned count;
- 	struct cfq_rb_root *st;
- 	unsigned group_slice;
--	enum wl_prio_t original_prio = cfqd->serving_prio;
-+	enum wl_class_t original_class = cfqd->serving_class;
- 
- 	/* Choose next priority. RT > BE > IDLE */
- 	if (cfq_group_busy_queues_wl(RT_WORKLOAD, cfqd, cfqg))
--		cfqd->serving_prio = RT_WORKLOAD;
-+		cfqd->serving_class = RT_WORKLOAD;
- 	else if (cfq_group_busy_queues_wl(BE_WORKLOAD, cfqd, cfqg))
--		cfqd->serving_prio = BE_WORKLOAD;
-+		cfqd->serving_class = BE_WORKLOAD;
- 	else {
--		cfqd->serving_prio = IDLE_WORKLOAD;
-+		cfqd->serving_class = IDLE_WORKLOAD;
- 		cfqd->workload_expires = jiffies + 1;
- 		return;
- 	}
- 
--	if (original_prio != cfqd->serving_prio)
-+	if (original_class != cfqd->serving_class)
- 		goto new_workload;
- 
- 	/*
-@@ -2544,7 +2544,7 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	 * (SYNC, SYNC_NOIDLE, ASYNC), and to compute a workload
- 	 * expiration time
- 	 */
--	st = service_tree_for(cfqg, cfqd->serving_prio, cfqd->serving_type);
-+	st = service_tree_for(cfqg, cfqd->serving_class, cfqd->serving_type);
- 	count = st->count;
- 
- 	/*
-@@ -2556,8 +2556,8 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
- new_workload:
- 	/* otherwise select new workload type */
- 	cfqd->serving_type =
--		cfq_choose_wl(cfqd, cfqg, cfqd->serving_prio);
--	st = service_tree_for(cfqg, cfqd->serving_prio, cfqd->serving_type);
-+		cfq_choose_wl(cfqd, cfqg, cfqd->serving_class);
-+	st = service_tree_for(cfqg, cfqd->serving_class, cfqd->serving_type);
- 	count = st->count;
- 
- 	/*
-@@ -2568,8 +2568,9 @@ new_workload:
- 	group_slice = cfq_group_slice(cfqd, cfqg);
- 
- 	slice = group_slice * count /
--		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_prio],
--		      cfq_group_busy_queues_wl(cfqd->serving_prio, cfqd, cfqg));
-+		max_t(unsigned, cfqg->busy_queues_avg[cfqd->serving_class],
-+		      cfq_group_busy_queues_wl(cfqd->serving_class, cfqd,
-+					cfqg));
- 
- 	if (cfqd->serving_type == ASYNC_WORKLOAD) {
- 		unsigned int tmp;
-@@ -2620,7 +2621,7 @@ static void cfq_choose_cfqg(struct cfq_data *cfqd)
- 	if (cfqg->saved_workload_slice) {
- 		cfqd->workload_expires = jiffies + cfqg->saved_workload_slice;
- 		cfqd->serving_type = cfqg->saved_workload;
--		cfqd->serving_prio = cfqg->saved_serving_prio;
-+		cfqd->serving_class = cfqg->saved_serving_class;
- 	} else
- 		cfqd->workload_expires = jiffies - 1;
- 
-@@ -3645,7 +3646,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 			service_tree = cfqq->service_tree;
- 		else
- 			service_tree = service_tree_for(cfqq->cfqg,
--				cfqq_prio(cfqq), cfqq_type(cfqq));
-+				cfqq_class(cfqq), cfqq_type(cfqq));
- 		service_tree->ttime.last_end_request = now;
- 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
- 			cfqd->last_delayed_sync = now;
+ arch/mips/kernel/mips_ksyms.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/arch/mips/kernel/mips_ksyms.c b/arch/mips/kernel/mips_ksyms.c
+index df1e3e4..8579bb8 100644
+--- a/arch/mips/kernel/mips_ksyms.c
++++ b/arch/mips/kernel/mips_ksyms.c
+@@ -60,3 +60,8 @@ EXPORT_SYMBOL(invalid_pte_table);
+ /* _mcount is defined in arch/mips/kernel/mcount.S */
+ EXPORT_SYMBOL(_mcount);
+ #endif
++
++#ifdef CONFIG_FLATMEM
++#include <linux/bootmem.h>
++EXPORT_SYMBOL(min_low_pfn);	/* defined by bootmem.c, but not exported by generic code */
++#endif
 -- 
-1.8.0.2
+1.7.0.4
 
