@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab2L1TRt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:49 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55077 "EHLO
+	id S1754624Ab2L1TRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:17:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55075 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754499Ab2L1TRm (ORCPT
+	by vger.kernel.org with ESMTP id S1754549Ab2L1TRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:17:42 -0500
-Message-Id: <20121228190358.332989074@decadent.org.uk>
+Message-Id: <20121228190358.063252052@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:49 +0100
+Date: Fri, 28 Dec 2012 20:05:47 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 139/173] nfsd4: fix oops on unusual readlike compound
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 137/173] ALSA: hda - Fix the wrong pincaps set in ALC861VD dallas/hp fixup
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,56 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit d5f50b0c290431c65377c4afa1c764e2c3fe5305 upstream.
+commit b78562b10fa66175e30b76073e32a0ad8d92aa83 upstream.
 
-If the argument and reply together exceed the maximum payload size, then
-a reply with a read-like operation can overlow the rq_pages array.
+The workaround to force VREF50 for dallas/hp model with ALC861VD
+was introduced in commit 8fdcb6fe4204bdb4c6991652717ab5063751414e,
+but it contained wrong pincap override bits.
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+This patch fixes to exclude VREF80 pincap bit correctly.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/nfsd/nfs4xdr.c |   11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2909,11 +2909,16 @@ nfsd4_encode_read(struct nfsd4_compoundr
- 	len = maxcount;
- 	v = 0;
- 	while (len > 0) {
--		pn = resp->rqstp->rq_resused++;
-+		pn = resp->rqstp->rq_resused;
-+		if (!resp->rqstp->rq_respages[pn]) { /* ran out of pages */
-+			maxcount -= len;
-+			break;
-+		}
- 		resp->rqstp->rq_vec[v].iov_base =
- 			page_address(resp->rqstp->rq_respages[pn]);
- 		resp->rqstp->rq_vec[v].iov_len =
- 			len < PAGE_SIZE ? len : PAGE_SIZE;
-+		resp->rqstp->rq_resused++;
- 		v++;
- 		len -= PAGE_SIZE;
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 16d210a..6ee3459 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6570,8 +6570,8 @@ static void alc861vd_fixup_dallas(struct hda_codec *codec,
+ 				  const struct alc_fixup *fix, int action)
+ {
+ 	if (action == ALC_FIXUP_ACT_PRE_PROBE) {
+-		snd_hda_override_pin_caps(codec, 0x18, 0x00001714);
+-		snd_hda_override_pin_caps(codec, 0x19, 0x0000171c);
++		snd_hda_override_pin_caps(codec, 0x18, 0x00000734);
++		snd_hda_override_pin_caps(codec, 0x19, 0x0000073c);
  	}
-@@ -2959,6 +2964,8 @@ nfsd4_encode_readlink(struct nfsd4_compo
- 		return nfserr;
- 	if (resp->xbuf->page_len)
- 		return nfserr_resource;
-+	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
-+		return nfserr_resource;
+ }
  
- 	page = page_address(resp->rqstp->rq_respages[resp->rqstp->rq_resused++]);
- 
-@@ -3008,6 +3015,8 @@ nfsd4_encode_readdir(struct nfsd4_compou
- 		return nfserr;
- 	if (resp->xbuf->page_len)
- 		return nfserr_resource;
-+	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
-+		return nfserr_resource;
- 
- 	RESERVE_SPACE(8);  /* verifier */
- 	savep = p;
 
 
