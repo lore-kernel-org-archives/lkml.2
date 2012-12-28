@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754787Ab2L1TWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:22:47 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55715 "EHLO
+	id S1754802Ab2L1TWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:22:52 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55729 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932477Ab2L1TT6 (ORCPT
+	by vger.kernel.org with ESMTP id S932486Ab2L1TT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:58 -0500
-Message-Id: <20121228190336.463606909@decadent.org.uk>
+Message-Id: <20121228190334.825197123@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:01 +0100
+Date: Fri, 28 Dec 2012 20:03:53 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Alex Graf <agraf@suse.de>, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: [ 031/173] s390/kvm: dont announce RRBM support
+        Duncan Roe <duncan_roe@acslink.net.au>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 023/173] ALSA: hda - Fix missing beep on ASUS X43U notebook
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,60 +27,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Borntraeger <borntraeger@de.ibm.com>
+From: Duncan Roe <duncan_roe@acslink.net.au>
 
-commit 87cac8f879a5ecd7109dbe688087e8810b3364eb upstream.
+commit 7110005e8d5c3cd418fc4b64f9f124f004422a9a upstream.
 
-Newer kernels (linux-next with the transparent huge page patches)
-use rrbm if the feature is announced via feature bit 66.
-RRBM will cause intercepts, so KVM does not handle it right now,
-causing an illegal instruction in the guest.
-The  easy solution is to disable the feature bit for the guest.
-
-This fixes bugs like:
-Kernel BUG at 0000000000124c2a [verbose debug info unavailable]
-illegal operation: 0001 [#1] SMP
-Modules linked in: virtio_balloon virtio_net ipv6 autofs4
-CPU: 0 Not tainted 3.5.4 #1
-Process fmempig (pid: 659, task: 000000007b712fd0, ksp: 000000007bed3670)
-Krnl PSW : 0704d00180000000 0000000000124c2a (pmdp_clear_flush_young+0x5e/0x80)
-     R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:3 CC:1 PM:0 EA:3
-     00000000003cc000 0000000000000004 0000000000000000 0000000079800000
-     0000000000040000 0000000000000000 000000007bed3918 000000007cf40000
-     0000000000000001 000003fff7f00000 000003d281a94000 000000007bed383c
-     000000007bed3918 00000000005ecbf8 00000000002314a6 000000007bed36e0
- Krnl Code:>0000000000124c2a: b9810025          ogr     %r2,%r5
-           0000000000124c2e: 41343000           la      %r3,0(%r4,%r3)
-           0000000000124c32: a716fffa           brct    %r1,124c26
-           0000000000124c36: b9010022           lngr    %r2,%r2
-           0000000000124c3a: e3d0f0800004       lg      %r13,128(%r15)
-           0000000000124c40: eb22003f000c       srlg    %r2,%r2,63
-[ 2150.713198] Call Trace:
-[ 2150.713223] ([<00000000002312c4>] page_referenced_one+0x6c/0x27c)
-[ 2150.713749]  [<0000000000233812>] page_referenced+0x32a/0x410
-[...]
-
-CC: Alex Graf <agraf@suse.de>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Duncan Roe <duncan_roe@acslink.net.au>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/kvm/kvm-s390.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_realtek.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/s390/kvm/kvm-s390.c b/arch/s390/kvm/kvm-s390.c
-index ecced9d..38883f0 100644
---- a/arch/s390/kvm/kvm-s390.c
-+++ b/arch/s390/kvm/kvm-s390.c
-@@ -997,7 +997,7 @@ static int __init kvm_s390_init(void)
- 	}
- 	memcpy(facilities, S390_lowcore.stfle_fac_list, 16);
- 	facilities[0] &= 0xff00fff3f47c0000ULL;
--	facilities[1] &= 0x201c000000000000ULL;
-+	facilities[1] &= 0x001c000000000000ULL;
- 	return 0;
- }
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 8568aee..7bec68c 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4245,6 +4245,7 @@ static void alc_auto_init_std(struct hda_codec *codec)
+ 	((spec)->beep_amp = HDA_COMPOSE_AMP_VAL(nid, 3, idx, dir))
  
+ static const struct snd_pci_quirk beep_white_list[] = {
++	SND_PCI_QUIRK(0x1043, 0x103c, "ASUS", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
+ 	SND_PCI_QUIRK(0x1043, 0x831a, "EeePC", 1),
 
 
