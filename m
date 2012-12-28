@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab2L1Tyi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:54:38 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55000 "EHLO
+	id S1754595Ab2L1Tyd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:54:33 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55004 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754326Ab2L1TRN (ORCPT
+	by vger.kernel.org with ESMTP id S1754428Ab2L1TRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:17:13 -0500
-Message-Id: <20121228190400.710267219@decadent.org.uk>
+Message-Id: <20121228190401.441155002@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:06:06 +0100
+Date: Fri, 28 Dec 2012 20:06:11 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Shiyan <shc_work@mail.ru>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 156/173] irda: sir_dev: Fix copy/paste typo
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Chen Gang <gang.chen@asianux.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 161/173] telephony: ijx: buffer overflow in ixj_write_cid()
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,29 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Shiyan <shc_work@mail.ru>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[ Upstream commit 2355a62bcbdcc4b567425bab036bfab6ade87eed ]
+[Not needed in 3.8 or newer as this driver is removed there. - gregkh]
 
-Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+We get this from user space and nothing has been done to ensure that
+these strings are NUL terminated.
+
+Reported-by: Chen Gang <gang.chen@asianux.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/irda/sir_dev.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/telephony/ixj.c |   24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/irda/sir_dev.c b/drivers/net/irda/sir_dev.c
-index 5039f08..43e9ab4 100644
---- a/drivers/net/irda/sir_dev.c
-+++ b/drivers/net/irda/sir_dev.c
-@@ -222,7 +222,7 @@ static void sirdev_config_fsm(struct work_struct *work)
- 			break;
+diff --git a/drivers/telephony/ixj.c b/drivers/telephony/ixj.c
+index d5f923b..e1abb45 100644
+--- a/drivers/telephony/ixj.c
++++ b/drivers/telephony/ixj.c
+@@ -3190,12 +3190,12 @@ static void ixj_write_cid(IXJ *j)
  
- 		case SIRDEV_STATE_DONGLE_SPEED:
--			if (dev->dongle_drv->reset) {
-+			if (dev->dongle_drv->set_speed) {
- 				ret = dev->dongle_drv->set_speed(dev, fsm->param);
- 				if (ret < 0) {
- 					fsm->result = ret;
+ 	ixj_fsk_alloc(j);
+ 
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
+@@ -3340,12 +3340,12 @@ static void ixj_write_cidcw(IXJ *j)
+ 		ixj_pre_cid(j);
+ 	}
+ 	j->flags.cidcw_ack = 0;
+-	strcpy(sdmf1, j->cid_send.month);
+-	strcat(sdmf1, j->cid_send.day);
+-	strcat(sdmf1, j->cid_send.hour);
+-	strcat(sdmf1, j->cid_send.min);
+-	strcpy(sdmf2, j->cid_send.number);
+-	strcpy(sdmf3, j->cid_send.name);
++	strlcpy(sdmf1, j->cid_send.month, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.day, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.hour, sizeof(sdmf1));
++	strlcat(sdmf1, j->cid_send.min, sizeof(sdmf1));
++	strlcpy(sdmf2, j->cid_send.number, sizeof(sdmf2));
++	strlcpy(sdmf3, j->cid_send.name, sizeof(sdmf3));
+ 
+ 	len1 = strlen(sdmf1);
+ 	len2 = strlen(sdmf2);
 
 
