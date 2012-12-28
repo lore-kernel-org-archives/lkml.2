@@ -1,129 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753855Ab2L1QWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 11:22:15 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37299 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753723Ab2L1QWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 11:22:12 -0500
-Date: Fri, 28 Dec 2012 17:22:09 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: azurIt <azurit@pobox.sk>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        cgroups mailinglist <cgroups@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH for 3.2.34] memcg: do not trigger OOM from
- add_to_page_cache_locked
-Message-ID: <20121228162209.GA1455@dhcp22.suse.cz>
-References: <20121210094318.GA6777@dhcp22.suse.cz>
- <20121210111817.F697F53E@pobox.sk>
- <20121210155205.GB6777@dhcp22.suse.cz>
- <20121217023430.5A390FD7@pobox.sk>
- <20121217163203.GD25432@dhcp22.suse.cz>
- <20121217192301.829A7020@pobox.sk>
- <20121217195510.GA16375@dhcp22.suse.cz>
- <20121218152223.6912832C@pobox.sk>
- <20121218152004.GA25208@dhcp22.suse.cz>
- <20121224142526.020165D3@pobox.sk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121224142526.020165D3@pobox.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753859Ab2L1Q3i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 11:29:38 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:52626 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753685Ab2L1Q3g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 11:29:36 -0500
+From: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+To: matt.fleming@intel.com
+Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        "Lee, Chun-Yi" <jlee@suse.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>
+Subject: [PATCH 2/3] rtc-efi: add timezone to rtc_time that will used by rtc-efi
+Date: Sat, 29 Dec 2012 00:26:40 +0800
+Message-Id: <1356712001-12198-2-git-send-email-jlee@suse.com>
+X-Mailer: git-send-email 1.6.0.2
+In-Reply-To: <1356712001-12198-1-git-send-email-jlee@suse.com>
+References: <1356712001-12198-1-git-send-email-jlee@suse.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 24-12-12 14:25:26, azurIt wrote:
-> >OK, good to hear and fingers crossed. I will try to get back to the
-> >original problem and a better solution sometimes early next year when
-> >all the things settle a bit.
-> 
-> 
-> Michal, problem, unfortunately, happened again :( twice. When it
-> happened first time (two days ago) i don't want to believe it so i
-> recompiled the kernel and boot it again to be sure i really used your
-> patch. Today it happened again, here is report:
-> http://watchdog.sk/lkml/memcg-bug-3.tar.gz
+Per UEFI 2.3.1 spec, we can use SetTime() to store the timezone value to BIOS and 
+get it back by GetTime(). It's good for installation system to gain the default 
+timezone setting from BIOS that was set by manufacturer. 
 
-Hmm, 1356352982/1507/stack says
-[<ffffffff8110a971>] mem_cgroup_handle_oom+0x241/0x3b0
-[<ffffffff8110b55b>] T.1147+0x5ab/0x5c0
-[<ffffffff8110c1de>] mem_cgroup_cache_charge+0xbe/0xe0
-[<ffffffff810ca20f>] add_to_page_cache_locked+0x4f/0x140
-[<ffffffff810ca322>] add_to_page_cache_lru+0x22/0x50
-[<ffffffff810cac53>] find_or_create_page+0x73/0xb0
-[<ffffffff8114340a>] __getblk+0xea/0x2c0
-[<ffffffff811921ab>] ext3_getblk+0xeb/0x240
-[<ffffffff81192319>] ext3_bread+0x19/0x90
-[<ffffffff811967e3>] ext3_dx_find_entry+0x83/0x1e0
-[<ffffffff81196c24>] ext3_find_entry+0x2e4/0x480
-[<ffffffff8119750d>] ext3_lookup+0x4d/0x120
-[<ffffffff8111cff5>] d_alloc_and_lookup+0x45/0x90
-[<ffffffff8111d598>] do_lookup+0x278/0x390
-[<ffffffff8111f11e>] path_lookupat+0xae/0x7e0
-[<ffffffff8111f885>] do_path_lookup+0x35/0xe0
-[<ffffffff8111fa19>] user_path_at_empty+0x59/0xb0
-[<ffffffff8111fa81>] user_path_at+0x11/0x20
-[<ffffffff811164d7>] vfs_fstatat+0x47/0x80
-[<ffffffff8111657e>] vfs_lstat+0x1e/0x20
-[<ffffffff811165a4>] sys_newlstat+0x24/0x50
-[<ffffffff815b5a66>] system_call_fastpath+0x18/0x1d
-[<ffffffffffffffff>] 0xffffffffffffffff
+This patch adds new field tm_timezone to rtc_time struct for expose the timezone
+to userspace. And, patch also adds the check logic to rtc-efi when convert timezone.
+The check logic of timezone only affect on x86 architecture and keep the original
+EFI_UNSPECIFIED_TIMEZONE value on IA64.
 
-which suggests that the patch is incomplete and that I am blind :/
-mem_cgroup_cache_charge calls __mem_cgroup_try_charge for the page cache
-and that one doesn't check GFP_MEMCG_NO_OOM. So you need the following
-follow-up patch on top of the one you already have (which should catch
-all the remaining cases).
-Sorry about that...
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+Signed-off-by: Lee, Chun-Yi <jlee@suse.com>
 ---
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 89997ac..559a54d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2779,6 +2779,7 @@ __mem_cgroup_commit_charge_lrucare(struct page *page, struct mem_cgroup *memcg,
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
+ drivers/rtc/rtc-efi.c    |   20 +++++++++++++++++---
+ include/uapi/linux/rtc.h |    1 +
+ 2 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/rtc/rtc-efi.c b/drivers/rtc/rtc-efi.c
+index c9f890b..4e74ec0 100644
+--- a/drivers/rtc/rtc-efi.c
++++ b/drivers/rtc/rtc-efi.c
+@@ -62,7 +62,7 @@ compute_wday(efi_time_t *eft)
+ 	return (ndays + 4) % 7;
+ }
+ 
+-static void
++static int
+ convert_to_efi_time(struct rtc_time *wtime, efi_time_t *eft)
  {
-+	bool oom = !(gfp_mask & GFP_MEMCG_NO_OOM);
- 	struct mem_cgroup *memcg = NULL;
- 	int ret;
- 
-@@ -2791,7 +2792,7 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 		mm = &init_mm;
- 
- 	if (page_is_file_cache(page)) {
--		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, true);
-+		ret = __mem_cgroup_try_charge(mm, gfp_mask, 1, &memcg, oom);
- 		if (ret || !memcg)
- 			return ret;
- 
-@@ -2827,6 +2828,7 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 				 struct page *page,
- 				 gfp_t mask, struct mem_cgroup **ptr)
- {
-+	bool oom = !(mask & GFP_MEMCG_NO_OOM);
- 	struct mem_cgroup *memcg;
- 	int ret;
- 
-@@ -2849,13 +2851,13 @@ int mem_cgroup_try_charge_swapin(struct mm_struct *mm,
- 	if (!memcg)
- 		goto charge_cur_mm;
- 	*ptr = memcg;
--	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, true);
-+	ret = __mem_cgroup_try_charge(NULL, mask, 1, ptr, oom);
- 	css_put(&memcg->css);
- 	return ret;
- charge_cur_mm:
- 	if (unlikely(!mm))
- 		mm = &init_mm;
--	return __mem_cgroup_try_charge(mm, mask, 1, ptr, true);
-+	return __mem_cgroup_try_charge(mm, mask, 1, ptr, oom);
+ 	eft->year	= wtime->tm_year + 1900;
+@@ -73,7 +73,16 @@ convert_to_efi_time(struct rtc_time *wtime, efi_time_t *eft)
+ 	eft->second 	= wtime->tm_sec;
+ 	eft->nanosecond = 0;
+ 	eft->daylight	= wtime->tm_isdst ? EFI_ISDST : 0;
++#ifdef CONFIG_X86
++	if (abs(wtime->tm_timezone) > 1440 &&
++			wtime->tm_timezone != EFI_UNSPECIFIED_TIMEZONE)
++		return -EINVAL;
++	eft->timezone	= wtime->tm_timezone;
++#else
+ 	eft->timezone	= EFI_UNSPECIFIED_TIMEZONE;
++#endif /* CONFIG_X86 */
++
++	return 0;
  }
  
  static void
+@@ -86,6 +95,9 @@ convert_from_efi_time(efi_time_t *eft, struct rtc_time *wtime)
+ 	wtime->tm_mday = eft->day;
+ 	wtime->tm_mon  = eft->month - 1;
+ 	wtime->tm_year = eft->year - 1900;
++#ifdef CONFIG_X86
++	wtime->tm_timezone = eft->timezone;
++#endif /* CONFIG_X86 */
+ 
+ 	/* day of the week [0-6], Sunday=0 */
+ 	wtime->tm_wday = compute_wday(eft);
+@@ -130,7 +142,8 @@ static int efi_set_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
+ 	efi_time_t eft;
+ 	efi_status_t status;
+ 
+-	convert_to_efi_time(&wkalrm->time, &eft);
++	if (convert_to_efi_time(&wkalrm->time, &eft))
++		return -EINVAL;
+ 
+ 	/*
+ 	 * XXX Fixme:
+@@ -171,7 +184,8 @@ static int efi_set_time(struct device *dev, struct rtc_time *tm)
+ 	efi_status_t status;
+ 	efi_time_t eft;
+ 
+-	convert_to_efi_time(tm, &eft);
++	if (convert_to_efi_time(tm, &eft))
++		return -EINVAL;
+ 
+ 	status = efi.set_time(&eft);
+ 
+diff --git a/include/uapi/linux/rtc.h b/include/uapi/linux/rtc.h
+index f8c82e6..841725f 100644
+--- a/include/uapi/linux/rtc.h
++++ b/include/uapi/linux/rtc.h
+@@ -27,6 +27,7 @@ struct rtc_time {
+ 	int tm_wday;
+ 	int tm_yday;
+ 	int tm_isdst;
++	int tm_timezone;
+ };
+ 
+ /*
 -- 
-Michal Hocko
-SUSE Labs
+1.6.4.2
+
