@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864Ab2L1T2O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:28:14 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:24489 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab2L1T2K (ORCPT
+	id S1754898Ab2L1T1o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:27:44 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55621 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932337Ab2L1TTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:28:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] module: prevent warning when finit_module a 0 sized file
-Date: Fri, 28 Dec 2012 14:27:17 -0500
-Message-Id: <1356722837-1457-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Fri, 28 Dec 2012 14:19:39 -0500
+Message-Id: <20121228190339.438295612@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 28 Dec 2012 20:04:15 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 045/173] usb: musb: cppi_dma: export cppi_interrupt()
+In-Reply-To: <20121228190330.025298996@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.217.219.220
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we try to finit_module on a file sized 0 bytes vmalloc will
-scream and spit out a warning.
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-Since modules have to be bigger than 0 bytes anyways we can just
-check that beforehand and avoid the warning.
+------------------
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+
+commit 8b416b0b25d5d8ddb3a91c1d20e1373582c50405 upstream.
+
+Now that DaVinci glue layer can be modular, we must export cppi_interrupt()
+that it may call...
+
+Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/module.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/musb/cppi_dma.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 250092c..2e1ce2e 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2527,6 +2527,12 @@ static int copy_module_from_fd(int fd, struct load_info *info)
- 		err = -EFBIG;
- 		goto out;
- 	}
-+
-+	if (stat.size == 0) {
-+		err = -EINVAL;
-+		goto out;
-+	}
-+
- 	info->hdr = vmalloc(stat.size);
- 	if (!info->hdr) {
- 		err = -ENOMEM;
--- 
-1.8.0.2
+--- a/drivers/usb/musb/cppi_dma.c
++++ b/drivers/usb/musb/cppi_dma.c
+@@ -1313,6 +1313,7 @@ irqreturn_t cppi_interrupt(int irq, void
+ 
+ 	return IRQ_HANDLED;
+ }
++EXPORT_SYMBOL_GPL(cppi_interrupt);
+ 
+ /* Instantiate a software object representing a DMA controller. */
+ struct dma_controller *__init
+
 
