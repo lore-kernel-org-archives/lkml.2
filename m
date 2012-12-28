@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754507Ab2L1UAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:00:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54872 "EHLO
+	id S1754986Ab2L1UBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:01:11 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54859 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754194Ab2L1TQu (ORCPT
+	by vger.kernel.org with ESMTP id S1754160Ab2L1TQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:50 -0500
-Message-Id: <20121228190334.014647549@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:47 -0500
+Message-Id: <20121228190333.797385171@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:49 +0100
+Date: Fri, 28 Dec 2012 20:03:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Masanari Iida <standby24x7@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 019/173] drivers/leds/leds-lp5521.c: fix typo
+        David Milburn <dmilburn@redhat.com>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [ 018/173] sata_svw: check DMA start bit before reset
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,33 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Masanari Iida <standby24x7@gmail.com>
+From: David Milburn <dmilburn@redhat.com>
 
-commit 3a2fd4a14112452eb5c1a079ac8b3f4842762afe upstream.
+commit b03e66a6be91f8389fcd902ab6c1563db1c9c06b upstream.
 
-"reseting" -> "resetting"
+If kdump is triggered with pending IO, controller may not respond causing
+kdump to fail.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+http://marc.info/?l=linux-ide&m=133032255424658&w=2
+
+During error recovery ata_do_dev_read_id never completes due hang
+in mmio_insw.
+
+ata_do_dev_read_id
+ ata_sff_data_xfer
+  ioread16_rep
+   mmio_insw
+
+if DMA start bit is cleared before reset, PIO command is successful
+and kdump succeeds.
+
+Signed-off-by: David Milburn <dmilburn@redhat.com>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/leds/leds-lp5521.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/ata/sata_svw.c |   35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
-diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
-index d62a798..c42c8f0 100644
---- a/drivers/leds/leds-lp5521.c
-+++ b/drivers/leds/leds-lp5521.c
-@@ -694,7 +694,7 @@ static int __devinit lp5521_probe(struct i2c_client *client,
- 	 */
- 	lp5521_read(client, LP5521_REG_R_CURRENT, &buf);
- 	if (buf != LP5521_REG_R_CURR_DEFAULT) {
--		dev_err(&client->dev, "error in reseting chip\n");
-+		dev_err(&client->dev, "error in resetting chip\n");
- 		goto fail2;
- 	}
- 	usleep_range(10000, 20000);
+diff --git a/drivers/ata/sata_svw.c b/drivers/ata/sata_svw.c
+index 44a4256..08608de 100644
+--- a/drivers/ata/sata_svw.c
++++ b/drivers/ata/sata_svw.c
+@@ -142,6 +142,39 @@ static int k2_sata_scr_write(struct ata_link *link,
+ 	return 0;
+ }
+ 
++static int k2_sata_softreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return ata_sff_softreset(link, class, deadline);
++}
++
++static int k2_sata_hardreset(struct ata_link *link,
++			     unsigned int *class, unsigned long deadline)
++{
++	u8 dmactl;
++	void __iomem *mmio = link->ap->ioaddr.bmdma_addr;
++
++	dmactl = readb(mmio + ATA_DMA_CMD);
++
++	/* Clear the start bit */
++	if (dmactl & ATA_DMA_START) {
++		dmactl &= ~ATA_DMA_START;
++		writeb(dmactl, mmio + ATA_DMA_CMD);
++	}
++
++	return sata_sff_hardreset(link, class, deadline);
++}
+ 
+ static void k2_sata_tf_load(struct ata_port *ap, const struct ata_taskfile *tf)
+ {
+@@ -346,6 +379,8 @@ static struct scsi_host_template k2_sata_sht = {
+ 
+ static struct ata_port_operations k2_sata_ops = {
+ 	.inherits		= &ata_bmdma_port_ops,
++	.softreset              = k2_sata_softreset,
++	.hardreset              = k2_sata_hardreset,
+ 	.sff_tf_load		= k2_sata_tf_load,
+ 	.sff_tf_read		= k2_sata_tf_read,
+ 	.sff_check_status	= k2_stat_check_status,
 
 
