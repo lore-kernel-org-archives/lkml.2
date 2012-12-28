@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab2L1Tfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:35:36 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55430 "EHLO
+	id S932323Ab2L1Tf3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:35:29 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55442 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932273Ab2L1TTC (ORCPT
+	by vger.kernel.org with ESMTP id S932280Ab2L1TTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:02 -0500
-Message-Id: <20121228190348.641050174@decadent.org.uk>
+Message-Id: <20121228190346.537463659@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:58 +0100
+Date: Fri, 28 Dec 2012 20:04:48 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>, Xiangliang Yu <yuxiangl@marvell.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 088/173] [SCSI] mvsas: fix undefined bit shift
+        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+        =?ISO-8859-15?q?Thomas=20Sch=C3=A4fer?= <tschaefer@t-online.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [ 078/173] USB: option: blacklist network interface on Huawei E173
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,73 +29,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Bjørn Mork <bjorn@mork.no>
 
-commit beecadea1b8d67f591b13f7099559f32f3fd601d upstream.
+commit f36446cf9bbebaa03a80d95cfeeafbaf68218249 upstream.
 
-The macro bit(n) is defined as ((u32)1 << n), and thus it doesn't work
-with n >= 32, such as in mvs_94xx_assign_reg_set():
+The Huawei E173 will normally appear as 12d1:1436 in Linux.  But
+the modem has another mode with different device ID and a slightly
+different set of descriptors. This is the mode used by Windows like
+this:
 
-	if (i >= 32) {
-		mvi->sata_reg_set |= bit(i);
-		...
-	}
+  3Modem:      USB\VID_12D1&PID_140C&MI_00\6&3A1D2012&0&0000
+  Networkcard: USB\VID_12D1&PID_140C&MI_01\6&3A1D2012&0&0001
+  Appli.Inter: USB\VID_12D1&PID_140C&MI_02\6&3A1D2012&0&0002
+  PC UI Inter: USB\VID_12D1&PID_140C&MI_03\6&3A1D2012&0&0003
 
-The shift ((u32)1 << n) with n >= 32 also leads to undefined behavior.
-The result varies depending on the architecture.
+All interfaces have the same ff/ff/ff class codes in this mode.
+Blacklisting the network interface to allow it to be picked up by
+the network driver.
 
-This patch changes bit(n) to do a 64-bit shift.  It also simplifies
-mv_ffc64() using __ffs64(), since invoking ffz() with ~0 is undefined.
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Acked-by: Xiangliang Yu <yuxiangl@marvell.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Reported-by: Thomas Schäfer <tschaefer@t-online.de>
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/mvsas/mv_94xx.h |   14 ++------------
- drivers/scsi/mvsas/mv_sas.h  |    2 +-
- 2 files changed, 3 insertions(+), 13 deletions(-)
+ drivers/usb/serial/option.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/scsi/mvsas/mv_94xx.h b/drivers/scsi/mvsas/mv_94xx.h
-index 8f7eb4f..487aa6f 100644
---- a/drivers/scsi/mvsas/mv_94xx.h
-+++ b/drivers/scsi/mvsas/mv_94xx.h
-@@ -258,21 +258,11 @@ enum sas_sata_phy_regs {
- #define SPI_ADDR_VLD_94XX         	(1U << 1)
- #define SPI_CTRL_SpiStart_94XX     	(1U << 0)
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 15365f9..e6f87b7 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -80,6 +80,7 @@ static void option_instat_callback(struct urb *urb);
+ #define OPTION_PRODUCT_GTM380_MODEM		0x7201
  
--#define mv_ffc(x)   ffz(x)
--
- static inline int
- mv_ffc64(u64 v)
- {
--	int i;
--	i = mv_ffc((u32)v);
--	if (i >= 0)
--		return i;
--	i = mv_ffc((u32)(v>>32));
--
--	if (i != 0)
--		return 32 + i;
--
--	return -1;
-+	u64 x = ~v;
-+	return x ? __ffs64(x) : -1;
- }
- 
- #define r_reg_set_enable(i) \
-diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
-index c04a4f5..da24955 100644
---- a/drivers/scsi/mvsas/mv_sas.h
-+++ b/drivers/scsi/mvsas/mv_sas.h
-@@ -69,7 +69,7 @@ extern struct kmem_cache *mvs_task_list_cache;
- #define DEV_IS_EXPANDER(type)	\
- 	((type == EDGE_DEV) || (type == FANOUT_DEV))
- 
--#define bit(n) ((u32)1 << n)
-+#define bit(n) ((u64)1 << n)
- 
- #define for_each_phy(__lseq_mask, __mc, __lseq)			\
- 	for ((__mc) = (__lseq_mask), (__lseq) = 0;		\
+ #define HUAWEI_VENDOR_ID			0x12D1
++#define HUAWEI_PRODUCT_E173			0x140C
+ #define HUAWEI_PRODUCT_K4505			0x1464
+ #define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_K4605			0x14C6
+@@ -552,6 +553,8 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLX) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GKE) },
+ 	{ USB_DEVICE(QUANTA_VENDOR_ID, QUANTA_PRODUCT_GLE) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E173, 0xff, 0xff, 0xff),
++		.driver_info = (kernel_ulong_t) &net_intf1_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff),
+ 		.driver_info = (kernel_ulong_t) &huawei_cdc12_blacklist },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff),
 
 
