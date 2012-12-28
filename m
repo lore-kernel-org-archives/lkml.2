@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab2L1TQw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:16:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54840 "EHLO
+	id S1754349Ab2L1TRE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:17:04 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54920 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753711Ab2L1TQl (ORCPT
+	by vger.kernel.org with ESMTP id S1754211Ab2L1TQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:41 -0500
-Message-Id: <20121228190331.745415727@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:59 -0500
+Message-Id: <20121228190403.079524028@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:38 +0100
+Date: Fri, 28 Dec 2012 20:06:23 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Calvin Walton <calvin.walton@kepstin.ca>
-Subject: [ 008/173] i915: Quirk no_lvds on Gigabyte GA-D525TUD ITX motherboard
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        WANG Cong <xiyou.wangcong@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 173/173] ramoops: fix use of rounddown_pow_of_two()
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,46 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Calvin Walton <calvin.walton@kepstin.ca>
+From: Marco Stornelli <marco.stornelli@gmail.com>
 
-commit a51d4ed01e5bb39d2cf36a12f9976ab08872c192 upstream.
+commit fdb5950754eb3dedb9fea7c8828d3e51d9dbc3f7 upstream.
 
-This board is incorrectly detected as having an LVDS connector,
-resulting in the VGA output (the only available output on the board)
-showing the console only in the top-left 1024x768 pixels, and an extra
-LVDS connector appearing in X.
+The return value of rounddown_pow_of_two wasn't evaluated, so the
+operation was a no-op.
 
-It's a desktop Mini-ITX board using an Atom D525 CPU with an NM10
-chipset.
-
-I've had this board for about a year, but this is the first time I
-noticed the issue because I've been running it headless for most of its
-life.
-
-Signed-off-by: Calvin Walton <calvin.walton@kepstin.ca>
+Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
+Reported-by: Andrew Morton <akpm@linux-foundation.org>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/char/ramoops.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index e05c0d3..e9a6f6a 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -780,6 +780,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "ZBOXSD-ID12/ID13"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "Gigabyte GA-D525TUD",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "Gigabyte Technology Co., Ltd."),
-+			DMI_MATCH(DMI_BOARD_NAME, "D525TUD"),
-+		},
-+	},
+diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+index feda90c..9c152ab 100644
+--- a/drivers/char/ramoops.c
++++ b/drivers/char/ramoops.c
+@@ -125,8 +125,8 @@ static int __init ramoops_probe(struct platform_device *pdev)
+ 		goto fail3;
+ 	}
  
- 	{ }	/* terminating entry */
- };
+-	rounddown_pow_of_two(pdata->mem_size);
+-	rounddown_pow_of_two(pdata->record_size);
++	pdata->mem_size = rounddown_pow_of_two(pdata->mem_size);
++	pdata->record_size = rounddown_pow_of_two(pdata->record_size);
+ 
+ 	/* Check for the minimum memory size */
+ 	if (pdata->mem_size < MIN_MEM_SIZE &&
 
 
