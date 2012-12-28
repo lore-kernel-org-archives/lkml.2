@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab2L1UAG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:00:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54870 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754192Ab2L1TQu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:50 -0500
-Message-Id: <20121228190333.385175939@decadent.org.uk>
-User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:46 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 016/173] use clamp_t in UNAME26 fix
-In-Reply-To: <20121228190330.025298996@decadent.org.uk>
-X-SA-Exim-Connect-IP: 151.217.219.220
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754938Ab2L1UAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:00:25 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:44760 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754199Ab2L1UAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 15:00:22 -0500
+Message-ID: <1356724821.31130.19.camel@joe-AO722>
+Subject: Re: [PATCH] get_maintainer.pl: Find maintainers for removed files
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Date: Fri, 28 Dec 2012 12:00:21 -0800
+In-Reply-To: <1356722870-18325-1-git-send-email-geert@linux-m68k.org>
+References: <1356722870-18325-1-git-send-email-geert@linux-m68k.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.2-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 2012-12-28 at 20:27 +0100, Geert Uytterhoeven wrote:
+> For removed files, get_maintainer.pl doesn't find any maintainers (besides
+> the default linux-kernel@vger.kernel.org), as it only looks at the "+++"
+> lines, which are "/dev/null" for removals.
+> Fix this by extending the parsing to the "---" lines.
+[]
+> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
+[]
+> @@ -433,7 +433,7 @@ foreach my $file (@ARGV) {
+>  
+>  	while (<$patch>) {
+>  	    my $patch_line = $_;
+> -	    if (m/^\+\+\+\s+(\S+)/) {
+> +	    if (m/^\+\+\+\s+(\S+)/ or m/^---\s+(\S+)/) {
+>  		my $filename = $1;
+>  		$filename =~ s@^[^/]*/@@;
+>  		$filename =~ s@\n@@;
 
-------------------
-
-From: Kees Cook <keescook@chromium.org>
-
-commit 31fd84b95eb211d5db460a1dda85e004800a7b52 upstream.
-
-The min/max call needed to have explicit types on some architectures
-(e.g. mn10300). Use clamp_t instead to avoid the warning:
-
-  kernel/sys.c: In function 'override_release':
-  kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
-
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
----
- kernel/sys.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sys.c b/kernel/sys.c
-index 01865c6..e6e0ece 100644
---- a/kernel/sys.c
-+++ b/kernel/sys.c
-@@ -1284,7 +1284,7 @@ static int override_release(char __user *release, size_t len)
- 			rest++;
- 		}
- 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
--		copy = min(sizeof(buf), max_t(size_t, 1, len));
-+		copy = clamp_t(size_t, len, 1, sizeof(buf));
- 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
- 		ret = copy_to_user(release, buf, copy + 1);
- 	}
+OK, but this would now match any keyword in a deleted filename.
 
 
