@@ -1,53 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab2L1Cnm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 21:43:42 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:47843 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753320Ab2L1Cly (ORCPT
+	id S1753122Ab2L1CqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 21:46:05 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:59355 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751654Ab2L1CqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 21:41:54 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID qBS2fKG7002305, This message is released by code: ctaloc0852
-From: <wei_wang@realsil.com.cn>
-To: <cjb@laptop.org>, <sameo@linux.intel.com>
-CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v3 1/8] MFD:rtsx: Fix typo in comment
-Date: Fri, 28 Dec 2012 10:41:19 +0800
-Message-ID: <96e414124cedf14c9783acbf6579f6ce357da2d1.1356662293.git.wei_wang@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1356662293.git.wei_wang@realsil.com.cn>
-References: <cover.1356662293.git.wei_wang@realsil.com.cn>
+	Thu, 27 Dec 2012 21:46:04 -0500
+Date: Thu, 27 Dec 2012 21:45:10 -0500 (EST)
+From: Zhouping Liu <zliu@redhat.com>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        mgorman@suse.de, hughd@google.com,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hillf Danton <dhillf@gmail.com>, sedat.dilek@gmail.com
+Message-ID: <1828895463.36547216.1356662710202.JavaMail.root@redhat.com>
+In-Reply-To: <50DC622B.7000802@iskon.hr>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at
+ 0000000000000500
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.16.255.10]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei WANG <wei_wang@realsil.com.cn>
+> 
+> Thank you for the report Zhouping!
+> 
+> Would you be so kind to test the following patch and report results?
+> Apply the patch to the latest mainline.
 
-Fix a misspelling word in comment
+Hello Zlatko,
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- include/linux/mfd/rtsx_pci.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I have tested the below patch(applied it on mainline directly),
+but IMO, I'd like to say it maybe don't fix the issue completely.
 
-diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-index 060b721..bebe9f9 100644
---- a/include/linux/mfd/rtsx_pci.h
-+++ b/include/linux/mfd/rtsx_pci.h
-@@ -452,7 +452,7 @@
- #define	SD_RSP_TYPE_R6			0x01
- #define	SD_RSP_TYPE_R7			0x01
- 
--/* SD_CONFIURE3 */
-+/* SD_CONFIGURE3 */
- #define	SD_RSP_80CLK_TIMEOUT_EN		0x01
- 
- /* Card Transfer Reset Register */
+run the reproducer[1] on two machine, one machine has 2 numa nodes(8Gb RAM),
+another one has 4 numa nodes(8Gb RAM), then the system hung all the time, such as the dmesg log:
+
+[  713.066937] Killed process 6085 (oom01) total-vm:18880768kB, anon-rss:7915612kB, file-rss:4kB
+[  959.555269] INFO: task kworker/13:2:147 blocked for more than 120 seconds.
+[  959.562144] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 1079.382018] INFO: task kworker/13:2:147 blocked for more than 120 seconds.
+[ 1079.388872] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 1199.209709] INFO: task kworker/13:2:147 blocked for more than 120 seconds.
+[ 1199.216562] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 1319.036939] INFO: task kworker/13:2:147 blocked for more than 120 seconds.
+[ 1319.043794] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 1438.864797] INFO: task kworker/13:2:147 blocked for more than 120 seconds.
+[ 1438.871649] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 1558.691611] INFO: task kworker/13:2:147 blocked for more than 120 seconds.
+[ 1558.698466] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+......
+
+I'm not sure whether it's your patch triggering the hung task or not, but reverted cda73a10eb3,
+the reproducer(oom01) can PASS without both 'NULL pointer dereference at 0000000000000500' and hung task issues.
+
+but some time, it's possible that the reproducer(oom01) cause hung task on a box with large RAM(100Gb+), so I can't judge it...
+
+Thanks,
+Zhouping
+
+> 
+> Thanks,
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 23291b9..e55ce55 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2564,6 +2564,7 @@ static bool prepare_kswapd_sleep(pg_data_t
+> *pgdat, int order, long remaining,
+>  static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>  							int *classzone_idx)
+>  {
+> +	bool pgdat_is_balanced = false;
+>  	struct zone *unbalanced_zone;
+>  	int i;
+>  	int end_zone = 0;	/* Inclusive.  0 = ZONE_DMA */
+> @@ -2638,8 +2639,11 @@ loop_again:
+>  				zone_clear_flag(zone, ZONE_CONGESTED);
+>  			}
+>  		}
+> -		if (i < 0)
+> +
+> +		if (i < 0) {
+> +			pgdat_is_balanced = true;
+>  			goto out;
+> +		}
+>  
+>  		for (i = 0; i <= end_zone; i++) {
+>  			struct zone *zone = pgdat->node_zones + i;
+> @@ -2766,8 +2770,11 @@ loop_again:
+>  				pfmemalloc_watermark_ok(pgdat))
+>  			wake_up(&pgdat->pfmemalloc_wait);
+>  
+> -		if (pgdat_balanced(pgdat, order, *classzone_idx))
+> +		if (pgdat_balanced(pgdat, order, *classzone_idx)) {
+> +			pgdat_is_balanced = true;
+>  			break;		/* kswapd: all done */
+> +		}
+> +
+>  		/*
+>  		 * OK, kswapd is getting into trouble.  Take a nap, then take
+>  		 * another pass across the zones.
+> @@ -2775,7 +2782,7 @@ loop_again:
+>  		if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
+>  			if (has_under_min_watermark_zone)
+>  				count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
+> -			else
+> +			else if (unbalanced_zone)
+>  				wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
+>  		}
+>  
+> @@ -2788,9 +2795,9 @@ loop_again:
+>  		if (sc.nr_reclaimed >= SWAP_CLUSTER_MAX)
+>  			break;
+>  	} while (--sc.priority >= 0);
+> -out:
+>  
+> -	if (!pgdat_balanced(pgdat, order, *classzone_idx)) {
+> +out:
+> +	if (!pgdat_is_balanced) {
+>  		cond_resched();
+>  
+>  		try_to_freeze();
+> 
+> --
+> Zlatko
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
 -- 
-1.7.9.5
-
+Thanks,
+Zhouping
