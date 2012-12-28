@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab2L1TbT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:31:19 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55535 "EHLO
+	id S932429Ab2L1TbS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:31:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55537 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932359Ab2L1TTW (ORCPT
+	by vger.kernel.org with ESMTP id S932361Ab2L1TTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 14:19:22 -0500
-Message-Id: <20121228190341.420202006@decadent.org.uk>
+Message-Id: <20121228190343.769288215@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:24 +0100
+Date: Fri, 28 Dec 2012 20:04:35 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Chintan Mehta <chintan.mehta@sibridgetech.com>,
-        Shimmer Huang <shimmering.h@gmail.com>,
-        Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Subject: [ 054/173] xHCI: Fix TD Size calculation on 1.0 hosts.
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>
+Subject: [ 065/173] cgroup: remove incorrect dget/dput() pair in cgroup_create_dir()
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,157 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 4525c0a10dff7ad3669763c28016c7daffc3900e upstream.
+commit 175431635ec09b1d1bba04979b006b99e8305a83 upstream.
 
-The xHCI 1.0 specification made a change to the TD Size field in TRBs.
-The value is now the number of packets that remain to be sent in the TD,
-not including this TRB.  The TD Size value for the last TRB in a TD must
-always be zero.
+cgroup_create_dir() does weird dancing with dentry refcnt.  On
+success, it gets and then puts it achieving nothing.  On failure, it
+puts but there isn't no matching get anywhere leading to the following
+oops if cgroup_create_file() fails for whatever reason.
 
-The xHCI function xhci_v1_0_td_remainder() attempts to calculate this,
-but it gets it wrong.  First, it erroneously reuses the old
-xhci_td_remainder function, which will right shift the value by 10.  The
-xHCI 1.0 spec as of June 2011 says nothing about right shifting by 10.
-Second, it does not set the TD size for the last TRB in a TD to zero.
+  ------------[ cut here ]------------
+  kernel BUG at /work/os/work/fs/dcache.c:552!
+  invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+  Modules linked in:
+  CPU 2
+  Pid: 697, comm: mkdir Not tainted 3.7.0-rc4-work+ #3 Bochs Bochs
+  RIP: 0010:[<ffffffff811d9c0c>]  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+  RSP: 0018:ffff88001a3ebef8  EFLAGS: 00010246
+  RAX: 0000000000000000 RBX: ffff88000e5b1ef8 RCX: 0000000000000403
+  RDX: 0000000000000303 RSI: 2000000000000000 RDI: ffff88000e5b1f58
+  RBP: ffff88001a3ebf18 R08: ffffffff82c76960 R09: 0000000000000001
+  R10: ffff880015022080 R11: ffd9bed70f48a041 R12: 00000000ffffffea
+  R13: 0000000000000001 R14: ffff88000e5b1f58 R15: 00007fff57656d60
+  FS:  00007ff05fcb3800(0000) GS:ffff88001fd00000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+  CR2: 00000000004046f0 CR3: 000000001315f000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process mkdir (pid: 697, threadinfo ffff88001a3ea000, task ffff880015022080)
+  Stack:
+   ffff88001a3ebf48 00000000ffffffea 0000000000000001 0000000000000000
+   ffff88001a3ebf38 ffffffff811cc889 0000000000000001 ffff88000e5b1ef8
+   ffff88001a3ebf68 ffffffff811d1fc9 ffff8800198d7f18 ffff880019106ef8
+  Call Trace:
+   [<ffffffff811cc889>] done_path_create+0x19/0x50
+   [<ffffffff811d1fc9>] sys_mkdirat+0x59/0x80
+   [<ffffffff811d2009>] sys_mkdir+0x19/0x20
+   [<ffffffff81be1e02>] system_call_fastpath+0x16/0x1b
+  Code: 00 48 8d 90 18 01 00 00 48 89 93 c0 00 00 00 4c 89 a0 18 01 00 00 48 8b 83 a0 00 00 00 83 80 28 01 00 00 01 e8 e6 6f a0 00 eb 92 <0f> 0b 66 90 0f 1f 44 00 00 55 48 89 e5 41 57 41 56 49 89 fe 41
+  RIP  [<ffffffff811d9c0c>] dput+0x1dc/0x1e0
+   RSP <ffff88001a3ebef8>
+  ---[ end trace 1277bcfd9561ddb0 ]---
 
-Third, it uses roundup instead of DIV_ROUND_UP.  The total packet count
-is supposed to be the total number of bytes in this TD, divided by the
-max packet size, rounded up.  DIV_ROUND_UP is the right function to use
-in that case.
+Fix it by dropping the unnecessary dget/dput() pair.
 
-With the old code, a TD on an endpoint with max packet size 1024 would
-be set up like so:
-TRB 1, TRB length = 600 bytes, TD size = 0
-TRB 1, TRB length = 200 bytes, TD size = 0
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-With the new code, the TD would be set up like this:
-TRB 1, TRB length = 600 bytes, TD size = 1
-TRB 1, TRB length = 200 bytes, TD size = 1
-TRB 1, TRB length = 100 bytes, TD size = 0
-
-This commit should be backported to kernels as old as 3.0, that contain
-the commit 4da6e6f247a2601ab9f1e63424e4d944ed4124f3 "xhci 1.0: Update TD
-size field format."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Chintan Mehta <chintan.mehta@sibridgetech.com>
-Reported-by: Shimmer Huang <shimmering.h@gmail.com>
-Tested-by: Bhavik Kothari <bhavik.kothari@sibridgetech.com>
-Tested-by: Shimmer Huang <shimmering.h@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Li Zefan <lizefan@huawei.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/xhci-ring.c |   32 +++++++++++++++++++-------------
- 1 file changed, 19 insertions(+), 13 deletions(-)
+ kernel/cgroup.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 77f1ace..cbb44b7 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -3071,11 +3071,11 @@ static u32 xhci_td_remainder(unsigned int remainder)
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 0f8fa6a..d0803f0 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -2684,9 +2684,7 @@ static int cgroup_create_dir(struct cgroup *cgrp, struct dentry *dentry,
+ 		dentry->d_fsdata = cgrp;
+ 		inc_nlink(parent->d_inode);
+ 		rcu_assign_pointer(cgrp->dentry, dentry);
+-		dget(dentry);
+ 	}
+-	dput(dentry);
+ 
+ 	return error;
  }
- 
- /*
-- * For xHCI 1.0 host controllers, TD size is the number of packets remaining in
-- * the TD (*not* including this TRB).
-+ * For xHCI 1.0 host controllers, TD size is the number of max packet sized
-+ * packets remaining in the TD (*not* including this TRB).
-  *
-  * Total TD packet count = total_packet_count =
-- *     roundup(TD size in bytes / wMaxPacketSize)
-+ *     DIV_ROUND_UP(TD size in bytes / wMaxPacketSize)
-  *
-  * Packets transferred up to and including this TRB = packets_transferred =
-  *     rounddown(total bytes transferred including this TRB / wMaxPacketSize)
-@@ -3083,15 +3083,16 @@ static u32 xhci_td_remainder(unsigned int remainder)
-  * TD size = total_packet_count - packets_transferred
-  *
-  * It must fit in bits 21:17, so it can't be bigger than 31.
-+ * The last TRB in a TD must have the TD size set to zero.
-  */
--
- static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
--		unsigned int total_packet_count, struct urb *urb)
-+		unsigned int total_packet_count, struct urb *urb,
-+		unsigned int num_trbs_left)
- {
- 	int packets_transferred;
- 
- 	/* One TRB with a zero-length data packet. */
--	if (running_total == 0 && trb_buff_len == 0)
-+	if (num_trbs_left == 0 || (running_total == 0 && trb_buff_len == 0))
- 		return 0;
- 
- 	/* All the TRB queueing functions don't count the current TRB in
-@@ -3100,7 +3101,9 @@ static u32 xhci_v1_0_td_remainder(int running_total, int trb_buff_len,
- 	packets_transferred = (running_total + trb_buff_len) /
- 		usb_endpoint_maxp(&urb->ep->desc);
- 
--	return xhci_td_remainder(total_packet_count - packets_transferred);
-+	if ((total_packet_count - packets_transferred) > 31)
-+		return 31 << 17;
-+	return (total_packet_count - packets_transferred) << 17;
- }
- 
- static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
-@@ -3127,7 +3130,7 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 
- 	num_trbs = count_sg_trbs_needed(xhci, urb);
- 	num_sgs = urb->num_mapped_sgs;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 
- 	trb_buff_len = prepare_transfer(xhci, xhci->devs[slot_id],
-@@ -3210,7 +3213,8 @@ static int queue_bulk_sg_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3318,7 +3322,7 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 	start_cycle = ep_ring->cycle_state;
- 
- 	running_total = 0;
--	total_packet_count = roundup(urb->transfer_buffer_length,
-+	total_packet_count = DIV_ROUND_UP(urb->transfer_buffer_length,
- 			usb_endpoint_maxp(&urb->ep->desc));
- 	/* How much data is in the first TRB? */
- 	addr = (u64) urb->transfer_dma;
-@@ -3364,7 +3368,8 @@ int xhci_queue_bulk_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 					running_total);
- 		} else {
- 			remainder = xhci_v1_0_td_remainder(running_total,
--					trb_buff_len, total_packet_count, urb);
-+					trb_buff_len, total_packet_count, urb,
-+					num_trbs - 1);
- 		}
- 		length_field = TRB_LEN(trb_buff_len) |
- 			remainder |
-@@ -3627,7 +3632,7 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 		addr = start_addr + urb->iso_frame_desc[i].offset;
- 		td_len = urb->iso_frame_desc[i].length;
- 		td_remain_len = td_len;
--		total_packet_count = roundup(td_len,
-+		total_packet_count = DIV_ROUND_UP(td_len,
- 				usb_endpoint_maxp(&urb->ep->desc));
- 		/* A zero-length transfer still involves at least one packet. */
- 		if (total_packet_count == 0)
-@@ -3706,7 +3711,8 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
- 			} else {
- 				remainder = xhci_v1_0_td_remainder(
- 						running_total, trb_buff_len,
--						total_packet_count, urb);
-+						total_packet_count, urb,
-+						(trbs_per_td - j - 1));
- 			}
- 			length_field = TRB_LEN(trb_buff_len) |
- 				remainder |
 
 
