@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab2L1TRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:17:12 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54941 "EHLO
+	id S1754946Ab2L1Tz0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:55:26 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54985 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754326Ab2L1TRF (ORCPT
+	by vger.kernel.org with ESMTP id S1754393Ab2L1TRL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:05 -0500
-Message-Id: <20121228190402.389451778@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:11 -0500
+Message-Id: <20121228190401.691793230@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:06:18 +0100
+Date: Fri, 28 Dec 2012 20:06:13 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [ 168/173] staging: vt6656: 64 bit fixes: use u32 for QWORD definition.
+        Mike Miller <mike.miller@hp.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [ 163/173] [SCSI] hpsa: gen8plus Smart Array IDs
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,42 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Mike Miller <mike.miller@hp.com>
 
-commit a552397d5e4ef0cc0bd3e9595d6acc9a3b381171 upstream.
+commit fe0c9610bb68dd0aad1017456f5e3c31264d70c2 upstream.
 
-Size of long issues replace with u32.
-
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/staging/vt6656/ttype.h |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/hpsa.c     |   32 +++++++++++++++++++++++++-------
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
-index 8e9450e..0f70562c 100644
---- a/drivers/staging/vt6656/ttype.h
-+++ b/drivers/staging/vt6656/ttype.h
-@@ -29,6 +29,8 @@
- #ifndef __TTYPE_H__
- #define __TTYPE_H__
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 5ed5859..c425d7b 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -99,6 +99,15 @@ static const struct pci_device_id hpsa_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3354},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3355},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x3356},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1920},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1921},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1922},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1923},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1924},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1925},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1926},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSH,     0x103C, 0x1928},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSF,     0x103C, 0x334d},
+ 	{PCI_VENDOR_ID_HP,     PCI_ANY_ID,	PCI_ANY_ID, PCI_ANY_ID,
+ 		PCI_CLASS_STORAGE_RAID << 8, 0xffff << 8, 0},
+ 	{0,}
+@@ -118,13 +127,22 @@ static struct board_type products[] = {
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+ 	{0x324a103C, "Smart Array P712m", &SA5_access},
+ 	{0x324b103C, "Smart Array P711m", &SA5_access},
+-	{0x3350103C, "Smart Array", &SA5_access},
+-	{0x3351103C, "Smart Array", &SA5_access},
+-	{0x3352103C, "Smart Array", &SA5_access},
+-	{0x3353103C, "Smart Array", &SA5_access},
+-	{0x3354103C, "Smart Array", &SA5_access},
+-	{0x3355103C, "Smart Array", &SA5_access},
+-	{0x3356103C, "Smart Array", &SA5_access},
++	{0x3350103C, "Smart Array P222", &SA5_access},
++	{0x3351103C, "Smart Array P420", &SA5_access},
++	{0x3352103C, "Smart Array P421", &SA5_access},
++	{0x3353103C, "Smart Array P822", &SA5_access},
++	{0x3354103C, "Smart Array P420i", &SA5_access},
++	{0x3355103C, "Smart Array P220i", &SA5_access},
++	{0x3356103C, "Smart Array P721m", &SA5_access},
++	{0x1920103C, "Smart Array", &SA5_access},
++	{0x1921103C, "Smart Array", &SA5_access},
++	{0x1922103C, "Smart Array", &SA5_access},
++	{0x1923103C, "Smart Array", &SA5_access},
++	{0x1924103C, "Smart Array", &SA5_access},
++	{0x1925103C, "Smart Array", &SA5_access},
++	{0x1926103C, "Smart Array", &SA5_access},
++	{0x1928103C, "Smart Array", &SA5_access},
++	{0x334d103C, "Smart Array P822se", &SA5_access},
+ 	{0xFFFF103C, "Unknown Smart Array", &SA5_access},
+ };
  
-+#include <linux/types.h>
-+
- /******* Common definitions and typedefs ***********************************/
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index fc35260..b38f737 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -753,6 +753,7 @@
+ #define PCI_DEVICE_ID_HP_CISSD		0x3238
+ #define PCI_DEVICE_ID_HP_CISSE		0x323a
+ #define PCI_DEVICE_ID_HP_CISSF		0x323b
++#define PCI_DEVICE_ID_HP_CISSH		0x323c
+ #define PCI_DEVICE_ID_HP_ZX2_IOC	0x4031
  
- typedef int             BOOL;
-@@ -51,8 +53,8 @@ typedef unsigned long   DWORD;          // 32-bit
- // which is NOT really a floating point number.
- typedef union tagUQuadWord {
-     struct {
--        DWORD   dwLowDword;
--        DWORD   dwHighDword;
-+	u32 dwLowDword;
-+	u32 dwHighDword;
-     } u;
-     double      DoNotUseThisField;
- } UQuadWord;
+ #define PCI_VENDOR_ID_PCTECH		0x1042
 
 
