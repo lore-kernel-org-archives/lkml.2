@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753477Ab2L1Klk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 05:41:40 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:59698 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab2L1Klf (ORCPT
+	id S1753387Ab2L1LDO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 06:03:14 -0500
+Received: from vsp-authed02.binero.net ([195.74.38.226]:25734 "HELO
+	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752604Ab2L1LDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 05:41:35 -0500
-X-IronPort-AV: E=Sophos;i="4.84,368,1355097600"; 
-   d="scan'208";a="1969310"
-Message-ID: <1356691292.2917.9.camel@iceland>
-Subject: Re: [Xen-devel] [PATCH 08/14] xen: netback: Remove redundant check
- on unsigned variable
-From: Wei Liu <Wei.Liu2@citrix.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-CC: <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>, <konrad.wilk@oracle.com>
-Date: Fri, 28 Dec 2012 10:41:32 +0000
-In-Reply-To: <50DD2AFB.6030701@linaro.org>
-References: <1353048646-10935-1-git-send-email-tushar.behera@linaro.org>
-	 <1353048646-10935-9-git-send-email-tushar.behera@linaro.org>
-	 <1353057394.3499.159.camel@zakaz.uk.xensource.com>
-	 <50DD2AFB.6030701@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
+	Fri, 28 Dec 2012 06:03:12 -0500
+Message-ID: <50DD7C5E.4080007@gaisler.com>
+Date: Fri, 28 Dec 2012 12:02:54 +0100
+From: Andreas Larsson <andreas@gaisler.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: software@gaisler.com, Linus Walleij <linus.walleij@linaro.org>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        spi-devel-general@lists.sourceforge.net,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 2/6] of: Return -ENXIO from of_parse_phandle_with_args
+ for too large index and return errors from of_gpio_named_count
+References: <1356610247-11491-1-git-send-email-andreas@gaisler.com> <1356610247-11491-3-git-send-email-andreas@gaisler.com>
+In-Reply-To: <1356610247-11491-3-git-send-email-andreas@gaisler.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-28 at 05:15 +0000, Tushar Behera wrote:
-> On 11/16/2012 02:46 PM, Ian Campbell wrote:
-> > On Fri, 2012-11-16 at 06:50 +0000, Tushar Behera wrote:
-> >> No need to check whether unsigned variable is less than 0.
-> >>
-> >> CC: Ian Campbell <ian.campbell@citrix.com>
-> >> CC: xen-devel@lists.xensource.com
-> >> CC: netdev@vger.kernel.org
-> >> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> > 
-> > Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> > 
-> > Thanks.
-> > 
-> 
-> This patch was not picked up for 3.8-rc1. Any idea, who should pick this up?
+On 2012-12-27 13:10, Andreas Larsson wrote:
+> This lets of_gpio_named_count return an errno on errors by being able to
+> distinguish between reaching the end of the phandle list and getting some other
+> error from of_parse_phandle_with_args.
+>
+> Return error from of_spi_register_master when there is an "cs-gpios" list for
+> which gp_gpio_named_count fails.
+>
+> Adjust drivers/hwmon/gpio-fan.c to cope with error return.
+>
+> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
 
-CC'ing Konrad.
+The callers of of_gpio_count of course also needs to handle errno 
+returns. I'll take care of that in V2 of the patch-set. But I'll wait 
+for more comments on the patch set before sending V2 unless someone insists.
+
+Cheers,
+Andreas
 
