@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754488Ab2L1UlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:41:08 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:51482 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004Ab2L1UlF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:41:05 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Fri, 28 Dec 2012 14:41:04 -0600
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
-        Steven Rostedt <rostedt@goodmis.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] staging: (sb105x) Fix compile error seen if PARPORT_PC is undefined
-Date: Fri, 28 Dec 2012 12:41:11 -0800
-Message-Id: <1356727271-21633-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	id S1754756Ab2L1Ulf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:41:35 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:38547 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754062Ab2L1Ulc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 15:41:32 -0500
+Message-ID: <50DE03D8.9030902@zytor.com>
+Date: Fri, 28 Dec 2012 12:40:56 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        Len Brown <lenb@kernel.org>, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+References: <1356712001-12198-1-git-send-email-jlee@suse.com>  <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>  <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com> <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
+In-Reply-To: <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix:
-ERROR: "parport_pc_probe_port" [drivers/staging/sb105x/sb105x.ko] undefined!
+On 12/28/2012 11:17 AM, Matthew Garrett wrote:
+> On Fri, 2012-12-28 at 11:07 -0800, H. Peter Anvin wrote:
+>> We do have such machines, which is why this change has been reverted twice already.  I believe we should stick to the priority scheme I proposed a few weeks ago.
+>
+> I seem to have missed that discussion, and couldn't find it after a
+> brief search. Got a pointer?
+>
 
-by making the code calling it conditional. Also remove the external reference to
-parport_pc_probe_port() from the sb105x source file, as it doesn't belong there.
+Looks like it was a non-public distribution ... anyway, what I wrote was:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/staging/sb105x/sb_pci_mp.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+> I suspect that what we *should* do looks like:
+>
+> 1. If ACPI exports a Time and Alarm Device (ACPI000E) the use it;
+> 2. If ACPI exports an PC/AT device (PNP0B00/1/2) then use it(*);
+> 3. If we have an EFI RTC use it;
+> 4. Probe for a PC/AT RTC device.
+>
+> I'm unsure what the ordering of 1 & 2 should be.  The ACPI device has
+> the advantage that it contains time zone information, which is important
+> for Windows interoperability, and at least optionally supports
+> millisecond resolution; there is no way to even export "this is where
+> you find time zone information" (since we're dealing with an RTC with
+> embedded CMOS, there is storage available, it is just a matter of
+> telling the OS how to find it) for the PNP0B0x devices.
+>
+> The TAD is also guaranteed to map 1:1 to the EFI RTC.
+>
+> 	-hpa
 
-diff --git a/drivers/staging/sb105x/sb_pci_mp.c b/drivers/staging/sb105x/sb_pci_mp.c
-index edb2a85..b7ded88 100644
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -1,12 +1,7 @@
- #include "sb_pci_mp.h"
- #include <linux/module.h>
- #include <linux/parport.h>
--
--extern struct parport *parport_pc_probe_port(unsigned long base_lo,
--		unsigned long base_hi,
--		int irq, int dma,
--		struct device *dev,
--		int irqflags);
-+#include <linux/parport_pc.h>
- 
- static struct mp_device_t mp_devs[MAX_MP_DEV];
- static int mp_nrpcibrds = sizeof(mp_pciboards)/sizeof(mppcibrd_t);
-@@ -3066,12 +3061,16 @@ static int init_mp_dev(struct pci_dev *pcidev, mppcibrd_t brd)
- 				pci_remap_base(pcidev, PCI_BASE_ADDRESS_1, prev_port_addr + 8, 8);
- 			}
- 
-+#if IS_ENABLED(CONFIG_PARPORT_PC)
- 			/* add PC compatible parallel port */
- 			parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
-+#endif
- 			break;
- 		case PCI_DEVICE_ID_MP1P :
-+#if IS_ENABLED(CONFIG_PARPORT_PC)
- 			/* add PC compatible parallel port */
- 			parport_pc_probe_port(pcidev->resource[2].start, pcidev->resource[3].start, PARPORT_IRQ_NONE, PARPORT_DMA_NONE, &pcidev->dev, 0);
-+#endif
- 			break;
- 	}
- 
+
 -- 
-1.7.9.7
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
