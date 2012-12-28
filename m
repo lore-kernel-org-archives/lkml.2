@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab2L1TjG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:39:06 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55387 "EHLO
+	id S932288Ab2L1Tj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:39:28 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55378 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932209Ab2L1TSr (ORCPT
+	by vger.kernel.org with ESMTP id S932207Ab2L1TSq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:47 -0500
-Message-Id: <20121228190348.832174310@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:46 -0500
+Message-Id: <20121228190349.066715325@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:59 +0100
+Date: Fri, 28 Dec 2012 20:05:00 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Jeffery <djeffery@redhat.com>,
-        Chad Dupuis <chad.dupuis@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [ 089/173] [SCSI] qla2xxx: Test and clear FCPORT_UPDATE_NEEDED atomically.
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 090/173] ACPI: do acpisleep dmi check when CONFIG_ACPI_SLEEP is set
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -30,54 +28,410 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Jeffery <djeffery@redhat.com>
+From: Zhang Rui <rui.zhang@intel.com>
 
-commit a394aac88506159e047630fc90dc2242568382d8 upstream.
+commit 0ac1b1d7b7424cd6f129b5454b504b3cae746f0e upstream.
 
-When the qla2xxx driver loses access to multiple, remote ports, there is a race
-condition which can occur which will keep the request stuck on a scsi request
-queue indefinitely.
+The current acpisleep DMI checks only run when CONFIG_SUSPEND is set.
+And this may break hibernation on some platforms when CONFIG_SUSPEND
+is cleared.
 
-This bad state occurred do to a race condition with how the FCPORT_UPDATE_NEEDED
-bit is set in qla2x00_schedule_rport_del(), and how it is cleared in
-qla2x00_do_dpc().  The problem port has its drport pointer set, but it has never
-been processed by the driver to inform the fc transport that the port has been
-lost.  qla2x00_schedule_rport_del() sets drport, and then sets the
-FCPORT_UPDATE_NEEDED bit.  In qla2x00_do_dpc(), the port lists are walked and
-any drport pointer is handled and the fc transport informed of the port loss,
-then the FCPORT_UPDATE_NEEDED bit is cleared.  This leaves a race where the
-dpc thread is processing one port removal, another port removal is marked
-with a call to qla2x00_schedule_rport_del(), and the dpc thread clears the
-bit for both removals, even though only the first removal was actually
-handled.  Until another event occurs to set FCPORT_UPDATE_NEEDED, the later
-port removal is never finished and qla2xxx stays in a bad state which causes
-requests to become stuck on request queues.
+Move acpisleep DMI check into #ifdef CONFIG_ACPI_SLEEP instead.
 
-This patch updates the driver to test and clear FCPORT_UPDATE_NEEDED
-atomically.  This ensures the port state changes are processed and not lost.
-
-Signed-off-by: David Jeffery <djeffery@redhat.com>
-Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+[rjw: Added acpi_sleep_dmi_check() and rebased on top of earlier
+ patches adding entries to acpisleep_dmi_table[].]
+References: https://bugzilla.kernel.org/show_bug.cgi?id=45921
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/qla2xxx/qla_os.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/acpi/sleep.c |  348 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 177 insertions(+), 171 deletions(-)
 
---- a/drivers/scsi/qla2xxx/qla_os.c
-+++ b/drivers/scsi/qla2xxx/qla_os.c
-@@ -3541,9 +3541,9 @@ qla2x00_do_dpc(void *data)
- 			    "ISP abort end.\n");
- 		}
+diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+index 1463c56..6efef87 100644
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -124,6 +124,180 @@ void __init acpi_old_suspend_ordering(void)
+ 	old_suspend_ordering = true;
+ }
  
--		if (test_bit(FCPORT_UPDATE_NEEDED, &base_vha->dpc_flags)) {
-+		if (test_and_clear_bit(FCPORT_UPDATE_NEEDED,
-+		    &base_vha->dpc_flags)) {
- 			qla2x00_update_fcports(base_vha);
--			clear_bit(FCPORT_UPDATE_NEEDED, &base_vha->dpc_flags);
- 		}
++static int __init init_old_suspend_ordering(const struct dmi_system_id *d)
++{
++	acpi_old_suspend_ordering();
++	return 0;
++}
++
++static int __init init_nvs_nosave(const struct dmi_system_id *d)
++{
++	acpi_nvs_nosave();
++	return 0;
++}
++
++static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
++	{
++	.callback = init_old_suspend_ordering,
++	.ident = "Abit KN9 (nForce4 variant)",
++	.matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "http://www.abit.com.tw/"),
++		DMI_MATCH(DMI_BOARD_NAME, "KN9 Series(NF-CK804)"),
++		},
++	},
++	{
++	.callback = init_old_suspend_ordering,
++	.ident = "HP xw4600 Workstation",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "HP xw4600 Workstation"),
++		},
++	},
++	{
++	.callback = init_old_suspend_ordering,
++	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
++	.matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTek Computer INC."),
++		DMI_MATCH(DMI_BOARD_NAME, "M2N8L"),
++		},
++	},
++	{
++	.callback = init_old_suspend_ordering,
++	.ident = "Panasonic CF51-2L",
++	.matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR,
++				"Matsushita Electric Industrial Co.,Ltd."),
++		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW21E",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW21E"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VPCEB17FX",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB17FX"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-SR11M",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR11M"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Everex StepNote Series",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Everex Systems, Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "Everex StepNote Series"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VPCEB1Z1E",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1Z1E"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-NW130D",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-NW130D"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VPCCW29FX",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCCW29FX"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Averatec AV1020-ED2",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "AVERATEC"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "1000 Series"),
++		},
++	},
++	{
++	.callback = init_old_suspend_ordering,
++	.ident = "Asus A8N-SLI DELUXE",
++	.matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
++		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI DELUXE"),
++		},
++	},
++	{
++	.callback = init_old_suspend_ordering,
++	.ident = "Asus A8N-SLI Premium",
++	.matches = {
++		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
++		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI Premium"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-SR26GN_P",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR26GN_P"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VPCEB1S1E",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1S1E"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Sony Vaio VGN-FW520F",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
++		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW520F"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Asus K54C",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "K54C"),
++		},
++	},
++	{
++	.callback = init_nvs_nosave,
++	.ident = "Asus K54HR",
++	.matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "K54HR"),
++		},
++	},
++	{},
++};
++
++static void acpi_sleep_dmi_check(void)
++{
++	dmi_check_system(acpisleep_dmi_table);
++}
++
+ /**
+  * acpi_pm_freeze - Disable the GPEs and suspend EC transactions.
+  */
+@@ -239,6 +413,7 @@ static void acpi_pm_end(void)
+ }
+ #else /* !CONFIG_ACPI_SLEEP */
+ #define acpi_target_sleep_state	ACPI_STATE_S0
++static inline void acpi_sleep_dmi_check(void) {}
+ #endif /* CONFIG_ACPI_SLEEP */
  
- 		if (test_bit(ISP_QUIESCE_NEEDED, &base_vha->dpc_flags)) {
+ #ifdef CONFIG_SUSPEND
+@@ -397,175 +572,6 @@ static const struct platform_suspend_ops acpi_suspend_ops_old = {
+ 	.end = acpi_pm_end,
+ 	.recover = acpi_pm_finish,
+ };
+-
+-static int __init init_old_suspend_ordering(const struct dmi_system_id *d)
+-{
+-	old_suspend_ordering = true;
+-	return 0;
+-}
+-
+-static int __init init_nvs_nosave(const struct dmi_system_id *d)
+-{
+-	acpi_nvs_nosave();
+-	return 0;
+-}
+-
+-static struct dmi_system_id __initdata acpisleep_dmi_table[] = {
+-	{
+-	.callback = init_old_suspend_ordering,
+-	.ident = "Abit KN9 (nForce4 variant)",
+-	.matches = {
+-		DMI_MATCH(DMI_BOARD_VENDOR, "http://www.abit.com.tw/"),
+-		DMI_MATCH(DMI_BOARD_NAME, "KN9 Series(NF-CK804)"),
+-		},
+-	},
+-	{
+-	.callback = init_old_suspend_ordering,
+-	.ident = "HP xw4600 Workstation",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "HP xw4600 Workstation"),
+-		},
+-	},
+-	{
+-	.callback = init_old_suspend_ordering,
+-	.ident = "Asus Pundit P1-AH2 (M2N8L motherboard)",
+-	.matches = {
+-		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTek Computer INC."),
+-		DMI_MATCH(DMI_BOARD_NAME, "M2N8L"),
+-		},
+-	},
+-	{
+-	.callback = init_old_suspend_ordering,
+-	.ident = "Panasonic CF51-2L",
+-	.matches = {
+-		DMI_MATCH(DMI_BOARD_VENDOR,
+-				"Matsushita Electric Industrial Co.,Ltd."),
+-		DMI_MATCH(DMI_BOARD_NAME, "CF51-2L"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VGN-FW21E",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW21E"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VPCEB17FX",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB17FX"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VGN-SR11M",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR11M"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Everex StepNote Series",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Everex Systems, Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "Everex StepNote Series"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VPCEB1Z1E",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1Z1E"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VGN-NW130D",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-NW130D"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VPCCW29FX",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VPCCW29FX"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Averatec AV1020-ED2",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "AVERATEC"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "1000 Series"),
+-		},
+-	},
+-	{
+-	.callback = init_old_suspend_ordering,
+-	.ident = "Asus A8N-SLI DELUXE",
+-	.matches = {
+-		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+-		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI DELUXE"),
+-		},
+-	},
+-	{
+-	.callback = init_old_suspend_ordering,
+-	.ident = "Asus A8N-SLI Premium",
+-	.matches = {
+-		DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer INC."),
+-		DMI_MATCH(DMI_BOARD_NAME, "A8N-SLI Premium"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VGN-SR26GN_P",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-SR26GN_P"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VPCEB1S1E",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VPCEB1S1E"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Sony Vaio VGN-FW520F",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "Sony Corporation"),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "VGN-FW520F"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Asus K54C",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "K54C"),
+-		},
+-	},
+-	{
+-	.callback = init_nvs_nosave,
+-	.ident = "Asus K54HR",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-		DMI_MATCH(DMI_PRODUCT_NAME, "K54HR"),
+-		},
+-	},
+-	{},
+-};
+ #endif /* CONFIG_SUSPEND */
+ 
+ #ifdef CONFIG_HIBERNATION
+@@ -896,13 +902,13 @@ int __init acpi_sleep_init(void)
+ 	u8 type_a, type_b;
+ #ifdef CONFIG_SUSPEND
+ 	int i = 0;
+-
+-	dmi_check_system(acpisleep_dmi_table);
+ #endif
+ 
+ 	if (acpi_disabled)
+ 		return 0;
+ 
++	acpi_sleep_dmi_check();
++
+ 	sleep_states[ACPI_STATE_S0] = 1;
+ 	printk(KERN_INFO PREFIX "(supports S0");
+ 
 
 
