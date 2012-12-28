@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932067Ab2L1Twk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:52:40 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55060 "EHLO
+	id S1754363Ab2L1TRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:17:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55039 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754511Ab2L1TRg (ORCPT
+	by vger.kernel.org with ESMTP id S1754511Ab2L1TR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:17:36 -0500
-Message-Id: <20121228190359.439576865@decadent.org.uk>
+	Fri, 28 Dec 2012 14:17:27 -0500
+Message-Id: <20121228190400.423759003@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:57 +0100
+Date: Fri, 28 Dec 2012 20:06:04 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alasdair G Kergon <agk@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>
-Subject: [ 147/173] dm ioctl: prevent unsafe change to dm_ioctl data_size
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        Neil Horman <nhorman@tuxdriver.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 154/173] sctp: fix -ENOMEM result with invalid user space pointer  in sendto() syscall
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,63 +30,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alasdair G Kergon <agk@redhat.com>
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-commit e910d7ebecd1aac43125944a8641b6cb1a0dfabe upstream.
+[ Upstream commit 6e51fe7572590d8d86e93b547fab6693d305fd0d ]
 
-Abort dm ioctl processing if userspace changes the data_size parameter
-after we validated it but before we finished copying the data buffer
-from userspace.
+Consider the following program, that sets the second argument to the
+sendto() syscall incorrectly:
 
-The dm ioctl parameters are processed in the following sequence:
- 1. ctl_ioctl() calls copy_params();
- 2. copy_params() makes a first copy of the fixed-sized portion of the
-    userspace parameters into the local variable "tmp";
- 3. copy_params() then validates tmp.data_size and allocates a new
-    structure big enough to hold the complete data and copies the whole
-    userspace buffer there;
- 4. ctl_ioctl() reads userspace data the second time and copies the whole
-    buffer into the pointer "param";
- 5. ctl_ioctl() reads param->data_size without any validation and stores it
-    in the variable "input_param_size";
- 6. "input_param_size" is further used as the authoritative size of the
-    kernel buffer.
+ #include <string.h>
+ #include <arpa/inet.h>
+ #include <sys/socket.h>
 
-The problem is that userspace code could change the contents of user
-memory between steps 2 and 4.  In particular, the data_size parameter
-can be changed to an invalid value after the kernel has validated it.
-This lets userspace force the kernel to access invalid kernel memory.
+ int main(void)
+ {
+         int fd;
+         struct sockaddr_in sa;
 
-The fix is to ensure that the size has not changed at step 4.
+         fd = socket(AF_INET, SOCK_STREAM, 132 /*IPPROTO_SCTP*/);
+         if (fd < 0)
+                 return 1;
 
-This patch shouldn't have a security impact because CAP_SYS_ADMIN is
-required to run this code, but it should be fixed anyway.
+         memset(&sa, 0, sizeof(sa));
+         sa.sin_family = AF_INET;
+         sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+         sa.sin_port = htons(11111);
 
-Reported-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Alasdair G Kergon <agk@redhat.com>
+         sendto(fd, NULL, 1, 0, (struct sockaddr *)&sa, sizeof(sa));
+
+         return 0;
+ }
+
+We get -ENOMEM:
+
+ $ strace -e sendto ./demo
+ sendto(3, NULL, 1, 0, {sa_family=AF_INET, sin_port=htons(11111), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 ENOMEM (Cannot allocate memory)
+
+Propagate the error code from sctp_user_addto_chunk(), so that we will
+tell user space what actually went wrong:
+
+ $ strace -e sendto ./demo
+ sendto(3, NULL, 1, 0, {sa_family=AF_INET, sin_port=htons(11111), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EFAULT (Bad address)
+
+Noticed while running Trinity (the syscall fuzzer).
+
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/md/dm-ioctl.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/sctp/chunk.c  | 13 +++++++++----
+ net/sctp/socket.c |  4 ++--
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-index afd9598..a651d52 100644
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1566,6 +1566,14 @@ static int copy_params(struct dm_ioctl __user *user, struct dm_ioctl **param)
- 	if (copy_from_user(dmi, user, tmp.data_size))
- 		goto bad;
+diff --git a/net/sctp/chunk.c b/net/sctp/chunk.c
+index 9534bf9..0018b65 100644
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -183,7 +183,7 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
  
-+	/*
-+	 * Abort if something changed the ioctl data while it was being copied.
-+	 */
-+	if (dmi->data_size != tmp.data_size) {
-+		DMERR("rejecting ioctl: data size modified while processing parameters");
-+		goto bad;
-+	}
+ 	msg = sctp_datamsg_new(GFP_KERNEL);
+ 	if (!msg)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+ 
+ 	/* Note: Calculate this outside of the loop, so that all fragments
+ 	 * have the same expiration.
+@@ -280,8 +280,11 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 
+ 		chunk = sctp_make_datafrag_empty(asoc, sinfo, len, frag, 0);
+ 
+-		if (!chunk)
++		if (!chunk) {
++			err = -ENOMEM;
+ 			goto errout;
++		}
 +
- 	/* Wipe the user buffer so we do not return it to userspace */
- 	if (secure_data && clear_user(user, tmp.data_size))
- 		goto bad;
+ 		err = sctp_user_addto_chunk(chunk, offset, len, msgh->msg_iov);
+ 		if (err < 0)
+ 			goto errout_chunk_free;
+@@ -315,8 +318,10 @@ struct sctp_datamsg *sctp_datamsg_from_user(struct sctp_association *asoc,
+ 
+ 		chunk = sctp_make_datafrag_empty(asoc, sinfo, over, frag, 0);
+ 
+-		if (!chunk)
++		if (!chunk) {
++			err = -ENOMEM;
+ 			goto errout;
++		}
+ 
+ 		err = sctp_user_addto_chunk(chunk, offset, over,msgh->msg_iov);
+ 
+@@ -342,7 +347,7 @@ errout:
+ 		sctp_chunk_free(chunk);
+ 	}
+ 	sctp_datamsg_put(msg);
+-	return NULL;
++	return ERR_PTR(err);
+ }
+ 
+ /* Check whether this message has expired. */
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 8e49d76..fa8333b 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -1908,8 +1908,8 @@ SCTP_STATIC int sctp_sendmsg(struct kiocb *iocb, struct sock *sk,
+ 
+ 	/* Break the message into multiple chunks of maximum size. */
+ 	datamsg = sctp_datamsg_from_user(asoc, sinfo, msg, msg_len);
+-	if (!datamsg) {
+-		err = -ENOMEM;
++	if (IS_ERR(datamsg)) {
++		err = PTR_ERR(datamsg);
+ 		goto out_free;
+ 	}
+ 
 
 
