@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2L1Luv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 06:50:51 -0500
-Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:33435
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751498Ab2L1Lut (ORCPT
+	id S1753573Ab2L1L5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 06:57:51 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:10792 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498Ab2L1L5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 06:50:49 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275dh177df4h17326ahz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Fri, 28 Dec 2012 19:50:27 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Borislav Petkov <bp@alien8.de>, Sasha Levin <levinsasha928@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <florianSchandinat@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
-Message-ID: <20121228115022.GA28009@S2101-09.ap.freescale.net>
-References: <20121116192606.11799.35711.stgit@localhost.localdomain>
- <CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com>
- <20121121125310.00625f55@pyramind.ukuu.org.uk>
- <CA+5PVA5iQwYOcoSYtLOoRBHaTNJANdv+X-C78474n3SzZg_m9w@mail.gmail.com>
- <CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com>
- <CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com>
- <CA+1xoqf0d5ckDZ3o1-Y+qd61nvVA7EECeH20U+WjDpNVb4E=pw@mail.gmail.com>
- <20121227045301.GB17472@x1.alien8.de>
+	Fri, 28 Dec 2012 06:57:49 -0500
+Message-ID: <1356695860.17740.51.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [RFC/RFT] forcedeth: Fix 'device driver failed to check map
+ error' warnings
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Fri, 28 Dec 2012 12:57:40 +0100
+In-Reply-To: <50db61fe.u8zB6nsB1I7ajQXN%Larry.Finger@lwfinger.net>
+References: <50db61fe.u8zB6nsB1I7ajQXN%Larry.Finger@lwfinger.net>
+Organization: Solarflare Communications
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20121227045301.GB17472@x1.alien8.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [151.217.219.220]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 05:53:01AM +0100, Borislav Petkov wrote:
-> On Wed, Dec 26, 2012 at 01:09:51PM -0500, Sasha Levin wrote:
-> > > This patch can fix the following warning we saw?
-> > > http://lkml.org/lkml/2012/12/22/53
-> > >
-> > > I will give it a try.
-> > 
-> > Yup, that's the same error I've reported couple of months ago.
-> > 
-> > It looks like the fb maintains are still absent, so it'll probably
-> > need a different way to get upstream.
+On Wed, 2012-12-26 at 14:45 -0600, Larry Finger wrote:
+> With 3.8-rc1, there are WARNINGS that the driver is not checking for
+> DMA mapping errors. The warnings start with
 > 
-> Adding to the bug pressure: just got a very similar splat on -rc1 (see
-> below). Alan, I'll run your patch to verify.
+> ------------[ cut here ]------------
+> WARNING: at lib/dma-debug.c:933 check_unmap+0x480/0x950()
+> Hardware name: HP Pavilion dv2700 Notebook PC
+> forcedeth 0000:00:0a.0: DMA-API: device driver failed to check
+>  map error[device address=0x00000000b176e002] [size=90 bytes] [mapped as single]
 > 
-+1
+> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+> ---
+> 
+> Please check that the error returns are correctly done.
+[...]
+> @@ -2217,6 +2229,9 @@ static netdev_tx_t nv_start_xmit(struct
+>  		bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
+>  		np->put_tx_ctx->dma = pci_map_single(np->pci_dev, skb->data + offset, bcnt,
+>  						PCI_DMA_TODEVICE);
+> +		if (pci_dma_mapping_error(np->pci_dev,
+> +					  np->put_tx_ctx->dma))
+> +			return NETDEV_TX_BUSY;
+>  		np->put_tx_ctx->dma_len = bcnt;
+>  		np->put_tx_ctx->dma_single = 1;
+>  		put_tx->buf = cpu_to_le32(np->put_tx_ctx->dma);
+> @@ -2337,6 +2352,9 @@ static netdev_tx_t nv_start_xmit_optimiz
+>  		bcnt = (size > NV_TX2_TSO_MAX_SIZE) ? NV_TX2_TSO_MAX_SIZE : size;
+>  		np->put_tx_ctx->dma = pci_map_single(np->pci_dev, skb->data + offset, bcnt,
+>  						PCI_DMA_TODEVICE);
+> +		if (pci_dma_mapping_error(np->pci_dev,
+> +					  np->put_tx_ctx->dma))
+> +			return NETDEV_TX_BUSY;
+>  		np->put_tx_ctx->dma_len = bcnt;
+>  		np->put_tx_ctx->dma_single = 1;
+>  		put_tx->bufhigh = cpu_to_le32(dma_high(np->put_tx_ctx->dma));
+[...]
 
-http://thread.gmane.org/gmane.linux.kernel/1413953/focus=1415070
+In these cases the skb should be freed and the return value should be
+NETDEV_TX_OK.
 
-Shawn
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
