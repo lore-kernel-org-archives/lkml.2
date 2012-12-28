@@ -1,121 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab2L1AXa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 19:23:30 -0500
-Received: from mail-da0-f46.google.com ([209.85.210.46]:54069 "EHLO
-	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab2L1AX1 (ORCPT
+	id S1752594Ab2L1AY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 19:24:26 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:39344 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab2L1AYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 19:23:27 -0500
-Message-ID: <1356654196.3387.2.camel@phoenix>
-Subject: [PATCH RESEND] regulator: lp3972: Convert to get_voltage_sel
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Fri, 28 Dec 2012 08:23:16 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 27 Dec 2012 19:24:23 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <50DCDEE5.9000700@iskon.hr>
+References: <CA+icZUV_CdAvq1nmOVZeLSAu0mZj+BO0T++REc6U1hevt50hXA@mail.gmail.com>
+	<50DCDC21.6080303@iskon.hr>
+	<CA+icZUX2g0R46QNFpntA1r6E3wu0HNhBjk+Kjm581aUBgM6VKA@mail.gmail.com>
+	<50DCDEE5.9000700@iskon.hr>
+Date: Fri, 28 Dec 2012 01:24:22 +0100
+Message-ID: <CA+icZUUXbCCtPaimG6hKsSUQTmnoMAZHsd_nrn7eityepqYUkQ@mail.gmail.com>
+Subject: Re: BUG: unable to handle kernel NULL pointer dereference at 0000000000000500
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-regulator_list_voltage_table() returns -EINVAL if selector >= n_voltages.
-Thus we don't need to check if reg is greater than LP3972_BUCK_VOL_MAX_IDX in
-lp3972_[ldo|dcdc]_get_voltage_sel.
+On Fri, Dec 28, 2012 at 12:51 AM, Zlatko Calusic
+<zlatko.calusic@iskon.hr> wrote:
+> On 28.12.2012 00:42, Sedat Dilek wrote:
+>>
+>> On Fri, Dec 28, 2012 at 12:39 AM, Zlatko Calusic
+>> <zlatko.calusic@iskon.hr> wrote:
+>>>
+>>> On 28.12.2012 00:30, Sedat Dilek wrote:
+>>>>
+>>>>
+>>>> Hi Zlatko,
+>>>>
+>>>> I am not sure if I hit the same problem as described in this thread.
+>>>>
+>>>> Under heavy load, while building a customized toolchain for the Freetz
+>>>> router project I got a BUG || NULL pointer derefence || kswapd ||
+>>>> zone_balanced || pgdat_balanced() etc. (details see my screenshot).
+>>>>
+>>>> I will try your patch from [1] ***only*** on top of my last
+>>>> Linux-v3.8-rc1 GIT setup (post-v3.8-rc1 mainline + some net-fixes).
+>>>>
+>>>
+>>> Yes, that's the same bug. It should be fixed with my latest patch, so I'd
+>>> appreciate you testing it, to be on the safe side this time. There should
+>>> be
+>>> no difference if you apply it to anything newer than 3.8-rc1, so go for
+>>> it.
+>>> Thanks!
+>>>
+>>
+>> Not sure how I can really reproduce this bug as one build worked fine
+>> within my last v3.8-rc1 kernel.
+>> I increased the parallel-make-jobs-number from "4" to "8" to stress a
+>> bit harder.
+>> Just building right now... and will report.
+>>
+>> If you have any test-case (script or whatever), please let me/us know.
+>>
+>
+> Unfortunately not, I haven't reproduced it yet on my machines. But it seems
+> that bug will hit only under heavy memory pressure. When close to OOM, or
+> possibly with lots of writing to disk. It's also possible that fragmentation
+> of memory zones could provoke it, that means testing it for a longer time.
+>
 
-LP3972_BUCK_VOL_MIN_IDX and LP3972_BUCK_VOL_MAX_IDX are not used, remove them.
+I tested successfully by doing simultaneously...
+- building Freetz with 8 parallel make-jobs
+- building Linux GIT with 1 make-job
+- 9 tabs open in firefox
+- In one tab I ran YouTube music video
+- etc.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
-Hi Mark,
-This patch was sent on https://lkml.org/lkml/2012/12/10/283 ,
-and you replied it's applied.
-But it seems not (yet) in regulator tree, so I resend it.
+I am reading [1] and [2] where another user reports success by reverting this...
 
-Axel
- drivers/regulator/lp3972.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+commit cda73a10eb3f493871ed39f468db50a65ebeddce
+"mm: do not sleep in balance_pgdat if there's no i/o congestion"
 
-diff --git a/drivers/regulator/lp3972.c b/drivers/regulator/lp3972.c
-index 69c42c3..0baabcf 100644
---- a/drivers/regulator/lp3972.c
-+++ b/drivers/regulator/lp3972.c
-@@ -165,8 +165,6 @@ static const int buck_base_addr[] = {
- #define LP3972_BUCK_VOL_ENABLE_REG(x) (buck_vol_enable_addr[x])
- #define LP3972_BUCK_VOL1_REG(x) (buck_base_addr[x])
- #define LP3972_BUCK_VOL_MASK 0x1f
--#define LP3972_BUCK_VOL_MIN_IDX(x) ((x) ? 0x01 : 0x00)
--#define LP3972_BUCK_VOL_MAX_IDX(x) ((x) ? 0x19 : 0x1f)
- 
- static int lp3972_i2c_read(struct i2c_client *i2c, char reg, int count,
- 	u16 *dest)
-@@ -257,7 +255,7 @@ static int lp3972_ldo_disable(struct regulator_dev *dev)
- 				mask, 0);
- }
- 
--static int lp3972_ldo_get_voltage(struct regulator_dev *dev)
-+static int lp3972_ldo_get_voltage_sel(struct regulator_dev *dev)
- {
- 	struct lp3972 *lp3972 = rdev_get_drvdata(dev);
- 	int ldo = rdev_get_id(dev) - LP3972_LDO1;
-@@ -267,7 +265,7 @@ static int lp3972_ldo_get_voltage(struct regulator_dev *dev)
- 	reg = lp3972_reg_read(lp3972, LP3972_LDO_VOL_CONTR_REG(ldo));
- 	val = (reg >> LP3972_LDO_VOL_CONTR_SHIFT(ldo)) & mask;
- 
--	return dev->desc->volt_table[val];
-+	return val;
- }
- 
- static int lp3972_ldo_set_voltage_sel(struct regulator_dev *dev,
-@@ -314,7 +312,7 @@ static struct regulator_ops lp3972_ldo_ops = {
- 	.is_enabled = lp3972_ldo_is_enabled,
- 	.enable = lp3972_ldo_enable,
- 	.disable = lp3972_ldo_disable,
--	.get_voltage = lp3972_ldo_get_voltage,
-+	.get_voltage_sel = lp3972_ldo_get_voltage_sel,
- 	.set_voltage_sel = lp3972_ldo_set_voltage_sel,
- };
- 
-@@ -353,24 +351,16 @@ static int lp3972_dcdc_disable(struct regulator_dev *dev)
- 	return val;
- }
- 
--static int lp3972_dcdc_get_voltage(struct regulator_dev *dev)
-+static int lp3972_dcdc_get_voltage_sel(struct regulator_dev *dev)
- {
- 	struct lp3972 *lp3972 = rdev_get_drvdata(dev);
- 	int buck = rdev_get_id(dev) - LP3972_DCDC1;
- 	u16 reg;
--	int val;
- 
- 	reg = lp3972_reg_read(lp3972, LP3972_BUCK_VOL1_REG(buck));
- 	reg &= LP3972_BUCK_VOL_MASK;
--	if (reg <= LP3972_BUCK_VOL_MAX_IDX(buck))
--		val = dev->desc->volt_table[reg];
--	else {
--		val = 0;
--		dev_warn(&dev->dev, "chip reported incorrect voltage value."
--				    " reg = %d\n", reg);
--	}
- 
--	return val;
-+	return reg;
- }
- 
- static int lp3972_dcdc_set_voltage_sel(struct regulator_dev *dev,
-@@ -402,7 +392,7 @@ static struct regulator_ops lp3972_dcdc_ops = {
- 	.is_enabled = lp3972_dcdc_is_enabled,
- 	.enable = lp3972_dcdc_enable,
- 	.disable = lp3972_dcdc_disable,
--	.get_voltage = lp3972_dcdc_get_voltage,
-+	.get_voltage_sel = lp3972_dcdc_get_voltage_sel,
- 	.set_voltage_sel = lp3972_dcdc_set_voltage_sel,
- };
- 
--- 
-1.7.9.5
+BTW, this machine has also 4GiB RAM (Ubuntu/precise AMD64).
 
+Feel free to add a "Reported-by/Tested-by" if you think this is a
+positive report.
 
+- Sedat -
 
+[1] http://marc.info/?l=linux-mm&m=135652835931174&w=2
+[2] http://marc.info/?l=linux-mm&m=135653399800655&w=2
+
+> --
+> Zlatko
