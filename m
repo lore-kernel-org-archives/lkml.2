@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab2L1TiA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:38:00 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55404 "EHLO
+	id S932246Ab2L1TSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:18:54 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932250Ab2L1TSz (ORCPT
+	by vger.kernel.org with ESMTP id S932147Ab2L1TSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:55 -0500
-Message-Id: <20121228190348.197447310@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:35 -0500
+Message-Id: <20121228190350.342846340@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:56 +0100
+Date: Fri, 28 Dec 2012 20:05:06 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alexander Stein <alexander.stein@systec-electronic.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [ 086/173] can: Do not call dev_put if restart timer is running upon close
+        Alexey Kaminsky <me@akaminsky.net>, Jiri Kosina <jkosina@suse.cz>
+Subject: [ 096/173] HID: apple: Add Apple wireless keyboard 2011 ANSI PID
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +27,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Stein <alexander.stein@systec-electronic.com>
+From: Alexey Kaminsky <me@akaminsky.net>
 
-commit ab48b03ec9ae1840a1e427e2375bd0d9d554b4ed upstream.
+commit 0a97e1e9f9a6765e6243030ac42b04694f3f3647 upstream.
 
-If the restart timer is running due to BUS-OFF and the device is
-disconnected an dev_put will decrease the usage counter to -1 thus
-blocking the interface removal, resulting in the following dmesg
-lines repeating every 10s:
-can: notifier: receive list not found for dev can0
-can: notifier: receive list not found for dev can0
-can: notifier: receive list not found for dev can0
-unregister_netdevice: waiting for can0 to become free. Usage count = -1
-
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Alexey Kaminsky <me@akaminsky.net>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+[bwh: Backported to 3.2: add the device ID to hid-ids.h]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/can/dev.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/hid/hid-apple.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/net/can/dev.c b/drivers/net/can/dev.c
-index 963e2cc..8233e5e 100644
---- a/drivers/net/can/dev.c
-+++ b/drivers/net/can/dev.c
-@@ -609,8 +609,7 @@ void close_candev(struct net_device *dev)
- {
- 	struct can_priv *priv = netdev_priv(dev);
- 
--	if (del_timer_sync(&priv->restart_timer))
--		dev_put(dev);
-+	del_timer_sync(&priv->restart_timer);
- 	can_flush_echo_skb(dev);
- }
- EXPORT_SYMBOL_GPL(close_candev);
+--- a/drivers/hid/hid-apple.c
++++ b/drivers/hid/hid-apple.c
+@@ -458,6 +458,9 @@ static const struct hid_device_id apple_
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN |
+ 			APPLE_ISO_KEYBOARD },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
++				USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
++		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ALU_WIRELESS_JIS),
+ 		.driver_data = APPLE_NUMLOCK_EMULATION | APPLE_HAS_FN },
+ 	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_WELLSPRING_ANSI),
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -131,6 +131,7 @@
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ANSI  0x0239
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_ISO   0x023a
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2009_JIS   0x023b
++#define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI  0x0255
+ #define USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO   0x0256
+ #define USB_DEVICE_ID_APPLE_FOUNTAIN_TP_ONLY	0x030a
+ #define USB_DEVICE_ID_APPLE_GEYSER1_TP_ONLY	0x030b
 
 
