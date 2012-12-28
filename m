@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab2L1VpD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 16:45:03 -0500
-Received: from mail-vb0-f53.google.com ([209.85.212.53]:36562 "EHLO
-	mail-vb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754629Ab2L1Voz (ORCPT
+	id S1755045Ab2L1VpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 16:45:01 -0500
+Received: from arrakis.dune.hu ([78.24.191.176]:60082 "EHLO
+	eddie.linux-mips.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754460Ab2L1Voz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Dec 2012 16:44:55 -0500
-Date: Fri, 28 Dec 2012 16:44:51 -0500
-From: "'Tejun Heo'" <tj@kernel.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: "'Kukjin Kim'" <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        "'Florian Tobias Schandinat'" <FlorianSchandinat@gmx.de>
-Subject: Re: [PATCH 23/25] video/exynos: don't use [delayed_]work_pending()
-Message-ID: <20121228214451.GK3062@mtj.dyndns.org>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-24-git-send-email-tj@kernel.org>
- <00af01cddff1$4170db40$c45291c0$@samsung.com>
- <02f901cde31e$0a284df0$1e78e9d0$%han@samsung.com>
+Date: Fri, 28 Dec 2012 22:44:48 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mips: Export min_low_pfn if CONFIG_FLATMEM
+Message-ID: <20121228214448.GB6786@linux-mips.org>
+References: <1356727256-3172-1-git-send-email-geert@linux-m68k.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <02f901cde31e$0a284df0$1e78e9d0$%han@samsung.com>
+In-Reply-To: <1356727256-3172-1-git-send-email-geert@linux-m68k.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 01:04:02PM +0900, Jingoo Han wrote:
-> On Saturday, December 22, 2012 12:06 PM, Kukjin Kim wrote 
-> > Tejun Heo wrote:
-> > >
-> > > There's no need to test whether a (delayed) work item in pending
-> > > before queueing, flushing or cancelling it.  Most uses are unnecessary
-> > > and quite a few of them are buggy.
-> > >
-> > > Remove unnecessary pending tests from exynos_dp_core.  Only compile
-> > > tested.
-> > >
-> > > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > > Cc: Kukjin Kim <kgene.kim@samsung.com>
-> > 
-> > Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-> 
-> Acked-by: Jingoo Han <jg1.han@samsung.com>
-> 
-> I tested this patch with Exynos5250.
-> Also, taking it through the workqueue tree would be better.
+On Fri, Dec 28, 2012 at 09:40:56PM +0100, Geert Uytterhoeven wrote:
 
-Applied to wq/for-3.9-cleanups.  Thanks!
+> Subject: [PATCH] mips: Export min_low_pfn if CONFIG_FLATMEM
+> 
+> If CONFIG_FLATMEM=y on MIPS, pfn_valid() (and thus virt_addr_valid()) uses
+> min_low_pfn. However, min_low_pfn is not exported by the generic bootmem
+> code.
+> 
+> As of commit e52a29326462badd9ceec90a9eb2ac2a8550e02e ("aoe: avoid races
+> between device destruction and discovery"), aoeblk_open() uses
+> virt_addr_valid(), causing a link error in the modular case:
+> 
+>     ERROR: "min_low_pfn" [drivers/block/aoe/aoe.ko] undefined!
+> 
+> Add a custom export to fix this, just like is done for ia64 in
+> arch/ia64/kernel/ia64_ksyms.c.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> ---
+> http://kisskb.ellerman.id.au/kisskb/buildresult/7864918/
+> 
+>  arch/mips/kernel/mips_ksyms.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/mips/kernel/mips_ksyms.c b/arch/mips/kernel/mips_ksyms.c
+> index df1e3e4..8579bb8 100644
+> --- a/arch/mips/kernel/mips_ksyms.c
+> +++ b/arch/mips/kernel/mips_ksyms.c
+> @@ -60,3 +60,8 @@ EXPORT_SYMBOL(invalid_pte_table);
+>  /* _mcount is defined in arch/mips/kernel/mcount.S */
+>  EXPORT_SYMBOL(_mcount);
+>  #endif
+> +
+> +#ifdef CONFIG_FLATMEM
+> +#include <linux/bootmem.h>
+> +EXPORT_SYMBOL(min_low_pfn);	/* defined by bootmem.c, but not exported by generic code */
+> +#endif
 
--- 
-tejun
+I've already applied a different patch which turns virt_addr_valid() into
+a normal function and exports it.
+
+Thanks,
+
+  Ralf
