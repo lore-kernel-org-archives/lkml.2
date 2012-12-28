@@ -1,69 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754667Ab2L1TuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:50:14 -0500
-Received: from out01.mta.xmission.com ([166.70.13.231]:53176 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754576Ab2L1TuI (ORCPT
+	id S1754584Ab2L1TRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:17:46 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55066 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754171Ab2L1TRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:50:08 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: anish singh <anish198519851985@gmail.com>,
-        amit mehta <gmate.amit@gmail.com>,
-        Henrique Rodrigues <henriquesilvar@gmail.com>,
-        kishore kumar <kishoreopen@gmail.com>,
-        Jonathan Neusch??fer <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
-References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
-	<20121227184034.GA2982@debian.debian>
-	<CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
-	<CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
-	<CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
-	<CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
-	<87a9syhbma.fsf@xmission.com>
-	<20121228160927.GY4939@ZenIV.linux.org.uk>
-Date: Fri, 28 Dec 2012 11:49:53 -0800
-In-Reply-To: <20121228160927.GY4939@ZenIV.linux.org.uk> (Al Viro's message of
-	"Fri, 28 Dec 2012 16:09:27 +0000")
-Message-ID: <87d2xuez32.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/QuYSy1QvVUJ9bbN81+52HXZCvP9F9K2I=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
-X-Spam-Relay-Country: 
-Subject: Re: how to look for source code in kernel
-X-SA-Exim-Version: 4.2.1 (built Sun, 08 Jan 2012 03:05:19 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 28 Dec 2012 14:17:39 -0500
+Message-Id: <20121228190359.714358948@decadent.org.uk>
+User-Agent: quilt/0.60-1
+Date: Fri, 28 Dec 2012 20:05:59 +0100
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Jani Nikula <jani.nikula@intel.com>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 149/173] drm/i915: do not default to 18 bpp for eDP if missing from VBT
+In-Reply-To: <20121228190330.025298996@decadent.org.uk>
+X-SA-Exim-Connect-IP: 151.217.219.220
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro <viro@ZenIV.linux.org.uk> writes:
+3.2-stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, Dec 27, 2012 at 11:36:13PM -0800, Eric W. Biederman wrote:
->> But then I am probably peculiar keeping an index of the source code in
->> my head.  When I need to look for something and I don't know where to
->> find it I do.
->> 
->> git-ls-files | xargs fgrep 'struct f2fs_inode'
->
-> What's wrong with git grep?
+------------------
 
-I haven't learned it yet.  git-ls-files is a lot better than find
-speed wise so is very much worth doing.    I haven't a clue if
-there is an advantage to git-grep, over just knowing find, xargs, and
-grep.
+From: Jani Nikula <jani.nikula@intel.com>
 
-Eric
+commit 9a30a61f3516871c5c638fd7c025fbaa11ddf7fe upstream.
+
+commit 500a8cc466a24e2fbc4c86ef9c6467ae2ffdeb0c
+Author: Zhenyu Wang <zhenyuw@linux.intel.com>
+Date:   Wed Jan 13 11:19:52 2010 +0800
+
+    drm/i915: parse eDP panel color depth from VBT block
+
+originally introduced parsing bpp for eDP from VBT, with a default of 18
+bpp if the eDP BIOS data block is not present. Turns out that default seems
+to break the Macbook Pro with retina display, as noted in
+
+commit 4344b813f105a19f793f1fd93ad775b784648b95
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Fri Aug 10 11:10:20 2012 +0200
+
+    drm/i915: ignore eDP bpc settings from vbt
+
+Since we can't ignore bpc settings from VBT completely after all, get rid
+of the default. Do not clamp eDP to 18 bpp by default if the eDP BDB is
+missing from VBT.
+
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Henrik Rydberg <rydberg@euromail.se>
+[danvet: paste in the updated commit message from irc.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/gpu/drm/i915/intel_bios.c    |   11 ++---------
+ drivers/gpu/drm/i915/intel_display.c |    2 +-
+ 2 files changed, 3 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_bios.c b/drivers/gpu/drm/i915/intel_bios.c
+index 0ed6baf..56846ed 100644
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -499,12 +499,8 @@ parse_edp(struct drm_i915_private *dev_priv, struct bdb_header *bdb)
+ 
+ 	edp = find_section(bdb, BDB_EDP);
+ 	if (!edp) {
+-		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support) {
+-			DRM_DEBUG_KMS("No eDP BDB found but eDP panel "
+-				      "supported, assume %dbpp panel color "
+-				      "depth.\n",
+-				      dev_priv->edp.bpp);
+-		}
++		if (SUPPORTS_EDP(dev_priv->dev) && dev_priv->edp.support)
++			DRM_DEBUG_KMS("No eDP BDB found but eDP panel supported.\n");
+ 		return;
+ 	}
+ 
+@@ -657,9 +653,6 @@ init_vbt_defaults(struct drm_i915_private *dev_priv)
+ 	dev_priv->lvds_use_ssc = 1;
+ 	dev_priv->lvds_ssc_freq = intel_bios_ssc_frequency(dev, 1);
+ 	DRM_DEBUG_KMS("Set default to SSC at %dMHz\n", dev_priv->lvds_ssc_freq);
+-
+-	/* eDP data */
+-	dev_priv->edp.bpp = 18;
+ }
+ 
+ static int __init intel_no_opregion_vbt_callback(const struct dmi_system_id *id)
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 4154bcd..b426d44 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -3845,7 +3845,7 @@ static bool intel_choose_pipe_bpp_dither(struct drm_crtc *crtc,
+ 			/* Use VBT settings if we have an eDP panel */
+ 			unsigned int edp_bpc = dev_priv->edp.bpp / 3;
+ 
+-			if (edp_bpc < display_bpc) {
++			if (edp_bpc && edp_bpc < display_bpc) {
+ 				DRM_DEBUG_KMS("clamping display bpc (was %d) to eDP (%d)\n", display_bpc, edp_bpc);
+ 				display_bpc = edp_bpc;
+ 			}
+
 
