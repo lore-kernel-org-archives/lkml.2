@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124Ab2L1TSa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:18:30 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55288 "EHLO
+	id S932111Ab2L1TS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:18:27 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55262 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932082Ab2L1TSY (ORCPT
+	by vger.kernel.org with ESMTP id S1754734Ab2L1TSU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:18:24 -0500
-Message-Id: <20121228190352.685272164@decadent.org.uk>
+	Fri, 28 Dec 2012 14:18:20 -0500
+Message-Id: <20121228190353.093271782@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:05:17 +0100
+Date: Fri, 28 Dec 2012 20:05:19 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Boris Ostrovsky <boris.ostrovsky@amd.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [ 107/173] x86,AMD: Power driver support for AMDs family 16h processors
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: [ 109/173] drm/i915: Close race between processing unpin task and queueing the
+ flip
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -28,39 +29,180 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boris Ostrovsky <boris.ostrovsky@amd.com>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 22e32f4f57778ebc6e17812fa3008361c05d64f9 upstream.
+commit e7d841ca03b7ab668620045cd7b428eda9f41601 upstream.
 
-Add family 16h PCI ID to AMD's power driver to allow it report
-power consumption on these processors.
+Before queuing the flip but crucially after attaching the unpin-work to
+the crtc, we continue to setup the unpin-work. However, should the
+hardware fire early, we see the connected unpin-work and queue the task.
+The task then promptly runs and unpins the fb before we finish taking
+the required references or even pinning it... Havoc.
 
-Signed-off-by: Boris Ostrovsky <boris.ostrovsky@amd.com>
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+To close the race, we use the flip-pending atomic to indicate when the
+flip is finally setup and enqueued. So during the flip-done processing,
+we can check more accurately whether the flip was expected.
+
+v2: Add the appropriate mb() to ensure that the writes to the page-flip
+worker are complete prior to marking it active and emitting the MI_FLIP.
+On the read side, the mb should be enforced by the spinlocks.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+[danvet: Review the barriers a bit, we need a write barrier both
+before and after updating ->pending. Similarly we need a read barrier
+in the interrupt handler both before and after reading ->pending. With
+well-ordered irqs only one barrier in each place should be required,
+but since this patch explicitly sets out to combat spurious interrupts
+with is staged activation of the unpin work we need to go full-bore on
+the barriers, too. Discussed with Chris Wilson on irc and changes
+acked by him.]
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/hwmon/fam15h_power.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/gpu/drm/i915/i915_debugfs.c  |    4 ++--
+ drivers/gpu/drm/i915/i915_irq.c      |    4 +++-
+ drivers/gpu/drm/i915/intel_display.c |   39 ++++++++++++++++++++++++++++------
+ drivers/gpu/drm/i915/intel_drv.h     |    5 ++++-
+ 4 files changed, 41 insertions(+), 11 deletions(-)
 
---- a/drivers/hwmon/fam15h_power.c
-+++ b/drivers/hwmon/fam15h_power.c
-@@ -31,6 +31,9 @@ MODULE_DESCRIPTION("AMD Family 15h CPU p
- MODULE_AUTHOR("Andreas Herrmann <andreas.herrmann3@amd.com>");
- MODULE_LICENSE("GPL");
+--- a/drivers/gpu/drm/i915/i915_debugfs.c
++++ b/drivers/gpu/drm/i915/i915_debugfs.c
+@@ -339,7 +339,7 @@ static int i915_gem_pageflip_info(struct
+ 			seq_printf(m, "No flip due on pipe %c (plane %c)\n",
+ 				   pipe, plane);
+ 		} else {
+-			if (!work->pending) {
++			if (atomic_read(&work->pending) < INTEL_FLIP_COMPLETE) {
+ 				seq_printf(m, "Flip queued on pipe %c (plane %c)\n",
+ 					   pipe, plane);
+ 			} else {
+@@ -350,7 +350,7 @@ static int i915_gem_pageflip_info(struct
+ 				seq_printf(m, "Stall check enabled, ");
+ 			else
+ 				seq_printf(m, "Stall check waiting for page flip ioctl, ");
+-			seq_printf(m, "%d prepares\n", work->pending);
++			seq_printf(m, "%d prepares\n", atomic_read(&work->pending));
  
-+/* Family 16h Northbridge's function 4 PCI ID */
-+#define PCI_DEVICE_ID_AMD_16H_NB_F4	0x1534
+ 			if (work->old_fb_obj) {
+ 				struct drm_i915_gem_object *obj = work->old_fb_obj;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -1187,7 +1187,9 @@ static void i915_pageflip_stall_check(st
+ 	spin_lock_irqsave(&dev->event_lock, flags);
+ 	work = intel_crtc->unpin_work;
+ 
+-	if (work == NULL || work->pending || !work->enable_stall_check) {
++	if (work == NULL ||
++	    atomic_read(&work->pending) >= INTEL_FLIP_COMPLETE ||
++	    !work->enable_stall_check) {
+ 		/* Either the pending flip IRQ arrived, or we're too early. Don't check */
+ 		spin_unlock_irqrestore(&dev->event_lock, flags);
+ 		return;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -6949,11 +6949,18 @@ static void do_intel_finish_page_flip(st
+ 
+ 	spin_lock_irqsave(&dev->event_lock, flags);
+ 	work = intel_crtc->unpin_work;
+-	if (work == NULL || !work->pending) {
 +
- /* D18F3 */
- #define REG_NORTHBRIDGE_CAP		0xe8
++	/* Ensure we don't miss a work->pending update ... */
++	smp_rmb();
++
++	if (work == NULL || atomic_read(&work->pending) < INTEL_FLIP_COMPLETE) {
+ 		spin_unlock_irqrestore(&dev->event_lock, flags);
+ 		return;
+ 	}
  
-@@ -256,6 +259,7 @@ static void __devexit fam15h_power_remov
++	/* and that the unpin work is consistent wrt ->pending. */
++	smp_rmb();
++
+ 	intel_crtc->unpin_work = NULL;
  
- static DEFINE_PCI_DEVICE_TABLE(fam15h_power_id_table) = {
- 	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_15H_NB_F4) },
-+	{ PCI_VDEVICE(AMD, PCI_DEVICE_ID_AMD_16H_NB_F4) },
- 	{}
+ 	if (work->event) {
+@@ -7025,16 +7032,25 @@ void intel_prepare_page_flip(struct drm_
+ 		to_intel_crtc(dev_priv->plane_to_crtc_mapping[plane]);
+ 	unsigned long flags;
+ 
++	/* NB: An MMIO update of the plane base pointer will also
++	 * generate a page-flip completion irq, i.e. every modeset
++	 * is also accompanied by a spurious intel_prepare_page_flip().
++	 */
+ 	spin_lock_irqsave(&dev->event_lock, flags);
+-	if (intel_crtc->unpin_work) {
+-		if ((++intel_crtc->unpin_work->pending) > 1)
+-			DRM_ERROR("Prepared flip multiple times\n");
+-	} else {
+-		DRM_DEBUG_DRIVER("preparing flip with no unpin work?\n");
+-	}
++	if (intel_crtc->unpin_work)
++		atomic_inc_not_zero(&intel_crtc->unpin_work->pending);
+ 	spin_unlock_irqrestore(&dev->event_lock, flags);
+ }
+ 
++inline static void intel_mark_page_flip_active(struct intel_crtc *intel_crtc)
++{
++	/* Ensure that the work item is consistent when activating it ... */
++	smp_wmb();
++	atomic_set(&intel_crtc->unpin_work->pending, INTEL_FLIP_PENDING);
++	/* and that it is marked active as soon as the irq could fire. */
++	smp_wmb();
++}
++
+ static int intel_gen2_queue_flip(struct drm_device *dev,
+ 				 struct drm_crtc *crtc,
+ 				 struct drm_framebuffer *fb,
+@@ -7071,6 +7087,8 @@ static int intel_gen2_queue_flip(struct
+ 	OUT_RING(fb->pitch);
+ 	OUT_RING(obj->gtt_offset + offset);
+ 	OUT_RING(MI_NOOP);
++
++	intel_mark_page_flip_active(intel_crtc);
+ 	ADVANCE_LP_RING();
+ 	return 0;
+ 
+@@ -7114,6 +7132,7 @@ static int intel_gen3_queue_flip(struct
+ 	OUT_RING(obj->gtt_offset + offset);
+ 	OUT_RING(MI_NOOP);
+ 
++	intel_mark_page_flip_active(intel_crtc);
+ 	ADVANCE_LP_RING();
+ 	return 0;
+ 
+@@ -7157,6 +7176,10 @@ static int intel_gen4_queue_flip(struct
+ 	pf = 0;
+ 	pipesrc = I915_READ(PIPESRC(intel_crtc->pipe)) & 0x0fff0fff;
+ 	OUT_RING(pf | pipesrc);
++
++	intel_mark_page_flip_active(intel_crtc);
++
++	intel_mark_page_flip_active(intel_crtc);
+ 	ADVANCE_LP_RING();
+ 	return 0;
+ 
+@@ -7246,6 +7269,8 @@ static int intel_gen7_queue_flip(struct
+ 	intel_ring_emit(ring, (fb->pitch | obj->tiling_mode));
+ 	intel_ring_emit(ring, (obj->gtt_offset));
+ 	intel_ring_emit(ring, (MI_NOOP));
++
++	intel_mark_page_flip_active(intel_crtc);
+ 	intel_ring_advance(ring);
+ 	return 0;
+ 
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -257,7 +257,10 @@ struct intel_unpin_work {
+ 	struct drm_i915_gem_object *old_fb_obj;
+ 	struct drm_i915_gem_object *pending_flip_obj;
+ 	struct drm_pending_vblank_event *event;
+-	int pending;
++	atomic_t pending;
++#define INTEL_FLIP_INACTIVE	0
++#define INTEL_FLIP_PENDING	1
++#define INTEL_FLIP_COMPLETE	2
+ 	bool enable_stall_check;
  };
- MODULE_DEVICE_TABLE(pci, fam15h_power_id_table);
+ 
 
 
