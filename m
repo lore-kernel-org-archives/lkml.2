@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab2L1JJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 04:09:16 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:60879 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335Ab2L1JJO (ORCPT
+	id S1752324Ab2L1JK3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 04:10:29 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:58129 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474Ab2L1JK1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 04:09:14 -0500
-Message-ID: <1356685743.27172.2.camel@phoenix>
-Subject: [PATCH 1/3] regulator: max8997: Use uV in voltage_map_desc
+	Fri, 28 Dec 2012 04:10:27 -0500
+Message-ID: <1356685820.27172.4.camel@phoenix>
+Subject: [PATCH 2/3] regulator: max8998: Use uV in voltage_map_desc
 From: Axel Lin <axel.lin@ingics.com>
 To: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: Thomas Abraham <thomas.abraham@linaro.org>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         MyungJoo Ham <myungjoo.ham@samsung.com>, Liam Girdwood <lrg@ti.com>,
         linux-kernel@vger.kernel.org
-Date: Fri, 28 Dec 2012 17:09:03 +0800
+Date: Fri, 28 Dec 2012 17:10:20 +0800
+In-Reply-To: <1356685743.27172.2.camel@phoenix>
+References: <1356685743.27172.2.camel@phoenix>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
@@ -24,146 +26,146 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code does integer division (min_vol = min_uV / 1000) before pass
-min_vol to max8997_get_voltage_proper_val().
-So it is possible min_vol is truncated to a smaller value.
-
-For example, if the request min_uV is 800900 for ldo.
-min_vol = 800900 / 1000 = 800 (mV)
-Then max8997_get_voltage_proper_val returns 800 mV for this case which is lower
-than the requested voltage.
-
-Use uV rather than mV in voltage_map_desc to prevent truncation by integer
-division.
+Integer division may truncate.
+This happens when pdata->buckx_voltagex setting is not align with 1000 uV.
+Thus use uV in voltage_map_desc, this ensures the selected voltage won't less
+than pdata buckx_voltagex settings.
 
 Signed-off-by: Axel Lin <axel.lin@ingics.com>
 ---
- drivers/regulator/max8997.c |   36 +++++++++++++++++-------------------
- 1 file changed, 17 insertions(+), 19 deletions(-)
+ drivers/regulator/max8998.c |   42 +++++++++++++++++++++---------------------
+ 1 file changed, 21 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index c30424a..1a1ae99 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -78,26 +78,26 @@ struct voltage_map_desc {
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index b821d08..06be8cc 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -51,39 +51,39 @@ struct voltage_map_desc {
  	int step;
  };
  
--/* Voltage maps in mV */
-+/* Voltage maps in uV */
- static const struct voltage_map_desc ldo_voltage_map_desc = {
--	.min = 800,	.max = 3950,	.step = 50,
-+	.min = 800000,	.max = 3950000,	.step = 50000,
- }; /* LDO1 ~ 18, 21 all */
- 
- static const struct voltage_map_desc buck1245_voltage_map_desc = {
--	.min = 650,	.max = 2225,	.step = 25,
-+	.min = 650000,	.max = 2225000,	.step = 25000,
- }; /* Buck1, 2, 4, 5 */
- 
- static const struct voltage_map_desc buck37_voltage_map_desc = {
--	.min = 750,	.max = 3900,	.step = 50,
-+	.min = 750000,	.max = 3900000,	.step = 50000,
- }; /* Buck3, 7 */
- 
--/* current map in mA */
-+/* current map in uA */
- static const struct voltage_map_desc charger_current_map_desc = {
--	.min = 200,	.max = 950,	.step = 50,
-+	.min = 200000,	.max = 950000,	.step = 50000,
+-/* Voltage maps */
++/* Voltage maps in uV*/
+ static const struct voltage_map_desc ldo23_voltage_map_desc = {
+-	.min = 800,	.step = 50,	.max = 1300,
++	.min = 800000,	.step = 50000,	.max = 1300000,
+ };
+ static const struct voltage_map_desc ldo456711_voltage_map_desc = {
+-	.min = 1600,	.step = 100,	.max = 3600,
++	.min = 1600000,	.step = 100000,	.max = 3600000,
+ };
+ static const struct voltage_map_desc ldo8_voltage_map_desc = {
+-	.min = 3000,	.step = 100,	.max = 3600,
++	.min = 3000000,	.step = 100000,	.max = 3600000,
+ };
+ static const struct voltage_map_desc ldo9_voltage_map_desc = {
+-	.min = 2800,	.step = 100,	.max = 3100,
++	.min = 2800000,	.step = 100000,	.max = 3100000,
+ };
+ static const struct voltage_map_desc ldo10_voltage_map_desc = {
+-	.min = 950,	.step = 50,	.max = 1300,
++	.min = 95000,	.step = 50000,	.max = 1300000,
+ };
+ static const struct voltage_map_desc ldo1213_voltage_map_desc = {
+-	.min = 800,	.step = 100,	.max = 3300,
++	.min = 800000,	.step = 100000,	.max = 3300000,
+ };
+ static const struct voltage_map_desc ldo1415_voltage_map_desc = {
+-	.min = 1200,	.step = 100,	.max = 3300,
++	.min = 1200000,	.step = 100000,	.max = 3300000,
+ };
+ static const struct voltage_map_desc ldo1617_voltage_map_desc = {
+-	.min = 1600,	.step = 100,	.max = 3600,
++	.min = 1600000,	.step = 100000,	.max = 3600000,
+ };
+ static const struct voltage_map_desc buck12_voltage_map_desc = {
+-	.min = 750,	.step = 25,	.max = 1525,
++	.min = 750000,	.step = 25000,	.max = 1525000,
+ };
+ static const struct voltage_map_desc buck3_voltage_map_desc = {
+-	.min = 1600,	.step = 100,	.max = 3600,
++	.min = 1600000,	.step = 100000,	.max = 3600000,
+ };
+ static const struct voltage_map_desc buck4_voltage_map_desc = {
+-	.min = 800,	.step = 100,	.max = 2300,
++	.min = 800000,	.step = 100000,	.max = 2300000,
  };
  
- static const struct voltage_map_desc topoff_current_map_desc = {
--	.min = 50,	.max = 200,	.step = 10,
-+	.min = 50000,	.max = 200000,	.step = 10000,
- };
+ static const struct voltage_map_desc *ldo_voltage_map[] = {
+@@ -445,7 +445,7 @@ static int max8998_set_voltage_buck_time_sel(struct regulator_dev *rdev,
+ 	if (max8998->iodev->type == TYPE_MAX8998 && !(val & MAX8998_ENRAMP))
+ 		return 0;
  
- static const struct voltage_map_desc *reg_voltage_map[] = {
-@@ -178,7 +178,7 @@ static int max8997_list_voltage(struct regulator_dev *rdev,
- 	if (val > desc->max)
- 		return -EINVAL;
+-	difference = (new_selector - old_selector) * desc->step;
++	difference = (new_selector - old_selector) * desc->step / 1000;
+ 	if (difference > 0)
+ 		return difference / ((val & 0x0f) + 1);
  
--	return val * 1000;
-+	return val;
- }
+@@ -702,7 +702,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       < (pdata->buck1_voltage1 / 1000))
++		       < pdata->buck1_voltage1)
+ 			i++;
+ 		max8998->buck1_vol[0] = i;
+ 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK1_VOLTAGE1, i);
+@@ -713,7 +713,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       < (pdata->buck1_voltage2 / 1000))
++		       < pdata->buck1_voltage2)
+ 			i++;
  
- static int max8997_get_enable_register(struct regulator_dev *rdev,
-@@ -469,7 +469,6 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
- {
- 	struct max8997_data *max8997 = rdev_get_drvdata(rdev);
- 	struct i2c_client *i2c = max8997->iodev->i2c;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
- 	const struct voltage_map_desc *desc;
- 	int rid = rdev_get_id(rdev);
- 	int i, reg, shift, mask, ret;
-@@ -493,7 +492,7 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
+ 		max8998->buck1_vol[1] = i;
+@@ -725,7 +725,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       < (pdata->buck1_voltage3 / 1000))
++		       < pdata->buck1_voltage3)
+ 			i++;
  
- 	desc = reg_voltage_map[rid];
+ 		max8998->buck1_vol[2] = i;
+@@ -737,7 +737,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       < (pdata->buck1_voltage4 / 1000))
++		       < pdata->buck1_voltage4)
+ 			i++;
  
--	i = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
-+	i = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
- 	if (i < 0)
- 		return i;
+ 		max8998->buck1_vol[3] = i;
+@@ -763,7 +763,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       < (pdata->buck2_voltage1 / 1000))
++		       < pdata->buck2_voltage1)
+ 			i++;
+ 		max8998->buck2_vol[0] = i;
+ 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE1, i);
+@@ -774,7 +774,7 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 		i = 0;
+ 		while (buck12_voltage_map_desc.min +
+ 		       buck12_voltage_map_desc.step*i
+-		       < (pdata->buck2_voltage2 / 1000))
++		       < pdata->buck2_voltage2)
+ 			i++;
+ 		max8998->buck2_vol[1] = i;
+ 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE2, i);
+@@ -792,8 +792,8 @@ static int max8998_pmic_probe(struct platform_device *pdev)
+ 			int count = (desc->max - desc->min) / desc->step + 1;
  
-@@ -541,7 +540,7 @@ static int max8997_set_voltage_buck_time_sel(struct regulator_dev *rdev,
- 	case MAX8997_BUCK4:
- 	case MAX8997_BUCK5:
- 		return DIV_ROUND_UP(desc->step * (new_selector - old_selector),
--				    max8997->ramp_delay);
-+				    max8997->ramp_delay * 1000);
- 	}
+ 			regulators[index].n_voltages = count;
+-			regulators[index].min_uV = desc->min * 1000;
+-			regulators[index].uV_step = desc->step * 1000;
++			regulators[index].min_uV = desc->min;
++			regulators[index].uV_step = desc->step;
+ 		}
  
- 	return 0;
-@@ -640,7 +639,6 @@ static int max8997_set_voltage_buck(struct regulator_dev *rdev,
- 	const struct voltage_map_desc *desc;
- 	int new_val, new_idx, damage, tmp_val, tmp_idx, tmp_dmg;
- 	bool gpio_dvs_mode = false;
--	int min_vol = min_uV / 1000, max_vol = max_uV / 1000;
- 
- 	if (rid < MAX8997_BUCK1 || rid > MAX8997_BUCK7)
- 		return -EINVAL;
-@@ -665,7 +663,7 @@ static int max8997_set_voltage_buck(struct regulator_dev *rdev,
- 						selector);
- 
- 	desc = reg_voltage_map[rid];
--	new_val = max8997_get_voltage_proper_val(desc, min_vol, max_vol);
-+	new_val = max8997_get_voltage_proper_val(desc, min_uV, max_uV);
- 	if (new_val < 0)
- 		return new_val;
- 
-@@ -1080,8 +1078,8 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 		max8997->buck1_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck1_voltage[i] / 1000,
--					pdata->buck1_voltage[i] / 1000 +
-+					pdata->buck1_voltage[i],
-+					pdata->buck1_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_out;
-@@ -1089,8 +1087,8 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 		max8997->buck2_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck2_voltage[i] / 1000,
--					pdata->buck2_voltage[i] / 1000 +
-+					pdata->buck2_voltage[i],
-+					pdata->buck2_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_out;
-@@ -1098,8 +1096,8 @@ static int max8997_pmic_probe(struct platform_device *pdev)
- 		max8997->buck5_vol[i] = ret =
- 			max8997_get_voltage_proper_val(
- 					&buck1245_voltage_map_desc,
--					pdata->buck5_voltage[i] / 1000,
--					pdata->buck5_voltage[i] / 1000 +
-+					pdata->buck5_voltage[i],
-+					pdata->buck5_voltage[i] +
- 					buck1245_voltage_map_desc.step);
- 		if (ret < 0)
- 			goto err_out;
+ 		config.dev = max8998->dev;
 -- 
 1.7.9.5
 
