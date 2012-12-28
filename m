@@ -1,213 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887Ab2L1TYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:24:39 -0500
-Received: from georges.telenet-ops.be ([195.130.137.68]:44886 "EHLO
-	georges.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab2L1TXw (ORCPT
+	id S1754852Ab2L1TZM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:25:12 -0500
+Received: from juliette.telenet-ops.be ([195.130.137.74]:38045 "EHLO
+	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754811Ab2L1TXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:23:52 -0500
+	Fri, 28 Dec 2012 14:23:42 -0500
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: linux-arch@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>,
         linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Cc: linux-m68k@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: [PATCH/RFC 3/4] avr32/bfin/c6x/cris/frv/m68k/mn10300/parisc/xtensa: Add dummy get_dma_ops()
-Date: Fri, 28 Dec 2012 20:23:33 +0100
-Message-Id: <1356722614-18224-4-git-send-email-geert@linux-m68k.org>
+Cc: linux-m68k@vger.kernel.org
+Subject: [PATCH/RFC 0/4] Re: dma_mmap_coherent / ARCH_HAS_DMA_MMAP_COHERENT
+Date: Fri, 28 Dec 2012 20:23:30 +0100
+Message-Id: <1356722614-18224-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <CAMuHMdVPBUzN8fsNHFzrEqev9BsvVCVR2fWySCOecjVA-J1qjg@mail.gmail.com>
 References: <CAMuHMdVPBUzN8fsNHFzrEqev9BsvVCVR2fWySCOecjVA-J1qjg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide dummy versions of get_dma_ops(), as dma_mmap_attrs() and
-dma_get_sgtable_attrs() (will) need these
+On Sun, Dec 16, 2012 at 5:03 PM, Geert Uytterhoeven <geert@linux-m68k.org>
+wrote:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
+> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
+> make[6]: *** [drivers/media/v4l2-core/videobuf2-dma-contig.o] Error 1
+> make[6]: Target `__build' not remade because of errors.
+> make[5]: *** [drivers/media/v4l2-core] Error 2
+>
+> Both dma_mmap_coherent() and dma_get_sgtable() are defined in
+> include/asm-generic/dma-mapping-common.h only, which is included by
+> <asm/dma-mapping.h> on alpha, arm, arm64, hexagon, ia64, microblaze, mips,
+> openrisc, powerpc, s390, sh, sparc, tile, unicore32, x86.
+> Should the remaining architectures include this, too?
+> Should it be moved to <linux/dma-mapping.h>?
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- arch/avr32/include/asm/dma-mapping.h    |    8 ++++++++
- arch/blackfin/include/asm/dma-mapping.h |    8 ++++++++
- arch/c6x/include/asm/dma-mapping.h      |    8 ++++++++
- arch/cris/include/asm/dma-mapping.h     |    8 ++++++++
- arch/frv/include/asm/dma-mapping.h      |    8 ++++++++
- arch/m68k/include/asm/dma-mapping.h     |    8 ++++++++
- arch/mn10300/include/asm/dma-mapping.h  |    8 ++++++++
- arch/parisc/include/asm/dma-mapping.h   |    8 ++++++++
- arch/xtensa/include/asm/dma-mapping.h   |    8 ++++++++
- 9 files changed, 72 insertions(+), 0 deletions(-)
+I came up with an RFC-solution for this in [PATCH/RFC 3/4]
+("avr32/bfin/c6x/cris/frv/m68k/mn10300/parisc/xtensa: Add dummy get_dma_ops()")
+and [PATCH/RFC 4/4] ("common: dma-mapping: Move dma_common_*() to
+<linux/dma-mapping.h>") of this series.
 
-diff --git a/arch/avr32/include/asm/dma-mapping.h b/arch/avr32/include/asm/dma-mapping.h
-index aaf5199..de55309 100644
---- a/arch/avr32/include/asm/dma-mapping.h
-+++ b/arch/avr32/include/asm/dma-mapping.h
-@@ -8,6 +8,14 @@
- #include <asm/cacheflush.h>
- #include <asm/io.h>
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- extern void dma_cache_sync(struct device *dev, void *vaddr, size_t size,
- 	int direction);
- 
-diff --git a/arch/blackfin/include/asm/dma-mapping.h b/arch/blackfin/include/asm/dma-mapping.h
-index bbf4610..a2778b3 100644
---- a/arch/blackfin/include/asm/dma-mapping.h
-+++ b/arch/blackfin/include/asm/dma-mapping.h
-@@ -10,6 +10,14 @@
- #include <asm/cacheflush.h>
- struct scatterlist;
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- void *dma_alloc_coherent(struct device *dev, size_t size,
- 			 dma_addr_t *dma_handle, gfp_t gfp);
- void dma_free_coherent(struct device *dev, size_t size, void *vaddr,
-diff --git a/arch/c6x/include/asm/dma-mapping.h b/arch/c6x/include/asm/dma-mapping.h
-index 3c69406..5ae2f81 100644
---- a/arch/c6x/include/asm/dma-mapping.h
-+++ b/arch/c6x/include/asm/dma-mapping.h
-@@ -17,6 +17,14 @@
- 
- #define dma_supported(d, m)	1
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- static inline int dma_set_mask(struct device *dev, u64 dma_mask)
- {
- 	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
-diff --git a/arch/cris/include/asm/dma-mapping.h b/arch/cris/include/asm/dma-mapping.h
-index 8588b2c..05a55aa 100644
---- a/arch/cris/include/asm/dma-mapping.h
-+++ b/arch/cris/include/asm/dma-mapping.h
-@@ -10,6 +10,14 @@
- #include <asm/io.h>
- #include <asm/scatterlist.h>
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
- #define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
- 
-diff --git a/arch/frv/include/asm/dma-mapping.h b/arch/frv/include/asm/dma-mapping.h
-index dfb8110..862e9b8 100644
---- a/arch/frv/include/asm/dma-mapping.h
-+++ b/arch/frv/include/asm/dma-mapping.h
-@@ -12,6 +12,14 @@
-  * following DMA API should work.
-  */
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
- #define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
- 
-diff --git a/arch/m68k/include/asm/dma-mapping.h b/arch/m68k/include/asm/dma-mapping.h
-index c68cdb4..d8977f5 100644
---- a/arch/m68k/include/asm/dma-mapping.h
-+++ b/arch/m68k/include/asm/dma-mapping.h
-@@ -5,6 +5,14 @@
- 
- struct scatterlist;
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- static inline int dma_supported(struct device *dev, u64 mask)
- {
- 	return 1;
-diff --git a/arch/mn10300/include/asm/dma-mapping.h b/arch/mn10300/include/asm/dma-mapping.h
-index c1be439..b0cea53 100644
---- a/arch/mn10300/include/asm/dma-mapping.h
-+++ b/arch/mn10300/include/asm/dma-mapping.h
-@@ -22,6 +22,14 @@
-  * following DMA API should work.
-  */
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- extern void *dma_alloc_coherent(struct device *dev, size_t size,
- 				dma_addr_t *dma_handle, int flag);
- 
-diff --git a/arch/parisc/include/asm/dma-mapping.h b/arch/parisc/include/asm/dma-mapping.h
-index 467bbd5..cdd450f 100644
---- a/arch/parisc/include/asm/dma-mapping.h
-+++ b/arch/parisc/include/asm/dma-mapping.h
-@@ -46,6 +46,14 @@ extern struct hppa_dma_ops pcx_dma_ops;
- 
- extern struct hppa_dma_ops *hppa_dma_ops;
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- static inline void *
- dma_alloc_coherent(struct device *dev, size_t size, dma_addr_t *dma_handle,
- 		   gfp_t flag)
-diff --git a/arch/xtensa/include/asm/dma-mapping.h b/arch/xtensa/include/asm/dma-mapping.h
-index 4acb5fe..0061c2d 100644
---- a/arch/xtensa/include/asm/dma-mapping.h
-+++ b/arch/xtensa/include/asm/dma-mapping.h
-@@ -26,6 +26,14 @@ extern void *consistent_alloc(int, size_t, dma_addr_t, unsigned long);
- extern void consistent_free(void*, size_t, dma_addr_t);
- extern void consistent_sync(void*, size_t, int);
- 
-+/*
-+ *  Dummy to make dma_mmap_attrs()/dma_get_sgtable_attrs() happy
-+ */
-+static inline const struct dma_map_ops *get_dma_ops(struct device *dev)
-+{
-+	return NULL;
-+}
-+
- #define dma_alloc_noncoherent(d, s, h, f) dma_alloc_coherent(d, s, h, f)
- #define dma_free_noncoherent(d, s, v, h) dma_free_coherent(d, s, v, h)
- 
--- 
-1.7.0.4
+> Furthermore, there's ARCH_HAS_DMA_MMAP_COHERENT, which is defined
+> by powerpc only:
+> arch/powerpc/include/asm/dma-mapping.h:#define ARCH_HAS_DMA_MMAP_COHERENT
+>
+> and handled in some fishy way in sound/core/pcm_native.c:
+>
+> #ifndef ARCH_HAS_DMA_MMAP_COHERENT
+> /* This should be defined / handled globally! */
+> #ifdef CONFIG_ARM
+> #define ARCH_HAS_DMA_MMAP_COHERENT
+> #endif
+> #endif
+>
+> /*
+>  * mmap the DMA buffer on RAM
+>  */
+> int snd_pcm_lib_default_mmap(struct snd_pcm_substream *substream,
+>                              struct vm_area_struct *area)
+> {
+>         area->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+> #ifdef ARCH_HAS_DMA_MMAP_COHERENT
+>         if (!substream->ops->page &&
+>             substream->dma_buffer.dev.type == SNDRV_DMA_TYPE_DEV)
+>                 return dma_mmap_coherent(substream->dma_buffer.dev.dev,
+>                                          area,
+>                                          substream->runtime->dma_area,
+>                                          substream->runtime->dma_addr,
+>                                          area->vm_end - area->vm_start);
+> #elif defined(CONFIG_MIPS) && defined(CONFIG_DMA_NONCOHERENT)
+>         if (substream->dma_buffer.dev.type == SNDRV_DMA_TYPE_DEV &&
+>             !plat_device_is_coherent(substream->dma_buffer.dev.dev))
+>                 area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+> #endif /* ARCH_HAS_DMA_MMAP_COHERENT */
+>         /* mmap with fault handler */
+>         area->vm_ops = &snd_pcm_vm_ops_data_fault;
+>         return 0;
+> }
+> EXPORT_SYMBOL_GPL(snd_pcm_lib_default_mmap);
+>
+> What's up here?
+
+Probably an easy solution here is to kill ARCH_HAS_DMA_MMAP_COHERENT and
+change the code to
+
+    #if defined(CONFIG_MIPS) && defined(CONFIG_DMA_NONCOHERENT)
+	    if (substream->dma_buffer.dev.type == SNDRV_DMA_TYPE_DEV &&
+		!plat_device_is_coherent(substream->dma_buffer.dev.dev))
+		    area->vm_page_prot = pgprot_noncached(area->vm_page_prot);
+    #else
+	    if (!substream->ops->page &&
+		substream->dma_buffer.dev.type == SNDRV_DMA_TYPE_DEV)
+		    return dma_mmap_coherent(substream->dma_buffer.dev.dev,
+					     area,
+					     substream->runtime->dma_area,
+					     substream->runtime->dma_addr,
+					     area->vm_end - area->vm_start);
+    #endif
+
+but obviously I don't like the test for CONFIG_MIPS in generic code...
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
 
