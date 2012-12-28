@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932537Ab2L1TUm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:20:42 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55713 "EHLO
+	id S932576Ab2L1TVf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:21:35 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55725 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932475Ab2L1TUA (ORCPT
+	by vger.kernel.org with ESMTP id S932418Ab2L1TT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:20:00 -0500
-Message-Id: <20121228190336.845327129@decadent.org.uk>
+	Fri, 28 Dec 2012 14:19:59 -0500
+Message-Id: <20121228190335.659874461@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:04:03 +0100
+Date: Fri, 28 Dec 2012 20:03:57 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [ 033/173] freezer: add missing mbs to freezer_count() and
- freezer_should_skip()
+        Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@kernel.org>,
+        Yong Zhang <yong.zhang0@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 027/173] Revert "sched, autogroup: Stop going ahead if autogroup is disabled"
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -29,114 +30,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Mike Galbraith <efault@gmx.de>
 
-commit dd67d32dbc5de299d70cc9e10c6c1e29ffa56b92 upstream.
+commit fd8ef11730f1d03d5d6555aa53126e9e34f52f12 upstream.
 
-A task is considered frozen enough between freezer_do_not_count() and
-freezer_count() and freezers use freezer_should_skip() to test this
-condition.  This supposedly works because freezer_count() always calls
-try_to_freezer() after clearing %PF_FREEZER_SKIP.
+This reverts commit 800d4d30c8f20bd728e5741a3b77c4859a613f7c.
 
-However, there currently is nothing which guarantees that
-freezer_count() sees %true freezing() after clearing %PF_FREEZER_SKIP
-when freezing is in progress, and vice-versa.  A task can escape the
-freezing condition in effect by freezer_count() seeing !freezing() and
-freezer_should_skip() seeing %PF_FREEZER_SKIP.
+Between commits 8323f26ce342 ("sched: Fix race in task_group()") and
+800d4d30c8f2 ("sched, autogroup: Stop going ahead if autogroup is
+disabled"), autogroup is a wreck.
 
-This patch adds smp_mb()'s to freezer_count() and
-freezer_should_skip() such that either %true freezing() is visible to
-freezer_count() or !PF_FREEZER_SKIP is visible to
-freezer_should_skip().
+With both applied, all you have to do to crash a box is disable
+autogroup during boot up, then reboot..  boom, NULL pointer dereference
+due to commit 800d4d30c8f2 not allowing autogroup to move things, and
+commit 8323f26ce342 making that the only way to switch runqueues:
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-[bwh: Backported to 3.2:
- - Adjust context and indentation
- - freezer_do_not_count() and freezer_count() are no-ops for kernel tasks]
+  BUG: unable to handle kernel NULL pointer dereference at           (null)
+  IP: [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+  Pid: 7047, comm: systemd-user-se Not tainted 3.6.8-smp #7 MEDIONPC MS-7502/MS-7502
+  RIP: effective_load.isra.43+0x50/0x90
+  Process systemd-user-se (pid: 7047, threadinfo ffff880221dde000, task ffff88022618b3a0)
+  Call Trace:
+    select_task_rq_fair+0x255/0x780
+    try_to_wake_up+0x156/0x2c0
+    wake_up_state+0xb/0x10
+    signal_wake_up+0x28/0x40
+    complete_signal+0x1d6/0x250
+    __send_signal+0x170/0x310
+    send_signal+0x40/0x80
+    do_send_sig_info+0x47/0x90
+    group_send_sig_info+0x4a/0x70
+    kill_pid_info+0x3a/0x60
+    sys_kill+0x97/0x1a0
+    ? vfs_read+0x120/0x160
+    ? sys_read+0x45/0x90
+    system_call_fastpath+0x16/0x1b
+  Code: 49 0f af 41 50 31 d2 49 f7 f0 48 83 f8 01 48 0f 46 c6 48 2b 07 48 8b bf 40 01 00 00 48 85 ff 74 3a 45 31 c0 48 8b 8f 50 01 00 00 <48> 8b 11 4c 8b 89 80 00 00 00 49 89 d2 48 01 d0 45 8b 59 58 4c
+  RIP  [<ffffffff81063ac0>] effective_load.isra.43+0x50/0x90
+   RSP <ffff880221ddfbd8>
+  CR2: 0000000000000000
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: adjust filenames]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- include/linux/freezer.h |   50 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 42 insertions(+), 8 deletions(-)
-
---- a/include/linux/freezer.h
-+++ b/include/linux/freezer.h
-@@ -88,9 +88,16 @@ static inline int cgroup_freezing_or_fro
-  * parent.
-  */
+--- a/kernel/sched_autogroup.c
++++ b/kernel/sched_autogroup.c
+@@ -160,15 +160,11 @@ autogroup_move_group(struct task_struct
  
--/*
-- * If the current task is a user space one, tell the freezer not to count it as
-- * freezable.
-+/**
-+ * freezer_do_not_count - tell freezer to ignore %current if a user space task
-+ *
-+ * Tell freezers to ignore the current task when determining whether the
-+ * target frozen state is reached.  IOW, the current task will be
-+ * considered frozen enough by freezers.
-+ *
-+ * The caller shouldn't do anything which isn't allowed for a frozen task
-+ * until freezer_cont() is called.  Usually, freezer[_do_not]_count() pair
-+ * wrap a scheduling operation and nothing much else.
-  */
- static inline void freezer_do_not_count(void)
- {
-@@ -98,24 +105,48 @@ static inline void freezer_do_not_count(
- 		current->flags |= PF_FREEZER_SKIP;
+ 	p->signal->autogroup = autogroup_kref_get(ag);
+ 
+-	if (!ACCESS_ONCE(sysctl_sched_autogroup_enabled))
+-		goto out;
+-
+ 	t = p;
+ 	do {
+ 		sched_move_task(t);
+ 	} while_each_thread(p, t);
+ 
+-out:
+ 	unlock_task_sighand(p, &flags);
+ 	autogroup_kref_put(prev);
  }
+--- a/kernel/sched_autogroup.h
++++ b/kernel/sched_autogroup.h
+@@ -1,11 +1,6 @@
+ #ifdef CONFIG_SCHED_AUTOGROUP
  
--/*
-- * If the current task is a user space one, tell the freezer to count it as
-- * freezable again and try to freeze it.
-+/**
-+ * freezer_count - tell freezer to stop ignoring %current if a user space task
-+ *
-+ * Undo freezer_do_not_count().  It tells freezers that %current should be
-+ * considered again and tries to freeze if freezing condition is already in
-+ * effect.
-  */
- static inline void freezer_count(void)
- {
- 	if (current->mm) {
- 		current->flags &= ~PF_FREEZER_SKIP;
-+		/*
-+		 * If freezing is in progress, the following paired with smp_mb()
-+		 * in freezer_should_skip() ensures that either we see %true
-+		 * freezing() or freezer_should_skip() sees !PF_FREEZER_SKIP.
-+		 */
-+		smp_mb();
- 		try_to_freeze();
- 	}
- }
- 
--/*
-- * Check if the task should be counted as freezable by the freezer
-+/**
-+ * freezer_should_skip - whether to skip a task when determining frozen
-+ *			 state is reached
-+ * @p: task in quesion
-+ *
-+ * This function is used by freezers after establishing %true freezing() to
-+ * test whether a task should be skipped when determining the target frozen
-+ * state is reached.  IOW, if this function returns %true, @p is considered
-+ * frozen enough.
-  */
--static inline int freezer_should_skip(struct task_struct *p)
-+static inline bool freezer_should_skip(struct task_struct *p)
- {
--	return !!(p->flags & PF_FREEZER_SKIP);
-+	/*
-+	 * The following smp_mb() paired with the one in freezer_count()
-+	 * ensures that either freezer_count() sees %true freezing() or we
-+	 * see cleared %PF_FREEZER_SKIP and return %false.  This makes it
-+	 * impossible for a task to slip frozen state testing after
-+	 * clearing %PF_FREEZER_SKIP.
-+	 */
-+	smp_mb();
-+	return p->flags & PF_FREEZER_SKIP;
- }
- 
- /*
+ struct autogroup {
+-	/*
+-	 * reference doesn't mean how many thread attach to this
+-	 * autogroup now. It just stands for the number of task
+-	 * could use this autogroup.
+-	 */
+ 	struct kref		kref;
+ 	struct task_group	*tg;
+ 	struct rw_semaphore	lock;
 
 
