@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab2L1Vbm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 16:31:42 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:51171 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754080Ab2L1Vbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 16:31:40 -0500
-Message-ID: <1356730299.31130.27.camel@joe-AO722>
-Subject: Re: how to look for source code in kernel
-From: Joe Perches <joe@perches.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        anish singh <anish198519851985@gmail.com>,
-        amit mehta <gmate.amit@gmail.com>,
-        Henrique Rodrigues <henriquesilvar@gmail.com>,
-        kishore kumar <kishoreopen@gmail.com>,
-        Jonathan Neusch??fer <j.neuschaefer@gmx.net>,
-        linux-kernel@vger.kernel.org, Kernelnewbies@kernelnewbies.org
-Date: Fri, 28 Dec 2012 13:31:39 -0800
-In-Reply-To: <20121228160927.GY4939@ZenIV.linux.org.uk>
-References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
-	 <20121227184034.GA2982@debian.debian>
-	 <CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
-	 <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
-	 <CAOUxTKNgs4N-M5RR6YHyGeXQqRrg0_CJpxgT2OmN_buEP+jbjQ@mail.gmail.com>
-	 <CAK7N6vqw+DVSVaCXqiQBVa_d2o-rg-oA5t8+6WNaZ9Mb_iQqdw@mail.gmail.com>
-	 <87a9syhbma.fsf@xmission.com> <20121228160927.GY4939@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754535Ab2L1Vk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 16:40:59 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:36450 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab2L1Vk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 16:40:56 -0500
+Date: Fri, 28 Dec 2012 16:40:52 -0500
+From: Tejun Heo <tj@kernel.org>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, wg@grandegger.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 03/25] sja1000: don't use [delayed_]work_pending()
+Message-ID: <20121228214052.GD3062@mtj.dyndns.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+ <1356141435-17340-4-git-send-email-tj@kernel.org>
+ <20121222.000111.1132195626602429566.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121222.000111.1132195626602429566.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-28 at 16:09 +0000, Al Viro wrote:
-> On Thu, Dec 27, 2012 at 11:36:13PM -0800, Eric W. Biederman wrote:
-> > But then I am probably peculiar keeping an index of the source code in
-> > my head.  When I need to look for something and I don't know where to
-> > find it I do.
-> > 
-> > git-ls-files | xargs fgrep 'struct f2fs_inode'
+On Sat, Dec 22, 2012 at 12:01:11AM -0800, David Miller wrote:
+> From: Tejun Heo <tj@kernel.org>
+> Date: Fri, 21 Dec 2012 17:56:53 -0800
 > 
-> What's wrong with git grep?
+> > There's no need to test whether a (delayed) work item in pending
+> > before queueing, flushing or cancelling it.  Most uses are unnecessary
+> > and quite a few of them are buggy.
+> > 
+> > Remove unnecessary pending tests from sja1000.  Only compile tested.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Wolfgang Grandegger <wg@grandegger.com>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Cc: netdev@vger.kernel.org
+> > ---
+> > Please let me know how this patch should be routed.  I can take it
+> > through the workqueue tree if necessary.
+> 
+> I would suggest just taking it via the workqueue tree, thanks Tejun.
 
-Positive: it loads multiple cpus with very little file I/O
-Negative: it doesn't use -P very well.
-          it won't spans lines like:
+Applied to wq/for-3.9-cleanups w/ your Acked-by added.
 
-	struct name
-	{
+Thanks.
 
-with git grep -P "\bstruct\s+\w+\s*{"
-
-(the last grep that does I believe is 2.54)
-
-
+-- 
+tejun
