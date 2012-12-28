@@ -1,247 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab2L1BpK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:45:10 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:51478 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab2L1BpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:45:05 -0500
-Date: Fri, 28 Dec 2012 01:45:03 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andreas Voellmy <andreas.voellmy@yale.edu>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>
-Subject: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20121228014503.GA5017@dcvr.yhbt.net>
+	id S1752860Ab2L1Bps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:45:48 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:60705 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab2L1Bpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 20:45:47 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50DCF9AB.3060503@jp.fujitsu.com>
+Date: Fri, 28 Dec 2012 10:45:15 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, akpm@linux-foundation.org, gthelen@google.com,
+        fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 7/8] memcg: disable memcg page stat accounting code
+ when not in use
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456477-14780-1-git-send-email-handai.szj@taobao.com>
+In-Reply-To: <1356456477-14780-1-git-send-email-handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm finding ppoll() unexpectedly stuck when waiting for POLLIN on a
-local TCP socket.  The isolated code below can reproduces the issue
-after many minutes (<1 hour).  It might be easier to reproduce on
-a busy system while disk I/O is happening.
+(2012/12/26 2:27), Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> It's inspired by a similar optimization from Glauber Costa
+> (memcg: make it suck faster; https://lkml.org/lkml/2012/9/25/154).
+> Here we use jump label to patch the memcg page stat accounting code
+> in or out when not used. when the first non-root memcg comes to
+> life the code is patching in otherwise it is out.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> ---
+>   include/linux/memcontrol.h |    9 +++++++++
+>   mm/memcontrol.c            |    8 ++++++++
+>   2 files changed, 17 insertions(+)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 1d22b81..3c4430c 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -56,6 +56,9 @@ struct mem_cgroup_reclaim_cookie {
+>   };
+>   
+>   #ifdef CONFIG_MEMCG
+> +
+> +extern struct static_key memcg_in_use_key;
+> +
+>   /*
+>    * All "charge" functions with gfp_mask should use GFP_KERNEL or
+>    * (gfp_mask & GFP_RECLAIM_MASK). In current implementatin, memcg doesn't
+> @@ -158,6 +161,9 @@ extern atomic_t memcg_moving;
+>   static inline void mem_cgroup_begin_update_page_stat(struct page *page,
+>   					bool *locked, unsigned long *flags)
+>   {
+> +	if (!static_key_false(&memcg_in_use_key))
+> +		return;
+> +
+>   	if (mem_cgroup_disabled())
+>   		return;
+>   	rcu_read_lock();
+> @@ -171,6 +177,9 @@ void __mem_cgroup_end_update_page_stat(struct page *page,
+>   static inline void mem_cgroup_end_update_page_stat(struct page *page,
+>   					bool *locked, unsigned long *flags)
+>   {
+> +	if (!static_key_false(&memcg_in_use_key))
+> +		return;
+> +
+>   	if (mem_cgroup_disabled())
+>   		return;
+>   	if (*locked)
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0cb5187..a2f73d7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -531,6 +531,8 @@ enum res_type {
+>   #define MEM_CGROUP_RECLAIM_SHRINK_BIT	0x1
+>   #define MEM_CGROUP_RECLAIM_SHRINK	(1 << MEM_CGROUP_RECLAIM_SHRINK_BIT)
+>   
+> +struct static_key memcg_in_use_key;
+> +
+>   static void mem_cgroup_get(struct mem_cgroup *memcg);
+>   static void mem_cgroup_put(struct mem_cgroup *memcg);
+>   
+> @@ -2226,6 +2228,9 @@ void mem_cgroup_update_page_stat(struct page *page,
+>   	struct page_cgroup *pc = lookup_page_cgroup(page);
+>   	unsigned long uninitialized_var(flags);
+>   
+> +	if (!static_key_false(&memcg_in_use_key))
+> +		return;
+> +
+>   	if (mem_cgroup_disabled())
+>   		return;
+>   
+> @@ -6340,6 +6345,8 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+>   		parent = mem_cgroup_from_cont(cont->parent);
+>   		memcg->use_hierarchy = parent->use_hierarchy;
+>   		memcg->oom_kill_disable = parent->oom_kill_disable;
+> +
+> +		static_key_slow_inc(&memcg_in_use_key);
+>   	}
+>   
+>   	if (parent && parent->use_hierarchy) {
+> @@ -6407,6 +6414,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+>   	kmem_cgroup_destroy(memcg);
+>   
+>   	memcg_dangling_add(memcg);
+> +	static_key_slow_dec(&memcg_in_use_key);
 
-This may also be related to an epoll-related issue reported
-by Andreas Voellmy:
-http://thread.gmane.org/gmane.linux.kernel/1408782/
+Hmm. I think this part should be folded into disarm_static_keys().
 
-My example involves a 3 thread data flow between two pairs
-of (4) sockets:
+Thanks,
+-Kame
 
-	 send_loop ->   recv_loop(recv_send)   -> recv_loop(recv_only)
-	 pair_a[1] -> (pair_a[0] -> pair_b[1]) -> pair_b[0]
 
-At least 3.7 and 3.7.1 are affected.
 
-I have tcp_low_latency=1 set, I will try 0 later
 
-The last progress message I got was after receiving 2942052597760
-bytes on fd=7 (out of 64-bit ULONG_MAX / 2)
-
-strace:
-
-3644  sendto(4, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 16384, 0, NULL, 0 <unfinished ...>
-3643  sendto(6, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 16384, 0, NULL, 0 <unfinished ...>
-3642  ppoll([{fd=7, events=POLLIN}], 1, NULL, NULL, 8 <unfinished ...>
-3641  futex(0x7f23ed8129d0, FUTEX_WAIT, 3644, NULL <unfinished ...>
-
-The first and last lines of the strace are expected:
-
-+ 3644	sendto(4) is blocked because 3643 is blocked on sendto(fd=6)
-  and not able to call recv().
-+ 3641 is the main thread calling pthread_join
-
-What is unexpected is the tid=3643 and tid=3642 interaction.  As confirmed
-by lsof below, fd=6 is sending to wake up fd=7, but ppoll(fd=7) seems
-to not be waking up.
-
-lsof:
-toosleepy 3641   ew    4u  IPv4  12405      0t0     TCP localhost:55904->localhost:33249 (ESTABLISHED)
-toosleepy 3641   ew    5u  IPv4  12406      0t0     TCP localhost:33249->localhost:55904 (ESTABLISHED)
-toosleepy 3641   ew    6u  IPv4  12408      0t0     TCP localhost:48777->localhost:33348 (ESTABLISHED)
-toosleepy 3641   ew    7u  IPv4  12409      0t0     TCP localhost:33348->localhost:48777 (ESTABLISHED)
-
-System info: Linux 3.7.1 x86_64 SMP PREEMPT
-AMD Phenom(tm) II X4 945 Processor (4 cores)
-Nothing interesting in dmesg, iptables rules are empty.
-
-I have not yet been able to reproduce the issue using UNIX sockets,
-only TCP, but you can run:
-
-  ./toosleepy unix
-
-...to test with UNIX sockets intead of TCP.
-
-The following code is also available via git://bogomips.org/toosleepy
-gcc -o toosleepy -O2 -Wall -lpthread toosleepy.c
--------------------------------- 8< ------------------------------------
-#define _GNU_SOURCE
-#include <poll.h>
-#include <sys/ioctl.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netinet/tcp.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <limits.h>
-
-struct receiver {
-	int rfd;
-	int sfd;
-};
-
-/* blocking sender */
-static void * send_loop(void *fdp)
-{
-	int fd = *(int *)fdp;
-	char buf[16384];
-	ssize_t s;
-	size_t sent = 0;
-	size_t max = (size_t)ULONG_MAX / 2;
-
-	while (sent < max) {
-		s = send(fd, buf, sizeof(buf), 0);
-		if (s > 0)
-			sent += s;
-		if (s == -1)
-			assert(errno == EINTR);
-	}
-	dprintf(2, "%d done sending: %zu\n", fd, sent);
-	close(fd);
-	return NULL;
-}
-
-/* non-blocking receiver, using ppoll */
-static void * recv_loop(void *p)
-{
-	const struct receiver *rcvr = p;
-	char buf[16384];
-	nfds_t nfds = 1;
-	struct pollfd fds;
-	int rc;
-	ssize_t r, s;
-	size_t received = 0;
-	size_t sent = 0;
-
-	for (;;) {
-		r = recv(rcvr->rfd, buf, sizeof(buf), 0);
-		if (r == 0) {
-			break;
-		} else if (r == -1) {
-			assert(errno == EAGAIN);
-
-			fds.fd = rcvr->rfd;
-			fds.events = POLLIN;
-			errno = 0;
-			rc = ppoll(&fds, nfds, NULL, NULL);
-			assert(rc == 1);
-		} else {
-			assert(r > 0);
-			received += r;
-			if (rcvr->sfd >= 0) {
-				s = send(rcvr->sfd, buf, sizeof(buf), 0);
-				if (s > 0)
-					sent += s;
-				if (s == -1)
-					assert(errno == EINTR);
-			} else {
-				/* just burn some cycles */
-				write(-1, buf, sizeof(buf));
-			}
-		}
-		if ((received % (sizeof(buf) * sizeof(buf) * 16) == 0))
-			dprintf(2, " %d progress: %zu\n",
-			        rcvr->rfd, received);
-	}
-	dprintf(2, "%d got: %zu\n", rcvr->rfd, received);
-	if (rcvr->sfd >= 0) {
-		dprintf(2, "%d sent: %zu\n", rcvr->sfd, sent);
-		close(rcvr->sfd);
-	}
-
-	return NULL;
-}
-
-static void tcp_socketpair(int sv[2], int accept_flags)
-{
-	struct sockaddr_in addr;
-	socklen_t addrlen = sizeof(addr);
-	int l = socket(PF_INET, SOCK_STREAM, 0);
-	int c = socket(PF_INET, SOCK_STREAM, 0);
-	int a;
-
-	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY;
-	addr.sin_port = 0;
-	assert(0 == bind(l, (struct sockaddr*)&addr, addrlen));
-	assert(0 == listen(l, 1024));
-	assert(0 == getsockname(l, (struct sockaddr *)&addr, &addrlen));
-	assert(0 == connect(c, (struct sockaddr *)&addr, addrlen));
-	a = accept4(l, NULL, NULL, accept_flags);
-	assert(a >= 0);
-	close(l);
-	sv[0] = a;
-	sv[1] = c;
-}
-
-int main(int argc, char *argv[])
-{
-	int pair_a[2];
-	int pair_b[2];
-	pthread_t s, rs, r;
-	struct receiver recv_only;
-	struct receiver recv_send;
-
-	if (argc == 2 && strcmp(argv[1], "unix") == 0) {
-		int val;
-		assert(0 == socketpair(AF_UNIX, SOCK_STREAM, 0, pair_a));
-		assert(0 == socketpair(AF_UNIX, SOCK_STREAM, 0, pair_b));
-		/* only make the receiver non-blocking */
-		val = 1;
-		assert(0 == ioctl(pair_a[0], FIONBIO, &val));
-		val = 1;
-		assert(0 == ioctl(pair_b[0], FIONBIO, &val));
-	} else {
-		tcp_socketpair(pair_a, SOCK_NONBLOCK);
-		tcp_socketpair(pair_b, SOCK_NONBLOCK);
-	}
-
-	recv_send.rfd = pair_a[0];
-	recv_send.sfd = pair_b[1];
-	recv_only.rfd = pair_b[0];
-	recv_only.sfd = -1;
-
-	/*
-	 * data flow:
-	 * send_loop ->   recv_loop(recv_send)   -> recv_loop(recv_only)
-	 * pair_a[1] -> (pair_a[0] -> pair_b[1]) -> pair_b[0]
-	 */
-	assert(0 == pthread_create(&r, NULL, recv_loop, &recv_only));
-	assert(0 == pthread_create(&rs, NULL, recv_loop, &recv_send));
-	assert(0 == pthread_create(&s, NULL, send_loop, &pair_a[1]));
-	assert(0 == pthread_join(s, NULL));
-	assert(0 == pthread_join(rs, NULL));
-	assert(0 == pthread_join(r, NULL));
-
-	return 0;
-}
--------------------------------- 8< ------------------------------------
-Any help/suggestions/test patches would be greatly appreciated.
-Thanks for reading!
-
--- 
-Eric Wong
