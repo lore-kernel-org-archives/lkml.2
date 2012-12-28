@@ -1,48 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab2L1LDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 06:03:14 -0500
-Received: from vsp-authed02.binero.net ([195.74.38.226]:25734 "HELO
-	vsp-authed-02-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752604Ab2L1LDM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 06:03:12 -0500
-Message-ID: <50DD7C5E.4080007@gaisler.com>
-Date: Fri, 28 Dec 2012 12:02:54 +0100
-From: Andreas Larsson <andreas@gaisler.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753412Ab2L1LWS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 06:22:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51100 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752746Ab2L1LWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 06:22:15 -0500
+Date: Fri, 28 Dec 2012 12:21:47 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Stephane Eranian <eranian@google.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCHSET 00/10] perf tools: Cleanups and bug fixes on sort keys
+Message-ID: <20121228112147.GA976@krava.brq.redhat.com>
+References: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: software@gaisler.com, Linus Walleij <linus.walleij@linaro.org>,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        spi-devel-general@lists.sourceforge.net,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 2/6] of: Return -ENXIO from of_parse_phandle_with_args
- for too large index and return errors from of_gpio_named_count
-References: <1356610247-11491-1-git-send-email-andreas@gaisler.com> <1356610247-11491-3-git-send-email-andreas@gaisler.com>
-In-Reply-To: <1356610247-11491-3-git-send-email-andreas@gaisler.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356599507-14226-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-27 13:10, Andreas Larsson wrote:
-> This lets of_gpio_named_count return an errno on errors by being able to
-> distinguish between reaching the end of the phandle list and getting some other
-> error from of_parse_phandle_with_args.
->
-> Return error from of_spi_register_master when there is an "cs-gpios" list for
-> which gp_gpio_named_count fails.
->
-> Adjust drivers/hwmon/gpio-fan.c to cope with error return.
->
-> Signed-off-by: Andreas Larsson <andreas@gaisler.com>
+On Thu, Dec 27, 2012 at 06:11:37PM +0900, Namhyung Kim wrote:
+> Hi,
+> 
+> There's a bug report from Stefan Beller that gets segfault on using
+> some sort keys.  In addition to it, I had some TODO items related to
+> it, hence this patchset. :)
+> 
+> This is mostly simple few liners and more complex ones might come later.
+> 
+> Stephane, it'd be great if you check I'm not messed up something on
+> the branch stack side (or other area too).  Although I've tested basic
+> functionality there might be something that I missed.
+> 
+> You can also get this from following tree:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git perf/sort-v1
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> Cc: Stephane Eranian <eranian@google.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> Namhyung Kim (10):
+>   perf sort: Move misplaced sort entry functions
+>   perf sort: Get rid of unnecessary __maybe_unused
+>   perf sort: Fix --sort pid output
+>   perf sort: Align cpu column to right
+>   perf sort: Calculate parent column width too
+>   perf sort: Drop ip_[lr] arguments from _sort__sym_cmp()
+>   perf sort: Check return value of strdup()
+>   perf sort: Clean up sort__first_dimension setting
+>   perf sort: Separate out branch stack specific sort keys
+>   perf report: Update documentation for sort keys
 
-The callers of of_gpio_count of course also needs to handle errno 
-returns. I'll take care of that in V2 of the patch-set. But I'll wait 
-for more comments on the patch set before sending V2 unless someone insists.
+I've tested all except for the branch related stuff, though they look ok as well
 
-Cheers,
-Andreas
+Acked-by: Jiri Olsa <jolsa@redhat.com>
 
+for the the patchset
+
+jirka
