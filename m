@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932176Ab2L1Ugr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 15:36:47 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:51158 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754795Ab2L1Ugm (ORCPT
+	id S1754771Ab2L1Ugk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:36:40 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:61506 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932081Ab2L1Ugd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 15:36:42 -0500
+	Fri, 28 Dec 2012 15:36:33 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, axboe@kernel.dk, vgoyal@redhat.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, ctalbott@google.com, rni@google.com,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 19/24] blkcg: implement blkg_[rw]stat_recursive_sum() and blkg_[rw]stat_merge()
-Date: Fri, 28 Dec 2012 12:35:41 -0800
-Message-Id: <1356726946-26037-20-git-send-email-tj@kernel.org>
+Subject: [PATCH 15/24] cfq-iosched: enable full blkcg hierarchy support
+Date: Fri, 28 Dec 2012 12:35:37 -0800
+Message-Id: <1356726946-26037-16-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1356726946-26037-1-git-send-email-tj@kernel.org>
 References: <1356726946-26037-1-git-send-email-tj@kernel.org>
@@ -22,215 +22,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement blkg_[rw]stat_recursive_sum() and blkg_[rw]stat_merge().
-The former two collect the [rw]stats designated by the target policy
-data and offset from the pd's subtree.  The latter two add one
-[rw]stat to another.
+With the previous two patches, all cfqg scheduling decisions are based
+on vfraction and ready for hierarchy support.  The only thing which
+keeps the behavior flat is cfqg_flat_parent() which makes vfraction
+calculation consider all non-root cfqgs children of the root cfqg.
 
-Note that the recursive sum functions require the queue lock to be
-held on entry to make blkg online test reliable.  This is necessary to
-properly handle stats of a dying blkg.
+Replace it with cfqg_parent() which returns the real parent.  This
+enables full blkcg hierarchy support for cfq-iosched.  For example,
+consider the following hierarchy.
 
-These will be used to implement hierarchical stats.
+        root
+      /      \
+   A:500      B:250
+  /     \
+ AA:500  AB:1000
+
+For simplicity, let's say all the leaf nodes have active tasks and are
+on service tree.  For each leaf node, vfraction would be
+
+ AA: (500  / 1500) * (500 / 750) =~ 0.2222
+ AB: (1000 / 1500) * (500 / 750) =~ 0.4444
+  B:                 (250 / 750) =~ 0.3333
+
+and vdisktime will be distributed accordingly.  For more detail,
+please refer to Documentation/block/cfq-iosched.txt.
+
+v2: cfq-iosched.txt updated to describe group scheduling as suggested
+    by Vivek.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/blk-cgroup.c | 107 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- block/blk-cgroup.h |  35 ++++++++++++++++++
- 2 files changed, 142 insertions(+)
+ Documentation/block/cfq-iosched.txt | 58 +++++++++++++++++++++++++++++++++++++
+ block/cfq-iosched.c                 | 21 ++++----------
+ 2 files changed, 64 insertions(+), 15 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index 4d625d2..a1a4b97 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -32,6 +32,26 @@ EXPORT_SYMBOL_GPL(blkcg_root);
+diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
+index d89b4fe..a5eb7d1 100644
+--- a/Documentation/block/cfq-iosched.txt
++++ b/Documentation/block/cfq-iosched.txt
+@@ -102,6 +102,64 @@ processing of request. Therefore, increasing the value can imporve the
+ performace although this can cause the latency of some I/O to increase due
+ to more number of requests.
  
- static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
++CFQ Group scheduling
++====================
++
++CFQ supports blkio cgroup and has "blkio." prefixed files in each
++blkio cgroup directory. It is weight-based and there are four knobs
++for configuration - weight[_device] and leaf_weight[_device].
++Internal cgroup nodes (the ones with children) can also have tasks in
++them, so the former two configure how much proportion the cgroup as a
++whole is entitled to at its parent's level while the latter two
++configure how much proportion the tasks in the cgroup have compared to
++its direct children.
++
++Another way to think about it is assuming that each internal node has
++an implicit leaf child node which hosts all the tasks whose weight is
++configured by leaf_weight[_device]. Let's assume a blkio hierarchy
++composed of five cgroups - root, A, B, AA and AB - with the following
++weights where the names represent the hierarchy.
++
++        weight leaf_weight
++ root :  125    125
++ A    :  500    750
++ B    :  250    500
++ AA   :  500    500
++ AB   : 1000    500
++
++root never has a parent making its weight is meaningless. For backward
++compatibility, weight is always kept in sync with leaf_weight. B, AA
++and AB have no child and thus its tasks have no children cgroup to
++compete with. They always get 100% of what the cgroup won at the
++parent level. Considering only the weights which matter, the hierarchy
++looks like the following.
++
++          root
++       /    |   \
++      A     B    leaf
++     500   250   125
++   /  |  \
++  AA  AB  leaf
++ 500 1000 750
++
++If all cgroups have active IOs and competing with each other, disk
++time will be distributed like the following.
++
++Distribution below root. The total active weight at this level is
++A:500 + B:250 + C:125 = 875.
++
++ root-leaf :   125 /  875      =~ 14%
++ A         :   500 /  875      =~ 57%
++ B(-leaf)  :   250 /  875      =~ 28%
++
++A has children and further distributes its 57% among the children and
++the implicit leaf node. The total active weight at this level is
++AA:500 + AB:1000 + A-leaf:750 = 2250.
++
++ A-leaf    : ( 750 / 2250) * A =~ 19%
++ AA(-leaf) : ( 500 / 2250) * A =~ 12%
++ AB(-leaf) : (1000 / 2250) * A =~ 25%
++
+ CFQ IOPS Mode for group scheduling
+ ===================================
+ Basic CFQ design is to provide priority based time slices. Higher priority
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index ee34282..e8f3106 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -606,20 +606,11 @@ static inline struct cfq_group *blkg_to_cfqg(struct blkcg_gq *blkg)
+ 	return pd_to_cfqg(blkg_to_pd(blkg, &blkcg_policy_cfq));
+ }
  
-+static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
-+				      struct request_queue *q, bool update_hint);
-+
-+/**
-+ * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
-+ * @d_blkg: loop cursor pointing to the current descendant
-+ * @pos_cgrp: used for iteration
-+ * @p_blkg: target blkg to walk descendants of
-+ *
-+ * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
-+ * read locked.  If called under either blkcg or queue lock, the iteration
-+ * is guaranteed to include all and only online blkgs.  The caller may
-+ * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
-+ * subtree.
-+ */
-+#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
-+	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
-+		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
-+					      (p_blkg)->q, false)))
-+
- static bool blkcg_policy_enabled(struct request_queue *q,
- 				 const struct blkcg_policy *pol)
+-/*
+- * Determine the parent cfqg for weight calculation.  Currently, cfqg
+- * scheduling is flat and the root is the parent of everyone else.
+- */
+-static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg)
++static inline struct cfq_group *cfqg_parent(struct cfq_group *cfqg)
  {
-@@ -127,6 +147,17 @@ err_free:
- 	return NULL;
+-	struct blkcg_gq *blkg = cfqg_to_blkg(cfqg);
+-	struct cfq_group *root;
+-
+-	while (blkg->parent)
+-		blkg = blkg->parent;
+-	root = blkg_to_cfqg(blkg);
++	struct blkcg_gq *pblkg = cfqg_to_blkg(cfqg)->parent;
+ 
+-	return root != cfqg ? root : NULL;
++	return pblkg ? blkg_to_cfqg(pblkg) : NULL;
  }
  
-+/**
-+ * __blkg_lookup - internal version of blkg_lookup()
-+ * @blkcg: blkcg of interest
-+ * @q: request_queue of interest
-+ * @update_hint: whether to update lookup hint with the result or not
-+ *
-+ * This is internal version and shouldn't be used by policy
-+ * implementations.  Looks up blkgs for the @blkcg - @q pair regardless of
-+ * @q's bypass state.  If @update_hint is %true, the caller should be
-+ * holding @q->queue_lock and lookup hint is updated on success.
-+ */
- static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
- 				      struct request_queue *q, bool update_hint)
- {
-@@ -585,6 +616,82 @@ u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
- EXPORT_SYMBOL_GPL(blkg_prfill_rwstat);
+ static inline void cfqg_get(struct cfq_group *cfqg)
+@@ -722,7 +713,7 @@ static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
  
- /**
-+ * blkg_stat_recursive_sum - collect hierarchical blkg_stat
-+ * @pd: policy private data of interest
-+ * @off: offset to the blkg_stat in @pd
-+ *
-+ * Collect the blkg_stat specified by @off from @pd and all its online
-+ * descendants and return the sum.  The caller must be holding the queue
-+ * lock for online tests.
-+ */
-+u64 blkg_stat_recursive_sum(struct blkg_policy_data *pd, int off)
-+{
-+	struct blkcg_policy *pol = blkcg_policy[pd->plid];
-+	struct blkcg_gq *pos_blkg;
-+	struct cgroup *pos_cgrp;
-+	u64 sum;
-+
-+	lockdep_assert_held(pd->blkg->q->queue_lock);
-+
-+	sum = blkg_stat_read((void *)pd + off);
-+
-+	rcu_read_lock();
-+	blkg_for_each_descendant_pre(pos_blkg, pos_cgrp, pd_to_blkg(pd)) {
-+		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
-+		struct blkg_stat *stat = (void *)pos_pd + off;
-+
-+		if (pos_blkg->online)
-+			sum += blkg_stat_read(stat);
-+	}
-+	rcu_read_unlock();
-+
-+	return sum;
-+}
-+EXPORT_SYMBOL_GPL(blkg_stat_recursive_sum);
-+
-+/**
-+ * blkg_rwstat_recursive_sum - collect hierarchical blkg_rwstat
-+ * @pd: policy private data of interest
-+ * @off: offset to the blkg_stat in @pd
-+ *
-+ * Collect the blkg_rwstat specified by @off from @pd and all its online
-+ * descendants and return the sum.  The caller must be holding the queue
-+ * lock for online tests.
-+ */
-+struct blkg_rwstat blkg_rwstat_recursive_sum(struct blkg_policy_data *pd,
-+					     int off)
-+{
-+	struct blkcg_policy *pol = blkcg_policy[pd->plid];
-+	struct blkcg_gq *pos_blkg;
-+	struct cgroup *pos_cgrp;
-+	struct blkg_rwstat sum;
-+	int i;
-+
-+	lockdep_assert_held(pd->blkg->q->queue_lock);
-+
-+	sum = blkg_rwstat_read((void *)pd + off);
-+
-+	rcu_read_lock();
-+	blkg_for_each_descendant_pre(pos_blkg, pos_cgrp, pd_to_blkg(pd)) {
-+		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
-+		struct blkg_rwstat *rwstat = (void *)pos_pd + off;
-+		struct blkg_rwstat tmp;
-+
-+		if (!pos_blkg->online)
-+			continue;
-+
-+		tmp = blkg_rwstat_read(rwstat);
-+
-+		for (i = 0; i < BLKG_RWSTAT_NR; i++)
-+			sum.cnt[i] += tmp.cnt[i];
-+	}
-+	rcu_read_unlock();
-+
-+	return sum;
-+}
-+EXPORT_SYMBOL_GPL(blkg_rwstat_recursive_sum);
-+
-+/**
-  * blkg_conf_prep - parse and prepare for per-blkg config update
-  * @blkcg: target block cgroup
-  * @pol: target policy
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 586c0ac..f2b2929 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -164,6 +164,10 @@ u64 blkg_prfill_stat(struct seq_file *sf, struct blkg_policy_data *pd, int off);
- u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
- 		       int off);
+ #else	/* CONFIG_CFQ_GROUP_IOSCHED */
  
-+u64 blkg_stat_recursive_sum(struct blkg_policy_data *pd, int off);
-+struct blkg_rwstat blkg_rwstat_recursive_sum(struct blkg_policy_data *pd,
-+					     int off);
-+
- struct blkg_conf_ctx {
- 	struct gendisk			*disk;
- 	struct blkcg_gq			*blkg;
-@@ -414,6 +418,18 @@ static inline void blkg_stat_reset(struct blkg_stat *stat)
- }
+-static inline struct cfq_group *cfqg_flat_parent(struct cfq_group *cfqg) { return NULL; }
++static inline struct cfq_group *cfqg_parent(struct cfq_group *cfqg) { return NULL; }
+ static inline void cfqg_get(struct cfq_group *cfqg) { }
+ static inline void cfqg_put(struct cfq_group *cfqg) { }
  
- /**
-+ * blkg_stat_merge - merge a blkg_stat into another
-+ * @to: the destination blkg_stat
-+ * @from: the source
-+ *
-+ * Add @from's count to @to.
-+ */
-+static inline void blkg_stat_merge(struct blkg_stat *to, struct blkg_stat *from)
-+{
-+	blkg_stat_add(to, blkg_stat_read(from));
-+}
-+
-+/**
-  * blkg_rwstat_add - add a value to a blkg_rwstat
-  * @rwstat: target blkg_rwstat
-  * @rw: mask of REQ_{WRITE|SYNC}
-@@ -484,6 +500,25 @@ static inline void blkg_rwstat_reset(struct blkg_rwstat *rwstat)
- 	memset(rwstat->cnt, 0, sizeof(rwstat->cnt));
- }
+@@ -1290,7 +1281,7 @@ cfq_group_service_tree_add(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ 	 * stops once an already activated node is met.  vfraction
+ 	 * calculation should always continue to the root.
+ 	 */
+-	while ((parent = cfqg_flat_parent(pos))) {
++	while ((parent = cfqg_parent(pos))) {
+ 		if (propagate) {
+ 			propagate = !parent->nr_active++;
+ 			parent->children_weight += pos->weight;
+@@ -1341,7 +1332,7 @@ cfq_group_service_tree_del(struct cfq_rb_root *st, struct cfq_group *cfqg)
+ 	pos->children_weight -= pos->leaf_weight;
  
-+/**
-+ * blkg_rwstat_merge - merge a blkg_rwstat into another
-+ * @to: the destination blkg_rwstat
-+ * @from: the source
-+ *
-+ * Add @from's counts to @to.
-+ */
-+static inline void blkg_rwstat_merge(struct blkg_rwstat *to,
-+				     struct blkg_rwstat *from)
-+{
-+	struct blkg_rwstat v = blkg_rwstat_read(from);
-+	int i;
-+
-+	u64_stats_update_begin(&to->syncp);
-+	for (i = 0; i < BLKG_RWSTAT_NR; i++)
-+		to->cnt[i] += v.cnt[i];
-+	u64_stats_update_end(&to->syncp);
-+}
-+
- #else	/* CONFIG_BLK_CGROUP */
+ 	while (propagate) {
+-		struct cfq_group *parent = cfqg_flat_parent(pos);
++		struct cfq_group *parent = cfqg_parent(pos);
  
- struct cgroup;
+ 		/* @pos has 0 nr_active at this point */
+ 		WARN_ON_ONCE(pos->children_weight);
 -- 
 1.8.0.2
 
