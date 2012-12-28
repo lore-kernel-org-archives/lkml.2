@@ -1,87 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478Ab2L1HRC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 02:17:02 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:48398 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab2L1HRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 02:17:00 -0500
-X-AuditID: 9c930197-b7c5bae000000e31-87-50dd476ab518
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: [PATCH] perf symbol: Include elf.h header regardless LIBELF_SUPPORT
-Date: Fri, 28 Dec 2012 16:16:49 +0900
-Message-Id: <1356679009-32122-1-git-send-email-namhyung@kernel.org>
+	id S1751509Ab2L1Hcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 02:32:36 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:43130 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280Ab2L1Hce (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 02:32:34 -0500
+X-IronPort-AV: E=Sophos;i="4.84,367,1355068800"; 
+   d="scan'208";a="6492408"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: bhelgaas@google.com, linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, yinghai@kernel.org, tangchen@cn.fujitsu.com,
+        Lin Feng <linfeng@cn.fujitsu.com>
+Subject: [PATCH] pci: remove redundant function calls in pci_reassigndev_resource_alignment()
+Date: Fri, 28 Dec 2012 15:31:42 +0800
+Message-Id: <1356679902-4266-1-git-send-email-linfeng@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.11.7
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Brightmail-Tracker: AAAAAA==
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/28 15:32:12,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2012/12/28 15:32:15,
+	Serialize complete at 2012/12/28 15:32:15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung.kim@lge.com>
+pci_reassigndev_resource_alignment() potentially calls
+pci_specified_resource_alignment() twice, which is redundant.
 
-The elf.h header file is used for NO_LIBELF build too so it should be
-included anyway.  Also remove duplicated include of the header file in
-symbol-*.c.  This patch fixes following build error on NO_LIBELF build:
+pci_is_reassigndev() is only called in pci_reassigndev_resource_alignment(),
+and from sematic/functionality aspects pci_specified_resource_alignment() is
+sufficient to substitute, so also make some cleanup.
 
-    CC tests/hists_link.o
-tests/hists_link.c: In function ‘setup_fake_machine’:
-tests/hists_link.c:132:8: error: ‘STB_GLOBAL’ undeclared (first use in this function)
-tests/hists_link.c:132:8: note: each undeclared identifier is reported only once for each function it appears in
-
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: Yinghai Lu <yinghai@kernel.org>
 ---
- tools/perf/util/symbol-elf.c     | 3 ---
- tools/perf/util/symbol-minimal.c | 1 -
- tools/perf/util/symbol.h         | 2 +-
- 3 files changed, 1 insertion(+), 5 deletions(-)
+ drivers/pci/pci.c |   16 ++--------------
+ 1 files changed, 2 insertions(+), 14 deletions(-)
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index f63557b59c06..54efcb5659ac 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -1,6 +1,3 @@
--#include <libelf.h>
--#include <gelf.h>
--#include <elf.h>
- #include <fcntl.h>
- #include <stdio.h>
- #include <errno.h>
-diff --git a/tools/perf/util/symbol-minimal.c b/tools/perf/util/symbol-minimal.c
-index 259f8f2ea9c9..a7390cde63bc 100644
---- a/tools/perf/util/symbol-minimal.c
-+++ b/tools/perf/util/symbol-minimal.c
-@@ -1,6 +1,5 @@
- #include "symbol.h"
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 5cb5820..789f401 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -3766,18 +3766,6 @@ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev)
+ 	return align;
+ }
  
--#include <elf.h>
- #include <stdio.h>
- #include <fcntl.h>
- #include <string.h>
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index ec7b2405c377..d97377ac2f16 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -16,8 +16,8 @@
- #ifdef LIBELF_SUPPORT
- #include <libelf.h>
- #include <gelf.h>
--#include <elf.h>
- #endif
-+#include <elf.h>
+-/**
+- * pci_is_reassigndev - check if specified PCI is target device to reassign
+- * @dev: the PCI device to check
+- *
+- * RETURNS: non-zero for PCI device is a target device to reassign,
+- *          or zero is not.
+- */
+-int pci_is_reassigndev(struct pci_dev *dev)
+-{
+-	return (pci_specified_resource_alignment(dev) != 0);
+-}
+-
+ /*
+  * This function disables memory decoding and releases memory resources
+  * of the device specified by kernel's boot parameter 'pci=resource_alignment='.
+@@ -3792,7 +3780,8 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
+ 	resource_size_t align, size;
+ 	u16 command;
  
- #include "dso.h"
+-	if (!pci_is_reassigndev(dev))
++	align = pci_specified_resource_alignment(dev);
++	if (!align)
+ 		return;
  
+ 	if (dev->hdr_type == PCI_HEADER_TYPE_NORMAL &&
+@@ -3808,7 +3797,6 @@ void pci_reassigndev_resource_alignment(struct pci_dev *dev)
+ 	command &= ~PCI_COMMAND_MEMORY;
+ 	pci_write_config_word(dev, PCI_COMMAND, command);
+ 
+-	align = pci_specified_resource_alignment(dev);
+ 	for (i = 0; i < PCI_BRIDGE_RESOURCES; i++) {
+ 		r = &dev->resource[i];
+ 		if (!(r->flags & IORESOURCE_MEM))
 -- 
-1.7.11.7
+1.7.1
 
