@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab2L1TXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:23:53 -0500
-Received: from juliette.telenet-ops.be ([195.130.137.74]:38044 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab2L1TXt (ORCPT
+	id S1754886Ab2L1TYP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:24:15 -0500
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:37450 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754866Ab2L1TYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:23:49 -0500
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-arch@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Cc: linux-m68k@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-        Chen Liqin <liqin.chen@sunplusct.com>, Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH 2/4] score: Remove unneeded <asm/dma-mapping.h>
-Date: Fri, 28 Dec 2012 20:23:32 +0100
-Message-Id: <1356722614-18224-3-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <CAMuHMdVPBUzN8fsNHFzrEqev9BsvVCVR2fWySCOecjVA-J1qjg@mail.gmail.com>
-References: <CAMuHMdVPBUzN8fsNHFzrEqev9BsvVCVR2fWySCOecjVA-J1qjg@mail.gmail.com>
+	Fri, 28 Dec 2012 14:24:07 -0500
+Date: Fri, 28 Dec 2012 20:24:00 +0100
+From: Amaury =?iso-8859-1?Q?Decr=EAme?= <amaury.decreme@gmail.com>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, nelson@sis.com,
+        mhoffman@lightlink.com, amalysh@web.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 0/2] I2C: sis630: add sis964 support
+Message-ID: <20121228192400.GA11968@gentoo>
+References: <1346204115-30293-1-git-send-email-amaury.decreme@gmail.com>
+ <20121218125105.25c2cbb6@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20121218125105.25c2cbb6@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It just includes <asm-generic/dma-mapping-broken.h>, which is already
-handled by <linux/dma-mapping.h> for the !CONFIG_HAS_DMA case (score sets
-CONFIG_NO_DMA=y).
+On Tue, Dec 18, 2012 at 12:51:05PM +0100, Jean Delvare wrote:
+> Hi Amaury,
+> 
+> On Wed, 29 Aug 2012 03:35:13 +0200, Amaury Decrême wrote:
+> 
+> I reviewed these two patches 2 months ago, but did not hear back from
+> you since then. Do you plan to resubmit these patches with the
+> improvements I suggested? I would hate to see your work time and mine
+> wasted.
+> 
+> Thanks,
+> -- 
+> Jean Delvare
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
----
- arch/score/include/asm/dma-mapping.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
- delete mode 100644 arch/score/include/asm/dma-mapping.h
 
-diff --git a/arch/score/include/asm/dma-mapping.h b/arch/score/include/asm/dma-mapping.h
-deleted file mode 100644
-index f9c0193..0000000
---- a/arch/score/include/asm/dma-mapping.h
-+++ /dev/null
-@@ -1,6 +0,0 @@
--#ifndef _ASM_SCORE_DMA_MAPPING_H
--#define _ASM_SCORE_DMA_MAPPING_H
--
--#include <asm-generic/dma-mapping-broken.h>
--
--#endif /* _ASM_SCORE_DMA_MAPPING_H */
+Hi Jean,
+
+
+I'm sorry I gave no news. I read your improvments with interests
+when you sent it.
+
+I changed my job at the very same moment  and didn't have a minute
+until xmas season..
+It's getting a bit better and I hope to send a working solution
+in early 2013 if the schedule is still ok.
+
+
+Best regards, season greetings.
 -- 
-1.7.0.4
-
+Amaury Decrême
