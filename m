@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab2L1BKO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 20:10:14 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:60024 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751509Ab2L1BKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 20:10:12 -0500
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CAE9FiQV2+AaGjyQBD=f8kKWDucbcnrk_UNHPi3Y=HtQCuYcYAQ@mail.gmail.com>
-References: <20121227182232.GA10054@x1.alien8.de> <CAE9FiQXpAB_AFtHF_NN7yr2iP2OOLgMir8MNvYUUc15k83_3zg@mail.gmail.com> <50DCE160.2040707@zytor.com> <CAE9FiQV2+AaGjyQBD=f8kKWDucbcnrk_UNHPi3Y=HtQCuYcYAQ@mail.gmail.com>
+	id S1752890Ab2L1BKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 20:10:54 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58564 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab2L1BKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 20:10:52 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50DCF185.7050408@jp.fujitsu.com>
+Date: Fri, 28 Dec 2012 10:10:29 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86, realmode: set real_mode permissions early
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 27 Dec 2012 17:09:42 -0800
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Borislav Petkov <bp@alien8.de>, LKML <linux-kernel@vger.kernel.org>
-Message-ID: <bbda41ab-0b8c-45f9-a7e4-be05e7c9388d@email.android.com>
+To: Sha Zhengju <handai.szj@gmail.com>
+CC: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, akpm@linux-foundation.org, gthelen@google.com,
+        fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 8/8] memcg: Document cgroup dirty/writeback memory
+ statistics
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456501-14818-1-git-send-email-handai.szj@taobao.com>
+In-Reply-To: <1356456501-14818-1-git-send-email-handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems ok.
+(2012/12/26 2:28), Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
 
-Yinghai Lu <yinghai@kernel.org> wrote:
+I don't think your words are bad but it may be better to sync with meminfo's text.
 
->On Thu, Dec 27, 2012 at 4:01 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 12/27/2012 03:56 PM, Yinghai Lu wrote:
->>>>
->>>>
->>>> I'm looking at this patch in the -v8 branch: you need to update the
->>>> comment above that function to say that trampoline code needs to be
->>>> marked X now earlier.
->>>
->>>
->>> Not sure if we really need to add such comment in the code.
->>>
->>> Peter, what is your idea about this?
->>>
->>
->> It would be good to note why the early_initcall is the right phase.
->>
->
->How about:
->
->---
->Trampoline will be executed by APs with SMP,
->So we need to set it EXEC in do_pre_smp_initcalls and it is
->early_initcall.
->---
+> ---
+>   Documentation/cgroups/memory.txt |    2 ++
+>   1 file changed, 2 insertions(+)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index addb1f1..2828164 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -487,6 +487,8 @@ pgpgin		- # of charging events to the memory cgroup. The charging
+>   pgpgout		- # of uncharging events to the memory cgroup. The uncharging
+>   		event happens each time a page is unaccounted from the cgroup.
+>   swap		- # of bytes of swap usage
+> +dirty          - # of bytes of file cache that are not in sync with the disk copy.
+> +writeback      - # of bytes of file/anon cache that are queued for syncing to disk.
+>   inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+>   		LRU list.
+>   active_anon	- # of bytes of anonymous and swap cache memory on active
+> 
 
--- 
-Sent from my mobile phone. Please excuse brevity and lack of formatting.
+Documentation/filesystems/proc.txt
+
+       Dirty: Memory which is waiting to get written back to the disk
+   Writeback: Memory which is actively being written back to the disk
+
+even if others are not ;(
+
+Thanks,
+-Kame
+
+
+
+
+
