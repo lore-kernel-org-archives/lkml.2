@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754680Ab2L1T5z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:57:55 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54900 "EHLO
+	id S1754789Ab2L1T6S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:58:18 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54881 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754256Ab2L1TQz (ORCPT
+	by vger.kernel.org with ESMTP id S1754213Ab2L1TQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:55 -0500
-Message-Id: <20121228190331.341180069@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:53 -0500
+Message-Id: <20121228190332.753245391@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:36 +0100
+Date: Fri, 28 Dec 2012 20:03:43 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eugeni Dodonov <eugeni.dodonov@intel.com>,
-        Chris Wilson <chris@hchris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>, Sean Finney <seanius@seanius.net>,
-        Soren Hansen <soren@linux2go.dk>,
-        Hernando Torque <sirius@sonnenkinder.org>,
-        Mike Lothian <mike@fireburn.co.uk>, Dave Airlie <airlied@redhat.com>
-Subject: [ 006/173] drm: give up on edid retries when i2c bus is not responding
+        Guenter Roeck <linux@roeck-us.net>, Fenghua Yu <fenghua.yu@intel.com>,
+        "R, Durgadoss" <durgadoss.r@intel.com>,
+        Jean Delvare <khali@linux-fr.org>
+Subject: [ 013/173] hwmon: (coretemp) Add support for Atom D2000 and N2000 series CPU
+ models
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,61 +30,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eugeni Dodonov <eugeni.dodonov@intel.com>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 9292f37e1f5c79400254dca46f83313488093825 upstream.
+commit 5592906f8b01282ea3c2acaf641fd067ad4bb3dc upstream.
 
-This allows to avoid talking to a non-responding bus repeatedly until we
-finally timeout after 15 attempts. We can do this by catching the -ENXIO
-error, provided by i2c_algo_bit:bit_doAddress call.
+Document the Atom series D2000 and N2000 (Cedar Trail) as being supported.
+List and set TjMax for those series.
 
-Within the bit_doAddress we already try 3 times to get the edid data, so
-if the routine tells us that bus is not responding, it is mostly pointless
-to keep re-trying those attempts over and over again until we reach final
-number of retries.
-
-This change should fix https://bugs.freedesktop.org/show_bug.cgi?id=41059
-and improve overall edid detection timing by 10-30% in most cases, and by
-a much larger margin in case of phantom outputs (up to 30x in one worst
-case).
-
-Timing results for i915-powered machines for 'time xrandr' command:
-Machine 1: from 0.840s to 0.290s
-Machine 2: from 0.315s to 0.280s
-Machine 3: from +/- 4s to 0.184s
-
-Timing results for HD5770 with 'time xrandr' command:
-Machine 4: from 3.210s to 1.060s
-
-Reviewed-by: Chris Wilson <chris@hchris-wilson.co.uk>
-Reviewed-by: Keith Packard <keithp@keithp.com>
-Tested-by: Sean Finney <seanius@seanius.net>
-Tested-by: Soren Hansen <soren@linux2go.dk>
-Tested-by: Hernando Torque <sirius@sonnenkinder.org>
-Tested-by: Mike Lothian <mike@fireburn.co.uk>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=41059
-Signed-off-by: Eugeni Dodonov <eugeni.dodonov@intel.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: "R, Durgadoss" <durgadoss.r@intel.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/drm_edid.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ Documentation/hwmon/coretemp |    5 ++++-
+ drivers/hwmon/coretemp.c     |    3 +++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index ece03fc..54a4efa 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -266,6 +266,11 @@ drm_do_probe_ddc_edid(struct i2c_adapter *adapter, unsigned char *buf,
- 			}
- 		};
- 		ret = i2c_transfer(adapter, msgs, 2);
-+		if (ret == -ENXIO) {
-+			DRM_DEBUG_KMS("drm: skipping non-existent adapter %s\n",
-+					adapter->name);
-+			break;
-+		}
- 	} while (ret != 2 && --retries);
+diff --git a/Documentation/hwmon/coretemp b/Documentation/hwmon/coretemp
+index f6aed440..71d83d2 100644
+--- a/Documentation/hwmon/coretemp
++++ b/Documentation/hwmon/coretemp
+@@ -7,7 +7,8 @@ Supported chips:
+     CPUID: family 0x6, models 0xe (Pentium M DC), 0xf (Core 2 DC 65nm),
+                               0x16 (Core 2 SC 65nm), 0x17 (Penryn 45nm),
+                               0x1a (Nehalem), 0x1c (Atom), 0x1e (Lynnfield),
+-                              0x26 (Tunnel Creek Atom), 0x27 (Medfield Atom)
++                              0x26 (Tunnel Creek Atom), 0x27 (Medfield Atom),
++                              0x36 (Cedar Trail Atom)
+     Datasheet: Intel 64 and IA-32 Architectures Software Developer's Manual
+                Volume 3A: System Programming Guide
+                http://softwarecommunity.intel.com/Wiki/Mobility/720.htm
+@@ -68,6 +69,8 @@ Process		Processor					TjMax(C)
  
- 	return ret == 2 ? 0 : -1;
+ 32nm		Atom Processors
+ 		Z2460						90
++		D2700/2550/2500					100
++		N2850/2800/2650/2600				100
+ 
+ 45nm		Xeon Processors 5400 Quad-Core
+ 		X5492, X5482, X5472, X5470, X5460, X5450	85
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index 495add5..42c2f43 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -224,6 +224,9 @@ static int __cpuinit adjust_tjmax(struct cpuinfo_x86 *c, u32 id,
+ 			tjmax = 90000;
+ 
+ 		pci_dev_put(host_bridge);
++	} else if (c->x86_model == 0x36) {
++		usemsr_ee = 0;
++		tjmax = 100000;
+ 	}
+ 
+ 	if (c->x86_model > 0xe && usemsr_ee) {
 
 
