@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754037Ab2L1TEl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:04:41 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:42445 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753711Ab2L1TEk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:04:40 -0500
-Date: Fri, 28 Dec 2012 23:04:35 +0400
-From: Vasily Kulikov <segoon@openwall.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: kernel-hardening@lists.openwall.com,
-        Containers <containers@lists.linux-foundation.org>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
-Message-ID: <20121228190435.GA8690@cachalot>
-References: <20121228175627.GA7683@cachalot>
- <20121228184334.GZ4939@ZenIV.linux.org.uk>
+	id S1754055Ab2L1THp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 14:07:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37703 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753711Ab2L1THm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Dec 2012 14:07:42 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
+References: <1356712001-12198-1-git-send-email-jlee@suse.com> <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121228184334.GZ4939@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 28 Dec 2012 11:07:11 -0800
+To: Matthew Garrett <matthew.garrett@nebula.com>,
+        "Lee, Chun-Yi" <joeyli.kernel@gmail.com>
+CC: "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>
+Message-ID: <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 18:43 +0000, Al Viro wrote:
-> On Fri, Dec 28, 2012 at 09:56:27PM +0400, Vasily Kulikov wrote:
-> > The included patch is a basic fix for both or them.  Both values are
-> > hardcoded here to 100 max depth and 1000 max in total.  I'm not sure how
-> > better to make them configurable.  Looks like it needs some sysctl value
-> > like kernel.max_user_ns_per_user, but also something more configurable
-> > like new rlimit'ish limit may be created for user_ns needs.  E.g. in
-> > case root wants one user to contain hundreds of private containers
-> > (container owner user), but he doesn't want anybody to fill the kernel
-> > with hundreds of containers multiplied by number of system users (equals
-> > to thousands).
-> 
-> I'm sorry, but this is not a solution.  Kernel is not x86-only; there are
-> architectures with far bigger minimal stack frame size.  E.g. on sparc64
-> every fucking stack frame is at least 176 bytes.  So your 100 calls deep
-> call chain will happily overflow the damn stack all by itself - kernel
-> stack on sparc64 is 16Kb total, including struct thread_info living there.
+We do have such machines, which is why this change has been reverted twice already.  I believe we should stick to the priority scheme I proposed a few weeks ago.
 
-Understood.  How to properly fix it then?  Looks like there are quite
-many kernel structures which may reference other structures which
-indirectly reference each other via kref, IOW it is not user_ns specific
-issue.  With unprivileged user_ns the way it should be freed must be
-somehow changed.
+Matthew Garrett <matthew.garrett@nebula.com> wrote:
 
-Thanks,
+>On Sat, 2012-12-29 at 00:26 +0800, Lee, Chun-Yi wrote:
+>> UEFI time services, GetTime(), SetTime(), GetWakeupTime(),
+>SetWakeupTime() are also
+>> supported by other non-IA64 architecutre with UEFI BIOS, e.g. x86.
+>> 
+>> This patch changed RTC_DRV_EFI configuration to depend on EFI but not
+>just IA64. It
+>> checks efi_enabled flag and efi-rtc driver should enabled.
+>
+>In theory, certainly - but do we still have machines that explode if
+>the
+>get_time call is made? We may also want to think about disabling the
+>legacy access to the RTC if the EFI calls are present.
 
 -- 
-Vasily Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
