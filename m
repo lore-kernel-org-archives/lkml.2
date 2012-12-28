@@ -1,64 +1,344 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2L1Eta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Dec 2012 23:49:30 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:59908 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753224Ab2L1Et2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Dec 2012 23:49:28 -0500
+	id S1752774Ab2L1E65 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Dec 2012 23:58:57 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:62645 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751504Ab2L1E6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Dec 2012 23:58:55 -0500
+Message-ID: <50DD2709.2060003@redhat.com>
+Date: Fri, 28 Dec 2012 12:58:49 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
-References: <CA+8YGd6UqfbzEHOb2NUL5p3EF4OECVq7yc2vRV3GViVT64CTbQ@mail.gmail.com>
-	<20121227184034.GA2982@debian.debian>
-	<CABuSbKbk5DdhvuwYUeLkm=eub1CsSaOB_oX7bkBZcAV_MNsSdg@mail.gmail.com>
-Date: Fri, 28 Dec 2012 10:19:27 +0530
-Message-ID: <CAK7N6vpvLrAb=sZitaEBQ6Fx4K5ehGg+LTU70hiVK=1RdE4WwQ@mail.gmail.com>
-Subject: Re: how to look for source code in kernel
-From: anish singh <anish198519851985@gmail.com>
-To: Henrique Rodrigues <henriquesilvar@gmail.com>
-Cc: =?UTF-8?Q?Jonathan_Neusch=C3=A4fer?= <j.neuschaefer@gmx.net>,
-        kishore kumar <kishoreopen@gmail.com>, Kernelnewbies@kernelnewbies.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] vhost_net: correct error hanlding in vhost_net_set_backend()
+References: <20121227130305.GE20595@redhat.com>
+In-Reply-To: <20121227130305.GE20595@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 1:23 AM, Henrique Rodrigues
-<henriquesilvar@gmail.com> wrote:
-> http://lxr.linux.no/ is a really good linux cross referencing website for
-> code reference.
->
-> On Thu, Dec 27, 2012 at 10:40 AM, Jonathan Neuschäfer
-> <j.neuschaefer@gmx.net> wrote:
+On 12/27/2012 09:03 PM, Michael S. Tsirkin wrote:
+> On Thu, Dec 27, 2012 at 02:39:20PM +0800, Jason Wang wrote:
+>> Currently, polling error were ignored in vhost. This may lead some issues (e.g
+>> kenrel crash when passing a tap fd to vhost before calling TUNSETIFF). Fix this
+>> by:
 >>
->> On Thu, Dec 27, 2012 at 11:01:52PM +0530, kishore kumar wrote:
->> > can anybody tell me how to look into source code, as most are hidden in
->> > kernel.
+>> - extend the idea of vhost_net_poll_state to all vhost_polls
+>> - change the state only when polling is succeed
+>> - make vhost_poll_start() report errors to the caller, which could be used
+>>   caller or userspace.
+> Maybe it could but this patch just ignores these errors.
+> And it's not clear how would userspace handle these errors.
+
+Not all were ignored, one example is vhost_net_enable_vq(), this could
+be used to let userspace know the fd were not setup correctly.
+> Also, since we have a reference on the fd, it would seem
+> that once poll succeeds it can't fail in the future.
+
+Right.
+>
+> So two other options would make more sense to me:
+> - if vhost is bound to tun without SETIFF, fail this immediately
+> - if vhost is bound to tun without SETIFF, defer polling
+>   until SETIFF
+>
+> Option 1 would seem much easier to implement, I think it's
+> preferable.
+
+Option 1 seems better, since userspace may also disable a queue in the
+meantime. Will add a vq_err() and break out of the loop when fails to
+start the polling.
+>> Signed-off-by: Jason Wang <jasowang@redhat.com>
+>> ---
+>>  drivers/vhost/net.c   |   75 +++++++++++++++++--------------------------------
+>>  drivers/vhost/vhost.c |   16 +++++++++-
+>>  drivers/vhost/vhost.h |   11 ++++++-
+>>  3 files changed, 50 insertions(+), 52 deletions(-)
 >>
->> You can find the Linux source code at http://kernel.org/ .
-for browsing the code unfortunately there is no good tool as in windows we
-have source insight.We can use wine in linux but that sucks.
->>
->> HTH,
->> Jonathan Neuschäfer
->>
->> _______________________________________________
->> Kernelnewbies mailing list
->> Kernelnewbies@kernelnewbies.org
->> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
+>> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+>> index 629d6b5..56e7f5a 100644
+>> --- a/drivers/vhost/net.c
+>> +++ b/drivers/vhost/net.c
+>> @@ -64,20 +64,10 @@ enum {
+>>  	VHOST_NET_VQ_MAX = 2,
+>>  };
+>>  
+>> -enum vhost_net_poll_state {
+>> -	VHOST_NET_POLL_DISABLED = 0,
+>> -	VHOST_NET_POLL_STARTED = 1,
+>> -	VHOST_NET_POLL_STOPPED = 2,
+>> -};
+>> -
+>>  struct vhost_net {
+>>  	struct vhost_dev dev;
+>>  	struct vhost_virtqueue vqs[VHOST_NET_VQ_MAX];
+>>  	struct vhost_poll poll[VHOST_NET_VQ_MAX];
+>> -	/* Tells us whether we are polling a socket for TX.
+>> -	 * We only do this when socket buffer fills up.
+>> -	 * Protected by tx vq lock. */
+>> -	enum vhost_net_poll_state tx_poll_state;
+>>  	/* Number of TX recently submitted.
+>>  	 * Protected by tx vq lock. */
+>>  	unsigned tx_packets;
+>> @@ -155,24 +145,6 @@ static void copy_iovec_hdr(const struct iovec *from, struct iovec *to,
+>>  	}
+>>  }
+>>  
+>> -/* Caller must have TX VQ lock */
+>> -static void tx_poll_stop(struct vhost_net *net)
+>> -{
+>> -	if (likely(net->tx_poll_state != VHOST_NET_POLL_STARTED))
+>> -		return;
+>> -	vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
+>> -	net->tx_poll_state = VHOST_NET_POLL_STOPPED;
+>> -}
+>> -
+>> -/* Caller must have TX VQ lock */
+>> -static void tx_poll_start(struct vhost_net *net, struct socket *sock)
+>> -{
+>> -	if (unlikely(net->tx_poll_state != VHOST_NET_POLL_STOPPED))
+>> -		return;
+>> -	vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
+>> -	net->tx_poll_state = VHOST_NET_POLL_STARTED;
+>> -}
+>> -
+>>  /* In case of DMA done not in order in lower device driver for some reason.
+>>   * upend_idx is used to track end of used idx, done_idx is used to track head
+>>   * of used idx. Once lower device DMA done contiguously, we will signal KVM
+>> @@ -252,7 +224,7 @@ static void handle_tx(struct vhost_net *net)
+>>  	wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+>>  	if (wmem >= sock->sk->sk_sndbuf) {
+>>  		mutex_lock(&vq->mutex);
+>> -		tx_poll_start(net, sock);
+>> +		vhost_poll_start(net->poll + VHOST_NET_VQ_TX, sock->file);
+>>  		mutex_unlock(&vq->mutex);
+>>  		return;
+>>  	}
+>> @@ -261,7 +233,7 @@ static void handle_tx(struct vhost_net *net)
+>>  	vhost_disable_notify(&net->dev, vq);
+>>  
+>>  	if (wmem < sock->sk->sk_sndbuf / 2)
+>> -		tx_poll_stop(net);
+>> +		vhost_poll_stop(net->poll + VHOST_NET_VQ_TX);
+>>  	hdr_size = vq->vhost_hlen;
+>>  	zcopy = vq->ubufs;
+>>  
+>> @@ -283,7 +255,8 @@ static void handle_tx(struct vhost_net *net)
+>>  
+>>  			wmem = atomic_read(&sock->sk->sk_wmem_alloc);
+>>  			if (wmem >= sock->sk->sk_sndbuf * 3 / 4) {
+>> -				tx_poll_start(net, sock);
+>> +				vhost_poll_start(net->poll + VHOST_NET_VQ_TX,
+>> +						 sock->file);
+>>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>>  				break;
+>>  			}
+>> @@ -294,7 +267,8 @@ static void handle_tx(struct vhost_net *net)
+>>  				    (vq->upend_idx - vq->done_idx) :
+>>  				    (vq->upend_idx + UIO_MAXIOV - vq->done_idx);
+>>  			if (unlikely(num_pends > VHOST_MAX_PEND)) {
+>> -				tx_poll_start(net, sock);
+>> +				vhost_poll_start(net->poll + VHOST_NET_VQ_TX,
+>> +						 sock->file);
+>>  				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
+>>  				break;
+>>  			}
+>> @@ -360,7 +334,8 @@ static void handle_tx(struct vhost_net *net)
+>>  			}
+>>  			vhost_discard_vq_desc(vq, 1);
+>>  			if (err == -EAGAIN || err == -ENOBUFS)
+>> -				tx_poll_start(net, sock);
+>> +				vhost_poll_start(net->poll + VHOST_NET_VQ_TX,
+>> +						 sock->file);
+>>  			break;
+>>  		}
+>>  		if (err != len)
+>> @@ -623,7 +598,6 @@ static int vhost_net_open(struct inode *inode, struct file *f)
+>>  
+>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
+>>  	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
+>> -	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+>>  
+>>  	f->private_data = n;
+>>  
+>> @@ -635,27 +609,26 @@ static void vhost_net_disable_vq(struct vhost_net *n,
+>>  {
+>>  	if (!vq->private_data)
+>>  		return;
+>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+>> -		tx_poll_stop(n);
+>> -		n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+>> -	} else
+>> +	if (vq == n->vqs + VHOST_NET_VQ_TX)
+>> +		vhost_poll_stop(n->poll + VHOST_NET_VQ_TX);
+>> +	else
+>>  		vhost_poll_stop(n->poll + VHOST_NET_VQ_RX);
+>>  }
+>>  
+>> -static void vhost_net_enable_vq(struct vhost_net *n,
+>> -				struct vhost_virtqueue *vq)
+>> +static int vhost_net_enable_vq(struct vhost_net *n,
+>> +			       struct vhost_virtqueue *vq)
+>>  {
+>> +	int err, index = vq - n->vqs;
+>>  	struct socket *sock;
+>>  
+>>  	sock = rcu_dereference_protected(vq->private_data,
+>>  					 lockdep_is_held(&vq->mutex));
+>>  	if (!sock)
+>> -		return;
+>> -	if (vq == n->vqs + VHOST_NET_VQ_TX) {
+>> -		n->tx_poll_state = VHOST_NET_POLL_STOPPED;
+>> -		tx_poll_start(n, sock);
+>> -	} else
+>> -		vhost_poll_start(n->poll + VHOST_NET_VQ_RX, sock->file);
+>> +		return 0;
+>> +
+>> +	n->poll[index].state = VHOST_POLL_STOPPED;
+>> +	err = vhost_poll_start(n->poll + index, sock->file);
+>> +	return err;
+>>  }
+>>  
+>>  static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+>> @@ -831,12 +804,16 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>>  		vq->ubufs = ubufs;
+>>  		vhost_net_disable_vq(n, vq);
+>>  		rcu_assign_pointer(vq->private_data, sock);
+>> -		vhost_net_enable_vq(n, vq);
+>> +		r = vhost_net_enable_vq(n, vq);
+>> +		if (r) {
+>> +			sock = NULL;
+>> +			goto err_enable;
+>> +		}
+>>  
+>>  		r = vhost_init_used(vq);
+>>  		if (r) {
+>>  			sock = NULL;
+>> -			goto err_used;
+>> +			goto err_enable;
+>>  		}
+>>  
+>>  		n->tx_packets = 0;
+>> @@ -861,7 +838,7 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+>>  	mutex_unlock(&n->dev.mutex);
+>>  	return 0;
+>>  
+>> -err_used:
+>> +err_enable:
+>>  	if (oldubufs)
+>>  		vhost_ubuf_put_and_wait(oldubufs);
+>>  	if (oldsock)
+>> diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+>> index 34389f7..1cb2604 100644
+>> --- a/drivers/vhost/vhost.c
+>> +++ b/drivers/vhost/vhost.c
+>> @@ -77,26 +77,36 @@ void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>>  	init_poll_funcptr(&poll->table, vhost_poll_func);
+>>  	poll->mask = mask;
+>>  	poll->dev = dev;
+>> +	poll->state = VHOST_POLL_DISABLED;
+>>  
+>>  	vhost_work_init(&poll->work, fn);
+>>  }
+>>  
+>>  /* Start polling a file. We add ourselves to file's wait queue. The caller must
+>>   * keep a reference to a file until after vhost_poll_stop is called. */
+>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file)
+>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file)
+>>  {
+>>  	unsigned long mask;
+>> +	if (unlikely(poll->state != VHOST_POLL_STOPPED))
+>> +		return 0;
+>>  
+>>  	mask = file->f_op->poll(file, &poll->table);
+>> +	if (mask & POLLERR)
+>> +		return -EINVAL;
+>>  	if (mask)
+>>  		vhost_poll_wakeup(&poll->wait, 0, 0, (void *)mask);
+>> +	poll->state = VHOST_POLL_STARTED;
+>> +	return 0;
+>>  }
+>>  
+> Hmm, interesting. I note that tun has this:
 >
+>        if (tun->dev->reg_state != NETREG_REGISTERED)
+>                 mask = POLLERR;
 >
+> So apparently we sometimes return POLLERR when poll
+> did succeed, then test below wouldn't remove
+> from wqh in this case. Maybe it's a bug in tun,
+> need to look into this.
+
+Looks a bug of tun to me, looks like a POLLHUP is better here.
 >
->
-> --
-> Henrique Rodrigues
-> http://www.dcc.ufmg.br/~hsr
->
-> _______________________________________________
-> Kernelnewbies mailing list
-> Kernelnewbies@kernelnewbies.org
-> http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
->
+>>  /* Stop polling a file. After this function returns, it becomes safe to drop the
+>>   * file reference. You must also flush afterwards. */
+>>  void vhost_poll_stop(struct vhost_poll *poll)
+>>  {
+>> +	if (likely(poll->state != VHOST_POLL_STARTED))
+>> +		return;
+>>  	remove_wait_queue(poll->wqh, &poll->wait);
+>> +	poll->state = VHOST_POLL_STOPPED;
+>>  }
+>>  
+>>  static bool vhost_work_seq_done(struct vhost_dev *dev, struct vhost_work *work,
+>> @@ -791,8 +801,10 @@ long vhost_vring_ioctl(struct vhost_dev *d, int ioctl, void __user *argp)
+>>  	if (filep)
+>>  		fput(filep);
+>>  
+>> -	if (pollstart && vq->handle_kick)
+>> +	if (pollstart && vq->handle_kick) {
+>> +		vq->poll.state = VHOST_POLL_STOPPED;
+>>  		vhost_poll_start(&vq->poll, vq->kick);
+>> +	}
+>>  
+>>  	mutex_unlock(&vq->mutex);
+>>  
+>> diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+>> index 2639c58..98861d9 100644
+>> --- a/drivers/vhost/vhost.h
+>> +++ b/drivers/vhost/vhost.h
+>> @@ -26,6 +26,12 @@ struct vhost_work {
+>>  	unsigned		  done_seq;
+>>  };
+>>  
+>> +enum vhost_poll_state {
+>> +	VHOST_POLL_DISABLED = 0,
+>> +	VHOST_POLL_STARTED = 1,
+>> +	VHOST_POLL_STOPPED = 2,
+>> +};
+>> +
+>>  /* Poll a file (eventfd or socket) */
+>>  /* Note: there's nothing vhost specific about this structure. */
+>>  struct vhost_poll {
+>> @@ -35,6 +41,9 @@ struct vhost_poll {
+>>  	struct vhost_work	  work;
+>>  	unsigned long		  mask;
+>>  	struct vhost_dev	 *dev;
+>> +	/* Tells us whether we are polling a file.
+>> +	 * Protected by tx vq lock. */
+> tx vq lock does not make sense in this context.
+
+Yes, thanks for pointing this out.
+>> +	enum vhost_poll_state	  state;
+>>  };
+>>  
+>>  void vhost_work_init(struct vhost_work *work, vhost_work_fn_t fn);
+>> @@ -42,7 +51,7 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work);
+>>  
+>>  void vhost_poll_init(struct vhost_poll *poll, vhost_work_fn_t fn,
+>>  		     unsigned long mask, struct vhost_dev *dev);
+>> -void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>> +int vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>>  void vhost_poll_stop(struct vhost_poll *poll);
+>>  void vhost_poll_flush(struct vhost_poll *poll);
+>>  void vhost_poll_queue(struct vhost_poll *poll);
+>> -- 
+>> 1.7.1
+
