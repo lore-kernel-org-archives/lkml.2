@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab2L1TQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 14:16:45 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54832 "EHLO
+	id S1755004Ab2L1UBz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 15:01:55 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:54844 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754062Ab2L1TQk (ORCPT
+	by vger.kernel.org with ESMTP id S1753979Ab2L1TQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 14:16:40 -0500
-Message-Id: <20121228190330.511716895@decadent.org.uk>
+	Fri, 28 Dec 2012 14:16:43 -0500
+Message-Id: <20121228190331.530702712@decadent.org.uk>
 User-Agent: quilt/0.60-1
-Date: Fri, 28 Dec 2012 20:03:32 +0100
+Date: Fri, 28 Dec 2012 20:03:37 +0100
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: [ 002/173] freezer: PF_FREEZER_NOSIG should be  cleared along with PF_NOFREEZE
+        Wu Fengguang <fengguang.wu@intel.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 007/173] ALSA: hda - add id for Atom Cedar Trail HDMI codec
 In-Reply-To: <20121228190330.025298996@decadent.org.uk>
 X-SA-Exim-Connect-IP: 151.217.219.220
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -27,38 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Wu Fengguang <fengguang.wu@intel.com>
 
-This patch is only for pre-v3.3 stable trees which backported
-b40a7959 "freezer: exec should clear PF_NOFREEZE along with PF_KTHREAD".
-v3.3+ doesn't need this fix.
+commit 6edc59e602b36cd3c95a426ef6e8cad0344af8c7 upstream.
 
-b40a7959 is the trivial bugfix, but unfortunately I forgot that
-until 34b087e4 "freezer: kill unused set_freezable_with_signal()"
-there were another only-for-kernel-threads flag, PF_FREEZER_NOSIG,
-which should be cleared as well.
+[the order sorted by tiwai]
 
-See https://bugs.launchpad.net/ubuntu/+source/v86d/+bug/1080530
-The freezer fails because it expects that a PF_FREEZER_NOSIG task
-doesn't need a signal. Before b40a7959 it wrongly succeeds leaving
-the PF_NOFREEZE | PF_FREEZER_NOSIG task unfrozen.
-
-Reported-and-tested-by: Joseph Salisbury <joseph.salisbury@canonical.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-[bwh: Don't touch PF_FORKNOEXEC; it's cleared elsewhere]
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ sound/pci/hda/patch_hdmi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1095,7 +1095,8 @@ int flush_old_exec(struct linux_binprm *
- 	bprm->mm = NULL;		/* We're using it now */
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 1168ebd..540cd13 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -1912,6 +1912,7 @@ static const struct hda_codec_preset snd_hda_preset_hdmi[] = {
+ { .id = 0x80862804, .name = "IbexPeak HDMI",	.patch = patch_generic_hdmi },
+ { .id = 0x80862805, .name = "CougarPoint HDMI",	.patch = patch_generic_hdmi },
+ { .id = 0x80862806, .name = "PantherPoint HDMI", .patch = patch_generic_hdmi },
++{ .id = 0x80862880, .name = "CedarTrail HDMI",	.patch = patch_generic_hdmi },
+ { .id = 0x808629fb, .name = "Crestline HDMI",	.patch = patch_generic_hdmi },
+ {} /* terminator */
+ };
+@@ -1958,6 +1959,7 @@ MODULE_ALIAS("snd-hda-codec-id:80862803");
+ MODULE_ALIAS("snd-hda-codec-id:80862804");
+ MODULE_ALIAS("snd-hda-codec-id:80862805");
+ MODULE_ALIAS("snd-hda-codec-id:80862806");
++MODULE_ALIAS("snd-hda-codec-id:80862880");
+ MODULE_ALIAS("snd-hda-codec-id:808629fb");
  
- 	set_fs(USER_DS);
--	current->flags &= ~(PF_RANDOMIZE | PF_KTHREAD | PF_NOFREEZE);
-+	current->flags &=
-+		~(PF_RANDOMIZE | PF_KTHREAD | PF_NOFREEZE | PF_FREEZER_NOSIG);
- 	flush_thread();
- 	current->personality &= ~bprm->per_clear;
- 
+ MODULE_LICENSE("GPL");
 
 
