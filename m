@@ -1,128 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab2L2Eim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 23:38:42 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:63478 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751142Ab2L2Eik (ORCPT
+	id S1751516Ab2L2FOE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 00:14:04 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41116 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab2L2FOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 23:38:40 -0500
-Date: Fri, 28 Dec 2012 20:38:45 -0800
-From: Olof Johansson <olof@lixom.net>
-To: torvalds@linux-foundation.org
-Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] ARM: arm-soc OMAP low-prio fixes
-Message-ID: <20121229043845.GB11208@quad.lixom.net>
+	Sat, 29 Dec 2012 00:14:02 -0500
+Date: Sat, 29 Dec 2012 05:13:44 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Vasily Kulikov <segoon@openwall.com>,
+        Containers <containers@lists.linux-foundation.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
+Message-ID: <20121229051344.GC4939@ZenIV.linux.org.uk>
+References: <20121228175627.GA7683@cachalot>
+ <87wqw15wqb.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <87wqw15wqb.fsf@xmission.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Dec 28, 2012 at 08:05:32PM -0800, Eric W. Biederman wrote:
 
-I'll leave it up to you to decide if you want to pull this or not --
-it can wait to 3.9 as well.
+> Yes.  Gcc can't turn a tail call into a jump in even the most basic
+> cases apparently.
 
-This branch came in from Tony at the start of the merge window, and I
-wanted to give it a little time in -next (but it got more than expected
-due to travel).
+What.  The.  Fuck?
 
-It's a mix of lowish priority fixes and a couple of cleanups to split
-setup between OMAP1/2+, needed for multiplatform restructuring.
+You have introduced unlimited recursion on kernel stack.  OK, it's
+unpleasant, but it can happen to anybody.  But then you have the gall
+to complain about gcc optimizations not saving your broken code.  Are
+you serious?
 
-Said multiplatform restructuring is the main reason arm-soc saw so much
-churn this release -- i.MX and OMAP platforms were reshuffled quite a
-bit to make them ready for multiplatform. i.MX finished, OMAP is nearly
-there with just a few more patches needed (for 3.9). It should slow down
-again for next release.
+It's not a question of gcc being not smart enough, and while we are
+at it, it's *not* a basic case at all - we have recursion going through
+the callback and we have non-trivial return value on top of that; if
+the caller of kref_put() had checked said return value, you would've
+been unable to turn that into a loop at all.
 
-
-Thanks,
-
--Olof
-
-The following changes since commit 2b8318881ddbcb67c5e8d2178b42284749442222:
-
-  Merge tag 'fbdev-for-3.8' of git://gitorious.org/linux-omap-dss2/linux (2012-12-15 13:03:48 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/omap-late-cleanups
-
-for you to fetch changes up to f64d204b5cf21b282445ba2fa357d970028c9f52:
-
-  arch/arm/mach-omap2/dpll3xxx.c: drop if around WARN_ON (2012-12-17 10:50:41 -0800)
-
-----------------------------------------------------------------
-ARM: arm-soc: late cleanups for omap
-
->From Tony Lindgren:
-Here are few more patches to finish the omap changes for
-multiplatform conversion that are not strictly fixes, but
-were too complex to do with the dependencies during the
-merge window. Those are to move of serial-omap.h to
-platform_data, and the removal of remaining cpu_is_omap
-macro usage outside mach-omap2.
-
-Then there are several trivial fixes for typos and few
-minimal omap2plus_defconfig updates.
-
-----------------------------------------------------------------
-AnilKumar Chimata (1):
-      ARM: OMAP2+: omap2plus_defconfig: Add tps65217 support
-
-Javier Martinez Canillas (2):
-      ARM: OMAP2+: enable devtmpfs and devtmpfs automount
-      ARM: OMAP2+: omap2plus_defconfig: enable twl4030 SoC audio
-
-Jon Hunter (1):
-      ARM: OMAP2+: PMU: Remove unused header
-
-Julia Lawall (1):
-      arch/arm/mach-omap2/dpll3xxx.c: drop if around WARN_ON
-
-Peter Ujfalusi (1):
-      ARM: OMAP2+: omap_twl: Change TWL4030_MODULE_PM_RECEIVER to TWL_MODULE_PM_RECEIVER
-
-Srinivas Kandagatla (1):
-      ARM/omap: use module_platform_driver macro
-
-Tony Lindgren (3):
-      MAINTAINERS: Add an entry for omap related .dts files
-      ARM: OMAP: Split fb.c to remove last remaining cpu_is_omap usage
-      ARM: OMAP2+: Drop plat/cpu.h for omap2plus
-
-Wei Yongjun (1):
-      ARM: OMAP4: remove duplicated include from omap_hwmod_44xx_data.c
-
-YOSHIFUJI Hideaki (1):
-      OMAP2: Fix a typo - replace regist with register.
-
- MAINTAINERS                                |  9 ++++
- arch/arm/configs/omap2plus_defconfig       |  5 ++
- arch/arm/mach-omap1/Makefile               |  2 +-
- arch/arm/mach-omap1/fb.c                   | 80 ++++++++++++++++++++++++++++++
- arch/arm/mach-omap2/Makefile               |  2 +-
- arch/arm/mach-omap2/control.h              |  2 +-
- arch/arm/mach-omap2/dpll3xxx.c             |  3 +-
- arch/arm/mach-omap2/drm.c                  |  1 -
- arch/arm/mach-omap2/dss-common.c           |  3 +-
- arch/arm/{plat-omap => mach-omap2}/fb.c    | 50 +------------------
- arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  1 -
- arch/arm/mach-omap2/omap_twl.c             |  8 +--
- arch/arm/mach-omap2/pmu.c                  |  2 -
- arch/arm/mach-omap2/prm2xxx.c              |  3 +-
- arch/arm/mach-omap2/prm3xxx.c              |  3 +-
- arch/arm/plat-omap/Makefile                |  2 +-
- arch/arm/plat-omap/dmtimer.c               | 13 +----
- arch/arm/plat-omap/include/plat/cpu.h      |  4 --
- drivers/media/platform/omap3isp/isp.c      |  2 -
- drivers/power/avs/smartreflex.c            |  2 -
- 20 files changed, 109 insertions(+), 88 deletions(-)
- create mode 100644 arch/arm/mach-omap1/fb.c
- rename arch/arm/{plat-omap => mach-omap2}/fb.c (76%)
+Are you seriously saying that you relied on compiler being smart enough
+to
+	* notice that return value of kref_put() is ignored
+	* notice that therefore the return value of kref_sub() is ignored
+	* notice that you have this call of put_user_ns() calling
+kref_put() calling kref_sub() inside the callback we'd passed through the
+last two levels of calls and that we are dealing with the tail recursion
+here
+... so that your code wouldn't have stepped into unlimited recursion?
+I sincerely hope that you are not that much of an idiot.  If nothing else,
+even if gcc did spot that one, the result would've been extremely brittle -
+minor change to kref.h several year down the road and we'd get the problem.
