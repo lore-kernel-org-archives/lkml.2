@@ -1,67 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753156Ab2L2Rwv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 12:52:51 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:48919 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752756Ab2L2Rws (ORCPT
+	id S1753224Ab2L2TZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 14:25:27 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:60404 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab2L2TZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 12:52:48 -0500
-Date: Sat, 29 Dec 2012 09:56:25 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Roland Dreier <roland@kernel.org>
-Cc: Kay Sievers <kay@vrfy.org>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Roland Dreier <roland@purestorage.com>
-Subject: Re: [PATCH] printk: Fix incorrect length from print_time() when
- seconds > 99999
-Message-ID: <20121229175625.GA1963@kroah.com>
-References: <1356754984-13917-1-git-send-email-roland@kernel.org>
+	Sat, 29 Dec 2012 14:25:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356754984-13917-1-git-send-email-roland@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121227182401.GA6306@opensource.wolfsonmicro.com>
+References: <1356083238-6932-1-git-send-email-andrew.smirnov@gmail.com>
+	<1356083238-6932-4-git-send-email-andrew.smirnov@gmail.com>
+	<20121227182401.GA6306@opensource.wolfsonmicro.com>
+Date: Sat, 29 Dec 2012 11:18:11 -0800
+Message-ID: <CAHQ1cqEMOJ-EWAFz9C0TjLypW7dVO0Aq0HM+sMdjrMYOqzc1Jg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] Add "no-bus" option for regmap API
+From: Andrey Smirnov <andrew.smirnov@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "andrey.smirnov@convergeddevices.net" 
+	<andrey.smirnov@convergeddevices.net>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 08:23:04PM -0800, Roland Dreier wrote:
-> From: Roland Dreier <roland@purestorage.com>
-> 
-> print_prefix() passes a NULL buf to print_time() to get the length of
-> the time prefix; when printk times are enabled, the current code just
-> returns the constant 15, which matches the format "[%5lu.%06lu] " used
-> to print the time value.  However, this is obviously incorrect when
-> the whole seconds part of the time gets beyond 5 digits (100000
-> seconds is a bit more than a day of uptime).
-> 
-> The simple fix is to use snprintf(NULL, 0, ...) to calculate the
-> actual length of the time prefix.  This could be micro-optimized but
-> it seems better to have simpler, more readable code here.
-> 
-> The bug leads to the syslog system call miscomputing which messages
-> fit into the userspace buffer.  If there are enough messages to fill
-> log_buf_len and some have a timestamp >= 100000, dmesg may fail with:
-> 
->     # dmesg
->     klogctl: Bad address
-> 
-> When this happens, strace shows that the failure is indeed EFAULT due
-> to the kernel mistakenly accessing past the end of dmesg's buffer,
-> since dmesg asks the kernel how big a buffer it needs, allocates a bit
-> more, and then gets an error when it asks the kernel to fill it:
-> 
->     syslog(0xa, 0, 0)                       = 1048576
->     mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fa4d25d2000
->     syslog(0x3, 0x7fa4d25d2010, 0x100008)   = -1 EFAULT (Bad address)
-> 
-> Signed-off-by: Roland Dreier <roland@purestorage.com>
+>> -     int (*reg_read)(struct regmap *map, unsigned int reg, unsigned int *val);
+>> -     int (*reg_write)(struct regmap *map, unsigned int reg, unsigned int val);
+>> +     int (*reg_read)(void *context, unsigned int reg, unsigned int *val);
+>> +     int (*reg_write)(void *context, unsigned int reg, unsigned int val);
+>
+> I'd be inclined to just do this in the initial refectoring patches
+> rather than rerefactoring here.
 
-Nice work.  When did you start seeing this problem, 3.6 or so?  I ask as
-it's probably something that should go to stable as well if so.
+I agree. I realized that I would have to have those parameters as
+"void *" only after I made first two commits and since I knew that the
+first version of the patch would have other problems decided to
+postpone fixing this till the second version of the patch.
 
-Andrew seems to be keeping the printk patches these days, so I'll let
-him pick this up with:
+>
+>> +     if (!bus || !bus->fast_io) {
+>>               mutex_init(&map->mutex);
+>>               map->lock = regmap_lock_mutex;
+>>               map->unlock = regmap_unlock_mutex;
+>> +     } else {
+>> +             spin_lock_init(&map->spinlock);
+>> +             map->lock = regmap_lock_spinlock;
+>> +             map->unlock = regmap_unlock_spinlock;
+>
+> It's not immediately obvious to me that no-bus should be forced to use
+> mutexes - is there any great reason for tying the two together?
 
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+No reason. I'll add provisions for configuring.
 
+>
+>> +     if (!bus) {
+>> +             map->cache_registers = true;
+>> +             goto skip_format_initialization;
+>> +     } else {
+>> +             map->reg_read = _regmap_bus_read;
+>> +     }
+>
+> Not sure I understand cache_registers here.  Why has this flag been
+> added?
+
+As of now when the write operation is performed("_regmap_write" is
+being called) the caching is handled either in "_regmap_write" or in
+"_regmap_raw_write". The decision which one of the two places it will
+be done at is made based on the availability of the
+"map->format.format_write". With the addition of "no-bus"
+configuration "map->format.format_write" is no longer a valid
+criterion for that decision and since caching writes makes sense for
+"no-bus" configuration too, I added this variable to serve as flag so
+that caching would be handled in "_regmap_write" for "no-bus"
+configuration and for busses with "map->format.format_write" and in
+"_regmap_raw_write" for all the other cases.
+
+
+>> + * @reg_read: Optional callback that if filled will be used to perform
+>> + *            all the reads from the registers.
+>> + * @reg_write: Optional callback that if filled will be used to perform
+>> + *             all the writes to the registers.
+>
+> I'd probably add some comment about not using this in conjunction with
+> SPI or I2C.
+
+Will do.
