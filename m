@@ -1,107 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157Ab2L2A14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 19:27:56 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48190 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab2L2A1y (ORCPT
+	id S1755169Ab2L2Ads (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 19:33:48 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:38221 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755105Ab2L2Adq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 19:27:54 -0500
-X-Greylist: delayed 100139 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 19:27:54 EST
-Message-ID: <50DE378D.4090008@lwfinger.net>
-Date: Fri, 28 Dec 2012 18:21:33 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-CC: cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
+	Fri, 28 Dec 2012 19:33:46 -0500
+Date: Sat, 29 Dec 2012 01:33:41 +0100
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, viresh kumar <viresh.kumar@linaro.org>,
+        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH V2] Fix problem with cpufreq_ondemand or cpufreq_conservative
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] Fix problem with cpufreq_pndemand or cpufreq_conservative
+Message-ID: <20121229003341.GA30982@balto.lan>
+Mail-Followup-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
+	Larry Finger <Larry.Finger@lwfinger.net>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	viresh kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
+	Linux PM list <linux-pm@vger.kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>
+References: <50DE1A74.4040607@lwfinger.net>
+ <3226192.H2BxHSuKio@vostro.rjw.lan>
+ <50DE2F32.1010207@lwfinger.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50DE2F32.1010207@lwfinger.net>
+X-Operating-System: Linux balto 3.8.0-rc1-00004-g637704c x86_64 GNU/Linux
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit 2aacdff entitled "cpufreq: Move common part from governors to separate file", whenever the drivers that 
-depend on this new file (cpufreq_ondemand or cpufreq_conservative) are built as modules, a new module named 
-cpufreq_governor is created. It seems that kmake is smart enough to create a separate module whenever more than one 
-module includes the same object file. As drivers/cpufreq/cpufreq_governor.c contains no MODULE directives, the resulting 
-module has no license specified, which results in logging of a "module license 'unspecified' taints kernel". In 
-addition, a number of globals are exported GPL only, and are therefore not available.
+On Fri, Dec 28, 2012 at 05:45:54PM -0600, Larry Finger wrote:
+> >I wonder if that's avoidable?  The intention is not to create an additional
+> >module, clearly.
+> 
+> It appears not to be possible. I don't know enough about to kmake to
+> understand why it is forcing a new module. Perhaps some expert knows
+> what Kconfig or Makefile magic will prevent that.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
----
+kbuild is building an additional module just because the makefile is
+adding the new objects in the obj-m list directly, as in:
 
-V2 is the more complicated version that makes clear what is happening.
+obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)     += cpufreq_ondemand.o cpufreq_governor.o
+obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE) += cpufreq_conservative.o cpufreq_governor.o
 
-Larry
----
+To build just two modules the Makefile would have to be modified [1]
+into something into something like:
 
-  Kconfig            |    5 +++++
-  Makefile           |    5 +++--
-  cpufreq_governor.c |    5 +++++
-  3 files changed, 13 insertions(+), 2 deletions(-)
----
+obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)     += cpufreq_ondemand_mod.o
+cpufreq_ondemand_mod-y                  := cpufreq_ondemand.o cpufreq_governor.o
+obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE) += cpufreq_conservative_mod.o
+cpufreq_conservative_mod-y              := cpufreq_conservative.o cpufreq_governor.o
 
-Index: wireless-testing-new/drivers/cpufreq/Makefile
-===================================================================
---- wireless-testing-new.orig/drivers/cpufreq/Makefile
-+++ wireless-testing-new/drivers/cpufreq/Makefile
-@@ -7,8 +7,9 @@ obj-$(CONFIG_CPU_FREQ_STAT)
-  obj-$(CONFIG_CPU_FREQ_GOV_PERFORMANCE)	+= cpufreq_performance.o
-  obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)	+= cpufreq_powersave.o
-  obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)	+= cpufreq_userspace.o
--obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o cpufreq_governor.o
--obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o cpufreq_governor.o
-+obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o
-+obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o
-+obj-$(CONFIG_CPU_FREQ_GOVERNOR)		+= cpufreq_governor.o
+so that only two .o are added to obj-m, but that's not correct either as
+you end up with cpufreq_governor symbols exported twice.
 
-  # CPUfreq cross-arch helpers
-  obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
-Index: wireless-testing-new/drivers/cpufreq/Kconfig
-===================================================================
---- wireless-testing-new.orig/drivers/cpufreq/Kconfig
-+++ wireless-testing-new/drivers/cpufreq/Kconfig
-@@ -20,6 +20,9 @@ if CPU_FREQ
-  config CPU_FREQ_TABLE
-  	tristate
+I think the only way would be to force cpufreq_governor as builtin with
+an automatic Kconfig option.
 
-+config CPU_FREQ_GOVERNOR
-+	tristate
-+
-  config CPU_FREQ_STAT
-  	tristate "CPU frequency translation statistics"
-  	select CPU_FREQ_TABLE
-@@ -141,6 +144,7 @@ config CPU_FREQ_GOV_USERSPACE
-  config CPU_FREQ_GOV_ONDEMAND
-  	tristate "'ondemand' cpufreq policy governor"
-  	select CPU_FREQ_TABLE
-+	select CPU_FREQ_GOVERNOR
-  	help
-  	  'ondemand' - This driver adds a dynamic cpufreq policy governor.
-  	  The governor does a periodic polling and
-@@ -159,6 +163,7 @@ config CPU_FREQ_GOV_ONDEMAND
-  config CPU_FREQ_GOV_CONSERVATIVE
-  	tristate "'conservative' cpufreq governor"
-  	depends on CPU_FREQ
-+	select CPU_FREQ_GOVERNOR
-  	help
-  	  'conservative' - this driver is rather similar to the 'ondemand'
-  	  governor both in its source code and its purpose, the difference is
-Index: wireless-testing-new/drivers/cpufreq/cpufreq_governor.c
-===================================================================
---- wireless-testing-new.orig/drivers/cpufreq/cpufreq_governor.c
-+++ wireless-testing-new/drivers/cpufreq/cpufreq_governor.c
-@@ -316,3 +316,8 @@ second_time:
-  	return 0;
-  }
-  EXPORT_SYMBOL_GPL(cpufreq_governor_dbs);
-+
-+MODULE_AUTHOR("Alexander Clouter <alex@digriz.org.uk>");
-+MODULE_DESCRIPTION("'cpufreq_governor' - A mini-module containing common code "
-+		   "for cpufreq_conservative and cpufreq_ondemand");
-+MODULE_LICENSE("GPL");
+Fabio
 
+1. http://lxr.linux.no/#linux+v3.7.1/Documentation/kbuild/makefiles.txt#L191
+
+-- 
+Fabio Baltieri
