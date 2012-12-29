@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab2L2Vs5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 16:48:57 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49884 "EHLO hydra.sisk.pl"
+	id S1753429Ab2L2Vvr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 16:51:47 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:49890 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753193Ab2L2Vsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 16:48:55 -0500
+	id S1753294Ab2L2Vvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 16:51:45 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: fabio.baltieri@linaro.org, viresh.kumar@linaro.org,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [PATCH V3] Fix problem with cpufreq_ondemand or cpufreq_conservative
-Date: Sat, 29 Dec 2012 22:54:23 +0100
-Message-ID: <2552356.7364PTaAEG@vostro.rjw.lan>
+To: Tim Hockin <thockin@hockin.org>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: kernel panic on resume from S3 - stumped
+Date: Sat, 29 Dec 2012 22:57:13 +0100
+Message-ID: <22263901.MJnoQmEgLn@vostro.rjw.lan>
 User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <50DF275D.1080702@lwfinger.net>
-References: <50de4d88.M3WYPilXC8de/dVl%Larry.Finger@lwfinger.net> <2035804.da5iyiYDGE@vostro.rjw.lan> <50DF275D.1080702@lwfinger.net>
+In-Reply-To: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
+References: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -23,66 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 29, 2012 11:24:45 AM Larry Finger wrote:
-> On 12/29/2012 07:27 AM, Rafael J. Wysocki wrote:
-> > On Friday, December 28, 2012 07:55:20 PM Larry Finger wrote:
-> >> Since commit 2aacdff entitled "cpufreq: Move common part from governors
-> >> to separate file", whenever the drivers that depend on this new file
-> >> (cpufreq_ondemand or cpufreq_conservative) are built as modules, a new
-> >> module named cpufreq_governor is created because the Makefile includes
-> >> cpufreq_governor.o twice. As drivers/cpufreq/cpufreq_governor.c contains no
-> >> MODULE directives, the resulting module has no license specified, which
-> >> results in logging of a "module license 'unspecified' taints kernel". In
-> >> addition, a number of globals are exported GPL only, and are therefore
-> >> not available. This fix establishes a new boolean configuration variable
-> >> that forces cpufreq_governor.o to be linked into the kernel whenever
-> >> either cpufreq_ondemand or cpufreq_conservative is selected.
-> >>
-> >> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-> >> ---
-> >> V3 changes only Kconfig and Makefile and avoids creating a new module.
-> >
-> > OK, thanks for the patch!
-> >
-> > If you don't mind, I'll rename CONFIG_CPU_FREQ_GOVERNOR to
-> > CONFIG_CPU_FREQ_GOV_COMMON when applying it, though.
+On Saturday, December 29, 2012 12:03:13 PM Tim Hockin wrote:
+> 4 days ago I had Ubuntu Lucid running on this computer. Suspend and
+> resume worked flawlessly every time.
 > 
-> The following does the job and is somewhat cleaner. If you want, I can remove 
-> the line wrap and submit it as V4. The downside of this approach is that the 
-> nested ifs will get cumbersome is more governors need cpufreq_governor.o.
+> Then I upgraded to Ubuntu Precise.
 
-I actually prefer the Kconfig-based one.  The extra config option is not
-a problem to me.
+Well, do you use a distro kernel or a kernel.org kernel?
+
+> Suspend seems to work, but resume
+> fails every time. The video never initializes.  By the flashing
+> keyboard lights, I guess it's a kernel panic. It fails from the Live
+> CD and from a fresh install.
+> 
+> Here is my debug so far.
+> 
+> Install all updates (3.2 kernel, nouveau driver)
+> Reboot
+> Try suspend = fails
+> 
+> Install Ubuntu's linux-generic-lts-quantal (3.5 kernel, nouveau driver)
+> Reboot
+> Try suspend = fails
+> 
+> Install nVidia's 304 driver
+> Reboot
+> Try suspend = fails
+> 
+> From within X:
+>   echo core > /sys/power/pm_test
+>   echo mem > /sys/power/state
+> The system acts like it is going to sleep, and then wakes up a few
+> seconds later. dmesg shows:
+> 
+> [ 1230.083404] ------------[ cut here ]------------
+> [ 1230.083410] WARNING: at
+> /build/buildd/linux-lts-quantal-3.5.0/kernel/power/suspend_test.c:53
+> suspend_test_finish+0x86/0x90()
+> [ 1230.083411] Hardware name: To Be Filled By O.E.M.
+> [ 1230.083412] Component: resume devices, time: 14424
+> [ 1230.083412] Modules linked in: snd_emu10k1_synth snd_emux_synth
+> snd_seq_virmidi snd_seq_midi_emul bnep rfcomm parport_pc ppdev
+> nvidia(PO) snd_emu10k1 snd_ac97_codec ac97_bus snd_pcm snd_page_alloc
+> snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event
+> snd_seq snd_timer coretemp snd_seq_device kvm_intel kvm snd
+> ghash_clmulni_intel soundcore aesni_intel btusb cryptd aes_x86_64
+> bluetooth i7core_edac edac_core microcode mac_hid lpc_ich mxm_wmi
+> shpchp serio_raw wmi hid_generic lp parport usbhid hid r8169
+> pata_marvell
+> [ 1230.083445] Pid: 3329, comm: bash Tainted: P O 3.5.0-21-generic
+> #32~precise1-Ubuntu
+> [ 1230.083446] Call Trace:
+> [ 1230.083448] [<ffffffff81052c9f>] warn_slowpath_common+0x7f/0xc0
+> [ 1230.083452] [<ffffffff81052d96>] warn_slowpath_fmt+0x46/0x50
+> [ 1230.083455] [<ffffffff8109b836>] suspend_test_finish+0x86/0x90
+> [ 1230.083457] [<ffffffff8109b53b>] suspend_devices_and_enter+0x10b/0x200
+> [ 1230.083460] [<ffffffff8109b701>] enter_state+0xd1/0x100
+> [ 1230.083463] [<ffffffff8109b74b>] pm_suspend+0x1b/0x60
+> [ 1230.083465] [<ffffffff8109a7a5>] state_store+0x45/0x70
+> [ 1230.083467] [<ffffffff81331d2f>] kobj_attr_store+0xf/0x30
+> [ 1230.083471] [<ffffffff811f77ff>] sysfs_write_file+0xef/0x170
+> [ 1230.083476] [<ffffffff811879d3>] vfs_write+0xb3/0x180
+> [ 1230.083480] [<ffffffff81187cfa>] sys_write+0x4a/0x90
+> [ 1230.083483] [<ffffffff816a6e69>] system_call_fastpath+0x16/0x1b
+> [ 1230.083488] ---[ end trace 839cdd0078b3ce03 ]---
+> 
+> Boot with init=/bin/bash
+> unload all modules except USBHID
+> echo core > /sys/power/pm_test
+> echo mem > /sys/power/state
+> system acts like it is going to sleep, and then wakes up a few seconds later
+> echo none > /sys/power/pm_test
+> echo mem > /sys/power/state
+> system goes to sleep
+> press power to resume = fails
+> 
+> At this point I am stumped on how to debug. This is a "modern"
+> computer with no serial ports. It worked under Lucid, so I know it is
+> POSSIBLE.
+> 
+> Mobo: ASRock X58 single-socket
+> CPU: Westmere 6 core (12 hyperthreads) 3.2 GHz
+> RAM: 12 GB ECC
+> Disk: sda = Intel SSD, mounted on /
+> Disk: sdb = Intel SSD, not mounted
+> Disk: sdc = Seagate HDD, not mounted
+> Disk: sdd = Seagate HDD, not mounted
+> NIC = Onboard RTL8168e/8111e
+> Sound = EMU1212 (emu10k1, not even configured yet)
+> Video = nVidia GeForce 7600 GT
+> KB = PS2 (also tried USB)
+> Mouse = USB
+> 
+> I have not updated to a more current kernel than 3.5, but I will if
+> there's evidence that this is resolved.  Any other clever trick to
+> try?
+
+There is no evidence and there won't be if you don't try a newer kernel.
 
 Thanks,
 Rafael
 
 
-> Index: wireless-testing-new/drivers/cpufreq/Makefile
-> ===================================================================
-> --- wireless-testing-new.orig/drivers/cpufreq/Makefile
-> +++ wireless-testing-new/drivers/cpufreq/Makefile
-> @@ -7,8 +7,15 @@ obj-$(CONFIG_CPU_FREQ_STAT)
->   obj-$(CONFIG_CPU_FREQ_GOV_PERFORMANCE) += cpufreq_performance.o
->   obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)   += cpufreq_powersave.o
->   obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)   += cpufreq_userspace.o
-> -obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)    += cpufreq_ondemand.o cpufreq_governor.o
-> -obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)        += cpufreq_conservative.o 
-> cpufreq_governor.o
-> +obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)    += cpufreq_ondemand.o
-> +obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)        += cpufreq_conservative.o
-> +ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND
-> +  obj-y += cpufreq_governor.o
-> +else
-> +  ifdef CONFIG_CPU_FREQ_GOV_CONSERVATIVE
-> +    obj-y += cpufreq_governor.o
-> +  endif
-> +endif
-> 
->   # CPUfreq cross-arch helpers
->   obj-$(CONFIG_CPU_FREQ_TABLE)           += freq_table.o
-> 
-> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
