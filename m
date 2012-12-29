@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab2L2K3i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 05:29:38 -0500
-Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:61660 "EHLO
-	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751418Ab2L2K3f (ORCPT
+	id S1752709Ab2L2KcF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 05:32:05 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:63703 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751321Ab2L2KcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 05:29:35 -0500
-From: Martin Nybo Andersen <tweek@tweek.dk>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: Panic: dma_map_area overflow 66 bytes on 3.7+
-Date: Sat, 29 Dec 2012 11:29:32 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.1-dmafix+; KDE/4.8.4; x86_64; ; )
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Michal Schmidt <mschmidt@redhat.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-References: <201212282005.10812.tweek@tweek.dk> <1356724390.21409.641.camel@edumazet-glaptop>
-In-Reply-To: <1356724390.21409.641.camel@edumazet-glaptop>
+	Sat, 29 Dec 2012 05:32:03 -0500
+Message-ID: <50DEBFD7.5000104@linaro.org>
+Date: Sat, 29 Dec 2012 11:03:03 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201212291129.33076.tweek@tweek.dk>
+To: rafael.j.wysocki@intel.com, rja@sgi.com
+CC: linux-pm@vger.kernel.org, pdeschrijver@nvidia.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpuidle - fix lock contention in the idle path
+References: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
+In-Reply-To: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 December 2012 20:53:10 Eric Dumazet wrote:
-> On Fri, 2012-12-28 at 20:05 +0100, Martin Nybo Andersen wrote:
-> > Hi list,
-> > 
-> > Since the release of 3.7 my main computer has been panicking a couple of
-> > times on both 3.7.0 and 3.7.1 because of a 'dma_map_area overflow xx bytes'.
-> > 
-> > Example screen shot:
-> > http://www.tweek.dk/panic.jpg
-> > 
-> > I can reproduce it somewhat easily by visiting http://www.openstreetmap.org/
-> > and zoom erratically with the scroll-button on the mouse.
-> > 
-> > The panic seems to occur on line 229 of arch/x86/kernel/amd_gart_64.c, and
-> > reverting commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd (r8169: use
-> > unlimited DMA burst for TX) seems to fix the problem for me (at least I've
-> > not been able to make it panic as before (yet)).
-> > 
-> > 
-> > lspci -v:
-> > 00:00.0 Host bridge: Advanced Micro Devices [AMD] nee ATI RS480 Host Bridge (rev 01)
-> > 00:02.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI RS480 PCI-X Root Port
-> > 00:05.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI RS480 PCI Bridge
-> > 00:12.0 SATA controller: Advanced Micro Devices [AMD] nee ATI SB600 Non-Raid-5 SATA
-> > 00:13.0 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI0)
-> > 00:13.1 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI1)
-> > 00:13.2 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI2)
-> > 00:13.3 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI3)
-> > 00:13.4 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI4)
-> > 00:13.5 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB Controller (EHCI)
-> > 00:14.0 SMBus: Advanced Micro Devices [AMD] nee ATI SBx00 SMBus Controller (rev 13)
-> > 00:14.1 IDE interface: Advanced Micro Devices [AMD] nee ATI SB600 IDE
-> > 00:14.2 Audio device: Advanced Micro Devices [AMD] nee ATI SBx00 Azalia (Intel HDA)
-> > 00:14.3 ISA bridge: Advanced Micro Devices [AMD] nee ATI SB600 PCI to LPC Bridge
-> > 00:14.4 PCI bridge: Advanced Micro Devices [AMD] nee ATI SBx00 PCI to PCI Bridge
-> > 00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
-> > 00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Address Map
-> > 00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] DRAM Controller
-> > 00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
-> > 01:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 01)
-> > 02:00.0 VGA compatible controller: NVIDIA Corporation G84 [GeForce 8600 GT] (rev a1)
-> > 03:07.0 Multimedia controller: Twinhan Technology Co. Ltd Mantis DTV PCI Bridge Controller [Ver 1.0] (rev 01)
-> > 
-> > 
-> > Please tell, if more info is needed.
+
+Hi Russ,
+
+Is it possible you try this patch on your 2048 cpus ?
+
+Thanks
+
+  -- Daniel
+
+On 12/26/2012 11:01 AM, Daniel Lezcano wrote:
+> The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
+> a lock in the cpuidle_get_cpu_driver function. This function
+> is used in the idle_call function.
 > 
-> Seems you have CONFIG_IOMMU_DEBUG, is it really what you want ?
-That is true, I've enabled CONFIG_IOMMU_DEBUG.
-If I want it? It seems like I don't... :-)
+> The problem is the contention with a large number of cpus because
+> they try to access the idle routine at the same time.
+> 
+> The lock could be safely removed because of how is used the
+> cpuidle api. The cpuidle_register_driver is called first but
+> until the cpuidle_register_device is not called we don't
+> enter in the cpuidle idle call function because the device
+> is not enabled.
+> 
+> The cpuidle_unregister_driver function, leading the a NULL driver,
+> is not called before the cpuidle_unregister_device.
+> 
+> This is how is used the cpuidle api from the different drivers.
+> 
+> However, a cleanup around the lock and a proper refcounting
+> mechanism should be used to ensure the consistency in the api,
+> like cpuidle_unregister_driver should failed if its refcounting
+> is not 0.
+> 
+> These modifications will need some code reorganization and rewrite
+> which does not fit with a fix.
+> 
+> The following patch is a hot fix by returning to the initial behavior
+> by removing the lock when getting the driver.
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  drivers/cpuidle/driver.c |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+> index 3af841f..c2b281a 100644
+> --- a/drivers/cpuidle/driver.c
+> +++ b/drivers/cpuidle/driver.c
+> @@ -235,16 +235,10 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
+>   */
+>  struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
+>  {
+> -	struct cpuidle_driver *drv;
+> -
+>  	if (!dev)
+>  		return NULL;
+>  
+> -	spin_lock(&cpuidle_driver_lock);
+> -	drv = __cpuidle_get_cpu_driver(dev->cpu);
+> -	spin_unlock(&cpuidle_driver_lock);
+> -
+> -	return drv;
+> +	return __cpuidle_get_cpu_driver(dev->cpu);
+>  }
+>  EXPORT_SYMBOL_GPL(cpuidle_get_cpu_driver);
+>  
+> 
 
-> It seems a bit strange we panic in this case
-> ( panic_on_overflow = 1;)
-I don't know much about IOMMUs, but if the alternative is trashed memory then
-I'm in for it.
 
-panic_on_overflow is set on lines 26--27 of arch/x86/kernel/pci-dma.c along
-with force_iommu if CONFIG_IOMMU_DEBUG is enabled.
+-- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
-> You could try to add iommu=nopanic to your boot command : packet should
-> be dropped, instead of panic.
-I opt for disabling CONFIG_IOMMU_DEBUG, as it sets force_iommu as well.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-If the only consequence of this is stats.tx_dropped being bumped not too
-often, that's ok for me.
-
-
-Thanks for the quick help! :-)
-
-
-Regards,
-Martin Nybo Andersen
