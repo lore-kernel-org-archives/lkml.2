@@ -1,83 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530Ab2L2Ipc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 03:45:32 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:53788 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab2L2Ip2 (ORCPT
+	id S1752499Ab2L2JCc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 04:02:32 -0500
+Received: from mail-ia0-f191.google.com ([209.85.210.191]:63246 "EHLO
+	mail-ia0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224Ab2L2JC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 03:45:28 -0500
+	Sat, 29 Dec 2012 04:02:29 -0500
+X-Greylist: delayed 2598 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Dec 2012 04:02:29 EST
+Path: glegroupsg2000goo.googlegroups.com!not-for-mail
+Newsgroups: fa.linux.kernel
+Date: Sat, 29 Dec 2012 00:19:10 -0800 (PST)
+In-Reply-To: <fa.aKiGvXaqF8zkt42DoAyNZWYEe5M@ifi.uio.no>
+Complaints-To: groups-abuse@google.com
+Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=137.163.19.9; posting-account=L_Ri8goAAADBuGROTBhW1crNbc8e7dzT
+NNTP-Posting-Host: 137.163.19.9
+References: <fa.bKjJDjpiXe4ZyttQxy70URjcaYU@ifi.uio.no> <fa.aKiGvXaqF8zkt42DoAyNZWYEe5M@ifi.uio.no>
+User-Agent: G2/1.0
+X-Google-Web-Client: true
+X-Google-IP: 137.163.19.9
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <50DD0106.7040001@iskon.hr>
-References: <50D24AF3.1050809@iskon.hr>
-	<20121220111208.GD10819@suse.de>
-	<20121220125802.23e9b22d.akpm@linux-foundation.org>
-	<50D601C9.9060803@iskon.hr>
-	<50D71166.6030608@iskon.hr>
-	<50DB129E.7010000@iskon.hr>
-	<50DD0106.7040001@iskon.hr>
-Date: Sat, 29 Dec 2012 09:45:27 +0100
-Message-ID: <CA+icZUV1kOPogpd6cuwUUFy=MK8AqArVW+XgAPDLpAKyWLUShg@mail.gmail.com>
-Subject: Re: [PATCH] mm: fix null pointer dereference in wait_iff_congested()
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zhouping Liu <zliu@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+Message-ID: <9d57e984-32bd-4d94-8137-6aeec4cf5986@googlegroups.com>
+Subject: Re: [PATCH 03/32] gadget: remove only user of aio retry
+From: john.wensley@gmail.com
+To: fa.linux.kernel@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        Zach Brown <zab@redhat.com>, bcrl@kvack.org, jmoyer@redhat.com,
+        axboe@kernel.dk, viro@zeniv.linux.org.uk, tytso@mit.edu,
+        Kent Overstreet <koverstreet@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just FYI:
+On Thursday, December 27, 2012 4:08:46 AM UTC+2, Kent Overstreet wrote:
+...
 
-This patch landed upstream [1].
-Thanks for all involved people.
+Great. Did you measure by how much your changes improve performance?
 
-- Sedat -
-
-[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=ecccd1248d6e6986130ffcc3b0d003cb46a485c0
-
-On Fri, Dec 28, 2012 at 3:16 AM, Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
-> From: Zlatko Calusic <zlatko.calusic@iskon.hr>
->
-> The unintended consequence of commit 4ae0a48b is that
-> wait_iff_congested() can now be called with NULL struct zone*
-> producing kernel oops like this:
->
-> BUG: unable to handle kernel NULL pointer dereference
-> IP: [<ffffffff811542d9>] wait_iff_congested+0x59/0x140
->
-> This trivial patch fixes it.
->
-> Reported-by: Zhouping Liu <zliu@redhat.com>
-> Reported-and-tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Hugh Dickins <hughd@google.com>
-> Signed-off-by: Zlatko Calusic <zlatko.calusic@iskon.hr>
-> ---
->  mm/vmscan.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 02bcfa3..e55ce55 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2782,7 +2782,7 @@ loop_again:
->                 if (total_scanned && (sc.priority < DEF_PRIORITY - 2)) {
->                         if (has_under_min_watermark_zone)
->                                 count_vm_event(KSWAPD_SKIP_CONGESTION_WAIT);
-> -                       else
-> +                       else if (unbalanced_zone)
->                                 wait_iff_congested(unbalanced_zone, BLK_RW_ASYNC, HZ/10);
->                 }
->
-> --
-> 1.8.1.rc3
->
-> --
-> Zlatko
+-- john
