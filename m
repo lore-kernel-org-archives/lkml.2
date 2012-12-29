@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755189Ab2L2AxZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 19:53:25 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:59974 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab2L2AxY (ORCPT
+	id S1755186Ab2L2BDD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 20:03:03 -0500
+Received: from smtp.nue.novell.com ([195.135.221.5]:48858 "EHLO
+	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755112Ab2L2BDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 19:53:24 -0500
-X-Greylist: delayed 1529 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Dec 2012 19:53:23 EST
-Message-ID: <50DE3F00.70800@lwfinger.net>
-Date: Fri, 28 Dec 2012 18:53:20 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        viresh kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix problem with cpufreq_pndemand or cpufreq_conservative
-References: <50DE1A74.4040607@lwfinger.net> <3226192.H2BxHSuKio@vostro.rjw.lan> <50DE2F32.1010207@lwfinger.net> <20121229003341.GA30982@balto.lan>
-In-Reply-To: <20121229003341.GA30982@balto.lan>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 28 Dec 2012 20:03:01 -0500
+Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+From: joeyli <jlee@suse.com>
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>
+In-Reply-To: <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
+References: <1356712001-12198-1-git-send-email-jlee@suse.com>
+	 <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 29 Dec 2012 09:00:03 +0800
+Message-ID: <1356742803.6113.245.camel@linux-s257.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/28/2012 06:33 PM, Fabio Baltieri wrote:
-> On Fri, Dec 28, 2012 at 05:45:54PM -0600, Larry Finger wrote:
->>> I wonder if that's avoidable?  The intention is not to create an additional
->>> module, clearly.
->>
->> It appears not to be possible. I don't know enough about to kmake to
->> understand why it is forcing a new module. Perhaps some expert knows
->> what Kconfig or Makefile magic will prevent that.
->
-> kbuild is building an additional module just because the makefile is
-> adding the new objects in the obj-m list directly, as in:
->
-> obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)     += cpufreq_ondemand.o cpufreq_governor.o
-> obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE) += cpufreq_conservative.o cpufreq_governor.o
->
-> To build just two modules the Makefile would have to be modified [1]
-> into something into something like:
->
-> obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)     += cpufreq_ondemand_mod.o
-> cpufreq_ondemand_mod-y                  := cpufreq_ondemand.o cpufreq_governor.o
-> obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE) += cpufreq_conservative_mod.o
-> cpufreq_conservative_mod-y              := cpufreq_conservative.o cpufreq_governor.o
->
-> so that only two .o are added to obj-m, but that's not correct either as
-> you end up with cpufreq_governor symbols exported twice.
->
-> I think the only way would be to force cpufreq_governor as builtin with
-> an automatic Kconfig option.
->
-> Fabio
->
-> 1. http://lxr.linux.no/#linux+v3.7.1/Documentation/kbuild/makefiles.txt#L191
+於 五，2012-12-28 於 17:43 +0000，Matthew Garrett 提到：
+> On Sat, 2012-12-29 at 00:26 +0800, Lee, Chun-Yi wrote:
+> > UEFI time services, GetTime(), SetTime(), GetWakeupTime(), SetWakeupTime() are also
+> > supported by other non-IA64 architecutre with UEFI BIOS, e.g. x86.
+> > 
+> > This patch changed RTC_DRV_EFI configuration to depend on EFI but not just IA64. It
+> > checks efi_enabled flag and efi-rtc driver should enabled.
+> 
+> In theory, certainly - but do we still have machines that explode if the
+> get_time call is made? We may also want to think about disabling the
+> legacy access to the RTC if the EFI calls are present.
 
-Fabio,
+The legacy get_time access on my test machine is work fine, not thing
+explode. :-)
+Just we have a function want to expose the timezone information to
+userspace and also store it.
 
-Thanks for the explanation. Now I think I know how to do it.
 
-V3 follows.
-
-Larry
+Thanks a lot!
+Joey Lee
 
 
