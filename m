@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134Ab2L2Rga (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 12:36:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9511 "EHLO mx1.redhat.com"
+	id S1753138Ab2L2Rhp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 12:37:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37078 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab2L2Rg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 12:36:27 -0500
-Date: Sat, 29 Dec 2012 18:36:14 +0100
+	id S1752839Ab2L2Rhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 12:37:43 -0500
+Date: Sat, 29 Dec 2012 18:35:54 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>
@@ -14,147 +14,26 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
         Josh Stone <jistone@redhat.com>,
         "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] uprobes: Teach handler_chain() to filter out the
+Subject: [PATCH 0/1] uprobes: Teach handler_chain() to filter out the
 	probed task
-Message-ID: <20121229173614.GA2154@redhat.com>
-References: <20121229173554.GA2145@redhat.com>
+Message-ID: <20121229173554.GA2145@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121229173554.GA2145@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currrently the are 2 problems with pre-filtering:
+Hello.
 
-1. It is not possible to add/remove a task (mm) after uprobe_register()
+On top of "uprobes: pre-filtering".
 
-2. A forked child inherits all breakpoints and uprobe_consumer can not
-   control this.
+Srikar, If you still disagree and prefer to use ->filter() in
+handler_chain() please argue.
 
-This patch does the first step to improve the filtering. handler_chain()
-removes the breakpoints installed by this uprobe from current->mm if all
-handlers return UPROBE_HANDLER_REMOVE.
+Note that unapply_uprobe() added by this patch can be generalized
+to implement uprobe_apply(consumer, mm, is_register).
 
-Note that handler_chain() relies on ->register_rwsem to avoid the race
-with uprobe_register/unregister which can add/del a consumer, or even
-remove and then insert the new uprobe at the same address.
-
-Perhaps we will add uprobe_apply_mm(uprobe, mm, is_register) and teach
-copy_mm() to do filter(UPROBE_FILTER_FORK), but I think this change makes
-sense anyway.
-
-Note: instead of checking the retcode from uc->handler, we could add
-uc->filter(UPROBE_FILTER_BPHIT). But I think this is not optimal to
-call 2 hooks in a row. This buys nothing, and if handler/filter do
-something nontrivial they will probably do the same work twice.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/uprobes.h |    3 ++
- kernel/events/uprobes.c |   58 ++++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 51 insertions(+), 10 deletions(-)
-
-diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-index c2df693..95d0002 100644
---- a/include/linux/uprobes.h
-+++ b/include/linux/uprobes.h
-@@ -35,6 +35,9 @@ struct inode;
- # include <asm/uprobes.h>
- #endif
- 
-+#define UPROBE_HANDLER_REMOVE		1
-+#define UPROBE_HANDLER_MASK		1
-+
- enum uprobe_filter_ctx {
- 	UPROBE_FILTER_REGISTER,
- 	UPROBE_FILTER_UNREGISTER,
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index e2ebb6f..59b6e97 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -440,16 +440,6 @@ static struct uprobe *alloc_uprobe(struct inode *inode, loff_t offset)
- 	return uprobe;
- }
- 
--static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
--{
--	struct uprobe_consumer *uc;
--
--	down_read(&uprobe->register_rwsem);
--	for (uc = uprobe->consumers; uc; uc = uc->next)
--		uc->handler(uc, regs);
--	up_read(&uprobe->register_rwsem);
--}
--
- static void consumer_add(struct uprobe *uprobe, struct uprobe_consumer *uc)
- {
- 	down_write(&uprobe->consumer_rwsem);
-@@ -882,6 +872,33 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
- 	put_uprobe(uprobe);
- }
- 
-+static int unapply_uprobe(struct uprobe *uprobe, struct mm_struct *mm)
-+{
-+	struct vm_area_struct *vma;
-+	int err = 0;
-+
-+	down_read(&mm->mmap_sem);
-+	for (vma = mm->mmap; vma; vma = vma->vm_next) {
-+		unsigned long vaddr;
-+		loff_t offset;
-+
-+		if (!valid_vma(vma, false) ||
-+		    vma->vm_file->f_mapping->host != uprobe->inode)
-+			continue;
-+
-+		offset = (loff_t)vma->vm_pgoff << PAGE_SHIFT;
-+		if (uprobe->offset <  offset ||
-+		    uprobe->offset >= offset + vma->vm_end - vma->vm_start)
-+			continue;
-+
-+		vaddr = offset_to_vaddr(vma, uprobe->offset);
-+		err |= remove_breakpoint(uprobe, mm, vaddr);
-+	}
-+	up_read(&mm->mmap_sem);
-+
-+	return err;
-+}
-+
- static struct rb_node *
- find_node_in_range(struct inode *inode, loff_t min, loff_t max)
- {
-@@ -1435,6 +1452,27 @@ static struct uprobe *find_active_uprobe(unsigned long bp_vaddr, int *is_swbp)
- 	return uprobe;
- }
- 
-+static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
-+{
-+	struct uprobe_consumer *uc;
-+	int remove = UPROBE_HANDLER_REMOVE;
-+
-+	down_read(&uprobe->register_rwsem);
-+	for (uc = uprobe->consumers; uc; uc = uc->next) {
-+		int rc = uc->handler(uc, regs);
-+
-+		WARN(rc & ~UPROBE_HANDLER_MASK,
-+			"bad rc=0x%x from %pf()\n", rc, uc->handler);
-+		remove &= rc;
-+	}
-+
-+	if (remove && uprobe->consumers) {
-+		WARN_ON(!uprobe_is_active(uprobe));
-+		unapply_uprobe(uprobe, current->mm);
-+	}
-+	up_read(&uprobe->register_rwsem);
-+}
-+
- /*
-  * Run handler and ask thread to singlestep.
-  * Ensure all non-fatal signals cannot interrupt thread while it singlesteps.
--- 
-1.5.5.1
-
+Oleg.
 
