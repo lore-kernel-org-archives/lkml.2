@@ -1,95 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab2L2P05 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 10:26:57 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:46893 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070Ab2L2P0x (ORCPT
+	id S1752940Ab2L2PjV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 10:39:21 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:34735 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752198Ab2L2PjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 10:26:53 -0500
-From: Emil Goode <emilgoode@gmail.com>
-To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
-        krzysztof.wilczynski@linux.com, devendra.aaru@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
-Subject: [PATCH] Staging: wlan-ng: Add missing argument
-Date: Sat, 29 Dec 2012 16:27:17 +0100
-Message-Id: <1356794837-14631-1-git-send-email-emilgoode@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 29 Dec 2012 10:39:20 -0500
+Message-ID: <50DF0EA4.8090603@lwfinger.net>
+Date: Sat, 29 Dec 2012 09:39:16 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: fabio.baltieri@linaro.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH V3] Fix problem with cpufreq_ondemand or cpufreq_conservative
+References: <50de4d88.M3WYPilXC8de/dVl%Larry.Finger@lwfinger.net> <2035804.da5iyiYDGE@vostro.rjw.lan>
+In-Reply-To: <2035804.da5iyiYDGE@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The commit c8442118 introduced a struct wireless_dev pointer
-as a second argument of the function pointers set_tx_power
-and get_tx_power. This patch adds the missing arguments for
-the wlan-ng driver.
+On 12/29/2012 07:27 AM, Rafael J. Wysocki wrote:
+> On Friday, December 28, 2012 07:55:20 PM Larry Finger wrote:
+>> Since commit 2aacdff entitled "cpufreq: Move common part from governors
+>> to separate file", whenever the drivers that depend on this new file
+>> (cpufreq_ondemand or cpufreq_conservative) are built as modules, a new
+>> module named cpufreq_governor is created because the Makefile includes
+>> cpufreq_governor.o twice. As drivers/cpufreq/cpufreq_governor.c contains no
+>> MODULE directives, the resulting module has no license specified, which
+>> results in logging of a "module license 'unspecified' taints kernel". In
+>> addition, a number of globals are exported GPL only, and are therefore
+>> not available. This fix establishes a new boolean configuration variable
+>> that forces cpufreq_governor.o to be linked into the kernel whenever
+>> either cpufreq_ondemand or cpufreq_conservative is selected.
+>>
+>> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+>> ---
+>> V3 changes only Kconfig and Makefile and avoids creating a new module.
+>
+> OK, thanks for the patch!
+>
+> If you don't mind, I'll rename CONFIG_CPU_FREQ_GOVERNOR to
+> CONFIG_CPU_FREQ_GOV_COMMON when applying it, though.
 
-Sparse warnings:
+No problem. It occurred to me that if one can do logic in a Makefile, then the 
+extra configuration variable can be eliminated. I still need to check if that is 
+possible.
 
-drivers/staging/wlan-ng/cfg80211.c:735:25: warning:
-	incorrect type in initializer (incompatible argument 2
-	(different base types))
-	drivers/staging/wlan-ng/cfg80211.c:735:25:
-	expected int ( *set_tx_power )( ... )
-	drivers/staging/wlan-ng/cfg80211.c:735:25:
-	got int ( extern [toplevel] *<noident> )( ... )
+Larry
 
-drivers/staging/wlan-ng/cfg80211.c:736:25: warning:
-	incorrect type in initializer (incompatible argument 2
-	(different base types))
-	drivers/staging/wlan-ng/cfg80211.c:736:25:
-	expected int ( *get_tx_power )( ... )
-	drivers/staging/wlan-ng/cfg80211.c:736:25:
-	got int ( extern [toplevel] *<noident> )( ... )
-
-drivers/staging/wlan-ng/cfg80211.c:735:2: warning:
-	initialization from incompatible pointer type [enabled by default]
-
-drivers/staging/wlan-ng/cfg80211.c:735:2: warning:
-	(near initialization for ‘prism2_usb_cfg_ops.set_tx_power’)
-	[enabled by default]
-
-drivers/staging/wlan-ng/cfg80211.c:736:2: warning:
-	initialization from incompatible pointer type [enabled by default]
-
-drivers/staging/wlan-ng/cfg80211.c:736:2: warning:
-	(near initialization for ‘prism2_usb_cfg_ops.get_tx_power’)
-	[enabled by default]
-
-Signed-off-by: Emil Goode <emilgoode@gmail.com>
----
- drivers/staging/wlan-ng/cfg80211.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
-index 18c06a5..1d31eab 100644
---- a/drivers/staging/wlan-ng/cfg80211.c
-+++ b/drivers/staging/wlan-ng/cfg80211.c
-@@ -638,8 +638,8 @@ int prism2_leave_ibss(struct wiphy *wiphy, struct net_device *dev)
- }
- 
- 
--int prism2_set_tx_power(struct wiphy *wiphy, enum nl80211_tx_power_setting type,
--			int mbm)
-+int prism2_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
-+			enum nl80211_tx_power_setting type, int mbm)
- {
- 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
- 	wlandevice_t *wlandev = priv->wlandev;
-@@ -665,7 +665,8 @@ exit:
- 	return err;
- }
- 
--int prism2_get_tx_power(struct wiphy *wiphy, int *dbm)
-+int prism2_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
-+			int *dbm)
- {
- 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
- 	wlandevice_t *wlandev = priv->wlandev;
--- 
-1.7.10.4
+>
+> Thanks,
+> Rafael
+>
+>
+>>   Kconfig  |    5 +++++
+>>   Makefile |    5 +++--
+>>   2 files changed, 8 insertions(+), 2 deletions(-)
+>>
+>> Index: wireless-testing-new/drivers/cpufreq/Kconfig
+>> ===================================================================
+>> --- wireless-testing-new.orig/drivers/cpufreq/Kconfig
+>> +++ wireless-testing-new/drivers/cpufreq/Kconfig
+>> @@ -20,6 +20,9 @@ if CPU_FREQ
+>>   config CPU_FREQ_TABLE
+>>   	tristate
+>>
+>> +config CPU_FREQ_GOVERNOR
+>> +	bool
+>> +
+>>   config CPU_FREQ_STAT
+>>   	tristate "CPU frequency translation statistics"
+>>   	select CPU_FREQ_TABLE
+>> @@ -141,6 +144,7 @@ config CPU_FREQ_GOV_USERSPACE
+>>   config CPU_FREQ_GOV_ONDEMAND
+>>   	tristate "'ondemand' cpufreq policy governor"
+>>   	select CPU_FREQ_TABLE
+>> +	select CPU_FREQ_GOVERNOR
+>>   	help
+>>   	  'ondemand' - This driver adds a dynamic cpufreq policy governor.
+>>   	  The governor does a periodic polling and
+>> @@ -159,6 +163,7 @@ config CPU_FREQ_GOV_ONDEMAND
+>>   config CPU_FREQ_GOV_CONSERVATIVE
+>>   	tristate "'conservative' cpufreq governor"
+>>   	depends on CPU_FREQ
+>> +	select CPU_FREQ_GOVERNOR
+>>   	help
+>>   	  'conservative' - this driver is rather similar to the 'ondemand'
+>>   	  governor both in its source code and its purpose, the difference is
+>> Index: wireless-testing-new/drivers/cpufreq/Makefile
+>> ===================================================================
+>> --- wireless-testing-new.orig/drivers/cpufreq/Makefile
+>> +++ wireless-testing-new/drivers/cpufreq/Makefile
+>> @@ -7,8 +7,9 @@ obj-$(CONFIG_CPU_FREQ_STAT)
+>>   obj-$(CONFIG_CPU_FREQ_GOV_PERFORMANCE)	+= cpufreq_performance.o
+>>   obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)	+= cpufreq_powersave.o
+>>   obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)	+= cpufreq_userspace.o
+>> -obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o cpufreq_governor.o
+>> -obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o cpufreq_governor.o
+>> +obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o
+>> +obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o
+>> +obj-$(CONFIG_CPU_FREQ_GOVERNOR)		+= cpufreq_governor.o
+>>
+>>   # CPUfreq cross-arch helpers
+>>   obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
 
