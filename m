@@ -1,70 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751827Ab2L2Ehh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 23:37:37 -0500
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:9692 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751142Ab2L2Ehf (ORCPT
+	id S1751721Ab2L2Eim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 23:38:42 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63478 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751142Ab2L2Eik (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 23:37:35 -0500
-X-Forefront-Antispam-Report: CIP:157.56.236.101;KIP:(null);UIP:(null);IPV:NLI;H:BY2PRD0510HT001.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: PS-5(zzbb2dI98dI9371I936eI1432Izz1de0h1202h1e76h1d1ah1d2ahzzz2fh2a8h668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
-        Len Brown <lenb@kernel.org>, Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-Thread-Topic: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-Thread-Index: AQHN5RiGq5ZUqF9Ep0mmn4k4iukZYZgue5kAgAAXSYCAAALxAIAAF0EAgAACcwCAAC2GAIAAAfiAgAARq4CAAEGJgA==
-Date: Sat, 29 Dec 2012 04:37:29 +0000
-Message-ID: <E99CBA9F97C3D149AA6B19ED2E277C9B01921744@BY2PRD0510MB365.namprd05.prod.outlook.com>
-References: <1356712001-12198-1-git-send-email-jlee@suse.com>
-	  <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	  <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com>
-	  <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	  <50DE03D8.9030902@zytor.com>
-	  <E99CBA9F97C3D149AA6B19ED2E277C9B01921638@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	  <35da3df5-ecac-4b57-83a2-828326e5bfc3@email.android.com>
-	 <E99CBA9F97C3D149AA6B19ED2E277C9B0192169D@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	 <50DE3C8F.4000405@zytor.com>
-In-Reply-To: <50DE3C8F.4000405@zytor.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.255.84.4]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <C4A7BF5DB02A514FA4C90B4E5679BD85@namprd05.prod.outlook.com>
+	Fri, 28 Dec 2012 23:38:40 -0500
+Date: Fri, 28 Dec 2012 20:38:45 -0800
+From: Olof Johansson <olof@lixom.net>
+To: torvalds@linux-foundation.org
+Cc: olof@lixom.net, arm@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ARM: arm-soc OMAP low-prio fixes
+Message-ID: <20121229043845.GB11208@quad.lixom.net>
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id qBT4bea4028055
 
-On Fri, 2012-12-28 at 16:42 -0800, H. Peter Anvin wrote:
-> On 12/28/2012 03:39 PM, Matthew Garrett wrote:
-> > On Fri, 2012-12-28 at 15:32 -0800, H. Peter Anvin wrote:
-> >> No, that is explicitly the ordering that is excludable.
-> > 
-> > Windows uses the UEFI time functions. The fact that they fail for us on
-> > a bunch of systems is just another symptom of our general failure to
-> > accurately mimic Windows when making runtime calls, and we should just
-> > make sure that that gets fixed rather than layering more workarounds on
-> > top. It's an embarrassment that we're still unable to deal with
-> > platforms that work fine with another OS. 
-> > 
-> 
-> Are they using them in preference to ACPI?  This seems a bit odd, since
-> one can presume that the ACPI functions were added at Microsoft's request...
+Hi Linus,
 
-In preference to the ACPI RTC, I haven't yet had an ACPI 5.0 TAD device
-to test in comparison.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I'll leave it up to you to decide if you want to pull this or not --
+it can wait to 3.9 as well.
+
+This branch came in from Tony at the start of the merge window, and I
+wanted to give it a little time in -next (but it got more than expected
+due to travel).
+
+It's a mix of lowish priority fixes and a couple of cleanups to split
+setup between OMAP1/2+, needed for multiplatform restructuring.
+
+Said multiplatform restructuring is the main reason arm-soc saw so much
+churn this release -- i.MX and OMAP platforms were reshuffled quite a
+bit to make them ready for multiplatform. i.MX finished, OMAP is nearly
+there with just a few more patches needed (for 3.9). It should slow down
+again for next release.
+
+
+Thanks,
+
+-Olof
+
+The following changes since commit 2b8318881ddbcb67c5e8d2178b42284749442222:
+
+  Merge tag 'fbdev-for-3.8' of git://gitorious.org/linux-omap-dss2/linux (2012-12-15 13:03:48 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc.git tags/omap-late-cleanups
+
+for you to fetch changes up to f64d204b5cf21b282445ba2fa357d970028c9f52:
+
+  arch/arm/mach-omap2/dpll3xxx.c: drop if around WARN_ON (2012-12-17 10:50:41 -0800)
+
+----------------------------------------------------------------
+ARM: arm-soc: late cleanups for omap
+
+>From Tony Lindgren:
+Here are few more patches to finish the omap changes for
+multiplatform conversion that are not strictly fixes, but
+were too complex to do with the dependencies during the
+merge window. Those are to move of serial-omap.h to
+platform_data, and the removal of remaining cpu_is_omap
+macro usage outside mach-omap2.
+
+Then there are several trivial fixes for typos and few
+minimal omap2plus_defconfig updates.
+
+----------------------------------------------------------------
+AnilKumar Chimata (1):
+      ARM: OMAP2+: omap2plus_defconfig: Add tps65217 support
+
+Javier Martinez Canillas (2):
+      ARM: OMAP2+: enable devtmpfs and devtmpfs automount
+      ARM: OMAP2+: omap2plus_defconfig: enable twl4030 SoC audio
+
+Jon Hunter (1):
+      ARM: OMAP2+: PMU: Remove unused header
+
+Julia Lawall (1):
+      arch/arm/mach-omap2/dpll3xxx.c: drop if around WARN_ON
+
+Peter Ujfalusi (1):
+      ARM: OMAP2+: omap_twl: Change TWL4030_MODULE_PM_RECEIVER to TWL_MODULE_PM_RECEIVER
+
+Srinivas Kandagatla (1):
+      ARM/omap: use module_platform_driver macro
+
+Tony Lindgren (3):
+      MAINTAINERS: Add an entry for omap related .dts files
+      ARM: OMAP: Split fb.c to remove last remaining cpu_is_omap usage
+      ARM: OMAP2+: Drop plat/cpu.h for omap2plus
+
+Wei Yongjun (1):
+      ARM: OMAP4: remove duplicated include from omap_hwmod_44xx_data.c
+
+YOSHIFUJI Hideaki (1):
+      OMAP2: Fix a typo - replace regist with register.
+
+ MAINTAINERS                                |  9 ++++
+ arch/arm/configs/omap2plus_defconfig       |  5 ++
+ arch/arm/mach-omap1/Makefile               |  2 +-
+ arch/arm/mach-omap1/fb.c                   | 80 ++++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/Makefile               |  2 +-
+ arch/arm/mach-omap2/control.h              |  2 +-
+ arch/arm/mach-omap2/dpll3xxx.c             |  3 +-
+ arch/arm/mach-omap2/drm.c                  |  1 -
+ arch/arm/mach-omap2/dss-common.c           |  3 +-
+ arch/arm/{plat-omap => mach-omap2}/fb.c    | 50 +------------------
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c |  1 -
+ arch/arm/mach-omap2/omap_twl.c             |  8 +--
+ arch/arm/mach-omap2/pmu.c                  |  2 -
+ arch/arm/mach-omap2/prm2xxx.c              |  3 +-
+ arch/arm/mach-omap2/prm3xxx.c              |  3 +-
+ arch/arm/plat-omap/Makefile                |  2 +-
+ arch/arm/plat-omap/dmtimer.c               | 13 +----
+ arch/arm/plat-omap/include/plat/cpu.h      |  4 --
+ drivers/media/platform/omap3isp/isp.c      |  2 -
+ drivers/power/avs/smartreflex.c            |  2 -
+ 20 files changed, 109 insertions(+), 88 deletions(-)
+ create mode 100644 arch/arm/mach-omap1/fb.c
+ rename arch/arm/{plat-omap => mach-omap2}/fb.c (76%)
