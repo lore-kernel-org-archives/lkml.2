@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492Ab2L2Qrv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 11:47:51 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:65359 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752363Ab2L2Qnd (ORCPT
+	id S1753339Ab2L2QsW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 11:48:22 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:54764 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab2L2Qn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 11:43:33 -0500
+	Sat, 29 Dec 2012 11:43:28 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 08/27] nohz: Trace timekeeping update
-Date: Sat, 29 Dec 2012 17:42:47 +0100
-Message-Id: <1356799386-4212-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 06/27] nohz: Basic full dynticks interface
+Date: Sat, 29 Dec 2012 17:42:45 +0100
+Message-Id: <1356799386-4212-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
 References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
@@ -31,8 +31,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not for merge. This may become a real tracepoint.
+Start with a very simple interface to define full dynticks CPU:
+use a boot time option defined cpumask through the "full_nohz="
+kernel parameter.
 
+Make sure you keep at least one CPU outside this range to handle
+the timekeeping.
+
+Also full_nohz= must match rcu_nocb= value.
+
+Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -48,25 +56,83 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/time/tick-sched.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ include/linux/tick.h     |    7 +++++++
+ kernel/time/Kconfig      |    9 +++++++++
+ kernel/time/tick-sched.c |   23 +++++++++++++++++++++++
+ 3 files changed, 39 insertions(+), 0 deletions(-)
 
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 553272e..2d4f6f0 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -157,6 +157,13 @@ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+ # endif /* !NO_HZ */
+ 
++#ifdef CONFIG_NO_HZ_FULL
++int tick_nohz_full_cpu(int cpu);
++#else
++static inline int tick_nohz_full_cpu(int cpu) { return 0; }
++#endif
++
++
+ # ifdef CONFIG_CPU_IDLE_GOV_MENU
+ extern void menu_hrtimer_cancel(void);
+ # else
+diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+index 8601f0d..dc6381d 100644
+--- a/kernel/time/Kconfig
++++ b/kernel/time/Kconfig
+@@ -70,6 +70,15 @@ config NO_HZ
+ 	  only trigger on an as-needed basis both when the system is
+ 	  busy and when the system is idle.
+ 
++config NO_HZ_FULL
++       bool "Full tickless system"
++       depends on NO_HZ && RCU_USER_QS && VIRT_CPU_ACCOUNTING_GEN && RCU_NOCB_CPU && SMP
++       select CONTEXT_TRACKING_FORCE
++       help
++         Try to be tickless everywhere, not just in idle. (You need
++	 to fill up the full_nohz_mask boot parameter).
++
++
+ config HIGH_RES_TIMERS
+ 	bool "High Resolution Timer Support"
+ 	depends on !ARCH_USES_GETTIMEOFFSET && GENERIC_CLOCKEVENTS
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index f19e8bf..ab3aa14 100644
+index ad0e6fa..fac9ba4 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -118,8 +118,10 @@ static void tick_sched_do_timer(ktime_t now)
- #endif
- 
- 	/* Check, if the jiffies need an update */
--	if (tick_do_timer_cpu == cpu)
-+	if (tick_do_timer_cpu == cpu) {
-+		trace_printk("do timekeeping\n");
- 		tick_do_update_jiffies64(now);
-+	}
+@@ -142,6 +142,29 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ 	profile_tick(CPU_PROFILING);
  }
  
- static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
++#ifdef CONFIG_NO_HZ_FULL
++static cpumask_var_t full_nohz_mask;
++bool have_full_nohz_mask;
++
++int tick_nohz_full_cpu(int cpu)
++{
++	if (!have_full_nohz_mask)
++		return 0;
++
++	return cpumask_test_cpu(cpu, full_nohz_mask);
++}
++
++/* Parse the boot-time nohz CPU list from the kernel parameters. */
++static int __init tick_nohz_full_setup(char *str)
++{
++	alloc_bootmem_cpumask_var(&full_nohz_mask);
++	have_full_nohz_mask = true;
++	cpulist_parse(str, full_nohz_mask);
++	return 1;
++}
++__setup("full_nohz=", tick_nohz_full_setup);
++#endif
++
+ /*
+  * NOHZ - aka dynamic tick functionality
+  */
 -- 
 1.7.5.4
 
