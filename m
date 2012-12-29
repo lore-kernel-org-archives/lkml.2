@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752850Ab2L2MDX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 07:03:23 -0500
-Received: from antcom.de ([188.40.178.216]:59678 "EHLO chuck.antcom.de"
+	id S1752829Ab2L2MLe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 07:11:34 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:39538 "EHLO mxout2.iskon.hr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab2L2MDV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 07:03:21 -0500
-Message-ID: <50DEDB99.5080701@antcom.de>
-Date: Sat, 29 Dec 2012 13:01:29 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1752099Ab2L2MLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 07:11:33 -0500
+X-Remote-IP: 213.191.128.133
+Date: Sat, 29 Dec 2012 13:11:28 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
-        tru@work-microwave.de, mark.rutland@arm.com
-Subject: Re: [PATCH 0/6 v12] gpio: Add block GPIO
-References: <1356281376-25853-1-git-send-email-stigge@antcom.de> <20121229102017.GA7360@game.jcrosoft.org>
-In-Reply-To: <20121229102017.GA7360@game.jcrosoft.org>
-X-Enigmail-Version: 1.4.1
-Content-Type: text/plain; charset=UTF-8
+To: Hillf Danton <dhillf@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <50D24AF3.1050809@iskon.hr> <50D24CD9.8070507@iskon.hr> <CAJd=RBCQN1GxOUCwGPXL27d_q8hv50uHK5LhDnsv7mdv_2Usaw@mail.gmail.com> <50DC6C6F.6050703@iskon.hr> <CAJd=RBB0bwyjoMc5yt5SfgxCt3JcLUo8Fiz1r3oQ0RRhE1i59w@mail.gmail.com>
+In-Reply-To: <CAJd=RBB0bwyjoMc5yt5SfgxCt3JcLUo8Fiz1r3oQ0RRhE1i59w@mail.gmail.com>
+Message-ID: <50DEDDF0.8090405@iskon.hr>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] mm: do not sleep in balance_pgdat if there's no i/o congestion
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20121229 #8920896, check: 20121229 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 40846 [Dec 29 2012]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 29/12/12 11:20, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 17:49 Sun 23 Dec     , Roland Stigge wrote:
->> This set of patches adds:
+On 29.12.2012 08:25, Hillf Danton wrote:
+> On Thu, Dec 27, 2012 at 11:42 PM, Zlatko Calusic
+> <zlatko.calusic@iskon.hr> wrote:
+>> On 21.12.2012 12:51, Hillf Danton wrote:
+>>>
+>>> On Thu, Dec 20, 2012 at 7:25 AM, Zlatko Calusic <zlatko.calusic@iskon.hr>
+>>> wrote:
+>>>>
+>>>>    static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
+>>>>                                                           int
+>>>> *classzone_idx)
+>>>>    {
+>>>> -       int all_zones_ok;
+>>>> +       struct zone *unbalanced_zone;
+>>>
+>>>
+>>> nit: less hunks if not erase that mark
+>>>
+>>> Hillf
 >>
->> * Block GPIO API to gpiolib
->> * Sysfs support for GPIO API, to provide userland access
->> * Device interface for userland access (alternative to sysfs)
->> * Devicetree support to instantiate GPIO blocks via DT
->> * Example implementations in several gpio drivers since they need
->>   special accessor functions for block wise GPIO access (only for some
->>   selected drivers since the feature is optional and not suitable for
->>   all GPIO hardware)
->> * Fix for race condition in gpiolib on device creation
 >>
->> Signed-off-by: Roland Stigge <stigge@antcom.de>
->> Tested by: Wolfgang Grandegger <wg@grandegger.com>
->> --
+>> This one left unanswered and forgotten because I didn't understand what you
+>> meant. Could you elaborate?
 >>
->> Testing branch available at: git://git.antcom.de/linux-2.6.git blockgpio
->>
->> Changes since v11:
->> * Removed support for at91, since this one is currently in the migration
->>   process to pinctrl implementation
-> already done for 3.8
-> 
-> in Linus tree
+> Sure, the patch looks simpler(and nicer) if we dont
+> erase all_zones_ok.
+>
 
-Good, thanks for the note! So we include support for block GPIO in
-pinctrl-at91.c now.
+Ah, yes. I gave it a good thought. But, when I introduced 
+unbalanced_zone it just didn't make much sense to me to have two 
+variables with very similar meaning. If I decided to keep all_zones_ok, 
+it would be either:
 
-I guess the redundant code in arch/arm/mach-at91/gpio.c will be removed?
+all_zones_ok = true
+unbalanced_zone = NULL
+(meaning: if no zone in unbalanced, then all zones must be ok)
 
-Thanks,
+or
 
-Roland
+all_zones_ok = false
+unbalanced_zone = struct zone *
+(meaning: if there's an unbalanced zone, then certainly not all zones 
+are ok)
+
+So I decided to use only unbalanced_zone (because I had to!), and remove 
+all_zones_ok to avoid redundancy. I hope it makes sense.
+
+If you check my latest (and still queued) optimization (mm: avoid 
+calling pgdat_balanced() needlessly), there again popped up a need for a 
+boolean, but I called it pgdat_is_balanced this time, just to match the 
+name of two other functions. It could've also been called all_zones_ok 
+if you prefer the name? Of course, I have no strong feelings about the 
+name, both are OK, so if you want me to redo the patch, just say.
+
+Generally speaking, while I always attempt to make a smaller patch (less 
+hunks and less changes = easier to review), before that I'll always try 
+to make the code that results from the commit cleaner, simpler, more 
+readable.
+
+For example, I'll always check that I don't mess with whitespace 
+needlessly, unless I think it's actually desirable, here's just one example:
+
+"mm: avoid calling pgdat_balanced() needlessly" changes
+
+---
+         } while (--sc.priority >= 0);
+out:
+
+         if (!pgdat_balanced(pgdat, order, *classzone_idx)) {
+---
+
+to
+
+---
+         } while (--sc.priority >= 0);
+
+out:
+         if (!pgdat_is_balanced) {
+---
+
+because I find the latter more correct place for the label "out".
+
+Thanks for the comment.
+-- 
+Zlatko
