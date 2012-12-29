@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753749Ab2L2Qo3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 11:44:29 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62142 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab2L2QoS (ORCPT
+	id S1753828Ab2L2QpM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 11:45:12 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:62481 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753277Ab2L2QoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 11:44:18 -0500
+	Sat, 29 Dec 2012 11:44:11 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 27/27] timer: Don't run non-pinned timer to full dynticks CPUs
-Date: Sat, 29 Dec 2012 17:43:06 +0100
-Message-Id: <1356799386-4212-28-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 24/27] nohz: Add some tracing
+Date: Sat, 29 Dec 2012 17:43:03 +0100
+Message-Id: <1356799386-4212-25-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
 References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
@@ -31,20 +31,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While trying to find a target for a non-pinned timer, use
-the following logic:
+Not for merge, just for debugging.
 
-- Use the closest (from a sched domain POV) busy CPU that
-is not full dynticks
-
-- If none, use the closest idle CPU that is not full dynticks.
-
-So this is biased toward isolation over powersaving. This is
-a quick hack until we provide a way for the user to tune that
-policy. A CPU mask affinity for non pinned timers could be such
-a solution.
-
-Original-patch-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
@@ -60,89 +48,73 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/hrtimer.c    |    3 ++-
- kernel/sched/core.c |   26 +++++++++++++++++++++++---
- kernel/timer.c      |    3 ++-
- 3 files changed, 27 insertions(+), 5 deletions(-)
+ kernel/time/tick-sched.c |   27 ++++++++++++++++++++++-----
+ 1 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 6db7a5e..f5da6fb 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -159,7 +159,8 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
- static int hrtimer_get_target(int this_cpu, int pinned)
- {
- #ifdef CONFIG_NO_HZ
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
-+	if (!pinned && get_sysctl_timer_migration() &&
-+	    (idle_cpu(this_cpu) || tick_nohz_full_cpu(this_cpu)))
- 		return get_nohz_timer_target();
- #endif
- 	return this_cpu;
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 7b6156a..e2884c5 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -560,22 +560,42 @@ void resched_cpu(int cpu)
-  */
- int get_nohz_timer_target(void)
- {
--	int cpu = smp_processor_id();
- 	int i;
- 	struct sched_domain *sd;
-+	int cpu = smp_processor_id();
-+	int target = -1;
- 
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		for_each_cpu(i, sched_domain_span(sd)) {
-+			/*
-+			 * This is biased toward CPU isolation usecase:
-+			 * try to migrate the timer to a busy non-full-nohz
-+			 * CPU. If there is none, then prefer an idle CPU
-+			 * than a full nohz one.
-+			 * We shouldn't do policy here (isolation VS powersaving)
-+			 * so this is a temporary hack. Being able to affine
-+			 * non-pinned timers would be a better thing.
-+			 */
-+			if (tick_nohz_full_cpu(i))
-+				continue;
-+
- 			if (!idle_cpu(i)) {
--				cpu = i;
-+				target = i;
- 				goto unlock;
- 			}
-+
-+			if (target == -1)
-+				target = i;
- 		}
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index eb6ad3d..0e1ebff 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -142,6 +142,7 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ 			ts->idle_jiffies++;
  	}
-+	/* Fallback in case of NULL domain */
-+	if (target == -1)
-+		target = cpu;
- unlock:
- 	rcu_read_unlock();
--	return cpu;
-+
-+	return target;
- }
- /*
-  * When add_timer_on() enqueues a timer into the timer wheel of an
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 970b57d..51dd02b 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -738,7 +738,8 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
- 	cpu = smp_processor_id();
- 
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
-+	if (!pinned && get_sysctl_timer_migration() &&
-+	    (idle_cpu(cpu) || tick_nohz_full_cpu(cpu)))
- 		cpu = get_nohz_timer_target();
  #endif
- 	new_base = per_cpu(tvec_bases, cpu);
++	trace_printk("tick\n");
+ 	update_process_times(user_mode(regs));
+ 	profile_tick(CPU_PROFILING);
+ }
+@@ -591,17 +592,30 @@ void tick_nohz_idle_enter(void)
+ #ifdef CONFIG_NO_HZ_FULL
+ static bool can_stop_full_tick(int cpu)
+ {
+-	if (!sched_can_stop_tick())
++	if (!sched_can_stop_tick()) {
++		trace_printk("Can't stop: sched\n");
+ 		return false;
++	}
+ 
+-	if (!rcu_is_nocb_cpu(cpu))
++	if (!rcu_is_nocb_cpu(cpu)) {
++		trace_printk("Can't stop: not RCU nocb\n");
+ 		return false;
++	}
+ 
+-	if (rcu_pending(cpu))
++	/*
++	 * Keep the tick if we are asked to report a quiescent state.
++	 * This must be further optimized (avoid checks for local callbacks,
++	 * ignore RCU in userspace, etc...
++	 */
++	if (rcu_pending(cpu)) {
++		trace_printk("Can't stop: RCU pending\n");
+ 		return false;
++	}
+ 
+-	if (posix_cpu_timers_running(current))
++	if (posix_cpu_timers_running(current)) {
++		trace_printk("Can't stop: posix CPU timers running\n");
+ 		return false;
++	}
+ 
+ 	return true;
+ }
+@@ -615,12 +629,15 @@ static void tick_nohz_full_stop_tick(struct tick_sched *ts)
+ 	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
+ 		return;
+ 
+-	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
++	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE) {
++		trace_printk("Can't stop: NOHZ_MODE_INACTIVE\n");
+ 		return;
++	}
+ 
+ 	if (!can_stop_full_tick(cpu))
+ 		return;
+ 
++	trace_printk("Stop tick\n");
+ 	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
+ #endif
+ }
 -- 
 1.7.5.4
 
