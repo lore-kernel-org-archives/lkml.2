@@ -1,97 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab2L2KPW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 05:15:22 -0500
-Received: from mout.web.de ([212.227.17.11]:55679 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab2L2KPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 05:15:04 -0500
-From: Daniel Schaal <farbing@web.de>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Daniel Schaal <farbing@web.de>
-Subject: [PATCH] Bluetooth: Add support for GC-WB300D PCIe [04ca:3006] to ath3k.
-Date: Sat, 29 Dec 2012 11:14:34 +0100
-Message-Id: <1356776074-1703-2-git-send-email-farbing@web.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1356776074-1703-1-git-send-email-farbing@web.de>
-References: <1356776074-1703-1-git-send-email-farbing@web.de>
-X-Provags-ID: V02:K0:D+B4rmE9oFqyS9k5fWVODlErOR5BUqW2b3qmtQoZlob
- F/POW2cgbfD8vchk+f0GWMHlu1Qg3YYeJbc1F2pZ3PxHM/08e9
- htzyO4XAuJLneJe34YMBpxUXFpsGRztyNt8y/FOL95Y+gi6/a4
- 2s3Xm+sJ0ykFMFjcbQd/jB99tEfUEOHCYseUkz5ORpcm7lXeio
- MUG5Vk0YNAPVLhWNQ7kbw==
+	id S1752676Ab2L2K1d (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 05:27:33 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:54250 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752441Ab2L2K1b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 05:27:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <1356549008.20133.20856.camel@edumazet-glaptop>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+	<20121221185147.4ae48ab5@annuminas.surriel.com>
+	<20121221185613.1f4c9523@annuminas.surriel.com>
+	<20121222033339.GF27621@home.goodmis.org>
+	<50D52E0C.6000103@redhat.com>
+	<1356549008.20133.20856.camel@edumazet-glaptop>
+Date: Sat, 29 Dec 2012 02:27:29 -0800
+Message-ID: <CANN689HBx357M+7ge3SQ_xtnyiTKPY=1v0oR+DS9EBiak-2BQg@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay factor
+From: Michel Lespinasse <walken@google.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        linux-kernel@vger.kernel.org, aquini@redhat.com, lwoodman@redhat.com,
+        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tom Herbert <therbert@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-T:  Bus=02 Lev=02 Prnt=02 Port=06 Cnt=01 Dev#=  4 Spd=12   MxCh= 0
-D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=04ca ProdID=3006 Rev= 0.02
-C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
-E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
-I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
-I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
-I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
-I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
-I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
-I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
-E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+On Wed, Dec 26, 2012 at 11:10 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> I did some tests with your patches with following configuration :
+>
+> tc qdisc add dev eth0 root htb r2q 1000 default 3
+> (to force a contention on qdisc lock, even with a multi queue net
+> device)
+>
+> and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m 128"
+>
+> Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
+> (24 threads), and a fast NIC (10Gbps)
+>
+> Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
 
-Signed-off-by: Daniel Schaal <farbing@web.de>
----
- drivers/bluetooth/ath3k.c |    2 ++
- drivers/bluetooth/btusb.c |    1 +
- 2 files changed, 3 insertions(+)
+I've been trying to use this workload on a similar machine. I am
+getting some confusing results however:
 
-diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-index b00000e..d936c5d 100644
---- a/drivers/bluetooth/ath3k.c
-+++ b/drivers/bluetooth/ath3k.c
-@@ -77,6 +77,7 @@ static struct usb_device_id ath3k_table[] = {
- 	{ USB_DEVICE(0x0CF3, 0x311D) },
- 	{ USB_DEVICE(0x13d3, 0x3375) },
- 	{ USB_DEVICE(0x04CA, 0x3005) },
-+	{ USB_DEVICE(0x04CA, 0x3006) },
- 	{ USB_DEVICE(0x13d3, 0x3362) },
- 	{ USB_DEVICE(0x0CF3, 0xE004) },
- 	{ USB_DEVICE(0x0930, 0x0219) },
-@@ -104,6 +105,7 @@ static struct usb_device_id ath3k_blist_tbl[] = {
- 	{ USB_DEVICE(0x0cf3, 0x311D), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index a1d4ede..3252792 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -135,6 +135,7 @@ static struct usb_device_id blacklist_table[] = {
- 	{ USB_DEVICE(0x0cf3, 0x311d), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3375), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x04ca, 0x3005), .driver_info = BTUSB_ATH3012 },
-+	{ USB_DEVICE(0x04ca, 0x3006), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x13d3, 0x3362), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0cf3, 0xe004), .driver_info = BTUSB_ATH3012 },
- 	{ USB_DEVICE(0x0930, 0x0219), .driver_info = BTUSB_ATH3012 },
+with 24 concurrent netperf -t UDP_STREAM -H $target -- -m 128 -R 1 , I
+am seeing some non-trivial run-to-run performance variation - about 5%
+in v3.7 baseline, but very significant after applying rik's 3 patches.
+my last few runs gave me results of 890.92, 1073.74, 963.13, 1234.41,
+754.18, 893.82. This is generally better than what I'm getting with
+baseline, but the variance is huge (which is somewhat surprising given
+that rik's patches don't have the issue of hash collisions). Also,
+this is significant in that I am not seeing the regression you were
+observing with just these 3 patches.
+
+If I add a 1 second delay in the netperf command line (netperf -t
+UDP_STREAM -s 1 -H lpk18 -- -m 128 -R 1), I am seeing a very constant
+660 Mbps result, but then I don't see any benefit from applying rik's
+patches. I have no explanation for these results, but I am getting
+them very consistently...
+
+> In this workload we have at least two contended spinlocks, with
+> different delays. (spinlocks are not held for the same duration)
+
+Just to confirm, I believe you are refering to qdisc->q.lock and
+qdisc->busylock ?
+
 -- 
-1.7.10.4
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
