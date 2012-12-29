@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab2L2OL7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 09:11:59 -0500
-Received: from antcom.de ([188.40.178.216]:50375 "EHLO chuck.antcom.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab2L2OL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 09:11:58 -0500
-Message-ID: <50DEF9BF.6020301@antcom.de>
-Date: Sat, 29 Dec 2012 15:10:07 +0100
-From: Roland Stigge <stigge@antcom.de>
-Organization: ANTCOM Open Source Research and Development
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121122 Icedove/10.0.11
+	id S1752652Ab2L2P05 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 10:26:57 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:46893 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070Ab2L2P0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 10:26:53 -0500
+From: Emil Goode <emilgoode@gmail.com>
+To: gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
+        krzysztof.wilczynski@linux.com, devendra.aaru@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, Emil Goode <emilgoode@gmail.com>
+Subject: [PATCH] Staging: wlan-ng: Add missing argument
+Date: Sat, 29 Dec 2012 16:27:17 +0100
+Message-Id: <1356794837-14631-1-git-send-email-emilgoode@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, w.sang@pengutronix.de,
-        jbe@pengutronix.de, highguy@gmail.com,
-        broonie@opensource.wolfsonmicro.com, daniel-gl@gmx.net,
-        rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
-        tru@work-microwave.de, mark.rutland@arm.com
-Subject: Re: [PATCH 0/6 v12] gpio: Add block GPIO
-References: <1356281376-25853-1-git-send-email-stigge@antcom.de> <20121229102017.GA7360@game.jcrosoft.org> <50DEDB99.5080701@antcom.de> <20121229121356.GB7360@game.jcrosoft.org>
-In-Reply-To: <20121229121356.GB7360@game.jcrosoft.org>
-X-Enigmail-Version: 1.4.1
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/12/12 13:13, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> On 13:01 Sat 29 Dec     , Roland Stigge wrote:
->> On 29/12/12 11:20, Jean-Christophe PLAGNIOL-VILLARD wrote:
->>> On 17:49 Sun 23 Dec     , Roland Stigge wrote:
->>>> This set of patches adds:
->>>>
->>>> * Block GPIO API to gpiolib
->>>> * Sysfs support for GPIO API, to provide userland access
->>>> * Device interface for userland access (alternative to sysfs)
->>>> * Devicetree support to instantiate GPIO blocks via DT
->>>> * Example implementations in several gpio drivers since they need
->>>>   special accessor functions for block wise GPIO access (only for some
->>>>   selected drivers since the feature is optional and not suitable for
->>>>   all GPIO hardware)
->>>> * Fix for race condition in gpiolib on device creation
->>>>
->>>> Signed-off-by: Roland Stigge <stigge@antcom.de>
->>>> Tested by: Wolfgang Grandegger <wg@grandegger.com>
->>>> --
->>>>
->>>> Testing branch available at: git://git.antcom.de/linux-2.6.git blockgpio
->>>>
->>>> Changes since v11:
->>>> * Removed support for at91, since this one is currently in the migration
->>>>   process to pinctrl implementation
->>> already done for 3.8
->>>
->>> in Linus tree
->>
->> Good, thanks for the note! So we include support for block GPIO in
->> pinctrl-at91.c now.
->>
->> I guess the redundant code in arch/arm/mach-at91/gpio.c will be removed?
-> no we keep for non DT platform
+The commit c8442118 introduced a struct wireless_dev pointer
+as a second argument of the function pointers set_tx_power
+and get_tx_power. This patch adds the missing arguments for
+the wlan-ng driver.
 
-So would it be helpful it to maintain/mainline Wolfgang's patch for this
-one regarding block GPIO? (Besides patching pinctrl-at91.c?)
+Sparse warnings:
 
-Thanks,
+drivers/staging/wlan-ng/cfg80211.c:735:25: warning:
+	incorrect type in initializer (incompatible argument 2
+	(different base types))
+	drivers/staging/wlan-ng/cfg80211.c:735:25:
+	expected int ( *set_tx_power )( ... )
+	drivers/staging/wlan-ng/cfg80211.c:735:25:
+	got int ( extern [toplevel] *<noident> )( ... )
 
-Roland
+drivers/staging/wlan-ng/cfg80211.c:736:25: warning:
+	incorrect type in initializer (incompatible argument 2
+	(different base types))
+	drivers/staging/wlan-ng/cfg80211.c:736:25:
+	expected int ( *get_tx_power )( ... )
+	drivers/staging/wlan-ng/cfg80211.c:736:25:
+	got int ( extern [toplevel] *<noident> )( ... )
+
+drivers/staging/wlan-ng/cfg80211.c:735:2: warning:
+	initialization from incompatible pointer type [enabled by default]
+
+drivers/staging/wlan-ng/cfg80211.c:735:2: warning:
+	(near initialization for ‘prism2_usb_cfg_ops.set_tx_power’)
+	[enabled by default]
+
+drivers/staging/wlan-ng/cfg80211.c:736:2: warning:
+	initialization from incompatible pointer type [enabled by default]
+
+drivers/staging/wlan-ng/cfg80211.c:736:2: warning:
+	(near initialization for ‘prism2_usb_cfg_ops.get_tx_power’)
+	[enabled by default]
+
+Signed-off-by: Emil Goode <emilgoode@gmail.com>
+---
+ drivers/staging/wlan-ng/cfg80211.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/wlan-ng/cfg80211.c b/drivers/staging/wlan-ng/cfg80211.c
+index 18c06a5..1d31eab 100644
+--- a/drivers/staging/wlan-ng/cfg80211.c
++++ b/drivers/staging/wlan-ng/cfg80211.c
+@@ -638,8 +638,8 @@ int prism2_leave_ibss(struct wiphy *wiphy, struct net_device *dev)
+ }
+ 
+ 
+-int prism2_set_tx_power(struct wiphy *wiphy, enum nl80211_tx_power_setting type,
+-			int mbm)
++int prism2_set_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
++			enum nl80211_tx_power_setting type, int mbm)
+ {
+ 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
+ 	wlandevice_t *wlandev = priv->wlandev;
+@@ -665,7 +665,8 @@ exit:
+ 	return err;
+ }
+ 
+-int prism2_get_tx_power(struct wiphy *wiphy, int *dbm)
++int prism2_get_tx_power(struct wiphy *wiphy, struct wireless_dev *wdev,
++			int *dbm)
+ {
+ 	struct prism2_wiphy_private *priv = wiphy_priv(wiphy);
+ 	wlandevice_t *wlandev = priv->wlandev;
+-- 
+1.7.10.4
+
