@@ -1,74 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab2L2UI7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 15:08:59 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:54351 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752748Ab2L2UI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 15:08:58 -0500
-Message-ID: <1356811734.16149.1.camel@joe-AO722>
-Subject: Re: [PATCH] printk: Fix incorrect length from print_time() when
- seconds > 99999
-From: Joe Perches <joe@perches.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sylvain Munaut <s.munaut@whatever-company.com>
-Cc: Roland Dreier <roland@kernel.org>, Kay Sievers <kay@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Roland Dreier <roland@purestorage.com>
-Date: Sat, 29 Dec 2012 12:08:54 -0800
-In-Reply-To: <20121229175625.GA1963@kroah.com>
-References: <1356754984-13917-1-git-send-email-roland@kernel.org>
-	 <20121229175625.GA1963@kroah.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753246Ab2L2UKT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 15:10:19 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:38287 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752748Ab2L2UKQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 15:10:16 -0500
+X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Dec 2012 15:10:16 EST
+MIME-Version: 1.0
+From: Tim Hockin <thockin@hockin.org>
+Date: Sat, 29 Dec 2012 12:03:13 -0800
+X-Google-Sender-Auth: ibWXtdoP4iI7rtpC7iRT4odporU
+Message-ID: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
+Subject: kernel panic on resume from S3 - stumped
+To: linux-kernel@vger.kernel.org
+Cc: rjw@sisk.pl, Pavel Machek <pavel@ucw.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-29 at 09:56 -0800, Greg Kroah-Hartman wrote:
-> On Fri, Dec 28, 2012 at 08:23:04PM -0800, Roland Dreier wrote:
-> > From: Roland Dreier <roland@purestorage.com>
-> > 
-> > print_prefix() passes a NULL buf to print_time() to get the length of
-> > the time prefix; when printk times are enabled, the current code just
-> > returns the constant 15, which matches the format "[%5lu.%06lu] " used
-> > to print the time value.  However, this is obviously incorrect when
-> > the whole seconds part of the time gets beyond 5 digits (100000
-> > seconds is a bit more than a day of uptime).
-> > 
-> > The simple fix is to use snprintf(NULL, 0, ...) to calculate the
-> > actual length of the time prefix.  This could be micro-optimized but
-> > it seems better to have simpler, more readable code here.
-> > 
-> > The bug leads to the syslog system call miscomputing which messages
-> > fit into the userspace buffer.  If there are enough messages to fill
-> > log_buf_len and some have a timestamp >= 100000, dmesg may fail with:
-> > 
-> >     # dmesg
-> >     klogctl: Bad address
-> > 
-> > When this happens, strace shows that the failure is indeed EFAULT due
-> > to the kernel mistakenly accessing past the end of dmesg's buffer,
-> > since dmesg asks the kernel how big a buffer it needs, allocates a bit
-> > more, and then gets an error when it asks the kernel to fill it:
-> > 
-> >     syslog(0xa, 0, 0)                       = 1048576
-> >     mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fa4d25d2000
-> >     syslog(0x3, 0x7fa4d25d2010, 0x100008)   = -1 EFAULT (Bad address)
-> > 
-> > Signed-off-by: Roland Dreier <roland@purestorage.com>
-> 
-> Nice work.  When did you start seeing this problem, 3.6 or so?  I ask as
-> it's probably something that should go to stable as well if so.
-> 
-> Andrew seems to be keeping the printk patches these days, so I'll let
-> him pick this up with:
+4 days ago I had Ubuntu Lucid running on this computer. Suspend and
+resume worked flawlessly every time.
 
-Sylvan Munaut did something similar
-https://lkml.org/lkml/2012/12/5/168
+Then I upgraded to Ubuntu Precise. Suspend seems to work, but resume
+fails every time. The video never initializes.  By the flashing
+keyboard lights, I guess it's a kernel panic. It fails from the Live
+CD and from a fresh install.
 
-It's been around quite awhile.
+Here is my debug so far.
 
+Install all updates (3.2 kernel, nouveau driver)
+Reboot
+Try suspend = fails
 
+Install Ubuntu's linux-generic-lts-quantal (3.5 kernel, nouveau driver)
+Reboot
+Try suspend = fails
+
+Install nVidia's 304 driver
+Reboot
+Try suspend = fails
+
+>From within X:
+  echo core > /sys/power/pm_test
+  echo mem > /sys/power/state
+The system acts like it is going to sleep, and then wakes up a few
+seconds later. dmesg shows:
+
+[ 1230.083404] ------------[ cut here ]------------
+[ 1230.083410] WARNING: at
+/build/buildd/linux-lts-quantal-3.5.0/kernel/power/suspend_test.c:53
+suspend_test_finish+0x86/0x90()
+[ 1230.083411] Hardware name: To Be Filled By O.E.M.
+[ 1230.083412] Component: resume devices, time: 14424
+[ 1230.083412] Modules linked in: snd_emu10k1_synth snd_emux_synth
+snd_seq_virmidi snd_seq_midi_emul bnep rfcomm parport_pc ppdev
+nvidia(PO) snd_emu10k1 snd_ac97_codec ac97_bus snd_pcm snd_page_alloc
+snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event
+snd_seq snd_timer coretemp snd_seq_device kvm_intel kvm snd
+ghash_clmulni_intel soundcore aesni_intel btusb cryptd aes_x86_64
+bluetooth i7core_edac edac_core microcode mac_hid lpc_ich mxm_wmi
+shpchp serio_raw wmi hid_generic lp parport usbhid hid r8169
+pata_marvell
+[ 1230.083445] Pid: 3329, comm: bash Tainted: P O 3.5.0-21-generic
+#32~precise1-Ubuntu
+[ 1230.083446] Call Trace:
+[ 1230.083448] [<ffffffff81052c9f>] warn_slowpath_common+0x7f/0xc0
+[ 1230.083452] [<ffffffff81052d96>] warn_slowpath_fmt+0x46/0x50
+[ 1230.083455] [<ffffffff8109b836>] suspend_test_finish+0x86/0x90
+[ 1230.083457] [<ffffffff8109b53b>] suspend_devices_and_enter+0x10b/0x200
+[ 1230.083460] [<ffffffff8109b701>] enter_state+0xd1/0x100
+[ 1230.083463] [<ffffffff8109b74b>] pm_suspend+0x1b/0x60
+[ 1230.083465] [<ffffffff8109a7a5>] state_store+0x45/0x70
+[ 1230.083467] [<ffffffff81331d2f>] kobj_attr_store+0xf/0x30
+[ 1230.083471] [<ffffffff811f77ff>] sysfs_write_file+0xef/0x170
+[ 1230.083476] [<ffffffff811879d3>] vfs_write+0xb3/0x180
+[ 1230.083480] [<ffffffff81187cfa>] sys_write+0x4a/0x90
+[ 1230.083483] [<ffffffff816a6e69>] system_call_fastpath+0x16/0x1b
+[ 1230.083488] ---[ end trace 839cdd0078b3ce03 ]---
+
+Boot with init=/bin/bash
+unload all modules except USBHID
+echo core > /sys/power/pm_test
+echo mem > /sys/power/state
+system acts like it is going to sleep, and then wakes up a few seconds later
+echo none > /sys/power/pm_test
+echo mem > /sys/power/state
+system goes to sleep
+press power to resume = fails
+
+At this point I am stumped on how to debug. This is a "modern"
+computer with no serial ports. It worked under Lucid, so I know it is
+POSSIBLE.
+
+Mobo: ASRock X58 single-socket
+CPU: Westmere 6 core (12 hyperthreads) 3.2 GHz
+RAM: 12 GB ECC
+Disk: sda = Intel SSD, mounted on /
+Disk: sdb = Intel SSD, not mounted
+Disk: sdc = Seagate HDD, not mounted
+Disk: sdd = Seagate HDD, not mounted
+NIC = Onboard RTL8168e/8111e
+Sound = EMU1212 (emu10k1, not even configured yet)
+Video = nVidia GeForce 7600 GT
+KB = PS2 (also tried USB)
+Mouse = USB
+
+I have not updated to a more current kernel than 3.5, but I will if
+there's evidence that this is resolved.  Any other clever trick to
+try?
+
+Tim
