@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060Ab2L2GjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 01:39:09 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55986 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751929Ab2L2GjH (ORCPT
+	id S1752128Ab2L2HWR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 02:22:17 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:47966 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab2L2HWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 01:39:07 -0500
-Date: Fri, 28 Dec 2012 22:39:13 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>, Shawn Guo <shawn.guo@linaro.org>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/9] ARM: dt: tegra114: Add new SoC base, Tegra 114 SoC
-Message-ID: <20121229063913.GA13620@quad.lixom.net>
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
- <1355996654-6579-7-git-send-email-hdoyu@nvidia.com>
+	Sat, 29 Dec 2012 02:22:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355996654-6579-7-git-send-email-hdoyu@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50DC7287.1080302@yahoo.ca>
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
+	<535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+	<CAJd=RBB9Tqv9c_Wv+N8yJOftfkJeUS10vLuz14eoLH1eEtjmBQ@mail.gmail.com>
+	<50DC7287.1080302@yahoo.ca>
+Date: Sat, 29 Dec 2012 15:22:14 +0800
+Message-ID: <CAJd=RBB-Q21KDiNqWV6+2-e8+t=Udirsrv50A+_KAPg2mrywOg@mail.gmail.com>
+Subject: Re: kernel BUG at mm/huge_memory.c:1798!
+From: Hillf Danton <dhillf@gmail.com>
+To: Alex Xu <alex_y_xu@yahoo.ca>
+Cc: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, mgorman@suse.de,
+        hughd@google.com, Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 11:44:04AM +0200, Hiroshi Doyu wrote:
-> Initial support for Tegra 114 SoC. This is expected to be included in
-> the board DTS files, Tegra 114 SoC based evaluation board family.
-> 
-> Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
+On Fri, Dec 28, 2012 at 12:08 AM, Alex Xu <alex_y_xu@yahoo.ca> wrote:
+> On 25/12/12 07:05 AM, Hillf Danton wrote:
+>> On Tue, Dec 25, 2012 at 12:38 PM, Zhouping Liu <zliu@redhat.com> wrote:
+>>> Hello all,
+>>>
+>>> I found the below kernel bug using latest mainline(637704cbc95),
+>>> my hardware has 2 numa nodes, and it's easy to reproduce the issue
+>>> using LTP test case: "# ./mmap10 -a -s -c 200":
+>>
+>> Can you test with 5a505085f0 and 4fc3f1d66b1 reverted?
+>>
+>> Hillf
+>>
+>
+> (for people from mailing lists, please cc me when replying)
+>
+> Same thing?
 
-Hi,
+Yes and thank you very much for reporting it.
 
-I think it could be a good idea to start documenting the cpu configuration in
-the device tree on some of these larger platforms as well, i.e. include a cpus/
-hierarchy. Would you mind adding those, please?
-
-It would give you the flexibility of switching over to using device
-tree to probe the number of cpus in case the platform grows yet another
-way to figure out the number of cores in the future, without having to
-update the device-trees at that time. :)
-
-
--Olof
+Hillf
+>
+> mapcount 0 page_mapcount 1
+> ------------[ cut here ]------------
+> kernel BUG at mm/huge_memory.c:1798!
