@@ -1,226 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab2L2T52 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 14:57:28 -0500
-Received: from mail-wg0-f74.google.com ([74.125.82.74]:44261 "EHLO
-	mail-wg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752472Ab2L2T5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 14:57:24 -0500
-From: David Decotigny <decot@googlers.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S1753224Ab2L2UI7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 15:08:59 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:54351 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752748Ab2L2UI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 15:08:58 -0500
+Message-ID: <1356811734.16149.1.camel@joe-AO722>
+Subject: Re: [PATCH] printk: Fix incorrect length from print_time() when
+ seconds > 99999
+From: Joe Perches <joe@perches.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sylvain Munaut <s.munaut@whatever-company.com>
+Cc: Roland Dreier <roland@kernel.org>, Kay Sievers <kay@vrfy.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@joshtriplett.org>,
-        David Howells <dhowells@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        David Decotigny <decot@googlers.com>
-Subject: [PATCH v3] lib: cpu_rmap: avoid flushing all workqueues
-Date: Sat, 29 Dec 2012 11:57:09 -0800
-Message-Id: <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
-X-Mailer: git-send-email 1.7.10.2.5.g20d7bc9
-In-Reply-To: <cover.1356810877.git.decot@googlers.com>
-References: <cover.1356810877.git.decot@googlers.com>
-Organization: Google, Inc.
+        linux-kernel@vger.kernel.org, Roland Dreier <roland@purestorage.com>
+Date: Sat, 29 Dec 2012 12:08:54 -0800
+In-Reply-To: <20121229175625.GA1963@kroah.com>
+References: <1356754984-13917-1-git-send-email-roland@kernel.org>
+	 <20121229175625.GA1963@kroah.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In some cases, free_irq_cpu_rmap() is called while holding a lock
-(eg. rtnl). This can lead to deadlocks, because it invokes
-flush_scheduled_work() which ends up waiting for whole system
-workqueue to flush, but some pending works might try to acquire the
-lock we are already holding.
+On Sat, 2012-12-29 at 09:56 -0800, Greg Kroah-Hartman wrote:
+> On Fri, Dec 28, 2012 at 08:23:04PM -0800, Roland Dreier wrote:
+> > From: Roland Dreier <roland@purestorage.com>
+> > 
+> > print_prefix() passes a NULL buf to print_time() to get the length of
+> > the time prefix; when printk times are enabled, the current code just
+> > returns the constant 15, which matches the format "[%5lu.%06lu] " used
+> > to print the time value.  However, this is obviously incorrect when
+> > the whole seconds part of the time gets beyond 5 digits (100000
+> > seconds is a bit more than a day of uptime).
+> > 
+> > The simple fix is to use snprintf(NULL, 0, ...) to calculate the
+> > actual length of the time prefix.  This could be micro-optimized but
+> > it seems better to have simpler, more readable code here.
+> > 
+> > The bug leads to the syslog system call miscomputing which messages
+> > fit into the userspace buffer.  If there are enough messages to fill
+> > log_buf_len and some have a timestamp >= 100000, dmesg may fail with:
+> > 
+> >     # dmesg
+> >     klogctl: Bad address
+> > 
+> > When this happens, strace shows that the failure is indeed EFAULT due
+> > to the kernel mistakenly accessing past the end of dmesg's buffer,
+> > since dmesg asks the kernel how big a buffer it needs, allocates a bit
+> > more, and then gets an error when it asks the kernel to fill it:
+> > 
+> >     syslog(0xa, 0, 0)                       = 1048576
+> >     mmap(NULL, 1052672, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fa4d25d2000
+> >     syslog(0x3, 0x7fa4d25d2010, 0x100008)   = -1 EFAULT (Bad address)
+> > 
+> > Signed-off-by: Roland Dreier <roland@purestorage.com>
+> 
+> Nice work.  When did you start seeing this problem, 3.6 or so?  I ask as
+> it's probably something that should go to stable as well if so.
+> 
+> Andrew seems to be keeping the printk patches these days, so I'll let
+> him pick this up with:
 
-This commit uses reference-counting to replace
-irq_run_affinity_notifiers(). It also removes
-irq_run_affinity_notifiers() altogether.
+Sylvan Munaut did something similar
+https://lkml.org/lkml/2012/12/5/168
 
-Signed-off-by: David Decotigny <decot@googlers.com>
----
- include/linux/cpu_rmap.h  |   13 ++++-------
- include/linux/interrupt.h |    5 ----
- lib/cpu_rmap.c            |   56 ++++++++++++++++++++++++++++++++++++++++-----
- 3 files changed, 54 insertions(+), 20 deletions(-)
+It's been around quite awhile.
 
-diff --git a/include/linux/cpu_rmap.h b/include/linux/cpu_rmap.h
-index ac3bbb5..3be2813 100644
---- a/include/linux/cpu_rmap.h
-+++ b/include/linux/cpu_rmap.h
-@@ -13,9 +13,11 @@
- #include <linux/cpumask.h>
- #include <linux/gfp.h>
- #include <linux/slab.h>
-+#include <linux/kref.h>
- 
- /**
-  * struct cpu_rmap - CPU affinity reverse-map
-+ * @refcount: kref for object
-  * @size: Number of objects to be reverse-mapped
-  * @used: Number of objects added
-  * @obj: Pointer to array of object pointers
-@@ -23,6 +25,7 @@
-  *      based on affinity masks
-  */
- struct cpu_rmap {
-+	struct kref	refcount;
- 	u16		size, used;
- 	void		**obj;
- 	struct {
-@@ -33,15 +36,7 @@ struct cpu_rmap {
- #define CPU_RMAP_DIST_INF 0xffff
- 
- extern struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags);
--
--/**
-- * free_cpu_rmap - free CPU affinity reverse-map
-- * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
-- */
--static inline void free_cpu_rmap(struct cpu_rmap *rmap)
--{
--	kfree(rmap);
--}
-+extern void free_cpu_rmap(struct cpu_rmap *rmap);
- 
- extern int cpu_rmap_add(struct cpu_rmap *rmap, void *obj);
- extern int cpu_rmap_update(struct cpu_rmap *rmap, u16 index,
-diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
-index 5e4e617..5fa5afe 100644
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -268,11 +268,6 @@ struct irq_affinity_notify {
- extern int
- irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify);
- 
--static inline void irq_run_affinity_notifiers(void)
--{
--	flush_scheduled_work();
--}
--
- #else /* CONFIG_SMP */
- 
- static inline int irq_set_affinity(unsigned int irq, const struct cpumask *m)
-diff --git a/lib/cpu_rmap.c b/lib/cpu_rmap.c
-index 145dec5..adf048c 100644
---- a/lib/cpu_rmap.c
-+++ b/lib/cpu_rmap.c
-@@ -45,6 +45,7 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
- 	if (!rmap)
- 		return NULL;
- 
-+	kref_init(&rmap->refcount);
- 	rmap->obj = (void **)((char *)rmap + obj_offset);
- 
- 	/* Initially assign CPUs to objects on a rota, since we have
-@@ -63,6 +64,35 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
- }
- EXPORT_SYMBOL(alloc_cpu_rmap);
- 
-+/**
-+ * cpu_rmap_reclaim - internal reclaiming helper called from kref_put
-+ * @ref: kref to struct cpu_rmap
-+ */
-+static void cpu_rmap_reclaim(struct kref *ref)
-+{
-+	struct cpu_rmap *rmap = container_of(ref, struct cpu_rmap, refcount);
-+	kfree(rmap);
-+}
-+
-+/**
-+ * cpu_rmap_put - internal helper to release ref on a cpu_rmap
-+ * @rmap: reverse-map allocated with alloc_cpu_rmap()
-+ */
-+static inline void cpu_rmap_put(struct cpu_rmap *rmap)
-+{
-+	kref_put(&rmap->refcount, cpu_rmap_reclaim);
-+}
-+
-+/**
-+ * free_cpu_rmap - free CPU affinity reverse-map
-+ * @rmap: Reverse-map allocated with alloc_cpu_rmap()
-+ */
-+void free_cpu_rmap(struct cpu_rmap *rmap)
-+{
-+	cpu_rmap_put(rmap);
-+}
-+EXPORT_SYMBOL(free_cpu_rmap);
-+
- /* Reevaluate nearest object for given CPU, comparing with the given
-  * neighbours at the given distance.
-  */
-@@ -197,8 +227,7 @@ struct irq_glue {
-  * free_irq_cpu_rmap - free a CPU affinity reverse-map used for IRQs
-  * @rmap: Reverse-map allocated with alloc_irq_cpu_map(), or %NULL
-  *
-- * Must be called in process context, before freeing the IRQs, and
-- * without holding any locks required by global workqueue items.
-+ * Must be called in process context, before freeing the IRQs.
-  */
- void free_irq_cpu_rmap(struct cpu_rmap *rmap)
- {
-@@ -212,12 +241,18 @@ void free_irq_cpu_rmap(struct cpu_rmap *rmap)
- 		glue = rmap->obj[index];
- 		irq_set_affinity_notifier(glue->notify.irq, NULL);
- 	}
--	irq_run_affinity_notifiers();
- 
--	kfree(rmap);
-+	cpu_rmap_put(rmap);
- }
- EXPORT_SYMBOL(free_irq_cpu_rmap);
- 
-+/**
-+ * irq_cpu_rmap_notify - callback for IRQ subsystem when IRQ affinity updated
-+ * @notify: struct irq_affinity_notify passed by irq/manage.c
-+ * @mask: cpu mask for new SMP affinity
-+ *
-+ * This is executed in workqueue context.
-+ */
- static void
- irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
- {
-@@ -230,16 +265,22 @@ irq_cpu_rmap_notify(struct irq_affinity_notify *notify, const cpumask_t *mask)
- 		pr_warning("irq_cpu_rmap_notify: update failed: %d\n", rc);
- }
- 
-+/**
-+ * irq_cpu_rmap_release - reclaiming callback for IRQ subsystem
-+ * @ref: kref to struct irq_affinity_notify passed by irq/manage.c
-+ */
- static void irq_cpu_rmap_release(struct kref *ref)
- {
- 	struct irq_glue *glue =
- 		container_of(ref, struct irq_glue, notify.kref);
-+
-+	cpu_rmap_put(glue->rmap);
- 	kfree(glue);
- }
- 
- /**
-  * irq_cpu_rmap_add - add an IRQ to a CPU affinity reverse-map
-- * @rmap: The reverse-map
-+ * @rmap: The per-IRQ reverse-map
-  * @irq: The IRQ number
-  *
-  * This adds an IRQ affinity notifier that will update the reverse-map
-@@ -259,9 +300,12 @@ int irq_cpu_rmap_add(struct cpu_rmap *rmap, int irq)
- 	glue->notify.release = irq_cpu_rmap_release;
- 	glue->rmap = rmap;
- 	glue->index = cpu_rmap_add(rmap, glue);
-+	kref_get(&rmap->refcount);
- 	rc = irq_set_affinity_notifier(irq, &glue->notify);
--	if (rc)
-+	if (rc) {
-+		cpu_rmap_put(glue->rmap);
- 		kfree(glue);
-+	}
- 	return rc;
- }
- EXPORT_SYMBOL(irq_cpu_rmap_add);
--- 
-1.7.10.2.5.g20d7bc9
 
