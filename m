@@ -1,132 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab2L2BjD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 20:39:03 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:40333 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755118Ab2L2BjB (ORCPT
+	id S1755221Ab2L2BzY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 20:55:24 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31310 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755124Ab2L2BzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 20:39:01 -0500
-Message-ID: <1356745130.8271.1.camel@phoenix>
-Subject: [PATCH] regulator: s5m8767: Remove max_vol parameter from
- s5m8767_convert_voltage_to_sel
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>,
-        Inderpal Singh <inderpal.singh@linaro.org>,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>,
-        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
-Date: Sat, 29 Dec 2012 09:38:50 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 28 Dec 2012 20:55:23 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=4xDcOe4IjvRdPVVETi+CqA==:17 a=TtU46XPs5IkA:10 a=TRgVYD6ZyiEA:10 a=bfdTmMi5DwwA:10 a=Zx2FLkwYMp0A:10 a=kj9zAlcOel0A:10 a=yQdBAQUQAAAA:8 a=Tf1pAs_9cGAA:10 a=rRNTo9lXbcyGnLgugroA:9 a=CjuIK1q_8ugA:10 a=IcxpeKGZWnEA:10 a=4xDcOe4IjvRdPVVETi+CqA==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 75.81.36.228
+Date: Fri, 28 Dec 2012 19:55:20 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+To: rjw@sisk.pl
+Cc: fabio.baltieri@linaro.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: [PATCH V3] Fix problem with cpufreq_ondemand or
+ cpufreq_conservative
+Message-ID: <50de4d88.M3WYPilXC8de/dVl%Larry.Finger@lwfinger.net>
+User-Agent: Heirloom mailx 12.5 7/5/10
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks pointless to pass max_vol to s5m8767_convert_voltage_to_sel().
-Compare selected voltage to desc->max is enough to ensure selected voltage
-is in supported range.
+Since commit 2aacdff entitled "cpufreq: Move common part from governors
+to separate file", whenever the drivers that depend on this new file
+(cpufreq_ondemand or cpufreq_conservative) are built as modules, a new
+module named cpufreq_governor is created because the Makefile includes
+cpufreq_governor.o twice. As drivers/cpufreq/cpufreq_governor.c contains no
+MODULE directives, the resulting module has no license specified, which
+results in logging of a "module license 'unspecified' taints kernel". In
+addition, a number of globals are exported GPL only, and are therefore
+not available. This fix establishes a new boolean configuration variable
+that forces cpufreq_governor.o to be linked into the kernel whenever
+either cpufreq_ondemand or cpufreq_conservative is selected.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 ---
- drivers/regulator/s5m8767.c |   33 ++++++++++-----------------------
- 1 file changed, 10 insertions(+), 23 deletions(-)
+V3 changes only Kconfig and Makefile and avoids creating a new module.
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index eeadf58..aa0ccef 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -297,16 +297,15 @@ static int s5m8767_get_vsel_reg(int reg_id, struct s5m8767_info *s5m8767)
- 	return reg;
- }
- 
--static int s5m8767_convert_voltage_to_sel(
--		const struct sec_voltage_desc *desc,
--		int min_vol, int max_vol)
-+static int s5m8767_convert_voltage_to_sel(const struct sec_voltage_desc *desc,
-+					  int min_vol)
- {
- 	int selector = 0;
- 
- 	if (desc == NULL)
- 		return -EINVAL;
- 
--	if (max_vol < desc->min || min_vol > desc->max)
-+	if (min_vol > desc->max)
- 		return -EINVAL;
- 
- 	if (min_vol < desc->min)
-@@ -314,7 +313,7 @@ static int s5m8767_convert_voltage_to_sel(
- 
- 	selector = DIV_ROUND_UP(min_vol - desc->min, desc->step);
- 
--	if (desc->min + desc->step * selector > max_vol)
-+	if (desc->min + desc->step * selector > desc->max)
- 		return -EINVAL;
- 
- 	return selector;
-@@ -544,23 +543,17 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 	s5m8767->opmode = pdata->opmode;
- 
- 	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
--						pdata->buck2_init,
--						pdata->buck2_init +
--						buck_voltage_val2.step);
-+						   pdata->buck2_init);
- 
- 	sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK2DVS2, buck_init);
- 
- 	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
--						pdata->buck3_init,
--						pdata->buck3_init +
--						buck_voltage_val2.step);
-+						   pdata->buck3_init);
- 
- 	sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK3DVS2, buck_init);
- 
- 	buck_init = s5m8767_convert_voltage_to_sel(&buck_voltage_val2,
--						pdata->buck4_init,
--						pdata->buck4_init +
--						buck_voltage_val2.step);
-+						   pdata->buck4_init);
- 
- 	sec_reg_write(s5m8767->iodev, S5M8767_REG_BUCK4DVS2, buck_init);
- 
-@@ -569,27 +562,21 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 			s5m8767->buck2_vol[i] =
- 				s5m8767_convert_voltage_to_sel(
- 						&buck_voltage_val2,
--						pdata->buck2_voltage[i],
--						pdata->buck2_voltage[i] +
--						buck_voltage_val2.step);
-+						pdata->buck2_voltage[i]);
- 		}
- 
- 		if (s5m8767->buck3_gpiodvs) {
- 			s5m8767->buck3_vol[i] =
- 				s5m8767_convert_voltage_to_sel(
- 						&buck_voltage_val2,
--						pdata->buck3_voltage[i],
--						pdata->buck3_voltage[i] +
--						buck_voltage_val2.step);
-+						pdata->buck3_voltage[i]);
- 		}
- 
- 		if (s5m8767->buck4_gpiodvs) {
- 			s5m8767->buck4_vol[i] =
- 				s5m8767_convert_voltage_to_sel(
- 						&buck_voltage_val2,
--						pdata->buck4_voltage[i],
--						pdata->buck4_voltage[i] +
--						buck_voltage_val2.step);
-+						pdata->buck4_voltage[i]);
- 		}
- 	}
- 
--- 
-1.7.9.5
+Larry
 
+ Kconfig  |    5 +++++
+ Makefile |    5 +++--
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
-
+Index: wireless-testing-new/drivers/cpufreq/Kconfig
+===================================================================
+--- wireless-testing-new.orig/drivers/cpufreq/Kconfig
++++ wireless-testing-new/drivers/cpufreq/Kconfig
+@@ -20,6 +20,9 @@ if CPU_FREQ
+ config CPU_FREQ_TABLE
+ 	tristate
+ 
++config CPU_FREQ_GOVERNOR
++	bool
++
+ config CPU_FREQ_STAT
+ 	tristate "CPU frequency translation statistics"
+ 	select CPU_FREQ_TABLE
+@@ -141,6 +144,7 @@ config CPU_FREQ_GOV_USERSPACE
+ config CPU_FREQ_GOV_ONDEMAND
+ 	tristate "'ondemand' cpufreq policy governor"
+ 	select CPU_FREQ_TABLE
++	select CPU_FREQ_GOVERNOR
+ 	help
+ 	  'ondemand' - This driver adds a dynamic cpufreq policy governor.
+ 	  The governor does a periodic polling and 
+@@ -159,6 +163,7 @@ config CPU_FREQ_GOV_ONDEMAND
+ config CPU_FREQ_GOV_CONSERVATIVE
+ 	tristate "'conservative' cpufreq governor"
+ 	depends on CPU_FREQ
++	select CPU_FREQ_GOVERNOR
+ 	help
+ 	  'conservative' - this driver is rather similar to the 'ondemand'
+ 	  governor both in its source code and its purpose, the difference is
+Index: wireless-testing-new/drivers/cpufreq/Makefile
+===================================================================
+--- wireless-testing-new.orig/drivers/cpufreq/Makefile
++++ wireless-testing-new/drivers/cpufreq/Makefile
+@@ -7,8 +7,9 @@ obj-$(CONFIG_CPU_FREQ_STAT)
+ obj-$(CONFIG_CPU_FREQ_GOV_PERFORMANCE)	+= cpufreq_performance.o
+ obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)	+= cpufreq_powersave.o
+ obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)	+= cpufreq_userspace.o
+-obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o cpufreq_governor.o
+-obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o cpufreq_governor.o
++obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)	+= cpufreq_ondemand.o
++obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)	+= cpufreq_conservative.o
++obj-$(CONFIG_CPU_FREQ_GOVERNOR)		+= cpufreq_governor.o
+ 
+ # CPUfreq cross-arch helpers
+ obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
