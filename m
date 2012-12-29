@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753423Ab2L2QrH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 11:47:07 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:45928 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752772Ab2L2Qno (ORCPT
+	id S1753363Ab2L2Qr3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 11:47:29 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:53710 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752756Ab2L2Qnk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 11:43:44 -0500
+	Sat, 29 Dec 2012 11:43:40 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 13/27] sched: Update rq clock on nohz CPU before setting fair group shares
-Date: Sat, 29 Dec 2012 17:42:52 +0100
-Message-Id: <1356799386-4212-14-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 11/27] sched: Comment on rq->clock correctness in ttwu_do_wakeup() in nohz
+Date: Sat, 29 Dec 2012 17:42:50 +0100
+Message-Id: <1356799386-4212-12-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
 References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
@@ -31,12 +31,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because we may update the execution time (sched_group_set_shares()->
-	update_cfs_shares()->reweight_entity()->update_curr()) before
-reweighting the entity after updating the group shares and this requires
-an uptodate version of the runqueue clock. Let's update it on the target
-CPU if it runs tickless because scheduler_tick() is not there to maintain
-it.
+Just to avoid confusion.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -53,25 +48,26 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/fair.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5eea870..a96f0f2 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6068,6 +6068,11 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
- 		se = tg->se[i];
- 		/* Propagate contribution to hierarchy */
- 		raw_spin_lock_irqsave(&rq->lock, flags);
-+		/*
-+		 * We may call update_curr() which needs an up-to-date
-+		 * version of rq clock if the CPU runs tickless.
-+		 */
-+		update_nohz_rq_clock(rq);
- 		for_each_sched_entity(se)
- 			update_cfs_shares(group_cfs_rq(se));
- 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 63b25e2..bfac40f 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1302,6 +1302,12 @@ ttwu_do_wakeup(struct rq *rq, struct task_struct *p, int wake_flags)
+ 	if (p->sched_class->task_woken)
+ 		p->sched_class->task_woken(rq, p);
+ 
++	/*
++	 * For adaptive nohz case: We called ttwu_activate()
++	 * which just updated the rq clock. There is an
++	 * exception with p->on_rq != 0 but in this case
++	 * we are not idle and rq->idle_stamp == 0
++	 */
+ 	if (rq->idle_stamp) {
+ 		u64 delta = rq->clock - rq->idle_stamp;
+ 		u64 max = 2*sysctl_sched_migration_cost;
 -- 
 1.7.5.4
 
