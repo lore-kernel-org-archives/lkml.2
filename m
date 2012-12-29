@@ -1,130 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429Ab2L2Vvr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 16:51:47 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:49890 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab2L2Vvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 16:51:45 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tim Hockin <thockin@hockin.org>
-Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: kernel panic on resume from S3 - stumped
-Date: Sat, 29 Dec 2012 22:57:13 +0100
-Message-ID: <22263901.MJnoQmEgLn@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
-References: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1753505Ab2L2Vv6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 16:51:58 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:42956 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab2L2Vvw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 16:51:52 -0500
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+To: ibm-acpi-devel@lists.sourceforge.net, ibm-acpi@hmh.eng.br,
+        linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Cc: Richard Hartmann <richih.mailinglist@gmail.com>
+Subject: [PATCH] drivers/platform/x86/thinkpad_acpi.c: Handle HKEY event 0x6040
+Date: Sat, 29 Dec 2012 22:51:49 +0100
+Message-Id: <1356817910-20890-1-git-send-email-richih.mailinglist@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <CAD77+gROUfVX=9LPZc6_jf=2Bc_iaf5FW5Z2efwESzORNrq9dQ@mail.gmail.com>
+References: <CAD77+gROUfVX=9LPZc6_jf=2Bc_iaf5FW5Z2efwESzORNrq9dQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, December 29, 2012 12:03:13 PM Tim Hockin wrote:
-> 4 days ago I had Ubuntu Lucid running on this computer. Suspend and
-> resume worked flawlessly every time.
-> 
-> Then I upgraded to Ubuntu Precise.
+Handle HKEY event generated on AC power change. The current message
+asks users to submit data related to this event which leads to
+a lot of confusion and noise on the mailing list.
 
-Well, do you use a distro kernel or a kernel.org kernel?
+The following is a list affected models and 'Message-Id'
+from ibm-acpi-devel@lists.sourceforge.net of people who saw this
+event when either plugging or unplugging the AC adapter or
+docking or undocking their laptop.
 
-> Suspend seems to work, but resume
-> fails every time. The video never initializes.  By the flashing
-> keyboard lights, I guess it's a kernel panic. It fails from the Live
-> CD and from a fresh install.
-> 
-> Here is my debug so far.
-> 
-> Install all updates (3.2 kernel, nouveau driver)
-> Reboot
-> Try suspend = fails
-> 
-> Install Ubuntu's linux-generic-lts-quantal (3.5 kernel, nouveau driver)
-> Reboot
-> Try suspend = fails
-> 
-> Install nVidia's 304 driver
-> Reboot
-> Try suspend = fails
-> 
-> From within X:
->   echo core > /sys/power/pm_test
->   echo mem > /sys/power/state
-> The system acts like it is going to sleep, and then wakes up a few
-> seconds later. dmesg shows:
-> 
-> [ 1230.083404] ------------[ cut here ]------------
-> [ 1230.083410] WARNING: at
-> /build/buildd/linux-lts-quantal-3.5.0/kernel/power/suspend_test.c:53
-> suspend_test_finish+0x86/0x90()
-> [ 1230.083411] Hardware name: To Be Filled By O.E.M.
-> [ 1230.083412] Component: resume devices, time: 14424
-> [ 1230.083412] Modules linked in: snd_emu10k1_synth snd_emux_synth
-> snd_seq_virmidi snd_seq_midi_emul bnep rfcomm parport_pc ppdev
-> nvidia(PO) snd_emu10k1 snd_ac97_codec ac97_bus snd_pcm snd_page_alloc
-> snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event
-> snd_seq snd_timer coretemp snd_seq_device kvm_intel kvm snd
-> ghash_clmulni_intel soundcore aesni_intel btusb cryptd aes_x86_64
-> bluetooth i7core_edac edac_core microcode mac_hid lpc_ich mxm_wmi
-> shpchp serio_raw wmi hid_generic lp parport usbhid hid r8169
-> pata_marvell
-> [ 1230.083445] Pid: 3329, comm: bash Tainted: P O 3.5.0-21-generic
-> #32~precise1-Ubuntu
-> [ 1230.083446] Call Trace:
-> [ 1230.083448] [<ffffffff81052c9f>] warn_slowpath_common+0x7f/0xc0
-> [ 1230.083452] [<ffffffff81052d96>] warn_slowpath_fmt+0x46/0x50
-> [ 1230.083455] [<ffffffff8109b836>] suspend_test_finish+0x86/0x90
-> [ 1230.083457] [<ffffffff8109b53b>] suspend_devices_and_enter+0x10b/0x200
-> [ 1230.083460] [<ffffffff8109b701>] enter_state+0xd1/0x100
-> [ 1230.083463] [<ffffffff8109b74b>] pm_suspend+0x1b/0x60
-> [ 1230.083465] [<ffffffff8109a7a5>] state_store+0x45/0x70
-> [ 1230.083467] [<ffffffff81331d2f>] kobj_attr_store+0xf/0x30
-> [ 1230.083471] [<ffffffff811f77ff>] sysfs_write_file+0xef/0x170
-> [ 1230.083476] [<ffffffff811879d3>] vfs_write+0xb3/0x180
-> [ 1230.083480] [<ffffffff81187cfa>] sys_write+0x4a/0x90
-> [ 1230.083483] [<ffffffff816a6e69>] system_call_fastpath+0x16/0x1b
-> [ 1230.083488] ---[ end trace 839cdd0078b3ce03 ]---
-> 
-> Boot with init=/bin/bash
-> unload all modules except USBHID
-> echo core > /sys/power/pm_test
-> echo mem > /sys/power/state
-> system acts like it is going to sleep, and then wakes up a few seconds later
-> echo none > /sys/power/pm_test
-> echo mem > /sys/power/state
-> system goes to sleep
-> press power to resume = fails
-> 
-> At this point I am stumped on how to debug. This is a "modern"
-> computer with no serial ports. It worked under Lucid, so I know it is
-> POSSIBLE.
-> 
-> Mobo: ASRock X58 single-socket
-> CPU: Westmere 6 core (12 hyperthreads) 3.2 GHz
-> RAM: 12 GB ECC
-> Disk: sda = Intel SSD, mounted on /
-> Disk: sdb = Intel SSD, not mounted
-> Disk: sdc = Seagate HDD, not mounted
-> Disk: sdd = Seagate HDD, not mounted
-> NIC = Onboard RTL8168e/8111e
-> Sound = EMU1212 (emu10k1, not even configured yet)
-> Video = nVidia GeForce 7600 GT
-> KB = PS2 (also tried USB)
-> Mouse = USB
-> 
-> I have not updated to a more current kernel than 3.5, but I will if
-> there's evidence that this is resolved.  Any other clever trick to
-> try?
+X120e - CAAAujb5v9dHdbdxDVvhNJoG4UrZC1TgKqeB_zGpAy7q8kZHMEQ@mail.gmail.com
+X121e - 20120817143459.GB3462@x1.osrc.amd.com
+X220  - Confirmed by Richard Hartmann
+X220i - 4F406274.7070807@gmail.com
+X220t - 4F489F5B.9040705@cs.tu-berlin.de
+X230  - CAKx4u7kqvVH0-gstomsiVYdGC0i6=bGxzaQ8sq9gbg76TGme3w@mail.gmail.com
+T420  - 9c848ee30b006737d0534d906bab0cf6@niklaas-baudet.net
+T420s - 20120608080824.GS25324@hexapodia.org
+W520  - 20121008181050.GF2549@ericlaptop.home.christensenplace.us
 
-There is no evidence and there won't be if you don't try a newer kernel.
+Signed-off-by: Richard Hartmann <richih.mailinglist@gmail.com>
+---
+ drivers/platform/x86/thinkpad_acpi.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
-Thanks,
-Rafael
-
-
+diff --git a/drivers/platform/x86/thinkpad_acpi.c b/drivers/platform/x86/thinkpad_acpi.c
+index 75dd651..15e2bba 100644
+--- a/drivers/platform/x86/thinkpad_acpi.c
++++ b/drivers/platform/x86/thinkpad_acpi.c
+@@ -209,9 +209,8 @@ enum tpacpi_hkey_event_t {
+ 	TP_HKEY_EV_ALARM_SENSOR_XHOT	= 0x6022, /* sensor critically hot */
+ 	TP_HKEY_EV_THM_TABLE_CHANGED	= 0x6030, /* thermal table changed */
+ 
+-	TP_HKEY_EV_UNK_6040		= 0x6040, /* Related to AC change?
+-						     some sort of APM hint,
+-						     W520 */
++	/* AC-related events */
++	TP_HKEY_EV_AC_CHANGED		= 0x6040, /* AC status changed */
+ 
+ 	/* Misc */
+ 	TP_HKEY_EV_RFKILL_CHANGED	= 0x7000, /* rfkill switch changed */
+@@ -3629,6 +3628,12 @@ static bool hotkey_notify_6xxx(const u32 hkey,
+ 			 "a sensor reports something is extremely hot!\n");
+ 		/* recommended action: immediate sleep/hibernate */
+ 		break;
++	case TP_HKEY_EV_AC_CHANGED:
++		/* X120e, X121e, X220, X220i, X220t, X230, T420, T420s, W520:
++		 * AC status changed; can be triggered by plugging or
++		 * unplugging AC adapter, docking or undocking. */
++
++		/* fallthrough */
+ 
+ 	case TP_HKEY_EV_KEY_NUMLOCK:
+ 	case TP_HKEY_EV_KEY_FN:
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.10.4
+
