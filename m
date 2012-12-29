@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516Ab2L2FOE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 00:14:04 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41116 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab2L2FOC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 00:14:02 -0500
-Date: Sat, 29 Dec 2012 05:13:44 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Vasily Kulikov <segoon@openwall.com>,
-        Containers <containers@lists.linux-foundation.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
-        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
-Message-ID: <20121229051344.GC4939@ZenIV.linux.org.uk>
-References: <20121228175627.GA7683@cachalot>
- <87wqw15wqb.fsf@xmission.com>
+	id S1751612Ab2L2FTs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 00:19:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:41294 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab2L2FTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 00:19:46 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <E99CBA9F97C3D149AA6B19ED2E277C9B01921744@BY2PRD0510MB365.namprd05.prod.outlook.com>
+References: <1356712001-12198-1-git-send-email-jlee@suse.com> <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com> <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com> <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com> <50DE03D8.9030902@zytor.com> <E99CBA9F97C3D149AA6B19ED2E277C9B01921638@BY2PRD0510MB365.namprd05.prod.outlook.com> <35da3df5-ecac-4b57-83a2-828326e5bfc3@email.android.com> <E99CBA9F97C3D149AA6B19ED2E277C9B0192169D@BY2PRD0510MB365.namprd05.prod.outlook.com> <50DE3C8F.4000405@zytor.com> <E99CBA9F97C3D149AA6B19ED2E277C9B01921744@BY2PRD0510MB365.namprd05.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87wqw15wqb.fsf@xmission.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 28 Dec 2012 21:19:21 -0800
+To: Matthew Garrett <matthew.garrett@nebula.com>
+CC: "Lee, Chun-Yi" <joeyli.kernel@gmail.com>,
+        "matt.fleming@intel.com" <matt.fleming@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "Lee, Chun-Yi" <jlee@suse.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Jan Beulich <JBeulich@suse.com>,
+        Len Brown <lenb@kernel.org>, Arjan van de Ven <arjan@infradead.org>
+Message-ID: <ed3971f1-8464-4406-bae2-eff914c9c2fc@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 08:05:32PM -0800, Eric W. Biederman wrote:
+Again, we could hack a simulator and try it.
 
-> Yes.  Gcc can't turn a tail call into a jump in even the most basic
-> cases apparently.
+Matthew Garrett <matthew.garrett@nebula.com> wrote:
 
-What.  The.  Fuck?
+>On Fri, 2012-12-28 at 16:42 -0800, H. Peter Anvin wrote:
+>> On 12/28/2012 03:39 PM, Matthew Garrett wrote:
+>> > On Fri, 2012-12-28 at 15:32 -0800, H. Peter Anvin wrote:
+>> >> No, that is explicitly the ordering that is excludable.
+>> > 
+>> > Windows uses the UEFI time functions. The fact that they fail for
+>us on
+>> > a bunch of systems is just another symptom of our general failure
+>to
+>> > accurately mimic Windows when making runtime calls, and we should
+>just
+>> > make sure that that gets fixed rather than layering more
+>workarounds on
+>> > top. It's an embarrassment that we're still unable to deal with
+>> > platforms that work fine with another OS. 
+>> > 
+>> 
+>> Are they using them in preference to ACPI?  This seems a bit odd,
+>since
+>> one can presume that the ACPI functions were added at Microsoft's
+>request...
+>
+>In preference to the ACPI RTC, I haven't yet had an ACPI 5.0 TAD device
+>to test in comparison.
 
-You have introduced unlimited recursion on kernel stack.  OK, it's
-unpleasant, but it can happen to anybody.  But then you have the gall
-to complain about gcc optimizations not saving your broken code.  Are
-you serious?
-
-It's not a question of gcc being not smart enough, and while we are
-at it, it's *not* a basic case at all - we have recursion going through
-the callback and we have non-trivial return value on top of that; if
-the caller of kref_put() had checked said return value, you would've
-been unable to turn that into a loop at all.
-
-Are you seriously saying that you relied on compiler being smart enough
-to
-	* notice that return value of kref_put() is ignored
-	* notice that therefore the return value of kref_sub() is ignored
-	* notice that you have this call of put_user_ns() calling
-kref_put() calling kref_sub() inside the callback we'd passed through the
-last two levels of calls and that we are dealing with the tail recursion
-here
-... so that your code wouldn't have stepped into unlimited recursion?
-I sincerely hope that you are not that much of an idiot.  If nothing else,
-even if gcc did spot that one, the result would've been extremely brittle -
-minor change to kref.h several year down the road and we'd get the problem.
+-- 
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
