@@ -1,108 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753635Ab2L2XcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 18:32:09 -0500
-Received: from sandeen.net ([63.231.237.45]:43024 "EHLO sandeen.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753334Ab2L2XcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 18:32:07 -0500
-Message-ID: <50DF7D7C.50104@sandeen.net>
-Date: Sat, 29 Dec 2012 17:32:12 -0600
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Sergei Trofimovich <slyfox@gentoo.org>
-CC: xfs@oss.sgi.com, Alex Elder <elder@kernel.org>,
-        Dave Chinner <dchinner@redhat.com>, linux-kernel@vger.kernel.org,
-        Ben Myers <bpm@sgi.com>, Phil White <pwhite@sgi.com>
-Subject: Re: [PATCH] xfs: return -EINVAL instead of -EUCLEAN when mounting
- non-xfs
-References: <20121230015615.6cc9e03c@sf> <1356823010-29768-1-git-send-email-slyfox@gentoo.org>
-In-Reply-To: <1356823010-29768-1-git-send-email-slyfox@gentoo.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753749Ab2L2XjO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 18:39:14 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38770 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753526Ab2L2XjM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 18:39:12 -0500
+Message-ID: <1356824335.4446.67.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [ 024/173] drm/i915: add Ivy Bridge GT2 Server entries
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Jonathan Nieder <jrnieder@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Eugeni Dodonov <eugeni.dodonov@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Date: Sun, 30 Dec 2012 00:38:55 +0100
+In-Reply-To: <20121229082112.GE18903@elie.Belkin>
+References: <20121228190330.025298996@decadent.org.uk>
+	 <20121228190335.033137454@decadent.org.uk>
+	 <20121229082112.GE18903@elie.Belkin>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-FnVF5QSoz8+wJBT3cONP"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 151.217.219.220
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/29/12 5:16 PM, Sergei Trofimovich wrote:
-> It fixes boot panic when trying to boot from btrfs filesystem.
-> kernel tries to mount as xfs and gets fatal -EUCLEAN:
-> 
-> [    0.170000] VFS: Cannot open root device "ubda" or unknown-block(98,0): error -117
-> [    0.170000] Please append a correct "root=" boot option; here are the available partitions:
-> [    0.170000] 6200         1048576 ubda  driver: uml-blkdev
-> [    0.170000] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(98,0)
-> 
-> init/do_mounts.c expects only -EINVAL as 'retry another' option.
-> Fixes regression introduced by commit 98021821a502db347bd9c7671beeee6e8ce07ea6
 
-yeah, that should work; great minds think alike ;)  Our patches
-crossed in the ether I guess.
+--=-FnVF5QSoz8+wJBT3cONP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-XFS uses EWRONGFS as an alias for EINVAL internally in these cases,
-so maybe we should stick with that for consistency, *shrug*
+On Sat, 2012-12-29 at 00:21 -0800, Jonathan Nieder wrote:
+> Ben Hutchings wrote:
+>=20
+> > This adds PCI ID for IVB GT2 server variant which we were missing.
+>=20
+> As discussed at [1], this triggers a small regression with Debian
+> wheezy userspace (X freezing instead of erroring out).  libdrm hasn't
+> been updated in wheezy since then, and I wouldn't be surprised if
+> other distros were affected, too.  Has there been a kernel patch since
+> then to avoid that?
+>=20
+> Though I wouldn't mind seeing this applied anyway, FWIW, as long as
+> the announcement mentions the userspace bugfix needed.
+>
+> [1] http://thread.gmane.org/gmane.linux.debian.devel.bugs.general/978320/=
+focus=3D74843
 
--Eric
+Sorry, forgot we'd discussed this before.  Thinking over this again, I'm
+not convinced that X freezing at startup is a significant regression
+from X failing to start.  Either way, it's unusable unless you
+explicitly configure it to use vesa.
 
-> Signed-off-by: Sergei Trofimovich <slyfox@gentoo.org>
-> CC: Ben Myers <bpm@sgi.com>
-> CC: Alex Elder <elder@kernel.org>
-> CC: xfs@oss.sgi.com
-> CC: linux-kernel@vger.kernel.org
-> CC: Dave Chinner <dchinner@redhat.com>
-> CC: Phil White <pwhite@sgi.com>
-> ---
->  fs/xfs/xfs_mount.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/xfs/xfs_mount.c b/fs/xfs/xfs_mount.c
-> index da50846..379cac1 100644
-> --- a/fs/xfs/xfs_mount.c
-> +++ b/fs/xfs/xfs_mount.c
-> @@ -641,41 +641,41 @@ xfs_sb_read_verify(
->  /*
->   * We may be probed for a filesystem match, so we may not want to emit
->   * messages when the superblock buffer is not actually an XFS superblock.
->   * If we find an XFS superblock, the run a normal, noisy mount because we are
->   * really going to mount it and want to know about errors.
->   */
->  static void
->  xfs_sb_quiet_read_verify(
->  	struct xfs_buf	*bp)
->  {
->  	struct xfs_sb	sb;
->  
->  	xfs_sb_from_disk(&sb, XFS_BUF_TO_SBP(bp));
->  
->  	if (sb.sb_magicnum == XFS_SB_MAGIC) {
->  		/* XFS filesystem, verify noisily! */
->  		xfs_sb_read_verify(bp);
->  		return;
->  	}
->  	/* quietly fail */
-> -	xfs_buf_ioerror(bp, EFSCORRUPTED);
-> +	xfs_buf_ioerror(bp, EINVAL);
->  }
->  
->  static void
->  xfs_sb_write_verify(
->  	struct xfs_buf	*bp)
->  {
->  	xfs_sb_verify(bp);
->  }
->  
->  const struct xfs_buf_ops xfs_sb_buf_ops = {
->  	.verify_read = xfs_sb_read_verify,
->  	.verify_write = xfs_sb_write_verify,
->  };
->  
->  static const struct xfs_buf_ops xfs_sb_quiet_buf_ops = {
->  	.verify_read = xfs_sb_quiet_read_verify,
->  	.verify_write = xfs_sb_write_verify,
->  };
->  
->  /*
-> 
+Ben.
 
+--=20
+Ben Hutchings
+It is easier to change the specification to fit the program than vice versa=
+.
+
+--=-FnVF5QSoz8+wJBT3cONP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIVAwUAUN9/D+e/yOyVhhEJAQo1TA/9E/9qGrE85tC6NomhdD650KJc+/r5cYQi
+T02aEhn0Q2kLMAfVswJRRaWMvHOUNksHccS2h0sryFj+xiCnla7HoW/pwU3qpPU5
+BsBvcxBFTXiFQwAVMYdJFsBCHr5Bvkq8kAANrP7dTK3x0Dj+FsISq55C63mGYZzd
+Gv+xozpNzSAIHXIoXx3TB+4O/jXfYlxgpEy2b+bbUkCsI56MzOAjVhSit2rV9DBc
+CYIL/s990FEQLDs+JINeXXyZCK2lOqPG/iuMKcxvlfYburstMlLgknIZiumlS2hs
+Esd3L6UraICIPJu3TRpRSaAAgBaGiibe1xBoefRlinimucu7zCQ/GexKZhcG3Cu7
+2Ymk+69Rf4FP+AQKklGsOSkuPLgcnNC0C79cXJJSui3HeesICiQ0YhMWTTn2+e4i
+vdWo3+My0w79KVdzgoJeD3fz/LtyQzMqV5aYJ00ztZOP09GmT/HTzHvdp/KIaevD
+1LKOJHu6uLH4GYi94GuKOH8lj1Agdmcw4eOk7FkiWIsaTpq+ijxA3m+yU2uwWjLO
+60xFmxXbwe+qNrQ4PoeWACYekLUP8pTJ5fBORK4nXVI2m2gVKmuRMFPbZkK7cUkE
+xy1iXLuDe+9aK63039p5GQlt4Ueuq7cVYbY3tn7u6bB+aq16elsK3BUPszqttEMe
+Em4uGWWSBHY=
+=+1NP
+-----END PGP SIGNATURE-----
+
+--=-FnVF5QSoz8+wJBT3cONP--
