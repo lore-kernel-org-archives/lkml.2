@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676Ab2L2K1d (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 05:27:33 -0500
-Received: from mail-vb0-f47.google.com ([209.85.212.47]:54250 "EHLO
-	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab2L2K1b (ORCPT
+	id S1752691Ab2L2K3i (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 05:29:38 -0500
+Received: from mail1-hoer.fullrate.dk ([89.150.129.84]:61660 "EHLO
+	smtp.fullrate.dk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751418Ab2L2K3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 05:27:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <1356549008.20133.20856.camel@edumazet-glaptop>
-References: <20121221184940.103c31ad@annuminas.surriel.com>
-	<20121221185147.4ae48ab5@annuminas.surriel.com>
-	<20121221185613.1f4c9523@annuminas.surriel.com>
-	<20121222033339.GF27621@home.goodmis.org>
-	<50D52E0C.6000103@redhat.com>
-	<1356549008.20133.20856.camel@edumazet-glaptop>
-Date: Sat, 29 Dec 2012 02:27:29 -0800
-Message-ID: <CANN689HBx357M+7ge3SQ_xtnyiTKPY=1v0oR+DS9EBiak-2BQg@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay factor
-From: Michel Lespinasse <walken@google.com>
+	Sat, 29 Dec 2012 05:29:35 -0500
+From: Martin Nybo Andersen <tweek@tweek.dk>
 To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Rik van Riel <riel@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org, aquini@redhat.com, lwoodman@redhat.com,
-        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tom Herbert <therbert@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: Panic: dma_map_area overflow 66 bytes on 3.7+
+Date: Sat, 29 Dec 2012 11:29:32 +0100
+User-Agent: KMail/1.13.7 (Linux/3.7.1-dmafix+; KDE/4.8.4; x86_64; ; )
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Michal Schmidt <mschmidt@redhat.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+References: <201212282005.10812.tweek@tweek.dk> <1356724390.21409.641.camel@edumazet-glaptop>
+In-Reply-To: <1356724390.21409.641.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201212291129.33076.tweek@tweek.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 11:10 AM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> I did some tests with your patches with following configuration :
->
-> tc qdisc add dev eth0 root htb r2q 1000 default 3
-> (to force a contention on qdisc lock, even with a multi queue net
-> device)
->
-> and 24 concurrent "netperf -t UDP_STREAM -H other_machine -- -m 128"
->
-> Machine : 2 Intel(R) Xeon(R) CPU X5660  @ 2.80GHz
-> (24 threads), and a fast NIC (10Gbps)
->
-> Resulting in a 13 % regression (676 Mbits -> 595 Mbits)
+On Friday 28 December 2012 20:53:10 Eric Dumazet wrote:
+> On Fri, 2012-12-28 at 20:05 +0100, Martin Nybo Andersen wrote:
+> > Hi list,
+> > 
+> > Since the release of 3.7 my main computer has been panicking a couple of
+> > times on both 3.7.0 and 3.7.1 because of a 'dma_map_area overflow xx bytes'.
+> > 
+> > Example screen shot:
+> > http://www.tweek.dk/panic.jpg
+> > 
+> > I can reproduce it somewhat easily by visiting http://www.openstreetmap.org/
+> > and zoom erratically with the scroll-button on the mouse.
+> > 
+> > The panic seems to occur on line 229 of arch/x86/kernel/amd_gart_64.c, and
+> > reverting commit aee77e4accbeb2c86b1d294cd84fec4a12dde3bd (r8169: use
+> > unlimited DMA burst for TX) seems to fix the problem for me (at least I've
+> > not been able to make it panic as before (yet)).
+> > 
+> > 
+> > lspci -v:
+> > 00:00.0 Host bridge: Advanced Micro Devices [AMD] nee ATI RS480 Host Bridge (rev 01)
+> > 00:02.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI RS480 PCI-X Root Port
+> > 00:05.0 PCI bridge: Advanced Micro Devices [AMD] nee ATI RS480 PCI Bridge
+> > 00:12.0 SATA controller: Advanced Micro Devices [AMD] nee ATI SB600 Non-Raid-5 SATA
+> > 00:13.0 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI0)
+> > 00:13.1 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI1)
+> > 00:13.2 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI2)
+> > 00:13.3 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI3)
+> > 00:13.4 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB (OHCI4)
+> > 00:13.5 USB controller: Advanced Micro Devices [AMD] nee ATI SB600 USB Controller (EHCI)
+> > 00:14.0 SMBus: Advanced Micro Devices [AMD] nee ATI SBx00 SMBus Controller (rev 13)
+> > 00:14.1 IDE interface: Advanced Micro Devices [AMD] nee ATI SB600 IDE
+> > 00:14.2 Audio device: Advanced Micro Devices [AMD] nee ATI SBx00 Azalia (Intel HDA)
+> > 00:14.3 ISA bridge: Advanced Micro Devices [AMD] nee ATI SB600 PCI to LPC Bridge
+> > 00:14.4 PCI bridge: Advanced Micro Devices [AMD] nee ATI SBx00 PCI to PCI Bridge
+> > 00:18.0 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] HyperTransport Technology Configuration
+> > 00:18.1 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Address Map
+> > 00:18.2 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] DRAM Controller
+> > 00:18.3 Host bridge: Advanced Micro Devices [AMD] K8 [Athlon64/Opteron] Miscellaneous Control
+> > 01:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168B PCI Express Gigabit Ethernet controller (rev 01)
+> > 02:00.0 VGA compatible controller: NVIDIA Corporation G84 [GeForce 8600 GT] (rev a1)
+> > 03:07.0 Multimedia controller: Twinhan Technology Co. Ltd Mantis DTV PCI Bridge Controller [Ver 1.0] (rev 01)
+> > 
+> > 
+> > Please tell, if more info is needed.
+> 
+> Seems you have CONFIG_IOMMU_DEBUG, is it really what you want ?
+That is true, I've enabled CONFIG_IOMMU_DEBUG.
+If I want it? It seems like I don't... :-)
 
-I've been trying to use this workload on a similar machine. I am
-getting some confusing results however:
+> It seems a bit strange we panic in this case
+> ( panic_on_overflow = 1;)
+I don't know much about IOMMUs, but if the alternative is trashed memory then
+I'm in for it.
 
-with 24 concurrent netperf -t UDP_STREAM -H $target -- -m 128 -R 1 , I
-am seeing some non-trivial run-to-run performance variation - about 5%
-in v3.7 baseline, but very significant after applying rik's 3 patches.
-my last few runs gave me results of 890.92, 1073.74, 963.13, 1234.41,
-754.18, 893.82. This is generally better than what I'm getting with
-baseline, but the variance is huge (which is somewhat surprising given
-that rik's patches don't have the issue of hash collisions). Also,
-this is significant in that I am not seeing the regression you were
-observing with just these 3 patches.
+panic_on_overflow is set on lines 26--27 of arch/x86/kernel/pci-dma.c along
+with force_iommu if CONFIG_IOMMU_DEBUG is enabled.
 
-If I add a 1 second delay in the netperf command line (netperf -t
-UDP_STREAM -s 1 -H lpk18 -- -m 128 -R 1), I am seeing a very constant
-660 Mbps result, but then I don't see any benefit from applying rik's
-patches. I have no explanation for these results, but I am getting
-them very consistently...
+> You could try to add iommu=nopanic to your boot command : packet should
+> be dropped, instead of panic.
+I opt for disabling CONFIG_IOMMU_DEBUG, as it sets force_iommu as well.
 
-> In this workload we have at least two contended spinlocks, with
-> different delays. (spinlocks are not held for the same duration)
+If the only consequence of this is stats.tx_dropped being bumped not too
+often, that's ok for me.
 
-Just to confirm, I believe you are refering to qdisc->q.lock and
-qdisc->busylock ?
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks for the quick help! :-)
+
+
+Regards,
+Martin Nybo Andersen
