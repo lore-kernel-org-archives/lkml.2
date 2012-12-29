@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753046Ab2L2RSM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 12:18:12 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:33014 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752108Ab2L2RSK (ORCPT
+	id S1753106Ab2L2RYv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 12:24:51 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:34587 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752363Ab2L2RYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 12:18:10 -0500
-Date: Sat, 29 Dec 2012 09:18:01 -0800
-From: Jonathan Nieder <jrnieder@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        David Howells <dhowells@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [ 016/173] use clamp_t in UNAME26 fix
-Message-ID: <20121229171801.GA1838@elie.Belkin>
-References: <20121228190330.025298996@decadent.org.uk>
- <20121228190333.385175939@decadent.org.uk>
- <20121229080742.GD18903@elie.Belkin>
- <1356778887.4446.25.camel@deadeye.wl.decadent.org.uk>
+	Sat, 29 Dec 2012 12:24:49 -0500
+Message-ID: <50DF275D.1080702@lwfinger.net>
+Date: Sat, 29 Dec 2012 11:24:45 -0600
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356778887.4446.25.camel@deadeye.wl.decadent.org.uk>
-User-Agent: Mutt/1.5.21+51 (9e756d1adb76) (2011-07-01)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: fabio.baltieri@linaro.org, viresh.kumar@linaro.org,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [PATCH V3] Fix problem with cpufreq_ondemand or cpufreq_conservative
+References: <50de4d88.M3WYPilXC8de/dVl%Larry.Finger@lwfinger.net> <2035804.da5iyiYDGE@vostro.rjw.lan>
+In-Reply-To: <2035804.da5iyiYDGE@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Hutchings wrote:
-> On Sat, 2012-12-29 at 00:07 -0800, Jonathan Nieder wrote:
->> Ben Hutchings wrote:
-
->>> The min/max call needed to have explicit types on some architectures
->>> (e.g. mn10300). Use clamp_t instead to avoid the warning:
->>>
->>>   kernel/sys.c: In function 'override_release':
->>>   kernel/sys.c:1287:10: warning: comparison of distinct pointer types lacks a cast [enabled by default]
->>>
->>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->> [...]
->>> -		copy = min(sizeof(buf), max_t(size_t, 1, len));
+On 12/29/2012 07:27 AM, Rafael J. Wysocki wrote:
+> On Friday, December 28, 2012 07:55:20 PM Larry Finger wrote:
+>> Since commit 2aacdff entitled "cpufreq: Move common part from governors
+>> to separate file", whenever the drivers that depend on this new file
+>> (cpufreq_ondemand or cpufreq_conservative) are built as modules, a new
+>> module named cpufreq_governor is created because the Makefile includes
+>> cpufreq_governor.o twice. As drivers/cpufreq/cpufreq_governor.c contains no
+>> MODULE directives, the resulting module has no license specified, which
+>> results in logging of a "module license 'unspecified' taints kernel". In
+>> addition, a number of globals are exported GPL only, and are therefore
+>> not available. This fix establishes a new boolean configuration variable
+>> that forces cpufreq_governor.o to be linked into the kernel whenever
+>> either cpufreq_ondemand or cpufreq_conservative is selected.
 >>
->> I don't understand how this happens given that v2.6.36-rc1~68
->> (MN10300: Fix size_t and ssize_t, 2010-08-12) was supposed to fix this
->> kind of thing.
-> [...]
+>> Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+>> ---
+>> V3 changes only Kconfig and Makefile and avoids creating a new module.
 >
-> Neither do I, but I'm including it now just to be consistent with other
-> stable series.
+> OK, thanks for the patch!
+>
+> If you don't mind, I'll rename CONFIG_CPU_FREQ_GOVERNOR to
+> CONFIG_CPU_FREQ_GOV_COMMON when applying it, though.
 
-Thanks for explaining.  That makes sense and the patch is harmless, so
-why not.
+The following does the job and is somewhat cleaner. If you want, I can remove 
+the line wrap and submit it as V4. The downside of this approach is that the 
+nested ifs will get cumbersome is more governors need cpufreq_governor.o.
 
-The patch still leaves me worried that there might be more problems
-lurking on mn10300, but that's more of a question for upstream.
+Larry
+
+Index: wireless-testing-new/drivers/cpufreq/Makefile
+===================================================================
+--- wireless-testing-new.orig/drivers/cpufreq/Makefile
++++ wireless-testing-new/drivers/cpufreq/Makefile
+@@ -7,8 +7,15 @@ obj-$(CONFIG_CPU_FREQ_STAT)
+  obj-$(CONFIG_CPU_FREQ_GOV_PERFORMANCE) += cpufreq_performance.o
+  obj-$(CONFIG_CPU_FREQ_GOV_POWERSAVE)   += cpufreq_powersave.o
+  obj-$(CONFIG_CPU_FREQ_GOV_USERSPACE)   += cpufreq_userspace.o
+-obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)    += cpufreq_ondemand.o cpufreq_governor.o
+-obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)        += cpufreq_conservative.o 
+cpufreq_governor.o
++obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)    += cpufreq_ondemand.o
++obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE)        += cpufreq_conservative.o
++ifdef CONFIG_CPU_FREQ_GOV_ONDEMAND
++  obj-y += cpufreq_governor.o
++else
++  ifdef CONFIG_CPU_FREQ_GOV_CONSERVATIVE
++    obj-y += cpufreq_governor.o
++  endif
++endif
+
+  # CPUfreq cross-arch helpers
+  obj-$(CONFIG_CPU_FREQ_TABLE)           += freq_table.o
+
+
