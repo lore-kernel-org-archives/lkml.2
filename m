@@ -1,115 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753246Ab2L2UKT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 15:10:19 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:38287 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748Ab2L2UKQ (ORCPT
+	id S1753259Ab2L2Ug4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 15:36:56 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:58164 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753077Ab2L2Ugx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 15:10:16 -0500
-X-Greylist: delayed 402 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Dec 2012 15:10:16 EST
+	Sat, 29 Dec 2012 15:36:53 -0500
+X-Originating-IP: 217.70.178.131
+X-Originating-IP: 50.43.39.152
+Date: Sat, 29 Dec 2012 12:36:44 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: David Decotigny <decot@googlers.com>
+Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH v3] lib: cpu_rmap: avoid flushing all workqueues
+Message-ID: <20121229203644.GA31014@leaf>
+References: <cover.1356810877.git.decot@googlers.com>
+ <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
 MIME-Version: 1.0
-From: Tim Hockin <thockin@hockin.org>
-Date: Sat, 29 Dec 2012 12:03:13 -0800
-X-Google-Sender-Auth: ibWXtdoP4iI7rtpC7iRT4odporU
-Message-ID: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
-Subject: kernel panic on resume from S3 - stumped
-To: linux-kernel@vger.kernel.org
-Cc: rjw@sisk.pl, Pavel Machek <pavel@ucw.cz>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-4 days ago I had Ubuntu Lucid running on this computer. Suspend and
-resume worked flawlessly every time.
+On Sat, Dec 29, 2012 at 11:57:09AM -0800, David Decotigny wrote:
+> In some cases, free_irq_cpu_rmap() is called while holding a lock
+> (eg. rtnl). This can lead to deadlocks, because it invokes
+> flush_scheduled_work() which ends up waiting for whole system
+> workqueue to flush, but some pending works might try to acquire the
+> lock we are already holding.
+> 
+> This commit uses reference-counting to replace
+> irq_run_affinity_notifiers(). It also removes
+> irq_run_affinity_notifiers() altogether.
+> 
+> Signed-off-by: David Decotigny <decot@googlers.com>
 
-Then I upgraded to Ubuntu Precise. Suspend seems to work, but resume
-fails every time. The video never initializes.  By the flashing
-keyboard lights, I guess it's a kernel panic. It fails from the Live
-CD and from a fresh install.
+You might consider adding a cpu_rmap_get to parallel cpu_rmap_put.
 
-Here is my debug so far.
+Also, why keep free_cpu_rmap around at this point?  As far as I can
+tell, it has no callers.
 
-Install all updates (3.2 kernel, nouveau driver)
-Reboot
-Try suspend = fails
+Otherwise, this looks good to me.
 
-Install Ubuntu's linux-generic-lts-quantal (3.5 kernel, nouveau driver)
-Reboot
-Try suspend = fails
-
-Install nVidia's 304 driver
-Reboot
-Try suspend = fails
-
->From within X:
-  echo core > /sys/power/pm_test
-  echo mem > /sys/power/state
-The system acts like it is going to sleep, and then wakes up a few
-seconds later. dmesg shows:
-
-[ 1230.083404] ------------[ cut here ]------------
-[ 1230.083410] WARNING: at
-/build/buildd/linux-lts-quantal-3.5.0/kernel/power/suspend_test.c:53
-suspend_test_finish+0x86/0x90()
-[ 1230.083411] Hardware name: To Be Filled By O.E.M.
-[ 1230.083412] Component: resume devices, time: 14424
-[ 1230.083412] Modules linked in: snd_emu10k1_synth snd_emux_synth
-snd_seq_virmidi snd_seq_midi_emul bnep rfcomm parport_pc ppdev
-nvidia(PO) snd_emu10k1 snd_ac97_codec ac97_bus snd_pcm snd_page_alloc
-snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event
-snd_seq snd_timer coretemp snd_seq_device kvm_intel kvm snd
-ghash_clmulni_intel soundcore aesni_intel btusb cryptd aes_x86_64
-bluetooth i7core_edac edac_core microcode mac_hid lpc_ich mxm_wmi
-shpchp serio_raw wmi hid_generic lp parport usbhid hid r8169
-pata_marvell
-[ 1230.083445] Pid: 3329, comm: bash Tainted: P O 3.5.0-21-generic
-#32~precise1-Ubuntu
-[ 1230.083446] Call Trace:
-[ 1230.083448] [<ffffffff81052c9f>] warn_slowpath_common+0x7f/0xc0
-[ 1230.083452] [<ffffffff81052d96>] warn_slowpath_fmt+0x46/0x50
-[ 1230.083455] [<ffffffff8109b836>] suspend_test_finish+0x86/0x90
-[ 1230.083457] [<ffffffff8109b53b>] suspend_devices_and_enter+0x10b/0x200
-[ 1230.083460] [<ffffffff8109b701>] enter_state+0xd1/0x100
-[ 1230.083463] [<ffffffff8109b74b>] pm_suspend+0x1b/0x60
-[ 1230.083465] [<ffffffff8109a7a5>] state_store+0x45/0x70
-[ 1230.083467] [<ffffffff81331d2f>] kobj_attr_store+0xf/0x30
-[ 1230.083471] [<ffffffff811f77ff>] sysfs_write_file+0xef/0x170
-[ 1230.083476] [<ffffffff811879d3>] vfs_write+0xb3/0x180
-[ 1230.083480] [<ffffffff81187cfa>] sys_write+0x4a/0x90
-[ 1230.083483] [<ffffffff816a6e69>] system_call_fastpath+0x16/0x1b
-[ 1230.083488] ---[ end trace 839cdd0078b3ce03 ]---
-
-Boot with init=/bin/bash
-unload all modules except USBHID
-echo core > /sys/power/pm_test
-echo mem > /sys/power/state
-system acts like it is going to sleep, and then wakes up a few seconds later
-echo none > /sys/power/pm_test
-echo mem > /sys/power/state
-system goes to sleep
-press power to resume = fails
-
-At this point I am stumped on how to debug. This is a "modern"
-computer with no serial ports. It worked under Lucid, so I know it is
-POSSIBLE.
-
-Mobo: ASRock X58 single-socket
-CPU: Westmere 6 core (12 hyperthreads) 3.2 GHz
-RAM: 12 GB ECC
-Disk: sda = Intel SSD, mounted on /
-Disk: sdb = Intel SSD, not mounted
-Disk: sdc = Seagate HDD, not mounted
-Disk: sdd = Seagate HDD, not mounted
-NIC = Onboard RTL8168e/8111e
-Sound = EMU1212 (emu10k1, not even configured yet)
-Video = nVidia GeForce 7600 GT
-KB = PS2 (also tried USB)
-Mouse = USB
-
-I have not updated to a more current kernel than 3.5, but I will if
-there's evidence that this is resolved.  Any other clever trick to
-try?
-
-Tim
+- Josh Triplett
