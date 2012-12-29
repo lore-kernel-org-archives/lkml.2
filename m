@@ -1,70 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab2L2Ads (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Dec 2012 19:33:48 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:38221 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755105Ab2L2Adq (ORCPT
+	id S1755178Ab2L2Ai7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Dec 2012 19:38:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:55831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755105Ab2L2Ai4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Dec 2012 19:33:46 -0500
-Date: Sat, 29 Dec 2012 01:33:41 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, viresh kumar <viresh.kumar@linaro.org>,
-        cpufreq@vger.kernel.org, Linux PM list <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix problem with cpufreq_pndemand or cpufreq_conservative
-Message-ID: <20121229003341.GA30982@balto.lan>
-Mail-Followup-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-	Larry Finger <Larry.Finger@lwfinger.net>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	viresh kumar <viresh.kumar@linaro.org>, cpufreq@vger.kernel.org,
-	Linux PM list <linux-pm@vger.kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <50DE1A74.4040607@lwfinger.net>
- <3226192.H2BxHSuKio@vostro.rjw.lan>
- <50DE2F32.1010207@lwfinger.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50DE2F32.1010207@lwfinger.net>
-X-Operating-System: Linux balto 3.8.0-rc1-00004-g637704c x86_64 GNU/Linux
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Dec 2012 19:38:56 -0500
+Date: Fri, 28 Dec 2012 22:09:42 -0200
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: linux-arch@vger.kernel.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-m68k@vger.kernel.org
+Subject: Re: [PATCH/RFC 4/4] common: dma-mapping: Move dma_common_*() to
+ <linux/dma-mapping.h>
+Message-ID: <20121228220942.5e6a5361@redhat.com>
+In-Reply-To: <1356722614-18224-5-git-send-email-geert@linux-m68k.org>
+References: <CAMuHMdVPBUzN8fsNHFzrEqev9BsvVCVR2fWySCOecjVA-J1qjg@mail.gmail.com>
+	<1356722614-18224-5-git-send-email-geert@linux-m68k.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 05:45:54PM -0600, Larry Finger wrote:
-> >I wonder if that's avoidable?  The intention is not to create an additional
-> >module, clearly.
+Em Fri, 28 Dec 2012 20:23:34 +0100
+Geert Uytterhoeven <geert@linux-m68k.org> escreveu:
+
+> dma_common_mmap() and dma_common_get_sgtable() are defined in
+> drivers/base/dma-mapping.c, and always compiled if CONFIG_HAS_DMA=y.
 > 
-> It appears not to be possible. I don't know enough about to kmake to
-> understand why it is forcing a new module. Perhaps some expert knows
-> what Kconfig or Makefile magic will prevent that.
+> However, their forward declarations and the inline functions defined on top
+> of them (dma_mmap_attrs(), dma_mmap_coherent(), dma_mmap_writecombine(),
+> dma_get_sgtable_attrs()), dma_get_sgtable()) are in
+> <asm-generic/dma-mapping-common.h>, which is not included by all
+> architectures supporting CONFIG_HAS_DMA=y.  There exist no alternative
+> implementations.
+> 
+> Hence for e.g. m68k allmodconfig, I get:
+> 
+> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
+> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
+> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
+> 
+> To fix this
+>   - Move the forward declarations and inline definitions to
+>     <linux/dma-mapping.h>, so all CONFIG_HAS_DMA=y architectures can use
+>     them,
+>   - Replace the hard "BUG_ON(!ops)" checks for dma_map_ops by soft checks,
+>     so architectures can fall back to the common code by returning NULL
+>     from their get_dma_ops(). Note that there are no "BUG_ON(!ops)" checks
+>     in other functions in <asm-generic/dma-mapping-common.h>,
+>   - Make "struct dma_map_ops *ops" const while we're at it.
+> 
+> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-kbuild is building an additional module just because the makefile is
-adding the new objects in the obj-m list directly, as in:
+>From my side:
 
-obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)     += cpufreq_ondemand.o cpufreq_governor.o
-obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE) += cpufreq_conservative.o cpufreq_governor.o
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-To build just two modules the Makefile would have to be modified [1]
-into something into something like:
+> ---
+>  include/asm-generic/dma-mapping-common.h |   55 ------------------------------
+>  include/linux/dma-mapping.h              |   54 +++++++++++++++++++++++++++++
+>  2 files changed, 54 insertions(+), 55 deletions(-)
+> 
+> diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
+> index de8bf89..2e248d8 100644
+> --- a/include/asm-generic/dma-mapping-common.h
+> +++ b/include/asm-generic/dma-mapping-common.h
+> @@ -176,59 +176,4 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
+>  #define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
+>  #define dma_unmap_sg(d, s, n, r) dma_unmap_sg_attrs(d, s, n, r, NULL)
+>  
+> -extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+> -			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
+> -
+> -/**
+> - * dma_mmap_attrs - map a coherent DMA allocation into user space
+> - * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+> - * @vma: vm_area_struct describing requested user mapping
+> - * @cpu_addr: kernel CPU-view address returned from dma_alloc_attrs
+> - * @handle: device-view address returned from dma_alloc_attrs
+> - * @size: size of memory originally requested in dma_alloc_attrs
+> - * @attrs: attributes of mapping properties requested in dma_alloc_attrs
+> - *
+> - * Map a coherent DMA buffer previously allocated by dma_alloc_attrs
+> - * into user space.  The coherent DMA buffer must not be freed by the
+> - * driver until the user space mapping has been released.
+> - */
+> -static inline int
+> -dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma, void *cpu_addr,
+> -	       dma_addr_t dma_addr, size_t size, struct dma_attrs *attrs)
+> -{
+> -	struct dma_map_ops *ops = get_dma_ops(dev);
+> -	BUG_ON(!ops);
+> -	if (ops->mmap)
+> -		return ops->mmap(dev, vma, cpu_addr, dma_addr, size, attrs);
+> -	return dma_common_mmap(dev, vma, cpu_addr, dma_addr, size);
+> -}
+> -
+> -#define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
+> -
+> -static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
+> -		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
+> -{
+> -	DEFINE_DMA_ATTRS(attrs);
+> -	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+> -	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
+> -}
+> -
+> -int
+> -dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
+> -		       void *cpu_addr, dma_addr_t dma_addr, size_t size);
+> -
+> -static inline int
+> -dma_get_sgtable_attrs(struct device *dev, struct sg_table *sgt, void *cpu_addr,
+> -		      dma_addr_t dma_addr, size_t size, struct dma_attrs *attrs)
+> -{
+> -	struct dma_map_ops *ops = get_dma_ops(dev);
+> -	BUG_ON(!ops);
+> -	if (ops->get_sgtable)
+> -		return ops->get_sgtable(dev, sgt, cpu_addr, dma_addr, size,
+> -					attrs);
+> -	return dma_common_get_sgtable(dev, sgt, cpu_addr, dma_addr, size);
+> -}
+> -
+> -#define dma_get_sgtable(d, t, v, h, s) dma_get_sgtable_attrs(d, t, v, h, s, NULL)
+> -
+>  #endif
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index 94af418..4b47150 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -74,6 +74,60 @@ static inline int is_device_dma_capable(struct device *dev)
+>  
+>  #ifdef CONFIG_HAS_DMA
+>  #include <asm/dma-mapping.h>
+> +
+> +extern int dma_common_mmap(struct device *dev, struct vm_area_struct *vma,
+> +			   void *cpu_addr, dma_addr_t dma_addr, size_t size);
+> +
+> +/**
+> + * dma_mmap_attrs - map a coherent DMA allocation into user space
+> + * @dev: valid struct device pointer, or NULL for ISA and EISA-like devices
+> + * @vma: vm_area_struct describing requested user mapping
+> + * @cpu_addr: kernel CPU-view address returned from dma_alloc_attrs
+> + * @handle: device-view address returned from dma_alloc_attrs
+> + * @size: size of memory originally requested in dma_alloc_attrs
+> + * @attrs: attributes of mapping properties requested in dma_alloc_attrs
+> + *
+> + * Map a coherent DMA buffer previously allocated by dma_alloc_attrs
+> + * into user space.  The coherent DMA buffer must not be freed by the
+> + * driver until the user space mapping has been released.
+> + */
+> +static inline int
+> +dma_mmap_attrs(struct device *dev, struct vm_area_struct *vma, void *cpu_addr,
+> +	       dma_addr_t dma_addr, size_t size, struct dma_attrs *attrs)
+> +{
+> +	const struct dma_map_ops *ops = get_dma_ops(dev);
+> +	if (ops && ops->mmap)
+> +		return ops->mmap(dev, vma, cpu_addr, dma_addr, size, attrs);
+> +	return dma_common_mmap(dev, vma, cpu_addr, dma_addr, size);
+> +}
+> +
+> +#define dma_mmap_coherent(d, v, c, h, s) dma_mmap_attrs(d, v, c, h, s, NULL)
+> +
+> +static inline int dma_mmap_writecombine(struct device *dev, struct vm_area_struct *vma,
+> +		      void *cpu_addr, dma_addr_t dma_addr, size_t size)
+> +{
+> +	DEFINE_DMA_ATTRS(attrs);
+> +	dma_set_attr(DMA_ATTR_WRITE_COMBINE, &attrs);
+> +	return dma_mmap_attrs(dev, vma, cpu_addr, dma_addr, size, &attrs);
+> +}
+> +
+> +int
+> +dma_common_get_sgtable(struct device *dev, struct sg_table *sgt,
+> +		       void *cpu_addr, dma_addr_t dma_addr, size_t size);
+> +
+> +static inline int
+> +dma_get_sgtable_attrs(struct device *dev, struct sg_table *sgt, void *cpu_addr,
+> +		      dma_addr_t dma_addr, size_t size, struct dma_attrs *attrs)
+> +{
+> +	const struct dma_map_ops *ops = get_dma_ops(dev);
+> +	if (ops && ops->get_sgtable)
+> +		return ops->get_sgtable(dev, sgt, cpu_addr, dma_addr, size,
+> +					attrs);
+> +	return dma_common_get_sgtable(dev, sgt, cpu_addr, dma_addr, size);
+> +}
+> +
+> +#define dma_get_sgtable(d, t, v, h, s) dma_get_sgtable_attrs(d, t, v, h, s, NULL)
+> +
+>  #else
+>  #include <asm-generic/dma-mapping-broken.h>
+>  #endif
 
-obj-$(CONFIG_CPU_FREQ_GOV_ONDEMAND)     += cpufreq_ondemand_mod.o
-cpufreq_ondemand_mod-y                  := cpufreq_ondemand.o cpufreq_governor.o
-obj-$(CONFIG_CPU_FREQ_GOV_CONSERVATIVE) += cpufreq_conservative_mod.o
-cpufreq_conservative_mod-y              := cpufreq_conservative.o cpufreq_governor.o
-
-so that only two .o are added to obj-m, but that's not correct either as
-you end up with cpufreq_governor symbols exported twice.
-
-I think the only way would be to force cpufreq_governor as builtin with
-an automatic Kconfig option.
-
-Fabio
-
-1. http://lxr.linux.no/#linux+v3.7.1/Documentation/kbuild/makefiles.txt#L191
 
 -- 
-Fabio Baltieri
+
+Cheers,
+Mauro
