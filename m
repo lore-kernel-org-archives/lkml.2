@@ -1,126 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab2L3Prp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 10:47:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23185 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754670Ab2L3Prj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 10:47:39 -0500
-Date: Sun, 30 Dec 2012 16:47:22 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] uprobes: Change handle_swbp() to expose bp_vaddr to
-	handler_chain()
-Message-ID: <20121230154722.GA28513@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121230154657.GA28488@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754726Ab2L3Ptj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 10:49:39 -0500
+Received: from correo.charanga.es ([213.165.82.142]:42715 "EHLO tetraware.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754680Ab2L3Pth (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 10:49:37 -0500
+From: nadinezmartin@charanga.es
+Reply-To: nadinezmartin@charanga.es
+To: linux-kernel@vger.kernel.org
+Subject: Holiday
+Auto-Submitted: auto-replied
+Message-Id: <E1TpL07-0002e8-62@tetraware.net>
+Date: Sun, 30 Dec 2012 16:40:35 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change handle_swbp() to set regs->ip = bp_vaddr in advance, this is
-what consumer->handler() needs but uprobe_get_swbp_addr() is not
-exported.
-
-This also simplifies the code and makes it more consistent across
-the supported architectures. handle_swbp() becomes the only caller
-of uprobe_get_swbp_addr().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c   |    1 -
- kernel/events/uprobes.c     |   15 +++++++--------
- kernel/trace/trace_uprobe.c |    4 ++--
- 3 files changed, 9 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 4e33a35..0ba4cfb 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -681,7 +681,6 @@ static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 			continue;
- 
- 		if (auprobe->insn[i] == 0x90) {
--			regs->ip = uprobe_get_swbp_addr(regs);
- 			regs->ip += i + 1;
- 			return true;
- 		}
-diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-index 59b6e97..f883813 100644
---- a/kernel/events/uprobes.c
-+++ b/kernel/events/uprobes.c
-@@ -1504,6 +1504,10 @@ static void handle_swbp(struct pt_regs *regs)
- 		}
- 		return;
- 	}
-+
-+	/* change it in advance for ->handler() and restart */
-+	instruction_pointer_set(regs, bp_vaddr);
-+
- 	/*
- 	 * TODO: move copy_insn/etc into _register and remove this hack.
- 	 * After we hit the bp, _unregister + _register can install the
-@@ -1511,14 +1515,14 @@ static void handle_swbp(struct pt_regs *regs)
- 	 */
- 	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
- 	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
--		goto restart;
-+		goto out;
- 
- 	utask = current->utask;
- 	if (!utask) {
- 		utask = add_utask();
- 		/* Cannot allocate; re-execute the instruction. */
- 		if (!utask)
--			goto restart;
-+			goto out;
- 	}
- 
- 	handler_chain(uprobe, regs);
-@@ -1531,12 +1535,7 @@ static void handle_swbp(struct pt_regs *regs)
- 		return;
- 	}
- 
--restart:
--	/*
--	 * cannot singlestep; cannot skip instruction;
--	 * re-execute the instruction.
--	 */
--	instruction_pointer_set(regs, bp_vaddr);
-+	/* can_skip_sstep() succeeded, or restart if can't singlestep */
- out:
- 	put_uprobe(uprobe);
- }
-diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-index 38eee92..52caead 100644
---- a/kernel/trace/trace_uprobe.c
-+++ b/kernel/trace/trace_uprobe.c
-@@ -488,7 +488,7 @@ static void uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 		return;
- 
- 	entry = ring_buffer_event_data(event);
--	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
-+	entry->ip = instruction_pointer(task_pt_regs(current));
- 	data = (u8 *)&entry[1];
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-@@ -663,7 +663,7 @@ static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
- 	if (!entry)
- 		goto out;
- 
--	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
-+	entry->ip = instruction_pointer(task_pt_regs(current));
- 	data = (u8 *)&entry[1];
- 	for (i = 0; i < tu->nr_args; i++)
- 		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
--- 
-1.5.5.1
-
+Dear Supplier,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 Vanessa and I will be on new years holiday next week (29th December to 7th of January, both inclusive).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 If you have any doubt along these days we are out of office, contact our colleagues Cristina  (cristina.serrano@charanga.es) and Rocio (rocio.tobar@charanga.es).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 Happy new year!                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 Best regards,
