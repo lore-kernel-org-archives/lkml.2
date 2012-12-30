@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754905Ab2L3S4b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 13:56:31 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:58929 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754715Ab2L3S4a (ORCPT
+	id S1754925Ab2L3TD2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 14:03:28 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:36522 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754787Ab2L3TDY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 13:56:30 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        rtc-linux@googlegroups.com, Tony Prisk <linux@prisktech.co.nz>,
-        Edgar Toernig <froese@gmx.de>
-Subject: [PATCH] rtc: vt8500: Fix year field in vt8500_rtc_set_time
-Date: Mon, 31 Dec 2012 07:56:33 +1300
-Message-Id: <1356893793-29537-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 30 Dec 2012 14:03:24 -0500
+X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Dec 2012 14:03:24 EST
+From: Alexander Lam <lambchop468@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>, Durgadoss R <durgadoss.r@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexander Lam <lambchop468@gmail.com>
+Subject: [PATCH 1/1] thermal: Check cooling device's current state before declaring it inactive
+Date: Sun, 30 Dec 2012 13:57:36 -0500
+Message-Id: <1356893856-26249-1-git-send-email-lambchop468@gmail.com>
+X-Mailer: git-send-email 1.8.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-year field is incorrectly masked when setting the date. If the year
-is beyond 2099, the year field will be incorrectly updated in hardware.
+It is possible for a cooling device to become active in between calls to
+the thermal governor. An example of this is the acerhdf driver, which
+can hand control of the cooling device over to the system firmware. Upon
+returning control back to the thermal system, the cooling device might
+be running again, so checking the current state of the cooling device is
+required.
 
-This patch masks the year field correctly.
-
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Alexander Lam <lambchop468@gmail.com>
 ---
-Patch based on 3.8-rc1
+ drivers/thermal/step_wise.c | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
- drivers/rtc/rtc-vt8500.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
-index 14e2d8c..37b42a4 100644
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -137,7 +137,7 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/thermal/step_wise.c b/drivers/thermal/step_wise.c
+index 0cd5e9f..0eeb709 100644
+--- a/drivers/thermal/step_wise.c
++++ b/drivers/thermal/step_wise.c
+@@ -94,16 +94,21 @@ static void update_instance_for_dethrottle(struct thermal_zone_device *tz,
+ 	unsigned long cur_state;
  
--	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
-+	writel((bin2bcd(tm->tm_year % 100) << DATE_YEAR_S)
- 		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
- 		| (bin2bcd(tm->tm_mday)),
- 		vt8500_rtc->regbase + VT8500_RTC_DS);
+ 	list_for_each_entry(instance, &tz->thermal_instances, tz_node) {
+-		if (instance->trip != trip ||
+-			instance->target == THERMAL_NO_TARGET)
++		if (instance->trip != trip)
+ 			continue;
+ 
+ 		cdev = instance->cdev;
+ 		cdev->ops->get_cur_state(cdev, &cur_state);
+ 
+-		instance->target = cur_state > instance->lower ?
++		cur_state = cur_state > instance->lower ?
+ 			    (cur_state - 1) : THERMAL_NO_TARGET;
+ 
++		if (cur_state == THERMAL_NO_TARGET &&
++					instance->target == THERMAL_NO_TARGET)
++			continue;
++
++		instance->target = cur_state;
++
+ 		/* Deactivate a passive thermal instance */
+ 		if (instance->target == THERMAL_NO_TARGET)
+ 			update_passive_instance(tz, trip_type, -1);
 -- 
-1.7.9.5
+1.8.0.2
 
