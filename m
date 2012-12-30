@@ -1,142 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754617Ab2L3MBe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 07:01:34 -0500
-Received: from vdsl.uvw.ru ([178.79.155.71]:37374 "EHLO vdsl.uvw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754023Ab2L3MBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 07:01:31 -0500
-X-Greylist: delayed 2451 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Dec 2012 07:01:31 EST
-Date: Sun, 30 Dec 2012 15:20:32 +0400
-From: "Dmitry E. Oboukhov" <unera@debian.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: kernel list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Message-ID: <20121230112032.GB5756@vdsl.uvw.ru>
-References: <20121230090621.GA5756@vdsl.uvw.ru>
- <20121230103948.GA8650@amd.pavel.ucw.cz>
+	id S1754541Ab2L3MRe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 07:17:34 -0500
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:42027 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753825Ab2L3MRc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 07:17:32 -0500
+X-Greylist: delayed 408 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Dec 2012 07:17:32 EST
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-ripemd160;
-	protocol="application/pgp-signature"; boundary="DSayHWYpDlRfCAAQ"
-Content-Disposition: inline
-In-Reply-To: <20121230103948.GA8650@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: dimka@vdsl.uvw.ru
-Subject: Re: 3.7.1 doesn't go to suspend
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:26:47 +0000)
-X-SA-Exim-Scanned: Yes (on vdsl.uvw.ru)
+In-Reply-To: <1356862159.7991.6.camel@tellur>
+References: <alpine.DEB.2.00.1212300420180.7673@skynet.skynet.ie>
+	<1356862159.7991.6.camel@tellur>
+Date: Sun, 30 Dec 2012 22:10:43 +1000
+Message-ID: <CAPM=9txQs_a3phmzF8aQV9357mRYOrrZAgKAEJ9CUxV+dOvLoA@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: Lucas Stach <dev@lynxeye.de>
+Cc: Dave Airlie <airlied@linux.ie>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Dec 30, 2012 at 8:09 PM, Lucas Stach <dev@lynxeye.de> wrote:
+> Hello Dave,
+>
+> Am Sonntag, den 30.12.2012, 04:23 +0000 schrieb Dave Airlie:
+>> Hi Linus,
+>>
+> [...]
+>>
+>> Lucas Stach (6):
+>>       drm: tegra: protect DC register access with mutex
+>         ^^^^ This patch is unnecessary and really shouldn't go in. There
+> was a brief discussion on the list with the conclusion to disregard this
+> patch.
 
---DSayHWYpDlRfCAAQ
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Linus, I just reverted it on top, didn't want to cause a rebase on  that branch,
 
->> Hi, Linux maintainers!
->>=20
->> First of all sorry for my bad English.
->>=20
->> I have Macbook Pro Retina and used Linux-3.7rc7 with the book.
->> It worked fine.
->>=20
->> Today I've tried to migrate to 3.7.1 (from debian repo) and found that
->> current kernel can't suspend.
->>=20
->> If I call pm-suspend in my shell, my computer doesn't go to suspend
->> and dmesg showes the error:
->>=20
->> [ 2512.960666] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37 [s=
-nd_hda_intel] returns -11
->>=20
->>=20
->> 3.7rc7 worked fine.
->>=20
->>=20
->> In attaches You can find some /proc/* files
+updated pull req.
 
-> You may want to rmmod snd_hda_inte before suspend and see if it helps?
+The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
 
-Hi!
-After rmmodding snd_hda_intel pm-suspend doesn't work yet.
+  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
 
-nb:[~]$ sudo rmmod snd_hda_intel=20
-nb:[~]$ sudo rmmod snd_hda_codec_cirrus snd_hda_codec_hdmi
-snd_hda_codec
-nb:[~]$ sudo rmmod snd_timer=20
-Error: Module snd_timer is in use by: snd_pcm snd_seq
-nb:[~]$ sudo rmmod snd_pcm snd_seq snd_timer=20
-nb:[~]$ sudo rmmod snd_seq_device=20
-nb:[~]$ sudo rmmod snd_hwdep=20
-nb:[~]$ sudo rmmod snd_page_alloc=20
-nb:[~]$ sudo pm-suspend
-nb:[~]$ dmesg|tail
-[   30.266443] wlan0: associated
-[   30.266463] IPv6: ADDRCONF(NETDEV_CHANGE): wlan0: link becomes
-ready
-[   30.342137] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[   30.352607] lp: driver loaded but no devices found
-[   30.358793] ppdev: user-space parallel port driver
-[   30.425092] nouveau W[  PGRAPH][0000:01:00.0] disabled, PGRAPH=3D1 to
-enable
-[   30.778659] bcm5974: bad trackpad package, length: 8
-[   32.490108] input: Mouseemu virtual keyboard as
-/devices/virtual/input/input19
-[   32.490441] input: Mouseemu virtual mouse as
-/devices/virtual/input/input20
-[   65.112500] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
+are available in the git repository at:
 
+  git://people.freedesktop.org/~airlied/linux drm-next
 
+for you to fetch changes up to d5757dbe79870d825d0dec30074d48683e1d7e9a:
 
-Also dmesg complains about the modules until booting process is done:
-nb:[~]$ dmesg|grep suspend
-[   26.331831] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[   30.342137] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[   65.112500] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
+  Revert "drm: tegra: protect DC register access with mutex"
+(2012-12-30 21:58:20 +1000)
 
+----------------------------------------------------------------
+Alex Deucher (1):
+      drm/radeon: add WAIT_UNTIL to evergreen VM safe reg list
 
+Ben Skeggs (8):
+      drm/nouveau: initial support for GK106
+      drm/nouveau/bios: update gpio parsing apis to match current design
+      drm/nouveau/bios: implement opcode 0xa9
+      drm/nouveau/bios: parse/display extra version component
+      drm/nouveau/mxm: silence output if no bios data
+      drm/nouveau/bios: cache ramcfg strap on later chipsets
+      drm/nvc0/graph: fix fuc, and enable acceleration on GF119
+      drm/nve0/graph: fix fuc, and enable acceleration on all known chipsets
 
+Chris Wilson (6):
+      drm/i915: Fixup cursor latency used for IVB lp3 watermarks
+      drm/i915: Double the cursor self-refresh latency on Valleyview
+      drm/i915: Clear self-refresh watermarks when disabled
+      drm/i915: Prefer CRTC 'active' rather than 'enabled' during WM
+computations
+      drm: Export routines for inserting preallocated nodes into the mm manager
+      drm/i915: Preallocate the drm_mm_node prior to manipulating the
+GTT drm_mm manager
 
-3.7rc7 works fine.
+Daniel Vetter (6):
+      drm/i915: Implement WaDisableHiZPlanesWhenMSAAEnabled
+      drm/i915: Implement WaSetupGtModeTdRowDispatch
+      drm/i915: Implement workaround for broken CS tlb on i830/845
+      drm/i915: don't disable disconnected outputs
+      drm/i915: optionally disable shrinker lock stealing
+      drm/i915: disable shrinker lock stealing for create_mmap_offset
 
-PPS: I've just rebooted into 3.7rc7.
-its dmesg complains while booting, too:
+Dave Airlie (5):
+      drm/i915: fix flags in dma buf exporting
+      Merge branch 'drm-nouveau-fixes-3.8' of
+git://anongit.freedesktop.org/git/nouveau/linux-2.6 into drm-next
+      Merge branch 'drm-fixes-3.8' of
+git://people.freedesktop.org/~agd5f/linux into drm-next
+      Merge branch 'drm-intel-fixes' of
+git://people.freedesktop.org/~danvet/drm-intel into drm-next
+      Revert "drm: tegra: protect DC register access with mutex"
 
-nb:[~]$ dmesg|grep suspend
-[   31.759388] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
+Jerome Glisse (4):
+      drm/radeon: don't leave fence blocked process on failed GPU reset
+      drm/radeon: avoid deadlock in pm path when waiting for fence
+      drm/radeon: restore modeset late in GPU reset path
+      drm/radeon: add support for MEM_WRITE packet
 
-but it complains once and then it suspends/wakeups/plays sounds fine
-:)
+Krzysztof Mazur (1):
+      i915: ensure that VGA plane is disabled
 
+Lucas Stach (6):
+      drm: tegra: fix front_porch <-> back_porch mixup
+      drm: tegra: don't leave clients host1x member uninitialized
+      drm: tegra: protect DC register access with mutex
+      drm: tegra: remove redundant tegra2_tmds_config entry
+      drm: tegra: clean out old gem prototypes
+      drm: tegra: program only one window during modeset
 
-
---=20
-
-=2E ''`.                               Dmitry E. Oboukhov
-: :=E2=80=99  :   email: unera@debian.org jabber://UNera@uvw.ru
-`. `~=E2=80=99              GPGKey: 1024D / F8E26537 2006-11-21
-  `- 1B23 D4F8 8EC0 D902 0555  E438 AB8C 00CF F8E2 6537
-
---DSayHWYpDlRfCAAQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEAREDAAYFAlDgI4AACgkQq4wAz/jiZTe3LgCfTSLzd/wYGUexEKnzwjRrIa8L
-cfoAn0K/rg5Cy8mDj8ak1IIHzc20C28R
-=Wamk
------END PGP SIGNATURE-----
-
---DSayHWYpDlRfCAAQ--
+ drivers/gpu/drm/drm_mm.c                           |  41 ++++--
+ drivers/gpu/drm/i915/i915_dma.c                    |   3 +
+ drivers/gpu/drm/i915/i915_drv.h                    |   8 ++
+ drivers/gpu/drm/i915/i915_gem.c                    |  77 +++++-----
+ drivers/gpu/drm/i915/i915_gem_dmabuf.c             |   2 +-
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c         |   2 +
+ drivers/gpu/drm/i915/i915_irq.c                    |  12 ++
+ drivers/gpu/drm/i915/i915_reg.h                    |   4 +-
+ drivers/gpu/drm/i915/intel_display.c               |  23 ++-
+ drivers/gpu/drm/i915/intel_pm.c                    | 160 ++++++++++++++++++---
+ drivers/gpu/drm/i915/intel_ringbuffer.c            |  76 ++++++++--
+ drivers/gpu/drm/i915/intel_ringbuffer.h            |   1 +
+ .../drm/nouveau/core/engine/graph/fuc/gpcnve0.fuc  |   5 +
+ .../nouveau/core/engine/graph/fuc/gpcnve0.fuc.h    |  17 ++-
+ .../drm/nouveau/core/engine/graph/fuc/hubnvc0.fuc  |  10 ++
+ .../nouveau/core/engine/graph/fuc/hubnvc0.fuc.h    | 147 +++++++++----------
+ .../drm/nouveau/core/engine/graph/fuc/hubnve0.fuc  |  13 ++
+ .../nouveau/core/engine/graph/fuc/hubnve0.fuc.h    | 157 ++++++++++----------
+ drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  11 +-
+ drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h   |   1 +
+ drivers/gpu/drm/nouveau/core/engine/graph/nve0.c   |   3 +-
+ drivers/gpu/drm/nouveau/core/include/subdev/bios.h |   1 +
+ .../drm/nouveau/core/include/subdev/bios/gpio.h    |   8 +-
+ .../drm/nouveau/core/include/subdev/bios/init.h    |   1 +
+ drivers/gpu/drm/nouveau/core/include/subdev/gpio.h |   2 +-
+ drivers/gpu/drm/nouveau/core/subdev/bios/base.c    |   5 +-
+ drivers/gpu/drm/nouveau/core/subdev/bios/gpio.c    | 128 ++++++++++-------
+ drivers/gpu/drm/nouveau/core/subdev/bios/init.c    |  65 ++++++++-
+ drivers/gpu/drm/nouveau/core/subdev/device/nve0.c  |  28 ++++
+ drivers/gpu/drm/nouveau/core/subdev/gpio/base.c    |   9 +-
+ drivers/gpu/drm/nouveau/core/subdev/gpio/nv50.c    |   9 +-
+ drivers/gpu/drm/nouveau/core/subdev/gpio/nvd0.c    |   9 +-
+ drivers/gpu/drm/nouveau/core/subdev/mxm/base.c     |   2 +-
+ drivers/gpu/drm/radeon/evergreen_cs.c              |  30 ++++
+ drivers/gpu/drm/radeon/r600_cs.c                   |  29 ++++
+ drivers/gpu/drm/radeon/radeon.h                    |   3 +-
+ drivers/gpu/drm/radeon/radeon_device.c             |  17 ++-
+ drivers/gpu/drm/radeon/radeon_drv.c                |   3 +-
+ drivers/gpu/drm/radeon/radeon_fence.c              |  49 ++++---
+ drivers/gpu/drm/radeon/radeon_pm.c                 |  15 +-
+ drivers/gpu/drm/tegra/dc.c                         |  11 +-
+ drivers/gpu/drm/tegra/drm.h                        |  18 ---
+ drivers/gpu/drm/tegra/hdmi.c                       |  25 +---
+ drivers/gpu/drm/tegra/host1x.c                     |   2 +
+ include/drm/drm_mm.h                               |  25 +++-
+ include/uapi/drm/i915_drm.h                        |  10 ++
+ 46 files changed, 880 insertions(+), 397 deletions(-)
