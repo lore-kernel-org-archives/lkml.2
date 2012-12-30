@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab2L3Kjz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 05:39:55 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55171 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab2L3Kjw (ORCPT
+	id S1754465Ab2L3LAu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 06:00:50 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:37000 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752907Ab2L3LAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 05:39:52 -0500
-Date: Sun, 30 Dec 2012 11:39:49 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: "Dmitry E. Oboukhov" <unera@debian.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 3.7.1 doesn't go to suspend
-Message-ID: <20121230103948.GA8650@amd.pavel.ucw.cz>
-References: <20121230090621.GA5756@vdsl.uvw.ru>
+	Sun, 30 Dec 2012 06:00:47 -0500
+Date: Sun, 30 Dec 2012 15:00:40 +0400
+From: Vasily Kulikov <segoon@openwall.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Containers <containers@lists.linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        linux-kernel@vger.kernel.org, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH/RFC] user_ns: fix missing limiting of user_ns counts
+Message-ID: <20121230110040.GA4351@cachalot>
+References: <20121228175627.GA7683@cachalot>
+ <87wqw15wqb.fsf@xmission.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121230090621.GA5756@vdsl.uvw.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87wqw15wqb.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 2012-12-30 13:06:21, Dmitry E. Oboukhov wrote:
-> Hi, Linux maintainers!
+On Fri, Dec 28, 2012 at 20:05 -0800, Eric W. Biederman wrote:
+> > A related issue which is NOT FIXED HERE is limits for all resources
+> > available for containerized pseudo roots.  E.g. I succeeded creating
+> > thousands of veth network devices without problems by a non-root user,
+> > there seems no limit in number of network devices.  I suspect it is
+> > possible to setup routing and net_ns'es the way it will be very
+> > time-consuming for kernel to handle IP packets inside of ksoftirq, which
+> > is not counted as this user scheduler time.   I suppose the issue is not
+> > veth-specific, almost all newly available for unprivileged users code
+> > pathes are vulnerable to DoS attacks.
 > 
-> First of all sorry for my bad English.
-> 
-> I have Macbook Pro Retina and used Linux-3.7rc7 with the book.
-> It worked fine.
-> 
-> Today I've tried to migrate to 3.7.1 (from debian repo) and found that
-> current kernel can't suspend.
-> 
-> If I call pm-suspend in my shell, my computer doesn't go to suspend
-> and dmesg showes the error:
-> 
-> [ 2512.960666] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37 [snd_hda_intel] returns -11
-> 
-> 
-> 3.7rc7 worked fine.
-> 
-> 
-> In attaches You can find some /proc/* files
+> veth at least should process packets synchronously so I don't see how
+> you will get softirq action.
 
-You may want to rmmod snd_hda_inte before suspend and see if it helps?
+What do you mean -- synchronously?  From my limited understanding of
+veth job, it is handled like every network packet in system, via:
 
-									Pavel
+    veth_xmit() -> dev_forward_skb() -> netif_rx() -> enqueue_to_backlog()
 
+enqueue_to_backlog() adds the packet to softnet_data->input_pkt_queue. 
 
+Then inside of softirq process_backlog() moves ->input_pkt_queue to
+->process_queue and calls __netif_receive_skb(), which does all networking
+stack magic.
+
+AFAICS, one could create user_ns, net_ns inside of it, and setup routing
+tables and netfilter to infinitely pass few network packets from and to
+veth, abusing ksoftirq.
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Vasily Kulikov
+http://www.openwall.com - bringing security into open computing environments
