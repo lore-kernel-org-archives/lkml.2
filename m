@@ -1,65 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab2L3GSj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 01:18:39 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:51986 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751263Ab2L3GSi (ORCPT
+	id S1753785Ab2L3GTu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 01:19:50 -0500
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:55201 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123Ab2L3GTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 01:18:38 -0500
-Date: Sat, 29 Dec 2012 22:18:43 -0800
-From: Olof Johansson <olof@lixom.net>
-To: myungjoo.ham@gmail.com
-Cc: Abhilash Kesavan <a.kesavan@samsung.com>, kyungmin.park@samsung.com,
-        rjw@sisk.pl, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        kgene.kim@samsung.com, jhbird.choi@samsung.com
-Subject: Re: [PATCH RFC] PM/Devfreq: Add Exynos5-bus devfreq driver for
- Exynos5250.
-Message-ID: <20121230061843.GB21331@quad.lixom.net>
-References: <1354264973-11214-1-git-send-email-a.kesavan@samsung.com>
- <CAJ0PZbTTDdAXJ378R7CDO2=spx7WF_RpztG5ch7iFZWx-v3N2Q@mail.gmail.com>
+	Sun, 30 Dec 2012 01:19:48 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJ0PZbTTDdAXJ378R7CDO2=spx7WF_RpztG5ch7iFZWx-v3N2Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAAKZwsn8cYURZZ9dSAHqUzAFGXQBU_jNYBsX30rvAMZfZvdFw@mail.gmail.com>
+References: <CAAAKZwsU=jMb6SCvUrAZqRn-uD8HNX3cJ8VFqrG-dqiOoW3+QQ@mail.gmail.com>
+ <22263901.MJnoQmEgLn@vostro.rjw.lan> <CAAAKZwsn8cYURZZ9dSAHqUzAFGXQBU_jNYBsX30rvAMZfZvdFw@mail.gmail.com>
+From: Tim Hockin <thockin@hockin.org>
+Date: Sat, 29 Dec 2012 22:19:27 -0800
+X-Google-Sender-Auth: iGJleLQYcwGFAmPt1Jb7FO8Uck0
+Message-ID: <CAAAKZwuQ2-2fSg4oX-PxyJdnh_rkNiF14WtKojr3W3coqHs81A@mail.gmail.com>
+Subject: Re: kernel panic on resume from S3 - stumped
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Quick update: booting with 'noapic' on the commandline seems to make
+it resume successfully.
 
-On Tue, Dec 11, 2012 at 10:20:51AM +0900, MyungJoo Ham wrote:
-> On Fri, Nov 30, 2012 at 5:42 PM, Abhilash Kesavan <a.kesavan@samsung.com> wrote:
-> >  drivers/devfreq/Kconfig        |   10 +
-> >  drivers/devfreq/Makefile       |    1 +
-> >  drivers/devfreq/exynos5_bus.c  |  595 ++++++++++++++++++++++++++++++++++++++++
-> >  drivers/devfreq/exynos5_ppmu.c |  395 ++++++++++++++++++++++++++
-> >  drivers/devfreq/exynos5_ppmu.h |   26 ++
-> >  drivers/devfreq/exynos_ppmu.c  |   56 ++++
-> >  drivers/devfreq/exynos_ppmu.h  |   79 ++++++
-> >  7 files changed, 1162 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/devfreq/exynos5_bus.c
-> >  create mode 100644 drivers/devfreq/exynos5_ppmu.c
-> >  create mode 100644 drivers/devfreq/exynos5_ppmu.h
-> >  create mode 100644 drivers/devfreq/exynos_ppmu.c
-> >  create mode 100644 drivers/devfreq/exynos_ppmu.h
-> 
-> I understand that Exynos PPMU drivers seem not to be used (at least in
-> mainline Linux) widely and it'd be convinent for a bus driver to have
-> ppmu driver located in the same source directory.
-> 
-> However, I don't feel very comfortable to have ppmu drivers explicitly
-> landing in devfreq directory. Would it be possible to place them
-> somewhere else? (in drivers/misc, arch/arm/mach-exynos, or somewhere
-> appropriate?) If PPMU drivers really have nowhere to relocate, they
-> may be located along with its sole user (exynos5_bus.c) anyway.
+The main dmesg diffs, other than the obvious "Skipping IOAPIC probe"
+and IRG number diffs) are:
 
-Why can't they be in drivers/busfreq? Create a subdirectory for
-platform-specific subdrivers if needed, but they definitiely do NOT
-belong in drivers/misc, and there seems to be little reason to have them
-in arch/arm.
+-nr_irqs_gsi: 40
++nr_irqs_gsi: 16
+
+-NR_IRQS:16640 nr_irqs:776 16
++NR_IRQS:16640 nr_irqs:368 16
+
+-system 00:0a: [mem 0xfec00000-0xfec00fff] could not be reserved
++system 00:0a: [mem 0xfec00000-0xfec00fff] has been reserved
+
+and a new warning about irq 5: nobody cared (try booting with the
+"irqpoll" option)
+
+I'll see if I can sort out further differences, but I thought it was
+worth sending this new info along, anyway.
+
+It did not require 'noapic' on the Lucid (2.6.32?) kernel
 
 
-
--Olof
+On Sat, Dec 29, 2012 at 9:34 PM, Tim Hockin <thockin@hockin.org> wrote:
+> Running a suspend with pm_trace set, I get:
+>
+> aer 0000:00:03.0:pcie02: hash matches
+>
+> I don't know what magic might be needed here, though.
+>
+> I guess next step is to try to build a non-distro kernel.
+>
+> On Sat, Dec 29, 2012 at 1:57 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Saturday, December 29, 2012 12:03:13 PM Tim Hockin wrote:
+>>> 4 days ago I had Ubuntu Lucid running on this computer. Suspend and
+>>> resume worked flawlessly every time.
+>>>
+>>> Then I upgraded to Ubuntu Precise.
+>>
+>> Well, do you use a distro kernel or a kernel.org kernel?
+>>
+>>> Suspend seems to work, but resume
+>>> fails every time. The video never initializes.  By the flashing
+>>> keyboard lights, I guess it's a kernel panic. It fails from the Live
+>>> CD and from a fresh install.
+>>>
+>>> Here is my debug so far.
+>>>
+>>> Install all updates (3.2 kernel, nouveau driver)
+>>> Reboot
+>>> Try suspend = fails
+>>>
+>>> Install Ubuntu's linux-generic-lts-quantal (3.5 kernel, nouveau driver)
+>>> Reboot
+>>> Try suspend = fails
+>>>
+>>> Install nVidia's 304 driver
+>>> Reboot
+>>> Try suspend = fails
+>>>
+>>> From within X:
+>>>   echo core > /sys/power/pm_test
+>>>   echo mem > /sys/power/state
+>>> The system acts like it is going to sleep, and then wakes up a few
+>>> seconds later. dmesg shows:
+>>>
+>>> [ 1230.083404] ------------[ cut here ]------------
+>>> [ 1230.083410] WARNING: at
+>>> /build/buildd/linux-lts-quantal-3.5.0/kernel/power/suspend_test.c:53
+>>> suspend_test_finish+0x86/0x90()
+>>> [ 1230.083411] Hardware name: To Be Filled By O.E.M.
+>>> [ 1230.083412] Component: resume devices, time: 14424
+>>> [ 1230.083412] Modules linked in: snd_emu10k1_synth snd_emux_synth
+>>> snd_seq_virmidi snd_seq_midi_emul bnep rfcomm parport_pc ppdev
+>>> nvidia(PO) snd_emu10k1 snd_ac97_codec ac97_bus snd_pcm snd_page_alloc
+>>> snd_util_mem snd_hwdep snd_seq_midi snd_rawmidi snd_seq_midi_event
+>>> snd_seq snd_timer coretemp snd_seq_device kvm_intel kvm snd
+>>> ghash_clmulni_intel soundcore aesni_intel btusb cryptd aes_x86_64
+>>> bluetooth i7core_edac edac_core microcode mac_hid lpc_ich mxm_wmi
+>>> shpchp serio_raw wmi hid_generic lp parport usbhid hid r8169
+>>> pata_marvell
+>>> [ 1230.083445] Pid: 3329, comm: bash Tainted: P O 3.5.0-21-generic
+>>> #32~precise1-Ubuntu
+>>> [ 1230.083446] Call Trace:
+>>> [ 1230.083448] [<ffffffff81052c9f>] warn_slowpath_common+0x7f/0xc0
+>>> [ 1230.083452] [<ffffffff81052d96>] warn_slowpath_fmt+0x46/0x50
+>>> [ 1230.083455] [<ffffffff8109b836>] suspend_test_finish+0x86/0x90
+>>> [ 1230.083457] [<ffffffff8109b53b>] suspend_devices_and_enter+0x10b/0x200
+>>> [ 1230.083460] [<ffffffff8109b701>] enter_state+0xd1/0x100
+>>> [ 1230.083463] [<ffffffff8109b74b>] pm_suspend+0x1b/0x60
+>>> [ 1230.083465] [<ffffffff8109a7a5>] state_store+0x45/0x70
+>>> [ 1230.083467] [<ffffffff81331d2f>] kobj_attr_store+0xf/0x30
+>>> [ 1230.083471] [<ffffffff811f77ff>] sysfs_write_file+0xef/0x170
+>>> [ 1230.083476] [<ffffffff811879d3>] vfs_write+0xb3/0x180
+>>> [ 1230.083480] [<ffffffff81187cfa>] sys_write+0x4a/0x90
+>>> [ 1230.083483] [<ffffffff816a6e69>] system_call_fastpath+0x16/0x1b
+>>> [ 1230.083488] ---[ end trace 839cdd0078b3ce03 ]---
+>>>
+>>> Boot with init=/bin/bash
+>>> unload all modules except USBHID
+>>> echo core > /sys/power/pm_test
+>>> echo mem > /sys/power/state
+>>> system acts like it is going to sleep, and then wakes up a few seconds later
+>>> echo none > /sys/power/pm_test
+>>> echo mem > /sys/power/state
+>>> system goes to sleep
+>>> press power to resume = fails
+>>>
+>>> At this point I am stumped on how to debug. This is a "modern"
+>>> computer with no serial ports. It worked under Lucid, so I know it is
+>>> POSSIBLE.
+>>>
+>>> Mobo: ASRock X58 single-socket
+>>> CPU: Westmere 6 core (12 hyperthreads) 3.2 GHz
+>>> RAM: 12 GB ECC
+>>> Disk: sda = Intel SSD, mounted on /
+>>> Disk: sdb = Intel SSD, not mounted
+>>> Disk: sdc = Seagate HDD, not mounted
+>>> Disk: sdd = Seagate HDD, not mounted
+>>> NIC = Onboard RTL8168e/8111e
+>>> Sound = EMU1212 (emu10k1, not even configured yet)
+>>> Video = nVidia GeForce 7600 GT
+>>> KB = PS2 (also tried USB)
+>>> Mouse = USB
+>>>
+>>> I have not updated to a more current kernel than 3.5, but I will if
+>>> there's evidence that this is resolved.  Any other clever trick to
+>>> try?
+>>
+>> There is no evidence and there won't be if you don't try a newer kernel.
+>>
+>> Thanks,
+>> Rafael
+>>
+>>
+>> --
+>> I speak only for myself.
+>> Rafael J. Wysocki, Intel Open Source Technology Center.
