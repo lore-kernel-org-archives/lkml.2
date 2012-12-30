@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab2L3WD1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 17:03:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:23851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab2L3WDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 17:03:24 -0500
-Message-ID: <1356904987.9725.10.camel@localhost>
-Subject: Re: [PATCH] prctl: fix validation of an address
-From: Eric Paris <eparis@redhat.com>
-To: Andrey Vagin <avagin@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Morris <jmorris@namei.org>
-Date: Sun, 30 Dec 2012 17:03:07 -0500
-In-Reply-To: <1356778810-20879-1-git-send-email-avagin@openvz.org>
-References: <1356778810-20879-1-git-send-email-avagin@openvz.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755182Ab2L3WIX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 17:08:23 -0500
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:62489 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753046Ab2L3WIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 17:08:22 -0500
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Rob Herring <rob.herring@calxeda.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rtc: pl031: add wake-up support
+Date: Sun, 30 Dec 2012 16:07:48 -0600
+Message-Id: <1356905268-29587-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-29 at 15:00 +0400, Andrey Vagin wrote:
-> The address should be bigger than dac_mmap_min_addr, because
-> a process with CAP_RAWIO can map a vma bellow mmap_min_addr.
+From: Rob Herring <rob.herring@calxeda.com>
 
-NAK
+Mark the pl031 as wake-up capable so that rtcwake and suspend test can work.
 
-This doesn't make any sense.  dac_mmap_min_addr should ONLY be used in
-security/min_addr.c and security/commoncap.c.  Period.  You should not
-be allowed to circumvent LSM protections.  Maybe you are missing that
-mmap_min_addr = max(dac_mmap_min_addr, CONFIG_LSM_MMAP_MIN_ADDR)  ?
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: linux-arm-kernel@lists.infradead.org
+Cc: rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org
+---
+ drivers/rtc/rtc-pl031.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-But this patch is absolutely unacceptable.  Maybe you can help me
-understand what problem you had and what you were hoping for?
-
--Eric
-> 
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Kees Cook <keescook@chromium.org>
-> Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-> Cc: Serge Hallyn <serge.hallyn@canonical.com>
-> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> Cc: Eric Paris <eparis@redhat.com>
-> Cc: James Morris <jmorris@namei.org>
-> Signed-off-by: Andrey Vagin <avagin@openvz.org>
-> ---
->  kernel/sys.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 265b376..e0e1bbd 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -1868,7 +1868,7 @@ static int prctl_set_mm(int opt, unsigned long addr,
->  	if (opt == PR_SET_MM_EXE_FILE)
->  		return prctl_set_mm_exe_file(mm, (unsigned int)addr);
->  
-> -	if (addr >= TASK_SIZE || addr < mmap_min_addr)
-> +	if (addr >= TASK_SIZE || addr < dac_mmap_min_addr)
->  		return -EINVAL;
->  
->  	error = -EINVAL;
-
+diff --git a/drivers/rtc/rtc-pl031.c b/drivers/rtc/rtc-pl031.c
+index 08378e3..9e20958 100644
+--- a/drivers/rtc/rtc-pl031.c
++++ b/drivers/rtc/rtc-pl031.c
+@@ -380,6 +380,8 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
+ 		goto out_no_irq;
+ 	}
+ 
++	device_init_wakeup(&adev->dev, 1);
++
+ 	return 0;
+ 
+ out_no_irq:
+-- 
+1.7.10.4
 
