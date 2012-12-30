@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab2L3U3p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 15:29:45 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:54399 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab2L3U3n (ORCPT
+	id S1755086Ab2L3Ux5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 15:53:57 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:57608 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755020Ab2L3Uxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 15:29:43 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linux.walleij@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] gpio: vt8500: Export dedicated GPIO before multifunction pins.
-Date: Mon, 31 Dec 2012 09:29:34 +1300
-Message-Id: <1356899374-9395-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 30 Dec 2012 15:53:54 -0500
+Date: Sun, 30 Dec 2012 21:53:52 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>
+Subject: Re: i915: GPU hang
+In-Reply-To: <CAKMK7uHvqJbXqass9UTT-sUOxnggrUFouNA7019htq2445i_FQ@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1212302141120.19832@axis700.grange>
+References: <Pine.LNX.4.64.1212172322350.30738@axis700.grange>
+ <CAKMK7uHvqJbXqass9UTT-sUOxnggrUFouNA7019htq2445i_FQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:jTw2uRM1NeO+YBCQXaHOt6JMczTzorK3wyApmzD9gUL
+ Ya/ZaLOL283JWN3zETBHcvylm3EBLyY/EQk3gMsnTwdOBYVadX
+ xHCAAG40AfYUui6Nn3+07dwj8SSBIvz82N6QJiaXDiDQtAWKFw
+ Yrv3zs3FYiJ5FuZRGV/lKMs0SaTf61cn4TnvuLD6KA73wdnLkW
+ NfbPZLLciKtcB01TbwPKuGlVardv0HPL1h1G6QvjUPKURTA3WF
+ oFk+PL0MJM4w2o5gH0R7cqnUpr/yHuC1GO3U4loNe1OyZa1UbI
+ 9n5VyyKzoeLRaM+V2GGvzu3m3lJBw0VKsKG2Oo94aKVP0ijqz8
+ sDV0/6S9a63mmfesUOc9leSAlaO8mvWOfobDI44Z4HGujQDAfa
+ XaYdUlGhawZww==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The vendor does not provide numbering for gpio pins. Vendor source
-exports dedicated gpio pins first, followed by multifunction pins.
-As this is what end users expect, this patch changes vt8500 and wm8505
-to do the same.
+Hi Daniel
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Sorry for a late reply.
+
+On Tue, 18 Dec 2012, Daniel Vetter wrote:
+
+> On Mon, Dec 17, 2012 at 11:36 PM, Guennadi Liakhovetski
+> <g.liakhovetski@gmx.de> wrote:
+> > Sorry, not sure what information is most appropriate here. GPU hangs from
+> > time to time on this laptop, typically when running firefox on
+> > graphics-intensive sites. Error log at the bottom. Distro is Debian 6.0.6
+> > (squeeze), lspci
+> >
+> > 00:02.0 VGA compatible controller: Intel Corporation Mobile GM965/GL960
+> > Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+> >         Subsystem: Acer Incorporated [ALI] Device 011f
+> >         Flags: bus master, fast devsel, latency 0, IRQ 46
+> >         Memory at fc000000 (64-bit, non-prefetchable) [size=1M]
+> >         Memory at d0000000 (64-bit, prefetchable) [size=256M]
+> >         I/O ports at 1800 [size=8]
+> >         Expansion ROM at <unassigned> [disabled]
+> >         Capabilities: [90] MSI: Enable+ Count=1/1 Maskable- 64bit-
+> >         Capabilities: [d0] Power Management version 3
+> >         Kernel driver in use: i915
+> >
+> > kernel version 3.5.2 (yes, I'll try to upgrade). Sometimes also the
+> > X-server freezes and restarts with no errors in dmesg. Is it a known
+> > problem?
+> 
+> Upgrading to 3.7 highly recommended, if just to get the recent pile of
+> gpu reset fixes - those should increase the chances that the reset
+> works and your system survives.
+
+Did that and it did work for a while, longer than the average with 3.5. I 
+was already about to write a success report, but then it hung again 
+yesterday. I'm not using this laptop very intensively, so, it is hard to 
+collect statistics.
+
+> Also worth testing is upgrading
+> userspace gfx driver components to the latest versions (mesa +
+> xf86-video-intel).
+
+Not sure I'll be bothered - recompiling user-space is too much of a hastle 
+;-) Maybe I'll just upgrade my distro altogether. Thanks for the tips 
+anyway!
+
+> If you still have gpu hangs with all that, please
+> file a bug report against DRM -> DRI/Intel and please attach the
+> i915_error_state from debugfs after your gpu hung).
+> 
+> Yours, Daniel
+
+Thanks
+Guennadi
 ---
- drivers/gpio/gpio-vt8500.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpio/gpio-vt8500.c b/drivers/gpio/gpio-vt8500.c
-index b53320a..9a7c434 100644
---- a/drivers/gpio/gpio-vt8500.c
-+++ b/drivers/gpio/gpio-vt8500.c
-@@ -73,19 +73,20 @@ struct vt8500_gpio_data {
- static struct vt8500_gpio_data vt8500_data = {
- 	.num_banks	= 7,
- 	.banks	= {
-+		VT8500_BANK(NO_REG, 0x3C, 0x5C, 0x7C, 9),
- 		VT8500_BANK(0x00, 0x20, 0x40, 0x60, 26),
- 		VT8500_BANK(0x04, 0x24, 0x44, 0x64, 28),
- 		VT8500_BANK(0x08, 0x28, 0x48, 0x68, 31),
- 		VT8500_BANK(0x0C, 0x2C, 0x4C, 0x6C, 19),
- 		VT8500_BANK(0x10, 0x30, 0x50, 0x70, 19),
- 		VT8500_BANK(0x14, 0x34, 0x54, 0x74, 23),
--		VT8500_BANK(NO_REG, 0x3C, 0x5C, 0x7C, 9),
- 	},
- };
- 
- static struct vt8500_gpio_data wm8505_data = {
- 	.num_banks	= 10,
- 	.banks	= {
-+		VT8500_BANK(0x64, 0x8C, 0xB4, 0xDC, 22),
- 		VT8500_BANK(0x40, 0x68, 0x90, 0xB8, 8),
- 		VT8500_BANK(0x44, 0x6C, 0x94, 0xBC, 32),
- 		VT8500_BANK(0x48, 0x70, 0x98, 0xC0, 6),
-@@ -95,7 +96,6 @@ static struct vt8500_gpio_data wm8505_data = {
- 		VT8500_BANK(0x58, 0x80, 0xA8, 0xD0, 5),
- 		VT8500_BANK(0x5C, 0x84, 0xAC, 0xD4, 12),
- 		VT8500_BANK(0x60, 0x88, 0xB0, 0xD8, 16),
--		VT8500_BANK(0x64, 0x8C, 0xB4, 0xDC, 22),
- 		VT8500_BANK(0x500, 0x504, 0x508, 0x50C, 6),
- 	},
- };
--- 
-1.7.9.5
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
