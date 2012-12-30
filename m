@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab2L3DEq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Dec 2012 22:04:46 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:53754 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab2L3DEp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Dec 2012 22:04:45 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        rtc-linux@googlegroups.com, Tony Prisk <linux@prisktech.co.nz>,
-        Edgar Toernig <froese@gmx.de>
-Subject: [PATCH] rtc: vt8500: Fix handling of data passed in struct rtc_time
-Date: Sun, 30 Dec 2012 16:04:46 +1300
-Message-Id: <1356836686-26419-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754310Ab2L3DIQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Dec 2012 22:08:16 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:44297 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754154Ab2L3DIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Dec 2012 22:08:14 -0500
+Message-ID: <1356836868.17061.7.camel@joe-AO722>
+Subject: Re: [PATCH] printk: Fix incorrect length from print_time() when
+ seconds > 99999
+From: Joe Perches <joe@perches.com>
+To: Roland Dreier <roland@purestorage.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sylvain Munaut <s.munaut@whatever-company.com>,
+        Kay Sievers <kay@vrfy.org>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 29 Dec 2012 19:07:48 -0800
+In-Reply-To: <CAL1RGDV5fje8+sNQUCgJNKaasZ=pvg4rWrXaz-3cZ+uNgsWDzg@mail.gmail.com>
+References: <1356754984-13917-1-git-send-email-roland@kernel.org>
+	 <20121229175625.GA1963@kroah.com> <1356811734.16149.1.camel@joe-AO722>
+	 <CAL1RGDV5fje8+sNQUCgJNKaasZ=pvg4rWrXaz-3cZ+uNgsWDzg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
-causing invalid date errors for January, and causing the day field
-to roll over incorrectly.
+On Sat, 2012-12-29 at 14:27 -0800, Roland Dreier wrote:
+> On Sat, Dec 29, 2012 at 12:08 PM, Joe Perches <joe@perches.com> wrote:
+> > Sylvan Munaut did something similar
+> > https://lkml.org/lkml/2012/12/5/168
+> 
+> Missed that and duplicated the debugging :(
+> Sorry Sylvain.
+> 
+> I guess my patch may be preferable, since I happened to use the snprintf()
+> method that you suggest -- all the open-coded digit-counting seems a bit
+> verbose and perhaps hard to read and see the equivalence to the sprintf.
 
-The century flag is only handled in vt8500_rtc_read_time, but not
-set in vt8500_rtc_set_time. This patch corrects the behaviour of the
-century flag.
+the kernel implementation of snprint/vsnprintf does expand on c99
+and allow snprintf(NULL, 0... so your code should work fine.
 
-Signed-off-by: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
+I think the
+	snprintf(NULL, 0
+might be suspect.
+(the same form is already used in drivers/usb/gadget/composite.c)
 
-This patch is based on 3.8rc1 with the previous fix applied:
+man snprintf says in part:
 
-Previous patch: 77cdf96a0654cb45b4dd530f3393c6a8f2fa1e0b
-rtc: vt8500: Correct handling of CR_24H bitfield
+       Concerning the return value of snprintf(),  SUSv2  and  C99  contradict
+       each other: when snprintf() is called with size=0 then SUSv2 stipulates
+       an unspecified return value less than 1, while C99  allows  str  to  be
+       NULL in this case, and gives the return value (as always) as the number
+       of characters that would have been written in case  the  output  string
+       has been large enough.
 
- drivers/rtc/rtc-vt8500.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/rtc/rtc-vt8500.c b/drivers/rtc/rtc-vt8500.c
-index 387edf6..2448f2a 100644
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -119,7 +119,7 @@ static int vt8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
- 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
- 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
- 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
--	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
-+	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
- 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
- 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
- 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
-@@ -138,8 +138,9 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
- 	}
- 
- 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
--		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
--		| (bin2bcd(tm->tm_mday)),
-+		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
-+		| (bin2bcd(tm->tm_mday))
-+		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
- 		vt8500_rtc->regbase + VT8500_RTC_DS);
- 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
- 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
--- 
-1.7.9.5
+If not here, maybe the tools/perf/util/values.c code
+that uses the same form might need changing.
 
