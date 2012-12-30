@@ -1,103 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751428Ab2L3Fvc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 00:51:32 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:31123 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab2L3Fv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 00:51:28 -0500
-X-IronPort-AV: E=Sophos;i="4.84,379,1355068800"; 
-   d="scan'208";a="6500610"
-Message-ID: <50DFD7F7.5090408@cn.fujitsu.com>
-Date: Sun, 30 Dec 2012 13:58:15 +0800
-From: Wen Congyang <wency@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Glauber Costa <glommer@parallels.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
- to avoid dependence
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com>
-In-Reply-To: <50D96543.6010903@parallels.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/30 13:51:07,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/30 13:51:08,
-	Serialize complete at 2012/12/30 13:51:08
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751908Ab2L3Fwd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 00:52:33 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:62982 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab2L3Fwa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 00:52:30 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-f2fs-devel@lists.sourceforge.net,
+        Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>,
+        Amit Sahrawat <a.sahrawat@samsung.com>
+Subject: [PATCH 1/4] f2fs: introduce f2fs_msg to ease adding information prints
+Date: Sun, 30 Dec 2012 14:52:05 +0900
+Message-Id: <1356846725-7644-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 12/25/2012 04:35 PM, Glauber Costa Wrote:
-> On 12/24/2012 04:09 PM, Tang Chen wrote:
->> From: Wen Congyang <wency@cn.fujitsu.com>
->>
->> memory can't be offlined when CONFIG_MEMCG is selected.
->> For example: there is a memory device on node 1. The address range
->> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
->> and memory11 under the directory /sys/devices/system/memory/.
->>
->> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
->> when we online pages. When we online memory8, the memory stored page cgroup
->> is not provided by this memory device. But when we online memory9, the memory
->> stored page cgroup may be provided by memory8. So we can't offline memory8
->> now. We should offline the memory in the reversed order.
->>
->> When the memory device is hotremoved, we will auto offline memory provided
->> by this memory device. But we don't know which memory is onlined first, so
->> offlining memory may fail. In such case, iterate twice to offline the memory.
->> 1st iterate: offline every non primary memory block.
->> 2nd iterate: offline primary (i.e. first added) memory block.
->>
->> This idea is suggested by KOSAKI Motohiro.
->>
->> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-> 
-> Maybe there is something here that I am missing - I admit that I came
-> late to this one, but this really sounds like a very ugly hack, that
-> really has no place in here.
-> 
-> Retrying, of course, may make sense, if we have reasonable belief that
-> we may now succeed. If this is the case, you need to document - in the
-> code - while is that.
-> 
-> The memcg argument, however, doesn't really cut it. Why can't we make
-> all page_cgroup allocations local to the node they are describing? If
-> memcg is the culprit here, we should fix it, and not retry. If there is
-> still any benefit in retrying, then we retry being very specific about why.
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-We try to make all page_cgroup allocations local to the node they are describing
-now. If the memory is the first memory onlined in this node, we will allocate
-it from the other node.
+Introduced f2fs_msg function to differentiate f2fs specific messages in
+the log. And, added few informative prints in the mount path, to convey
+proper error in case of mount failure.
 
-For example, node1 has 4 memory blocks: 8-11, and we online it from 8 to 11
-1. memory block 8, page_cgroup allocations are in the other nodes
-2. memory block 9, page_cgroup allocations are in memory block 8
+Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+Signed-off-by: Amit Sahrawat <a.sahrawat@samsung.com>
+---
+ fs/f2fs/f2fs.h  |    2 ++
+ fs/f2fs/super.c |   80 +++++++++++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 65 insertions(+), 17 deletions(-)
 
-So we should offline memory block 9 first. But we don't know in which order
-the user online the memory block.
-
-I think we can modify memcg like this:
-allocate the memory from the memory block they are describing
-
-I am not sure it is OK to do so.
-
-Thanks
-Wen Congyang
-
-> 
-> 
-> 
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+index 13c6dfb..8199ee9 100644
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -877,6 +877,8 @@ bool f2fs_empty_dir(struct inode *);
+  * super.c
+  */
+ int f2fs_sync_fs(struct super_block *, int);
++extern __printf(3, 4)
++void f2fs_msg(struct super_block *, const char *, const char *, ...);
+ 
+ /*
+  * hash.c
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+index 08a94c8..67b978b 100644
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -53,6 +53,18 @@ static match_table_t f2fs_tokens = {
+ 	{Opt_err, NULL},
+ };
+ 
++void f2fs_msg(struct super_block *sb, const char *level, const char *fmt, ...)
++{
++	struct va_format vaf;
++	va_list args;
++
++	va_start(args, fmt);
++	vaf.fmt = fmt;
++	vaf.va = &args;
++	printk("%sF2FS-fs (%s): %pV\n", level, sb->s_id, &vaf);
++	va_end(args);
++}
++
+ static void init_once(void *foo)
+ {
+ 	struct f2fs_inode_info *fi = (struct f2fs_inode_info *) foo;
+@@ -247,7 +259,8 @@ static const struct export_operations f2fs_export_ops = {
+ 	.get_parent = f2fs_get_parent,
+ };
+ 
+-static int parse_options(struct f2fs_sb_info *sbi, char *options)
++static int parse_options(struct super_block *sb, struct f2fs_sb_info *sbi,
++				char *options)
+ {
+ 	substring_t args[MAX_OPT_ARGS];
+ 	char *p;
+@@ -286,7 +299,8 @@ static int parse_options(struct f2fs_sb_info *sbi, char *options)
+ 			break;
+ #else
+ 		case Opt_nouser_xattr:
+-			pr_info("nouser_xattr options not supported\n");
++			f2fs_msg(sb, KERN_INFO,
++				"nouser_xattr options not supported");
+ 			break;
+ #endif
+ #ifdef CONFIG_F2FS_FS_POSIX_ACL
+@@ -295,7 +309,7 @@ static int parse_options(struct f2fs_sb_info *sbi, char *options)
+ 			break;
+ #else
+ 		case Opt_noacl:
+-			pr_info("noacl options not supported\n");
++			f2fs_msg(sb, KERN_INFO, "noacl options not supported");
+ 			break;
+ #endif
+ 		case Opt_active_logs:
+@@ -309,8 +323,9 @@ static int parse_options(struct f2fs_sb_info *sbi, char *options)
+ 			set_opt(sbi, DISABLE_EXT_IDENTIFY);
+ 			break;
+ 		default:
+-			pr_err("Unrecognized mount option \"%s\" or missing value\n",
+-					p);
++			f2fs_msg(sb, KERN_ERR,
++				"Unrecognized mount option \"%s\" or missing value",
++				p);
+ 			return -EINVAL;
+ 		}
+ 	}
+@@ -337,23 +352,36 @@ static loff_t max_file_size(unsigned bits)
+ 	return result;
+ }
+ 
+-static int sanity_check_raw_super(struct f2fs_super_block *raw_super)
++static int sanity_check_raw_super(struct super_block *sb,
++			struct f2fs_super_block *raw_super)
+ {
+ 	unsigned int blocksize;
+ 
+-	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic))
++	if (F2FS_SUPER_MAGIC != le32_to_cpu(raw_super->magic)) {
++		f2fs_msg(sb, KERN_INFO,
++			"Magic Mismatch, valid(0x%x) - read(0x%x)",
++			F2FS_SUPER_MAGIC, le32_to_cpu(raw_super->magic));
+ 		return 1;
++	}
+ 
+ 	/* Currently, support only 4KB block size */
+ 	blocksize = 1 << le32_to_cpu(raw_super->log_blocksize);
+-	if (blocksize != PAGE_CACHE_SIZE)
++	if (blocksize != PAGE_CACHE_SIZE) {
++		f2fs_msg(sb, KERN_INFO,
++			"Invalid blocksize (%u), supports only 4KB\n",
++			blocksize);
+ 		return 1;
++	}
+ 	if (le32_to_cpu(raw_super->log_sectorsize) !=
+-					F2FS_LOG_SECTOR_SIZE)
++					F2FS_LOG_SECTOR_SIZE) {
++		f2fs_msg(sb, KERN_INFO, "Invalid log sectorsize");
+ 		return 1;
++	}
+ 	if (le32_to_cpu(raw_super->log_sectors_per_block) !=
+-					F2FS_LOG_SECTORS_PER_BLOCK)
++					F2FS_LOG_SECTORS_PER_BLOCK) {
++		f2fs_msg(sb, KERN_INFO, "Invalid log sectors per block");
+ 		return 1;
++	}
+ 	return 0;
+ }
+ 
+@@ -414,13 +442,16 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 		return -ENOMEM;
+ 
+ 	/* set a temporary block size */
+-	if (!sb_set_blocksize(sb, F2FS_BLKSIZE))
++	if (!sb_set_blocksize(sb, F2FS_BLKSIZE)) {
++		f2fs_msg(sb, KERN_ERR, "unable to set blocksize");
+ 		goto free_sbi;
++	}
+ 
+ 	/* read f2fs raw super block */
+ 	raw_super_buf = sb_bread(sb, 0);
+ 	if (!raw_super_buf) {
+ 		err = -EIO;
++		f2fs_msg(sb, KERN_ERR, "unable to read superblock");
+ 		goto free_sbi;
+ 	}
+ 	raw_super = (struct f2fs_super_block *)
+@@ -438,12 +469,14 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	set_opt(sbi, POSIX_ACL);
+ #endif
+ 	/* parse mount options */
+-	if (parse_options(sbi, (char *)data))
++	if (parse_options(sb, sbi, (char *)data))
+ 		goto free_sb_buf;
+ 
+ 	/* sanity checking of raw super */
+-	if (sanity_check_raw_super(raw_super))
++	if (sanity_check_raw_super(sb, raw_super)) {
++		f2fs_msg(sb, KERN_ERR, "Can't find a valid F2FS filesystem");
+ 		goto free_sb_buf;
++	}
+ 
+ 	sb->s_maxbytes = max_file_size(le32_to_cpu(raw_super->log_blocksize));
+ 	sb->s_max_links = F2FS_LINK_MAX;
+@@ -477,18 +510,23 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	/* get an inode for meta space */
+ 	sbi->meta_inode = f2fs_iget(sb, F2FS_META_INO(sbi));
+ 	if (IS_ERR(sbi->meta_inode)) {
++		f2fs_msg(sb, KERN_ERR, "Failed to read F2FS meta data inode");
+ 		err = PTR_ERR(sbi->meta_inode);
+ 		goto free_sb_buf;
+ 	}
+ 
+ 	err = get_valid_checkpoint(sbi);
+-	if (err)
++	if (err) {
++		f2fs_msg(sb, KERN_ERR, "Failed to get valid F2FS checkpoint");
+ 		goto free_meta_inode;
++	}
+ 
+ 	/* sanity checking of checkpoint */
+ 	err = -EINVAL;
+-	if (sanity_check_ckpt(raw_super, sbi->ckpt))
++	if (sanity_check_ckpt(raw_super, sbi->ckpt)) {
++		f2fs_msg(sb, KERN_ERR, "Invalid F2FS checkpoint");
+ 		goto free_cp;
++	}
+ 
+ 	sbi->total_valid_node_count =
+ 				le32_to_cpu(sbi->ckpt->valid_node_count);
+@@ -510,17 +548,24 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 
+ 	/* setup f2fs internal modules */
+ 	err = build_segment_manager(sbi);
+-	if (err)
++	if (err) {
++		f2fs_msg(sb, KERN_ERR,
++			"Failed to initialize F2FS segment manager");
+ 		goto free_sm;
++	}
+ 	err = build_node_manager(sbi);
+-	if (err)
++	if (err) {
++		f2fs_msg(sb, KERN_ERR,
++			"Failed to initialize F2FS node manager");
+ 		goto free_nm;
++	}
+ 
+ 	build_gc_manager(sbi);
+ 
+ 	/* get an inode for node space */
+ 	sbi->node_inode = f2fs_iget(sb, F2FS_NODE_INO(sbi));
+ 	if (IS_ERR(sbi->node_inode)) {
++		f2fs_msg(sb, KERN_ERR, "Failed to read node inode");
+ 		err = PTR_ERR(sbi->node_inode);
+ 		goto free_nm;
+ 	}
+@@ -533,6 +578,7 @@ static int f2fs_fill_super(struct super_block *sb, void *data, int silent)
+ 	/* read root inode and dentry */
+ 	root = f2fs_iget(sb, F2FS_ROOT_INO(sbi));
+ 	if (IS_ERR(root)) {
++		f2fs_msg(sb, KERN_ERR, "Failed to read root inode");
+ 		err = PTR_ERR(root);
+ 		goto free_node_inode;
+ 	}
+-- 
+1.7.9.5
 
