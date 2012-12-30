@@ -1,42 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab2L3KMq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 05:12:46 -0500
-Received: from ns.km20343-01.keymachine.de ([84.19.182.79]:40204 "EHLO
-	km20343-01.keymachine.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750946Ab2L3KMn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 05:12:43 -0500
-Message-ID: <1356862159.7991.6.camel@tellur>
-Subject: Re: [git pull] drm fixes
-From: Lucas Stach <dev@lynxeye.de>
-To: Dave Airlie <airlied@linux.ie>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-In-Reply-To: <alpine.DEB.2.00.1212300420180.7673@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1212300420180.7673@skynet.skynet.ie>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 30 Dec 2012 11:09:19 +0100
-Mime-Version: 1.0
-X-Mailer: Evolution 3.6.2 (3.6.2-3.fc18) 
-Content-Transfer-Encoding: 7bit
+	id S1754445Ab2L3KiC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 05:38:02 -0500
+Received: from mga11.intel.com ([192.55.52.93]:10433 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753936Ab2L3KiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 05:38:00 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,381,1355126400"; 
+   d="asc'?scan'208";a="271214102"
+Date: Sun, 30 Dec 2012 12:38:50 +0200
+From: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-mips@linux-mips.org, Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: 3.8-rc1 build failure with MIPS/SPARSEMEM
+Message-ID: <20121230103850.GA5424@otc-wbsnb-06>
+References: <20121222122757.GB6847@blackmetal.musicnaut.iki.fi>
+ <20121226003434.GA27760@otc-wbsnb-06>
+ <20121227121607.GA7097@blackmetal.musicnaut.iki.fi>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
+Content-Disposition: inline
+In-Reply-To: <20121227121607.GA7097@blackmetal.musicnaut.iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dave,
 
-Am Sonntag, den 30.12.2012, 04:23 +0000 schrieb Dave Airlie:
-> Hi Linus,
-> 
-[...]
-> 
-> Lucas Stach (6):
->       drm: tegra: protect DC register access with mutex
-        ^^^^ This patch is unnecessary and really shouldn't go in. There
-was a brief discussion on the list with the conclusion to disregard this
-patch.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-Lucas
+On Thu, Dec 27, 2012 at 02:16:07PM +0200, Aaro Koskinen wrote:
+> Hi,
+>=20
+> On Wed, Dec 26, 2012 at 02:34:35AM +0200, Kirill A. Shutemov wrote:
+> > On MIPS if SPARSEMEM is enabled we've got this:
+> >=20
+> > In file included from /home/kas/git/public/linux/arch/mips/include/asm/=
+pgtable.h:552,
+> >                  from include/linux/mm.h:44,
+> >                  from arch/mips/kernel/asm-offsets.c:14:
+> > include/asm-generic/pgtable.h: In function =E2=80=98my_zero_pfn=E2=80=
+=99:
+> > include/asm-generic/pgtable.h:466: error: implicit declaration of funct=
+ion =E2=80=98page_to_section=E2=80=99
+> > In file included from arch/mips/kernel/asm-offsets.c:14:
+> > include/linux/mm.h: At top level:
+> > include/linux/mm.h:738: error: conflicting types for =E2=80=98page_to_s=
+ection=E2=80=99
+> > include/asm-generic/pgtable.h:466: note: previous implicit declaration =
+of =E2=80=98page_to_section=E2=80=99 was here
+> >=20
+> > Due header files inter-dependencies, the only way I see to fix it is
+> > convert my_zero_pfn() for __HAVE_COLOR_ZERO_PAGE to macros.
+> >=20
+> > Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
+>=20
+> Thanks, this works.
+>=20
+> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
 
+Andrew, could you take the patch?
+
+--=20
+ Kirill A. Shutemov
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ4Bm5AAoJEAd+omnVudOMz1oP/3Gv20OjCZOhdYhdsufNiNDN
+Hw5t2YwyzXVQ+HtHpqQuMXzdbHJYDWGALwvoyw1QMBxYkD8hVpc6bD7DpL23QHqv
+JhV3luv30NrXIFaIhnu2ZPjNST43jVCI1SOrg35hTqCGehYtQIYuIWvDytXNlJtu
+6chzAon5KgGS1fY60G7t0uL8CyLzywDZ7Gs0Y5S3TizR0Z/J5kk3R3uHN6oRsN3Y
+WWKKebJgLtzq6cWoVjJhFvB+HqAHK7I4+6hpcE7FvC0phjJubCcnLDQ8g7O2XKBY
+jOTOVZt4SbOuzsBYvNzVPIkxOW4M9pfy4NUw9MWPR/ilJGWlM6k2dJ+9Zum2fKLE
+dJ3J1McnfSgf5HUIR7icPxeklCGUsWl2qjqINP7k0j4bYmlHLdYKV1N0FPdSTb/F
+f0nuzbHB1DbvID9OXgyzkrznTdZ7vx67RJSLkR6tFzeaKZJbqlVcGc+l9B+EA6o1
+E8VHlXWpyH7kncIHXUOgoY93LESWAMF6/lLjCUZqVIxMZV9/T+bpkcAAuambS10Q
+tswy3L5I6oMvkfXviSjUfa7HFxfhkvGPoocDdStS4v8SAlK/aM6K12U/Vlr/Svif
+5lfavj8P9S+R0ECyn+4wdzP71zRkmB4MP+eJdG8jSnos0zpZq21nntKCeD+EcWEC
+/3r3MPDCqj+vz32O6xke
+=VVis
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
