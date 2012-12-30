@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494Ab2L3FnL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 00:43:11 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:38733 "EHLO song.cn.fujitsu.com"
+	id S1751428Ab2L3Fvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 00:51:32 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:31123 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750735Ab2L3FnG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 00:43:06 -0500
+	id S1750814Ab2L3Fv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 00:51:28 -0500
 X-IronPort-AV: E=Sophos;i="4.84,379,1355068800"; 
-   d="scan'208";a="6500583"
-Message-ID: <50DFD5FF.7050609@cn.fujitsu.com>
-Date: Sun, 30 Dec 2012 13:49:51 +0800
+   d="scan'208";a="6500610"
+Message-ID: <50DFD7F7.5090408@cn.fujitsu.com>
+Date: Sun, 30 Dec 2012 13:58:15 +0800
 From: Wen Congyang <wency@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Glauber Costa <glommer@parallels.com>
 CC: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
         rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -27,21 +27,21 @@ CC: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
         cmetcalf@tilera.com, sparclinux@vger.kernel.org
 Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
  to avoid dependence
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50DA68A8.4060001@jp.fujitsu.com>
-In-Reply-To: <50DA68A8.4060001@jp.fujitsu.com>
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com>
+In-Reply-To: <50D96543.6010903@parallels.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/30 13:42:43,
+ 2012/12/30 13:51:07,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2012/12/30 13:42:45,
-	Serialize complete at 2012/12/30 13:42:45
+ 2012/12/30 13:51:08,
+	Serialize complete at 2012/12/30 13:51:08
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At 12/26/2012 11:02 AM, Kamezawa Hiroyuki Wrote:
-> (2012/12/24 21:09), Tang Chen wrote:
+At 12/25/2012 04:35 PM, Glauber Costa Wrote:
+> On 12/24/2012 04:09 PM, Tang Chen wrote:
 >> From: Wen Congyang <wency@cn.fujitsu.com>
 >>
 >> memory can't be offlined when CONFIG_MEMCG is selected.
@@ -55,15 +55,6 @@ At 12/26/2012 11:02 AM, Kamezawa Hiroyuki Wrote:
 >> stored page cgroup may be provided by memory8. So we can't offline memory8
 >> now. We should offline the memory in the reversed order.
 >>
-> 
-> If memory8 is onlined as NORMAL memory ...right ?
-
-Yes, memory8 is onlined as NORMAL memory. And when we online memory9, we allocate
-memory from memory8 to store page cgroup information.
-
-> 
-> IIUC, vmalloc() uses __GFP_HIGHMEM but doesn't use __GFP_MOVABLE.
-> 
 >> When the memory device is hotremoved, we will auto offline memory provided
 >> by this memory device. But we don't know which memory is onlined first, so
 >> offlining memory may fail. In such case, iterate twice to offline the memory.
@@ -74,75 +65,38 @@ memory from memory8 to store page cgroup information.
 >>
 >> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 > 
-> I'm not sure but the whole DIMM should be onlined as MOVABLE mem ?
-
-If the whole DIMM is onlined as MOVABLE mem, we can offline it, and don't
-retry again.
-
+> Maybe there is something here that I am missing - I admit that I came
+> late to this one, but this really sounds like a very ugly hack, that
+> really has no place in here.
 > 
-> Anyway, I agree this kind of retry is required if memory is onlined as NORMAL mem.
-> But retry-once is ok ?
+> Retrying, of course, may make sense, if we have reasonable belief that
+> we may now succeed. If this is the case, you need to document - in the
+> code - while is that.
+> 
+> The memcg argument, however, doesn't really cut it. Why can't we make
+> all page_cgroup allocations local to the node they are describing? If
+> memcg is the culprit here, we should fix it, and not retry. If there is
+> still any benefit in retrying, then we retry being very specific about why.
 
-I'am not sure, but I think in most cases the user may online the memory according first
-which is hot-added first. So we may always fail in the first time, and retry-once can
-success.
+We try to make all page_cgroup allocations local to the node they are describing
+now. If the memory is the first memory onlined in this node, we will allocate
+it from the other node.
+
+For example, node1 has 4 memory blocks: 8-11, and we online it from 8 to 11
+1. memory block 8, page_cgroup allocations are in the other nodes
+2. memory block 9, page_cgroup allocations are in memory block 8
+
+So we should offline memory block 9 first. But we don't know in which order
+the user online the memory block.
+
+I think we can modify memcg like this:
+allocate the memory from the memory block they are describing
+
+I am not sure it is OK to do so.
 
 Thanks
 Wen Congyang
 
-> 
-> Thanks,
-> -Kame
-> 
->> ---
->>   mm/memory_hotplug.c |   16 ++++++++++++++--
->>   1 files changed, 14 insertions(+), 2 deletions(-)
->>
->> diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
->> index d04ed87..62e04c9 100644
->> --- a/mm/memory_hotplug.c
->> +++ b/mm/memory_hotplug.c
->> @@ -1388,10 +1388,13 @@ int remove_memory(u64 start, u64 size)
->>   	unsigned long start_pfn, end_pfn;
->>   	unsigned long pfn, section_nr;
->>   	int ret;
->> +	int return_on_error = 0;
->> +	int retry = 0;
->>   
->>   	start_pfn = PFN_DOWN(start);
->>   	end_pfn = start_pfn + PFN_DOWN(size);
->>   
->> +repeat:
->>   	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
->>   		section_nr = pfn_to_section_nr(pfn);
->>   		if (!present_section_nr(section_nr))
->> @@ -1410,14 +1413,23 @@ int remove_memory(u64 start, u64 size)
->>   
->>   		ret = offline_memory_block(mem);
->>   		if (ret) {
->> -			kobject_put(&mem->dev.kobj);
->> -			return ret;
->> +			if (return_on_error) {
->> +				kobject_put(&mem->dev.kobj);
->> +				return ret;
->> +			} else {
->> +				retry = 1;
->> +			}
->>   		}
->>   	}
->>   
->>   	if (mem)
->>   		kobject_put(&mem->dev.kobj);
->>   
->> +	if (retry) {
->> +		return_on_error = 1;
->> +		goto repeat;
->> +	}
->> +
->>   	return 0;
->>   }
->>   #else
->>
 > 
 > 
 > 
