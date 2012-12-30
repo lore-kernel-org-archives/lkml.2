@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab2L3Qud (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 11:50:33 -0500
-Received: from mail.work-microwave.de ([62.245.205.51]:49340 "EHLO
+	id S1754889Ab2L3Qur (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 11:50:47 -0500
+Received: from mail.work-microwave.de ([62.245.205.51]:39115 "EHLO
 	work-microwave.de" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754508Ab2L3Qu1 (ORCPT
+	with ESMTP id S1754852Ab2L3Qul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 11:50:27 -0500
+	Sun, 30 Dec 2012 11:50:41 -0500
 From: Roland Stigge <stigge@antcom.de>
 To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         linus.walleij@linaro.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: gregkh@linuxfoundation.org, grant.likely@secretlab.ca,
         rmallon@gmail.com, sr@denx.de, wg@grandegger.com,
         tru@work-microwave.de, mark.rutland@arm.com
 Cc: Roland Stigge <stigge@antcom.de>
-Subject: [PATCH 2/6 v13] gpio: Add sysfs support to block GPIO API
-Date: Sun, 30 Dec 2012 17:49:35 +0100
-Message-Id: <1356886179-13535-3-git-send-email-stigge@antcom.de>
+Subject: [PATCH 4/6 v13] gpiolib: Fix default attributes for class
+Date: Sun, 30 Dec 2012 17:49:37 +0100
+Message-Id: <1356886179-13535-5-git-send-email-stigge@antcom.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1356886179-13535-1-git-send-email-stigge@antcom.de>
 References: <1356886179-13535-1-git-send-email-stigge@antcom.de>
@@ -27,407 +27,198 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds sysfs support to the block GPIO API.
+There is a race condition between creating a gpio or gpiochip device and adding
+default attributes. This patch fixes this by defining the default attributes as
+dev_attrs of the class. For this, it was necessary to create a separate
+gpiochip_class besides gpio_class.
 
 Signed-off-by: Roland Stigge <stigge@antcom.de>
-
 ---
- Documentation/ABI/testing/sysfs-gpio |   20 ++
- drivers/gpio/gpiolib.c               |  252 ++++++++++++++++++++++++++++++++++-
- include/asm-generic/gpio.h           |   11 +
- include/linux/gpio.h                 |   15 ++
- 4 files changed, 297 insertions(+), 1 deletion(-)
+ Documentation/ABI/testing/sysfs-gpio |   11 ++++
+ drivers/gpio/gpiolib.c               |   78 ++++++++++++++---------------------
+ 2 files changed, 44 insertions(+), 45 deletions(-)
 
 --- linux-2.6.orig/Documentation/ABI/testing/sysfs-gpio
 +++ linux-2.6/Documentation/ABI/testing/sysfs-gpio
-@@ -25,3 +25,23 @@ Description:
- 	    /label ... (r/o) descriptive, not necessarily unique
- 	    /ngpio ... (r/o) number of GPIOs; numbered N to N + (ngpio - 1)
- 
-+What:		/sys/class/gpioblock/
+@@ -20,6 +20,17 @@ Description:
+ 	    /value ... always readable, writes fail for input GPIOs
+ 	    /direction ... r/w as: in, out (default low); write: high, low
+ 	    /edge ... r/w as: none, falling, rising, both
++
++What:		/sys/class/gpiochip/
 +Date:		October 2012
 +KernelVersion:	3.7
 +Contact:	Roland Stigge <stigge@antcom.de>
 +Description:
 +
-+  Block GPIO devices are visible in sysfs as soon as they are registered
-+  (e.g. via devicetree definition). For actual I/O use, their "exported"
-+  boolean attribute must be set to "1". Then, the attribute "values" is
-+  created and at the same time, the GPIOs in the block are requested for
-+  exclusive use by sysfs.
++  Each gpiochip is represented by a separate device having the following
++  attributes:
 +
-+    /sys/class/gpioblock
-+	/BLOCKNAME ... for each GPIO block name
-+	    /ngpio ... (r/o) number of GPIOs in this group
-+	    /exported ... sysfs export state of this group (0, 1)
-+	    /value ... current value as 32 or 64 bit integer in hex
-+                       (only available if /exported is 1)
-+	    /mask ... current mask as 32 or 64 bit integer in hex
-+                       (only available if /exported is 1)
++    /sys/class/gpiochip
+ 	/gpiochipN ... for each gpiochip; #N is its first GPIO
+ 	    /base ... (r/o) same as N
+ 	    /label ... (r/o) descriptive, not necessarily unique
 --- linux-2.6.orig/drivers/gpio/gpiolib.c
 +++ linux-2.6/drivers/gpio/gpiolib.c
-@@ -224,7 +224,8 @@ static bool gpio_block_is_output(struct
- 	int i;
- 
- 	for (i = 0; i < block->ngpio; i++)
--		if (!test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags))
-+		if ((block->cur_mask & BIT(i)) &&
-+		    !test_bit(FLAG_IS_OUT, &gpio_desc[block->gpio[i]].flags))
- 			return false;
- 	return true;
- }
-@@ -1020,6 +1021,240 @@ static void gpiochip_unexport(struct gpi
- 				chip->label, status);
+@@ -362,9 +362,6 @@ static ssize_t gpio_value_store(struct d
+ 	return status;
  }
  
-+static ssize_t gpio_block_ngpio_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	const struct gpio_block	*block = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%u\n", block->ngpio);
-+}
-+
-+static ssize_t gpio_block_value_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf)
-+{
-+	const struct gpio_block *block = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, sizeof(unsigned long) == 4 ? "0x%08lx\n" :
-+		       "0x%016lx\n", gpio_block_get(block, block->cur_mask));
-+}
-+
-+static ssize_t gpio_block_value_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t size)
-+{
-+	ssize_t			status;
-+	struct gpio_block	*block = dev_get_drvdata(dev);
-+	unsigned long		value;
-+
-+	status = kstrtoul(buf, 0, &value);
-+	if (status == 0) {
-+		mutex_lock(&sysfs_lock);
-+		if (gpio_block_is_output(block)) {
-+			gpio_block_set(block, block->cur_mask, value);
-+			status = size;
-+		} else {
-+			status = -EPERM;
-+		}
-+		mutex_unlock(&sysfs_lock);
-+	}
-+	return status;
-+}
-+
-+static struct device_attribute
-+dev_attr_block_value = __ATTR(value, S_IWUSR | S_IRUGO, gpio_block_value_show,
-+			      gpio_block_value_store);
-+
-+static ssize_t gpio_block_mask_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
-+{
-+	const struct gpio_block *block = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, sizeof(unsigned long) == 4 ? "0x%08lx\n" :
-+		       "0x%016lx\n", block->cur_mask);
-+}
-+
-+static ssize_t gpio_block_mask_store(struct device *dev,
-+				     struct device_attribute *attr,
-+				     const char *buf, size_t size)
-+{
-+	ssize_t			status;
-+	struct gpio_block	*block = dev_get_drvdata(dev);
-+	unsigned long		mask;
-+
-+	status = kstrtoul(buf, 0, &mask);
-+	if (status == 0) {
-+		block->cur_mask = mask;
-+		status = size;
-+	}
-+	return status;
-+}
-+
-+static struct device_attribute
-+dev_attr_block_mask = __ATTR(mask, S_IWUSR | S_IRUGO, gpio_block_mask_show,
-+			     gpio_block_mask_store);
-+
-+static struct class gpio_block_class;
-+
-+static int gpio_block_value_is_exported(struct gpio_block *block)
-+{
-+	struct device		*dev;
-+	struct sysfs_dirent	*sd = NULL;
-+
-+	mutex_lock(&sysfs_lock);
-+	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
-+	if (!dev)
-+		goto out;
-+
-+	sd = sysfs_get_dirent(dev->kobj.sd, NULL, "value");
-+
-+out:
-+	mutex_unlock(&sysfs_lock);
-+	return !!sd;
-+}
-+
-+static ssize_t gpio_block_exported_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct gpio_block	*block = dev_get_drvdata(dev);
-+
-+	return sprintf(buf, "%u\n", gpio_block_value_is_exported(block));
-+}
-+
-+static int gpio_block_value_export(struct gpio_block *block)
-+{
-+	struct device	*dev;
-+	int		status;
-+	int		i;
-+
-+	mutex_lock(&sysfs_lock);
-+
-+	for (i = 0; i < block->ngpio; i++) {
-+		status = gpio_request(block->gpio[i], "sysfs");
-+		if (status)
-+			goto out1;
-+	}
-+
-+	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
-+	if (!dev) {
-+		status = -ENODEV;
-+		goto out1;
-+	}
-+
-+	status = device_create_file(dev, &dev_attr_block_value);
-+	if (status)
-+		goto out1;
-+
-+	status = device_create_file(dev, &dev_attr_block_mask);
-+	if (status)
-+		goto out2;
-+
-+	mutex_unlock(&sysfs_lock);
-+	return 0;
-+
-+out2:
-+	device_remove_file(dev, &dev_attr_block_value);
-+out1:
-+	while (--i >= 0)
-+		gpio_free(block->gpio[i]);
-+
-+	mutex_unlock(&sysfs_lock);
-+	return status;
-+}
-+
-+static int gpio_block_value_unexport(struct gpio_block *block)
-+{
-+	struct device	*dev;
-+	int		i;
-+
-+	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
-+	if (!dev)
-+		return -ENODEV;
-+
-+	for (i = 0; i < block->ngpio; i++)
-+		gpio_free(block->gpio[i]);
-+
-+	device_remove_file(dev, &dev_attr_block_value);
-+	device_remove_file(dev, &dev_attr_block_mask);
-+
-+	return 0;
-+}
-+
-+static ssize_t gpio_block_exported_store(struct device *dev,
-+					 struct device_attribute *attr,
-+					 const char *buf, size_t size)
-+{
-+	long	value;
-+	int	status;
-+	struct	gpio_block *block = dev_get_drvdata(dev);
-+	int	exported = gpio_block_value_is_exported(block);
-+
-+	status = kstrtoul(buf, 0, &value);
-+	if (status < 0)
-+		goto err;
-+
-+	if (value != exported) {
-+		if (value)
-+			status = gpio_block_value_export(block);
-+		else
-+			status = gpio_block_value_unexport(block);
-+		if (!status)
-+			status = size;
-+	} else {
-+		status = size;
-+	}
-+err:
-+	return status;
-+}
-+
-+static struct device_attribute gpio_block_attrs[] = {
-+	__ATTR(exported, S_IWUSR | S_IRUGO, gpio_block_exported_show,
-+	       gpio_block_exported_store),
-+	__ATTR(ngpio, S_IRUGO, gpio_block_ngpio_show, NULL),
+-static const DEVICE_ATTR(value, 0644,
+-		gpio_value_show, gpio_value_store);
+-
+ static irqreturn_t gpio_sysfs_irq(int irq, void *priv)
+ {
+ 	struct sysfs_dirent	*value_sd = priv;
+@@ -585,19 +582,6 @@ static ssize_t gpio_active_low_store(str
+ 	return status ? : size;
+ }
+ 
+-static const DEVICE_ATTR(active_low, 0644,
+-		gpio_active_low_show, gpio_active_low_store);
+-
+-static const struct attribute *gpio_attrs[] = {
+-	&dev_attr_value.attr,
+-	&dev_attr_active_low.attr,
+-	NULL,
+-};
+-
+-static const struct attribute_group gpio_attr_group = {
+-	.attrs = (struct attribute **) gpio_attrs,
+-};
+-
+ /*
+  * /sys/class/gpio/gpiochipN/
+  *   /base ... matching gpio_chip.base (N)
+@@ -612,7 +596,6 @@ static ssize_t chip_base_show(struct dev
+ 
+ 	return sprintf(buf, "%d\n", chip->base);
+ }
+-static DEVICE_ATTR(base, 0444, chip_base_show, NULL);
+ 
+ static ssize_t chip_label_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+@@ -621,7 +604,6 @@ static ssize_t chip_label_show(struct de
+ 
+ 	return sprintf(buf, "%s\n", chip->label ? : "");
+ }
+-static DEVICE_ATTR(label, 0444, chip_label_show, NULL);
+ 
+ static ssize_t chip_ngpio_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+@@ -630,18 +612,6 @@ static ssize_t chip_ngpio_show(struct de
+ 
+ 	return sprintf(buf, "%u\n", chip->ngpio);
+ }
+-static DEVICE_ATTR(ngpio, 0444, chip_ngpio_show, NULL);
+-
+-static const struct attribute *gpiochip_attrs[] = {
+-	&dev_attr_base.attr,
+-	&dev_attr_label.attr,
+-	&dev_attr_ngpio.attr,
+-	NULL,
+-};
+-
+-static const struct attribute_group gpiochip_attr_group = {
+-	.attrs = (struct attribute **) gpiochip_attrs,
+-};
+ 
+ /*
+  * /sys/class/gpio/export ... write-only
+@@ -720,11 +690,32 @@ static struct class_attribute gpio_class
+ 	__ATTR_NULL,
+ };
+ 
++static struct device_attribute gpio_attrs[] = {
++	__ATTR(active_low, 0644, gpio_active_low_show, gpio_active_low_store),
++	__ATTR(value, 0644, gpio_value_show, gpio_value_store),
 +	__ATTR_NULL,
 +};
 +
-+static struct class gpio_block_class = {
-+	.name =         "gpioblock",
-+	.owner =        THIS_MODULE,
-+
-+	.dev_attrs =  gpio_block_attrs,
+ static struct class gpio_class = {
+ 	.name =		"gpio",
+ 	.owner =	THIS_MODULE,
+ 
+-	.class_attrs =	gpio_class_attrs,
++	.class_attrs = gpio_class_attrs,
++	.dev_attrs = gpio_attrs,
 +};
 +
-+int gpio_block_export(struct gpio_block *block)
-+{
-+	int		status = 0;
-+	struct device	*dev;
++static struct device_attribute gpiochip_attrs[] = {
++	__ATTR(label, 0444, chip_label_show, NULL),
++	__ATTR(base, 0444, chip_base_show, NULL),
++	__ATTR(ngpio, 0444, chip_ngpio_show, NULL),
++	__ATTR_NULL,
++};
 +
-+	/* can't export until sysfs is available ... */
-+	if (!gpio_block_class.p) {
-+		pr_debug("%s: called too early!\n", __func__);
-+		return -ENOENT;
-+	}
++static struct class gpiochip_class = {
++	.name =		"gpiochip",
++	.owner =	THIS_MODULE,
 +
-+	mutex_lock(&sysfs_lock);
-+	dev = device_create(&gpio_block_class, NULL, MKDEV(0, 0), block,
-+			    block->name);
-+	if (IS_ERR(dev))
-+		status = PTR_ERR(dev);
-+	mutex_unlock(&sysfs_lock);
-+
-+	return status;
-+}
-+EXPORT_SYMBOL_GPL(gpio_block_export);
-+
-+void gpio_block_unexport(struct gpio_block *block)
-+{
-+	struct device *dev;
-+
-+	mutex_lock(&sysfs_lock);
-+	dev = class_find_device(&gpio_block_class, NULL, block, match_export);
-+	if (dev)
-+		device_unregister(dev);
-+	mutex_unlock(&sysfs_lock);
-+}
-+EXPORT_SYMBOL_GPL(gpio_block_unexport);
-+
- static int __init gpiolib_sysfs_init(void)
++	.dev_attrs =	gpiochip_attrs,
+ };
+ 
+ 
+@@ -791,10 +782,6 @@ int gpio_export(unsigned gpio, bool dire
+ 		goto fail_unlock;
+ 	}
+ 
+-	status = sysfs_create_group(&dev->kobj, &gpio_attr_group);
+-	if (status)
+-		goto fail_unregister_device;
+-
+ 	if (direction_may_change) {
+ 		status = device_create_file(dev, &dev_attr_direction);
+ 		if (status)
+@@ -962,25 +949,22 @@ EXPORT_SYMBOL_GPL(gpio_unexport);
+ 
+ static int gpiochip_export(struct gpio_chip *chip)
  {
- 	int		status;
-@@ -1030,6 +1265,10 @@ static int __init gpiolib_sysfs_init(voi
+-	int		status;
++	int		status = 0;
+ 	struct device	*dev;
+ 
+ 	/* Many systems register gpio chips for SOC support very early,
+ 	 * before driver model support is available.  In those cases we
+ 	 * export this later, in gpiolib_sysfs_init() ... here we just
+-	 * verify that _some_ field of gpio_class got initialized.
++	 * verify that _some_ field of gpiochip_class got initialized.
+ 	 */
+-	if (!gpio_class.p)
++	if (!gpiochip_class.p)
+ 		return 0;
+ 
+ 	/* use chip->base for the ID; it's already known to be unique */
+ 	mutex_lock(&sysfs_lock);
+-	dev = device_create(&gpio_class, chip->dev, MKDEV(0, 0), chip,
+-				"gpiochip%d", chip->base);
+-	if (!IS_ERR(dev)) {
+-		status = sysfs_create_group(&dev->kobj,
+-				&gpiochip_attr_group);
+-	} else
++	dev = device_create(&gpiochip_class, chip->dev, MKDEV(0, 0), chip,
++			    "gpiochip%d", chip->base);
++	if (IS_ERR(dev))
+ 		status = PTR_ERR(dev);
+ 	chip->exported = (status == 0);
+ 	mutex_unlock(&sysfs_lock);
+@@ -1008,7 +992,7 @@ static void gpiochip_unexport(struct gpi
+ 	struct device		*dev;
+ 
+ 	mutex_lock(&sysfs_lock);
+-	dev = class_find_device(&gpio_class, NULL, chip, match_export);
++	dev = class_find_device(&gpiochip_class, NULL, chip, match_export);
+ 	if (dev) {
+ 		put_device(dev);
+ 		device_unregister(dev);
+@@ -1267,6 +1251,10 @@ static int __init gpiolib_sysfs_init(voi
  	if (status < 0)
  		return status;
  
-+	status = class_register(&gpio_block_class);
++	status = class_register(&gpiochip_class);
 +	if (status < 0)
 +		return status;
 +
- 	/* Scan and register the gpio_chips which registered very
- 	 * early (e.g. before the class_register above was called).
- 	 *
-@@ -1843,6 +2082,7 @@ struct gpio_block *gpio_block_create(uns
- 
- 	block->name = name;
- 	block->ngpio = size;
-+	block->cur_mask = ~0;
- 	INIT_LIST_HEAD(&block->gbc_list);
- 	block->gpio = kzalloc(sizeof(*block->gpio) * size, GFP_KERNEL);
- 	if (!block->gpio)
-@@ -2005,12 +2245,21 @@ EXPORT_SYMBOL_GPL(gpio_block_find_by_nam
- 
- int gpio_block_register(struct gpio_block *block)
- {
-+	int ret;
-+
- 	if (gpio_block_find_by_name(block->name))
- 		return -EBUSY;
- 
- 	list_add(&block->list, &gpio_block_list);
- 
-+	ret = gpio_block_export(block);
-+	if (ret)
-+		goto err1;
-+
- 	return 0;
-+err1:
-+	list_del(&block->list);
-+	return ret;
- }
- EXPORT_SYMBOL_GPL(gpio_block_register);
- 
-@@ -2021,6 +2270,7 @@ void gpio_block_unregister(struct gpio_b
- 	list_for_each_entry(i, &gpio_block_list, list)
- 		if (i == block) {
- 			list_del(&i->list);
-+			gpio_block_unexport(block);
- 			break;
- 		}
- }
---- linux-2.6.orig/include/asm-generic/gpio.h
-+++ linux-2.6/include/asm-generic/gpio.h
-@@ -226,6 +226,8 @@ extern int gpio_export_link(struct devic
- 			unsigned gpio);
- extern int gpio_sysfs_set_active_low(unsigned gpio, int value);
- extern void gpio_unexport(unsigned gpio);
-+extern int gpio_block_export(struct gpio_block *block);
-+extern void gpio_block_unexport(struct gpio_block *block);
- 
- #endif	/* CONFIG_GPIO_SYSFS */
- 
-@@ -285,6 +287,15 @@ static inline int gpio_sysfs_set_active_
- static inline void gpio_unexport(unsigned gpio)
- {
- }
-+
-+static inline int gpio_block_export(struct gpio_block *block)
-+{
-+	return -ENOSYS;
-+}
-+
-+static inline void gpio_block_unexport(struct gpio_block *block)
-+{
-+}
- #endif	/* CONFIG_GPIO_SYSFS */
- 
- #ifdef CONFIG_PINCTRL
---- linux-2.6.orig/include/linux/gpio.h
-+++ linux-2.6/include/linux/gpio.h
-@@ -88,6 +88,7 @@ struct gpio_block_chip {
-  * @ngpio:      number of gpios in this block
-  * @gpio:       list of gpios in this block
-  * @list:       global list of blocks, maintained by gpiolib
-+ * @cur_mask:   currently used gpio mask used by userspace API
-  */
- struct gpio_block {
- 	struct list_head	gbc_list;
-@@ -97,6 +98,7 @@ struct gpio_block {
- 	unsigned		*gpio;
- 
- 	struct list_head	list;
-+	unsigned long		cur_mask;
- };
- 
- #ifdef CONFIG_GENERIC_GPIO
-@@ -314,6 +316,19 @@ static inline void gpio_unexport(unsigne
- 	WARN_ON(1);
- }
- 
-+static inline int gpio_block_export(struct gpio_block *block)
-+{
-+	/* GPIO block can never have been requested or set as {in,out}put */
-+	WARN_ON(1);
-+	return -EINVAL;
-+}
-+
-+static inline void gpio_block_unexport(struct gpio_block *block)
-+{
-+	/* GPIO block can never have been exported */
-+	WARN_ON(1);
-+}
-+
- static inline int gpio_to_irq(unsigned gpio)
- {
- 	/* GPIO can never have been requested or set as input */
+ 	status = class_register(&gpio_block_class);
+ 	if (status < 0)
+ 		return status;
