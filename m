@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751712Ab2LaS4k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 13:56:40 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:50709 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751629Ab2LaS4i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 13:56:38 -0500
-From: Devendra Naga <devendra.aaru@gmail.com>
-To: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org
-Cc: Devendra Naga <devendra.aaru@gmail.com>
-Subject: [PATCH] uio: sercos3: use devm_kzalloc
-Date: Mon, 31 Dec 2012 13:56:29 -0500
-Message-Id: <1356980189-19749-1-git-send-email-devendra.aaru@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751758Ab2LaS6n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 13:58:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5538 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751647Ab2LaS6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 13:58:41 -0500
+To: Jovi Zhang <bookjovi@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] ktap: Another dynamic tracing tool for Linux
+References: <CACV3sb+69VQMM44vXx_-AdOZmbz18zZeVdmi1+YHEq7kZ_VmdA@mail.gmail.com>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Mon, 31 Dec 2012 13:58:39 -0500
+In-Reply-To: <CACV3sb+69VQMM44vXx_-AdOZmbz18zZeVdmi1+YHEq7kZ_VmdA@mail.gmail.com> (Jovi Zhang's message of "Mon, 31 Dec 2012 11:32:39 +0800")
+Message-ID: <y0mliceujz4.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use devm_kzalloc and no need of free's at error path and unload
 
-Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
----
+bookjovi wrote:
 
-Please apply this after
 
-changeid: 1fb4ec94e7e955a1e26bf81f2634e5be2fa5f1d5
-[PATCH] uio: uio_sercos3: use module_pci_driver macro
+> [...]  This mail is RFC for discuss on a new dynamic tracing tool, I
+> name it ktap. (only experimental project now)
 
-sorry for sending as patch should be patch 2/2.
+Welcome to the problem domain!
 
- drivers/uio/uio_sercos3.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/uio/uio_sercos3.c b/drivers/uio/uio_sercos3.c
-index 5419832..c0d758a 100644
---- a/drivers/uio/uio_sercos3.c
-+++ b/drivers/uio/uio_sercos3.c
-@@ -123,16 +123,16 @@ static int sercos3_pci_probe(struct pci_dev *dev,
- 	struct sercos3_priv *priv;
- 	int i;
- 
--	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
-+	info = devm_kzalloc(&dev->dev, sizeof(struct uio_info), GFP_KERNEL);
- 	if (!info)
- 		return -ENOMEM;
- 
--	priv = kzalloc(sizeof(struct sercos3_priv), GFP_KERNEL);
-+	priv = devm_kzalloc(&dev->dev, sizeof(struct sercos3_priv), GFP_KERNEL);
- 	if (!priv)
--		goto out_free;
-+		return -ENOMEM;
- 
- 	if (pci_enable_device(dev))
--		goto out_free_priv;
-+		goto out;
- 
- 	if (pci_request_regions(dev, "sercos3"))
- 		goto out_disable;
-@@ -173,10 +173,7 @@ out_unmap:
- 	pci_release_regions(dev);
- out_disable:
- 	pci_disable_device(dev);
--out_free_priv:
--	kfree(priv);
--out_free:
--	kfree(info);
-+out:
- 	return -ENODEV;
- }
- 
-@@ -193,8 +190,6 @@ static void sercos3_pci_remove(struct pci_dev *dev)
- 		if (info->mem[i].internal_addr)
- 			iounmap(info->mem[i].internal_addr);
- 	}
--	kfree(info->priv);
--	kfree(info);
- }
- 
- static struct pci_device_id sercos3_pci_ids[] = {
--- 
-1.7.10.4
+> [...]
+> what ktap differentiates with Systemtap is:
+> [...]
+> 2). ktap have good portability, because it compile source file to
+> bytecode, like python and Java.
 
+(From this PoV, systemtap is just as portable as the kernel, as it
+generates the same sort of C code the kernel is built from.)
+
+> [...]
+> 5). ktap will be open source completely, with GPL license, it might be
+> merge into mainline in someday, that's very convince for tracing user.
+
+(systemtap has always been GPLv2, ever since its beginning in 2005.)
+
+
+> [...]
+> ktap use lua language syntax and bytecode as initial implementation,
+
+Interesting approach.  I recall we considered it way back when, but
+rejected it for a couple of reasons, including the at-the-time
+perceived unwelcomeness of a serious bytecode interpreter within the
+kernel.
+
+
+> it could support kprobe, uprobe, userspace probe, etc.
+
+Great.
+
+> I wish you can give me some technical architecture pre-review for
+> ktap, before ktap release 1.0.
+> Any comments is welcome, thanks very much.
+
+Have you made any source code available yet?
+
+
+- FChE
