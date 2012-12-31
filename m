@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751507Ab2LaPii (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 10:38:38 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:37466 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab2LaPig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 10:38:36 -0500
-Date: Mon, 31 Dec 2012 19:38:33 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Serge Hallyn <serge.hallyn@canonical.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        James Morris <jmorris@namei.org>
-Subject: Re: [PATCH] prctl: fix validation of an address
-Message-ID: <20121231153833.GA11523@moon>
-References: <1356778810-20879-1-git-send-email-avagin@openvz.org>
- <1356904987.9725.10.camel@localhost>
- <20121231101414.GA27119@paralelels.com>
- <1356964034.31923.12.camel@localhost>
- <20121231151356.GA11118@moon>
- <1356967247.31923.14.camel@localhost>
+	id S1751434Ab2LaQLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 11:11:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:60881 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751020Ab2LaQLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 11:11:50 -0500
+Date: Mon, 31 Dec 2012 17:11:35 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH v2 2/3] mm: Update file times when inodes are written
+ after mmaped writes
+Message-ID: <20121231161135.GH7564@quack.suse.cz>
+References: <cover.1356124965.git.luto@amacapital.net>
+ <6b22b806806b21af02b70a2fa860a9d10304fc16.1356124965.git.luto@amacapital.net>
+ <20121222082933.GA26477@infradead.org>
+ <CALCETrX423Au=Q0SgdpFp7hcVBAw0t4FprO18Wk9j0K=j8fg_w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356967247.31923.14.camel@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CALCETrX423Au=Q0SgdpFp7hcVBAw0t4FprO18Wk9j0K=j8fg_w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 31, 2012 at 10:20:47AM -0500, Eric Paris wrote:
+On Sat 22-12-12 00:43:30, Andy Lutomirski wrote:
+> On Sat, Dec 22, 2012 at 12:29 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> > NAK, we went through great trouble to get rid of the nasty layering
+> > violation where the VM called file_update_time directly just a short
+> > while ago, reintroducing that is a massive step back.
+> >
+> > Make sure whatever "solution" for your problem you come up with keeps
+> > the file update in the filesystem or generic helpers.
+>
 > 
-> Is there anything which prevents an unpriv application from changing
-> mm.mm_start_code and mm.mm_end_code in the image, thus taking advantage
-> of the privileged restore code to bypass the mmap_min_addr
-> restrictions? 
+> There's an inode operation ->update_time that is called (if it exists)
+> in these patches to update the time.  Is that insufficient?
+  Filesystems need more choice in when they modify time stamps because that
+can mean complex work like starting a transaction which has various locking
+implications. Just making a separate callback for this doesn't really solve
+the problem. Although I don't see particular problem with the call sites you
+chose Christoph is right we probably don't want to reintroduce updates of
+time stamps from generic code because eventually someone will have problem
+with that.
 
-Well, you can assign some values in image directly (note the crtools
-is running with root priveleges and image files have appropriate
-owner:group) because image format is opened and well known from
-crtools source code or from protobufer files we use to descibe the
-entries in image. Thus it's assumed that administrator/root guarantee
-that images are not modified after checkpoint (image signing,
-checksumming and such). Also note the members being assigned in
-this prctl call are not critical but rather used for statistics
-output in procfs as far as I remember.
+> I could add a new inode operation ->modified_by_mmap that would be
+> called in mapping_flush_cmtime if that would be better.
+  Not really. That's only uglier ;)
 
-	Cyrill
+> The original version of this patch did the update in ->writepage and
+> ->writepages, but that may have had lock ordering issues.  (I wasn't
+> able to confirm that there was any actual problem.)
+  Well, your call of mapping_flush_cmtime() from do_writepages() is easy to
+move to generic_writepages(). Thus filesystem can easily implement it's own
+->writepages() callback if time update doesn't suit it. With the call from
+remove_vma() it is more problematic (and the calling context there is
+harder as well because we hold mmap_sem). We could maybe leave the call
+upto filesystem's ->release callback (and provide generic ->release handler
+which just calls mapping_flush_cmtime()). It won't be perfect because that
+gets called only after the last file descriptor for that struct file is
+closed (i.e., if a process forks and child inherits mappings, ->release gets
+called only after both parent and the child unmap the file) but it should
+catch 99% of the real world cases. Christoph, would the be OK with
+you?
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
