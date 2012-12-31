@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754372Ab2LaDgN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 22:36:13 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:57077 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750750Ab2LaDgK (ORCPT
+	id S1754571Ab2LaDjb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 22:39:31 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:63120 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750841Ab2LaDj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 22:36:10 -0500
+	Sun, 30 Dec 2012 22:39:29 -0500
+Message-ID: <50E108EA.1010404@linaro.org>
+Date: Mon, 31 Dec 2012 09:09:22 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121231032200.GA5769@kroah.com>
-References: <1356922268-13098-1-git-send-email-tobetter@gmail.com>
-	<20121231032200.GA5769@kroah.com>
-Date: Mon, 31 Dec 2012 12:36:07 +0900
-Message-ID: <CADoNuNdJyH5+RrtS9LCY_zMpfOG6C=+0WyaG9H1XK2E39mm6CQ@mail.gmail.com>
-Subject: Re: [PATCH] USB: misc: Add USB3503 High-Speed Hub Controller
-From: Dongjin Kim <tobetter@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        =?ISO-8859-1?Q?Ren=E9_B=FCrgel?= <rene.buergel@sohard.de>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
+To: Dongjin Kim <tobetter@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene.kim@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH RESEND] ARM: dts: Add EHCI device tree node for Exynos4
+References: <1356921918-12959-1-git-send-email-tobetter@gmail.com>
+In-Reply-To: <1356921918-12959-1-git-send-email-tobetter@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On 12/31/2012 08:15 AM, Dongjin Kim wrote:
+> This patch adds EHCI device node on device tree for Exynos4 and defines its
+> default platform data, s5p_usb_phy_init and s5p_usb_phy_exit, so that those
+> function can be called from the driver.
+> 
+> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+> ---
+>  arch/arm/boot/dts/exynos4.dtsi         |    7 +++++++
+>  arch/arm/mach-exynos/mach-exynos4-dt.c |    9 +++++++++
+>  2 files changed, 16 insertions(+)
 
-Thanks for your reviewing.
+[ ... ]
 
-The mode switching is required for power management, and actually it
-is not tested properly yet. Therefore suspend/resume functions are
-missing in the current patch but kept the switching function for the
-future.
+>  
+> +static struct s5p_ehci_platdata s5p_ehci_platdata = {
+> +	.phy_init = s5p_usb_phy_init,
+> +	.phy_exit = s5p_usb_phy_exit,
+> +};
+> +
 
-Thanks again.
-Dongjin.
+Going by the recent development on Samsung USBPHY driver, we won't need
+these hooks once that patch gets accepted. [1]
+
+Patch for adding EHCI support for EXYNOS5-DT can be found here.[2]
+
+[1] https://patchwork.kernel.org/patch/1794651/
+[2] https://patchwork.kernel.org/patch/1875491/
 
 
-On Mon, Dec 31, 2012 at 12:22 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Mon, Dec 31, 2012 at 11:50:54AM +0900, Dongjin Kim wrote:
->> This patch adds new driver of SMSC USB3503 USB 2.0 hub controller with HSIC
->> upstream connectivity and three USB 2.0 downstream ports. The specification
->> can be found from 'http://www.smsc.com/index.php?tid=295&pid=325'.
->>
->> The current version have been tested very basic features switching the modes,
->> HUB-MODE and STANDBY-MODE.
->
-> What causes the modes to be switched?  From reading the driver, that
-> only seems possible to do at boot/load time when the driver reads the
-> platform data, right?  After that, nothing happens to the device from
-> what I can tell.
->
-> Is something going to cause the state of the device to change in the
-> future?
->
->> +             hub->mode = mode;
->> +             dev_info(&i2c->dev, "switched to HUB mode\n");
->
-> Can you please switch all of the dev_info() calls to dev_dbg()?  There's
-> no need to tell the world what is going on in this driver, no one really
-> cares.  And if they do, they can dynamically enable debugging and get
-> the information then :)
->
-> thanks,
->
-> greg k-h
+>  /*
+>   * The following lookup table is used to override device names when devices
+>   * are registered from device tree. This is temporarily added to enable
+> @@ -80,6 +87,8 @@ static const struct of_dev_auxdata exynos4_auxdata_lookup[] __initconst = {
+>  	OF_DEV_AUXDATA("arm,pl330", EXYNOS4_PA_MDMA1, "dma-pl330.2", NULL),
+>  	OF_DEV_AUXDATA("samsung,exynos4210-tmu", EXYNOS4_PA_TMU,
+>  				"exynos-tmu", NULL),
+> +	OF_DEV_AUXDATA("samsung,exynos-ehci", EXYNOS4_PA_EHCI,
+> +				"s5p-ehci", &s5p_ehci_platdata),
+>  	{},
+>  };
+>  
+> 
+
+
+-- 
+Tushar Behera
