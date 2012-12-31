@@ -1,119 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab2LaNIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 08:08:32 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:44399 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab2LaNIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 08:08:31 -0500
-Message-ID: <50E18E4B.7000107@collabora.co.uk>
-Date: Mon, 31 Dec 2012 14:08:27 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Ezequiel Garcia <elezegarcia@gmail.com>
-CC: linux-leds@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] leds: leds-gpio: set devm_gpio_request_one() flags
- correctly
-References: <1356102464-22234-1-git-send-email-javier.martinez@collabora.co.uk> <CALF0-+XM4EZJHU360AUAUFBPctwO81JQ7kUiH12V2n6x7wCXfA@mail.gmail.com>
-In-Reply-To: <CALF0-+XM4EZJHU360AUAUFBPctwO81JQ7kUiH12V2n6x7wCXfA@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751341Ab2LaNVR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 08:21:17 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:56466 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751011Ab2LaNVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 08:21:14 -0500
+From: Eric Wong <normalperson@yhbt.net>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Wong <normalperson@yhbt.net>, Hans Verkuil <hans.verkuil@cisco.com>,
+        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [PATCH] poll: prevent missed events if _qproc is NULL
+Date: Mon, 31 Dec 2012 13:21:00 +0000
+Message-Id: <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
+X-Mailer: git-send-email 1.8.1.rc2.8.ga09f24b
+In-Reply-To: <20121228014503.GA5017@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 06:06 PM, Ezequiel Garcia wrote:
-> On Fri, Dec 21, 2012 at 12:07 PM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
->> commit a99d76f leds: leds-gpio: use gpio_request_one
->>
->> changed the leds-gpio driver to use gpio_request_one() instead
->> of gpio_request() + gpio_direction_output()
->>
->> Unfortunately, it also made a semantic change that breaks the
->> leds-gpio driver.
->>
->> The gpio_request_one() flags parameter was set to:
->>
->> GPIOF_DIR_OUT | (led_dat->active_low ^ state)
->>
->> Since GPIOF_DIR_OUT is 0, the final flags value will just be the
->> XOR'ed value of led_dat->active_low and state.
->>
->> This value were used to distinguish between HIGH/LOW output initial
->> level and call gpio_direction_output() accordingly.
->>
->> With this new semantic gpio_request_one() will take the flags value
->> of 1 as a configuration of input direction (GPIOF_DIR_IN) and will
->> call gpio_direction_input() instead of gpio_direction_output().
->>
->> int gpio_request_one(unsigned gpio, unsigned long flags, const char *label)
->> {
->> ..
->>         if (flags & GPIOF_DIR_IN)
->>                 err = gpio_direction_input(gpio);
->>         else
->>                 err = gpio_direction_output(gpio,
->>                                 (flags & GPIOF_INIT_HIGH) ? 1 : 0);
->> ..
->> }
->>
->> The right semantic is to evaluate led_dat->active_low ^ state and
->> set the output initial level explicitly.
->>
->> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
->> ---
->>
->> This makes LEDs to work again on my IGEPv2 board (TI OMAP3 based SoC).
->>
->> I sent this patch before but then realized that I only cc'ed to linux-leds.
->> So, I'm resending the patch cc'ing linux-omap,linux-arm-kernel and LKML to
->> reach a broader audience and have more people review/test the patch.
->>
->> Sorry for the noise if someone got it twice.
->>
->>  drivers/leds/leds-gpio.c |    5 +++--
->>  1 files changed, 3 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/leds/leds-gpio.c b/drivers/leds/leds-gpio.c
->> index 1885a26..a0d931b 100644
->> --- a/drivers/leds/leds-gpio.c
->> +++ b/drivers/leds/leds-gpio.c
->> @@ -127,8 +127,9 @@ static int create_gpio_led(const struct gpio_led *template,
->>                 led_dat->cdev.flags |= LED_CORE_SUSPENDRESUME;
->>
->>         ret = devm_gpio_request_one(parent, template->gpio,
->> -                       GPIOF_DIR_OUT | (led_dat->active_low ^ state),
->> -                       template->name);
->> +                                   (led_dat->active_low ^ state) ?
->> +                                   GPIOF_OUT_INIT_HIGH : GPIOF_OUT_INIT_LOW,
->> +                                   template->name);
->>         if (ret < 0)
->>                 return ret;
->>
->> --
->> 1.7.7.6
->>
-> 
-> Without this patch my IGEP v2 LEDs were dead,
-> and this patch brings them back.
-> 
-> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> 
-> Thanks,
-> 
->     Ezequiel
-> 
+This patch seems to fix my issue with ppoll() being stuck on my
+SMP machine: http://article.gmane.org/gmane.linux.file-systems/70414
 
-Hello,
+The change to sock_poll_wait() in
+commit 626cf236608505d376e4799adb4f7eb00a8594af
+  (poll: add poll_requested_events() and poll_does_not_wait() functions)
+seems to have allowed additional cases where the SMP memory barrier
+is not issued before checking for readiness.
 
-Any news on this?
+In my case, this affects the select()-family of functions
+which register descriptors once and set _qproc to NULL before
+checking events again (after poll_schedule_timeout() returns).
+The set_mb() barrier in poll_schedule_timeout() appears to be
+insufficient on my SMP x86-64 machine (as it's only an xchg()).
 
-GPIO LEDs support is still not working on latest mainline kernel and other
-people report that this patch solves the issue for them.
+This may also be related to the epoll issue described by
+Andreas Voellmy in http://thread.gmane.org/gmane.linux.kernel/1408782/
 
-Thanks a lot and best regards,
-Javier
+Signed-off-by: Eric Wong <normalperson@yhbt.net>
+Cc: Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Davide Libenzi <davidel@xmailserver.org>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
+Cc: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
+Cc: netdev@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
+---
+ If this patch is correct, I think we can just drop the
+ poll_does_not_wait() function entirely since poll_wait()
+ does the same check anyways...
+
+ include/net/sock.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/net/sock.h b/include/net/sock.h
+index c945fba..1923e48 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1925,8 +1925,9 @@ static inline bool wq_has_sleeper(struct socket_wq *wq)
+ static inline void sock_poll_wait(struct file *filp,
+ 		wait_queue_head_t *wait_address, poll_table *p)
+ {
+-	if (!poll_does_not_wait(p) && wait_address) {
+-		poll_wait(filp, wait_address, p);
++	if (wait_address) {
++		if (!poll_does_not_wait(p))
++			poll_wait(filp, wait_address, p);
+ 		/* We need to be sure we are in sync with the
+ 		 * socket flags modification.
+ 		 *
+-- 
+Eric Wong
+
