@@ -1,94 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341Ab2LaNVR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 08:21:17 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:56466 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751011Ab2LaNVO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 08:21:14 -0500
-From: Eric Wong <normalperson@yhbt.net>
+	id S1751314Ab2LaOZj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 09:25:39 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:38199 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751177Ab2LaOZh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 09:25:37 -0500
+MIME-Version: 1.0
+Date: Mon, 31 Dec 2012 15:25:36 +0100
+Message-ID: <CAHOpdHXwLrKmyfUQbz0uhp26JHnWBuKUPgH7KjyU1=WgHw1Frg@mail.gmail.com>
+Subject: pm-suspend not waking up properly
+From: =?ISO-8859-1?Q?Bj=F6rn_Christoph?= <einkaufenbc09@googlemail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Eric Wong <normalperson@yhbt.net>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] poll: prevent missed events if _qproc is NULL
-Date: Mon, 31 Dec 2012 13:21:00 +0000
-Message-Id: <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
-X-Mailer: git-send-email 1.8.1.rc2.8.ga09f24b
-In-Reply-To: <20121228014503.GA5017@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch seems to fix my issue with ppoll() being stuck on my
-SMP machine: http://article.gmane.org/gmane.linux.file-systems/70414
+Hey,
 
-The change to sock_poll_wait() in
-commit 626cf236608505d376e4799adb4f7eb00a8594af
-  (poll: add poll_requested_events() and poll_does_not_wait() functions)
-seems to have allowed additional cases where the SMP memory barrier
-is not issued before checking for readiness.
+I used uswusp till now and it worked for my old HW configuration. Now
+I updated to a new
 
-In my case, this affects the select()-family of functions
-which register descriptors once and set _qproc to NULL before
-checking events again (after poll_schedule_timeout() returns).
-The set_mb() barrier in poll_schedule_timeout() appears to be
-insufficient on my SMP x86-64 machine (as it's only an xchg()).
+I'm running Ubuntu 12.04 with a self-compiled Linux 3.7.0 kernel (uname -a):
+Linux linux 3.7.0-custom #2 SMP Sat Dec 22 15:07:12 CET 2012 x86_64
+x86_64 x86_64 GNU/Linux
 
-This may also be related to the epoll issue described by
-Andreas Voellmy in http://thread.gmane.org/gmane.linux.kernel/1408782/
+Mainboard is (dmesg | grep Gigabyte):
+[    0.000000] DMI: Gigabyte Technology Co., Ltd. To be filled by
+O.E.M./F2A85X-D3H, BIOS F1 10/09/2012
 
-Signed-off-by: Eric Wong <normalperson@yhbt.net>
-Cc: Hans Verkuil <hans.verkuil@cisco.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Davide Libenzi <davidel@xmailserver.org>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andreas Voellmy <andreas.voellmy@yale.edu>
-Cc: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
-Cc: netdev@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org
----
- If this patch is correct, I think we can just drop the
- poll_does_not_wait() function entirely since poll_wait()
- does the same check anyways...
+Processor is an AMD A4-5300 with a microcode update (cat /proc/cpuinfo):
+processor       : 1
+vendor_id       : AuthenticAMD
+cpu family      : 21
+model           : 16
+model name      : AMD A4-5300 APU with Radeon(tm) HD Graphics
+stepping        : 1
+microcode       : 0x6001119
 
- include/net/sock.h | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+"s2ram" would not work with this mainboard anymore. I then used "s2ram
+-f -a 1" and that worked.
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index c945fba..1923e48 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1925,8 +1925,9 @@ static inline bool wq_has_sleeper(struct socket_wq *wq)
- static inline void sock_poll_wait(struct file *filp,
- 		wait_queue_head_t *wait_address, poll_table *p)
- {
--	if (!poll_does_not_wait(p) && wait_address) {
--		poll_wait(filp, wait_address, p);
-+	if (wait_address) {
-+		if (!poll_does_not_wait(p))
-+			poll_wait(filp, wait_address, p);
- 		/* We need to be sure we are in sync with the
- 		 * socket flags modification.
- 		 *
--- 
-Eric Wong
+Now s2ram is deprecated so I used "pm-suspend" but the PC doesnt wake
+up properly. Monitor is black, network is down but keyboard lights up
+when i press the CAPSLOCK button etc.
 
+So i took a log to see what happens when PC enters suspend mode:
+---------
+Mon Dec 24 23:10:02 CET 2012: Running hooks for suspend.
+Running hook /usr/lib/pm-utils/sleep.d/000kernel-change suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/000kernel-change suspend suspend: success.
+Running hook /usr/lib/pm-utils/sleep.d/00logging suspend suspend:
+Linux linux 3.7.0-custom #2 SMP Sat Dec 22 15:07:12 CET 2012 x86_64
+x86_64 x86_64 GNU/Linux
+Module                  Size  Used by
+xfs                   885075  1
+libcrc32c              12644  1 xfs
+ext2                   72820  2
+kvm_amd                59833  0
+kvm                   443029  1 kvm_amd
+snd_hda_codec_hdmi     36804  1
+snd_hda_intel          43738  0
+snd_hda_codec         140017  2 snd_hda_codec_hdmi,snd_hda_intel
+snd_hwdep              13563  1 snd_hda_codec
+snd_pcm                97486  3 snd_hda_codec_hdmi,snd_hda_intel,snd_hda_codec
+snd_timer              29532  1 snd_pcm
+snd                    78958  6
+snd_hda_codec_hdmi,snd_hda_intel,snd_hda_codec,snd_hwdep,snd_pcm,snd_timer
+soundcore              15047  1 snd
+snd_page_alloc         18710  2 snd_hda_intel,snd_pcm
+microcode              22893  0
+i2c_piix4              13266  0
+serio_raw              13215  0
+k10temp                13126  0
+mac_hid                13205  0
+lp                     17759  0
+parport                46354  1 lp
+dm_crypt               22800  7
+pata_jmicron           12758  0
+ghash_clmulni_intel    13259  0
+aesni_intel            55399  15
+ablk_helper            13597  1 aesni_intel
+cryptd                 20360  10 ghash_clmulni_intel,aesni_intel,ablk_helper
+lrw                    13286  1 aesni_intel
+aes_x86_64             17255  1 aesni_intel
+xts                    12914  1 aesni_intel
+gf128mul               14951  2 lrw,xts
+radeon                929563  1
+r8169                  67571  0
+ttm                    83223  1 radeon
+drm_kms_helper         49196  1 radeon
+drm                   280816  3 radeon,ttm,drm_kms_helper
+i2c_algo_bit           13413  1 radeon
+             total       used       free     shared    buffers     cached
+Mem:       3414116    3302128     111988          0      13144    2664148
+-/+ buffers/cache:     624836    2789280
+Swap:      1953788          0    1953788
+
+/usr/lib/pm-utils/sleep.d/00logging suspend suspend: success.
+Running hook /usr/lib/pm-utils/sleep.d/00powersave suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/00powersave suspend suspend: success.
+Running hook /etc/pm/sleep.d/10_grub-common suspend suspend:
+
+/etc/pm/sleep.d/10_grub-common suspend suspend: success.
+Running hook /etc/pm/sleep.d/10_unattended-upgrades-hibernate suspend suspend:
+
+/etc/pm/sleep.d/10_unattended-upgrades-hibernate suspend suspend: success.
+Running hook /usr/lib/pm-utils/sleep.d/55NetworkManager suspend suspend:
+Having NetworkManager put all interaces to sleep...Failed.
+
+/usr/lib/pm-utils/sleep.d/55NetworkManager suspend suspend: success.
+Running hook /usr/lib/pm-utils/sleep.d/75modules suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/75modules suspend suspend: not applicable.
+Running hook /usr/lib/pm-utils/sleep.d/90clock suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/90clock suspend suspend: not applicable.
+Running hook /usr/lib/pm-utils/sleep.d/94cpufreq suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/94cpufreq suspend suspend: success.
+Running hook /usr/lib/pm-utils/sleep.d/95hdparm-apm suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/95hdparm-apm suspend suspend: not applicable.
+Running hook /usr/lib/pm-utils/sleep.d/95led suspend suspend:
+
+/usr/lib/pm-utils/sleep.d/95led suspend suspend: not applicable.
+Running hook /usr/lib/pm-utils/sleep.d/98video-quirk-db-handler suspend suspend:
+Kernel modesetting video driver detected, not using quirks.
+
+/usr/lib/pm-utils/sleep.d/98video-quirk-db-handler suspend suspend: success.
+Running hook /usr/lib/pm-utils/sleep.d/99video suspend suspend:
+kernel.acpi_video_flags = 0
+
+/usr/lib/pm-utils/sleep.d/99video suspend suspend: success.
+Mon Dec 24 23:10:03 CET 2012: performing suspend
+------------
+
+Can someone help?
+
+Thanks!
