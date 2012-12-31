@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab2LaBfP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 20:35:15 -0500
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:47188 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755279Ab2LaBfN (ORCPT
+	id S1755319Ab2LaBpU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 20:45:20 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56489 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755280Ab2LaBpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 20:35:13 -0500
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: [RESEND PATCH] drm/nouveau: fix init with agpgart-uninorth
-Date: Mon, 31 Dec 2012 03:34:59 +0200
-Message-Id: <1356917699-19479-1-git-send-email-aaro.koskinen@iki.fi>
-X-Mailer: git-send-email 1.7.10.4
+	Sun, 30 Dec 2012 20:45:17 -0500
+X-Sasl-enc: SascGgGP6GGe0OVedOm+G1G6/ru5kzh7R4LFgFSKQfVf 1356918316
+Date: Sun, 30 Dec 2012 23:45:13 -0200
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Richard Hartmann <richih.mailinglist@gmail.com>
+Cc: ibm-acpi-devel@lists.sourceforge.net, ibm-acpi@hmh.eng.br,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [ibm-acpi-devel] [PATCH] drivers/platform/x86/thinkpad_acpi.c:
+ Handle HKEY event 0x6040
+Message-ID: <20121231014513.GA2416@khazad-dum.debian.net>
+References: <CAD77+gROUfVX=9LPZc6_jf=2Bc_iaf5FW5Z2efwESzORNrq9dQ@mail.gmail.com>
+ <1356817910-20890-1-git-send-email-richih.mailinglist@gmail.com>
+ <20121230020008.GA24121@khazad-dum.debian.net>
+ <CAD77+gROHKXOBDAy8A4sLnzSnZXTz-KKomk4nqrEfapjNo03vA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAD77+gROHKXOBDAy8A4sLnzSnZXTz-KKomk4nqrEfapjNo03vA@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check that the AGP aperture can be mapped. This follows a similar change
-done for Radeon (commit 365048ff, drm/radeon: AGP memory is only I/O if
-the aperture can be mapped by the CPU.).
+On Sun, 30 Dec 2012, Richard Hartmann wrote:
+> On Sun, Dec 30, 2012 at 3:00 AM, Henrique de Moraes Holschuh <hmh@hmh.eng.br
+> > wrote:
+> 
+> > Acked-by: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+> >
+> 
+> Thanks for the two ACKs.
+> 
+> Just to make sure: From how I read the (outdated) Copyright section, you
+> are the maintainer of thinkpad_acpi and thus will copy over the ACKs into
+> my commit message, merge, and forward into what will become 3.9 at some
+> point, correct?
 
-The patch fixes the following error seen on G5 iMac:
+Usually the subsystem maintainer picks such simple patches and ACKs directly
+from the platform-driver-x86 list email, adds his signed-of-by, and
+eventually sends it to Linus.
 
-	nouveau E[     DRM] failed to create kernel channel, -12
+For this "obviously correct" single-code-line fix, we might even lucky
+out and it could make it to 3.8, depends on his judgment.
 
-Reviewed-by: Michel Dänzer <michel@daenzer.net>
-Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
----
- drivers/gpu/drm/nouveau/nouveau_bo.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
-index 5614c89..69d7b1d 100644
---- a/drivers/gpu/drm/nouveau/nouveau_bo.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
-@@ -1276,7 +1276,7 @@ nouveau_ttm_io_mem_reserve(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem)
- 		if (drm->agp.stat == ENABLED) {
- 			mem->bus.offset = mem->start << PAGE_SHIFT;
- 			mem->bus.base = drm->agp.base;
--			mem->bus.is_iomem = true;
-+			mem->bus.is_iomem = !dev->agp->cant_use_aperture;
- 		}
- #endif
- 		break;
 -- 
-1.7.10.4
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
