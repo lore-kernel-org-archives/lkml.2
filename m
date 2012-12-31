@@ -1,106 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755290Ab2LaAuT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 19:50:19 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49681 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab2LaAuQ (ORCPT
+	id S1755296Ab2LaBPj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 20:15:39 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:54586 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab2LaBPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 19:50:16 -0500
-X-AuditID: 9c930179-b7becae000000e51-43-50e0e1453a2e
-Date: Mon, 31 Dec 2012 09:50:13 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Zhouping Liu <zliu@redhat.com>, Sedat Dilek <sedat.dilek@gmail.com>
-Subject: Re: [PATCH] mm: fix null pointer dereference in wait_iff_congested()
-Message-ID: <20121231005013.GA3641@blaptop>
-References: <50D24AF3.1050809@iskon.hr>
- <20121220111208.GD10819@suse.de>
- <20121220125802.23e9b22d.akpm@linux-foundation.org>
- <50D601C9.9060803@iskon.hr>
- <50D71166.6030608@iskon.hr>
- <50DB129E.7010000@iskon.hr>
- <50DD0106.7040001@iskon.hr>
- <20121228024928.GA19720@blaptop>
- <50DD9EA7.6050309@iskon.hr>
+	Sun, 30 Dec 2012 20:15:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50DD9EA7.6050309@iskon.hr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <CAHFgRy-GKacNL0Vcp1H1ac0zLEcjp1Y42aAz+jMVCdr=pMBDWg@mail.gmail.com>
+References: <CAHFgRy-GKacNL0Vcp1H1ac0zLEcjp1Y42aAz+jMVCdr=pMBDWg@mail.gmail.com>
+Date: Mon, 31 Dec 2012 11:15:36 +1000
+Message-ID: <CAPM=9txc-OX+gbKTn+6NR4a=VMiYBr9QjoJnf=nFMU2gnjGSoQ@mail.gmail.com>
+Subject: Re: Linus GIT (3.8.0-rc1+) -- drivers/built-in.o: In function
+ `nouveau_acpi_edid': (.text+0x134e47): undefined reference to `acpi_video_get_edid'
+From: Dave Airlie <airlied@gmail.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, skeggsb@gmail.com,
+        Marcin Slusarz <marcin.slusarz@gmail.com>,
+        Maarten Maathuis <madman2003@gmail.com>, maximlevitsky@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zlatko,
+On Mon, Dec 31, 2012 at 10:41 AM, Miles Lane <miles.lane@gmail.com> wrote:
+>   LD      init/built-in.o
+> drivers/built-in.o: In function `nouveau_acpi_edid':
+> (.text+0x134e47): undefined reference to `acpi_video_get_edid'
 
-On Fri, Dec 28, 2012 at 02:29:11PM +0100, Zlatko Calusic wrote:
-> On 28.12.2012 03:49, Minchan Kim wrote:
-> >Hello Zlatko,
-> >
-> >On Fri, Dec 28, 2012 at 03:16:38AM +0100, Zlatko Calusic wrote:
-> >>From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-> >>
-> >>The unintended consequence of commit 4ae0a48b is that
-> >>wait_iff_congested() can now be called with NULL struct zone*
-> >>producing kernel oops like this:
-> >
-> >For good description, it would be better to write simple pseudo code
-> >flow to show how NULL-zone pass into wait_iff_congested because
-> >kswapd code flow is too complex.
-> >
-> >As I see the code, we have following line above wait_iff_congested.
-> >
-> >if (!unbalanced_zone || blah blah)
-> >         break;
-> >
-> >How can NULL unbalanced_zone reach wait_iff_congested?
-> >
-> 
-> Hello Minchan, and thanks for the comment.
-> 
-> That line was there before commit 4ae0a48b got in, and you're right,
+Wierd not really sure why this would have just stared happening.
+select ACPI_VIDEO if ACPI && X86 && BACKLIGHT_CLASS_DEVICE &&
+VIDEO_OUTPUT_CONTROL && INPUT
 
-Argh, I didn't see 4ae0a48b in 3.8-rc1.
+should pick ACPI_VIDEO=y from what I can see if nouveau is y, unless I
+misunderstand Kconfig, which is most probable.
 
-> it's what was protecting wait_iff_congested() from being called with
-> NULL zone*. But then all that logic got colapsed to a simple
-> pgdat_balanced() call and that's when I introduced the bug, I lost
-> the protection.
-> 
-> What I _think_ is happening (pseudo code following...) is that after
-> scanning the zone in the dma->highmem direction, and concluding that
-> all zones are balanced (unbalanced_zone remains NULL!),
-> wake_up(&pgdat->pfmemalloc_wait) wakes up a lot of memory hungry
-> processes (especially true in various aggressive test/benchmarks)
-> that immediately drain and unbalance one or more zones. Then
-> pgdat_balanced() call which immediately follows will be false, but
-> we still have unbalanced_zone = NULL, rememeber? Oops...
-> 
-> But, all that is a speculation that I can't prove atm. Of course, if
-> anybody thinks that's a credible explanation, I could add it as a
-> commit comment, or even as a code comment, but I didn't want to be
-> overly imaginative. The fix itself is simple and real.
-
-Never mind. My confusing is caused my missing 4ae0a48b in lasest tree.
-Thanks, Zlatko.
-
-> 
-> Regards,
-> -- 
-> Zlatko
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
--- 
-Kind regards,
-Minchan Kim
+Dave.
