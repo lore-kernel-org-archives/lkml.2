@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab2LaGzP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 01:55:15 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:54707 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751583Ab2LaGzO (ORCPT
+	id S1753303Ab2LaHMy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 02:12:54 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2765 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751780Ab2LaHMw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 01:55:14 -0500
-Date: Mon, 31 Dec 2012 01:55:08 -0500 (EST)
-From: CAI Qian <caiqian@redhat.com>
-To: Mihai Caraman <mihai.caraman@freescale.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: stable@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Message-ID: <1099858744.6758417.1356936908719.JavaMail.root@redhat.com>
-In-Reply-To: <1155846710.6748036.1356924799341.JavaMail.root@redhat.com>
-Subject: Re: kernel compilation failure on power7 system
+	Mon, 31 Dec 2012 02:12:52 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sun, 30 Dec 2012 23:12:15 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "olof@lixom.net" <olof@lixom.net>
+CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Mon, 31 Dec 2012 08:12:05 +0100
+Subject: Re: [PATCH 6/9] ARM: dt: tegra114: Add new SoC base, Tegra 114 SoC
+Thread-Topic: [PATCH 6/9] ARM: dt: tegra114: Add new SoC base, Tegra 114 SoC
+Thread-Index: Ac3nJifDdNWHtO8MSW+4d5DfuEoJUA==
+Message-ID: <20121231.091205.1954307462967637866.hdoyu@nvidia.com>
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-7-git-send-email-hdoyu@nvidia.com><20121229063913.GA13620@quad.lixom.net>
+In-Reply-To: <20121229063913.GA13620@quad.lixom.net>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.13.37]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this as this turned out some unclean bits rendered
-the result unstable. It is now passed the complication testing. 
+Hi Olof,
 
------ Original Message -----
-> From: "CAI Qian" <caiqian@redhat.com>
-> To: "Mihai Caraman" <mihai.caraman@freescale.com>, "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
-> Cc: stable@vger.kernel.org, "linux-kernel" <linux-kernel@vger.kernel.org>
-> Sent: Monday, December 31, 2012 11:33:19 AM
-> Subject: kernel compilation failure on power7 system
+Olof Johansson <olof@lixom.net> wrote @ Sat, 29 Dec 2012 07:39:13 +0100:
+
+> On Thu, Dec 20, 2012 at 11:44:04AM +0200, Hiroshi Doyu wrote:
+> > Initial support for Tegra 114 SoC. This is expected to be included in
+> > the board DTS files, Tegra 114 SoC based evaluation board family.
+> > 
+> > Signed-off-by: Hiroshi Doyu <hdoyu@nvidia.com>
 > 
-> Stable kernel 3.7.1 failure to compile on power7 system here,
+> Hi,
 > 
-> arch/powerpc/kvm/built-in.o: In function `hdec_soon':
-> /root/linux-stable/arch/powerpc/kvm/book3s_hv_rmhandlers.S:1068:
-> undefined reference to `PACA_SPRG3'
-> make: *** [vmlinux] Error 1
+> I think it could be a good idea to start documenting the cpu configuration in
+> the device tree on some of these larger platforms as well, i.e. include a cpus/
+> hierarchy. Would you mind adding those, please?
+
+Ok, I'll.
+
+> It would give you the flexibility of switching over to using device
+> tree to probe the number of cpus in case the platform grows yet another
+> way to figure out the number of cores in the future, without having to
+> update the device-trees at that time. :)
 > 
-> reverted this commit fixed the problem,
-> -----
-> 0127262c01f0beb485f917c720d1d95d165dfdbf
-> [PATCH] powerpc: Restore VDSO information on critical exception om
->  BookE
 > 
-> Critical exception on 64-bit booke uses user-visible SPRG3 as
-> scratch.
-> Restore VDSO information in SPRG3 on exception prolog.
-> 
-> Use a common sprg3 field in PACA for all powerpc64 architectures.
-> -----
-> 
-> Used this config - http://people.redhat.com/qcai/stable/config-ppc
-> 
-> system information here,
-> # cat /proc/device-tree/model
-> IBM,8231-E2B
-> 
-> CAI Qian
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> -Olof
