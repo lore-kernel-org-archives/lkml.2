@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab2LaXHI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 18:07:08 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46052 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab2LaXHG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 18:07:06 -0500
+	id S1751398Ab2LaXY0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 18:24:26 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:58801 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750898Ab2LaXYZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 18:24:25 -0500
+Date: Mon, 31 Dec 2012 23:24:24 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: linux-kernel@vger.kernel.org
+Cc: Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
+        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] poll: prevent missed events if _qproc is NULL
+Message-ID: <20121231232424.GA24235@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
 MIME-Version: 1.0
-Message-ID: <0e91c1e5-7a62-4b89-9473-09fff384a334@default>
-Date: Mon, 31 Dec 2012 15:06:09 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: RE: [PATCH 7/8] zswap: add to mm/
-References: <<1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>>
- <<1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>>
-In-Reply-To: <<1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Disposition: inline
+In-Reply-To: <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
-> Subject: [PATCH 7/8] zswap: add to mm/
+Eric Wong <normalperson@yhbt.net> wrote:
+> This patch seems to fix my issue with ppoll() being stuck on my
+> SMP machine: http://article.gmane.org/gmane.linux.file-systems/70414
+
+OK, it doesn't fix my issue, but it seems to make it harder-to-hit...
+
+> The change to sock_poll_wait() in
+> commit 626cf236608505d376e4799adb4f7eb00a8594af
+>   (poll: add poll_requested_events() and poll_does_not_wait() functions)
+> seems to have allowed additional cases where the SMP memory barrier
+> is not issued before checking for readiness.
 > 
-> zswap is a thin compression backend for frontswap. It receives
-> pages from frontswap and attempts to store them in a compressed
-> memory pool, resulting in an effective partial memory reclaim and
-> dramatically reduced swap device I/O.
+> In my case, this affects the select()-family of functions
+> which register descriptors once and set _qproc to NULL before
+> checking events again (after poll_schedule_timeout() returns).
+> The set_mb() barrier in poll_schedule_timeout() appears to be
+> insufficient on my SMP x86-64 machine (as it's only an xchg()).
+> 
+> This may also be related to the epoll issue described by
+> Andreas Voellmy in http://thread.gmane.org/gmane.linux.kernel/1408782/
 
-Hi Seth --
+However, I believe my patch will still fix Andreas' issue with epoll
+due to how ep_modify() uses a NULL qproc when calling ->poll().
 
-Happy (almost) New Year!
-
-I am eagerly studying one of the details of your zswap "flush"
-code in this patch to see how you solved a problem or two that
-I was struggling with for the similar mechanism RFC'ed for zcache
-(see https://lkml.org/lkml/2012/10/3/558).  I like the way
-that you force the newly-uncompressed to-be-flushed page immediately
-into a swap bio in zswap_flush_entry via the call to swap_writepage,
-though I'm not entirely convinced that there aren't some race
-conditions there.  However, won't swap_writepage simply call
-frontswap_store instead and re-compress the page back into zswap?
-The (very ugly) solution I used for this was to flag the page in a
-frontswap_denial_map (see https://lkml.org/lkml/2012/10/3/560).
-Don't you require something like that also, or am I missing some
-magic in your code?
-
-I'm also a bit concerned about the consequent recursion:
-
-frontswap_store->
-  zswap_fs_store->
-    zswap_flush_entries->
-      zswap_flush_entry->
-        __swap_writepage->
-          swap_writepage->
-            frontswap_store->
-              zswap_fs_store-> etc
-
-It's not obvious to me how deeply this might recurse and/or
-how the recursion is terminated.  The RFC'ed zcache code
-calls its equivalence of your "flush" code only from the
-shrinker thread to avoid this, though there may be a third,
-better, way.
-
-A second related issue that concerns me is that, although you
-are now, like zcache2, using an LRU queue for compressed pages
-(aka "zpages"), there is no relationship between that queue and
-physical pageframes.  In other words, you may free up 100 zpages
-out of zswap via zswap_flush_entries, but not free up a single
-pageframe.  This seems like a significant design issue.  Or am
-I misunderstanding the code?
-
-A third concern is about scalability... the locking seems very
-coarse-grained.  In zcache, you personally observed and fixed
-hashbucket contention (see https://lkml.org/lkml/2011/9/29/215).
-Doesn't zswap's tree_lock essentially use a single tree (per
-swaptype), i.e. no scalability?
-
-Thanks,
-Dan
+(I've never been able to reproduce Andreas' issue on my 4-core system,
+ but he's been hitting it since 3.4 (at least))
