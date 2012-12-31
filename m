@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab2LaQLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 11:11:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60881 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab2LaQLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 11:11:50 -0500
-Date: Mon, 31 Dec 2012 17:11:35 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH v2 2/3] mm: Update file times when inodes are written
- after mmaped writes
-Message-ID: <20121231161135.GH7564@quack.suse.cz>
-References: <cover.1356124965.git.luto@amacapital.net>
- <6b22b806806b21af02b70a2fa860a9d10304fc16.1356124965.git.luto@amacapital.net>
- <20121222082933.GA26477@infradead.org>
- <CALCETrX423Au=Q0SgdpFp7hcVBAw0t4FprO18Wk9j0K=j8fg_w@mail.gmail.com>
+	id S1751517Ab2LaQjJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 11:39:09 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:54934 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab2LaQjF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 11:39:05 -0500
+Message-ID: <50E1BFA6.9040102@wwwdotorg.org>
+Date: Mon, 31 Dec 2012 09:39:02 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrX423Au=Q0SgdpFp7hcVBAw0t4FprO18Wk9j0K=j8fg_w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Olof Johansson <olof@lixom.net>
+CC: Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Shawn Guo <shawn.guo@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH 1/2] ARM: dts: prevent *.dtb from always being rebuilt
+References: <1356741767-29292-1-git-send-email-swarren@wwwdotorg.org> <20121230053204.GC20903@quad.lixom.net>
+In-Reply-To: <20121230053204.GC20903@quad.lixom.net>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 22-12-12 00:43:30, Andy Lutomirski wrote:
-> On Sat, Dec 22, 2012 at 12:29 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> > NAK, we went through great trouble to get rid of the nasty layering
-> > violation where the VM called file_update_time directly just a short
-> > while ago, reintroducing that is a massive step back.
-> >
-> > Make sure whatever "solution" for your problem you come up with keeps
-> > the file update in the filesystem or generic helpers.
->
+On 12/29/2012 10:32 PM, Olof Johansson wrote:
+> On Fri, Dec 28, 2012 at 05:42:46PM -0700, Stephen Warren wrote:
+>> From: Stephen Warren <swarren@nvidia.com>
+>>
+>> if_changed (used by the *.dts->*.dtc rule) rebuilds files if they aren't
+>> contained in $(targets). (make V=2 indicates this). Add $(dtb-y) to
+>> $(targets) to prevent *.dtb from always being rebuilt.
+>>
+>> This fixes a regression introduced by the .dtb rule rework in 499cd82
+>> "ARM: dt: change .dtb build rules to build in dts directory".
+>>
+>> Reported-by: Shawn Guo <shawn.guo@linaro.org>
+>> Signed-off-by: Stephen Warren <swarren@nvidia.com>
 > 
-> There's an inode operation ->update_time that is called (if it exists)
-> in these patches to update the time.  Is that insufficient?
-  Filesystems need more choice in when they modify time stamps because that
-can mean complex work like starting a transaction which has various locking
-implications. Just making a separate callback for this doesn't really solve
-the problem. Although I don't see particular problem with the call sites you
-chose Christoph is right we probably don't want to reintroduce updates of
-time stamps from generic code because eventually someone will have problem
-with that.
+> Not sure who you have in mind to apply this, but if it's not through arm-soc:
+> 
+> Acked-by: Olof Johansson <olof@lixom.net>
 
-> I could add a new inode operation ->modified_by_mmap that would be
-> called in mapping_flush_cmtime if that would be better.
-  Not really. That's only uglier ;)
-
-> The original version of this patch did the update in ->writepage and
-> ->writepages, but that may have had lock ordering issues.  (I wasn't
-> able to confirm that there was any actual problem.)
-  Well, your call of mapping_flush_cmtime() from do_writepages() is easy to
-move to generic_writepages(). Thus filesystem can easily implement it's own
-->writepages() callback if time update doesn't suit it. With the call from
-remove_vma() it is more problematic (and the calling context there is
-harder as well because we hold mmap_sem). We could maybe leave the call
-upto filesystem's ->release callback (and provide generic ->release handler
-which just calls mapping_flush_cmtime()). It won't be perfect because that
-gets called only after the last file descriptor for that struct file is
-closed (i.e., if a process forks and child inherits mappings, ->release gets
-called only after both parent and the child unmap the file) but it should
-catch 99% of the real world cases. Christoph, would the be OK with
-you?
-
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+I was assuming through the device tree tree, since that's where the dtc
+rule rework went through, but I think it's mostly just about whoever
+picks it up:-)
