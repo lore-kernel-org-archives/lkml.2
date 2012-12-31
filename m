@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327Ab2LaIfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 03:35:48 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45601 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751053Ab2LaIfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 03:35:44 -0500
-Date: Mon, 31 Dec 2012 14:05:34 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] uprobes: Change handle_swbp() to expose bp_vaddr
-	to handler_chain()
-Message-ID: <20121231083534.GA5879@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20121230154657.GA28488@redhat.com> <20121230154722.GA28513@redhat.com>
+	id S1751216Ab2LaJDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 04:03:42 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:60758 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750958Ab2LaJDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 04:03:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121230154722.GA28513@redhat.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 12123108-5806-0000-0000-00001D9674CD
+In-Reply-To: <CAK4r=d6--9FniNQ10Ja0z4hUQHuTnCPjsHJUHDmFP7Eeo8NwAA@mail.gmail.com>
+References: <CAK4r=d6--9FniNQ10Ja0z4hUQHuTnCPjsHJUHDmFP7Eeo8NwAA@mail.gmail.com>
+From: Vivek Satpute <vivekonline86@gmail.com>
+Date: Mon, 31 Dec 2012 14:33:20 +0530
+Message-ID: <CAK4r=d6TjnbR2dU2AHia18WEGpK1w06mC5tCMH6VSF5vrsuyhw@mail.gmail.com>
+Subject: Re: Request-queue not getting process even after calling unplug
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 30, 2012 at 04:47:22PM +0100, Oleg Nesterov wrote:
-> Change handle_swbp() to set regs->ip = bp_vaddr in advance, this is
-> what consumer->handler() needs but uprobe_get_swbp_addr() is not
-> exported.
-> 
-> This also simplifies the code and makes it more consistent across
-> the supported architectures. handle_swbp() becomes the only caller
-> of uprobe_get_swbp_addr().
+Kindly let me know if I am posting query in wrong Forum. If yes, then
+could anyone point me to the appropriate forum ?
 
-The arch agnostic bits look fine to me.
 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Thanks in advance,
+Vivek Satpute
 
+On Sun, Dec 30, 2012 at 5:02 PM, Vivek Satpute <vivekonline86@gmail.com> wrote:
+> Hi All,
+>
+> I am working on RHEL5.8 (kernel-2.6.18-308) and facing weird behavior
+> with the IO subsystem.
+>
+> My testcase requires to form the SCSI request manually and send it
+> down to the underlying HBA
+> for further IO processing. To achieve this I have formed the SCSI
+> request, packed it inside the
+> new request. Later on I am queuing the request to device's
+> request-queue using function - elv_add_request( ).
+> Request is getting queued correctly in a queue. Further I called
+> unplug on a queue, still it is not getting
+> processed further by IO scheduler. Request remains stuck in queue itself !
+>
+> Strange part is, same code is working successfully on other kernel versions,
+> but I am facing the issue only on kernel-2.6.18-308.
+>
+> Can anyone help me to understand why request is being stuck in a queue
+> ? How can I debug this further ?
+>
+>
+> Thanks in advance!
+> Vivek Satpute
