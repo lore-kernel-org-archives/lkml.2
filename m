@@ -1,474 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755286Ab2LaAqI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Dec 2012 19:46:08 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:51633 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab2LaAqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Dec 2012 19:46:07 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Huang Ying <ying.huang@intel.com>
-Subject: [Update 3][PATCH] ACPI / PM: Rework the handling of devices depending on power resources
-Date: Mon, 31 Dec 2012 01:51:37 +0100
-Message-ID: <9719234.yL2Ehds6ne@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <8453404.q87zujn534@vostro.rjw.lan>
-References: <5426632.fEiO7uHb6l@vostro.rjw.lan> <2027798.rmHWafy1WQ@vostro.rjw.lan> <8453404.q87zujn534@vostro.rjw.lan>
+	id S1755290Ab2LaAuT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Dec 2012 19:50:19 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:49681 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755247Ab2LaAuQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Dec 2012 19:50:16 -0500
+X-AuditID: 9c930179-b7becae000000e51-43-50e0e1453a2e
+Date: Mon, 31 Dec 2012 09:50:13 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhouping Liu <zliu@redhat.com>, Sedat Dilek <sedat.dilek@gmail.com>
+Subject: Re: [PATCH] mm: fix null pointer dereference in wait_iff_congested()
+Message-ID: <20121231005013.GA3641@blaptop>
+References: <50D24AF3.1050809@iskon.hr>
+ <20121220111208.GD10819@suse.de>
+ <20121220125802.23e9b22d.akpm@linux-foundation.org>
+ <50D601C9.9060803@iskon.hr>
+ <50D71166.6030608@iskon.hr>
+ <50DB129E.7010000@iskon.hr>
+ <50DD0106.7040001@iskon.hr>
+ <20121228024928.GA19720@blaptop>
+ <50DD9EA7.6050309@iskon.hr>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50DD9EA7.6050309@iskon.hr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Zlatko,
 
-Commit 0090def6 (ACPI: Add interface to register/unregister device
-to/from power resources) made it possible to indicate to the ACPI
-core that if the given device depends on any power resources, then
-it should be resumed as soon as all of the power resources required
-by it to transition to the D0 power state have been turned on.
+On Fri, Dec 28, 2012 at 02:29:11PM +0100, Zlatko Calusic wrote:
+> On 28.12.2012 03:49, Minchan Kim wrote:
+> >Hello Zlatko,
+> >
+> >On Fri, Dec 28, 2012 at 03:16:38AM +0100, Zlatko Calusic wrote:
+> >>From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+> >>
+> >>The unintended consequence of commit 4ae0a48b is that
+> >>wait_iff_congested() can now be called with NULL struct zone*
+> >>producing kernel oops like this:
+> >
+> >For good description, it would be better to write simple pseudo code
+> >flow to show how NULL-zone pass into wait_iff_congested because
+> >kswapd code flow is too complex.
+> >
+> >As I see the code, we have following line above wait_iff_congested.
+> >
+> >if (!unbalanced_zone || blah blah)
+> >         break;
+> >
+> >How can NULL unbalanced_zone reach wait_iff_congested?
+> >
+> 
+> Hello Minchan, and thanks for the comment.
+> 
+> That line was there before commit 4ae0a48b got in, and you're right,
 
-Unfortunately, however, this was a mistake, because all devices
-depending on power resources should be treated this way (i.e. they
-should be resumed when all power resources required by their D0
-state have been turned on) and the ACPI core can figure out by itself
-which (physical) devices depend on what power resources.
+Argh, I didn't see 4ae0a48b in 3.8-rc1.
 
-For this reason, replace the code added by commit 0090def6 with a
-new, much more straightforward, mechanism that will be used
-internally by the ACPI core and remove all references to that code
-from kernel subsystems using ACPI.
+> it's what was protecting wait_iff_congested() from being called with
+> NULL zone*. But then all that logic got colapsed to a simple
+> pgdat_balanced() call and that's when I introduced the bug, I lost
+> the protection.
+> 
+> What I _think_ is happening (pseudo code following...) is that after
+> scanning the zone in the dma->highmem direction, and concluding that
+> all zones are balanced (unbalanced_zone remains NULL!),
+> wake_up(&pgdat->pfmemalloc_wait) wakes up a lot of memory hungry
+> processes (especially true in various aggressive test/benchmarks)
+> that immediately drain and unbalance one or more zones. Then
+> pgdat_balanced() call which immediately follows will be false, but
+> we still have unbalanced_zone = NULL, rememeber? Oops...
+> 
+> But, all that is a speculation that I can't prove atm. Of course, if
+> anybody thinks that's a credible explanation, I could add it as a
+> commit comment, or even as a code comment, but I didn't want to be
+> overly imaginative. The fix itself is simple and real.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+Never mind. My confusing is caused my missing 4ae0a48b in lasest tree.
+Thanks, Zlatko.
 
-One more update, hopefully the last one.
+> 
+> Regards,
+> -- 
+> Zlatko
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-The previous version added devices to power resources' "dependent devices"
-lists too early and they might be left on those lists inadvertently if there
-were problems with registering them.  To fix this make the addition of devices
-to those lists symmetrical with respect to the removal (this also simplifies
-the patch slightly).
-
-Thanks,
-Rafael
-
----
- drivers/acpi/internal.h   |    1 
- drivers/acpi/power.c      |  215 ++++++++++++++++------------------------------
- drivers/acpi/scan.c       |    7 +
- drivers/ata/libata-acpi.c |    4 
- drivers/pci/pci-acpi.c    |    2 
- include/acpi/acpi_bus.h   |    2 
- 6 files changed, 87 insertions(+), 144 deletions(-)
-
-Index: linux/drivers/acpi/scan.c
-===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -725,6 +725,7 @@ static int acpi_device_register(struct a
- 		dev_err(&device->dev, "Error registering device\n");
- 		goto end;
- 	}
-+	acpi_power_add_remove_device(device, true);
- 
- 	result = acpi_device_setup_files(device);
- 	if (result)
-@@ -754,7 +755,13 @@ static void acpi_device_unregister(struc
- 	acpi_detach_data(device->handle, acpi_bus_data_handler);
- 
- 	acpi_device_remove_files(device);
-+	acpi_power_add_remove_device(device, false);
- 	device_unregister(&device->dev);
-+	/*
-+	 * Drop the reference counts of all power resources the device depends
-+	 * on and turn off the ones that have no more references.
-+	 */
-+	acpi_power_transition(device, ACPI_STATE_D3_COLD);
- }
- 
- /* --------------------------------------------------------------------------
-Index: linux/drivers/acpi/power.c
-===================================================================
---- linux.orig/drivers/acpi/power.c
-+++ linux/drivers/acpi/power.c
-@@ -83,31 +83,20 @@ static struct acpi_driver acpi_power_dri
- 	.drv.pm = &acpi_power_pm,
- };
- 
--/*
-- * A power managed device
-- * A device may rely on multiple power resources.
-- * */
--struct acpi_power_managed_device {
--	struct device *dev; /* The physical device */
--	acpi_handle *handle;
--};
--
--struct acpi_power_resource_device {
--	struct acpi_power_managed_device *device;
--	struct acpi_power_resource_device *next;
-+struct acpi_power_dependent_device {
-+	struct list_head node;
-+	struct acpi_device *adev;
-+	struct work_struct work;
- };
- 
- struct acpi_power_resource {
--	struct acpi_device * device;
-+	struct acpi_device *device;
-+	struct list_head dependent;
- 	acpi_bus_id name;
- 	u32 system_level;
- 	u32 order;
- 	unsigned int ref_count;
- 	struct mutex resource_lock;
--
--	/* List of devices relying on this power resource */
--	struct acpi_power_resource_device *devices;
--	struct mutex devices_lock;
- };
- 
- static struct list_head acpi_power_resource_list;
-@@ -207,21 +196,27 @@ static int acpi_power_get_list_state(str
- 	return 0;
- }
- 
--/* Resume the device when all power resources in _PR0 are on */
--static void acpi_power_on_device(struct acpi_power_managed_device *device)
-+static void acpi_power_resume_dependent(struct work_struct *work)
- {
--	struct acpi_device *acpi_dev;
--	acpi_handle handle = device->handle;
-+	struct acpi_power_dependent_device *dep;
-+	struct acpi_device_physical_node *pn;
-+	struct acpi_device *adev;
- 	int state;
- 
--	if (acpi_bus_get_device(handle, &acpi_dev))
-+	dep = container_of(work, struct acpi_power_dependent_device, work);
-+	adev = dep->adev;
-+	if (acpi_power_get_inferred_state(adev, &state))
- 		return;
- 
--	if(acpi_power_get_inferred_state(acpi_dev, &state))
-+	if (state > ACPI_STATE_D0)
- 		return;
- 
--	if (state == ACPI_STATE_D0 && pm_runtime_suspended(device->dev))
--		pm_request_resume(device->dev);
-+	mutex_lock(&adev->physical_node_lock);
-+
-+	list_for_each_entry(pn, &adev->physical_node_list, node)
-+		pm_request_resume(pn->dev);
-+
-+	mutex_unlock(&adev->physical_node_lock);
- }
- 
- static int __acpi_power_on(struct acpi_power_resource *resource)
-@@ -244,9 +239,7 @@ static int __acpi_power_on(struct acpi_p
- static int acpi_power_on(acpi_handle handle)
- {
- 	int result = 0;
--	bool resume_device = false;
- 	struct acpi_power_resource *resource = NULL;
--	struct acpi_power_resource_device *device_list;
- 
- 	result = acpi_power_get_context(handle, &resource);
- 	if (result)
-@@ -260,26 +253,17 @@ static int acpi_power_on(acpi_handle han
- 				  resource->name));
- 	} else {
- 		result = __acpi_power_on(resource);
--		if (result)
-+		if (result) {
- 			resource->ref_count--;
--		else
--			resume_device = true;
--	}
-+		} else {
-+			struct acpi_power_dependent_device *dep;
- 
--	mutex_unlock(&resource->resource_lock);
--
--	if (!resume_device)
--		return result;
--
--	mutex_lock(&resource->devices_lock);
--
--	device_list = resource->devices;
--	while (device_list) {
--		acpi_power_on_device(device_list->device);
--		device_list = device_list->next;
-+			list_for_each_entry(dep, &resource->dependent, node)
-+				schedule_work(&dep->work);
-+		}
- 	}
- 
--	mutex_unlock(&resource->devices_lock);
-+	mutex_unlock(&resource->resource_lock);
- 
- 	return result;
- }
-@@ -357,119 +341,82 @@ static int acpi_power_on_list(struct acp
- 	return result;
- }
- 
--static void __acpi_power_resource_unregister_device(struct device *dev,
--		acpi_handle res_handle)
-+static void acpi_power_add_dependent(acpi_handle rhandle,
-+				     struct acpi_device *adev)
- {
--	struct acpi_power_resource *resource = NULL;
--	struct acpi_power_resource_device *prev, *curr;
-+	struct acpi_power_dependent_device *dep;
-+	struct acpi_power_resource *resource;
- 
--	if (acpi_power_get_context(res_handle, &resource))
-+	if (!rhandle || !adev || acpi_power_get_context(rhandle, &resource))
- 		return;
- 
--	mutex_lock(&resource->devices_lock);
--	prev = NULL;
--	curr = resource->devices;
--	while (curr) {
--		if (curr->device->dev == dev) {
--			if (!prev)
--				resource->devices = curr->next;
--			else
--				prev->next = curr->next;
--
--			kfree(curr);
--			break;
--		}
--
--		prev = curr;
--		curr = curr->next;
--	}
--	mutex_unlock(&resource->devices_lock);
--}
--
--/* Unlink dev from all power resources in _PR0 */
--void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle)
--{
--	struct acpi_device *acpi_dev;
--	struct acpi_handle_list *list;
--	int i;
-+	mutex_lock(&resource->resource_lock);
- 
--	if (!dev || !handle)
--		return;
-+	list_for_each_entry(dep, &resource->dependent, node)
-+		if (dep->adev == adev)
-+			goto out;
- 
--	if (acpi_bus_get_device(handle, &acpi_dev))
--		return;
-+	dep = kzalloc(sizeof(*dep), GFP_KERNEL);
-+	if (!dep)
-+		goto out;
- 
--	list = &acpi_dev->power.states[ACPI_STATE_D0].resources;
-+	dep->adev = adev;
-+	INIT_WORK(&dep->work, acpi_power_resume_dependent);
-+	list_add_tail(&dep->node, &resource->dependent);
- 
--	for (i = 0; i < list->count; i++)
--		__acpi_power_resource_unregister_device(dev,
--			list->handles[i]);
-+ out:
-+	mutex_unlock(&resource->resource_lock);
- }
--EXPORT_SYMBOL_GPL(acpi_power_resource_unregister_device);
- 
--static int __acpi_power_resource_register_device(
--	struct acpi_power_managed_device *powered_device, acpi_handle handle)
-+static void acpi_power_remove_dependent(acpi_handle rhandle,
-+					struct acpi_device *adev)
- {
--	struct acpi_power_resource *resource = NULL;
--	struct acpi_power_resource_device *power_resource_device;
--	int result;
-+	struct acpi_power_dependent_device *dep;
-+	struct acpi_power_resource *resource;
-+	struct work_struct *work = NULL;
- 
--	result = acpi_power_get_context(handle, &resource);
--	if (result)
--		return result;
-+	if (!rhandle || !adev || acpi_power_get_context(rhandle, &resource))
-+		return;
- 
--	power_resource_device = kzalloc(
--		sizeof(*power_resource_device), GFP_KERNEL);
--	if (!power_resource_device)
--		return -ENOMEM;
-+	mutex_lock(&resource->resource_lock);
- 
--	power_resource_device->device = powered_device;
-+	list_for_each_entry(dep, &resource->dependent, node)
-+		if (dep->adev == adev) {
-+			list_del(&dep->node);
-+			work = &dep->work;
-+			break;
-+		}
- 
--	mutex_lock(&resource->devices_lock);
--	power_resource_device->next = resource->devices;
--	resource->devices = power_resource_device;
--	mutex_unlock(&resource->devices_lock);
-+	mutex_unlock(&resource->resource_lock);
- 
--	return 0;
-+	if (work) {
-+		cancel_work_sync(work);
-+		kfree(dep);
-+	}
- }
- 
--/* Link dev to all power resources in _PR0 */
--int acpi_power_resource_register_device(struct device *dev, acpi_handle handle)
-+void acpi_power_add_remove_device(struct acpi_device *adev, bool add)
- {
--	struct acpi_device *acpi_dev;
--	struct acpi_handle_list *list;
--	struct acpi_power_managed_device *powered_device;
--	int i, ret;
--
--	if (!dev || !handle)
--		return -ENODEV;
--
--	ret = acpi_bus_get_device(handle, &acpi_dev);
--	if (ret || !acpi_dev->power.flags.power_resources)
--		return -ENODEV;
--
--	powered_device = kzalloc(sizeof(*powered_device), GFP_KERNEL);
--	if (!powered_device)
--		return -ENOMEM;
--
--	powered_device->dev = dev;
--	powered_device->handle = handle;
-+	int state;
- 
--	list = &acpi_dev->power.states[ACPI_STATE_D0].resources;
-+	for (state = ACPI_STATE_D0; state <= ACPI_STATE_D3_HOT; state++) {
-+		struct acpi_device_power_state *ps = &adev->power.states[state];
-+		int j;
- 
--	for (i = 0; i < list->count; i++) {
--		ret = __acpi_power_resource_register_device(powered_device,
--			list->handles[i]);
-+		for (j = 0; j < ps->resources.count; j++) {
-+			acpi_handle rhandle = ps->resources.handles[j];
- 
--		if (ret) {
--			acpi_power_resource_unregister_device(dev, handle);
--			break;
-+			if (add)
-+				acpi_power_add_dependent(rhandle, adev);
-+			else
-+				acpi_power_remove_dependent(rhandle, adev);
- 		}
- 	}
--
--	return ret;
- }
--EXPORT_SYMBOL_GPL(acpi_power_resource_register_device);
-+
-+/* --------------------------------------------------------------------------
-+                             Device Power Management
-+   -------------------------------------------------------------------------- */
- 
- /**
-  * acpi_device_sleep_wake - execute _DSW (Device Sleep Wake) or (deprecated in
-@@ -623,10 +570,6 @@ int acpi_disable_wakeup_device_power(str
- 	return err;
- }
- 
--/* --------------------------------------------------------------------------
--                             Device Power Management
--   -------------------------------------------------------------------------- */
--
- int acpi_power_get_inferred_state(struct acpi_device *device, int *state)
- {
- 	int result = 0;
-@@ -725,7 +668,7 @@ static int acpi_power_add(struct acpi_de
- 
- 	resource->device = device;
- 	mutex_init(&resource->resource_lock);
--	mutex_init(&resource->devices_lock);
-+	INIT_LIST_HEAD(&resource->dependent);
- 	strcpy(resource->name, device->pnp.bus_id);
- 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
- 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
-Index: linux/drivers/acpi/internal.h
-===================================================================
---- linux.orig/drivers/acpi/internal.h
-+++ linux/drivers/acpi/internal.h
-@@ -42,6 +42,7 @@ static inline void acpi_debugfs_init(voi
-                                   Power Resource
-    -------------------------------------------------------------------------- */
- int acpi_power_init(void);
-+void acpi_power_add_remove_device(struct acpi_device *adev, bool add);
- int acpi_device_sleep_wake(struct acpi_device *dev,
-                            int enable, int sleep_state, int dev_state);
- int acpi_power_get_inferred_state(struct acpi_device *device, int *state);
-Index: linux/drivers/pci/pci-acpi.c
-===================================================================
---- linux.orig/drivers/pci/pci-acpi.c
-+++ linux/drivers/pci/pci-acpi.c
-@@ -330,7 +330,6 @@ static void pci_acpi_setup(struct device
- 		acpi_pci_irq_add_prt(handle, pci_domain_nr(pci_dev->bus), bus);
- 	}
- 
--	acpi_power_resource_register_device(dev, handle);
- 	if (acpi_bus_get_device(handle, &adev) || !adev->wakeup.flags.valid)
- 		return;
- 
-@@ -353,7 +352,6 @@ static void pci_acpi_cleanup(struct devi
- 		device_set_run_wake(dev, false);
- 		pci_acpi_remove_pm_notifier(adev);
- 	}
--	acpi_power_resource_unregister_device(dev, handle);
- 
- 	if (pci_dev->subordinate)
- 		acpi_pci_irq_del_prt(pci_domain_nr(pci_dev->bus),
-Index: linux/include/acpi/acpi_bus.h
-===================================================================
---- linux.orig/include/acpi/acpi_bus.h
-+++ linux/include/acpi/acpi_bus.h
-@@ -377,8 +377,6 @@ static inline bool acpi_bus_can_wakeup(a
- }
- #endif /* !CONFIG_PM */
- 
--int acpi_power_resource_register_device(struct device *dev, acpi_handle handle);
--void acpi_power_resource_unregister_device(struct device *dev, acpi_handle handle);
- #ifdef CONFIG_ACPI_PROC_EVENT
- int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
- int acpi_bus_generate_proc_event4(const char *class, const char *bid, u8 type, int data);
-Index: linux/drivers/ata/libata-acpi.c
-===================================================================
---- linux.orig/drivers/ata/libata-acpi.c
-+++ linux/drivers/ata/libata-acpi.c
-@@ -1036,8 +1036,6 @@ static void ata_acpi_register_power_reso
- 		return;
- 
- 	device = &sdev->sdev_gendev;
--
--	acpi_power_resource_register_device(device, handle);
- }
- 
- static void ata_acpi_unregister_power_resource(struct ata_device *dev)
-@@ -1051,8 +1049,6 @@ static void ata_acpi_unregister_power_re
- 		return;
- 
- 	device = &sdev->sdev_gendev;
--
--	acpi_power_resource_unregister_device(device, handle);
- }
- 
- void ata_acpi_bind(struct ata_device *dev)
-
+-- 
+Kind regards,
+Minchan Kim
