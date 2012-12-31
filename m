@@ -1,112 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751409Ab2LaPIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 10:08:38 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:39387 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751238Ab2LaPIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 10:08:36 -0500
-Date: Mon, 31 Dec 2012 09:08:33 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org,
-        pdeschrijver@nvidia.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, rja@americas.sgi.com
-Subject: Re: [PATCH] cpuidle - fix lock contention in the idle path
-Message-ID: <20121231150833.GA5425@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org> <50DEBFD7.5000104@linaro.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1751402Ab2LaPOD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 10:14:03 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:57254 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238Ab2LaPOB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 10:14:01 -0500
+Date: Mon, 31 Dec 2012 19:13:57 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andrew Vagin <avagin@parallels.com>, Andrey Vagin <avagin@openvz.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] prctl: fix validation of an address
+Message-ID: <20121231151356.GA11118@moon>
+References: <1356778810-20879-1-git-send-email-avagin@openvz.org>
+ <1356904987.9725.10.camel@localhost>
+ <20121231101414.GA27119@paralelels.com>
+ <1356964034.31923.12.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <50DEBFD7.5000104@linaro.org>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1356964034.31923.12.camel@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 29, 2012 at 11:03:03AM +0100, Daniel Lezcano wrote:
+On Mon, Dec 31, 2012 at 09:27:14AM -0500, Eric Paris wrote:
+> On Mon, 2012-12-31 at 14:14 +0400, Andrew Vagin wrote:
+> > On Sun, Dec 30, 2012 at 05:03:07PM -0500, Eric Paris wrote:
+> > > On Sat, 2012-12-29 at 15:00 +0400, Andrey Vagin wrote:
+> > > > The address should be bigger than dac_mmap_min_addr, because
+> > > > a process with CAP_RAWIO can map a vma bellow mmap_min_addr.
+> > > 
+> > > NAK
+> > 
+> > Currently prctl(PR_SET_MM_*, addr, ) returns EINVAL for valid addresses.
+> > I think it's a bug. Are you agree?
 > 
-> Hi Russ,
-> 
-> Is it possible you try this patch on your 2048 cpus ?
+> Can you help me understand how prctl(PR_SET_MM_*, relates to
+> checkpoint/restore?  My worry here is that somehow this interface could
 
-Yes, I will try it later today.
-Thanks
+Here how we use it (from userspace code)
 
+	ret |= sys_prctl_safe(PR_SET_MM, PR_SET_MM_START_CODE, (long)args->mm.mm_start_code, 0);
+	ret |= sys_prctl_safe(PR_SET_MM, PR_SET_MM_END_CODE, (long)args->mm.mm_end_code, 0);
+	...
 
-> Thanks
-> 
->   -- Daniel
-> 
-> On 12/26/2012 11:01 AM, Daniel Lezcano wrote:
-> > The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
-> > a lock in the cpuidle_get_cpu_driver function. This function
-> > is used in the idle_call function.
-> > 
-> > The problem is the contention with a large number of cpus because
-> > they try to access the idle routine at the same time.
-> > 
-> > The lock could be safely removed because of how is used the
-> > cpuidle api. The cpuidle_register_driver is called first but
-> > until the cpuidle_register_device is not called we don't
-> > enter in the cpuidle idle call function because the device
-> > is not enabled.
-> > 
-> > The cpuidle_unregister_driver function, leading the a NULL driver,
-> > is not called before the cpuidle_unregister_device.
-> > 
-> > This is how is used the cpuidle api from the different drivers.
-> > 
-> > However, a cleanup around the lock and a proper refcounting
-> > mechanism should be used to ensure the consistency in the api,
-> > like cpuidle_unregister_driver should failed if its refcounting
-> > is not 0.
-> > 
-> > These modifications will need some code reorganization and rewrite
-> > which does not fit with a fix.
-> > 
-> > The following patch is a hot fix by returning to the initial behavior
-> > by removing the lock when getting the driver.
-> > 
-> > Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > ---
-> >  drivers/cpuidle/driver.c |    8 +-------
-> >  1 file changed, 1 insertion(+), 7 deletions(-)
-> > 
-> > diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-> > index 3af841f..c2b281a 100644
-> > --- a/drivers/cpuidle/driver.c
-> > +++ b/drivers/cpuidle/driver.c
-> > @@ -235,16 +235,10 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
-> >   */
-> >  struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
-> >  {
-> > -	struct cpuidle_driver *drv;
-> > -
-> >  	if (!dev)
-> >  		return NULL;
-> >  
-> > -	spin_lock(&cpuidle_driver_lock);
-> > -	drv = __cpuidle_get_cpu_driver(dev->cpu);
-> > -	spin_unlock(&cpuidle_driver_lock);
-> > -
-> > -	return drv;
-> > +	return __cpuidle_get_cpu_driver(dev->cpu);
-> >  }
-> >  EXPORT_SYMBOL_GPL(cpuidle_get_cpu_driver);
-> >  
-> > 
-> 
-> 
-> -- 
->  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-> 
-> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-> <http://twitter.com/#!/linaroorg> Twitter |
-> <http://www.linaro.org/linaro-blog/> Blog
+the values of mm.mm_start_code and such are saved in image file and obtained
+during checkpoint stage. Note the prctl_set_mm requires the caller to have
+CAP_SYS_RESOURCE privilege granted.
 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+> be used to bypass the security properties of mmap_min_addr.    I have no
+> idea how the interface is used, so I don't know if my fears are founded.
+> When I hear 'restore' I think of a privileged application setting up
+> some unprivileged application based on untrusted data.  My fear is that
+> some unpriv application, that doesn't have permission to map below
+> mmap_min_addr, may be able to trick the privileged application, which
+> would have this permission, into doing it on its behalf.  Does that make
+> sense?  Is that a realistic scenario with how this interface is used?
+
+> 
+> > CONFIG_LSM_MMAP_MIN_ADDR could not be got from user space.
+> > 
+> > This application can use a real value of mmap_min_addr, but it is not
+> > provided into userspace.
+> 
+> Unrelated to this patch issue, but I guess either could be exposed if
+> there is a need.
+> 
+> > Currently a task can have user memory area bellow dac_mmap_min_addr,
+> > but prctl returns -EINVAL for such addresses.
+> > How can I understand the reason, if I know that the address is valid?
+> 
+> Talking about dac_mmap_min_addr is wrong.  The capabilities security
+> module uses dac_mmap_min_addr but other LSMs can (and obviously do) use
+> other things.  mmap_min_addr is just the shorthand to make sure you
+> clear all hurdles.  Breaking those hurdles up outside of the security
+> subsystem is wrong.
+> 
+> The kernel makes the decision on what is valid via security_mmap_addr().
+> Assuming there are no security fears of an untrusted application
+> tricking some priviledged application to set up these maps the answer is
+> just calling security_mmap_addr() instead of doing if(addr <
+> mmap_min_addr) return -EINVAL;
+
+If only I've not missed something obvious, the check for security_mmap_addr() here
+instead of poking the mmap_min_addr looks more correct for me. Andrew?
+
+> I don't know if it is a good idea to allow this interface to ever go
+> below mmap_min_addr, but I do know that using (or even thinking about)
+> dac_mmap_min_addr is wrong and you should be looking at
+> security_mmap_addr() if you look at anything...
+
+	Cyrill
