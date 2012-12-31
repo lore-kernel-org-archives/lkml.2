@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751672Ab2LaSuL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 13:50:11 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:61803 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596Ab2LaSuI (ORCPT
+	id S1751712Ab2LaS4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 13:56:40 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:50709 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751629Ab2LaS4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 13:50:08 -0500
-MIME-Version: 1.0
-Date: Mon, 31 Dec 2012 13:50:07 -0500
-Message-ID: <CAGh4K3J449zkCq8cPu5pCzxZ9CK0rbDia0-YzrTeQLLn7v0quw@mail.gmail.com>
-Subject: PATCH: Error Checking for pagemap.h.
-From: Christopher Sacchi <chris.sacchi@gmail.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 31 Dec 2012 13:56:38 -0500
+From: Devendra Naga <devendra.aaru@gmail.com>
+To: "Hans J. Koch" <hjk@hansjkoch.de>, linux-kernel@vger.kernel.org
+Cc: Devendra Naga <devendra.aaru@gmail.com>
+Subject: [PATCH] uio: sercos3: use devm_kzalloc
+Date: Mon, 31 Dec 2012 13:56:29 -0500
+Message-Id: <1356980189-19749-1-git-send-email-devendra.aaru@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is for the pagemap.h. This checks to see if the
-page_size_int is 2, if not, set the value to 2, and return 1.
-The code is under the double-dashed lines. It is for Kernel Version 3.8-rc1.
-This is a rewrite.
+use devm_kzalloc and no need of free's at error path and unload
 
---
-Signed-off-by: Christopher P. Sacchi chris.sacchi@gmail.com
---- pagemap.h   2012-12-21 20:19:00.000000000 -0500
-+++ pagemap.h   2012-12-31 13:07:51.566631871 -0500
-@@ -14,11 +14,15 @@
- #include <linux/bitops.h>
- #include <linux/hardirq.h> /* for in_interrupt() */
- #include <linux/hugetlb_inline.h>
--
- /*
-  * Bits in mapping->flags.  The lower __GFP_BITS_SHIFT bits are the page
-  * allocation mode flags.
-  */
-+/*
-+* Here we declare the number that
-+* the PAGE_SIZE should have.
-+* We need it an integer for checking
-+* and writing. This value should be two.
-+* If not, later we'll check.
-+*/
-+int page_size_integer = 2;
- enum mapping_flags {
-        AS_EIO          = __GFP_BITS_SHIFT + 0, /* IO error on async write */
-        AS_ENOSPC       = __GFP_BITS_SHIFT + 1, /* ENOSPC on async write */
-@@ -426,6 +430,18 @@ extern void add_page_wait_queue(struct p
-  * This assumes that two userspace pages are always sufficient.  That's
-  * not true if PAGE_CACHE_SIZE > PAGE_SIZE.
-  */
-+
-+/*
-+* Here we'll check for if the two userspace pages are not sufficient,
-+* and if PAGE_CACHE_SIZE > PAGE_SIZE.
-+* This will return 1 if true,
-+* and will set the value back to 2 in case of a fault.
-+*/
-+static inline int fault_userspace_assumption_sufficient_not_true()
-+{
-+       if (PAGE_CACHE_SIZE > PAGE_SIZE) {
-+               page_size_int = 2;
-+               return 1;
-+       }
-+}
- static inline int fault_in_pages_writeable(char __user *uaddr, int size)
- {
-        int ret;
---
+Signed-off-by: Devendra Naga <devendra.aaru@gmail.com>
+---
 
-Regards,
-Christopher
+Please apply this after
+
+changeid: 1fb4ec94e7e955a1e26bf81f2634e5be2fa5f1d5
+[PATCH] uio: uio_sercos3: use module_pci_driver macro
+
+sorry for sending as patch should be patch 2/2.
+
+ drivers/uio/uio_sercos3.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/uio/uio_sercos3.c b/drivers/uio/uio_sercos3.c
+index 5419832..c0d758a 100644
+--- a/drivers/uio/uio_sercos3.c
++++ b/drivers/uio/uio_sercos3.c
+@@ -123,16 +123,16 @@ static int sercos3_pci_probe(struct pci_dev *dev,
+ 	struct sercos3_priv *priv;
+ 	int i;
+ 
+-	info = kzalloc(sizeof(struct uio_info), GFP_KERNEL);
++	info = devm_kzalloc(&dev->dev, sizeof(struct uio_info), GFP_KERNEL);
+ 	if (!info)
+ 		return -ENOMEM;
+ 
+-	priv = kzalloc(sizeof(struct sercos3_priv), GFP_KERNEL);
++	priv = devm_kzalloc(&dev->dev, sizeof(struct sercos3_priv), GFP_KERNEL);
+ 	if (!priv)
+-		goto out_free;
++		return -ENOMEM;
+ 
+ 	if (pci_enable_device(dev))
+-		goto out_free_priv;
++		goto out;
+ 
+ 	if (pci_request_regions(dev, "sercos3"))
+ 		goto out_disable;
+@@ -173,10 +173,7 @@ out_unmap:
+ 	pci_release_regions(dev);
+ out_disable:
+ 	pci_disable_device(dev);
+-out_free_priv:
+-	kfree(priv);
+-out_free:
+-	kfree(info);
++out:
+ 	return -ENODEV;
+ }
+ 
+@@ -193,8 +190,6 @@ static void sercos3_pci_remove(struct pci_dev *dev)
+ 		if (info->mem[i].internal_addr)
+ 			iounmap(info->mem[i].internal_addr);
+ 	}
+-	kfree(info->priv);
+-	kfree(info);
+ }
+ 
+ static struct pci_device_id sercos3_pci_ids[] = {
+-- 
+1.7.10.4
+
