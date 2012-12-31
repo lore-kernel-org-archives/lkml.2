@@ -1,309 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751829Ab2LaVeb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 16:34:31 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:56720 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001Ab2LaVe3 (ORCPT
+	id S1751932Ab2LaWPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 17:15:03 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:33243 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab2LaWO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 16:34:29 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Tony Prisk <linux@prisktech.co.nz>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-input@vger.kernel.org
-Subject: [PATCH v3] input: vt8500: Add power button keypad driver
-Date: Tue,  1 Jan 2013 10:34:07 +1300
-Message-Id: <1356989647-18081-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 31 Dec 2012 17:14:59 -0500
+MIME-Version: 1.0
+Date: Mon, 31 Dec 2012 14:14:58 -0800
+Message-ID: <CAGXD9OfewV8OPs+5NhbuxEDgweCTff94NBAsfH=4NfuUmp2QVQ@mail.gmail.com>
+Subject: Bad page state
+From: Prasad Koya <prasad.koya@gmail.com>
+To: xiaoguangrong@linux.vnet.ibm.com, sagig@mellanox.co.il
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the Power Button keypad found on
-Wondermedia netbooks/tablets.
+Hi
 
-A keymap property is exposed to allowing defining the key
-event to be generated when the power button is pressed.
+I still see bad page state and bad spinlock magic after applying
+following patches to 2.6.38.8. I see these patches in 3.7.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-CC: linux-kernel@vger.kernel.org
-CC: linux-arm-kernel@lists.infradead.org
-CC: vt8500-wm8505-linux-kernel@googlegroups.com
-CC: linux-input@vger.kernel.org
+3ad3d901bbcfb15a5e4690e55350db0899095a68 (31 Jul '12):
+mm: mmu_notifier: fix freed page still mapped in secondary MMU
 
-v2:
-Remove devicetree binding for keycode
-Add dependency on OF in Kconfig
-Move static variables in a struct
-Remove redundant inline modifier from kpad_power_timeout()
-Remove unneccessary checks against power_button_pressed. Drop variable.
-Cleanup the fail path code and add a .remove function.
-Change the button behaviour so that a key-released event is only generated once
-the key is released, not after timeout.
-*Changes tested on WM8650 tablet.
 
-v3:
-Remove dependency on PMC node, and change binding document accordingly.
-Remove mod_timer call in kpad_power_timeout()
-Unmap io memory in fail path and .remove
-Update name & phys fields to be more meaningful
-Use del_timer_sync rather than del_timer
-Fix usage of input_unregister_device/input_free_device
+21a92735f660eaecf69a6f2e777f18463760ec32
+mm: mmu_notifier: have mmu_notifiers use a global SRCU so they may
+safely schedule
 
- .../bindings/input/vt8500-power-keypad.txt         |   17 ++
- drivers/input/keyboard/Kconfig                     |   10 ++
- drivers/input/keyboard/Makefile                    |    1 +
- drivers/input/keyboard/wmt_power_keypad.c          |  182 ++++++++++++++++++++
- 4 files changed, 210 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/input/vt8500-power-keypad.txt
- create mode 100644 drivers/input/keyboard/wmt_power_keypad.c
 
-diff --git a/Documentation/devicetree/bindings/input/vt8500-power-keypad.txt b/Documentation/devicetree/bindings/input/vt8500-power-keypad.txt
-new file mode 100644
-index 0000000..f6996d5
---- /dev/null
-+++ b/Documentation/devicetree/bindings/input/vt8500-power-keypad.txt
-@@ -0,0 +1,17 @@
-+* Wondermedia Power Keypad device tree bindings
-+
-+Wondermedia SoCs have a single irq-driven power button attached to
-+the power management controller.
-+
-+Required SoC Specific Properties:
-+- compatible: should be one of the following
-+   - "wm,power-keypad": For all Wondermedia 8xxx-series SoCs.
-+- reg : Should contain the register range of the Power Mgmt controller
-+- interrupts: should be the power management controller wakeup interrupt.
-+
-+Example:
-+	powerkey: pwrkey@0 {
-+		compatible = "wm,power-keypad";
-+		reg = <0xd8130000 0x1000>;
-+		interrupts = <22>;
-+	};
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 5a240c6..bb1e04f 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -595,6 +595,16 @@ config KEYBOARD_TWL4030
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called twl4030_keypad.
- 
-+config KEYBOARD_WMT_POWER_KEYPAD
-+	tristate "Wondermedia Power keypad support"
-+	depends on (OF && ARCH_VT8500)
-+	help
-+	  Say Y here to enable support for the power button keypad
-+	  on Wondermedia 8xxx-series SoCs.
-+
-+	  To compile this driver as a module, choose M here: the
-+	  module will be called wmt_power_keypad.
-+
- config KEYBOARD_XTKBD
- 	tristate "XT keyboard"
- 	select SERIO
-diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
-index 44e7600..eea31af 100644
---- a/drivers/input/keyboard/Makefile
-+++ b/drivers/input/keyboard/Makefile
-@@ -52,5 +52,6 @@ obj-$(CONFIG_KEYBOARD_TC3589X)		+= tc3589x-keypad.o
- obj-$(CONFIG_KEYBOARD_TEGRA)		+= tegra-kbc.o
- obj-$(CONFIG_KEYBOARD_TNETV107X)	+= tnetv107x-keypad.o
- obj-$(CONFIG_KEYBOARD_TWL4030)		+= twl4030_keypad.o
-+obj-$(CONFIG_KEYBOARD_WMT_POWER_KEYPAD)	+= wmt_power_keypad.o
- obj-$(CONFIG_KEYBOARD_XTKBD)		+= xtkbd.o
- obj-$(CONFIG_KEYBOARD_W90P910)		+= w90p910_keypad.o
-diff --git a/drivers/input/keyboard/wmt_power_keypad.c b/drivers/input/keyboard/wmt_power_keypad.c
-new file mode 100644
-index 0000000..383b73e
---- /dev/null
-+++ b/drivers/input/keyboard/wmt_power_keypad.c
-@@ -0,0 +1,182 @@
-+/* Wondermedia Power Keypad
-+ *
-+ * Copyright (C) 2012 Tony Prisk <linux@prisktech.co.nz>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/input.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <linux/bitops.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_device.h>
-+
-+struct kpad_pwr_data {
-+	struct input_dev	*kpad_power;
-+	void __iomem		*pmc_base;
-+	int			irq;
-+	struct timer_list	timer;
-+	spinlock_t		lock;
-+	unsigned int		keycode;
-+};
-+
-+static void kpad_power_timeout(unsigned long fcontext)
-+{
-+	struct kpad_pwr_data *data = (struct kpad_pwr_data *)fcontext;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+
-+	input_report_key(data->kpad_power, data->keycode, 0);
-+	input_sync(data->kpad_power);
-+
-+	spin_unlock_irqrestore(&data->lock, flags);
-+}
-+
-+static irqreturn_t kpad_power_isr(int irq_num, void *priv)
-+{
-+	struct kpad_pwr_data *data = priv;
-+	u32 status;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&data->lock, flags);
-+
-+	status = readl(data->pmc_base + 0x14);
-+	writel(status, data->pmc_base + 0x14);
-+
-+	if (status & BIT(14)) {
-+		input_report_key(data->kpad_power, data->keycode, 1);
-+		input_sync(data->kpad_power);
-+		mod_timer(&data->timer, jiffies + msecs_to_jiffies(250));
-+	}
-+
-+	spin_unlock_irqrestore(&data->lock, flags);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int vt8500_pwr_kpad_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct kpad_pwr_data *data;
-+	u32 status;
-+	int err;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "devicenode not found\n");
-+		return -ENODEV;
-+	}
-+
-+	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-+	if (!data) {
-+		dev_err(&pdev->dev, "unable to allocate private data\n");
-+		return -ENOMEM;
-+	}
-+
-+	platform_set_drvdata(pdev, data);
-+	data->keycode = KEY_POWER;
-+	spin_lock_init(&data->lock);
-+
-+	data->pmc_base = of_iomap(np, 0);
-+	if (!data->pmc_base) {
-+		dev_err(&pdev->dev, "unable to map pmc memory\n");
-+		return -ENOMEM;
-+	}
-+
-+	/* set power button to soft-power */
-+	status = readl(data->pmc_base + 0x54);
-+	writel(status | 1, data->pmc_base + 0x54);
-+
-+	/* clear any pending interrupts */
-+	status = readl(data->pmc_base + 0x14);
-+	writel(status, data->pmc_base + 0x14);
-+
-+	data->kpad_power = input_allocate_device();
-+	if (!data->kpad_power) {
-+		dev_err(&pdev->dev, "failed to allocate input device\n");
-+		return -ENOMEM;
-+	}
-+
-+	input_set_capability(data->kpad_power, EV_KEY, data->keycode);
-+
-+	data->kpad_power->name = "Wondermedia Power Button";
-+	data->kpad_power->phys = "vt8500-pmc/input0";
-+	data->kpad_power->keycode = &data->keycode;
-+	data->kpad_power->keycodesize = sizeof(unsigned int);
-+	data->kpad_power->keycodemax = 1;
-+
-+	setup_timer(&data->timer, kpad_power_timeout, (unsigned long)data);
-+
-+	data->irq = irq_of_parse_and_map(np, 0);
-+	err = request_irq(data->irq, &kpad_power_isr, 0, "pwrbtn", data);
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "failed to request irq\n");
-+		goto cleanup_irq;
-+	}
-+
-+	err = input_register_device(data->kpad_power);
-+	if (err < 0) {
-+		dev_err(&pdev->dev, "failed to register input device\n");
-+		goto cleanup_input;
-+	}
-+
-+	return 0;
-+
-+cleanup_input:
-+	free_irq(data->irq, NULL);
-+cleanup_irq:
-+	del_timer(&data->timer);
-+	input_free_device(data->kpad_power);
-+	iounmap(data->pmc_base);
-+	return err;
-+}
-+
-+static int vt8500_pwr_kpad_remove(struct platform_device *pdev)
-+
-+{
-+	struct kpad_pwr_data *data = platform_get_drvdata(pdev);
-+
-+	free_irq(data->irq, data);
-+	del_timer_sync(&data->timer);
-+	input_unregister_device(data->kpad_power);
-+	iounmap(data->pmc_base);
-+
-+	return 0;
-+}
-+
-+
-+static struct of_device_id vt8500_pwr_kpad_dt_ids[] = {
-+	{ .compatible = "wm,power-keypad" },
-+	{ /* Sentinel */ },
-+};
-+
-+static struct platform_driver vt8500_pwr_kpad_driver = {
-+	.probe		= vt8500_pwr_kpad_probe,
-+	.remove		= vt8500_pwr_kpad_remove,
-+	.driver		= {
-+		.name	= "wmt-power-keypad",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = vt8500_pwr_kpad_dt_ids,
-+	},
-+};
-+
-+module_platform_driver(vt8500_pwr_kpad_driver);
-+
-+MODULE_DESCRIPTION("Wondermedia Power Keypad Driver");
-+MODULE_AUTHOR("Tony Prisk <linux@prisktech.co.nz>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_DEVICE_TABLE(of, vt8500_pwr_kpad_dt_ids);
--- 
-1.7.9.5
+70400303ce0c4ced3139499c676d5c79636b0c72
+mm: mmu_notifier: make the mmu_notifier srcu static
 
+
+This is reproducible. Here is the backtrace. Does anyone else see this
+issue? I can enable any configs related to debugging if needed.
+
+thank you
+
+[  197.968501] BUG: Bad page state in process rsyslogd  pfn:9eedd
+[  198.052406] page:ffffea00022c4058 count:58504 mapcount:0 mapping:
+    (null) index:0x0
+[  198.432354] page flags:
+0x259300000000e2ee(error|referenced|uptodate|lru|active|slab|arch_1|writeback|head|tail)
+[  198.995150] Call Trace:
+[  199.128022] [<ffffffff810779e0>] ? dump_page+0xb1/0xb6
+[  199.189319] [<ffffffff81078985>] ? bad_page+0xee/0x104
+[  199.250602] [<ffffffff81079999>] ? get_page_from_freelist+0x322/0x468
+[  199.327468] [<ffffffff81079c01>] ? __alloc_pages_nodemask+0x122/0x64e
+[  199.404339] [<ffffffff8102dcd4>] ? get_parent_ip+0x11/0x41
+[  199.469778] [<ffffffff8102dcd4>] ? get_parent_ip+0x11/0x41
+[  199.535223] [<ffffffff81088524>] ? __do_fault+0x41b/0x452
+[  199.599623] [<ffffffff8102dcd4>] ? get_parent_ip+0x11/0x41
+[  199.665063] [<ffffffff81088e9c>] ? handle_pte_fault+0x6ff/0xa11
+[  199.735697] [<ffffffff8102dcd4>] ? get_parent_ip+0x11/0x41
+[  199.801140] [<ffffffff8138cc60>] ? _raw_spin_unlock+0x13/0x2e
+[  199.869697] [<ffffffff8108a3f0>] ? handle_mm_fault+0x134/0x14a
+[  199.939287] [<ffffffff8138f909>] ? do_page_fault+0x449/0x46e
+[  200.006798] [<ffffffff8138d30f>] ? page_fault+0x1f/0x30
+[  200.069124] [<ffffffff81099b0f>] ? filp_close+0x63/0x6d
+[  200.131449] [<ffffffff810a8947>] ? sys_dup3+0x124/0x155
+[  200.193779] [<ffffffff8138d30f>] ? page_fault+0x1f/0x30
+
+
+And another instance:
+
+[   42.874973] Starting new kernel
+[    1.244086] BUG: spinlock bad magic on CPU#1, ksoftirqd/1/10
+[    1.244086] BUG: unable to handle kernel paging request at 0000000000009367
+[    1.244086] IP: [<ffffffff8118b1b5>] spin_bug+0x73/0xa3
+[    1.244086] Oops: 0000 [#1] PREEMPT SMP
+[    1.244086] last sysfs file:
+/sys/devices/pci0000:00/0000:00:12.2/usb1/1-3/1-3:1.0/host4/target4:0:0/4:0:0:0/block/sda/sda2/dev
+[    1.244086] Stack:
+[    1.244086] Call Trace:
+[    1.244086]  <IRQ>
+[    1.244086] [<ffffffff8118b299>] do_raw_spin_lock+0x29/0x13c
+[    1.244086] [<ffffffff8138cde4>] _raw_spin_lock_irqsave+0x1f/0x27
+[    1.244086] [<ffffffff81025f59>] __wake_up+0x1d/0x48
+[    1.244086] [<ffffffff8104902a>] __wake_up_bit+0x2c/0x2e
+[    1.244086] [<ffffffff81074591>] unlock_page+0x25/0x2a
+[    1.244086] [<ffffffff810c0489>] end_buffer_async_read+0x140/0x187
+[    1.244086] [<ffffffff810be2d5>] end_bio_bh_io_sync+0x35/0x42
+[    1.244086] [<ffffffff810c18a4>] bio_endio+0x28/0x2a
+[    1.244086] [<ffffffff81173767>] req_bio_endio+0x8b/0xaa
+[    1.244086] [<ffffffff81173915>] blk_update_request+0x18f/0x394
+[    1.244086] [<ffffffff81173b35>] blk_update_bidi_request+0x1b/0x69
+[    1.244086] [<ffffffff811748b5>] blk_end_bidi_request+0x1a/0x58
+[    1.244086] [<ffffffff81174925>] blk_end_request+0xb/0xd
+[    1.244086] [<ffffffff81200c96>] scsi_io_completion+0x17d/0x3f9
+[    1.244086] [<ffffffff811fb237>] scsi_finish_command+0xb0/0xb9
+[    1.244086] [<ffffffff81200fff>] scsi_softirq_done+0xdd/0xe6
+[    1.244086] [<ffffffff811791a4>] blk_done_softirq+0x6c/0x7c
+[    1.244086] [<ffffffff810376ce>] __do_softirq+0x8c/0x141
+[    1.244086] [<ffffffff810037cc>] call_softirq+0x1c/0x28
+[    1.244086]  <EOI>
+[    1.244086] [<ffffffff81004c43>] ? do_softirq+0x33/0x68
+[    1.244086] [<ffffffff81037316>] run_ksoftirqd+0xa6/0x1a5
+[    1.244086] [<ffffffff81037270>] ? run_ksoftirqd+0x0/0x1a5
+[    1.244086] [<ffffffff81037270>] ? run_ksoftirqd+0x0/0x1a5
+[    1.244086] [<ffffffff81048c8e>] kthread+0x7d/0x85
+[    1.244086] [<ffffffff810036d4>] kernel_thread_helper+0x4/0x10
+[    1.244086] [<ffffffff81048c11>] ? kthread+0x0/0x85
+[    1.244086] [<ffffffff810036d0>] ? kernel_thread_helper+0x0/0x10
+[    1.244086] Code: 00 48 8d 88 08 03 00 00 31 c0 65 8b 14 25 50 c4
+00 00 e8 dd ed 1f 00 41 83 c8 ff 4d 85 e4 44 8b 4b 08 48 c7 c1 dd 30
+4d 81 74 10 <45> 8b 84 24 60 01 00 00 49 8d 8c 24 08 03 00 00 8b 53 04
+48 89
+[    1.244086] RIP  [<ffffffff8118b1b5>] spin_bug+0x73/0xa3
+[    1.244086] CR2: 0000000000009367
+[    1.244086] Kernel panic - not syncing: Fatal exception in interrupt
+[    1.244086] Call Trace:
+[    1.244086]  <IRQ>
+[    1.244086] [<ffffffff81389e71>] ? panic+0x83/0x190
+[    1.244086] [<ffffffff8138de90>] ? oops_end+0xa9/0xb9
+[    1.244086] [<ffffffff8101f71a>] ? no_context+0x1f7/0x206
+[    1.244086] [<ffffffff8101f8ab>] ? __bad_area_nosemaphore+0x182/0x1a5
+[    1.244086] [<ffffffff8101f8dc>] ? bad_area_nosemaphore+0xe/0x10
+[    1.244086] [<ffffffff8138f821>] ? do_page_fault+0x261/0x46e
+[    1.244086] [<ffffffff8138cd30>] ? _raw_spin_unlock_irqrestore+0x1d/0x3a
+[    1.244086] [<ffffffff8138cd30>] ? _raw_spin_unlock_irqrestore+0x1d/0x3a
+[    1.244086] [<ffffffff81032ce4>] ? console_unlock+0x18b/0x1b1
+[    1.244086] [<ffffffff81033297>] ? vprintk+0x346/0x38c
+[    1.244086] [<ffffffff8138d40f>] ? page_fault+0x1f/0x30
+[    1.244086] [<ffffffff8118b1b5>] ? spin_bug+0x73/0xa3
+[    1.244086] [<ffffffff8118b1a1>] ? spin_bug+0x5f/0xa3
+[    1.244086] [<ffffffff8118b299>] ? do_raw_spin_lock+0x29/0x13c
+[    1.244086] [<ffffffff8138cde4>] ? _raw_spin_lock_irqsave+0x1f/0x27
+[    1.244086] [<ffffffff81025f59>] ? __wake_up+0x1d/0x48
+[    1.244086] [<ffffffff8104902a>] ? __wake_up_bit+0x2c/0x2e
+[    1.244086] [<ffffffff81074591>] ? unlock_page+0x25/0x2a
+[    1.244086] [<ffffffff810c0489>] ? end_buffer_async_read+0x140/0x187
+[    1.244086] [<ffffffff810be2d5>] ? end_bio_bh_io_sync+0x35/0x42
+[    1.244086] [<ffffffff810c18a4>] ? bio_endio+0x28/0x2a
+[    1.244086] [<ffffffff81173767>] ? req_bio_endio+0x8b/0xaa
+[    1.244086] [<ffffffff81173915>] ? blk_update_request+0x18f/0x394
+[    1.244086] [<ffffffff81173b35>] ? blk_update_bidi_request+0x1b/0x69
+[    1.244086] [<ffffffff811748b5>] ? blk_end_bidi_request+0x1a/0x58
+[    1.244086] [<ffffffff81174925>] ? blk_end_request+0xb/0xd
+[    1.244086] [<ffffffff81200c96>] ? scsi_io_completion+0x17d/0x3f9
+[    1.244086] [<ffffffff811fb237>] ? scsi_finish_command+0xb0/0xb9
+[    1.244086] [<ffffffff81200fff>] ? scsi_softirq_done+0xdd/0xe6
+[    1.244086] [<ffffffff811791a4>] ? blk_done_softirq+0x6c/0x7c
+[    1.244086] [<ffffffff810376ce>] ? __do_softirq+0x8c/0x141
+[    1.244086] [<ffffffff810037cc>] ? call_softirq+0x1c/0x28
+[    1.244086]  <EOI>
+[    1.244086] [<ffffffff81004c43>] ? do_softirq+0x33/0x68
+[    1.244086] [<ffffffff81037316>] ? run_ksoftirqd+0xa6/0x1a5
+[    1.244086] [<ffffffff81037270>] ? run_ksoftirqd+0x0/0x1a5
+[    1.244086] [<ffffffff81037270>] ? run_ksoftirqd+0x0/0x1a5
+[    1.244086] [<ffffffff81048c8e>] ? kthread+0x7d/0x85
+[    1.244086] [<ffffffff810036d4>] ? kernel_thread_helper+0x4/0x10
+[    1.244086] [<ffffffff81048c11>] ? kthread+0x0/0x85
+[    1.244086] [<ffffffff810036d0>] ? kernel_thread_helper+0x0/0x10
+[    1.244086] Rebooting in 60 seconds..
