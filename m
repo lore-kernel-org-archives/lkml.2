@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab3AAWye (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 17:54:34 -0500
-Received: from nm1-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.27]:21980
-	"EHLO nm1-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752499Ab3AAWyY (ORCPT
+	id S1752581Ab3AAWzp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 17:55:45 -0500
+Received: from nm8-vm0.access.bullet.mail.mud.yahoo.com ([66.94.237.191]:34179
+	"EHLO nm8-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752537Ab3AAWyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 17:54:24 -0500
-X-Yahoo-Newman-Id: 282118.18166.bm@smtp107.sbc.mail.bf1.yahoo.com
+	Tue, 1 Jan 2013 17:54:33 -0500
+X-Yahoo-Newman-Id: 851576.18166.bm@smtp107.sbc.mail.bf1.yahoo.com
 X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: vg7ytBcVM1lRp4cIVmQESmBhhEBD1aOo_dxfus99Iwbbl8J
- 7lADzBI22Ba04dKH7wCjwMHBYEW0WrD9lg8HHaLou4WzxNcLlXojKbs5X.Os
- ytiPr463CvMwzSOZfLt.h_XpB_zEitGp9jZRYYlyTbAEizO.HMlaJfllqU85
- RtDfVnybcy3XUeN5tZPwKQq.UGxVkW8Atd.yVeqUvmjzQA0WC83p1kkeYhvi
- XkH2GjX_2ZNHStszIyKoeup9iLofT4mdW9xr.o6IfxnCCumOUvl95BdsYVkJ
- 2QoGJ_MSSS.ZUUQur.BM4MbNW9VBrE.ZX9bJ_BGqAFBNQ6c4x0g6H3.ilqUy
- Fr8D.p_vMMDPxIhPqLPrIROHhQw.JRlg5rvRNDU9GhU66wp5m_wmdxXyx6m8
- r4VzEq3W3ljRllfmkgDo33Sq0.hS51l1rHcb5wuCJXnzoA2LLNzANrR8-
+X-YMail-OSG: UXHOZTUVM1mxdJy4UHHByJdtpCVvkPjG.D8BUFK4wHaG951
+ S5aCImbbxRTy0aD7cZ3.H8CAzYUUtDyHuYFcqZw0xZMlPywm_G2qxbjMMONN
+ FV6NjuOmNjbrY_Y1695_giRPuCOeXHz0yj8ZdePsrXD7mms1_64KbHV4bB8X
+ eUWmv6tuNisIs25y1TNVPh9pfS3WxCPSYUpP9Kl5m52PUqJ.Pf9__b.fmtkY
+ WtDidGSt26S2dAHva_qDoIW3yOZ2Yd5yjdssG6GR924RKC_gqgvGZxcGTwQJ
+ 6MCfMC20zqMFgBjim2DnchmtS7sFusXszcx_myLbRpTVzziqcOVfrFAuFkAe
+ 1vIcF0nuLeUK4unJ1J_zg0mt50VxaX1CSsr_Gj8WkK7r7eFEHqVnxXzX8ppA
+ 8CoU_EW9ITJ8RUjV5b.kZT3vOfqwab9y7POR6xtxo2d_OXntKTdE0
 X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
 From: danielfsantos@att.net
 To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
@@ -31,9 +31,9 @@ To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Steven Rostedt <rostedt@goodmis.org>
 Cc: Daniel Santos <daniel.santos@pobox.com>
-Subject: [PATCH v8 4/9] compiler{,-gcc4}.h, bug.h: Remove duplicate macros
-Date: Tue,  1 Jan 2013 16:54:06 -0600
-Message-Id: <1357080851-30938-5-git-send-email-daniel.santos@pobox.com>
+Subject: [PATCH v8 8/9] compiler.h, bug.h: Prevent double error messages with BUILD_BUG{,_ON}
+Date: Tue,  1 Jan 2013 16:54:10 -0600
+Message-Id: <1357080851-30938-9-git-send-email-daniel.santos@pobox.com>
 X-Mailer: git-send-email 1.7.8.6
 In-Reply-To: <1357080851-30938-1-git-send-email-daniel.santos@pobox.com>
 References: <1348874411-28288-1-git-send-email-daniel.santos@pobox.com>
@@ -42,58 +42,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__linktime_error() does the same thing as __compiletime_error() and is
-only used in bug.h.  Since the macro defines a function attribute that
-will cause a failure at compile-time (not link-time), it makes more
-sense to keep __compiletime_error(), which is also neatly mated with
-__compiletime_warning().
+Prior to the introduction of __attribute__((error("msg"))) in gcc 4.3,
+creating compile-time errors required a little trickery.
+BUILD_BUG{,_ON} uses this attribute when available to generate
+compile-time errors, but also uses the negative-sized array trick for
+older compilers, resulting in two error messages in some cases.  The
+reason it's "some" cases is that as of gcc 4.4, the negative-sized array
+will not create an error in some situations, like inline functions.
+
+This patch replaces the negative-sized array code with the new
+__compiletime_error_fallback() macro which expands to the same thing
+unless the the error attribute is available, in which case it expands to
+do{}while(0), resulting in exactly one compile-time error on all
+versions of gcc.
+
+Note that we are not changing the negative-sized array code for the
+unoptimized version of BUILD_BUG_ON, since it has the potential to catch
+problems that would be disabled in later versions of gcc were
+__compiletime_error_fallback used.  The reason is that that an
+unoptimized build can't always remove calls to an error-attributed
+function call (like we are using) that should effectively become dead
+code if it were optimized.  However, using a negative-sized array with a
+similar value will not result in an false-positive (error). The only
+caveat being that it will also fail to catch valid conditions, which we
+should be expecting in an unoptimized build anyway.
 
 Signed-off-by: Daniel Santos <daniel.santos@pobox.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Acked-by: Borislav Petkov <bp@alien8.de>
 ---
- include/linux/bug.h           |    2 +-
- include/linux/compiler-gcc4.h |    2 --
- include/linux/compiler.h      |    3 ---
- 3 files changed, 1 insertions(+), 6 deletions(-)
+ include/linux/bug.h      |    2 +-
+ include/linux/compiler.h |    5 +++++
+ 2 files changed, 6 insertions(+), 1 deletions(-)
 
 diff --git a/include/linux/bug.h b/include/linux/bug.h
-index b1cf40d..2a11774 100644
+index 08d97e9..57c7688 100644
 --- a/include/linux/bug.h
 +++ b/include/linux/bug.h
-@@ -74,7 +74,7 @@ extern int __build_bug_on_failed;
- #define BUILD_BUG()						\
- 	do {							\
- 		extern void __build_bug_failed(void)		\
--			__linktime_error("BUILD_BUG failed");	\
-+			__compiletime_error("BUILD_BUG failed");\
- 		__build_bug_failed();				\
- 	} while (0)
+@@ -67,7 +67,7 @@ struct pt_regs;
+ 			__compiletime_error("BUILD_BUG_ON failed");	\
+ 		if (__cond)						\
+ 			__build_bug_on_failed();			\
+-		((void)sizeof(char[1 - 2 * __cond]));			\
++		__compiletime_error_fallback(__cond);			\
+ 	} while(0)
+ #endif
  
-diff --git a/include/linux/compiler-gcc4.h b/include/linux/compiler-gcc4.h
-index a9ffdfe..68b162d 100644
---- a/include/linux/compiler-gcc4.h
-+++ b/include/linux/compiler-gcc4.h
-@@ -33,8 +33,6 @@
-    the kernel context */
- #define __cold			__attribute__((__cold__))
- 
--#define __linktime_error(message) __attribute__((__error__(message)))
--
- #define __UNIQUE_ID(prefix) __PASTE(__PASTE(__UNIQUE_ID_, prefix), __COUNTER__)
- 
- #ifndef __CHECKER__
 diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index dd852b7..4c638be 100644
+index 4c638be..423bb6b 100644
 --- a/include/linux/compiler.h
 +++ b/include/linux/compiler.h
-@@ -308,9 +308,6 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+@@ -307,7 +307,12 @@ void ftrace_likely_update(struct ftrace_branch_data *f, int val, int expect);
+ #endif
  #ifndef __compiletime_error
  # define __compiletime_error(message)
++# define __compiletime_error_fallback(condition) \
++	do { ((void)sizeof(char[1 - 2*!!(condition)])); } while (0)
++#else
++# define __compiletime_error_fallback(condition) do { } while (0)
  #endif
--#ifndef __linktime_error
--# define __linktime_error(message)
--#endif
++
  /*
   * Prevent the compiler from merging or refetching accesses.  The compiler
   * is also forbidden from reordering successive instances of ACCESS_ONCE(),
