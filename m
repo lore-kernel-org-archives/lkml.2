@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab3AAVRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 16:17:31 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:35816 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752450Ab3AAVR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 16:17:29 -0500
-Date: Tue, 1 Jan 2013 21:17:28 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH] poll: prevent missed events if _qproc is NULL
-Message-ID: <20130101211728.GA13380@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
- <1357065750.21409.12527.camel@edumazet-glaptop>
- <20130101210033.GA13255@dcvr.yhbt.net>
+	id S1752502Ab3AAV1c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 16:27:32 -0500
+Received: from nm19.access.bullet.mail.sp2.yahoo.com ([98.139.44.146]:27679
+	"EHLO nm19.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752467Ab3AAV1a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jan 2013 16:27:30 -0500
+X-Yahoo-Newman-Id: 51267.2181.bm@smtp114.sbc.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 1KlKIwYVM1leywVN0Bp0Xu6kQdXp_GfOG9uUoXDyZ7ybn8l
+ IQv68idN8.MSRhHbSLDQwNicxTHGr.OE5rFiicBrglmFJdHBrNOLptdFzsey
+ gKg6WDP2QvVBVsq_0BlUr8kRtNkDSDRv0qO3gz3anl934XAPvGY3IU.0.BR_
+ j.YyIW6wsaTkpToTaCbp1rM14i5Vu5W5xsOrYoaYm4NupOQw2671JLEte7W4
+ XVv2dLGrbaO7JQhDGNK5rxEYHNRTe4O9k4FsHyGologxiBfyzM_6beWNeY7_
+ 7iJdaLzJ4aAtEEZxT.jFWEkAFsl1Q776k0bILKH3Q15BvvwiyFBKnwCYf8XO
+ VX.lPvQxQUWgNNLmrvDJ.X9Wu5qEmz2P7gHMCxy2DOW_mQ5uZJJMZNHeDl.e
+ jdb_y7NSfpeteHCUKRVKa4_VcMfgjthA4NaCgP0D77jz7iI1HNFk43wIx0x7
+ _gaBurGRqw7zR0uAgH_uGsLkK
+X-Yahoo-SMTP: xXkkXk6swBBAi.5wfkIWFW3ugxbrqyhyk_b4Z25Sfu.XGQ--
+Message-ID: <50E354C2.4060808@att.net>
+Date: Tue, 01 Jan 2013 15:27:30 -0600
+From: Daniel Santos <danielfsantos@att.net>
+Reply-To: Daniel Santos <daniel.santos@pobox.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121128 Thunderbird/10.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130101210033.GA13255@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: LKML <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Christopher Li <sparse@chrisli.org>,
+        David Daney <david.daney@cavium.com>,
+        David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-sparse@vger.kernel.org,
+        Michel Lespinasse <walken@google.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Daniel Santos <daniel.santos@pobox.com>
+Subject: Re: [PATCH v7 1/9] compiler-gcc4.h: Reorder macros based upon gcc
+ ver
+References: <1357074491-21669-1-git-send-email-daniel.santos@pobox.com> <1357074597-21722-1-git-send-email-daniel.santos@pobox.com>
+In-Reply-To: <1357074597-21722-1-git-send-email-daniel.santos@pobox.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Wong <normalperson@yhbt.net> wrote:
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > commit 626cf236608505d376e4799adb4f7eb00a8594af should not have this
-> > side effect, at least for poll()/select() functions. The epoll() changes
-> > I am not yet very confident.
-> 
-> I have a better explanation of the epoll problem below.
-> 
-> An alternate version (limited to epoll) would be:
-> 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index cd96649..ca5f3d0 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -1299,6 +1299,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
->  	 * Get current event bits. We can safely use the file* here because
->  	 * its usage count has been increased by the caller of this function.
->  	 */
-> +	smp_mb();
->  	revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt);
->  
->  	/*
-> 
-> > I suspect a race already existed before this commit, it would be nice to
-> > track it properly.
-> 
-> I don't believe this race existed before that change.
+On 01/01/2013 03:09 PM, danielfsantos@att.net wrote:
 
-I was wrong, rereading 626cf236608505d376e4799adb4f7eb00a8594af,
-I think this race existed before.
+>   #ifdef CONFIG_ARCH_USE_BUILTIN_BSWAP
+> -#if __GNUC_MINOR__>= 4
+> +#if GCC_VERSION>= 40400
+>   #define __HAVE_BUILTIN_BSWAP32__
+>   #define __HAVE_BUILTIN_BSWAP64__
+>   #endif
+> -#if __GNUC_MINOR__>= 8 || (defined(__powerpc__)&&  __GNUC_MINOR__>= 6)
+> +#if GCC_VERSION>= 40800 || (defined(__powerpc__)&&  GCC_VERSION>= 40600)
+>   #define __HAVE_BUILTIN_BSWAP16__
+>   #endif
+> -#endif
+> +#endif /* CONFIG_ARCH_USE_BUILTIN_BSWAP */
+I'm terribly sorry, I appear to have broken bisectability here.
 
-Perhaps my alternate patch above is a better fix.
+
