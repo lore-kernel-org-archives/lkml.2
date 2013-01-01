@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab3AASoH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 13:44:07 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:49013 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752390Ab3AASoF (ORCPT
+	id S1752475Ab3AATPm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 14:15:42 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:35105 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412Ab3AATPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 13:44:05 -0500
-Message-ID: <50E32E71.7080000@openvz.org>
-Date: Tue, 01 Jan 2013 22:44:01 +0400
-From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
+	Tue, 1 Jan 2013 14:15:40 -0500
+Date: Tue, 1 Jan 2013 11:15:06 -0800
+From: Kent Overstreet <koverstreet@google.com>
+To: john.wensley@gmail.com
+Cc: fa.linux.kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-aio@kvack.org, Zach Brown <zab@redhat.com>, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu
+Subject: Re: [PATCH 03/32] gadget: remove only user of aio retry
+Message-ID: <20130101191506.GE10411@moria.home.lan>
+References: <fa.bKjJDjpiXe4ZyttQxy70URjcaYU@ifi.uio.no>
+ <fa.aKiGvXaqF8zkt42DoAyNZWYEe5M@ifi.uio.no>
+ <9d57e984-32bd-4d94-8137-6aeec4cf5986@googlegroups.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: [REGRESSION 3.8-r1] broken pci irq/pm state for e1000e device
-References: <50E32C52.4000008@openvz.org>
-In-Reply-To: <50E32C52.4000008@openvz.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <9d57e984-32bd-4d94-8137-6aeec4cf5986@googlegroups.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konstantin Khlebnikov wrote:
-> Seems like it's unrelated to e1000e driver itself, because I tried to
-> revert all it's changes down to 3.6 one by one and it does not help.
->
-> Looks like regression somewhere in pci-bus irq or power-management.
-> because I see underflow of counter pci_dev->enable_cnt:
->
-> root@zurg:/sys/bus/pci/devices# cat 0000\:00\:19.0/enable ; modprobe e1000e ; sleep 2 ; rmmod e1000e ; cat 0000\:00\:19.0/enable
-> 4294967288
-> 4294967287
->
-> without sleep in the middle it does not work
+On Sat, Dec 29, 2012 at 12:19:10AM -0800, john.wensley@gmail.com wrote:
+> On Thursday, December 27, 2012 4:08:46 AM UTC+2, Kent Overstreet wrote:
+> ...
+> 
+> Great. Did you measure by how much your changes improve performance?
 
-Hmm, 3.7 also affected. This is not good.
+This particular patch? No. As for the whole series, Jens has done the
+best actual benchmarks; mostly I've just been looking at profiles - I
+don't have any high end hardware with drivers suitable for that kind of
+benchmarking, myself.
 
-root@zurg:/sys/bus/pci/devices# cat 0000\:00\:19.0/enable
-4294967293
-root@zurg:/sys/bus/pci/devices# uname -a
-Linux zurg 3.7.1-zurg #631 SMP Sat Dec 29 11:54:15 MSK 2012 x86_64 GNU/Linux
-
->
-> my kernel config in attachment
-> hardware: lenovo thinkpad x220
->
-> root@zurg:/sys/bus/pci/devices# uname -a
-> Linux zurg 3.8.0-rc1-zurg-00091-g4a490b7 #632 SMP Tue Jan 1 20:02:31 MSK 2013 x86_64 GNU/Linux
->
+Also, my changes have been particularly aimed at improving the situation
+where an ioctx is shared between different threads; we don't have any
+actual benchmarks for how much that's improved as fio doesn't do that
+but the gains there are going to be much more significant, for
+applications where that's useful.
