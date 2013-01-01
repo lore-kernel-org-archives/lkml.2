@@ -1,508 +1,318 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751355Ab3AAAPF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 19:15:05 -0500
-Received: from [207.46.163.26] ([207.46.163.26]:59279 "EHLO
-	co9outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750960Ab3AAAPB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 19:15:01 -0500
-X-Forefront-Antispam-Report: CIP:157.56.232.213;KIP:(null);UIP:(null);IPV:NLI;H:BLUPRD0511HT005.namprd05.prod.outlook.com;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: PS1(zzzz1de0h1202h1e76h1d1ah1d2ahzz8275bh1954cbh17326ahz32i2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
-From: Scan Subscription <scan-subscription@coverity.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: New Defect(s) reported by Coverity Scan 
-Thread-Topic: New Defect(s) reported by Coverity Scan 
-Thread-Index: Ac3ntNcJ4nAo3ddpS2mWT36GUqviNA==
-Date: Tue, 1 Jan 2013 00:13:35 +0000
-Message-ID: <C0A4ACBB26D853488EA0C68388B70268168CDC32@BLUPRD0511MB401.namprd05.prod.outlook.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [24.23.129.86]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751398Ab3AAA0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 19:26:20 -0500
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:60455 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab3AAA0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 19:26:17 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=MGcJy8yP664TBILjmvGGI256Y5JpyoLAiJM+2HdBchlCiUVFmgKBw4qQ
+	NcPdo0wVY6WMUWpbBQ2P6cpUB9TrKDz7w7zyJRJng0zE27iz+/jqUGKHDe1IbJMu
+	vgg2npcbe2tCD8rkbw1nLuim/rDWFkEVyXys6QJ1bF94yUsZOrI=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v1.8.1
+Date: Mon, 31 Dec 2012 16:26:14 -0800
+Message-ID: <7vobh9d9zt.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-X-OriginatorOrg: coverity.com
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: DA5FFB0C-53A9-11E2-A792-F0CE2E706CDE-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The latest feature release Git v1.8.1 is now available at the
+usual places.
 
-Hi,
+The release tarballs are found at:
 
-Please find the latest report on new defect(s) that have been introduced to the Linux Kernel found with Coverity SCAN. 
+    http://code.google.com/p/git-core/downloads/list
 
+and their SHA-1 checksums are:
 
-Defect(s) Reported-by: Coverity Scan:
-___________________________________________________________________________
-** CID 753114: Use after free (USE_AFTER_FREE)
-/drivers/block/rbd.c: 3662
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753114
+ac8dced9c3232c0ec6a88d04600a4d0eaf2ba4e3  git-1.8.1.tar.gz
+a256fc56c89dc3c8d58b81a2c02dc89299f1f29b  git-htmldocs-1.8.1.tar.gz
+a9ab9de3fa1781bb5009f5a215374dfc694feb30  git-manpages-1.8.1.tar.gz
 
+Also the following public repositories all have a copy of the v1.8.1
+tag and the master branch that the tag points at:
 
-** CID 753112: Uninitialized scalar variable (UNINIT)
-/fs/f2fs/node.c: 713
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753112
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
 
+Git v1.8.1 Release Notes
+========================
 
-** CID 753111: Uninitialized scalar variable (UNINIT)
-/drivers/block/rbd.c: 2641
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753111
+Backward compatibility notes
+----------------------------
 
+In the next major release (not *this* one), we will change the
+behavior of the "git push" command.
 
-** CID 753110: Use of untrusted scalar value (TAINTED_SCALAR)
-/fs/nfsd/fault_inject.c: 138
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753110
+When "git push [$there]" does not say what to push, we have used the
+traditional "matching" semantics so far (all your branches were sent
+to the remote as long as there already are branches of the same name
+over there).  We will use the "simple" semantics that pushes the
+current branch to the branch with the same name, only when the current
+branch is set to integrate with that remote branch.  There is a user
+preference configuration variable "push.default" to change this, and
+"git push" will warn about the upcoming change until you set this
+variable in this release.
 
-
-** CID 753109: Dereference null return value (NULL_RETURNS)
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1109
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753109
-
-
-** CID 753108: Dereference null return value (NULL_RETURNS)
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1207
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753108
-
-
-** CID 753107: Dereference null return value (NULL_RETURNS)
-/drivers/infiniband/hw/cxgb4/cm.c: 2910
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753107
-
-
-** CID 753106: Dereference null return value (NULL_RETURNS)
-/drivers/infiniband/hw/cxgb4/cm.c: 1463
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753106
+"git branch --set-upstream" is deprecated and may be removed in a
+relatively distant future.  "git branch [-u|--set-upstream-to]" has
+been introduced with a saner order of arguments to replace it.
 
 
-** CID 753105: Data race condition (MISSING_LOCK)
-/fs/f2fs/node.h: 68
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753105
+Updates since v1.8.0
+--------------------
+
+UI, Workflows & Features
+
+ * Command-line completion scripts for tcsh and zsh have been added.
+
+ * "git-prompt" scriptlet (in contrib/completion) can be told to paint
+   pieces of the hints in the prompt string in colors.
+
+ * Some documentation pages that used to ship only in the plain text
+   format are now formatted in HTML as well.
+
+ * We used to have a workaround for a bug in ancient "less" that
+   causes it to exit without any output when the terminal is resized.
+   The bug has been fixed in "less" version 406 (June 2007), and the
+   workaround has been removed in this release.
+
+ * When "git checkout" checks out a branch, it tells the user how far
+   behind (or ahead) the new branch is relative to the remote tracking
+   branch it builds upon.  The message now also advises how to sync
+   them up by pushing or pulling.  This can be disabled with the
+   advice.statusHints configuration variable.
+
+ * "git config --get" used to diagnose presence of multiple
+   definitions of the same variable in the same configuration file as
+   an error, but it now applies the "last one wins" rule used by the
+   internal configuration logic.  Strictly speaking, this may be an
+   API regression but it is expected that nobody will notice it in
+   practice.
+
+ * A new configuration variable "diff.context" can be used to
+   give the default number of context lines in the patch output, to
+   override the hardcoded default of 3 lines.
+
+ * "git format-patch" learned the "--notes=<ref>" option to give
+   notes for the commit after the three-dash lines in its output.
+
+ * "git log -p -S<string>" now looks for the <string> after applying
+   the textconv filter (if defined); earlier it inspected the contents
+   of the blobs without filtering.
+
+ * "git log --grep=<pcre>" learned to honor the "grep.patterntype"
+   configuration set to "perl".
+
+ * "git replace -d <object>" now interprets <object> as an extended
+   SHA-1 (e.g. HEAD~4 is allowed), instead of only accepting full hex
+   object name.
+
+ * "git rm $submodule" used to punt on removing a submodule working
+   tree to avoid losing the repository embedded in it.  Because
+   recent git uses a mechanism to separate the submodule repository
+   from the submodule working tree, "git rm" learned to detect this
+   case and removes the submodule working tree when it is safe to do so.
+
+ * "git send-email" used to prompt for the sender address, even when
+   the committer identity is well specified (e.g. via user.name and
+   user.email configuration variables).  The command no longer gives
+   this prompt when not necessary.
+
+ * "git send-email" did not allow non-address garbage strings to
+   appear after addresses on Cc: lines in the patch files (and when
+   told to pick them up to find more recipients), e.g.
+
+     Cc: Stable Kernel <stable@k.org> # for v3.2 and up
+
+   The command now strips " # for v3.2 and up" part before adding the
+   remainder of this line to the list of recipients.
+
+ * "git submodule add" learned to add a new submodule at the same
+   path as the path where an unrelated submodule was bound to in an
+   existing revision via the "--name" option.
+
+ * "git submodule sync" learned the "--recursive" option.
+
+ * "diff.submodule" configuration variable can be used to give custom
+   default value to the "git diff --submodule" option.
+
+ * "git symbolic-ref" learned the "-d $symref" option to delete the
+   named symbolic ref, which is more intuitive way to spell it than
+   "update-ref -d --no-deref $symref".
 
 
-** CID 753104: Data race condition (MISSING_LOCK)
-/fs/f2fs/node.h: 67
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753104
+Foreign Interface
+
+ * "git cvsimport" can be told to record timezones (other than GMT)
+   per-author via its author info file.
+
+ * The remote helper interface to interact with subversion
+   repositories (one of the GSoC 2012 projects) has been merged.
+
+ * A new remote-helper interface for Mercurial has been added to
+   contrib/remote-helpers.
+
+ * The documentation for git(1) was pointing at a page at an external
+   site for the list of authors that no longer existed.  The link has
+   been updated to point at an alternative site.
 
 
-** CID 753103: Explicit null dereferenced (FORWARD_NULL)
-/fs/f2fs/acl.c: 200
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753103
+Performance, Internal Implementation, etc.
+
+ * Compilation on Cygwin with newer header files are supported now.
+
+ * A couple of low-level implementation updates on MinGW.
+
+ * The logic to generate the initial advertisement from "upload-pack"
+   (i.e. what is invoked by "git fetch" on the other side of the
+   connection) to list what refs are available in the repository has
+   been optimized.
+
+ * The logic to find set of attributes that match a given path has
+   been optimized.
+
+ * Use preloadindex in "git diff-index" and "git update-index", which
+   has a nice speedup on systems with slow stat calls (and even on
+   Linux).
 
 
-** CID 753102: Unchecked return value (CHECKED_RETURN)
-/fs/f2fs/recovery.c: 70
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753102
+Also contains minor documentation updates and code clean-ups.
 
 
-** CID 753101: Unchecked return value (CHECKED_RETURN)
-/drivers/vfio/pci/vfio_pci.c: 59
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753101
+Fixes since v1.8.0
+------------------
 
+Unless otherwise noted, all the fixes since v1.8.0 in the maintenance
+track are contained in this release (see release notes to them for
+details).
 
-###########################################################################
-Defect Details:
-___________________________________________________________________________
-CID 753114: Use after free (USE_AFTER_FREE)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753114
+ * The configuration parser had an unnecessary hardcoded limit on
+   variable names that was not checked consistently.
 
-/drivers/block/rbd.c: 3627 ( freed_arg)
-   3624    	if (rc < 0)
-   3625    		goto err_out_module;
-   3626    
->>> "rbd_get_client(struct ceph_options *)" frees "ceph_opts".
-   3627    	rbdc = rbd_get_client(ceph_opts);
-   3628    	if (IS_ERR(rbdc)) {
-   3629    		rc = PTR_ERR(rbdc);
-   3630    		goto err_out_args;
-   3631    	}
-  
+ * The "say" function in the test scaffolding incorrectly allowed
+   "echo" to interpret "\a" as if it were a C-string asking for a
+   BEL output.
 
-/drivers/block/rbd.c: 3662 ( deref_arg)
-   3659    	rbd_put_client(rbdc);
-   3660    err_out_args:
-   3661    	if (ceph_opts)
->>> CID 753114: Use after free (USE_AFTER_FREE) Calling 
->>> "ceph_destroy_options(struct ceph_options *)" dereferences freed pointer "ceph_opts".
-   3662    		ceph_destroy_options(ceph_opts);
-   3663    	kfree(rbd_opts);
-   3664    	rbd_spec_put(spec);
-   3665    err_out_module:
-   3666    	module_put(THIS_MODULE);
-  
-________________________________________________________________________
-CID 753112: Uninitialized scalar variable (UNINIT)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753112
+ * "git mergetool" feeds /dev/null as a common ancestor when dealing
+   with an add/add conflict, but p4merge backend cannot handle
+   it. Work it around by passing a temporary empty file.
 
-/fs/f2fs/node.c: 663 ( var_decl)
-   660    	int level, offset[4], noffset[4];
-   661    	unsigned int nofs;
-   662    	struct f2fs_node *rn;
->>> Declaring variable "dn" without initializer.
-   663    	struct dnode_of_data dn;
-   664    	struct page *page;
-   665    
-   666    	level = get_node_path(from, offset, noffset);
-   667    
-  
+ * "git log -F -E --grep='<ere>'" failed to use the given <ere>
+   pattern as extended regular expression, and instead looked for the
+   string literally.
 
-/fs/f2fs/node.c: 713 ( uninit_use_in_call)
-   710    
-   711    		case NODE_IND1_BLOCK:
-   712    		case NODE_IND2_BLOCK:
->>> CID 753112: Uninitialized scalar variable (UNINIT) Using 
->>> uninitialized value "dn": field "dn"."data_blkaddr" is uninitialized when calling "truncate_nodes(struct dnode_of_data *, unsigned int, int, int)".
-   713    			err = truncate_nodes(&dn, nofs, offset[1], 2);
-   714    			break;
-   715    
-   716    		case NODE_DIND_BLOCK:
-   717    			err = truncate_nodes(&dn, nofs, offset[1], 3);
-  
-________________________________________________________________________
-CID 753111: Uninitialized scalar variable (UNINIT)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753111
+ * "git grep -e pattern <tree>" asked the attribute system to read
+   "<tree>:.gitattributes" file in the working tree, which was
+   nonsense.
 
-/drivers/block/rbd.c: 2596 ( var_decl)
-   2593    	struct ceph_osd_client *osdc;
-   2594    	const char *name;
-   2595    	void *reply_buf = NULL;
->>> Declaring variable "ret" without initializer.
-   2596    	int ret;
-   2597    
-   2598    	if (rbd_dev->spec->pool_name)
-   2599    		return 0;	/* Already have the names */
-   2600    
-  
+ * A symbolic ref refs/heads/SYM was not correctly removed with "git
+   branch -d SYM"; the command removed the ref pointed by SYM
+   instead.
 
-/drivers/block/rbd.c: 2641 ( uninit_use)
-   2638    	kfree(rbd_dev->spec->pool_name);
-   2639    	rbd_dev->spec->pool_name = NULL;
-   2640    
->>> CID 753111: Uninitialized scalar variable (UNINIT) Using 
->>> uninitialized value "ret".
-   2641    	return ret;
-   2642    }
-   2643    
-   2644    static int rbd_dev_v2_snap_context(struct rbd_device *rbd_dev, u64 *ver)
-   2645    {
-  
-________________________________________________________________________
-CID 753110: Use of untrusted scalar value (TAINTED_SCALAR)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753110
+ * Update "remote tracking branch" in the documentation to
+   "remote-tracking branch".
 
-/fs/nfsd/fault_inject.c: 130 ( tainted_data_argument)
-   127    	struct sockaddr_storage sa;
-   128    	u64 val;
-   129    
->>> Calling function "copy_from_user(void *, void const *, unsigned long)" taints argument "write_buf".
-   130    	if (copy_from_user(write_buf, buf, size))
-   131    		return -EFAULT;
-   132    	write_buf[size] = '\0';
-   133    
-   134    	size = rpc_pton(net, write_buf, size, (struct sockaddr *)&sa, sizeof(sa));
-  
+ * "git pull --rebase" run while the HEAD is detached tried to find
+   the upstream branch of the detached HEAD (which by definition
+   does not exist) and emitted unnecessary error messages.
 
-/fs/nfsd/fault_inject.c: 138 ( tainted_data)
-   135    	if (size > 0)
-   136    		nfsd_inject_set_client(file->f_dentry->d_inode->i_private, &sa, size);
-   137    	else {
->>> CID 753110: Use of untrusted scalar value (TAINTED_SCALAR) Passing 
->>> tainted variable "write_buf" to a tainted sink.
-   138    		val = simple_strtoll(write_buf, NULL, 0);
-   139    		nfsd_inject_set(file->f_dentry->d_inode->i_private, val);
-   140    	}
-   141    	return len; /* on success, claim we got the whole input */
-   142    }
-  
-________________________________________________________________________
-CID 753109: Dereference null return value (NULL_RETURNS)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753109
+ * The refs/replace hierarchy was not mentioned in the
+   repository-layout docs.
 
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1108 ( returned_null)
-   1105    
-   1106    	ftid = adapter->tids.ftid_base + fidx;
-   1107    
->>> Function "alloc_skb(unsigned int, gfp_t)" returns null (checked 379 out of 403 times).
-   1108    	skb = alloc_skb(sizeof(*fwr), GFP_KERNEL | __GFP_NOFAIL);
-   1109    	fwr = (struct fw_filter_wr *)__skb_put(skb, sizeof(*fwr));
-   1110    	memset(fwr, 0, sizeof(*fwr));
-   1111    
-   1112    	/* It would be nice to put most of the following in t4_hw.c but most
-  
+ * Various rfc2047 quoting issues around a non-ASCII name on the
+   From: line in the output from format-patch have been corrected.
 
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1108 ( var_assigned)
-   1105    
-   1106    	ftid = adapter->tids.ftid_base + fidx;
-   1107    
->>> Assigning: "skb" = null return value from "alloc_skb(unsigned int, gfp_t)".
-   1108    	skb = alloc_skb(sizeof(*fwr), GFP_KERNEL | __GFP_NOFAIL);
-   1109    	fwr = (struct fw_filter_wr *)__skb_put(skb, sizeof(*fwr));
-   1110    	memset(fwr, 0, sizeof(*fwr));
-   1111    
-   1112    	/* It would be nice to put most of the following in t4_hw.c but most
-  
+ * Sometimes curl_multi_timeout() function suggested a wrong timeout
+   value when there is no file descriptor to wait on and the http
+   transport ended up sleeping for minutes in select(2) system call.
+   A workaround has been added for this.
 
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1109 ( dereference)
-   1106    	ftid = adapter->tids.ftid_base + fidx;
-   1107    
-   1108    	skb = alloc_skb(sizeof(*fwr), GFP_KERNEL | __GFP_NOFAIL);
->>> CID 753109: Dereference null return value (NULL_RETURNS) 
->>> Dereferencing a pointer that might be null "skb" when calling "__skb_put(struct sk_buff *, unsigned int)".
-   1109    	fwr = (struct fw_filter_wr *)__skb_put(skb, sizeof(*fwr));
-   1110    	memset(fwr, 0, sizeof(*fwr));
-   1111    
-   1112    	/* It would be nice to put most of the following in t4_hw.c but most
-   1113    	 * of the work is translating the cxgbtool ch_filter_specification
-  
-________________________________________________________________________
-CID 753108: Dereference null return value (NULL_RETURNS)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753108
+ * For a fetch refspec (or the result of applying wildcard on one),
+   we always want the RHS to map to something inside "refs/"
+   hierarchy, but the logic to check it was not exactly right.
+   (merge 5c08c1f jc/maint-fetch-tighten-refname-check later to maint).
 
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1206 ( returned_null)
-   1203    	len = sizeof(*fwr);
-   1204    	ftid = adapter->tids.ftid_base + fidx;
-   1205    
->>> Function "alloc_skb(unsigned int, gfp_t)" returns null (checked 379 out of 403 times).
-   1206    	skb = alloc_skb(len, GFP_KERNEL | __GFP_NOFAIL);
-   1207    	fwr = (struct fw_filter_wr *)__skb_put(skb, len);
-   1208    	t4_mk_filtdelwr(ftid, fwr, adapter->sge.fw_evtq.abs_id);
-   1209    
-   1210    	/* Mark the filter as "pending" and ship off the Filter Work Request.
-  
+ * "git diff -G<pattern>" did not honor textconv filter when looking
+   for changes.
 
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1206 ( var_assigned)
-   1203    	len = sizeof(*fwr);
-   1204    	ftid = adapter->tids.ftid_base + fidx;
-   1205    
->>> Assigning: "skb" = null return value from "alloc_skb(unsigned int, gfp_t)".
-   1206    	skb = alloc_skb(len, GFP_KERNEL | __GFP_NOFAIL);
-   1207    	fwr = (struct fw_filter_wr *)__skb_put(skb, len);
-   1208    	t4_mk_filtdelwr(ftid, fwr, adapter->sge.fw_evtq.abs_id);
-   1209    
-   1210    	/* Mark the filter as "pending" and ship off the Filter Work Request.
-  
+ * Some HTTP servers ask for auth only during the actual packing phase
+   (not in ls-remote phase); this is not really a recommended
+   configuration, but the clients used to fail to authenticate with
+   such servers.
+   (merge 2e736fd jk/maint-http-half-auth-fetch later to maint).
 
-/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c: 1207 ( dereference)
-   1204    	ftid = adapter->tids.ftid_base + fidx;
-   1205    
-   1206    	skb = alloc_skb(len, GFP_KERNEL | __GFP_NOFAIL);
->>> CID 753108: Dereference null return value (NULL_RETURNS) 
->>> Dereferencing a pointer that might be null "skb" when calling "__skb_put(struct sk_buff *, unsigned int)".
-   1207    	fwr = (struct fw_filter_wr *)__skb_put(skb, len);
-   1208    	t4_mk_filtdelwr(ftid, fwr, adapter->sge.fw_evtq.abs_id);
-   1209    
-   1210    	/* Mark the filter as "pending" and ship off the Filter Work Request.
-   1211    	 * When we get the Work Request Reply we'll clear the pending status.
-  
-________________________________________________________________________
-CID 753107: Dereference null return value (NULL_RETURNS)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753107
+ * "git p4" used to try expanding malformed "$keyword$" that spans
+   across multiple lines.
 
-/drivers/infiniband/hw/cxgb4/cm.c: 2909 ( returned_null)
-   2906    	struct fw_ofld_connection_wr *req;
-   2907    	struct cpl_pass_accept_req *cpl = cplhdr(skb);
-   2908    
->>> Function "alloc_skb(unsigned int, gfp_t)" returns null (checked 379 out of 403 times).
-   2909    	req_skb = alloc_skb(sizeof(struct fw_ofld_connection_wr), GFP_KERNEL);
-   2910    	req = (struct fw_ofld_connection_wr *)__skb_put(req_skb, sizeof(*req));
-   2911    	memset(req, 0, sizeof(*req));
-   2912    	req->op_compl = htonl(V_WR_OP(FW_OFLD_CONNECTION_WR) | FW_WR_COMPL(1));
-   2913    	req->len16_pkd = htonl(FW_WR_LEN16(DIV_ROUND_UP(sizeof(*req), 16)));
-  
+ * Syntax highlighting in "gitweb" was not quite working.
 
-/drivers/infiniband/hw/cxgb4/cm.c: 2909 ( var_assigned)
-   2906    	struct fw_ofld_connection_wr *req;
-   2907    	struct cpl_pass_accept_req *cpl = cplhdr(skb);
-   2908    
->>> Assigning: "req_skb" = null return value from "alloc_skb(unsigned int, gfp_t)".
-   2909    	req_skb = alloc_skb(sizeof(struct fw_ofld_connection_wr), GFP_KERNEL);
-   2910    	req = (struct fw_ofld_connection_wr *)__skb_put(req_skb, sizeof(*req));
-   2911    	memset(req, 0, sizeof(*req));
-   2912    	req->op_compl = htonl(V_WR_OP(FW_OFLD_CONNECTION_WR) | FW_WR_COMPL(1));
-   2913    	req->len16_pkd = htonl(FW_WR_LEN16(DIV_ROUND_UP(sizeof(*req), 16)));
-  
+ * RSS feed from "gitweb" had a xss hole in its title output.
 
-/drivers/infiniband/hw/cxgb4/cm.c: 2910 ( dereference)
-   2907    	struct cpl_pass_accept_req *cpl = cplhdr(skb);
-   2908    
-   2909    	req_skb = alloc_skb(sizeof(struct fw_ofld_connection_wr), GFP_KERNEL);
->>> CID 753107: Dereference null return value (NULL_RETURNS) 
->>> Dereferencing a pointer that might be null "req_skb" when calling "__skb_put(struct sk_buff *, unsigned int)".
-   2910    	req = (struct fw_ofld_connection_wr *)__skb_put(req_skb, sizeof(*req));
-   2911    	memset(req, 0, sizeof(*req));
-   2912    	req->op_compl = htonl(V_WR_OP(FW_OFLD_CONNECTION_WR) | FW_WR_COMPL(1));
-   2913    	req->len16_pkd = htonl(FW_WR_LEN16(DIV_ROUND_UP(sizeof(*req), 16)));
-   2914    	req->le.version_cpl = htonl(F_FW_OFLD_CONNECTION_WR_CPL);
-  
-________________________________________________________________________
-CID 753106: Dereference null return value (NULL_RETURNS)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753106
+ * "git config --path $key" segfaulted on "[section] key" (a boolean
+   "true" spelled without "=", not "[section] key = true").
 
-/drivers/infiniband/hw/cxgb4/cm.c: 1462 ( returned_null)
-   1459    	unsigned int mtu_idx;
-   1460    	int wscale;
-   1461    
->>> Function "get_skb(struct sk_buff *, int, gfp_t)" returns null (checked 10 out of 12 times).
-   1462    	skb = get_skb(NULL, sizeof(*req), GFP_KERNEL);
-   1463    	req = (struct fw_ofld_connection_wr *)__skb_put(skb, sizeof(*req));
-   1464    	memset(req, 0, sizeof(*req));
-   1465    	req->op_compl = htonl(V_WR_OP(FW_OFLD_CONNECTION_WR));
-   1466    	req->len16_pkd = htonl(FW_WR_LEN16(DIV_ROUND_UP(sizeof(*req), 16)));
-  
+ * "git checkout -b foo" while on an unborn branch did not say
+   "Switched to a new branch 'foo'" like other cases.
 
-/drivers/infiniband/hw/cxgb4/cm.c: 1462 ( var_assigned)
-   1459    	unsigned int mtu_idx;
-   1460    	int wscale;
-   1461    
->>> Assigning: "skb" = null return value from "get_skb(struct sk_buff *, int, gfp_t)".
-   1462    	skb = get_skb(NULL, sizeof(*req), GFP_KERNEL);
-   1463    	req = (struct fw_ofld_connection_wr *)__skb_put(skb, sizeof(*req));
-   1464    	memset(req, 0, sizeof(*req));
-   1465    	req->op_compl = htonl(V_WR_OP(FW_OFLD_CONNECTION_WR));
-   1466    	req->len16_pkd = htonl(FW_WR_LEN16(DIV_ROUND_UP(sizeof(*req), 16)));
-  
+ * Various codepaths have workaround for a common misconfiguration to
+   spell "UTF-8" as "utf8", but it was not used uniformly.  Most
+   notably, mailinfo (which is used by "git am") lacked this support.
 
-/drivers/infiniband/hw/cxgb4/cm.c: 1463 ( dereference)
-   1460    	int wscale;
-   1461    
-   1462    	skb = get_skb(NULL, sizeof(*req), GFP_KERNEL);
->>> CID 753106: Dereference null return value (NULL_RETURNS) 
->>> Dereferencing a pointer that might be null "skb" when calling "__skb_put(struct sk_buff *, unsigned int)".
-   1463    	req = (struct fw_ofld_connection_wr *)__skb_put(skb, sizeof(*req));
-   1464    	memset(req, 0, sizeof(*req));
-   1465    	req->op_compl = htonl(V_WR_OP(FW_OFLD_CONNECTION_WR));
-   1466    	req->len16_pkd = htonl(FW_WR_LEN16(DIV_ROUND_UP(sizeof(*req), 16)));
-   1467    	req->le.filter = cpu_to_be32(select_ntuple(ep->com.dev, ep->dst,
-  
-________________________________________________________________________
-CID 753105: Data race condition (MISSING_LOCK)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753105
+ * We failed to mention a file without any content change but whose
+   permission bit was modified, or (worse yet) a new file without any
+   content in the "git diff --stat" output.
 
-/fs/f2fs/node.h: 68 ( missing_lock)
-   65    {
-   66    	ni->ino = le32_to_cpu(raw_ne->ino);
-   67    	ni->blk_addr = le32_to_cpu(raw_ne->block_addr);
->>> CID 753105: Data race condition (MISSING_LOCK) Accessing 
->>> "ni->version" without holding lock "f2fs_nm_info.nat_tree_lock". Elsewhere, "ni->version" is accessed with "f2fs_nm_info.nat_tree_lock" held 4 out of 5 times.
-   68    	ni->version = raw_ne->version;
-   69    }
-   70    
-   71    /*
-   72     * For free nid mangement
-  
-________________________________________________________________________
-CID 753104: Data race condition (MISSING_LOCK)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753104
+ * When "--stat-count" hides a diffstat for binary contents, the total
+   number of added and removed lines at the bottom was computed
+   incorrectly.
 
-/fs/f2fs/node.h: 67 ( missing_lock)
-   64    						struct f2fs_nat_entry *raw_ne)
-   65    {
-   66    	ni->ino = le32_to_cpu(raw_ne->ino);
->>> CID 753104: Data race condition (MISSING_LOCK) Accessing 
->>> "ni->blk_addr" without holding lock "f2fs_nm_info.nat_tree_lock". Elsewhere, "ni->blk_addr" is accessed with "f2fs_nm_info.nat_tree_lock" held 4 out of 5 times.
-   67    	ni->blk_addr = le32_to_cpu(raw_ne->block_addr);
-   68    	ni->version = raw_ne->version;
-   69    }
-   70    
-   71    /*
-  
-________________________________________________________________________
-CID 753103: Explicit null dereferenced (FORWARD_NULL)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753103
+ * When "--stat-count" hides a diffstat for unmerged paths, the total
+   number of affected files at the bottom of the "diff --stat" output
+   was computed incorrectly.
 
-/fs/f2fs/acl.c: 172 ( assign_zero)
-   169    {
-   170    	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
-   171    	int name_index = F2FS_XATTR_INDEX_POSIX_ACL_DEFAULT;
->>> Assigning: "value" = "NULL".
-   172    	void *value = NULL;
-   173    	struct posix_acl *acl;
-   174    	int retval;
-   175    
-   176    	if (!test_opt(sbi, POSIX_ACL))
-  
+ * "diff --shortstat" miscounted the total number of affected files
+   when there were unmerged paths.
 
-/fs/f2fs/acl.c: 200 ( var_deref_model)
-   197    		else
-   198    			acl = ERR_PTR(retval);
-   199    	} else {
->>> CID 753103: Explicit null dereferenced (FORWARD_NULL) Passing null 
->>> pointer "value" to function "f2fs_acl_from_disk(char const *, size_t)", which dereferences it.
-   200    		acl = f2fs_acl_from_disk(value, retval);
-   201    	}
-   202    	kfree(value);
-   203    	if (!IS_ERR(acl))
-   204    		set_cached_acl(inode, type, acl);
-  
-________________________________________________________________________
-CID 753102: Unchecked return value (CHECKED_RETURN)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753102
+ * "update-ref -d --deref SYM" to delete a ref through a symbolic ref
+   that points to it did not remove it correctly.
 
-/fs/f2fs/recovery.c: 70 ( check_return)
-   67    		kunmap(page);
-   68    		f2fs_put_page(page, 0);
-   69    	} else {
->>> CID 753102: Unchecked return value (CHECKED_RETURN) Calling function 
->>> "f2fs_add_link(struct dentry *, struct inode *)" without checking return value (as is done elsewhere 6 out of 7 times).
-   70    		f2fs_add_link(&dent, inode);
-   71    	}
-   72    	iput(dir);
-   73    out:
-   74    	kunmap(ipage);
-  
+----------------------------------------------------------------
 
-/fs/f2fs/recovery.c: 70 ( unchecked_value)
-   67    		kunmap(page);
-   68    		f2fs_put_page(page, 0);
-   69    	} else {
->>> No check of the return value of "f2fs_add_link(&dent, inode)".
-   70    		f2fs_add_link(&dent, inode);
-   71    	}
-   72    	iput(dir);
-   73    out:
-   74    	kunmap(ipage);
-  
-________________________________________________________________________
-CID 753101: Unchecked return value (CHECKED_RETURN)
-http://scan5.coverity.com:8080/sourcebrowser.htm?projectId=10063#mergedDefectId=753101
+Changes since v1.8.1-rc3 are as follows:
 
-/drivers/vfio/pci/vfio_pci.c: 59 ( check_return)
-   56    
-   57    	ret = vfio_config_init(vdev);
-   58    	if (ret) {
->>> CID 753101: Unchecked return value (CHECKED_RETURN) Calling function 
->>> "pci_load_and_free_saved_state(struct pci_dev *, struct pci_saved_state **)" without checking return value (as is done elsewhere 4 out of 5 times).
-   59    		pci_load_and_free_saved_state(pdev, &vdev->pci_saved_state);
-   60    		pci_disable_device(pdev);
-   61    		return ret;
-   62    	}
-   63    
-  
+Junio C Hamano (3):
+      git(1): show link to contributor summary page
+      Git 1.8.0.3
+      Git 1.8.1
 
-/drivers/vfio/pci/vfio_pci.c: 59 ( unchecked_value)
-   56    
-   57    	ret = vfio_config_init(vdev);
-   58    	if (ret) {
->>> No check of the return value of "pci_load_and_free_saved_state(pdev, &vdev->pci_saved_state)".
-   59    		pci_load_and_free_saved_state(pdev, &vdev->pci_saved_state);
-   60    		pci_disable_device(pdev);
-   61    		return ret;
-   62    	}
-   63    
-  
-________________________________________________________________________
+Max Horn (1):
+      git-remote-helpers.txt: document invocation before input format
 
+Ramkumar Ramachandra (1):
+      Documentation: move diff.wordRegex from config.txt to diff-config.txt
 
-To view the defects in Coverity Scan visit, http://scan5.coverity.com:8080.  
-Your username should be the first part of your email address. If you don't have a username, you can request one by emailing: scan-admin at coverity.com
-	
-Thank you,
-Dakshesh Vyas
-Coverity SCAN-ADMIN
-scan-admin at coverity.com
-http://scan.coverity.com
+Sebastian Leske (4):
+      git-svn: Document branches with at-sign(@).
+      git-svn: Recommend use of structure options.
+      git-svn: Expand documentation for --follow-parent
+      git-svn: Note about tags.
 
+Simon Oosthoek (1):
+      make __git_ps1 accept a third parameter in pcmode
+
+Thomas Ackermann (1):
+      Sort howto documents in howto-index.txt
 
