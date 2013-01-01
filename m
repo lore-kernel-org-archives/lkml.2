@@ -1,318 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab3AAA0U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Dec 2012 19:26:20 -0500
-Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:60455 "EHLO
-	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab3AAA0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Dec 2012 19:26:17 -0500
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
-	:subject:date:message-id:mime-version:content-type; q=dns; s=
-	sasl; b=MGcJy8yP664TBILjmvGGI256Y5JpyoLAiJM+2HdBchlCiUVFmgKBw4qQ
-	NcPdo0wVY6WMUWpbBQ2P6cpUB9TrKDz7w7zyJRJng0zE27iz+/jqUGKHDe1IbJMu
-	vgg2npcbe2tCD8rkbw1nLuim/rDWFkEVyXys6QJ1bF94yUsZOrI=
-From: Junio C Hamano <gitster@pobox.com>
-To: git@vger.kernel.org
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: [ANNOUNCE] Git v1.8.1
-Date: Mon, 31 Dec 2012 16:26:14 -0800
-Message-ID: <7vobh9d9zt.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751421Ab3AABWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Dec 2012 20:22:19 -0500
+Received: from mail-ea0-f182.google.com ([209.85.215.182]:62295 "EHLO
+	mail-ea0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab3AABWR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Dec 2012 20:22:17 -0500
+Date: Tue, 1 Jan 2013 02:21:45 +0100
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>, Ben Skeggs <skeggsb@gmail.com>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, stefan@konink.de
+Subject: Re: [RESEND PATCH] drm/nouveau: fix init with agpgart-uninorth
+Message-ID: <20130101011158.GA7601@joi.lan>
+References: <1356917699-19479-1-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Pobox-Relay-ID: DA5FFB0C-53A9-11E2-A792-F0CE2E706CDE-77302942!b-pb-sasl-quonix.pobox.com
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1356917699-19479-1-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The latest feature release Git v1.8.1 is now available at the
-usual places.
-
-The release tarballs are found at:
-
-    http://code.google.com/p/git-core/downloads/list
-
-and their SHA-1 checksums are:
-
-ac8dced9c3232c0ec6a88d04600a4d0eaf2ba4e3  git-1.8.1.tar.gz
-a256fc56c89dc3c8d58b81a2c02dc89299f1f29b  git-htmldocs-1.8.1.tar.gz
-a9ab9de3fa1781bb5009f5a215374dfc694feb30  git-manpages-1.8.1.tar.gz
-
-Also the following public repositories all have a copy of the v1.8.1
-tag and the master branch that the tag points at:
-
-  url = git://repo.or.cz/alt-git.git
-  url = https://code.google.com/p/git-core/
-  url = git://git.sourceforge.jp/gitroot/git-core/git.git
-  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
-  url = https://github.com/gitster/git
-
-Git v1.8.1 Release Notes
-========================
-
-Backward compatibility notes
-----------------------------
-
-In the next major release (not *this* one), we will change the
-behavior of the "git push" command.
-
-When "git push [$there]" does not say what to push, we have used the
-traditional "matching" semantics so far (all your branches were sent
-to the remote as long as there already are branches of the same name
-over there).  We will use the "simple" semantics that pushes the
-current branch to the branch with the same name, only when the current
-branch is set to integrate with that remote branch.  There is a user
-preference configuration variable "push.default" to change this, and
-"git push" will warn about the upcoming change until you set this
-variable in this release.
-
-"git branch --set-upstream" is deprecated and may be removed in a
-relatively distant future.  "git branch [-u|--set-upstream-to]" has
-been introduced with a saner order of arguments to replace it.
-
-
-Updates since v1.8.0
---------------------
-
-UI, Workflows & Features
-
- * Command-line completion scripts for tcsh and zsh have been added.
-
- * "git-prompt" scriptlet (in contrib/completion) can be told to paint
-   pieces of the hints in the prompt string in colors.
-
- * Some documentation pages that used to ship only in the plain text
-   format are now formatted in HTML as well.
-
- * We used to have a workaround for a bug in ancient "less" that
-   causes it to exit without any output when the terminal is resized.
-   The bug has been fixed in "less" version 406 (June 2007), and the
-   workaround has been removed in this release.
-
- * When "git checkout" checks out a branch, it tells the user how far
-   behind (or ahead) the new branch is relative to the remote tracking
-   branch it builds upon.  The message now also advises how to sync
-   them up by pushing or pulling.  This can be disabled with the
-   advice.statusHints configuration variable.
-
- * "git config --get" used to diagnose presence of multiple
-   definitions of the same variable in the same configuration file as
-   an error, but it now applies the "last one wins" rule used by the
-   internal configuration logic.  Strictly speaking, this may be an
-   API regression but it is expected that nobody will notice it in
-   practice.
-
- * A new configuration variable "diff.context" can be used to
-   give the default number of context lines in the patch output, to
-   override the hardcoded default of 3 lines.
-
- * "git format-patch" learned the "--notes=<ref>" option to give
-   notes for the commit after the three-dash lines in its output.
-
- * "git log -p -S<string>" now looks for the <string> after applying
-   the textconv filter (if defined); earlier it inspected the contents
-   of the blobs without filtering.
-
- * "git log --grep=<pcre>" learned to honor the "grep.patterntype"
-   configuration set to "perl".
-
- * "git replace -d <object>" now interprets <object> as an extended
-   SHA-1 (e.g. HEAD~4 is allowed), instead of only accepting full hex
-   object name.
-
- * "git rm $submodule" used to punt on removing a submodule working
-   tree to avoid losing the repository embedded in it.  Because
-   recent git uses a mechanism to separate the submodule repository
-   from the submodule working tree, "git rm" learned to detect this
-   case and removes the submodule working tree when it is safe to do so.
-
- * "git send-email" used to prompt for the sender address, even when
-   the committer identity is well specified (e.g. via user.name and
-   user.email configuration variables).  The command no longer gives
-   this prompt when not necessary.
-
- * "git send-email" did not allow non-address garbage strings to
-   appear after addresses on Cc: lines in the patch files (and when
-   told to pick them up to find more recipients), e.g.
-
-     Cc: Stable Kernel <stable@k.org> # for v3.2 and up
-
-   The command now strips " # for v3.2 and up" part before adding the
-   remainder of this line to the list of recipients.
-
- * "git submodule add" learned to add a new submodule at the same
-   path as the path where an unrelated submodule was bound to in an
-   existing revision via the "--name" option.
-
- * "git submodule sync" learned the "--recursive" option.
-
- * "diff.submodule" configuration variable can be used to give custom
-   default value to the "git diff --submodule" option.
-
- * "git symbolic-ref" learned the "-d $symref" option to delete the
-   named symbolic ref, which is more intuitive way to spell it than
-   "update-ref -d --no-deref $symref".
-
-
-Foreign Interface
-
- * "git cvsimport" can be told to record timezones (other than GMT)
-   per-author via its author info file.
-
- * The remote helper interface to interact with subversion
-   repositories (one of the GSoC 2012 projects) has been merged.
-
- * A new remote-helper interface for Mercurial has been added to
-   contrib/remote-helpers.
-
- * The documentation for git(1) was pointing at a page at an external
-   site for the list of authors that no longer existed.  The link has
-   been updated to point at an alternative site.
-
-
-Performance, Internal Implementation, etc.
-
- * Compilation on Cygwin with newer header files are supported now.
-
- * A couple of low-level implementation updates on MinGW.
-
- * The logic to generate the initial advertisement from "upload-pack"
-   (i.e. what is invoked by "git fetch" on the other side of the
-   connection) to list what refs are available in the repository has
-   been optimized.
-
- * The logic to find set of attributes that match a given path has
-   been optimized.
-
- * Use preloadindex in "git diff-index" and "git update-index", which
-   has a nice speedup on systems with slow stat calls (and even on
-   Linux).
-
-
-Also contains minor documentation updates and code clean-ups.
-
-
-Fixes since v1.8.0
-------------------
-
-Unless otherwise noted, all the fixes since v1.8.0 in the maintenance
-track are contained in this release (see release notes to them for
-details).
-
- * The configuration parser had an unnecessary hardcoded limit on
-   variable names that was not checked consistently.
-
- * The "say" function in the test scaffolding incorrectly allowed
-   "echo" to interpret "\a" as if it were a C-string asking for a
-   BEL output.
-
- * "git mergetool" feeds /dev/null as a common ancestor when dealing
-   with an add/add conflict, but p4merge backend cannot handle
-   it. Work it around by passing a temporary empty file.
-
- * "git log -F -E --grep='<ere>'" failed to use the given <ere>
-   pattern as extended regular expression, and instead looked for the
-   string literally.
-
- * "git grep -e pattern <tree>" asked the attribute system to read
-   "<tree>:.gitattributes" file in the working tree, which was
-   nonsense.
-
- * A symbolic ref refs/heads/SYM was not correctly removed with "git
-   branch -d SYM"; the command removed the ref pointed by SYM
-   instead.
-
- * Update "remote tracking branch" in the documentation to
-   "remote-tracking branch".
-
- * "git pull --rebase" run while the HEAD is detached tried to find
-   the upstream branch of the detached HEAD (which by definition
-   does not exist) and emitted unnecessary error messages.
-
- * The refs/replace hierarchy was not mentioned in the
-   repository-layout docs.
-
- * Various rfc2047 quoting issues around a non-ASCII name on the
-   From: line in the output from format-patch have been corrected.
-
- * Sometimes curl_multi_timeout() function suggested a wrong timeout
-   value when there is no file descriptor to wait on and the http
-   transport ended up sleeping for minutes in select(2) system call.
-   A workaround has been added for this.
-
- * For a fetch refspec (or the result of applying wildcard on one),
-   we always want the RHS to map to something inside "refs/"
-   hierarchy, but the logic to check it was not exactly right.
-   (merge 5c08c1f jc/maint-fetch-tighten-refname-check later to maint).
-
- * "git diff -G<pattern>" did not honor textconv filter when looking
-   for changes.
-
- * Some HTTP servers ask for auth only during the actual packing phase
-   (not in ls-remote phase); this is not really a recommended
-   configuration, but the clients used to fail to authenticate with
-   such servers.
-   (merge 2e736fd jk/maint-http-half-auth-fetch later to maint).
-
- * "git p4" used to try expanding malformed "$keyword$" that spans
-   across multiple lines.
-
- * Syntax highlighting in "gitweb" was not quite working.
-
- * RSS feed from "gitweb" had a xss hole in its title output.
-
- * "git config --path $key" segfaulted on "[section] key" (a boolean
-   "true" spelled without "=", not "[section] key = true").
-
- * "git checkout -b foo" while on an unborn branch did not say
-   "Switched to a new branch 'foo'" like other cases.
-
- * Various codepaths have workaround for a common misconfiguration to
-   spell "UTF-8" as "utf8", but it was not used uniformly.  Most
-   notably, mailinfo (which is used by "git am") lacked this support.
-
- * We failed to mention a file without any content change but whose
-   permission bit was modified, or (worse yet) a new file without any
-   content in the "git diff --stat" output.
-
- * When "--stat-count" hides a diffstat for binary contents, the total
-   number of added and removed lines at the bottom was computed
-   incorrectly.
-
- * When "--stat-count" hides a diffstat for unmerged paths, the total
-   number of affected files at the bottom of the "diff --stat" output
-   was computed incorrectly.
-
- * "diff --shortstat" miscounted the total number of affected files
-   when there were unmerged paths.
-
- * "update-ref -d --deref SYM" to delete a ref through a symbolic ref
-   that points to it did not remove it correctly.
-
-----------------------------------------------------------------
-
-Changes since v1.8.1-rc3 are as follows:
-
-Junio C Hamano (3):
-      git(1): show link to contributor summary page
-      Git 1.8.0.3
-      Git 1.8.1
-
-Max Horn (1):
-      git-remote-helpers.txt: document invocation before input format
-
-Ramkumar Ramachandra (1):
-      Documentation: move diff.wordRegex from config.txt to diff-config.txt
-
-Sebastian Leske (4):
-      git-svn: Document branches with at-sign(@).
-      git-svn: Recommend use of structure options.
-      git-svn: Expand documentation for --follow-parent
-      git-svn: Note about tags.
-
-Simon Oosthoek (1):
-      make __git_ps1 accept a third parameter in pcmode
-
-Thomas Ackermann (1):
-      Sort howto documents in howto-index.txt
-
+On Mon, Dec 31, 2012 at 03:34:59AM +0200, Aaro Koskinen wrote:
+> Check that the AGP aperture can be mapped. This follows a similar change
+> done for Radeon (commit 365048ff, drm/radeon: AGP memory is only I/O if
+> the aperture can be mapped by the CPU.).
+> 
+> The patch fixes the following error seen on G5 iMac:
+> 
+> 	nouveau E[     DRM] failed to create kernel channel, -12
+> 
+> Reviewed-by: Michel Dänzer <michel@daenzer.net>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> ---
+
+This patch fixes https://bugs.freedesktop.org/show_bug.cgi?id=58806.
+For some (weird) reason Nouveau worked on this configuration on 3.6 kernel,
+so cc'ing stable@vger seems to be appropriate.
+
+>  drivers/gpu/drm/nouveau/nouveau_bo.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_bo.c b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> index 5614c89..69d7b1d 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_bo.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_bo.c
+> @@ -1276,7 +1276,7 @@ nouveau_ttm_io_mem_reserve(struct ttm_bo_device *bdev, struct ttm_mem_reg *mem)
+>  		if (drm->agp.stat == ENABLED) {
+>  			mem->bus.offset = mem->start << PAGE_SHIFT;
+>  			mem->bus.base = drm->agp.base;
+> -			mem->bus.is_iomem = true;
+> +			mem->bus.is_iomem = !dev->agp->cant_use_aperture;
+>  		}
+>  #endif
+>  		break;
+> -- 
