@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752503Ab3AAXVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 18:21:08 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:44725 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab3AAXVF (ORCPT
+	id S1752296Ab3AAXhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 18:37:37 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:58338 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab3AAXhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 18:21:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
-	<1356960060-1263-1-git-send-email-normalperson@yhbt.net>
-	<1357065750.21409.12527.camel@edumazet-glaptop>
-	<20130101210033.GA13255@dcvr.yhbt.net>
-	<20130101211728.GA13380@dcvr.yhbt.net>
-	<CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
-Date: Tue, 1 Jan 2013 18:21:03 -0500
-Message-ID: <CAErQho4EdoTD9+KhS3bRN9QFxfPRuTO-oh=z1J7tEBQqp4nTMA@mail.gmail.com>
-Subject: Re: [PATCH] poll: prevent missed events if _qproc is NULL
-From: "Junchang(Jason) Wang" <junchang.wang@yale.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Eric Wong <normalperson@yhbt.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 1 Jan 2013 18:37:36 -0500
+Date: Wed, 2 Jan 2013 10:37:26 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bill Pemberton <wfp5p@virginia.edu>,
+        Wolfram Sang <w.sang@pengutronix.de>
+Subject: linux-next: manual merge of the driver-core.current tree with Linus
+ tree
+Message-Id: <20130102103726.edc15af3340bb990991ed0c1@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__2_Jan_2013_10_37_26_+1100_viJN9a=_1zFiWlYm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+--Signature=_Wed__2_Jan_2013_10_37_26_+1100_viJN9a=_1zFiWlYm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The alternate patch from Eric works well too. Even though I didn't see
-a performance boost compared with the old version, this one is clearer
-to me. Thanks your guys.
+Hi Greg,
 
+Today's linux-next merge of the driver-core.current tree got a conflict
+in drivers/i2c/busses/i2c-au1550.c between commit 0b255e927d47 ("i2c:
+remove __dev* attributes from subsystem") from Linus' tree and commit
+eeb30d064414 ("Drivers: i2c: remove __dev* attributes") from the
+driver-core.current tree.
 
-Cheers!
+I fixed it up (I used the driver-core.current version) and can carry the
+fix as necessary (no action is required).
 
---Jason
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Signature=_Wed__2_Jan_2013_10_37_26_+1100_viJN9a=_1zFiWlYm
+Content-Type: application/pgp-signature
 
-On Tue, Jan 1, 2013 at 5:53 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jan 1, 2013 at 1:17 PM, Eric Wong <normalperson@yhbt.net> wrote:
->>>
->>> An alternate version (limited to epoll) would be:
->>>
->>> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
->>> index cd96649..ca5f3d0 100644
->>> --- a/fs/eventpoll.c
->>> +++ b/fs/eventpoll.c
->>> @@ -1299,6 +1299,7 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
->>>        * Get current event bits. We can safely use the file* here because
->>>        * its usage count has been increased by the caller of this function.
->>>        */
->>> +     smp_mb();
->>>       revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt);
->>>
->>>       /*
->>
->> I was wrong, rereading 626cf236608505d376e4799adb4f7eb00a8594af,
->> I think this race existed before.
->>
->> Perhaps my alternate patch above is a better fix.
->
-> Please document the barrier that this mb() pairs with, and then give
-> an explanation for the fix in the commit message, and I'll happily
-> take it. Even if it's just duplicating the comments above the
-> wq_has_sleeper() function, except modified for the ep_modify() case.
->
-> Of course, it would be good to get verification from Jason and Andreas
-> that the alternate patch also works for them.
->
->                Linus
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ43M2AAoJEECxmPOUX5FEJukP/2gvcMwKZhCpzNcKAiADE9TU
+nkhXq/bJ6Zgf5PUFJr2+S/l9CI/F879Amd3qmN64cS1JpDV7y16VXfftpvIawHOA
+Twro+xV61fUxqOBks03DRaTVtqDLKSZUNN7wpwhvZQjMaDXsmZ6CAo765Btjx38C
+ZjHN9APVtAKMJrYbDwd18eJm0dJF5GtVTNcS3HR8C9soI+NMt6U7qx9hmDwBsdyK
+oG/dIK5F4P+gsqE8r+b3N3s5SHakglf1hjDx5o9gNzMW3r9nFuaaocq2Or8aDzvW
+E+mH9ieN08OrmjbEZMBAtfRGcVwW9dI1HZQuQ4McgyL1UOKZOIXsTzvfuZxVyhxo
+QHTFg+wexYBVmEWcXFreq3lEnYTymCZF4bOCNkgkmYAWbhY7OJyS5/7NvJzX2FLS
+qv3QcNIclzoO/cF09BOPjlmrNpoguNt+zEkbVqLqkM9l6UFZoUuKTIQQtwCzSAnc
+kE3Nble/OyZugQrV3/SVBV3Kpc1LYuC/3aMAan/qMRPwWriagexb2C4KPLhPWSi6
+pU9griN+uIOBFrheVQqZoxDkrsI8WfL7B4P5URhrtPKdisIYI9lv/oYN2y7IBYsR
+1toXQtPRNBNVkWRiqFSIIyvD5pLXZT2UDIa11Pr5oO99hzmug4LILjJOLZMG/IM1
+A/dsD10goNyRbP/IwuuK
+=bLie
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__2_Jan_2013_10_37_26_+1100_viJN9a=_1zFiWlYm--
