@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061Ab3AAIIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 03:08:09 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:64140 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024Ab3AAIII (ORCPT
+	id S1752067Ab3AAId1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 03:33:27 -0500
+Received: from mail-vb0-f46.google.com ([209.85.212.46]:46707 "EHLO
+	mail-vb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752039Ab3AAId0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 03:08:08 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Chris Ball <cjb@laptop.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-mmc@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH] mmc: vt8500: Remove __devexit attribute on .remove
-Date: Tue,  1 Jan 2013 21:08:03 +1300
-Message-Id: <1357027683-26992-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 1 Jan 2013 03:33:26 -0500
+MIME-Version: 1.0
+In-Reply-To: <1356964034.31923.12.camel@localhost>
+References: <1356778810-20879-1-git-send-email-avagin@openvz.org>
+	<1356904987.9725.10.camel@localhost>
+	<20121231101414.GA27119@paralelels.com>
+	<1356964034.31923.12.camel@localhost>
+Date: Tue, 1 Jan 2013 12:26:44 +0400
+Message-ID: <CANaxB-whN+BG76cw5x794DkCA1dGAnporHE4MrMODMENeTaUXg@mail.gmail.com>
+Subject: Re: [PATCH] prctl: fix validation of an address
+From: Andrey Wagin <avagin@gmail.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andrew Vagin <avagin@parallels.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        James Morris <jmorris@namei.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the changes to HOTPLUG merged for 3.8, this attribute is
-no longer required and results in a warning at compile time.
+>
+> The kernel makes the decision on what is valid via security_mmap_addr().
+> Assuming there are no security fears of an untrusted application
+> tricking some priviledged application to set up these maps the answer is
+> just calling security_mmap_addr() instead of doing if(addr <
+> mmap_min_addr) return -EINVAL;
+>
+> I don't know if it is a good idea to allow this interface to ever go
+> below mmap_min_addr, but I do know that using (or even thinking about)
+> dac_mmap_min_addr is wrong and you should be looking at
+> security_mmap_addr() if you look at anything...
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/mmc/host/wmt-sdmmc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+This sounds reasonable. Thank you for the comments. I'm going to send
+a second version of this patch.
 
-diff --git a/drivers/mmc/host/wmt-sdmmc.c b/drivers/mmc/host/wmt-sdmmc.c
-index 5ba4605..3a7ce57 100644
---- a/drivers/mmc/host/wmt-sdmmc.c
-+++ b/drivers/mmc/host/wmt-sdmmc.c
-@@ -892,7 +892,7 @@ fail1:
- 	return ret;
- }
- 
--static int __devexit wmt_mci_remove(struct platform_device *pdev)
-+static int wmt_mci_remove(struct platform_device *pdev)
- {
- 	struct mmc_host *mmc;
- 	struct wmt_mci_priv *priv;
-@@ -1012,7 +1012,7 @@ static const struct dev_pm_ops wmt_mci_pm = {
- 
- static struct platform_driver wmt_mci_driver = {
- 	.probe = wmt_mci_probe,
--	.remove = __exit_p(wmt_mci_remove),
-+	.remove = wmt_mci_remove,
- 	.driver = {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
--- 
-1.7.9.5
-
+>
+> -Eric
+>
