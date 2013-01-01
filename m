@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab3AASmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 13:42:36 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46019 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752402Ab3AASme (ORCPT
+	id S1752455Ab3AASoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 13:44:07 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:49013 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752390Ab3AASoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 13:42:34 -0500
-Subject: Re: [PATCH] poll: prevent missed events if _qproc is NULL
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-kernel@vger.kernel.org, Hans Verkuil <hans.verkuil@cisco.com>,
-        Jiri Olsa <jolsa@redhat.com>, Jonathan Corbet <corbet@lwn.net>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        netdev@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
-	 <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jan 2013 10:42:30 -0800
-Message-ID: <1357065750.21409.12527.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 1 Jan 2013 13:44:05 -0500
+Message-ID: <50E32E71.7080000@openvz.org>
+Date: Tue, 01 Jan 2013 22:44:01 +0400
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121123 Firefox/10.0.11 Iceape/2.7.11
+MIME-Version: 1.0
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org, Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [REGRESSION 3.8-r1] broken pci irq/pm state for e1000e device
+References: <50E32C52.4000008@openvz.org>
+In-Reply-To: <50E32C52.4000008@openvz.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2012-12-31 at 13:21 +0000, Eric Wong wrote:
-> This patch seems to fix my issue with ppoll() being stuck on my
-> SMP machine: http://article.gmane.org/gmane.linux.file-systems/70414
-> 
-> The change to sock_poll_wait() in
-> commit 626cf236608505d376e4799adb4f7eb00a8594af
->   (poll: add poll_requested_events() and poll_does_not_wait() functions)
-> seems to have allowed additional cases where the SMP memory barrier
-> is not issued before checking for readiness.
-> 
-> In my case, this affects the select()-family of functions
-> which register descriptors once and set _qproc to NULL before
-> checking events again (after poll_schedule_timeout() returns).
-> The set_mb() barrier in poll_schedule_timeout() appears to be
-> insufficient on my SMP x86-64 machine (as it's only an xchg()).
-> 
-> This may also be related to the epoll issue described by
-> Andreas Voellmy in http://thread.gmane.org/gmane.linux.kernel/1408782/
+Konstantin Khlebnikov wrote:
+> Seems like it's unrelated to e1000e driver itself, because I tried to
+> revert all it's changes down to 3.6 one by one and it does not help.
+>
+> Looks like regression somewhere in pci-bus irq or power-management.
+> because I see underflow of counter pci_dev->enable_cnt:
+>
+> root@zurg:/sys/bus/pci/devices# cat 0000\:00\:19.0/enable ; modprobe e1000e ; sleep 2 ; rmmod e1000e ; cat 0000\:00\:19.0/enable
+> 4294967288
+> 4294967287
+>
+> without sleep in the middle it does not work
 
-Hmm, the change seems not very logical to me.
+Hmm, 3.7 also affected. This is not good.
 
-If it helps, I would like to understand the real issue.
+root@zurg:/sys/bus/pci/devices# cat 0000\:00\:19.0/enable
+4294967293
+root@zurg:/sys/bus/pci/devices# uname -a
+Linux zurg 3.7.1-zurg #631 SMP Sat Dec 29 11:54:15 MSK 2012 x86_64 GNU/Linux
 
-commit 626cf236608505d376e4799adb4f7eb00a8594af should not have this
-side effect, at least for poll()/select() functions. The epoll() changes
-I am not yet very confident.
-
-I suspect a race already existed before this commit, it would be nice to
-track it properly.
-
-
+>
+> my kernel config in attachment
+> hardware: lenovo thinkpad x220
+>
+> root@zurg:/sys/bus/pci/devices# uname -a
+> Linux zurg 3.8.0-rc1-zurg-00091-g4a490b7 #632 SMP Tue Jan 1 20:02:31 MSK 2013 x86_64 GNU/Linux
+>
