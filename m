@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262Ab3AANGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 08:06:23 -0500
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:57632 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab3AANGW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 08:06:22 -0500
-From: Martin Steigerwald <Martin@lichtvoll.de>
+	id S1752280Ab3AANTz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 08:19:55 -0500
+Received: from plane.gmane.org ([80.91.229.3]:48907 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752235Ab3AANTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jan 2013 08:19:53 -0500
+X-Injected-Via-Gmane: http://gmane.org/
 To: linux-kernel@vger.kernel.org
-Subject: Re: Tux3 report: New news for the new year
-Date: Tue, 1 Jan 2013 14:06:19 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.0-f2fs-tp520+; KDE/4.8.4; x86_64; ; )
-Cc: Daniel Phillips <lkml@phunq.net>
-References: <2597526.usDRg4h3X1@mars> (sfid-20130101_131559_487328_F8377415)
-In-Reply-To: <2597526.usDRg4h3X1@mars>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201301011406.19983.Martin@lichtvoll.de>
+From: Elisey Shemyakin <elisey@shemyakin.me>
+Subject: Re: [PATCH] x86: Aspire One Happy2 reboots only with the kbd method
+Date: Tue, 1 Jan 2013 13:16:31 +0000 (UTC)
+Message-ID: <loom.20130101T120312-589@post.gmane.org>
+References: <20120621133203.GA26316@zverina> <20120621142938.GZ32472@redhat.com> <4FE33278.20807@zytor.com> <20120621222228.GA27593@zverina> <4FE39FC5.8060303@zytor.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 62.176.18.211 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+H. Peter Anvin <hpa <at> zytor.com> writes:
 
-Happy new year to you and everyone else!
+> 
+> On 06/21/2012 03:22 PM, Uros Vampl wrote:
+> > 
+> > I advised the Arch user to join this discussion and provide the 
+> > requested info. I immediately went for kbd as the solution because 
+> > that's exactly what I need for my own Aspire One - that AOA110 quirk 
+> > that's visible in the context of this patch. I figured it's a pattern, 
+> > Aspire One machines quirky in the same way.
+> > 
+> 
+> Probably, but we'd like to figure out what is going on.
+> 
+> 	-hpa
+>
+ 
+Hi. I got here from this forum https://bbs.archlinux.org/viewtopic.php?id=143716
+ with the same issue on the same device.
 
-Am Dienstag, 1. Januar 2013 schrieb Daniel Phillips:
+Here is FACP table from acpidump output:
 
-[… long description on Tux3 design and current state …]
+FACP @ 0x7f5fd000
+  0000: 46 41 43 50 f4 00 00 00 04 4c 41 43 52 53 59 53  FACP.....LACRSYS
+  0010: 41 43 52 50 52 44 43 54 01 00 00 00 31 30 32 35  ACRPRDCT....1025
+  0020: 00 00 04 00 00 30 58 7f 00 10 5f 7f 00 02 09 00  .....0X..._.....
+  0030: b2 00 00 00 a0 a1 00 80 00 04 00 00 00 00 00 00  ................
+  0040: 04 04 00 00 00 00 00 00 20 04 00 00 08 04 00 00  ........ .......
+  0050: 28 04 00 00 00 00 00 00 04 02 01 04 08 00 00 85  (...............
+  0060: 65 00 e9 03 00 00 00 00 01 03 0d 00 00 03 00 00  e...............
+  0070: a5 84 00 00 01 08 00 01 b2 00 00 00 00 00 00 00  ................
+  0080: fb 00 00 00 00 30 58 7f 00 00 00 00 00 10 5f 7f  .....0X......._.
+  0090: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  00f0: 00 00 00 00
 
-> We have made plausible plans for all of the above, but indeed the devil
-> is in  the doing. So we are considering the merits of invoking the "many
-> hands make light work" principle. Tux3 is pretty well documented and the
-> code base is, if not completely obvious, at least small and orthogonal.
-> Tux3 runs in userspace in two different ways: the tux3 command and fuse.
-> Prototyping in user space is a rare luxury that could almost make one
-> lazy. Tux3 is an entirely grassroots effort driven by volunteers.
-> Nonetheless, we would welcome offers of assistance from wherever they
-> may come, especially testers.
+I have tried to reboot with different kernel parameters.
+Worked: kbd, efi, bios
+Not worked: acpi, triple, pci
 
-Sounds all good and nice and interesting to test, but where to grab the
-source?
+So, this patch works for me:
 
-I found no obvious URL.
-
-
-http://tux3.org/source.html:
-
-merkaba:/tmp> git clone git://git.kernel.org/pub/scm/linux/kernel/git/daniel/linux-tux3.git
-Cloning into 'linux-tux3'...
-fatal: The remote end hung up unexpectedly
-
-merkaba:/tmp> hg clone http://hg.tux3.org/tux3/ 
-Abbruch: Fehler: Connection timed out
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -447,6 +447,14 @@ 
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "Precision M6600"),
+ 		},
+ 	},
++	{	/* Handle reboot issue on the Acer Aspire One Happy2. */
++		.callback = set_kbd_reboot,
++		.ident = "Acer Aspire One Happy2",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Acer"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "AOHAPPY2"),
++		},
++	},
+ 	{ }
+ };
 
 
-http://phunq.net/:
-
-| Welcome to phunq.net!
-| 
-| Please stay tuned for more exciting developments.
-
-Thanks,
--- 
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
