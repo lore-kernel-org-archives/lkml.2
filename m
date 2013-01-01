@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab3AAKqY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jan 2013 05:46:24 -0500
-Received: from us02smtp2.synopsys.com ([198.182.60.77]:40851 "EHLO
-	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab3AAKqW (ORCPT
+	id S1752153Ab3AAL2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jan 2013 06:28:00 -0500
+Received: from mail.active-venture.com ([67.228.131.205]:62174 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751774Ab3AAL15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jan 2013 05:46:22 -0500
-Message-ID: <50E2BE71.6010100@synopsys.com>
-Date: Tue, 1 Jan 2013 16:16:09 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Tue, 1 Jan 2013 06:27:57 -0500
+X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
+  Tue, 01 Jan 2013 05:27:56 -0600
+X-Originating-IP: 108.223.40.66
+From: Guenter Roeck <linux@roeck-us.net>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>,
+        Dave Airlie <airlied@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH v2/RESEND] drm: nouveau: Fix build warning seen if HWMON is undefined
+Date: Tue,  1 Jan 2013 03:28:00 -0800
+Message-Id: <1357039680-19436-1-git-send-email-linux@roeck-us.net>
+X-Mailer: git-send-email 1.7.9.7
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH v1 12/31] ARC: Interrupt Handling
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-13-git-send-email-vgupta@synopsys.com> <alpine.LFD.2.02.1211122059101.10000@ionos>
-In-Reply-To: <alpine.LFD.2.02.1211122059101.10000@ionos>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 13 November 2012 01:38 AM, Thomas Gleixner wrote:
-> On Wed, 7 Nov 2012, Vineet Gupta wrote:
->> +void __init init_IRQ(void)
->> +{
->> +	const int irq = TIMER0_IRQ;
->> +
->> +	/*
->> +	 * Each CPU needs to register irq of it's private TIMER0.
->> +	 * The APIs request_percpu_irq()/enable_percpu_irq() will not be
->> +	 * functional, if we don't "prep" the generic IRQ sub-system with
->> +	 * the following:
->> +	 * -Ensure that devid passed to request_percpu_irq() is indeed per cpu
->> +	 * -disable NOAUTOEN, w/o which the device handler never gets called
-> 
-> What sets NOAUTOEN in the first place? The core code definitely does
-> not.
+Fix:
 
-So this is based off of my orig 3.2 port and I can see similar flow even in 3.7
+nouveau_pm.c: In function ‘nouveau_hwmon_init’:
+nouveau_pm.c:703:24: warning: unused variable ‘therm’ [-Wunused-variable]
 
-(1) start_kernel
-     early_irq_initd
-       desc_set_defaults
-         irqd_set(IRQD_IRQ_DISAB)
+Introduced by commit 095f979a (drm/nouveau/pm: fix build with HWMON off) which
+fixed a build error but introduced a build warning.
 
-(2) For setting up IRQ dev to be per-cpu
-     irq_set_percpu_devid
-         irq_set_percpu_devid_flags
-                irq_set_status_flags(IRQ_NOAUTOEN | ....)  <----
+Cc: Dave Airlie <airlied@redhat.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+v2: Improved explanation
+    Added Cc:
 
-Am I missing/overlooking something ?
+ drivers/gpu/drm/nouveau/nouveau_pm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/gpu/drm/nouveau/nouveau_pm.c b/drivers/gpu/drm/nouveau/nouveau_pm.c
+index 5566172..a701ff5 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_pm.c
++++ b/drivers/gpu/drm/nouveau/nouveau_pm.c
+@@ -698,10 +698,10 @@ static int
+ nouveau_hwmon_init(struct drm_device *dev)
+ {
+ 	struct nouveau_pm *pm = nouveau_pm(dev);
+-	struct nouveau_drm *drm = nouveau_drm(dev);
+-	struct nouveau_therm *therm = nouveau_therm(drm->device);
+ 
+ #if defined(CONFIG_HWMON) || (defined(MODULE) && defined(CONFIG_HWMON_MODULE))
++	struct nouveau_drm *drm = nouveau_drm(dev);
++	struct nouveau_therm *therm = nouveau_therm(drm->device);
+ 	struct device *hwmon_dev;
+ 	int ret = 0;
+ 
+-- 
+1.7.9.7
 
-> 
->> +	 */
->> +	irq_set_percpu_devid(irq);
->> +	irq_modify_status(irq, IRQ_NOAUTOEN, 0);
-> 
-> Aside of that we have irq_clear_status_flags() for this.
-
-OK ! I can use that.
-
-
-> 
->> +	plat_init_IRQ();
->> +}
-> 
->> +int __init get_hw_config_num_irq(void)
-> 
-> How is that function used ?
-
-
-This is used in the SMP port patch to verify that number of IRQs have been
-configured properly in hardware. This is again in mini-series #2 of v1 patchset
-https://lkml.org/lkml/2012/11/12/160
-
-Thx,
--Vineet
