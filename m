@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3ABKXs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 05:23:48 -0500
-Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:33593 "EHLO
-	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752414Ab3ABKXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 05:23:46 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Anmar Oueja <anmar.oueja@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>, <stable@kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH] mfd: tc3589x: use simple irqdomain
-Date: Wed, 2 Jan 2013 11:00:35 +0100
-Message-ID: <1357120835-14748-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S1752647Ab3ABKo2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 05:44:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45386 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752134Ab3ABKo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 05:44:27 -0500
+Date: Wed, 2 Jan 2013 11:44:21 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        kamezawa.hiroyu@jp.fujitsu.com, gthelen@google.com,
+        fengguang.wu@intel.com, glommer@parallels.com, dchinner@redhat.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
+Message-ID: <20130102104421.GC22160@dhcp22.suse.cz>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+ <1356456367-14660-1-git-send-email-handai.szj@taobao.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356456367-14660-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a regression in the TC3589x driver introduced in
-commit 15e27b1088245a2de3b7d09d39cd209212eb16af
-"mfd: Provide the tc3589x with its own IRQ domain"
+On Wed 26-12-12 01:26:07, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> This patch adds memcg routines to count dirty pages, which allows memory controller
+> to maintain an accurate view of the amount of its dirty memory and can provide some
+> info for users while cgroup's direct reclaim is working.
 
-If a system with a TC3589x expander is booted from device
-tree, but a base IRQ is anyway passed from platform data,
-a linear IRQ domain will be used, while a legacy domain is
-actually desired.
+I guess you meant targeted resp. (hard/soft) limit reclaim here,
+right? It is true that this is direct reclaim but it is not clear to me
+why the usefulnes should be limitted to the reclaim for users. I would
+understand this if the users was in fact in-kernel users.
 
-Fix this by switching to using the simple irqdomain that
-will handle this uniformly and also allocates descriptors
-explicitly.
+[...]
+> To prevent AB/BA deadlock mentioned by Greg Thelen in previous version
+> (https://lkml.org/lkml/2012/7/30/227), we adjust the lock order:
+> ->private_lock --> mapping->tree_lock --> memcg->move_lock.
+> So we need to make mapping->tree_lock ahead of TestSetPageDirty in __set_page_dirty()
+> and __set_page_dirty_nobuffers(). But in order to avoiding useless spinlock contention,
+> a prepare PageDirty() checking is added.
 
-Also fix two small whitespace errors in the vicinity while
-we're at it.
+But there is another AA deadlock here I believe.
+page_remove_rmap
+  mem_cgroup_begin_update_page_stat		<<< 1
+  set_page_dirty
+    __set_page_dirty_buffers
+      __set_page_dirty
+        mem_cgroup_begin_update_page_stat	<<< 2
+	  move_lock_mem_cgroup
+	    spin_lock_irqsave(&memcg->move_lock, *flags);
 
-Cc: stable@kernel.org
-Cc: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
-Hi Sam, this should go into the fixes for stable unless issues
-are found, it fixes a regression for us.
----
- drivers/mfd/tc3589x.c | 17 +++++------------
- 1 file changed, 5 insertions(+), 12 deletions(-)
+mem_cgroup_begin_update_page_stat is not recursive wrt. locking AFAICS
+because we might race with the moving charges:
+	CPU0						CPU1					
+page_remove_rmap
+						mem_cgroup_can_attach
+  mem_cgroup_begin_update_page_stat (1)
+    rcu_read_lock
+						  mem_cgroup_start_move
+						    atomic_inc(&memcg_moving)
+						    atomic_inc(&memcg->moving_account)
+						    synchronize_rcu
+    __mem_cgroup_begin_update_page_stat
+      mem_cgroup_stolen	<<< TRUE
+      move_lock_mem_cgroup
+  [...]
+        mem_cgroup_begin_update_page_stat (2)
+	  __mem_cgroup_begin_update_page_stat
+	    mem_cgroup_stolen	  <<< still TRUE
+	    move_lock_mem_cgroup  <<< DEADLOCK
+  [...]
+  mem_cgroup_end_update_page_stat
+    rcu_unlock
+    						  # wake up from synchronize_rcu
+						[...]
+						mem_cgroup_move_task
+						  mem_cgroup_move_charge
+						    walk_page_range
+						      mem_cgroup_move_account
+						        move_lock_mem_cgroup
 
-diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
-index a06d66b..ecc092c 100644
---- a/drivers/mfd/tc3589x.c
-+++ b/drivers/mfd/tc3589x.c
-@@ -219,25 +219,18 @@ static void tc3589x_irq_unmap(struct irq_domain *d, unsigned int virq)
- }
- 
- static struct irq_domain_ops tc3589x_irq_ops = {
--        .map    = tc3589x_irq_map,
-+	.map    = tc3589x_irq_map,
- 	.unmap  = tc3589x_irq_unmap,
--        .xlate  = irq_domain_xlate_twocell,
-+	.xlate  = irq_domain_xlate_twocell,
- };
- 
- static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
- {
- 	int base = tc3589x->irq_base;
- 
--	if (base) {
--		tc3589x->domain = irq_domain_add_legacy(
--			NULL, TC3589x_NR_INTERNAL_IRQS, base,
--			0, &tc3589x_irq_ops, tc3589x);
--	}
--	else {
--		tc3589x->domain = irq_domain_add_linear(
--			np, TC3589x_NR_INTERNAL_IRQS,
--			&tc3589x_irq_ops, tc3589x);
--	}
-+	tc3589x->domain = irq_domain_add_simple(
-+		np, TC3589x_NR_INTERNAL_IRQS, base,
-+		&tc3589x_irq_ops, tc3589x);
- 
- 	if (!tc3589x->domain) {
- 		dev_err(tc3589x->dev, "Failed to create irqdomain\n");
+
+Maybe I have missed some other locking which would prevent this from
+happening but the locking relations are really complicated in this area
+so if mem_cgroup_{begin,end}_update_page_stat might be called
+recursively then we need a fat comment which justifies that.
+
+[...]
 -- 
-1.7.11.3
-
+Michal Hocko
+SUSE Labs
