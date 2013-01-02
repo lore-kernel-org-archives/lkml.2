@@ -1,135 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab3ABN0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 08:26:30 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46020 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752649Ab3ABN02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 08:26:28 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
-        <b-cousson@ti.com>
-CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 5/7] ARM: dts: AM33XX: Add PWMSS device tree nodes
-Date: Wed, 2 Jan 2013 18:54:52 +0530
-Message-ID: <1357133094-30806-6-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
-References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752811Ab3ABN0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 08:26:39 -0500
+Received: from caibbdcaaaaf.dreamhost.com ([208.113.200.5]:59441 "EHLO
+	homiemail-a79.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752649Ab3ABN0d convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 08:26:33 -0500
+References: <50E306FB.6080607@shealevy.com> <50E31BB4.7040702@zytor.com>
+Mime-Version: 1.0 (1.0)
+In-Reply-To: <50E31BB4.7040702@zytor.com>
+Content-Type: text/plain;
+	charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+Message-Id: <710F73BE-9F65-48C9-8739-BFCF097F4B07@shealevy.com>
+Cc: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (10A551)
+From: Shea Levy <shea@shealevy.com>
+Subject: Re: Revisiting EFI boot stub config file support
+Date: Wed, 2 Jan 2013 08:26:29 -0500
+To: "H. Peter Anvin" <hpa@zytor.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add PWMSS device tree nodes in relation with ECAP & EHRPWM DT nodes to
-AM33XX SoC family. Also populates device tree nodes for ECAP & EHRPWM by
-adding necessary properties like pwm-cells, base reg & set disabled as
-status.
+On Jan 1, 2013, at 12:24, "H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- arch/arm/boot/dts/am33xx.dtsi |   84 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 84 insertions(+)
+> On 01/01/2013 07:55 AM, Shea Levy wrote:
+>> Hi all,
+>> 
+>> In March last year, I submitted a patch to enable the EFI boot stub to
+>> read its config arguments from a file on the ESP, both to help with
+>> booting from livecds and to avoid having to use efibootmgr every time
+>> you change your boottime arguments. I ended up dropping the submission
+>> because I ended up coming to the conclusion that tools like rEFInd and
+>> gummiboot were better suited to the task of boot managing than the
+>> kernel itself.
+>> 
+>> Since then, however, I've received enough emails asking about the status
+>> of the patch that I think there is room for a simpler entrant into the
+>> field of linux EFI boot management. This could be in-kernel, as per my
+>> original patch, or a very simple out-of-kernel (but maybe distributed
+>> in-tree?) efi image that simply reads linux.conf and boots linux with
+>> those parameters. My personal bias is still toward handling this
+>> functionality outside of the kernel itself, but before I started the
+>> work I thought I'd ask here if anyone thought I should instead bring my
+>> old patch up-to-date.
+> 
+> I am willing to accept this (but I am not the first-line maintainer,
+> Matt is) in the kernel EFI stub as long as there are no hard-coded
+> filenames involved, no automatic behavior, and no "scanning".  Those are
+> showstoppers, as is adding to the boot time for nonusers.
 
-diff --git a/arch/arm/boot/dts/am33xx.dtsi b/arch/arm/boot/dts/am33xx.dtsi
-index c2f14e8..6aa51cb 100644
---- a/arch/arm/boot/dts/am33xx.dtsi
-+++ b/arch/arm/boot/dts/am33xx.dtsi
-@@ -385,5 +385,89 @@
- 				mac-address = [ 00 00 00 00 00 00 ];
- 			};
- 		};
-+
-+		epwmss0: epwmss@48300000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48300000 0x10>;
-+			ti,hwmods = "epwmss0";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges = <0x48300100 0x48300100 0x80   /* ECAP */
-+				  0x48300180 0x48300180 0x80   /* EQEP */
-+				  0x48300200 0x48300200 0x80>; /* EHRPWM */
-+
-+			ecap0: ecap@48300100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48300100 0x80>;
-+				ti,hwmods = "ecap0";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm0: ehrpwm@48300200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48300200 0x80>;
-+				ti,hwmods = "ehrpwm0";
-+				status = "disabled";
-+			};
-+		};
-+
-+		epwmss1: epwmss@48302000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48302000 0x10>;
-+			ti,hwmods = "epwmss1";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges = <0x48302100 0x48302100 0x80   /* ECAP */
-+				  0x48302180 0x48302180 0x80   /* EQEP */
-+				  0x48302200 0x48302200 0x80>; /* EHRPWM */
-+
-+			ecap1: ecap@48302100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48302100 0x80>;
-+				ti,hwmods = "ecap1";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm1: ehrpwm@48302200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48302200 0x80>;
-+				ti,hwmods = "ehrpwm1";
-+				status = "disabled";
-+			};
-+		};
-+
-+		epwmss2: epwmss@48304000 {
-+			compatible = "ti,am33xx-pwmss";
-+			reg = <0x48304000 0x10>;
-+			ti,hwmods = "epwmss2";
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			status = "disabled";
-+			ranges = <0x48304100 0x48304100 0x80   /* ECAP */
-+				  0x48304180 0x48304180 0x80   /* EQEP */
-+				  0x48304200 0x48304200 0x80>; /* EHRPWM */
-+
-+			ecap2: ecap@48304100 {
-+				compatible = "ti,am33xx-ecap";
-+				#pwm-cells = <3>;
-+				reg = <0x48304100 0x80>;
-+				ti,hwmods = "ecap2";
-+				status = "disabled";
-+			};
-+
-+			ehrpwm2: ehrpwm@48304200 {
-+				compatible = "ti,am33xx-ehrpwm";
-+				#pwm-cells = <3>;
-+				reg = <0x48304200 0x80>;
-+				ti,hwmods = "ehrpwm2";
-+				status = "disabled";
-+			};
-+		};
- 	};
- };
--- 
-1.7.9.5
+Hm, ok. Does the boot stub have access to CONFIG_CMDLINE? Or could another compile-time setting be added so that distros can ship livecds that automatically use a config file found at a hard-coded location?
 
+> 
+>    -hpa
+> 
+> 
