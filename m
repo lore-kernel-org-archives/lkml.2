@@ -1,92 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752815Ab3ABVNF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 16:13:05 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:32810 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab3ABVND (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 16:13:03 -0500
-X-Greylist: delayed 1839 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 16:13:03 EST
-MIME-Version: 1.0
-In-Reply-To: <CAG88wWb9X1abn4yhcxPmM07pJU0RtKcTJOdOz-=g4+hu+Zdegg@mail.gmail.com>
-References: <cover.1356810877.git.decot@googlers.com> <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
- <20121229203644.GA31014@leaf> <1357158557.3652.42.camel@bwh-desktop.uk.solarflarecom.com>
- <CAG88wWb9X1abn4yhcxPmM07pJU0RtKcTJOdOz-=g4+hu+Zdegg@mail.gmail.com>
-From: David Decotigny <decot@googlers.com>
-Date: Wed, 2 Jan 2013 13:12:11 -0800
-Message-ID: <CAG88wWZw=DCioNPSgRXWARm5hHmsR-K8UKyZQ93UsAYmijcXfw@mail.gmail.com>
-Subject: Re: [PATCH v3] lib: cpu_rmap: avoid flushing all workqueues
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Josh Triplett <josh@joshtriplett.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752854Ab3ABVNT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 16:13:19 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:37291 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752702Ab3ABVNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 16:13:18 -0500
+Date: Wed, 2 Jan 2013 15:13:15 -0600
+From: Russ Anderson <rja@sgi.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org,
+        pdeschrijver@nvidia.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, rja@americas.sgi.com
+Subject: Re: [PATCH] cpuidle - fix lock contention in the idle path
+Message-ID: <20130102211314.GA29447@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Revising my position: v4 will only have comments update (Ben) and new
-cpu_rmap_get inetrnal helper (Josh). IMHO, further API rework
-discussed with Ben and Eric ought to be in a later patch, as they
-affect drivers.
+On Wed, Dec 26, 2012 at 11:01:48AM +0100, Daniel Lezcano wrote:
+> The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
+> a lock in the cpuidle_get_cpu_driver function. This function
+> is used in the idle_call function.
+> 
+> The problem is the contention with a large number of cpus because
+> they try to access the idle routine at the same time.
+> 
+> The lock could be safely removed because of how is used the
+> cpuidle api. The cpuidle_register_driver is called first but
+> until the cpuidle_register_device is not called we don't
+> enter in the cpuidle idle call function because the device
+> is not enabled.
+> 
+> The cpuidle_unregister_driver function, leading the a NULL driver,
+> is not called before the cpuidle_unregister_device.
+> 
+> This is how is used the cpuidle api from the different drivers.
+> 
+> However, a cleanup around the lock and a proper refcounting
+> mechanism should be used to ensure the consistency in the api,
+> like cpuidle_unregister_driver should failed if its refcounting
+> is not 0.
+> 
+> These modifications will need some code reorganization and rewrite
+> which does not fit with a fix.
 
---
-David Decotigny
+I agree.
 
+> The following patch is a hot fix by returning to the initial behavior
+> by removing the lock when getting the driver.
 
-On Wed, Jan 2, 2013 at 12:34 PM, David Decotigny <decot@googlers.com> wrote:
-> Thanks,
->
-> I appreciate your review and clarification, as I was afraid there
-> could be something I missed. I will send v4 of this patch: an update
-> with the cpu_rmap_get helper that Josh suggested and the
-> "free_cpu_rmap" alias removed.
->
-> Regards,
->
-> --
-> David Decotigny
->
-> On Wed, Jan 2, 2013 at 12:29 PM, Ben Hutchings
-> <bhutchings@solarflare.com> wrote:
->> On Sat, 2012-12-29 at 12:36 -0800, Josh Triplett wrote:
->>> On Sat, Dec 29, 2012 at 11:57:09AM -0800, David Decotigny wrote:
->>> > In some cases, free_irq_cpu_rmap() is called while holding a lock
->>> > (eg. rtnl). This can lead to deadlocks, because it invokes
->>> > flush_scheduled_work() which ends up waiting for whole system
->>> > workqueue to flush, but some pending works might try to acquire the
->>> > lock we are already holding.
->>> >
->>> > This commit uses reference-counting to replace
->>> > irq_run_affinity_notifiers(). It also removes
->>> > irq_run_affinity_notifiers() altogether.
->>> >
->>> > Signed-off-by: David Decotigny <decot@googlers.com>
->>>
->>> You might consider adding a cpu_rmap_get to parallel cpu_rmap_put.
->>>
->>> Also, why keep free_cpu_rmap around at this point?  As far as I can
->>> tell, it has no callers.
->>>
->>> Otherwise, this looks good to me.
->>
->> I intended to make cpu_rmap usable independently of IRQ notification,
->> although as you note there have been no other users so far.
->> free_cpu_rmap() is now effectively an alias for cpu_rmap_put(), and the
->> latter *does* have a caller.  So perhaps cpu_rmap_put() should be extern
->> and the alias dropped.
->>
->> Ben.
->>
->> --
->> Ben Hutchings, Staff Engineer, Solarflare
->> Not speaking for my employer; that's the marketing department's job.
->> They asked us to note that Solarflare product names are trademarked.
->>
+The patch fixes the problem.  Verified on a system with 1024 cpus.
+Thanks.
+
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+Reported-by: Russ Anderson <rja@sgi.com>
+Acked-by: Russ Anderson <rja@sgi.com>
+
+> ---
+>  drivers/cpuidle/driver.c |    8 +-------
+>  1 file changed, 1 insertion(+), 7 deletions(-)
+> 
+> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+> index 3af841f..c2b281a 100644
+> --- a/drivers/cpuidle/driver.c
+> +++ b/drivers/cpuidle/driver.c
+> @@ -235,16 +235,10 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
+>   */
+>  struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
+>  {
+> -	struct cpuidle_driver *drv;
+> -
+>  	if (!dev)
+>  		return NULL;
+>  
+> -	spin_lock(&cpuidle_driver_lock);
+> -	drv = __cpuidle_get_cpu_driver(dev->cpu);
+> -	spin_unlock(&cpuidle_driver_lock);
+> -
+> -	return drv;
+> +	return __cpuidle_get_cpu_driver(dev->cpu);
+>  }
+>  EXPORT_SYMBOL_GPL(cpuidle_get_cpu_driver);
+>  
+> -- 
+> 1.7.9.5
+
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
