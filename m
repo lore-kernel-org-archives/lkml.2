@@ -1,68 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943Ab3ABQaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 11:30:15 -0500
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:61353 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709Ab3ABQaN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 11:30:13 -0500
+	id S1752987Ab3ABQaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 11:30:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30859 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752736Ab3ABQay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 11:30:54 -0500
 Date: Wed, 2 Jan 2013 11:30:10 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 23/24] cfq-iosched: collect stats from dead cfqgs
-Message-ID: <20130102163010.GC11220@mtj.dyndns.org>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-24-git-send-email-tj@kernel.org>
- <20130102162415.GA4306@redhat.com>
+From: Dave Jones <davej@redhat.com>
+To: Chris Mason <chris.mason@fusionio.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Mason <clmason@fusionio.com>
+Subject: Re: memory corruption, possibly caused by i915
+Message-ID: <20130102163010.GB14219@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Chris Mason <chris.mason@fusionio.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Daniel Vetter <daniel.vetter@ffwll.ch>,
+	Chris Mason <clmason@fusionio.com>
+References: <20130102155233.GA12479@redhat.com>
+ <20130102160115.GB12838@shiny>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130102162415.GA4306@redhat.com>
+In-Reply-To: <20130102160115.GB12838@shiny>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, Vivek.
+On Wed, Jan 02, 2013 at 11:01:15AM -0500, Chris Mason wrote:
+ > > [52460.280346] BUG: Bad page map in process panel-6-systray  pte:ffff8800b665a0e8 pmd:b6659067
+ > > [52460.280848] addr:00000038bf3fd000 vm_flags:00000070 anon_vma:          (null) mapping:ffff88011052fd98 index:1fd
+ > > [52460.281547] vma->vm_ops->fault: filemap_fault+0x0/0x470
+ > > [52460.281878] vma->vm_file->f_op->mmap: btrfs_file_mmap+0x0/0x60 [btrfs]
+ > > 
+ > > It's falling over in btrfs's mmap op, but I think it's just the victim here,
+ > > of something else corrupting what had been mmaped in the panel process.
+ > 
+ > It's a btrfs file, but this isn't in our mmap op.  The traces are
+ > finding bad pages at unmap time. 
 
-On Wed, Jan 02, 2013 at 11:24:15AM -0500, Vivek Goyal wrote:
-> On Fri, Dec 28, 2012 at 12:35:45PM -0800, Tejun Heo wrote:
-> > To support hierarchical stats, it's necessary to remember stats from
-> > dead children.  Add cfqg->dead_stats and make a dying cfqg transfer
-> > its stats to the parent's dead-stats.
-> 
-> Hi Tejun,
-> 
-> Why not directly transfer stats to cfqg->stats. IOW, what's the advantage
-> of maintaining dead_stats separately.
+Sorry, bad wording on my part.
+ 
+ > > Daniel, can you think of additional sanity checks that could be added to
+ > > the i915 driver ? (Even if at the expense of speed: a CONFIG_DEBUG option
+ > > to prove correctness would be very worthwhile imo)
+ > 
+ > If the bad pages are getting all the way to btrfs,
+ > CONFIG_DEBUG_PAGE_ALOC may help?  You've got lockdep on so maybe you
+ > already enabled it.
 
-Backward compatibility?  The existing stat cgroupfs files expect to
-see non-recursive stats.
-
-> > +	cfqg_stats_merge(&parent->dead_stats, &cfqg->stats);
-> > +	cfqg_stats_merge(&parent->dead_stats, &cfqg->dead_stats);
-> > +	cfqg_stats_reset(&cfqg->stats);
-> > +	cfqg_stats_reset(&cfqg->dead_stats);
-> 
-> Anyway group will be marked offline and later freed. So resetting stats
-> might not be required.
-
-Yeah, it isn't strictly necessary.  I tried to transfer the residual
-IOs between offline and release first so the resetting.  Kinda like
-them there tho.
-
-> In fact if we have a realiable way of resetting status then online/offline
-> infrastructure might not be required? I think per cpu stats will be a
-> problem though and that's why we probably require logic to online/offline
-> the group?
-
-Hmmm?  What do you mean?
+Yeah, already enabled.
 
 Thanks.
 
--- 
-tejun
+	Dave.
