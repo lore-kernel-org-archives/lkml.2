@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab3ABMfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 07:35:47 -0500
-Received: from mail-ea0-f178.google.com ([209.85.215.178]:35173 "EHLO
-	mail-ea0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab3ABMfq (ORCPT
+	id S1752754Ab3ABMfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 07:35:52 -0500
+Received: from mail-ea0-f180.google.com ([209.85.215.180]:50811 "EHLO
+	mail-ea0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab3ABMft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 07:35:46 -0500
+	Wed, 2 Jan 2013 07:35:49 -0500
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V5 15/15] net: kill dev->master
-Date: Wed,  2 Jan 2013 13:28:36 +0100
-Message-Id: <1357129716-2450-16-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next V5 03/15] vlan: add link to upper device
+Date: Wed,  2 Jan 2013 13:28:24 +0100
+Message-Id: <1357129716-2450-4-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1357129716-2450-1-git-send-email-jiri@resnulli.us>
 References: <1357129716-2450-1-git-send-email-jiri@resnulli.us>
@@ -30,28 +30,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nobody uses this now. Remove it.
-
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- include/linux/netdevice.h | 4 ----
- 1 file changed, 4 deletions(-)
+ net/8021q/vlan.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index c3723ef..009bad3 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1167,10 +1167,6 @@ struct net_device {
- 						 * avoid dirtying this cache line.
- 						 */
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index a292e80..babfde9 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -105,6 +105,8 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
+ 	 */
+ 	unregister_netdevice_queue(dev, head);
  
--	struct net_device	*master; /* Pointer to master device of a group,
--					  * which this device is member of.
--					  */
--
- 	struct list_head	upper_dev_list; /* List of upper devices */
++	netdev_upper_dev_unlink(real_dev, dev);
++
+ 	if (grp->nr_vlan_devs == 0)
+ 		vlan_gvrp_uninit_applicant(real_dev);
  
- 	/* Interface address info used in eth_type_trans() */
+@@ -162,9 +164,13 @@ int register_vlan_dev(struct net_device *dev)
+ 	if (err < 0)
+ 		goto out_uninit_applicant;
+ 
++	err = netdev_upper_dev_link(real_dev, dev);
++	if (err)
++		goto out_uninit_applicant;
++
+ 	err = register_netdevice(dev);
+ 	if (err < 0)
+-		goto out_uninit_applicant;
++		goto out_upper_dev_unlink;
+ 
+ 	/* Account for reference in struct vlan_dev_priv */
+ 	dev_hold(real_dev);
+@@ -180,6 +186,8 @@ int register_vlan_dev(struct net_device *dev)
+ 
+ 	return 0;
+ 
++out_upper_dev_unlink:
++	netdev_upper_dev_unlink(real_dev, dev);
+ out_uninit_applicant:
+ 	if (grp->nr_vlan_devs == 0)
+ 		vlan_gvrp_uninit_applicant(real_dev);
 -- 
 1.8.0
 
