@@ -1,78 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690Ab3ABJ06 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 04:26:58 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8509 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752642Ab3ABJ0z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752667Ab3ABJ0z (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 2 Jan 2013 04:26:55 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Wed, 02 Jan 2013 01:26:44 -0800
-Message-ID: <50E3FE8C.8000309@nvidia.com>
-Date: Wed, 2 Jan 2013 11:31:56 +0200
-From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38527 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab3ABJ0x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 04:26:53 -0500
+Date: Wed, 2 Jan 2013 09:26:38 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
+	IS_ERR_OR_NULL
+Message-ID: <20130102092638.GB2631@n2100.arm.linux.org.uk>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz> <1355852048-23188-7-git-send-email-linux@prisktech.co.nz> <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com> <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
 MIME-Version: 1.0
-To: Mark Zhang <nvmarkzhang@gmail.com>
-CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "dev@lynxeye.de" <dev@lynxeye.de>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 3/8] gpu: host1x: Add channel support
-References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <1356089964-5265-4-git-send-email-tbergstrom@nvidia.com> <50E3E45A.5050003@gmail.com>
-In-Reply-To: <50E3E45A.5050003@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02.01.2013 09:40, Mark Zhang wrote:
-> On 12/21/2012 07:39 PM, Terje Bergstrom wrote:
->> Add support for host1x client modules, and host1x channels to submit
->> work to the clients. The work is submitted in GEM CMA buffers, so
->> this patch adds support for them.
->>
->> Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
->> ---
-> [...]
->> +/*
->> + * Begin a cdma submit
->> + */
->> +int host1x_cdma_begin(struct host1x_cdma *cdma, struct host1x_job *job)
->> +{
->> +	struct host1x *host1x = cdma_to_host1x(cdma);
->> +
->> +	mutex_lock(&cdma->lock);
->> +
->> +	if (job->timeout) {
->> +		/* init state on first submit with timeout value */
->> +		if (!cdma->timeout.initialized) {
->> +			int err;
->> +			err = host1x->cdma_op.timeout_init(cdma,
->> +					job->syncpt_id);
->> +			if (err) {
->> +				mutex_unlock(&cdma->lock);
->> +				return err;
->> +			}
->> +		}
->> +	}
->> +	if (!cdma->running)
->> +		host1x->cdma_op.start(cdma);
->> +
->> +	cdma->slots_free = 0;
->> +	cdma->slots_used = 0;
->> +	cdma->first_get = host1x->cdma_pb_op.putptr(&cdma->push_buffer);
->> +
->> +	trace_host1x_cdma_begin(job->ch->dev->name);
+On Wed, Jan 02, 2013 at 08:10:36AM +0300, Dan Carpenter wrote:
+> clk_get() returns NULL if CONFIG_HAVE_CLK is disabled.
 > 
-> Seems missing "mutex_unlock(&cdma->lock);" here.
+> I told Tony about this but everyone has been gone with end of year
+> holidays so it hasn't been addressed.
+> 
+> Tony, please fix it so people don't apply these patches until
+> clk_get() is updated to not return NULL.  It sucks to have to revert
+> patches.
 
-That's intentional. Writing a job to channel is atomic, so lock is taken
-from host1x_cdma_begin() until host1x_cdma_end().
-
-Terje
-
+How about people stop using IS_ERR_OR_NULL for stuff which it shouldn't
+be used for?
