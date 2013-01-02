@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805Ab3ABVKC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 16:10:02 -0500
-Received: from relay2.sgi.com ([192.48.179.30]:52869 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752702Ab3ABVKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 16:10:00 -0500
-Date: Wed, 2 Jan 2013 15:09:58 -0600
-From: Robin Holt <holt@sgi.com>
-To: Nathan Zimmer <nzimmer@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        linux-efi@vger.kernel.org, matt.fleming@intel.com, tglx@linutronix.de,
-        mingo@redhat.com
-Subject: Re: BUG: unable to handle kernel paging request at 000000effd870020
-Message-ID: <20130102210958.GD3470@sgi.com>
-References: <20130102172107.GA26761@gulag1.americas.sgi.com>
- <50E476C2.7060300@zytor.com>
- <50E486E7.1080903@sgi.com>
+	id S1752815Ab3ABVNF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 16:13:05 -0500
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:32810 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752702Ab3ABVND (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 16:13:03 -0500
+X-Greylist: delayed 1839 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 16:13:03 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50E486E7.1080903@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAG88wWb9X1abn4yhcxPmM07pJU0RtKcTJOdOz-=g4+hu+Zdegg@mail.gmail.com>
+References: <cover.1356810877.git.decot@googlers.com> <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
+ <20121229203644.GA31014@leaf> <1357158557.3652.42.camel@bwh-desktop.uk.solarflarecom.com>
+ <CAG88wWb9X1abn4yhcxPmM07pJU0RtKcTJOdOz-=g4+hu+Zdegg@mail.gmail.com>
+From: David Decotigny <decot@googlers.com>
+Date: Wed, 2 Jan 2013 13:12:11 -0800
+Message-ID: <CAG88wWZw=DCioNPSgRXWARm5hHmsR-K8UKyZQ93UsAYmijcXfw@mail.gmail.com>
+Subject: Re: [PATCH v3] lib: cpu_rmap: avoid flushing all workqueues
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Josh Triplett <josh@joshtriplett.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 01:13:43PM -0600, Nathan Zimmer wrote:
-> On 01/02/2013 12:04 PM, H. Peter Anvin wrote:
-> >On 01/02/2013 09:21 AM, Nathan Zimmer wrote:
-> >>I am getting an early boot problem. It only happens on the larger of the
-> >>machines I haven't seen it crop up on machines with more then 512 GB of ram.
-> >>It shows in the latest linus kernel too.
-> >>
-> >>I am (wildly) guessing that what is happening is that the new_memmap that is
-> >>being passed to bios is somehow placed incorrectly.
-> >>I have come up with a workaround.  By placing it the DMA area the issue goes
-> >>away but that doesn't seem like a real fix.
-> >>
-> >What does your memory map look like?
+Revising my position: v4 will only have comments update (Ben) and new
+cpu_rmap_get inetrnal helper (Josh). IMHO, further API rework
+discussed with Ben and Eric ought to be in a later patch, as they
+affect drivers.
 
-We reported this a few times (Russ Anderson and I both).  The problem is
-at the point in boot where the efi_enter_virtual_mode callback is, there
-is no identity mapping for most of memory.  If the allocation happens
-to be above the 512GB (or maybe something lower than that) point, the
-BIOS is not able to address this via the physical address passed to it.
+--
+David Decotigny
 
-Russ' solution was to not remap at all.  The interim workaround I have
-been using is adding a GFP_DMA flag to the kmalloc.  An earlier post I
-made to the list was to pass in the va to the new memmap table.
 
-Robin
+On Wed, Jan 2, 2013 at 12:34 PM, David Decotigny <decot@googlers.com> wrote:
+> Thanks,
+>
+> I appreciate your review and clarification, as I was afraid there
+> could be something I missed. I will send v4 of this patch: an update
+> with the cpu_rmap_get helper that Josh suggested and the
+> "free_cpu_rmap" alias removed.
+>
+> Regards,
+>
+> --
+> David Decotigny
+>
+> On Wed, Jan 2, 2013 at 12:29 PM, Ben Hutchings
+> <bhutchings@solarflare.com> wrote:
+>> On Sat, 2012-12-29 at 12:36 -0800, Josh Triplett wrote:
+>>> On Sat, Dec 29, 2012 at 11:57:09AM -0800, David Decotigny wrote:
+>>> > In some cases, free_irq_cpu_rmap() is called while holding a lock
+>>> > (eg. rtnl). This can lead to deadlocks, because it invokes
+>>> > flush_scheduled_work() which ends up waiting for whole system
+>>> > workqueue to flush, but some pending works might try to acquire the
+>>> > lock we are already holding.
+>>> >
+>>> > This commit uses reference-counting to replace
+>>> > irq_run_affinity_notifiers(). It also removes
+>>> > irq_run_affinity_notifiers() altogether.
+>>> >
+>>> > Signed-off-by: David Decotigny <decot@googlers.com>
+>>>
+>>> You might consider adding a cpu_rmap_get to parallel cpu_rmap_put.
+>>>
+>>> Also, why keep free_cpu_rmap around at this point?  As far as I can
+>>> tell, it has no callers.
+>>>
+>>> Otherwise, this looks good to me.
+>>
+>> I intended to make cpu_rmap usable independently of IRQ notification,
+>> although as you note there have been no other users so far.
+>> free_cpu_rmap() is now effectively an alias for cpu_rmap_put(), and the
+>> latter *does* have a caller.  So perhaps cpu_rmap_put() should be extern
+>> and the alias dropped.
+>>
+>> Ben.
+>>
+>> --
+>> Ben Hutchings, Staff Engineer, Solarflare
+>> Not speaking for my employer; that's the marketing department's job.
+>> They asked us to note that Solarflare product names are trademarked.
+>>
