@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752672Ab3ABK73 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 05:59:29 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:43645 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111Ab3ABK71 convert rfc822-to-8bit (ORCPT
+	id S1752680Ab3ABLDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 06:03:15 -0500
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:52498 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752600Ab3ABLDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 05:59:27 -0500
-Date: Wed, 2 Jan 2013 10:59:20 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 2/5] clockevents: Add generic timer broadcast
- receiver
-Message-ID: <20130102105919.GA21978@e106331-lin.cambridge.arm.com>
-References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
- <1355832418-31692-3-git-send-email-mark.rutland@arm.com>
- <50D433AA.6070606@ti.com>
+	Wed, 2 Jan 2013 06:03:13 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=YO+FcVZrxpdWV6Mo6AkY2Rtp7tuV51ZJEd1ZQZEmJbs= c=1 sm=1
+ a=0Z2zpp6RY3MA:10 a=TPbdJ-YLJ1kA:10 a=FGLzUi7B6sIA:10 a=BLceEmwcHowA:10
+ a=kj9zAlcOel0A:10 a=eeMGdU6VVFt2UVJcxx6VzA==:17 a=XjXHVkDAlsmo5O86-cYA:9
+ a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Daniel Phillips <lkml@phunq.net>
+To: Shentino <shentino@gmail.com>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tux3@phunq.net
+Subject: Re: Tux3 report: New news for the new year
+Date: Wed, 02 Jan 2013 03:03:13 -0800
+Message-ID: <8397253.yJIEVV2VgF@mars>
+Organization: tux3.org
+User-Agent: KMail/4.9.3 (Linux/3.2.0-35-generic-pae; KDE/4.9.3; i686; ; )
+In-Reply-To: <CAGDaZ_pDCyMs8BA5XaM19kEcm1X=LwawSsWLit=kqftxpyV_Yw@mail.gmail.com>
+References: <2597526.usDRg4h3X1@mars> <18617468.vkbTvjxc0P@mars> <CAGDaZ_pDCyMs8BA5XaM19kEcm1X=LwawSsWLit=kqftxpyV_Yw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <50D433AA.6070606@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 02 Jan 2013 10:59:23.0597 (UTC) FILETIME=[39538FD0:01CDE8D8]
-X-MC-Unique: 113010210592503701
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 10:02:18AM +0000, Santosh Shilimkar wrote:
-> On Tuesday 18 December 2012 05:36 PM, Mark Rutland wrote:
-> > Currently the broadcast mechanism used for timers is abstracted by a
-> > function pointer on struct clock_event_device. As the fundamental
-> > mechanism for broadcast is architecture-specific, this ties each
-> > clock_event_device driver to a single architecture, even where the
-> > driver is otherwise generic.
-> >
-> > This patch adds a standard path for the receipt of timer broadcasts, so
-> > drivers and/or architecture backends need not manage redundant lists of
-> > timers for the purpose of routing broadcast timer ticks.
-> >
-> > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> > ---
-> >   include/linux/clockchips.h   |    4 ++++
-> >   kernel/time/tick-broadcast.c |   15 +++++++++++++++
-> >   2 files changed, 19 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> > index 8a7096f..e1089aa 100644
-> > --- a/include/linux/clockchips.h
-> > +++ b/include/linux/clockchips.h
-> > @@ -161,6 +161,10 @@ clockevents_calc_mult_shift(struct clock_event_device *ce, u32 freq, u32 minsec)
-> >   extern void clockevents_suspend(void);
-> >   extern void clockevents_resume(void);
-> >
-> > +#ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-> > +extern int tick_receive_broadcast(void);
-> > +#endif
-> > +
-> As mentioned in earlier patch, CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
-> isn't must for SMP kernel and hence when build with
-> !GENERIC_CLOCKEVENTS_BROADCAST, $subject patch will break the build.
+On Tuesday, January 01, 2013 10:58:35 PM Shentino wrote:
+> From what I can tell on the design, tux3 is "fsync satiating" with a
+> single disk write.  It writes the data to the final location, updates
+> the log, and at that point the data is considered committed and it can
+> let userspace go on its merry way and take care of rolling up the
+> changes later.
 
-I'd assumed that the broadcast receive path would be ifdef'd on
-CONFIG_GENERIC_CLOCKEVENTS_BROADCAST, and thus this wouldn't be a problem.
-Though I guess it probably makes arch/platform code a bit nicer if it doesn't
-have to ifdef everything.
+Yes, correct. I think we currently sync a small file create+write with seven 
+blocks and a file rewrite with four blocks, including the commit block and only 
+one long seek. We haven't benchmarked that yet, but it sounds fast. There are 
+two synchronous waits in the backend, but the frontend only waits on the 
+commit block completion in the task doing the sync while other concurrent 
+filesystem operations just keep going.
 
-> Below is the fix for the same. Feel free to fold it if you agree.
+> If I understand btrfs correctly though it has to block
+> until the cow logic percolates all the way up to the superblock.
 
-Will do.
+A careful reading of the Btrfs design doc left me confused about that. Perhaps 
+Btrfs devs could clarify?
 
-> diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-> index 6634652..921568b 100644
-> --- a/include/linux/clockchips.h
-> +++ b/include/linux/clockchips.h
-> @@ -168,6 +168,11 @@ extern void tick_broadcast(const struct cpumask *mask);
->   #define tick_broadcast	NULL
->   #endif
->   extern int tick_receive_broadcast(void);
-> +#else
-> +static inline int tick_receive_broadcast(void)
-> +{
-> +	return 0;
-> +}
->   #endif
-> 
->   #ifdef CONFIG_GENERIC_CLOCKEVENTS
-> 
+> One other thing that interests me is this "page forking" that allows
+> userspace to write to a page that's already busy being written to
+> disk.  From what I heard it bypasses a stall caused by userspace I/O
+> hitting a locked page.
 
-Thanks,
-Mark.
+Page forking is an amazing thing and should really head into core, after being 
+thoroughly proved out of course.
+
+> Finally, atime handling.  I personally dislike the forced default of
+> "relatime" for mount options and anything that can let atime updates
+> happen without being a bottleneck is a plus for me.
+
+Atime is an odious invention indeed from a developer's perspective, but 
+apparently well loved by some users and has real applications. Knowing which 
+videos you watched recently apparently being one of them. We have a pretty 
+good plan for it that is actually just a small development item, the main 
+feature of which is avoiding polluting the inode table btree, which would 
+cause a lot of churn and aggravate allocate-on-write issues that are already 
+difficult, plus be horribly unfriendly to flash. Instead, we churn a dedicated 
+btree array (actually a regular file) where the write-on-reads are densely 
+concentrated. It somehow feels good to quarantine this craziness at least.
+
+Regards,
+
+Daniel
 
