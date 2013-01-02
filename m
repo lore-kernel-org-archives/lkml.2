@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758Ab3ABOWp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 09:22:45 -0500
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:42855 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab3ABOWm (ORCPT
+	id S1752793Ab3ABOYW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 09:24:22 -0500
+Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:8295 "EHLO
+	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752627Ab3ABOYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 09:22:42 -0500
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8; format=flowed
-X-AuditID: cbfec7f4-b7f6d6d000001620-43-50e442b0cc69
-Message-id: <50E442A7.3010002@samsung.com>
-Date: Wed, 02 Jan 2013 15:22:31 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH/RFC 4/4] common: dma-mapping: Move dma_common_*() to
- <linux/dma-mapping.h>
-References: <CAMuHMdVPBUzN8fsNHFzrEqev9BsvVCVR2fWySCOecjVA-J1qjg@mail.gmail.com>
- <1356722614-18224-5-git-send-email-geert@linux-m68k.org>
-In-reply-to: <1356722614-18224-5-git-send-email-geert@linux-m68k.org>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t/xa7obnJ4EGPzfzGnRsesri8XlXXPY
-	LHa/v89o0bNhK6sDi8fnTXIBjFFcNimpOZllqUX6dglcGRtu6hdMEqjobFzE2MC4jbeLkZND
-	QsBEYtuu7WwQtpjEhXvrgWwuDiGBpYwSTy7fZgVJ8AoISvyYfI+li5GDg1lAXuLIpWyQMLOA
-	mcSjlnXMEPXNTBIH/r1jgajXkljwaDrYUBYBVYnutiawOJuAoUTX2y6wuKiAr8S0X9eYQGaK
-	COhKzPnJBDGzXOLR7vtgJcICCRI7L35lgpjfyyixuOcoWIJTwFVi6a3rbBMYBWYhOW8Wwnmz
-	kJy3gJF5FaNoamlyQXFSeq6hXnFibnFpXrpecn7uJkZIaH7Zwbj4mNUhRgEORiUe3oucTwKE
-	WBPLiitzDzFKcDArifDqcgGFeFMSK6tSi/Lji0pzUosPMTJxcEo1MM5YM2ej47wHwSsrItvi
-	H1j+CFmpL/R81vqWCbl2V4xY109OTri49tVn59ffj8b7eeouVcrVsPvx5cu8/C7fl4uKZn8U
-	e3qveAL7v+unrjJe8flbXFpel/Tm/V3zS4s/fFit2Voy82Wbc4jfvMx9MnHLb/zcqazHUFb3
-	JnCRd+hCv8xfsZ+5p89WYinOSDTUYi4qTgQAB0CEVCsCAAA=
+	Wed, 2 Jan 2013 09:24:19 -0500
+Date: Wed, 2 Jan 2013 14:24:17 +0000
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Tang Chen <tangchen@cn.fujitsu.com>
+cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        akpm@linux-foundation.org, rientjes@google.com, liuj97@gmail.com,
+        len.brown@intel.com, benh@kernel.crashing.org, paulus@samba.org,
+        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
+        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com,
+        wency@cn.fujitsu.com, hpa@zytor.com, linfeng@cn.fujitsu.com,
+        laijs@cn.fujitsu.com, mgorman@suse.de, yinghai@kernel.org,
+        x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH v5 04/14] memory-hotplug: remove /sys/firmware/memmap/X
+ sysfs
+In-Reply-To: <50DBBBEF.70701@cn.fujitsu.com>
+Message-ID: <0000013bfba5f7f2-ba70da31-0707-48fd-949e-0bad11ba0e10-000000@email.amazonses.com>
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-5-git-send-email-tangchen@cn.fujitsu.com> <50DA6F5A.2070601@jp.fujitsu.com> <50DBBBEF.70701@cn.fujitsu.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-SES-Outgoing: 199.255.193.30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 27 Dec 2012, Tang Chen wrote:
 
-On 12/28/2012 8:23 PM, Geert Uytterhoeven wrote:
-> dma_common_mmap() and dma_common_get_sgtable() are defined in
-> drivers/base/dma-mapping.c, and always compiled if CONFIG_HAS_DMA=y.
+> On 12/26/2012 11:30 AM, Kamezawa Hiroyuki wrote:
+> >> @@ -41,6 +42,7 @@ struct firmware_map_entry {
+> >>    	const char		*type;	/* type of the memory range */
+> >>    	struct list_head	list;	/* entry for the linked list */
+> >>    	struct kobject		kobj;   /* kobject for each entry */
+> >> +	unsigned int		bootmem:1; /* allocated from bootmem */
+> >>    };
+> >
+> > Can't we detect from which the object is allocated from, slab or bootmem ?
+> >
+> > Hm, for example,
+> >
+> >      PageReserved(virt_to_page(address_of_obj)) ?
+> >      PageSlab(virt_to_page(address_of_obj)) ?
+> >
 >
-> However, their forward declarations and the inline functions defined on top
-> of them (dma_mmap_attrs(), dma_mmap_coherent(), dma_mmap_writecombine(),
-> dma_get_sgtable_attrs()), dma_get_sgtable()) are in
-> <asm-generic/dma-mapping-common.h>, which is not included by all
-> architectures supporting CONFIG_HAS_DMA=y.  There exist no alternative
-> implementations.
+> Hi Kamezawa-san,
 >
-> Hence for e.g. m68k allmodconfig, I get:
->
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_mmap’:
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:204: error: implicit declaration of function ‘dma_mmap_coherent’
-> drivers/media/v4l2-core/videobuf2-dma-contig.c: In function ‘vb2_dc_get_base_sgt’:
-> drivers/media/v4l2-core/videobuf2-dma-contig.c:387: error: implicit declaration of function ‘dma_get_sgtable’
->
-> To fix this
->    - Move the forward declarations and inline definitions to
->      <linux/dma-mapping.h>, so all CONFIG_HAS_DMA=y architectures can use
->      them,
->    - Replace the hard "BUG_ON(!ops)" checks for dma_map_ops by soft checks,
->      so architectures can fall back to the common code by returning NULL
->      from their get_dma_ops(). Note that there are no "BUG_ON(!ops)" checks
->      in other functions in <asm-generic/dma-mapping-common.h>,
->    - Make "struct dma_map_ops *ops" const while we're at it.
+> I think we can detect it without a new member. I think bootmem:1 member
+> is just for convenience. I think I can remove it. :)
 
-I think that more appropriate way of handling it is to avoid dma_map_ops 
-based
-calls (those archs probably have some reasons why they don't use it at 
-all) and
-provide static inline stubs which call dma_common_mmap and 
-dma_common_get_sgtable.
+Larger size slab allocations may fall back to the page allocator but then
+the slabs do not track this allocation. That memory can be freed using the
+page allocator.
 
-It is definitely my fault that I missed the case of non-dma-map-ops 
-based archs
-while I was adding support for dma_mmap_coherent and dma_get_sgt calls...
-
- > (snipped)
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+If you see pageslab then you can always remove using the slab allocator.
+Otherwise the page allocator should work (unless it was some
+special case bootmem allocation).
 
