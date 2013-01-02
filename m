@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab3ABIri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 03:47:38 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61555 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3ABIrf convert rfc822-to-8bit (ORCPT
+	id S1752638Ab3ABIsk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 03:48:40 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:51123 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834Ab3ABIsh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 03:47:35 -0500
-X-AuditID: 9c930197-b7c5bae000000e31-c4-50e3f42508e2
-From: Namhyung Kim <namhyung@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 21/27] nohz: Only stop the tick on RCU nocb CPUs
-References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
-	<1356799386-4212-22-git-send-email-fweisbec@gmail.com>
-Date: Wed, 02 Jan 2013 17:47:33 +0900
-In-Reply-To: <1356799386-4212-22-git-send-email-fweisbec@gmail.com> (Frederic
-	Weisbecker's message of "Sat, 29 Dec 2012 17:43:00 +0100")
-Message-ID: <87bod8rmxm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 2 Jan 2013 03:48:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Brightmail-Tracker: AAAAAA==
+Date: Wed, 2 Jan 2013 09:40:58 +0100
+Message-ID: <CACRpkdYryuV=+iuZ8URvkw-cWMvNREuhC_pWdQwbt0mZUH9DQQ@mail.gmail.com>
+Subject: [GIT PULL] pinctrl fixes for v3.8
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+Hi Linus,
 
-On Sat, 29 Dec 2012 17:43:00 +0100, Frederic Weisbecker wrote:
-> On a full dynticks CPU, we want the RCU callbacks to be
-> offlined to another CPU, otherwise we need to keep
-> the tick to wait for the grace period completion.
->
-> Ensure the full dynticks CPU is also an rcu_nocb one.
-[snip]
-> -static bool is_nocb_cpu(int cpu)
-> -{
-> -	return false;
-> -}
-> -
+these are the first few pinctrl fixes for the v3.8 cycle, the information
+is in the signed tag as usual.
 
-You may want to add the following also to shut up the gcc:
+Please pull it in!
 
-      CC      kernel/rcutree.o
-    In file included from /home/namhyung/project/linux/kernel/rcutree.c:58:0:
-    /home/namhyung/project/linux/kernel/rcutree.h:539:13: warning: ‘is_nocb_cpu’ declared ‘static’ but never defined [-Wunused-function]
+Yours,
+Linus Walleij
 
+The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
 
-Thanks,
-Namhyung
+  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
 
+are available in the git repository at:
 
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 4b69291b093d..fbbad931c36a 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -536,7 +536,6 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
- static void print_cpu_stall_info_end(void);
- static void zero_cpu_stall_ticks(struct rcu_data *rdp);
- static void increment_cpu_stall_ticks(void);
--static bool is_nocb_cpu(int cpu);
- static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
-                            bool lazy);
- static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-fixes
+
+for you to fetch changes up to 9fcb4cc2d7dd192ae718f0e7484c6f5c08b8af23:
+
+  ARM: ux500: add pinctrl address resources (2012-12-26 01:59:54 +0100)
+
+----------------------------------------------------------------
+A first round of pinctrl fixes for v3.8:
+- i.MX5 register configuration
+- Swap a kfree to devm_kfree() to avoid memory
+  corruption in the at91 driver
+- Add the missing device tree binding doc for the
+  SIRF pin controller
+- Enable the SIRF GPIO pull up/down configuration
+  from the device tree, it was previously retired
+  from the hard-coded approach.
+- NULL check for the prcm_base in the Nomadik pin
+  controller.
+- Provide the prcm_base from the device tree in the
+  DT boot path for the Nomadik pin controller.
+
+----------------------------------------------------------------
+Barry Song (2):
+      pinctrl: sirf: add missing DT-binding document
+      pinctrl: sirf: enable GPIO pullup/down configuration from dts
+
+Fabio Baltieri (2):
+      pinctrl: nomadik: return if prcm_base is NULL
+      ARM: ux500: add pinctrl address resources
+
+Julia Lawall (1):
+      drivers/pinctrl/pinctrl-at91.c: convert kfree to devm_kfree
+
+Linus Walleij (1):
+      pinctrl: fix comment mistake
+
+Philipp Zabel (1):
+      pinctrl: imx5: fix GPIO_8 pad CAN1_RXCAN configuration
+
+ .../devicetree/bindings/pinctrl/pinctrl-sirf.txt   | 47 +++++++++++++++++++++
+ arch/arm/boot/dts/dbx5x0.dtsi                      |  4 +-
+ arch/arm/mach-ux500/cpu-db8500.c                   |  3 +-
+ drivers/pinctrl/core.c                             |  2 +-
+ drivers/pinctrl/pinctrl-at91.c                     |  2 +-
+ drivers/pinctrl/pinctrl-imx53.c                    |  2 +-
+ drivers/pinctrl/pinctrl-nomadik.c                  | 11 ++++-
+ drivers/pinctrl/pinctrl-sirf.c                     | 48 ++++++++++++++++++++++
+ 8 files changed, 113 insertions(+), 6 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-sirf.txt
