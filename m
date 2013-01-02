@@ -1,119 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab3ABS1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 13:27:23 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34936 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752843Ab3ABS1V (ORCPT
+	id S1752906Ab3ABSbC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 13:31:02 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:62319 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3ABSbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 13:27:21 -0500
-From: Stephen Warren <swarren@wwwdotorg.org>
-To: Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
-Cc: linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH REPOST] xtensa: use new common dtc rule
-Date: Wed,  2 Jan 2013 11:27:14 -0700
-Message-Id: <1357151234-5681-1-git-send-email-swarren@wwwdotorg.org>
-X-Mailer: git-send-email 1.7.10.4
-X-NVConfidentiality: public
+	Wed, 2 Jan 2013 13:31:00 -0500
+Date: Wed, 2 Jan 2013 10:30:53 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Christoph Lameter <cl@linux.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 1/2] tmpfs mempolicy: fix /proc/mounts corrupting
+ memory
+In-Reply-To: <0000013bfbad4630-c888f29b-7294-4685-8164-87e2fb136796-000000@email.amazonses.com>
+Message-ID: <alpine.LNX.2.00.1301021011520.30549@eggly.anvils>
+References: <alpine.LNX.2.00.1301020153090.18049@eggly.anvils> <0000013bfbad4630-c888f29b-7294-4685-8164-87e2fb136796-000000@email.amazonses.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Warren <swarren@nvidia.com>
+On Wed, 2 Jan 2013, Christoph Lameter wrote:
+> On Wed, 2 Jan 2013, Hugh Dickins wrote:
+> 
+> > Recent NUMA enhancements are not to blame: this dates back to 2.6.35,
+> > when commit e17f74af351c "mempolicy: don't call mpol_set_nodemask()
+> > when no_context" skipped mpol_parse_str()'s call to mpol_set_nodemask(),
+> > which used to initialize v.preferred_node, or set MPOL_F_LOCAL in flags.
+> > With slab poisoning, you can then rely on mpol_to_str() to set the bit
+> > for node 0x6b6b, probably in the next page above the caller's stack.
+> 
+> Ugly. But 2.6.35 means that the patch was not included in several
+> enterprise linux releases.
 
-The current rules have the .dtb files build in a different directory
-from the .dts files. This patch changes xtensa to use the generic dtb
-rule which builds .dtb files in the same directory as the source .dts.
+Thanks, that's some relief.  I forgot to mention that a good test for
+whether your particular kernel (with who knows what additional patches
+applied) is affected, is to
 
-This requires moving parts of arch/xtensa/boot/Makefile into newly
-created arch/xtensa/boot/dts/Makefile, and updating arch/xtensa/Makefile
-to call the new Makefile.
+mount -o remount,mpol=local /dev/shm # which should be a tmpfs
+grep /dev/shm /proc/mounts
 
-Cc: Chris Zankel <chris@zankel.net>
-Cc: Max Filippov <jcmvbkbc@gmail.com>
-Cc: linux-xtensa@linux-xtensa.org
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-This patch applies recent dtc-rule-related changes to the xtensa arch.
-They couldn't be applied along with the similar changes for other archs
-due to dependencies on other xtensa changes. This should apply OK now to
-Linus's tree, or for 3.9.
+If that says "mpol=prefer" then you're affected and need the fix; if
+it says "mpol=local" (like 2.6.34 or after this fix) then you're safe.
 
-Note: I have not tested this recently.
+(Conversely, setting "mpol=prefer" shows up as "mpol=local" after the,
+fix, since that's what prefer without a node specification amounts to.)
 
- arch/xtensa/Makefile          |    4 ++--
- arch/xtensa/boot/Makefile     |   12 ------------
- arch/xtensa/boot/dts/Makefile |   15 +++++++++++++++
- 3 files changed, 17 insertions(+), 14 deletions(-)
- create mode 100644 arch/xtensa/boot/dts/Makefile
+> 
+> > I don't understand why MPOL_LOCAL is described as a pseudo-policy:
+> > it's a reasonable policy which suffers from a confusing implementation
+> > in terms of MPOL_PREFERRED with MPOL_F_LOCAL.  I believe this would be
+> > much more robust if MPOL_LOCAL were recognized in switch statements
+> > throughout, MPOL_F_LOCAL deleted, and MPOL_PREFERRED use the (possibly
+> > empty) nodes mask like everyone else, instead of its preferred_node
+> > variant (I presume an optimization from the days before MPOL_LOCAL).
+> > But that would take me too long to get right and fully tested.
+> 
+> The current approaches to implementing NUMA scheduling are making
+> MPOL_LOCAL an explicit policy. See
+> https://patchwork.kernel.org/patch/1703641/.
 
-diff --git a/arch/xtensa/Makefile b/arch/xtensa/Makefile
-index 0aa7270..48c1a5b 100644
---- a/arch/xtensa/Makefile
-+++ b/arch/xtensa/Makefile
-@@ -88,7 +88,7 @@ core-y		+= $(buildvar) $(buildplf)
- libs-y		+= arch/xtensa/lib/ $(LIBGCC)
- 
- ifneq ($(CONFIG_BUILTIN_DTB),"")
--core-$(CONFIG_OF) += arch/xtensa/boot/
-+core-$(CONFIG_OF) += arch/xtensa/boot/dts/
- endif
- 
- boot		:= arch/xtensa/boot
-@@ -101,7 +101,7 @@ zImage: vmlinux
- 	$(Q)$(MAKE) $(build)=$(boot) $@
- 
- %.dtb:
--	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
-+	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
- 
- define archhelp
-   @echo '* zImage      - Compressed kernel image (arch/xtensa/boot/images/zImage.*)'
-diff --git a/arch/xtensa/boot/Makefile b/arch/xtensa/boot/Makefile
-index 818647e..64ffc4b 100644
---- a/arch/xtensa/boot/Makefile
-+++ b/arch/xtensa/boot/Makefile
-@@ -25,18 +25,6 @@ bootdir-$(CONFIG_XTENSA_PLATFORM_ISS)	 += boot-elf
- bootdir-$(CONFIG_XTENSA_PLATFORM_XT2000) += boot-redboot boot-elf boot-uboot
- bootdir-$(CONFIG_XTENSA_PLATFORM_XTFPGA) += boot-redboot boot-elf boot-uboot
- 
--
--BUILTIN_DTB := $(patsubst "%",%,$(CONFIG_BUILTIN_DTB)).dtb.o
--ifneq ($(CONFIG_BUILTIN_DTB),"")
--obj-$(CONFIG_OF) += $(BUILTIN_DTB)
--endif
--
--# Rule to build device tree blobs
--$(obj)/%.dtb: $(src)/dts/%.dts FORCE
--	$(call if_changed_dep,dtc)
--
--clean-files := *.dtb.S
--
- zImage Image: $(bootdir-y)
- 
- $(bootdir-y): $(addprefix $(obj)/,$(subdir-y)) \
-diff --git a/arch/xtensa/boot/dts/Makefile b/arch/xtensa/boot/dts/Makefile
-new file mode 100644
-index 0000000..5f711bb
---- /dev/null
-+++ b/arch/xtensa/boot/dts/Makefile
-@@ -0,0 +1,15 @@
-+#
-+# arch/xtensa/boot/dts/Makefile
-+#
-+# This file is subject to the terms and conditions of the GNU General Public
-+# License.  See the file "COPYING" in the main directory of this archive
-+# for more details.
-+#
-+#
-+
-+BUILTIN_DTB := $(patsubst "%",%,$(CONFIG_BUILTIN_DTB)).dtb.o
-+ifneq ($(CONFIG_BUILTIN_DTB),"")
-+obj-$(CONFIG_OF) += $(BUILTIN_DTB)
-+endif
-+
-+clean-files := *.dtb.S
--- 
-1.7.10.4
+It's a good step in the right direction.
 
+> 
+> Does that address the concerns?
+
+It makes no difference to this bug, and does not go far enough to
+remove all the MPOL_F_LOCAL MPOL_PREFERRED MPOL_LOCAL twistiness.
+
+Hugh
