@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721Ab3ABNYi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 08:24:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:52335 "EHLO arroyo.ext.ti.com"
+	id S1752752Ab3ABNYs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 08:24:48 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:52475 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752649Ab3ABNYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 08:24:36 -0500
+	id S1752649Ab3ABNYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 08:24:44 -0500
 From: Philip Avinash <avinashphilip@ti.com>
 To: <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
         <b-cousson@ti.com>
@@ -13,58 +13,263 @@ CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
         Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 0/7] HWMOD fixes for AM33xx PWM submodules and device tree nodes.
-Date: Wed, 2 Jan 2013 18:54:47 +0530
-Message-ID: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
+Subject: [PATCH 1/7] ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem HWMOD entries
+Date: Wed, 2 Jan 2013 18:54:48 +0530
+Message-ID: <1357133094-30806-2-git-send-email-avinashphilip@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
+References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series is being part of [1] and resubmitting on top of 3.8-rc1 to
-make it to 3.9.
+EQEP entry is HWMOD entry is not present in HWMOD entry. Also address
+ranges specified for EACP & EHRPWM is not correct & HWMOD flags of
+ADDR_TYPE_RT is added to PWM subsystem register address space. This
+patch
+1. Corrects register address mapping for ECAP & EHRPWM
+2. Removes  HWMOD flags in PWM submodule register address space.
+3. Adds EQEP HWMOD entries.
 
-In AM33xx PWM sub modules like ECAP, EHRPWM & EQEP are  integrated to
-PWM subsystem. All these submodules shares the resources (clock) & has
-a clock gating register in PWM Subsystem. So a parent PWM subsystem
-driver is created. To support PWM subsystem driver, parent child
-relation is created in HWMOD entry in patch #2.
+Signed-off-by: Philip Avinash <avinashphilip@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  158 +++++++++++++++++++++++++---
+ 1 file changed, 145 insertions(+), 13 deletions(-)
 
-In addition EHRPWM module requires explicit clock gating from control
-module. Hence add clock node for tbclk handling in patch #4.
-
-Patch #3 to support common clock migration for AM33xx.
-
-Also Device tree nodes populated to support parent child relation
-between PWMSS, ECAP & EHRPWM submodules (patch #5, 6 & 7).
-
-This patch series based on linux_omap/master [2] and tested for
-backlight with ECAP on AM335x-evm & AM335x-evmsk.
-
-1. https://lkml.org/lkml/2012/11/27/120
-2. http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap.git;a=commit;h=c4e2e79ff7c9f4fdad7da432c6b449121cc3033e
-
-Philip Avinash (7):
-  ARM: OMAP: AM33xx hwmod: Corrects PWM subsystem HWMOD entries
-  ARM: OMAP: AM33xx hwmod: Add parent-child relationship for PWM
-    subsystem
-  pwm: pwm-tiehrpwm: Update the clock handling of pwm-tiehrpwm driver
-  ARM: AM33XX: clk: Add clock node for EHRPWM TBCLK
-  ARM: dts: AM33XX: Add PWMSS device tree nodes
-  ARM: dts: AM33XX: Add PWM backlight DT data to  am335x-evm
-  ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evmsk
-
- arch/arm/boot/dts/am335x-evm.dts           |   23 ++
- arch/arm/boot/dts/am335x-evmsk.dts         |   23 ++
- arch/arm/boot/dts/am33xx.dtsi              |   84 ++++++
- arch/arm/mach-omap2/cclock33xx_data.c      |   30 +++
- arch/arm/mach-omap2/control.h              |    8 +
- arch/arm/mach-omap2/omap_hwmod_33xx_data.c |  390 ++++++++++++++++++----------
- drivers/pwm/pwm-tiehrpwm.c                 |    4 +-
- 7 files changed, 417 insertions(+), 145 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+index 081c71e..42a841b 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_33xx_data.c
+@@ -784,7 +784,7 @@ static struct omap_hwmod am33xx_elm_hwmod = {
+ };
+ 
+ /*
+- * 'epwmss' class: ecap0,1,2,  ehrpwm0,1,2
++ * 'epwmss' class: ehrpwm0,1,2 eqep0,1,2 ecap0,1,2
+  */
+ static struct omap_hwmod_class_sysconfig am33xx_epwmss_sysc = {
+ 	.rev_offs	= 0x0,
+@@ -864,6 +864,66 @@ static struct omap_hwmod am33xx_ehrpwm2_hwmod = {
+ 	},
+ };
+ 
++/* eqep0 */
++static struct omap_hwmod_irq_info am33xx_eqep0_irqs[] = {
++	{ .irq = 79 + OMAP_INTC_START, },
++	{ .irq = -1 },
++};
++
++static struct omap_hwmod am33xx_eqep0_hwmod = {
++	.name		= "eqep0",
++	.class		= &am33xx_epwmss_hwmod_class,
++	.clkdm_name	= "l4ls_clkdm",
++	.mpu_irqs	= am33xx_eqep0_irqs,
++	.main_clk	= "l4ls_gclk",
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS0_CLKCTRL_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* eqep1 */
++static struct omap_hwmod_irq_info am33xx_eqep1_irqs[] = {
++	{ .irq = 88 + OMAP_INTC_START, },
++	{ .irq = -1 },
++};
++
++static struct omap_hwmod am33xx_eqep1_hwmod = {
++	.name		= "eqep1",
++	.class		= &am33xx_epwmss_hwmod_class,
++	.clkdm_name	= "l4ls_clkdm",
++	.mpu_irqs	= am33xx_eqep1_irqs,
++	.main_clk	= "l4ls_gclk",
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS1_CLKCTRL_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* eqep2 */
++static struct omap_hwmod_irq_info am33xx_eqep2_irqs[] = {
++	{ .irq = 89 + OMAP_INTC_START, },
++	{ .irq = -1 },
++};
++
++static struct omap_hwmod am33xx_eqep2_hwmod = {
++	.name		= "eqep2",
++	.class		= &am33xx_epwmss_hwmod_class,
++	.clkdm_name	= "l4ls_clkdm",
++	.mpu_irqs	= am33xx_eqep2_irqs,
++	.main_clk	= "l4ls_gclk",
++	.prcm		= {
++		.omap4	= {
++			.clkctrl_offs	= AM33XX_CM_PER_EPWMSS2_CLKCTRL_OFFSET,
++			.modulemode	= MODULEMODE_SWCTRL,
++		},
++	},
++};
++
+ /* ecap0 */
+ static struct omap_hwmod_irq_info am33xx_ecap0_irqs[] = {
+ 	{ .irq = 31 + OMAP_INTC_START, },
+@@ -2559,8 +2619,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm0_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48300200,
+-		.pa_end		= 0x48300200 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48300200 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2585,8 +2644,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm1_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48302200,
+-		.pa_end		= 0x48302200 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48302200 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2611,8 +2669,7 @@ static struct omap_hwmod_addr_space am33xx_ehrpwm2_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48304200,
+-		.pa_end		= 0x48304200 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48304200 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2629,6 +2686,81 @@ static struct omap_hwmod_ocp_if am33xx_l4_ls__ehrpwm2 = {
+  * Splitting the resources to handle access of PWMSS config space
+  * and module specific part independently
+  */
++static struct omap_hwmod_addr_space am33xx_eqep0_addr_space[] = {
++	{
++		.pa_start	= 0x48300000,
++		.pa_end		= 0x48300000 + SZ_16 - 1,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.pa_start	= 0x48300180,
++		.pa_end		= 0x48300180 + SZ_128 - 1,
++	},
++	{ }
++};
++
++static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep0 = {
++	.master		= &am33xx_l4_ls_hwmod,
++	.slave		= &am33xx_eqep0_hwmod,
++	.clk		= "l4ls_gclk",
++	.addr		= am33xx_eqep0_addr_space,
++	.user		= OCP_USER_MPU,
++};
++
++/*
++ * Splitting the resources to handle access of PWMSS config space
++ * and module specific part independently
++ */
++static struct omap_hwmod_addr_space am33xx_eqep1_addr_space[] = {
++	{
++		.pa_start	= 0x48302000,
++		.pa_end		= 0x48302000 + SZ_16 - 1,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.pa_start	= 0x48302180,
++		.pa_end		= 0x48302180 + SZ_128 - 1,
++	},
++	{ }
++};
++
++static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep1 = {
++	.master		= &am33xx_l4_ls_hwmod,
++	.slave		= &am33xx_eqep1_hwmod,
++	.clk		= "l4ls_gclk",
++	.addr		= am33xx_eqep1_addr_space,
++	.user		= OCP_USER_MPU,
++};
++
++/*
++ * Splitting the resources to handle access of PWMSS config space
++ * and module specific part independently
++ */
++static struct omap_hwmod_addr_space am33xx_eqep2_addr_space[] = {
++	{
++		.pa_start	= 0x48304000,
++		.pa_end		= 0x48304000 + SZ_16 - 1,
++		.flags		= ADDR_TYPE_RT
++	},
++	{
++		.pa_start	= 0x48304180,
++		.pa_end		= 0x48304180 + SZ_128 - 1,
++	},
++	{ }
++};
++
++static struct omap_hwmod_ocp_if am33xx_l4_ls__eqep2 = {
++	.master		= &am33xx_l4_ls_hwmod,
++	.slave		= &am33xx_eqep2_hwmod,
++	.clk		= "l4ls_gclk",
++	.addr		= am33xx_eqep2_addr_space,
++	.user		= OCP_USER_MPU,
++};
++
++/*
++ * Splitting the resources to handle access of PWMSS config space
++ * and module specific part independently
++ */
+ static struct omap_hwmod_addr_space am33xx_ecap0_addr_space[] = {
+ 	{
+ 		.pa_start	= 0x48300000,
+@@ -2637,8 +2769,7 @@ static struct omap_hwmod_addr_space am33xx_ecap0_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48300100,
+-		.pa_end		= 0x48300100 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48300100 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2663,8 +2794,7 @@ static struct omap_hwmod_addr_space am33xx_ecap1_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48302100,
+-		.pa_end		= 0x48302100 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48302100 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -2689,8 +2819,7 @@ static struct omap_hwmod_addr_space am33xx_ecap2_addr_space[] = {
+ 	},
+ 	{
+ 		.pa_start	= 0x48304100,
+-		.pa_end		= 0x48304100 + SZ_256 - 1,
+-		.flags		= ADDR_TYPE_RT
++		.pa_end		= 0x48304100 + SZ_128 - 1,
+ 	},
+ 	{ }
+ };
+@@ -3388,6 +3517,9 @@ static struct omap_hwmod_ocp_if *am33xx_hwmod_ocp_ifs[] __initdata = {
+ 	&am33xx_l4_ls__ehrpwm0,
+ 	&am33xx_l4_ls__ehrpwm1,
+ 	&am33xx_l4_ls__ehrpwm2,
++	&am33xx_l4_ls__eqep0,
++	&am33xx_l4_ls__eqep1,
++	&am33xx_l4_ls__eqep2,
+ 	&am33xx_l4_ls__ecap0,
+ 	&am33xx_l4_ls__ecap1,
+ 	&am33xx_l4_ls__ecap2,
 -- 
 1.7.9.5
 
