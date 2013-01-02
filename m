@@ -1,226 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab3ABMXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 07:23:24 -0500
-Received: from ns1.pc-advies.be ([83.149.101.17]:41006 "EHLO
-	spo001.leaseweb.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752134Ab3ABMXW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 07:23:22 -0500
-Date: Wed, 2 Jan 2013 13:23:19 +0100
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>
-Subject: [GIT PULL REQUEST] watchdog - v3.8-rc1 Fixes
-Message-ID: <20130102122319.GA10667@spo001.leaseweb.com>
-Mime-Version: 1.0
+	id S1752699Ab3ABM1W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 07:27:22 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48772 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752090Ab3ABM1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 07:27:20 -0500
+Date: Wed, 2 Jan 2013 13:27:12 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 6/8] memcg: Don't account root_mem_cgroup page
+ statistics
+Message-ID: <20130102122712.GE22160@dhcp22.suse.cz>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+ <1356456447-14740-1-git-send-email-handai.szj@taobao.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.1i
+In-Reply-To: <1356456447-14740-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed 26-12-12 01:27:27, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> If memcg is enabled and no non-root memcg exists, all allocated pages
+> belongs to root_mem_cgroup and go through root memcg statistics routines
+> which brings some overheads. So for the sake of performance, we can give
+> up accounting stats of root memcg for MEM_CGROUP_STAT_FILE_MAPPED/FILE_DIRTY
+> /WRITEBACK
 
-Please pull from 'master' branch of
-	git://www.linux-watchdog.org/linux-watchdog.git
+I do not like this selective approach. We should handle all the stat
+types in the same way. SWAP is not a hot path but RSS and CACHE should
+be optimized as well. It seems that thresholds events might be a
+complication here but it shouldn't be that a big deal (mem_cgroup_usage
+would need some treat).
 
-It fixes some small errors in the new da9055 driver, eliminates a compiler warning
-and adds DT support for the twl4030_wdt driver (so that we can have multiple watchdogs
-with DT on the omap platforms).
+> and instead we pay special attention while showing root
+> memcg numbers in memcg_stat_show(): as we don't account root memcg stats
+> anymore, the root_mem_cgroup->stat numbers are actually 0.
 
-This will update the following files:
+Yes, this is reasonable.
 
- Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt |   10 +++++++
- arch/arm/boot/dts/twl4030.dtsi                             |    4 +++
- drivers/watchdog/da9055_wdt.c                              |   17 ++++---------
- drivers/watchdog/omap_wdt.c                                |    1 
- drivers/watchdog/twl4030_wdt.c                             |   11 ++++++--
- 5 files changed, 29 insertions(+), 14 deletions(-)
+> But because of hierachy, figures of root_mem_cgroup may just represent
+> numbers of pages used by its own tasks(not belonging to any other
+> child cgroup).
 
-with these Changes:
+I am not sure what the above means. root might have use_hierarchy set to
+1 as well.
 
-commit 8899b8d93ec64b7a8e54807a68a958e1206535e2
-Author: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date:   Sun Dec 23 22:03:37 2012 +0200
+> So here we fake these root numbers by using stats of global state and
+> all other memcg.  That is for root memcg:
+> 	nr(MEM_CGROUP_STAT_FILE_MAPPED) = global_page_state(NR_FILE_MAPPED) -
+>                               sum_of_all_memcg(MEM_CGROUP_STAT_FILE_MAPPED);
+> Dirty/Writeback pages accounting are in the similar way.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
 
-    watchdog: twl4030_wdt: add DT support
-    
-    Add DT support for twl4030_wdt. This is needed to get twl4030_wdt to
-    probe when booting with DT.
-    
-    Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+I like the approach but I do not like the implementation. See details
+bellow.
 
-commit 412b3729dd0234771c67452b8999191f1e8d8630
-Author: Aaro Koskinen <aaro.koskinen@iki.fi>
-Date:   Sun Dec 23 22:03:36 2012 +0200
+> ---
+>  mm/memcontrol.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 68 insertions(+), 2 deletions(-)
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index fc20ac9..728349d 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -5396,18 +5406,70 @@ static inline void mem_cgroup_lru_names_not_uptodate(void)
+>  	BUILD_BUG_ON(ARRAY_SIZE(mem_cgroup_lru_names) != NR_LRU_LISTS);
+>  }
+>  
+> +long long root_memcg_local_stat(unsigned int i, long long val,
+> +					long long nstat[])
 
-    watchdog: omap_wdt: eliminate unused variable and a compiler warning
-    
-    We forgot to delete this in the commit 4f4753d9 (watchdog: omap_wdt:
-    convert to devm_ functions), and as a result the following compilation
-    warning was introduced:
-    
-    drivers/watchdog/omap_wdt.c: In function 'omap_wdt_remove':
-    drivers/watchdog/omap_wdt.c:299:19: warning: unused variable 'res' [-Wunused-variable]
-    
-    Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-    Reviewed-by: Paul Walmsley <paul@pwsan.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+Function should be static
+also
+nstat parameter is ugly because this can be done by the caller
+and also expecting that the caller already calculated val is not
+nice (and undocumented). This approach is really hackish and error
+prone. Why should we define a specific function rather than hooking into
+mem_cgroup_read_stat and doing all the stuff there? I think that would
+be much more maintainable.
 
-commit 98e4a293895dda2b74476ac3a9f79c58b5d0155a
-Author: Axel Lin <axel.lin@ingics.com>
-Date:   Sat Dec 22 11:07:01 2012 +0800
+> +{
+> +	long long res = 0;
+> +
+> +	switch (i) {
+> +	case MEM_CGROUP_STAT_FILE_MAPPED:
+> +		res = global_page_state(NR_FILE_MAPPED);
+> +		break;
+> +	case MEM_CGROUP_STAT_FILE_DIRTY:
+> +		res = global_page_state(NR_FILE_DIRTY);
+> +		break;
+> +	case MEM_CGROUP_STAT_WRITEBACK:
+> +		res = global_page_state(NR_WRITEBACK);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +
+> +	res = (res <= val) ? 0 : (res - val) * PAGE_SIZE;
+> +	nstat[i] = res;
+> +
+> +	return res;
+> +}
+> +
+>  static int memcg_stat_show(struct cgroup *cont, struct cftype *cft,
+>  				 struct seq_file *m)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
+>  	struct mem_cgroup *mi;
+>  	unsigned int i;
+> +	long long nstat[MEM_CGROUP_STAT_NSTATS] = {0};
 
-    watchdog: da9055: Don't update wdt_dev->timeout in da9055_wdt_set_timeout error path
-    
-    Otherwise, WDIOC_GETTIMEOUT returns wrong value if set_timeout fails.
-    This patch also removes unnecessary ret variable in da9055_wdt_ping function.
-    
-    Signed-off-by: Axel Lin <axel.lin@ingics.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+s/nstat/root_stat/
 
-commit ee8c94adff9bd8609e70fb2ecdfaa71f561ed40d
-Author: Axel Lin <axel.lin@ingics.com>
-Date:   Fri Dec 21 21:09:06 2012 +0800
+>  
+>  	for (i = 0; i < MEM_CGROUP_STAT_NSTATS; i++) {
+> +		long long val = 0, res = 0;
+> +
+>  		if (i == MEM_CGROUP_STAT_SWAP && !do_swap_account)
+>  			continue;
+> -		seq_printf(m, "%s %ld\n", mem_cgroup_stat_names[i],
+> -			   mem_cgroup_read_stat(memcg, i) * PAGE_SIZE);
+> +		if (i == MEM_CGROUP_STAT_SWAP || i == MEM_CGROUP_STAT_CACHE ||
+> +			i == MEM_CGROUP_STAT_RSS) {
 
-    watchdog: da9055: Fix invalid free of devm_ allocated data
-    
-    It is not required to free devm_ allocated data. Since kref_put
-    needs a valid release function, da9055_wdt_release_resources()
-    is not deleted.
-    
-    Signed-off-by: Axel Lin <axel.lin@ingics.com>
-    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+This is plain ugly. If nothing else it asks for a comment why those are
+special.
 
-For completeness, I added the overal diff below.
+> +			seq_printf(m, "%s %ld\n", mem_cgroup_stat_names[i],
+> +				   mem_cgroup_read_stat(memcg, i) * PAGE_SIZE);
+> +			continue;
+> +		}
+> +
+> +		/* As we don't account root memcg stats anymore, the
+> +		 * root_mem_cgroup->stat numbers are actually 0. But because of
+> +		 * hierachy, figures of root_mem_cgroup may just represent
+> +		 * numbers of pages used by its own tasks(not belonging to any
+> +		 * other child cgroup). So here we fake these root numbers by
+> +		 * using stats of global state and all other memcg. That is for
+> +		 * root memcg:
+> +		 * nr(MEM_CGROUP_STAT_FILE_MAPPED) = global_page_state(NR_FILE_
+> +		 * 	MAPPED) - sum_of_all_memcg(MEM_CGROUP_STAT_FILE_MAPPED)
+> +		 * Dirty/Writeback pages accounting are in the similar way.
+> +		 */
+> +		if (memcg == root_mem_cgroup) {
+> +			for_each_mem_cgroup(mi)
+> +				val += mem_cgroup_read_stat(mi, i);
+> +			res = root_memcg_local_stat(i, val, nstat);
+> +		} else
+> +			res = mem_cgroup_read_stat(memcg, i) * PAGE_SIZE;
+> +
+> +		seq_printf(m, "%s %lld\n", mem_cgroup_stat_names[i], res);
+>  	}
+>  
+>  	for (i = 0; i < MEM_CGROUP_EVENTS_NSTATS; i++)
+> @@ -5435,6 +5497,10 @@ static int memcg_stat_show(struct cgroup *cont, struct cftype *cft,
+>  			continue;
+>  		for_each_mem_cgroup_tree(mi, memcg)
+>  			val += mem_cgroup_read_stat(mi, i) * PAGE_SIZE;
+> +
+> +		/* Adding local stats of root memcg */
+> +		if (memcg == root_mem_cgroup)
+> +			val += nstat[i];
+>  		seq_printf(m, "total_%s %lld\n", mem_cgroup_stat_names[i], val);
+>  	}
+>  
+> -- 
+> 1.7.9.5
+> 
 
-Greetings,
-Wim.
-
-================================================================================
-diff --git a/Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt b/Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt
-new file mode 100644
-index 0000000..80a3719
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/twl4030-wdt.txt
-@@ -0,0 +1,10 @@
-+Device tree bindings for twl4030-wdt driver (TWL4030 watchdog)
-+
-+Required properties:
-+	compatible = "ti,twl4030-wdt";
-+
-+Example:
-+
-+watchdog {
-+	compatible = "ti,twl4030-wdt";
-+};
-diff --git a/arch/arm/boot/dts/twl4030.dtsi b/arch/arm/boot/dts/twl4030.dtsi
-index 63411b0..ed0bc95 100644
---- a/arch/arm/boot/dts/twl4030.dtsi
-+++ b/arch/arm/boot/dts/twl4030.dtsi
-@@ -19,6 +19,10 @@
- 		interrupts = <11>;
- 	};
- 
-+	watchdog {
-+		compatible = "ti,twl4030-wdt";
-+	};
-+
- 	vdac: regulator-vdac {
- 		compatible = "ti,twl4030-vdac";
- 		regulator-min-microvolt = <1800000>;
-diff --git a/drivers/watchdog/da9055_wdt.c b/drivers/watchdog/da9055_wdt.c
-index 709ea1a..f5ad105 100644
---- a/drivers/watchdog/da9055_wdt.c
-+++ b/drivers/watchdog/da9055_wdt.c
-@@ -72,20 +72,21 @@ static int da9055_wdt_set_timeout(struct watchdog_device *wdt_dev,
- 					DA9055_TWDSCALE_MASK,
- 					da9055_wdt_maps[i].reg_val <<
- 					DA9055_TWDSCALE_SHIFT);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_err(da9055->dev,
- 			"Failed to update timescale bit, %d\n", ret);
-+		return ret;
-+	}
- 
- 	wdt_dev->timeout = timeout;
- 
--	return ret;
-+	return 0;
- }
- 
- static int da9055_wdt_ping(struct watchdog_device *wdt_dev)
- {
- 	struct da9055_wdt_data *driver_data = watchdog_get_drvdata(wdt_dev);
- 	struct da9055 *da9055 = driver_data->da9055;
--	int ret;
- 
- 	/*
- 	 * We have a minimum time for watchdog window called TWDMIN. A write
-@@ -94,18 +95,12 @@ static int da9055_wdt_ping(struct watchdog_device *wdt_dev)
- 	mdelay(DA9055_TWDMIN);
- 
- 	/* Reset the watchdog timer */
--	ret = da9055_reg_update(da9055, DA9055_REG_CONTROL_E,
--				DA9055_WATCHDOG_MASK, 1);
--
--	return ret;
-+	return da9055_reg_update(da9055, DA9055_REG_CONTROL_E,
-+				 DA9055_WATCHDOG_MASK, 1);
- }
- 
- static void da9055_wdt_release_resources(struct kref *r)
- {
--	struct da9055_wdt_data *driver_data =
--		container_of(r, struct da9055_wdt_data, kref);
--
--	kfree(driver_data);
- }
- 
- static void da9055_wdt_ref(struct watchdog_device *wdt_dev)
-diff --git a/drivers/watchdog/omap_wdt.c b/drivers/watchdog/omap_wdt.c
-index 34ed61e..b0e541d 100644
---- a/drivers/watchdog/omap_wdt.c
-+++ b/drivers/watchdog/omap_wdt.c
-@@ -296,7 +296,6 @@ static int omap_wdt_remove(struct platform_device *pdev)
- {
- 	struct watchdog_device *wdog = platform_get_drvdata(pdev);
- 	struct omap_wdt_dev *wdev = watchdog_get_drvdata(wdog);
--	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 
- 	pm_runtime_disable(wdev->dev);
- 	watchdog_unregister_device(wdog);
-diff --git a/drivers/watchdog/twl4030_wdt.c b/drivers/watchdog/twl4030_wdt.c
-index 81918cf..0f03106 100644
---- a/drivers/watchdog/twl4030_wdt.c
-+++ b/drivers/watchdog/twl4030_wdt.c
-@@ -131,14 +131,21 @@ static int twl4030_wdt_resume(struct platform_device *pdev)
- #define twl4030_wdt_resume         NULL
- #endif
- 
-+static const struct of_device_id twl_wdt_of_match[] = {
-+	{ .compatible = "ti,twl4030-wdt", },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(of, twl_wdt_of_match);
-+
- static struct platform_driver twl4030_wdt_driver = {
- 	.probe		= twl4030_wdt_probe,
- 	.remove		= twl4030_wdt_remove,
- 	.suspend	= twl4030_wdt_suspend,
- 	.resume		= twl4030_wdt_resume,
- 	.driver		= {
--		.owner	= THIS_MODULE,
--		.name	= "twl4030_wdt",
-+		.owner		= THIS_MODULE,
-+		.name		= "twl4030_wdt",
-+		.of_match_table	= twl_wdt_of_match,
- 	},
- };
- 
+-- 
+Michal Hocko
+SUSE Labs
