@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab3ABSbC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 13:31:02 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:62319 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3ABSbA (ORCPT
+	id S1752953Ab3ABSdu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 13:33:50 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:48934 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab3ABSdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 13:31:00 -0500
-Date: Wed, 2 Jan 2013 10:30:53 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Christoph Lameter <cl@linux.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH 1/2] tmpfs mempolicy: fix /proc/mounts corrupting
- memory
-In-Reply-To: <0000013bfbad4630-c888f29b-7294-4685-8164-87e2fb136796-000000@email.amazonses.com>
-Message-ID: <alpine.LNX.2.00.1301021011520.30549@eggly.anvils>
-References: <alpine.LNX.2.00.1301020153090.18049@eggly.anvils> <0000013bfbad4630-c888f29b-7294-4685-8164-87e2fb136796-000000@email.amazonses.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 2 Jan 2013 13:33:46 -0500
+Date: Wed, 2 Jan 2013 10:33:51 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Dave Reisner <dreisner@archlinux.org>, keescook@chromium.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] debugfs: convert gid= argument from decimal, not octal
+Message-ID: <20130102183351.GA28554@kroah.com>
+References: <1357134877-27141-1-git-send-email-dreisner@archlinux.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357134877-27141-1-git-send-email-dreisner@archlinux.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jan 2013, Christoph Lameter wrote:
-> On Wed, 2 Jan 2013, Hugh Dickins wrote:
-> 
-> > Recent NUMA enhancements are not to blame: this dates back to 2.6.35,
-> > when commit e17f74af351c "mempolicy: don't call mpol_set_nodemask()
-> > when no_context" skipped mpol_parse_str()'s call to mpol_set_nodemask(),
-> > which used to initialize v.preferred_node, or set MPOL_F_LOCAL in flags.
-> > With slab poisoning, you can then rely on mpol_to_str() to set the bit
-> > for node 0x6b6b, probably in the next page above the caller's stack.
-> 
-> Ugly. But 2.6.35 means that the patch was not included in several
-> enterprise linux releases.
+On Wed, Jan 02, 2013 at 08:54:37AM -0500, Dave Reisner wrote:
+> This patch technically breaks userspace, but I suspect that anyone who
+> actually used this flag would have encountered this brokenness, declared
+> it lunacy, and already sent a patch.
 
-Thanks, that's some relief.  I forgot to mention that a good test for
-whether your particular kernel (with who knows what additional patches
-applied) is affected, is to
+Kees is the one that originally did this change (I think, right?)
 
-mount -o remount,mpol=local /dev/shm # which should be a tmpfs
-grep /dev/shm /proc/mounts
+Kees, any objection to this patch?  Will it break your existing systems?
 
-If that says "mpol=prefer" then you're affected and need the fix; if
-it says "mpol=local" (like 2.6.34 or after this fix) then you're safe.
+thanks,
 
-(Conversely, setting "mpol=prefer" shows up as "mpol=local" after the,
-fix, since that's what prefer without a node specification amounts to.)
+greg k-h
 
 > 
-> > I don't understand why MPOL_LOCAL is described as a pseudo-policy:
-> > it's a reasonable policy which suffers from a confusing implementation
-> > in terms of MPOL_PREFERRED with MPOL_F_LOCAL.  I believe this would be
-> > much more robust if MPOL_LOCAL were recognized in switch statements
-> > throughout, MPOL_F_LOCAL deleted, and MPOL_PREFERRED use the (possibly
-> > empty) nodes mask like everyone else, instead of its preferred_node
-> > variant (I presume an optimization from the days before MPOL_LOCAL).
-> > But that would take me too long to get right and fully tested.
+> Signed-off-by: Dave Reisner <dreisner@archlinux.org>
+> ---
+>  fs/debugfs/inode.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> The current approaches to implementing NUMA scheduling are making
-> MPOL_LOCAL an explicit policy. See
-> https://patchwork.kernel.org/patch/1703641/.
-
-It's a good step in the right direction.
-
-> 
-> Does that address the concerns?
-
-It makes no difference to this bug, and does not go far enough to
-remove all the MPOL_F_LOCAL MPOL_PREFERRED MPOL_LOCAL twistiness.
-
-Hugh
+> diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+> index 153bb1e..a5f12b7 100644
+> --- a/fs/debugfs/inode.c
+> +++ b/fs/debugfs/inode.c
+> @@ -176,7 +176,7 @@ static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
+>  			opts->uid = uid;
+>  			break;
+>  		case Opt_gid:
+> -			if (match_octal(&args[0], &option))
+> +			if (match_int(&args[0], &option))
+>  				return -EINVAL;
+>  			gid = make_kgid(current_user_ns(), option);
+>  			if (!gid_valid(gid))
+> -- 
+> 1.8.0.3
