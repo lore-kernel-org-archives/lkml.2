@@ -1,42 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab3ABFRR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 00:17:17 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:51867 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750783Ab3ABFRM (ORCPT
+	id S1752208Ab3ABFSb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 00:18:31 -0500
+Received: from vaxjo.synopsys.com ([198.182.60.75]:39855 "EHLO
+	vaxjo.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890Ab3ABFS2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 00:17:12 -0500
+	Wed, 2 Jan 2013 00:18:28 -0500
+Message-ID: <50E3C2B6.9010208@synopsys.com>
+Date: Wed, 2 Jan 2013 10:46:38 +0530
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <50E32C06.5020104@gmail.com>
-References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
-	<1355852048-23188-7-git-send-email-linux@prisktech.co.nz>
-	<50D62BC9.9010706@mvista.com>
-	<50E32C06.5020104@gmail.com>
-Date: Wed, 2 Jan 2013 08:10:36 +0300
-Message-ID: <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
-Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of IS_ERR_OR_NULL
-From: Dan Carpenter <error27@gmail.com>
-To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-Cc: Tony Prisk <linux@prisktech.co.nz>, Sergei Shtylyov <sshtylyov@mvista.com>,
-        kernel-janitors@vger.kernel.org,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        "Tony Lindgren" <tony@atomide.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH] modpost: Ignore ARC specific non-alloc sections
+References: <1352720953-24321-21-git-send-email-vgupta@synopsys.com> <1356605240-4555-1-git-send-email-vgupta@synopsys.com> <1356605240-4555-2-git-send-email-vgupta@synopsys.com> <20121227204816.GA2068@merkur.ravnborg.org> <8738yk76k6.fsf@rustcorp.com.au>
+In-Reply-To: <8738yk76k6.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clk_get() returns NULL if CONFIG_HAVE_CLK is disabled.
+On Wednesday 02 January 2013 06:19 AM, Rusty Russell wrote:
+> Sam Ravnborg <sam@ravnborg.org> writes:
+>
+>> On Thu, Dec 27, 2012 at 04:17:20PM +0530, Vineet Gupta wrote:
+>>> ARC relocatable object files contain one/more .gnu.linkonce.arcextmap.*
+>>> sections (collated by kernel/vmlinux.lds into .arcextmap in final link).
+>>> This section is used by debuggers to display the extension instructions
+>>> and need-not be loaded by target (hence !SHF_ALLOC)
+>>>
+>>> The final kernel binary only needs .arcextmap entry in modpost's ignore
+>>> list (section_white_list[]). However when building modules, modpost scans
+>>> each object file individually, hence tripping on non-aggregated
+>>> .gnu.linkonce.arcextmap.* entries as well.
+>> The list exist for this particular purpose.
+>> So acked.
+> Applied, thanks!
+>
+> Cheers,
+> Rusty.
 
-I told Tony about this but everyone has been gone with end of year
-holidays so it hasn't been addressed.
+Thanks Rusty.
+I'll drop this patch from my series.
 
-Tony, please fix it so people don't apply these patches until
-clk_get() is updated to not return NULL.  It sucks to have to revert
-patches.
-
-regards,
-dan carpenter
+-Vineet
