@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab3ABSkN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 13:40:13 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:41935 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752752Ab3ABSkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 13:40:11 -0500
-Date: Wed, 2 Jan 2013 18:40:10 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] epoll: prevent missed events on EPOLL_CTL_MOD
-Message-ID: <20130102184010.GA21780@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
- <1357065750.21409.12527.camel@edumazet-glaptop>
- <20130101210033.GA13255@dcvr.yhbt.net>
- <20130101211728.GA13380@dcvr.yhbt.net>
- <CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
- <20130101235605.GA17168@dcvr.yhbt.net>
- <1357148750.21409.17169.camel@edumazet-glaptop>
+	id S1752989Ab3ABSmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 13:42:22 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:45059 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752846Ab3ABSmS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 13:42:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357148750.21409.17169.camel@edumazet-glaptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130102183351.GA28554@kroah.com>
+References: <1357134877-27141-1-git-send-email-dreisner@archlinux.org>
+	<20130102183351.GA28554@kroah.com>
+Date: Wed, 2 Jan 2013 10:42:17 -0800
+X-Google-Sender-Auth: 597mO0WejcPzjhzV5ppTK3xYYWU
+Message-ID: <CAGXu5jJ1oGh-ExwQ6f0CMNQjF2cAcLrgWRCz8ho0v4Ve+GjOuw@mail.gmail.com>
+Subject: Re: [PATCH] debugfs: convert gid= argument from decimal, not octal
+From: Kees Cook <keescook@chromium.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Dave Reisner <dreisner@archlinux.org>, LKML <linux-kernel@vger.kernel.org>,
+        Vasiliy Kulikov <segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> First, thanks for working on this issue.
+On Wed, Jan 2, 2013 at 10:33 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Jan 02, 2013 at 08:54:37AM -0500, Dave Reisner wrote:
+>> This patch technically breaks userspace, but I suspect that anyone who
+>> actually used this flag would have encountered this brokenness, declared
+>> it lunacy, and already sent a patch.
+>
+> Kees is the one that originally did this change (I think, right?)
 
-No problem!
+I recommended the default change, but I think it was Vasiliy that
+added the gid option, IIRC.
 
-> It seems the real problem is the epi->event.events = event->events;
-> which is done without taking ep->lock
+> Kees, any objection to this patch?  Will it break your existing systems?
 
-Yes.  I am hoping it is possible to do it without a lock there,
-but your change is more obviously correct.
+Regardless, I have no objection -- this should be int, not octal.
 
-> While a smp_mb() could reduce the race window, I believe there is still
-> a race, and the following patch would close it.
+-Kees
 
-I'm not an experienced kernel hacker, can you describe where the race
-would be?
+>
+> thanks,
+>
+> greg k-h
+>
+>>
+>> Signed-off-by: Dave Reisner <dreisner@archlinux.org>
+>> ---
+>>  fs/debugfs/inode.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+>> index 153bb1e..a5f12b7 100644
+>> --- a/fs/debugfs/inode.c
+>> +++ b/fs/debugfs/inode.c
+>> @@ -176,7 +176,7 @@ static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
+>>                       opts->uid = uid;
+>>                       break;
+>>               case Opt_gid:
+>> -                     if (match_octal(&args[0], &option))
+>> +                     if (match_int(&args[0], &option))
+>>                               return -EINVAL;
+>>                       gid = make_kgid(current_user_ns(), option);
+>>                       if (!gid_valid(gid))
+>> --
+>> 1.8.0.3
 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index be56b21..25e5c53 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -1313,7 +1313,10 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
->  	 * otherwise we might miss an event that happens between the
->  	 * f_op->poll() call and the new event set registering.
->  	 */
-> +	spin_lock_irq(&ep->lock);
->  	epi->event.events = event->events;
-> +	spin_unlock_irq(&ep->lock);
-> +
->  	pt._key = event->events;
->  	epi->event.data = event->data; /* protected by mtx */
->  	if (epi->event.events & EPOLLWAKEUP) {
+
+
+--
+Kees Cook
+Chrome OS Security
