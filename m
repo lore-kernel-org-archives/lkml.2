@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab3ABPGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:06:45 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:38215 "EHLO
+	id S1752957Ab3ABPHN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:07:13 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:38211 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752866Ab3ABPBM (ORCPT
+	with ESMTP id S1752725Ab3ABPBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:01:12 -0500
+	Wed, 2 Jan 2013 10:01:07 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <keshava_mgowda@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <rogerq@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 06/22] mfd: omap-usb-tll: Check for missing platform data in probe
-Date: Wed, 2 Jan 2013 17:00:26 +0200
-Message-ID: <1357138842-28964-7-git-send-email-rogerq@ti.com>
+Subject: [PATCH v5 03/22] mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
+Date: Wed, 2 Jan 2013 17:00:23 +0200
+Message-ID: <1357138842-28964-4-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1357138842-28964-1-git-send-email-rogerq@ti.com>
 References: <1357138842-28964-1-git-send-email-rogerq@ti.com>
@@ -25,54 +25,101 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to check for missing platform data in runtime_suspend/resume
-as it makes more sense to do it in the probe function.
+Use devm_ variants of kzalloc() and ioremap(). Simplify the error path.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   37 +++++++++++--------------------------
+ 1 files changed, 11 insertions(+), 26 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index b188ee8..f319ac9 100644
+index 5d5595b..e225cbc 100644
 --- a/drivers/mfd/omap-usb-tll.c
 +++ b/drivers/mfd/omap-usb-tll.c
-@@ -225,6 +225,11 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		return -ENOMEM;
+@@ -215,11 +215,10 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 
+ 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
+ 
+-	tll = kzalloc(sizeof(struct usbtll_omap), GFP_KERNEL);
++	tll = devm_kzalloc(dev, sizeof(struct usbtll_omap), GFP_KERNEL);
+ 	if (!tll) {
+ 		dev_err(dev, "Memory allocation failed\n");
+-		ret = -ENOMEM;
+-		goto end;
++		return -ENOMEM;
  	}
  
-+	if (!pdata) {
-+		dev_err(dev, "Platform data missing\n");
-+		return -ENODEV;
-+	}
-+
  	spin_lock_init(&tll->lock);
+@@ -230,28 +229,21 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	if (IS_ERR(tll->usbtll_p1_fck)) {
+ 		ret = PTR_ERR(tll->usbtll_p1_fck);
+ 		dev_err(dev, "usbtll_p1_fck failed error:%d\n", ret);
+-		goto err_tll;
++		return ret;
+ 	}
  
- 	tll->pdata = pdata;
-@@ -367,11 +372,6 @@ static int usbtll_runtime_resume(struct device *dev)
+ 	tll->usbtll_p2_fck = clk_get(dev, "usb_tll_hs_usb_ch1_clk");
+ 	if (IS_ERR(tll->usbtll_p2_fck)) {
+ 		ret = PTR_ERR(tll->usbtll_p2_fck);
+ 		dev_err(dev, "usbtll_p2_fck failed error:%d\n", ret);
+-		goto err_usbtll_p1_fck;
++		goto err_p2_fck;
+ 	}
  
- 	dev_dbg(dev, "usbtll_runtime_resume\n");
- 
--	if (!pdata) {
--		dev_dbg(dev, "missing platform_data\n");
--		return  -ENODEV;
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		dev_err(dev, "usb tll get resource failed\n");
+-		ret = -ENODEV;
+-		goto err_usbtll_p2_fck;
 -	}
 -
- 	spin_lock_irqsave(&tll->lock, flags);
+-	base = ioremap(res->start, resource_size(res));
++	base = devm_request_and_ioremap(dev, res);
+ 	if (!base) {
+-		dev_err(dev, "TLL ioremap failed\n");
+-		ret = -ENOMEM;
+-		goto err_usbtll_p2_fck;
++		ret = -EADDRNOTAVAIL;
++		goto err_res;
+ 	}
  
- 	for (i = 0; i < tll->nch; i++) {
-@@ -403,11 +403,6 @@ static int usbtll_runtime_suspend(struct device *dev)
+ 	platform_set_drvdata(pdev, tll);
+@@ -323,23 +315,17 @@ static int usbtll_omap_probe(struct platform_device *pdev)
+ 	}
  
- 	dev_dbg(dev, "usbtll_runtime_suspend\n");
+ 	spin_unlock_irqrestore(&tll->lock, flags);
+-	iounmap(base);
+ 	pm_runtime_put_sync(dev);
+ 	tll_pdev = pdev;
+-	if (!ret)
+-		goto end;
+-	pm_runtime_disable(dev);
  
--	if (!pdata) {
--		dev_dbg(dev, "missing platform_data\n");
--		return  -ENODEV;
--	}
+-err_usbtll_p2_fck:
++	return 0;
++
++err_res:
+ 	clk_put(tll->usbtll_p2_fck);
+ 
+-err_usbtll_p1_fck:
++err_p2_fck:
+ 	clk_put(tll->usbtll_p1_fck);
+ 
+-err_tll:
+-	kfree(tll);
 -
- 	spin_lock_irqsave(&tll->lock, flags);
+-end:
+ 	return ret;
+ }
  
- 	for (i = 0; i < tll->nch; i++) {
+@@ -356,7 +342,6 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	clk_put(tll->usbtll_p2_fck);
+ 	clk_put(tll->usbtll_p1_fck);
+ 	pm_runtime_disable(&pdev->dev);
+-	kfree(tll);
+ 	return 0;
+ }
+ 
 -- 
 1.7.4.1
 
