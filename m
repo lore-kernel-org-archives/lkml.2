@@ -1,44 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab3ABJ3v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 04:29:51 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38540 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752351Ab3ABJ3t (ORCPT
+	id S1752635Ab3ABJbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 04:31:12 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:38837 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752351Ab3ABJbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 04:29:49 -0500
-Date: Wed, 2 Jan 2013 09:28:54 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Dan Carpenter <error27@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
-	IS_ERR_OR_NULL
-Message-ID: <20130102092854.GC2631@n2100.arm.linux.org.uk>
-References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz> <1355852048-23188-7-git-send-email-linux@prisktech.co.nz> <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com> <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com> <1357104713.30504.8.camel@gitbox> <alpine.DEB.2.02.1301020827040.2241@localhost6.localdomain6>
+	Wed, 2 Jan 2013 04:31:09 -0500
+Message-ID: <50E3FE57.5070702@gmail.com>
+Date: Wed, 02 Jan 2013 17:31:03 +0800
+From: Mark Zhang <nvmarkzhang@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1301020827040.2241@localhost6.localdomain6>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
+        "airlied@linux.ie" <airlied@linux.ie>,
+        "dev@lynxeye.de" <dev@lynxeye.de>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 3/8] gpu: host1x: Add channel support
+References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <1356089964-5265-4-git-send-email-tbergstrom@nvidia.com> <50E3E45A.5050003@gmail.com> <50E3FE8C.8000309@nvidia.com>
+In-Reply-To: <50E3FE8C.8000309@nvidia.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 08:29:57AM +0100, Julia Lawall wrote:
-> There are dereferences to the result of clk_get a few times.  I tried the 
-> following semantic patch:
+On 01/02/2013 05:31 PM, Terje Bergström wrote:
+> On 02.01.2013 09:40, Mark Zhang wrote:
+>> On 12/21/2012 07:39 PM, Terje Bergstrom wrote:
+>>> Add support for host1x client modules, and host1x channels to submit
+>>> work to the clients. The work is submitted in GEM CMA buffers, so
+>>> this patch adds support for them.
+>>>
+>>> Signed-off-by: Terje Bergstrom <tbergstrom@nvidia.com>
+>>> ---
+>> [...]
+>>> +/*
+>>> + * Begin a cdma submit
+>>> + */
+>>> +int host1x_cdma_begin(struct host1x_cdma *cdma, struct host1x_job *job)
+>>> +{
+>>> +	struct host1x *host1x = cdma_to_host1x(cdma);
+>>> +
+>>> +	mutex_lock(&cdma->lock);
+>>> +
+>>> +	if (job->timeout) {
+>>> +		/* init state on first submit with timeout value */
+>>> +		if (!cdma->timeout.initialized) {
+>>> +			int err;
+>>> +			err = host1x->cdma_op.timeout_init(cdma,
+>>> +					job->syncpt_id);
+>>> +			if (err) {
+>>> +				mutex_unlock(&cdma->lock);
+>>> +				return err;
+>>> +			}
+>>> +		}
+>>> +	}
+>>> +	if (!cdma->running)
+>>> +		host1x->cdma_op.start(cdma);
+>>> +
+>>> +	cdma->slots_free = 0;
+>>> +	cdma->slots_used = 0;
+>>> +	cdma->first_get = host1x->cdma_pb_op.putptr(&cdma->push_buffer);
+>>> +
+>>> +	trace_host1x_cdma_begin(job->ch->dev->name);
+>>
+>> Seems missing "mutex_unlock(&cdma->lock);" here.
+> 
+> That's intentional. Writing a job to channel is atomic, so lock is taken
+> from host1x_cdma_begin() until host1x_cdma_end().
+> 
 
-And those are buggy; struct clk is _SUPPOSED_ to be an OPAQUE COOKIE
-and no one other than the clk code should be dereferencing it.
+Okay. So can we consider that lock and unlock this mutex in the function
+which calls host1x_cdma_begin and host1x_cdma_end, that means, in
+current implementation, function "channel_submit"?
 
-I guess this is the danger of the common clk API - we now have a struct
-clk that is exposed in a linux/*.h include which anyone can include, and
-now anyone can get a definition for a struct clk and dereference it,
-destroying opaqueness of this cookie.
+Mark
+> Terje
+> 
