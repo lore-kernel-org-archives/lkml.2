@@ -1,65 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677Ab3ABL0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 06:26:47 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:21885 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab3ABL0p (ORCPT
+	id S1752690Ab3ABL3U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 06:29:20 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44189 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab3ABL3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 06:26:45 -0500
-X-IronPort-AV: E=Sophos;i="4.84,394,1355097600"; 
-   d="scan'208";a="2272329"
-Message-ID: <50E41973.9050705@citrix.com>
-Date: Wed, 2 Jan 2013 11:26:43 +0000
-From: Andrew Cooper <andrew.cooper3@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121127 Icedove/10.0.11
+	Wed, 2 Jan 2013 06:29:17 -0500
+Date: Wed, 2 Jan 2013 12:29:08 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>, kernel@pengutronix.de,
+        p.zabel@pengutronix.de, javier.martin@vista-silicon.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] coda: Fix build due to iram.h rename
+Message-ID: <20130102112908.GI26326@pengutronix.de>
+References: <1352898282-21576-1-git-send-email-fabio.estevam@freescale.com>
+ <20121217093714.GI26326@pengutronix.de>
+ <20121227201512.0a5c5828@infradead.org>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "x86@kernel.org" <x86@kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jbeulich@suse.com" <jbeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump implementation
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com> <50DBC856.6030208@zytor.com> <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com> <50DC58C4.3000307@citrix.com> <874nj7qsor.fsf@xmission.com>
-In-Reply-To: <874nj7qsor.fsf@xmission.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121227201512.0a5c5828@infradead.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:20:09 up 193 days,  2:31, 64 users,  load average: 1.47, 2.02,
+ 3.45
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/12/12 18:02, Eric W. Biederman wrote:
-> Andrew Cooper<andrew.cooper3@citrix.com>  writes:
->
->> On 27/12/2012 07:53, Eric W. Biederman wrote:
->>> The syscall ABI still has the wrong semantics.
->>>
->>> Aka totally unmaintainable and umergeable.
->>>
->>> The concept of domU support is also strange.  What does domU support even mean, when the dom0 support is loading a kernel to pick up Xen when Xen falls over.
->> There are two requirements pulling at this patch series, but I agree
->> that we need to clarify them.
-> It probably make sense to split them apart a little even.
->
->
+Hi Mauro,
 
-Thinking about this split, there might be a way to simply it even more.
+On Thu, Dec 27, 2012 at 08:15:12PM -0200, Mauro Carvalho Chehab wrote:
+> Em Mon, 17 Dec 2012 10:37:14 +0100
+> Sascha Hauer <s.hauer@pengutronix.de> escreveu:
+> 
+> > On Wed, Nov 14, 2012 at 11:04:42AM -0200, Fabio Estevam wrote:
+> > > commit c045e3f13 (ARM: imx: include iram.h rather than mach/iram.h) changed the
+> > > location of iram.h, which causes the following build error when building the coda
+> > > driver:
+> > > 
+> > > drivers/media/platform/coda.c:27:23: error: mach/iram.h: No such file or directory
+> > > drivers/media/platform/coda.c: In function 'coda_probe':
+> > > drivers/media/platform/coda.c:2000: error: implicit declaration of function 'iram_alloc'
+> > > drivers/media/platform/coda.c:2001: warning: assignment makes pointer from integer without a cast
+> > > drivers/media/platform/coda.c: In function 'coda_remove':
+> > > drivers/media/platform/coda.c:2024: error: implicit declaration of function 'iram_free
+> > > 
+> > > Since the content of iram.h is not imx specific, move it to include/linux/iram.h
+> > > instead.
+> > 
+> > Generally we need a fix for this, but:
+> > 
+> > > diff --git a/arch/arm/mach-imx/iram.h b/include/linux/iram.h
+> > > similarity index 100%
+> > > rename from arch/arm/mach-imx/iram.h
+> > > rename to include/linux/iram.h
+> > 
+> > We shouldn't introduce a file include/linux/iram.h which is purely i.MX
+> > specific. The name is far too generic. I would rather suggest
+> > include/linux/platform_data/imx-iram.h (Although it's not exactly
+> > platform_data, so I'm open for better suggestions).
+> > 
+> > As a side note this i.MX specific iram stuff (hopefully) is obsolete
+> > after the next merge window as Philip already has patches for a generic
+> > iram allocator which didn't make it into this merge window.
+> 
+> Hi Sasha,
+> 
+> This compilation breakage seems to still be happening.
+> 
+> Just tested here with arm32 "allmodconfig", on a tree based on Linus one,
+> with -next and -media patches applied on it:
+> 
+> drivers/media//platform/coda.c:27:23: fatal error: mach/iram.h: No such file or directory
+> compilation terminated.
+> 
+> I don't mind how this would be named, but this should be fixed somehow ;)
 
-/sbin/kexec can load the "Xen" crash kernel itself by issuing hypercalls 
-using /dev/xen/privcmd.  This would remove the need for the dom0 kernel 
-to distinguish between loading a crash kernel for itself and loading a 
-kernel for Xen.
+I will prepare a patch for this next week when I'm back in the office.
 
-Or is this just a silly idea complicating the matter?
+Sascha
 
-~Andrew
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
