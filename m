@@ -1,82 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab3ABIqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 03:46:16 -0500
-Received: from hermes.synopsys.com ([198.182.44.81]:43289 "EHLO
-	hermes.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab3ABIqN (ORCPT
+	id S1752612Ab3ABIri (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 03:47:38 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:61555 "EHLO
+	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825Ab3ABIrf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 03:46:13 -0500
-Message-ID: <50E3F3C4.3030706@synopsys.com>
-Date: Wed, 2 Jan 2013 14:15:56 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Wed, 2 Jan 2013 03:47:35 -0500
+X-AuditID: 9c930197-b7c5bae000000e31-c4-50e3f42508e2
+From: Namhyung Kim <namhyung@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 21/27] nohz: Only stop the tick on RCU nocb CPUs
+References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
+	<1356799386-4212-22-git-send-email-fweisbec@gmail.com>
+Date: Wed, 02 Jan 2013 17:47:33 +0900
+In-Reply-To: <1356799386-4212-22-git-send-email-fweisbec@gmail.com> (Frederic
+	Weisbecker's message of "Sat, 29 Dec 2012 17:43:00 +0100")
+Message-ID: <87bod8rmxm.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        James Hogan <james.hogan@imgtec.com>,
-        John Stultz <john.stultz@linaro.org>
-Subject: Re: [RFC PATCH v1 15/31] ARC: Process/scheduling/clock/Timers/Delay
- Management
-References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com> <1352281674-2186-16-git-send-email-vgupta@synopsys.com> <alpine.LFD.2.02.1211122110230.10000@ionos> <50E3DE29.6020403@synopsys.com>
-In-Reply-To: <50E3DE29.6020403@synopsys.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.205]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 January 2013 12:43 PM, Vineet Gupta wrote:
-> On Tuesday 13 November 2012 01:59 AM, Thomas Gleixner wrote:
->> On Wed, 7 Nov 2012, Vineet Gupta wrote:
->>> +static int arc_finished_booting;
->>> +
->>> +/*
->>> + * Scheduler clock - returns current time in nanosec units.
->>> + * It's return value must NOT wrap around.
->>> + *
->>> + * Although the return value is nanosec units based, what's more important
->>> + * is whats the "source" of this value. The orig jiffies based computation
->>> + * was only as granular as jiffies itself (10ms on ARC).
->>> + * We need something that is more granular, so use the same mechanism as
->>> + * gettimeofday(), which uses ARC Timer T1 wrapped as a clocksource.
->>> + * Unfortunately the first call to sched_clock( ) is way before that subsys
->>> + * is initialiased, thus use the jiffies based value in the interim.
->>> + */
->>> +unsigned long long sched_clock(void)
->>> +{
->>> +	if (!arc_finished_booting) {
->>> +		return (unsigned long long)(jiffies - INITIAL_JIFFIES)
->>> +		    * (NSEC_PER_SEC / HZ);
->>> +	} else {
->>> +		struct timespec ts;
->>> +		getrawmonotonic(&ts);
->>
->> This can live lock. sched_clock() is used by the tracer. So assume you
->> are function tracing and you trace a function called from within the
->> timekeeping seqcount write "locked" region. You spin forever in
->> getrawmonotonic(). Not what you want, right ?
-> 
-> Correct- so that means we need an equivalent of partially open-code
-> getrawmonotonic w/o any locks here - read the clocksource directly just as other
-> arches.
+Hi Frederic,
 
-Spoke too soon. The desired semantics here are monotonically increasing value
-using a 32-bit overflowing hardware counter (and not Jiffies based since Android
-CTS has a test case which requires that back-back calls to
-clock_gettime(CLOCK_THREAD_CPUTIME_ID)  - which simply use sched_clock( ) return
-different values.
+On Sat, 29 Dec 2012 17:43:00 +0100, Frederic Weisbecker wrote:
+> On a full dynticks CPU, we want the RCU callbacks to be
+> offlined to another CPU, otherwise we need to keep
+> the tick to wait for the grace period completion.
+>
+> Ensure the full dynticks CPU is also an rcu_nocb one.
+[snip]
+> -static bool is_nocb_cpu(int cpu)
+> -{
+> -	return false;
+> -}
+> -
 
-Since counter is overflowing, we need additional state (last snapshot) provided by
-likes of clocksource. But IMHO, opencoding clocksource code w/o xtime seqlock will
-be wrong.
+You may want to add the following also to shut up the gcc:
 
-I don't see a way out - except to keep using jiffies based versions and use the 64
-bit Time-stamp counter available in newer ARC CPUs.
-
--Vineet
+      CC      kernel/rcutree.o
+    In file included from /home/namhyung/project/linux/kernel/rcutree.c:58:0:
+    /home/namhyung/project/linux/kernel/rcutree.h:539:13: warning: ‘is_nocb_cpu’ declared ‘static’ but never defined [-Wunused-function]
 
 
+Thanks,
+Namhyung
+
+
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 4b69291b093d..fbbad931c36a 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -536,7 +536,6 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
+ static void print_cpu_stall_info_end(void);
+ static void zero_cpu_stall_ticks(struct rcu_data *rdp);
+ static void increment_cpu_stall_ticks(void);
+-static bool is_nocb_cpu(int cpu);
+ static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
+                            bool lazy);
+ static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
