@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752771Ab3ABW2C (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 17:28:02 -0500
-Received: from magic.merlins.org ([209.81.13.136]:54366 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367Ab3ABW2A (ORCPT
+	id S1752773Ab3ABWb1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 17:31:27 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:55968 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752707Ab3ABWbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 17:28:00 -0500
-Date: Wed, 2 Jan 2013 14:27:57 -0800
-From: Marc MERLIN <marc@merlins.org>
-To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Fairly reproduceable crash in 3.7.1 Null pointer rb_erase+0xc4/0x292
-Message-ID: <20130102222757.GC8631@merlins.org>
+	Wed, 2 Jan 2013 17:31:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Sysadmin: BOFH
-X-URL: http://marc.merlins.org/
-X-Operating-System: Proudly running Linux 3.6.6-amd64-preempt-20120903/Debian
- wheezy/sid
-X-Mailer: Some Outlooks can't quote properly without this header
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-No-Run: Yes
-X-SA-Exim-Connect-IP: 82.235.219.215
-X-SA-Exim-Mail-From: merlin@merlins.org
+In-Reply-To: <50E4755E.7030209@iki.fi>
+References: <20121223105527.GA6230@liondog.tnic>
+	<50D6E491.3030801@ukfsn.org>
+	<20121223110730.GC6230@liondog.tnic>
+	<50D6E8A4.1030204@ukfsn.org>
+	<20121223113153.GA8918@liondog.tnic>
+	<20121223115133.GA229@x4>
+	<20121223122210.GA4460@liondog.tnic>
+	<20121223133102.GA8153@liondog.tnic>
+	<CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com>
+	<50E3907C.4040106@iki.fi>
+	<20130102120248.GC6181@x1.alien8.de>
+	<CAH3drwYSrfsbKg-BYpMF3Nkxrw1toK=EmcvJfKGzdbT_BK-1HQ@mail.gmail.com>
+	<50E4755E.7030209@iki.fi>
+Date: Wed, 2 Jan 2013 17:31:23 -0500
+Message-ID: <CAH3drwZsNL6kwufTPGR8h-U9gfrsoYj_+C+8Ei1Ab-PPXrSuTQ@mail.gmail.com>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Antti Palosaari <crope@iki.fi>
+Cc: Borislav Petkov <bp@alien8.de>, Shuah Khan <shuahkhan@gmail.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Andy Furniss <andyqos@ukfsn.org>, Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Google only shows hits pointing to an ext4 patch that didn't go in 3.7
-proper.
+Please affected people can you test if patch :
+http://people.freedesktop.org/~glisse/0003-drm-radeon-fix-dma-copy-on-r6xx-r7xx-evergen-ni-si-g.patch
 
-http://marc.merlins.org/tmp/crash.jpg
+Fix the issue, you need to make sure you don't have the patch that
+disable dma on r6xx ie that line 977-978 & 1061-1062  in radeon_asic.c
+is :
+ .copy = &r600_copy_dma,
+ .copy_ring_index = R600_RING_TYPE_DMA_INDEX,
 
-My call trace doesn't look copmlete, but shows "fatal exception in interrupt" and:
-timerqueue_del
-__remove_hrtimer
-__run_htrimer
-hrtimer_interruypt
-smp_apic_timer_interrupt
-<???>
-paravirt_read_tpe
-intel_idle
-intel_idle
-cpuidle_enter
-
-I had pretty repeated crashes when plugging power back into my running
-laptop, but the display just freezes and I can't get a dump.
-
-For the crash here, I did: suspend to RAM, plug power back in, wake up.
-Laptop crashed about 3 seconds after wakeup.
-
-I'm on vacation with no hardware to get a proper crash dump or even
-serial console, but I have a bad screenshot.
-
-Boy do I wish this could be saved in some kind of NVRAM instead like on
-android.
-
-
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/
+Cheers,
+Jerome
