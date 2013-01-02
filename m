@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab3ABUbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 15:31:31 -0500
-Received: from mail-ia0-f174.google.com ([209.85.210.174]:38076 "EHLO
-	mail-ia0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751867Ab3ABUb2 (ORCPT
+	id S1752753Ab3ABUdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 15:33:15 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:28915 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488Ab3ABUdN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 15:31:28 -0500
+	Wed, 2 Jan 2013 15:33:13 -0500
+Message-ID: <1357158788.3652.45.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH v2] lib: cpu_rmap: avoid flushing all workqueues
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: David Decotigny <decot@googlers.com>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 2 Jan 2013 20:33:08 +0000
+In-Reply-To: <1356729284.21409.889.camel@edumazet-glaptop>
+References: <cover.1356721114.git.decot@googlers.com>
+	 <d1d3f42dff1837cd43e67f954c51eb9d1f91b4ba.1356721114.git.decot@googlers.com>
+	 <1356729284.21409.889.camel@edumazet-glaptop>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-X-Originating-IP: [95.200.223.160]
-In-Reply-To: <1356921314-12595-2-git-send-email-tobetter@gmail.com>
-References: <1356921314-12595-1-git-send-email-tobetter@gmail.com>
-	<1356921314-12595-2-git-send-email-tobetter@gmail.com>
-Date: Wed, 2 Jan 2013 12:31:27 -0800
-Message-ID: <CAOesGMgoyT2xTwgPBw1CASO-6iakpRLxEh1aad-LL7SxJ1+5Vg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] ODROID-X: dts: Add board dts file for ODROID-X
-From: Olof Johansson <olof@lixom.net>
-To: Dongjin Kim <tobetter@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Jason Cooper <jason@lakedaemon.net>,
-        Shawn Guo <shawn.guo@linaro.org>, Andrew Lunn <andrew@lunn.ch>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19504.001
+X-TM-AS-Result: No--21.548700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 30, 2012 at 6:35 PM, Dongjin Kim <tobetter@gmail.com> wrote:
-> Add initial dtb file for Hardkernel's ODROID-X board based on EXYNOS4412 SoC.
->
-> Signed-off-by: Dongjin Kim <tobetter@gmail.com>
+On Fri, 2012-12-28 at 13:14 -0800, Eric Dumazet wrote:
+[...]
+> > +/**
+> > + * reclaim_cpu_rmap - internal reclaiming helper called from kref_put
+> > + * @ref: kref to struct cpu_rmap
+> > + */
+> > +static void reclaim_cpu_rmap(struct kref *ref)
+> 
+> Could be named cpu_rmap_free()
+> 
+> (and alloc_cpu_rmap() should be renamed as cpu_rmap_alloc()
+[...]
 
-Patch 1-4:
+There are many other APIs that include alloc_foo() and free_foo().  I'm
+not aware of any convention that this should be avoided in new APIs (not
+that this is new any more).
 
-Acked-by: Olof Johansson <olof@lixom.net>
+Ben.
 
-... but I think it might make sense to just add the file as one commit
-instead of splitting it across 4 as this series does.
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-
--Olof
