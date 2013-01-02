@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab3ABGI2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 01:08:28 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:46112 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab3ABGI0 (ORCPT
+	id S1752439Ab3ABGaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 01:30:02 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:44413 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751635Ab3ABG36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 01:08:26 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: [PATCH] s5p-fimc: Fix typo of URL pointing to Media Controller API's
-Date: Wed,  2 Jan 2013 11:38:15 +0530
-Message-Id: <1357106895-4360-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 2 Jan 2013 01:29:58 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKohpomfEHGrCdbZ-EakRN4=qF8epd5seX5TWRcErQj9BEFpNA@mail.gmail.com>
+References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org>
+	<4137114.myBUIQvsg3@vostro.rjw.lan>
+	<CAKohpomfEHGrCdbZ-EakRN4=qF8epd5seX5TWRcErQj9BEFpNA@mail.gmail.com>
+Date: Wed, 2 Jan 2013 11:59:57 +0530
+Message-ID: <CAKohpomxCSVRXkvde-P6T3Ks=7Z8PX1NSjzFfvKsPYQXTScwRw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cpufreq: Manage only online cpus
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linaro-dev@lists.linaro.org, nicolas.pitre@linaro.org,
+        amit.kucheria@linaro.org, mathieu.poirier@linaro.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        pdsw-power-team@arm.com, linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
----
- Documentation/video4linux/fimc.txt |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 16 December 2012 19:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> On 16 December 2012 18:34, Rafael J. Wysocki <rjw@sisk.pl> wrote:
 
-diff --git a/Documentation/video4linux/fimc.txt b/Documentation/video4linux/fimc.txt
-index fd02d9a..25f4d34 100644
---- a/Documentation/video4linux/fimc.txt
-+++ b/Documentation/video4linux/fimc.txt
-@@ -58,7 +58,7 @@ Not currently supported:
- 4.1. Media device interface
- 
- The driver supports Media Controller API as defined at
--http://http://linuxtv.org/downloads/v4l-dvb-apis/media_common.html
-+http://linuxtv.org/downloads/v4l-dvb-apis/media_common.html
- The media device driver name is "SAMSUNG S5P FIMC".
- 
- The purpose of this interface is to allow changing assignment of FIMC instances
--- 
-1.7.4.1
+>> Well, this series makes sense to me, but I'd like to hear what the other people
+>> think.
+>
+> That sounds great :)
+>
+> Some more information for others about how i reached to these issues
+> is present here:
+>
+> https://lkml.org/lkml/2012/12/10/44
 
+Hmm.. I don't know, if we are going to get any feedback from others :(
+
+BTW, i consider them as fixes and so would make sense to get them in next rc.
+What do you think?
+
+--
+viresh
