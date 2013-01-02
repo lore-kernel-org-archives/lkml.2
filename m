@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab3ABP1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:27:37 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:29803 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752725Ab3ABP1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:27:35 -0500
-X-IronPort-AV: E=Sophos;i="4.84,396,1355097600"; 
-   d="scan'208";a="416044"
-Message-ID: <1357140452.5668.69.camel@zakaz.uk.xensource.com>
-Subject: Re: [PATCH v3 00/11] xen: Initial kexec/kdump implementation
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "Daniel Kiper" <daniel.kiper@oracle.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "jbeulich@suse.com" <jbeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Date: Wed, 2 Jan 2013 15:27:32 +0000
-In-Reply-To: <50DC58C4.3000307@citrix.com>
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
-	 <50DBC856.6030208@zytor.com>
-	 <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
-	 <50DC58C4.3000307@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	id S1752863Ab3ABP1v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:27:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30417 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752778Ab3ABP1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 10:27:36 -0500
+Date: Wed, 2 Jan 2013 10:27:27 -0500
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: schedule_timeout: wrong timeout value fffffffffffffff0
+Message-ID: <20130102152727.GA25940@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Ingo Molnar <mingo@redhat.com>,
+	Peter Zijlstra <peterz@infradead.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-27 at 14:18 +0000, Andrew Cooper wrote:
-> Many cloud customers and service providers want the ability for a VM
-> administrator to be able to load a kdump/kexec kernel within a
-> domain[1].  This allows the VM administrator to take more proactive
-> steps to isolate the cause of a crash, the state of which is most likely
-> discarded while tearing down the domain.  The result being that as far
-> as Xen is concerned, the domain is still alive, while the kdump
-> kernel/environment can work its usual magic.  I am not aware of any
-> feature like this existing in the past.
+This happened to a box I left running fuzz tests over the holidays.
 
-I have a feeling that some versions of the classic-Xen port supported
-domU kexec as well. Certainly there was some work on that back in 2005,
-although I can't see much evidence that that attempt ever went anywhere
-so maybe I'm imagining things.
 
-It's possible that I'm confusing domU kexec support with support for
-domU kexec in some dom0 kernels. That was/is used to support "kexec"
-from a PV bootloader into the real kernel (which looks to the host a lot
-like a domU kexec would).
-
-Ian.
+schedule_timeout: wrong timeout value fffffffffffffff0
+Pid: 6606, comm: trinity-child1 Not tainted 3.8.0-rc1+ #43
+Call Trace:
+ [<ffffffff81698415>] schedule_timeout+0x305/0x340
+ [<ffffffff8169ae82>] ? preempt_schedule+0x42/0x60
+ [<ffffffff8169cb65>] ? _raw_spin_unlock_irqrestore+0x75/0x80
+ [<ffffffff810dc461>] audit_log_start+0x311/0x470
+ [<ffffffff8106c62c>] ? __rcu_read_unlock+0x5c/0xa0
+ [<ffffffff81086120>] ? try_to_wake_up+0x320/0x320
+ [<ffffffff810e0d0b>] audit_log_exit+0x4b/0xfb0
+ [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
+ [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
+ [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
+ [<ffffffff810b2ecb>] ? lock_release_holdtime.part.24+0xcb/0x130
+ [<ffffffff81075f93>] ? up_write+0x23/0x40
+ [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
+ [<ffffffff816a4afc>] ? sysret_signal+0x5/0x47
+ [<ffffffff810e3d3f>] __audit_syscall_exit+0x25f/0x2c0
+ [<ffffffff816a4bad>] sysret_audit+0x17/0x21
 
