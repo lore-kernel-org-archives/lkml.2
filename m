@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3ABU3Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 15:29:24 -0500
-Received: from webmail.solarflare.com ([12.187.104.25]:6692 "EHLO
-	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751509Ab3ABU3W (ORCPT
+	id S1752785Ab3ABU3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 15:29:54 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:59500 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3ABU3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 15:29:22 -0500
-Message-ID: <1357158557.3652.42.camel@bwh-desktop.uk.solarflarecom.com>
-Subject: Re: [PATCH v3] lib: cpu_rmap: avoid flushing all workqueues
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Josh Triplett <josh@joshtriplett.org>
-CC: David Decotigny <decot@googlers.com>, <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Wed, 2 Jan 2013 20:29:17 +0000
-In-Reply-To: <20121229203644.GA31014@leaf>
-References: <cover.1356810877.git.decot@googlers.com>
-	 <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
-	 <20121229203644.GA31014@leaf>
-Organization: Solarflare
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jan 2013 15:29:53 -0500
+Message-ID: <50E498BD.7070104@wwwdotorg.org>
+Date: Wed, 02 Jan 2013 13:29:49 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-Originating-IP: [10.17.20.137]
-X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19504.001
-X-TM-AS-Result: No--17.736600-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+To: Linus Walleij <linus.walleij@stericsson.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Stephen Warren <swarren@nvidia.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2] pinctrl/nomadik: add device tree support
+References: <1355992535-5383-1-git-send-email-linus.walleij@stericsson.com>
+In-Reply-To: <1355992535-5383-1-git-send-email-linus.walleij@stericsson.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-29 at 12:36 -0800, Josh Triplett wrote:
-> On Sat, Dec 29, 2012 at 11:57:09AM -0800, David Decotigny wrote:
-> > In some cases, free_irq_cpu_rmap() is called while holding a lock
-> > (eg. rtnl). This can lead to deadlocks, because it invokes
-> > flush_scheduled_work() which ends up waiting for whole system
-> > workqueue to flush, but some pending works might try to acquire the
-> > lock we are already holding.
-> > 
-> > This commit uses reference-counting to replace
-> > irq_run_affinity_notifiers(). It also removes
-> > irq_run_affinity_notifiers() altogether.
-> > 
-> > Signed-off-by: David Decotigny <decot@googlers.com>
+On 12/20/2012 01:35 AM, Linus Walleij wrote:
+> From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
 > 
-> You might consider adding a cpu_rmap_get to parallel cpu_rmap_put.
-> 
-> Also, why keep free_cpu_rmap around at this point?  As far as I can
-> tell, it has no callers.
-> 
-> Otherwise, this looks good to me.
+> This implements pin multiplexing and pin configuration for
+> the Nomadik pin controller using the device tree.
 
-I intended to make cpu_rmap usable independently of IRQ notification,
-although as you note there have been no other users so far.
-free_cpu_rmap() is now effectively an alias for cpu_rmap_put(), and the
-latter *does* have a caller.  So perhaps cpu_rmap_put() should be extern
-and the alias dropped.
+> diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
 
-Ben.
+> +Required properties:
+> +- compatible: "stericsson,nmk_pinctrl"
 
--- 
-Ben Hutchings, Staff Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+- rather than _ is more typically used, but not a big deal.
 
+> +mux function to select on those pin(s)/group(s), and various pin configuration
+> +parameters, such as inputn output, pull up, pull down...
+
+s/n/,/ ?
+
+> +Example board file extract:
+> +
+> +	pinctrl {
+> +		compatible = "stericsson,nmk_pinctrl";
+> +		reg = <0x80157000 0x2000>;
+> +
+> +		pinctrl-names = "default";
+> +		pinctrl-0 = <&uart0_default_mode>;
+...
+> +	uart@80120000 {
+> +		compatible = "arm,pl011", "arm,primecell";
+> +		reg = <0x80120000 0x1000>;
+> +		interrupts = <0 11 0x4>;
+> +
+> +		pinctrl-names = "default","sleep";
+> +		pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
+> +		pinctrl-1 = <&uart0_sleep_mode>;
+> +	};
+
+Both pinctrl and uart@80120000 are going to try and claim/use the
+content of &uart0_default_mode in that example, which I don't think will
+work.
+
+> +
+
+There's a blank line at the end of the file.
+
+> diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+
+> +int nmk_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+
+> +	unsigned reserve = 1;
+...> +	ret = of_property_read_string(np, "ste,function", &function);
+> +	if (ret < 0)
+> +		reserve = 0;
+
+It might be a little simpler to say:
+
+reserve = 0;
+...
+	ret = of_property_read_string(np, "ste,function", &function);
+	if (ret >= 0)
+		reserve = 1;
+
+but not a big deal I suppose.
+
+Aside from that,
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
