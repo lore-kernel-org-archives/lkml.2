@@ -1,41 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025Ab3ABSVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 13:21:17 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46991 "EHLO
+	id S1752931Ab3ABS1X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 13:27:23 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34936 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab3ABSVQ (ORCPT
+	with ESMTP id S1752843Ab3ABS1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 13:21:16 -0500
-Message-ID: <50E47A97.2000401@wwwdotorg.org>
-Date: Wed, 02 Jan 2013 11:21:11 -0700
+	Wed, 2 Jan 2013 13:27:21 -0500
 From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Josh Cartwright <josh.cartwright@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Stephen Warren <swarren@nvidia.com>
-Subject: Re: [PATCH V4 3/3] ARM: tegra: move timer.c to drivers/clocksource/
-References: <1353453142-4973-1-git-send-email-swarren@wwwdotorg.org> <1353453142-4973-3-git-send-email-swarren@wwwdotorg.org>
-In-Reply-To: <1353453142-4973-3-git-send-email-swarren@wwwdotorg.org>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Chris Zankel <chris@zankel.net>, Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH REPOST] xtensa: use new common dtc rule
+Date: Wed,  2 Jan 2013 11:27:14 -0700
+Message-Id: <1357151234-5681-1-git-send-email-swarren@wwwdotorg.org>
+X-Mailer: git-send-email 1.7.10.4
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11/20/2012 04:12 PM, Stephen Warren wrote:
-> From: Stephen Warren <swarren@nvidia.com>
-> 
-> Move arch/arm/mach-tegra/timer.c to drivers/clocksource/tegra20_timer.c
-> so that the code is co-located with other clocksource drivers, and to
-> reduce the size of the mach-tegra directory.
+From: Stephen Warren <swarren@nvidia.com>
 
-I have applied this to Tegra's for-3.9/cleanup branch.
+The current rules have the .dtb files build in a different directory
+from the .dts files. This patch changes xtensa to use the generic dtb
+rule which builds .dtb files in the same directory as the source .dts.
+
+This requires moving parts of arch/xtensa/boot/Makefile into newly
+created arch/xtensa/boot/dts/Makefile, and updating arch/xtensa/Makefile
+to call the new Makefile.
+
+Cc: Chris Zankel <chris@zankel.net>
+Cc: Max Filippov <jcmvbkbc@gmail.com>
+Cc: linux-xtensa@linux-xtensa.org
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+---
+This patch applies recent dtc-rule-related changes to the xtensa arch.
+They couldn't be applied along with the similar changes for other archs
+due to dependencies on other xtensa changes. This should apply OK now to
+Linus's tree, or for 3.9.
+
+Note: I have not tested this recently.
+
+ arch/xtensa/Makefile          |    4 ++--
+ arch/xtensa/boot/Makefile     |   12 ------------
+ arch/xtensa/boot/dts/Makefile |   15 +++++++++++++++
+ 3 files changed, 17 insertions(+), 14 deletions(-)
+ create mode 100644 arch/xtensa/boot/dts/Makefile
+
+diff --git a/arch/xtensa/Makefile b/arch/xtensa/Makefile
+index 0aa7270..48c1a5b 100644
+--- a/arch/xtensa/Makefile
++++ b/arch/xtensa/Makefile
+@@ -88,7 +88,7 @@ core-y		+= $(buildvar) $(buildplf)
+ libs-y		+= arch/xtensa/lib/ $(LIBGCC)
+ 
+ ifneq ($(CONFIG_BUILTIN_DTB),"")
+-core-$(CONFIG_OF) += arch/xtensa/boot/
++core-$(CONFIG_OF) += arch/xtensa/boot/dts/
+ endif
+ 
+ boot		:= arch/xtensa/boot
+@@ -101,7 +101,7 @@ zImage: vmlinux
+ 	$(Q)$(MAKE) $(build)=$(boot) $@
+ 
+ %.dtb:
+-	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
++	$(Q)$(MAKE) $(build)=$(boot)/dts $(boot)/dts/$@
+ 
+ define archhelp
+   @echo '* zImage      - Compressed kernel image (arch/xtensa/boot/images/zImage.*)'
+diff --git a/arch/xtensa/boot/Makefile b/arch/xtensa/boot/Makefile
+index 818647e..64ffc4b 100644
+--- a/arch/xtensa/boot/Makefile
++++ b/arch/xtensa/boot/Makefile
+@@ -25,18 +25,6 @@ bootdir-$(CONFIG_XTENSA_PLATFORM_ISS)	 += boot-elf
+ bootdir-$(CONFIG_XTENSA_PLATFORM_XT2000) += boot-redboot boot-elf boot-uboot
+ bootdir-$(CONFIG_XTENSA_PLATFORM_XTFPGA) += boot-redboot boot-elf boot-uboot
+ 
+-
+-BUILTIN_DTB := $(patsubst "%",%,$(CONFIG_BUILTIN_DTB)).dtb.o
+-ifneq ($(CONFIG_BUILTIN_DTB),"")
+-obj-$(CONFIG_OF) += $(BUILTIN_DTB)
+-endif
+-
+-# Rule to build device tree blobs
+-$(obj)/%.dtb: $(src)/dts/%.dts FORCE
+-	$(call if_changed_dep,dtc)
+-
+-clean-files := *.dtb.S
+-
+ zImage Image: $(bootdir-y)
+ 
+ $(bootdir-y): $(addprefix $(obj)/,$(subdir-y)) \
+diff --git a/arch/xtensa/boot/dts/Makefile b/arch/xtensa/boot/dts/Makefile
+new file mode 100644
+index 0000000..5f711bb
+--- /dev/null
++++ b/arch/xtensa/boot/dts/Makefile
+@@ -0,0 +1,15 @@
++#
++# arch/xtensa/boot/dts/Makefile
++#
++# This file is subject to the terms and conditions of the GNU General Public
++# License.  See the file "COPYING" in the main directory of this archive
++# for more details.
++#
++#
++
++BUILTIN_DTB := $(patsubst "%",%,$(CONFIG_BUILTIN_DTB)).dtb.o
++ifneq ($(CONFIG_BUILTIN_DTB),"")
++obj-$(CONFIG_OF) += $(BUILTIN_DTB)
++endif
++
++clean-files := *.dtb.S
+-- 
+1.7.10.4
+
