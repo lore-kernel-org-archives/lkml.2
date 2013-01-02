@@ -1,65 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3ABVQf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 16:16:35 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:42774 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752702Ab3ABVQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 16:16:33 -0500
-Date: Wed, 2 Jan 2013 21:16:32 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] epoll: prevent missed events on EPOLL_CTL_MOD
-Message-ID: <20130102211632.GB17806@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
- <1357065750.21409.12527.camel@edumazet-glaptop>
- <20130101210033.GA13255@dcvr.yhbt.net>
- <20130101211728.GA13380@dcvr.yhbt.net>
- <CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
- <20130101235605.GA17168@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130101235605.GA17168@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752826Ab3ABVVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 16:21:18 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62630 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751867Ab3ABVVQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 16:21:16 -0500
+From: Matt Klein <mklein@twitter.com>
+To: linux-kernel@vger.kernel.org
+Cc: jason.wessel@windriver.com, Matt Klein <mklein@twitter.com>
+Subject: [PATCH] kgdb,kdb: Setup basic kdb state before invoking commands via kgdb
+Date: Wed,  2 Jan 2013 13:20:49 -0800
+Message-Id: <1357161649-42894-1-git-send-email-mklein@twitter.com>
+X-Mailer: git-send-email 1.8.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Wong <normalperson@yhbt.net> wrote:
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> > Please document the barrier that this mb() pairs with, and then give
-> > an explanation for the fix in the commit message, and I'll happily
-> > take it. Even if it's just duplicating the comments above the
-> > wq_has_sleeper() function, except modified for the ep_modify() case.
-> 
-> Hopefully my explanation is correct and makes sense below,
-> I think both effects of the barrier are needed
+Although invasive kdb commands are not supported via kgdb, some useful
+non-invasive commands like bt* require basic kdb state to be setup before
+calling into the kdb code. Factor out some of this code and call it before
+and after executing kdb commands via kgdb.
 
-I noticed Linus accepted this already.  This should probably go to
-stable, right?
+Signed-off-by: Matt Klein <mklein@twitter.com>
+---
+ kernel/debug/debug_core.h       |  2 ++
+ kernel/debug/gdbstub.c          |  7 +++++++
+ kernel/debug/kdb/kdb_debugger.c | 24 ++++++++++++++++++------
+ 3 files changed, 27 insertions(+), 6 deletions(-)
 
->From ancient git history[1], it seems this bug exists for all
-2.6 kernels:
+diff --git a/kernel/debug/debug_core.h b/kernel/debug/debug_core.h
+index 3494c28..2235967 100644
+--- a/kernel/debug/debug_core.h
++++ b/kernel/debug/debug_core.h
+@@ -72,6 +72,8 @@ extern int dbg_kdb_mode;
+ #ifdef CONFIG_KGDB_KDB
+ extern int kdb_stub(struct kgdb_state *ks);
+ extern int kdb_parse(const char *cmdstr);
++extern int kdb_common_init_state(struct kgdb_state *ks);
++extern int kdb_common_deinit_state(void);
+ #else /* ! CONFIG_KGDB_KDB */
+ static inline int kdb_stub(struct kgdb_state *ks)
+ {
+diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
+index ce615e0..3c96043 100644
+--- a/kernel/debug/gdbstub.c
++++ b/kernel/debug/gdbstub.c
+@@ -782,7 +782,14 @@ static void gdb_cmd_query(struct kgdb_state *ks)
+ 			len = len / 2;
+ 			remcom_out_buffer[len++] = 0;
+ 
++			/*
++			 * Although invasive kdb commands are not supported via kgdb,
++			 * some non-invasive commands need basic setup (e.g., bt*),
++			 * so do that before calling into the kdb code. */
++			kdb_common_init_state(ks);
+ 			kdb_parse(remcom_out_buffer);
++			kdb_common_deinit_state();
++
+ 			strcpy(remcom_out_buffer, "OK");
+ 		}
+ 		break;
+diff --git a/kernel/debug/kdb/kdb_debugger.c b/kernel/debug/kdb/kdb_debugger.c
+index be7b33b..9ac1e7f 100644
+--- a/kernel/debug/kdb/kdb_debugger.c
++++ b/kernel/debug/kdb/kdb_debugger.c
+@@ -34,6 +34,22 @@ EXPORT_SYMBOL_GPL(kdb_poll_idx);
+ 
+ static struct kgdb_state *kdb_ks;
+ 
++int kdb_common_init_state(struct kgdb_state *ks)
++{
++	kdb_initial_cpu = atomic_read(&kgdb_active);
++	kdb_current_task = kgdb_info[ks->cpu].task;
++	kdb_current_regs = kgdb_info[ks->cpu].debuggerinfo;
++	return 0;
++}
++
++int kdb_common_deinit_state()
++{
++	kdb_initial_cpu = -1;
++	kdb_current_task = NULL;
++	kdb_current_regs = NULL;
++	return 0;
++}
++
+ int kdb_stub(struct kgdb_state *ks)
+ {
+ 	int error = 0;
+@@ -94,9 +110,7 @@ int kdb_stub(struct kgdb_state *ks)
+ 	}
+ 	/* Set initial kdb state variables */
+ 	KDB_STATE_CLEAR(KGDB_TRANS);
+-	kdb_initial_cpu = atomic_read(&kgdb_active);
+-	kdb_current_task = kgdb_info[ks->cpu].task;
+-	kdb_current_regs = kgdb_info[ks->cpu].debuggerinfo;
++	kdb_common_init_state(ks);
+ 	/* Remove any breakpoints as needed by kdb and clear single step */
+ 	kdb_bp_remove();
+ 	KDB_STATE_CLEAR(DOING_SS);
+@@ -125,9 +139,7 @@ int kdb_stub(struct kgdb_state *ks)
+ 	 * Upon exit from the kdb main loop setup break points and restart
+ 	 * the system based on the requested continue state
+ 	 */
+-	kdb_initial_cpu = -1;
+-	kdb_current_task = NULL;
+-	kdb_current_regs = NULL;
++	kdb_common_deinit_state();
+ 	KDB_STATE_CLEAR(PAGER);
+ 	kdbnearsym_cleanup();
+ 	if (error == KDB_CMD_KGDB) {
+-- 
+1.8.1
 
-	commit 424980a87e226d63af46579b2af16ec1b8d17e52
-	Author: Davide Libenzi <davidel@xmailserver.org>
-	Date:   Thu Nov 14 16:17:23 2002 -0800
-
-	    [PATCH] epoll bits 0.46 ...
-
-[1] - git://git.kernel.org/pub/scm/linux/kernel/git/tglx/history.git
