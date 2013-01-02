@@ -1,38 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab3ABPcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:32:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15704 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755Ab3ABPcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:32:04 -0500
-Message-ID: <50E452E2.7010601@redhat.com>
-Date: Wed, 02 Jan 2013 10:31:46 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752856Ab3ABPep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:34:45 -0500
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:57135 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755Ab3ABPem (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 10:34:42 -0500
+Date: Wed, 2 Jan 2013 10:34:39 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Li Zefan <lizefan@huawei.com>, paul@paulmenage.org, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/13] cpuset: cleanup cpuset[_can]_attach()
+Message-ID: <20130102153439.GA11220@mtj.dyndns.org>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+ <1354138460-19286-7-git-send-email-tj@kernel.org>
+ <50DACF5B.6050705@huawei.com>
+ <20121226120415.GA18193@mtj.dyndns.org>
+ <87zk0s5h7c.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, lwoodman@redhat.com,
-        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>
-Subject: Re: [PATCH 1/2] x86,smp: simplify __ticket_spin_lock
-References: <20121221184940.103c31ad@annuminas.surriel.com> <20130102000653.GA13678@google.com> <20130102000935.GB13678@google.com>
-In-Reply-To: <20130102000935.GB13678@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zk0s5h7c.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2013 07:09 PM, Michel Lespinasse wrote:
-> Just cosmetic - avoid an unnecessary goto construct
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+Hello, Rusty.
 
-I have had this in my code base since you first suggested
-it on December 21st. Thank you for sending in more improvements,
-though :)
+On Wed, Jan 02, 2013 at 03:12:15PM +1030, Rusty Russell wrote:
+> > Hmmm?  cpumask_t can't be used for stack but other than that I don't
+> > see how it would be deprecated completely.  Rusty, can you please
+> > chime in?
+> 
+> The long-never-quite-complete-plan was for struct cpumask to be
+> undefined when CONFIG_CPUMASK_OFFSTACK=y.  That means noone can declare
+> them, or pass them on the stack, since they'll get a compiler error.
+> 
+> Now, there are some cases where it really is a reason to use a static
+> bitmap, and 1/2 a K of wasted space be damned.  There's a
+> deliberately-ugly way of doing that: declare a bitmap and use
+> to_cpumask().  Of course, if we ever really want to remove NR_CPUS and
+> make it completely generic, we have to kill all these too, but noone is
+> serious about that.
+
+So, I guess this currently is caught in a place which isn't here or
+there.  I'm pretty skeptical whether it makes sense to bother about
+static usages tho.  Can I keep them for static ones?
+
+Thanks.
 
 -- 
-All rights reversed
+tejun
