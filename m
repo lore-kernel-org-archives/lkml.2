@@ -1,99 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752854Ab3ABVNT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 16:13:19 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:37291 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752702Ab3ABVNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 16:13:18 -0500
-Date: Wed, 2 Jan 2013 15:13:15 -0600
-From: Russ Anderson <rja@sgi.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: rafael.j.wysocki@intel.com, linux-pm@vger.kernel.org,
-        pdeschrijver@nvidia.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, rja@americas.sgi.com
-Subject: Re: [PATCH] cpuidle - fix lock contention in the idle path
-Message-ID: <20130102211314.GA29447@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
-Mime-Version: 1.0
+	id S1752838Ab3ABVQf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 16:16:35 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:42774 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752702Ab3ABVQd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 16:16:33 -0500
+Date: Wed, 2 Jan 2013 21:16:32 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH] epoll: prevent missed events on EPOLL_CTL_MOD
+Message-ID: <20130102211632.GB17806@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
+ <1357065750.21409.12527.camel@edumazet-glaptop>
+ <20130101210033.GA13255@dcvr.yhbt.net>
+ <20130101211728.GA13380@dcvr.yhbt.net>
+ <CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
+ <20130101235605.GA17168@dcvr.yhbt.net>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20130101235605.GA17168@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 26, 2012 at 11:01:48AM +0100, Daniel Lezcano wrote:
-> The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
-> a lock in the cpuidle_get_cpu_driver function. This function
-> is used in the idle_call function.
+Eric Wong <normalperson@yhbt.net> wrote:
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> > Please document the barrier that this mb() pairs with, and then give
+> > an explanation for the fix in the commit message, and I'll happily
+> > take it. Even if it's just duplicating the comments above the
+> > wq_has_sleeper() function, except modified for the ep_modify() case.
 > 
-> The problem is the contention with a large number of cpus because
-> they try to access the idle routine at the same time.
-> 
-> The lock could be safely removed because of how is used the
-> cpuidle api. The cpuidle_register_driver is called first but
-> until the cpuidle_register_device is not called we don't
-> enter in the cpuidle idle call function because the device
-> is not enabled.
-> 
-> The cpuidle_unregister_driver function, leading the a NULL driver,
-> is not called before the cpuidle_unregister_device.
-> 
-> This is how is used the cpuidle api from the different drivers.
-> 
-> However, a cleanup around the lock and a proper refcounting
-> mechanism should be used to ensure the consistency in the api,
-> like cpuidle_unregister_driver should failed if its refcounting
-> is not 0.
-> 
-> These modifications will need some code reorganization and rewrite
-> which does not fit with a fix.
+> Hopefully my explanation is correct and makes sense below,
+> I think both effects of the barrier are needed
 
-I agree.
+I noticed Linus accepted this already.  This should probably go to
+stable, right?
 
-> The following patch is a hot fix by returning to the initial behavior
-> by removing the lock when getting the driver.
+>From ancient git history[1], it seems this bug exists for all
+2.6 kernels:
 
-The patch fixes the problem.  Verified on a system with 1024 cpus.
-Thanks.
+	commit 424980a87e226d63af46579b2af16ec1b8d17e52
+	Author: Davide Libenzi <davidel@xmailserver.org>
+	Date:   Thu Nov 14 16:17:23 2002 -0800
 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+	    [PATCH] epoll bits 0.46 ...
 
-Reported-by: Russ Anderson <rja@sgi.com>
-Acked-by: Russ Anderson <rja@sgi.com>
-
-> ---
->  drivers/cpuidle/driver.c |    8 +-------
->  1 file changed, 1 insertion(+), 7 deletions(-)
-> 
-> diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
-> index 3af841f..c2b281a 100644
-> --- a/drivers/cpuidle/driver.c
-> +++ b/drivers/cpuidle/driver.c
-> @@ -235,16 +235,10 @@ EXPORT_SYMBOL_GPL(cpuidle_get_driver);
->   */
->  struct cpuidle_driver *cpuidle_get_cpu_driver(struct cpuidle_device *dev)
->  {
-> -	struct cpuidle_driver *drv;
-> -
->  	if (!dev)
->  		return NULL;
->  
-> -	spin_lock(&cpuidle_driver_lock);
-> -	drv = __cpuidle_get_cpu_driver(dev->cpu);
-> -	spin_unlock(&cpuidle_driver_lock);
-> -
-> -	return drv;
-> +	return __cpuidle_get_cpu_driver(dev->cpu);
->  }
->  EXPORT_SYMBOL_GPL(cpuidle_get_cpu_driver);
->  
-> -- 
-> 1.7.9.5
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+[1] - git://git.kernel.org/pub/scm/linux/kernel/git/tglx/history.git
