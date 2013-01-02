@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878Ab3ABPBN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:01:13 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56536 "EHLO bear.ext.ti.com"
+	id S1753006Ab3ABPBb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:01:31 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56790 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752736Ab3ABPBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:01:08 -0500
+	id S1752889Ab3ABPBQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 10:01:16 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <keshava_mgowda@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <rogerq@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 02/22] mfd: omap-usb-tll: Fix channel count detection
-Date: Wed, 2 Jan 2013 17:00:22 +0200
-Message-ID: <1357138842-28964-3-git-send-email-rogerq@ti.com>
+Subject: [PATCH v5 07/22] mfd: omap-usb-tll: Fix error message
+Date: Wed, 2 Jan 2013 17:00:27 +0200
+Message-ID: <1357138842-28964-8-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1357138842-28964-1-git-send-email-rogerq@ti.com>
 References: <1357138842-28964-1-git-send-email-rogerq@ti.com>
@@ -24,78 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix channel count detecion for REV2. Also, don't give up
-if we don't recognize the IP Revision. We assume the default
-number of channels (i.e. 3) for unrecognized IPs.
+omap_enable/disable_tll() can fail if TLL device is not
+initialized. It could be due to multiple reasons and not only
+due to missing platform data.
+
+Also make local variables static and use 'struct device *'
+instead of 'struct platform_device *' for global reference.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-tll.c |   20 +++++++++++---------
- 1 files changed, 11 insertions(+), 9 deletions(-)
+ drivers/mfd/omap-usb-tll.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-tll.c b/drivers/mfd/omap-usb-tll.c
-index a10dcd1..5d5595b 100644
+index f319ac9..5f61352 100644
 --- a/drivers/mfd/omap-usb-tll.c
 +++ b/drivers/mfd/omap-usb-tll.c
-@@ -98,6 +98,7 @@
- struct usbtll_omap {
- 	struct clk				*usbtll_p1_fck;
- 	struct clk				*usbtll_p2_fck;
-+	int					nch;	/* num. of channels */
- 	struct usbtll_omap_platform_data	*pdata;
- 	/* secure the register updates */
- 	spinlock_t				lock;
-@@ -210,7 +211,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	unsigned				reg;
- 	unsigned long				flags;
- 	int					ret = 0;
--	int					i, ver, count;
-+	int					i, ver;
+@@ -109,8 +109,8 @@ struct usbtll_omap {
  
- 	dev_dbg(dev, "starting TI HSUSB TLL Controller\n");
+ /*-------------------------------------------------------------------------*/
  
-@@ -262,16 +263,18 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 	ver =  usbtll_read(base, OMAP_USBTLL_REVISION);
- 	switch (ver) {
- 	case OMAP_USBTLL_REV1:
--	case OMAP_USBTLL_REV2:
--		count = OMAP_TLL_CHANNEL_COUNT;
-+		tll->nch = OMAP_TLL_CHANNEL_COUNT;
- 		break;
-+	case OMAP_USBTLL_REV2:
- 	case OMAP_USBTLL_REV3:
--		count = OMAP_REV2_TLL_CHANNEL_COUNT;
-+		tll->nch = OMAP_REV2_TLL_CHANNEL_COUNT;
- 		break;
- 	default:
--		dev_err(dev, "TLL version failed\n");
--		ret = -ENODEV;
--		goto err_ioremap;
-+		tll->nch = OMAP_TLL_CHANNEL_COUNT;
-+		dev_dbg(dev,
-+		 "USB TLL Rev : 0x%x not recognized, assuming %d channels\n",
-+			ver, tll->nch);
-+		break;
- 	}
+-const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
+-struct platform_device	*tll_pdev;
++static const char usbtll_driver_name[] = USBTLL_DRIVER_NAME;
++static struct device	*tll_dev;
  
- 	if (is_ehci_tll_mode(pdata->port_mode[0]) ||
-@@ -291,7 +294,7 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		usbtll_write(base, OMAP_TLL_SHARED_CONF, reg);
+ /*-------------------------------------------------------------------------*/
  
- 		/* Enable channels now */
--		for (i = 0; i < count; i++) {
-+		for (i = 0; i < tll->nch; i++) {
- 			reg = usbtll_read(base,	OMAP_TLL_CHANNEL_CONF(i));
+@@ -334,7 +334,8 @@ static int usbtll_omap_probe(struct platform_device *pdev)
  
- 			if (is_ohci_port(pdata->port_mode[i])) {
-@@ -319,7 +322,6 @@ static int usbtll_omap_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--err_ioremap:
  	spin_unlock_irqrestore(&tll->lock, flags);
- 	iounmap(base);
  	pm_runtime_put_sync(dev);
+-	tll_pdev = pdev;
++	/* only after this can omap_tll_enable/disable work */
++	tll_dev = dev;
+ 
+ 	return 0;
+ 
+@@ -356,6 +357,8 @@ static int usbtll_omap_remove(struct platform_device *pdev)
+ 	struct usbtll_omap *tll = platform_get_drvdata(pdev);
+ 	int i;
+ 
++	tll_dev = NULL;
++
+ 	for (i = 0; i < tll->nch; i++)
+ 		clk_put(tll->ch_clk[i]);
+ 
+@@ -435,21 +438,21 @@ static struct platform_driver usbtll_omap_driver = {
+ 
+ int omap_tll_enable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_get_sync(&tll_pdev->dev);
++	return pm_runtime_get_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_enable);
+ 
+ int omap_tll_disable(void)
+ {
+-	if (!tll_pdev) {
+-		pr_err("missing omap usbhs tll platform_data\n");
++	if (!tll_dev) {
++		pr_err("%s: OMAP USB TLL not initialized\n", __func__);
+ 		return  -ENODEV;
+ 	}
+-	return pm_runtime_put_sync(&tll_pdev->dev);
++	return pm_runtime_put_sync(tll_dev);
+ }
+ EXPORT_SYMBOL_GPL(omap_tll_disable);
+ 
 -- 
 1.7.4.1
 
