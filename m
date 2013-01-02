@@ -1,70 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694Ab3ABLOO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 06:14:14 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:44790 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546Ab3ABLON convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 06:14:13 -0500
-Date: Wed, 2 Jan 2013 11:14:05 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "nico@linaro.org" <nico@linaro.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC PATCH 1/5] ARM: remove useless guard in smp.c
-Message-ID: <20130102111405.GA25907@e106331-lin.cambridge.arm.com>
-References: <1355832418-31692-1-git-send-email-mark.rutland@arm.com>
- <1355832418-31692-2-git-send-email-mark.rutland@arm.com>
- <50D43399.7010705@ti.com>
+	id S1752702Ab3ABLPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 06:15:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46399 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab3ABLPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 06:15:19 -0500
+Date: Wed, 2 Jan 2013 12:15:14 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 5/8] memcg: add per cgroup writeback pages accounting
+Message-ID: <20130102111514.GD22160@dhcp22.suse.cz>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+ <1356456409-14701-1-git-send-email-handai.szj@taobao.com>
 MIME-Version: 1.0
-In-Reply-To: <50D43399.7010705@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 02 Jan 2013 11:14:09.0867 (UTC) FILETIME=[4995A1B0:01CDE8DA]
-X-MC-Unique: 113010211141103401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1356456409-14701-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 10:02:01AM +0000, Santosh Shilimkar wrote:
-> On Tuesday 18 December 2012 05:36 PM, Mark Rutland wrote:
-> > Currently we only provide an implementation of smp_timer_broadcast in
-> > smp.c if GENERIC_CLOCKEVENTS_BROADCAST is selected. As
-> > smp_timer_broadcast is only used in smp.c, smp.c depends on SMP, and
-> > GENERIC_CLOCKEVENTS_BROADCAST is selected by SMP, this is unnecessary.
-> >
-> > This patch removes the redundant guard.
-> >
-> > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> > ---
-> CONFIG_GENERIC_CLOCKEVENTS_BROADCAST isn't mandatory to
-> have SMP kernel working so the below select in ARM arch
-> kconfig not seems to entirely accurate. SMP kernel will
-> still boot with !GENERIC_CLOCKEVENTS_BROADCAST.
+On Wed 26-12-12 01:26:48, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
 > 
-> select GENERIC_CLOCKEVENTS_BROADCAST if SMP
-
-Agreed, the selection is not entirely accurate. I'd be happy to see it made
-more fine-grained (i.e. selected by platforms) instead.
-
-If people want that I'm happy to drop this patch.
-
-> The issue comes only for deeper CPU power C-states.
-> Anyway, you patch is correct from the current code point of
-> view.
+> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
+> rule still is:
+>         mem_cgroup_begin_update_page_stat()
+>         modify page WRITEBACK stat
+>         mem_cgroup_update_page_stat()
+>         mem_cgroup_end_update_page_stat()
 > 
-> Regards
-> Santosh
+> There're two writeback interface to modify: test_clear/set_page_writeback.
+> 
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
 
-Thanks,
-Mark.
+Looks good to me
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
+Thanks!
+> ---
+>  include/linux/memcontrol.h |    1 +
+>  mm/memcontrol.c            |    5 +++++
+>  mm/page-writeback.c        |   17 +++++++++++++++++
+>  3 files changed, 23 insertions(+)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 358019e..1d22b81 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -45,6 +45,7 @@ enum mem_cgroup_stat_index {
+>  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
+>  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+> +	MEM_CGROUP_STAT_WRITEBACK,  /* # of pages under writeback */
+>  	MEM_CGROUP_STAT_NSTATS,
+>  };
+>  
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 21df36d..13cd14a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -96,6 +96,7 @@ static const char * const mem_cgroup_stat_names[] = {
+>  	"mapped_file",
+>  	"swap",
+>  	"dirty",
+> +	"writeback",
+>  };
+>  
+>  enum mem_cgroup_events_index {
+> @@ -3676,6 +3677,10 @@ static int mem_cgroup_move_account(struct page *page,
+>  		mem_cgroup_move_account_page_stat(from, to, nr_pages,
+>  			MEM_CGROUP_STAT_FILE_DIRTY);
+>  
+> +	if (PageWriteback(page))
+> +		mem_cgroup_move_account_page_stat(from, to, nr_pages,
+> +			MEM_CGROUP_STAT_WRITEBACK);
+> +
+>  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+>  
+>  	/* caller should have done css_get */
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 526ddd7..ae6498a 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -2002,11 +2002,17 @@ EXPORT_SYMBOL(account_page_dirtied);
+>  
+>  /*
+>   * Helper function for set_page_writeback family.
+> + *
+> + * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
+> + * while modifying struct page state and accounting writeback pages.
+> + * See test_set_page_writeback for example.
+> + *
+>   * NOTE: Unlike account_page_dirtied this does not rely on being atomic
+>   * wrt interrupts.
+>   */
+>  void account_page_writeback(struct page *page)
+>  {
+> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+>  	inc_zone_page_state(page, NR_WRITEBACK);
+>  }
+>  EXPORT_SYMBOL(account_page_writeback);
+> @@ -2242,7 +2248,10 @@ int test_clear_page_writeback(struct page *page)
+>  {
+>  	struct address_space *mapping = page_mapping(page);
+>  	int ret;
+> +	bool locked;
+> +	unsigned long memcg_flags;
+>  
+> +	mem_cgroup_begin_update_page_stat(page, &locked, &memcg_flags);
+>  	if (mapping) {
+>  		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  		unsigned long flags;
+> @@ -2263,9 +2272,12 @@ int test_clear_page_writeback(struct page *page)
+>  		ret = TestClearPageWriteback(page);
+>  	}
+>  	if (ret) {
+> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+>  		dec_zone_page_state(page, NR_WRITEBACK);
+>  		inc_zone_page_state(page, NR_WRITTEN);
+>  	}
+> +
+> +	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
+>  	return ret;
+>  }
+>  
+> @@ -2273,7 +2285,10 @@ int test_set_page_writeback(struct page *page)
+>  {
+>  	struct address_space *mapping = page_mapping(page);
+>  	int ret;
+> +	bool locked;
+> +	unsigned long flags;
+>  
+> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+>  	if (mapping) {
+>  		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  		unsigned long flags;
+> @@ -2300,6 +2315,8 @@ int test_set_page_writeback(struct page *page)
+>  	}
+>  	if (!ret)
+>  		account_page_writeback(page);
+> +
+> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
+>  	return ret;
+>  
+>  }
+> -- 
+> 1.7.9.5
+> 
+
+-- 
+Michal Hocko
+SUSE Labs
