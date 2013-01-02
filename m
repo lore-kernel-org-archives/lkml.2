@@ -1,100 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752964Ab3ABPwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:52:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34596 "EHLO mx1.redhat.com"
+	id S1752949Ab3ABP4S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:56:18 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49518 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752937Ab3ABPwi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:52:38 -0500
-Date: Wed, 2 Jan 2013 10:52:33 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Mason <chris.mason@fusionio.com>
-Subject: memory corruption, possibly caused by i915
-Message-ID: <20130102155233.GA12479@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Daniel Vetter <daniel.vetter@ffwll.ch>,
-	Chris Mason <chris.mason@fusionio.com>
+	id S1752763Ab3ABP4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 10:56:17 -0500
+Message-ID: <50E4588E.6080001@linux.vnet.ibm.com>
+Date: Wed, 02 Jan 2013 07:55:58 -0800
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH 7/8] zswap: add to mm/
+References: <<1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>> <<1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>> <0e91c1e5-7a62-4b89-9473-09fff384a334@default> <50E32255.60901@linux.vnet.ibm.com>
+In-Reply-To: <50E32255.60901@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010215-7182-0000-0000-00000425BC4E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've had a increased number of reports in the last six months or so
-from Fedora users getting corrupted page tables.
-At first I wrote it off to bad hardware, but they started happening frequently
-enough that I began to wonder if it was a real problem.
+On 01/01/2013 09:52 AM, Seth Jennings wrote:
+> On 12/31/2012 05:06 PM, Dan Magenheimer wrote:
+>> A second related issue that concerns me is that, although you
+>> are now, like zcache2, using an LRU queue for compressed pages
+>> (aka "zpages"), there is no relationship between that queue and
+>> physical pageframes.  In other words, you may free up 100 zpages
+>> out of zswap via zswap_flush_entries, but not free up a single
+>> pageframe.  This seems like a significant design issue.  Or am
+>> I misunderstanding the code?
+> 
+> You understand correctly.  There is room for optimization here and it
+> is something I'm working on right now.
 
-The only common thing I could think of was that now that gnome-shell is
-our default desktop, we're making a lot more use of DRI than we used to.
+It's the same "design issue" that the slab shrinkers have, and they are
+likely to have some substantially consistently smaller object sizes.
 
-To test a hypothesis, I played a whole lot of quake3 over the holidays,
-and was finally able to make it happen too.
+>> A third concern is about scalability... the locking seems very
+>> coarse-grained.  In zcache, you personally observed and fixed
+>> hashbucket contention (see https://lkml.org/lkml/2011/9/29/215).
+>> Doesn't zswap's tree_lock essentially use a single tree (per
+>> swaptype), i.e. no scalability?
+> 
+> The reason the coarse lock isn't a problem for zswap like the hash
+> bucket locks where in zcache is that the lock is not held for long
+> periods time as it is in zcache.  It is only held while operating on
+> the tree, not during compression/decompression and larger memory
+> operations.
 
-After playing the game for a few hours, I exited it, and all was well.
-But when I then went to shut down the laptop, I saw this..
+Lock hold times don't often dominate lock cost these days.  The limiting
+factor tends to be the cost of atomic operations to bring the cacheline
+over to the CPUs acquiring the lock.
 
-[52460.280346] BUG: Bad page map in process panel-6-systray  pte:ffff8800b665a0e8 pmd:b6659067
-[52460.280848] addr:00000038bf3fd000 vm_flags:00000070 anon_vma:          (null) mapping:ffff88011052fd98 index:1fd
-[52460.281547] vma->vm_ops->fault: filemap_fault+0x0/0x470
-[52460.281878] vma->vm_file->f_op->mmap: btrfs_file_mmap+0x0/0x60 [btrfs]
-[52460.282286] Modules linked in: iptable_mangle bridge stp llc ip6table_filter ip6_tables dm_crypt xfs snd_hda_codec_hdmi arc4 iwldvm mac80211 c
-oretemp crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm iwlwifi thinkpad_acpi snd_page_alloc btusb 
-iTCO_wdt microcode tpm_tis vhost_net iTCO_vendor_support cfg80211 snd_timer bluetooth snd e1000e tpm pcspkr tun macvtap lpc_ich soundcore tpm_bios rfkill wmi hwmon mfd_core me
-i macvlan kvm_intel kvm nfsd auth_rpcgss nfs_acl lockd sunrpc btrfs libcrc32c zlib_deflate i915 i2c_algo_bit drm_kms_helper drm sdhci_pci sdhci led_class mmc_core i2c_core vid
-eo
-[52460.286556] Pid: 1317, comm: panel-6-systray Not tainted 3.7.0+ #15
-[52460.286926] Call Trace:
-[52460.287086]  [<ffffffff8114c662>] print_bad_pte+0x1e2/0x250
-[52460.287445]  [<ffffffff8114ea1d>] unmap_single_vma+0x5dd/0x8a0
-[52460.287804]  [<ffffffff8114f541>] unmap_vmas+0x51/0xa0
-[52460.288087]  [<ffffffff81158628>] exit_mmap+0x98/0x170
-[52460.288388]  [<ffffffff81047808>] mmput+0x78/0xe0
-[52460.288651]  [<ffffffff8104ffae>] do_exit+0x24e/0xa30
-[52460.288944]  [<ffffffff8119394e>] ? ____fput+0xe/0x10
-[52460.289268]  [<ffffffff8106af3c>] ? task_work_run+0xac/0xe0
-[52460.289608]  [<ffffffff8105081f>] do_group_exit+0x3f/0xa0
-[52460.289937]  [<ffffffff81050897>] sys_exit_group+0x17/0x20
-[52460.290288]  [<ffffffff815f5699>] system_call_fastpath+0x16/0x1b
-[52460.290652] Disabling lock debugging due to kernel taint
-[52460.290972] BUG: Bad page map in process panel-6-systray  pte:ffffffff81033f52 pmd:b6659067
-[52460.291477] addr:00000038bf3fe000 vm_flags:00000070 anon_vma:          (null) mapping:ffff88011052fd98 index:1fe
-[52460.292083] vma->vm_ops->fault: filemap_fault+0x0/0x470
-[52460.292427] vma->vm_file->f_op->mmap: btrfs_file_mmap+0x0/0x60 [btrfs]
-[52460.292816] Modules linked in: iptable_mangle bridge stp llc ip6table_filter ip6_tables dm_crypt xfs snd_hda_codec_hdmi arc4 iwldvm mac80211 c
-oretemp crc32c_intel snd_hda_codec_realtek ghash_clmulni_intel snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm iwlwifi thinkpad_acpi snd_page_alloc btusb 
-iTCO_wdt microcode tpm_tis vhost_net iTCO_vendor_support cfg80211 snd_timer bluetooth snd e1000e tpm pcspkr tun macvtap lpc_ich soundcore tpm_bios rfkill wmi hwmon mfd_core me
-i macvlan kvm_intel kvm nfsd auth_rpcgss nfs_acl lockd sunrpc btrfs libcrc32c zlib_deflate i915 i2c_algo_bit drm_kms_helper drm sdhci_pci sdhci led_class mmc_core i2c_core vid
-eo
-[52460.297010] Pid: 1317, comm: panel-6-systray Tainted: G    B        3.7.0+ #15
-[52460.297455] Call Trace:
-[52460.297617]  [<ffffffff8114c662>] print_bad_pte+0x1e2/0x250
-[52460.297954]  [<ffffffff81033f52>] ? __change_page_attr_set_clr+0x772/0xc00
-[52460.298383]  [<ffffffff81033f52>] ? __change_page_attr_set_clr+0x772/0xc00
-[52460.298796]  [<ffffffff8114db8d>] vm_normal_page+0x6d/0x90
-[52460.299143]  [<ffffffff8114e90f>] unmap_single_vma+0x4cf/0x8a0
-[52460.299497]  [<ffffffff8114f541>] unmap_vmas+0x51/0xa0
-[52460.299810]  [<ffffffff81158628>] exit_mmap+0x98/0x170
-[52460.300142]  [<ffffffff81047808>] mmput+0x78/0xe0
-[52460.300432]  [<ffffffff8104ffae>] do_exit+0x24e/0xa30
-[52460.300738]  [<ffffffff8119394e>] ? ____fput+0xe/0x10
-[52460.301041]  [<ffffffff8106af3c>] ? task_work_run+0xac/0xe0
-[52460.301363]  [<ffffffff8105081f>] do_group_exit+0x3f/0xa0
-[52460.301669]  [<ffffffff81050897>] sys_exit_group+0x17/0x20
-[52460.301974]  [<ffffffff815f5699>] system_call_fastpath+0x16/0x1b
+> Also, I've done some lockstat checks and the zswap tree lock is way
+> down on the list contributing <1% of the lock contention wait time on
+> a 4-core system.  The anon_vma lock is the primary bottleneck.
 
+4 cores these days is awfully small.  Some of our fellow colleagues at
+IBM might be a _bit_ concerned if we told them that we were using a
+4-core non-NUMA system and extrapolating lock contention from there. :)
 
-It's falling over in btrfs's mmap op, but I think it's just the victim here,
-of something else corrupting what had been mmaped in the panel process.
-
-Daniel, can you think of additional sanity checks that could be added to
-the i915 driver ? (Even if at the expense of speed: a CONFIG_DEBUG option
-to prove correctness would be very worthwhile imo)
-
-	Dave
+It's curious that you chose the anon_vma lock, though.  It can only
+possibly show _contention_ when you've got a bunch of CPUs beating on
+the related VMAs.  That contention disappears in workloads that aren't
+threaded, so it seems at least a bit imprecise to say anon_vma lock is
+the primary bottleneck.
 
