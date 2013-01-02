@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926Ab3ABMa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 07:30:29 -0500
-Received: from mail-ea0-f171.google.com ([209.85.215.171]:35196 "EHLO
-	mail-ea0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752818Ab3ABM3P (ORCPT
+	id S1752768Ab3ABM3O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 07:29:14 -0500
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:36877 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752670Ab3ABM3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 07:29:15 -0500
+	Wed, 2 Jan 2013 07:29:08 -0500
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V5 09/15] qlcnic: guard __vlan_find_dev_deep() by rcu_read_lock
-Date: Wed,  2 Jan 2013 13:28:30 +0100
-Message-Id: <1357129716-2450-10-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next V5 07/15] netpoll: remove usage of dev->master
+Date: Wed,  2 Jan 2013 13:28:28 +0100
+Message-Id: <1357129716-2450-8-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1357129716-2450-1-git-send-email-jiri@resnulli.us>
 References: <1357129716-2450-1-git-send-email-jiri@resnulli.us>
@@ -30,33 +30,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rcu_read_lock was missing here
-
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
-Acked-by: Sony Chacko <sony.chacko@qlogic.com>
 ---
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c | 2 ++
- 1 file changed, 2 insertions(+)
+ net/core/netpoll.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-index e1a3625..d4170a0 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
-@@ -3204,12 +3204,14 @@ void qlcnic_restore_indev_addr(struct net_device *netdev, unsigned long event)
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 3151acf..d2bda8e 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -210,9 +210,12 @@ static void netpoll_poll_dev(struct net_device *dev)
  
- 	qlcnic_config_indev_addr(adapter, netdev, event);
- 
-+	rcu_read_lock();
- 	for_each_set_bit(vid, adapter->vlans, VLAN_N_VID) {
- 		dev = __vlan_find_dev_deep(netdev, vid);
- 		if (!dev)
- 			continue;
- 		qlcnic_config_indev_addr(adapter, dev, event);
+ 	if (dev->flags & IFF_SLAVE) {
+ 		if (ni) {
+-			struct net_device *bond_dev = dev->master;
++			struct net_device *bond_dev;
+ 			struct sk_buff *skb;
+-			struct netpoll_info *bond_ni = rcu_dereference_bh(bond_dev->npinfo);
++			struct netpoll_info *bond_ni;
++
++			bond_dev = netdev_master_upper_dev_get_rcu(dev);
++			bond_ni = rcu_dereference_bh(bond_dev->npinfo);
+ 			while ((skb = skb_dequeue(&ni->arp_tx))) {
+ 				skb->dev = bond_dev;
+ 				skb_queue_tail(&bond_ni->arp_tx, skb);
+@@ -815,7 +818,7 @@ int netpoll_setup(struct netpoll *np)
+ 		return -ENODEV;
  	}
-+	rcu_read_unlock();
- }
  
- static int qlcnic_netdev_event(struct notifier_block *this,
+-	if (ndev->master) {
++	if (netdev_master_upper_dev_get(ndev)) {
+ 		np_err(np, "%s is a slave device, aborting\n", np->dev_name);
+ 		err = -EBUSY;
+ 		goto put;
 -- 
 1.8.0
 
