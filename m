@@ -1,170 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab3ABUXr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 15:23:47 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:57603 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694Ab3ABUXE (ORCPT
+	id S1752762Ab3ABU3Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 15:29:24 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:6692 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751509Ab3ABU3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 15:23:04 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Florian Schandinat <florianschandinat@gmx.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        linux-fbdev@vger.kernel.org, Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCH 2/4] video: vt8500: Make wmt_ge_rops optional
-Date: Thu,  3 Jan 2013 09:23:02 +1300
-Message-Id: <1357158184-18213-2-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357158184-18213-1-git-send-email-linux@prisktech.co.nz>
-References: <1357158184-18213-1-git-send-email-linux@prisktech.co.nz>
+	Wed, 2 Jan 2013 15:29:22 -0500
+Message-ID: <1357158557.3652.42.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH v3] lib: cpu_rmap: avoid flushing all workqueues
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Josh Triplett <josh@joshtriplett.org>
+CC: David Decotigny <decot@googlers.com>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 2 Jan 2013 20:29:17 +0000
+In-Reply-To: <20121229203644.GA31014@leaf>
+References: <cover.1356810877.git.decot@googlers.com>
+	 <796d4768f46d928c68018f44b369df570a0889c4.1356810877.git.decot@googlers.com>
+	 <20121229203644.GA31014@leaf>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19504.001
+X-TM-AS-Result: No--17.736600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the moment, accelerated raster ops are always enabled on VT8500
-and WM8xxx series SoCs. This patch makes them optional.
+On Sat, 2012-12-29 at 12:36 -0800, Josh Triplett wrote:
+> On Sat, Dec 29, 2012 at 11:57:09AM -0800, David Decotigny wrote:
+> > In some cases, free_irq_cpu_rmap() is called while holding a lock
+> > (eg. rtnl). This can lead to deadlocks, because it invokes
+> > flush_scheduled_work() which ends up waiting for whole system
+> > workqueue to flush, but some pending works might try to acquire the
+> > lock we are already holding.
+> > 
+> > This commit uses reference-counting to replace
+> > irq_run_affinity_notifiers(). It also removes
+> > irq_run_affinity_notifiers() altogether.
+> > 
+> > Signed-off-by: David Decotigny <decot@googlers.com>
+> 
+> You might consider adding a cpu_rmap_get to parallel cpu_rmap_put.
+> 
+> Also, why keep free_cpu_rmap around at this point?  As far as I can
+> tell, it has no callers.
+> 
+> Otherwise, this looks good to me.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
- drivers/video/Kconfig       |   23 +++++++++++++----------
- drivers/video/vt8500lcdfb.c |   15 +++++++++++++++
- drivers/video/wm8505fb.c    |   15 +++++++++++++++
- 3 files changed, 43 insertions(+), 10 deletions(-)
+I intended to make cpu_rmap usable independently of IRQ notification,
+although as you note there have been no other users so far.
+free_cpu_rmap() is now effectively an alias for cpu_rmap_put(), and the
+latter *does* have a caller.  So perhaps cpu_rmap_put() should be extern
+and the alias dropped.
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index e7068c5..6678daf 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -190,14 +190,6 @@ config FB_SYS_FOPS
-        depends on FB
-        default n
- 
--config FB_WMT_GE_ROPS
--	tristate
--	depends on FB
--	default n
--	---help---
--	  Include functions for accelerated rectangle filling and area
--	  copying using WonderMedia Graphics Engine operations.
--
- config FB_DEFERRED_IO
- 	bool
- 	depends on FB
-@@ -1777,7 +1769,8 @@ config FB_AU1200
- config FB_VT8500
- 	bool "VT8500 LCD Driver"
- 	depends on (FB = y) && ARM && ARCH_VT8500
--	select FB_WMT_GE_ROPS
-+	select FB_SYS_FILLRECT if (!FB_WMT_GE_ROPS)
-+	select FB_SYS_COPYAREA if (!FB_WMT_GE_ROPS)
- 	select FB_SYS_IMAGEBLIT
- 	help
- 	  This is the framebuffer driver for VIA VT8500 integrated LCD
-@@ -1786,12 +1779,22 @@ config FB_VT8500
- config FB_WM8505
- 	bool "WM8505 frame buffer support"
- 	depends on (FB = y) && ARM && ARCH_VT8500
--	select FB_WMT_GE_ROPS
-+	select FB_SYS_FILLRECT if (!FB_WMT_GE_ROPS)
-+	select FB_SYS_COPYAREA if (!FB_WMT_GE_ROPS)
- 	select FB_SYS_IMAGEBLIT
- 	help
- 	  This is the framebuffer driver for WonderMedia WM8505/WM8650
- 	  integrated LCD controller.
- 
-+config FB_WMT_GE_ROPS
-+	bool "VT8500/WM8xxx accelerated raster ops support"
-+	depends on (FB = y) && (FB_VT8500 || FB_WM8505)
-+	default n
-+	help
-+	  This adds support for accelerated raster operations on the
-+	  VIA VT8500 and Wondermedia 8xxx series SoCs.
-+
-+
- source "drivers/video/geode/Kconfig"
- 
- config FB_HIT
-diff --git a/drivers/video/vt8500lcdfb.c b/drivers/video/vt8500lcdfb.c
-index 9af8da7..e8853ac 100644
---- a/drivers/video/vt8500lcdfb.c
-+++ b/drivers/video/vt8500lcdfb.c
-@@ -33,7 +33,10 @@
- #include <linux/platform_data/video-vt8500lcdfb.h>
- 
- #include "vt8500lcdfb.h"
-+
-+#ifdef CONFIG_FB_WMT_GE_ROPS
- #include "wmt_ge_rops.h"
-+#endif
- 
- #ifdef CONFIG_OF
- #include <linux/of.h>
-@@ -249,12 +252,24 @@ static int vt8500lcd_blank(int blank, struct fb_info *info)
- 	return 0;
- }
- 
-+#ifndef CONFIG_FB_WMT_GE_ROPS
-+static int wmt_ge_sync(struct fb_info *p)
-+{
-+	return 0;
-+}
-+#endif
-+
- static struct fb_ops vt8500lcd_ops = {
- 	.owner		= THIS_MODULE,
- 	.fb_set_par	= vt8500lcd_set_par,
- 	.fb_setcolreg	= vt8500lcd_setcolreg,
-+#ifdef CONFIG_FB_WMT_GE_ROPS
- 	.fb_fillrect	= wmt_ge_fillrect,
- 	.fb_copyarea	= wmt_ge_copyarea,
-+#else
-+	.fb_fillrect	= sys_fillrect,
-+	.fb_copyarea	= sys_copyarea,
-+#endif
- 	.fb_imageblit	= sys_imageblit,
- 	.fb_sync	= wmt_ge_sync,
- 	.fb_ioctl	= vt8500lcd_ioctl,
-diff --git a/drivers/video/wm8505fb.c b/drivers/video/wm8505fb.c
-index 77539c1..a990708 100644
---- a/drivers/video/wm8505fb.c
-+++ b/drivers/video/wm8505fb.c
-@@ -35,7 +35,10 @@
- #include <linux/platform_data/video-vt8500lcdfb.h>
- 
- #include "wm8505fb_regs.h"
-+
-+#ifdef CONFIG_FB_WMT_GE_ROPS
- #include "wmt_ge_rops.h"
-+#endif
- 
- #define DRIVER_NAME "wm8505-fb"
- 
-@@ -248,12 +251,24 @@ static int wm8505fb_blank(int blank, struct fb_info *info)
- 	return 0;
- }
- 
-+#ifndef CONFIG_FB_WMT_GE_ROPS
-+static int wmt_ge_sync(struct fb_info *p)
-+{
-+	return 0;
-+}
-+#endif
-+
- static struct fb_ops wm8505fb_ops = {
- 	.owner		= THIS_MODULE,
- 	.fb_set_par	= wm8505fb_set_par,
- 	.fb_setcolreg	= wm8505fb_setcolreg,
-+#ifdef CONFIG_FB_WMT_GE_ROPS
- 	.fb_fillrect	= wmt_ge_fillrect,
- 	.fb_copyarea	= wmt_ge_copyarea,
-+#else
-+	.fb_fillrect	= sys_fillrect,
-+	.fb_copyarea	= sys_copyarea,
-+#endif
- 	.fb_imageblit	= sys_imageblit,
- 	.fb_sync	= wmt_ge_sync,
- 	.fb_pan_display	= wm8505fb_pan_display,
+Ben.
+
 -- 
-1.7.9.5
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
