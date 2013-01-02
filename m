@@ -1,64 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835Ab3ABPa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:30:27 -0500
-Received: from a193-30.smtp-out.amazonses.com ([199.255.193.30]:7203 "EHLO
-	a193-30.smtp-out.amazonses.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752755Ab3ABPaZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:30:25 -0500
-Date: Wed, 2 Jan 2013 15:30:24 +0000
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 07/27] nohz: Assign timekeeping duty to a non-full-nohz
- CPU
-In-Reply-To: <1356799386-4212-8-git-send-email-fweisbec@gmail.com>
-Message-ID: <0000013bfbe28263-98bca726-cf8f-4307-989d-472ea478e7f3-000000@email.amazonses.com>
-References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com> <1356799386-4212-8-git-send-email-fweisbec@gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752849Ab3ABPcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:32:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:15704 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752755Ab3ABPcE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 10:32:04 -0500
+Message-ID: <50E452E2.7010601@redhat.com>
+Date: Wed, 02 Jan 2013 10:31:46 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-SES-Outgoing: 199.255.193.30
+To: Michel Lespinasse <walken@google.com>
+CC: linux-kernel@vger.kernel.org, aquini@redhat.com, lwoodman@redhat.com,
+        jeremy@goop.org, Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Eric Dumazet <edumazet@google.com>, Tom Herbert <therbert@google.com>
+Subject: Re: [PATCH 1/2] x86,smp: simplify __ticket_spin_lock
+References: <20121221184940.103c31ad@annuminas.surriel.com> <20130102000653.GA13678@google.com> <20130102000935.GB13678@google.com>
+In-Reply-To: <20130102000935.GB13678@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 Dec 2012, Frederic Weisbecker wrote:
+On 01/01/2013 07:09 PM, Michel Lespinasse wrote:
+> Just cosmetic - avoid an unnecessary goto construct
+>
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-> @@ -163,6 +164,8 @@ static int __init tick_nohz_full_setup(char *str)
->  	return 1;
->  }
->  __setup("full_nohz=", tick_nohz_full_setup);
-> +#else
-> +#define have_full_nohz_mask (0)
->  #endif
->
->  /*
-> @@ -512,6 +515,10 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
->  		return false;
->  	}
->
-> +	/* If there are full nohz CPUs around, we need to keep the timekeeping duty */
-> +	if (have_full_nohz_mask && tick_do_timer_cpu == cpu)
-> +		return false;
-> +
->  	return true;
->  }
->
->
+I have had this in my code base since you first suggested
+it on December 21st. Thank you for sending in more improvements,
+though :)
 
-Ok so I guess this means that if I setup all cpus as nohz then a random
-one will continue to do timekeeping?
+-- 
+All rights reversed
