@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab3ABPN7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:13:59 -0500
-Received: from mail-qa0-f42.google.com ([209.85.216.42]:43138 "EHLO
-	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab3ABPN5 (ORCPT
+	id S1752915Ab3ABPOL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:14:11 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56333 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814Ab3ABPN6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:13:57 -0500
-X-Greylist: delayed 998 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 10:13:57 EST
+	Wed, 2 Jan 2013 10:13:58 -0500
+Date: Wed, 2 Jan 2013 09:13:44 -0600
+From: Serge Hallyn <serge.hallyn@canonical.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: ebiederm@xmission.com, Containers <containers@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] userns: Allow unprivileged reboot
+Message-ID: <20130102151344.GA5822@sergelap>
+References: <50DBC2E0.3040908@huawei.com>
 MIME-Version: 1.0
-Date: Wed, 2 Jan 2013 16:13:56 +0100
-Message-ID: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
-Subject: tg3 v3.123 in 100Mbps Full-Duplex mode with autoneg off
-From: Marcin Miotk <marcinmiotk81@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50DBC2E0.3040908@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Quoting Li Zefan (lizefan@huawei.com):
+> In a container with its own pid namespace and user namespace, rebooting
+> the system won't reboot the host, but terminate all the processes in
+> it and thus have the container shutdown, so it's safe.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-While upgrading some gentoo servers from 3.0.9-gentoo to 3.4.11-gentoo
-on HP Proliant DL320p machines I spotted an issue with tg3 driver.
-I had port on a switch set to 100FD mode (autoneg off) and NIC set to
-'speed 100 duplex full autoneg off' during bootup with ethtool - it's
-been working this way for a very long time with no issues, however
-after upgrading kernel I noticed that there is no connectivity at all
-on the interface - the interface is up, configured (manually), but I'm
-not able to ping any host - ethtool result below:
+Thanks, Li.
 
+fwiw,
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
 
-Settings for eth1:
-    Supported ports: [ TP ]
-    Supported link modes:   10baseT/Half 10baseT/Full
-                            100baseT/Half 100baseT/Full
-                            1000baseT/Half 1000baseT/Full
-    Supported pause frame use: No
-    Supports auto-negotiation: Yes
-    Advertised link modes:  Not reported
-    Advertised pause frame use: Symmetric
-    Advertised auto-negotiation: No
-    Speed: Unknown!
-    Duplex: Unknown! (255)
-    Port: Twisted Pair
-    PHYAD: 1
-    Transceiver: internal
-    Auto-negotiation: off
-    MDI-X: Unknown
-    Supports Wake-on: g
-    Wake-on: g
-    Current message level: 0x000000ff (255)
-                   drv probe link timer ifdown ifup rx_err tx_err
-    Link detected: no
+-serge
 
-
-The NIC is working properly when I set the switchport to Autoneg +
-100FD advertised and NIC is set to 'autoneg on' - on that config both
-NIC and switch shows link as 100FD and there is no issues at all.
-I compiled few kernel versions (also from vanilla sources) and the
-source of the issue seems to be tg3 driver v3.123 - kernels with tg3
-v3.122 works properly.
-While browsing the tg3 changelog I noticed that there were some
-changes made to autoneg in v3.123 + some code has been removed from
-it.
-Is this a known issue?
-
-Regards,
-Marcin Miotk
+> ---
+>  kernel/sys.c | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sys.c b/kernel/sys.c
+> index 265b376..24d1ef5 100644
+> --- a/kernel/sys.c
+> +++ b/kernel/sys.c
+> @@ -433,11 +433,12 @@ static DEFINE_MUTEX(reboot_mutex);
+>  SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  		void __user *, arg)
+>  {
+> +	struct pid_namespace *pid_ns = task_active_pid_ns(current);
+>  	char buffer[256];
+>  	int ret = 0;
+>  
+>  	/* We only trust the superuser with rebooting the system. */
+> -	if (!capable(CAP_SYS_BOOT))
+> +	if (!ns_capable(pid_ns->user_ns, CAP_SYS_BOOT))
+>  		return -EPERM;
+>  
+>  	/* For safety, we require "magic" arguments. */
+> @@ -453,7 +454,7 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
+>  	 * pid_namespace, the command is handled by reboot_pid_ns() which will
+>  	 * call do_exit().
+>  	 */
+> -	ret = reboot_pid_ns(task_active_pid_ns(current), cmd);
+> +	ret = reboot_pid_ns(pid_ns, cmd);
+>  	if (ret)
+>  		return ret;
+>  
+> -- 
+> 1.8.0.2
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linuxfoundation.org/mailman/listinfo/containers
