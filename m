@@ -1,160 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab3ABLPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 06:15:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46399 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab3ABLPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 06:15:19 -0500
-Date: Wed, 2 Jan 2013 12:15:14 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 5/8] memcg: add per cgroup writeback pages accounting
-Message-ID: <20130102111514.GD22160@dhcp22.suse.cz>
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
- <1356456409-14701-1-git-send-email-handai.szj@taobao.com>
+	id S1752718Ab3ABLP6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 06:15:58 -0500
+Received: from idcmail-mo1so.shaw.ca ([24.71.223.10]:55532 "EHLO
+	idcmail-mo1so.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab3ABLP4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 06:15:56 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=qT60hWcJq2tKMlwzTlfV91MSQCJjCwg5oP07qu3o0oU= c=1 sm=1
+ a=0Z2zpp6RY3MA:10 a=TPbdJ-YLJ1kA:10 a=FGLzUi7B6sIA:10 a=BLceEmwcHowA:10
+ a=kj9zAlcOel0A:10 a=eeMGdU6VVFt2UVJcxx6VzA==:17 a=FgQmb5Bki9c5cQ4nxfQA:9
+ a=CjuIK1q_8ugA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+From: Daniel Phillips <lkml@phunq.net>
+To: Tero Roponen <tero.roponen@gmail.com>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org
+Subject: Re: Tux3 report: New news for the new year
+Date: Wed, 02 Jan 2013 03:15:57 -0800
+Message-ID: <2665409.mugjWqk2Cd@mars>
+Organization: tux3.org
+User-Agent: KMail/4.9.3 (Linux/3.2.0-35-generic-pae; KDE/4.9.3; i686; ; )
+In-Reply-To: <alpine.LFD.2.03.1301021144280.10305@gmail.com>
+References: <2597526.usDRg4h3X1@mars> <201301011537.08466.Martin@lichtvoll.de> <alpine.LFD.2.03.1301021144280.10305@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356456409-14701-1-git-send-email-handai.szj@taobao.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-12-12 01:26:48, Sha Zhengju wrote:
-> From: Sha Zhengju <handai.szj@taobao.com>
-> 
-> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
-> rule still is:
->         mem_cgroup_begin_update_page_stat()
->         modify page WRITEBACK stat
->         mem_cgroup_update_page_stat()
->         mem_cgroup_end_update_page_stat()
-> 
-> There're two writeback interface to modify: test_clear/set_page_writeback.
-> 
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+On Wednesday, January 02, 2013 11:45:29 AM Tero Roponen wrote:
+> I have not looked at Tux3 for a long time, but there seems to be
+> a simple fix for at least this problem, and two workarounds...
 
-Looks good to me
-Acked-by: Michal Hocko <mhocko@suse.cz>
+Wow, that was fast. Martin, does this work for you?
 
-Thanks!
-> ---
->  include/linux/memcontrol.h |    1 +
->  mm/memcontrol.c            |    5 +++++
->  mm/page-writeback.c        |   17 +++++++++++++++++
->  3 files changed, 23 insertions(+)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 358019e..1d22b81 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -45,6 +45,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
->  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
-> +	MEM_CGROUP_STAT_WRITEBACK,  /* # of pages under writeback */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 21df36d..13cd14a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -96,6 +96,7 @@ static const char * const mem_cgroup_stat_names[] = {
->  	"mapped_file",
->  	"swap",
->  	"dirty",
-> +	"writeback",
->  };
->  
->  enum mem_cgroup_events_index {
-> @@ -3676,6 +3677,10 @@ static int mem_cgroup_move_account(struct page *page,
->  		mem_cgroup_move_account_page_stat(from, to, nr_pages,
->  			MEM_CGROUP_STAT_FILE_DIRTY);
->  
-> +	if (PageWriteback(page))
-> +		mem_cgroup_move_account_page_stat(from, to, nr_pages,
-> +			MEM_CGROUP_STAT_WRITEBACK);
-> +
->  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
->  
->  	/* caller should have done css_get */
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 526ddd7..ae6498a 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -2002,11 +2002,17 @@ EXPORT_SYMBOL(account_page_dirtied);
->  
->  /*
->   * Helper function for set_page_writeback family.
-> + *
-> + * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
-> + * while modifying struct page state and accounting writeback pages.
-> + * See test_set_page_writeback for example.
-> + *
->   * NOTE: Unlike account_page_dirtied this does not rely on being atomic
->   * wrt interrupts.
->   */
->  void account_page_writeback(struct page *page)
->  {
-> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
->  	inc_zone_page_state(page, NR_WRITEBACK);
->  }
->  EXPORT_SYMBOL(account_page_writeback);
-> @@ -2242,7 +2248,10 @@ int test_clear_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long memcg_flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &memcg_flags);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2263,9 +2272,12 @@ int test_clear_page_writeback(struct page *page)
->  		ret = TestClearPageWriteback(page);
->  	}
->  	if (ret) {
-> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
->  		dec_zone_page_state(page, NR_WRITEBACK);
->  		inc_zone_page_state(page, NR_WRITTEN);
->  	}
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
->  	return ret;
->  }
->  
-> @@ -2273,7 +2285,10 @@ int test_set_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2300,6 +2315,8 @@ int test_set_page_writeback(struct page *page)
->  	}
->  	if (!ret)
->  		account_page_writeback(page);
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	return ret;
->  
->  }
-> -- 
-> 1.7.9.5
-> 
+Regards,
 
--- 
-Michal Hocko
-SUSE Labs
+Daniel
