@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754Ab3ABNtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 08:49:09 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:64109 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3ABNtH (ORCPT
+	id S1752763Ab3ABNyu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 08:54:50 -0500
+Received: from gerolde.archlinux.org ([66.211.214.132]:60731 "EHLO
+	gerolde.archlinux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab3ABNys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 08:49:07 -0500
-X-Greylist: delayed 18489 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 08:49:07 EST
-MIME-Version: 1.0
-In-Reply-To: <20121212215404.GA18555@kroah.com>
-References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
-	<20121212215404.GA18555@kroah.com>
-Date: Wed, 2 Jan 2013 14:42:24 +0100
-Message-ID: <CACRpkdaLFjDh_k7BdrzvxNJ5E3ho-BV9n9tHey2AMzQzyuL+Qg@mail.gmail.com>
-Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
-From: Linus Walleij <linus.walleij@linaro.org>
+	Wed, 2 Jan 2013 08:54:48 -0500
+From: Dave Reisner <dreisner@archlinux.org>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Mitch Bradley <wmb@firmworks.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Rickard Andersson <rickard.andersson@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Cc: linux-kernel@vger.kernel.org, Dave Reisner <dreisner@archlinux.org>
+Subject: [PATCH] debugfs: convert gid= argument from decimal, not octal
+Date: Wed,  2 Jan 2013 08:54:37 -0500
+Message-Id: <1357134877-27141-1-git-send-email-dreisner@archlinux.org>
+X-Mailer: git-send-email 1.8.0.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 12, 2012 at 10:54 PM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Wed, Dec 12, 2012 at 09:25:07PM +0100, Linus Walleij wrote:
->> From: Linus Walleij <linus.walleij@linaro.org>
->>
->> This makes the device core auto-grab the pinctrl handle and set
->> the "default" (PINCTRL_STATE_DEFAULT) state for every device
->> that is present in the device model right before probe. This will
->> account for the lion's share of embedded silicon devcies.
-(...)
->
-> It looks ok, but this can't go in for 3.8, sorry, please wait for 3.9.
+This patch technically breaks userspace, but I suspect that anyone who
+actually used this flag would have encountered this brokenness, declared
+it lunacy, and already sent a patch.
 
-Greg, now that v3.8-rc1 is out, can you give me an ACK on
-this patch so I can put it into linux-next for some rotation
-through the pinctrl tree?
+Signed-off-by: Dave Reisner <dreisner@archlinux.org>
+---
+ fs/debugfs/inode.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Yours,
-Linus Walleij
+diff --git a/fs/debugfs/inode.c b/fs/debugfs/inode.c
+index 153bb1e..a5f12b7 100644
+--- a/fs/debugfs/inode.c
++++ b/fs/debugfs/inode.c
+@@ -176,7 +176,7 @@ static int debugfs_parse_options(char *data, struct debugfs_mount_opts *opts)
+ 			opts->uid = uid;
+ 			break;
+ 		case Opt_gid:
+-			if (match_octal(&args[0], &option))
++			if (match_int(&args[0], &option))
+ 				return -EINVAL;
+ 			gid = make_kgid(current_user_ns(), option);
+ 			if (!gid_valid(gid))
+-- 
+1.8.0.3
+
