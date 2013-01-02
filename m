@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697Ab3ABLxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 06:53:04 -0500
-Received: from nm12-vm0.bullet.mail.ukl.yahoo.com ([217.146.183.246]:46849
-	"EHLO nm12-vm0.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752090Ab3ABLxA (ORCPT
+	id S1752704Ab3ABLy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 06:54:26 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:50609 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752090Ab3ABLyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 06:53:00 -0500
-X-Yahoo-Newman-Id: 949035.20536.bm@smtp129.mail.ukl.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Pn1aPvEVM1kcBb7r3_rG6vRf7_SmsrVkyHiVjHBFZ6cFdlR
- 8Zt_ALww5AJIRSohI2toBkNVL9667J889X.g0P8p3wfOPnosPa.rNCtjrgWV
- DysG_j1JwPbbZiuk2NjELTbvwD0JWWbz0c3ElXMhWraDKvqk539hrXo8.fQb
- ChnrDc6kvujwVUIqF22YUayscAC4nc.okrsfw3wVBmv9iC2l4Xt7WC2N8lQ4
- Cv2Mq15pjVEDkB1EewuhB3QVGCoyklOKqD0l6cgti6QVt6jd06DAU3NAsXWB
- MAtvDz8JcrheeytmU7Gygp9kzm4URI_6CM9yABYcp.ftcT6MJxYAUasyrkCF
- 23dxPkgywp2o6PR27cULs.EtMA1eelnQPFgkabob8PWxSjHHJFVx9r0.gcNj
- JxNhgUCUOD0vgrRt0_m2eR67UZQTKO2O8u6ZeMavcvFGkwR03og--
-X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
-From: Marek Lindner <lindner_marek@yahoo.de>
-To: b.a.t.m.a.n@lists.open-mesh.org
-Subject: Re: [B.A.T.M.A.N.] [PATCH 20/29] batman-adv: rename random32() to prandom_u32()
-Date: Wed, 2 Jan 2013 19:52:49 +0800
-User-Agent: KMail/1.13.7 (Linux/3.2.0-4-amd64; KDE/4.8.4; x86_64; ; )
-Cc: Antonio Quartulli <ordex@autistici.org>,
-        Akinobu Mita <akinobu.mita@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>, akpm@linux-foundation.org,
-        "David S. Miller" <davem@davemloft.net>
-References: <1356315256-6572-1-git-send-email-akinobu.mita@gmail.com> <1356315256-6572-21-git-send-email-akinobu.mita@gmail.com> <20121225113036.GD2604@ritirata.org>
-In-Reply-To: <20121225113036.GD2604@ritirata.org>
+	Wed, 2 Jan 2013 06:54:25 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: [PATCH] davinci: dm644x: fix enum ccdc_gama_width and enum ccdc_data_size comparision warning
+Date: Wed,  2 Jan 2013 17:23:50 +0530
+Message-Id: <1357127630-8167-2-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1357127630-8167-1-git-send-email-prabhakar.lad@ti.com>
+References: <1357127630-8167-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301021952.49979.lindner_marek@yahoo.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, December 25, 2012 19:30:36 Antonio Quartulli wrote:
-> On Mon, Dec 24, 2012 at 11:14:07AM +0900, Akinobu Mita wrote:
-> > Use more preferable function name which implies using a pseudo-random
-> > number generator.
-> > 
-> > Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> > Cc: Marek Lindner <lindner_marek@yahoo.de>
-> > Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-> > Cc: Antonio Quartulli <ordex@autistici.org>
-> > Cc: b.a.t.m.a.n@lists.open-mesh.org
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Cc: netdev@vger.kernel.org
-> 
-> Acked-by: Antonio Quartulli <ordex@autistici.org>
+while the effect is harmless this patch fixes following build warning,
 
-Applied in revision 02c5591.
+drivers/media/platform/davinci/dm644x_ccdc.c: In function ‘validate_ccdc_param’:
+drivers/media/platform/davinci/dm644x_ccdc.c:233:32: warning: comparison between
+‘enum ccdc_gama_width’ and ‘enum ccdc_data_size’ [-Wenum-compare]
 
-Thanks,
-Marek
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+---
+ drivers/media/platform/davinci/dm644x_ccdc.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/platform/davinci/dm644x_ccdc.c b/drivers/media/platform/davinci/dm644x_ccdc.c
+index ee7942b..42b473a 100644
+--- a/drivers/media/platform/davinci/dm644x_ccdc.c
++++ b/drivers/media/platform/davinci/dm644x_ccdc.c
+@@ -228,9 +228,12 @@ static void ccdc_readregs(void)
+ static int validate_ccdc_param(struct ccdc_config_params_raw *ccdcparam)
+ {
+ 	if (ccdcparam->alaw.enable) {
++		u32 gama_wd = ccdcparam->alaw.gama_wd;
++		u32 data_sz = ccdcparam->data_sz;
++
+ 		if ((ccdcparam->alaw.gama_wd > CCDC_GAMMA_BITS_09_0) ||
+ 		    (ccdcparam->alaw.gama_wd < CCDC_GAMMA_BITS_15_6) ||
+-		    (ccdcparam->alaw.gama_wd < ccdcparam->data_sz)) {
++		    (gama_wd < data_sz)) {
+ 			dev_dbg(ccdc_cfg.dev, "\nInvalid data line select");
+ 			return -1;
+ 		}
+-- 
+1.7.4.1
+
