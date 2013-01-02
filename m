@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab3ABPep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:34:45 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:57135 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab3ABPem (ORCPT
+	id S1752894Ab3ABPeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:34:50 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34390 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752794Ab3ABPeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:34:42 -0500
-Date: Wed, 2 Jan 2013 10:34:39 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Li Zefan <lizefan@huawei.com>, paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/13] cpuset: cleanup cpuset[_can]_attach()
-Message-ID: <20130102153439.GA11220@mtj.dyndns.org>
-References: <1354138460-19286-1-git-send-email-tj@kernel.org>
- <1354138460-19286-7-git-send-email-tj@kernel.org>
- <50DACF5B.6050705@huawei.com>
- <20121226120415.GA18193@mtj.dyndns.org>
- <87zk0s5h7c.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zk0s5h7c.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 2 Jan 2013 10:34:44 -0500
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] regmap: debugfs: Fix attempts to read nonexistant register blocks
+Date: Wed,  2 Jan 2013 15:34:41 +0000
+Message-Id: <1357140881-6524-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rusty.
+Return the start of the last block we tried to read rather than a position,
+and also make sure we update the byte position while we're at it.  Without
+this reads that go into nonexistant areas get confused.
 
-On Wed, Jan 02, 2013 at 03:12:15PM +1030, Rusty Russell wrote:
-> > Hmmm?  cpumask_t can't be used for stack but other than that I don't
-> > see how it would be deprecated completely.  Rusty, can you please
-> > chime in?
-> 
-> The long-never-quite-complete-plan was for struct cpumask to be
-> undefined when CONFIG_CPUMASK_OFFSTACK=y.  That means noone can declare
-> them, or pass them on the stack, since they'll get a compiler error.
-> 
-> Now, there are some cases where it really is a reason to use a static
-> bitmap, and 1/2 a K of wasted space be damned.  There's a
-> deliberately-ugly way of doing that: declare a bitmap and use
-> to_cpumask().  Of course, if we ever really want to remove NR_CPUS and
-> make it completely generic, we have to kill all these too, but noone is
-> serious about that.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/base/regmap/regmap-debugfs.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-So, I guess this currently is caught in a place which isn't here or
-there.  I'm pretty skeptical whether it makes sense to bother about
-static usages tho.  Can I keep them for static ones?
-
-Thanks.
-
+diff --git a/drivers/base/regmap/regmap-debugfs.c b/drivers/base/regmap/regmap-debugfs.c
+index 07aad78..3ec8bc5 100644
+--- a/drivers/base/regmap/regmap-debugfs.c
++++ b/drivers/base/regmap/regmap-debugfs.c
+@@ -103,12 +103,12 @@ static unsigned int regmap_debugfs_get_dump_start(struct regmap *map,
+ 
+ 	/* Find the relevant block */
+ 	list_for_each_entry(c, &map->debugfs_off_cache, list) {
+-		if (*pos >= c->min && *pos <= c->max) {
+-			*pos = c->min;
++		*pos = c->min;
++
++		if (*pos >= c->min && *pos <= c->max)
+ 			return c->base_reg;
+-		}
+ 
+-		ret = c->max;
++		ret = c->base_reg;
+ 	}
+ 
+ 	return ret;
 -- 
-tejun
+1.7.10.4
+
