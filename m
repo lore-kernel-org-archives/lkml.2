@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab3ABNqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 08:46:10 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43860 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752677Ab3ABNqI (ORCPT
+	id S1752754Ab3ABNtJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 08:49:09 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:64109 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab3ABNtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 08:46:08 -0500
-Date: Wed, 2 Jan 2013 13:46:07 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Stephen Warren <swarren@wwwdotorg.org>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] vfs: Add missing errno.h inclusion to namei.h
-Message-ID: <20130102134606.GE4627@opensource.wolfsonmicro.com>
-References: <1357133786-29587-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <20130102084205.2320f6b9@tlielax.poochiereds.net>
+	Wed, 2 Jan 2013 08:49:07 -0500
+X-Greylist: delayed 18489 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 08:49:07 EST
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ep0oHQY+/Gbo/zt0"
-Content-Disposition: inline
-In-Reply-To: <20130102084205.2320f6b9@tlielax.poochiereds.net>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121212215404.GA18555@kroah.com>
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
+	<20121212215404.GA18555@kroah.com>
+Date: Wed, 2 Jan 2013 14:42:24 +0100
+Message-ID: <CACRpkdaLFjDh_k7BdrzvxNJ5E3ho-BV9n9tHey2AMzQzyuL+Qg@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Dec 12, 2012 at 10:54 PM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Wed, Dec 12, 2012 at 09:25:07PM +0100, Linus Walleij wrote:
+>> From: Linus Walleij <linus.walleij@linaro.org>
+>>
+>> This makes the device core auto-grab the pinctrl handle and set
+>> the "default" (PINCTRL_STATE_DEFAULT) state for every device
+>> that is present in the device model right before probe. This will
+>> account for the lion's share of embedded silicon devcies.
+(...)
+>
+> It looks ok, but this can't go in for 3.8, sorry, please wait for 3.9.
 
---ep0oHQY+/Gbo/zt0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Greg, now that v3.8-rc1 is out, can you give me an ACK on
+this patch so I can put it into linux-next for some rotation
+through the pinctrl tree?
 
-On Wed, Jan 02, 2013 at 08:42:05AM -0500, Jeff Layton wrote:
-
-> I think Ted and Stephen (cc'ed here) proposed the same patch a week or
-> so ago, but I'm not sure why Al hasn't pushed it yet.
-
-Well, a Christmas vacation isn't totally unreasonable...
-
---ep0oHQY+/Gbo/zt0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ5DoXAAoJELSic+t+oim93vkP/2KFmFl77+w0zocIWUHdKotW
-HuT4SLzqZhrqLvlGsEZeq86t70CBHT2n+z8tEkkPumAQxVKokoOblyJD4V+d+kik
-ILFCoH5nDkXXvm1o+dSSAhssRzxaRvvCuybixBn5Jr7BOyH4LUUhbTefoRU22GwE
-k5gAWKlCK25vEz1W8PugM2ooDvPuB6w/+stLnfmAygoTCWZUXYoNfGgLB9Ld+3Is
-0SiehlYO3llno1iqJastlUnvD8T7efDwL28ifkQgvOFa6NDBTVNuYiUCbma+vQx6
-fFSi1NZ36si1dcapRT+/wYqiH7xX1x6snnOAX3cHcDw2RH7jIQK334eYKCR1SQO7
-8Q8/XGyKlyJwQFoaohYHMmiQsUjFuAHUJlcMTTC59wD1JPuTkhPQNZ2uIKzZ+8T3
-goVwqzeriXfwBmC9zqqm9/EaY6OgIlcGqZYvswkMg2+XP2hPg74ZaaBOz4MGVYq8
-CkUrVGjUqAUVR+EbJj850M55et2ai4yRdqWWsTkLKhbGcKi+FHANOjmmCzC653a9
-OEPwlh0Rj5SSxe4Xv5P9E1lzuS2cCdNF8gqwbE9rYM4FkHWKoCY31wIJV3fw14Fp
-xWIodEpEnf1gIP+wU4QgM0AVaeaz3er+cSVLnI70voNCINOaG24Fnljf/S6OpFUP
-HGaBMIqGpZ+Hd+cIi6vW
-=OnJz
------END PGP SIGNATURE-----
-
---ep0oHQY+/Gbo/zt0--
+Yours,
+Linus Walleij
