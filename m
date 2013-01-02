@@ -1,139 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752751Ab3ABOJx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 09:09:53 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:53751 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677Ab3ABOJu (ORCPT
+	id S1752742Ab3ABOQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 09:16:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47048 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab3ABOQP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 09:09:50 -0500
-Date: Wed, 2 Jan 2013 15:09:41 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Tony Prisk <linux@prisktech.co.nz>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH 2/2] pwm: vt8500: Add support for .set_polarity
-Message-ID: <20130102140941.GC4414@avionic-0098.adnet.avionic-design.de>
-References: <1356899005-8876-1-git-send-email-linux@prisktech.co.nz>
- <1356899005-8876-2-git-send-email-linux@prisktech.co.nz>
+	Wed, 2 Jan 2013 09:16:15 -0500
+Date: Wed, 2 Jan 2013 15:16:01 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, namhyung.kim@lge.com
+Subject: Re: [PATCH v4 14/18] perf tools: add new mem command for memory
+ access profiling
+Message-ID: <20130102141601.GD931@krava.brq.redhat.com>
+References: <1356018108-6081-1-git-send-email-eranian@google.com>
+ <1356018108-6081-15-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4ZLFUWh1odzi/v6L"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356899005-8876-2-git-send-email-linux@prisktech.co.nz>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1356018108-6081-15-git-send-email-eranian@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:5CxnA7A1a3DrDwM8BFK9wl3MV2cHQXKyt3QxKSCEfWu
- DY2o10UrRXLg/2mrIyB/l1uK37Vgyl8wz7rAfpYymqL0itDyoj
- vNcbzqbnYbyz2fgB34S0atzfbQtyIArh83fXHDkCkbOxKVUQvw
- 56oXxyA4Fdll3ilxSY8L5aLVCTR0JozR1VzM+wHSk/6sGfZ0qZ
- jgxsXlAgyxOATLB4xuEM1Rpf74vwzkoFffLWeEZxRZvgouCWLi
- ZRaIFEg0hXpOXI1ypWQLX9sMuP4S3rmYFufh+83HjiflpSHmJO
- mf5Z3RvZGR2x5GJDLEtwJ1LUpP9dPl+3Yrdnty0mPPffVwLqeg
- +IRzImcs3Gg0SPFLoicg/zCUNocKS8znCdJjpKsBeXEYXOOiJM
- PSU+losFowIOHZcgfKoduUK3DPUpXGmnk0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Dec 20, 2012 at 04:41:44PM +0100, Stephane Eranian wrote:
+> This new command is a wrapper on top of perf record and
+> perf report to make it easier to configure for memory
+> access profiling.
+> 
+> To record loads:
+> $ perf mem -t load rec .....
+> 
+> To record stores:
+> $ perf mem -t store rec .....
+> 
+> To get the report:
+> $ perf mem -t load rep
 
---4ZLFUWh1odzi/v6L
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I get following segfault occasionally:
 
-On Mon, Dec 31, 2012 at 09:23:25AM +1300, Tony Prisk wrote:
-> Add support to set polarity on pwm devices, allowing for inverted
-> duty cycles.
+  $ perf mem -t load rec ls
+  $ perf mem -t load rep --stdio
+    Failed to open /etc/ld.so.cache, continuing without symbols
+    Segmentation fault
+  $ gdb ./perf
+  GNU gdb (GDB) Fedora (7.4.50.20120120-52.fc17)
+  Copyright (C) 2012 Free Software Foundation, Inc.
+  License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+  This is free software: you are free to change and redistribute it.
+  There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+  and "show warranty" for details.
+  This GDB was configured as "x86_64-redhat-linux-gnu".
+  For bug reporting instructions, please see:
+  <http://www.gnu.org/software/gdb/bugs/>...
+  Reading symbols from /home/jolsa/kernel/tip-local/tools/perf/perf...done.
+  (gdb) r  mem -t load rep --stdio
+  Starting program: /home/jolsa/kernel/tip-local/tools/perf/perf mem -t load rep --stdio
+  [Thread debugging using libthread_db enabled]
+  Using host libthread_db library "/lib64/libthread_db.so.1".
+  Detaching after fork from child process 3130.
+  Failed to open /etc/ld.so.cache, continuing without symbols
 
-"PWM devices", please. Maybe the subject could be something less API
-specific, like "pwm: vt8500: Add polarity support".
+  Program received signal SIGSEGV, Segmentation fault.
+  dso__name_len (dso=0x68100142) at util/dso.c:389
+  389             return dso->short_name_len;
+  Missing separate debuginfos, use: debuginfo-install atk-2.4.0-1.fc17.x86_64 audit-libs-2.2.1-1.fc17.x86_64 bzip2-libs-1.0.6-4.fc17.x86_64 cairo-1.10.2-7.fc17.x86_64 elfutils-libelf-0.154-2.fc17.x86_64 elfutils-libs-0.154-2.fc17.x86_64 expat-2.1.0-1.fc17.x86_64 fontconfig-2.8.0-8.fc17.x86_64 freetype-2.4.8-3.fc17.x86_64 gdk-pixbuf2-2.26.1-1.fc17.x86_64 glib2-2.32.4-2.fc17.x86_64 glibc-2.15-58.fc17.x86_64 gtk2-2.24.13-1.fc17.x86_64 libX11-1.5.0-2.fc17.x86_64 libXau-1.0.6-3.fc17.x86_64 libXcomposite-0.4.3-3.fc17.x86_64 libXcursor-1.1.13-1.fc17.x86_64 libXdamage-1.1.3-3.fc17.x86_64 libXext-1.3.1-1.fc17.x86_64 libXfixes-5.0-2.fc17.x86_64 libXi-1.6.1-1.fc17.x86_64 libXinerama-1.1.2-1.fc17.x86_64 libXrandr-1.3.1-3.fc17.x86_64 libXrender-0.9.7-1.fc17.x86_64 libffi-3.0.10-2.fc17.x86_64 libgcc-4.7.2-2.fc17.x86_64 libpng-1.5.10-1.fc17.x86_64 libselinux-2.1.10-3.fc17.x86_64 libunwind-1.0.1-3.fc17.x86_64 libxcb-1.9-1.fc17.x86_64 newt-0.52.14-2.fc17.x86_64 numactl-libs-2.0.7-6.fc17.x86_64 pango-1.30.0-1.fc17.x86_64 pixman-0.24.4-2.fc17.x86_64 python-libs-2.7.3-7.2.fc17.x86_64 slang-2.2.4-3.fc17.x86_64 xz-libs-5.1.2-1alpha.fc17.x86_64 zlib-1.2.5-7.fc17.x86_64
+  (gdb) bt
+  #0  dso__name_len (dso=0x68100142) at util/dso.c:389
+  #1  0x000000000048d8cd in hists__calc_col_len (hists=hists@entry=0x8a1c10, h=h@entry=0xd7de50) at util/hist.c:130
+  #2  0x000000000048dc47 in hists__inc_nr_entries (h=0xd7de50, hists=0x8a1c10) at util/hist.c:285
+  #3  hists__inc_nr_entries (h=0xd7de50, hists=0x8a1c10) at util/hist.c:613
+  #4  __hists__output_resort (hists=hists@entry=0x8a1c10, threaded=threaded@entry=false) at util/hist.c:639
+  #5  0x000000000048e2de in hists__output_resort (hists=hists@entry=0x8a1c10) at util/hist.c:645
+  #6  0x0000000000436240 in __cmd_report (rep=0x7fffffffd330) at builtin-report.c:521
+  #7  cmd_report (argc=<optimized out>, argv=argv@entry=0x89fd10, prefix=prefix@entry=0x0) at builtin-report.c:888
+  #8  0x0000000000449e30 in report_events (mem=0x7fffffffde90, argv=0x7fffffffe4a0, argc=<optimized out>) at builtin-mem.c:182
+  #9  cmd_mem (argc=<optimized out>, argv=0x7fffffffe4a0, prefix=<optimized out>) at builtin-mem.c:233
+  #10 0x00000000004191d3 in run_builtin (p=p@entry=0x7bf768, argc=argc@entry=5, argv=argv@entry=0x7fffffffe4a0) at perf.c:319
+  #11 0x0000000000418976 in handle_internal_command (argv=0x7fffffffe4a0, argc=5) at perf.c:367
+  #12 run_argv (argv=0x7fffffffe290, argcp=0x7fffffffe29c) at perf.c:411
+  #13 main (argc=5, argv=0x7fffffffe4a0) at perf.c:513
 
->  .../devicetree/bindings/pwm/vt8500-pwm.txt         |    7 ++++---
->  drivers/pwm/pwm-vt8500.c                           |   21 ++++++++++++++=
-++++++
->  2 files changed, 25 insertions(+), 3 deletions(-)
->=20
-> diff --git a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt b/Docum=
-entation/devicetree/bindings/pwm/vt8500-pwm.txt
-> index bcc6367..f71cc8d 100644
-> --- a/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-> +++ b/Documentation/devicetree/bindings/pwm/vt8500-pwm.txt
-> @@ -3,14 +3,15 @@ VIA/Wondermedia VT8500/WM8xxx series SoC PWM controller
->  Required properties:
->  - compatible: should be "via,vt8500-pwm"
->  - reg: physical base address and length of the controller's registers
-> -- #pwm-cells: should be 2.  The first cell specifies the per-chip index
-> -  of the PWM to use and the second cell is the period in nanoseconds.
-> +- #pwm-cells: should be 3.  The first cell specifies the per-chip index
-> +  of the PWM to use, the second cell is the period in nanoseconds, and t=
-he
-> +  third cell is for flags.
 
-This needs to document what flags the third cell encodes and how. Either
-that or refer to the generic PWM binding documentation.
-
-> diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
-> index 27ed0f4..9abf561 100644
-> --- a/drivers/pwm/pwm-vt8500.c
-> +++ b/drivers/pwm/pwm-vt8500.c
-> @@ -164,10 +164,31 @@ static void vt8500_pwm_disable(struct pwm_chip *chi=
-p, struct pwm_device *pwm)
->  	clk_disable(vt8500->clk);
->  }
-> =20
-> +static int vt8500_pwm_set_polarity(struct pwm_chip *chip,
-> +				   struct pwm_device *pwm,
-> +				   enum pwm_polarity polarity)
-> +{
-> +	struct vt8500_chip *vt8500 =3D to_vt8500_chip(chip);
-> +	u32 val;
-> +
-> +	val =3D readl(vt8500->base + REG_CTRL(pwm->hwpwm));
-> +
-> +	if (polarity =3D=3D PWM_POLARITY_INVERSED)
-> +		val |=3D CTRL_INVERT;
-> +	else
-> +		val &=3D ~CTRL_INVERT;
-> +
-> +	writel(val, vt8500->base + REG_CTRL(pwm->hwpwm));
-> +	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_CTRL_UPDATE);
-> +
-> +	return 0;
-> +}
-> +
->  static struct pwm_ops vt8500_pwm_ops =3D {
->  	.enable =3D vt8500_pwm_enable,
->  	.disable =3D vt8500_pwm_disable,
->  	.config =3D vt8500_pwm_config,
-> +	.set_polarity =3D vt8500_pwm_set_polarity,
->  	.owner =3D THIS_MODULE,
->  };
-
-This patch is missing the corresponding changes to the DT code. You need
-to override the pwm_chip's .of_xlate() and .of_pwm_n_cells fields. You
-can look at the TI EHRPWM driver if you need inspiration.
-
-Thierry
-
---4ZLFUWh1odzi/v6L
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ5D+lAAoJEN0jrNd/PrOhmqEP/j0ENc22jCehiWa6OrLvEhg0
-UnHdlXyjsPDSNwsu08hVH93npv8t4TrQlP889136sD/ybBvgstQZsT2dPXtcbKOK
-G1nVgAvu59YpFFQCjYY2fkSQcsS/N2/SH7ixYQ5/od9pfHUHjFzwqizaKi/x0i/B
-jPQiw6hwv264muGKTQNTwqzZAHK3AIy6d3aHqxhgSInHnvCgS1Tgb+P9UxH41lwY
-chKyoqnFKWLWXkuZ/bR6UZVcTxE9B4c2mbMPg3JC0+1eC88f0FaYnI/AOwDw/Gpu
-1WfkWsYfeUU1V1PwlE0J1bKOsrZoHe+x/cpjTm60W1L0CKCom2hQUmzeCd+qYVeX
-Cq0LxwtdajdriYYTgs7Z4acDd8j/e6W2trhU15NnfUI83lHYoZGbCe79iR4RVdsc
-/NgIZ1sdFtQfDA3ZD5YQCs6Zs/38rv/0nWpCJ/5MFA0Czpgt7Hd4sySCPewlEm91
-zt+HR8VK8/vweHop19ShqNLm2OV2DSptQLUjl4w0jBpOo+t/sK6Q2tEPhgZaPRyj
-5XGEmjnV/PE3ft1cxn1ZuokihWEgli/CRBkkWaQsRulnfpQ4fJAyaaLgc9IgjQCM
-XA+VPcij5pCaLRuR0xBYAUEvGBHCl3wToTRfxTCl8KWx36ZZBLJNEkZOqiPX0zaj
-Wl930CehB+OR4srOhLgi
-=OxAO
------END PGP SIGNATURE-----
-
---4ZLFUWh1odzi/v6L--
+jirka
