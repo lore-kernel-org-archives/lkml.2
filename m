@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab3ABS5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 13:57:46 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:45028 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab3ABS5m (ORCPT
+	id S1752684Ab3ABTDA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 14:03:00 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34521 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752461Ab3ABTC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 13:57:42 -0500
-Date: Wed, 2 Jan 2013 10:57:47 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Dave Reisner <dreisner@archlinux.org>, LKML <linux-kernel@vger.kernel.org>,
-        Vasiliy Kulikov <segoon@openwall.com>
-Subject: Re: [PATCH] debugfs: convert gid= argument from decimal, not octal
-Message-ID: <20130102185747.GA28762@kroah.com>
-References: <1357134877-27141-1-git-send-email-dreisner@archlinux.org>
- <20130102183351.GA28554@kroah.com>
- <CAGXu5jJ1oGh-ExwQ6f0CMNQjF2cAcLrgWRCz8ho0v4Ve+GjOuw@mail.gmail.com>
+	Wed, 2 Jan 2013 14:02:57 -0500
+Message-ID: <50E4845D.6020809@wwwdotorg.org>
+Date: Wed, 02 Jan 2013 12:02:53 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ1oGh-ExwQ6f0CMNQjF2cAcLrgWRCz8ho0v4Ve+GjOuw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hiroshi Doyu <hdoyu@nvidia.com>
+CC: linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
+Subject: Re: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from
+ DT
+References: <1355725087-11363-1-git-send-email-hdoyu@nvidia.com> <1355725087-11363-4-git-send-email-hdoyu@nvidia.com>
+In-Reply-To: <1355725087-11363-4-git-send-email-hdoyu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 10:42:17AM -0800, Kees Cook wrote:
-> On Wed, Jan 2, 2013 at 10:33 AM, Greg Kroah-Hartman
-> <gregkh@linuxfoundation.org> wrote:
-> > On Wed, Jan 02, 2013 at 08:54:37AM -0500, Dave Reisner wrote:
-> >> This patch technically breaks userspace, but I suspect that anyone who
-> >> actually used this flag would have encountered this brokenness, declared
-> >> it lunacy, and already sent a patch.
-> >
-> > Kees is the one that originally did this change (I think, right?)
-> 
-> I recommended the default change, but I think it was Vasiliy that
-> added the gid option, IIRC.
+On 12/16/2012 11:18 PM, Hiroshi Doyu wrote:
+> Set Snoop Control Unit(SCU) register base address dynamically from DT.
 
-Ah, you are right, sorry about that.
-
-> > Kees, any objection to this patch?  Will it break your existing systems?
-> 
-> Regardless, I have no objection -- this should be int, not octal.
-
-Ok, I'll queue this up when I get back from vacation next week.
-
-thanks,
-
-greg k-h
+Hiroshi, what's the status on this patch series? I think Rob had
+comments/objections on patch 4; are you going to post an updated series,
+or is this series replaced by patch 3 in your Tegra114 series?
