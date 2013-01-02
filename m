@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752649Ab3ABKFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 05:05:18 -0500
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:49643 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752422Ab3ABKFQ (ORCPT
+	id S1752649Ab3ABKPp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 05:15:45 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45896 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263Ab3ABKPn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 05:05:16 -0500
-Message-ID: <50E404BC.3010604@monstr.eu>
-Date: Wed, 02 Jan 2013 10:58:20 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
+	Wed, 2 Jan 2013 05:15:43 -0500
+From: "AnilKumar, Chimata" <anilkumar@ti.com>
+To: "AnilKumar, Chimata" <anilkumar@ti.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] mfd: tps65910: Select REGMAP_IRQ in Kconfig to fix
+ build error
+Thread-Topic: [PATCH] mfd: tps65910: Select REGMAP_IRQ in Kconfig to fix
+ build error
+Thread-Index: AQHN1seiI6fLegAXTkGaMUde0EWBo5g18YqQ
+Date: Wed, 2 Jan 2013 10:15:39 +0000
+Message-ID: <331ABD5ECB02734CA317220B2BBEABC13EAD58CF@DBDE01.ent.ti.com>
+References: <1355138096-7702-1-git-send-email-anilkumar@ti.com>
+In-Reply-To: <1355138096-7702-1-git-send-email-anilkumar@ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.132.219]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, netdev@vger.kernel.org
-CC: Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        David Miller <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, John Linn <linnj@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>
-Subject: Support for Marvell 88E1510 and 88E1116R
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys,
+On Mon, Dec 10, 2012 at 16:44:56, AnilKumar, Chimata wrote:
+> TPS65910 mfd driver uses functions that are only avaiable when
+> REGMAP_IRQ is enabled. So "select REGMAP_IRQ" is added to mfd
+> Kconfig to fix below build error:
+> 
+> drivers/built-in.o: In function `tps65910_irq_exit':
+> /media/anil/kernel/drivers/mfd/tps65910.c:265: undefined reference to `regmap_del_irq_chip'
+> drivers/built-in.o: In function `tps65910_irq_init':
+> /media/anil/kernel/drivers/mfd/tps65910.c:254: undefined reference to `regmap_add_irq_chip'
+> drivers/built-in.o: In function `tps65910_i2c_probe':
+> /media/anil/kernel/drivers/mfd/tps65910.c:509: undefined reference to `regmap_irq_get_domain'
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: AnilKumar Ch <anilkumar@ti.com>
+> ---
+>  drivers/mfd/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 1c0abd4..01413a2 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -237,6 +237,7 @@ config MFD_TPS65910
+>  	depends on I2C=y && GPIOLIB
+>  	select MFD_CORE
+>  	select REGMAP_I2C
+> +	select REGMAP_IRQ
+>  	select IRQ_DOMAIN
+>  	help
+>  	  if you say yes here you get support for the TPS65910 series of
 
-just a question regarding to Marvell 88e1510 and 88E1116R phys.
-We have these phys on the arm zynq board and would like to add
-support to the kernel. Is there any repository with these phys?
-If yes, when are you going to add them to the mainline?
+Hi Samuel,
 
-If there is not, I can send patches for them.
-(I am not the author of that patches just trying to clean our
-repository and add patches to the mainline)
+Could you please pull this fix?
 
-Thanks,
-Michal
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Thanks
+AnilKumar
