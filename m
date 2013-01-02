@@ -1,38 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684Ab3ABTDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 14:03:00 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34521 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752461Ab3ABTC5 (ORCPT
+	id S1752706Ab3ABTDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 14:03:48 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:34602 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752404Ab3ABTDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 14:02:57 -0500
-Message-ID: <50E4845D.6020809@wwwdotorg.org>
-Date: Wed, 02 Jan 2013 12:02:53 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Hiroshi Doyu <hdoyu@nvidia.com>
-CC: linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: Re: [PATCH 4/4] ARM: tegra: Set SCU base address dynamically from
- DT
-References: <1355725087-11363-1-git-send-email-hdoyu@nvidia.com> <1355725087-11363-4-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1355725087-11363-4-git-send-email-hdoyu@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Jan 2013 14:03:45 -0500
+Subject: Re: [PATCH] epoll: prevent missed events on EPOLL_CTL_MOD
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Eric Wong <normalperson@yhbt.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
+        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
+        Davide Libenzi <davidel@xmailserver.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Voellmy <andreas.voellmy@yale.edu>,
+        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
+        Network Development <netdev@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <20130102184010.GA21780@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+	 <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
+	 <1357065750.21409.12527.camel@edumazet-glaptop>
+	 <20130101210033.GA13255@dcvr.yhbt.net>
+	 <20130101211728.GA13380@dcvr.yhbt.net>
+	 <CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
+	 <20130101235605.GA17168@dcvr.yhbt.net>
+	 <1357148750.21409.17169.camel@edumazet-glaptop>
+	 <20130102184010.GA21780@dcvr.yhbt.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Jan 2013 11:03:36 -0800
+Message-ID: <1357153416.21409.17488.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/16/2012 11:18 PM, Hiroshi Doyu wrote:
-> Set Snoop Control Unit(SCU) register base address dynamically from DT.
+On Wed, 2013-01-02 at 18:40 +0000, Eric Wong wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > First, thanks for working on this issue.
+> 
+> No problem!
+> 
+> > It seems the real problem is the epi->event.events = event->events;
+> > which is done without taking ep->lock
+> 
+> Yes.  I am hoping it is possible to do it without a lock there,
+> but your change is more obviously correct.
+> 
+> > While a smp_mb() could reduce the race window, I believe there is still
+> > a race, and the following patch would close it.
+> 
+> I'm not an experienced kernel hacker, can you describe where the race
+> would be?
 
-Hiroshi, what's the status on this patch series? I think Rob had
-comments/objections on patch 4; are you going to post an updated series,
-or is this series replaced by patch 3 in your Tegra114 series?
+It would be for example in ep_send_events_proc() doing :
+
+if (epi->event.events & EPOLLONESHOT)
+    epi->event.events &= EP_PRIVATE_BITS;
+
+And this could happen at the same time.
+
+
+
