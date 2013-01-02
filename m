@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab3ABMBm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 07:01:42 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:63428 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090Ab3ABMBj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 07:01:39 -0500
-X-Greylist: delayed 456 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 07:01:39 EST
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>
-Subject: [PATCH] davinci: dm355: Fix uninitialized variable compiler warnings
-Date: Wed,  2 Jan 2013 17:23:49 +0530
-Message-Id: <1357127630-8167-1-git-send-email-prabhakar.lad@ti.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1752691Ab3ABMCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 07:02:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:43266 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab3ABMCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 07:02:37 -0500
+Date: Wed, 2 Jan 2013 13:02:48 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Antti Palosaari <crope@iki.fi>
+Cc: Shuah Khan <shuahkhan@gmail.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Andy Furniss <andyqos@ukfsn.org>, Alex Deucher <alexdeucher@gmail.com>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+Message-ID: <20130102120248.GC6181@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Antti Palosaari <crope@iki.fi>, Shuah Khan <shuahkhan@gmail.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Andy Furniss <andyqos@ukfsn.org>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org,
+	lkml <linux-kernel@vger.kernel.org>
+References: <20121223105527.GA6230@liondog.tnic>
+ <50D6E491.3030801@ukfsn.org>
+ <20121223110730.GC6230@liondog.tnic>
+ <50D6E8A4.1030204@ukfsn.org>
+ <20121223113153.GA8918@liondog.tnic>
+ <20121223115133.GA229@x4>
+ <20121223122210.GA4460@liondog.tnic>
+ <20121223133102.GA8153@liondog.tnic>
+ <CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com>
+ <50E3907C.4040106@iki.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50E3907C.4040106@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/media/platform/davinci/dm355_ccdc.c:593:9: warning: ‘val1’ may be
-used uninitialized in this function [-Wuninitialized]
-drivers/media/platform/davinci/dm355_ccdc.c:560:6: note: ‘val1’ was declared here
+On Wed, Jan 02, 2013 at 03:42:20AM +0200, Antti Palosaari wrote:
+> I ended up also that same commit after bisecting from current 3.8
+> master.
+>
+> 01:05.0 VGA compatible controller: ATI Technologies Inc 760G [Radeon
+> 3000] It is ASUS M5A78L-M/USB3 with integrated GPU.
+>
+> I cannot even boot unless graphical boot is removed from Fedora 17
+> boot options (rhgb quiet). Random GPU crashes still.
 
-This is a false positive but the compiler has no way to know about it,
-so initialize the variable to 0.
+You could try the temporary R600-only fix although I can't see whether
+your GPU is also an R600 ASIC or something different by staring at the
+model string above:
 
-Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
----
- drivers/media/platform/davinci/dm355_ccdc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+http://marc.info/?l=dri-devel&m=135628734704029
 
-diff --git a/drivers/media/platform/davinci/dm355_ccdc.c b/drivers/media/platform/davinci/dm355_ccdc.c
-index ce0e413..3c28aaa 100644
---- a/drivers/media/platform/davinci/dm355_ccdc.c
-+++ b/drivers/media/platform/davinci/dm355_ccdc.c
-@@ -557,7 +557,7 @@ static int ccdc_config_vdfc(struct ccdc_vertical_dft *dfc)
-  */
- static void ccdc_config_csc(struct ccdc_csc *csc)
- {
--	u32 val1, val2;
-+	u32 val1 = 0, val2;
- 	int i;
- 
- 	if (!csc->enable)
+HTH.
+
 -- 
-1.7.4.1
-
+Regards/Gruss,
+Boris.
