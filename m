@@ -1,88 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830Ab3ABN1R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 08:27:17 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:46077 "EHLO comal.ext.ti.com"
+	id S1752737Ab3ABNf2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 08:35:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51214 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752649Ab3ABN1P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 08:27:15 -0500
-From: Philip Avinash <avinashphilip@ti.com>
-To: <tony@atomide.com>, <paul@pwsan.com>, <linux@arm.linux.org.uk>,
-        <b-cousson@ti.com>
-CC: <hvaibhav@ti.com>, <anilkumar@ti.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <nsekhar@ti.com>, <gururaja.hebbar@ti.com>, <vaibhav.bedia@ti.com>,
-        Philip Avinash <avinashphilip@ti.com>
-Subject: [PATCH 7/7] ARM: dts: AM33XX: Add PWM backlight DT data to am335x-evmsk
-Date: Wed, 2 Jan 2013 18:54:54 +0530
-Message-ID: <1357133094-30806-8-git-send-email-avinashphilip@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
-References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
+	id S1752697Ab3ABNfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 08:35:25 -0500
+Date: Wed, 2 Jan 2013 14:35:18 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        Sha Zhengju <handai.szj@taobao.com>, Mel Gorman <mgorman@suse.de>
+Subject: Re: [PATCH V3 7/8] memcg: disable memcg page stat accounting code
+ when not in use
+Message-ID: <20130102133518.GF22160@dhcp22.suse.cz>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+ <1356456477-14780-1-git-send-email-handai.szj@taobao.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356456477-14780-1-git-send-email-handai.szj@taobao.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PWM output from ecap2 uses as backlight source. Also adds low threshold
-value to have a uniform divisions in brightness-levels scales with
-inverse polarity.
+[CCing Mel]
 
-Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-Reviewed-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- arch/arm/boot/dts/am335x-evmsk.dts |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+On Wed 26-12-12 01:27:57, Sha Zhengju wrote:
+> From: Sha Zhengju <handai.szj@taobao.com>
+> 
+> It's inspired by a similar optimization from Glauber Costa
+> (memcg: make it suck faster; https://lkml.org/lkml/2012/9/25/154).
+> Here we use jump label to patch the memcg page stat accounting code
+> in or out when not used. when the first non-root memcg comes to
+> life the code is patching in otherwise it is out.
 
-diff --git a/arch/arm/boot/dts/am335x-evmsk.dts b/arch/arm/boot/dts/am335x-evmsk.dts
-index f5a6162..a50f286 100644
---- a/arch/arm/boot/dts/am335x-evmsk.dts
-+++ b/arch/arm/boot/dts/am335x-evmsk.dts
-@@ -51,6 +51,12 @@
- 				0x9c 0x27	/* gpmc_ben0_cle.gpio2_5, INPUT | MODE7 */
- 			>;
- 		};
-+
-+		ecap2_pins: backlight_pins {
-+			pinctrl-single,pins = <
-+				0x19c 0x4	/* mcasp0_ahclkr.ecap2_in_pwm2_out MODE4 */
-+			>;
-+		};
- 	};
- 
- 	ocp {
-@@ -94,6 +100,16 @@
- 				st,max-limit-z = <750>;
- 			};
- 		};
-+
-+		epwmss2: epwmss@48304000 {
-+			status = "okay";
-+
-+			ecap2: ecap@48304100 {
-+				status = "okay";
-+				pinctrl-names = "default";
-+				pinctrl-0 = <&ecap2_pins>;
-+			};
-+		};
- 	};
- 
- 	vbat: fixedregulator@0 {
-@@ -170,6 +186,13 @@
- 			gpios = <&gpio3 5 0>;
- 		};
- 	};
-+
-+	backlight {
-+		compatible = "pwm-backlight";
-+		pwms = <&ecap2 0 50000 1>;
-+		brightness-levels = <0 58 61 66 75 90 125 170 255>;
-+		default-brightness-level = <8>;
-+	};
- };
- 
- /include/ "tps65910.dtsi"
+Mel had a workload which shown quite a big regression when memcg is
+enabled with no cgroups but root (it was a page fault microbench AFAIR
+but I do not have a link handy) so it would be nice to check how much
+this patch helps and what are the other places which could benefit from
+the static key.
+
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+
+Anyway, I like this as a first step (and the patch description should be
+explicit about that). See other comments bellow.
+
+> ---
+>  include/linux/memcontrol.h |    9 +++++++++
+>  mm/memcontrol.c            |    8 ++++++++
+>  2 files changed, 17 insertions(+)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 1d22b81..3c4430c 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -56,6 +56,9 @@ struct mem_cgroup_reclaim_cookie {
+>  };
+>  
+>  #ifdef CONFIG_MEMCG
+> +
+> +extern struct static_key memcg_in_use_key;
+> +
+>  /*
+>   * All "charge" functions with gfp_mask should use GFP_KERNEL or
+>   * (gfp_mask & GFP_RECLAIM_MASK). In current implementatin, memcg doesn't
+> @@ -158,6 +161,9 @@ extern atomic_t memcg_moving;
+>  static inline void mem_cgroup_begin_update_page_stat(struct page *page,
+>  					bool *locked, unsigned long *flags)
+>  {
+> +	if (!static_key_false(&memcg_in_use_key))
+> +		return;
+
+Maybe static_key checks could be wrapped by a helper function with a
+more obvious name (mem_cgroup_in_use())?
+
+> +
+>  	if (mem_cgroup_disabled())
+>  		return;
+
+I would assume the check ordering would be vice versa.
+
+>  	rcu_read_lock();
+> @@ -171,6 +177,9 @@ void __mem_cgroup_end_update_page_stat(struct page *page,
+>  static inline void mem_cgroup_end_update_page_stat(struct page *page,
+>  					bool *locked, unsigned long *flags)
+>  {
+> +	if (!static_key_false(&memcg_in_use_key))
+> +		return;
+> +
+>  	if (mem_cgroup_disabled())
+>  		return;
+
+ditto
+
+>  	if (*locked)
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 0cb5187..a2f73d7 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -531,6 +531,8 @@ enum res_type {
+>  #define MEM_CGROUP_RECLAIM_SHRINK_BIT	0x1
+>  #define MEM_CGROUP_RECLAIM_SHRINK	(1 << MEM_CGROUP_RECLAIM_SHRINK_BIT)
+>  
+
+/*
+ * TODO comment what it is used for, please
+ */
+> +struct static_key memcg_in_use_key;
+> +
+>  static void mem_cgroup_get(struct mem_cgroup *memcg);
+>  static void mem_cgroup_put(struct mem_cgroup *memcg);
+>  
+> @@ -2226,6 +2228,9 @@ void mem_cgroup_update_page_stat(struct page *page,
+>  	struct page_cgroup *pc = lookup_page_cgroup(page);
+>  	unsigned long uninitialized_var(flags);
+
+This artifact can be removed.
+
+> +	if (!static_key_false(&memcg_in_use_key))
+> +		return;
+> +
+>  	if (mem_cgroup_disabled())
+>  		return;
+>  
+> @@ -6340,6 +6345,8 @@ mem_cgroup_css_alloc(struct cgroup *cont)
+>  		parent = mem_cgroup_from_cont(cont->parent);
+>  		memcg->use_hierarchy = parent->use_hierarchy;
+>  		memcg->oom_kill_disable = parent->oom_kill_disable;
+> +
+> +		static_key_slow_inc(&memcg_in_use_key);
+
+Please wrap this into a function because later we will probably want to
+do an action depending on whether this is a first onlined group (e.g.
+sync stats etc...).
+
+>  	}
+>  
+>  	if (parent && parent->use_hierarchy) {
+> @@ -6407,6 +6414,7 @@ static void mem_cgroup_css_free(struct cgroup *cont)
+>  	kmem_cgroup_destroy(memcg);
+>  
+>  	memcg_dangling_add(memcg);
+> +	static_key_slow_dec(&memcg_in_use_key);
+>  	mem_cgroup_put(memcg);
+
+memcg could be still alive at this moment (e.g. due to swap or kmem
+charges). This is not a big issue with the current state of the patch
+set as you ignore MEM_CGROUP_STAT_SWAP now but you shouldn't rely on
+that. We also have a proper place for it already (disarm_static_keys).
+
 -- 
-1.7.9.5
-
+Michal Hocko
+SUSE Labs
