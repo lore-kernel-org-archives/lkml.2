@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab3ABQxv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 11:53:51 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:52326 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752561Ab3ABQxt (ORCPT
+	id S1752828Ab3ABRHL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 12:07:11 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:56272 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab3ABRHI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 11:53:49 -0500
-From: Nitin Gupta <ngupta@vflare.org>
-To: Greg KH <greg@kroah.com>
-Cc: Jerome Marchand <jmarchan@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Sam Hansen <solid.se7en@gmail.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH][RESEND] staging: zram: fix invalid memory references during disk write
-Date: Wed,  2 Jan 2013 08:53:41 -0800
-Message-Id: <1357145621-3438-1-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.10.4
+	Wed, 2 Jan 2013 12:07:08 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130102140405.GA931@krava.brq.redhat.com>
+References: <1356018108-6081-1-git-send-email-eranian@google.com>
+	<1356018108-6081-2-git-send-email-eranian@google.com>
+	<20130102140405.GA931@krava.brq.redhat.com>
+Date: Wed, 2 Jan 2013 18:07:07 +0100
+Message-ID: <CABPqkBQvUNvpgsqnxGAfgOHr3pdEfTW+C6iEJQFkZ7MjLCD-1g@mail.gmail.com>
+Subject: Re: [PATCH v4 01/18] perf, x86: Support CPU specific sysfs events
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes a bug introduced by commit c8f2f0db1 ("zram: Fix handling
-of incompressible pages") which caused invalid memory references
-during disk write. Invalid references could occur in two cases:
- - Incoming data expands on compression: In this case, reference was
-made to kunmap()'ed bio page.
- - Partial (non PAGE_SIZE) write with incompressible data: In this
-case, reference was made to a kfree()'ed buffer.
+On Wed, Jan 2, 2013 at 3:04 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Thu, Dec 20, 2012 at 04:41:31PM +0100, Stephane Eranian wrote:
+>> From: Andi Kleen <ak@linux.intel.com>
+>>
+>> Add a way for the CPU initialization code to register additional events,
+>> and merge them into the events attribute directory. Used in the next
+>> patch.
+>>
+>> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+>> ---
+>>  arch/x86/kernel/cpu/perf_event.c |   29 +++++++++++++++++++++++++++++
+>>  arch/x86/kernel/cpu/perf_event.h |    1 +
+>>  2 files changed, 30 insertions(+)
+>>
+>> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+>> index 4428fd1..83f4c1a 100644
+>> --- a/arch/x86/kernel/cpu/perf_event.c
+>> +++ b/arch/x86/kernel/cpu/perf_event.c
+>> @@ -1341,6 +1341,30 @@ static void __init filter_events(struct attribute **attrs)
+>>       }
+>>  }
+>>
+>> +/* Merge two pointer arrays */
+>> +static __init struct attribute **merge_attr(struct attribute **a,
+>> +                                         struct attribute **b)
+>> +{
+>> +     struct attribute **new;
+>> +     int j, i;
+>> +
+>> +     for (j = 0; a[j]; j++)
+>> +             ;
+>> +     for (i = 0; b[i]; i++)
+>> +             j++;
+>> +     j++;
+>> +     new = kmalloc(sizeof(struct attribute *) * j, GFP_KERNEL);
+>> +     if (!new)
+>> +             return a;
+>
+> not likely to happen, but still.. do we want proper error handling?
+>
+Ok, will fix the error path from Andi's patch.
+Thanks.
 
-Fixes bug 50081:
-https://bugzilla.kernel.org/show_bug.cgi?id=50081
-
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-Reported-by: Mihail Kasadjikov <hamer.mk@gmail.com>
-Reported-by: Tomas M <tomas@slax.org>
-Reviewed-by: Minchan Kim <minchan@kernel.org>
----
- drivers/staging/zram/zram_drv.c |   39 ++++++++++++++++++++++++---------------
- 1 file changed, 24 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index fb4a7c9..f2a73bd 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -265,7 +265,7 @@ out_cleanup:
- static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			   int offset)
- {
--	int ret;
-+	int ret = 0;
- 	size_t clen;
- 	unsigned long handle;
- 	struct page *page;
-@@ -286,10 +286,8 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 			goto out;
- 		}
- 		ret = zram_decompress_page(zram, uncmem, index);
--		if (ret) {
--			kfree(uncmem);
-+		if (ret)
- 			goto out;
--		}
- 	}
- 
- 	/*
-@@ -302,16 +300,18 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 
- 	user_mem = kmap_atomic(page);
- 
--	if (is_partial_io(bvec))
-+	if (is_partial_io(bvec)) {
- 		memcpy(uncmem + offset, user_mem + bvec->bv_offset,
- 		       bvec->bv_len);
--	else
-+		kunmap_atomic(user_mem);
-+		user_mem = NULL;
-+	} else {
- 		uncmem = user_mem;
-+	}
- 
- 	if (page_zero_filled(uncmem)) {
--		kunmap_atomic(user_mem);
--		if (is_partial_io(bvec))
--			kfree(uncmem);
-+		if (!is_partial_io(bvec))
-+			kunmap_atomic(user_mem);
- 		zram_stat_inc(&zram->stats.pages_zero);
- 		zram_set_flag(zram, index, ZRAM_ZERO);
- 		ret = 0;
-@@ -321,9 +321,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	ret = lzo1x_1_compress(uncmem, PAGE_SIZE, src, &clen,
- 			       zram->compress_workmem);
- 
--	kunmap_atomic(user_mem);
--	if (is_partial_io(bvec))
--			kfree(uncmem);
-+	if (!is_partial_io(bvec)) {
-+		kunmap_atomic(user_mem);
-+		user_mem = NULL;
-+		uncmem = NULL;
-+	}
- 
- 	if (unlikely(ret != LZO_E_OK)) {
- 		pr_err("Compression failed! err=%d\n", ret);
-@@ -332,8 +334,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 
- 	if (unlikely(clen > max_zpage_size)) {
- 		zram_stat_inc(&zram->stats.bad_compress);
--		src = uncmem;
- 		clen = PAGE_SIZE;
-+		src = NULL;
-+		if (is_partial_io(bvec))
-+			src = uncmem;
- 	}
- 
- 	handle = zs_malloc(zram->mem_pool, clen);
-@@ -345,7 +349,11 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	}
- 	cmem = zs_map_object(zram->mem_pool, handle, ZS_MM_WO);
- 
-+	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-+		src = kmap_atomic(page);
- 	memcpy(cmem, src, clen);
-+	if ((clen == PAGE_SIZE) && !is_partial_io(bvec))
-+		kunmap_atomic(src);
- 
- 	zs_unmap_object(zram->mem_pool, handle);
- 
-@@ -358,9 +366,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
- 	if (clen <= PAGE_SIZE / 2)
- 		zram_stat_inc(&zram->stats.good_compress);
- 
--	return 0;
--
- out:
-+	if (is_partial_io(bvec))
-+		kfree(uncmem);
-+
- 	if (ret)
- 		zram_stat64_inc(zram, &zram->stats.failed_writes);
- 	return ret;
--- 
-1.7.10.4
-
+> other than that the patch looks ok to me
+>
+> jirka
