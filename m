@@ -1,58 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab3ACBHf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 20:07:35 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:57617 "EHLO hydra.sisk.pl"
+	id S1753045Ab3ACBRJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 20:17:09 -0500
+Received: from ozlabs.org ([203.10.76.45]:39337 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752707Ab3ACBHc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 20:07:32 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-dev@lists.linaro.org, nicolas.pitre@linaro.org,
-        amit.kucheria@linaro.org, mathieu.poirier@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        pdsw-power-team@arm.com, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/3] cpufreq: Manage only online cpus
-Date: Thu, 03 Jan 2013 02:13:08 +0100
-Message-ID: <7569403.CvHy03LdiU@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <CAKohpomxCSVRXkvde-P6T3Ks=7Z8PX1NSjzFfvKsPYQXTScwRw@mail.gmail.com>
-References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org> <CAKohpomfEHGrCdbZ-EakRN4=qF8epd5seX5TWRcErQj9BEFpNA@mail.gmail.com> <CAKohpomxCSVRXkvde-P6T3Ks=7Z8PX1NSjzFfvKsPYQXTScwRw@mail.gmail.com>
+	id S1752745Ab3ACBQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 20:16:58 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jonathan Kliegman <kliegs@chromium.org>, linux-kernel@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org,
+        Jonathan Kliegman <kliegs@chromium.org>
+Subject: Re: [PATCH] modpost: Add flag -f for making section mismatches fatal
+In-Reply-To: <1356029364-11346-1-git-send-email-kliegs@chromium.org>
+References: <1356029364-11346-1-git-send-email-kliegs@chromium.org>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Thu, 03 Jan 2013 10:26:01 +1030
+Message-ID: <87ip7f5ecu.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 02, 2013 11:59:57 AM Viresh Kumar wrote:
-> On 16 December 2012 19:07, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> > On 16 December 2012 18:34, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> 
-> >> Well, this series makes sense to me, but I'd like to hear what the other people
-> >> think.
-> >
-> > That sounds great :)
-> >
-> > Some more information for others about how i reached to these issues
-> > is present here:
-> >
-> > https://lkml.org/lkml/2012/12/10/44
-> 
-> Hmm.. I don't know, if we are going to get any feedback from others :(
+Jonathan Kliegman <kliegs@chromium.org> writes:
+> The section mismatch warning can be easy to miss during the kernel build
+> process.  Allow it to be marked as fatal to be easily caught and prevent
+> bugs from slipping in.
+>
+> Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
 
-Surely somebody cares except for us two?
+Hmm, a CONFIG option with no Kconfig entry?  That seems weird...
 
-> BTW, i consider them as fixes and so would make sense to get them in next rc.
-> What do you think?
-
-Yes, if somebody tells me "yes, this fixes a problem for me".  Otherwise,
-I don't quite see the reason.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Cheers,
+Rusty.
