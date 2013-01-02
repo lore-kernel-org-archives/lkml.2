@@ -1,77 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752481Ab3ABSsY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 13:48:24 -0500
-Received: from mail-vc0-f201.google.com ([209.85.220.201]:61605 "EHLO
-	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3ABSsW (ORCPT
+	id S1752726Ab3ABSsu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 13:48:50 -0500
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:45793 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752678Ab3ABSsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 13:48:22 -0500
-Date: Wed, 2 Jan 2013 11:48:21 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
+	Wed, 2 Jan 2013 13:48:46 -0500
+Date: Wed, 2 Jan 2013 10:48:42 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Lutomirski <luto@amacapital.net>,
-        Huang Ying <ying.huang@intel.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: [GIT PULL] PCI updates for v3.8
-Message-ID: <20130102184821.GA31813@google.com>
+cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        David Rientjes <rientjes@google.com>, Mel Gorman <mgorman@suse.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: [PATCH 1/2] tmpfs mempolicy: fix /proc/mounts corrupting
+ memory
+In-Reply-To: <CA+55aFyH63agfbf+pYNRGHaprPqAJF=F19GR6ASP_RhoyDGLdA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1301021031230.30549@eggly.anvils>
+References: <alpine.LNX.2.00.1301020153090.18049@eggly.anvils> <0000013bfbfbb293-ccc455ed-2db6-46e2-8362-dc418bae0def-000000@email.amazonses.com> <CA+55aFyH63agfbf+pYNRGHaprPqAJF=F19GR6ASP_RhoyDGLdA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2 Jan 2013, Linus Torvalds wrote:
+> On Wed, Jan 2, 2013 at 7:57 AM, Christoph Lameter <cl@linux.com> wrote:
+> > On Wed, 2 Jan 2013, Hugh Dickins wrote:
+> >
+> >> @@ -2796,10 +2787,7 @@ int mpol_to_str(char *buffer, int maxlen
+> >>       case MPOL_BIND:
+> >>               /* Fall through */
+> >>       case MPOL_INTERLEAVE:
+> >> -             if (no_context)
+> >> -                     nodes = pol->w.user_nodemask;
+> >> -             else
+> >> -                     nodes = pol->v.nodes;
+> >> +             nodes = pol->v.nodes;
+> >>               break;
+> >>
+> >
+> > no_context was always true. Why is the code from the false branch kept?
+> 
+> no_context is zero in the caller in fs/proc/task_mmu.c, and one in the
+> mm/shmem.c caller. So it's not always true (for mpol_parse_str() there
+> is only one caller, and it's always true as Hugh said).
 
-Here are some fixes for v3.8.  They include a fix for the new SR-IOV
-sysfs management support, an expanded quirk for Ricoh SD card readers,
-a Stratus DMI quirk fix, and a PME polling fix.
+Yes, I think Christoph was remembering the old days when mpol_to_str()
+started out just for tmpfs; later /proc/pid/numa_maps extended it for
+use on vmas (the "contextualized" !no_context case).
 
-Bjorn
+> 
+> Anyway, I do not know why Hugh took the true case, but I don't really
+> imagine that it matters. So I'll take these two patches, but it would
+> be good if you double-checked this, Hugh.
 
+Thanks, yes, I played with a number of ways of fixing it (and sat on my
+original fix for several days, rightly guessing this an area where more
+problems would emerge - only later realizing mpol=prefer:Node wrong too).
 
-The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+I could probably have kept mpol_to_str()'s no_context arg, and done
+something with it in the MPOL_PREFERRED case; perhaps would have chosen
+that if the arg had been more understandably named than "no_context";
+but in the end thought removing the need for the arg was simplest.
 
-  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git tags/3.8-pci-fixes
-
-for you to fetch changes up to 812089e01b9f65f90fc8fc670d8cce72a0e01fbb:
-
-  PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz (2012-12-26 10:43:06 -0700)
-
-----------------------------------------------------------------
-PCI updates for v3.8:
-
-  PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
-  PCI: Remove spurious error for sriov_numvfs store and simplify flow
-  PCI: Add PCIe Link Capability link speed and width names
-  PCI/PM: Do not suspend port if any subordinate device needs PME polling
-  PCI: Work around Stratus ftServer broken PCIe hierarchy (fix DMI check)
-
-----------------------------------------------------------------
-Andy Lutomirski (1):
-      PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
-
-Bjorn Helgaas (2):
-      PCI: Remove spurious error for sriov_numvfs store and simplify flow
-      PCI: Add PCIe Link Capability link speed and width names
-
-Huang Ying (1):
-      PCI/PM: Do not suspend port if any subordinate device needs PME polling
-
-Myron Stowe (1):
-      PCI: Work around Stratus ftServer broken PCIe hierarchy (fix DMI check)
-
- arch/x86/pci/common.c          |  3 +-
- drivers/pci/pci-sysfs.c        | 85 +++++++++++++++++-------------------------
- drivers/pci/pcie/portdrv_pci.c | 20 +++++++++-
- drivers/pci/quirks.c           |  7 +++-
- include/linux/pci_ids.h        |  1 +
- include/uapi/linux/pci_regs.h  |  2 +
- 6 files changed, 63 insertions(+), 55 deletions(-)
+Hugh
