@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635Ab3ABFYV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 00:24:21 -0500
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:32379 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab3ABFYT (ORCPT
+	id S1752558Ab3ABFY2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 00:24:28 -0500
+Received: from g6t0185.atlanta.hp.com ([15.193.32.62]:29034 "EHLO
+	g6t0185.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751782Ab3ABFYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 00:24:19 -0500
-Message-ID: <1357104253.2182.4.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH 1/3] staging: zram: simplify num_devices paramater
+	Wed, 2 Jan 2013 00:24:25 -0500
+Message-ID: <1357104262.2182.5.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH 2/3] staging: zram: show correct disksize
 From: Davidlohr Bueso <davidlohr.bueso@hp.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, Nitin Gupta <ngupta@vflare.org>
-Date: Tue, 01 Jan 2013 21:24:13 -0800
+Date: Tue, 01 Jan 2013 21:24:22 -0800
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
 Mime-Version: 1.0
@@ -21,50 +21,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify dealing with num_devices when initializing zram.
-Also cleanup some of the output messages.
+The ->disksize variable stores values in units of bytes,
+print the correct size in Kb
 
 Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
 ---
- drivers/staging/zram/zram_drv.c | 10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/staging/zram/zram_drv.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index fb4a7c9..8115be9 100644
+index 8115be9..10d7592 100644
 --- a/drivers/staging/zram/zram_drv.c
 +++ b/drivers/staging/zram/zram_drv.c
-@@ -40,7 +40,7 @@ static int zram_major;
- struct zram *zram_devices;
- 
- /* Module params (documentation at end) */
--static unsigned int num_devices;
-+static unsigned int num_devices = 1;
- 
- static void zram_stat_inc(u32 *v)
- {
-@@ -715,13 +715,7 @@ static int __init zram_init(void)
- 		goto out;
+@@ -126,8 +126,7 @@ static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
+ 		"\tMemory Size: %zu kB\n"
+ 		"\tSize you selected: %llu kB\n"
+ 		"Continuing anyway ...\n",
+-		totalram_bytes >> 10, zram->disksize
+-		);
++		totalram_bytes >> 10, zram->disksize >> 10);
  	}
  
--	if (!num_devices) {
--		pr_info("num_devices not specified. Using default: 1\n");
--		num_devices = 1;
--	}
--
- 	/* Allocate the device array and initialize each one */
--	pr_info("Creating %u devices ...\n", num_devices);
- 	zram_devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
- 	if (!zram_devices) {
- 		ret = -ENOMEM;
-@@ -734,6 +728,8 @@ static int __init zram_init(void)
- 			goto free_devices;
- 	}
- 
-+	pr_info("Created %u device(s) ...\n", num_devices);
-+
- 	return 0;
- 
- free_devices:
+ 	zram->disksize &= PAGE_MASK;
 -- 
 1.7.11.7
 
