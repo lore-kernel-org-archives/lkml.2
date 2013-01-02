@@ -1,82 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab3ABW6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 17:58:24 -0500
-Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:58472 "EHLO nsa.gov"
+	id S1753016Ab3ABW6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 17:58:53 -0500
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:65010 "EHLO nsa.gov"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752735Ab3ABW6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 17:58:21 -0500
-X-TM-IMSS-Message-ID: <5cefc27c00096f1b@nsa.gov>
+	id S1752787Ab3ABW6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 17:58:23 -0500
+X-TM-IMSS-Message-ID: <80b7e41b000c9452@nsa.gov>
 From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
 To: viro@ZenIV.linux.org.uk, konrad.wilk@oracle.com
 Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: oopsable race in xen-gntdev [PATCH 0/3]
-Date: Wed,  2 Jan 2013 17:57:10 -0500
-Message-Id: <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Subject: [PATCH 3/3] xen/gntdev: remove erronous use of copy_to_user
+Date: Wed,  2 Jan 2013 17:57:13 -0500
+Message-Id: <1357167433-16874-4-git-send-email-dgdegra@tycho.nsa.gov>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <20121221201824.GA31554@phenom.dumpdata.com>
+In-Reply-To: <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
 References: <20121221201824.GA31554@phenom.dumpdata.com>
+ <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12/21/2012 03:18 PM, Konrad Rzeszutek Wilk wrote:
-> On Sat, Dec 15, 2012 at 06:12:11PM +0000, Al Viro wrote:
->> 	1) find_vma() is *not* safe without ->mmap_sem and its result may
->> very well be freed just as it's returned to caller.  IOW,
->> gntdev_ioctl_get_offset_for_vaddr() is racy and may end up with
->> dereferencing freed memory.
+Since there is now a mapping of granted pages in kernel address space in
+both PV and HVM, use it for UNMAP_NOTIFY_CLEAR_BYTE instead of accessing
+memory via copy_to_user and triggering sleep-in-atomic warnings.
 
-I agree, this one should be fixed by taking mmap_sem in
-gntdev_ioctl_get_offset_for_vaddr. Iterating the grant_map list here
-will not work under HVM, where map->vma is not filled in.
+Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+---
+ drivers/xen/gntdev.c | 13 +++----------
+ 1 file changed, 3 insertions(+), 10 deletions(-)
 
->> 	2) gntdev_vma_close() is putting NULL into map->vma with only
->> ->mmap_sem held by caller.  Things like
->>                 if (!map->vma)
->>                         continue;
->>                 if (map->vma->vm_start >= end)
->>                         continue;
->>                 if (map->vma->vm_end <= start)
->> done with just priv->lock held are racy.
->>
->> 	I'm not familiar with the code, but it looks like we need to
->> protect gntdev_vma_close() guts with the same spinlock and probably
->> hold ->mmap_sem shared around the "find_vma()+get to map->{index,count}"
->> in the ioctl.  Or replace the logics in ioctl with search through the
->> list of grant_map under the same spinlock...
->>
->> 	Comments?
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index 9be3e5e..3c8803f 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -312,17 +312,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
+ 
+ 	if (map->notify.flags & UNMAP_NOTIFY_CLEAR_BYTE) {
+ 		int pgno = (map->notify.addr >> PAGE_SHIFT);
+-		if (pgno >= offset && pgno < offset + pages && use_ptemod) {
+-			void __user *tmp = (void __user *)
+-				map->vma->vm_start + map->notify.addr;
+-			err = copy_to_user(tmp, &err, 1);
+-			if (err)
+-				return -EFAULT;
+-			map->notify.flags &= ~UNMAP_NOTIFY_CLEAR_BYTE;
+-		} else if (pgno >= offset && pgno < offset + pages) {
+-			uint8_t *tmp = kmap(map->pages[pgno]);
++		if (pgno >= offset && pgno < offset + pages) {
++			/* No need for kmap, pages are in lowmem */
++			uint8_t *tmp = pfn_to_kaddr(page_to_pfn(map->pages[pgno]));
+ 			tmp[map->notify.addr & (PAGE_SIZE-1)] = 0;
+-			kunmap(map->pages[pgno]);
+ 			map->notify.flags &= ~UNMAP_NOTIFY_CLEAR_BYTE;
+ 		}
+ 	}
+-- 
+1.7.11.7
 
-Although I don't think the mmu notifier is ever called without mmap_sem
-on this particular device file (we map only with VM_DONTCOPY and other
-paths like truncate generally aren't triggered), it's probably best not
-to rely on that behavior, so adding the spinlock in gntdev_vma_close
-seems to be the best solution.
-
-> Hey Al,
-> 
-> Thank you for your analysis.
-> 
-> CC-ing Daniel, David and Stefano. I recall we had some priv->lock movement
-> in the past and there is also interaction with another piece of code - 
-> the balloon code so we better be circumspect of not blowing up.
-> 
-> Al, it is around holidays and folks are mostly gone - so this will take
-> a bit of time to get sorted out.
-
-While I was digging in this code, I found a related bug in
-mn_invl_range_start: if gntdev_ioctl_unmap_grant_ref is called on
-a range before unmapping it, the entry is removed from priv->maps and
-the later call to mn_invl_range_start won't find it to do the unmapping.
-This could be fixed by using find_vma, but I don't think there's a safe
-way to do that from inside the mmu notifier, so instead I created a list
-of these unlinked but still mapped pages.
-
-The third patch is a fix to an unrelated bug that I found while testing
-the fixes in the other two patches.
-
-[PATCH 1/3] xen/gntdev: fix unsafe vma access
-[PATCH 2/3] xen/gntdev: correctly unmap unlinked maps in mmu
-[PATCH 3/3] xen/gntdev: remove erronous use of copy_to_user
