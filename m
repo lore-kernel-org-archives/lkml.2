@@ -1,100 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752742Ab3ABNjL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 08:39:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:59311 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752656Ab3ABNjJ (ORCPT
+	id S1752749Ab3ABNkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 08:40:32 -0500
+Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:32815 "EHLO
+	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752656Ab3ABNka (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 08:39:09 -0500
-Date: Wed, 2 Jan 2013 14:38:43 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Philip Avinash <avinashphilip@ti.com>
-Cc: tony@atomide.com, paul@pwsan.com, linux@arm.linux.org.uk, b-cousson@ti.com,
-        hvaibhav@ti.com, anilkumar@ti.com, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        nsekhar@ti.com, gururaja.hebbar@ti.com, vaibhav.bedia@ti.com
-Subject: Re: [PATCH 3/7] pwm: pwm-tiehrpwm: Update the clock handling of
- pwm-tiehrpwm driver
-Message-ID: <20130102133843.GA4414@avionic-0098.adnet.avionic-design.de>
-References: <1357133094-30806-1-git-send-email-avinashphilip@ti.com>
- <1357133094-30806-4-git-send-email-avinashphilip@ti.com>
+	Wed, 2 Jan 2013 08:40:30 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@stericsson.com>, <stable@kernel.org>
+Subject: [PATCH v2] mfd: tc3589x: use simple irqdomain
+Date: Wed, 2 Jan 2013 14:40:14 +0100
+Message-ID: <1357134014-31203-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="r5Pyd7+fXNt84Ff3"
-Content-Disposition: inline
-In-Reply-To: <1357133094-30806-4-git-send-email-avinashphilip@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:rD2rofoIj2pLY+9kbftKXzle/Lj6FrdY9a9U8Wc4Xx9
- yeTeoi8uVOog7ebRPI5cZQdz5joJQdzjbtUWRpJaugwQ7WJDQI
- +WuWt0SOs+lnqSbzvuFP3evXOGJJ2WksYo5qps8q3PytICcu/U
- MCzkulROwi55z/bfspXJBSclPK+w+0TX0acs4f0SMIxylUQQYw
- r/xrKUsfWcUTmRUxnNxyIcLfOaf0s93LDUaFOPYGe9eqgYiVVd
- q9Yyb4Gl+WHB3upEvK2tl713VCXaaiOWDDPtr6TFNA2Yig6HJf
- dZY6msQgp30IVSIqNWN8ctlc2iSTiB5EH/7NCuwOfyayHAIS0G
- 6UJp6wJY/uQaxwbHtxe6pmK3uIk1bN4K+s9+xTMooEPTev/nzi
- erPXUsKfusulejiLvINIY3/NcfCa/UQGas=
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This fixes a regression in the TC3589x driver introduced in
+commit 15e27b1088245a2de3b7d09d39cd209212eb16af
+"mfd: Provide the tc3589x with its own IRQ domain"
 
---r5Pyd7+fXNt84Ff3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+If a system with a TC3589x expander is booted and a base
+IRQ is passed from platform data, a legacy domain will
+be used. However, since the Ux500 is now switched to use
+SPARSE_IRQ, no descriptors get allocated on-the-fly,
+and we get a crash.
 
-On Wed, Jan 02, 2013 at 06:54:50PM +0530, Philip Avinash wrote:
-> The clock framework has changed and it's now better to invoke
-> clock_prepare_enable() and clk_disable_unprepare() rather than the
-> legacy clk_enable() and clk_disable() calls. This patch converts the
-> pwm-tiehrpwm driver to the new framework.
->=20
-> Signed-off-by: Philip Avinash <avinashphilip@ti.com>
-> Cc: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
-> In 3.8-rc1, common clock frame work support added to AM335x.
->=20
->  drivers/pwm/pwm-tiehrpwm.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/pwm/pwm-tiehrpwm.c b/drivers/pwm/pwm-tiehrpwm.c
-> index 72a6dd4..af6f162 100644
-> --- a/drivers/pwm/pwm-tiehrpwm.c
-> +++ b/drivers/pwm/pwm-tiehrpwm.c
-> @@ -341,7 +341,7 @@ static int ehrpwm_pwm_enable(struct pwm_chip *chip, s=
-truct pwm_device *pwm)
->  	configure_polarity(pc, pwm->hwpwm);
-> =20
->  	/* Enable TBCLK before enabling PWM device */
-> -	clk_enable(pc->tbclk);
-> +	clk_prepare_enable(pc->tbclk);
+Fix this by switching to using the simple irqdomain that
+will handle this uniformly and also allocates descriptors
+explicitly.
 
-I apparently didn't catch this before, but maybe it would be useful to
-check the return value here to make sure we only proceed if the clock
-can actually be enabled.
+Also fix two small whitespace errors in the vicinity while
+we're at it.
 
-Thierry
+Cc: stable@kernel.org
+Acked-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ChangeLog v1->v2:
+- Update commit message after comments from Lee, add ACK, no
+  changes to the patche per se.
 
---r5Pyd7+fXNt84Ff3
-Content-Type: application/pgp-signature
+Hi Sam, this should go into the fixes for stable unless issues
+are found, it fixes a regression for us.
+---
+ drivers/mfd/tc3589x.c | 17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index a06d66b..ecc092c 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -219,25 +219,18 @@ static void tc3589x_irq_unmap(struct irq_domain *d, unsigned int virq)
+ }
+ 
+ static struct irq_domain_ops tc3589x_irq_ops = {
+-        .map    = tc3589x_irq_map,
++	.map    = tc3589x_irq_map,
+ 	.unmap  = tc3589x_irq_unmap,
+-        .xlate  = irq_domain_xlate_twocell,
++	.xlate  = irq_domain_xlate_twocell,
+ };
+ 
+ static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+ {
+ 	int base = tc3589x->irq_base;
+ 
+-	if (base) {
+-		tc3589x->domain = irq_domain_add_legacy(
+-			NULL, TC3589x_NR_INTERNAL_IRQS, base,
+-			0, &tc3589x_irq_ops, tc3589x);
+-	}
+-	else {
+-		tc3589x->domain = irq_domain_add_linear(
+-			np, TC3589x_NR_INTERNAL_IRQS,
+-			&tc3589x_irq_ops, tc3589x);
+-	}
++	tc3589x->domain = irq_domain_add_simple(
++		np, TC3589x_NR_INTERNAL_IRQS, base,
++		&tc3589x_irq_ops, tc3589x);
+ 
+ 	if (!tc3589x->domain) {
+ 		dev_err(tc3589x->dev, "Failed to create irqdomain\n");
+-- 
+1.7.11.3
 
-iQIcBAEBAgAGBQJQ5DhjAAoJEN0jrNd/PrOhdu8P/12xU5M0R2PV1JLRaFyFOR6i
-Y1SioRt3GENO+iJdEJGW74PcFBRyzjPxgcGpeaJ6p8ko0YpkT/Q0/HwNeqQ9ZKrb
-aWmRXy+zlX6kGbxHp208fd4tGu3rwYyC49YUNVybNdtzVwU2KWB6yp0Ij463RYIS
-/nBZaO/dNOHUzX1JJrBz8qQM/5br0ttztHLy4TH9jkN12yhMxVbk87t6jUikFnzs
-+Y+xN1FJ8srHGKH63Ndw+BvKLLIgTdXirFW0QUoET9mYc3OGzhlu/oYyDocFzmQk
-ldekPqJbuwinyzlAGYIjrSutknkx/zAfcjVF7Gnlyauktg39wZTGAVkIllmXhOKG
-yIOJn0TSn1qWDMLvSkt9yfJ3+1y0CMMmn62xREExB7JTqpPwjEsIGCiXf4pVKB0e
-Ojh7oDS1qpBX1qGeYB4W/MF0jyOWNtkWgghAqmQrwCdSxwAs0lxnDz1291EAtT6w
-7AwPVdUcbhM4FNlAjn0fnl9HW4zmpIFhVRWotJLyR8gxhRDzUBu+sNdgfDy2pO5/
-5JZOgTDwTuQntq49WtvyMdSyDIKqJTvIAeEikvgLhdD/OJKUtTAxKbKsfAbC/XMa
-CeiDrodNomB0bjUCInUZSBpQ3QuVYPmx3gmIzEdmoNSOHlp4cLFlEXqiQxwH7gH6
-Kzmal9AsBItpsF78d1vI
-=dpiy
------END PGP SIGNATURE-----
-
---r5Pyd7+fXNt84Ff3--
