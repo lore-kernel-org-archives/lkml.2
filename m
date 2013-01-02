@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204Ab3ABPD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 10:03:28 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:50874 "EHLO comal.ext.ti.com"
+	id S1753220Ab3ABPD4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 10:03:56 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56828 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752759Ab3ABPBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 10:01:42 -0500
+	id S1753079Ab3ABPBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 10:01:40 -0500
 From: Roger Quadros <rogerq@ti.com>
 To: <balbi@ti.com>, <sameo@linux.intel.com>, <tony@atomide.com>
 CC: <keshava_mgowda@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
         <rogerq@ti.com>, <linux-usb@vger.kernel.org>,
         <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH v5 17/22] mfd: omap-usb-host: clean up omap_usbhs_init()
-Date: Wed, 2 Jan 2013 17:00:37 +0200
-Message-ID: <1357138842-28964-18-git-send-email-rogerq@ti.com>
+Subject: [PATCH v5 16/22] mfd: omap-usb-host: Get rid of unnecessary spinlock
+Date: Wed, 2 Jan 2013 17:00:36 +0200
+Message-ID: <1357138842-28964-17-git-send-email-rogerq@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1357138842-28964-1-git-send-email-rogerq@ti.com>
 References: <1357138842-28964-1-git-send-email-rogerq@ti.com>
@@ -24,155 +24,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We split initializing revision 1 and revision 2 into different
-functions. Initialization is now done dynamically so that only
-the number of ports available on the system are initialized.
+The driver does not have an interrupt handler and
+we don't really need a spinlock, so get rid of it.
 
 Signed-off-by: Roger Quadros <rogerq@ti.com>
 ---
- drivers/mfd/omap-usb-host.c |  122 +++++++++++++++++++++++++-----------------
- 1 files changed, 73 insertions(+), 49 deletions(-)
+ drivers/mfd/omap-usb-host.c |   16 ----------------
+ 1 files changed, 0 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
-index bef7249..9166df3 100644
+index a58da22..bef7249 100644
 --- a/drivers/mfd/omap-usb-host.c
 +++ b/drivers/mfd/omap-usb-host.c
-@@ -364,6 +364,75 @@ static int usbhs_runtime_suspend(struct device *dev)
+@@ -23,7 +23,6 @@
+ #include <linux/delay.h>
+ #include <linux/clk.h>
+ #include <linux/dma-mapping.h>
+-#include <linux/spinlock.h>
+ #include <linux/gpio.h>
+ #include <linux/platform_device.h>
+ #include <linux/platform_data/usb-omap.h>
+@@ -108,7 +107,6 @@ struct usbhs_hcd_omap {
+ 	struct usbhs_omap_platform_data	*pdata;
+ 
+ 	u32				usbhs_rev;
+-	spinlock_t			lock;
+ };
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -281,14 +279,12 @@ static bool is_ohci_port(enum usbhs_omap_port_mode pmode)
+ static int usbhs_runtime_resume(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+-	unsigned long			flags;
+ 	struct usbhs_omap_platform_data *pdata = omap->pdata;
+ 	int i, r;
+ 
+ 	dev_dbg(dev, "usbhs_runtime_resume\n");
+ 
+ 	omap_tll_enable();
+-	spin_lock_irqsave(&omap->lock, flags);
+ 
+ 	if (omap->ehci_logic_fck && !IS_ERR(omap->ehci_logic_fck))
+ 		clk_enable(omap->ehci_logic_fck);
+@@ -330,22 +326,17 @@ static int usbhs_runtime_resume(struct device *dev)
+ 		}
+ 	}
+ 
+-	spin_unlock_irqrestore(&omap->lock, flags);
+-
  	return 0;
  }
  
-+static unsigned omap_usbhs_rev1_hostconfig(struct usbhs_hcd_omap *omap,
-+						unsigned reg)
-+{
-+	struct usbhs_omap_platform_data	*pdata = omap->pdata;
-+	int i;
-+
-+	for (i = 0; i < omap->nports; i++) {
-+		switch (pdata->port_mode[i]) {
-+		case OMAP_USBHS_PORT_MODE_UNUSED:
-+			reg &= ~(OMAP_UHH_HOSTCONFIG_P1_CONNECT_STATUS << i);
-+			break;
-+		case OMAP_EHCI_PORT_MODE_PHY:
-+			if (pdata->single_ulpi_bypass)
-+				break;
-+
-+			if (i == 0)
-+				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
-+			else
-+				reg &= ~(OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS
-+								<< (i-1));
-+			break;
-+		default:
-+			if (pdata->single_ulpi_bypass)
-+				break;
-+
-+			if (i == 0)
-+				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
-+			else
-+				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS
-+								<< (i-1);
-+			break;
-+		}
-+	}
-+
-+	if (pdata->single_ulpi_bypass) {
-+		/* bypass ULPI only if none of the ports use PHY mode */
-+		reg |= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
-+
-+		for (i = 0; i < omap->nports; i++) {
-+			if (is_ehci_phy_mode(pdata->port_mode[i])) {
-+				reg &= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
-+				break;
-+			}
-+		}
-+	}
-+
-+	return reg;
-+}
-+
-+static unsigned omap_usbhs_rev2_hostconfig(struct usbhs_hcd_omap *omap,
-+						unsigned reg)
-+{
-+	struct usbhs_omap_platform_data	*pdata = omap->pdata;
-+	int i;
-+
-+	for (i = 0; i < omap->nports; i++) {
-+		/* Clear port mode fields for PHY mode */
-+		reg &= ~(OMAP4_P1_MODE_CLEAR << 2 * i);
-+
-+		if (is_ehci_tll_mode(pdata->port_mode[i]) ||
-+				(is_ohci_port(pdata->port_mode[i])))
-+			reg |= OMAP4_P1_MODE_TLL << 2 * i;
-+		else if (is_ehci_hsic_mode(pdata->port_mode[i]))
-+			reg |= OMAP4_P1_MODE_HSIC << 2 * i;
-+	}
-+
-+	return reg;
-+}
-+
- static void omap_usbhs_init(struct device *dev)
+ static int usbhs_runtime_suspend(struct device *dev)
  {
  	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
-@@ -395,55 +464,10 @@ static void omap_usbhs_init(struct device *dev)
- 	reg |= OMAP4_UHH_HOSTCONFIG_APP_START_CLK;
- 	reg &= ~OMAP_UHH_HOSTCONFIG_INCRX_ALIGN_EN;
+-	unsigned long			flags;
+ 	struct usbhs_omap_platform_data *pdata = omap->pdata;
+ 	int i;
  
--	if (is_omap_usbhs_rev1(omap)) {
--		if (pdata->port_mode[0] == OMAP_USBHS_PORT_MODE_UNUSED)
--			reg &= ~OMAP_UHH_HOSTCONFIG_P1_CONNECT_STATUS;
--		if (pdata->port_mode[1] == OMAP_USBHS_PORT_MODE_UNUSED)
--			reg &= ~OMAP_UHH_HOSTCONFIG_P2_CONNECT_STATUS;
--		if (pdata->port_mode[2] == OMAP_USBHS_PORT_MODE_UNUSED)
--			reg &= ~OMAP_UHH_HOSTCONFIG_P3_CONNECT_STATUS;
--
--		/* Bypass the TLL module for PHY mode operation */
--		if (pdata->single_ulpi_bypass) {
--			dev_dbg(dev, "OMAP3 ES version <= ES2.1\n");
--			if (is_ehci_phy_mode(pdata->port_mode[0]) ||
--				is_ehci_phy_mode(pdata->port_mode[1]) ||
--					is_ehci_phy_mode(pdata->port_mode[2]))
--				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
--			else
--				reg |= OMAP_UHH_HOSTCONFIG_ULPI_BYPASS;
--		} else {
--			dev_dbg(dev, "OMAP3 ES version > ES2.1\n");
--			if (is_ehci_phy_mode(pdata->port_mode[0]))
--				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
--			else
--				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P1_BYPASS;
--			if (is_ehci_phy_mode(pdata->port_mode[1]))
--				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS;
--			else
--				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P2_BYPASS;
--			if (is_ehci_phy_mode(pdata->port_mode[2]))
--				reg &= ~OMAP_UHH_HOSTCONFIG_ULPI_P3_BYPASS;
--			else
--				reg |= OMAP_UHH_HOSTCONFIG_ULPI_P3_BYPASS;
--		}
--	} else if (is_omap_usbhs_rev2(omap)) {
--		/* Clear port mode fields for PHY mode*/
--		reg &= ~OMAP4_P1_MODE_CLEAR;
--		reg &= ~OMAP4_P2_MODE_CLEAR;
--
--		if (is_ehci_tll_mode(pdata->port_mode[0]) ||
--			(is_ohci_port(pdata->port_mode[0])))
--			reg |= OMAP4_P1_MODE_TLL;
--		else if (is_ehci_hsic_mode(pdata->port_mode[0]))
--			reg |= OMAP4_P1_MODE_HSIC;
--
--		if (is_ehci_tll_mode(pdata->port_mode[1]) ||
--			(is_ohci_port(pdata->port_mode[1])))
--			reg |= OMAP4_P2_MODE_TLL;
--		else if (is_ehci_hsic_mode(pdata->port_mode[1]))
--			reg |= OMAP4_P2_MODE_HSIC;
--	}
-+	if (is_omap_usbhs_rev1(omap))
-+		reg = omap_usbhs_rev1_hostconfig(omap, reg);
-+	else if (is_omap_usbhs_rev2(omap))
-+		reg = omap_usbhs_rev2_hostconfig(omap, reg);
+ 	dev_dbg(dev, "usbhs_runtime_suspend\n");
  
+-	spin_lock_irqsave(&omap->lock, flags);
+-
+ 	for (i = 0; i < omap->nports; i++) {
+ 		switch (pdata->port_mode[i]) {
+ 		case OMAP_EHCI_PORT_MODE_HSIC:
+@@ -368,7 +359,6 @@ static int usbhs_runtime_suspend(struct device *dev)
+ 	if (omap->ehci_logic_fck && !IS_ERR(omap->ehci_logic_fck))
+ 		clk_disable(omap->ehci_logic_fck);
+ 
+-	spin_unlock_irqrestore(&omap->lock, flags);
+ 	omap_tll_disable();
+ 
+ 	return 0;
+@@ -378,7 +368,6 @@ static void omap_usbhs_init(struct device *dev)
+ {
+ 	struct usbhs_hcd_omap		*omap = dev_get_drvdata(dev);
+ 	struct usbhs_omap_platform_data	*pdata = omap->pdata;
+-	unsigned long			flags;
+ 	unsigned			reg;
+ 
+ 	dev_dbg(dev, "starting TI HSUSB Controller\n");
+@@ -397,7 +386,6 @@ static void omap_usbhs_init(struct device *dev)
+ 	}
+ 
+ 	pm_runtime_get_sync(dev);
+-	spin_lock_irqsave(&omap->lock, flags);
+ 
+ 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+ 	/* setup ULPI bypass and burst configurations */
+@@ -460,8 +448,6 @@ static void omap_usbhs_init(struct device *dev)
  	usbhs_write(omap->uhh_base, OMAP_UHH_HOSTCONFIG, reg);
  	dev_dbg(dev, "UHH setup done, uhh_hostconfig=%x\n", reg);
+ 
+-	spin_unlock_irqrestore(&omap->lock, flags);
+-
+ 	pm_runtime_put_sync(dev);
+ 	if (pdata->ehci_data->phy_reset) {
+ 		/* Hold the PHY in RESET for enough time till
+@@ -525,8 +511,6 @@ static int usbhs_omap_probe(struct platform_device *pdev)
+ 	if (!omap->uhh_base)
+ 		return -EADDRNOTAVAIL;
+ 
+-	spin_lock_init(&omap->lock);
+-
+ 	omap->pdata = pdata;
+ 
+ 	pm_runtime_enable(dev);
 -- 
 1.7.4.1
 
