@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752774Ab3ABRT4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 12:19:56 -0500
-Received: from mail-la0-f54.google.com ([209.85.215.54]:48962 "EHLO
-	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752569Ab3ABRTy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 12:19:54 -0500
+	id S1752788Ab3ABRVN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 12:21:13 -0500
+Received: from relay3.sgi.com ([192.48.152.1]:40427 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752132Ab3ABRVM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 12:21:12 -0500
+Date: Wed, 2 Jan 2013 11:21:10 -0600
+From: Nathan Zimmer <nzimmer@sgi.com>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org
+Cc: matt.fleming@intel.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com
+Subject: BUG: unable to handle kernel paging request at 000000effd870020
+Message-ID: <20130102172107.GA26761@gulag1.americas.sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <20130102120248.GC6181@x1.alien8.de>
-References: <20121223105527.GA6230@liondog.tnic>
-	<50D6E491.3030801@ukfsn.org>
-	<20121223110730.GC6230@liondog.tnic>
-	<50D6E8A4.1030204@ukfsn.org>
-	<20121223113153.GA8918@liondog.tnic>
-	<20121223115133.GA229@x4>
-	<20121223122210.GA4460@liondog.tnic>
-	<20121223133102.GA8153@liondog.tnic>
-	<CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com>
-	<50E3907C.4040106@iki.fi>
-	<20130102120248.GC6181@x1.alien8.de>
-Date: Wed, 2 Jan 2013 12:19:52 -0500
-Message-ID: <CAH3drwYSrfsbKg-BYpMF3Nkxrw1toK=EmcvJfKGzdbT_BK-1HQ@mail.gmail.com>
-Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-From: Jerome Glisse <j.glisse@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Antti Palosaari <crope@iki.fi>,
-        Shuah Khan <shuahkhan@gmail.com>,
-        Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Andy Furniss <andyqos@ukfsn.org>, Alex Deucher <alexdeucher@gmail.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 2, 2013 at 7:02 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, Jan 02, 2013 at 03:42:20AM +0200, Antti Palosaari wrote:
->> I ended up also that same commit after bisecting from current 3.8
->> master.
->>
->> 01:05.0 VGA compatible controller: ATI Technologies Inc 760G [Radeon
->> 3000] It is ASUS M5A78L-M/USB3 with integrated GPU.
->>
->> I cannot even boot unless graphical boot is removed from Fedora 17
->> boot options (rhgb quiet). Random GPU crashes still.
->
-> You could try the temporary R600-only fix although I can't see whether
-> your GPU is also an R600 ASIC or something different by staring at the
-> model string above:
->
-> http://marc.info/?l=dri-devel&m=135628734704029
->
-> HTH.
->
-> --
-> Regards/Gruss,
-> Boris.
+I am getting an early boot problem. It only happens on the larger of the
+machines I haven't seen it crop up on machines with more then 512 GB of ram.
+It shows in the latest linus kernel too.
 
-How do you trigger the issue ? Does it happens right away on boot ?
+I am (wildly) guessing that what is happening is that the new_memmap that is
+being passed to bios is somehow placed incorrectly.  
+I have come up with a workaround.  By placing it the DMA area the issue goes
+away but that doesn't seem like a real fix. 
 
-Cheers,
-Jerome
+
+BUG: unable to handle kernel paging request at 000000effd870020
+IP: [<0000000078bce331>] 0x78bce330
+PGD 0 
+Oops: 0000 [#1] SMP 
+Modules linked in:
+CPU 0 
+Pid: 0, comm: swapper/0 Tainted: G        W    3.8.0-rc1-next-20121224-medusa_ntz+ #2 Intel Corp. Stoutland Platform
+RIP: 0010:[<0000000078bce331>]  [<0000000078bce331>] 0x78bce330
+RSP: 0000:ffffffff81601d28  EFLAGS: 00010006
+RAX: 0000000078b80e18 RBX: 0000000000000004 RCX: 0000000000000004
+RDX: 0000000078bcf958 RSI: 0000000000002400 RDI: 8000000000000000
+RBP: 0000000078bcf760 R08: 000000effd870000 R09: 0000000000000000
+R10: 0000000000000000 R11: 00000000000000c3 R12: 0000000000000030
+R13: 000000effd870000 R14: 0000000000000000 R15: ffff88effd870000
+FS:  0000000000000000(0000) GS:ffff88effe400000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 000000effd870020 CR3: 000000000160c000 CR4: 00000000000006b0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper/0 (pid: 0, threadinfo ffffffff81600000, task ffffffff81614400)
+Stack:
+ 0000000078b80d18 0000000000000004 0000000078bced7b ffff880078b81fff
+ 0000000000000000 0000000000000082 0000000078bce3a8 0000000000002400
+ 0000000060000202 0000000078b80da0 0000000078bce45d ffffffff8107cb5a
+Call Trace:
+ [<ffffffff8107cb5a>] ? on_each_cpu+0x77/0x83
+ [<ffffffff8102f4eb>] ? change_page_attr_set_clr+0x32f/0x3ed
+ [<ffffffff81035946>] ? efi_call4+0x46/0x80
+ [<ffffffff816c5abb>] ? efi_enter_virtual_mode+0x1f5/0x305
+ [<ffffffff816aeb24>] ? start_kernel+0x34a/0x3d2
+ [<ffffffff816ae5ed>] ? repair_env_string+0x60/0x60
+ [<ffffffff816ae2be>] ? x86_64_start_reservations+0xba/0xc1
+ [<ffffffff816ae120>] ? early_idt_handlers+0x120/0x120
+ [<ffffffff816ae419>] ? x86_64_start_kernel+0x154/0x163
+Code:  Bad RIP value.
+RIP  [<0000000078bce331>] 0x78bce330
+ RSP <ffffffff81601d28>
+CR2: 000000effd870020
+---[ end trace ead828934fef5eab ]---
+
+
+
+---
+ arch/x86/platform/efi/efi.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux/arch/x86/platform/efi/efi.c
+===================================================================
+--- linux.orig/arch/x86/platform/efi/efi.c	2012-11-24 09:43:09.236997834 -0600
++++ linux/arch/x86/platform/efi/efi.c	2012-11-24 09:53:30.264654748 -0600
+@@ -915,7 +915,7 @@
+ 		}
+ 		new_memmap = krealloc(new_memmap,
+ 				      (count + 1) * memmap.desc_size,
+-				      GFP_KERNEL);
++				      GFP_DMA);
+ 		memcpy(new_memmap + (count * memmap.desc_size), md,
+ 		       memmap.desc_size);
+ 		count++;
+
