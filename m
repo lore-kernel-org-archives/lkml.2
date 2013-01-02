@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752846Ab3ABXlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 18:41:23 -0500
-Received: from mail-vc0-f171.google.com ([209.85.220.171]:41773 "EHLO
-	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773Ab3ABXlU (ORCPT
+	id S1752860Ab3ABXo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 18:44:26 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53042 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab3ABXoX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 18:41:20 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357169259.25181.9.camel@joe-AO722>
-References: <20130102232730.5706.82243.stgit@grignak.americas.hpqcorp.net>
-	<20130102232743.5706.63153.stgit@grignak.americas.hpqcorp.net>
-	<1357169259.25181.9.camel@joe-AO722>
-Date: Wed, 2 Jan 2013 15:41:19 -0800
-X-Google-Sender-Auth: AkB8-GB6mAwBRfEaPk0aeerf2NQ
-Message-ID: <CA+8MBbK3Ah81TCDRTqM-XV9vEtKCC1m7YCAr75NiUwPRM4OfsQ@mail.gmail.com>
-Subject: Re: [PATCH v8 3/3] aerdrv: Cleanup log output for AER
-From: Tony Luck <tony.luck@intel.com>
-To: Joe Perches <joe@perches.com>
-Cc: Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-        lance_ortiz@hotmail.com, jiang.liu@huawei.com, bp@alien8.de,
-        rostedt@goodmis.org, mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Jan 2013 18:44:23 -0500
+Date: Wed, 2 Jan 2013 15:44:22 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        bug-track@fisher-privat.net
+Subject: Re: [PATCH 2/2] fat: mark fs as dirty on mount and clean on umount
+Message-Id: <20130102154422.53a84995.akpm@linux-foundation.org>
+In-Reply-To: <87han7za23.fsf@devron.myhome.or.jp>
+References: <87pq1vza3y.fsf@devron.myhome.or.jp>
+	<87han7za23.fsf@devron.myhome.or.jp>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 2, 2013 at 3:27 PM, Joe Perches <joe@perches.com> wrote:
-> Just use dev_err( instead of dev_printk(KERN_ERR,
-> It's a function and it makes the object code smaller.
+On Fri, 28 Dec 2012 02:20:20 +0900
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> wrote:
 
-Looks like we are almost converged on a solution (Lance: thanks for
-your patience and diligence in making changes).
+> There is no documented methods to mark FAT as dirty. Unofficially MS
+> started to use reserved Byte in boot sector for this purpose,
+> at least since Win 2000. With Win 7 user is warned if fs is dirty
+> and asked to clean it.
+> Different versions of Win, handle it in different ways,
+> but always have same meaning:
+> - Win 2000 and XP, set it on write operations and
+>   remove it after operation was finnished
+> - Win 7, set dirty flag on first write and remove it on umount.
+> 
+> We will do it as fallow:
+> - set dirty flag on mount. If fs was initially dirty, warn user,
+>   remember it and do not do any changes to boot sector.
+> - clean it on umount. If fs was initially dirty, leave it dirty.
+> - do not do any thing if fs mounted read-only.
+> - TODO: leave fs dirty if we found some error after mount.
 
-Anyone on the "To:" list want to claim this for their tree to commit?
-The series touches pci, acpi, RAS, and tracing ... so there are
-several possible owners.
+The changelog doesn't describe why we're making this change.  Nor does
+it describe the user-visible effects of this change.
 
-If someone else wants it, then add an:
-Acked-by: Tony Luck <tony.luck@intel.com>
-to all three parts.
+AFAICT the effect is to issue a warning at mount-time to tell the
+user that the fs wasn't cleanly unmounted and that the user should fsck
+the volume, correct?
 
-If there isn't a strong claim, I'll add v9[*] to the RAS tree
-and see if the TIP tree folks will pull it from me.
+If so, why is this considered a desirable feature?  (I can guess, but
+would prefer to hear it spelled out by the experts, please).
 
--Tony
-
-[*] When Lance makes the change suggested by Joe.
