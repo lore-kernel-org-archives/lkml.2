@@ -1,169 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683Ab3ABTze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 14:55:34 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:62610 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752132Ab3ABTzb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 14:55:31 -0500
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com,
-        Tony Prisk <linux@prisktech.co.nz>
-Subject: [PATCHv2 1/2] pwm: vt8500: Register write busy test performed incorrectly
-Date: Thu,  3 Jan 2013 08:44:15 +1300
-Message-Id: <1357155856-9552-1-git-send-email-linux@prisktech.co.nz>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752631Ab3ABUBF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 15:01:05 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:39378 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752132Ab3ABUBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 15:01:02 -0500
+Message-ID: <50E491D5.3080106@ti.com>
+Date: Wed, 2 Jan 2013 14:00:21 -0600
+From: Jon Hunter <jon-hunter@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Pratik Patel <pratikp@codeaurora.org>
+CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        <linux-arm-msm@vger.kernel.org>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, <linux-kernel@vger.kernel.org>,
+        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
+        "david.rusling@linaro.org" <david.rusling@linaro.org>,
+        "arve@android.com" <arve@android.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "d-deao@ti.com" <d-deao@ti.com>,
+        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: CoreSight framework and drivers
+References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org> <20121219112314.GA26329@mudshark.cambridge.arm.com> <50D1F37E.6000804@ti.com> <20121219212431.GC23594@pratikp-linux.qualcomm.com> <50D34EE5.8090407@ti.com> <20121220195127.GA14877@pratikp-linux.qualcomm.com> <50D3972E.4030607@ti.com> <20121221221828.GA2658@pratikp-linux.qualcomm.com>
+In-Reply-To: <20121221221828.GA2658@pratikp-linux.qualcomm.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.157.144.139]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Correct operation for register writes is to perform a busy-wait
-after writing the register. Currently the busy wait it performed
-before, meaning subsequent register writes to bitfields may occur
-before the previous field has been updated.
 
-Also, all registers are defined as 32-bit read/write. Change
-pwm_busy_wait() to use readl rather than readb.
+On 12/21/2012 04:18 PM, Pratik Patel wrote:
+> On Thu, Dec 20, 2012 at 04:54:38PM -0600, Jon Hunter wrote:
+>>
+>> On 12/20/2012 01:51 PM, Pratik Patel wrote:
+>>> On Thu, Dec 20, 2012 at 11:46:13AM -0600, Jon Hunter wrote:
+>>>>
+>>>> On 12/19/2012 03:24 PM, Pratik Patel wrote:
+>>>>
+>>>> [snip]
+>>>>
+>>>>> Currently we use the CoreSight virtual bus to conveniently list
+>>>>> sysfs configuration attributes for all the registered CoreSight
+>>>>> devices.
+>>>>>
+>>>>> For eg:
+>>>>> /sys/bus/coresight/devices/coresight-etm0/<attribute>
+>>>>> /sys/bus/coresight/devices/coresight-etm1/<attribute>
+>>>>> /sys/bus/coresight/devices/coresight-stm/<attribute>
+>>>>> /sys/bus/coresight/devices/coresight-tmc-etf/<attribute>
+>>>>> ...
+>>>>> ...
+>>>>>
+>>>>> Some of the attributes are based on device type (i.e. source,
+>>>>> link or sink) so they will exist for all devices of that type
+>>>>> while some are device specific.
+>>>>>
+>>>>> Maybe I am misunderstanding the question but are you suggesting
+>>>>> to register CoreSight devices to the AMBA bus instead of the
+>>>>> CoreSight core layer code?
+>>>>
+>>>> Yes exactly.
+>>>>
+>>>>> Will Deacon mentioned earlier that AMBA framework can be changed
+>>>>> to accomodate devices with a different class but I am more
+>>>>> concerned with losing some of the stuff that the core layer code
+>>>>> does (eg. coresight_register, coresight_enable, coresight_disable
+>>>>> in coresight.c) if we register CoreSight drivers to the AMBA bus
+>>>>> without letting the core layer know about the device connections.
+>>>>
+>>>> I may be missing something, but couldn't you keep all the
+>>>> register/enable/disable stuff but just register the device with the amba
+>>>> bus? Obviously some changes would need to be made.
+>>>>
+>>>
+>>> Ok, so are you referring to making CoreSight devices register
+>>> with AMBA bus instead of platform bus keeping everything else
+>>> intact?
+>>
+>> Yes exactly. However, please note I am not saying that we should do
+>> this, and I asking what direction does the community want us to take
+>> here? Platform bus or AMBA bus?
+>>
+>>>> Personally, I don't have strong feeling either way, but we have ETM/ETB
+>>>> drivers using AMBA today and so I am hoping we can come to agreement on
+>>>> this going forward.
+>>>>
+>>>> Russell, Will, what are your thoughts?
+>>>>
+>>>> Otherwise, looking at the code, I like what you have implemented. I
+>>>> still need to look closer, but I am struggling to figure out how a
+>>>> coresight device such as the cross-trigger-interface fits with this
+>>>> model. This model appears to be geared towards coresight devices used
+>>>> for traces purposes and are either source, links or sinks. The
+>>>> cross-trigger-interface is not a source or a sink. However, although you
+>>>> it could be considered as a link (routing events), it is not really, as
+>>>> it may not link to other coresight sinks/source.
+>>>>
+>>>> In my case, I have PMU-IRQ --> CTI --> GIC. So a non-coresight source
+>>>> and sink. In away the CTI looks more like a 2nd-level interrupt
+>>>> controller than anything else. Hence, another type of coresight device
+>>>> may be needed in addition to source, links and sinks. Or link is
+>>>> extended in some way to connect to non-coresight sources/sinks.
+>>>>
+>>>> Let me know if you have any thoughts.
+>>>>
+>>>
+>>> I had left the "None" type for miscellaneous stuff but I agree it
+>>> should be a separate type - maybe "debug".
+>>>
+>>> Having said that I like the CTI driver you have uploaded. Need to
+>>> look at it in more detail. Since CTI connections can vary between
+>>> chip to chip, we need a generic way to deal with it.
+>>
+>> Yes if you have any ideas let me know. As Will had mentioned it would be
+>> good to have a common function table all these devices could use too. I
+>> will take a closer look at what you have.
+>>
+> 
+> I had started on a CTI driver much in line with your current
+> implementation but your approach looks good to me.
+> 
+> Looking at the code though, I couldn't find a way to perform a
+> mapping between two different CTIs. Reason I ask is because we
+> have use cases where we need to map one CTIs input to another
+> CTIs output on the same channel.
 
-Improve readability of code with defines for registers and bitfields.
+The code is largely based upon the existing cti helpers, which just had
+a cti_map_trigger() function. The use-case you described is not
+supported by the current helpers and so also not supported in my initial
+implementation (although we should add this). Hence, it would be
+probably best to split the cti_map_trigger() into two functions say,
+cti_map_triggerin() and cti_map_triggerout(), to map a trigger
+input/output to a channel.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
----
-v2:
-Change parenthesis around defines
-Replace pr_warn with dev_warn in pwm_busy_wait()
+> Do you intend to support different entities within kernel to map
+> different trig_in or trig_out on the same CTI? If so, it might
+> probably require reference counting for the enable/disable.
 
- drivers/pwm/pwm-vt8500.c |   64 +++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 49 insertions(+), 15 deletions(-)
+I need to think about this some more, as this does make it a little more
+complex. Right now only one entity can use a cti module at a time.
 
-diff --git a/drivers/pwm/pwm-vt8500.c b/drivers/pwm/pwm-vt8500.c
-index b0ba2d4..bbc3750 100644
---- a/drivers/pwm/pwm-vt8500.c
-+++ b/drivers/pwm/pwm-vt8500.c
-@@ -36,6 +36,25 @@
-  */
- #define VT8500_NR_PWMS	2
- 
-+#define REG_CTRL(pwm)		(((pwm) << 4) + 0x00)
-+#define REG_SCALAR(pwm)		(((pwm) << 4) + 0x04)
-+#define REG_PERIOD(pwm)		(((pwm) << 4) + 0x08)
-+#define REG_DUTY(pwm)		(((pwm) << 4) + 0x0C)
-+#define REG_STATUS		0x40
-+
-+#define CTRL_ENABLE		BIT(0)
-+#define CTRL_INVERT		BIT(1)
-+#define CTRL_AUTOLOAD		BIT(2)
-+#define CTRL_STOP_IMM		BIT(3)
-+#define CTRL_LOAD_PRESCALE	BIT(4)
-+#define CTRL_LOAD_PERIOD	BIT(5)
-+
-+#define STATUS_CTRL_UPDATE	BIT(0)
-+#define STATUS_SCALAR_UPDATE	BIT(1)
-+#define STATUS_PERIOD_UPDATE	BIT(2)
-+#define STATUS_DUTY_UPDATE	BIT(3)
-+#define STATUS_ALL_UPDATE	0x0F
-+
- struct vt8500_chip {
- 	struct pwm_chip chip;
- 	void __iomem *base;
-@@ -45,15 +64,17 @@ struct vt8500_chip {
- #define to_vt8500_chip(chip)	container_of(chip, struct vt8500_chip, chip)
- 
- #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
--static inline void pwm_busy_wait(void __iomem *reg, u8 bitmask)
-+static inline void pwm_busy_wait(struct vt8500_chip *vt8500, int nr, u8 bitmask)
- {
- 	int loops = msecs_to_loops(10);
--	while ((readb(reg) & bitmask) && --loops)
-+	u32 mask = bitmask << (nr << 8);
-+
-+	while ((readl(vt8500->base + REG_STATUS) & mask) && --loops)
- 		cpu_relax();
- 
- 	if (unlikely(!loops))
--		pr_warn("Waiting for status bits 0x%x to clear timed out\n",
--			   bitmask);
-+		dev_warn(vt8500->chip.dev, "Waiting for status bits 0x%x to clear timed out\n",
-+			 mask);
- }
- 
- static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
-@@ -63,6 +84,7 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	unsigned long long c;
- 	unsigned long period_cycles, prescale, pv, dc;
- 	int err;
-+	u32 val;
- 
- 	err = clk_enable(vt8500->clk);
- 	if (err < 0) {
-@@ -91,14 +113,19 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	do_div(c, period_ns);
- 	dc = c;
- 
--	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 1));
--	writel(prescale, vt8500->base + 0x4 + (pwm->hwpwm << 4));
-+	writel(prescale, vt8500->base + REG_SCALAR(pwm->hwpwm));
-+	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_SCALAR_UPDATE);
-+
-+	writel(pv, vt8500->base + REG_PERIOD(pwm->hwpwm));
-+	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_PERIOD_UPDATE);
- 
--	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 2));
--	writel(pv, vt8500->base + 0x8 + (pwm->hwpwm << 4));
-+	writel(dc, vt8500->base + REG_DUTY(pwm->hwpwm));
-+	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_DUTY_UPDATE);
- 
--	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 3));
--	writel(dc, vt8500->base + 0xc + (pwm->hwpwm << 4));
-+	val = readl(vt8500->base + REG_CTRL(pwm->hwpwm));
-+	val |= CTRL_AUTOLOAD;
-+	writel(val, vt8500->base + REG_CTRL(pwm->hwpwm));
-+	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_CTRL_UPDATE);
- 
- 	clk_disable(vt8500->clk);
- 	return 0;
-@@ -106,8 +133,9 @@ static int vt8500_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 
- static int vt8500_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
--	int err;
- 	struct vt8500_chip *vt8500 = to_vt8500_chip(chip);
-+	int err;
-+	u32 val;
- 
- 	err = clk_enable(vt8500->clk);
- 	if (err < 0) {
-@@ -115,17 +143,23 @@ static int vt8500_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
- 		return err;
- 	}
- 
--	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
--	writel(5, vt8500->base + (pwm->hwpwm << 4));
-+	val = readl(vt8500->base + REG_CTRL(pwm->hwpwm));
-+	val |= CTRL_ENABLE;
-+	writel(val, vt8500->base + REG_CTRL(pwm->hwpwm));
-+	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_CTRL_UPDATE);
-+
- 	return 0;
- }
- 
- static void vt8500_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
- {
- 	struct vt8500_chip *vt8500 = to_vt8500_chip(chip);
-+	u32 val;
- 
--	pwm_busy_wait(vt8500->base + 0x40 + pwm->hwpwm, (1 << 0));
--	writel(0, vt8500->base + (pwm->hwpwm << 4));
-+	val = readl(vt8500->base + REG_CTRL(pwm->hwpwm));
-+	val &= ~CTRL_ENABLE;
-+	writel(val, vt8500->base + REG_CTRL(pwm->hwpwm));
-+	pwm_busy_wait(vt8500, pwm->hwpwm, STATUS_CTRL_UPDATE);
- 
- 	clk_disable(vt8500->clk);
- }
--- 
-1.7.9.5
+> What user interface do you plan to provide for the CTI? Maybe
+> something consistent with other CoreSight components in sysfs to
+> allow users to enable, disable, map and unmap ???
+
+Yes that's possible.
+
+> Please let me know your thoughts.
+> 
+> CTIs can easily be made part of the CoreSight core layer using a
+> different type but apart from being part of the CoreSight list
+> containing all the trace and CTI components, not sure if there is
+> anything that is useful to do in the core layer. Need to think
+> about this.
+
+Yes it would be good to make this all part of the same coresight framework.
+
+Cheers
+Jon
 
