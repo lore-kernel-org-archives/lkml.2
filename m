@@ -1,159 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785Ab3ABXMp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 18:12:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52908 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab3ABXMn (ORCPT
+	id S1752795Ab3ABXOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 18:14:35 -0500
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:55451 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab3ABXOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 18:12:43 -0500
-Date: Wed, 2 Jan 2013 15:12:42 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Decotigny <decot@googlers.com>
-Cc: linux-kernel@vger.kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Josh Triplett <josh@joshtriplett.org>,
-        David Howells <dhowells@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: Re: [PATCH v4] lib: cpu_rmap: avoid flushing all workqueues
-Message-Id: <20130102151242.fc6f1bee.akpm@linux-foundation.org>
-In-Reply-To: <bb2493cb7d0b36f35282d77c1f07727601f9c751.1357163124.git.decot@googlers.com>
-References: <cover.1357163124.git.decot@googlers.com>
-	<bb2493cb7d0b36f35282d77c1f07727601f9c751.1357163124.git.decot@googlers.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jan 2013 18:14:33 -0500
+Date: Wed, 2 Jan 2013 16:07:32 -0700
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Alternative 2][PATCH] ACPI / PCI: Set root bridge ACPI handle
+ in advance
+Message-ID: <20130102230732.GB31813@google.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan>
+ <CAErSpo5ZpUaHzYQEpR9Jh0MbcmjHfhKUQ-EpRJH1PNCHR_qnVg@mail.gmail.com>
+ <5457615.T2WjKPXXC4@vostro.rjw.lan>
+ <2816571.07LqOj3EJg@vostro.rjw.lan>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2816571.07LqOj3EJg@vostro.rjw.lan>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Jan 2013 13:52:25 -0800
-David Decotigny <decot@googlers.com> wrote:
+On Thu, Dec 27, 2012 at 10:32:13PM +0100, Rafael J. Wysocki wrote:
+> To that end, split pci_create_root_bus() into two functions,
+> pci_alloc_root() and pci_add_root(), that will allocate memory for
+> the new PCI bus and bridge representations and register them with
+> the driver core, respectively, and that may be called directly by
+> the architectures that need to set the root bridge's ACPI handle
+> before registering it.
 
-> In some cases, free_irq_cpu_rmap() is called while holding a lock
-> (eg. rtnl). This can lead to deadlocks, because it invokes
-> flush_scheduled_work() which ends up waiting for whole system
-> workqueue to flush, but some pending works might try to acquire the
-> lock we are already holding.
-> 
-> This commit uses reference-counting to replace
-> irq_run_affinity_notifiers(). It also removes
-> irq_run_affinity_notifiers() altogether.
+I'm trying to *reduce* the interfaces for creating and scanning PCI
+host bridges, and this is a step in the opposite direction.
 
-I can't say that I've ever noticed cpu_rmap.c before :( Is is too late
-to review it?
+> Next, Make both x86 and ia64 (the only architectures using ACPI at
+> the moment) call pci_alloc_root(), set the root bridge's ACPI handle
+> and then call pci_add_root() in their pci_acpi_scan_root() routines
+> instead of calling pci_create_root_bus().  For the other code paths
+> adding PCI root bridges define a new pci_create_root_bus() as a
+> simple combination of pci_alloc_root() and pci_add_root().
 
-- The naming is chaotic.  At least these:
+pci_create_root_bus() takes a "struct device *parent" argument.  That
+seems like a logical place to tell the PCI core about the host bridge
+device, but x86 and ia64 currently pass NULL there.
 
-	EXPORT_SYMBOL(alloc_cpu_rmap);
-	EXPORT_SYMBOL(free_cpu_rmap);
-	EXPORT_SYMBOL(cpu_rmap_add);
-	EXPORT_SYMBOL(cpu_rmap_update);
-	EXPORT_SYMBOL(free_irq_cpu_rmap);
-	EXPORT_SYMBOL(irq_cpu_rmap_add);
+The patch below shows what I'm thinking.  It does have the side-effect
+of changing the sysfs topology from this:
 
-  should be consistently named cpu_rmap_foo()
+    /sys/devices/pci0000:00
+    /sys/devices/pci0000:00/0000:00:00.0
 
-- What's the locking model?  It appears to be caller-provided, but
-  it is undocumented.
+to this:
 
-  drivers/net/ethernet/mellanox/mlx4/ appears to be using
-  msix_ctl.pool_lock for exclusion, but I didn't check for coverage.
+    /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/pci0000:00
+    /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/pci0000:00/0000:00:00.0
 
-  drivers/net/ethernet/sfc/efx.c seems to not need locking because
-  all its cpu_rmap operations are at module_init() time.
+because it puts the PCI root bus (pci0000:00) under the PNP0A08 device
+rather than at the top level.  That seems like an improvement to me,
+but it *is* different.
 
-  The cpu_rmap code would be less of a hand grenade if each of its
-  interface functions documented the caller's locking requirements.
+Bjorn
 
+commit 5dee5f2f4fefbe4888939871c2252299067123bf
+Author: Bjorn Helgaas <bhelgaas@google.com>
+Date:   Wed Jan 2 13:47:02 2013 -0700
 
-As for this patch: there's no cc:stable here but it does appear that
-the problem is sufficiently serious to justify a backport, agree?
-
-> --- a/include/linux/cpu_rmap.h
-> +++ b/include/linux/cpu_rmap.h
->
-> ...
->
-> @@ -33,15 +36,7 @@ struct cpu_rmap {
->  #define CPU_RMAP_DIST_INF 0xffff
->  
->  extern struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags);
-> -
-> -/**
-> - * free_cpu_rmap - free CPU affinity reverse-map
-> - * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
-> - */
-> -static inline void free_cpu_rmap(struct cpu_rmap *rmap)
-> -{
-> -	kfree(rmap);
-> -}
-> +extern void free_cpu_rmap(struct cpu_rmap *rmap);
-
-Can we do away with free_cpu_rmap() altogether?  It is a misleading
-name - it is a put() function, not a free() function.  It would be
-clearer (not to mention faster and smaller) to change all call sites
-to directly call cpu_rmap_put().
-
-
->  extern int cpu_rmap_add(struct cpu_rmap *rmap, void *obj);
->  extern int cpu_rmap_update(struct cpu_rmap *rmap, u16 index,
->
-> ...
->
-> @@ -63,6 +64,44 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
->  }
->  EXPORT_SYMBOL(alloc_cpu_rmap);
->  
-> +/**
-> + * cpu_rmap_reclaim - internal reclaiming helper called from kref_put
-> + * @ref: kref to struct cpu_rmap
-> + */
-> +static void cpu_rmap_reclaim(struct kref *ref)
-> +{
-> +	struct cpu_rmap *rmap = container_of(ref, struct cpu_rmap, refcount);
-> +	kfree(rmap);
-> +}
-
-I suggest this be renamed to cpu_rmap_release().  As "release" is the
-conventional term for a kref release handler.
-
->
-> ...
->
-> +/**
-> + * cpu_rmap_put - internal helper to release ref on a cpu_rmap
-> + * @rmap: reverse-map allocated with alloc_cpu_rmap()
-> + */
-> +static inline void cpu_rmap_put(struct cpu_rmap *rmap)
-> +{
-> +	kref_put(&rmap->refcount, cpu_rmap_reclaim);
-> +}
-
-As mentioned, I suggest this become the public interface.  And I
-suppose it should propagate kref_put()'s return value, in case someone
-is interested.
-
-> +/**
-> + * free_cpu_rmap - free CPU affinity reverse-map
-> + * @rmap: Reverse-map allocated with alloc_cpu_rmap()
-> + */
-> +void free_cpu_rmap(struct cpu_rmap *rmap)
-> +{
-> +	cpu_rmap_put(rmap);
-> +}
-> +EXPORT_SYMBOL(free_cpu_rmap);
-
-zap.
-
->  /* Reevaluate nearest object for given CPU, comparing with the given
->   * neighbours at the given distance.
->   */
->
-> ...
->
-
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 0c01261..1cfde12 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -552,8 +552,9 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 
+ 		if (!setup_mcfg_map(info, domain, (u8)root->secondary.start,
+ 				    (u8)root->secondary.end, root->mcfg_addr))
+-			bus = pci_create_root_bus(NULL, busnum, &pci_root_ops,
+-						  sd, &resources);
++			bus = pci_create_root_bus(&device->dev, busnum,
++						  &pci_root_ops, sd,
++						  &resources);
+ 
+ 		if (bus) {
+ 			pci_scan_child_bus(bus);
+@@ -593,6 +594,15 @@ struct pci_bus * __devinit pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	return bus;
+ }
+ 
++int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
++{
++	struct device *parent = bridge->dev.parent;
++
++	if (parent)
++		ACPI_HANDLE_SET(&bridge->dev, to_acpi_device(parent)->handle);
++	return 0;
++}
++
+ int __init pci_acpi_init(void)
+ {
+ 	struct pci_dev *dev = NULL;
+diff --git a/drivers/pci/pci-acpi.c b/drivers/pci/pci-acpi.c
+index 1af4008..d4516c4 100644
+--- a/drivers/pci/pci-acpi.c
++++ b/drivers/pci/pci-acpi.c
+@@ -303,28 +303,9 @@ static int acpi_pci_find_device(struct device *dev, acpi_handle *handle)
+ 	return 0;
+ }
+ 
+-static int acpi_pci_find_root_bridge(struct device *dev, acpi_handle *handle)
+-{
+-	int num;
+-	unsigned int seg, bus;
+-
+-	/*
+-	 * The string should be the same as root bridge's name
+-	 * Please look at 'pci_scan_bus_parented'
+-	 */
+-	num = sscanf(dev_name(dev), "pci%04x:%02x", &seg, &bus);
+-	if (num != 2)
+-		return -ENODEV;
+-	*handle = acpi_get_pci_rootbridge_handle(seg, bus);
+-	if (!*handle)
+-		return -ENODEV;
+-	return 0;
+-}
+-
+ static struct acpi_bus_type acpi_pci_bus = {
+ 	.bus = &pci_bus_type,
+ 	.find_device = acpi_pci_find_device,
+-	.find_bridge = acpi_pci_find_root_bridge,
+ };
+ 
+ static int __init acpi_pci_init(void)
+diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+index 6186f03..3575b2b 100644
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -1633,6 +1633,11 @@ unsigned int pci_scan_child_bus(struct pci_bus *bus)
+ 	return max;
+ }
+ 
++int __weak pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
++{
++	return 0;
++}
++
+ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
+ {
+@@ -1645,7 +1650,6 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	char bus_addr[64];
+ 	char *fmt;
+ 
+-
+ 	b = pci_alloc_bus();
+ 	if (!b)
+ 		return NULL;
+@@ -1666,6 +1670,9 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+ 	bridge->dev.parent = parent;
+ 	bridge->dev.release = pci_release_bus_bridge_dev;
+ 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
++	error = pcibios_root_bridge_prepare(bridge);
++	if (error)
++		goto bridge_dev_reg_err;
+ 	error = device_register(&bridge->dev);
+ 	if (error)
+ 		goto bridge_dev_reg_err;
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 15472d6..238438c 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -674,6 +674,7 @@ extern struct list_head pci_root_buses;	/* list of all known PCI buses */
+ /* Some device drivers need know if pci is initiated */
+ extern int no_pci_devices(void);
+ 
++int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
+ void pcibios_fixup_bus(struct pci_bus *);
+ int __must_check pcibios_enable_device(struct pci_dev *, int mask);
+ /* Architecture specific versions may override this (weak) */
