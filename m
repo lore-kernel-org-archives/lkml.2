@@ -1,56 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab3ABUpe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 15:45:34 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:48041 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972Ab3ABUpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 15:45:30 -0500
-Date: Wed, 2 Jan 2013 15:45:27 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 21/24] blkcg: make blkcg_print_blkgs() grab q locks
- instead of blkcg lock
-Message-ID: <20130102204527.GG11220@mtj.dyndns.org>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-22-git-send-email-tj@kernel.org>
- <20130102192700.GA9552@redhat.com>
+	id S1752766Ab3ABUrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 15:47:15 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:42580 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751972Ab3ABUrN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 15:47:13 -0500
+Date: Wed, 2 Jan 2013 20:47:12 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20130102204712.GA17806@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <20130102200848.GA4500@dcvr.yhbt.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130102192700.GA9552@redhat.com>
+In-Reply-To: <20130102200848.GA4500@dcvr.yhbt.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 02:27:00PM -0500, Vivek Goyal wrote:
-> On Fri, Dec 28, 2012 at 12:35:43PM -0800, Tejun Heo wrote:
-> > Instead of holding blkcg->lock while walking ->blkg_list and executing
-> > prfill(), RCU walk ->blkg_list and hold the blkg's queue lock while
-> > executing prfill().  This makes prfill() implementations easier as
-> > stats are mostly protected by queue lock.
-> > 
-> > This will be used to implement hierarchical stats.
-> > 
+Eric Wong <normalperson@yhbt.net> wrote:
+> [1] my full setup is very strange.
 > 
-> Hi Tejun,
-> 
-> I think dropping blkcg->lock might be a problem. Using RCU we have made
-> sure that blkg and q are around. But what about blkg->q.backing_dev_info.dev.
-> 
-> We can follow bdi->dev pointer in blkg_dev_name(). I am not sure if we
-> ever clear it from q or not when device goes away.
+>     Other than the FUSE component I forgot to mention, little depends on
+>     the kernel.  With all this, the standalone toosleepy can get stuck.
+>     I'll try to reproduce it with less...
 
-If the queue is dead, it wouldn't have policy enabled bit set which is
-tested while holding queue lock, so I don't think it's gonna be a
-problem.
-
-Thanks.
-
--- 
-tejun
+I just confirmed my toosleepy processes will get stuck while just
+doing "rsync -a" between local disks.  So this does not depend on
+sendfile or FUSE to reproduce.
