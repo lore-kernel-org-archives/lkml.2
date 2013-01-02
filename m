@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab3ABXo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 18:44:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53042 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752790Ab3ABXoX (ORCPT
+	id S1752867Ab3ABXqx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 18:46:53 -0500
+Received: from webmail.solarflare.com ([12.187.104.25]:49948 "EHLO
+	webmail.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab3ABXqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 18:44:23 -0500
-Date: Wed, 2 Jan 2013 15:44:22 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        bug-track@fisher-privat.net
-Subject: Re: [PATCH 2/2] fat: mark fs as dirty on mount and clean on umount
-Message-Id: <20130102154422.53a84995.akpm@linux-foundation.org>
-In-Reply-To: <87han7za23.fsf@devron.myhome.or.jp>
-References: <87pq1vza3y.fsf@devron.myhome.or.jp>
-	<87han7za23.fsf@devron.myhome.or.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 2 Jan 2013 18:46:51 -0500
+Message-ID: <1357170406.3652.66.camel@bwh-desktop.uk.solarflarecom.com>
+Subject: Re: [PATCH v4] lib: cpu_rmap: avoid flushing all workqueues
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Decotigny <decot@googlers.com>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Josh Triplett <josh@joshtriplett.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Wed, 2 Jan 2013 23:46:46 +0000
+In-Reply-To: <20130102151242.fc6f1bee.akpm@linux-foundation.org>
+References: <cover.1357163124.git.decot@googlers.com>
+	 <bb2493cb7d0b36f35282d77c1f07727601f9c751.1357163124.git.decot@googlers.com>
+	 <20130102151242.fc6f1bee.akpm@linux-foundation.org>
+Organization: Solarflare
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
 Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+X-Originating-IP: [10.17.20.137]
+X-TM-AS-Product-Ver: SMEX-10.0.0.1412-7.000.1014-19504.001
+X-TM-AS-Result: No--31.335700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Dec 2012 02:20:20 +0900
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp> wrote:
-
-> There is no documented methods to mark FAT as dirty. Unofficially MS
-> started to use reserved Byte in boot sector for this purpose,
-> at least since Win 2000. With Win 7 user is warned if fs is dirty
-> and asked to clean it.
-> Different versions of Win, handle it in different ways,
-> but always have same meaning:
-> - Win 2000 and XP, set it on write operations and
->   remove it after operation was finnished
-> - Win 7, set dirty flag on first write and remove it on umount.
+On Wed, 2013-01-02 at 15:12 -0800, Andrew Morton wrote:
+> On Wed,  2 Jan 2013 13:52:25 -0800
+> David Decotigny <decot@googlers.com> wrote:
 > 
-> We will do it as fallow:
-> - set dirty flag on mount. If fs was initially dirty, warn user,
->   remember it and do not do any changes to boot sector.
-> - clean it on umount. If fs was initially dirty, leave it dirty.
-> - do not do any thing if fs mounted read-only.
-> - TODO: leave fs dirty if we found some error after mount.
+> > In some cases, free_irq_cpu_rmap() is called while holding a lock
+> > (eg. rtnl). This can lead to deadlocks, because it invokes
+> > flush_scheduled_work() which ends up waiting for whole system
+> > workqueue to flush, but some pending works might try to acquire the
+> > lock we are already holding.
+> > 
+> > This commit uses reference-counting to replace
+> > irq_run_affinity_notifiers(). It also removes
+> > irq_run_affinity_notifiers() altogether.
+> 
+> I can't say that I've ever noticed cpu_rmap.c before :( Is is too late
+> to review it?
+> 
+> - The naming is chaotic.  At least these:
+> 
+> 	EXPORT_SYMBOL(alloc_cpu_rmap);
+> 	EXPORT_SYMBOL(free_cpu_rmap);
+> 	EXPORT_SYMBOL(cpu_rmap_add);
+> 	EXPORT_SYMBOL(cpu_rmap_update);
+> 	EXPORT_SYMBOL(free_irq_cpu_rmap);
+> 	EXPORT_SYMBOL(irq_cpu_rmap_add);
+> 
+>   should be consistently named cpu_rmap_foo()
 
-The changelog doesn't describe why we're making this change.  Nor does
-it describe the user-visible effects of this change.
+There is a common practice of defining alloc_foo() and free_foo()
+alongside foo_do_this() and foo_do_that().  I deliberately chose to
+follow that.  If this is deprecated then it should be documented
+somewhere.
 
-AFAICT the effect is to issue a warning at mount-time to tell the
-user that the fs wasn't cleanly unmounted and that the user should fsck
-the volume, correct?
+There is also a separation between functions that are specific to IRQ
+affinity (last 2) and those that are not (first 4).
 
-If so, why is this considered a desirable feature?  (I can guess, but
-would prefer to hear it spelled out by the experts, please).
+> - What's the locking model?  It appears to be caller-provided, but
+>   it is undocumented.
+
+I think caller-provided can be assumed as the default for library code.
+And IRQ setup and teardown need to be properly serialised in the driver
+already.
+
+>   drivers/net/ethernet/mellanox/mlx4/ appears to be using
+>   msix_ctl.pool_lock for exclusion, but I didn't check for coverage.
+>
+>   drivers/net/ethernet/sfc/efx.c seems to not need locking because
+>   all its cpu_rmap operations are at module_init() time.
+>
+>   The cpu_rmap code would be less of a hand grenade if each of its
+>   interface functions documented the caller's locking requirements.
+
+This particular 'hand grenade' *was* documented.  So I don't think
+documentation is the problem.
+
+> As for this patch: there's no cc:stable here but it does appear that
+> the problem is sufficiently serious to justify a backport, agree?
+[...]
+
+Not sure.  So far as I can see, nothing called free_irq_cpu_rmap() while
+holding the RTNL lock before v3.8-rc1.  If there can be work items on a
+global workqueue that lock a PCI device (perhaps EEH?) then stable
+versions may also be affected.
+
+Ben.
+
+-- 
+Ben Hutchings, Staff Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
