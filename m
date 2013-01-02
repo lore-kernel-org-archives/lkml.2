@@ -1,45 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab3ABF11 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 00:27:27 -0500
-Received: from sg2plout10-02.prod.sin2.secureserver.net ([182.50.145.5]:50985
-	"EHLO sg2plout10-02.prod.sin2.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751229Ab3ABF1Z (ORCPT
+	id S1752312Ab3ABFbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 00:31:53 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:59210 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750930Ab3ABFbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 00:27:25 -0500
-From: Sujith Manoharan <sujith@msujith.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Wed, 2 Jan 2013 00:31:52 -0500
+Message-ID: <1357104713.30504.8.camel@gitbox>
+Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
+ IS_ERR_OR_NULL
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        kernel-janitors@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Date: Wed, 02 Jan 2013 18:31:53 +1300
+In-Reply-To: <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
+	 <1355852048-23188-7-git-send-email-linux@prisktech.co.nz>
+	 <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com>
+	 <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-ID: <20707.50445.510814.481023@gargle.gargle.HOWL>
-Date: Wed, 2 Jan 2013 10:56:37 +0530
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, Stable <stable@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@qca.qualcomm.com>,
-        Vasanthakumar Thiagarajan <vthiagar@qca.qualcomm.com>,
-        Senthil Balasubramanian <senthilb@qca.qualcomm.com>,
-        ath9k-devel@lists.ath9k.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ath9k_htc: Fix skb leaks
-In-Reply-To: <50E3BE23.3010102@lwfinger.net>
-References: <1357098567-8558-1-git-send-email-Larry.Finger@lwfinger.net>
-	<20707.47067.474241.813195@gargle.gargle.HOWL>
-	<50E3BE23.3010102@lwfinger.net>
-X-Mailer: VM 8.2.0b under 24.2.2 (x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Larry Finger wrote:
-> My only counter argument is that none of the other paths that get to 
-> ath9k_htc_txcompletion_cb() leak the skb. It only happens for the path that goes 
-> through htc_connect_service().
+On Wed, 2013-01-02 at 08:10 +0300, Dan Carpenter wrote:
+> clk_get() returns NULL if CONFIG_HAVE_CLK is disabled.
+> 
+> I told Tony about this but everyone has been gone with end of year
+> holidays so it hasn't been addressed.
+> 
+> Tony, please fix it so people don't apply these patches until
+> clk_get() is updated to not return NULL.  It sucks to have to revert
+> patches.
+> 
+> regards,
+> dan carpenter
 
-Sure, but the TX completion handler would be invoked for every skb that is passed
-to the USB layer, including the ones that are allocated in htc_hst.c. When this
-skb goes down to hif_usb.c, a URB is allocated and I am not sure how freeing
-the skb before the USB layer invokes the completion handler for the URB is correct.
+I posted the query to Mike Turquette, linux-kernel and linux-arm-kernel
+mailing lists, regarding the return of NULL when HAVE_CLK is undefined.
 
-I'll come up with a patch and see if kmemleak still complains.
+Short Answer: A return value of NULL is valid and not an error therefore
+we should be using IS_ERR, not IS_ERR_OR_NULL on clk_get results.
 
-Sujith
+I see the obvious problem this creates, and asked this question:
+
+If the driver can't operate with a NULL clk, it should use a
+IS_ERR_OR_NULL test to test for failure, rather than IS_ERR.
+
+
+And Russell's answer:
+
+Why should a _consumer_ of a clock care?  It is _very_ important that
+people get this idea - to a consumer, the struct clk is just an opaque
+cookie.  The fact that it appears to be a pointer does _not_ mean that
+the driver can do any kind of dereferencing on that pointer - it should
+never do so.
+
+Thread can be viewed here:
+https://lkml.org/lkml/2012/12/20/105
+
+
+Regards
+Tony Prisk
+
