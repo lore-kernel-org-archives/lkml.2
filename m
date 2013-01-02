@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753002Ab3ABQHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 11:07:03 -0500
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:59741 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752793Ab3ABQG7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 11:06:59 -0500
-Message-ID: <50E45B74.70301@metafoo.de>
-Date: Wed, 02 Jan 2013 17:08:20 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
+	id S1752976Ab3ABQKA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 11:10:00 -0500
+Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:57824 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752783Ab3ABQJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 11:09:56 -0500
+X-Greylist: delayed 891 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 11:09:56 EST
+X-TM-IMSS-Message-ID: <5b6c4b8100091e36@nsa.gov>
+Message-ID: <50E4584B.6080805@tycho.nsa.gov>
+Date: Wed, 02 Jan 2013 10:54:51 -0500
+From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: netdev@vger.kernel.org, Christian Hohnstaedt <chohnstaedt@innominate.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        David Miller <davem@davemloft.net>,
-        LKML <linux-kernel@vger.kernel.org>, John Linn <linnj@xilinx.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Sam Bobrowicz <SBobrowicz@digilentinc.com>,
-        Rick Hoover <RHoover@digilentinc.com>,
-        Steven Wang <steven.wang@digilentinc.com>
-Subject: Re: Support for Marvell 88E1510 and 88E1116R
-References: <50E404BC.3010604@monstr.eu>
-In-Reply-To: <50E404BC.3010604@monstr.eu>
-X-Enigmail-Version: 1.0.1
+To: Tamas Lengyel <tamas.lengyel@zentific.com>
+CC: konrad.wilk@oracle.com, jeremy@goop.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Access control in Xen privcmd_ioctl_mmap
+References: <CAErYnsgFhW3Cf-W1CQJGOUstcyfdQxWUcGkGbd0uxM1R=XYuSw@mail.gmail.com>
+In-Reply-To: <CAErYnsgFhW3Cf-W1CQJGOUstcyfdQxWUcGkGbd0uxM1R=XYuSw@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2013 10:58 AM, Michal Simek wrote:
-> Hi guys,
+On 12/31/2012 03:44 PM, Tamas Lengyel wrote:
+> In the privcmd Linux driver two checks in the functions
+> privcmd_ioctl_mmap and privcmd_ioctl_mmap_batch are not needed as they
+> are trying to enforce hypervisor-level access control.  They should be
+> removed as they break secondary control domains when performing dom0
+> disaggregation. Xen itself provides adequate security controls around
+> these hypercalls and these checks prevent those controls from
+> functioning as intended.
 > 
-> just a question regarding to Marvell 88e1510 and 88E1116R phys.
-> We have these phys on the arm zynq board and would like to add
-> support to the kernel. Is there any repository with these phys?
-> If yes, when are you going to add them to the mainline?
-> 
-> If there is not, I can send patches for them.
-> (I am not the author of that patches just trying to clean our
-> repository and add patches to the mainline)
+> The patch applies to the stable Linux 3.7.1 kernel.
 
-I think the 88E1510 support was added by the Digilent guys (added to Cc) and
-the 88E1116R support came from within Xilinx.
+It also applies to (and I have tested it on) 3.8-rc1.
 
-I agree that these are pretty straight forward changes and could go upstream in
-their current form.
+> Signed-off-by: Tamas K Lengyel <tamas.lengyel@zentific.com>
+> Cc: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+> Cc: xen-devel@lists.xensource.com
+> Cc: linux-kernel@vger.kernel.org
 
-- Lars
+Acked-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
