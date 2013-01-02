@@ -1,512 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab3ABTNr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 14:13:47 -0500
-Received: from relay1.sgi.com ([192.48.179.29]:50262 "EHLO relay.sgi.com"
+	id S1752717Ab3ABTSd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 14:18:33 -0500
+Received: from mail2.charite.de ([141.42.206.200]:42128 "EHLO mail2.charite.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752555Ab3ABTNp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 14:13:45 -0500
-Message-ID: <50E486E7.1080903@sgi.com>
-Date: Wed, 2 Jan 2013 13:13:43 -0600
-From: Nathan Zimmer <nzimmer@sgi.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1752522Ab3ABTSa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 14:18:30 -0500
+X-Greylist: delayed 546 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jan 2013 14:18:30 EST
+Date: Wed, 2 Jan 2013 20:09:20 +0100
+From: Ralf Hildebrandt <Ralf.Hildebrandt@charite.de>
+To: linux-kernel@vger.kernel.org
+Subject: INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
+Message-ID: <20130102190920.GD29452@charite.de>
+Mail-Followup-To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-efi@vger.kernel.org>,
-        <matt.fleming@intel.com>, <tglx@linutronix.de>, <mingo@redhat.com>
-Subject: Re: BUG: unable to handle kernel paging request at 000000effd870020
-References: <20130102172107.GA26761@gulag1.americas.sgi.com> <50E476C2.7060300@zytor.com>
-In-Reply-To: <50E476C2.7060300@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.162.233.130]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2013 12:04 PM, H. Peter Anvin wrote:
-> On 01/02/2013 09:21 AM, Nathan Zimmer wrote:
->> I am getting an early boot problem. It only happens on the larger of the
->> machines I haven't seen it crop up on machines with more then 512 GB of ram.
->> It shows in the latest linus kernel too.
->>
->> I am (wildly) guessing that what is happening is that the new_memmap that is
->> being passed to bios is somehow placed incorrectly.
->> I have come up with a workaround.  By placing it the DMA area the issue goes
->> away but that doesn't seem like a real fix.
->>
-> What does your memory map look like?
->
-> 	-hpa
->
+This happened of a virtual guest (Linux mail 3.2.0-35-virtual #55-Ubuntu SMP Wed Dec 5 18:02:05 UTC 2012 x86_64 x86_64 x86_64 GNU/Linux)
 
+Jan  2 13:24:08 mail kernel: [3531872.484283] INFO: rcu_bh detected stall on CPU 3 (t=0 jiffies)
+Jan  2 13:24:08 mail kernel: [3531872.484398] sending NMI to all CPUs:
+Jan  2 13:24:08 mail kernel: [3531872.484430] NMI backtrace for cpu 3
+Jan  2 13:24:08 mail kernel: [3531872.484432] CPU 3
+Jan  2 13:24:08 mail kernel: [3531872.484433] Modules linked in: btrfs zlib_deflate libcrc32c ufs vfat msdos fat xfs ip6_queue nf_conntrack_proto_udplite xt_TCPMSS xt_sctp ip6t_LOG ip6t_REJECT nf_conntrack_ipv6 ip6table_raw ip6table_mangle ip6table_filter act_police cls_basic cls_flow cls_fw cls_u32 sch_tbf sch_prio sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm xt_addrtype iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah xt_set ip_set nf_nat_tftp nf_nat_snmp_basic nf_conntrack_snmp nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core ip6_tables nf_defrag_i
+ pv6 xt_tcpmss xt_pkttype xt
+Jan  2 13:24:08 mail kernel: _physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_conntrack xt_connmark xt_CLASSIFY xt_AUDIT ipt_LOG xt_tcpudp xt_state iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_mangle nfnetlink iptable_filter ip_tables x_tables ext2 psmouse serio_raw virtio_balloon lp parport floppy
+Jan  2 13:24:08 mail kernel: [3531872.484533]
+Jan  2 13:24:08 mail kernel: [3531872.484536] Pid: 0, comm: swapper/3 Not tainted 3.2.0-33-virtual #52-Ubuntu Bochs Bochs
+Jan  2 13:24:08 mail kernel: [3531872.484539] RIP: 0010:[<ffffffff81036d5f>]  [<ffffffff81036d5f>] flat_send_IPI_all+0xaf/0xd0
+Jan  2 13:24:08 mail kernel: [3531872.484548] RSP: 0018:ffff88011fd83d88  EFLAGS: 00010006
+Jan  2 13:24:08 mail kernel: [3531872.484550] RAX: 0000000000000000 RBX: 0000000000000046 RCX: 000000000003ffff
+Jan  2 13:24:08 mail kernel: [3531872.484552] RDX: 0000000000000000 RSI: 0000000000000086 RDI: 0000000000000300
+Jan  2 13:24:08 mail kernel: [3531872.484554] RBP: ffff88011fd83da8 R08: 000000000000000a R09: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.484556] R10: 0000000000000000 R11: 0000000000000000 R12: 0000000000000c00
+Jan  2 13:24:08 mail kernel: [3531872.484558] R13: 000000000f000000 R14: ffff88011fd8e700 R15: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.484560] FS:  0000000000000000(0000) GS:ffff88011fd80000(0000) knlGS:0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.484562] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jan  2 13:24:08 mail kernel: [3531872.484564] CR2: 00007fc17c266000 CR3: 000000007a52d000 CR4: 00000000000006e0
+Jan  2 13:24:08 mail kernel: [3531872.484570] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.484575] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jan  2 13:24:08 mail kernel: [3531872.484577] Process swapper/3 (pid: 0, threadinfo ffff880118b4e000, task ffff880118b516e0)
+Jan  2 13:24:08 mail kernel: [3531872.484579] Stack:
+Jan  2 13:24:08 mail kernel: [3531872.484610]  0000000000000000 0000000000002710 ffffffff81c30900 ffffffff81c30a00
+Jan  2 13:24:08 mail kernel: [3531872.484614]  ffff88011fd83dc8 ffffffff810323ca 000609111e000000 ffffffff81c30900
+Jan  2 13:24:08 mail kernel: [3531872.484617]  ffff88011fd83de8 ffffffff810ddf37 ffff88011fd83e18 ffff88011fd8ea60
+Jan  2 13:24:08 mail kernel: [3531872.484620] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.484652]  <IRQ>
+Jan  2 13:24:08 mail kernel: [3531872.484689]  [<ffffffff810323ca>] arch_trigger_all_cpu_backtrace+0x5a/0x90
+Jan  2 13:24:08 mail kernel: [3531872.484703]  [<ffffffff810ddf37>] check_cpu_stall.isra.36+0x97/0xf0
+Jan  2 13:24:08 mail kernel: [3531872.484706]  [<ffffffff810ddfc8>] __rcu_pending+0x38/0x1b0
+Jan  2 13:24:08 mail kernel: [3531872.484709]  [<ffffffff810de58b>] rcu_check_callbacks+0x1cb/0x1e0
+Jan  2 13:24:08 mail kernel: [3531872.484719]  [<ffffffff81076fb8>] update_process_times+0x48/0x90
+Jan  2 13:24:08 mail kernel: [3531872.484725]  [<ffffffff8109a5f4>] tick_sched_timer+0x64/0xc0
+Jan  2 13:24:08 mail kernel: [3531872.484730]  [<ffffffff8108cd78>] __run_hrtimer+0x78/0x1f0
+Jan  2 13:24:08 mail kernel: [3531872.484733]  [<ffffffff8109a590>] ? tick_nohz_handler+0x100/0x100
+Jan  2 13:24:08 mail kernel: [3531872.484736]  [<ffffffff8108d6a7>] hrtimer_interrupt+0xf7/0x230
+Jan  2 13:24:08 mail kernel: [3531872.484742]  [<ffffffff8165f0c9>] smp_apic_timer_interrupt+0x69/0x99
+Jan  2 13:24:08 mail kernel: [3531872.484745]  [<ffffffff8165cf9e>] apic_timer_interrupt+0x6e/0x80
+Jan  2 13:24:08 mail kernel: [3531872.484747]  <EOI>
+Jan  2 13:24:08 mail kernel: [3531872.484780]  [<ffffffff8108f175>] ? sched_clock_local+0x25/0x90
+Jan  2 13:24:08 mail kernel: [3531872.484785]  [<ffffffff8103bf6b>] ? native_safe_halt+0xb/0x10
+Jan  2 13:24:08 mail kernel: [3531872.484790]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.484794]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.484804]  [<ffffffff81631f52>] start_secondary+0xd9/0xdb
+Jan  2 13:24:08 mail kernel: [3531872.484806] Code: 8b 05 06 4b ca 00 41 c1 e5 18 44 8b 60 34 ff 90 48 01 00 00 44 89 2c 25 10 b3 5f ff 41 81 cc 00 04 00 00 44 89 24 25 00 b3 5f ff <48> 89 df 57 9d 0f 1f 44 00 00 48 83 c4 08 5b 41 5c 41 5d 5d c3
+Jan  2 13:24:08 mail kernel: [3531872.485054] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.485055]  <IRQ>  [<ffffffff810323ca>] arch_trigger_all_cpu_backtrace+0x5a/0x90
+Jan  2 13:24:08 mail kernel: [3531872.485061]  [<ffffffff810ddf37>] check_cpu_stall.isra.36+0x97/0xf0
+Jan  2 13:24:08 mail kernel: [3531872.485064]  [<ffffffff810ddfc8>] __rcu_pending+0x38/0x1b0
+Jan  2 13:24:08 mail kernel: [3531872.485067]  [<ffffffff810de58b>] rcu_check_callbacks+0x1cb/0x1e0
+Jan  2 13:24:08 mail kernel: [3531872.485070]  [<ffffffff81076fb8>] update_process_times+0x48/0x90
+Jan  2 13:24:08 mail kernel: [3531872.485073]  [<ffffffff8109a5f4>] tick_sched_timer+0x64/0xc0
+Jan  2 13:24:08 mail kernel: [3531872.485076]  [<ffffffff8108cd78>] __run_hrtimer+0x78/0x1f0
+Jan  2 13:24:08 mail kernel: [3531872.485078]  [<ffffffff8109a590>] ? tick_nohz_handler+0x100/0x100
+Jan  2 13:24:08 mail kernel: [3531872.485081]  [<ffffffff8108d6a7>] hrtimer_interrupt+0xf7/0x230
+Jan  2 13:24:08 mail kernel: [3531872.485088]  [<ffffffff8165f0c9>] smp_apic_timer_interrupt+0x69/0x99
+Jan  2 13:24:08 mail kernel: [3531872.485090]  [<ffffffff8165cf9e>] apic_timer_interrupt+0x6e/0x80
+Jan  2 13:24:08 mail kernel: [3531872.485092]  <EOI>  [<ffffffff8108f175>] ? sched_clock_local+0x25/0x90
+Jan  2 13:24:08 mail kernel: [3531872.485097]  [<ffffffff8103bf6b>] ? native_safe_halt+0xb/0x10
+Jan  2 13:24:08 mail kernel: [3531872.485099]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.485102]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.485105]  [<ffffffff81631f52>] start_secondary+0xd9/0xdb
+Jan  2 13:24:08 mail kernel: [3531872.485109] NMI backtrace for cpu 1
+Jan  2 13:24:08 mail kernel: [3531872.485111] CPU 1
+Jan  2 13:24:08 mail kernel: [3531872.485113] Modules linked in: btrfs zlib_deflate libcrc32c ufs vfat msdos fat xfs ip6_queue nf_conntrack_proto_udplite xt_TCPMSS xt_sctp ip6t_LOG ip6t_REJECT nf_conntrack_ipv6 ip6table_raw ip6table_mangle ip6table_filter act_police cls_basic cls_flow cls_fw cls_u32 sch_tbf sch_prio sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm xt_addrtype iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah xt_set ip_set nf_nat_tftp nf_nat_snmp_basic nf_conntrack_snmp nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core ip6_tables nf_defrag_i
+ pv6 xt_tcpmss xt_pkttype xt
+Jan  2 13:24:08 mail kernel: _physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_conntrack xt_connmark xt_CLASSIFY xt_AUDIT ipt_LOG xt_tcpudp xt_state iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_mangle nfnetlink iptable_filter ip_tables x_tables ext2 psmouse serio_raw virtio_balloon lp parport floppy
+Jan  2 13:24:08 mail kernel: [3531872.485179]
+Jan  2 13:24:08 mail kernel: [3531872.485181] Pid: 0, comm: swapper/1 Not tainted 3.2.0-33-virtual #52-Ubuntu Bochs Bochs
+Jan  2 13:24:08 mail kernel: [3531872.485184] RIP: 0010:[<ffffffff8103bf6b>]  [<ffffffff8103bf6b>] native_safe_halt+0xb/0x10
+Jan  2 13:24:08 mail kernel: [3531872.485190] RSP: 0018:ffff880118b17ec8  EFLAGS: 00000246
+Jan  2 13:24:08 mail kernel: [3531872.485192] RAX: 0000000000000000 RBX: ffff880118b17fd8 RCX: 00000000ffffffff
+Jan  2 13:24:08 mail kernel: [3531872.485194] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffff81dd9e48
+Jan  2 13:24:08 mail kernel: [3531872.485196] RBP: ffff880118b17ec8 R08: 0000000000000000 R09: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485198] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff81cdbc60
+Jan  2 13:24:08 mail kernel: [3531872.485200] R13: 0000000000000001 R14: 0000000000000000 R15: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485202] FS:  0000000000000000(0000) GS:ffff88011fc80000(0000) knlGS:0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485204] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jan  2 13:24:08 mail kernel: [3531872.485206] CR2: 00007fb19f934000 CR3: 0000000001c05000 CR4: 00000000000006e0
+Jan  2 13:24:08 mail kernel: [3531872.485212] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485217] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jan  2 13:24:08 mail kernel: [3531872.485219] Process swapper/1 (pid: 0, threadinfo ffff880118b16000, task ffff880118b196e0)
+Jan  2 13:24:08 mail kernel: [3531872.485220] Stack:
+Jan  2 13:24:08 mail kernel: [3531872.485254]  ffff880118b17ef8 ffffffff8101b8a3 ffff880118b17fd8 ffffffff81cdbc60
+Jan  2 13:24:08 mail kernel: [3531872.485257]  0000000000000000 0000000000000000 ffff880118b17f28 ffffffff81012236
+Jan  2 13:24:08 mail kernel: [3531872.485261]  ffff880118b17f18 cc49a6709741f8e5 0000000000000000 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485264] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.485298]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.485301]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.485304]  [<ffffffff81631f52>] start_secondary+0xd9/0xdb
+Jan  2 13:24:08 mail kernel: [3531872.485306] Code: 55 48 89 e5 0f 1f 44 00 00 fa 5d c3 0f 1f 40 00 55 48 89 e5 0f 1f 44 00 00 fb 5d c3 0f 1f 40 00 55 48 89 e5 0f 1f 44 00 00 fb f4 <5d> c3 0f 1f 00 55 48 89 e5 0f 1f 44 00 00 f4 5d c3 0f 1f 40 00
+Jan  2 13:24:08 mail kernel: [3531872.485556] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.485559]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.485561]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.485568]  [<ffffffff81631f52>] start_secondary+0xd9/0xdb
+Jan  2 13:24:08 mail kernel: [3531872.485573] NMI backtrace for cpu 2
+Jan  2 13:24:08 mail kernel: [3531872.485578] CPU 2
+Jan  2 13:24:08 mail kernel: [3531872.485581] Modules linked in: btrfs zlib_deflate libcrc32c ufs vfat msdos fat xfs ip6_queue nf_conntrack_proto_udplite xt_TCPMSS xt_sctp ip6t_LOG ip6t_REJECT nf_conntrack_ipv6 ip6table_raw ip6table_mangle ip6table_filter act_police cls_basic cls_flow cls_fw cls_u32 sch_tbf sch_prio sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm xt_addrtype iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah xt_set ip_set nf_nat_tftp nf_nat_snmp_basic nf_conntrack_snmp nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core ip6_tables nf_defrag_i
+ pv6 xt_tcpmss xt_pkttype xt
+Jan  2 13:24:08 mail kernel: _physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_conntrack xt_connmark xt_CLASSIFY xt_AUDIT ipt_LOG xt_tcpudp xt_state iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_mangle nfnetlink iptable_filter ip_tables x_tables ext2 psmouse serio_raw virtio_balloon lp parport floppy
+Jan  2 13:24:08 mail kernel: [3531872.485718]
+Jan  2 13:24:08 mail kernel: [3531872.485723] Pid: 0, comm: swapper/2 Not tainted 3.2.0-33-virtual #52-Ubuntu Bochs Bochs
+Jan  2 13:24:08 mail kernel: [3531872.485729] RIP: 0010:[<ffffffff8103bf6b>]  [<ffffffff8103bf6b>] native_safe_halt+0xb/0x10
+Jan  2 13:24:08 mail kernel: [3531872.485741] RSP: 0018:ffff880118b39ec8  EFLAGS: 00000246
+Jan  2 13:24:08 mail kernel: [3531872.485745] RAX: 0000000000000000 RBX: ffff880118b39fd8 RCX: 00000000ffffffff
+Jan  2 13:24:08 mail kernel: [3531872.485749] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffff81dd9e48
+Jan  2 13:24:08 mail kernel: [3531872.485753] RBP: ffff880118b39ec8 R08: 0000000000000000 R09: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485757] R10: 0000000000000000 R11: 0000000000000001 R12: ffffffff81cdbc60
+Jan  2 13:24:08 mail kernel: [3531872.485761] R13: 0000000000000002 R14: 0000000000000000 R15: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485766] FS:  0000000000000000(0000) GS:ffff88011fd00000(0000) knlGS:0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485770] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jan  2 13:24:08 mail kernel: [3531872.485774] CR2: 00007fb19f934000 CR3: 000000008f70e000 CR4: 00000000000006e0
+Jan  2 13:24:08 mail kernel: [3531872.485785] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485795] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jan  2 13:24:08 mail kernel: [3531872.485800] Process swapper/2 (pid: 0, threadinfo ffff880118b38000, task ffff880118b316e0)
+Jan  2 13:24:08 mail kernel: [3531872.485803] Stack:
+Jan  2 13:24:08 mail kernel: [3531872.485873]  ffff880118b39ef8 ffffffff8101b8a3 ffff880118b39fd8 ffffffff81cdbc60
+Jan  2 13:24:08 mail kernel: [3531872.485881]  0000000000000000 0000000000000000 ffff880118b39f28 ffffffff81012236
+Jan  2 13:24:08 mail kernel: [3531872.485887]  ffff880118b39f18 4aab3b13eb9b4215 0000000000000000 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.485894] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.485970]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.485977]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.485984]  [<ffffffff81631f52>] start_secondary+0xd9/0xdb
+Jan  2 13:24:08 mail kernel: [3531872.485988] Code: 55 48 89 e5 0f 1f 44 00 00 fa 5d c3 0f 1f 40 00 55 48 89 e5 0f 1f 44 00 00 fb 5d c3 0f 1f 40 00 55 48 89 e5 0f 1f 44 00 00 fb f4 <5d> c3 0f 1f 00 55 48 89 e5 0f 1f 44 00 00 f4 5d c3 0f 1f 40 00
+Jan  2 13:24:08 mail kernel: [3531872.486565] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.486570]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.486576]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.486581]  [<ffffffff81631f52>] start_secondary+0xd9/0xdb
+Jan  2 13:24:08 mail kernel: [3531872.467874] NMI backtrace for cpu 0
+Jan  2 13:24:08 mail kernel: [3531872.467874] CPU 0
+Jan  2 13:24:08 mail kernel: [3531872.467874] Modules linked in: btrfs zlib_deflate libcrc32c ufs vfat msdos fat xfs ip6_queue nf_conntrack_proto_udplite xt_TCPMSS xt_sctp ip6t_LOG ip6t_REJECT nf_conntrack_ipv6 ip6table_raw ip6table_mangle ip6table_filter act_police cls_basic cls_flow cls_fw cls_u32 sch_tbf sch_prio sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm xt_addrtype iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REJECT ipt_REDIRECT ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah xt_set ip_set nf_nat_tftp nf_nat_snmp_basic nf_conntrack_snmp nf_nat_sip nf_nat_pptp nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_broadcast nf_conntrack_irc nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core ip6_tables nf_defrag_i
+ pv6 xt_tcpmss xt_pkttype xt
+Jan  2 13:24:08 mail kernel: _physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log xt_multiport xt_mark xt_mac xt_limit xt_length xt_iprange xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_conntrack xt_connmark xt_CLASSIFY xt_AUDIT ipt_LOG xt_tcpudp xt_state iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack iptable_mangle nfnetlink iptable_filter ip_tables x_tables ext2 psmouse serio_raw virtio_balloon lp parport floppy
+Jan  2 13:24:08 mail kernel: [3531872.467874]
+Jan  2 13:24:08 mail kernel: [3531872.467874] Pid: 0, comm: swapper/0 Not tainted 3.2.0-33-virtual #52-Ubuntu Bochs Bochs
+Jan  2 13:24:08 mail kernel: [3531872.467874] RIP: 0010:[<ffffffff8103bf6b>]  [<ffffffff8103bf6b>] native_safe_halt+0xb/0x10
+Jan  2 13:24:08 mail kernel: [3531872.467874] RSP: 0018:ffffffff81c01ea8  EFLAGS: 00000246
+Jan  2 13:24:08 mail kernel: [3531872.467874] RAX: 0000000000000000 RBX: ffffffff81c01fd8 RCX: 00000000ffffffff
+Jan  2 13:24:08 mail kernel: [3531872.467874] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffffffff81dd9e48
+Jan  2 13:24:08 mail kernel: [3531872.467874] RBP: ffffffff81c01ea8 R08: 0000000000000000 R09: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.467874] R10: 0000000000000000 R11: 0000000000000000 R12: ffffffff81cdbc60
+Jan  2 13:24:08 mail kernel: [3531872.467874] R13: 0000000000000000 R14: ffffffffffffffff R15: 000000000008c800
+Jan  2 13:24:08 mail kernel: [3531872.467874] FS:  0000000000000000(0000) GS:ffff88011fc00000(0000) knlGS:0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.467874] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jan  2 13:24:08 mail kernel: [3531872.467874] CR2: 00007ffe7e9c39cc CR3: 00000000db7ed000 CR4: 00000000000006f0
+Jan  2 13:24:08 mail kernel: [3531872.467874] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jan  2 13:24:08 mail kernel: [3531872.467874] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jan  2 13:24:08 mail kernel: [3531872.467874] Process swapper/0 (pid: 0, threadinfo ffffffff81c00000, task ffffffff81c0d020)
+Jan  2 13:24:08 mail kernel: [3531872.467874] Stack:
+Jan  2 13:24:08 mail kernel: [3531872.467874]  ffffffff81c01ed8 ffffffff8101b8a3 ffffffff81c01fd8 ffffffff81cdbc60
+Jan  2 13:24:08 mail kernel: [3531872.467874]  ffff88011ffb0840 ffffffffffffffff ffffffff81c01f08 ffffffff81012236
+Jan  2 13:24:08 mail kernel: [3531872.467874]  ffffffffffffffff a87feeb7073bf6b3 0000000000000000 ffffffff81d42d20
+Jan  2 13:24:08 mail kernel: [3531872.467874] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff8161ac2e>] rest_init+0x72/0x74
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9c03>] start_kernel+0x3b0/0x3bd
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9388>] x86_64_start_reservations+0x132/0x136
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9140>] ? early_idt_handlers+0x140/0x140
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9459>] x86_64_start_kernel+0xcd/0xdc
+Jan  2 13:24:08 mail kernel: [3531872.467874] Code: 55 48 89 e5 0f 1f 44 00 00 fa 5d c3 0f 1f 40 00 55 48 89 e5 0f 1f 44 00 00 fb 5d c3 0f 1f 40 00 55 48 89 e5 0f 1f 44 00 00 fb f4 <5d> c3 0f 1f 00 55 48 89 e5 0f 1f 44 00 00 f4 5d c3 0f 1f 40 00
+Jan  2 13:24:08 mail kernel: [3531872.467874] Call Trace:
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff8101b8a3>] default_idle+0x53/0x1d0
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81012236>] cpu_idle+0xd6/0x120
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff8161ac2e>] rest_init+0x72/0x74
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9c03>] start_kernel+0x3b0/0x3bd
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9388>] x86_64_start_reservations+0x132/0x136
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9140>] ? early_idt_handlers+0x140/0x140
+Jan  2 13:24:08 mail kernel: [3531872.467874]  [<ffffffff81cf9459>] x86_64_start_kernel+0xcd/0xdc
 
-efi: EFI v2.10 by INTEL
-efi:  ACPI 2.0=0x78d40014  SMBIOS=0x78bd2000  UVsystab=0x76314000
-efi: mem00: type=3, attr=0xf, 
-range=[0x0000000000000000-0x0000000000001000) (0MB)
-efi: mem01: type=7, attr=0xf, 
-range=[0x0000000000001000-0x000000000000e000) (0MB)
-efi: mem02: type=3, attr=0xf, 
-range=[0x000000000000e000-0x0000000000010000) (0MB)
-efi: mem03: type=7, attr=0xf, 
-range=[0x0000000000010000-0x000000000005f000) (0MB)
-efi: mem04: type=4, attr=0xf, 
-range=[0x000000000005f000-0x0000000000060000) (0MB)
-efi: mem05: type=3, attr=0xf, 
-range=[0x0000000000060000-0x000000000008f000) (0MB)
-efi: mem06: type=10, attr=0xf, 
-range=[0x000000000008f000-0x0000000000090000) (0MB)
-efi: mem07: type=3, attr=0xf, 
-range=[0x0000000000090000-0x00000000000a0000) (0MB)
-efi: mem08: type=2, attr=0xf, 
-range=[0x0000000000100000-0x0000000000900000) (8MB)
-efi: mem09: type=7, attr=0xf, 
-range=[0x0000000000900000-0x0000000000c00000) (3MB)
-efi: mem10: type=3, attr=0xf, 
-range=[0x0000000000c00000-0x0000000001000000) (4MB)
-efi: mem11: type=7, attr=0xf, 
-range=[0x0000000001000000-0x00000000731a7000) (1825MB)
-efi: mem12: type=2, attr=0xf, 
-range=[0x00000000731a7000-0x00000000738f6000) (7MB)
-efi: mem13: type=1, attr=0xf, 
-range=[0x00000000738f6000-0x0000000073934000) (0MB)
-efi: mem14: type=7, attr=0xf, 
-range=[0x0000000073934000-0x000000007394b000) (0MB)
-efi: mem15: type=2, attr=0xf, 
-range=[0x000000007394b000-0x0000000073950000) (0MB)
-efi: mem16: type=7, attr=0xf, 
-range=[0x0000000073950000-0x0000000073951000) (0MB)
-efi: mem17: type=2, attr=0xf, 
-range=[0x0000000073951000-0x0000000073954000) (0MB)
-efi: mem18: type=4, attr=0xf, 
-range=[0x0000000073954000-0x0000000073955000) (0MB)
-efi: mem19: type=2, attr=0xf, 
-range=[0x0000000073955000-0x0000000073970000) (0MB)
-efi: mem20: type=4, attr=0xf, 
-range=[0x0000000073970000-0x0000000073976000) (0MB)
-efi: mem21: type=2, attr=0xf, 
-range=[0x0000000073976000-0x0000000073978000) (0MB)
-efi: mem22: type=4, attr=0xf, 
-range=[0x0000000073978000-0x00000000739d4000) (0MB)
-efi: mem23: type=7, attr=0xf, 
-range=[0x00000000739d4000-0x00000000739d5000) (0MB)
-efi: mem24: type=4, attr=0xf, 
-range=[0x00000000739d5000-0x00000000739d6000) (0MB)
-efi: mem25: type=2, attr=0xf, 
-range=[0x00000000739d6000-0x00000000739d7000) (0MB)
-efi: mem26: type=4, attr=0xf, 
-range=[0x00000000739d7000-0x00000000739ff000) (0MB)
-efi: mem27: type=2, attr=0xf, 
-range=[0x00000000739ff000-0x0000000073a13000) (0MB)
-efi: mem28: type=4, attr=0xf, 
-range=[0x0000000073a13000-0x0000000073a15000) (0MB)
-efi: mem29: type=2, attr=0xf, 
-range=[0x0000000073a15000-0x0000000073a1e000) (0MB)
-efi: mem30: type=4, attr=0xf, 
-range=[0x0000000073a1e000-0x0000000073ba2000) (1MB)
-efi: mem31: type=1, attr=0xf, 
-range=[0x0000000073ba2000-0x0000000073c63000) (0MB)
-efi: mem32: type=4, attr=0xf, 
-range=[0x0000000073c63000-0x0000000073ca0000) (0MB)
-efi: mem33: type=2, attr=0xf, 
-range=[0x0000000073ca0000-0x0000000073ca1000) (0MB)
-efi: mem34: type=4, attr=0xf, 
-range=[0x0000000073ca1000-0x0000000073ca2000) (0MB)
-efi: mem35: type=2, attr=0xf, 
-range=[0x0000000073ca2000-0x0000000073cab000) (0MB)
-efi: mem36: type=4, attr=0xf, 
-range=[0x0000000073cab000-0x0000000073cd6000) (0MB)
-efi: mem37: type=3, attr=0xf, 
-range=[0x0000000073cd6000-0x0000000073cec000) (0MB)
-efi: mem38: type=4, attr=0xf, 
-range=[0x0000000073cec000-0x0000000075a31000) (29MB)
-efi: mem39: type=6, attr=0x800000000000000f, 
-range=[0x0000000075a31000-0x0000000075a32000) (0MB)
-efi: mem40: type=4, attr=0xf, 
-range=[0x0000000075a32000-0x0000000075a33000) (0MB)
-efi: mem41: type=5, attr=0x800000000000000f, 
-range=[0x0000000075a33000-0x0000000075a3c000) (0MB)
-efi: mem42: type=6, attr=0x800000000000000f, 
-range=[0x0000000075a3c000-0x0000000075a3d000) (0MB)
-efi: mem43: type=5, attr=0x800000000000000f, 
-range=[0x0000000075a3d000-0x0000000075a58000) (0MB)
-efi: mem44: type=3, attr=0xf, 
-range=[0x0000000075a58000-0x0000000075a5c000) (0MB)
-efi: mem45: type=4, attr=0xf, 
-range=[0x0000000075a5c000-0x0000000075c53000) (1MB)
-efi: mem46: type=3, attr=0xf, 
-range=[0x0000000075c53000-0x0000000075c56000) (0MB)
-efi: mem47: type=4, attr=0xf, 
-range=[0x0000000075c56000-0x0000000075cbc000) (0MB)
-efi: mem48: type=3, attr=0xf, 
-range=[0x0000000075cbc000-0x0000000075cbe000) (0MB)
-efi: mem49: type=4, attr=0xf, 
-range=[0x0000000075cbe000-0x0000000075cc0000) (0MB)
-efi: mem50: type=5, attr=0x800000000000000f, 
-range=[0x0000000075cc0000-0x0000000075cc5000) (0MB)
-efi: mem51: type=3, attr=0xf, 
-range=[0x0000000075cc5000-0x0000000075cc7000) (0MB)
-efi: mem52: type=4, attr=0xf, 
-range=[0x0000000075cc7000-0x0000000075ccb000) (0MB)
-efi: mem53: type=3, attr=0xf, 
-range=[0x0000000075ccb000-0x0000000075ccf000) (0MB)
-efi: mem54: type=0, attr=0xf, 
-range=[0x0000000075ccf000-0x0000000075cd8000) (0MB)
-efi: mem55: type=4, attr=0xf, 
-range=[0x0000000075cd8000-0x0000000075cdb000) (0MB)
-efi: mem56: type=3, attr=0xf, 
-range=[0x0000000075cdb000-0x0000000075cdd000) (0MB)
-efi: mem57: type=4, attr=0xf, 
-range=[0x0000000075cdd000-0x0000000075cde000) (0MB)
-efi: mem58: type=3, attr=0xf, 
-range=[0x0000000075cde000-0x0000000075ce4000) (0MB)
-efi: mem59: type=4, attr=0xf, 
-range=[0x0000000075ce4000-0x0000000075ce5000) (0MB)
-efi: mem60: type=3, attr=0xf, 
-range=[0x0000000075ce5000-0x0000000075cec000) (0MB)
-efi: mem61: type=4, attr=0xf, 
-range=[0x0000000075cec000-0x0000000075cee000) (0MB)
-efi: mem62: type=3, attr=0xf, 
-range=[0x0000000075cee000-0x0000000075cf6000) (0MB)
-efi: mem63: type=4, attr=0xf, 
-range=[0x0000000075cf6000-0x0000000075cf7000) (0MB)
-efi: mem64: type=3, attr=0xf, 
-range=[0x0000000075cf7000-0x0000000075cfa000) (0MB)
-efi: mem65: type=4, attr=0xf, 
-range=[0x0000000075cfa000-0x0000000075cfb000) (0MB)
-efi: mem66: type=3, attr=0xf, 
-range=[0x0000000075cfb000-0x0000000075cff000) (0MB)
-efi: mem67: type=4, attr=0xf, 
-range=[0x0000000075cff000-0x0000000075d00000) (0MB)
-efi: mem68: type=3, attr=0xf, 
-range=[0x0000000075d00000-0x0000000075d02000) (0MB)
-efi: mem69: type=4, attr=0xf, 
-range=[0x0000000075d02000-0x0000000075d04000) (0MB)
-efi: mem70: type=3, attr=0xf, 
-range=[0x0000000075d04000-0x0000000075d06000) (0MB)
-efi: mem71: type=4, attr=0xf, 
-range=[0x0000000075d06000-0x0000000075d07000) (0MB)
-efi: mem72: type=5, attr=0x800000000000000f, 
-range=[0x0000000075d07000-0x0000000075d0f000) (0MB)
-efi: mem73: type=4, attr=0xf, 
-range=[0x0000000075d0f000-0x0000000075d10000) (0MB)
-efi: mem74: type=3, attr=0xf, 
-range=[0x0000000075d10000-0x0000000075d18000) (0MB)
-efi: mem75: type=5, attr=0x800000000000000f, 
-range=[0x0000000075d18000-0x0000000075d1a000) (0MB)
-efi: mem76: type=4, attr=0xf, 
-range=[0x0000000075d1a000-0x0000000075d1b000) (0MB)
-efi: mem77: type=3, attr=0xf, 
-range=[0x0000000075d1b000-0x0000000075d1e000) (0MB)
-efi: mem78: type=4, attr=0xf, 
-range=[0x0000000075d1e000-0x0000000075d21000) (0MB)
-efi: mem79: type=3, attr=0xf, 
-range=[0x0000000075d21000-0x0000000075d28000) (0MB)
-efi: mem80: type=4, attr=0xf, 
-range=[0x0000000075d28000-0x0000000075d29000) (0MB)
-efi: mem81: type=3, attr=0xf, 
-range=[0x0000000075d29000-0x0000000075d2c000) (0MB)
-efi: mem82: type=4, attr=0xf, 
-range=[0x0000000075d2c000-0x0000000075d2e000) (0MB)
-efi: mem83: type=3, attr=0xf, 
-range=[0x0000000075d2e000-0x0000000075d3c000) (0MB)
-efi: mem84: type=4, attr=0xf, 
-range=[0x0000000075d3c000-0x0000000075d3d000) (0MB)
-efi: mem85: type=3, attr=0xf, 
-range=[0x0000000075d3d000-0x0000000075d45000) (0MB)
-efi: mem86: type=4, attr=0xf, 
-range=[0x0000000075d45000-0x0000000075d46000) (0MB)
-efi: mem87: type=3, attr=0xf, 
-range=[0x0000000075d46000-0x0000000075d4f000) (0MB)
-efi: mem88: type=4, attr=0xf, 
-range=[0x0000000075d4f000-0x0000000075d53000) (0MB)
-efi: mem89: type=3, attr=0xf, 
-range=[0x0000000075d53000-0x0000000075d5c000) (0MB)
-efi: mem90: type=4, attr=0xf, 
-range=[0x0000000075d5c000-0x0000000075d5d000) (0MB)
-efi: mem91: type=3, attr=0xf, 
-range=[0x0000000075d5d000-0x0000000075d63000) (0MB)
-efi: mem92: type=4, attr=0xf, 
-range=[0x0000000075d63000-0x0000000075d64000) (0MB)
-efi: mem93: type=5, attr=0x800000000000000f, 
-range=[0x0000000075d64000-0x0000000075d66000) (0MB)
-efi: mem94: type=6, attr=0x800000000000000f, 
-range=[0x0000000075d66000-0x0000000075d6b000) (0MB)
-efi: mem95: type=5, attr=0x800000000000000f, 
-range=[0x0000000075d6b000-0x0000000075d75000) (0MB)
-efi: mem96: type=4, attr=0xf, 
-range=[0x0000000075d75000-0x0000000075d77000) (0MB)
-efi: mem97: type=5, attr=0x800000000000000f, 
-range=[0x0000000075d77000-0x0000000075d85000) (0MB)
-efi: mem98: type=4, attr=0xf, 
-range=[0x0000000075d85000-0x0000000075d87000) (0MB)
-efi: mem99: type=3, attr=0xf, 
-range=[0x0000000075d87000-0x0000000075da1000) (0MB)
-efi: mem100: type=4, attr=0xf, 
-range=[0x0000000075da1000-0x0000000075da2000) (0MB)
-efi: mem101: type=3, attr=0xf, 
-range=[0x0000000075da2000-0x0000000075da8000) (0MB)
-efi: mem102: type=4, attr=0xf, 
-range=[0x0000000075da8000-0x000000007615c000) (3MB)
-efi: mem103: type=3, attr=0xf, 
-range=[0x000000007615c000-0x0000000076162000) (0MB)
-efi: mem104: type=4, attr=0xf, 
-range=[0x0000000076162000-0x0000000076163000) (0MB)
-efi: mem105: type=3, attr=0xf, 
-range=[0x0000000076163000-0x00000000761d6000) (0MB)
-efi: mem106: type=4, attr=0xf, 
-range=[0x00000000761d6000-0x00000000761d9000) (0MB)
-efi: mem107: type=3, attr=0xf, 
-range=[0x00000000761d9000-0x00000000761e0000) (0MB)
-efi: mem108: type=4, attr=0xf, 
-range=[0x00000000761e0000-0x00000000761e1000) (0MB)
-efi: mem109: type=5, attr=0x800000000000000f, 
-range=[0x00000000761e1000-0x0000000076211000) (0MB)
-efi: mem110: type=4, attr=0xf, 
-range=[0x0000000076211000-0x0000000076214000) (0MB)
-efi: mem111: type=3, attr=0xf, 
-range=[0x0000000076214000-0x0000000076250000) (0MB)
-efi: mem112: type=4, attr=0xf, 
-range=[0x0000000076250000-0x0000000076253000) (0MB)
-efi: mem113: type=3, attr=0xf, 
-range=[0x0000000076253000-0x0000000076258000) (0MB)
-efi: mem114: type=4, attr=0xf, 
-range=[0x0000000076258000-0x000000007625b000) (0MB)
-efi: mem115: type=3, attr=0xf, 
-range=[0x000000007625b000-0x0000000076267000) (0MB)
-efi: mem116: type=4, attr=0xf, 
-range=[0x0000000076267000-0x00000000762b8000) (0MB)
-efi: mem117: type=3, attr=0xf, 
-range=[0x00000000762b8000-0x00000000762c2000) (0MB)
-efi: mem118: type=5, attr=0x800000000000000f, 
-range=[0x00000000762c2000-0x00000000762c4000) (0MB)
-efi: mem119: type=3, attr=0xf, 
-range=[0x00000000762c4000-0x00000000762d3000) (0MB)
-efi: mem120: type=4, attr=0xf, 
-range=[0x00000000762d3000-0x00000000762dd000) (0MB)
-efi: mem121: type=5, attr=0x800000000000000f, 
-range=[0x00000000762dd000-0x00000000762e0000) (0MB)
-efi: mem122: type=4, attr=0xf, 
-range=[0x00000000762e0000-0x00000000762ec000) (0MB)
-efi: mem123: type=5, attr=0x800000000000000f, 
-range=[0x00000000762ec000-0x00000000762f2000) (0MB)
-efi: mem124: type=3, attr=0xf, 
-range=[0x00000000762f2000-0x00000000762f3000) (0MB)
-efi: mem125: type=4, attr=0xf, 
-range=[0x00000000762f3000-0x00000000762f4000) (0MB)
-efi: mem126: type=3, attr=0xf, 
-range=[0x00000000762f4000-0x00000000762f7000) (0MB)
-efi: mem127: type=5, attr=0x800000000000000f, 
-range=[0x00000000762f7000-0x00000000762ff000) (0MB)
-efi: mem128: type=3, attr=0xf, 
-range=[0x00000000762ff000-0x0000000076307000) (0MB)
-efi: mem129: type=2, attr=0xf, 
-range=[0x0000000076307000-0x0000000076308000) (0MB)
-efi: mem130: type=4, attr=0xf, 
-range=[0x0000000076308000-0x000000007630a000) (0MB)
-efi: mem131: type=0, attr=0xf, 
-range=[0x000000007630a000-0x0000000076313000) (0MB)
-efi: mem132: type=6, attr=0x800000000000000f, 
-range=[0x0000000076313000-0x0000000076315000) (0MB)
-efi: mem133: type=4, attr=0xf, 
-range=[0x0000000076315000-0x000000007647f000) (1MB)
-efi: mem134: type=3, attr=0xf, 
-range=[0x000000007647f000-0x0000000076497000) (0MB)
-efi: mem135: type=4, attr=0xf, 
-range=[0x0000000076497000-0x000000007649b000) (0MB)
-efi: mem136: type=3, attr=0xf, 
-range=[0x000000007649b000-0x000000007649d000) (0MB)
-efi: mem137: type=4, attr=0xf, 
-range=[0x000000007649d000-0x000000007649e000) (0MB)
-efi: mem138: type=3, attr=0xf, 
-range=[0x000000007649e000-0x00000000764a8000) (0MB)
-efi: mem139: type=4, attr=0xf, 
-range=[0x00000000764a8000-0x00000000764ba000) (0MB)
-efi: mem140: type=3, attr=0xf, 
-range=[0x00000000764ba000-0x00000000764bc000) (0MB)
-efi: mem141: type=4, attr=0xf, 
-range=[0x00000000764bc000-0x000000007652f000) (0MB)
-efi: mem142: type=3, attr=0xf, 
-range=[0x000000007652f000-0x0000000076534000) (0MB)
-efi: mem143: type=4, attr=0xf, 
-range=[0x0000000076534000-0x0000000076548000) (0MB)
-efi: mem144: type=3, attr=0xf, 
-range=[0x0000000076548000-0x0000000076552000) (0MB)
-efi: mem145: type=4, attr=0xf, 
-range=[0x0000000076552000-0x0000000076554000) (0MB)
-efi: mem146: type=3, attr=0xf, 
-range=[0x0000000076554000-0x000000007655b000) (0MB)
-efi: mem147: type=4, attr=0xf, 
-range=[0x000000007655b000-0x0000000076572000) (0MB)
-efi: mem148: type=3, attr=0xf, 
-range=[0x0000000076572000-0x0000000076573000) (0MB)
-efi: mem149: type=4, attr=0xf, 
-range=[0x0000000076573000-0x0000000076580000) (0MB)
-efi: mem150: type=3, attr=0xf, 
-range=[0x0000000076580000-0x0000000076582000) (0MB)
-efi: mem151: type=4, attr=0xf, 
-range=[0x0000000076582000-0x0000000076584000) (0MB)
-efi: mem152: type=3, attr=0xf, 
-range=[0x0000000076584000-0x00000000765c1000) (0MB)
-efi: mem153: type=4, attr=0xf, 
-range=[0x00000000765c1000-0x00000000765c2000) (0MB)
-efi: mem154: type=3, attr=0xf, 
-range=[0x00000000765c2000-0x00000000765c6000) (0MB)
-efi: mem155: type=4, attr=0xf, 
-range=[0x00000000765c6000-0x00000000765ce000) (0MB)
-efi: mem156: type=3, attr=0xf, 
-range=[0x00000000765ce000-0x00000000765d2000) (0MB)
-efi: mem157: type=4, attr=0xf, 
-range=[0x00000000765d2000-0x00000000765d4000) (0MB)
-efi: mem158: type=3, attr=0xf, 
-range=[0x00000000765d4000-0x00000000765d9000) (0MB)
-efi: mem159: type=4, attr=0xf, 
-range=[0x00000000765d9000-0x00000000765da000) (0MB)
-efi: mem160: type=3, attr=0xf, 
-range=[0x00000000765da000-0x0000000076603000) (0MB)
-efi: mem161: type=4, attr=0xf, 
-range=[0x0000000076603000-0x0000000076604000) (0MB)
-efi: mem162: type=3, attr=0xf, 
-range=[0x0000000076604000-0x0000000076611000) (0MB)
-efi: mem163: type=4, attr=0xf, 
-range=[0x0000000076611000-0x0000000076612000) (0MB)
-efi: mem164: type=3, attr=0xf, 
-range=[0x0000000076612000-0x0000000076618000) (0MB)
-efi: mem165: type=4, attr=0xf, 
-range=[0x0000000076618000-0x000000007661a000) (0MB)
-efi: mem166: type=3, attr=0xf, 
-range=[0x000000007661a000-0x0000000076652000) (0MB)
-efi: mem167: type=4, attr=0xf, 
-range=[0x0000000076652000-0x0000000076653000) (0MB)
-efi: mem168: type=3, attr=0xf, 
-range=[0x0000000076653000-0x0000000076664000) (0MB)
-efi: mem169: type=4, attr=0xf, 
-range=[0x0000000076664000-0x0000000076665000) (0MB)
-efi: mem170: type=3, attr=0xf, 
-range=[0x0000000076665000-0x0000000076667000) (0MB)
-efi: mem171: type=4, attr=0xf, 
-range=[0x0000000076667000-0x0000000076668000) (0MB)
-efi: mem172: type=3, attr=0xf, 
-range=[0x0000000076668000-0x0000000076673000) (0MB)
-efi: mem173: type=4, attr=0xf, 
-range=[0x0000000076673000-0x0000000076675000) (0MB)
-efi: mem174: type=3, attr=0xf, 
-range=[0x0000000076675000-0x000000007667d000) (0MB)
-efi: mem175: type=4, attr=0xf, 
-range=[0x000000007667d000-0x0000000076a7d000) (4MB)
-efi: mem176: type=3, attr=0xf, 
-range=[0x0000000076a7d000-0x0000000076a82000) (0MB)
-efi: mem177: type=4, attr=0xf, 
-range=[0x0000000076a82000-0x0000000076a9f000) (0MB)
-efi: mem178: type=3, attr=0xf, 
-range=[0x0000000076a9f000-0x0000000076aa1000) (0MB)
-efi: mem179: type=4, attr=0xf, 
-range=[0x0000000076aa1000-0x0000000076ae7000) (0MB)
-efi: mem180: type=3, attr=0xf, 
-range=[0x0000000076ae7000-0x0000000076aec000) (0MB)
-efi: mem181: type=4, attr=0xf, 
-range=[0x0000000076aec000-0x0000000076b01000) (0MB)
-efi: mem182: type=3, attr=0xf, 
-range=[0x0000000076b01000-0x0000000076b23000) (0MB)
-efi: mem183: type=4, attr=0xf, 
-range=[0x0000000076b23000-0x0000000076b93000) (0MB)
-efi: mem184: type=3, attr=0xf, 
-range=[0x0000000076b93000-0x0000000076b95000) (0MB)
-efi: mem185: type=4, attr=0xf, 
-range=[0x0000000076b95000-0x0000000076b96000) (0MB)
-efi: mem186: type=3, attr=0xf, 
-range=[0x0000000076b96000-0x0000000076ba5000) (0MB)
-efi: mem187: type=4, attr=0xf, 
-range=[0x0000000076ba5000-0x0000000076ba6000) (0MB)
-efi: mem188: type=3, attr=0xf, 
-range=[0x0000000076ba6000-0x0000000076ba8000) (0MB)
-efi: mem189: type=4, attr=0xf, 
-range=[0x0000000076ba8000-0x0000000078b31000) (31MB)
-efi: mem190: type=6, attr=0x800000000000000f, 
-range=[0x0000000078b31000-0x0000000078b33000) (0MB)
-efi: mem191: type=5, attr=0x800000000000000f, 
-range=[0x0000000078b33000-0x0000000078b35000) (0MB)
-efi: mem192: type=6, attr=0x800000000000000f, 
-range=[0x0000000078b35000-0x0000000078b37000) (0MB)
-efi: mem193: type=5, attr=0x800000000000000f, 
-range=[0x0000000078b37000-0x0000000078b41000) (0MB)
-efi: mem194: type=6, attr=0x800000000000000f, 
-range=[0x0000000078b41000-0x0000000078b67000) (0MB)
-efi: mem195: type=5, attr=0x800000000000000f, 
-range=[0x0000000078b67000-0x0000000078b71000) (0MB)
-efi: mem196: type=6, attr=0x800000000000000f, 
-range=[0x0000000078b71000-0x0000000078b81000) (0MB)
-efi: mem197: type=5, attr=0x800000000000000f, 
-range=[0x0000000078b81000-0x0000000078bd1000) (0MB)
-efi: mem198: type=0, attr=0xf, 
-range=[0x0000000078bd1000-0x0000000078bd2000) (0MB)
-efi: mem199: type=0, attr=0xf, 
-range=[0x0000000078bd2000-0x0000000078bde000) (0MB)
-efi: mem200: type=0, attr=0xf, 
-range=[0x0000000078bde000-0x0000000078bf6000) (0MB)
-efi: mem201: type=0, attr=0xf, 
-range=[0x0000000078bf6000-0x0000000078c21000) (0MB)
-efi: mem202: type=10, attr=0xf, 
-range=[0x0000000078c21000-0x0000000078c7a000) (0MB)
-efi: mem203: type=9, attr=0xf, 
-range=[0x0000000078c7a000-0x0000000078cda000) (0MB)
-efi: mem204: type=10, attr=0xf, 
-range=[0x0000000078cda000-0x0000000078cf0000) (0MB)
-efi: mem205: type=10, attr=0xf, 
-range=[0x0000000078cf0000-0x0000000078d21000) (0MB)
-efi: mem206: type=9, attr=0xf, 
-range=[0x0000000078d21000-0x0000000078d22000) (0MB)
-efi: mem207: type=9, attr=0xf, 
-range=[0x0000000078d22000-0x0000000078d41000) (0MB)
-efi: mem208: type=4, attr=0xf, 
-range=[0x0000000078d41000-0x000000007cda2000) (64MB)
-efi: mem209: type=6, attr=0x800000000000000f, 
-range=[0x000000007cda2000-0x000000007cda3000) (0MB)
-efi: mem210: type=4, attr=0xf, 
-range=[0x000000007cda3000-0x000000007cdb5000) (0MB)
-efi: mem211: type=6, attr=0x800000000000000f, 
-range=[0x000000007cdb5000-0x000000007ce35000) (0MB)
-efi: mem212: type=4, attr=0xf, 
-range=[0x000000007ce35000-0x000000007f000000) (33MB)
-efi: mem213: type=7, attr=0xf, 
-range=[0x0000008080000000-0x0000008800000000) (30720MB)
-efi: mem214: type=7, attr=0xf, 
-range=[0x000000a000000000-0x000000bfff000000) (131056MB)
-efi: mem215: type=7, attr=0xf, 
-range=[0x000000c000000000-0x000000cfff000000) (65520MB)
-efi: mem216: type=7, attr=0xf, 
-range=[0x000000e000000000-0x000000efff000000) (65520MB)
-efi: mem217: type=11, attr=0x8000000000000001, 
-range=[0x0000000080000000-0x0000000090000000) (256MB)
-efi: mem218: type=11, attr=0x8000000000000001, 
-range=[0x00000000f0000000-0x00000000fc000000) (192MB)
-efi: mem219: type=11, attr=0x8000000000000001, 
-range=[0x00000000feb00000-0x00000000fec00000) (1MB)
-efi: mem220: type=11, attr=0x8000000000000001, 
-range=[0x000000ff50000000-0x000000ff53d00000) (61MB)
-efi: mem221: type=11, attr=0x8000000000000001, 
-range=[0x000000ff53e00000-0x000000ff54000000) (2MB)
-efi: mem222: type=11, attr=0x8000000000000001, 
-range=[0x000000ff57e00000-0x000000ff58000000) (2MB)
-efi: mem223: type=11, attr=0x8000000000000001, 
-range=[0x000000ff5be00000-0x000000ff5c000000) (2MB)
-efi: mem224: type=11, attr=0x8000000000000001, 
-range=[0x000000ff5fe00000-0x000000ff60000000) (2MB)
-efi: mem225: type=11, attr=0x8000000000000001, 
-range=[0x000000ff80000000-0x000000ff83000000) (48MB)
-efi: mem226: type=11, attr=0x8000000000000001, 
-range=[0x000000ff84000000-0x000000ff87000000) (48MB)
-efi: mem227: type=11, attr=0x8000000000000001, 
-range=[0x000000ff88000000-0x000000ff8b000000) (48MB)
-efi: mem228: type=11, attr=0x8000000000000001, 
-range=[0x000000ff8c000000-0x000000ff8f000000) (48MB)
-efi: mem229: type=11, attr=0x8000000000000001, 
-range=[0x000000ff90000000-0x000000ff93000000) (48MB)
-efi: mem230: type=11, attr=0x8000000000000001, 
-range=[0x000000ff94000000-0x000000ff97000000) (48MB)
-efi: mem231: type=11, attr=0x8000000000000001, 
-range=[0x000000ff98000000-0x000000ff9b000000) (48MB)
-efi: mem232: type=11, attr=0x8000000000000001, 
-range=[0x000000ff9c000000-0x000000ff9f000000) (48MB)
-
+-- 
+Ralf Hildebrandt                   Charite Universitätsmedizin Berlin
+ralf.hildebrandt@charite.de        Campus Benjamin Franklin
+http://www.charite.de              Hindenburgdamm 30, 12203 Berlin
+Geschäftsbereich IT, Abt. Netzwerk fon: +49-30-450.570.155
