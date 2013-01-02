@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640Ab3ABFo0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 00:44:26 -0500
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:56469 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab3ABFoX (ORCPT
+	id S1752657Ab3ABGI2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 01:08:28 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:46112 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab3ABGI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 00:44:23 -0500
-MIME-Version: 1.0
-In-Reply-To: <ae59db1945518d6f6250920d46eb1f1a9cc0024e.1352361704.git.viresh.kumar@linaro.org>
-References: <ae59db1945518d6f6250920d46eb1f1a9cc0024e.1352361704.git.viresh.kumar@linaro.org>
-Date: Wed, 2 Jan 2013 11:14:23 +0530
-Message-ID: <CAKohpokC5T8+iEiEbz1aoz0mgVXWULuBcVKp3KoQOxe7FfxZYg@mail.gmail.com>
-Subject: Re: [PATCH] sched/fair: Set se->vruntime directly in place_entity()
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: mingo@redhat.com, peterz@infradead.org
-Cc: linaro-dev@lists.linaro.org, patches@linaro.org,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Jan 2013 01:08:26 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: [PATCH] s5p-fimc: Fix typo of URL pointing to Media Controller API's
+Date: Wed,  2 Jan 2013 11:38:15 +0530
+Message-Id: <1357106895-4360-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 November 2012 13:33, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> We are first storing the new vruntime in a variable and then storing it in
-> se->vruntime. Simply update se->vruntime directly.
->
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
->  kernel/sched/fair.c | 4 +---
->  1 file changed, 1 insertion(+), 3 deletions(-)
->
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index a319d56c..820a2f1 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -1454,9 +1454,7 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
->         }
->
->         /* ensure we never gain time by being placed backwards. */
-> -       vruntime = max_vruntime(se->vruntime, vruntime);
-> -
-> -       se->vruntime = vruntime;
-> +       se->vruntime = max_vruntime(se->vruntime, vruntime);
->  }
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ Documentation/video4linux/fimc.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Ping!!
+diff --git a/Documentation/video4linux/fimc.txt b/Documentation/video4linux/fimc.txt
+index fd02d9a..25f4d34 100644
+--- a/Documentation/video4linux/fimc.txt
++++ b/Documentation/video4linux/fimc.txt
+@@ -58,7 +58,7 @@ Not currently supported:
+ 4.1. Media device interface
+ 
+ The driver supports Media Controller API as defined at
+-http://http://linuxtv.org/downloads/v4l-dvb-apis/media_common.html
++http://linuxtv.org/downloads/v4l-dvb-apis/media_common.html
+ The media device driver name is "SAMSUNG S5P FIMC".
+ 
+ The purpose of this interface is to allow changing assignment of FIMC instances
+-- 
+1.7.4.1
+
