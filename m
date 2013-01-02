@@ -1,98 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab3ABWog (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 17:44:36 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:59768 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752753Ab3ABWoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 17:44:34 -0500
-Message-ID: <50E4B849.108@linux.vnet.ibm.com>
-Date: Wed, 02 Jan 2013 16:44:25 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 7/8] zswap: add to mm/
-References: <<1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>> <<1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>> <0e91c1e5-7a62-4b89-9473-09fff384a334@default> <50E32255.60901@linux.vnet.ibm.com> <50E4588E.6080001@linux.vnet.ibm.com>
-In-Reply-To: <50E4588E.6080001@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010222-9360-0000-0000-00000EAD643A
+	id S1752882Ab3ABW6Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 17:58:25 -0500
+Received: from emvm-gh1-uea09.nsa.gov ([63.239.67.10]:58474 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752769Ab3ABW6V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 17:58:21 -0500
+X-TM-IMSS-Message-ID: <5cefc39500096f1c@nsa.gov>
+From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+To: viro@ZenIV.linux.org.uk, konrad.wilk@oracle.com
+Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+        Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Subject: [PATCH 1/3] xen/gntdev: fix unsafe vma access
+Date: Wed,  2 Jan 2013 17:57:11 -0500
+Message-Id: <1357167433-16874-2-git-send-email-dgdegra@tycho.nsa.gov>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
+References: <20121221201824.GA31554@phenom.dumpdata.com>
+ <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2013 09:55 AM, Dave Hansen wrote:
-> On 01/01/2013 09:52 AM, Seth Jennings wrote:
->> On 12/31/2012 05:06 PM, Dan Magenheimer wrote:
->> Also, I've done some lockstat checks and the zswap tree lock is way
->> down on the list contributing <1% of the lock contention wait time on
->> a 4-core system.  The anon_vma lock is the primary bottleneck.
->
-> It's curious that you chose the anon_vma lock, though.  It can only
-> possibly show _contention_ when you've got a bunch of CPUs beating on
-> the related VMAs.  That contention disappears in workloads that aren't
-> threaded, so it seems at least a bit imprecise to say anon_vma lock is
-> the primary bottleneck.
+In gntdev_ioctl_get_offset_for_vaddr, we need to hold mmap_sem while
+calling find_vma() to avoid potentially having the result freed out from
+under us.  Similarly, the MMU notifier functions need to synchronize with
+gntdev_vma_close to avoid map->vma being freed during their iteration.
 
-Sorry, should have qualified.  According to lockstat, the locks with
-the most contention during a -j16 kernel build on a memory restricted
-4-core machine were:
+Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
+Reported-by: Al Viro <viro@ZenIV.linux.org.uk>
+---
+ drivers/xen/gntdev.c | 29 ++++++++++++++++++++++++-----
+ 1 file changed, 24 insertions(+), 5 deletions(-)
 
-1  sb_lock:				252400
-2  swap_lock:				191499
-3  &(&mm->page_table_lock)->rlock:	69725
-4  &anon_vma->mutex:			51369
-5  swapper_space.tree_lock:		42261
-6  &(&zone->lru_lock)->rlock:		38909
-7  &rq->lock:				19586
-8  rcu_node_0:				18467
-9  &(&tree->lock)->rlock:		12776 <-- zswap tree lock
-10 &rsp->gp_wq:				11909
-
-The zswap tree lock accounts for <2% of contentions within the top 10
-contended locks.
-
-During the same build, the locks with the most wait time were:
-
-1  &type->i_mutex_dir_key#4:		137134027.28
-2  &anon_vma->mutex:			43569273.66
-3  &mapping->i_mmap_mutex:		12041326.01
-4  &sb->s_type->i_mutex_key#3/1:	3574244.56
-5  &(&mm->page_table_lock)->rlock:	701280.1
-6  sysfs_mutex:				628204.76
-7  &sb->s_type->i_mutex_key#3:		598007.84
-8  swap_lock:				333334.8
-9  &rsp->gp_wq:				177479.84
-10 &tty->atomic_write_lock:		142573.89
-...
-18 &(&tree->lock)->rlock:		13451.57
-
-The zswap tree lock wait numbers are noise here.
-
-During a single-threaded test with memknobs, a single threaded
-application that simply allocates/touches a large anonymous memory
-section and then randomly reads from it, there were no contentions.
-
-I also did a tmpfs test, where I copied the kernel source tree into a
-tmpfs mount that overflowed into swap by around 300MB.  Zswap captured
-all the pages that compressed well enough according to policy and
-there were no contentions on the zswap tree lock.
-
-So I'm not seeing any cases where the zswap locking is causing a
-measurable issue.  In the cases where there contention occurs, the
-vast majority of the contention and wait time happens in other layers.
-
-Seth
+diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
+index 2e22df2..cca62cc 100644
+--- a/drivers/xen/gntdev.c
++++ b/drivers/xen/gntdev.c
+@@ -378,7 +378,20 @@ static void gntdev_vma_close(struct vm_area_struct *vma)
+ 	struct grant_map *map = vma->vm_private_data;
+ 
+ 	pr_debug("gntdev_vma_close %p\n", vma);
+-	map->vma = NULL;
++	if (use_ptemod) {
++		struct file *file = vma->vm_file;
++		struct gntdev_priv *priv = file->private_data;
++		/* It is possible that an mmu notifier could be running
++		 * concurrently, so take priv->lock to ensure that the vma won't
++		 * vanishing during the unmap_grant_pages call, since we will
++		 * spin here until that completes. Such a concurrent call will
++		 * not do any unmapping, since that has been done prior to
++		 * closing the vma, but it may still iterate the unmap_ops list.
++		 */
++		spin_lock(&priv->lock);
++		map->vma = NULL;
++		spin_unlock(&priv->lock);
++	}
+ 	vma->vm_private_data = NULL;
+ 	gntdev_put_map(map);
+ }
+@@ -579,25 +592,31 @@ static long gntdev_ioctl_get_offset_for_vaddr(struct gntdev_priv *priv,
+ 	struct ioctl_gntdev_get_offset_for_vaddr op;
+ 	struct vm_area_struct *vma;
+ 	struct grant_map *map;
++	int rv = -EINVAL;
+ 
+ 	if (copy_from_user(&op, u, sizeof(op)) != 0)
+ 		return -EFAULT;
+ 	pr_debug("priv %p, offset for vaddr %lx\n", priv, (unsigned long)op.vaddr);
+ 
++	down_read(&current->mm->mmap_sem);
+ 	vma = find_vma(current->mm, op.vaddr);
+ 	if (!vma || vma->vm_ops != &gntdev_vmops)
+-		return -EINVAL;
++		goto out_unlock;
+ 
+ 	map = vma->vm_private_data;
+ 	if (!map)
+-		return -EINVAL;
++		goto out_unlock;
+ 
+ 	op.offset = map->index << PAGE_SHIFT;
+ 	op.count = map->count;
++	rv = 0;
+ 
+-	if (copy_to_user(u, &op, sizeof(op)) != 0)
++ out_unlock:
++	up_read(&current->mm->mmap_sem);
++
++	if (rv == 0 && copy_to_user(u, &op, sizeof(op)) != 0)
+ 		return -EFAULT;
+-	return 0;
++	return rv;
+ }
+ 
+ static long gntdev_ioctl_notify(struct gntdev_priv *priv, void __user *u)
+-- 
+1.7.11.7
 
