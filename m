@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016Ab3ABW6x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 17:58:53 -0500
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:65010 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752787Ab3ABW6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 17:58:23 -0500
-X-TM-IMSS-Message-ID: <80b7e41b000c9452@nsa.gov>
-From: Daniel De Graaf <dgdegra@tycho.nsa.gov>
-To: viro@ZenIV.linux.org.uk, konrad.wilk@oracle.com
-Cc: david.vrabel@citrix.com, stefano.stabellini@eu.citrix.com,
-        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-        Daniel De Graaf <dgdegra@tycho.nsa.gov>
-Subject: [PATCH 3/3] xen/gntdev: remove erronous use of copy_to_user
-Date: Wed,  2 Jan 2013 17:57:13 -0500
-Message-Id: <1357167433-16874-4-git-send-email-dgdegra@tycho.nsa.gov>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
-References: <20121221201824.GA31554@phenom.dumpdata.com>
- <1357167433-16874-1-git-send-email-dgdegra@tycho.nsa.gov>
+	id S1752848Ab3ABXBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 18:01:32 -0500
+Received: from magic.merlins.org ([209.81.13.136]:54641 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab3ABXBb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 18:01:31 -0500
+Date: Wed, 2 Jan 2013 15:01:28 -0800
+From: Marc MERLIN <marc@merlins.org>
+To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Fairly reproduceable crash in 3.7.1 Null pointer
+ rb_erase+0xc4/0x292
+Message-ID: <20130102230128.GE8631@merlins.org>
+References: <20130102222757.GC8631@merlins.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130102222757.GC8631@merlins.org>
+X-Sysadmin: BOFH
+X-URL: http://marc.merlins.org/
+X-Operating-System: Proudly running Linux 3.6.6-amd64-preempt-20120903/Debian
+ wheezy/sid
+X-Mailer: Some Outlooks can't quote properly without this header
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-No-Run: Yes
+X-SA-Exim-Connect-IP: 82.235.219.215
+X-SA-Exim-Mail-From: merlin@merlins.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since there is now a mapping of granted pages in kernel address space in
-both PV and HVM, use it for UNMAP_NOTIFY_CLEAR_BYTE instead of accessing
-memory via copy_to_user and triggering sleep-in-atomic warnings.
+On Wed, Jan 02, 2013 at 02:27:57PM -0800, Marc MERLIN wrote:
+> Google only shows hits pointing to an ext4 patch that didn't go in 3.7
+> proper.
+> 
+> http://marc.merlins.org/tmp/crash.jpg
 
-Signed-off-by: Daniel De Graaf <dgdegra@tycho.nsa.gov>
----
- drivers/xen/gntdev.c | 13 +++----------
- 1 file changed, 3 insertions(+), 10 deletions(-)
+Grumble, I kind of forgot to add the link to my .config, sorry about
+that:
+http://marc.merlins.org/tmp/.config-3.7.1-amd64-preempt-20121226
 
-diff --git a/drivers/xen/gntdev.c b/drivers/xen/gntdev.c
-index 9be3e5e..3c8803f 100644
---- a/drivers/xen/gntdev.c
-+++ b/drivers/xen/gntdev.c
-@@ -312,17 +312,10 @@ static int __unmap_grant_pages(struct grant_map *map, int offset, int pages)
- 
- 	if (map->notify.flags & UNMAP_NOTIFY_CLEAR_BYTE) {
- 		int pgno = (map->notify.addr >> PAGE_SHIFT);
--		if (pgno >= offset && pgno < offset + pages && use_ptemod) {
--			void __user *tmp = (void __user *)
--				map->vma->vm_start + map->notify.addr;
--			err = copy_to_user(tmp, &err, 1);
--			if (err)
--				return -EFAULT;
--			map->notify.flags &= ~UNMAP_NOTIFY_CLEAR_BYTE;
--		} else if (pgno >= offset && pgno < offset + pages) {
--			uint8_t *tmp = kmap(map->pages[pgno]);
-+		if (pgno >= offset && pgno < offset + pages) {
-+			/* No need for kmap, pages are in lowmem */
-+			uint8_t *tmp = pfn_to_kaddr(page_to_pfn(map->pages[pgno]));
- 			tmp[map->notify.addr & (PAGE_SIZE-1)] = 0;
--			kunmap(map->pages[pgno]);
- 			map->notify.flags &= ~UNMAP_NOTIFY_CLEAR_BYTE;
- 		}
- 	}
+While my crash picture is lame (sorry), I'm happy to provide what else I
+can before I go home and can provide a proper serial console crash dump.
+
+Marc
 -- 
-1.7.11.7
-
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/
