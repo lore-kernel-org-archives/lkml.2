@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752939Ab3ABMbV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 07:31:21 -0500
-Received: from mail-ea0-f177.google.com ([209.85.215.177]:41824 "EHLO
-	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755Ab3ABM3B (ORCPT
+	id S1752714Ab3ABMbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 07:31:16 -0500
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60116 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab3ABM3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 07:29:01 -0500
+	Wed, 2 Jan 2013 07:29:11 -0500
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V5 05/15] team: remove usage of netdev_set_master()
-Date: Wed,  2 Jan 2013 13:28:26 +0100
-Message-Id: <1357129716-2450-6-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next V5 08/15] cxgb3: remove usage of dev->master
+Date: Wed,  2 Jan 2013 13:28:29 +0100
+Message-Id: <1357129716-2450-9-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1357129716-2450-1-git-send-email-jiri@resnulli.us>
 References: <1357129716-2450-1-git-send-email-jiri@resnulli.us>
@@ -32,49 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- drivers/net/team/team.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index 918a901..3df5cc1 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1055,10 +1055,11 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
+diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+index 942dace..3f1f501 100644
+--- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
++++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
+@@ -182,14 +182,17 @@ static struct net_device *get_iff_from_mac(struct adapter *adapter,
+ 		struct net_device *dev = adapter->port[i];
+ 
+ 		if (!memcmp(dev->dev_addr, mac, ETH_ALEN)) {
++			rcu_read_lock();
+ 			if (vlan && vlan != VLAN_VID_MASK) {
+-				rcu_read_lock();
+ 				dev = __vlan_find_dev_deep(dev, vlan);
+-				rcu_read_unlock();
+ 			} else if (netif_is_bond_slave(dev)) {
+-				while (dev->master)
+-					dev = dev->master;
++				struct net_device *upper_dev;
++
++				while ((upper_dev =
++					netdev_master_upper_dev_get_rcu(dev)))
++					dev = upper_dev;
+ 			}
++			rcu_read_unlock();
+ 			return dev;
  		}
  	}
- 
--	err = netdev_set_master(port_dev, dev);
-+	err = netdev_master_upper_dev_link(port_dev, dev);
- 	if (err) {
--		netdev_err(dev, "Device %s failed to set master\n", portname);
--		goto err_set_master;
-+		netdev_err(dev, "Device %s failed to set upper link\n",
-+			   portname);
-+		goto err_set_upper_link;
- 	}
- 
- 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
-@@ -1091,9 +1092,9 @@ err_option_port_add:
- 	netdev_rx_handler_unregister(port_dev);
- 
- err_handler_register:
--	netdev_set_master(port_dev, NULL);
-+	netdev_upper_dev_unlink(port_dev, dev);
- 
--err_set_master:
-+err_set_upper_link:
- 	team_port_disable_netpoll(port);
- 
- err_enable_netpoll:
-@@ -1137,7 +1138,7 @@ static int team_port_del(struct team *team, struct net_device *port_dev)
- 	team_port_disable(team, port);
- 	list_del_rcu(&port->list);
- 	netdev_rx_handler_unregister(port_dev);
--	netdev_set_master(port_dev, NULL);
-+	netdev_upper_dev_unlink(port_dev, dev);
- 	team_port_disable_netpoll(port);
- 	vlan_vids_del_by_dev(port_dev, dev);
- 	dev_close(port_dev);
 -- 
 1.8.0
 
