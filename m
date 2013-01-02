@@ -1,72 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752476Ab3ABH0m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 02:26:42 -0500
-Received: from mga12.intel.com ([143.182.124.36]:5266 "EHLO
-	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752301Ab3ABH0j (ORCPT
+	id S1752418Ab3ABHaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 02:30:05 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:49315
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750896Ab3ABHaC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 02:26:39 -0500
-Message-ID: <1357111592.27261.19.camel@mfleming-mobl1.ger.corp.intel.com>
-Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-From: Matt Fleming <matt.fleming@intel.com>
-To: joeyli <jlee@suse.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>, Len Brown <lenb@kernel.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Date: Wed, 02 Jan 2013 07:26:32 +0000
-In-Reply-To: <1357094751.6113.253.camel@linux-s257.site>
-References: <1356712001-12198-1-git-send-email-jlee@suse.com>
-	 <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	 <3fa7337e-6bbc-4462-9704-2d8ac20a9cf2@email.android.com>
-	 <E99CBA9F97C3D149AA6B19ED2E277C9B019215FA@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	 <50DE03D8.9030902@zytor.com>
-	 <E99CBA9F97C3D149AA6B19ED2E277C9B01921638@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	 <50DE2EED.9030608@zytor.com> <1357094751.6113.253.camel@linux-s257.site>
-Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
- Way, Swindon SN3 1RJ
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jan 2013 02:30:02 -0500
+X-IronPort-AV: E=Sophos;i="4.84,394,1355094000"; 
+   d="scan'208";a="167241448"
+Date: Wed, 2 Jan 2013 08:29:57 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Tony Prisk <linux@prisktech.co.nz>
+cc: Dan Carpenter <error27@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        kernel-janitors@vger.kernel.org,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
+ IS_ERR_OR_NULL
+In-Reply-To: <1357104713.30504.8.camel@gitbox>
+Message-ID: <alpine.DEB.2.02.1301020827040.2241@localhost6.localdomain6>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>  <1355852048-23188-7-git-send-email-linux@prisktech.co.nz>  <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com>  <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
+ <1357104713.30504.8.camel@gitbox>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-02 at 10:45 +0800, joeyli wrote:
-> I didn't find the EFI RTC problem on Asus from google. 
-> Could you please share what's the situation on ASUS hardware?
 
-It's mentioned in the following commit (which has since been reverted in
-Linus' tree),
 
-commit 185034e72d591f9465e5e18f937ed642e7ea0070
-Author: Matt Fleming <matt.fleming@intel.com>
-Date:   Fri Sep 7 18:28:04 2012 +0100
+On Wed, 2 Jan 2013, Tony Prisk wrote:
 
-    x86, efi: 1:1 pagetable mapping for virtual EFI calls
-    
-    Some firmware still needs a 1:1 (virt->phys) mapping even after we've
-    called SetVirtualAddressMap(). So install the mapping alongside our
-    existing kernel mapping whenever we make EFI calls in virtual mode.
-    
-    This bug was discovered on ASUS machines where the firmware
-    implementation of GetTime() accesses the RTC device via physical
-    addresses, even though that's bogus per the UEFI spec since we've
-    informed the firmware via SetVirtualAddressMap() that the boottime
-    memory map is no longer valid.
-    
-    This bug seems to be present in a lot of consumer devices, so there's
-    not a lot we can do about this spec violation apart from workaround
-    it.
-    
+> On Wed, 2013-01-02 at 08:10 +0300, Dan Carpenter wrote:
+>> clk_get() returns NULL if CONFIG_HAVE_CLK is disabled.
+>>
+>> I told Tony about this but everyone has been gone with end of year
+>> holidays so it hasn't been addressed.
+>>
+>> Tony, please fix it so people don't apply these patches until
+>> clk_get() is updated to not return NULL.  It sucks to have to revert
+>> patches.
+>>
+>> regards,
+>> dan carpenter
+>
+> I posted the query to Mike Turquette, linux-kernel and linux-arm-kernel
+> mailing lists, regarding the return of NULL when HAVE_CLK is undefined.
+>
+> Short Answer: A return value of NULL is valid and not an error therefore
+> we should be using IS_ERR, not IS_ERR_OR_NULL on clk_get results.
+>
+> I see the obvious problem this creates, and asked this question:
+>
+> If the driver can't operate with a NULL clk, it should use a
+> IS_ERR_OR_NULL test to test for failure, rather than IS_ERR.
+>
+>
+> And Russell's answer:
+>
+> Why should a _consumer_ of a clock care?  It is _very_ important that
+> people get this idea - to a consumer, the struct clk is just an opaque
+> cookie.  The fact that it appears to be a pointer does _not_ mean that
+> the driver can do any kind of dereferencing on that pointer - it should
+> never do so.
+>
+> Thread can be viewed here:
+> https://lkml.org/lkml/2012/12/20/105
 
-The bug was originally mentioned here,
+There are dereferences to the result of clk_get a few times.  I tried the 
+following semantic patch:
 
-	https://lkml.org/lkml/2012/3/12/214
+@@ expression E; identifier I; @@
+* E = clk_get(...) ... E->I
 
+It gives the results shown below (- marks matched lines, not lines to 
+remove).  I also tried with devm_clk_get instead of clk_get, but got 
+nothing.
+
+julia
+
+diff -u -p /var/linuxes/linux-next/arch/sh/kernel/cpufreq.c /tmp/nothing/arch/sh/kernel/cpufreq.c
+--- /var/linuxes/linux-next/arch/sh/kernel/cpufreq.c
++++ /tmp/nothing/arch/sh/kernel/cpufreq.c
+@@ -117,15 +117,11 @@ static int sh_cpufreq_cpu_init(struct cp
+
+  	dev = get_cpu_device(cpu);
+
+-	cpuclk = clk_get(dev, "cpu_clk");
+-	if (IS_ERR(cpuclk)) {
+  		dev_err(dev, "couldn't get CPU clk\n");
+  		return PTR_ERR(cpuclk);
+  	}
+
+-	policy->cur = policy->min = policy->max = sh_cpufreq_get(cpu);
+
+-	freq_table = cpuclk->nr_freqs ? cpuclk->freq_table : NULL;
+  	if (freq_table) {
+  		int result;
+
+diff -u -p /var/linuxes/linux-next/arch/mips/kernel/cpufreq/loongson2_cpufreq.c /tmp/nothing/arch/mips/kernel/cpufreq/loongson2_cpufreq.c
+--- /var/linuxes/linux-next/arch/mips/kernel/cpufreq/loongson2_cpufreq.c
++++ /tmp/nothing/arch/mips/kernel/cpufreq/loongson2_cpufreq.c
+@@ -111,13 +111,10 @@ static int loongson2_cpufreq_cpu_init(st
+  	if (!cpu_online(policy->cpu))
+  		return -ENODEV;
+
+-	cpuclk = clk_get(NULL, "cpu_clk");
+-	if (IS_ERR(cpuclk)) {
+  		printk(KERN_ERR "cpufreq: couldn't get CPU clk\n");
+  		return PTR_ERR(cpuclk);
+  	}
+
+-	cpuclk->rate = cpu_clock_freq / 1000;
+  	if (!cpuclk->rate)
+  		return -EINVAL;
+
+diff -u -p /var/linuxes/linux-next/drivers/net/ethernet/ti/cpts.c /tmp/nothing/drivers/net/ethernet/ti/cpts.c
+--- /var/linuxes/linux-next/drivers/net/ethernet/ti/cpts.c
++++ /tmp/nothing/drivers/net/ethernet/ti/cpts.c
+@@ -241,14 +241,10 @@ static void cpts_overflow_check(struct w
+
+  static void cpts_clk_init(struct cpts *cpts)
+  {
+-	cpts->refclk = clk_get(NULL, CPTS_REF_CLOCK_NAME);
+-	if (IS_ERR(cpts->refclk)) {
+  		pr_err("Failed to clk_get %s\n", CPTS_REF_CLOCK_NAME);
+  		cpts->refclk = NULL;
+  		return;
+  	}
+-	clk_enable(cpts->refclk);
+-	cpts->freq = cpts->refclk->recalc(cpts->refclk);
+  }
+
+  static void cpts_clk_release(struct cpts *cpts)
+diff -u -p /var/linuxes/linux-next/drivers/i2c/busses/i2c-sh7760.c /tmp/nothing/drivers/i2c/busses/i2c-sh7760.c
+--- /var/linuxes/linux-next/drivers/i2c/busses/i2c-sh7760.c
++++ /tmp/nothing/drivers/i2c/busses/i2c-sh7760.c
+@@ -397,11 +397,7 @@ static int calc_CCR(unsigned long scl_hz
+  	signed char cdf, cdfm;
+  	int scgd, scgdm, scgds;
+
+-	mclk = clk_get(NULL, "peripheral_clk");
+-	if (IS_ERR(mclk)) {
+  		return PTR_ERR(mclk);
+-	} else {
+-		mck = mclk->rate;
+  		clk_put(mclk);
+  	}
 
