@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab3ABTcb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 14:32:31 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:42222 "EHLO dcvr.yhbt.net"
+	id S1752788Ab3ABTih (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 14:38:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42537 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752668Ab3ABTc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 14:32:28 -0500
-Date: Wed, 2 Jan 2013 19:32:27 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>, Jiri Olsa <jolsa@redhat.com>,
-        Jonathan Corbet <corbet@lwn.net>, Al Viro <viro@zeniv.linux.org.uk>,
-        Davide Libenzi <davidel@xmailserver.org>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Voellmy <andreas.voellmy@yale.edu>,
-        "Junchang(Jason) Wang" <junchang.wang@yale.edu>,
-        Network Development <netdev@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [PATCH] epoll: prevent missed events on EPOLL_CTL_MOD
-Message-ID: <20130102193227.GA13566@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <1356960060-1263-1-git-send-email-normalperson@yhbt.net>
- <1357065750.21409.12527.camel@edumazet-glaptop>
- <20130101210033.GA13255@dcvr.yhbt.net>
- <20130101211728.GA13380@dcvr.yhbt.net>
- <CA+55aFwP3Tvmfh23KDDXhB3k=RS8pNhqasw5vuBUHw4TxrakOQ@mail.gmail.com>
- <20130101235605.GA17168@dcvr.yhbt.net>
- <1357148750.21409.17169.camel@edumazet-glaptop>
- <20130102184010.GA21780@dcvr.yhbt.net>
- <1357153416.21409.17488.camel@edumazet-glaptop>
+	id S1752426Ab3ABTif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 14:38:35 -0500
+Date: Wed, 2 Jan 2013 14:38:28 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 17/24] blkcg: implement blkcg_policy->on/offline_pd_fn()
+ and blkcg_gq->online
+Message-ID: <20130102193828.GE4306@redhat.com>
+References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+ <1356726946-26037-18-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357153416.21409.17488.camel@edumazet-glaptop>
+In-Reply-To: <1356726946-26037-18-git-send-email-tj@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> On Wed, 2013-01-02 at 18:40 +0000, Eric Wong wrote:
-> > Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > > It seems the real problem is the epi->event.events = event->events;
-> > > which is done without taking ep->lock
-> > 
-> > Yes.  I am hoping it is possible to do it without a lock there,
-> > but your change is more obviously correct.
-> > 
-> > > While a smp_mb() could reduce the race window, I believe there is still
-> > > a race, and the following patch would close it.
-> > 
-> > I'm not an experienced kernel hacker, can you describe where the race
-> > would be?
-> 
-> It would be for example in ep_send_events_proc() doing :
-> 
-> if (epi->event.events & EPOLLONESHOT)
->     epi->event.events &= EP_PRIVATE_BITS;
-> 
-> And this could happen at the same time.
+On Fri, Dec 28, 2012 at 12:35:39PM -0800, Tejun Heo wrote:
 
-That modification in ep_send_events_proc() is protected by ep->mtx
-(as is ep_modify()), though.  Maybe there are other places, but I
-don't see it.
+[..]
+> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+> index 40f5b97..678e89e 100644
+> --- a/block/blk-cgroup.h
+> +++ b/block/blk-cgroup.h
+> @@ -106,12 +106,17 @@ struct blkcg_gq {
+>  	/* reference count */
+>  	int				refcnt;
+>  
+> +	/* is this blkg online? protected by both blkcg and q locks */
+> +	bool				online;
+> +
+
+Hi Tejun,
+
+What does above mean? One needs to take one lock or both the locks to
+check/modify blkg->online.
+
+Thanks
+Vivek
