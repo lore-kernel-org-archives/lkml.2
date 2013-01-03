@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753690Ab3ACRgJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 12:36:09 -0500
-Received: from brockman.in8.de ([85.214.220.56]:39065 "EHLO mail.in8.de"
+	id S1753592Ab3ACRm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 12:42:26 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36267 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab3ACRgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 12:36:08 -0500
-X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 12:36:08 EST
-Message-ID: <50E5BF2D.20909@jan-o-sch.net>
-Date: Thu, 03 Jan 2013 18:26:05 +0100
-From: Jan Schmidt <list.btrfs@jan-o-sch.net>
+	id S1753444Ab3ACRmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 12:42:24 -0500
+Message-ID: <50E5C2E1.3070103@zytor.com>
+Date: Thu, 03 Jan 2013 09:41:53 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Mathieu Chouquet-Stringer <mathieu@csetco.com>
-CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sami.liedes@iki.fi, chris.mason@fusionio.com, sensille@gmx.net
-Subject: Re: GPF in read_extent_buffer while scrubbing on 3.7.0-rc8-00014-g27d7c2a
-References: <20121206143458.GA24396@kashmir> <20121210222125.GA20072@kashmir> <20121214181149.GA15378@kashmir>
-In-Reply-To: <20121214181149.GA15378@kashmir>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Matt Fleming <matt@console-pimps.org>
+CC: Steve Langasek <steve.langasek@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Tony Luck <tony.luck@intel.com>, Matt Fleming <matt.fleming@intel.com>,
+        David Airlie <airlied@linux.ie>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Dave Jiang <dave.jiang@intel.com>, Peter Jones <pjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [RFC PATCH 1/2] efi: Make 'efi_enabled' a function to query EFI
+ facilities
+References: <1357219085-4312-1-git-send-email-matt@console-pimps.org> <1357219085-4312-2-git-send-email-matt@console-pimps.org>
+In-Reply-To: <1357219085-4312-2-git-send-email-matt@console-pimps.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mathieu,
+On 01/03/2013 05:18 AM, Matt Fleming wrote:
+>
+> A machine's EFI facilities are naturally represented by a bitfield.
+>
 
-Sorry for the late reply. I had quite a good reproducer once for what I suspect
-may be your problem here - but it suddenly stopped reproducing the problem and I
-still haven't figured out why. (see https://patchwork.kernel.org/patch/1773611/
-if you're interested)
+Nitpick: what you have here is a bitmask, not a bitfield.  This is good, 
+because bitfields are generally frowned upon in a Linux kernel context, 
+but you may want to revise the description.
 
-Can you please give the following patch a try and report back if it helps you
-(apply on top of cmason/for-linus, 57ba86c)? If it doesn't, you've got three
-choices:
+Other than that, looks good to me.
 
-a) forget about the problem
-b) send me a dump of your whole file system (space can be provided)
-c) receive debug patches, apply them and send me the output
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
 
-Thanks,
--Jan
+	-hpa (who is still on vacation)
 
------->8---------
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 65f0367..d51185e 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3324,8 +3324,6 @@ int close_ctree(struct btrfs_root *root)
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
- 	btrfs_dev_replace_suspend_for_unmount(fs_info);
-
--	btrfs_scrub_cancel(fs_info);
--
- 	/* wait for any defraggers to finish */
- 	wait_event(fs_info->transaction_wait,
- 		   (atomic_read(&fs_info->defrag_running) == 0));
-@@ -3392,6 +3390,7 @@ int close_ctree(struct btrfs_root *root)
- 	btrfs_stop_workers(&fs_info->caching_workers);
- 	btrfs_stop_workers(&fs_info->readahead_workers);
- 	btrfs_stop_workers(&fs_info->flush_workers);
-+	btrfs_scrub_cancel(fs_info);
-
- #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
- 	if (btrfs_test_opt(root, CHECK_INTEGRITY))
