@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab3ACMQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:16:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15767 "EHLO mx1.redhat.com"
+	id S1753303Ab3ACMQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:16:49 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4996 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162Ab3ACMQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:16:37 -0500
+	id S1753219Ab3ACMQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 07:16:40 -0500
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Abhijith Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 2/4] GFS2: Fix race in gfs2_rs_alloc
-Date: Thu,  3 Jan 2013 11:50:08 +0000
-Message-Id: <1357213810-3739-3-git-send-email-swhiteho@redhat.com>
+Cc: Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 4/4] GFS2: Reset rd_last_alloc when it reaches the end of the rgrp
+Date: Thu,  3 Jan 2013 11:50:10 +0000
+Message-Id: <1357213810-3739-5-git-send-email-swhiteho@redhat.com>
 In-Reply-To: <1357213810-3739-1-git-send-email-swhiteho@redhat.com>
 References: <1357213810-3739-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijith Das <adas@redhat.com>
+From: Bob Peterson <rpeterso@redhat.com>
 
-QE aio tests uncovered a race condition in gfs2_rs_alloc where it's possible
-to come out of the function with a valid ip->i_res allocation but it gets
-freed before use resulting in a NULL ptr dereference.
+In function rg_mblk_search, it's searching for multiple blocks in
+a given state (e.g. "free"). If there's an active block reservation
+its goal is the next free block of that. If the resource group
+contains the dinode's goal block, that's used for the search. But
+if neither is the case, it uses the rgrp's last allocated block.
+That way, consecutive allocations appear after one another on media.
+The problem comes in when you hit the end of the rgrp; it would never
+start over and search from the beginning. This became a problem,
+since if you deleted all the files and data from the rgrp, it would
+never start over and find free blocks. So it had to keep searching
+further out on the media to allocate blocks. This patch resets the
+rd_last_alloc after it does an unsuccessful search at the end of
+the rgrp.
 
-This patch envelopes the initial short-circuit check for non-NULL ip->i_res
-into the mutex lock. With this patch, I was able to successfully run the
-reproducer test multiple times.
-
-Resolves: rhbz#878476
-Signed-off-by: Abhi Das <adas@redhat.com>
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 
 diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 37ee061..738b388 100644
+index 712dd4f..b7eff07 100644
 --- a/fs/gfs2/rgrp.c
 +++ b/fs/gfs2/rgrp.c
-@@ -557,22 +557,20 @@ void gfs2_free_clones(struct gfs2_rgrpd *rgd)
-  */
- int gfs2_rs_alloc(struct gfs2_inode *ip)
- {
--	struct gfs2_blkreserv *res;
-+	int error = 0;
- 
-+	down_write(&ip->i_rw_mutex);
- 	if (ip->i_res)
--		return 0;
--
--	res = kmem_cache_zalloc(gfs2_rsrv_cachep, GFP_NOFS);
--	if (!res)
--		return -ENOMEM;
-+		goto out;
- 
--	RB_CLEAR_NODE(&res->rs_node);
-+	ip->i_res = kmem_cache_zalloc(gfs2_rsrv_cachep, GFP_NOFS);
-+	if (!ip->i_res) {
-+		error = -ENOMEM;
-+		goto out;
-+	}
- 
--	down_write(&ip->i_rw_mutex);
--	if (ip->i_res)
--		kmem_cache_free(gfs2_rsrv_cachep, res);
--	else
--		ip->i_res = res;
-+	RB_CLEAR_NODE(&ip->i_res->rs_node);
-+out:
- 	up_write(&ip->i_rw_mutex);
- 	return 0;
+@@ -1426,6 +1426,9 @@ static void rg_mblk_search(struct gfs2_rgrpd *rgd, struct gfs2_inode *ip,
+ 		rs->rs_free = extlen;
+ 		rs->rs_inum = ip->i_no_addr;
+ 		rs_insert(ip);
++	} else {
++		if (goal == rgd->rd_last_alloc + rgd->rd_data0)
++			rgd->rd_last_alloc = 0;
+ 	}
  }
+ 
 -- 
 1.7.4
 
