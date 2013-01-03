@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab3ACNAC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 08:00:02 -0500
-Received: from mail-ie0-f179.google.com ([209.85.223.179]:34410 "EHLO
-	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751237Ab3ACM76 (ORCPT
+	id S1753222Ab3ACNB6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 08:01:58 -0500
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:64636 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab3ACNB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:59:58 -0500
-MIME-Version: 1.0
-Date: Thu, 3 Jan 2013 13:59:58 +0100
-Message-ID: <CAHTX3d+bwTNEhzB78mqoz6prk0nw0U_-1YFR3Tje_-uQLyTMBQ@mail.gmail.com>
-Subject: uapi __NR_syscalls for microblaze
-From: Michal Simek <monstr@monstr.eu>
-To: David Howells <dhowells@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Jan 2013 08:01:56 -0500
+Message-ID: <1357218107.4914.1.camel@phoenix>
+Subject: [PATCH] regulator: core: Fix comment for regulator_register()
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Date: Thu, 03 Jan 2013 21:01:47 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+regulator_register() does not return 0 on success, fix the comment.
 
-just want to check with you if __NR_syscalls is necessary for user
-space. I see that powerpc and arm
-have this macro in asm not in uapi like Microblaze.
-If is not needed by user space, I should move it to asm/unistd.h
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/core.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Thanks,
-Michal
-
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 9afcdda3..861cda1 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -3337,7 +3337,8 @@ static void rdev_init_debugfs(struct regulator_dev *rdev)
+  * @config: runtime configuration for regulator
+  *
+  * Called by regulator drivers to register a regulator.
+- * Returns 0 on success.
++ * Returns a valid pointer to struct regulator_dev on success
++ * or an ERR_PTR() on error.
+  */
+ struct regulator_dev *
+ regulator_register(const struct regulator_desc *regulator_desc,
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian
+1.7.9.5
+
+
+
