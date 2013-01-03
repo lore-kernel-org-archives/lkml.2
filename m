@@ -1,163 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203Ab3ACWDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:03:12 -0500
-Received: from mail-vc0-f176.google.com ([209.85.220.176]:36774 "EHLO
-	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab3ACWDK (ORCPT
+	id S1754261Ab3ACWDW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:03:22 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:43417 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab3ACWDP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:03:10 -0500
-Date: Thu, 3 Jan 2013 20:02:58 -0200
-From: Gustavo Padovan <gustavo@padovan.org>
-To: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: marcel@holtmann.org, johan.hedberg@gmail.com,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Bluetooth: fix the oops due to conn->hcon == NULL in
- shutdown case
-Message-ID: <20130103220258.GF2114@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	Chuansheng Liu <chuansheng.liu@intel.com>, marcel@holtmann.org,
-	johan.hedberg@gmail.com, linux-bluetooth@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1356429857.25456.4.camel@cliu38-desktop-build>
+	Thu, 3 Jan 2013 17:03:15 -0500
+Date: Thu, 3 Jan 2013 17:03:09 -0500
+From: Tejun Heo <tj@kernel.org>
+To: "Adamson, Dros" <Weston.Adamson@netapp.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
+Subject: Re: nfsd oops on Linus' current tree.
+Message-ID: <20130103220309.GA2753@mtj.dyndns.org>
+References: <20121221153348.GA32151@redhat.com>
+ <20121221180824.GA27729@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221230849.GB29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221232609.GC29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221234530.GA30048@fieldses.org>
+ <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356429857.25456.4.camel@cliu38-desktop-build>
+In-Reply-To: <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chuansheng,
+Hello, guys.
 
-* Chuansheng Liu <chuansheng.liu@intel.com> [2012-12-25 18:04:17 +0800]:
+On Thu, Jan 03, 2013 at 04:28:37PM +0000, Adamson, Dros wrote:
+> The deadlock we were seeing was:
+> 
+> - task A gets queued on rpciod workqueue and assigned kworker-0:0
+> - task B gets queued on rpciod workqueue and assigned the same kworker (kworker-0:0)
+> - task A gets run, calls rpc_shutdown_client(), which will loop forever waiting for task B to run rpc_async_release()
+> - task B will never run rpc_async_release() - it can't run until kworker-0:0 is free, which won't happen until task A (rpc_shutdown_client) is done
+> 
+> The same deadlock happened when we tried queuing the tasks on a
+> different workqueues -- queue_work() assigns the task to a kworker
+> thread and it's luck of the draw if it's the same kworker as task A.
+> We tried the different workqueue options, but nothing changed this
+> behavior.
 
-> 
-> Meet one panic issue as below stack:
-> <1>[11340.226404] BUG: unable to handle kernel NULL pointer dereference at 00000008
-> <4>[11340.226619] EIP is at __sco_sock_close+0xe8/0x1a0
-> <4>[11340.226629] EAX: f063a740 EBX: 00000000 ECX: f58f4544 EDX: 00000000
-> <4>[11340.226640] ESI: dec83e00 EDI: 5f9a081f EBP: e0fdff38 ESP: e0fdff1c
-> <0>[11340.226674] Stack:
-> <4>[11340.226682]  c184db87 c1251028 dec83e00 e0fdff38 c1754aef dec83e00 00000000 e0fdff5c
-> <4>[11340.226718]  c184f587 e0fdff64 e0fdff68 5f9a081f e0fdff5c c1751852 d7813800 62262f10
-> <4>[11340.226752]  e0fdff70 c1753c00 00000000 00000001 0000000d e0fdffac c175425c 00000041
-> <0>[11340.226793] Call Trace:
-> <4>[11340.226813]  [<c184db87>] ? sco_sock_clear_timer+0x27/0x60
-> <4>[11340.226831]  [<c1251028>] ? local_bh_enable+0x68/0xd0
-> <4>[11340.226846]  [<c1754aef>] ? lock_sock_nested+0x4f/0x60
-> <4>[11340.226862]  [<c184f587>] sco_sock_shutdown+0x67/0xb0
-> <4>[11340.226879]  [<c1751852>] ? sockfd_lookup_light+0x22/0x80
-> <4>[11340.226897]  [<c1753c00>] sys_shutdown+0x30/0x60
-> <4>[11340.226912]  [<c175425c>] sys_socketcall+0x1dc/0x2a0
-> <4>[11340.226929]  [<c149ba78>] ? trace_hardirqs_on_thunk+0xc/0x10
-> <4>[11340.226944]  [<c18860f1>] syscall_call+0x7/0xb
-> <4>[11340.226960]  [<c1880000>] ? restore_cur+0x5e/0xd7
-> <0>[11340.226969] Code: <f0> ff 4b 08 0f 94 c0 84 c0 74 20 80 7b 19 01 74 2f b8 0a 00 00
-> 
-> Disassemble the code:
-> base address of __sco_sock_close is 0xc184f410
-> 0xc184f4f8 <+232>:   lock decl 0x8(%ebx) < == crash here, ebx is 0x0,
-> 
-> the related source code is:
-> (gdb) l *0xc184f4f8
-> 0xc184f4f8 is in __sco_sock_close (arch/x86/include/asm/atomic.h:123)
-> 119     static inline int atomic_dec_and_test(atomic_t *v)
-> 123             asm volatile(LOCK_PREFIX "decl %0; sete %1"
-> 
-> The whole call stack is:
-> sys_shutdown()
->   sco_sock_shutdown()
->     __sco_sock_close()
->       hci_conn_put()
->         atomic_dec_and_test()
-> 
-> Due to the conn->hcon is NULL, and the member hcon->refcnt is at offset 0x8,
-> so "BUG: unable to handle kernel NULL pointer dereference at 00000008"
-> appears.
-> 
-> Here fix it that adding the condition if conn->hcon is NULL, just like
-> in sco_chan_del().
-> 
-> Signed-off-by: liu chuansheng <chuansheng.liu@intel.com>
-> ---
->  net/bluetooth/sco.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
-> 
-> diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
-> index 531a93d..190f70c 100644
-> --- a/net/bluetooth/sco.c
-> +++ b/net/bluetooth/sco.c
-> @@ -355,8 +355,10 @@ static void __sco_sock_close(struct sock *sk)
->  		if (sco_pi(sk)->conn) {
->  			sk->sk_state = BT_DISCONN;
->  			sco_sock_set_timer(sk, SCO_DISCONN_TIMEOUT);
-> -			hci_conn_put(sco_pi(sk)->conn->hcon);
-> -			sco_pi(sk)->conn->hcon = NULL;
-> +			if (sco_pi(sk)->conn->hcon) {
-> +				hci_conn_put(sco_pi(sk)->conn->hcon);
-> +				sco_pi(sk)->conn->hcon = NULL;
-> +			}
->  		} else
->  			sco_chan_del(sk, ECONNRESET);
->  		break;
+Work items don't get assigned to workers on queueing.  Idle workers
+pick up work items.  A work item is directly assigned to a specific
+worker iff the worker is already executing that specific work item or
+the new work item is "linked" to the one it's currently executing.
+Currently, the only case where a linked work item is used is when
+flushing which is guaranteed to not introduce dependency the other way
+around.
 
-Please check if the following patch fixes the issue for you:
+So, your diagnosis looks wrong to me.  If such problem existed, we
+would be seeing deadlocks all over the place.
 
-commit ae5668c1fc155d3034d0eedcdb52798390975a39 (HEAD, master)
-Author: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Date:   Thu Jan 3 19:59:28 2013 -0200
+> Once a work struct is queued, there is no way to back out of the
+> deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
 
-    Bluetooth: Check if the hci connection exists in SCO shutdown
-    
-    Checking only for sco_conn seems to not be enough and lead to NULL
-    dereferences in the code, check for hcon instead.
-    
-    <1>[11340.226404] BUG: unable to handle kernel NULL pointer dereference at
-    0000000
-    8
-    <4>[11340.226619] EIP is at __sco_sock_close+0xe8/0x1a0
-    <4>[11340.226629] EAX: f063a740 EBX: 00000000 ECX: f58f4544 EDX: 00000000
-    <4>[11340.226640] ESI: dec83e00 EDI: 5f9a081f EBP: e0fdff38 ESP: e0fdff1c
-    <0>[11340.226674] Stack:
-    <4>[11340.226682]  c184db87 c1251028 dec83e00 e0fdff38 c1754aef dec83e00
-    00000000
-    e0fdff5c
-    <4>[11340.226718]  c184f587 e0fdff64 e0fdff68 5f9a081f e0fdff5c c1751852
-    d7813800
-    62262f10
-    <4>[11340.226752]  e0fdff70 c1753c00 00000000 00000001 0000000d e0fdffac
-    c175425c
-    00000041
-    <0>[11340.226793] Call Trace:
-    <4>[11340.226813]  [<c184db87>] ? sco_sock_clear_timer+0x27/0x60
-    <4>[11340.226831]  [<c1251028>] ? local_bh_enable+0x68/0xd0
-    <4>[11340.226846]  [<c1754aef>] ? lock_sock_nested+0x4f/0x60
-    <4>[11340.226862]  [<c184f587>] sco_sock_shutdown+0x67/0xb0
-    <4>[11340.226879]  [<c1751852>] ? sockfd_lookup_light+0x22/0x80
-    <4>[11340.226897]  [<c1753c00>] sys_shutdown+0x30/0x60
-    <4>[11340.226912]  [<c175425c>] sys_socketcall+0x1dc/0x2a0
-    <4>[11340.226929]  [<c149ba78>] ? trace_hardirqs_on_thunk+0xc/0x10
-    <4>[11340.226944]  [<c18860f1>] syscall_call+0x7/0xb
-    <4>[11340.226960]  [<c1880000>] ? restore_cur+0x5e/0xd7
-    <0>[11340.226969] Code: <f0> ff 4b 08 0f 94 c0 84 c0 74 20 80 7b 19 01 74
-    2f b8 0a 00 00
-    
-    Reported-by: Chuansheng Liu <chuansheng.liu@intel.com>
-    Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Yes, there are.  cancel_work[_sync]() do exactly that.
 
-diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
-index 531a93d..57f250c 100644
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -352,7 +352,7 @@ static void __sco_sock_close(struct sock *sk)
- 
- 	case BT_CONNECTED:
- 	case BT_CONFIG:
--		if (sco_pi(sk)->conn) {
-+		if (sco_pi(sk)->conn->hcon) {
- 			sk->sk_state = BT_DISCONN;
- 			sco_sock_set_timer(sk, SCO_DISCONN_TIMEOUT);
- 			hci_conn_put(sco_pi(sk)->conn->hcon);
+>  * Currently, a queued barrier can't be canceled.  This is because
+>  * try_to_grab_pending() can't determine whether the work to be
+>  * grabbed is at the head of the queue and thus can't clear LINKED
+>  * flag of the previous work while there must be a valid next work
+>  * after a work with LINKED flag set.
+> 
+> So once a work struct is queued and there is an ordering dependency
+> (i.e. task A is before task B), there is no way to back task B out -
+> so we can't just call cancel_work() or something on task B in
+> rpc_shutdown_client.
 
+A *barrier* can't be canceled.  A barrier is used only to flush work
+items.  The above comment means that we currently don't (or can't)
+support canceling flush_work().  It has *nothing* to do with canceling
+regular work items.  You can cancel work items fine.
+
+> The root of our issue is that rpc_shutdown_client is never safe to
+> call from a workqueue context - it loops until there are no more
+> tasks, marking tasks as killed and waiting for them to be cleaned up
+> in each task's own workqueue context. Any tasks that have already
+> been assigned to the same kworker thread will never have a chance to
+> run this cleanup stage.
+>
+> When fixing this deadlock, Trond and I discussed changing how
+> rpc_shutdown_client works (making it workqueue safe), but Trond felt
+> that it'd be better to just not call it from a workqueue context and
+> print a warning if it is.
+>
+> IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with
+> no success), but I'd argue that even if that did work it would still
+> be very easy to call rpc_shutdown_client from the wrong context and
+> MUCH harder to detect it.  It's also unclear to me if setting rpciod
+> workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
+
+It looks like you guys ended up in a weird place misled by wrong
+analysis.  Unless you require more than one concurrent execution on
+the same workqueue, WQ_MEM_RECLAIM guarantees forward progress.  It
+won't deadlock because "a different work item is queued to the same
+worker".  The whole thing is designed *exactly* to avoid problems like
+that.  So, I'd strongly recommend looking again at why the deadlocks
+are occurring.
+
+Thanks.
+
+-- 
+tejun
