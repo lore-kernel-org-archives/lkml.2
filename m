@@ -1,223 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911Ab3ACUGq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 15:06:46 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:63979 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753864Ab3ACUGo (ORCPT
+	id S1753949Ab3ACUHe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 15:07:34 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:58601 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab3ACUHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 15:06:44 -0500
-Message-ID: <1357243589.16864.56.camel@marge.simpson.net>
-Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
- Metric into the Load Balancer
-From: Mike Galbraith <bitbucket@online.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Alex Shi <alex.shi@intel.com>,
-        srikar@linux.vnet.ibm.com
-Date: Thu, 03 Jan 2013 21:06:29 +0100
-In-Reply-To: <50E55F99.6090104@linux.vnet.ibm.com>
-References: <50E3B61A.3040808@linux.vnet.ibm.com>
-	 <1357114354.5586.39.camel@marge.simpson.net>
-	 <50E55F99.6090104@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:PsbAq//acEidElPMfXH3Df0vC+chewlXhood6Yxm6l9
- 31qi/Zv5P1gxnwdnesaC5qHFL6ZNsRbqSCkKhhUhjyveO2n9aW
- 5yraxw6eBwpyKHsEqAsWAqoeEzz+8wLVarhvAlHm2TMQNnyEds
- F/nSrw+t7nKbTcM2wR3encSNmcJjCYu9BneODPbpgOvc9HGFNK
- 19Iv1DZ/V4m13GCZO3jturYOLxI3t8lcPorN5Ws14Wh9Be0IO7
- ul6caNQ2s0Yq+Fn7F5feQVJ4/oMaMuS49QpixyGXKYipxt85V2
- 33goX1+U0CpyvyYxAxKsZA2R6y42iGk9nD0q1O85WqUO6GyqfV
- kC0xeBISpXAfSVkNUQjXWIhWgmZ7If1Oc4W6tQ8IYmKkiFnpFJ
- VE7R5bqp9oZ6g==
+	Thu, 3 Jan 2013 15:07:31 -0500
+Date: Thu, 3 Jan 2013 18:07:24 -0200
+From: Gustavo Padovan <gustavo@padovan.org>
+To: Daniel Schaal <farbing@web.de>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Bluetooth: Add support for GC-WB300D PCIe [04ca:3006] to
+ ath3k.
+Message-ID: <20130103200724.GC2114@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	Daniel Schaal <farbing@web.de>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	Johan Hedberg <johan.hedberg@gmail.com>,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1356776074-1703-1-git-send-email-farbing@web.de>
+ <1356776074-1703-2-git-send-email-farbing@web.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356776074-1703-2-git-send-email-farbing@web.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 16:08 +0530, Preeti U Murthy wrote: 
-> Hi Mike,
-> 
-> Thank you very much for your feedback.Considering your suggestions,I have posted out a 
-> proposed solution to prevent select_idle_sibling() from becoming a disadvantage to normal
-> load balancing,rather aiding it.
-> 
-> **This patch is *without* the enablement of the per entity load tracking metric.**
-> 
-> This is with an intention to correct the existing select_idle_sibling() mess before
-> going ahead.
+Hi Daniel, 
 
-Bench the traversal cost, BALANCE_WAKE used to be _way_ to expensive to
-live with for fast movers.  It was turned on briefly, only to be turned
-off again.  Maybe that's changed, cool if so.
+* Daniel Schaal <farbing@web.de> [2012-12-29 11:14:34 +0100]:
 
-But before you do that: picking any idle or somewhat more idle cpu in an
-entire large L3 package on every wakeup rapes fast moving communicating
-tasks at L2.  You can't do that at high frequency and live, so any
-integration has to prevent high frequency bounce.. but at the same time,
-react quickly to ramp, pull communicating tasks together quickly.. and
-not harm 1:N loads that currently benefit massively from full package
-high frequency bounce :)
-
-> -------------------BEGIN PATCH--------------------------------------------------------
+> T:  Bus=02 Lev=02 Prnt=02 Port=06 Cnt=01 Dev#=  4 Spd=12   MxCh= 0
+> D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+> P:  Vendor=04ca ProdID=3006 Rev= 0.02
+> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+> E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+> I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+> I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+> I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+> I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+> I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+> E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+> E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 > 
-> Subject: [PATCH] sched: Merge select_idle_sibling with the behaviour of SD_BALANCE_WAKE
-> 
-> The function of select_idle_sibling() is to place the woken up task in the
-> vicinity of the waking cpu or on the previous cpu depending on what wake_affine() says.
-> This placement being only in an idle group.If an idle group is not found,the
-> fallback cpu is either the waking cpu or the previous cpu accordingly.
-> 
-> This results in the runqueue of the waking cpu or the previous cpu getting
-> overloaded when the system is committed,which is a latency hit to these tasks.
-> 
-> What is required is that the newly woken up tasks be placed close to the wake
-> up cpu or the previous cpu,whichever is best, for reasons to avoid latency hit and cache
-> coldness respectively.This is achieved with wake_affine() deciding which
-> cache domain the task should be placed on.
-> 
-> Once this is decided,instead of searching for a completely idle group,let us
-> search for the idlest group.This will anyway return a completely idle group
-> if it exists and its mechanism will fall back to what select_idle_sibling()
-> was doing.But if this fails,find_idlest_group() continues the search for a
-> relatively more idle group.
-> 
-> The argument could be that,we wish to avoid migration of the newly woken up
-> task to any other group unless it is completely idle.But in this case, to
-> begin with we choose a sched domain,within which a migration could be less
-> harmful.We enable the SD_BALANCE_WAKE flag on the SMT and MC domains to co-operate
-> with the same.
-> 
-> This patch is based on the tip tree without enabling the per entity load
-> tracking.This is with an intention to clear up the select_idle_sibling() mess
-> before introducing the metric.
+> Signed-off-by: Daniel Schaal <farbing@web.de>
 > ---
->  include/linux/topology.h |    4 ++-
->  kernel/sched/fair.c      |   61 +++++-----------------------------------------
->  2 files changed, 9 insertions(+), 56 deletions(-)
-> 
-> diff --git a/include/linux/topology.h b/include/linux/topology.h
-> index d3cf0d6..eeb309e 100644
-> --- a/include/linux/topology.h
-> +++ b/include/linux/topology.h
-> @@ -95,7 +95,7 @@ int arch_update_cpu_topology(void);
->  				| 1*SD_BALANCE_NEWIDLE			\
->  				| 1*SD_BALANCE_EXEC			\
->  				| 1*SD_BALANCE_FORK			\
-> -				| 0*SD_BALANCE_WAKE			\
-> +				| 1*SD_BALANCE_WAKE			\
->  				| 1*SD_WAKE_AFFINE			\
->  				| 1*SD_SHARE_CPUPOWER			\
->  				| 1*SD_SHARE_PKG_RESOURCES		\
-> @@ -127,7 +127,7 @@ int arch_update_cpu_topology(void);
->  				| 1*SD_BALANCE_NEWIDLE			\
->  				| 1*SD_BALANCE_EXEC			\
->  				| 1*SD_BALANCE_FORK			\
-> -				| 0*SD_BALANCE_WAKE			\
-> +				| 1*SD_BALANCE_WAKE			\
->  				| 1*SD_WAKE_AFFINE			\
->  				| 0*SD_SHARE_CPUPOWER			\
->  				| 1*SD_SHARE_PKG_RESOURCES		\
-> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-> index b29cdbf..c33eda7 100644
-> --- a/kernel/sched/fair.c
-> +++ b/kernel/sched/fair.c
-> @@ -3303,58 +3303,6 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
->  	return idlest;
->  }
->  
-> -/*
-> - * Try and locate an idle CPU in the sched_domain.
-> - */
-> -static int select_idle_sibling(struct task_struct *p, int target)
-> -{
-> -	int cpu = smp_processor_id();
-> -	int prev_cpu = task_cpu(p);
-> -	struct sched_domain *sd;
-> -	struct sched_group *sg;
-> -	int i;
-> -
-> -	/*
-> -	 * If the task is going to be woken-up on this cpu and if it is
-> -	 * already idle, then it is the right target.
-> -	 */
-> -	if (target == cpu && idle_cpu(cpu))
-> -		return cpu;
-> -
-> -	/*
-> -	 * If the task is going to be woken-up on the cpu where it previously
-> -	 * ran and if it is currently idle, then it the right target.
-> -	 */
-> -	if (target == prev_cpu && idle_cpu(prev_cpu))
-> -		return prev_cpu;
-> -
-> -	/*
-> -	 * Otherwise, iterate the domains and find an elegible idle cpu.
-> -	 */
-> -	sd = rcu_dereference(per_cpu(sd_llc, target));
-> -	for_each_lower_domain(sd) {
-> -		sg = sd->groups;
-> -		do {
-> -			if (!cpumask_intersects(sched_group_cpus(sg),
-> -						tsk_cpus_allowed(p)))
-> -				goto next;
-> -
-> -			for_each_cpu(i, sched_group_cpus(sg)) {
-> -				if (!idle_cpu(i))
-> -					goto next;
-> -			}
-> -
-> -			target = cpumask_first_and(sched_group_cpus(sg),
-> -					tsk_cpus_allowed(p));
-> -			goto done;
-> -next:
-> -			sg = sg->next;
-> -		} while (sg != sd->groups);
-> -	}
-> -done:
-> -	return target;
-> -}
-> -
->  #ifdef CONFIG_SCHED_NUMA
->  static inline bool pick_numa_rand(int n)
->  {
-> @@ -3469,8 +3417,13 @@ find_sd:
->  		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
->  			prev_cpu = cpu;
->  
-> -		new_cpu = select_idle_sibling(p, prev_cpu);
-> -		goto unlock;
-> +		if (prev_cpu == task_cpu(p) && idle_cpu(prev_cpu) ||
-> +		    prev_cpu == smp_processor_id() && idle_cpu(prev_cpu)) {
-> +			new_cpu = prev_cpu;
-> +			goto unlock;
-> +		} else {
-> +			sd = rcu_dereference(per_cpu(sd_llc, prev_cpu));
-> +		}
->  	}
->  
->  pick_idlest:
-> 
-> 
-> 
-> 
-> 
-> 
+>  drivers/bluetooth/ath3k.c |    2 ++
+>  drivers/bluetooth/btusb.c |    1 +
+>  2 files changed, 3 insertions(+)
 
+Patch has been applied to bluetooth.git. Thanks.
 
+	Gustavo
