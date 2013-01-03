@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab3ACXll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 18:41:41 -0500
-Received: from smtp131.dfw.emailsrvr.com ([67.192.241.131]:36818 "EHLO
-	smtp131.dfw.emailsrvr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab3ACXlk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 18:41:40 -0500
-X-Greylist: delayed 422 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 18:41:40 EST
-Message-ID: <50E6158C.3050700@calxeda.com>
-Date: Thu, 03 Jan 2013 17:34:36 -0600
-From: Rob Herring <rob.herring@calxeda.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754802Ab3ACXqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 18:46:01 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:52949 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753776Ab3ACXp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 18:45:59 -0500
+Date: Thu, 3 Jan 2013 23:45:58 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20130103234558.GA1689@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <20130102200848.GA4500@dcvr.yhbt.net>
+ <20130102204712.GA17806@dcvr.yhbt.net>
+ <1357220469.21409.24574.camel@edumazet-glaptop>
+ <20130103183251.GA10113@dcvr.yhbt.net>
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Jon Loeliger <jdl@jdl.com>
-Subject: Re: [PATCH] dtc: fdtdump, properly handle multi-string properties
-References: <1357252332-6131-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1357252332-6131-1-git-send-email-panto@antoniou-consulting.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130103183251.GA10113@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 04:32 PM, Pantelis Antoniou wrote:
-> Device tree can store multiple strings in a single property.
-> We didn't handle that case properly.
+Eric Wong <normalperson@yhbt.net> wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> > With the following patch, I cant reproduce the 'apparent stuck'
 > 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> ---
->  scripts/dtc/fdtdump.c | 12 +++++++++++-
->  1 file changed, 11 insertions(+), 1 deletion(-)
-
-These need to be posted against the upstream dtc sources and to the dtc
-maintainer Jon Loeliger.
-
-Rob
-
+> Right, the output is just an approximation and the logic there
+> was bogus.
 > 
-> diff --git a/scripts/dtc/fdtdump.c b/scripts/dtc/fdtdump.c
-> index 207a46d..d4fa6d7 100644
-> --- a/scripts/dtc/fdtdump.c
-> +++ b/scripts/dtc/fdtdump.c
-> @@ -21,13 +21,23 @@ static void print_data(const char *data, int len)
->  {
->  	int i;
->  	const char *p = data;
-> +	const char *s;
->  
->  	/* no data, don't print */
->  	if (len == 0)
->  		return;
->  
->  	if (util_is_printable_string(data, len)) {
-> -		printf(" = \"%s\"", (const char *)data);
-> +		printf(" = ");
-> +
-> +		s = data;
-> +		do {
-> +			printf("\"%s\"", s);
-> +			s += strlen(s) + 1;
-> +			if (s < data + len)
-> +				printf(", ");
-> +		} while (s < data + len);
-> +
->  	} else if ((len % 4) == 0) {
->  		printf(" = <");
->  		for (i = 0; i < len; i += 4)
-> 
+> Thanks for looking at this.
+
+I'm still able to reproduce the issue under v3.8-rc2 with your patch
+for toosleepy.
+
+(As expected when blocked,) TCP send() will eventually return
+ETIMEOUT when I forget to check (and toosleepy will abort from it)
+
+I think this requires frequent dirtying/cycling of pages to reproduce.
+(from copying large files around) to interact with compaction.
+I'll see if I can reproduce the issue with read-only FS activity.
+
+With 3.7.1 and compaction/THP disabled, I was able to run ~21 hours
+and copy a few TB around without anything getting stuck.
