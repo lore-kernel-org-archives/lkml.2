@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab3ACXqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 18:46:01 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:52949 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753776Ab3ACXp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 18:45:59 -0500
-Date: Thu, 3 Jan 2013 23:45:58 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130103234558.GA1689@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130102204712.GA17806@dcvr.yhbt.net>
- <1357220469.21409.24574.camel@edumazet-glaptop>
- <20130103183251.GA10113@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130103183251.GA10113@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754269Ab3ACXyI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 18:54:08 -0500
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:56175 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753987Ab3ACXyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 18:54:06 -0500
+X-Sasl-enc: qKbp/kz4qJneIZmBM+qEfa4la8QLYQoT4CN8jpm9epBX 1357257244
+Message-ID: <1357257241.2207.2.camel@perseus.themaw.net>
+Subject: Re: [PATCH] fs/autofs: Fix sparse warning: context imbalance in
+ 'autofs4_d_automount' - different lock contexts for basic block
+From: Ian Kent <raven@themaw.net>
+To: Peter Huewe <peterhuewe@gmx.de>
+Cc: autofs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Date: Fri, 04 Jan 2013 07:54:01 +0800
+In-Reply-To: <1357224733-31251-1-git-send-email-peterhuewe@gmx.de>
+References: <1357224733-31251-1-git-send-email-peterhuewe@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 (3.2.3-3.fc16) 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Wong <normalperson@yhbt.net> wrote:
-> Eric Dumazet <eric.dumazet@gmail.com> wrote:
-> > With the following patch, I cant reproduce the 'apparent stuck'
+On Thu, 2013-01-03 at 15:52 +0100, Peter Huewe wrote:
+> Sparse complains:
+> + fs/autofs4/root.c:409:9: sparse: context imbalance in
+> 'autofs4_d_automount' - different lock contexts for basic block
 > 
-> Right, the output is just an approximation and the logic there
-> was bogus.
+> This was introduced by commit
+> f55fb0c243 autofs4 - dont clear DCACHE_NEED_AUTOMOUNT on rootless mount
 > 
-> Thanks for looking at this.
+> The function autofs4_d_automount can be left with the (&sbi->fs_lock)
+> held if sbi->version <= 4 and simple_empty(dentry) == false so the warning seems valid.
+> 
+> --> Add an spin_unlock in this case before we jump to done
+> 
+> Unfortunately compile tested only.
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-I'm still able to reproduce the issue under v3.8-rc2 with your patch
-for toosleepy.
+Yes, good catch, it looks right to me.
+Acked-by: Ian Kent <raven@themaw.net>
 
-(As expected when blocked,) TCP send() will eventually return
-ETIMEOUT when I forget to check (and toosleepy will abort from it)
+> ---
+>  fs/autofs4/root.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+> index c934476..74a299f 100644
+> --- a/fs/autofs4/root.c
+> +++ b/fs/autofs4/root.c
+> @@ -383,8 +383,10 @@ static struct vfsmount *autofs4_d_automount(struct path *path)
+>  				goto done;
+>  			}
+>  		} else {
+> -			if (!simple_empty(dentry))
+> +			if (!simple_empty(dentry)) {
+> +				spin_unlock(&sbi->fs_lock);
+>  				goto done;
+> +			}
+>  		}
+>  		ino->flags |= AUTOFS_INF_PENDING;
+>  		spin_unlock(&sbi->fs_lock);
 
-I think this requires frequent dirtying/cycling of pages to reproduce.
-(from copying large files around) to interact with compaction.
-I'll see if I can reproduce the issue with read-only FS activity.
 
-With 3.7.1 and compaction/THP disabled, I was able to run ~21 hours
-and copy a few TB around without anything getting stuck.
