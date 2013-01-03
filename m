@@ -1,108 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab3ACLL5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:11:57 -0500
-Received: from mxsmtp211.mxic.com.tw ([211.75.127.162]:54011 "EHLO
-	twhmllg4.macronix.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752162Ab3ACLLz (ORCPT
+	id S1753024Ab3ACLPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:15:07 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:46961 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752102Ab3ACLPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:11:55 -0500
-X-Greylist: delayed 3158 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 06:11:54 EST
-Subject: [PATCH 1/1] m25p80: add JEDEC id and reset SR for Macronix devices
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-X-Mailer: Lotus Notes Release 7.0.3 September 26, 2007
-Message-ID: <OF44C3A336.F4B571D0-ON48257AE8.0037CB7F-48257AE8.0038A88B@mxic.com.tw>
-From: jimkuo@mxic.com.tw
-Date: Thu, 3 Jan 2013 18:18:50 +0800
-X-MIMETrack: Serialize by Router on MXML01A/TAIWAN/MXIC(Release 7.0.4FP2|June 06, 2010) at
- 2013/01/03 18:18:51
+	Thu, 3 Jan 2013 06:15:04 -0500
+Date: Thu, 3 Jan 2013 11:14:50 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH 4/4 v3] net/smsc911x: Provide common clock functionality
+Message-ID: <20130103111450.GC14714@gmail.com>
+References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
+ <1355937587-31730-4-git-send-email-lee.jones@linaro.org>
+ <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
+ <20121220192441.GC14363@n2100.arm.linux.org.uk>
+ <20121220203514.GN2691@gmail.com>
+ <20121220205113.GD14363@n2100.arm.linux.org.uk>
+ <20121221091306.GO2691@gmail.com>
+ <20121221092421.GG14363@n2100.arm.linux.org.uk>
+ <20121221114105.GP2691@gmail.com>
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: twhmllg4.macronix.com r03AIoFY058512
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20121221114105.GP2691@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Some platforms provide clocks which require enabling before the
+SMSC911x chip will power on. This patch uses the new common clk
+framework to do just that. If no clock is provided, it will just
+be ignored and the driver will continue to assume that no clock
+is required for the chip to run successfully.
 
-From: Mike Lavender <mike@steroidmicros.com>
-
-The following modification is based on Linux-3.8-rc1.
-I changed and added some JEDEC id of Macronix devices to "m25p_ids" array.
-And I set status register to 0 at startup time for using some type of
-Macronix device.
-Signed-off-by: Jim Kuo <jimkuo@mxic.com.tw>
+Cc: Steve Glendinning <steve.glendinning@shawell.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
-diff -uprN a/drivers/mtd/devices/m25p80.c b/drivers/mtd/devices/m25p80.c
---- a/drivers/mtd/devices/m25p80.c  2013-01-03 14:48:03.250938000 +0800
-+++ b/drivers/mtd/devices/m25p80.c  2013-01-03 14:55:14.364119000 +0800
-@@ -649,13 +649,31 @@ static const struct spi_device_id m25p_i
-      { "n25q064",  INFO(0x20ba17, 0, 64 * 1024, 128, 0) },
+ drivers/net/ethernet/smsc/smsc911x.c |   29 ++++++++++++++++++++++++++++-
+ 1 file changed, 28 insertions(+), 1 deletion(-)
 
-      /* Macronix */
--     { "mx25l2005a",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
--     { "mx25l4005a",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
--     { "mx25l8005",   INFO(0xc22014, 0, 64 * 1024,  16, 0) },
--     { "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, SECT_4K) },
--     { "mx25l3205d",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
--     { "mx25l6405d",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
--     { "mx25l12805d", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
-+     { "mx25l512e",   INFO(0xc22010, 0, 64 * 1024,   1, SECT_4K) },
-+     { "mx25l5121e",  INFO(0xc22210, 0, 64 * 1024,   1, SECT_4K) },
-+     { "mx25l1006e",  INFO(0xc22011, 0, 64 * 1024,   2, SECT_4K) },
-+     { "mx25l1021e",  INFO(0xc22211, 0, 64 * 1024,   2, SECT_4K) },
-+     { "mx25l2006e",  INFO(0xc22012, 0, 64 * 1024,   4, SECT_4K) },
-+     { "mx25l4006e",  INFO(0xc22013, 0, 64 * 1024,   8, SECT_4K) },
-+     { "mx25u4035",   INFO(0xc22533, 0, 64 * 1024,   8, SECT_4K) },
-+     { "mx25v4035",   INFO(0xc22553, 0, 64 * 1024,   8, SECT_4K) },
-+     { "mx25l8006e",  INFO(0xc22014, 0, 64 * 1024,  16, 0) },
-+     { "mx25u8035",   INFO(0xc22534, 0, 64 * 1024,  16, 0) },
-+     { "mx25v8035",   INFO(0xc22554, 0, 64 * 1024,  16, 0) },
-+     { "mx25l1606e",  INFO(0xc22015, 0, 64 * 1024,  32, 0) },
-+     { "mx25l1633e",  INFO(0xc22415, 0, 64 * 1024,  32, 0) },
-+     { "mx25l1635e",  INFO(0xc22515, 0, 64 * 1024,  32, 0) },
-+     { "mx25u1635e",  INFO(0xc22535, 0, 64 * 1024,  32, 0) },
-+     { "mx25l1655d",  INFO(0xc22615, 0, 64 * 1024,  32, 0) },
-+     { "mx25l3206e",  INFO(0xc22016, 0, 64 * 1024,  64, 0) },
-+     { "mx25l3239e",  INFO(0xc22536, 0, 64 * 1024,  64, 0) },
-+     { "mx25l3225d",  INFO(0xc25e16, 0, 64 * 1024,  64, 0) },
-+     { "mx25l3255d",  INFO(0xc29e16, 0, 64 * 1024,  64, 0) },
-+     { "mx25l6406e",  INFO(0xc22017, 0, 64 * 1024, 128, 0) },
-+     { "mx25l6439e",  INFO(0xc22537, 0, 64 * 1024, 128, 0) },
-+     { "mx25l6455e",  INFO(0xc22617, 0, 64 * 1024, 128, 0) },
-+     { "mx25l12806e", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
-+     { "mx25u12835f", INFO(0xc22538, 0, 64 * 1024, 256, 0) },
-      { "mx25l12855e", INFO(0xc22618, 0, 64 * 1024, 256, 0) },
-      { "mx25l25635e", INFO(0xc22019, 0, 64 * 1024, 512, 0) },
-      { "mx25l25655e", INFO(0xc22619, 0, 64 * 1024, 512, 0) },
-@@ -876,13 +894,14 @@ static int m25p_probe(struct spi_device
-      dev_set_drvdata(&spi->dev, flash);
-
-      /*
--      * Atmel, SST and Intel/Numonyx serial flash tend to power
--      * up with the software protection bits set
-+      * Atmel, SST, Intel/Numonyx and Macronix serial flash tend
-+      * to power up with the software protection bits set
-       */
-
-      if (JEDEC_MFR(info->jedec_id) == CFI_MFR_ATMEL ||
-          JEDEC_MFR(info->jedec_id) == CFI_MFR_INTEL ||
--         JEDEC_MFR(info->jedec_id) == CFI_MFR_SST) {
-+         JEDEC_MFR(info->jedec_id) == CFI_MFR_SST   ||
-+         JEDEC_MFR(info->jedec_id) == CFI_MFR_MACRONIX) {
-            write_enable(flash);
-            write_sr(flash, 0);
-      }
-
-
-
-============================================================================
-
-CONFIDENTIALITY NOTE:
-
-This e-mail and any attachments may contain confidential information and may be protected by legal privilege. If you are not the intended addressee (or authorized to receive for the addressee), be aware that any disclosure, copying, distribution or use of this e-mail or any attachment is prohibited. If you have received this e-mail in error, please notify us immediately by returning it to the sender and delete this copy from your system. Thank you for your cooperation.
-
-Macronix International Co., Ltd.
-
-=====================================================================
-
+diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
+index e112877..f9b6bb7 100644
+--- a/drivers/net/ethernet/smsc/smsc911x.c
++++ b/drivers/net/ethernet/smsc/smsc911x.c
+@@ -33,6 +33,7 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/crc32.h>
++#include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/errno.h>
+ #include <linux/etherdevice.h>
+@@ -144,6 +145,9 @@ struct smsc911x_data {
+ 
+ 	/* regulators */
+ 	struct regulator_bulk_data supplies[SMSC911X_NUM_SUPPLIES];
++
++	/* clock */
++	struct clk *clk;
+ };
+ 
+ /* Easy access to information */
+@@ -369,7 +373,7 @@ out:
+ }
+ 
+ /*
+- * enable resources, currently just regulators.
++ * enable regulator and clock resources.
+  */
+ static int smsc911x_enable_resources(struct platform_device *pdev)
+ {
+@@ -382,6 +386,13 @@ static int smsc911x_enable_resources(struct platform_device *pdev)
+ 	if (ret)
+ 		netdev_err(ndev, "failed to enable regulators %d\n",
+ 				ret);
++
++	if (!IS_ERR(pdata->clk)) {
++		ret = clk_prepare_enable(pdata->clk);
++		if (ret < 0)
++			netdev_err(ndev, "failed to enable clock %d\n", ret);
++	}
++
+ 	return ret;
+ }
+ 
+@@ -396,6 +407,10 @@ static int smsc911x_disable_resources(struct platform_device *pdev)
+ 
+ 	ret = regulator_bulk_disable(ARRAY_SIZE(pdata->supplies),
+ 			pdata->supplies);
++
++	if (!IS_ERR(pdata->clk))
++		clk_disable_unprepare(pdata->clk);
++
+ 	return ret;
+ }
+ 
+@@ -421,6 +436,12 @@ static int smsc911x_request_resources(struct platform_device *pdev)
+ 	if (ret)
+ 		netdev_err(ndev, "couldn't get regulators %d\n",
+ 				ret);
++
++	/* Request clock */
++	pdata->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(pdata->clk))
++		netdev_warn(ndev, "couldn't get clock %li\n", PTR_ERR(pdata->clk));
++
+ 	return ret;
+ }
+ 
+@@ -436,6 +457,12 @@ static void smsc911x_free_resources(struct platform_device *pdev)
+ 	/* Free regulators */
+ 	regulator_bulk_free(ARRAY_SIZE(pdata->supplies),
+ 			pdata->supplies);
++
++	/* Free clock */
++	if (!IS_ERR(pdata->clk)) {
++		clk_put(pdata->clk);
++		pdata->clk = NULL;
++	}
+ }
+ 
+ /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
+-- 
+1.7.9.5
