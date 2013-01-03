@@ -1,501 +1,593 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab3ACOzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 09:55:40 -0500
-Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:39606 "EHLO
-	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753604Ab3ACOze (ORCPT
+	id S1753503Ab3ACOyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:54:53 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:60976 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073Ab3ACOxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 09:55:34 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v3] pinctrl/nomadik: add device tree support
-Date: Thu, 3 Jan 2013 15:55:12 +0100
-Message-ID: <1357224912-22226-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 3 Jan 2013 09:53:17 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 01/10] TTY: switch tty_buffer_request_room to tty_port
+Date: Thu,  3 Jan 2013 15:53:01 +0100
+Message-Id: <1357224789-2853-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Now, we start converting tty buffer functions to actually use
+tty_port. This will allow us to get rid of the need of tty pointer in
+many call sites. Only tty_port will be needed and hence no more
+tty_port_tty_get calls in those paths.
 
-This implements pin multiplexing and pin configuration for
-the Nomadik pin controller using the device tree.
+Here we start with tty_buffer_request_room.
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
-Reviewed-by: Stephen Warren <swarren@nvidia.com>
-Reviewed-by: Philippe Langlais <philippe.langlais@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
-ChangeLog v2->v3:
-- Replace nmk_pinctrl with nmk-pinctrl to conform to common design
-  pattern everywhere.
-- Fix spelling mistakes.
-- Fix DTS compatible strings.
-- Remove surplus blank line.
-- Invert if() clause from (ret < 0) to (ret >= 0).
----
- .../devicetree/bindings/pinctrl/ste,nomadik.txt    | 127 ++++++++++
- .../devicetree/bindings/vendor-prefixes.txt        |   1 +
- arch/arm/mach-ux500/cpu-db8500.c                   |   2 +-
- drivers/pinctrl/pinctrl-nomadik.c                  | 261 ++++++++++++++++++++-
- 4 files changed, 389 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+ arch/mn10300/kernel/mn10300-serial.c        |  5 +++--
+ arch/um/drivers/chan_kern.c                 |  3 ++-
+ drivers/char/pcmcia/synclink_cs.c           |  3 ++-
+ drivers/isdn/i4l/isdn_common.c              |  3 ++-
+ drivers/isdn/i4l/isdn_tty.c                 | 12 +++++++-----
+ drivers/staging/dgrp/dgrp_net_ops.c         |  4 ++--
+ drivers/tty/cyclades.c                      | 13 ++++++++-----
+ drivers/tty/ehv_bytechan.c                  |  2 +-
+ drivers/tty/hvc/hvc_console.c               |  2 +-
+ drivers/tty/hvc/hvcs.c                      |  2 +-
+ drivers/tty/serial/cpm_uart/cpm_uart_core.c |  5 +++--
+ drivers/tty/serial/ioc4_serial.c            |  2 +-
+ drivers/tty/serial/jsm/jsm_tty.c            |  6 ++++--
+ drivers/tty/serial/mpsc.c                   |  6 +++---
+ drivers/tty/serial/mrst_max3110.c           |  6 ++++--
+ drivers/tty/serial/pch_uart.c               |  5 +++--
+ drivers/tty/serial/sh-sci.c                 |  8 +++++---
+ drivers/tty/serial/ucc_uart.c               |  5 +++--
+ drivers/tty/tty_buffer.c                    |  5 ++---
+ drivers/usb/serial/quatech2.c               |  4 ++--
+ include/linux/tty_flip.h                    |  2 +-
+ 21 files changed, 60 insertions(+), 43 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-new file mode 100644
-index 0000000..8639234
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-@@ -0,0 +1,127 @@
-+ST Ericsson Nomadik pinmux controller
-+
-+Required properties:
-+- compatible: "stericsson,nmk-pinctrl", "stericsson,nmk-pinctrl-db8540",
-+              "stericsson,nmk-pinctrl-stn8815"
-+- reg: Should contain the register physical address and length of the PRCMU.
-+
-+Please refer to pinctrl-bindings.txt in this directory for details of the
-+common pinctrl bindings used by client devices, including the meaning of the
-+phrase "pin configuration node".
-+
-+ST Ericsson's pin configuration nodes act as a container for an arbitrary number of
-+subnodes. Each of these subnodes represents some desired configuration for a
-+pin, a group, or a list of pins or groups. This configuration can include the
-+mux function to select on those pin(s)/group(s), and various pin configuration
-+parameters, such as input, output, pull up, pull down...
-+
-+The name of each subnode is not important; all subnodes should be enumerated
-+and processed purely based on their content.
-+
-+Required subnode-properties:
-+- ste,pins : An array of strings. Each string contains the name of a pin or
-+    group.
-+
-+Optional subnode-properties:
-+- ste,function: A string containing the name of the function to mux to the
-+  pin or group.
-+
-+- ste,input : <0/1/2/3>
-+	0: input with no pull
-+	1: input with pull up,
-+	2: input with pull down,
-+	3: input and keep last input configuration (no pull, pull up or pull down).
-+
-+- ste,output: <0/1/2>
-+	0: output low,
-+	1: output high,
-+	2: output (value is not specified).
-+
-+- ste,sleep: <0/1>
-+	0: sleep mode disable,
-+	1: sleep mode enable.
-+
-+- ste,sleep-input: <0/1/2>
-+	0: sleep input with no pull,
-+	1: sleep input with pull up,
-+	2: sleep input with pull down.
-+
-+- ste,sleep-output: <0/1/2>
-+	0: sleep output low,
-+	1: sleep output high,
-+	2: sleep output (value is not specified).
-+
-+- ste,sleep-gpio: <0/1>
-+	0: disable sleep gpio mode,
-+	1: enable sleep gpio mode.
-+
-+- ste,sleep-wakeup: <0/1>
-+	0: wake-up detection enabled,
-+	1: wake-up detection disabled.
-+
-+- ste,sleep-pull-disable: <0/1>
-+	0: GPIO pull-up or pull-down resistor is enabled, when pin is an input,
-+	1: GPIO pull-up and pull-down resistor are disabled.
-+
-+Example board file extract:
-+
-+	pinctrl@80157000 {
-+		compatible = "stericsson,nmk-pinctrl";
-+		reg = <0x80157000 0x2000>;
-+
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&uart0_default_mode>;
-+
-+		uart0 {
-+			uart0_default_mux: uart0_mux {
-+				u0_default_mux {
-+					ste,function = "u0";
-+					ste,pins = "u0_a_1";
-+					};
-+			};
-+			uart0_default_mode: uart0_default {
-+				uart0_default_cfg1 {
-+					ste,pins = "GPIO0", "GPIO2";
-+					ste,input = <1>;
-+				};
-+
-+				uart0_default_cfg2 {
-+					ste,pins = "GPIO1", "GPIO3";
-+					ste,output = <1>;
-+				};
-+			};
-+			uart0_sleep_mode: uart0_sleep {
-+				uart0_sleep_cfg1 {
-+					ste,pins = "GPIO0", "GPIO2";
-+					ste,sleep = <0>;
-+					ste,sleep-input = <0>;
-+					ste,sleep-wakeup = <1>;
-+					ste,sleep-pull-disable = <0>;
-+				};
-+				uart0_sleep_cfg2 {
-+					ste,pins = "GPIO1";
-+					ste,sleep = <0>;
-+					ste,sleep-output = <1>;
-+					ste,sleep-wakeup = <1>;
-+					ste,sleep-pull-disable = <0>;
-+				};
-+				uart0_sleep_cfg3 {
-+					ste,pins = "GPIO3";
-+					ste,sleep = <0>;
-+					ste,sleep-output = <2>;
-+					ste,sleep-wakeup = <1>;
-+					ste,sleep-pull-disable = <0>;
-+				};
-+			};
-+		};
-+	};
-+
-+	uart@80120000 {
-+		compatible = "arm,pl011", "arm,primecell";
-+		reg = <0x80120000 0x1000>;
-+		interrupts = <0 11 0x4>;
-+
-+		pinctrl-names = "default","sleep";
-+		pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
-+		pinctrl-1 = <&uart0_sleep_mode>;
-+	};
-diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-index 902b1b1..1532137 100644
---- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-+++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-@@ -50,6 +50,7 @@ simtek
- sirf	SiRF Technology, Inc.
- snps 	Synopsys, Inc.
- st	STMicroelectronics
-+ste	ST-Ericsson
- stericsson	ST-Ericsson
- ti	Texas Instruments
- via	VIA Technologies, Inc.
-diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
-index 5b286e0..b80ad96 100644
---- a/arch/arm/mach-ux500/cpu-db8500.c
-+++ b/arch/arm/mach-ux500/cpu-db8500.c
-@@ -285,7 +285,7 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80110000, "nmk-i2c.3", NULL),
- 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
- 	/* Requires device name bindings. */
--	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", U8500_PRCMU_BASE,
-+	OF_DEV_AUXDATA("stericsson,nmk-pinctrl", U8500_PRCMU_BASE,
- 		"pinctrl-db8500", NULL),
- 	/* Requires clock name and DMA bindings. */
- 	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 78ab91e..b508bd7 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -25,6 +25,7 @@
- #include <linux/irqdomain.h>
- #include <linux/slab.h>
- #include <linux/of_device.h>
-+#include <linux/pinctrl/machine.h>
- #include <linux/pinctrl/pinctrl.h>
- #include <linux/pinctrl/pinmux.h>
- #include <linux/pinctrl/pinconf.h>
-@@ -1509,11 +1510,269 @@ static void nmk_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
- 	nmk_gpio_dbg_show_one(s, pctldev, chip, offset - chip->base, offset);
- }
+diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
+index 81d5cb9..9b2232a 100644
+--- a/arch/mn10300/kernel/mn10300-serial.c
++++ b/arch/mn10300/kernel/mn10300-serial.c
+@@ -524,7 +524,8 @@ static int mask_test_and_clear(volatile u8 *ptr, u8 mask)
+ static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
+ {
+ 	struct uart_icount *icount = &port->uart.icount;
+-	struct tty_struct *tty = port->uart.state->port.tty;
++	struct tty_port *port = &port->uart.state->port;
++	struct tty_struct *tty = port->tty;
+ 	unsigned ix;
+ 	int count;
+ 	u8 st, ch, push, status, overrun;
+@@ -534,7 +535,7 @@ static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
+ 	push = 0;
  
-+static void nmk_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
-+		struct pinctrl_map *map, unsigned num_maps)
-+{
-+	int i;
-+
-+	for (i = 0; i < num_maps; i++)
-+		if (map[i].type == PIN_MAP_TYPE_CONFIGS_PIN)
-+			kfree(map[i].data.configs.configs);
-+	kfree(map);
-+}
-+
-+static int nmk_dt_reserve_map(struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, unsigned reserve)
-+{
-+	unsigned old_num = *reserved_maps;
-+	unsigned new_num = *num_maps + reserve;
-+	struct pinctrl_map *new_map;
-+
-+	if (old_num >= new_num)
-+		return 0;
-+
-+	new_map = krealloc(*map, sizeof(*new_map) * new_num, GFP_KERNEL);
-+	if (!new_map)
-+		return -ENOMEM;
-+
-+	memset(new_map + old_num, 0, (new_num - old_num) * sizeof(*new_map));
-+
-+	*map = new_map;
-+	*reserved_maps = new_num;
-+
-+	return 0;
-+}
-+
-+static int nmk_dt_add_map_mux(struct pinctrl_map **map, unsigned *reserved_maps,
-+		unsigned *num_maps, const char *group,
-+		const char *function)
-+{
-+	if (*num_maps == *reserved_maps)
-+		return -ENOSPC;
-+
-+	(*map)[*num_maps].type = PIN_MAP_TYPE_MUX_GROUP;
-+	(*map)[*num_maps].data.mux.group = group;
-+	(*map)[*num_maps].data.mux.function = function;
-+	(*num_maps)++;
-+
-+	return 0;
-+}
-+
-+static int nmk_dt_add_map_configs(struct pinctrl_map **map,
-+		unsigned *reserved_maps,
-+		unsigned *num_maps, const char *group,
-+		unsigned long *configs, unsigned num_configs)
-+{
-+	unsigned long *dup_configs;
-+
-+	if (*num_maps == *reserved_maps)
-+		return -ENOSPC;
-+
-+	dup_configs = kmemdup(configs, num_configs * sizeof(*dup_configs),
-+			      GFP_KERNEL);
-+	if (!dup_configs)
-+		return -ENOMEM;
-+
-+	(*map)[*num_maps].type = PIN_MAP_TYPE_CONFIGS_PIN;
-+
-+	(*map)[*num_maps].data.configs.group_or_pin = group;
-+	(*map)[*num_maps].data.configs.configs = dup_configs;
-+	(*map)[*num_maps].data.configs.num_configs = num_configs;
-+	(*num_maps)++;
-+
-+	return 0;
-+}
-+
-+#define NMK_CONFIG_PIN(x,y) { .property = x, .config = y, }
-+#define NMK_CONFIG_PIN_ARRAY(x,y) { .property = x, .choice = y, \
-+	.size = ARRAY_SIZE(y), }
-+
-+static const unsigned long nmk_pin_input_modes[] = {
-+	PIN_INPUT_NOPULL,
-+	PIN_INPUT_PULLUP,
-+	PIN_INPUT_PULLDOWN,
-+};
-+
-+static const unsigned long nmk_pin_output_modes[] = {
-+	PIN_OUTPUT_LOW,
-+	PIN_OUTPUT_HIGH,
-+	PIN_DIR_OUTPUT,
-+};
-+
-+static const unsigned long nmk_pin_sleep_modes[] = {
-+	PIN_SLEEPMODE_DISABLED,
-+	PIN_SLEEPMODE_ENABLED,
-+};
-+
-+static const unsigned long nmk_pin_sleep_input_modes[] = {
-+	PIN_SLPM_INPUT_NOPULL,
-+	PIN_SLPM_INPUT_PULLUP,
-+	PIN_SLPM_INPUT_PULLDOWN,
-+	PIN_SLPM_DIR_INPUT,
-+};
-+
-+static const unsigned long nmk_pin_sleep_output_modes[] = {
-+	PIN_SLPM_OUTPUT_LOW,
-+	PIN_SLPM_OUTPUT_HIGH,
-+	PIN_SLPM_DIR_OUTPUT,
-+};
-+
-+static const unsigned long nmk_pin_sleep_wakeup_modes[] = {
-+	PIN_SLPM_WAKEUP_DISABLE,
-+	PIN_SLPM_WAKEUP_ENABLE,
-+};
-+
-+static const unsigned long nmk_pin_gpio_modes[] = {
-+	PIN_GPIOMODE_DISABLED,
-+	PIN_GPIOMODE_ENABLED,
-+};
-+
-+static const unsigned long nmk_pin_sleep_pdis_modes[] = {
-+	PIN_SLPM_PDIS_DISABLED,
-+	PIN_SLPM_PDIS_ENABLED,
-+};
-+
-+struct nmk_cfg_param {
-+	const char *property;
-+	unsigned long config;
-+	const unsigned long *choice;
-+	int size;
-+};
-+
-+static const struct nmk_cfg_param nmk_cfg_params[] = {
-+	NMK_CONFIG_PIN_ARRAY("ste,input",		nmk_pin_input_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,output",		nmk_pin_output_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,sleep",		nmk_pin_sleep_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,sleep-input",		nmk_pin_sleep_input_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,sleep-output",	nmk_pin_sleep_output_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,sleep-wakeup",	nmk_pin_sleep_wakeup_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,gpio",		nmk_pin_gpio_modes),
-+	NMK_CONFIG_PIN_ARRAY("ste,sleep-pull-disable",	nmk_pin_sleep_pdis_modes),
-+};
-+
-+static int nmk_dt_pin_config(int index, int val, unsigned long *config)
-+{
-+	int ret = 0;
-+
-+	if (nmk_cfg_params[index].choice == NULL)
-+		*config = nmk_cfg_params[index].config;
-+	else {
-+		/* test if out of range */
-+		if  (val < nmk_cfg_params[index].size) {
-+			*config = nmk_cfg_params[index].config |
-+				nmk_cfg_params[index].choice[val];
-+		}
-+	}
-+	return ret;
-+}
-+
-+static const char *nmk_find_pin_name(struct pinctrl_dev *pctldev, const char *pin_name)
-+{
-+	int i, pin_number;
-+	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
-+
-+	if (sscanf((char *)pin_name, "GPIO%d", &pin_number) == 1)
-+		for (i = 0; i < npct->soc->npins; i++)
-+			if (npct->soc->pins[i].number == pin_number)
-+				return npct->soc->pins[i].name;
-+	return NULL;
-+}
-+
-+int nmk_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
-+		struct device_node *np,
-+		struct pinctrl_map **map,
-+		unsigned *reserved_maps,
-+		unsigned *num_maps)
-+{
-+	int ret, i;
-+	const char *function = NULL;
-+	unsigned long configs = 0;
-+	bool has_config = 0;
-+	unsigned reserve = 0;
-+	struct property *prop;
-+	const char *group, *gpio_name;
-+
-+	ret = of_property_read_string(np, "ste,function", &function);
-+	if (ret >= 0)
-+		reserve = 1;
-+
-+	for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
-+		unsigned long cfg = 0;
-+		int val;
-+
-+		ret = of_property_read_u32(np, nmk_cfg_params[i].property, &val);
-+		if (ret != -EINVAL) {
-+			if (nmk_dt_pin_config(i, val, &cfg) == 0) {
-+				configs |= cfg;
-+				has_config = 1;
-+			}
-+		}
-+	}
-+	ret = of_property_count_strings(np, "ste,pins");
-+	if (ret < 0)
-+		goto exit;
-+
-+	if (has_config)
-+		reserve++;
-+
-+	reserve *= ret;
-+
-+	ret = nmk_dt_reserve_map(map, reserved_maps, num_maps, reserve);
-+	if (ret < 0)
-+		goto exit;
-+
-+	of_property_for_each_string(np, "ste,pins", prop, group) {
-+		if (function) {
-+			ret = nmk_dt_add_map_mux(map, reserved_maps, num_maps,
-+					  group, function);
-+			if (ret < 0)
-+				goto exit;
-+		}
-+		if (has_config) {
-+			gpio_name = nmk_find_pin_name(pctldev, group);
-+
-+			ret = nmk_dt_add_map_configs(map, reserved_maps, num_maps,
-+					      gpio_name, &configs, 1);
-+			if (ret < 0)
-+				goto exit;
-+		}
-+
-+	}
-+exit:
-+	return ret;
-+}
-+
-+int nmk_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
-+				 struct device_node *np_config,
-+				 struct pinctrl_map **map, unsigned *num_maps)
-+{
-+	unsigned reserved_maps;
-+	struct device_node *np;
-+	int ret;
-+
-+	reserved_maps = 0;
-+	*map = NULL;
-+	*num_maps = 0;
-+
-+	for_each_child_of_node(np_config, np) {
-+		ret = nmk_pinctrl_dt_subnode_to_map(pctldev, np, map,
-+				&reserved_maps, num_maps);
-+		if (ret < 0) {
-+			nmk_pinctrl_dt_free_map(pctldev, *map, *num_maps);
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static struct pinctrl_ops nmk_pinctrl_ops = {
- 	.get_groups_count = nmk_get_groups_cnt,
- 	.get_group_name = nmk_get_group_name,
- 	.get_group_pins = nmk_get_group_pins,
- 	.pin_dbg_show = nmk_pin_dbg_show,
-+	.dt_node_to_map = nmk_pinctrl_dt_node_to_map,
-+	.dt_free_map = nmk_pinctrl_dt_free_map,
- };
+ 	count = CIRC_CNT(port->rx_inp, port->rx_outp, MNSC_BUFFER_SIZE);
+-	count = tty_buffer_request_room(tty, count);
++	count = tty_buffer_request_room(port, count);
+ 	if (count == 0) {
+ 		if (!tty->low_latency)
+ 			tty_flip_buffer_push(tty);
+diff --git a/arch/um/drivers/chan_kern.c b/arch/um/drivers/chan_kern.c
+index e9a0abc..4ff2503 100644
+--- a/arch/um/drivers/chan_kern.c
++++ b/arch/um/drivers/chan_kern.c
+@@ -554,6 +554,7 @@ int parse_chan_pair(char *str, struct line *line, int device,
  
- static int nmk_pmx_get_funcs_cnt(struct pinctrl_dev *pctldev)
-@@ -1847,7 +2106,7 @@ static struct pinctrl_desc nmk_pinctrl_desc = {
+ void chan_interrupt(struct line *line, struct tty_struct *tty, int irq)
+ {
++	struct tty_port *port = &line->port;
+ 	struct chan *chan = line->chan_in;
+ 	int err;
+ 	char c;
+@@ -562,7 +563,7 @@ void chan_interrupt(struct line *line, struct tty_struct *tty, int irq)
+ 		goto out;
  
- static const struct of_device_id nmk_pinctrl_match[] = {
- 	{
--		.compatible = "stericsson,nmk_pinctrl",
-+		.compatible = "stericsson,nmk-pinctrl",
- 		.data = (void *)PINCTRL_NMK_DB8500,
- 	},
- 	{},
+ 	do {
+-		if (tty && !tty_buffer_request_room(tty, 1)) {
++		if (!tty_buffer_request_room(port, 1)) {
+ 			schedule_delayed_work(&line->task, 1);
+ 			goto out;
+ 		}
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index b66eaa0..7a4370c 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -888,6 +888,7 @@ static void rx_ready_hdlc(MGSLPC_INFO *info, int eom)
+ 
+ static void rx_ready_async(MGSLPC_INFO *info, int tcd, struct tty_struct *tty)
+ {
++	struct tty_port *port = &info->port;
+ 	unsigned char data, status, flag;
+ 	int fifo_count;
+ 	int work = 0;
+@@ -913,7 +914,7 @@ static void rx_ready_async(MGSLPC_INFO *info, int tcd, struct tty_struct *tty)
+ 	} else
+ 		fifo_count = 32;
+ 
+-	tty_buffer_request_room(tty, fifo_count);
++	tty_buffer_request_room(port, fifo_count);
+ 	/* Flush received async data to receive data buffer. */
+ 	while (fifo_count) {
+ 		data   = read_reg(info, CHA + RXFIFO);
+diff --git a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
+index e2a945e..7093169 100644
+--- a/drivers/isdn/i4l/isdn_common.c
++++ b/drivers/isdn/i4l/isdn_common.c
+@@ -878,6 +878,7 @@ isdn_readbchan(int di, int channel, u_char *buf, u_char *fp, int len, wait_queue
+ int
+ isdn_readbchan_tty(int di, int channel, struct tty_struct *tty, int cisco_hack)
+ {
++	struct tty_port *port = tty->port;
+ 	int count;
+ 	int count_pull;
+ 	int count_put;
+@@ -891,7 +892,7 @@ isdn_readbchan_tty(int di, int channel, struct tty_struct *tty, int cisco_hack)
+ 	if (skb_queue_empty(&dev->drv[di]->rpqueue[channel]))
+ 		return 0;
+ 
+-	len = tty_buffer_request_room(tty, dev->drv[di]->rcvcount[channel]);
++	len = tty_buffer_request_room(port, dev->drv[di]->rcvcount[channel]);
+ 	if (len == 0)
+ 		return len;
+ 
+diff --git a/drivers/isdn/i4l/isdn_tty.c b/drivers/isdn/i4l/isdn_tty.c
+index e09dc8a..4f5bcee 100644
+--- a/drivers/isdn/i4l/isdn_tty.c
++++ b/drivers/isdn/i4l/isdn_tty.c
+@@ -60,6 +60,7 @@ static int si2bit[8] =
+ static int
+ isdn_tty_try_read(modem_info *info, struct sk_buff *skb)
+ {
++	struct tty_port *port = &info->port;
+ 	int c;
+ 	int len;
+ 	struct tty_struct *tty;
+@@ -68,7 +69,7 @@ isdn_tty_try_read(modem_info *info, struct sk_buff *skb)
+ 	if (!info->online)
+ 		return 0;
+ 
+-	tty = info->port.tty;
++	tty = port->tty;
+ 	if (!tty)
+ 		return 0;
+ 
+@@ -81,7 +82,7 @@ isdn_tty_try_read(modem_info *info, struct sk_buff *skb)
+ #endif
+ 		;
+ 
+-	c = tty_buffer_request_room(tty, len);
++	c = tty_buffer_request_room(port, len);
+ 	if (c < len)
+ 		return 0;
+ 
+@@ -2230,6 +2231,7 @@ void
+ isdn_tty_at_cout(char *msg, modem_info *info)
+ {
+ 	struct tty_struct *tty;
++	struct tty_port *port = &info->port;
+ 	atemu *m = &info->emu;
+ 	char *p;
+ 	char c;
+@@ -2246,15 +2248,15 @@ isdn_tty_at_cout(char *msg, modem_info *info)
+ 	l = strlen(msg);
+ 
+ 	spin_lock_irqsave(&info->readlock, flags);
+-	tty = info->port.tty;
+-	if ((info->port.flags & ASYNC_CLOSING) || (!tty)) {
++	tty = port->tty;
++	if ((port->flags & ASYNC_CLOSING) || (!tty)) {
+ 		spin_unlock_irqrestore(&info->readlock, flags);
+ 		return;
+ 	}
+ 
+ 	/* use queue instead of direct, if online and */
+ 	/* data is in queue or buffer is full */
+-	if (info->online && ((tty_buffer_request_room(tty, l) < l) ||
++	if (info->online && ((tty_buffer_request_room(port, l) < l) ||
+ 			     !skb_queue_empty(&dev->drv[info->isdn_driver]->rpqueue[info->isdn_channel]))) {
+ 		skb = alloc_skb(l, GFP_ATOMIC);
+ 		if (!skb) {
+diff --git a/drivers/staging/dgrp/dgrp_net_ops.c b/drivers/staging/dgrp/dgrp_net_ops.c
+index 2d1bbfd..c0aeaaa 100644
+--- a/drivers/staging/dgrp/dgrp_net_ops.c
++++ b/drivers/staging/dgrp/dgrp_net_ops.c
+@@ -211,7 +211,7 @@ static void dgrp_input(struct ch_struct *ch)
+ 	data_len = (ch->ch_rin - ch->ch_rout) & RBUF_MASK;
+ 
+ 	/* len is the amount of data we are going to transfer here */
+-	len = tty_buffer_request_room(tty, data_len);
++	len = tty_buffer_request_room(&ch->port, data_len);
+ 
+ 	/* Check DPA flow control */
+ 	if ((nd->nd_dpa_debug) &&
+@@ -2956,7 +2956,7 @@ check_query:
+ 			    I_BRKINT(ch->ch_tun.un_tty) &&
+ 			    !(I_IGNBRK(ch->ch_tun.un_tty))) {
+ 
+-				tty_buffer_request_room(ch->ch_tun.un_tty, 1);
++				tty_buffer_request_room(&ch->port, 1);
+ 				tty_insert_flip_char(ch->ch_tun.un_tty, 0, TTY_BREAK);
+ 				tty_flip_buffer_push(ch->ch_tun.un_tty);
+ 
+diff --git a/drivers/tty/cyclades.c b/drivers/tty/cyclades.c
+index b09c8d1f..b85acc7 100644
+--- a/drivers/tty/cyclades.c
++++ b/drivers/tty/cyclades.c
+@@ -442,6 +442,7 @@ static void cyy_chip_rx(struct cyclades_card *cinfo, int chip,
+ {
+ 	struct cyclades_port *info;
+ 	struct tty_struct *tty;
++	struct tty_port *port;
+ 	int len, index = cinfo->bus_index;
+ 	u8 ivr, save_xir, channel, save_car, data, char_count;
+ 
+@@ -452,11 +453,12 @@ static void cyy_chip_rx(struct cyclades_card *cinfo, int chip,
+ 	save_xir = readb(base_addr + (CyRIR << index));
+ 	channel = save_xir & CyIRChannel;
+ 	info = &cinfo->ports[channel + chip * 4];
++	port = &info->port;
+ 	save_car = cyy_readb(info, CyCAR);
+ 	cyy_writeb(info, CyCAR, save_xir);
+ 	ivr = cyy_readb(info, CyRIVR) & CyIVRMask;
+ 
+-	tty = tty_port_tty_get(&info->port);
++	tty = tty_port_tty_get(port);
+ 	/* if there is nowhere to put the data, discard it */
+ 	if (tty == NULL) {
+ 		if (ivr == CyIVRRxEx) {	/* exception */
+@@ -487,14 +489,14 @@ static void cyy_chip_rx(struct cyclades_card *cinfo, int chip,
+ 			tty_kref_put(tty);
+ 			return;
+ 		}
+-		if (tty_buffer_request_room(tty, 1)) {
++		if (tty_buffer_request_room(port, 1)) {
+ 			if (data & info->read_status_mask) {
+ 				if (data & CyBREAK) {
+ 					tty_insert_flip_char(tty,
+ 						cyy_readb(info, CyRDSR),
+ 						TTY_BREAK);
+ 					info->icount.rx++;
+-					if (info->port.flags & ASYNC_SAK)
++					if (port->flags & ASYNC_SAK)
+ 						do_SAK(tty);
+ 				} else if (data & CyFRAME) {
+ 					tty_insert_flip_char(tty,
+@@ -552,7 +554,7 @@ static void cyy_chip_rx(struct cyclades_card *cinfo, int chip,
+ 			info->mon.char_max = char_count;
+ 		info->mon.char_last = char_count;
+ #endif
+-		len = tty_buffer_request_room(tty, char_count);
++		len = tty_buffer_request_room(port, char_count);
+ 		while (len--) {
+ 			data = cyy_readb(info, CyRDSR);
+ 			tty_insert_flip_char(tty, data, TTY_NORMAL);
+@@ -928,6 +930,7 @@ static void cyz_handle_rx(struct cyclades_port *info, struct tty_struct *tty)
+ {
+ 	struct BUF_CTRL __iomem *buf_ctrl = info->u.cyz.buf_ctrl;
+ 	struct cyclades_card *cinfo = info->card;
++	struct tty_port *port = &info->port;
+ 	unsigned int char_count;
+ 	int len;
+ #ifdef BLOCKMOVE
+@@ -983,7 +986,7 @@ static void cyz_handle_rx(struct cyclades_port *info, struct tty_struct *tty)
+ 				info->idle_stats.recv_bytes += len;
+ 			}
+ #else
+-			len = tty_buffer_request_room(tty, char_count);
++			len = tty_buffer_request_room(port, char_count);
+ 			while (len--) {
+ 				data = readb(cinfo->base_addr + rx_bufaddr +
+ 						new_rx_get);
+diff --git a/drivers/tty/ehv_bytechan.c b/drivers/tty/ehv_bytechan.c
+index c117d77..af97e39 100644
+--- a/drivers/tty/ehv_bytechan.c
++++ b/drivers/tty/ehv_bytechan.c
+@@ -386,7 +386,7 @@ static irqreturn_t ehv_bc_tty_rx_isr(int irq, void *data)
+ 	 * read from the byte channel will be accepted by the TTY layer.
+ 	 */
+ 	ev_byte_channel_poll(bc->handle, &rx_count, &tx_count);
+-	count = tty_buffer_request_room(ttys, rx_count);
++	count = tty_buffer_request_room(&bc->port, rx_count);
+ 
+ 	/* 'count' is the maximum amount of data the TTY layer can accept at
+ 	 * this time.  However, during testing, I was never able to get 'count'
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 13ee53b..3d2ea92 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -629,7 +629,7 @@ int hvc_poll(struct hvc_struct *hp)
+ 
+ 	/* Read data if any */
+ 	for (;;) {
+-		int count = tty_buffer_request_room(tty, N_INBUF);
++		int count = tty_buffer_request_room(&hp->port, N_INBUF);
+ 
+ 		/* If flip is full, just reschedule a later read */
+ 		if (count == 0) {
+diff --git a/drivers/tty/hvc/hvcs.c b/drivers/tty/hvc/hvcs.c
+index 8776357..4a0ab98 100644
+--- a/drivers/tty/hvc/hvcs.c
++++ b/drivers/tty/hvc/hvcs.c
+@@ -609,7 +609,7 @@ static int hvcs_io(struct hvcs_struct *hvcsd)
+ 	/* remove the read masks */
+ 	hvcsd->todo_mask &= ~(HVCS_READ_MASK);
+ 
+-	if (tty_buffer_request_room(tty, HVCS_BUFF_LEN) >= HVCS_BUFF_LEN) {
++	if (tty_buffer_request_room(&hvcsd->port, HVCS_BUFF_LEN) >= HVCS_BUFF_LEN) {
+ 		got = hvc_get_chars(unit_address,
+ 				&buf[0],
+ 				HVCS_BUFF_LEN);
+diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+index ad0caf1..42d5eb0 100644
+--- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
++++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
+@@ -245,7 +245,8 @@ static void cpm_uart_int_rx(struct uart_port *port)
+ 	int i;
+ 	unsigned char ch;
+ 	u8 *cp;
+-	struct tty_struct *tty = port->state->port.tty;
++	struct tty_port *tport = &port->state->port;
++	struct tty_struct *tty = tport->tty;
+ 	struct uart_cpm_port *pinfo = (struct uart_cpm_port *)port;
+ 	cbd_t __iomem *bdp;
+ 	u16 status;
+@@ -276,7 +277,7 @@ static void cpm_uart_int_rx(struct uart_port *port)
+ 		/* If we have not enough room in tty flip buffer, then we try
+ 		 * later, which will be the next rx-interrupt or a timeout
+ 		 */
+-		if(tty_buffer_request_room(tty, i) < i) {
++		if (tty_buffer_request_room(tport, i) < i) {
+ 			printk(KERN_WARNING "No room in flip buffer\n");
+ 			return;
+ 		}
+diff --git a/drivers/tty/serial/ioc4_serial.c b/drivers/tty/serial/ioc4_serial.c
+index 3e7da10..555aeb2 100644
+--- a/drivers/tty/serial/ioc4_serial.c
++++ b/drivers/tty/serial/ioc4_serial.c
+@@ -2356,7 +2356,7 @@ static void receive_chars(struct uart_port *the_port)
+ 	spin_lock_irqsave(&the_port->lock, pflags);
+ 	tty = state->port.tty;
+ 
+-	request_count = tty_buffer_request_room(tty, IOC4_MAX_CHARS);
++	request_count = tty_buffer_request_room(&state->port, IOC4_MAX_CHARS);
+ 
+ 	if (request_count > 0) {
+ 		icount = &the_port->icount;
+diff --git a/drivers/tty/serial/jsm/jsm_tty.c b/drivers/tty/serial/jsm/jsm_tty.c
+index 4c00c55..3969e54 100644
+--- a/drivers/tty/serial/jsm/jsm_tty.c
++++ b/drivers/tty/serial/jsm/jsm_tty.c
+@@ -521,6 +521,7 @@ void jsm_input(struct jsm_channel *ch)
+ {
+ 	struct jsm_board *bd;
+ 	struct tty_struct *tp;
++	struct tty_port *port;
+ 	u32 rmask;
+ 	u16 head;
+ 	u16 tail;
+@@ -536,7 +537,8 @@ void jsm_input(struct jsm_channel *ch)
+ 	if (!ch)
+ 		return;
+ 
+-	tp = ch->uart_port.state->port.tty;
++	port = &ch->uart_port.state->port;
++	tp = port->tty;
+ 
+ 	bd = ch->ch_bd;
+ 	if(!bd)
+@@ -600,7 +602,7 @@ void jsm_input(struct jsm_channel *ch)
+ 		return;
+ 	}
+ 
+-	len = tty_buffer_request_room(tp, data_len);
++	len = tty_buffer_request_room(port, data_len);
+ 	n = len;
+ 
+ 	/*
+diff --git a/drivers/tty/serial/mpsc.c b/drivers/tty/serial/mpsc.c
+index 6a9c660..5036686 100644
+--- a/drivers/tty/serial/mpsc.c
++++ b/drivers/tty/serial/mpsc.c
+@@ -937,7 +937,8 @@ static int serial_polled;
+ static int mpsc_rx_intr(struct mpsc_port_info *pi)
+ {
+ 	struct mpsc_rx_desc *rxre;
+-	struct tty_struct *tty = pi->port.state->port.tty;
++	struct tty_port *port = &pi->port.state->port;
++	struct tty_struct *tty = port->tty;
+ 	u32	cmdstat, bytes_in, i;
+ 	int	rc = 0;
+ 	u8	*bp;
+@@ -968,8 +969,7 @@ static int mpsc_rx_intr(struct mpsc_port_info *pi)
+ 		}
+ #endif
+ 		/* Following use of tty struct directly is deprecated */
+-		if (unlikely(tty_buffer_request_room(tty, bytes_in)
+-					< bytes_in)) {
++		if (tty_buffer_request_room(port, bytes_in) < bytes_in) {
+ 			if (tty->low_latency)
+ 				tty_flip_buffer_push(tty);
+ 			/*
+diff --git a/drivers/tty/serial/mrst_max3110.c b/drivers/tty/serial/mrst_max3110.c
+index 58734d7..776431f 100644
+--- a/drivers/tty/serial/mrst_max3110.c
++++ b/drivers/tty/serial/mrst_max3110.c
+@@ -339,6 +339,7 @@ static int
+ receive_chars(struct uart_max3110 *max, unsigned short *str, int len)
+ {
+ 	struct uart_port *port = &max->port;
++	struct tty_port *tport;
+ 	struct tty_struct *tty;
+ 	char buf[M3110_RX_FIFO_DEPTH];
+ 	int r, w, usable;
+@@ -347,7 +348,8 @@ receive_chars(struct uart_max3110 *max, unsigned short *str, int len)
+ 	if (!port->state)
+ 		return 0;
+ 
+-	tty = tty_port_tty_get(&port->state->port);
++	tport = &port->state->port;
++	tty = tty_port_tty_get(tport);
+ 	if (!tty)
+ 		return 0;
+ 
+@@ -370,7 +372,7 @@ receive_chars(struct uart_max3110 *max, unsigned short *str, int len)
+ 	}
+ 
+ 	for (r = 0; w; r += usable, w -= usable) {
+-		usable = tty_buffer_request_room(tty, w);
++		usable = tty_buffer_request_room(tport, w);
+ 		if (usable) {
+ 			tty_insert_flip_string(tty, buf + r, usable);
+ 			port->icount.rx += usable;
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index 8318925..4f1774b 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -629,15 +629,16 @@ static int dma_push_rx(struct eg20t_port *priv, int size)
+ 	struct tty_struct *tty;
+ 	int room;
+ 	struct uart_port *port = &priv->port;
++	struct tty_port *tport = &port->state->port;
+ 
+ 	port = &priv->port;
+-	tty = tty_port_tty_get(&port->state->port);
++	tty = tty_port_tty_get(tport);
+ 	if (!tty) {
+ 		dev_dbg(priv->port.dev, "%s:tty is busy now", __func__);
+ 		return 0;
+ 	}
+ 
+-	room = tty_buffer_request_room(tty, size);
++	room = tty_buffer_request_room(tport, size);
+ 
+ 	if (room < size)
+ 		dev_warn(port->dev, "Rx overrun: dropping %u bytes\n",
+diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+index 6147756..cf96314 100644
+--- a/drivers/tty/serial/sh-sci.c
++++ b/drivers/tty/serial/sh-sci.c
+@@ -596,7 +596,8 @@ static void sci_transmit_chars(struct uart_port *port)
+ static void sci_receive_chars(struct uart_port *port)
+ {
+ 	struct sci_port *sci_port = to_sci_port(port);
+-	struct tty_struct *tty = port->state->port.tty;
++	struct tty_port *tport = &port->state->port;
++	struct tty_struct *tty = tport->tty;
+ 	int i, count, copied = 0;
+ 	unsigned short status;
+ 	unsigned char flag;
+@@ -607,7 +608,7 @@ static void sci_receive_chars(struct uart_port *port)
+ 
+ 	while (1) {
+ 		/* Don't copy more bytes than there is room for in the buffer */
+-		count = tty_buffer_request_room(tty, sci_rxfill(port));
++		count = tty_buffer_request_room(tport, sci_rxfill(port));
+ 
+ 		/* If for any reason we can't copy more data, we're done! */
+ 		if (count == 0)
+@@ -1263,9 +1264,10 @@ static int sci_dma_rx_push(struct sci_port *s, struct tty_struct *tty,
+ 			   size_t count)
+ {
+ 	struct uart_port *port = &s->port;
++	struct tty_port *tport = &port->state->port;
+ 	int i, active, room;
+ 
+-	room = tty_buffer_request_room(tty, count);
++	room = tty_buffer_request_room(tport, count);
+ 
+ 	if (s->active_rx == s->cookie_rx[0]) {
+ 		active = 0;
+diff --git a/drivers/tty/serial/ucc_uart.c b/drivers/tty/serial/ucc_uart.c
+index f99b0c9..ed047d9 100644
+--- a/drivers/tty/serial/ucc_uart.c
++++ b/drivers/tty/serial/ucc_uart.c
+@@ -469,7 +469,8 @@ static void qe_uart_int_rx(struct uart_qe_port *qe_port)
+ 	int i;
+ 	unsigned char ch, *cp;
+ 	struct uart_port *port = &qe_port->port;
+-	struct tty_struct *tty = port->state->port.tty;
++	struct tty_port *tport = &port->state->port;
++	struct tty_struct *tty = tport->tty;
+ 	struct qe_bd *bdp;
+ 	u16 status;
+ 	unsigned int flg;
+@@ -491,7 +492,7 @@ static void qe_uart_int_rx(struct uart_qe_port *qe_port)
+ 		/* If we don't have enough room in RX buffer for the entire BD,
+ 		 * then we try later, which will be the next RX interrupt.
+ 		 */
+-		if (tty_buffer_request_room(tty, i) < i) {
++		if (tty_buffer_request_room(tport, i) < i) {
+ 			dev_dbg(port->dev, "ucc-uart: no room in RX buffer\n");
+ 			return;
+ 		}
+diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
+index 45d9161..f897332 100644
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -235,7 +235,7 @@ static int __tty_buffer_request_room(struct tty_port *port, size_t size)
+ 
+ /**
+  *	tty_buffer_request_room		-	grow tty buffer if needed
+- *	@tty: tty structure
++ *	@port: tty port structure
+  *	@size: size desired
+  *
+  *	Make at least size bytes of linear space available for the tty
+@@ -243,9 +243,8 @@ static int __tty_buffer_request_room(struct tty_port *port, size_t size)
+  *
+  *	Locking: Takes port->buf.lock
+  */
+-int tty_buffer_request_room(struct tty_struct *tty, size_t size)
++int tty_buffer_request_room(struct tty_port *port, size_t size)
+ {
+-	struct tty_port *port = tty->port;
+ 	unsigned long flags;
+ 	int length;
+ 
+diff --git a/drivers/usb/serial/quatech2.c b/drivers/usb/serial/quatech2.c
+index d152be9..1e67fd8 100644
+--- a/drivers/usb/serial/quatech2.c
++++ b/drivers/usb/serial/quatech2.c
+@@ -697,7 +697,7 @@ void qt2_process_read_urb(struct urb *urb)
+ 				escapeflag = true;
+ 				break;
+ 			case QT2_CONTROL_ESCAPE:
+-				tty_buffer_request_room(tty, 2);
++				tty_buffer_request_room(&port->port, 2);
+ 				tty_insert_flip_string(tty, ch, 2);
+ 				i += 2;
+ 				escapeflag = true;
+@@ -713,7 +713,7 @@ void qt2_process_read_urb(struct urb *urb)
+ 		}
+ 
+ 		if (tty) {
+-			tty_buffer_request_room(tty, 1);
++			tty_buffer_request_room(&port->port, 1);
+ 			tty_insert_flip_string(tty, ch, 1);
+ 		}
+ 	}
+diff --git a/include/linux/tty_flip.h b/include/linux/tty_flip.h
+index 2002344..78207ca 100644
+--- a/include/linux/tty_flip.h
++++ b/include/linux/tty_flip.h
+@@ -1,7 +1,7 @@
+ #ifndef _LINUX_TTY_FLIP_H
+ #define _LINUX_TTY_FLIP_H
+ 
+-extern int tty_buffer_request_room(struct tty_struct *tty, size_t size);
++extern int tty_buffer_request_room(struct tty_port *port, size_t size);
+ extern int tty_insert_flip_string_flags(struct tty_struct *tty, const unsigned char *chars, const char *flags, size_t size);
+ extern int tty_insert_flip_string_fixed_flag(struct tty_struct *tty, const unsigned char *chars, char flag, size_t size);
+ extern int tty_prepare_flip_string(struct tty_struct *tty, unsigned char **chars, size_t size);
 -- 
-1.7.11.3
+1.8.1
+
 
