@@ -1,59 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3ACQ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:28:16 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34811 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753402Ab3ACQ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:28:14 -0500
-Message-ID: <1357230494.25181.55.camel@joe-AO722>
-Subject: Re: [PATCH] checkpatch: prefer dev_<level>( to
- dev_printk(KERN_<LEVEL>
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
-        bp@alien8.de, rostedt@goodmis.org, mchehab@redhat.com,
-        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 03 Jan 2013 08:28:14 -0800
-In-Reply-To: <20130103100808.GG2649@dm>
-References: <20130102232730.5706.82243.stgit@grignak.americas.hpqcorp.net>
-	 <20130102232743.5706.63153.stgit@grignak.americas.hpqcorp.net>
-	 <1357171594.25181.19.camel@joe-AO722> <20130103100808.GG2649@dm>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753712Ab3ACQ2m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 11:28:42 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:42338 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753677Ab3ACQ2k convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 11:28:40 -0500
+X-IronPort-AV: E=Sophos;i="4.84,403,1355126400"; 
+   d="scan'208";a="4465785"
+From: "Adamson, Dros" <Weston.Adamson@netapp.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "Adamson, Dros" <Weston.Adamson@netapp.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: nfsd oops on Linus' current tree.
+Thread-Topic: nfsd oops on Linus' current tree.
+Thread-Index: AQHN35CZGjcSyXpSdkKK6nqmM/aY8JgkE1AAgAAJFQCAAErbgIAAAeoAgAAC7oCAAAL9gIAAAmsAgBP0PoA=
+Date: Thu, 3 Jan 2013 16:28:37 +0000
+Message-ID: <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
+References: <20121221153348.GA32151@redhat.com>
+ <20121221180824.GA27729@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221230849.GB29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221232609.GC29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221234530.GA30048@fieldses.org>
+In-Reply-To: <20121221234530.GA30048@fieldses.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.106.53.51]
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <9EA7D60B6574C5488272FD0F6D1C7D27@tahoe.netapp.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 10:08 +0000, Andy Whitcroft wrote:
-> On Wed, Jan 02, 2013 at 04:06:34PM -0800, Joe Perches wrote:
-> > Add YA check to printk style.
-> > 
-> > dev_<level> uses are functions and generate smaller
-> > object code than dev_printk(KERN_<LEVEL>.
-[]
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-[]
-> > +		if ($line =~ /\bdev_printk\s*\(\s*KERN_([A-Z]+)/) {
-> > +			my $orig = $1;
-> > +			my $level = lc($orig);
-> > +			$level = "warn" if ($level eq "warning");
-> > +			my $level2 = $level;
-> > +			$level2 = "dbg" if ($level eq "debug");
+Hey, sorry for the late response, I've been on vacation.
+
+On Dec 21, 2012, at 6:45 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+
+> On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
+>> Please reread what I said. There was no obvious circular dependency,
+>> because nfsiod and rpciod are separate workqueues, both created with
+>> WQ_MEM_RECLAIM.
 > 
-> Is there some sublty I am not seeing here such that level2 is necessary?
+> Oh, sorry, I read "rpciod" as "nfsiod"!
+> 
+>> Dros' experience shows, however that a call to
+>> rpc_shutdown_client in an nfsiod work item will deadlock with rpciod
+>> if the RPC task's work item has been assigned to the same CPU as the
+>> one running the rpc_shutdown_client work item.
+>> 
+>> I can't tell right now if that is intentional (in which case the
+>> WARN_ON in the rpc code is correct), or if it is a bug in the
+>> workqueue code. For now, we're assuming the former.
+> 
+> Well, Documentation/workqueue.txt says:
+> 
+> 	"Each wq with WQ_MEM_RECLAIM set has an execution context
+> 	reserved for it.  If there is dependency among multiple work
+> 	items used during memory reclaim, they should be queued to
+> 	separate wq each with WQ_MEM_RECLAIM."
 
-No, your vision is 20/20, it's not necessary.
+The deadlock we were seeing was:
 
-It was a copy/paste from the pr_<level> conversion above it
-where 2 styles to convert to (dev_dbg and pr_debug) are used.
+- task A gets queued on rpciod workqueue and assigned kworker-0:0
+- task B gets queued on rpciod workqueue and assigned the same kworker (kworker-0:0)
+- task A gets run, calls rpc_shutdown_client(), which will loop forever waiting for task B to run rpc_async_release()
+- task B will never run rpc_async_release() - it can't run until kworker-0:0 is free, which won't happen until task A (rpc_shutdown_client) is done
 
-Here there is just one form and your review is appreciated.
-I'll submit a V2 later.
+The same deadlock happened when we tried queuing the tasks on a different workqueues -- queue_work() assigns the task to a kworker thread and it's luck of the draw if it's the same kworker as task A.  We tried the different workqueue options, but nothing changed this behavior.
 
+Once a work struct is queued, there is no way to back out of the deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
+
+ * Currently, a queued barrier can't be canceled.  This is because
+ * try_to_grab_pending() can't determine whether the work to be
+ * grabbed is at the head of the queue and thus can't clear LINKED
+ * flag of the previous work while there must be a valid next work
+ * after a work with LINKED flag set.
+
+So once a work struct is queued and there is an ordering dependency (i.e. task A is before task B), there is no way to back task B out - so we can't just call cancel_work() or something on task B in rpc_shutdown_client.
+
+The root of our issue is that rpc_shutdown_client is never safe to call from a workqueue context - it loops until there are no more tasks, marking tasks as killed and waiting for them to be cleaned up in each task's own workqueue context. Any tasks that have already been assigned to the same kworker thread will never have a chance to run this cleanup stage.
+
+When fixing this deadlock, Trond and I discussed changing how rpc_shutdown_client works (making it workqueue safe), but Trond felt that it'd be better to just not call it from a workqueue context and print a warning if it is.
+
+IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with no success), but I'd argue that even if that did work it would still be very easy to call rpc_shutdown_client from the wrong context and MUCH harder to detect it.  It's also unclear to me if setting rpciod workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
+
+-dros
 
