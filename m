@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3ACQch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:32:37 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:59133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753412Ab3ACQcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:32:36 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 9/9] ARM: tegra: Add initial support for Tegra 114 SoC.
-Date: Thu, 3 Jan 2013 16:28:19 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Hiroshi Doyu <hdoyu@nvidia.com>, linux-tegra@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>, Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        John Stultz <johnstul@us.ibm.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Landley <rob@landley.net>, Olof Johansson <olof@lixom.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com> <1355996654-6579-10-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1355996654-6579-10-git-send-email-hdoyu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301031628.19743.arnd@arndb.de>
-X-Provags-ID: V02:K0:UOsNE6nAE9d7UnwUzxdAqsP45u6upqhn4yaaSZN/VQc
- /ah9+ypbdM8JIjjea83A0e9L8zGHuslzFNxFeopdpqx1p+KzQd
- RDHVOtTYMWhp12qpccyeXHHJC2pcPA7YK/9i6u36hqLLFyaM/c
- 3CTpAOrkUA3USqXWydskTtPD2YZAUFqiwmF2c77BHdv5r8CCT8
- IGKz2Pd9kDX4k+03B4xWQQzsuxJMGXfr2TpiWKJD59Tt55wz9Y
- WyIInxvcYn58mV1RkPx1A+5aVKWiKTJPTSBEpajrfUa+P68Bzt
- 3NXHs+E5wgQBG+jN4Hlgfi6wRXuqD2hLxzcVlWotHYTR1hgEYA
- wFCRcWKEMnR8ds7llwZs=
+	id S1753670Ab3ACQfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 11:35:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17711 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753476Ab3ACQfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 11:35:23 -0500
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <CAHTX3d+P_UQK8nPfN8BKLdTkVY2VMKhty1rkCKbfHCrQBa+Nyw@mail.gmail.com>
+References: <CAHTX3d+P_UQK8nPfN8BKLdTkVY2VMKhty1rkCKbfHCrQBa+Nyw@mail.gmail.com>
+To: Michal Simek <monstr@monstr.eu>
+Cc: dhowells@redhat.com, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: Add #includes needed to permit the removal of asm/system.h - sha1 96f951edb1f1bdbbc99b0cd458f9808bb83d58ae
+Date: Thu, 03 Jan 2013 16:35:17 +0000
+Message-ID: <14685.1357230917@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 December 2012, Hiroshi Doyu wrote:
-> +
-> +DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
-> +       .smp            = smp_ops(tegra_smp_ops),
-> +       .map_io         = tegra_map_common_io,
-> +       .init_early     = tegra30_init_early,
-> +       .init_irq       = tegra_dt_init_irq,
-> +       .handle_irq     = gic_handle_irq,
-> +       .init_time      = clocksource_of_init,
-> +       .init_machine   = tegra114_dt_init,
-> +       .init_late      = tegra_init_late,
-> +       .restart        = tegra_assert_system_reset,
-> +       .dt_compat      = tegra114_dt_board_compat,
-> +MACHINE_END
+Michal Simek <monstr@monstr.eu> wrote:
 
-This one is so similar to Tegra30 that I wonder if it's actually worth keeping
-them separate still. The only difference I see is the clock initialization.
-Maybe that can be factored out to keep this the same as Tegra30.
+> It is because microblaze uses cmpxchg_local which is defined
+> asm-generic/atomic.h file.
+> Arnds patch has added it to atomic.h
+> asm-generic: add generic atomic.h and io.h
+> (sha1: 3f7e212df82ca0459d44c91d9e019efd1b5f936c)
+> 
+> What about to move cmpxchg_local and cmpxchg64_local from atomic.h to
+> cmpxchg-local.h?
 
-Or are you planning to add more SoC specific here that would make this harder?
+Hmmm...  cmpxchg_local() should be obtained through asm/cmpxchg.h, not
+asm/atomic.h.  See:
 
-	Arnd
+	grep -r define\\s*cmpxchg_local arch
+
+David
