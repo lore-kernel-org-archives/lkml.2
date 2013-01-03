@@ -1,68 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab3ACJGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 04:06:07 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:53011 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab3ACJF7 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:7:1>);
-	Thu, 3 Jan 2013 04:05:59 -0500
-Message-Id: <50E5580102000078000B29D1@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Thu, 03 Jan 2013 09:05:53 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Rik van Riel" <riel@redhat.com>
-Cc: <eric.dumazet@gmail.com>, <rostedt@goodmis.org>, <therbert@google.com>,
-        <walken@google.com>, <jeremy@goop.org>, <tglx@linutronix.de>,
-        <aquini@redhat.com>, <lwoodman@redhat.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff
- delay factor
-References: <20121221184940.103c31ad@annuminas.surriel.com>
- <20121221185147.4ae48ab5@annuminas.surriel.com>
- <20121221185613.1f4c9523@annuminas.surriel.com>
- <20121222033339.GF27621@home.goodmis.org> <50D52E0C.6000103@redhat.com>
- <1356549008.20133.20856.camel@edumazet-glaptop>
- <50DB5531.90500@redhat.com>
- <CANN689HeTk0jNJb4sF_0t714MvFnU0vLw0=JeXYRUwMx8GDnXQ@mail.gmail.com>
- <1356618448.30414.948.camel@edumazet-glaptop>
- <50DC5CC0.6010003@redhat.com>
- <50DC9662020000780009210D@nat28.tlf.novell.com>
- <50DC9CE1.9030709@redhat.com>
-In-Reply-To: <50DC9CE1.9030709@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1753027Ab3ACJGP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 04:06:15 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:53699 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753010Ab3ACJGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 04:06:10 -0500
+Date: Thu, 3 Jan 2013 14:35:56 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] uprobes: Kill uprobes_mutex[], separate
+ alloc_uprobe() and __uprobe_register()
+Message-ID: <20130103090556.GB8140@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121125223331.GA24788@redhat.com>
+ <20121125223350.GA24811@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+In-Reply-To: <20121125223350.GA24811@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010309-5806-0000-0000-00001DB90245
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 27.12.12 at 20:09, Rik van Riel <riel@redhat.com> wrote:
-> On 12/27/2012 01:41 PM, Jan Beulich wrote:
->>>>> Rik van Riel <riel@redhat.com> 12/27/12 4:01 PM >>>
->>> On 12/27/2012 09:27 AM, Eric Dumazet wrote:
->>>> So the hash sounds good to me, because the hash key could mix both lock
->>>> address and caller IP ( __builtin_return_address(1) in
->>>> ticket_spin_lock_wait())
->>>
->>> The lock acquisition time depends on the holder of the lock,
->>> and what the CPUs ahead of us in line will do with the lock,
->>> not on the caller IP of the spinner.
->>
->> The lock holder could supply its __builtin_return_address(0) for use
->> in eventual hashing.
->>
->> Also, with all of this - did you evaluate the alternative of using
->> monitor/mwait instead?
+* Oleg Nesterov <oleg@redhat.com> [2012-11-25 23:33:50]:
+
+> uprobe_register() and uprobe_unregister() are the only users of
+> mutex_lock(uprobes_hash(inode)), and the only reason why we can't
+> simply remove it is that we need to ensure that delete_uprobe() is
+> not possible after alloc_uprobe() and before consumer_add().
 > 
-> How much bus traffic do monitor/mwait cause behind the scenes?
+> IOW, we need to ensure that when we take uprobe->register_rwsem
+> this uprobe is still valid and we didn't race with _unregister()
+> which called delete_uprobe() in between.
+> 
+> With this patch uprobe_register() simply checks uprobe_is_active()
+> and retries if it hits this very unlikely race. uprobes_mutex[] is
+> no longer needed and can be removed.
+> 
+> There is another reason for this change, prepare_uprobe() should be
+> folded into alloc_uprobe() and we do not want to hold the extra locks
+> around read_mapping_page/etc.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-I would suppose that this just snoops the bus for writes, but the
-amount of bus traffic involved in this isn't explicitly documented.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-One downside of course is that unless a spin lock is made occupy
-exactly a cache line, false wakeups are possible.
-
-Jan
+> ---
+>  kernel/events/uprobes.c |   51 +++++++++++++---------------------------------
+>  1 files changed, 15 insertions(+), 36 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 2886c82..105ac0d 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -50,29 +50,6 @@ static struct rb_root uprobes_tree = RB_ROOT;
+>  static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
+> 
+>  #define UPROBES_HASH_SZ	13
+> -
+> -/*
+> - * We need separate register/unregister and mmap/munmap lock hashes because
+> - * of mmap_sem nesting.
+> - *
+> - * uprobe_register() needs to install probes on (potentially) all processes
+> - * and thus needs to acquire multiple mmap_sems (consequtively, not
+> - * concurrently), whereas uprobe_mmap() is called while holding mmap_sem
+> - * for the particular process doing the mmap.
+> - *
+> - * uprobe_register()->register_for_each_vma() needs to drop/acquire mmap_sem
+> - * because of lock order against i_mmap_mutex. This means there's a hole in
+> - * the register vma iteration where a mmap() can happen.
+> - *
+> - * Thus uprobe_register() can race with uprobe_mmap() and we can try and
+> - * install a probe where one is already installed.
+> - */
+> -
+> -/* serialize (un)register */
+> -static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
+> -
+> -#define uprobes_hash(v)		(&uprobes_mutex[((unsigned long)(v)) % UPROBES_HASH_SZ])
+> -
+>  /* serialize uprobe->pending_list */
+>  static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
+>  #define uprobes_mmap_hash(v)	(&uprobes_mmap_mutex[((unsigned long)(v)) % UPROBES_HASH_SZ])
+> @@ -865,20 +842,26 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
+>  	if (offset > i_size_read(inode))
+>  		return -EINVAL;
+> 
+> -	ret = -ENOMEM;
+> -	mutex_lock(uprobes_hash(inode));
+> + retry:
+>  	uprobe = alloc_uprobe(inode, offset);
+> -	if (uprobe) {
+> -		down_write(&uprobe->register_rwsem);
+> +	if (!uprobe)
+> +		return -ENOMEM;
+> +	/*
+> +	 * We can race with uprobe_unregister()->delete_uprobe().
+> +	 * Check uprobe_is_active() and retry if it is false.
+> +	 */
+> +	down_write(&uprobe->register_rwsem);
+> +	ret = -EAGAIN;
+> +	if (likely(uprobe_is_active(uprobe))) {
+>  		ret = __uprobe_register(uprobe, uc);
+>  		if (ret)
+>  			__uprobe_unregister(uprobe, uc);
+> -		up_write(&uprobe->register_rwsem);
+>  	}
+> -	mutex_unlock(uprobes_hash(inode));
+> -	if (uprobe)
+> -		put_uprobe(uprobe);
+> +	up_write(&uprobe->register_rwsem);
+> +	put_uprobe(uprobe);
+> 
+> +	if (unlikely(ret == -EAGAIN))
+> +		goto retry;
+>  	return ret;
+>  }
+> 
+> @@ -896,11 +879,9 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
+>  	if (!uprobe)
+>  		return;
+> 
+> -	mutex_lock(uprobes_hash(inode));
+>  	down_write(&uprobe->register_rwsem);
+>  	__uprobe_unregister(uprobe, uc);
+>  	up_write(&uprobe->register_rwsem);
+> -	mutex_unlock(uprobes_hash(inode));
+>  	put_uprobe(uprobe);
+>  }
+> 
+> @@ -1609,10 +1590,8 @@ static int __init init_uprobes(void)
+>  {
+>  	int i;
+> 
+> -	for (i = 0; i < UPROBES_HASH_SZ; i++) {
+> -		mutex_init(&uprobes_mutex[i]);
+> +	for (i = 0; i < UPROBES_HASH_SZ; i++)
+>  		mutex_init(&uprobes_mmap_mutex[i]);
+> -	}
+> 
+>  	if (percpu_init_rwsem(&dup_mmap_sem))
+>  		return -ENOMEM;
+> -- 
+> 1.5.5.1
+> 
 
