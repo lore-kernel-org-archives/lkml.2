@@ -1,58 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab3ACUGH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 15:06:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59835 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753629Ab3ACUGF (ORCPT
+	id S1753911Ab3ACUGq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 15:06:46 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:63979 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753864Ab3ACUGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 15:06:05 -0500
-Date: Thu, 3 Jan 2013 12:06:03 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Daniel J Blueman <daniel@quora.org>,
-        Peter Jones <pjones@redhat.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        nouveau@lists.freedesktop.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Subject: Re: 3.8-rc2: EFI framebuffer lock inversion...
-Message-Id: <20130103120603.6f8e94a7.akpm@linux-foundation.org>
-In-Reply-To: <CA+55aFyseLhQj-u7XOdCayMN2dJ+LaKKxSN2NrfqFA98o1WW+A@mail.gmail.com>
-References: <CAMVG2ssA-B6s+F-g4mL0dbBSVsNupzT1nm1Kc70dXHGsNQuNYA@mail.gmail.com>
-	<20130103131156.214bd7a5@pyramind.ukuu.org.uk>
-	<CA+55aFyseLhQj-u7XOdCayMN2dJ+LaKKxSN2NrfqFA98o1WW+A@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 3 Jan 2013 15:06:44 -0500
+Message-ID: <1357243589.16864.56.camel@marge.simpson.net>
+Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
+ Metric into the Load Balancer
+From: Mike Galbraith <bitbucket@online.de>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Venki Pallipadi <venki@google.com>,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Lists linaro-dev <linaro-dev@lists.linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Alex Shi <alex.shi@intel.com>,
+        srikar@linux.vnet.ibm.com
+Date: Thu, 03 Jan 2013 21:06:29 +0100
+In-Reply-To: <50E55F99.6090104@linux.vnet.ibm.com>
+References: <50E3B61A.3040808@linux.vnet.ibm.com>
+	 <1357114354.5586.39.camel@marge.simpson.net>
+	 <50E55F99.6090104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:PsbAq//acEidElPMfXH3Df0vC+chewlXhood6Yxm6l9
+ 31qi/Zv5P1gxnwdnesaC5qHFL6ZNsRbqSCkKhhUhjyveO2n9aW
+ 5yraxw6eBwpyKHsEqAsWAqoeEzz+8wLVarhvAlHm2TMQNnyEds
+ F/nSrw+t7nKbTcM2wR3encSNmcJjCYu9BneODPbpgOvc9HGFNK
+ 19Iv1DZ/V4m13GCZO3jturYOLxI3t8lcPorN5Ws14Wh9Be0IO7
+ ul6caNQ2s0Yq+Fn7F5feQVJ4/oMaMuS49QpixyGXKYipxt85V2
+ 33goX1+U0CpyvyYxAxKsZA2R6y42iGk9nD0q1O85WqUO6GyqfV
+ kC0xeBISpXAfSVkNUQjXWIhWgmZ7If1Oc4W6tQ8IYmKkiFnpFJ
+ VE7R5bqp9oZ6g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jan 2013 11:40:47 -0800
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Thu, Jan 3, 2013 at 5:11 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >
-> > The fb layer locking was broken. I posted patches early December which
-> > should have fixed the ones we know about. ('fb: Rework locking to fix
-> > lock ordering on takeover').
+On Thu, 2013-01-03 at 16:08 +0530, Preeti U Murthy wrote: 
+> Hi Mike,
 > 
-> That patch causes compile errors with "allmodconfig":
+> Thank you very much for your feedback.Considering your suggestions,I have posted out a 
+> proposed solution to prevent select_idle_sibling() from becoming a disadvantage to normal
+> load balancing,rather aiding it.
 > 
->   ERROR: "do_take_over_console" [drivers/video/console/fbcon.ko] undefined!
->   make[1]: *** [__modpost] Error 1
->   make: *** [modules] Error 2
->   make: *** Waiting for unfinished jobs....
+> **This patch is *without* the enablement of the per entity load tracking metric.**
 > 
-> Hmm?
+> This is with an intention to correct the existing select_idle_sibling() mess before
+> going ahead.
 
-I have a couple of fixes against
-fb-rework-locking-to-fix-lock-ordering-on-takeover.patch:
+Bench the traversal cost, BALANCE_WAKE used to be _way_ to expensive to
+live with for fast movers.  It was turned on briefly, only to be turned
+off again.  Maybe that's changed, cool if so.
 
-http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix.patch
-http://ozlabs.org/~akpm/mmots/broken-out/fb-rework-locking-to-fix-lock-ordering-on-takeover-fix-2.patch
+But before you do that: picking any idle or somewhat more idle cpu in an
+entire large L3 package on every wakeup rapes fast moving communicating
+tasks at L2.  You can't do that at high frequency and live, so any
+integration has to prevent high frequency bounce.. but at the same time,
+react quickly to ramp, pull communicating tasks together quickly.. and
+not harm 1:N loads that currently benefit massively from full package
+high frequency bounce :)
 
-Florian has been busy for a month or two - I've been waiting for him to
-reappear to consider this patch.
+> -------------------BEGIN PATCH--------------------------------------------------------
+> 
+> Subject: [PATCH] sched: Merge select_idle_sibling with the behaviour of SD_BALANCE_WAKE
+> 
+> The function of select_idle_sibling() is to place the woken up task in the
+> vicinity of the waking cpu or on the previous cpu depending on what wake_affine() says.
+> This placement being only in an idle group.If an idle group is not found,the
+> fallback cpu is either the waking cpu or the previous cpu accordingly.
+> 
+> This results in the runqueue of the waking cpu or the previous cpu getting
+> overloaded when the system is committed,which is a latency hit to these tasks.
+> 
+> What is required is that the newly woken up tasks be placed close to the wake
+> up cpu or the previous cpu,whichever is best, for reasons to avoid latency hit and cache
+> coldness respectively.This is achieved with wake_affine() deciding which
+> cache domain the task should be placed on.
+> 
+> Once this is decided,instead of searching for a completely idle group,let us
+> search for the idlest group.This will anyway return a completely idle group
+> if it exists and its mechanism will fall back to what select_idle_sibling()
+> was doing.But if this fails,find_idlest_group() continues the search for a
+> relatively more idle group.
+> 
+> The argument could be that,we wish to avoid migration of the newly woken up
+> task to any other group unless it is completely idle.But in this case, to
+> begin with we choose a sched domain,within which a migration could be less
+> harmful.We enable the SD_BALANCE_WAKE flag on the SMT and MC domains to co-operate
+> with the same.
+> 
+> This patch is based on the tip tree without enabling the per entity load
+> tracking.This is with an intention to clear up the select_idle_sibling() mess
+> before introducing the metric.
+> ---
+>  include/linux/topology.h |    4 ++-
+>  kernel/sched/fair.c      |   61 +++++-----------------------------------------
+>  2 files changed, 9 insertions(+), 56 deletions(-)
+> 
+> diff --git a/include/linux/topology.h b/include/linux/topology.h
+> index d3cf0d6..eeb309e 100644
+> --- a/include/linux/topology.h
+> +++ b/include/linux/topology.h
+> @@ -95,7 +95,7 @@ int arch_update_cpu_topology(void);
+>  				| 1*SD_BALANCE_NEWIDLE			\
+>  				| 1*SD_BALANCE_EXEC			\
+>  				| 1*SD_BALANCE_FORK			\
+> -				| 0*SD_BALANCE_WAKE			\
+> +				| 1*SD_BALANCE_WAKE			\
+>  				| 1*SD_WAKE_AFFINE			\
+>  				| 1*SD_SHARE_CPUPOWER			\
+>  				| 1*SD_SHARE_PKG_RESOURCES		\
+> @@ -127,7 +127,7 @@ int arch_update_cpu_topology(void);
+>  				| 1*SD_BALANCE_NEWIDLE			\
+>  				| 1*SD_BALANCE_EXEC			\
+>  				| 1*SD_BALANCE_FORK			\
+> -				| 0*SD_BALANCE_WAKE			\
+> +				| 1*SD_BALANCE_WAKE			\
+>  				| 1*SD_WAKE_AFFINE			\
+>  				| 0*SD_SHARE_CPUPOWER			\
+>  				| 1*SD_SHARE_PKG_RESOURCES		\
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index b29cdbf..c33eda7 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3303,58 +3303,6 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>  	return idlest;
+>  }
+>  
+> -/*
+> - * Try and locate an idle CPU in the sched_domain.
+> - */
+> -static int select_idle_sibling(struct task_struct *p, int target)
+> -{
+> -	int cpu = smp_processor_id();
+> -	int prev_cpu = task_cpu(p);
+> -	struct sched_domain *sd;
+> -	struct sched_group *sg;
+> -	int i;
+> -
+> -	/*
+> -	 * If the task is going to be woken-up on this cpu and if it is
+> -	 * already idle, then it is the right target.
+> -	 */
+> -	if (target == cpu && idle_cpu(cpu))
+> -		return cpu;
+> -
+> -	/*
+> -	 * If the task is going to be woken-up on the cpu where it previously
+> -	 * ran and if it is currently idle, then it the right target.
+> -	 */
+> -	if (target == prev_cpu && idle_cpu(prev_cpu))
+> -		return prev_cpu;
+> -
+> -	/*
+> -	 * Otherwise, iterate the domains and find an elegible idle cpu.
+> -	 */
+> -	sd = rcu_dereference(per_cpu(sd_llc, target));
+> -	for_each_lower_domain(sd) {
+> -		sg = sd->groups;
+> -		do {
+> -			if (!cpumask_intersects(sched_group_cpus(sg),
+> -						tsk_cpus_allowed(p)))
+> -				goto next;
+> -
+> -			for_each_cpu(i, sched_group_cpus(sg)) {
+> -				if (!idle_cpu(i))
+> -					goto next;
+> -			}
+> -
+> -			target = cpumask_first_and(sched_group_cpus(sg),
+> -					tsk_cpus_allowed(p));
+> -			goto done;
+> -next:
+> -			sg = sg->next;
+> -		} while (sg != sd->groups);
+> -	}
+> -done:
+> -	return target;
+> -}
+> -
+>  #ifdef CONFIG_SCHED_NUMA
+>  static inline bool pick_numa_rand(int n)
+>  {
+> @@ -3469,8 +3417,13 @@ find_sd:
+>  		if (cpu != prev_cpu && wake_affine(affine_sd, p, sync))
+>  			prev_cpu = cpu;
+>  
+> -		new_cpu = select_idle_sibling(p, prev_cpu);
+> -		goto unlock;
+> +		if (prev_cpu == task_cpu(p) && idle_cpu(prev_cpu) ||
+> +		    prev_cpu == smp_processor_id() && idle_cpu(prev_cpu)) {
+> +			new_cpu = prev_cpu;
+> +			goto unlock;
+> +		} else {
+> +			sd = rcu_dereference(per_cpu(sd_llc, prev_cpu));
+> +		}
+>  	}
+>  
+>  pick_idlest:
+> 
+> 
+> 
+> 
+> 
+> 
+
+
