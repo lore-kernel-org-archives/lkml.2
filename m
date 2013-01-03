@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753310Ab3ACMbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:31:05 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:61766 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab3ACMbB (ORCPT
+	id S1753421Ab3ACMcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:32:46 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:53149 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab3ACMco (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:31:01 -0500
+	Thu, 3 Jan 2013 07:32:44 -0500
 MIME-Version: 1.0
-In-Reply-To: <20130103002341.3cc4b7b4@annuminas.surriel.com>
-References: <20130103001536.7fd1e952@annuminas.surriel.com>
-	<20130103002341.3cc4b7b4@annuminas.surriel.com>
-Date: Thu, 3 Jan 2013 04:31:00 -0800
-Message-ID: <CANN689Hd01BNYhcBJJBfz7VXJiFM5QikGOLVnokS4Gbq7cT=1g@mail.gmail.com>
-Subject: Re: [RFC PATCH 3/5] x86,smp: auto tune spinlock backoff delay factor
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>, knoel@redhat.com
+Date: Thu, 3 Jan 2013 13:32:43 +0100
+Message-ID: <CAHTX3d+P_UQK8nPfN8BKLdTkVY2VMKhty1rkCKbfHCrQBa+Nyw@mail.gmail.com>
+Subject: Add #includes needed to permit the removal of asm/system.h - sha1 96f951edb1f1bdbbc99b0cd458f9808bb83d58ae
+From: Michal Simek <monstr@monstr.eu>
+To: dhowells@redhat.com, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 2, 2013 at 9:23 PM, Rik van Riel <riel@redhat.com> wrote:
-> Proportional spinlock delay with a high delay factor works well
-> when there is lots contention on a lock. Likewise, a smaller
-> delay factor works well when a lock is lightly contended.
->
-> Making the code auto-tune the delay factor results in a system
-> that performs well with both light and heavy lock contention.
+HI David and Arnd,
 
-I don't quite like that part of the explanation - Ideally I would like
-to explain that there are huge benefits in having the delay be at
-least equivalent to the time taken by a no-load spin/release section,
-and that beyond that there are small additional benefits to using a
-longer delay when the spinlock hold times are larger, and an
-explanation of why linear increase / exponential delay works nicely
-here.
+This patch is breaking microblaze kernel compilation
 
-I'll see if I can make a more concrete proposal and still keep it
-short enough :)
+commit 96f951edb1f1bdbbc99b0cd458f9808bb83d58ae
+Author: David Howells <dhowells@redhat.com>
+Date:   Wed Mar 28 18:30:03 2012 +0100
 
-> +#define MIN_SPINLOCK_DELAY 1
-> +#define MAX_SPINLOCK_DELAY 16000
-> +DEFINE_PER_CPU(int, spinlock_delay) = { MIN_SPINLOCK_DELAY };
+    Add #includes needed to permit the removal of asm/system.h
 
-unsigned would seem more natural here, though it's only a tiny detail
+Warning log:
+  CC      kernel/irq_work.o
+In file included from include/linux/irq_work.h:4,
+                 from kernel/irq_work.c:11:
+include/linux/llist.h: In function 'llist_add':
+include/linux/llist.h:185: error: implicit declaration of function
+'cmpxchg_local'
+include/linux/llist.h:185: warning: assignment makes pointer from
+integer without a cast
+make[1]: *** [kernel/irq_work.o] Error 1
+make: *** [kernel] Error 2
+make: *** Waiting for unfinished jobs....
 
->  void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
->  {
->         __ticket_t head = inc.head, ticket = inc.tail;
->         __ticket_t waiters_ahead;
-> +       int delay = __this_cpu_read(spinlock_delay);
 
-I like that you used __this_cpu_read() - your v1 version wasn't as nice.
+It is because microblaze uses cmpxchg_local which is defined
+asm-generic/atomic.h file.
+Arnds patch has added it to atomic.h
+asm-generic: add generic atomic.h and io.h
+(sha1: 3f7e212df82ca0459d44c91d9e019efd1b5f936c)
 
-> +
-> +               /*
-> +                * The lock is still busy; slowly increase the delay. If we
-> +                * end up sleeping too long, the code below will reduce the
-> +                * delay. Ideally we acquire the lock in the tight loop above.
-> +                */
-> +               if (!(head % 7) && delay < MAX_SPINLOCK_DELAY)
-> +                       delay++;
-> +
-> +               loops = delay * waiters_ahead;
+What about to move cmpxchg_local and cmpxchg64_local from atomic.h to
+cmpxchg-local.h?
 
-I don't like the head % 7 thing. I think using fixed point arithmetic
-would be nicer:
+If this should be separate step after your patch then please squash
+the patch below to your one.
 
-if (delay < MAX_SPINLOCK_DELAY)
-  delay += 256/7; /* Or whatever constant we choose */
+Thanks,
+Michal
 
-loops = (delay * waiter_ahead) >> 8;
+diff --git a/arch/microblaze/include/asm/cmpxchg.h
+b/arch/microblaze/include/asm/cmpxchg.h
+index 538afc0..cd10925 100644
+--- a/arch/microblaze/include/asm/cmpxchg.h
++++ b/arch/microblaze/include/asm/cmpxchg.h
+@@ -38,5 +38,6 @@ static inline unsigned long __xchg(unsigned long x,
+volatile void *ptr,
 
-Also, we should probably skip the delay increment on the first loop
-iteration - after all, we haven't waited yet, so we can't say that the
-delay was too short.
+ #include <asm-generic/cmpxchg.h>
+ #include <asm-generic/cmpxchg-local.h>
++#include <asm-generic/atomic.h>
 
-> -               if (head == ticket)
-> +               if (head == ticket) {
-> +                       /*
-> +                        * We overslept and have no idea how long the lock
-> +                        * went idle. Reduce the delay as a precaution.
-> +                        */
-> +                       delay -= delay/32 + 1;
+ #endif /* _ASM_MICROBLAZE_CMPXCHG_H */
 
-There is a possibility of integer underflow here. It seems that the
-window to hit it would be quite small, but it can happen (at the very
-least, imagine getting an interrupt at an inopportune time which would
-make it look like you overslept). I think this may be what was causing
-the stability issues I noticed.
-
-I'll try to come up with a custom version of this patch. I do feel
-that we're going in a good direction in general, though.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian
