@@ -1,35 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab3ACLm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:42:56 -0500
+	id S1753303Ab3ACLnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:43:04 -0500
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:56715 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753229Ab3ACLmx (ORCPT
+	with ESMTP id S1753270Ab3ACLm4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:42:53 -0500
-X-AuditID: cbfec7f4-b7f6d6d000001620-a1-50e56ebad2fa
+	Thu, 3 Jan 2013 06:42:56 -0500
+X-AuditID: cbfec7f4-b7f6d6d000001620-ab-50e56ebb97e3
 From: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrzej Pietrasiewicz <andrzej.p@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Joel Becker <jlbec@evilplan.org>,
         Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: [PATCH 2/8] fs/configfs: configfs_internal.h checkpatch cleanup
-Date: Thu, 03 Jan 2013 12:42:35 +0100
-Message-id: <1357213361-23620-3-git-send-email-andrzej.p@samsung.com>
+Subject: [PATCH 5/8] fs/configfs: inode.c checkpatch cleanup
+Date: Thu, 03 Jan 2013 12:42:38 +0100
+Message-id: <1357213361-23620-6-git-send-email-andrzej.p@samsung.com>
 X-Mailer: git-send-email 1.7.10
 In-reply-to: <1357213361-23620-1-git-send-email-andrzej.p@samsung.com>
 References: <"Message-id: <CAHdPZaNZQcS3YggV5rGkBGULp3BBBXXeeRn4BhTgNfLci0=AwA"@mail.gmail.com>
  <1357213361-23620-1-git-send-email-andrzej.p@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrGJMWRmVeSWpSXmKPExsVy+t/xq7q78p4GGDx+oG9xedccNgdGj8+b
-	5AIYo7hsUlJzMstSi/TtErgy5k/bzVzwQavi2L85zA2MT5S7GDk5JARMJE4f6mCEsMUkLtxb
-	z9bFyMUhJLCUUaL/5EdWCGcDk8T/xtdsIFVsAsYSew9CdIgIKEhs7n0GVsQssJ5RYuL9BrCE
-	sICHxJH3z1hAbBYBVYnGRSdYQWxeAVeJD8dWsEGsk5d4er8PzOYUcJNY2b8EattcRolvS9ez
-	TmDkXcDIsIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjxO9fdjAuPmZ1iFGAg1GJh3dFzZMA
-	IdbEsuLK3EOMEhzMSiK813OAQrwpiZVVqUX58UWlOanFhxiZODilGhgDW974OJ5RyT3zQu+Z
-	KbvKqUsni6fkn3jjfsj3kfejQhW2lAl2wS+s7yyurI/szP9z566b3g/TZ1EdzYE3EuIMlL/b
-	zD13/xTX58juHWGcMzv2bju44ObBHez/CifIxdtxWffmZT4ynLfn7ItXApwRi6aoZVq2vd85
-	U+B0Ivfbouqg8w1p6beVWIozEg21mIuKEwGWZHbd2QEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEJMWRmVeSWpSXmKPExsVy+t/xq7q7854GGLx4Z21xedccNgdGj8+b
+	5AIYo7hsUlJzMstSi/TtErgynvxbxFTQqlNxq5e3gbFBpYuRk0NCwESifUs/E4QtJnHh3no2
+	EFtIYCmjxJuT8RD2BiaJDVsKQWw2AWOJvQc7GEFsEQEFic29z1i7GLk4mAXWM0pMvN8AlODg
+	EBawkbi6zwKkhkVAVeLpg+Ng9bwCrhLTbu9lhNglL/H0fh/YLk4BN4mV/UvA5ggJzGWU+LZ0
+	PesERt4FjAyrGEVTS5MLipPScw31ihNzi0vz0vWS83M3MUL8/WUH4+JjVocYBTgYlXh4V9Q8
+	CRBiTSwrrsw9xCjBwawkwns9ByjEm5JYWZValB9fVJqTWnyIkYmDU6qBcf3+i00capyhWdo7
+	/x1Xql8VaP928uzW5yzc9jaZnKVvErJbL2087/7NX8Gu4vfXbd1TrWprlv8O55Pu73xSdf/2
+	7MdyygXqZxc4nOkOXN7ptVTETkwyP3Diu3cB2/XSRT4pVPl8mdycXaSYvEHP8qiics2Tt7P2
+	vcyRPe6547J/d0pUq9QEJZbijERDLeai4kQAfaWq/NUBAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -39,13 +39,13 @@ Eliminate checkpatch errors and warnings
 Signed-off-by: Andrzej Pietrasiewicz <andrzej.p@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- fs/configfs/configfs_internal.h |   54 +++++++++++++++++++++-----------------
- 1 files changed, 30 insertions(+), 24 deletions(-)
+ fs/configfs/inode.c |   46 +++++++++++++++++++++++++---------------------
+ 1 files changed, 25 insertions(+), 21 deletions(-)
 
-diff --git a/fs/configfs/configfs_internal.h b/fs/configfs/configfs_internal.h
-index b5f0a3b..4ef5d4d 100644
---- a/fs/configfs/configfs_internal.h
-+++ b/fs/configfs/configfs_internal.h
+diff --git a/fs/configfs/inode.c b/fs/configfs/inode.c
+index a9d35b0..087fc73 100644
+--- a/fs/configfs/inode.c
++++ b/fs/configfs/inode.c
 @@ -19,7 +19,7 @@
   * Boston, MA 021110-1307, USA.
   *
@@ -54,122 +54,133 @@ index b5f0a3b..4ef5d4d 100644
 + *	sysfs is Copyright (C) 2001, 2002, 2003 Patrick Mochel
   *
   * configfs Copyright (C) 2005 Oracle.  All rights reserved.
-  */
-@@ -34,11 +34,11 @@ struct configfs_dirent {
- 	struct list_head	s_sibling;
- 	struct list_head	s_children;
- 	struct list_head	s_links;
--	void			* s_element;
-+	void			*s_element;
- 	int			s_type;
- 	umode_t			s_mode;
--	struct dentry		* s_dentry;
--	struct iattr		* s_iattr;
-+	struct dentry		*s_dentry;
-+	struct iattr		*s_iattr;
+  *
+@@ -56,15 +56,15 @@ static struct backing_dev_info configfs_backing_dev_info = {
+ 	.capabilities	= BDI_CAP_NO_ACCT_AND_WRITEBACK,
+ };
+ 
+-static const struct inode_operations configfs_inode_operations ={
++static const struct inode_operations configfs_inode_operations = {
+ 	.setattr	= configfs_setattr,
+ };
+ 
+-int configfs_setattr(struct dentry * dentry, struct iattr * iattr)
++int configfs_setattr(struct dentry *dentry, struct iattr *iattr)
+ {
+-	struct inode * inode = dentry->d_inode;
+-	struct configfs_dirent * sd = dentry->d_fsdata;
+-	struct iattr * sd_iattr;
++	struct inode *inode = dentry->d_inode;
++	struct configfs_dirent *sd = dentry->d_fsdata;
++	struct iattr *sd_iattr;
+ 	unsigned int ia_valid = iattr->ia_valid;
+ 	int error;
+ 
+@@ -81,7 +81,8 @@ int configfs_setattr(struct dentry * dentry, struct iattr * iattr)
+ 		sd_iattr->ia_mode = sd->s_mode;
+ 		sd_iattr->ia_uid = GLOBAL_ROOT_UID;
+ 		sd_iattr->ia_gid = GLOBAL_ROOT_GID;
+-		sd_iattr->ia_atime = sd_iattr->ia_mtime = sd_iattr->ia_ctime = CURRENT_TIME;
++		sd_iattr->ia_atime = sd_iattr->ia_mtime = sd_iattr->ia_ctime =
++			CURRENT_TIME;
+ 		sd->s_iattr = sd_iattr;
+ 	}
+ 	/* attributes were changed atleast once in past */
+@@ -114,13 +115,13 @@ int configfs_setattr(struct dentry * dentry, struct iattr * iattr)
+ 	return error;
+ }
+ 
+-static inline void set_default_inode_attr(struct inode * inode, umode_t mode)
++static inline void set_default_inode_attr(struct inode *inode, umode_t mode)
+ {
+ 	inode->i_mode = mode;
+ 	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ }
+ 
+-static inline void set_inode_attr(struct inode * inode, struct iattr * iattr)
++static inline void set_inode_attr(struct inode *inode, struct iattr *iattr)
+ {
+ 	inode->i_mode = iattr->ia_mode;
+ 	inode->i_uid = iattr->ia_uid;
+@@ -133,7 +134,7 @@ static inline void set_inode_attr(struct inode * inode, struct iattr * iattr)
+ struct inode *configfs_new_inode(umode_t mode, struct configfs_dirent *sd,
+ 				 struct super_block *s)
+ {
+-	struct inode * inode = new_inode(s);
++	struct inode *inode = new_inode(s);
+ 	if (inode) {
+ 		inode->i_ino = get_next_ino();
+ 		inode->i_mapping->a_ops = &configfs_aops;
+@@ -154,6 +155,8 @@ struct inode *configfs_new_inode(umode_t mode, struct configfs_dirent *sd,
+ 
  #ifdef CONFIG_LOCKDEP
- 	int			s_depth;
- #endif
-@@ -62,21 +62,26 @@ extern struct kmem_cache *configfs_dir_cachep;
  
- extern int configfs_is_root(struct config_item *item);
- 
--extern struct inode * configfs_new_inode(umode_t mode, struct configfs_dirent *, struct super_block *);
--extern int configfs_create(struct dentry *, umode_t mode, int (*init)(struct inode *));
-+extern struct inode *configfs_new_inode(umode_t mode, struct configfs_dirent *,
-+					struct super_block *);
-+extern int configfs_create(struct dentry *, umode_t mode,
-+			   int (*init)(struct inode *));
- extern int configfs_inode_init(void);
- extern void configfs_inode_exit(void);
- 
--extern int configfs_create_file(struct config_item *, const struct configfs_attribute *);
-+extern int configfs_create_file(struct config_item *,
-+				const struct configfs_attribute *);
- extern int configfs_make_dirent(struct configfs_dirent *,
- 				struct dentry *, void *, umode_t, int);
- extern int configfs_dirent_is_ready(struct configfs_dirent *);
- 
--extern int configfs_add_file(struct dentry *, const struct configfs_attribute *, int);
--extern void configfs_hash_and_remove(struct dentry * dir, const char * name);
-+extern int configfs_add_file(struct dentry *,
-+			     const struct configfs_attribute *, int);
-+extern void configfs_hash_and_remove(struct dentry *dir, const char *name);
- 
--extern const unsigned char * configfs_get_name(struct configfs_dirent *sd);
--extern void configfs_drop_dentry(struct configfs_dirent *sd, struct dentry *parent);
-+extern const unsigned char *configfs_get_name(struct configfs_dirent *sd);
-+extern void configfs_drop_dentry(struct configfs_dirent *sd,
-+				 struct dentry *parent);
- extern int configfs_setattr(struct dentry *dentry, struct iattr *iattr);
- 
- extern struct dentry *configfs_pin_fs(void);
-@@ -104,27 +109,28 @@ extern int configfs_create_link(struct configfs_symlink *sl,
- 				struct dentry *parent,
- 				struct dentry *dentry);
- 
--static inline struct config_item * to_item(struct dentry * dentry)
-+static inline struct config_item *to_item(struct dentry *dentry)
++static char *lockdep_msg =
++"configfs: Too many levels of inodes for the locking correctness validator.\n";
+ static void configfs_set_inode_lock_class(struct configfs_dirent *sd,
+ 					  struct inode *inode)
  {
--	struct configfs_dirent * sd = dentry->d_fsdata;
--	return ((struct config_item *) sd->s_element);
-+	struct configfs_dirent *sd = dentry->d_fsdata;
-+	return (struct config_item *) sd->s_element;
+@@ -168,9 +171,8 @@ static void configfs_set_inode_lock_class(struct configfs_dirent *sd,
+ 			 * In practice the maximum level of locking depth is
+ 			 * already reached. Just inform about possible reasons.
+ 			 */
+-			printk(KERN_INFO "configfs: Too many levels of inodes"
+-			       " for the locking correctness validator.\n");
+-			printk(KERN_INFO "Spurious warnings may appear.\n");
++			pr_info(lockdep_msg);
++			pr_info("Spurious warnings may appear.\n");
+ 		}
+ 	}
+ }
+@@ -184,7 +186,8 @@ static void configfs_set_inode_lock_class(struct configfs_dirent *sd,
+ 
+ #endif /* CONFIG_LOCKDEP */
+ 
+-int configfs_create(struct dentry * dentry, umode_t mode, int (*init)(struct inode *))
++int configfs_create(struct dentry *dentry, umode_t mode,
++		    int (*init)(struct inode *))
+ {
+ 	int error = 0;
+ 	struct inode *inode = NULL;
+@@ -220,9 +223,10 @@ int configfs_create(struct dentry * dentry, umode_t mode, int (*init)(struct ino
  }
  
--static inline struct configfs_attribute * to_attr(struct dentry * dentry)
-+static inline struct configfs_attribute *to_attr(struct dentry *dentry)
+ /*
+- * Get the name for corresponding element represented by the given configfs_dirent
++ * Get the name for corresponding element represented by the given
++ * configfs_dirent
+  */
+-const unsigned char * configfs_get_name(struct configfs_dirent *sd)
++const unsigned char *configfs_get_name(struct configfs_dirent *sd)
  {
--	struct configfs_dirent * sd = dentry->d_fsdata;
--	return ((struct configfs_attribute *) sd->s_element);
-+	struct configfs_dirent *sd = dentry->d_fsdata;
-+	return (struct configfs_attribute *) sd->s_element;
- }
+ 	struct configfs_attribute *attr;
  
--static inline struct config_item *configfs_get_config_item(struct dentry *dentry)
-+static inline struct config_item
-+*configfs_get_config_item(struct dentry *dentry)
+@@ -244,9 +248,9 @@ const unsigned char * configfs_get_name(struct configfs_dirent *sd)
+  * Unhashes the dentry corresponding to given configfs_dirent
+  * Called with parent inode's i_mutex held.
+  */
+-void configfs_drop_dentry(struct configfs_dirent * sd, struct dentry * parent)
++void configfs_drop_dentry(struct configfs_dirent *sd, struct dentry *parent)
  {
--	struct config_item * item = NULL;
-+	struct config_item *item = NULL;
+-	struct dentry * dentry = sd->s_dentry;
++	struct dentry *dentry = sd->s_dentry;
  
- 	spin_lock(&dentry->d_lock);
- 	if (!d_unhashed(dentry)) {
--		struct configfs_dirent * sd = dentry->d_fsdata;
-+		struct configfs_dirent *sd = dentry->d_fsdata;
- 		if (sd->s_type & CONFIGFS_ITEM_LINK) {
--			struct configfs_symlink * sl = sd->s_element;
-+			struct configfs_symlink *sl = sd->s_element;
- 			item = config_item_get(sl->sl_target);
- 		} else
- 			item = config_item_get(sd->s_element);
-@@ -134,7 +140,7 @@ static inline struct config_item *configfs_get_config_item(struct dentry *dentry
- 	return item;
- }
- 
--static inline void release_configfs_dirent(struct configfs_dirent * sd)
-+static inline void release_configfs_dirent(struct configfs_dirent *sd)
- {
- 	if (!(sd->s_type & CONFIGFS_ROOT)) {
- 		kfree(sd->s_iattr);
-@@ -142,7 +148,7 @@ static inline void release_configfs_dirent(struct configfs_dirent * sd)
+ 	if (dentry) {
+ 		spin_lock(&dentry->d_lock);
+@@ -260,10 +264,10 @@ void configfs_drop_dentry(struct configfs_dirent * sd, struct dentry * parent)
  	}
  }
  
--static inline struct configfs_dirent * configfs_get(struct configfs_dirent * sd)
-+static inline struct configfs_dirent *configfs_get(struct configfs_dirent *sd)
+-void configfs_hash_and_remove(struct dentry * dir, const char * name)
++void configfs_hash_and_remove(struct dentry *dir, const char *name)
  {
- 	if (sd) {
- 		WARN_ON(!atomic_read(&sd->s_count));
-@@ -151,7 +157,7 @@ static inline struct configfs_dirent * configfs_get(struct configfs_dirent * sd)
- 	return sd;
- }
+-	struct configfs_dirent * sd;
+-	struct configfs_dirent * parent_sd = dir->d_fsdata;
++	struct configfs_dirent *sd;
++	struct configfs_dirent *parent_sd = dir->d_fsdata;
  
--static inline void configfs_put(struct configfs_dirent * sd)
-+static inline void configfs_put(struct configfs_dirent *sd)
- {
- 	WARN_ON(!atomic_read(&sd->s_count));
- 	if (atomic_dec_and_test(&sd->s_count))
+ 	if (dir->d_inode == NULL)
+ 		/* no inode means this hasn't been made visible yet */
 -- 
 1.7.0.4
 
