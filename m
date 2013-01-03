@@ -1,134 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753024Ab3ACLPH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:15:07 -0500
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:46961 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752102Ab3ACLPE (ORCPT
+	id S1753133Ab3ACLV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:21:27 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39187 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752715Ab3ACLVZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:15:04 -0500
-Date: Thu, 3 Jan 2013 11:14:50 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Robert Marklund <robert.marklund@stericsson.com>,
-        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 4/4 v3] net/smsc911x: Provide common clock functionality
-Message-ID: <20130103111450.GC14714@gmail.com>
-References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
- <1355937587-31730-4-git-send-email-lee.jones@linaro.org>
- <CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
- <20121220192441.GC14363@n2100.arm.linux.org.uk>
- <20121220203514.GN2691@gmail.com>
- <20121220205113.GD14363@n2100.arm.linux.org.uk>
- <20121221091306.GO2691@gmail.com>
- <20121221092421.GG14363@n2100.arm.linux.org.uk>
- <20121221114105.GP2691@gmail.com>
+	Thu, 3 Jan 2013 06:21:25 -0500
+Date: Thu, 3 Jan 2013 11:21:02 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Dan Carpenter <error27@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
+	IS_ERR_OR_NULL
+Message-ID: <20130103112102.GM2631@n2100.arm.linux.org.uk>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz> <1355852048-23188-7-git-send-email-linux@prisktech.co.nz> <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com> <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com> <1357104713.30504.8.camel@gitbox> <20130103090520.GC7247@mwanda> <20130103100000.GJ2631@n2100.arm.linux.org.uk> <20130103111040.GD7247@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121221114105.GP2691@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130103111040.GD7247@mwanda>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms provide clocks which require enabling before the
-SMSC911x chip will power on. This patch uses the new common clk
-framework to do just that. If no clock is provided, it will just
-be ignored and the driver will continue to assume that no clock
-is required for the chip to run successfully.
+On Thu, Jan 03, 2013 at 02:10:40PM +0300, Dan Carpenter wrote:
+> Come on...  Don't say we haven't read comment.  Obviously, the first
+> thing we did was read that comment.  I've read it many times at this
+> point and I still think we should add in a bit which says:
 
-Cc: Steve Glendinning <steve.glendinning@shawell.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/net/ethernet/smsc/smsc911x.c |   29 ++++++++++++++++++++++++++++-
- 1 file changed, 28 insertions(+), 1 deletion(-)
+So where does it give you in that comment permission to treat NULL any
+differently to any other non-IS_ERR() return value?
 
-diff --git a/drivers/net/ethernet/smsc/smsc911x.c b/drivers/net/ethernet/smsc/smsc911x.c
-index e112877..f9b6bb7 100644
---- a/drivers/net/ethernet/smsc/smsc911x.c
-+++ b/drivers/net/ethernet/smsc/smsc911x.c
-@@ -33,6 +33,7 @@
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
- 
- #include <linux/crc32.h>
-+#include <linux/clk.h>
- #include <linux/delay.h>
- #include <linux/errno.h>
- #include <linux/etherdevice.h>
-@@ -144,6 +145,9 @@ struct smsc911x_data {
- 
- 	/* regulators */
- 	struct regulator_bulk_data supplies[SMSC911X_NUM_SUPPLIES];
-+
-+	/* clock */
-+	struct clk *clk;
- };
- 
- /* Easy access to information */
-@@ -369,7 +373,7 @@ out:
- }
- 
- /*
-- * enable resources, currently just regulators.
-+ * enable regulator and clock resources.
-  */
- static int smsc911x_enable_resources(struct platform_device *pdev)
- {
-@@ -382,6 +386,13 @@ static int smsc911x_enable_resources(struct platform_device *pdev)
- 	if (ret)
- 		netdev_err(ndev, "failed to enable regulators %d\n",
- 				ret);
-+
-+	if (!IS_ERR(pdata->clk)) {
-+		ret = clk_prepare_enable(pdata->clk);
-+		if (ret < 0)
-+			netdev_err(ndev, "failed to enable clock %d\n", ret);
-+	}
-+
- 	return ret;
- }
- 
-@@ -396,6 +407,10 @@ static int smsc911x_disable_resources(struct platform_device *pdev)
- 
- 	ret = regulator_bulk_disable(ARRAY_SIZE(pdata->supplies),
- 			pdata->supplies);
-+
-+	if (!IS_ERR(pdata->clk))
-+		clk_disable_unprepare(pdata->clk);
-+
- 	return ret;
- }
- 
-@@ -421,6 +436,12 @@ static int smsc911x_request_resources(struct platform_device *pdev)
- 	if (ret)
- 		netdev_err(ndev, "couldn't get regulators %d\n",
- 				ret);
-+
-+	/* Request clock */
-+	pdata->clk = clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(pdata->clk))
-+		netdev_warn(ndev, "couldn't get clock %li\n", PTR_ERR(pdata->clk));
-+
- 	return ret;
- }
- 
-@@ -436,6 +457,12 @@ static void smsc911x_free_resources(struct platform_device *pdev)
- 	/* Free regulators */
- 	regulator_bulk_free(ARRAY_SIZE(pdata->supplies),
- 			pdata->supplies);
-+
-+	/* Free clock */
-+	if (!IS_ERR(pdata->clk)) {
-+		clk_put(pdata->clk);
-+		pdata->clk = NULL;
-+	}
- }
- 
- /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
--- 
-1.7.9.5
+It is very clear: values where IS_ERR() is true are considered errors.
+Everything else is considered valid.
+
+> "NOTE:  Drivers should treat the return value as an opaque cookie
+> and not dereference it.  NULL returns don't imply an error so don't
+> use IS_ERR_OR_NULL() to check for errors."
+
+No.  The one thing I've learnt through maintaining www.arm.linux.org.uk
+is that the more of these kinds of "lets add to documentation" suggestions
+you get, the more _unclear_ the documentation becomes, and the more it is
+open to bad interpretation, and the more suggestions to add more words you
+receive.
+
+Concise documentation is the only way to go.  And what we have there today
+is concise and to the point.  It specifies it very clearly:
+
+ * Returns a struct clk corresponding to the clock producer, or
+ * valid IS_ERR() condition containing errno.
+
+That one sentence gives you all the information you need about it's return
+value.  It gives you two choices.  (1) a return value where IS_ERR() is
+true, which is an error, and (2) a return value where IS_ERR() is false,
+which is a valid cookie.
+
+Maybe you don't realise, but IS_ERR(NULL) is false.  Therefore, this falls
+into category (2).
+
+You can't get clearer than that, unless you don't understand the IS_ERR()
+and associated macro.
+
+Moreover, it tells you the function to use to check the return value for
+errors.  IS_ERR().  It doesn't say IS_ERR_OR_NULL(), it says IS_ERR().
+
+All it takes is for people to engage their grey cells and read the
+documentation as it stands, rather than trying to weasel their way around
+it and invent crap that it doesn't say.
