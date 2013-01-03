@@ -1,54 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463Ab3ACQBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:01:11 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:61333 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab3ACQBJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:01:09 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: uapi __NR_syscalls for microblaze
-Date: Thu, 3 Jan 2013 16:01:00 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Howells <dhowells@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-arch@vger.kernel.org
-References: <CAHTX3d+bwTNEhzB78mqoz6prk0nw0U_-1YFR3Tje_-uQLyTMBQ@mail.gmail.com> <26599.1357221783@warthog.procyon.org.uk> <CAHTX3d+C6_Vr-Q-UH8y9F_7=8GwBxzd8eECPN6tNBpxwr10=cQ@mail.gmail.com>
-In-Reply-To: <CAHTX3d+C6_Vr-Q-UH8y9F_7=8GwBxzd8eECPN6tNBpxwr10=cQ@mail.gmail.com>
+	id S1753482Ab3ACQCe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 11:02:34 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:35329 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753371Ab3ACQCc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 11:02:32 -0500
+Message-ID: <50E5AB51.8020201@linux.vnet.ibm.com>
+Date: Thu, 03 Jan 2013 10:01:21 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Seth Jennings <sjenning@linux.vnet.ibm.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH 0/8] zswap: compressed swap caching
+References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301031601.00594.arnd@arndb.de>
-X-Provags-ID: V02:K0:fGvdQXovkN1YTxzryTDnJZhIgTOmrWEjBivcGJpLmCC
- Y7Vb9JjGdrENPK6zFcjA/A/3Jcy9YmD4O80m2Qpr0V+bho4L3I
- lYpYV3Re5+5kjGO65OYUkryIPDQiC10VhzV7wLflhCwa7nVdZn
- ZRFqXjj45rlO6NnXWIyd8XAnCLcuVLR3MYgJfhv/6ALoZLPK8i
- Alle3VKCELjBATc07al3oyExPrqp+h0JzgwQmXLseYiayLL5ei
- Lqt0sRj7uBC/SjTViR70NE+vtLbs4TntpnDUr93dQ0e6H8D6V7
- +UZoQzXEXoKYUBPalyZjAW/y8rnkADyF9pQ3qBa5DVnrn3uNLE
- hAvPtyr2gvK8Sp7KjYHU=
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010316-7182-0000-0000-0000042C83EE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 January 2013, Michal Simek wrote:
-> 2013/1/3 David Howells <dhowells@redhat.com>:
-> > Michal Simek <monstr@monstr.eu> wrote:
-> >
-> >> just want to check with you if __NR_syscalls is necessary for user space. I
-> >> see that powerpc and arm have this macro in asm not in uapi like Microblaze.
-> >> If is not needed by user space, I should move it to asm/unistd.h
-> >
-> > It isn't as far as I know...  I recommend putting your question on the
-> > linux-arch mailing list.
-> 
-> I have add linux-arch to CC.
+Now that we are clear of the merge window, I was hoping others could
+take a look at this patchset.  If you have a chance, I'd greatly
+appreciate the feedback!
 
-Right, I'm pretty sure it's not needed, but it has traditionally been
-exported on a lot of platforms, so you can keep it in UAPI to be
-on the safe side.
+Thanks,
+Seth
 
-	Arnd
