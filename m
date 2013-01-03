@@ -1,421 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab3ACKsY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 05:48:24 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:18858 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab3ACKsU (ORCPT
+	id S1753222Ab3ACK4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 05:56:54 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:55082 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab3ACK4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 05:48:20 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 03 Jan 2013 02:47:41 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <sameo@linux.intel.com>, <linus.walleij@linaro.org>,
-        <grant.likely@secretlab.ca>, <akpm@linux-foundation.org>
-CC: <a.zummo@towertech.it>, <broonie@opensource.wolfsonmicro.com>,
-        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH 4/4] rtc: palmas: add RTC driver Palmas series PMIC
-Date: Thu, 3 Jan 2013 16:17:00 +0530
-Message-ID: <1357210020-19876-5-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
-References: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 3 Jan 2013 05:56:52 -0500
+Date: Thu, 3 Jan 2013 21:56:42 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: linux-next: manual merge of the kvm tree with the s390 tree
+Message-Id: <20130103215642.b7f641ecc107fd65bdd5eefe@canb.auug.org.au>
+In-Reply-To: <20130103083155.5cc97c31@mschwide>
+References: <20130103120650.a19cea9d14a664893c0a5e30@canb.auug.org.au>
+	<20130103083155.5cc97c31@mschwide>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TI Palmas series PMIC support the RTC and alarm functionality.
-Add RTC driver with alarm support for this device.
+--Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/rtc/Kconfig      |   10 ++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-palmas.c |  339 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 350 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-palmas.c
+Hi Martin,
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index d03bb8f..a0e86ba 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -279,6 +279,16 @@ config RTC_DRV_X1205
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-x1205.
- 
-+config RTC_DRV_PALMAS
-+	tristate "TI Palmas RTC driver"
-+	depends on MFD_PALMAS
-+	help
-+	  If you say yes here you get support for the RTC of TI PALMA series PMIC
-+	  chips.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-palma.
-+
- config RTC_DRV_PCF8523
- 	tristate "NXP PCF8523"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 3215b5c..1050c4e 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -77,6 +77,7 @@ obj-$(CONFIG_RTC_DRV_MPC5121)	+= rtc-mpc5121.o
- obj-$(CONFIG_RTC_DRV_MV)	+= rtc-mv.o
- obj-$(CONFIG_RTC_DRV_NUC900)	+= rtc-nuc900.o
- obj-$(CONFIG_RTC_DRV_OMAP)	+= rtc-omap.o
-+obj-$(CONFIG_RTC_DRV_PALMAS)	+= rtc-palmas.o
- obj-$(CONFIG_RTC_DRV_PCAP)	+= rtc-pcap.o
- obj-$(CONFIG_RTC_DRV_PCF8523)	+= rtc-pcf8523.o
- obj-$(CONFIG_RTC_DRV_PCF8563)	+= rtc-pcf8563.o
-diff --git a/drivers/rtc/rtc-palmas.c b/drivers/rtc/rtc-palmas.c
-new file mode 100644
-index 0000000..59c4298
---- /dev/null
-+++ b/drivers/rtc/rtc-palmas.c
-@@ -0,0 +1,339 @@
-+/*
-+ * rtc-palmas.c -- Palmas Real Time Clock driver.
-+
-+ * RTC driver for TI Palma series devices like TPS65913,
-+ * TPS65914 power management IC.
-+ *
-+ * Copyright (c) 2012, NVIDIA Corporation.
-+ *
-+ * Author: Laxman Dewangan <ldewangan@nvidia.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation version 2.
-+ *
-+ * This program is distributed "as is" WITHOUT ANY WARRANTY of any kind,
-+ * whether express or implied; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA
-+ * 02111-1307, USA
-+ */
-+
-+#include <linux/bcd.h>
-+#include <linux/errno.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/palmas.h>
-+#include <linux/module.h>
-+#include <linux/rtc.h>
-+#include <linux/types.h>
-+#include <linux/platform_device.h>
-+#include <linux/pm.h>
-+
-+struct palmas_rtc {
-+	struct rtc_device	*rtc;
-+	struct device		*dev;
-+	unsigned int		irq;
-+};
-+
-+/* Total number of RTC registers needed to set time*/
-+#define PALMAS_NUM_TIME_REGS	(PALMAS_YEARS_REG - PALMAS_SECONDS_REG + 1)
-+
-+static int palmas_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned char rtc_data[PALMAS_NUM_TIME_REGS];
-+	struct palmas *palmas = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	/* Copy RTC counting registers to static registers or latches */
-+	ret = palmas_update_bits(palmas, PALMAS_RTC_BASE, PALMAS_RTC_CTRL_REG,
-+		PALMAS_RTC_CTRL_REG_GET_TIME, PALMAS_RTC_CTRL_REG_GET_TIME);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC CTRL reg update failed, err: %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = palmas_bulk_read(palmas, PALMAS_RTC_BASE, PALMAS_SECONDS_REG,
-+			rtc_data, PALMAS_NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC_SECONDS reg read failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	tm->tm_sec = bcd2bin(rtc_data[0]);
-+	tm->tm_min = bcd2bin(rtc_data[1]);
-+	tm->tm_hour = bcd2bin(rtc_data[2]);
-+	tm->tm_mday = bcd2bin(rtc_data[3]);
-+	tm->tm_mon = bcd2bin(rtc_data[4]) - 1;
-+	tm->tm_year = bcd2bin(rtc_data[5]) + 100;
-+
-+	return ret;
-+}
-+
-+static int palmas_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	unsigned char rtc_data[PALMAS_NUM_TIME_REGS];
-+	struct palmas *palmas = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	rtc_data[0] = bin2bcd(tm->tm_sec);
-+	rtc_data[1] = bin2bcd(tm->tm_min);
-+	rtc_data[2] = bin2bcd(tm->tm_hour);
-+	rtc_data[3] = bin2bcd(tm->tm_mday);
-+	rtc_data[4] = bin2bcd(tm->tm_mon + 1);
-+	rtc_data[5] = bin2bcd(tm->tm_year - 100);
-+
-+	/* Stop RTC while updating the RTC time registers */
-+	ret = palmas_update_bits(palmas, PALMAS_RTC_BASE, PALMAS_RTC_CTRL_REG,
-+		PALMAS_RTC_CTRL_REG_STOP_RTC, 0);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC stop failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = palmas_bulk_write(palmas, PALMAS_RTC_BASE, PALMAS_SECONDS_REG,
-+		rtc_data, PALMAS_NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC_SECONDS reg write failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	/* Start back RTC */
-+	ret = palmas_update_bits(palmas, PALMAS_RTC_BASE, PALMAS_RTC_CTRL_REG,
-+		PALMAS_RTC_CTRL_REG_STOP_RTC, PALMAS_RTC_CTRL_REG_STOP_RTC);
-+	if (ret < 0)
-+		dev_err(dev, "RTC start failed, err = %d\n", ret);
-+	return ret;
-+}
-+
-+static int palmas_rtc_alarm_irq_enable(struct device *dev, unsigned enabled)
-+{
-+	struct palmas *palmas = dev_get_drvdata(dev->parent);
-+	u8 val;
-+
-+	val = enabled ? PALMAS_RTC_INTERRUPTS_REG_IT_ALARM : 0;
-+	return palmas_write(palmas, PALMAS_RTC_BASE,
-+		PALMAS_RTC_INTERRUPTS_REG, val);
-+}
-+
-+static int palmas_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
-+{
-+	unsigned char alarm_data[PALMAS_NUM_TIME_REGS];
-+	u32 int_val;
-+	struct palmas *palmas = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	ret = palmas_bulk_read(palmas, PALMAS_RTC_BASE,
-+			PALMAS_ALARM_SECONDS_REG,
-+			alarm_data, PALMAS_NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC_ALARM_SECONDS read failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	alm->time.tm_sec = bcd2bin(alarm_data[0]);
-+	alm->time.tm_min = bcd2bin(alarm_data[1]);
-+	alm->time.tm_hour = bcd2bin(alarm_data[2]);
-+	alm->time.tm_mday = bcd2bin(alarm_data[3]);
-+	alm->time.tm_mon = bcd2bin(alarm_data[4]) - 1;
-+	alm->time.tm_year = bcd2bin(alarm_data[5]) + 100;
-+
-+	ret = palmas_read(palmas, PALMAS_RTC_BASE, PALMAS_RTC_INTERRUPTS_REG,
-+			&int_val);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC_INTERRUPTS reg read failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	if (int_val & PALMAS_RTC_INTERRUPTS_REG_IT_ALARM)
-+		alm->enabled = 1;
-+	return ret;
-+}
-+
-+static int palmas_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alm)
-+{
-+	unsigned char alarm_data[PALMAS_NUM_TIME_REGS];
-+	struct palmas *palmas = dev_get_drvdata(dev->parent);
-+	int ret;
-+
-+	ret = palmas_rtc_alarm_irq_enable(dev, 0);
-+	if (ret < 0) {
-+		dev_err(dev, "Disable RTC alarm failed\n");
-+		return ret;
-+	}
-+
-+	alarm_data[0] = bin2bcd(alm->time.tm_sec);
-+	alarm_data[1] = bin2bcd(alm->time.tm_min);
-+	alarm_data[2] = bin2bcd(alm->time.tm_hour);
-+	alarm_data[3] = bin2bcd(alm->time.tm_mday);
-+	alarm_data[4] = bin2bcd(alm->time.tm_mon + 1);
-+	alarm_data[5] = bin2bcd(alm->time.tm_year - 100);
-+
-+	ret = palmas_bulk_write(palmas, PALMAS_RTC_BASE,
-+		PALMAS_ALARM_SECONDS_REG, alarm_data, PALMAS_NUM_TIME_REGS);
-+	if (ret < 0) {
-+		dev_err(dev, "ALARM_SECONDS_REG write failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	if (alm->enabled)
-+		ret = palmas_rtc_alarm_irq_enable(dev, 1);
-+	return ret;
-+}
-+
-+static int palmas_clear_interrupts(struct device *dev)
-+{
-+	struct palmas *palmas = dev_get_drvdata(dev->parent);
-+	unsigned int rtc_reg;
-+	int ret;
-+
-+	ret = palmas_read(palmas, PALMAS_RTC_BASE, PALMAS_RTC_STATUS_REG,
-+				&rtc_reg);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC_STATUS read failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = palmas_write(palmas, PALMAS_RTC_BASE, PALMAS_RTC_STATUS_REG,
-+			rtc_reg);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC_STATUS write failed, err = %d\n", ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+static irqreturn_t palmas_rtc_interrupt(int irq, void *context)
-+{
-+	struct palmas_rtc *palmas_rtc = context;
-+	struct device *dev = palmas_rtc->dev;
-+	int ret;
-+
-+	ret = palmas_clear_interrupts(dev);
-+	if (ret < 0) {
-+		dev_err(dev, "RTC interrupt clear failed, err = %d\n", ret);
-+		return IRQ_NONE;
-+	}
-+
-+	rtc_update_irq(palmas_rtc->rtc, 1, RTC_IRQF | RTC_AF);
-+	return IRQ_HANDLED;
-+}
-+
-+static struct rtc_class_ops palmas_rtc_ops = {
-+	.read_time	= palmas_rtc_read_time,
-+	.set_time	= palmas_rtc_set_time,
-+	.read_alarm	= palmas_rtc_read_alarm,
-+	.set_alarm	= palmas_rtc_set_alarm,
-+	.alarm_irq_enable = palmas_rtc_alarm_irq_enable,
-+};
-+
-+static int palmas_rtc_probe(struct platform_device *pdev)
-+{
-+	struct palmas *palmas = dev_get_drvdata(pdev->dev.parent);
-+	struct palmas_rtc *palmas_rtc = NULL;
-+	int ret;
-+
-+	palmas_rtc = devm_kzalloc(&pdev->dev, sizeof(struct palmas_rtc),
-+			GFP_KERNEL);
-+	if (!palmas_rtc)
-+		return -ENOMEM;
-+
-+	/* Clear pending interrupts */
-+	ret = palmas_clear_interrupts(&pdev->dev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "clear RTC int failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	palmas_rtc->dev = &pdev->dev;
-+	platform_set_drvdata(pdev, palmas_rtc);
-+
-+	/* Start RTC */
-+	ret = palmas_update_bits(palmas, PALMAS_RTC_BASE, PALMAS_RTC_CTRL_REG,
-+			PALMAS_RTC_CTRL_REG_STOP_RTC,
-+			PALMAS_RTC_CTRL_REG_STOP_RTC);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "RTC_CTRL write failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	palmas_rtc->irq = platform_get_irq(pdev, 0);
-+
-+	palmas_rtc->rtc = rtc_device_register(pdev->name, &pdev->dev,
-+				&palmas_rtc_ops, THIS_MODULE);
-+	if (IS_ERR(palmas_rtc->rtc)) {
-+		ret = PTR_ERR(palmas_rtc->rtc);
-+		dev_err(&pdev->dev, "RTC register failed, err = %d\n", ret);
-+		return ret;
-+	}
-+
-+	ret = request_threaded_irq(palmas_rtc->irq, NULL,
-+			palmas_rtc_interrupt,
-+			IRQF_TRIGGER_LOW | IRQF_ONESHOT |
-+			IRQF_EARLY_RESUME,
-+			dev_name(&pdev->dev), palmas_rtc);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "IRQ request failed, err = %d\n", ret);
-+		rtc_device_unregister(palmas_rtc->rtc);
-+		return ret;
-+	}
-+
-+	device_set_wakeup_capable(&pdev->dev, 1);
-+	return 0;
-+}
-+
-+static int palmas_rtc_remove(struct platform_device *pdev)
-+{
-+	struct palmas_rtc *palmas_rtc = platform_get_drvdata(pdev);
-+
-+	palmas_rtc_alarm_irq_enable(&pdev->dev, 0);
-+	free_irq(palmas_rtc->irq, palmas_rtc);
-+	rtc_device_unregister(palmas_rtc->rtc);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int palmas_rtc_suspend(struct device *dev)
-+{
-+	struct palmas_rtc *palmas_rtc = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		enable_irq_wake(palmas_rtc->irq);
-+	return 0;
-+}
-+
-+static int palmas_rtc_resume(struct device *dev)
-+{
-+	struct palmas_rtc *palmas_rtc = dev_get_drvdata(dev);
-+
-+	if (device_may_wakeup(dev))
-+		disable_irq_wake(palmas_rtc->irq);
-+	return 0;
-+}
-+#endif
-+
-+static const struct dev_pm_ops palmas_rtc_pm_ops = {
-+	SET_SYSTEM_SLEEP_PM_OPS(palmas_rtc_suspend, palmas_rtc_resume)
-+};
-+
-+static struct platform_driver palmas_rtc_driver = {
-+	.probe		= palmas_rtc_probe,
-+	.remove		= palmas_rtc_remove,
-+	.driver		= {
-+		.owner	= THIS_MODULE,
-+		.name	= "palmas-rtc",
-+		.pm	= &palmas_rtc_pm_ops,
-+	},
-+};
-+
-+module_platform_driver(palmas_rtc_driver);
-+
-+MODULE_ALIAS("platform:palmas_rtc");
-+MODULE_DESCRIPTION("TI PALMAS series RTC driver");
-+MODULE_AUTHOR("Laxman Dewangan <ldewangan@nvidia.com>");
-+MODULE_LICENSE("GPL v2");
--- 
-1.7.1.1
+On Thu, 3 Jan 2013 08:31:55 +0100 Martin Schwidefsky <schwidefsky@de.ibm.co=
+m> wrote:
+>
+> I surprises me a bit that there is only one hunk in the cleanup patch.
+> I expected three, the above for virtio_ccw.c, one for irq.c and another
+> for irq.h. I checked the resulting tree which is correct! The merge diff
+> has a '++' line for irq.c/irq.h:
 
+Those bits were further down in the mail I sent you (after my signature).
+
+Thanks for checking.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ5WPqAAoJEECxmPOUX5FESTEP/0+bpw+M37ggKflO9qZj8yUf
+2DGfIVisEklAUiSDDyQ1WCQKn5V/gSnXCf2PaNi/519Iuox/nALgRW5GvVT+olg7
+pK+JA3ZNsSEv3C7VRPseorFvgPAhxBK9pYJUb6Wn3R3pea3/LQTuFLNvcsQz85hb
+j+R8weMLm8vrHXi0r5t/+ozY/xNDG1Zb3sEglXJZEmAWxB1EjZsOjgIHoC07zwD6
+VlmYaaM1FwVYFL9y3XzXXLw4cdTEdrcKp+2WCt9CZk9LuUrP1SJZ+8k568B0Puf1
+PTva/m7zVLxPSFBb8Y5x6+p/51v7X2H+mAfmhpLHOzlVQrS5sEScvCP+fMb6f1sn
+3lis1HWyp01j+bVvGI4kwaAw32D1nwV17YicE3XXitBleByeSCHPgbT/vyrip+uc
+NFdEqqQM1YjGha0zgeqRBIyNgvm10jxRBNlbNAHqg0IU7RyHKBwBseDQg5uCoE3K
+uG6YDezdq0FDHWzZGYVJ5hhy/8TpHv4lGzsc3yFvteAtR63PlI880WfOwaoCkZO9
+gS/O0UFZxLurjNafRyTJTd9bkfI8wUqXBAGyQ6ACwUwCD/ueO30PGiLm22AVAe/k
+i6esyw+MURnLT11d6JV/otVyTCKFb71V7V2tkkpPCJfMptkw7y8N/nlos41PlU0h
+03xhEOjtodg9IFcT0ceN
+=axhl
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c--
