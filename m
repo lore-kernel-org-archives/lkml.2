@@ -1,78 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab3ACJts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 04:49:48 -0500
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:49554 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752854Ab3ACJtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 04:49:45 -0500
+	id S1753140Ab3ACJuw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 04:50:52 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51338 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751134Ab3ACJus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 04:50:48 -0500
+Date: Thu, 3 Jan 2013 10:50:42 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] Support of dual pen/multitouch and new default
+ for win 7 certified devices
+In-Reply-To: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
+Message-ID: <alpine.LNX.2.00.1301031050060.27348@pobox.suse.cz>
+References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <50E4854E.8060801@suse.cz>
-References: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com>
-	<50E3FDFA.4070203@suse.cz>
-	<20130102114311.66215bf5@pyramind.ukuu.org.uk>
-	<CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com>
-	<50E4854E.8060801@suse.cz>
-Date: Thu, 3 Jan 2013 10:49:44 +0100
-Message-ID: <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
-Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
- queue is active
-From: Ivo Sieben <meltedpianoman@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg, Peter, Ingo, Andi & Preeti,
+On Fri, 23 Nov 2012, Benjamin Tissoires wrote:
 
-2013/1/2 Jiri Slaby <jslaby@suse.cz>:
-> On 01/02/2013 04:21 PM, Ivo Sieben wrote:
->> I don't understand your responses: do you suggest to implement this
->> "if active" behavior in:
->> * A new wake_up function called wake_up_if_active() that is part of
->> the waitqueue layer?
->
-> Sounds good.
->
-> --
-> js
-> suse labs
+> Last week, I received two new interesting devices report:
+> - N-trig win 8 certified pen/touch panel
+> - Samsung Nexio 42"
 
-I want to ask you 'scheduler' people for your opinion:
+Bejmanin, Henrik, what are the plans with this patchset please? Planning 
+respin for 3.9?
 
-Maybe you remember my previous patch where I suggested an extra
-'waitqueue empty' check before entering the critical section of the
-wakeup() function (If you do not remember see
-https://lkml.org/lkml/2012/10/25/159)
+Thanks.
 
-Finally Oleg responded that a lot of callers do
+> 
+> 
+> N-trig device
+> -------------
+> The first one is the origin of patches 1 to 6.
+> The multiouch part worked flawlessly with the win 8 patches I sent before,
+> but the pen part was completely ignored.
+> I could have used the quirk MULTI_INPUT, but by testing this quirk against
+> several devices report I have (https://github.com/bentiss/hid-devices), it
+> was a pain because some of them create 4 or 5 useless inputs.
+> 
+> I choose to allow the hid driver to control the creation of input devices, thus
+> patches 1 to 3.
+> 
+> 
+> Nexio device
+> ------------
+> The second one was more problematic. Indeed, it was not working at all with the
+> current release of hid-multitouch. I had several ghost points, and any of the
+> available quirks worked.
+> I finaly found the trick, and this trick applies to all the win7 and win8
+> devices I saw so far (same url as before).
+> 
+> So I think I finally understood why the windows driver was better than us: it
+> first looks at the announced contact count, and treat only the right number. It
+> was so simple... and it works so well...
+> 
+> However, for us, I need to get this information from the raw_event because most
+> of the devices put the contact count field at the end of the report.
+> 
+> I also decided to change the default class as it is much more tolerant than the
+> previous one. I could have changed all the devices, but in the end, I changed
+> only those that get a benefit and that I could test.
+> 
+> 
+> Debug tool
+> ----------
+> I was able to discover this trick only recently because I made a small C program
+> that allows me to replay the hid events through hid-multitouch. The code is
+> here: https://github.com/bentiss/hid-replay and you will need a kernel 3.6
+> to make it work (it requires uhid).
+> 
+> However, be careful, this program can be the root of many kernel oopses if the
+> targeted hid module tries to directly handle the usb or with any of the usbhid
+> function.
+> So, Henrik, I really need you to push your abstraction of usbhid in all hid
+> modules :)
+> 
+> Anyway, this tool can be very helpful to debug hid devices, that's why I share
+> it there... and also because I work for an open-source company :)
+> 
+> Happy reviewing.
+> 
+> Cheers,
+> Benjamin
+> 
+> Benjamin Tissoires (11):
+>   HID: hid-input factorize hid_input allocation
+>   HID: hid-input: simplify hid_input allocation and registration
+>   HID: hid-input: export hidinput_allocation function
+>   HID: hid-multitouch: creates and handle stylus report with dual-sensors
+>   HID: hid-multitouch: manually send sync event for pen input report
+>   HID: hid-multitouch: append " Pen" to the name of the stylus input
+>   HID: hid-multitouch: rename MT_CLS_DEFAULT into MT_CLS_NSMU
+>   HID: hid-multitouch: add support for Nexio 42" panel
+>   HID: hid-multitouch: check if ContactCount is given for default quirk
+>   HID: hid-multitouch: fix protocol for 3 devices
+>   HID: hid-multitouch: use MT_QUIRK_CONTACT_COUNT_ACCURATE for win 8 devices
+> 
+>  drivers/hid/hid-ids.h        |   3 +
+>  drivers/hid/hid-input.c      | 100 +++++++++++++---------
+>  drivers/hid/hid-multitouch.c | 198 +++++++++++++++++++++++++++++++++++--------
+>  include/linux/hid.h          |   1 +
+>  4 files changed, 229 insertions(+), 73 deletions(-)
+> 
+> -- 
+> 1.8.0
+> 
 
-	if (waitqueue_active(q))
-		wake_up(...);
-
-what made my patch pointless and adds a memory barrier. I then decided
-to also implement the 'waitqueue_active' approach for my problem.
-
-But now I get a review comment by Jiri that he would like to hide this
-'if active behavior' in a wake_up_if_active() kind of function. I
-think he is right that implementing this check in the wakeup function
-would clean things up, right?
-
-I would like to have your opinion on the following two suggestions:
-- We still can do the original patch on the wake_up() that I
-suggested. I then can do an additional code cleanup patch that removes
-the double 'waitqueue_active' call (a quick grep found about 150 of
-these waitqueue active calls) on several places in the code.
-- Or - as an alternative - I could add extra _if_active() versions of
-all wake_up() functions, that implement this extra test.
-
-Regards,
-Ivo
+-- 
+Jiri Kosina
+SUSE Labs
