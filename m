@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab3ACQF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:05:26 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:18832 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab3ACQFW (ORCPT
+	id S1753525Ab3ACQIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 11:08:42 -0500
+Received: from mail-ea0-f175.google.com ([209.85.215.175]:52775 "EHLO
+	mail-ea0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab3ACQIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:05:22 -0500
-Date: Thu, 3 Jan 2013 19:04:55 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Cyril Roelandt <tipecaml@gmail.com>,
-        spi-devel-general@lists.sourceforge.net,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] spi: fix return value check in hspi_probe().
-Message-ID: <20130103160455.GO7247@mwanda>
-References: <1355271894-5284-1-git-send-email-tipecaml@gmail.com>
- <1355271894-5284-6-git-send-email-tipecaml@gmail.com>
- <87txrsqf7f.wl%kuninori.morimoto.gx@renesas.com>
- <20121219151154.937EC3E0AD7@localhost>
- <20121219163914.GN5032@mwanda>
- <20121222095620.83E243E07FA@localhost>
+	Thu, 3 Jan 2013 11:08:39 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
+        "'Pawel Osciak'" <pawel@osciak.com>,
+        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
+        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        sylwester Nawrocki <s.nawrocki@samsung.com>
+Subject: Re: [PATCH v3 2/4] videobuf2-dma-streaming: new videobuf2 memory allocator
+Date: Thu, 03 Jan 2013 17:13:14 +0100
+Message-ID: <1399400.izKZgEHXnP@harkonnen>
+User-Agent: KMail/4.9.4 (Linux/3.6.10-2.fc17.x86_64; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <20130101105217.63d7ca9c@redhat.com>
+References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <1419875.Bts6eHGtlv@number-5> <20130101105217.63d7ca9c@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121222095620.83E243E07FA@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 22, 2012 at 09:56:20AM +0000, Grant Likely wrote:
-> On Wed, 19 Dec 2012 19:39:14 +0300, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > On Wed, Dec 19, 2012 at 03:11:54PM +0000, Grant Likely wrote:
-> > > On Tue, 11 Dec 2012 16:36:27 -0800 (PST), Kuninori Morimoto <kuninori.morimoto.gx@renesas.com> wrote:
-> > > > 
-> > > > Hi
-> > > > 
-> > > > > According to its documentation, clk_get() returns a "valid IS_ERR() condition
-> > > > > containing errno", so we should call IS_ERR() rather than a NULL check.
-> > > > > 
-> > > > > Signed-off-by: Cyril Roelandt <tipecaml@gmail.com>
-> > > > 
-> > > > Acked-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> > > 
-> > > Applied, thanks.
-> > 
-> > In another thread, we were just talking about who clk_get() can
-> > return a NULL if !CONFIG_HAVE_CLK.  That might change to match the
-> > documentation later...  Not sure.
-> 
-> So what is the solution here? Will the dummy clk_get() be changed, or is
-> there more work needed on the drivers?
-> 
+> After all those discussions, I'm ok on adding this new driver, but please
+> add a summary of those discussions at the patch description. As I said,
+> the reason why this driver is needed is not obvious. So, it needs to be
+> very well described.
 
-This driver can't function without a clk.  It should select that at
-build time instead of testing for it at probe.  Just checking for
-IS_ERR() will NOT cause a NULL dereference so the patch is ok in
-that respect.  I'm not sure if this can be build without
-CONFIG_HAVE_CLK.
+ack. I will ask more information to ST about the board because the 
+architecture side it is not in the kernel mainline, but it should be.
 
-regards,
-dan carpenter
+> Patch 1/4 of this series doesn't apply anymore (maybe it were already
+> applied?).
 
+Probably already applied
+
+> So, could you please send us a v4, rebased on the top of staging/for_v3.9
+> branch of the media-tree?
+
+I will do it
+
+-- 
+Federico Vaga
