@@ -1,184 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab3ACWrF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:47:05 -0500
-Received: from fieldses.org ([174.143.236.118]:34786 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754437Ab3ACWrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:47:03 -0500
-Date: Thu, 3 Jan 2013 17:46:56 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Pawel Dziepak <pdziepak@quarnos.org>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] nfsd: Don't overuse NFS?ERR_PERM error code
-Message-ID: <20130103224656.GB3238@fieldses.org>
-References: <CALS3df0FR0XD9wnzVhCMDXbS-Q2OejH2TfgYf6uL8gF4cKDRng@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALS3df0FR0XD9wnzVhCMDXbS-Q2OejH2TfgYf6uL8gF4cKDRng@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754620Ab3ACWsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:48:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34281 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022Ab3ACWsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 17:48:41 -0500
+Date: Thu, 3 Jan 2013 14:48:39 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <koverstreet@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu
+Subject: Re: [PATCH 23/32] Generic dynamic per cpu refcounting
+Message-Id: <20130103144839.7a514924.akpm@linux-foundation.org>
+In-Reply-To: <1356573611-18590-26-git-send-email-koverstreet@google.com>
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
+	<1356573611-18590-26-git-send-email-koverstreet@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25, 2012 at 12:30:42AM +0100, Pawel Dziepak wrote:
-> From: Pawel Dziepak <pdziepak@quarnos.org>
+On Wed, 26 Dec 2012 18:00:02 -0800
+Kent Overstreet <koverstreet@google.com> wrote:
+
+> This implements a refcount with similar semantics to
+> atomic_get()/atomic_dec_and_test(), that starts out as just an atomic_t
+> but dynamically switches to per cpu refcounting when the rate of
+> gets/puts becomes too high.
 > 
-> Unlike EPERM, NFS?ERR_PERM error code applies only when the operation could
-> not be completed because the caller is either not the owner or not a
-> privileged user. Actually, only OPEN, CREATE and SETATTR are supposed to
-> ever return such error code when a problem occurs when changing or setting
-> access permissions.
->
-> Generally, this patch replaces NFS?ERR_PERM with NFS?ERR_ACCESS which is a more
-> appropriate error code indicating that the caller is not allowed to perform the
-> requested operation.
+> It also implements two stage shutdown, as we need it to tear down the
+> percpu counts. Before dropping the initial refcount, you must call
+> percpu_ref_kill(); this puts the refcount in "shutting down mode" and
+> switches back to a single atomic refcount with the appropriate barriers
+> (synchronize_rcu()).
 > 
-> In case of incorrect {file,directory} names either NFS?ERR_INVAL or
-> NFS4ERR_BADNAME is returned.
+> It's also legal to call percpu_ref_kill() multiple times - it only
+> returns true once, so callers don't have to reimplement shutdown
+> synchronization.
 > 
-> Opening for write files with append-only bit set or mandatory locking enabled
-> results in NFS4ERR_SHARE_DENIED.
+> For the sake of simplicity/efficiency, the heuristic is pretty simple -
+> it just switches to percpu refcounting if there are more than x gets
+> in one second (completely arbitrarily, 4096).
 > 
-> Signed-off-by: Pawel Dziepak <pdziepak@quarnos.org>
-> ---
->  fs/nfsd/nfsfh.c |  2 +-
->  fs/nfsd/vfs.c   | 28 ++++++++++++++++------------
->  2 files changed, 17 insertions(+), 13 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
-> index 814afaa..b18382c 100644
-> --- a/fs/nfsd/nfsfh.c
-> +++ b/fs/nfsd/nfsfh.c
-> @@ -91,7 +91,7 @@ static __be32 nfsd_setuser_and_check_port(struct
-> svc_rqst *rqstp,
->   dprintk(KERN_WARNING
->         "nfsd: request from insecure port %s!\n",
->         svc_print_addr(rqstp, buf, sizeof(buf)));
-> - return nfserr_perm;
-> + return nfserr_acces;
+> It'd be more correct to count the number of cache misses or something
+> else more profile driven, but doing so would require accessing the
+> shared ref twice per get - by just counting the number of gets(), we can
+> stick that counter in the high bits of the refcount and increment both
+> with a single atomic64_add(). But I expect this'll be good enough in
+> practice.
 
-Why is eaccess better in this particular case?
+I still don't "get" why this code exists.  It is spectacularly,
+stunningly undocumented and if someone were to ask me "under what
+circumstances should I use percpu-refcount", I would not be able to
+help them.
 
->   }
-> 
->   /* Set user creds for this exportpoint */
-> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-> index d586117..a9964de 100644
-> --- a/fs/nfsd/vfs.c
-> +++ b/fs/nfsd/vfs.c
-> @@ -777,7 +777,7 @@ nfsd_open(struct svc_rqst *rqstp, struct svc_fh
-> *fhp, umode_t type,
->   /* Disallow write access to files with the append-only bit set
->   * or any access when mandatory locking enabled
->   */
-> - err = nfserr_perm;
-> + err = nfserr_share_denied;
-
-This results in returning a v4-only error on some v2 and v3
-routines--definitely not OK.
-
->   if (IS_APPEND(inode) && (may_flags & NFSD_MAY_WRITE))
->   goto out;
->   /*
-> @@ -924,8 +924,6 @@ nfsd_vfs_read(struct svc_rqst *rqstp, struct
-> svc_fh *fhp, struct file *file,
->   __be32 err;
->   int host_err;
-> 
-> - err = nfserr_perm;
-> -
-
-Hm, yeah there's no way out of this routine without clobbering this
-value later, I don't know why we have this assignment.  OK.
-
->   if (file->f_op->splice_read && rqstp->rq_splice_ok) {
->   struct splice_desc sd = {
->   .len = 0,
-> @@ -1246,7 +1244,7 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->   __be32 err2;
->   int host_err;
-> 
-> - err = nfserr_perm;
-> + err = nfserr_inval;
->   if (!flen)
->   goto out;
-
-OK, I guess.  I'm curious though why you care which error you get when
-operating on a zero-length filehandle.
-
-Is there a practical problem you're trying to solve here?
-
->   err = nfserr_exist;
-> @@ -1387,7 +1385,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
->   int host_err;
->   __u32 v_mtime=0, v_atime=0;
-> 
-> - err = nfserr_perm;
-> + err = nfserr_inval;
->   if (!flen)
->   goto out;
->   err = nfserr_exist;
-> @@ -1675,7 +1673,7 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
->   err = nfserr_isdir;
->   if (S_ISDIR(tfhp->fh_dentry->d_inode->i_mode))
->   goto out;
-> - err = nfserr_perm;
-> + err = nfserr_inval;
->   if (!len)
->   goto out;
->   err = nfserr_exist;
-> @@ -1761,8 +1759,11 @@ nfsd_rename(struct svc_rqst *rqstp, struct
-> svc_fh *ffhp, char *fname, int flen,
->   if (ffhp->fh_export != tfhp->fh_export)
->   goto out;
-> 
-> - err = nfserr_perm;
-> - if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
-> + err = nfserr_inval;
-> + if (!flen || !tlen)
-> + goto out;
-> + err = nfsd_v4client(rqstp) ? nfserr_badname : nfserr_inval;
-> + if (isdotent(fname, flen) || isdotent(tname, tlen))
->   goto out;
-> 
->   host_err = fh_want_write(ffhp);
-> @@ -1850,8 +1851,11 @@ nfsd_unlink(struct svc_rqst *rqstp, struct
-> svc_fh *fhp, int type,
->   __be32 err;
->   int host_err;
-> 
-> - err = nfserr_acces;
-> - if (!flen || isdotent(fname, flen))
-> + err = nfserr_inval;
-> + if (!flen)
-> + goto out;
-> + err = nfsd_v4client(rqstp) ? nfserr_badname : nfserr_inval;
-> + if (isdotent(fname, flen))
->   goto out;
->   err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_REMOVE);
->   if (err)
-> @@ -2120,10 +2124,10 @@ nfsd_permission(struct svc_rqst *rqstp, struct
-> svc_export *exp,
->      __mnt_is_readonly(exp->ex_path.mnt))
->   return nfserr_rofs;
->   if (/* (acc & NFSD_MAY_WRITE) && */ IS_IMMUTABLE(inode))
-> - return nfserr_perm;
-> + return nfserr_acces;
-
-I'm confused about that case.  This is consistent with
-fs/namei.c:__inode_permission, but not with any other IS_IMMUTABLE
-checks that I can find.
-
-I would have thought this sort of "nobody can do this" case would be
-EPERM.
-
->   }
->   if ((acc & NFSD_MAY_TRUNC) && IS_APPEND(inode))
-> - return nfserr_perm;
-> + return nfserr_acces;
-
-Ditto, this is inconsistent with other uses.
-
---b.
