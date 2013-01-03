@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111Ab3ACKnh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 05:43:37 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39171 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab3ACKne (ORCPT
+	id S1753133Ab3ACKqE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 05:46:04 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:50150 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3ACKqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 05:43:34 -0500
-Date: Thu, 3 Jan 2013 10:38:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: kpark3469@gmail.com
-Cc: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sahara <keun-o.park@windriver.com>
-Subject: Re: [PATCH 2/2] arm: make return_address available for ARM_UNWIND
-Message-ID: <20130103103815.GL2631@n2100.arm.linux.org.uk>
-References: <1357207949-3349-1-git-send-email-kpark3469@gmail.com> <1357207949-3349-2-git-send-email-kpark3469@gmail.com>
+	Thu, 3 Jan 2013 05:46:02 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357207949-3349-2-git-send-email-kpark3469@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130103001536.7fd1e952@annuminas.surriel.com>
+References: <20130103001536.7fd1e952@annuminas.surriel.com>
+Date: Thu, 3 Jan 2013 02:46:01 -0800
+Message-ID: <CANN689GPzjJW7OiYhFJi1xLSN+606auMeJCsxR_CHL_T4aETZg@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] x86,smp: make ticket spinlock proportional
+ backoff w/ auto tuning
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>, knoel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 07:12:29PM +0900, kpark3469@gmail.com wrote:
-> -#if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
-> +#if defined(CONFIG_FRAME_POINTER) || defined(CONFIG_ARM_UNWIND)
->  /*
->   * return_address uses walk_stackframe to do it's work.  If both
->   * CONFIG_FRAME_POINTER=y and CONFIG_ARM_UNWIND=y walk_stackframe uses unwind
-> - * information.  For this to work in the function tracer many functions would
-> - * have to be marked with __notrace.  So for now just depend on
-> - * !CONFIG_ARM_UNWIND.
+On Wed, Jan 2, 2013 at 9:15 PM, Rik van Riel <riel@redhat.com> wrote:
+> The v2 series integrates several ideas from Michel Lespinasse
+> and Eric Dumazet, which should result in better throughput and
+> nicer behaviour in situations with contention on multiple locks.
+>
+> Please let me know if you manage to break this code in any way,
+> so I can fix it...
 
-So what have you done about the issue referred in this comment?  Or do you
-believe that fixing warnings (even if they are explicit #warning statements)
-is far more important than code being functionally correct?
+I'm seeing some very weird things on my 3 test machines. Looks like
+the spinlock delay sometimes gets crazy, at which point spinlock
+performance becomes unbearable and the network driver freaks out.
+
+# ./spinlock_load_test
+ 1 spinlocks: 24159990
+ 2 spinlocks: 12900657
+ 3 spinlocks: 11547771
+ 4 spinlocks: 9113
+ 6 spinlocks: 259
+ 8 spinlocks: 310
+12 spinlocks: 283
+16 spinlocks:
+<seems to be stuck here; meanwhile my serial console fills up with
+network driver cries>
+
+Well, I take it as an incitation to pay special attention to this code review :)
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
