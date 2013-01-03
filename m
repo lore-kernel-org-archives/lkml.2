@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753731Ab3ACSzJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 13:55:09 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:37376 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753017Ab3ACSzH (ORCPT
+	id S1753843Ab3ACSzX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 13:55:23 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46939 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753799Ab3ACSzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 13:55:07 -0500
+	Thu, 3 Jan 2013 13:55:17 -0500
+Message-ID: <50E5D460.80303@infradead.org>
+Date: Thu, 03 Jan 2013 10:56:32 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20121222094545.GA4222@google.com>
-References: <1356050997-2688-1-git-send-email-walken@google.com>
- <CALCETrUi4JJSahrDKBARrwGsGE=1RbH8WL4tk1YgDmEowzXtSQ@mail.gmail.com>
- <CANN689H+yOeA3pvBMGu52q7brfoDwtkh0pA==c8VVoCkapkx6g@mail.gmail.com>
- <CALCETrU7u7P67QCwmj4qTMHti1=MXyjy3V9FejWbbrMVi01mDw@mail.gmail.com>
- <CANN689GBCsZWKkAQuNGfF4OJwVOyZ5neUcJo=ajzMKNmFug+XQ@mail.gmail.com>
- <CALCETrUOXjm6uoZ=TwyPr0_EQT-10ko5k448FwGP_dMwb=v=AA@mail.gmail.com>
- <CANN689G-+Dns7BEJVG1SNO_CYA1vCEhiyf7F90sKYPvrNsXN9w@mail.gmail.com> <20121222094545.GA4222@google.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 3 Jan 2013 10:54:44 -0800
-Message-ID: <CALCETrU6CAFTUi8t8BzGx6jYe6GuzmUfVyVc=HjWbiY81-MmMQ@mail.gmail.com>
-Subject: Re: [PATCH 10/9] mm: make do_mmap_pgoff return populate as a size in
- bytes, not as a bool
-To: Michel Lespinasse <walken@google.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Hugh Dickins <hughd@google.com>, Jorn_Engel <joern@logfs.org>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        netfilter-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 2 (netfilter)
+References: <20130102151216.b81cd4d4bf54fc8d1f5d9b27@canb.auug.org.au> <50E47EEF.8090005@infradead.org> <20130103013559.GA2323@1984> <20130103023001.GA13254@1984>
+In-Reply-To: <20130103023001.GA13254@1984>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 22, 2012 at 1:45 AM, Michel Lespinasse <walken@google.com> wrote:
-> do_mmap_pgoff() rounds up the desired size to the next PAGE_SIZE multiple,
-> however there was no equivalent code in mm_populate(), which caused issues.
->
-> This could be fixed by introduced the same rounding in mm_populate(),
-> however I think it's preferable to make do_mmap_pgoff() return populate
-> as a size rather than as a boolean, so we don't have to duplicate the
-> size rounding logic in mm_populate().
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+On 01/02/13 18:30, Pablo Neira Ayuso wrote:
+> On Thu, Jan 03, 2013 at 02:35:59AM +0100, Pablo Neira Ayuso wrote:
+>>> when NF_CONNTRACK is not enabled (build was on i386):
+>>>
+>>>   CC [M]  net/netfilter/xt_CT.o
+>>> In file included from net/netfilter/xt_CT.c:16:0:
+>>> include/net/netfilter/nf_conntrack.h:77:22: error: field 'ct_general' has incomplete type
+>>> include/net/netfilter/nf_conntrack.h: In function 'nf_ct_get':
+>>> include/net/netfilter/nf_conntrack.h:157:30: error: 'const struct sk_buff' has no member named 'nfct'
+>>> include/net/netfilter/nf_conntrack.h: In function 'nf_ct_put':
+>>> include/net/netfilter/nf_conntrack.h:164:2: error: implicit declaration of function 'nf_conntrack_put' [-Werror=implicit-function-declaration]
+>>> net/netfilter/xt_CT.c: In function 'xt_ct_target_v0':
+>>> net/netfilter/xt_CT.c:30:9: error: 'struct sk_buff' has no member named 'nfct'
+>>> net/netfilter/xt_CT.c:34:5: error: 'struct sk_buff' has no member named 'nfct'
+>>> net/netfilter/xt_CT.c: In function 'xt_ct_target_v1':
+>>> net/netfilter/xt_CT.c:47:9: error: 'struct sk_buff' has no member named 'nfct'
+>>> net/netfilter/xt_CT.c:51:5: error: 'struct sk_buff' has no member named 'nfct'
+>>> net/netfilter/xt_CT.c: In function 'xt_ct_tg_check_v0':
+>>> net/netfilter/xt_CT.c:155:15: error: 'struct net' has no member named 'ct'
+>>> net/netfilter/xt_CT.c: In function 'xt_ct_tg_check_v1':
+>>> net/netfilter/xt_CT.c:299:15: error: 'struct net' has no member named 'ct'
+>>> net/netfilter/xt_CT.c: In function 'notrack_tg':
+>>> net/netfilter/xt_CT.c:392:9: error: 'struct sk_buff' has no member named 'nfct'
+>>> net/netfilter/xt_CT.c:395:5: error: 'struct sk_buff' has no member named 'nfct'
+>>> net/netfilter/xt_CT.c:397:2: error: implicit declaration of function 'nf_conntrack_get' [-Werror=implicit-function-declaration]
+>>> net/netfilter/xt_CT.c:397:22: error: 'struct sk_buff' has no member named 'nfct'
+>>> cc1: some warnings being treated as errors
+>>> make[3]: *** [net/netfilter/xt_CT.o] Error 1
+>>
+>> Sorry, I cannot reproduce the selection ...
+> 
+> Caught it. Patch attached, thanks for the report.
+> 
 
-This appears to fix my hangs.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
---Andy
+Thanks.
+
+
+-- 
+~Randy
