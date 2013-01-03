@@ -1,65 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab3ACVQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:16:50 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:34358 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753497Ab3ACVQr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:16:47 -0500
-Message-ID: <50E5F539.8060600@wwwdotorg.org>
-Date: Thu, 03 Jan 2013 14:16:41 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753934Ab3ACVRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:17:33 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58940 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197Ab3ACVRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 16:17:30 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Alternative 2][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Thu, 03 Jan 2013 22:23:05 +0100
+Message-ID: <1635295.TkbrarASZn@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <2695660.jbNleTYArh@vostro.rjw.lan>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <1626213.gpPY5etSgn@vostro.rjw.lan> <2695660.jbNleTYArh@vostro.rjw.lan>
 MIME-Version: 1.0
-To: Thierry Reding <thierry.reding@avionic-design.de>
-CC: Hiroshi Doyu <hdoyu@nvidia.com>, Andrew Lunn <andrew@lunn.ch>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jason Cooper <jason@lakedaemon.net>, John Stultz <johnstul@us.ibm.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Olof Johansson <olof@lixom.net>, Rob Landley <rob@landley.net>,
-        linux-tegra@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 0/9] ARM: Initial support for Tegra 114 SoC.
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com> <20130103210036.GA4412@avionic-0098.adnet.avionic-design.de>
-In-Reply-To: <20130103210036.GA4412@avionic-0098.adnet.avionic-design.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 02:00 PM, Thierry Reding wrote:
-> On Thu, Dec 20, 2012 at 11:43:58AM +0200, Hiroshi Doyu wrote:
->> Hi,
->> 
->> This patchset adds initial support for the NVIDIA's new Tegra
->> 114 SoC (T114) based on the ARM Cortex-A15 MP. It has the minimal
->> support to allow the kernel to boot up into shell console. This
->> can be used as a basis for adding other device drivers for this
->> SoC. Currently there are 2 evaluation boards available, "Dalmore"
->> and "Pluto".
->> 
->> This patchset is against Stephen Warren's linux-next_common
->> branch:
->> 
->> git://nv-tegra.nvidia.com/user/swarren/linux-2.6
->> linux-next_common
->> 
->> For those who want to try:
->> 
->> $ make ARCH=arm tegra_defconfig $ scripts/config -e
->> ARCH_TEGRA_114_SOC -d DRM -d SUSPEND \ -d PM_RUNTIME -d CPU_FREQ
->> -d CPU_IDLE
+On Thursday, January 03, 2013 01:11:30 PM Rafael J. Wysocki wrote:
+> On Thursday, January 03, 2013 01:40:52 AM Rafael J. Wysocki wrote:
+> > On Wednesday, January 02, 2013 04:07:32 PM Bjorn Helgaas wrote:
+> > > On Thu, Dec 27, 2012 at 10:32:13PM +0100, Rafael J. Wysocki wrote:
+> > > > To that end, split pci_create_root_bus() into two functions,
+> > > > pci_alloc_root() and pci_add_root(), that will allocate memory for
+> > > > the new PCI bus and bridge representations and register them with
+> > > > the driver core, respectively, and that may be called directly by
+> > > > the architectures that need to set the root bridge's ACPI handle
+> > > > before registering it.
+> > > 
+> > > I'm trying to *reduce* the interfaces for creating and scanning PCI
+> > > host bridges, and this is a step in the opposite direction.
+> > 
+> > Yes it is.
+> > 
+> > The alternative is to make the root bridge initialization code more complex.
 > 
-> I wonder, what's the reason for disabling DRM? And while on the
-> topic, are there any plans to release a Tegra114 TRM?
+> Well, maybe not so much.
+> 
+> What about adding an extra arg to pci_create_root_bus(), ie. the patch below
+> (changelog skipped for now)?
+> 
+> I admit that having two void * args there is a little awkward, but at least
+> it's totally generic.
+> 
+> > > > Next, Make both x86 and ia64 (the only architectures using ACPI at
+> > > > the moment) call pci_alloc_root(), set the root bridge's ACPI handle
+> > > > and then call pci_add_root() in their pci_acpi_scan_root() routines
+> > > > instead of calling pci_create_root_bus().  For the other code paths
+> > > > adding PCI root bridges define a new pci_create_root_bus() as a
+> > > > simple combination of pci_alloc_root() and pci_add_root().
+> > > 
+> > > pci_create_root_bus() takes a "struct device *parent" argument.  That
+> > > seems like a logical place to tell the PCI core about the host bridge
+> > > device, but x86 and ia64 currently pass NULL there.
+> > 
+> > And there's a reason for that.  Namely, on these architectures PCI host
+> > bridges have no physical parents (well, at least in current practice).
+> > 
+> > > The patch below shows what I'm thinking.  It does have the side-effect
+> > > of changing the sysfs topology from this:
+> > > 
+> > >     /sys/devices/pci0000:00
+> > >     /sys/devices/pci0000:00/0000:00:00.0
+> > > 
+> > > to this:
+> > > 
+> > >     /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/pci0000:00
+> > >     /sys/devices/LNXSYSTM:00/device:00/PNP0A08:00/pci0000:00/0000:00:00.0
+> > > 
+> > > because it puts the PCI root bus (pci0000:00) under the PNP0A08 device
+> > > rather than at the top level.
+> > 
+> > Which is wrong.
+> > 
+> > PNP0A08 is not a parent of the host bridge, but its ACPI "companion" (ie. ACPI
+> > namespace node representing the host bridge itself).
+> > 
+> > > That seems like an improvement to me, but it *is* different.
+> > 
+> > Well, then we should make every ACPI device node corresponding to a PCI device
+> > be a parent of that device's struct pci_dev and so on for other bus types.  It
+> > doesn't sound like an attractive idea. :-)  Moreover, it is impossible, because
+> > those things generally already have parents (struct pci_dev objects have them
+> > at least).
+> > 
+> > That said the idea to pass something meaningful in the parent argument
+> > of pci_create_root_bus() can be implemented if we create a "physical" device
+> > object corresponding to "device:00" (which is an ACPI namespace node) in your
+> > example.
+> > 
+> > From what I can tell, "device:00" always corresponds to the ACPI _SB scope
+> > (which is mandatory), so in principle we can create an abstract "physical"
+> > device object for it and call it something like "system_root".  Then, if we
+> > use it as the parent of pci0000:00 (the host bridge), then we'll have
+> > 
+> >      /sys/devices/system_root/pci0000:00
+> >      /sys/devices/system_root/pci0000:00/0000:00:00.0
+> 
+> Having considered that a little more I don't really think it's a good idea.
+> It still would be going a little backwards, because we'd need to use the parent
+> to get an ACPI handle known already beforehand.
 
-AFAIK, the HW is basically compatible with previous chips, so I expect
-to see a DRM driver for it show up once all the various more basic
-devices are supported.
+One more thing.
+
+The sysfs locations of PCI devices shouldn't change if acpi=off is passed to
+the kernel, so the above is not a good idea at all, I'm afraid.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
