@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab3ACWev (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:34:51 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:54281 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753941Ab3ACWer (ORCPT
+	id S1754290Ab3ACWh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:37:56 -0500
+Received: from mail-da0-f46.google.com ([209.85.210.46]:35447 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753823Ab3ACWhw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:34:47 -0500
-Date: Thu, 3 Jan 2013 17:34:44 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        "Adamson, Dros" <Weston.Adamson@netapp.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Message-ID: <20130103223444.GF2753@mtj.dyndns.org>
-References: <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221234530.GA30048@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
- <20130103201120.GA2096@fieldses.org>
- <20130103220814.GB2753@mtj.dyndns.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA9119886EE@SACEXCMBX04-PRD.hq.netapp.com>
- <20130103222639.GE2753@mtj.dyndns.org>
+	Thu, 3 Jan 2013 17:37:52 -0500
+Date: Thu, 3 Jan 2013 14:38:01 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PATCH] Driver core __dev* removal patches for 3.8-rc2
+Message-ID: <20130103223801.GA4479@kroah.com>
+References: <20130103214114.GA12392@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130103222639.GE2753@mtj.dyndns.org>
+In-Reply-To: <20130103214114.GA12392@kroah.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 05:26:39PM -0500, Tejun Heo wrote:
-> Hello, Trond.
+On Thu, Jan 03, 2013 at 01:41:14PM -0800, Greg KH wrote:
+> The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 > 
-> On Thu, Jan 03, 2013 at 10:12:32PM +0000, Myklebust, Trond wrote:
-> > > The analysis is likely completely wrong, so please don't go off doing
-> > > something unnecessary.  Please take look at what's causing the
-> > > deadlocks again.
-> > 
-> > The analysis is a no-brainer:
-> > We see a deadlock due to one work item waiting for completion of another
-> > work item that is queued on the same CPU. There is no other dependency
-> > between the two work items.
+>   Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
 > 
-> What do you mean "waiting for completion of"?  Is one flushing the
-> other?  Or is one waiting for the other to take certain action?  How
-> are the two work items related?  Are they queued on the same
-> workqueue?  Can you create a minimal repro case of the observed
-> deadlock?
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.8-rc2
+> 
+> for you to fetch changes up to 96611032705e2bddeafda85f11987f24e3a8336e:
+> 
+>   Merge 3.8-rc2 into driver-core-linus (2013-01-03 13:14:26 -0800)
+> 
 
-Ooh, BTW, there was a bug where workqueue code created a false
-dependency between two work items.  Workqueue currently considers two
-work items to be the same if they're on the same address and won't
-execute them concurrently - ie. it makes a work item which is queued
-again while being executed wait for the previous execution to
-complete.
+<snip>
 
-If a work function frees the work item, and then waits for an event
-which should be performed by another work item and *that* work item
-recycles the freed work item, it can create a false dependency loop.
-There really is no reliable way to detect this short of verifying
-every memory free.  A patch is queued to make such occurrences less
-likely (work functions should also match for two work items considered
-the same), but if you're seeing this, the best thing to do is freeing
-the work item at the end of the work function.
+>  drivers/i2c/Module.symvers                               |  59 ++++++++++++++++++++++++++++++++
 
-Thanks.
+Crap, I accidentally committed this file as part of the merge, sorry
+about that.  I can either recreate the tree without this file in it, or
+delete the file in a commit on top of this, or just let you remove the
+file.  Which is easier for you?
 
--- 
-tejun
+Sorry about that, that's what I get for being on vacation for so long...
+
+greg k-h
