@@ -1,150 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437Ab3ACWUd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:20:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34063 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab3ACWUb (ORCPT
+	id S1754510Ab3ACWUu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:20:50 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:57846 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754490Ab3ACWUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:20:31 -0500
-Date: Thu, 3 Jan 2013 14:20:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
-Subject: Re: schedule_timeout: wrong timeout value fffffffffffffff0
-Message-Id: <20130103142029.705d2538.akpm@linux-foundation.org>
-In-Reply-To: <20130102152727.GA25940@redhat.com>
-References: <20130102152727.GA25940@redhat.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jan 2013 17:20:48 -0500
+Date: Thu, 3 Jan 2013 17:20:39 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: paul@paulmenage.org, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from
+ cgroup core
+Message-ID: <20130103222039.GD2753@mtj.dyndns.org>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org>
+ <50DAD696.8050400@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50DAD696.8050400@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jan 2013 10:27:27 -0500
-Dave Jones <davej@redhat.com> wrote:
+Hey, Li.
 
-> This happened to a box I left running fuzz tests over the holidays.
-> 
-> 
-> schedule_timeout: wrong timeout value fffffffffffffff0
-> Pid: 6606, comm: trinity-child1 Not tainted 3.8.0-rc1+ #43
-> Call Trace:
->  [<ffffffff81698415>] schedule_timeout+0x305/0x340
->  [<ffffffff8169ae82>] ? preempt_schedule+0x42/0x60
->  [<ffffffff8169cb65>] ? _raw_spin_unlock_irqrestore+0x75/0x80
->  [<ffffffff810dc461>] audit_log_start+0x311/0x470
->  [<ffffffff8106c62c>] ? __rcu_read_unlock+0x5c/0xa0
->  [<ffffffff81086120>] ? try_to_wake_up+0x320/0x320
->  [<ffffffff810e0d0b>] audit_log_exit+0x4b/0xfb0
->  [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
->  [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
->  [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
->  [<ffffffff810b2ecb>] ? lock_release_holdtime.part.24+0xcb/0x130
->  [<ffffffff81075f93>] ? up_write+0x23/0x40
->  [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
->  [<ffffffff816a4afc>] ? sysret_signal+0x5/0x47
->  [<ffffffff810e3d3f>] __audit_syscall_exit+0x25f/0x2c0
->  [<ffffffff816a4bad>] sysret_audit+0x17/0x21
-> 
+On Wed, Dec 26, 2012 at 06:51:02PM +0800, Li Zefan wrote:
+> I created a cpuset which has cpuset.cpus=1, and I forked a few cpu-hog tasks
+> and moved them to this cpuset, and the final operations was offlining cpu1.
+> It stucked.
 
-ooh, I can fix that.  Please review.
+This was caused by not rebuilding sched domains synchronously from cpu
+offline path.  I looks like scheduler got confused and put tasks on
+the dead cpu.  Should be okay in the updated patchset.  Can you please
+test / review that one?
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Subject: kernel/audit.c: avoid negative sleep durations
+Thanks.
 
-audit_log_start() performs the same jiffies comparison in two places.  If
-sufficient time has elapsed between the two comparisons, the second one
-produces a negative sleep duration:
-
-schedule_timeout: wrong timeout value fffffffffffffff0
-Pid: 6606, comm: trinity-child1 Not tainted 3.8.0-rc1+ #43
-Call Trace:
- [<ffffffff81698415>] schedule_timeout+0x305/0x340
- [<ffffffff8169ae82>] ? preempt_schedule+0x42/0x60
- [<ffffffff8169cb65>] ? _raw_spin_unlock_irqrestore+0x75/0x80
- [<ffffffff810dc461>] audit_log_start+0x311/0x470
- [<ffffffff8106c62c>] ? __rcu_read_unlock+0x5c/0xa0
- [<ffffffff81086120>] ? try_to_wake_up+0x320/0x320
- [<ffffffff810e0d0b>] audit_log_exit+0x4b/0xfb0
- [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
- [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
- [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
- [<ffffffff810b2ecb>] ? lock_release_holdtime.part.24+0xcb/0x130
- [<ffffffff81075f93>] ? up_write+0x23/0x40
- [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
- [<ffffffff816a4afc>] ? sysret_signal+0x5/0x47
- [<ffffffff810e3d3f>] __audit_syscall_exit+0x25f/0x2c0
- [<ffffffff816a4bad>] sysret_audit+0x17/0x21
-
-Fix it by performing the comparison a single time.
-
-Reported-by: Dave Jones <davej@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- kernel/audit.c |   36 +++++++++++++++++++++++-------------
- 1 file changed, 23 insertions(+), 13 deletions(-)
-
-diff -puN kernel/audit.c~a kernel/audit.c
---- a/kernel/audit.c~a
-+++ a/kernel/audit.c
-@@ -1101,6 +1101,23 @@ static inline void audit_get_stamp(struc
- 	}
- }
- 
-+/*
-+ * Wait for auditd to drain the queue a little
-+ */
-+static void wait_for_auditd(unsigned long sleep_time)
-+{
-+	DECLARE_WAITQUEUE(wait, current);
-+	set_current_state(TASK_INTERRUPTIBLE);
-+	add_wait_queue(&audit_backlog_wait, &wait);
-+
-+	if (audit_backlog_limit &&
-+	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
-+		schedule_timeout(sleep_time);
-+
-+	__set_current_state(TASK_RUNNING);
-+	remove_wait_queue(&audit_backlog_wait, &wait);
-+}
-+
- /* Obtain an audit buffer.  This routine does locking to obtain the
-  * audit buffer, but then no locking is required for calls to
-  * audit_log_*format.  If the tsk is a task that is currently in a
-@@ -1146,20 +1163,13 @@ struct audit_buffer *audit_log_start(str
- 
- 	while (audit_backlog_limit
- 	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
--		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
--		    && time_before(jiffies, timeout_start + audit_backlog_wait_time)) {
--
--			/* Wait for auditd to drain the queue a little */
--			DECLARE_WAITQUEUE(wait, current);
--			set_current_state(TASK_INTERRUPTIBLE);
--			add_wait_queue(&audit_backlog_wait, &wait);
--
--			if (audit_backlog_limit &&
--			    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
--				schedule_timeout(timeout_start + audit_backlog_wait_time - jiffies);
-+		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time) {
-+			unsigned long sleep_time;
- 
--			__set_current_state(TASK_RUNNING);
--			remove_wait_queue(&audit_backlog_wait, &wait);
-+			sleep_time = timeout_start + audit_backlog_wait_time -
-+					jiffies;
-+			if ((long)sleep_time > 0)
-+				wait_for_auditd(sleep_time);
- 			continue;
- 		}
- 		if (audit_rate_check() && printk_ratelimit())
-_
-
+-- 
+tejun
