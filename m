@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753682Ab3ACSGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 13:06:53 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:12277 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753475Ab3ACSGv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 13:06:51 -0500
-X-IronPort-AV: E=Sophos;i="4.84,404,1355126400"; 
-   d="scan'208";a="17681943"
-Date: Thu, 3 Jan 2013 10:06:43 -0800
-From: Pratik Patel <pratikp@codeaurora.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Jon Hunter <jon-hunter@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
-        "david.rusling@linaro.org" <david.rusling@linaro.org>,
-        "arve@android.com" <arve@android.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "d-deao@ti.com" <d-deao@ti.com>,
-        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: CoreSight framework and drivers
-Message-ID: <20130103180643.GA30277@pratikp-linux.qualcomm.com>
-References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
- <20121219112314.GA26329@mudshark.cambridge.arm.com>
- <50D1F37E.6000804@ti.com>
- <20121219212431.GC23594@pratikp-linux.qualcomm.com>
- <50D34EE5.8090407@ti.com>
- <20121220195127.GA14877@pratikp-linux.qualcomm.com>
- <50D3972E.4030607@ti.com>
- <20121221221828.GA2658@pratikp-linux.qualcomm.com>
- <20121223113239.GG16237@mudshark.cambridge.arm.com>
+	id S1753643Ab3ACSJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 13:09:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38952 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753494Ab3ACSJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 13:09:04 -0500
+Date: Thu, 3 Jan 2013 19:09:01 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH -repost] memcg,vmscan: do not break out targeted reclaim
+ without reclaimed pages
+Message-ID: <20130103180901.GA22067@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20121223113239.GG16237@mudshark.cambridge.arm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 11:32:39AM +0000, Will Deacon wrote:
-> On Fri, Dec 21, 2012 at 10:18:28PM +0000, Pratik Patel wrote:
-> > What user interface do you plan to provide for the CTI? Maybe
-> > something consistent with other CoreSight components in sysfs to
-> > allow users to enable, disable, map and unmap ???
-> > 
-> > Please let me know your thoughts.
-> 
-> Rather than have your current approach of dev nodes + sysfs config files for
-> each coresight device, I think it might be better to follow something closer
-> to ftrace and stick per-device directories under debugfs/coresight/. Then you
-> can have a pipe file and some config files in the same directory for each
-> component. You also don't need to do any mapping operations with this (just
-> post-process the stream directly).
-> 
+Hi,
+I have posted this quite some time ago
+(https://lkml.org/lkml/2012/12/14/102) but it probably slipped through
+---
+>From 28b4e10bc3c18b82bee695b76f4bf25c03baa5f8 Mon Sep 17 00:00:00 2001
+From: Michal Hocko <mhocko@suse.cz>
+Date: Fri, 14 Dec 2012 11:12:43 +0100
+Subject: [PATCH] memcg,vmscan: do not break out targeted reclaim without
+ reclaimed pages
 
-Thanks for the suggestion. I had initially debated between debugfs
-and sysfs but chose sysfs + dev nodes since using device attributes
-relieves the drivers from manually managing directories and files,
-its taken care of by the device and sysfs layers. Moreover, since
-these are physical devices, device attributes made sense at the
-time.
+Targeted (hard resp. soft) reclaim has traditionally tried to scan one
+group with decreasing priority until nr_to_reclaim (SWAP_CLUSTER_MAX
+pages) is reclaimed or all priorities are exhausted. The reclaim is
+then retried until the limit is met.
 
-The map and unmap I was referring to was for the CTI trigger
-mappings. Dev nodes are currently intended to provide the raw
-data collected in the sinks.
+This approach, however, doesn't work well with deeper hierarchies where
+groups higher in the hierarchy do not have any or only very few pages
+(this usually happens if those groups do not have any tasks and they
+have only re-parented pages after some of their children is removed).
+Those groups are reclaimed with decreasing priority pointlessly as there
+is nothing to reclaim from them.
 
-Whats the advantage in using debugfs here?
+An easiest fix is to break out of the memcg iteration loop in shrink_zone
+only if the whole hierarchy has been visited or sufficient pages have
+been reclaimed. This is also more natural because the reclaimer expects
+that the hierarchy under the given root is reclaimed. As a result we can
+simplify the soft limit reclaim which does its own iteration.
 
-> It might also be fun to play with file redirection for sources and sinks, but
-> that's probably a bit too invasive.
-> 
-> Will
+Reported-by: Ying Han <yinghan@google.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+---
+ mm/vmscan.c |   19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 916afbc..bfd41a6 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1973,18 +1973,17 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+ 			shrink_lruvec(lruvec, sc);
+ 
+ 			/*
+-			 * Limit reclaim has historically picked one
+-			 * memcg and scanned it with decreasing
+-			 * priority levels until nr_to_reclaim had
+-			 * been reclaimed.  This priority cycle is
+-			 * thus over after a single memcg.
+-			 *
+-			 * Direct reclaim and kswapd, on the other
+-			 * hand, have to scan all memory cgroups to
+-			 * fulfill the overall scan target for the
++			 * Direct reclaim and kswapd have to scan all memory
++			 * cgroups to fulfill the overall scan target for the
+ 			 * zone.
++			 *
++			 * Limit reclaim, on the other hand, only cares about
++			 * nr_to_reclaim pages to be reclaimed and it will
++			 * retry with decreasing priority if one round over the
++			 * whole hierarchy is not sufficient.
+ 			 */
+-			if (!global_reclaim(sc)) {
++			if (!global_reclaim(sc) &&
++					sc->nr_to_reclaim >= sc->nr_reclaimed) {
+ 				mem_cgroup_iter_break(root, memcg);
+ 				break;
+ 			}
+-- 
+1.7.10.4
 
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Michal Hocko
+SUSE Labs
