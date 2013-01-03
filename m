@@ -1,94 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753282Ab3ACL7K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:59:10 -0500
-Received: from ampleforth.srv.alexanderweb.de ([89.238.79.244]:53320 "EHLO
-	ampleforth.srv.alexanderweb.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753039Ab3ACL7I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:59:08 -0500
-Message-ID: <50E5728B.6070105@alexanderweb.de>
-Date: Thu, 03 Jan 2013 12:59:07 +0100
-From: Alexander Schremmer <alex@alexanderweb.de>
+	id S1753292Ab3ACMBB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:01:01 -0500
+Received: from mail.pr.hu ([87.242.0.5]:44374 "EHLO mail.pr.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753039Ab3ACMA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 07:00:58 -0500
+X-Greylist: delayed 1412 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 07:00:58 EST
+Message-ID: <50E56D66.9030807@pr.hu>
+Date: Thu, 03 Jan 2013 12:37:10 +0100
+From: Boszormenyi Zoltan <zboszor@pr.hu>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] sound: Add support for Creative BT-D1 via usb sound quirks
-References: <50DEEF81.40008@alexanderweb.de> <s5hk3rur3kk.wl%tiwai@suse.de>
-In-Reply-To: <s5hk3rur3kk.wl%tiwai@suse.de>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Alex Deucher <alexdeucher@gmail.com>
+CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        lkml <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Borislav Petkov <bp@alien8.de>, Shuah Khan <shuahkhan@gmail.com>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+References: <20121223113153.GA8918@liondog.tnic> <20121223115133.GA229@x4> <20121223122210.GA4460@liondog.tnic> <20121223133102.GA8153@liondog.tnic> <CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com> <50E3907C.4040106@iki.fi> <20130102120248.GC6181@x1.alien8.de> <CAH3drwYSrfsbKg-BYpMF3Nkxrw1toK=EmcvJfKGzdbT_BK-1HQ@mail.gmail.com> <50E4755E.7030209@iki.fi> <CAH3drwZsNL6kwufTPGR8h-U9gfrsoYj_+C+8Ei1Ab-PPXrSuTQ@mail.gmail.com> <20130102223807.GA242@x4> <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
+In-Reply-To: <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Spam-Score: -0.2 (/)
+X-Scan-Signature: 179ef3736e309226eac6e039e192467d
+X-Spam-Tracer: backend.mail.pr.hu -0.2 20130103113602Z
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.01.2013 10:58, Takashi Iwai wrote:
+2013-01-03 00:37 keltezéssel, Alex Deucher írta:
+> On Wed, Jan 2, 2013 at 5:38 PM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+>> On 2013.01.02 at 17:31 -0500, Jerome Glisse wrote:
+>>> Please affected people can you test if patch :
+>>> http://people.freedesktop.org/~glisse/0003-drm-radeon-fix-dma-copy-on-r6xx-r7xx-evergen-ni-si-g.patch
+>>>
+>>> Fix the issue, you need to make sure you don't have the patch that
+>>> disable dma on r6xx ie that line 977-978 & 1061-1062  in radeon_asic.c
+>>> is :
+>>>   .copy = &r600_copy_dma,
+>>>   .copy_ring_index = R600_RING_TYPE_DMA_INDEX,
+>> It fixes the issue for me. Thanks.
+> The count is actually the count, not count - 1.  The real fix seems to
+> be that r6xx requires 2 dw aligned transfers.  The attached patch
+> fixes the issue for me.
+>
+> Alex
 
-> Thanks for the patch.  The changes look OK, but could you fix trivial
-> coding issues reported by scripts/checkpatch.pl and resend?
+I tried this patch over kernel 3.8.0-rc2 but the GDM screen is mostly garbage.
+Only some text, like "Not on the list?" below the users and small icons are visible
+but many user names are not rendered. http://tinypic.com/r/33xihit/6
+I am on Fedora 18/x86_64, Radeon HD6570.
 
-Oops, my sending workflow ate the tabs, here it is again (hopefully now
-working correctly):
-
-
-From: Alexander Schremmer <alex@alexanderweb.de>
-
-Support the Creative BT-D1 Bluetooth USB audio device. Before this
-patch, Linux had trouble finding the correct USB descriptors and bailed
-out with these messages:
-
- no or invalid class specific endpoint descriptor
-
-Now it still prints these messages on hotplug:
-
- snd-usb-audio: probe of ...:1.0 failed with error -5
- snd-usb-audio: probe of ...:1.2 failed with error -5
- snd-usb-audio: probe of ...:1.3 failed with error -5
-
-But the device works correctly, including the HID support.
-
-The patch is diff'ed against 3.8-rc1 but should apply to older kernels
-as well.
-
-Signed-off-by: Alexander Schremmer <alex@alexanderweb.de>
-
----
-diff -uprN linux-3.8-rc1/sound/usb/quirks-table.h
-linux-3.8-rc1-mod/sound/usb/quirks-table.h
---- linux-3.8-rc1/sound/usb/quirks-table.h	2012-12-22 02:19:00.000000000
-+0100
-+++ linux-3.8-rc1-mod/sound/usb/quirks-table.h	2012-12-26
-11:41:28.000000000 +0100
-@@ -50,6 +50,28 @@
- 	}
- },
-
-+{
-+	/* Creative BT-D1 */
-+	USB_DEVICE(0x041e, 0x0005),
-+	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
-+		.ifnum = 1,
-+		.type = QUIRK_AUDIO_FIXED_ENDPOINT,
-+		.data = &(const struct audioformat) {
-+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
-+			.channels = 2,
-+			.iface = 1,
-+			.altsetting = 1,
-+			.altset_idx = 1,
-+			.endpoint = 0x03,
-+			.ep_attr = USB_ENDPOINT_XFER_ISOC,
-+			.attributes = 0,
-+			.rates = SNDRV_PCM_RATE_CONTINUOUS,
-+			.rate_min = 48000,
-+			.rate_max = 48000,
-+		}
-+	}
-+},
-+
- /* Creative/Toshiba Multimedia Center SB-0500 */
- {
- 	USB_DEVICE(0x041e, 0x3048),
+Best regards,
+Zoltán Böszörményi
 
