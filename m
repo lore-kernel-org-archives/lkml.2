@@ -1,43 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab3ACVc2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:32:28 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:44736 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710Ab3ACVc0 (ORCPT
+	id S1754098Ab3ACVep (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:34:45 -0500
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:38015 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab3ACVen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:32:26 -0500
+	Thu, 3 Jan 2013 16:34:43 -0500
+Message-ID: <50E5F96E.2040703@gmail.com>
+Date: Thu, 03 Jan 2013 22:34:38 +0100
+From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
 MIME-Version: 1.0
-In-Reply-To: <CAB9v_DHJYAEcZDuPd3XBEib_nGca=_sKbZngV3z1N6H8KcJJGQ@mail.gmail.com>
-References: <CA+55aFxQ9vH70UrqC0ypm-diNbGcZbWbdhYa3FLH+0Vbrk4hUQ@mail.gmail.com>
- <CAB9v_DHJYAEcZDuPd3XBEib_nGca=_sKbZngV3z1N6H8KcJJGQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 3 Jan 2013 13:32:04 -0800
-X-Google-Sender-Auth: y1CCNQWcYX-L4O-wWk1xRMpzlxg
-Message-ID: <CA+55aFzQtxET9JWdaLGi52OL=A9yRbj+vaa7RfniuBvfB5K04Q@mail.gmail.com>
-Subject: Re: Linux 3.8-rc2
-To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Peter Ujfalusi <peter.ujfalusi@gmail.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: KyongHo Cho <pullip.cho@samsung.com>
+CC: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Hyunwoong Kim <khw0178.kim@samsung.com>,
+        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Subash Patel <supash.ramaswamy@linaro.org>,
+        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Tomasz Figa <t.figa@samsung.com>
+Subject: Re: [PATCH v6 05/12] iommu/exynos: support for device tree
+References: <003801cde30b$d9667b90$8c3372b0$%cho@samsung.com> <50E1E62B.3090501@gmail.com> <CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
+In-Reply-To: <CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 3, 2013 at 1:09 PM, Alexey Zaytsev <alexey.zaytsev@gmail.com> wrote:
+On 01/02/2013 06:53 AM, KyongHo Cho wrote:
+>> > +/*
+>> > + * Descriptions of Device Tree node for System MMU
+>> > + *
+>> > + * A System MMU should be described by a single tree node.
+>> > + *
+>> > + * A System MMU node should have the following properties:
+>> > + * - reg: tuples of the base address and the size of the IO region
+> of System MMU
+>> > + * - compatible: it must be "samsung,exynos-sysmmu".
+>>
+>>  I think this compatible property is too generic. It should include
+>>  specific SoC
+>>  name in it, e.g. samsung,exynos4210-sysmmu. Please refer to this thread
+>>  http://www.spinics.net/lists/linux-omap/msg83512.html, which discusses
+>>  similar issue.
 >
-> i915 got broken on my machine (Lenovo ThinkPad SL500) by this -rc. The screen
-> goes blank after loading the module. I've bisected the problem to
-> b0a2658acb5bf9ca86b4aab011b7106de3af0add "drm/i915: don't disable
-> disconnected outputs".
+> Ok, I got the point. BTW , I think this will cause adding a
+> compatibility property whenever a SoC is released even though it has
+> completely sameSystem MMU. Is it inevitable?
 
-Hmm. Daniel - should I just revert it, or do you have a patch to
-possibly fix the divide-by-zero error in g4x_compute_wm0() (which may
-involve not getting that deep in the call chain to begin with or
-whatever)? Maybe that fixes the blank screen too without a revert..
+No, there is no need for separate 'compatible' property for each SoC.
+If the iommu is same across several SoCs same 'compatible' string should be
+used for it. Please refer to the below table.
 
-                 Linus
+  SoC       | sysmmu type |    compatible
+-------------------------------------------------------------
+exynos4210 |  A          | samsung,exynos4210-sysmmu
+exynos4212 |  A          | samsung,exynos4210-sysmmu
+exynos4412 |  B          | samsung,exynos4412-sysmmu
+exynos5250 |  C          | samsung,exynos5250-sysmmu
+
+In fact, the sysmmu device compatible property could contain more than one
+string, e.g.
+
+   compatible = "samsung,exynos4412-sysmmu", "samsung,exynos4210-sysmmu";
+
+if type A is subset of type B in terms of functionality and the register
+maps are compatible.
+
+It might be useful to put in the documentation which compatible applies
+to which SoC. Then the driver can distinguish between different versions
+of the hardware by looking at the 'compatible' property.
+
+In patch "[PATCH v6 10/12] iommu/exynos: pass version information from DT"
+you are doing something that looks strange to me. Couldn't you use 
+compatible
+property to derive the SYSMMU major/minor version information ? Or do these
+numbers differ even within single SoC type ?
+
+>> > + * - interrupt-parent = specify if the interrupt of System MMU is
+> generated by
+>> > + *   interrupt combiner or interrupt controller.
+>> > + * - interrupts: tuples of interrupt numbers. a tuple has 2 elements if
+>> > + *   @interrupt-parent is '<&combiner>', 3 elements otherwise.
+>>
+>>  It's probably enough to say that format of the interrupts property is
+>>  dependant on
+>>  the interrupt controller used.
+>
+> I agree that :)
+>
+>> > + *
+>> > + * 'mmuname', 'reg' and 'interrupts' properties can be an array if
+> the System
+>> > + * MMU driver controls several number of System MMUs at the same
+> time. Note that
+>> > + * the number of elements in those three properties must be the same.
+>>
+>>  It might be useful to provide some example here.
+>
+> examples are there in Documentations directory.
+
+Oops, sorry. I missed these are just comments in the code. AFAIU, there is
+no need to keep 2 copies of the binding's description. I would put it only
+under the Documentation directory.
+
+>> > + * The following properties are optional:
+>> > + * - mmuname: name of the System MMU for debugging purpose
+>>
+>>  Not sure if it is something that is supposed to be included in FDT. You
+>>  could
+>>  probably derive it from the 'compatible' property, if it is really
+>>  needed. The device
+>>  tree bindings should not be treated as direct replacement for platform
+>>  data structures.
+>
+> actually it is just for debugging purpose.
+> I understand that it should not be there.
+> Thank you.
+>
+>> > + * - mmu-master: reference to the node of the master device.
+>> > + * - mmu-master-compat: 'compatible' proberty of the node of the
+> master device
+>> > + *    of System MMU. This is ignored if @mmu-master is currectly
+> specified.
+>> > + * - mmu-master-no: instance number of the master device of System
+> MMU. This is
+>> > + *    ignored if @mmu-master is correctly specified. This is '0' by
+> default.
+>>
+>>  Maybe device node aliases would be better alternative here ? But what
+>>  would be
+>>  a use case where you can't set 'mmu-master' and 'mmu-master-no' is
+> needed ?
+>
+> It is for platform devices that are not specified in FDT.
+> Don't we need consider that?
+
+I don't think there is a need for that. But I might be missing something.
+In any case it's probably better to use aliases, e.g. like it's done with
+the exynos5 gscaler device.
