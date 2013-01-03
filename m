@@ -1,43 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588Ab3ACNxU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 08:53:20 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39286 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753444Ab3ACNxS (ORCPT
+	id S1753605Ab3ACOAM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:00:12 -0500
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:44270 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753444Ab3ACOAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 08:53:18 -0500
-Date: Thu, 3 Jan 2013 13:52:56 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Dan Carpenter <error27@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
-	IS_ERR_OR_NULL
-Message-ID: <20130103135256.GO2631@n2100.arm.linux.org.uk>
-References: <1355852048-23188-7-git-send-email-linux@prisktech.co.nz> <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com> <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com> <1357104713.30504.8.camel@gitbox> <20130103090520.GC7247@mwanda> <20130103100000.GJ2631@n2100.arm.linux.org.uk> <20130103111040.GD7247@mwanda> <20130103112102.GM2631@n2100.arm.linux.org.uk> <20130103134554.GJ7247@mwanda>
+	Thu, 3 Jan 2013 09:00:10 -0500
+Date: Thu, 3 Jan 2013 15:00:00 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Julia Lawall <julia.lawall@lip6.fr>
+Cc: davem@davemloft.net, tony@atomide.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: clk dereference in drivers/net/ethernet/ti/cpts.c
+Message-ID: <20130103140000.GA9656@localhost.localdomain>
+References: <alpine.DEB.2.02.1301031040320.1989@hadrien>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130103134554.GJ7247@mwanda>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <alpine.DEB.2.02.1301031040320.1989@hadrien>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 04:45:54PM +0300, Dan Carpenter wrote:
-> On Thu, Jan 03, 2013 at 11:21:02AM +0000, Russell King - ARM Linux wrote:
-> > Maybe you don't realise, but IS_ERR(NULL) is false.  Therefore, this falls
-> > into category (2).
+On Thu, Jan 03, 2013 at 11:20:52AM +0100, Julia Lawall wrote:
+> There has been a discussion recently about how the result of get_clk
+> should be an opaque handle, not a value that can be dereferenced:
 > 
-> No, obviously, I know the difference between IS_ERR() and
-> IS_ERR_OR_NULL().  That's how we started this thread.
+> https://lkml.org/lkml/2012/12/20/105
+> 
+> There is such a dereference in drivers/net/ethernet/ti/cpts.c, in the
+> function cpts_clk_init:
+> 
+> cpts->freq = cpts->refclk->recalc(cpts->refclk);
+> 
+> It was not obvious to me, however, what API function should be used
+> instead, so I am just reporting the (potential) problem.
 
-Well, if you know that, then how is the documentation anything _but_
-clear?
+This issue has been fixed in v3.8-rc2.
+
+Thanks,
+Richard
