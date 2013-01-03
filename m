@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3ACN1g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 08:27:36 -0500
-Received: from arkanian.console-pimps.org ([212.110.184.194]:39174 "EHLO
+	id S1753478Ab3ACN1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 08:27:38 -0500
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39177 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752853Ab3ACN1d (ORCPT
+	by vger.kernel.org with ESMTP id S1753059Ab3ACN1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jan 2013 08:27:33 -0500
 From: Matt Fleming <matt@console-pimps.org>
@@ -12,58 +12,52 @@ To: Steve Langasek <steve.langasek@canonical.com>,
         Matthew Garrett <mjg59@srcf.ucam.org>
 Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
         "H. Peter Anvin" <hpa@zytor.com>, Olof Johansson <olof@lixom.net>,
-        Tony Luck <tony.luck@intel.com>, Matt Fleming <matt.fleming@intel.com>
-Subject: [RFC PATCH 0/2] EFI facilities bitfield
-Date: Thu,  3 Jan 2013 13:18:03 +0000
-Message-Id: <1357219085-4312-1-git-send-email-matt@console-pimps.org>
+        Tony Luck <tony.luck@intel.com>, Matt Fleming <matt.fleming@intel.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        platform-driver-x86@vger.kernel.org
+Subject: [RFC PATCH 2/2] samsung-laptop: Disable on EFI hardware
+Date: Thu,  3 Jan 2013 13:18:05 +0000
+Message-Id: <1357219085-4312-3-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1357219085-4312-1-git-send-email-matt@console-pimps.org>
+References: <1357219085-4312-1-git-send-email-matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-Various users expect different semantics from 'efi_enabled', and one
-variable can't be all things to all users. Introduce an EFI facilities
-bitfield, which informs users what EFI initialisation steps were
-completed successfully (are the system/config tables mapped, can we
-invoke runtime services, etc?) and allows users to clearly document
-which pieces of EFI firmware functionality they're using.
+There have been reports of this driver causing Machine Check
+Exceptions on recent EFI-enabled Samsung laptops,
 
-The immediate motivation for this patch series is the bug report at,
+	https://bugzilla.kernel.org/show_bug.cgi?id=47121
 
-    https://bugzilla.kernel.org/show_bug.cgi?id=47121
+So disable it if booting from EFI since this driver relies on
+grovelling around in the BIOS memory map which isn't going to work.
 
-Drivers need a new means of detecting whether they're running on an
-EFI machine, as sadly the expression,
+Cc: Corentin Chary <corentincj@iksaif.net>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Steve Langasek <steve.langasek@canonical.com>
+Cc: platform-driver-x86@vger.kernel.org
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ drivers/platform/x86/samsung-laptop.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-    if (!efi_enabled)
-
-hasn't been a sufficient condition for quite some time.
-
-This series has only seen minimal runtime testing since it's an RFC
-and is intended to start a discussion.
-
-Matt Fleming (2):
-  efi: Make 'efi_enabled' a function to query EFI facilities
-  samsung-laptop: Disable on EFI hardware
-
- arch/x86/include/asm/efi.h             |  1 +
- arch/x86/kernel/reboot.c               |  2 +-
- arch/x86/kernel/setup.c                | 28 ++++++++---------
- arch/x86/platform/efi/efi.c            | 55 ++++++++++++++++++++--------------
- drivers/acpi/osl.c                     |  2 +-
- drivers/firmware/dmi_scan.c            |  2 +-
- drivers/firmware/efivars.c             |  4 +--
- drivers/firmware/iscsi_ibft_find.c     |  2 +-
- drivers/gpu/drm/radeon/radeon_device.c |  3 +-
- drivers/platform/x86/ibm_rtl.c         |  2 +-
- drivers/platform/x86/samsung-laptop.c  |  3 ++
- drivers/scsi/isci/init.c               |  2 +-
- include/linux/efi.h                    | 24 +++++++++++----
- init/main.c                            |  4 +--
- 14 files changed, 80 insertions(+), 54 deletions(-)
-
+diff --git a/drivers/platform/x86/samsung-laptop.c b/drivers/platform/x86/samsung-laptop.c
+index dd90d15..a94c0ee 100644
+--- a/drivers/platform/x86/samsung-laptop.c
++++ b/drivers/platform/x86/samsung-laptop.c
+@@ -1534,6 +1534,9 @@ static int __init samsung_init(void)
+ 	struct samsung_laptop *samsung;
+ 	int ret;
+ 
++	if (efi_enabled(EFI_BOOT))
++		return -ENODEV;
++
+ 	quirks = &samsung_unknown;
+ 	if (!force && !dmi_check_system(samsung_dmi_table))
+ 		return -ENODEV;
 -- 
 1.7.11.7
 
