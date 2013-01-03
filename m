@@ -1,155 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753027Ab3ACJGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 04:06:15 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:53699 "EHLO e7.ny.us.ibm.com"
+	id S1753057Ab3ACJGj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 04:06:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50123 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753010Ab3ACJGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 04:06:10 -0500
-Date: Thu, 3 Jan 2013 14:35:56 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] uprobes: Kill uprobes_mutex[], separate
- alloc_uprobe() and __uprobe_register()
-Message-ID: <20130103090556.GB8140@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121125223331.GA24788@redhat.com>
- <20121125223350.GA24811@redhat.com>
+	id S1752846Ab3ACJGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 04:06:35 -0500
+Message-ID: <50E54A14.5010909@suse.cz>
+Date: Thu, 03 Jan 2013 10:06:28 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120825 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121125223350.GA24811@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010309-5806-0000-0000-00001DB90245
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jonathan Kliegman <kliegs@chromium.org>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] modpost: Add flag -f for making section mismatches fatal
+References: <1356029364-11346-1-git-send-email-kliegs@chromium.org> <87ip7f5ecu.fsf@rustcorp.com.au>
+In-Reply-To: <87ip7f5ecu.fsf@rustcorp.com.au>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-11-25 23:33:50]:
+Dne 3.1.2013 00:56, Rusty Russell napsal(a):
+> Jonathan Kliegman <kliegs@chromium.org> writes:
+>> The section mismatch warning can be easy to miss during the kernel build
+>> process.  Allow it to be marked as fatal to be easily caught and prevent
+>> bugs from slipping in.
+>>
+>> Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
+> 
+> Hmm, a CONFIG option with no Kconfig entry?  That seems weird...
 
-> uprobe_register() and uprobe_unregister() are the only users of
-> mutex_lock(uprobes_hash(inode)), and the only reason why we can't
-> simply remove it is that we need to ensure that delete_uprobe() is
-> not possible after alloc_uprobe() and before consumer_add().
-> 
-> IOW, we need to ensure that when we take uprobe->register_rwsem
-> this uprobe is still valid and we didn't race with _unregister()
-> which called delete_uprobe() in between.
-> 
-> With this patch uprobe_register() simply checks uprobe_is_active()
-> and retries if it hits this very unlikely race. uprobes_mutex[] is
-> no longer needed and can be removed.
-> 
-> There is another reason for this change, prepare_uprobe() should be
-> folded into alloc_uprobe() and we do not want to hold the extra locks
-> around read_mapping_page/etc.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+With a Kconfig entry, all{mod,yes}configs would start failing. It can be
+enabled with make CONFIG_SECTION_MISMATCH_FATAL=y for now. Maybe it
+could be added to Kconfig with 'depends on n', so that it is documented
+somewhere.
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> ---
->  kernel/events/uprobes.c |   51 +++++++++++++---------------------------------
->  1 files changed, 15 insertions(+), 36 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 2886c82..105ac0d 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -50,29 +50,6 @@ static struct rb_root uprobes_tree = RB_ROOT;
->  static DEFINE_SPINLOCK(uprobes_treelock);	/* serialize rbtree access */
-> 
->  #define UPROBES_HASH_SZ	13
-> -
-> -/*
-> - * We need separate register/unregister and mmap/munmap lock hashes because
-> - * of mmap_sem nesting.
-> - *
-> - * uprobe_register() needs to install probes on (potentially) all processes
-> - * and thus needs to acquire multiple mmap_sems (consequtively, not
-> - * concurrently), whereas uprobe_mmap() is called while holding mmap_sem
-> - * for the particular process doing the mmap.
-> - *
-> - * uprobe_register()->register_for_each_vma() needs to drop/acquire mmap_sem
-> - * because of lock order against i_mmap_mutex. This means there's a hole in
-> - * the register vma iteration where a mmap() can happen.
-> - *
-> - * Thus uprobe_register() can race with uprobe_mmap() and we can try and
-> - * install a probe where one is already installed.
-> - */
-> -
-> -/* serialize (un)register */
-> -static struct mutex uprobes_mutex[UPROBES_HASH_SZ];
-> -
-> -#define uprobes_hash(v)		(&uprobes_mutex[((unsigned long)(v)) % UPROBES_HASH_SZ])
-> -
->  /* serialize uprobe->pending_list */
->  static struct mutex uprobes_mmap_mutex[UPROBES_HASH_SZ];
->  #define uprobes_mmap_hash(v)	(&uprobes_mmap_mutex[((unsigned long)(v)) % UPROBES_HASH_SZ])
-> @@ -865,20 +842,26 @@ int uprobe_register(struct inode *inode, loff_t offset, struct uprobe_consumer *
->  	if (offset > i_size_read(inode))
->  		return -EINVAL;
-> 
-> -	ret = -ENOMEM;
-> -	mutex_lock(uprobes_hash(inode));
-> + retry:
->  	uprobe = alloc_uprobe(inode, offset);
-> -	if (uprobe) {
-> -		down_write(&uprobe->register_rwsem);
-> +	if (!uprobe)
-> +		return -ENOMEM;
-> +	/*
-> +	 * We can race with uprobe_unregister()->delete_uprobe().
-> +	 * Check uprobe_is_active() and retry if it is false.
-> +	 */
-> +	down_write(&uprobe->register_rwsem);
-> +	ret = -EAGAIN;
-> +	if (likely(uprobe_is_active(uprobe))) {
->  		ret = __uprobe_register(uprobe, uc);
->  		if (ret)
->  			__uprobe_unregister(uprobe, uc);
-> -		up_write(&uprobe->register_rwsem);
->  	}
-> -	mutex_unlock(uprobes_hash(inode));
-> -	if (uprobe)
-> -		put_uprobe(uprobe);
-> +	up_write(&uprobe->register_rwsem);
-> +	put_uprobe(uprobe);
-> 
-> +	if (unlikely(ret == -EAGAIN))
-> +		goto retry;
->  	return ret;
->  }
-> 
-> @@ -896,11 +879,9 @@ void uprobe_unregister(struct inode *inode, loff_t offset, struct uprobe_consume
->  	if (!uprobe)
->  		return;
-> 
-> -	mutex_lock(uprobes_hash(inode));
->  	down_write(&uprobe->register_rwsem);
->  	__uprobe_unregister(uprobe, uc);
->  	up_write(&uprobe->register_rwsem);
-> -	mutex_unlock(uprobes_hash(inode));
->  	put_uprobe(uprobe);
->  }
-> 
-> @@ -1609,10 +1590,8 @@ static int __init init_uprobes(void)
->  {
->  	int i;
-> 
-> -	for (i = 0; i < UPROBES_HASH_SZ; i++) {
-> -		mutex_init(&uprobes_mutex[i]);
-> +	for (i = 0; i < UPROBES_HASH_SZ; i++)
->  		mutex_init(&uprobes_mmap_mutex[i]);
-> -	}
-> 
->  	if (percpu_init_rwsem(&dup_mmap_sem))
->  		return -ENOMEM;
-> -- 
-> 1.5.5.1
-> 
-
+Michal
