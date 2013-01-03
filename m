@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753712Ab3ACQ2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:28:42 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:42338 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab3ACQ2k convert rfc822-to-8bit (ORCPT
+	id S1753626Ab3ACQ31 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 11:29:27 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39380 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753439Ab3ACQ3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:28:40 -0500
-X-IronPort-AV: E=Sophos;i="4.84,403,1355126400"; 
-   d="scan'208";a="4465785"
-From: "Adamson, Dros" <Weston.Adamson@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "Adamson, Dros" <Weston.Adamson@netapp.com>, Tejun Heo <tj@kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Thread-Topic: nfsd oops on Linus' current tree.
-Thread-Index: AQHN35CZGjcSyXpSdkKK6nqmM/aY8JgkE1AAgAAJFQCAAErbgIAAAeoAgAAC7oCAAAL9gIAAAmsAgBP0PoA=
-Date: Thu, 3 Jan 2013 16:28:37 +0000
-Message-ID: <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
-References: <20121221153348.GA32151@redhat.com>
- <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221234530.GA30048@fieldses.org>
-In-Reply-To: <20121221234530.GA30048@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <9EA7D60B6574C5488272FD0F6D1C7D27@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Jan 2013 11:29:24 -0500
+Date: Thu, 3 Jan 2013 16:23:59 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Keun-O Park <kpark3469@gmail.com>, fweisbec@gmail.com, mingo@redhat.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        sahara <keun-o.park@windriver.com>
+Subject: Re: [PATCH 2/2] arm: make return_address available for ARM_UNWIND
+Message-ID: <20130103162359.GR2631@n2100.arm.linux.org.uk>
+References: <1357207949-3349-1-git-send-email-kpark3469@gmail.com> <1357207949-3349-2-git-send-email-kpark3469@gmail.com> <20130103103815.GL2631@n2100.arm.linux.org.uk> <CA+KhAHbmjD7zTw+wcw84Abg3V1dD=0Ea4kUpYdGENQf1UOWphw@mail.gmail.com> <1357220165.10284.30.camel@gandalf.local.home> <20130103141301.GQ2631@n2100.arm.linux.org.uk> <1357229038.10284.46.camel@gandalf.local.home>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357229038.10284.46.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey, sorry for the late response, I've been on vacation.
-
-On Dec 21, 2012, at 6:45 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-
-> On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
->> Please reread what I said. There was no obvious circular dependency,
->> because nfsiod and rpciod are separate workqueues, both created with
->> WQ_MEM_RECLAIM.
+On Thu, Jan 03, 2013 at 11:03:58AM -0500, Steven Rostedt wrote:
+> On Thu, 2013-01-03 at 14:13 +0000, Russell King - ARM Linux wrote:
+> > In summary, from what I can see in the patch, the reason why the ifdefs
+> > are the way they are, and the reason the warning is there has not been
+> > addressed; these patches just seem to be aimed just at removing a #warning
+> > statement to make the warning go away.
 > 
-> Oh, sorry, I read "rpciod" as "nfsiod"!
-> 
->> Dros' experience shows, however that a call to
->> rpc_shutdown_client in an nfsiod work item will deadlock with rpciod
->> if the RPC task's work item has been assigned to the same CPU as the
->> one running the rpc_shutdown_client work item.
->> 
->> I can't tell right now if that is intentional (in which case the
->> WARN_ON in the rpc code is correct), or if it is a bug in the
->> workqueue code. For now, we're assuming the former.
-> 
-> Well, Documentation/workqueue.txt says:
-> 
-> 	"Each wq with WQ_MEM_RECLAIM set has an execution context
-> 	reserved for it.  If there is dependency among multiple work
-> 	items used during memory reclaim, they should be queued to
-> 	separate wq each with WQ_MEM_RECLAIM."
+> You're correct that this patch does not solve any of theses issues. Now,
+> I'm thinking that ftrace has matured where these issues don't exist, and
+> where they do, it will only cause noise in the trace than anything
+> serious. But, this needs to be looked deeper to make sure.
 
-The deadlock we were seeing was:
+Looking back in the archives, it seems that we had a problem with ftrace
+and the unwinder polluting the trace information:
 
-- task A gets queued on rpciod workqueue and assigned kworker-0:0
-- task B gets queued on rpciod workqueue and assigned the same kworker (kworker-0:0)
-- task A gets run, calls rpc_shutdown_client(), which will loop forever waiting for task B to run rpc_async_release()
-- task B will never run rpc_async_release() - it can't run until kworker-0:0 is free, which won't happen until task A (rpc_shutdown_client) is done
+http://lists.arm.linux.org.uk/lurker/message/20090604.201745.1c41ee6c.en.html
 
-The same deadlock happened when we tried queuing the tasks on a different workqueues -- queue_work() assigns the task to a kworker thread and it's luck of the draw if it's the same kworker as task A.  We tried the different workqueue options, but nothing changed this behavior.
-
-Once a work struct is queued, there is no way to back out of the deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
-
- * Currently, a queued barrier can't be canceled.  This is because
- * try_to_grab_pending() can't determine whether the work to be
- * grabbed is at the head of the queue and thus can't clear LINKED
- * flag of the previous work while there must be a valid next work
- * after a work with LINKED flag set.
-
-So once a work struct is queued and there is an ordering dependency (i.e. task A is before task B), there is no way to back task B out - so we can't just call cancel_work() or something on task B in rpc_shutdown_client.
-
-The root of our issue is that rpc_shutdown_client is never safe to call from a workqueue context - it loops until there are no more tasks, marking tasks as killed and waiting for them to be cleaned up in each task's own workqueue context. Any tasks that have already been assigned to the same kworker thread will never have a chance to run this cleanup stage.
-
-When fixing this deadlock, Trond and I discussed changing how rpc_shutdown_client works (making it workqueue safe), but Trond felt that it'd be better to just not call it from a workqueue context and print a warning if it is.
-
-IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with no success), but I'd argue that even if that did work it would still be very easy to call rpc_shutdown_client from the wrong context and MUCH harder to detect it.  It's also unclear to me if setting rpciod workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
-
--dros
-
+There's quite a bit of discussion in that thread about this which details
+why we came up with what we have today.
