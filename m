@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab3ACQ2U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:28:20 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40919 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab3ACQ2Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753605Ab3ACQ2Q (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jan 2013 11:28:16 -0500
-Message-ID: <50E5B173.7070807@linux.vnet.ibm.com>
-Date: Thu, 03 Jan 2013 08:27:31 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC 2/8] Don't allow volatile attribute on THP and KSM
-References: <1357187286-18759-1-git-send-email-minchan@kernel.org> <1357187286-18759-3-git-send-email-minchan@kernel.org>
-In-Reply-To: <1357187286-18759-3-git-send-email-minchan@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Received: from perches-mx.perches.com ([206.117.179.246]:34811 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753402Ab3ACQ2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 11:28:14 -0500
+Message-ID: <1357230494.25181.55.camel@joe-AO722>
+Subject: Re: [PATCH] checkpatch: prefer dev_<level>( to
+ dev_printk(KERN_<LEVEL>
+From: Joe Perches <joe@perches.com>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        bp@alien8.de, rostedt@goodmis.org, mchehab@redhat.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 03 Jan 2013 08:28:14 -0800
+In-Reply-To: <20130103100808.GG2649@dm>
+References: <20130102232730.5706.82243.stgit@grignak.americas.hpqcorp.net>
+	 <20130102232743.5706.63153.stgit@grignak.americas.hpqcorp.net>
+	 <1357171594.25181.19.camel@joe-AO722> <20130103100808.GG2649@dm>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010316-2876-0000-0000-000003C6F754
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2013 08:28 PM, Minchan Kim wrote:
-> VOLATILE imply the the pages in the range isn't working set any more
-> so it's pointless that make them to THP/KSM.
+On Thu, 2013-01-03 at 10:08 +0000, Andy Whitcroft wrote:
+> On Wed, Jan 02, 2013 at 04:06:34PM -0800, Joe Perches wrote:
+> > Add YA check to printk style.
+> > 
+> > dev_<level> uses are functions and generate smaller
+> > object code than dev_printk(KERN_<LEVEL>.
+[]
+> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+[]
+> > +		if ($line =~ /\bdev_printk\s*\(\s*KERN_([A-Z]+)/) {
+> > +			my $orig = $1;
+> > +			my $level = lc($orig);
+> > +			$level = "warn" if ($level eq "warning");
+> > +			my $level2 = $level;
+> > +			$level2 = "dbg" if ($level eq "debug");
+> 
+> Is there some sublty I am not seeing here such that level2 is necessary?
 
-One of the points of this implementation is that it be able to preserve
-memory contents when there is no pressure.  If those contents happen to
-contain a THP/KSM page, and there's no pressure, it seems like the right
-thing to do is to leave that memory in place.
+No, your vision is 20/20, it's not necessary.
 
-It might be a fair thing to do this in order to keep the implementation
-more sane at the moment.  But, we should make sure there's some good
-text on that in the changelog.
+It was a copy/paste from the pr_<level> conversion above it
+where 2 styles to convert to (dev_dbg and pr_debug) are used.
+
+Here there is just one form and your review is appreciated.
+I'll submit a V2 later.
+
 
