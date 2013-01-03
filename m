@@ -1,122 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab3ACOHm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 09:07:42 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11904 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753426Ab3ACOHj convert rfc822-to-8bit (ORCPT
+	id S1753541Ab3ACOKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:10:46 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60726
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753222Ab3ACOKl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 09:07:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 03 Jan 2013 06:04:28 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: Stephen Warren <swarren@nvidia.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Hiroshi Doyu <hdoyu@nvidia.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "rob@landley.net" <rob@landley.net>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "olof@lixom.net" <olof@lixom.net>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Thu, 3 Jan 2013 15:06:56 +0100
-Subject: Re: [PATCH 0/9] ARM: Initial support for Tegra 114 SoC.
-Thread-Topic: [PATCH 0/9] ARM: Initial support for Tegra 114 SoC.
-Thread-Index: Ac3pu5h0rgYJANECRVe0+3Jxv3NnVg==
-Message-ID: <20130103.160656.1043855724416946158.hdoyu@nvidia.com>
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
-In-Reply-To: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Thu, 3 Jan 2013 09:10:41 -0500
+Message-ID: <50E5910E.7060606@kernel.dk>
+Date: Thu, 03 Jan 2013 15:09:18 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
+To: Ed Cashin <ecashin@coraid.com>
+CC: Josh Boyer <jwboyer@redhat.com>,
+        "mitko@banksoft-bg.com" <mitko@banksoft-bg.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@fedoraproject.org" <kernel-team@fedoraproject.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Oops on aoe module removal
+References: <20130103132556.GA13290@hansolo.jdub.homelinux.org> <587E85C3-7395-4BC1-B31B-426572B5080C@coraid.com>
+In-Reply-To: <587E85C3-7395-4BC1-B31B-426572B5080C@coraid.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 2013-01-03 15:02, Ed Cashin wrote:
+> On Jan 3, 2013, at 8:25 AM, Josh Boyer wrote:
+> 
+>> Hello,
+>>
+>> We have a user that has reported an oops when removing the aoe module.
+>> This seems to have been happening since the 3.4 kernel, as you can see
+>> in this bug: https://bugzilla.redhat.com/show_bug.cgi?id=853064
+>>
+>> The recreate steps and oops output from a 3.6.11 kernel is below.  Any
+>> thoughts on what could be causing this?
+>>
+>> josh
+>>
+>>
+>> I run the following commands sequentially
+>>
+>> - modprobe aoe
+>> - dmesg:
+>> [699170.611997] aoe: AoE v47 initialised.
+>> [699170.653980] aoe: e4.1: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654106] aoe: e6.0: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: e6.2: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: e6.3: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: e8.1: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: e8.2: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: e8.10: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: e8.11: setting 8192 byte data frames on eth1:000423d36ac3
+>> [699170.654961] aoe: 000423d36ac3 e4.1 v0100 has 33554432 sectors
+>> [699170.654961] aoe: 000423d36ac3 e6.0 v0100 has 12582912 sectors
+>> [699170.654961] aoe: 000423d36ac3 e6.2 v0100 has 16777216 sectors
+>> [699170.702143] aoe: 000423d36ac3 e6.3 v0100 has 104857600 sectors
+>> [699170.706391] aoe: 000423d36ac3 e8.1 v0100 has 272629760 sectors
+>> [699170.710623] aoe: 000423d36ac3 e8.2 v0100 has 67108864 sectors
+>> [699170.714851] aoe: 000423d36ac3 e8.10 v0100 has 33554432 sectors
+>> [699170.719056] aoe: 000423d36ac3 e8.11 v0100 has 67108864 sectors
+>> [699170.824774]  etherd/e4.1: p1
+>> [699170.829069]  etherd/e6.0: p1 p2
+>> [699170.833274]  etherd/e8.1: p1 p2
+>> [699170.837329]  etherd/e8.2: p1
+>> [699170.841204]  etherd/e8.10: p1
+>> [699170.845030]  etherd/e8.11: p1
+>> [699170.848706]  etherd/e6.3: unknown partition table
+>> [699170.852384]  etherd/e6.2: unknown partition table
+>>
+>> - lsmod |grep aoe
+>> aoe                    32214  0	  
+>>
+>> - modprobe -vr aoe
+>> - dmesg:
+>> [699231.304689] ------------[ cut here ]------------
+>> [699231.308319] WARNING: at lib/list_debug.c:62 __list_del_entry+0x82/0xd0()
+>> [699231.312031] Hardware name: S5000VSA
+>> [699231.315658] list_del corruption. next->prev should be ffff880009fa37e8, but was ffffffff81c79c00
+>> [699231.319352] Modules linked in: aoe(-) ip6table_filter ip6_tables ebtable_nat ebtables lockd sunrpc bridge 8021q garp stp llc vfat fat binfmt_misc iTCO_wdt iTCO_vendor_support vhost_net lpc_ich radeon tun macvtap mfd_core serio_raw coretemp i2c_algo_bit ttm i5000_edac macvlan drm_kms_helper e1000e edac_core microcode i5k_amb shpchp i2c_i801 drm kvm_intel i2c_core kvm ioatdma dca raid1
+>> [699231.336259] Pid: 8584, comm: modprobe Not tainted 3.6.11-1.fc17.x86_64 #1
+>> [699231.340561] Call Trace:
+>> [699231.344865]  [<ffffffff8105c8ef>] warn_slowpath_common+0x7f/0xc0
+>> [699231.349212]  [<ffffffff8105c9e6>] warn_slowpath_fmt+0x46/0x50
+>> [699231.353595]  [<ffffffff812eee52>] __list_del_entry+0x82/0xd0
+>> [699231.357954]  [<ffffffff812eeeb1>] list_del+0x11/0x40
+>> [699231.362319]  [<ffffffff812f6458>] percpu_counter_destroy+0x28/0x50
+>> [699231.366712]  [<ffffffff8114c513>] bdi_destroy+0x43/0x140
+>> [699231.371127]  [<ffffffff812be20c>] blk_release_queue+0x8c/0xc0
+>> [699231.375454]  [<ffffffff812dc322>] kobject_cleanup+0x82/0x1b0
+>> [699231.379675]  [<ffffffff812dc1ab>] kobject_put+0x2b/0x60
+>> [699231.383851]  [<ffffffff812b80a5>] blk_put_queue+0x15/0x20
+>> [699231.387899]  [<ffffffff812bc659>] blk_cleanup_queue+0xc9/0xe0
+>> [699231.391794]  [<ffffffffa01f53f5>] aoedev_freedev+0x135/0x150 [aoe]
+>> [699231.395668]  [<ffffffffa01f59a5>] aoedev_exit+0x65/0x80 [aoe]
+>> [699231.399493]  [<ffffffffa01f5afe>] aoe_exit+0x2e/0x40 [aoe]
+>> [699231.403273]  [<ffffffff810bdefe>] sys_delete_module+0x16e/0x2d0
+>> [699231.407119]  [<ffffffff8161db56>] ? __schedule+0x3c6/0x7a0
+>> [699231.411050]  [<ffffffff8119054a>] ? sys_write+0x4a/0x90
+>> [699231.415033]  [<ffffffff81627329>] system_call_fastpath+0x16/0x1b
+>> [699231.419117] ---[ end trace 9e1558af1964b569 ]---
+>> [699231.423248] ------------[ cut here ]------------
+> 
+> Thanks for the report.  The problem seems to be older than that (see
+> 2.6.32 below), and it seems to be related to changes that first
+> appeared in 2.6.24.  I'm going to investigate the changes introduced
+> in the commit below to see whether the aoe driver needed updating when
+> they went in.  I'm Cc-ing Peter Zijlstra in case this rings any bells.
 
-Hiroshi Doyu <hdoyu@nvidia.com> wrote @ Thu, 20 Dec 2012 10:43:58 +0100:
+I highly doubt that has anything to do with it. Since it triggers
+immediately on rmmod after modprobe (and not having set a device up,
+presumably, being the key), it looks like a generic bug in aoeblk.
 
-> Hi,
-> 
-> This patchset adds initial support for the NVIDIA's new Tegra 114
-> SoC (T114) based on the ARM Cortex-A15 MP. It has the minimal support
-> to allow the kernel to boot up into shell console. This can be used as
-> a basis for adding other device drivers for this SoC. Currently there
-> are 2 evaluation boards available, "Dalmore" and "Pluto".
+Ed, can you reproduce the issue?
 
-I'll resend v2 of this series just with /cpus node in DT added. The
-rest would be same since TSC initialization and dynamic core
-detections are still necessary/valid for Tegra as backup of /cpus DT
-failure. Or if you take this series as is first, I'll make a /cpus DT
-patchset agaist this series.
+-- 
+Jens Axboe
 
-> This patchset is against Stephen Warren's linux-next_common branch:
-> 
->   git://nv-tegra.nvidia.com/user/swarren/linux-2.6 linux-next_common
-> 
-> For those who want to try:
-> 
->   $ make ARCH=arm tegra_defconfig
->   $ scripts/config -e ARCH_TEGRA_114_SOC -d DRM -d SUSPEND \
->     	-d PM_RUNTIME -d CPU_FREQ -d CPU_IDLE
->   $ make ARCH=arm menuconfig # if needed to configure more
->   $ make ARCH=arm all -j9
-> 
-> Verified that this single image booted up with "Dalmore(T114)",
-> "Pluto(T114)" and "Cardhu(T30)". For "Cardhu(T30)" with this single
-> image, SPI driver doesn't seem to afford the above configuration , it
-> hangs at boot-up. With SPI disabled, it's ok.
-> 
-> 
-> Hiroshi Doyu (9):
->   ARM: tegra: fuse: Add chipid TEGRA114 0x35
->   HACK: ARM: tegra: Use CLK_IGNORE_UNUSED for Tegra 114 SoC
->   ARM: tegra: # of CPU cores detection w/ & w/o HAVE_ARM_SCU
->   clocksource: tegra: Reorganize funcs by clock functionarities
->   clocksource: tegra: Enable ARM arch_timer with TSC
->   ARM: dt: tegra114: Add new SoC base, Tegra 114 SoC
->   ARM: dt: tegra114: Add new board, Dalmore
->   ARM: dt: tegra114: Add new board, Pluto
->   ARM: tegra: Add initial support for Tegra 114 SoC.
-> 
->  .../bindings/arm/tegra/nvidia,tegra114-tsc.txt     |   11 +
->  arch/arm/boot/dts/Makefile                         |    4 +-
->  arch/arm/boot/dts/tegra114-dalmore.dts             |   21 ++
->  arch/arm/boot/dts/tegra114-pluto.dts               |   21 ++
->  arch/arm/boot/dts/tegra114.dtsi                    |   89 ++++++++
->  arch/arm/mach-tegra/Kconfig                        |   10 +
->  arch/arm/mach-tegra/Makefile                       |    1 +
->  arch/arm/mach-tegra/board-dt-tegra114.c            |   48 +++++
->  arch/arm/mach-tegra/common.c                       |    1 +
->  arch/arm/mach-tegra/fuse.h                         |    1 +
->  arch/arm/mach-tegra/platsmp.c                      |   31 ++-
->  arch/arm/mach-tegra/tegra30_clocks_data.c          |    2 +
->  drivers/clocksource/tegra20_timer.c                |  222 +++++++++++++-------
->  13 files changed, 384 insertions(+), 78 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/tegra/nvidia,tegra114-tsc.txt
->  create mode 100644 arch/arm/boot/dts/tegra114-dalmore.dts
->  create mode 100644 arch/arm/boot/dts/tegra114-pluto.dts
->  create mode 100644 arch/arm/boot/dts/tegra114.dtsi
->  create mode 100644 arch/arm/mach-tegra/board-dt-tegra114.c
-> 
-> -- 
-> 1.7.9.5
-> 
