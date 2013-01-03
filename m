@@ -1,149 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3ACWii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:38:38 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:48785 "EHLO
+	id S1754456Ab3ACWig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:38:36 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:48787 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754379Ab3ACWic (ORCPT
+	by vger.kernel.org with ESMTP id S1754381Ab3ACWib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:38:32 -0500
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 17:38:31 EST
+	Thu, 3 Jan 2013 17:38:31 -0500
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] i2c-EEPROM: In kernel memory accessor interface
-Date: Fri,  4 Jan 2013 00:31:47 +0200
-Message-Id: <1357252307-6063-1-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH] platform: Fix platform device resource linking
+Date: Fri,  4 Jan 2013 00:31:10 +0200
+Message-Id: <1357252270-5955-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kernel users need to access the EEPROM using the i2c_client
-interface. Extend at24 to use it via the command interface.
+Platform device removal uncovered a number of problems with
+the way resources are handled in the core platform code.
+
+Resources now form child/parent linkages and this requires
+proper linking of the resources. On top of that the OF core
+directly creates it's own platform devices. Simplify things
+by providing helper functions that manage the linking properly.
+
+Two functions are provided:
+
+platform_device_link_resources(), which links all the
+linkable resources (if not already linked).
+
+and platform_device_unlink_resources(), which unlinks all the
+resources.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- drivers/misc/eeprom/at24.c | 23 ++++++++++++++++++
- include/linux/i2c/eeprom.h | 59 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
- create mode 100644 include/linux/i2c/eeprom.h
+ drivers/base/platform.c         | 124 +++++++++++++++++++++++++++-------------
+ include/linux/platform_device.h |   4 ++
+ 2 files changed, 87 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
-index 2baeec5..40b1a95 100644
---- a/drivers/misc/eeprom/at24.c
-+++ b/drivers/misc/eeprom/at24.c
-@@ -23,6 +23,7 @@
- #include <linux/of.h>
- #include <linux/i2c.h>
- #include <linux/i2c/at24.h>
-+#include <linux/i2c/eeprom.h>
- 
- /*
-  * I2C EEPROMs from most vendors are inexpensive and mostly interchangeable.
-@@ -672,6 +673,27 @@ static int at24_remove(struct i2c_client *client)
- 	return 0;
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index c0b8df3..dab9552 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -270,6 +270,80 @@ int platform_device_add_data(struct platform_device *pdev, const void *data,
  }
+ EXPORT_SYMBOL_GPL(platform_device_add_data);
  
-+static int at24_command(struct i2c_client *client, unsigned int cmd, void *arg)
++static struct resource *platform_device_parent_resource(
++		struct platform_device *pdev, struct resource *r)
 +{
-+	struct at24_data *at24;
-+	const struct memory_accessor **maccp;
++	unsigned long type;
 +
-+	/* only supporting a single command */
-+	if (cmd != I2C_EEPROM_GET_MEMORY_ACCESSOR)
-+		return -ENOTSUPP;
++	if (r->parent)
++		return r->parent;
 +
-+	/* rudimentary check */
-+	if (arg == NULL)
-+		return -EINVAL;
++	type = resource_type(r);
++	switch (type) {
++		case IORESOURCE_MEM:
++			return &iomem_resource;
++		case IORESOURCE_IO:
++			return &ioport_resource;
++		/* TODO: What about the other resources? */
++		default:
++			break;
++	}
++	pr_debug("%s: no parent for resource %p type 0x%lx\n",
++			dev_name(&pdev->dev), r, resource_type(r));
++	return NULL;
++}
 +
-+	at24 = i2c_get_clientdata(client);
++int platform_device_unlink_resources(struct platform_device *pdev)
++{
++	struct resource *r;
++	int i;
 +
-+	maccp = arg;
-+	*maccp = &at24->macc;
-+
++	for (i = pdev->num_resources - 1; i >= 0; i--) {
++		r = &pdev->resource[i];
++		if (r->parent == NULL)
++			continue;
++		release_resource(r);
++	}
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(platform_device_unlink_resources);
 +
- /*-------------------------------------------------------------------------*/
- 
- static struct i2c_driver at24_driver = {
-@@ -682,6 +704,7 @@ static struct i2c_driver at24_driver = {
- 	.probe = at24_probe,
- 	.remove = at24_remove,
- 	.id_table = at24_ids,
-+	.command = at24_command,
- };
- 
- static int __init at24_init(void)
-diff --git a/include/linux/i2c/eeprom.h b/include/linux/i2c/eeprom.h
-new file mode 100644
-index 0000000..1393980
---- /dev/null
-+++ b/include/linux/i2c/eeprom.h
-@@ -0,0 +1,59 @@
-+/*
-+ * i2c/eeprom.h
-+ *
-+ * In-kernel interface for accessing eeprom memory.
-+ *
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *                    Pantelis Antoniou <panto@antoniou-consulting.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+#ifndef I2C_EEPROM_H
-+#define I2C_EEPROM_H
-+
-+#include <linux/types.h>
-+#include <linux/memory.h>
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+
-+/*
-+ * The method called in the client is
-+ *
-+ * int command(struct i2c_client *client, unsigned int cmd, void *arg);
-+ *
-+ * A single command is supported, which returns a pointer to the memory
-+ * accessor already available, but which was only accessible via platform
-+ * callbacks. We can't use platform callbacks anymore for device tree
-+ * platforms, hence this interface.
-+ *
-+ */
-+
-+/* interface commands */
-+#define I2C_EEPROM_GET_MEMORY_ACCESSOR	1
-+
-+static inline struct memory_accessor *
-+i2c_eeprom_get_memory_accessor(struct i2c_client *client)
++int platform_device_link_resources(struct platform_device *pdev)
 +{
-+	int ret;
-+	struct memory_accessor *macc;
++	int i;
++	struct resource *p, *r;
 +
-+	/* verify that the i2c client's driver has a command method */
-+	if (!client || !client->driver || !client->driver->command)
-+		return ERR_PTR(-ENOTSUPP);
++	for (i = 0; i < pdev->num_resources; i++) {
++		r = &pdev->resource[i];
 +
-+	macc = NULL;
-+	ret = client->driver->command(client, I2C_EEPROM_GET_MEMORY_ACCESSOR,
-+			&macc);
-+	if (ret != 0)
-+		return ERR_PTR(ret);
++		if (r->name == NULL)
++			r->name = dev_name(&pdev->dev);
 +
-+	if (macc == NULL)
-+		return ERR_PTR(-ENOTSUPP);
++		/* already linked */
++		if (r->parent != NULL)
++			continue;
 +
-+	return macc;
++		p = platform_device_parent_resource(pdev, r);
++		if (p && insert_resource(p, r)) {
++			pr_err("%s: failed to claim resource %d\n",
++			       dev_name(&pdev->dev), i);
++			goto fail;
++		}
++	}
++
++	return 0;
++
++fail:
++	while (--i >= 0) {
++		r = &pdev->resource[i];
++		if (r->parent == NULL)
++			continue;
++		release_resource(r);
++	}
++	return -EBUSY;
 +}
++EXPORT_SYMBOL_GPL(platform_device_link_resources);
 +
-+#endif
+ /**
+  * platform_device_add - add a platform device to device hierarchy
+  * @pdev: platform device we're adding
+@@ -279,7 +353,7 @@ EXPORT_SYMBOL_GPL(platform_device_add_data);
+  */
+ int platform_device_add(struct platform_device *pdev)
+ {
+-	int i, ret;
++	int ret;
+ 
+ 	if (!pdev)
+ 		return -EINVAL;
+@@ -311,28 +385,10 @@ int platform_device_add(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
+-	for (i = 0; i < pdev->num_resources; i++) {
+-		struct resource *p, *r = &pdev->resource[i];
+-
+-		if (r->name == NULL)
+-			r->name = dev_name(&pdev->dev);
+-
+-		p = r->parent;
+-		if (!p) {
+-			if (resource_type(r) == IORESOURCE_MEM)
+-				p = &iomem_resource;
+-			else if (resource_type(r) == IORESOURCE_IO)
+-				p = &ioport_resource;
+-		}
+-
+-		if (p && insert_resource(p, r)) {
+-			printk(KERN_ERR
+-			       "%s: failed to claim resource %d\n",
+-			       dev_name(&pdev->dev), i);
+-			ret = -EBUSY;
+-			goto failed;
+-		}
+-	}
++	/* make sure the resources are linked properly */
++	ret = platform_device_link_resources(pdev);
++	if (ret != 0)
++		goto failed_res;
+ 
+ 	pr_debug("Registering platform device '%s'. Parent at %s\n",
+ 		 dev_name(&pdev->dev), dev_name(pdev->dev.parent));
+@@ -341,20 +397,14 @@ int platform_device_add(struct platform_device *pdev)
+ 	if (ret == 0)
+ 		return ret;
+ 
+- failed:
++	platform_device_unlink_resources(pdev);
++
++ failed_res:
+ 	if (pdev->id_auto) {
+ 		ida_simple_remove(&platform_devid_ida, pdev->id);
+ 		pdev->id = PLATFORM_DEVID_AUTO;
+ 	}
+ 
+-	while (--i >= 0) {
+-		struct resource *r = &pdev->resource[i];
+-		unsigned long type = resource_type(r);
+-
+-		if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
+-			release_resource(r);
+-	}
+-
+  err_out:
+ 	return ret;
+ }
+@@ -370,8 +420,6 @@ EXPORT_SYMBOL_GPL(platform_device_add);
+  */
+ void platform_device_del(struct platform_device *pdev)
+ {
+-	int i;
+-
+ 	if (pdev) {
+ 		device_del(&pdev->dev);
+ 
+@@ -380,13 +428,7 @@ void platform_device_del(struct platform_device *pdev)
+ 			pdev->id = PLATFORM_DEVID_AUTO;
+ 		}
+ 
+-		for (i = 0; i < pdev->num_resources; i++) {
+-			struct resource *r = &pdev->resource[i];
+-			unsigned long type = resource_type(r);
+-
+-			if (type == IORESOURCE_MEM || type == IORESOURCE_IO)
+-				release_resource(r);
+-		}
++		platform_device_unlink_resources(pdev);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(platform_device_del);
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index a9ded9a..e48c2d5 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -293,4 +293,8 @@ extern int platform_pm_restore(struct device *dev);
+ #define USE_PLATFORM_PM_SLEEP_OPS
+ #endif
+ 
++/* helper functions for resource list managment */
++int platform_device_unlink_resources(struct platform_device *pdev);
++int platform_device_link_resources(struct platform_device *pdev);
++
+ #endif /* _PLATFORM_DEVICE_H_ */
 -- 
 1.7.12
 
