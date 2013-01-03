@@ -1,117 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543Ab3ACViw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:38:52 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:57545 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab3ACVg0 (ORCPT
+	id S1754561Ab3ACVjG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:39:06 -0500
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:13829 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab3ACVjD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:36:26 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 06/13] cpuset: cleanup cpuset[_can]_attach()
-Date: Thu,  3 Jan 2013 13:36:00 -0800
-Message-Id: <1357248967-24959-7-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1357248967-24959-1-git-send-email-tj@kernel.org>
-References: <1357248967-24959-1-git-send-email-tj@kernel.org>
+	Thu, 3 Jan 2013 16:39:03 -0500
+From: Lance Ortiz <lance.ortiz@hp.com>
+Subject: [PATCH v9 1/3] aerdrv: Trace Event for AER
+To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
+        mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 03 Jan 2013 15:34:01 -0700
+Message-ID: <20130103223401.10751.1838.stgit@grignak.americas.hpqcorp.net>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuset_can_attach() prepare global variables cpus_attach and
-cpuset_attach_nodemask_{to|from} which are used by cpuset_attach().
-There is no reason to prepare in cpuset_can_attach().  The same
-information can be accessed from cpuset_attach().
+This header file will define a new trace event that will be triggered when
+a AER event occurs.  The following data will be provided to the trace
+event.
 
-Move the prepartion logic from cpuset_can_attach() to cpuset_attach()
-and make the global variables static ones inside cpuset_attach().
+char * dev_name - The name of the slot where the device resides
+                  ([domain:]bus:device.function).
 
-With this change, there's no reason to keep
-cpuset_attach_nodemask_{from|to} global.  Move them inside
-cpuset_attach().  Unfortunately, we need to keep cpus_attach global as
-it can't be allocated from cpuset_attach().
+u32 status - Either the correctable or uncorrectable register
+             indicating what error or errors have been see.
 
-v2: cpus_attach not converted to cpumask_t as per Li Zefan and Rusty
-    Russell.
+u8 severity - error severity 0:NONFATAL 1:FATAL 2:CORRECTED
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Li Zefan <lizefan@huawei.com>
+The trace event will also provide a trace string that may look like:
+
+"0000:05:00.0 PCIe Bus Error:severity=Uncorrected (Non-Fatal), Poisoned
+TLP"
+
+v1-v2 Move header from include/ras/aer_event.h to
+include/trace/events/ras.h
+v3-v4 Cleaned up comments and commit header
+v4-v5 More cleanup remove () from if statement in print.
+      Renamed string define to be more specific.
+v5-v6 change TRACE_SYSTEM define to be ras and not aer.
+Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Acked-by: Tony Luck <tony.luck@intel.com>
 ---
- kernel/cpuset.c | 35 ++++++++++++++++++-----------------
- 1 file changed, 18 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 4b054b9..c5edc6b 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1395,15 +1395,6 @@ static int fmeter_getrate(struct fmeter *fmp)
- 	return val;
- }
- 
--/*
-- * Protected by cgroup_lock. The nodemasks must be stored globally because
-- * dynamically allocating them is not allowed in can_attach, and they must
-- * persist until attach.
-- */
--static cpumask_var_t cpus_attach;
--static nodemask_t cpuset_attach_nodemask_from;
--static nodemask_t cpuset_attach_nodemask_to;
--
- /* Called by cgroups to determine if a cpuset is usable; cgroup_mutex held */
- static int cpuset_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- {
-@@ -1430,19 +1421,21 @@ static int cpuset_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- 			return ret;
- 	}
- 
--	/* prepare for attach */
--	if (cs == &top_cpuset)
--		cpumask_copy(cpus_attach, cpu_possible_mask);
--	else
--		guarantee_online_cpus(cs, cpus_attach);
--
--	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
--
- 	return 0;
- }
- 
+ include/trace/events/ras.h |   77 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 77 insertions(+), 0 deletions(-)
+ create mode 100644 include/trace/events/ras.h
+
+diff --git a/include/trace/events/ras.h b/include/trace/events/ras.h
+new file mode 100644
+index 0000000..88b8783
+--- /dev/null
++++ b/include/trace/events/ras.h
+@@ -0,0 +1,77 @@
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM ras
++
++#if !defined(_TRACE_AER_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_AER_H
++
++#include <linux/tracepoint.h>
++#include <linux/edac.h>
++
++
 +/*
-+ * Protected by cgroup_mutex.  cpus_attach is used only by cpuset_attach()
-+ * but we can't allocate it dynamically there.  Define it global and
-+ * allocate from cpuset_init().
++ * PCIe AER Trace event
++ *
++ * These events are generated when hardware detects a corrected or
++ * uncorrected event on a PCIe device. The event report has
++ * the following structure:
++ *
++ * char * dev_name -	The name of the slot where the device resides
++ *			([domain:]bus:device.function).
++ * u32 status -		Either the correctable or uncorrectable register
++ *			indicating what error or errors have been seen
++ * u8 severity -	error severity 0:NONFATAL 1:FATAL 2:CORRECTED
 + */
-+static cpumask_var_t cpus_attach;
 +
- static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- {
-+	/* static bufs protected by cgroup_mutex */
-+	static nodemask_t cpuset_attach_nodemask_from;
-+	static nodemask_t cpuset_attach_nodemask_to;
- 	struct mm_struct *mm;
- 	struct task_struct *task;
- 	struct task_struct *leader = cgroup_taskset_first(tset);
-@@ -1450,6 +1443,14 @@ static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- 	struct cpuset *cs = cgroup_cs(cgrp);
- 	struct cpuset *oldcs = cgroup_cs(oldcgrp);
- 
-+	/* prepare for attach */
-+	if (cs == &top_cpuset)
-+		cpumask_copy(cpus_attach, cpu_possible_mask);
-+	else
-+		guarantee_online_cpus(cs, cpus_attach);
++#define aer_correctable_errors		\
++	{BIT(0),	"Receiver Error"},		\
++	{BIT(6),	"Bad TLP"},			\
++	{BIT(7),	"Bad DLLP"},			\
++	{BIT(8),	"RELAY_NUM Rollover"},		\
++	{BIT(12),	"Replay Timer Timeout"},	\
++	{BIT(13),	"Advisory Non-Fatal"}
 +
-+	guarantee_online_mems(cs, &cpuset_attach_nodemask_to);
++#define aer_uncorrectable_errors		\
++	{BIT(4),	"Data Link Protocol"},		\
++	{BIT(12),	"Poisoned TLP"},		\
++	{BIT(13),	"Flow Control Protocol"},	\
++	{BIT(14),	"Completion Timeout"},		\
++	{BIT(15),	"Completer Abort"},		\
++	{BIT(16),	"Unexpected Completion"},	\
++	{BIT(17),	"Receiver Overflow"},		\
++	{BIT(18),	"Malformed TLP"},		\
++	{BIT(19),	"ECRC"},			\
++	{BIT(20),	"Unsupported Request"}
 +
- 	cgroup_taskset_for_each(task, cgrp, tset) {
- 		/*
- 		 * can_attach beforehand should guarantee that this doesn't
--- 
-1.8.0.2
++TRACE_EVENT(aer_event,
++	TP_PROTO(const char *dev_name,
++		 const u32 status,
++		 const u8 severity),
++
++	TP_ARGS(dev_name, status, severity),
++
++	TP_STRUCT__entry(
++		__string(	dev_name,	dev_name	)
++		__field(	u32,		status		)
++		__field(	u8,		severity	)
++	),
++
++	TP_fast_assign(
++		__assign_str(dev_name, dev_name);
++		__entry->status		= status;
++		__entry->severity	= severity;
++	),
++
++	TP_printk("%s PCIe Bus Error: severity=%s, %s\n",
++		__get_str(dev_name),
++		__entry->severity == HW_EVENT_ERR_CORRECTED ? "Corrected" :
++			__entry->severity == HW_EVENT_ERR_FATAL ?
++			"Fatal" : "Uncorrected",
++		__entry->severity == HW_EVENT_ERR_CORRECTED ?
++		__print_flags(__entry->status, "|", aer_correctable_errors) :
++		__print_flags(__entry->status, "|", aer_uncorrectable_errors))
++);
++
++#endif /* _TRACE_AER_H */
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 
