@@ -1,87 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab3ACVkQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:40:16 -0500
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:53424 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab3ACVgV (ORCPT
+	id S1754625Ab3ACVkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:40:36 -0500
+Received: from mail-ia0-f182.google.com ([209.85.210.182]:49246 "EHLO
+	mail-ia0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab3ACVkO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:36:21 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 04/13] cpuset: introduce CS_ONLINE
-Date: Thu,  3 Jan 2013 13:35:58 -0800
-Message-Id: <1357248967-24959-5-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1357248967-24959-1-git-send-email-tj@kernel.org>
-References: <1357248967-24959-1-git-send-email-tj@kernel.org>
+	Thu, 3 Jan 2013 16:40:14 -0500
+MIME-Version: 1.0
+In-Reply-To: <50E54A14.5010909@suse.cz>
+References: <1356029364-11346-1-git-send-email-kliegs@chromium.org>
+ <87ip7f5ecu.fsf@rustcorp.com.au> <50E54A14.5010909@suse.cz>
+From: Jonathan Kliegman <kliegs@chromium.org>
+Date: Thu, 3 Jan 2013 16:39:52 -0500
+Message-ID: <CAPQV+nOTEfeQVwqd8zAP37qS3PrdwFQv1c0AC=nAz3UCemXhSg@mail.gmail.com>
+Subject: Re: [PATCH] modpost: Add flag -f for making section mismatches fatal
+To: Michal Marek <mmarek@suse.cz>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add CS_ONLINE which is set from css_online() and cleared from
-css_offline().  This will enable using generic cgroup iterator while
-allowing decoupling cpuset from cgroup internal locking.
+On Thu, Jan 3, 2013 at 4:06 AM, Michal Marek <mmarek@suse.cz> wrote:
+>
+> Dne 3.1.2013 00:56, Rusty Russell napsal(a):
+> > Jonathan Kliegman <kliegs@chromium.org> writes:
+> >> The section mismatch warning can be easy to miss during the kernel build
+> >> process.  Allow it to be marked as fatal to be easily caught and prevent
+> >> bugs from slipping in.
+> >>
+> >> Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
+> >
+> > Hmm, a CONFIG option with no Kconfig entry?  That seems weird...
+>
+> With a Kconfig entry, all{mod,yes}configs would start failing. It can be
+> enabled with make CONFIG_SECTION_MISMATCH_FATAL=y for now. Maybe it
+> could be added to Kconfig with 'depends on n', so that it is documented
+> somewhere.
+>
+Sorry for missing the Kconfig entry.  It looks like init/Kconfig in
+the "General setup" seems the best fit as that looks like where the
+other build options are.  If this is ok I'll upload a new version of
+the patch with the entry added.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
----
- kernel/cpuset.c | 11 ++++++++++-
- 1 file changed, 10 insertions(+), 1 deletion(-)
+I'm not sure what you mean about configs failing.  After adding this
+option to init/Kconfig I was able to build fine using old and new
+configs with and without the option set.  Is there something specific
+you'd like me to test for?
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 1d7a611..e857887 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -138,6 +138,7 @@ static inline bool task_has_mempolicy(struct task_struct *task)
- 
- /* bits in struct cpuset flags field */
- typedef enum {
-+	CS_ONLINE,
- 	CS_CPU_EXCLUSIVE,
- 	CS_MEM_EXCLUSIVE,
- 	CS_MEM_HARDWALL,
-@@ -154,6 +155,11 @@ enum hotplug_event {
- };
- 
- /* convenient tests for these bits */
-+static inline bool is_cpuset_online(const struct cpuset *cs)
-+{
-+	return test_bit(CS_ONLINE, &cs->flags);
-+}
-+
- static inline int is_cpu_exclusive(const struct cpuset *cs)
- {
- 	return test_bit(CS_CPU_EXCLUSIVE, &cs->flags);
-@@ -190,7 +196,8 @@ static inline int is_spread_slab(const struct cpuset *cs)
- }
- 
- static struct cpuset top_cpuset = {
--	.flags = ((1 << CS_CPU_EXCLUSIVE) | (1 << CS_MEM_EXCLUSIVE)),
-+	.flags = ((1 << CS_ONLINE) | (1 << CS_CPU_EXCLUSIVE) |
-+		  (1 << CS_MEM_EXCLUSIVE)),
- };
- 
- /*
-@@ -1822,6 +1829,7 @@ static int cpuset_css_online(struct cgroup *cgrp)
- 	if (!parent)
- 		return 0;
- 
-+	set_bit(CS_ONLINE, &cs->flags);
- 	if (is_spread_page(parent))
- 		set_bit(CS_SPREAD_PAGE, &cs->flags);
- 	if (is_spread_slab(parent))
-@@ -1871,6 +1879,7 @@ static void cpuset_css_offline(struct cgroup *cgrp)
- 		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
- 
- 	number_of_cpusets--;
-+	clear_bit(CS_ONLINE, &cs->flags);
- 
- 	cgroup_unlock();
- }
--- 
-1.8.0.2
-
+> Michal
