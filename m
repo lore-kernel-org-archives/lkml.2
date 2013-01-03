@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab3ACOjg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 09:39:36 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:62110 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752800Ab3ACOje (ORCPT
+	id S1753281Ab3ACOxT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:53:19 -0500
+Received: from mail.pripojeni.net ([178.22.112.14]:60977 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753167Ab3ACOxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 09:39:34 -0500
-MIME-Version: 1.0
-X-Originating-IP: [121.6.69.232]
-In-Reply-To: <CA+icZUVEBEerN=YRSS8Rx-2Xvx4byFuBDbVcE45qq4QZ67+Q-A@mail.gmail.com>
-References: <CA+icZUVEBEerN=YRSS8Rx-2Xvx4byFuBDbVcE45qq4QZ67+Q-A@mail.gmail.com>
-Date: Thu, 3 Jan 2013 22:39:33 +0800
-Message-ID: <CAMVG2svQkEZtz_kod-ifp1y=pwOPa4ZyRnsayf=oyzHzyRsotw@mail.gmail.com>
-Subject: Re: 3.8-rc2: EFI framebuffer lock inversion...
-From: Daniel J Blueman <daniel@quora.org>
-To: sedat.dilek@gmail.com
-Cc: alan@lxorguk.ukuu.org.uk, linux-fbdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Jan 2013 09:53:17 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: gregkh@linuxfoundation.org
+Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 09/10] TTY: synclink, remove unneeded tests
+Date: Thu,  3 Jan 2013 15:53:09 +0100
+Message-Id: <1357224789-2853-10-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 January 2013 22:11, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> Hi Daniel,
->
-> just wanted to test the fb-fix [2] from Alan and followed the thread in [1].
-> Me is also working with i915 KMS.
->
-> I looked at nouveau KMS driver and adapted the part for i915:
->
-> drivers/gpu/drm/nouveau/nouveau_drm.c-200-      /* remove conflicting
-> drivers (vesafb, efifb etc) */
-> drivers/gpu/drm/nouveau/nouveau_drm.c:201:      aper = alloc_apertures(3);
-> drivers/gpu/drm/nouveau/nouveau_drm.c-202-      if (!aper)
-> drivers/gpu/drm/nouveau/nouveau_drm.c-203-              return -ENOMEM;
->
-> Untested by me, feel free to test.
->
-> Maybe some of the i915 and/or fb driver experts can comment on the problem.
+info in synclink bottom-halves cannot be NULL because it is taken from
+work_struct using container_of. Remove the tests.
 
-The structure array from alloc_apertures is just used for the PCI base
-address registers, so it's important here.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ drivers/char/pcmcia/synclink_cs.c | 3 ---
+ drivers/tty/synclink_gt.c         | 2 --
+ drivers/tty/synclinkmp.c          | 3 ---
+ 3 files changed, 8 deletions(-)
 
-I'll take a look at the efifb locking later.
-
-Thanks,
-  Daniel
+diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
+index a046b17..a1ef7bb 100644
+--- a/drivers/char/pcmcia/synclink_cs.c
++++ b/drivers/char/pcmcia/synclink_cs.c
+@@ -765,9 +765,6 @@ static void bh_handler(struct work_struct *work)
+ 	struct tty_struct *tty;
+ 	int action;
+ 
+-	if (!info)
+-		return;
+-
+ 	if (debug_level >= DEBUG_LEVEL_BH)
+ 		printk( "%s(%d):bh_handler(%s) entry\n",
+ 			__FILE__,__LINE__,info->device_name);
+diff --git a/drivers/tty/synclink_gt.c b/drivers/tty/synclink_gt.c
+index 1654b7e..7cb74e8 100644
+--- a/drivers/tty/synclink_gt.c
++++ b/drivers/tty/synclink_gt.c
+@@ -1958,8 +1958,6 @@ static void bh_handler(struct work_struct *work)
+ 	struct slgt_info *info = container_of(work, struct slgt_info, task);
+ 	int action;
+ 
+-	if (!info)
+-		return;
+ 	info->bh_running = true;
+ 
+ 	while((action = bh_action(info))) {
+diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
+index 22d94a1..68bfce0 100644
+--- a/drivers/tty/synclinkmp.c
++++ b/drivers/tty/synclinkmp.c
+@@ -2008,9 +2008,6 @@ static void bh_handler(struct work_struct *work)
+ 	SLMP_INFO *info = container_of(work, SLMP_INFO, task);
+ 	int action;
+ 
+-	if (!info)
+-		return;
+-
+ 	if ( debug_level >= DEBUG_LEVEL_BH )
+ 		printk( "%s(%d):%s bh_handler() entry\n",
+ 			__FILE__,__LINE__,info->device_name);
 -- 
-Daniel J Blueman
+1.8.1
+
+
