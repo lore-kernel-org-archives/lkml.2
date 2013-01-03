@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab3ACFzx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 00:55:53 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:61210 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab3ACFzv (ORCPT
+	id S1752140Ab3ACGJE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 01:09:04 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:3954 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750885Ab3ACGJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 00:55:51 -0500
-Message-ID: <50E51D5F.6090009@gmail.com>
-Date: Thu, 03 Jan 2013 13:55:43 +0800
-From: Mark Zhang <nvmarkzhang@gmail.com>
+	Thu, 3 Jan 2013 01:09:02 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 02 Jan 2013 22:06:18 -0800
+Message-ID: <50E521AE.2030500@nvidia.com>
+Date: Thu, 3 Jan 2013 08:14:06 +0200
+From: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+To: Lucas Stach <dev@lynxeye.de>
 CC: "thierry.reding@avionic-design.de" <thierry.reding@avionic-design.de>,
         "airlied@linux.ie" <airlied@linux.ie>,
-        "dev@lynxeye.de" <dev@lynxeye.de>,
         "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCHv4 0/8] Support for Tegra 2D hardware
-References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <50DD6311.9000002@gmail.com> <50E40106.4020406@nvidia.com> <50E4FBAF.30700@gmail.com> <50E51C08.1020603@nvidia.com>
-In-Reply-To: <50E51C08.1020603@nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <1356097818.1490.109.camel@tellur>
+In-Reply-To: <1356097818.1490.109.camel@tellur>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 01:50 PM, Terje Bergström wrote:
-> On 03.01.2013 05:31, Mark Zhang wrote:
->> Sorry I didn't get it. Yes, in current design, you can pin all mem
->> handles in one time but I haven't found anything related with "locking
->> only once per submit".
->>
->> My idea is:
->> - remove "job->addr_phys"
->> - assign "job->reloc_addr_phys" & "job->gather_addr_phys" separately
->> - In "pin_job_mem", just call "host1x_memmgr_pin_array_ids" twice to
->> fill the "reloc_addr_phy" & "gather_addr_phys".
->>
->> Anything I misunderstood?
-> 
-> The current design uses CMA, which makes pinning basically a no-op. When
-> we have IOMMU support, pinning requires calling into IOMMU. Updating
-> SMMU tables requires locking, and probably maintenance before SMMU code
-> also requires its own locked data tables. For example, preventing
-> duplicate pinning might require a global table of handles.
-> 
-> Putting all of the handles in one table allows doing duplicate detection
-> across cmdbuf and reloc tables. This allows pinning each buffer exactly
-> once, which reduces number of calls to IOMMU.
-> 
+On 21.12.2012 15:50, Lucas Stach wrote:
+> Am Freitag, den 21.12.2012, 13:39 +0200 schrieb Terje Bergstrom:
+>> Some of the issues left open:
+>>  * Register definitions still use static inline. There has been a
+>>    debate about code style versus ability to use compiler type
+>>    checking and code coverage analysis. There was no conclusion, so
+>>    I left it as was.
+> This has to be resolved before merging. Personally I'm in favour of
+> keeping reg access patterns close to what is done in other parts of the
+> kernel.
 
-Thanks Terje. Yes, I understand IOMMU will bring in more operations. But
-I'm not convinced that separating 2 arrays have lots of overheads than
-putting them into one array.
+How about if I define inline functions, and #defines to proxy to them?
+Something like:
 
-But it doesn't matter, after the IOMMU support version released, I can
-read this part of codes again. Let's talk about this at that time.
+static inline u32 host1x_sync_cfpeek_ctrl_r(void)
+{
+	return 0x74c;
+}
+#define HOST1X_SYNC_CFPEEK_CTRL \
+	host1x_sync_cfpeek_ctrl_r()
 
->> "host1x_cma_pin_array_ids" doesn't return negative value right now, so
->> maybe you need to take a look at it.
-> 
-> True, and also a consequence of using CMA: pinning can never fail. With
-> IOMMU, pinning can fail.
+static inline u32 host1x_sync_cfpeek_ctrl_cfpeek_ena_f(u32 v)
+{
+	return (v & 0x1) << 31;
+}
+#define HOST1X_SYNC_CFPEEK_CTRL_CFPEEK_ENA_F(v) \
+	host1x_sync_cfpeek_ctrl_cfpeek_ena_f(v)
 
-Got it. Agree.
+I'd use the macros in .c files. That way the references will look
+familiar to reader of .c files, but we can still get the benefits of
+compiler processing (type checking, better error codes etc) and gcov
+coverage tracking.
 
-> 
-> Terje
-> 
+Terje
