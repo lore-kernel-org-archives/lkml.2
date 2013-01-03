@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab3ACPM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 10:12:26 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:45156 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab3ACPMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 10:12:24 -0500
+	id S1753412Ab3ACPQV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 10:16:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33285 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab3ACPQR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 10:16:17 -0500
+Date: Thu, 3 Jan 2013 16:16:12 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Jorrit Schippers <jorrit@ncode.nl>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Replace incomming with incoming in all comments and
+ strings
+In-Reply-To: <20130103151050.GN7247@mwanda>
+Message-ID: <alpine.LNX.2.00.1301031616030.4954@pobox.suse.cz>
+References: <1356625982-4335-1-git-send-email-jorrit@ncode.nl> <20130103151050.GN7247@mwanda>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Thu, 3 Jan 2013 16:12:23 +0100
-Message-ID: <CA+icZUV-rgfmNRK+RAGRywRhzyV4-z+s4yB0+xW4WHUjScdjyg@mail.gmail.com>
-Subject: Re: 3.8-rc2: EFI framebuffer lock inversion...
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Alan Cox <alan@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-fbdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 3 Jan 2013, Dan Carpenter wrote:
 
-I have tested the fb-fix [1] from Alan on top of Linux v3.8-rc2.
+> On Thu, Dec 27, 2012 at 05:33:02PM +0100, Jorrit Schippers wrote:
+> > Signed-off-by: Jorrit Schippers <jorrit@ncode.nl>
+> 
+> This needs to either be broken up and submitted as a patch series
+> so it can be committed by all the subsystem maintainers.  Or perhaps
+> it can go in as one patch through the trivial tree.
+> 
+> I've added trivial@kernel.org to the CC list.
 
-Unfortunately, several people still complain about it.
-As Boris shouted out... Apply directly to mainline?
+I am taking it, thanks.
 
-Feel free to add a "Tested-by".
-
-Just FYI: There seems to exist a locking problem with efifb reported
-by Daniel J (also see [1]).
-
-Regards,
-- Sedat -
-
-[1] http://marc.info/?t=135721787600001&r=1&w=2
-[2] https://patchwork.kernel.org/patch/1757061/
+-- 
+Jiri Kosina
+SUSE Labs
