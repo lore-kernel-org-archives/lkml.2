@@ -1,51 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab3ACWP2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:15:28 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:46578 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049Ab3ACWPY (ORCPT
+	id S1754437Ab3ACWUd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:20:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34063 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754329Ab3ACWUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:15:24 -0500
-Message-ID: <50E602D4.8020604@oracle.com>
-Date: Thu, 03 Jan 2013 17:14:44 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] module: prevent warning when finit_module a 0 sized file
-References: <1356722837-1457-1-git-send-email-sasha.levin@oracle.com> <877gnv5c9s.fsf@rustcorp.com.au>
-In-Reply-To: <877gnv5c9s.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Jan 2013 17:20:31 -0500
+Date: Thu, 3 Jan 2013 14:20:29 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>
+Subject: Re: schedule_timeout: wrong timeout value fffffffffffffff0
+Message-Id: <20130103142029.705d2538.akpm@linux-foundation.org>
+In-Reply-To: <20130102152727.GA25940@redhat.com>
+References: <20130102152727.GA25940@redhat.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2013 07:41 PM, Rusty Russell wrote:
-> Sasha Levin <sasha.levin@oracle.com> writes:
+On Wed, 2 Jan 2013 10:27:27 -0500
+Dave Jones <davej@redhat.com> wrote:
+
+> This happened to a box I left running fuzz tests over the holidays.
 > 
->> If we try to finit_module on a file sized 0 bytes vmalloc will
->> scream and spit out a warning.
->>
->> Since modules have to be bigger than 0 bytes anyways we can just
->> check that beforehand and avoid the warning.
 > 
-> Applied, but I added the comment you somehow missed :)
+> schedule_timeout: wrong timeout value fffffffffffffff0
+> Pid: 6606, comm: trinity-child1 Not tainted 3.8.0-rc1+ #43
+> Call Trace:
+>  [<ffffffff81698415>] schedule_timeout+0x305/0x340
+>  [<ffffffff8169ae82>] ? preempt_schedule+0x42/0x60
+>  [<ffffffff8169cb65>] ? _raw_spin_unlock_irqrestore+0x75/0x80
+>  [<ffffffff810dc461>] audit_log_start+0x311/0x470
+>  [<ffffffff8106c62c>] ? __rcu_read_unlock+0x5c/0xa0
+>  [<ffffffff81086120>] ? try_to_wake_up+0x320/0x320
+>  [<ffffffff810e0d0b>] audit_log_exit+0x4b/0xfb0
+>  [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
+>  [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
+>  [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
+>  [<ffffffff810b2ecb>] ? lock_release_holdtime.part.24+0xcb/0x130
+>  [<ffffffff81075f93>] ? up_write+0x23/0x40
+>  [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
+>  [<ffffffff816a4afc>] ? sysret_signal+0x5/0x47
+>  [<ffffffff810e3d3f>] __audit_syscall_exit+0x25f/0x2c0
+>  [<ffffffff816a4bad>] sysret_audit+0x17/0x21
+> 
 
-Thanks!
+ooh, I can fix that.  Please review.
 
-I do have a somewhat related follow-up question:
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: kernel/audit.c: avoid negative sleep durations
 
-When init_module() goes through the module loading process, it will try to vmalloc()
-whatever size passed to it by the user, which may cause vmalloc() to scream and shout
-if the size passed from userspace is too big.
+audit_log_start() performs the same jiffies comparison in two places.  If
+sufficient time has elapsed between the two comparisons, the second one
+produces a negative sleep duration:
 
-Do you think that reading just the header and doing a quick elf_header_check() on
-it before trying to read the entire file would make sense here?
+schedule_timeout: wrong timeout value fffffffffffffff0
+Pid: 6606, comm: trinity-child1 Not tainted 3.8.0-rc1+ #43
+Call Trace:
+ [<ffffffff81698415>] schedule_timeout+0x305/0x340
+ [<ffffffff8169ae82>] ? preempt_schedule+0x42/0x60
+ [<ffffffff8169cb65>] ? _raw_spin_unlock_irqrestore+0x75/0x80
+ [<ffffffff810dc461>] audit_log_start+0x311/0x470
+ [<ffffffff8106c62c>] ? __rcu_read_unlock+0x5c/0xa0
+ [<ffffffff81086120>] ? try_to_wake_up+0x320/0x320
+ [<ffffffff810e0d0b>] audit_log_exit+0x4b/0xfb0
+ [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
+ [<ffffffff810b2342>] ? get_lock_stats+0x22/0x70
+ [<ffffffff810b27ae>] ? put_lock_stats.isra.23+0xe/0x40
+ [<ffffffff810b2ecb>] ? lock_release_holdtime.part.24+0xcb/0x130
+ [<ffffffff81075f93>] ? up_write+0x23/0x40
+ [<ffffffff81156e1b>] ? vm_mmap_pgoff+0x8b/0xb0
+ [<ffffffff816a4afc>] ? sysret_signal+0x5/0x47
+ [<ffffffff810e3d3f>] __audit_syscall_exit+0x25f/0x2c0
+ [<ffffffff816a4bad>] sysret_audit+0x17/0x21
 
+Fix it by performing the comparison a single time.
 
-Thanks,
-Sasha
+Reported-by: Dave Jones <davej@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ kernel/audit.c |   36 +++++++++++++++++++++++-------------
+ 1 file changed, 23 insertions(+), 13 deletions(-)
+
+diff -puN kernel/audit.c~a kernel/audit.c
+--- a/kernel/audit.c~a
++++ a/kernel/audit.c
+@@ -1101,6 +1101,23 @@ static inline void audit_get_stamp(struc
+ 	}
+ }
+ 
++/*
++ * Wait for auditd to drain the queue a little
++ */
++static void wait_for_auditd(unsigned long sleep_time)
++{
++	DECLARE_WAITQUEUE(wait, current);
++	set_current_state(TASK_INTERRUPTIBLE);
++	add_wait_queue(&audit_backlog_wait, &wait);
++
++	if (audit_backlog_limit &&
++	    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
++		schedule_timeout(sleep_time);
++
++	__set_current_state(TASK_RUNNING);
++	remove_wait_queue(&audit_backlog_wait, &wait);
++}
++
+ /* Obtain an audit buffer.  This routine does locking to obtain the
+  * audit buffer, but then no locking is required for calls to
+  * audit_log_*format.  If the tsk is a task that is currently in a
+@@ -1146,20 +1163,13 @@ struct audit_buffer *audit_log_start(str
+ 
+ 	while (audit_backlog_limit
+ 	       && skb_queue_len(&audit_skb_queue) > audit_backlog_limit + reserve) {
+-		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time
+-		    && time_before(jiffies, timeout_start + audit_backlog_wait_time)) {
+-
+-			/* Wait for auditd to drain the queue a little */
+-			DECLARE_WAITQUEUE(wait, current);
+-			set_current_state(TASK_INTERRUPTIBLE);
+-			add_wait_queue(&audit_backlog_wait, &wait);
+-
+-			if (audit_backlog_limit &&
+-			    skb_queue_len(&audit_skb_queue) > audit_backlog_limit)
+-				schedule_timeout(timeout_start + audit_backlog_wait_time - jiffies);
++		if (gfp_mask & __GFP_WAIT && audit_backlog_wait_time) {
++			unsigned long sleep_time;
+ 
+-			__set_current_state(TASK_RUNNING);
+-			remove_wait_queue(&audit_backlog_wait, &wait);
++			sleep_time = timeout_start + audit_backlog_wait_time -
++					jiffies;
++			if ((long)sleep_time > 0)
++				wait_for_auditd(sleep_time);
+ 			continue;
+ 		}
+ 		if (audit_rate_check() && printk_ratelimit())
+_
+
