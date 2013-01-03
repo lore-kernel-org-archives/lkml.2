@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3ACMUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:20:37 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:63194 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab3ACMU1 (ORCPT
+	id S1753512Ab3ACMVH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:21:07 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:40540 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753560Ab3ACMUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:20:27 -0500
+	Thu, 3 Jan 2013 07:20:32 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH -v2 23/26] net/core:  rename random32() to prandom_u32()
-Date: Thu,  3 Jan 2013 21:19:19 +0900
-Message-Id: <1357215562-6288-24-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: [PATCH -v2 26/26] remove unused random32() and srandom32()
+Date: Thu,  3 Jan 2013 21:19:22 +0900
+Message-Id: <1357215562-6288-27-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
 References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
@@ -21,141 +20,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more preferable function name which implies using a pseudo-random
-number generator.
+After finishing a naming transition, remove unused backward
+compatibility wrapper macros
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
+Cc: "Theodore Ts'o" <tytso@mit.edu>
 ---
 
 * Change from v1
-- leave net_random() callers as-is because that is a useful indirection
+- leave net_random() and net_srandom() definision
 
- net/core/pktgen.c | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
+ include/linux/random.h | 7 -------
+ 1 file changed, 7 deletions(-)
 
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index b29dacf..d23ec86 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -2182,7 +2182,7 @@ static inline int f_pick(struct pktgen_dev *pkt_dev)
- 				pkt_dev->curfl = 0; /*reset */
- 		}
- 	} else {
--		flow = random32() % pkt_dev->cflows;
-+		flow = prandom_u32() % pkt_dev->cflows;
- 		pkt_dev->curfl = flow;
+diff --git a/include/linux/random.h b/include/linux/random.h
+index d984608..2ae2840 100644
+--- a/include/linux/random.h
++++ b/include/linux/random.h
+@@ -29,13 +29,6 @@ u32 prandom_u32(void);
+ void prandom_bytes(void *buf, int nbytes);
+ void prandom_seed(u32 seed);
  
- 		if (pkt_dev->flows[flow].count > pkt_dev->lflow) {
-@@ -2229,7 +2229,7 @@ static void set_cur_queue_map(struct pktgen_dev *pkt_dev)
- 	else if (pkt_dev->queue_map_min <= pkt_dev->queue_map_max) {
- 		__u16 t;
- 		if (pkt_dev->flags & F_QUEUE_MAP_RND) {
--			t = random32() %
-+			t = prandom_u32() %
- 				(pkt_dev->queue_map_max -
- 				 pkt_dev->queue_map_min + 1)
- 				+ pkt_dev->queue_map_min;
-@@ -2261,7 +2261,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 		__u32 tmp;
+-/*
+- * These macros are preserved for backward compatibility and should be
+- * removed as soon as a transition is finished.
+- */
+-#define random32() prandom_u32()
+-#define srandom32(seed) prandom_seed(seed)
+-
+ u32 prandom_u32_state(struct rnd_state *);
+ void prandom_bytes_state(struct rnd_state *state, void *buf, int nbytes);
  
- 		if (pkt_dev->flags & F_MACSRC_RND)
--			mc = random32() % pkt_dev->src_mac_count;
-+			mc = prandom_u32() % pkt_dev->src_mac_count;
- 		else {
- 			mc = pkt_dev->cur_src_mac_offset++;
- 			if (pkt_dev->cur_src_mac_offset >=
-@@ -2287,7 +2287,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 		__u32 tmp;
- 
- 		if (pkt_dev->flags & F_MACDST_RND)
--			mc = random32() % pkt_dev->dst_mac_count;
-+			mc = prandom_u32() % pkt_dev->dst_mac_count;
- 
- 		else {
- 			mc = pkt_dev->cur_dst_mac_offset++;
-@@ -2314,21 +2314,21 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 		for (i = 0; i < pkt_dev->nr_labels; i++)
- 			if (pkt_dev->labels[i] & MPLS_STACK_BOTTOM)
- 				pkt_dev->labels[i] = MPLS_STACK_BOTTOM |
--					     ((__force __be32)random32() &
-+					     ((__force __be32)prandom_u32() &
- 						      htonl(0x000fffff));
- 	}
- 
- 	if ((pkt_dev->flags & F_VID_RND) && (pkt_dev->vlan_id != 0xffff)) {
--		pkt_dev->vlan_id = random32() & (4096-1);
-+		pkt_dev->vlan_id = prandom_u32() & (4096 - 1);
- 	}
- 
- 	if ((pkt_dev->flags & F_SVID_RND) && (pkt_dev->svlan_id != 0xffff)) {
--		pkt_dev->svlan_id = random32() & (4096 - 1);
-+		pkt_dev->svlan_id = prandom_u32() & (4096 - 1);
- 	}
- 
- 	if (pkt_dev->udp_src_min < pkt_dev->udp_src_max) {
- 		if (pkt_dev->flags & F_UDPSRC_RND)
--			pkt_dev->cur_udp_src = random32() %
-+			pkt_dev->cur_udp_src = prandom_u32() %
- 				(pkt_dev->udp_src_max - pkt_dev->udp_src_min)
- 				+ pkt_dev->udp_src_min;
- 
-@@ -2341,7 +2341,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 
- 	if (pkt_dev->udp_dst_min < pkt_dev->udp_dst_max) {
- 		if (pkt_dev->flags & F_UDPDST_RND) {
--			pkt_dev->cur_udp_dst = random32() %
-+			pkt_dev->cur_udp_dst = prandom_u32() %
- 				(pkt_dev->udp_dst_max - pkt_dev->udp_dst_min)
- 				+ pkt_dev->udp_dst_min;
- 		} else {
-@@ -2358,7 +2358,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 		if (imn < imx) {
- 			__u32 t;
- 			if (pkt_dev->flags & F_IPSRC_RND)
--				t = random32() % (imx - imn) + imn;
-+				t = prandom_u32() % (imx - imn) + imn;
- 			else {
- 				t = ntohl(pkt_dev->cur_saddr);
- 				t++;
-@@ -2379,7 +2379,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 				__be32 s;
- 				if (pkt_dev->flags & F_IPDST_RND) {
- 
--					t = random32() % (imx - imn) + imn;
-+					t = prandom_u32() % (imx - imn) + imn;
- 					s = htonl(t);
- 
- 					while (ipv4_is_loopback(s) ||
-@@ -2387,7 +2387,8 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 					       ipv4_is_lbcast(s) ||
- 					       ipv4_is_zeronet(s) ||
- 					       ipv4_is_local_multicast(s)) {
--						t = random32() % (imx - imn) + imn;
-+						t = prandom_u32() %
-+							(imx - imn) + imn;
- 						s = htonl(t);
- 					}
- 					pkt_dev->cur_daddr = s;
-@@ -2420,7 +2421,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 
- 			for (i = 0; i < 4; i++) {
- 				pkt_dev->cur_in6_daddr.s6_addr32[i] =
--				    (((__force __be32)random32() |
-+				    (((__force __be32)prandom_u32() |
- 				      pkt_dev->min_in6_daddr.s6_addr32[i]) &
- 				     pkt_dev->max_in6_daddr.s6_addr32[i]);
- 			}
-@@ -2430,7 +2431,7 @@ static void mod_cur_headers(struct pktgen_dev *pkt_dev)
- 	if (pkt_dev->min_pkt_size < pkt_dev->max_pkt_size) {
- 		__u32 t;
- 		if (pkt_dev->flags & F_TXSIZE_RND) {
--			t = random32() %
-+			t = prandom_u32() %
- 				(pkt_dev->max_pkt_size - pkt_dev->min_pkt_size)
- 				+ pkt_dev->min_pkt_size;
- 		} else {
 -- 
 1.7.11.7
 
