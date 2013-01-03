@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab3ACAJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 19:09:07 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:47840 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752838Ab3ACAJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 19:09:05 -0500
+	id S1753054Ab3ACAbS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 19:31:18 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:8925 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753015Ab3ACAbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 19:31:16 -0500
+Message-ID: <50E4D145.5030006@redhat.com>
+Date: Wed, 02 Jan 2013 19:31:01 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1357145418.5429.17.camel@mesosphere.localdomain>
-References: <1357145418.5429.17.camel@mesosphere.localdomain>
-Date: Wed, 2 Jan 2013 16:09:04 -0800
-Message-ID: <CANN689HqKWf2SdE+HHQum9ukpwj6HbQoh66fZciWZuQVaJaUxQ@mail.gmail.com>
-Subject: Re: mmap() scalability in the presence of the MAP_POPULATE flag
-From: Michel Lespinasse <walken@google.com>
-To: Roman Dubtsov <dubtsov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
-        Rik van Riel <riel@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Michel Lespinasse <walken@google.com>
+CC: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>, Hugh Dickins <hughd@google.com>,
+        Jorn_Engel <joern@logfs.org>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/9] mm: remap_file_pages() fixes
+References: <1356050997-2688-1-git-send-email-walken@google.com> <1356050997-2688-3-git-send-email-walken@google.com>
+In-Reply-To: <1356050997-2688-3-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 2, 2013 at 8:50 AM, Roman Dubtsov <dubtsov@gmail.com> wrote:
-> Concurrent mmap() calls from the same process are serialized via downing
-> mm->mmap_sem for write. This means that operations like populating the
-> pages which do not alter vmas are also performed serially. Anecdotal
-> data from two machines I have access to is that populating pages by
-> touching them in a loop outside of mmap() improves performance of the
-> synthetic micro-benchmark by ~40% in the worst case. A crude patch that
-> modifies vm_mmap_pgoff() to call make_pages_present() outside of
-> do_mmap_pgoff() after upping the semaphore when MAP_POPULATE is present
-> brings identical performance improvement.
+On 12/20/2012 07:49 PM, Michel Lespinasse wrote:
+> Assorted small fixes. The first two are quite small:
 >
-> Is there an interest in fixing this or concurrent mmaps() from the same
-> process are too much of a corner case to worry about it?
+> - Move check for vma->vm_private_data && !(vma->vm_flags & VM_NONLINEAR)
+>    within existing if (!(vma->vm_flags & VM_NONLINEAR)) block.
+>    Purely cosmetic.
+>
+> - In the VM_LOCKED case, when dropping PG_Mlocked for the over-mapped
+>    range, make sure we own the mmap_sem write lock around the
+>    munlock_vma_pages_range call as this manipulates the vma's vm_flags.
+>
+> Last fix requires a longer explanation. remap_file_pages() can do its work
+> either through VM_NONLINEAR manipulation or by creating extra vmas.
+> These two cases were inconsistent with each other (and ultimately, both wrong)
+> as to exactly when did they fault in the newly mapped file pages:
+>
+> - In the VM_NONLINEAR case, new file pages would be populated if
+>    the MAP_NONBLOCK flag wasn't passed. If MAP_NONBLOCK was passed,
+>    new file pages wouldn't be populated even if the vma is already
+>    marked as VM_LOCKED.
+>
+> - In the linear (emulated) case, the work is passed to the mmap_region()
+>    function which would populate the pages if the vma is marked as
+>    VM_LOCKED, and would not otherwise - regardless of the value of the
+>    MAP_NONBLOCK flag, because MAP_POPULATE wasn't being passed to
+>    mmap_region().
+>
+> The desired behavior is that we want the pages to be populated and locked
+> if the vma is marked as VM_LOCKED, or to be populated if the MAP_NONBLOCK
+> flag is not passed to remap_file_pages().
+>
+> Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Funny this comes up again. I actually have a patch series that is
-supposed to do that:
-[PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem held
-
-However, the patches are still pending, didn't get much review
-(probably not enough for Andrew to take them at this point), and I
-think everyone forgot about them during the winter break.
-
-Care to have a look at that thread and see if it works for you ?
-
-(caveat: you will possibly also need "[PATCH 10/9] mm: make
-do_mmap_pgoff return populate as a size in bytes, not as a bool" to
-make the series actually work for you)
+Acked-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+All rights reversed
