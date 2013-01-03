@@ -1,130 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753511Ab3ACNeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 08:34:06 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:63061 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331Ab3ACNeF (ORCPT
+	id S1753509Ab3ACNfW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 08:35:22 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:51747 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab3ACNfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 08:34:05 -0500
-MIME-Version: 1.0
-In-Reply-To: <8037573.45Pa1cP0Ir@avalon>
-References: <1357219362-9080-1-git-send-email-prabhakar.lad@ti.com>
- <1357219362-9080-4-git-send-email-prabhakar.lad@ti.com> <1883891.1g43jikvbT@avalon>
- <8037573.45Pa1cP0Ir@avalon>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Thu, 3 Jan 2013 19:03:43 +0530
-Message-ID: <CA+V-a8vaANxY-sEiYscv5AtAv45KsNJjxHJ-m6UFrc0BfQuH_g@mail.gmail.com>
-Subject: Re: [PATCH] tvp7002: use devm_kzalloc() instead of kzalloc()
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: davinci-linux-open-source@linux.davincidsp.com,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LMML <linux-media@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 3 Jan 2013 08:35:20 -0500
+Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
+ factor
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jan Beulich <JBeulich@suse.com>, Rik van Riel <riel@redhat.com>,
+        therbert@google.com, walken@google.com, jeremy@goop.org,
+        tglx@linutronix.de, aquini@redhat.com, lwoodman@redhat.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1357219477.10284.23.camel@gandalf.local.home>
+References: <20121221184940.103c31ad@annuminas.surriel.com>
+	 <20121221185147.4ae48ab5@annuminas.surriel.com>
+	 <20121221185613.1f4c9523@annuminas.surriel.com>
+	 <20121222033339.GF27621@home.goodmis.org> <50D52E0C.6000103@redhat.com>
+	 <1356549008.20133.20856.camel@edumazet-glaptop> <50DB5531.90500@redhat.com>
+	 <CANN689HeTk0jNJb4sF_0t714MvFnU0vLw0=JeXYRUwMx8GDnXQ@mail.gmail.com>
+	 <1356618448.30414.948.camel@edumazet-glaptop> <50DC5CC0.6010003@redhat.com>
+	 <50DC9662020000780009210D@nat28.tlf.novell.com>
+	 <50DC9CE1.9030709@redhat.com>
+	 <50E5580102000078000B29D1@nat28.tlf.novell.com>
+	 <1357219477.10284.23.camel@gandalf.local.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jan 2013 05:35:17 -0800
+Message-ID: <1357220117.21409.24539.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laurent,
+On Thu, 2013-01-03 at 08:24 -0500, Steven Rostedt wrote:
+> On Thu, 2013-01-03 at 09:05 +0000, Jan Beulich wrote:
+> 
+> > > How much bus traffic do monitor/mwait cause behind the scenes?
+> > 
+> > I would suppose that this just snoops the bus for writes, but the
+> > amount of bus traffic involved in this isn't explicitly documented.
+> > 
+> > One downside of course is that unless a spin lock is made occupy
+> > exactly a cache line, false wakeups are possible.
+> 
+> And that would probably be very likely, as the whole purpose of Rik's
+> patches was to lower cache stalls due to other CPUs pounding on spin
+> locks that share the cache line of what is being protected (and
+> modified).
 
-Thanks for the quick review!
+A monitor/mwait would be an option only if using MCS (or K42 variant)
+locks, where each cpu would wait on a private and dedicated cache line.
 
-On Thu, Jan 3, 2013 at 7:02 PM, Laurent Pinchart
-<laurent.pinchart@ideasonboard.com> wrote:
-> On Thursday 03 January 2013 14:31:20 Laurent Pinchart wrote:
->> On Thursday 03 January 2013 18:52:42 Lad, Prabhakar wrote:
->> > I2C drivers can use devm_kzalloc() too in their .probe() methods. Doing so
->> > simplifies their clean up paths.
->> >
->> > Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
->> > Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
->> > ---
->> >
->> >  drivers/media/i2c/tvp7002.c |   10 ++--------
->> >  1 files changed, 2 insertions(+), 8 deletions(-)
->> >
->> > diff --git a/drivers/media/i2c/tvp7002.c b/drivers/media/i2c/tvp7002.c
->> > index fb6a5b5..2d4c86e 100644
->> > --- a/drivers/media/i2c/tvp7002.c
->> > +++ b/drivers/media/i2c/tvp7002.c
->> > @@ -1036,7 +1036,7 @@ static int tvp7002_probe(struct i2c_client *c, const
->> > struct i2c_device_id *id) return -ENODEV;
->> >
->> >     }
->> >
->> > -   device = kzalloc(sizeof(struct tvp7002), GFP_KERNEL);
->> > +   device = devm_kzalloc(&c->dev, sizeof(struct tvp7002), GFP_KERNEL);
->> >
->> >     if (!device)
->> >
->> >             return -ENOMEM;
->> >
->> > @@ -1088,17 +1088,12 @@ static int tvp7002_probe(struct i2c_client *c,
->> > const struct i2c_device_id *id) V4L2_CID_GAIN, 0, 255, 1, 0);
->> >
->> >     sd->ctrl_handler = &device->hdl;
->> >     if (device->hdl.error) {
->> >
->> > -           int err = device->hdl.error;
->> > -
->> >
->> >             v4l2_ctrl_handler_free(&device->hdl);
->> >
->> > -           kfree(device);
->> > -           return err;
->> > +           return device->hdl.error;
->>
->> At this point device->hdl as been freed (or rather uninitialized, as the
->> structure is not dynamically allocated by the control framework), so device-
->> >hdl.error is undefined. That's why you need the local err variable.
->
-> And this comment holds true for the other patches in this series.
->
-Ok I'll fix it respin a v2.
 
->> >
->> >     }
->> >     v4l2_ctrl_handler_setup(&device->hdl);
->> >
->> >  found_error:
->> > -   if (error < 0)
->> > -           kfree(device);
->>
->> You can remove the found_error label and return errors directly instead of
->> using goto's.
->>
-Ok
 
->> >     return error;
->>
->> And this can then be turned into return 0.
-Ok.
-
-Regards,
---Prabhakar
-
->>
->> >  }
->> >
->> > @@ -1120,7 +1115,6 @@ static int tvp7002_remove(struct i2c_client *c)
->> >
->> >     v4l2_device_unregister_subdev(sd);
->> >     v4l2_ctrl_handler_free(&device->hdl);
->> >
->> > -   kfree(device);
->> >
->> >     return 0;
->> >
->> >  }
->
-> --
-> Regards,
->
-> Laurent Pinchart
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
