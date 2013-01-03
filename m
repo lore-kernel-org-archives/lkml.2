@@ -1,73 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3ACWpo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:45:44 -0500
-Received: from mga02.intel.com ([134.134.136.20]:32678 "EHLO mga02.intel.com"
+	id S1754721Ab3ACWrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:47:05 -0500
+Received: from fieldses.org ([174.143.236.118]:34786 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754517Ab3ACWpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:45:42 -0500
-Message-Id: <6c3329$7ukf5e@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,405,1355126400"; 
-   d="scan'208";a="267009198"
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: Linux 3.8-rc2
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Zaytsev <alexey.zaytsev@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Peter Ujfalusi <peter.ujfalusi@gmail.com>,
-        stable <stable@vger.kernel.org>
-In-Reply-To: <CA+55aFzQtxET9JWdaLGi52OL=A9yRbj+vaa7RfniuBvfB5K04Q@mail.gmail.com>
-References: <CA+55aFxQ9vH70UrqC0ypm-diNbGcZbWbdhYa3FLH+0Vbrk4hUQ@mail.gmail.com> <CAB9v_DHJYAEcZDuPd3XBEib_nGca=_sKbZngV3z1N6H8KcJJGQ@mail.gmail.com> <CA+55aFzQtxET9JWdaLGi52OL=A9yRbj+vaa7RfniuBvfB5K04Q@mail.gmail.com>
-Date: Thu, 03 Jan 2013 22:45:36 +0000
+	id S1754437Ab3ACWrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 17:47:03 -0500
+Date: Thu, 3 Jan 2013 17:46:56 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Pawel Dziepak <pdziepak@quarnos.org>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] nfsd: Don't overuse NFS?ERR_PERM error code
+Message-ID: <20130103224656.GB3238@fieldses.org>
+References: <CALS3df0FR0XD9wnzVhCMDXbS-Q2OejH2TfgYf6uL8gF4cKDRng@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALS3df0FR0XD9wnzVhCMDXbS-Q2OejH2TfgYf6uL8gF4cKDRng@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jan 2013 13:32:04 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Thu, Jan 3, 2013 at 1:09 PM, Alexey Zaytsev <alexey.zaytsev@gmail.com> wrote:
-> >
-> > i915 got broken on my machine (Lenovo ThinkPad SL500) by this -rc. The screen
-> > goes blank after loading the module. I've bisected the problem to
-> > b0a2658acb5bf9ca86b4aab011b7106de3af0add "drm/i915: don't disable
-> > disconnected outputs".
+On Tue, Dec 25, 2012 at 12:30:42AM +0100, Pawel Dziepak wrote:
+> From: Pawel Dziepak <pdziepak@quarnos.org>
 > 
-> Hmm. Daniel - should I just revert it, or do you have a patch to
-> possibly fix the divide-by-zero error in g4x_compute_wm0() (which may
-> involve not getting that deep in the call chain to begin with or
-> whatever)? Maybe that fixes the blank screen too without a revert..
+> Unlike EPERM, NFS?ERR_PERM error code applies only when the operation could
+> not be completed because the caller is either not the owner or not a
+> privileged user. Actually, only OPEN, CREATE and SETATTR are supposed to
+> ever return such error code when a problem occurs when changing or setting
+> access permissions.
+>
+> Generally, this patch replaces NFS?ERR_PERM with NFS?ERR_ACCESS which is a more
+> appropriate error code indicating that the caller is not allowed to perform the
+> requested operation.
+> 
+> In case of incorrect {file,directory} names either NFS?ERR_INVAL or
+> NFS4ERR_BADNAME is returned.
+> 
+> Opening for write files with append-only bit set or mandatory locking enabled
+> results in NFS4ERR_SHARE_DENIED.
+> 
+> Signed-off-by: Pawel Dziepak <pdziepak@quarnos.org>
+> ---
+>  fs/nfsd/nfsfh.c |  2 +-
+>  fs/nfsd/vfs.c   | 28 ++++++++++++++++------------
+>  2 files changed, 17 insertions(+), 13 deletions(-)
+> 
+> diff --git a/fs/nfsd/nfsfh.c b/fs/nfsd/nfsfh.c
+> index 814afaa..b18382c 100644
+> --- a/fs/nfsd/nfsfh.c
+> +++ b/fs/nfsd/nfsfh.c
+> @@ -91,7 +91,7 @@ static __be32 nfsd_setuser_and_check_port(struct
+> svc_rqst *rqstp,
+>   dprintk(KERN_WARNING
+>         "nfsd: request from insecure port %s!\n",
+>         svc_print_addr(rqstp, buf, sizeof(buf)));
+> - return nfserr_perm;
+> + return nfserr_acces;
 
-The issue appears to be a disagreement between intel_crtc->active, an
-attached framebuffer and there not being a valid mode set on the crtc.
+Why is eaccess better in this particular case?
 
-It looks like we end up in that situation with further confusion over
-intel_crtc->base.enabled vs intel_crtc->active. I suspect the answer is
-something like:
+>   }
+> 
+>   /* Set user creds for this exportpoint */
+> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+> index d586117..a9964de 100644
+> --- a/fs/nfsd/vfs.c
+> +++ b/fs/nfsd/vfs.c
+> @@ -777,7 +777,7 @@ nfsd_open(struct svc_rqst *rqstp, struct svc_fh
+> *fhp, umode_t type,
+>   /* Disallow write access to files with the append-only bit set
+>   * or any access when mandatory locking enabled
+>   */
+> - err = nfserr_perm;
+> + err = nfserr_share_denied;
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index a9fb046..5e4b818 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -7940,10 +7940,8 @@ bool intel_set_mode(struct drm_crtc *crtc,
- 		}
- 	}
- 
--	for_each_intel_crtc_masked(dev, prepare_pipes, intel_crtc) {
--		if (intel_crtc->base.enabled)
--			dev_priv->display.crtc_disable(&intel_crtc->base);
--	}
-+	for_each_intel_crtc_masked(dev, prepare_pipes, intel_crtc)
-+		dev_priv->display.crtc_disable(&intel_crtc->base);
- 
- 	/* crtc->mode is already used by the ->mode_set callbacks, hence we need
- 	 * to set it here already despite that we pass it down the callchain.
+This results in returning a v4-only error on some v2 and v3
+routines--definitely not OK.
 
-However, until that confusion is unravelled, reverting b0a2658ac, seems
-the most sensible approach.
--Chris
+>   if (IS_APPEND(inode) && (may_flags & NFSD_MAY_WRITE))
+>   goto out;
+>   /*
+> @@ -924,8 +924,6 @@ nfsd_vfs_read(struct svc_rqst *rqstp, struct
+> svc_fh *fhp, struct file *file,
+>   __be32 err;
+>   int host_err;
+> 
+> - err = nfserr_perm;
+> -
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+Hm, yeah there's no way out of this routine without clobbering this
+value later, I don't know why we have this assignment.  OK.
+
+>   if (file->f_op->splice_read && rqstp->rq_splice_ok) {
+>   struct splice_desc sd = {
+>   .len = 0,
+> @@ -1246,7 +1244,7 @@ nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>   __be32 err2;
+>   int host_err;
+> 
+> - err = nfserr_perm;
+> + err = nfserr_inval;
+>   if (!flen)
+>   goto out;
+
+OK, I guess.  I'm curious though why you care which error you get when
+operating on a zero-length filehandle.
+
+Is there a practical problem you're trying to solve here?
+
+>   err = nfserr_exist;
+> @@ -1387,7 +1385,7 @@ do_nfsd_create(struct svc_rqst *rqstp, struct svc_fh *fhp,
+>   int host_err;
+>   __u32 v_mtime=0, v_atime=0;
+> 
+> - err = nfserr_perm;
+> + err = nfserr_inval;
+>   if (!flen)
+>   goto out;
+>   err = nfserr_exist;
+> @@ -1675,7 +1673,7 @@ nfsd_link(struct svc_rqst *rqstp, struct svc_fh *ffhp,
+>   err = nfserr_isdir;
+>   if (S_ISDIR(tfhp->fh_dentry->d_inode->i_mode))
+>   goto out;
+> - err = nfserr_perm;
+> + err = nfserr_inval;
+>   if (!len)
+>   goto out;
+>   err = nfserr_exist;
+> @@ -1761,8 +1759,11 @@ nfsd_rename(struct svc_rqst *rqstp, struct
+> svc_fh *ffhp, char *fname, int flen,
+>   if (ffhp->fh_export != tfhp->fh_export)
+>   goto out;
+> 
+> - err = nfserr_perm;
+> - if (!flen || isdotent(fname, flen) || !tlen || isdotent(tname, tlen))
+> + err = nfserr_inval;
+> + if (!flen || !tlen)
+> + goto out;
+> + err = nfsd_v4client(rqstp) ? nfserr_badname : nfserr_inval;
+> + if (isdotent(fname, flen) || isdotent(tname, tlen))
+>   goto out;
+> 
+>   host_err = fh_want_write(ffhp);
+> @@ -1850,8 +1851,11 @@ nfsd_unlink(struct svc_rqst *rqstp, struct
+> svc_fh *fhp, int type,
+>   __be32 err;
+>   int host_err;
+> 
+> - err = nfserr_acces;
+> - if (!flen || isdotent(fname, flen))
+> + err = nfserr_inval;
+> + if (!flen)
+> + goto out;
+> + err = nfsd_v4client(rqstp) ? nfserr_badname : nfserr_inval;
+> + if (isdotent(fname, flen))
+>   goto out;
+>   err = fh_verify(rqstp, fhp, S_IFDIR, NFSD_MAY_REMOVE);
+>   if (err)
+> @@ -2120,10 +2124,10 @@ nfsd_permission(struct svc_rqst *rqstp, struct
+> svc_export *exp,
+>      __mnt_is_readonly(exp->ex_path.mnt))
+>   return nfserr_rofs;
+>   if (/* (acc & NFSD_MAY_WRITE) && */ IS_IMMUTABLE(inode))
+> - return nfserr_perm;
+> + return nfserr_acces;
+
+I'm confused about that case.  This is consistent with
+fs/namei.c:__inode_permission, but not with any other IS_IMMUTABLE
+checks that I can find.
+
+I would have thought this sort of "nobody can do this" case would be
+EPERM.
+
+>   }
+>   if ((acc & NFSD_MAY_TRUNC) && IS_APPEND(inode))
+> - return nfserr_perm;
+> + return nfserr_acces;
+
+Ditto, this is inconsistent with other uses.
+
+--b.
