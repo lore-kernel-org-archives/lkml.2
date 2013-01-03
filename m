@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753833Ab3ACRyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 12:54:54 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38380 "EHLO mx2.suse.de"
+	id S1753816Ab3ACRyv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 12:54:51 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38387 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab3ACRyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753773Ab3ACRyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jan 2013 12:54:46 -0500
 From: Michal Hocko <mhocko@suse.cz>
 To: linux-mm@kvack.org
@@ -13,9 +13,9 @@ Cc: linux-kernel@vger.kernel.org,
         Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
         Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
         Li Zefan <lizefan@huawei.com>
-Subject: [PATCH v3 3/7] memcg: rework mem_cgroup_iter to use cgroup iterators
-Date: Thu,  3 Jan 2013 18:54:17 +0100
-Message-Id: <1357235661-29564-4-git-send-email-mhocko@suse.cz>
+Subject: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
+Date: Thu,  3 Jan 2013 18:54:18 +0100
+Message-Id: <1357235661-29564-5-git-send-email-mhocko@suse.cz>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
 References: <1357235661-29564-1-git-send-email-mhocko@suse.cz>
@@ -23,181 +23,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mem_cgroup_iter curently relies on css->id when walking down a group
-hierarchy tree. This is really awkward because the tree walk depends on
-the groups creation ordering. The only guarantee is that a parent node
-is visited before its children.
-Example
- 1) mkdir -p a a/d a/b/c
- 2) mkdir -a a/b/c a/d
-Will create the same trees but the tree walks will be different:
- 1) a, d, b, c
- 2) a, b, c, d
+Now that per-node-zone-priority iterator caches memory cgroups rather
+than their css ids we have to be careful and remove them from the
+iterator when they are on the way out otherwise they might hang for
+unbounded amount of time (until the global/targeted reclaim triggers the
+zone under priority to find out the group is dead and let it to find the
+final rest).
 
-574bd9f7 (cgroup: implement generic child / descendant walk macros) has
-introduced generic cgroup tree walkers which provide either pre-order
-or post-order tree walk. This patch converts css->id based iteration
-to pre-order tree walk to keep the semantic with the original iterator
-where parent is always visited before its subtree.
+This is solved by hooking into mem_cgroup_css_offline and checking all
+per-node-zone-priority iterators up the way to the root cgroup. If the
+current memcg is found in the respective iter->last_visited then it is
+replaced by the previous one in the same sub-hierarchy.
 
-cgroup_for_each_descendant_pre suggests using post_create and
-pre_destroy for proper synchronization with groups addidition resp.
-removal. This implementation doesn't use those because a new memory
-cgroup is fully initialized in mem_cgroup_create and css reference
-counting enforces that the group is alive for both the last seen cgroup
-and the found one resp. it signals that the group is dead and it should
-be skipped.
+This guarantees that no group gets more reclaiming than necessary and
+the next iteration will continue without noticing that the removed group
+has disappeared.
 
-If the reclaim cookie is used we need to store the last visited group
-into the iterator so we have to be careful that it doesn't disappear in
-the mean time. Elevated reference count on the css keeps it alive even
-though the group have been removed (parked waiting for the last dput so
-that it can be freed).
-
-V2
-- use css_{get,put} for iter->last_visited rather than
-  mem_cgroup_{get,put} because it is stronger wrt. cgroup life cycle
-- cgroup_next_descendant_pre expects NULL pos for the first iterartion
-  otherwise it might loop endlessly for intermediate node without any
-  children.
-
+Spotted-by: Ying Han <yinghan@google.com>
 Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/memcontrol.c |   74 ++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 57 insertions(+), 17 deletions(-)
+ mm/memcontrol.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 89 insertions(+)
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 90a3b1d..e9f5c47 100644
+index e9f5c47..4f81abd 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -144,8 +144,8 @@ struct mem_cgroup_stat_cpu {
- };
+@@ -6375,10 +6375,99 @@ free_out:
+ 	return ERR_PTR(error);
+ }
  
- struct mem_cgroup_reclaim_iter {
--	/* css_id of the last scanned hierarchy member */
--	int position;
-+	/* last scanned hierarchy member with elevated css ref count */
-+	struct mem_cgroup *last_visited;
- 	/* scan generation, increased every round-trip */
- 	unsigned int generation;
- 	/* lock to protect the position and generation */
-@@ -1132,7 +1132,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 				   struct mem_cgroup_reclaim_cookie *reclaim)
- {
- 	struct mem_cgroup *memcg = NULL;
--	int id = 0;
-+	struct mem_cgroup *last_visited = NULL;
- 
- 	if (mem_cgroup_disabled())
- 		return NULL;
-@@ -1141,7 +1141,7 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		root = root_mem_cgroup;
- 
- 	if (prev && !reclaim)
--		id = css_id(&prev->css);
-+		last_visited = prev;
- 
- 	if (!root->use_hierarchy && root != root_mem_cgroup) {
- 		if (prev)
-@@ -1149,9 +1149,10 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 		return root;
- 	}
- 
-+	rcu_read_lock();
- 	while (!memcg) {
- 		struct mem_cgroup_reclaim_iter *uninitialized_var(iter);
--		struct cgroup_subsys_state *css;
-+		struct cgroup_subsys_state *css = NULL;
- 
- 		if (reclaim) {
- 			int nid = zone_to_nid(reclaim->zone);
-@@ -1161,34 +1162,73 @@ struct mem_cgroup *mem_cgroup_iter(struct mem_cgroup *root,
- 			mz = mem_cgroup_zoneinfo(root, nid, zid);
- 			iter = &mz->reclaim_iter[reclaim->priority];
- 			spin_lock(&iter->iter_lock);
-+			last_visited = iter->last_visited;
- 			if (prev && reclaim->generation != iter->generation) {
-+				if (last_visited) {
-+					css_put(&last_visited->css);
-+					iter->last_visited = NULL;
++/*
++ * Helper to find memcg's previous group under the given root
++ * hierarchy.
++ */
++struct mem_cgroup *__find_prev_memcg(struct mem_cgroup *root,
++		struct mem_cgroup *memcg)
++{
++	struct cgroup *memcg_cgroup = memcg->css.cgroup;
++	struct cgroup *root_cgroup = root->css.cgroup;
++	struct cgroup *prev_cgroup = NULL;
++	struct cgroup *iter;
++
++	cgroup_for_each_descendant_pre(iter, root_cgroup) {
++		if (iter == memcg_cgroup)
++			break;
++		prev_cgroup = iter;
++	}
++
++	return (prev_cgroup) ? mem_cgroup_from_cont(prev_cgroup) : NULL;
++}
++
++/*
++ * Remove the given memcg under given root from all per-node per-zone
++ * per-priority chached iterators.
++ */
++static void mem_cgroup_uncache_reclaim_iters(struct mem_cgroup *root,
++		struct mem_cgroup *memcg)
++{
++	int node;
++
++	for_each_node(node) {
++		struct mem_cgroup_per_node *pn = root->info.nodeinfo[node];
++		int zone;
++
++		for (zone = 0; zone < MAX_NR_ZONES; zone++) {
++			struct mem_cgroup_per_zone *mz;
++			int prio;
++
++			mz = &pn->zoneinfo[zone];
++			for (prio = 0; prio < DEF_PRIORITY + 1; prio++) {
++				struct mem_cgroup_reclaim_iter *iter;
++
++				/*
++				 * Just drop the reference on the removed memcg
++				 * cached last_visited. No need to lock iter as
++				 * the memcg is on the way out and cannot be
++				 * reclaimed.
++				 */
++				iter = &mz->reclaim_iter[prio];
++				if (root == memcg) {
++					if (iter->last_visited)
++						css_put(&iter->last_visited->css);
++					continue;
 +				}
- 				spin_unlock(&iter->iter_lock);
--				goto out_css_put;
-+				goto out_unlock;
- 			}
--			id = iter->position;
- 		}
- 
--		rcu_read_lock();
--		css = css_get_next(&mem_cgroup_subsys, id + 1, &root->css, &id);
--		if (css) {
--			if (css == &root->css || css_tryget(css))
--				memcg = mem_cgroup_from_css(css);
--		} else
--			id = 0;
--		rcu_read_unlock();
-+		/*
-+		 * Root is not visited by cgroup iterators so it needs an
-+		 * explicit visit.
-+		 */
-+		if (!last_visited) {
-+			css = &root->css;
-+		} else {
-+			struct cgroup *prev_cgroup, *next_cgroup;
 +
-+			prev_cgroup = (last_visited == root) ? NULL
-+				: last_visited->css.cgroup;
-+			next_cgroup = cgroup_next_descendant_pre(prev_cgroup,
-+					root->css.cgroup);
-+			if (next_cgroup)
-+				css = cgroup_subsys_state(next_cgroup,
-+						mem_cgroup_subsys_id);
++				rcu_read_lock();
++				spin_lock(&iter->iter_lock);
++				if (iter->last_visited == memcg) {
++					iter->last_visited = __find_prev_memcg(
++							root, memcg);
++					css_put(&memcg->css);
++				}
++				spin_unlock(&iter->iter_lock);
++				rcu_read_unlock();
++			}
 +		}
++	}
++}
 +
-+		/*
-+		 * Even if we found a group we have to make sure it is alive.
-+		 * css && !memcg means that the groups should be skipped and
-+		 * we should continue the tree walk.
-+		 * last_visited css is safe to use because it is protected by
-+		 * css_get and the tree walk is rcu safe.
-+		 */
-+		if (css == &root->css || (css && css_tryget(css)))
-+			memcg = mem_cgroup_from_css(css);
++/*
++ * Remove the given memcg from all cached reclaim iterators.
++ */
++static void mem_cgroup_uncache_from_reclaim(struct mem_cgroup *memcg)
++{
++	struct mem_cgroup *parent = memcg;
++
++	do {
++		mem_cgroup_uncache_reclaim_iters(parent, memcg);
++	} while ((parent = parent_mem_cgroup(parent)));
++
++	/*
++	 * if the root memcg is not hierarchical we have to check it
++	 * explicitely.
++	 */
++	if (!root_mem_cgroup->use_hierarchy)
++		mem_cgroup_uncache_reclaim_iters(root_mem_cgroup, memcg);
++}
++
+ static void mem_cgroup_css_offline(struct cgroup *cont)
+ {
+ 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cont);
  
- 		if (reclaim) {
--			iter->position = id;
-+			struct mem_cgroup *curr = memcg;
-+
-+			if (last_visited)
-+				css_put(&last_visited->css);
-+
-+			if (css && !memcg)
-+				curr = mem_cgroup_from_css(css);
-+
-+			/* make sure that the cached memcg is not removed */
-+			if (curr)
-+				css_get(&curr->css);
-+			iter->last_visited = curr;
-+
- 			if (!css)
- 				iter->generation++;
- 			else if (!prev && memcg)
- 				reclaim->generation = iter->generation;
- 			spin_unlock(&iter->iter_lock);
-+		} else if (css && !memcg) {
-+			last_visited = mem_cgroup_from_css(css);
- 		}
- 
- 		if (prev && !css)
--			goto out_css_put;
-+			goto out_unlock;
- 	}
-+out_unlock:
-+	rcu_read_unlock();
- out_css_put:
- 	if (prev && prev != root)
- 		css_put(&prev->css);
++	mem_cgroup_uncache_from_reclaim(memcg);
+ 	mem_cgroup_reparent_charges(memcg);
+ 	mem_cgroup_destroy_all_caches(memcg);
+ }
 -- 
 1.7.10.4
 
