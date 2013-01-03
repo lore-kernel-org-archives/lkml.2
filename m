@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324Ab3ACVgl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:36:41 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:44521 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754157Ab3ACVgg (ORCPT
+	id S1754417Ab3ACVhR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:37:17 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:58979 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270Ab3ACVge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:36:36 -0500
+	Thu, 3 Jan 2013 16:36:34 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
         hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 11/13] cpuset: pin down cpus and mems while a task is being attached
-Date: Thu,  3 Jan 2013 13:36:05 -0800
-Message-Id: <1357248967-24959-12-git-send-email-tj@kernel.org>
+Subject: [PATCH 10/13] cpuset: make CPU / memory hotplug propagation asynchronous
+Date: Thu,  3 Jan 2013 13:36:04 -0800
+Message-Id: <1357248967-24959-11-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1357248967-24959-1-git-send-email-tj@kernel.org>
 References: <1357248967-24959-1-git-send-email-tj@kernel.org>
@@ -23,98 +23,156 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cpuset is scheduled to be decoupled from cgroup_lock which will make
-configuration updates race with task migration.  Any config update
-will be allowed to happen between ->can_attach() and ->attach().  If
-such config update removes either all cpus or mems, by the time
-->attach() is called, the condition verified by ->can_attach(), that
-the cpuset is capable of hosting the tasks, is no longer true.
+cpuset_hotplug_workfn() has been invoking cpuset_propagate_hotplug()
+directly to propagate hotplug updates to !root cpusets; however, this
+has the following problems.
 
-This patch adds cpuset->attach_in_progress which is incremented from
-->can_attach() and decremented when the attach operation finishes
-either successfully or not.  validate_change() treats cpusets w/
-non-zero ->attach_in_progress like cpusets w/ tasks and refuses to
-remove all cpus or mems from it.
+* cpuset locking is scheduled to be decoupled from cgroup_mutex,
+  cgroup_mutex will be unexported, and cgroup_attach_task() will do
+  cgroup locking internally, so propagation can't synchronously move
+  tasks to a parent cgroup while walking the hierarchy.
 
-This currently doesn't make any functional difference as everything is
-protected by cgroup_mutex but enables decoupling the locking.
+* We can't use cgroup generic tree iterator because propagation to
+  each cpuset may sleep.  With propagation done asynchronously, we can
+  lose the rather ugly cpuset specific iteration.
+
+Convert cpuset_propagate_hotplug() to
+cpuset_propagate_hotplug_workfn() and execute it from newly added
+cpuset->hotplug_work.  The work items are run on an ordered workqueue,
+so the propagation order is preserved.  cpuset_hotplug_workfn()
+schedules all propagations while holding cgroup_mutex and waits for
+completion without cgroup_mutex.  Each in-flight propagation holds a
+reference to the cpuset->css.
+
+This patch doesn't cause any functional difference.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- kernel/cpuset.c | 28 ++++++++++++++++++++++++++--
- 1 file changed, 26 insertions(+), 2 deletions(-)
+ kernel/cpuset.c | 54 ++++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 48 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 2d0b9bc..27e8614 100644
+index 74e412f..2d0b9bc 100644
 --- a/kernel/cpuset.c
 +++ b/kernel/cpuset.c
-@@ -91,6 +91,12 @@ struct cpuset {
+@@ -99,6 +99,8 @@ struct cpuset {
  
- 	struct fmeter fmeter;		/* memory_pressure filter */
- 
-+	/*
-+	 * Tasks are being attached to this cpuset.  Used to prevent
-+	 * zeroing cpus/mems_allowed between ->can_attach() and ->attach().
-+	 */
-+	int attach_in_progress;
+ 	/* used for walking a cpuset hierarchy */
+ 	struct list_head stack_list;
 +
- 	/* partition number for rebuild_sched_domains() */
- 	int pn;
++	struct work_struct hotplug_work;
+ };
  
-@@ -468,9 +474,12 @@ static int validate_change(const struct cpuset *cur, const struct cpuset *trial)
- 			goto out;
- 	}
- 
--	/* Cpusets with tasks can't have empty cpus_allowed or mems_allowed */
-+	/*
-+	 * Cpusets with tasks - existing or newly being attached - can't
-+	 * have empty cpus_allowed or mems_allowed.
-+	 */
- 	ret = -ENOSPC;
--	if (cgroup_task_count(cur->css.cgroup) &&
-+	if ((cgroup_task_count(cur->css.cgroup) || cur->attach_in_progress) &&
- 	    (cpumask_empty(trial->cpus_allowed) ||
- 	     nodes_empty(trial->mems_allowed)))
- 		goto out;
-@@ -1386,9 +1395,21 @@ static int cpuset_can_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- 			return ret;
- 	}
- 
-+	/*
-+	 * Mark attach is in progress.  This makes validate_change() fail
-+	 * changes which zero cpus/mems_allowed.
-+	 */
-+	cs->attach_in_progress++;
+ /* Retrieve the cpuset for a cgroup */
+@@ -254,7 +256,10 @@ static DEFINE_SPINLOCK(cpuset_buffer_lock);
+ /*
+  * CPU / memory hotplug is handled asynchronously.
+  */
++static struct workqueue_struct *cpuset_propagate_hotplug_wq;
 +
- 	return 0;
+ static void cpuset_hotplug_workfn(struct work_struct *work);
++static void cpuset_propagate_hotplug_workfn(struct work_struct *work);
+ 
+ static DECLARE_WORK(cpuset_hotplug_work, cpuset_hotplug_workfn);
+ 
+@@ -1808,6 +1813,7 @@ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
+ 	cpumask_clear(cs->cpus_allowed);
+ 	nodes_clear(cs->mems_allowed);
+ 	fmeter_init(&cs->fmeter);
++	INIT_WORK(&cs->hotplug_work, cpuset_propagate_hotplug_workfn);
+ 	cs->relax_domain_level = -1;
+ 	cs->parent = cgroup_cs(cont->parent);
+ 
+@@ -2033,21 +2039,20 @@ static struct cpuset *cpuset_next(struct list_head *queue)
  }
  
-+static void cpuset_cancel_attach(struct cgroup *cgrp,
-+				 struct cgroup_taskset *tset)
-+{
-+	cgroup_cs(cgrp)->attach_in_progress--;
+ /**
+- * cpuset_propagate_hotplug - propagate CPU/memory hotplug to a cpuset
++ * cpuset_propagate_hotplug_workfn - propagate CPU/memory hotplug to a cpuset
+  * @cs: cpuset in interest
+  *
+  * Compare @cs's cpu and mem masks against top_cpuset and if some have gone
+  * offline, update @cs accordingly.  If @cs ends up with no CPU or memory,
+  * all its tasks are moved to the nearest ancestor with both resources.
+- *
+- * Should be called with cgroup_mutex held.
+  */
+-static void cpuset_propagate_hotplug(struct cpuset *cs)
++static void cpuset_propagate_hotplug_workfn(struct work_struct *work)
+ {
+ 	static cpumask_t off_cpus;
+ 	static nodemask_t off_mems, tmp_mems;
++	struct cpuset *cs = container_of(work, struct cpuset, hotplug_work);
+ 
+-	WARN_ON_ONCE(!cgroup_lock_is_held());
++	cgroup_lock();
+ 
+ 	cpumask_andnot(&off_cpus, cs->cpus_allowed, top_cpuset.cpus_allowed);
+ 	nodes_andnot(off_mems, cs->mems_allowed, top_cpuset.mems_allowed);
+@@ -2071,6 +2076,36 @@ static void cpuset_propagate_hotplug(struct cpuset *cs)
+ 
+ 	if (cpumask_empty(cs->cpus_allowed) || nodes_empty(cs->mems_allowed))
+ 		remove_tasks_in_empty_cpuset(cs);
++
++	cgroup_unlock();
++
++	/* the following may free @cs, should be the last operation */
++	css_put(&cs->css);
 +}
 +
- /*
-  * Protected by cgroup_mutex.  cpus_attach is used only by cpuset_attach()
-  * but we can't allocate it dynamically there.  Define it global and
-@@ -1441,6 +1462,8 @@ static void cpuset_attach(struct cgroup *cgrp, struct cgroup_taskset *tset)
- 					  &cpuset_attach_nodemask_to);
- 		mmput(mm);
- 	}
++/**
++ * schedule_cpuset_propagate_hotplug - schedule hotplug propagation to a cpuset
++ * @cs: cpuset of interest
++ *
++ * Schedule cpuset_propagate_hotplug_workfn() which will update CPU and
++ * memory masks according to top_cpuset.
++ */
++static void schedule_cpuset_propagate_hotplug(struct cpuset *cs)
++{
++	/*
++	 * Pin @cs.  The refcnt will be released when the work item
++	 * finishes executing.
++	 */
++	if (!css_tryget(&cs->css))
++		return;
 +
-+	cs->attach_in_progress--;
++	/*
++	 * Queue @cs->empty_cpuset_work.  If already pending, lose the css
++	 * ref.  cpuset_propagate_hotplug_wq is ordered and propagation
++	 * will happen in the order this function is called.
++	 */
++	if (!queue_work(cpuset_propagate_hotplug_wq, &cs->hotplug_work))
++		css_put(&cs->css);
  }
  
- /* The various types of files and directories in a cpuset file system */
-@@ -1908,6 +1931,7 @@ struct cgroup_subsys cpuset_subsys = {
- 	.css_offline = cpuset_css_offline,
- 	.css_free = cpuset_css_free,
- 	.can_attach = cpuset_can_attach,
-+	.cancel_attach = cpuset_cancel_attach,
- 	.attach = cpuset_attach,
- 	.subsys_id = cpuset_subsys_id,
- 	.base_cftypes = files,
+ /**
+@@ -2135,11 +2170,14 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
+ 		list_add_tail(&top_cpuset.stack_list, &queue);
+ 		while ((cs = cpuset_next(&queue)))
+ 			if (cs != &top_cpuset)
+-				cpuset_propagate_hotplug(cs);
++				schedule_cpuset_propagate_hotplug(cs);
+ 	}
+ 
+ 	cgroup_unlock();
+ 
++	/* wait for propagations to finish */
++	flush_workqueue(cpuset_propagate_hotplug_wq);
++
+ 	/* rebuild sched domains if cpus_allowed has changed */
+ 	if (cpus_updated) {
+ 		struct sched_domain_attr *attr;
+@@ -2196,6 +2234,10 @@ void __init cpuset_init_smp(void)
+ 	top_cpuset.mems_allowed = node_states[N_MEMORY];
+ 
+ 	hotplug_memory_notifier(cpuset_track_online_nodes, 10);
++
++	cpuset_propagate_hotplug_wq =
++		alloc_ordered_workqueue("cpuset_hotplug", 0);
++	BUG_ON(!cpuset_propagate_hotplug_wq);
+ }
+ 
+ /**
 -- 
 1.8.0.2
 
