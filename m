@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488Ab3ACPu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 10:50:56 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:55104 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753426Ab3ACPux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 10:50:53 -0500
-Date: Thu, 3 Jan 2013 16:51:04 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@intel.com>
-Cc: Joe Perches <joe@perches.com>, Lance Ortiz <lance.ortiz@hp.com>,
-        bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        rostedt@goodmis.org, mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v8 3/3] aerdrv: Cleanup log output for AER
-Message-ID: <20130103155103.GE10243@x1.alien8.de>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tony Luck <tony.luck@intel.com>, Joe Perches <joe@perches.com>,
-	Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
-	lance_ortiz@hotmail.com, jiang.liu@huawei.com, rostedt@goodmis.org,
-	mchehab@redhat.com, linux-acpi@vger.kernel.org,
-	linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20130102232730.5706.82243.stgit@grignak.americas.hpqcorp.net>
- <20130102232743.5706.63153.stgit@grignak.americas.hpqcorp.net>
- <1357169259.25181.9.camel@joe-AO722>
- <CA+8MBbK3Ah81TCDRTqM-XV9vEtKCC1m7YCAr75NiUwPRM4OfsQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CA+8MBbK3Ah81TCDRTqM-XV9vEtKCC1m7YCAr75NiUwPRM4OfsQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753503Ab3ACPvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 10:51:06 -0500
+Received: from mga10.intel.com ([192.55.52.92]:10997 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753412Ab3ACPvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 10:51:03 -0500
+Message-ID: <1357228255.8203.10.camel@mfleming-mobl1.ger.corp.intel.com>
+Subject: Re: BUG: unable to handle kernel paging request at 000000effd870020
+From: Matt Fleming <matt.fleming@intel.com>
+To: Robin Holt <holt@sgi.com>
+Cc: Nathan Zimmer <nzimmer@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        tglx@linutronix.de, mingo@redhat.com
+Date: Thu, 03 Jan 2013 15:50:55 +0000
+In-Reply-To: <20130102210958.GD3470@sgi.com>
+References: <20130102172107.GA26761@gulag1.americas.sgi.com>
+	 <50E476C2.7060300@zytor.com> <50E486E7.1080903@sgi.com>
+	 <20130102210958.GD3470@sgi.com>
+Organization: Intel Corporation (UK) Ltd. - Registered No. 1134945 - Pipers
+ Way, Swindon SN3 1RJ
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 03:41:19PM -0800, Tony Luck wrote:
-> On Wed, Jan 2, 2013 at 3:27 PM, Joe Perches <joe@perches.com> wrote:
-> > Just use dev_err( instead of dev_printk(KERN_ERR,
-> > It's a function and it makes the object code smaller.
+On Wed, 2013-01-02 at 15:09 -0600, Robin Holt wrote:
+> On Wed, Jan 02, 2013 at 01:13:43PM -0600, Nathan Zimmer wrote:
+> > On 01/02/2013 12:04 PM, H. Peter Anvin wrote:
+> > >On 01/02/2013 09:21 AM, Nathan Zimmer wrote:
+> > >>I am getting an early boot problem. It only happens on the larger of the
+> > >>machines I haven't seen it crop up on machines with more then 512 GB of ram.
+> > >>It shows in the latest linus kernel too.
+> > >>
+> > >>I am (wildly) guessing that what is happening is that the new_memmap that is
+> > >>being passed to bios is somehow placed incorrectly.
+> > >>I have come up with a workaround.  By placing it the DMA area the issue goes
+> > >>away but that doesn't seem like a real fix.
+> > >>
+> > >What does your memory map look like?
 > 
-> Looks like we are almost converged on a solution (Lance: thanks for
-> your patience and diligence in making changes).
-> 
-> Anyone on the "To:" list want to claim this for their tree to commit?
-> The series touches pci, acpi, RAS, and tracing ... so there are
-> several possible owners.
-> 
-> If someone else wants it, then add an:
-> Acked-by: Tony Luck <tony.luck@intel.com>
-> to all three parts.
+> We reported this a few times (Russ Anderson and I both).  The problem is
+> at the point in boot where the efi_enter_virtual_mode callback is, there
+> is no identity mapping for most of memory.  If the allocation happens
+> to be above the 512GB (or maybe something lower than that) point, the
+> BIOS is not able to address this via the physical address passed to it.
 
-Ditto.
+Right, looks like efi_call_phys_prelog() needs rewriting to install a
+proper identity mapping that actually addresses *all* of available
+memory, instead of just the first PGDIR_SIZE bytes.
 
-Acked-by: Borislav Petkov <bp@alien8.de>
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
