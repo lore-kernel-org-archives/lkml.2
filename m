@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab3ACMUL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:20:11 -0500
-Received: from mail-da0-f50.google.com ([209.85.210.50]:58758 "EHLO
-	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753059Ab3ACMUD (ORCPT
+	id S1753609Ab3ACMXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:23:46 -0500
+Received: from mail-da0-f53.google.com ([209.85.210.53]:37193 "EHLO
+	mail-da0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452Ab3ACMUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:20:03 -0500
+	Thu, 3 Jan 2013 07:20:11 -0500
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Ben Myers <bpm@sgi.com>,
-        Alex Elder <elder@kernel.org>, xfs@oss.sgi.com
-Subject: [PATCH -v2 12/26] xfs: rename random32() to prandom_u32()
-Date: Thu,  3 Jan 2013 21:19:08 +0900
-Message-Id: <1357215562-6288-13-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Robert Love <robert.w.love@intel.com>, devel@open-fcoe.org,
+        James Smart <james.smart@emulex.com>,
+        Andrew Vasquez <andrew.vasquez@qlogic.com>, linux-driver@qlogic.com,
+        linux-scsi@vger.kernel.org
+Subject: [PATCH -v2 16/26] scsi: rename random32() to prandom_u32()
+Date: Thu,  3 Jan 2013 21:19:12 +0900
+Message-Id: <1357215562-6288-17-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
 References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
@@ -25,71 +29,93 @@ Use more preferable function name which implies using a pseudo-random
 number generator.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Ben Myers <bpm@sgi.com>
-Cc: Alex Elder <elder@kernel.org>
-Cc: xfs@oss.sgi.com
+Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Robert Love <robert.w.love@intel.com>
+Cc: devel@open-fcoe.org
+Cc: James Smart <james.smart@emulex.com>
+Cc: Andrew Vasquez <andrew.vasquez@qlogic.com>
+Cc: linux-driver@qlogic.com
+Cc: linux-scsi@vger.kernel.org
 ---
 
 No change from v1
 
- fs/xfs/xfs_alloc.c  | 2 +-
- fs/xfs/xfs_error.c  | 2 +-
- fs/xfs/xfs_ialloc.c | 2 +-
- fs/xfs/xfs_log.c    | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/scsi/fcoe/fcoe_ctlr.c    | 4 ++--
+ drivers/scsi/lpfc/lpfc_hbadisc.c | 6 +++---
+ drivers/scsi/qla2xxx/qla_attr.c  | 7 +++++--
+ 3 files changed, 10 insertions(+), 7 deletions(-)
 
-diff --git a/fs/xfs/xfs_alloc.c b/fs/xfs/xfs_alloc.c
-index 393055f..d2dd19d 100644
---- a/fs/xfs/xfs_alloc.c
-+++ b/fs/xfs/xfs_alloc.c
-@@ -842,7 +842,7 @@ xfs_alloc_ag_vextent_near(
- 	 */
- 	int		dofirst;	/* set to do first algorithm */
+diff --git a/drivers/scsi/fcoe/fcoe_ctlr.c b/drivers/scsi/fcoe/fcoe_ctlr.c
+index 4a909d7..d870ccc 100644
+--- a/drivers/scsi/fcoe/fcoe_ctlr.c
++++ b/drivers/scsi/fcoe/fcoe_ctlr.c
+@@ -2153,7 +2153,7 @@ static void fcoe_ctlr_vn_restart(struct fcoe_ctlr *fip)
  
--	dofirst = random32() & 1;
-+	dofirst = prandom_u32() & 1;
- #endif
+ 	if (fip->probe_tries < FIP_VN_RLIM_COUNT) {
+ 		fip->probe_tries++;
+-		wait = random32() % FIP_VN_PROBE_WAIT;
++		wait = prandom_u32() % FIP_VN_PROBE_WAIT;
+ 	} else
+ 		wait = FIP_VN_RLIM_INT;
+ 	mod_timer(&fip->timer, jiffies + msecs_to_jiffies(wait));
+@@ -2786,7 +2786,7 @@ static void fcoe_ctlr_vn_timeout(struct fcoe_ctlr *fip)
+ 					  fcoe_all_vn2vn, 0);
+ 			fip->port_ka_time = jiffies +
+ 				 msecs_to_jiffies(FIP_VN_BEACON_INT +
+-					(random32() % FIP_VN_BEACON_FUZZ));
++					(prandom_u32() % FIP_VN_BEACON_FUZZ));
+ 		}
+ 		if (time_before(fip->port_ka_time, next_time))
+ 			next_time = fip->port_ka_time;
+diff --git a/drivers/scsi/lpfc/lpfc_hbadisc.c b/drivers/scsi/lpfc/lpfc_hbadisc.c
+index d7096ad..bfda184 100644
+--- a/drivers/scsi/lpfc/lpfc_hbadisc.c
++++ b/drivers/scsi/lpfc/lpfc_hbadisc.c
+@@ -1732,7 +1732,7 @@ lpfc_check_pending_fcoe_event(struct lpfc_hba *phba, uint8_t unreg_fcf)
+  * use through a sequence of @fcf_cnt eligible FCF records with equal
+  * probability. To perform integer manunipulation of random numbers with
+  * size unit32_t, the lower 16 bits of the 32-bit random number returned
+- * from random32() are taken as the random random number generated.
++ * from prandom_u32() are taken as the random random number generated.
+  *
+  * Returns true when outcome is for the newly read FCF record should be
+  * chosen; otherwise, return false when outcome is for keeping the previously
+@@ -1744,7 +1744,7 @@ lpfc_sli4_new_fcf_random_select(struct lpfc_hba *phba, uint32_t fcf_cnt)
+ 	uint32_t rand_num;
  
- restart:
-diff --git a/fs/xfs/xfs_error.c b/fs/xfs/xfs_error.c
-index 6104560..07bf3b9 100644
---- a/fs/xfs/xfs_error.c
-+++ b/fs/xfs/xfs_error.c
-@@ -66,7 +66,7 @@ xfs_error_test(int error_tag, int *fsidp, char *expression,
- 	int i;
- 	int64_t fsid;
+ 	/* Get 16-bit uniform random number */
+-	rand_num = (0xFFFF & random32());
++	rand_num = 0xFFFF & prandom_u32();
  
--	if (random32() % randfactor)
-+	if (prandom_u32() % randfactor)
- 		return 0;
+ 	/* Decision with probability 1/fcf_cnt */
+ 	if ((fcf_cnt * rand_num) < 0xFFFF)
+@@ -2380,7 +2380,7 @@ lpfc_mbx_cmpl_fcf_scan_read_fcf_rec(struct lpfc_hba *phba, LPFC_MBOXQ_t *mboxq)
+ 		phba->fcf.eligible_fcf_cnt = 1;
+ 		/* Seeding the random number generator for random selection */
+ 		seed = (uint32_t)(0xFFFFFFFF & jiffies);
+-		srandom32(seed);
++		prandom_seed(seed);
+ 	}
+ 	spin_unlock_irq(&phba->hbalock);
+ 	goto read_next_fcf;
+diff --git a/drivers/scsi/qla2xxx/qla_attr.c b/drivers/scsi/qla2xxx/qla_attr.c
+index 83d7984..3658e9f 100644
+--- a/drivers/scsi/qla2xxx/qla_attr.c
++++ b/drivers/scsi/qla2xxx/qla_attr.c
+@@ -1933,8 +1933,11 @@ qla24xx_vport_delete(struct fc_vport *fc_vport)
  
- 	memcpy(&fsid, fsidp, sizeof(xfs_fsid_t));
-diff --git a/fs/xfs/xfs_ialloc.c b/fs/xfs/xfs_ialloc.c
-index a815412..6c75865 100644
---- a/fs/xfs/xfs_ialloc.c
-+++ b/fs/xfs/xfs_ialloc.c
-@@ -373,7 +373,7 @@ xfs_ialloc_ag_alloc(
- 	 * number from being easily guessable.
- 	 */
- 	error = xfs_ialloc_inode_init(args.mp, tp, agno, args.agbno,
--			args.len, random32());
-+			args.len, prandom_u32());
+ 	/* No pending activities shall be there on the vha now */
+ 	if (ql2xextended_error_logging & ql_dbg_user)
+-		msleep(random32()%10);  /* Just to see if something falls on
+-					* the net we have placed below */
++		msleep(prandom_u32() % 10);
++		/*
++		 * Just to see if something falls on the net we have placed
++		 * below
++		 */
  
- 	if (error)
- 		return error;
-diff --git a/fs/xfs/xfs_log.c b/fs/xfs/xfs_log.c
-index 46bd9d5..92e036b 100644
---- a/fs/xfs/xfs_log.c
-+++ b/fs/xfs/xfs_log.c
-@@ -3485,7 +3485,7 @@ xlog_ticket_alloc(
- 	tic->t_curr_res		= unit_bytes;
- 	tic->t_cnt		= cnt;
- 	tic->t_ocnt		= cnt;
--	tic->t_tid		= random32();
-+	tic->t_tid		= prandom_u32();
- 	tic->t_clientid		= client;
- 	tic->t_flags		= XLOG_TIC_INITED;
- 	tic->t_trans_type	= 0;
+ 	BUG_ON(atomic_read(&vha->vref_count));
+ 
 -- 
 1.7.11.7
 
