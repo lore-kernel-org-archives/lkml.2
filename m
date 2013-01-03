@@ -1,151 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab3ACU1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 15:27:25 -0500
-Received: from mx2.netapp.com ([216.240.18.37]:44042 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753430Ab3ACU1X convert rfc822-to-8bit (ORCPT
+	id S1753902Ab3ACU3i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 15:29:38 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:48630 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497Ab3ACU3f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 15:27:23 -0500
-X-IronPort-AV: E=Sophos;i="4.84,404,1355126400"; 
-   d="scan'208";a="2642395"
-From: "Adamson, Dros" <Weston.Adamson@netapp.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: "Adamson, Dros" <Weston.Adamson@netapp.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Thread-Topic: nfsd oops on Linus' current tree.
-Thread-Index: AQHN35CZGjcSyXpSdkKK6nqmM/aY8JgkE1AAgAAJFQCAAErbgIAAAeoAgAAC7oCAAAL9gIAAAmsAgBP0PoCAAD46AIAABHsA
-Date: Thu, 3 Jan 2013 20:27:20 +0000
-Message-ID: <0EC8763B847DB24D9ADF5EBD9CD7B4191259F54D@SACEXCMBX02-PRD.hq.netapp.com>
-References: <20121221153348.GA32151@redhat.com>
- <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221234530.GA30048@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
- <20130103201120.GA2096@fieldses.org>
-In-Reply-To: <20130103201120.GA2096@fieldses.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.106.53.51]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <57915B3DEE3D884BBF9B50FC69877BC0@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Jan 2013 15:29:35 -0500
+Message-ID: <50E5EA2C.609@wwwdotorg.org>
+Date: Thu, 03 Jan 2013 13:29:32 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: gregkh@linuxfoundation.org
+CC: Venu Byravarasu <vbyravarasu@nvidia.com>, stern@rowland.harvard.edu,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 2/2] usb: host: tegra: Resetting PORT0 based on
+ information received via DT.
+References: <1357198179-10031-1-git-send-email-vbyravarasu@nvidia.com> <1357198179-10031-3-git-send-email-vbyravarasu@nvidia.com>
+In-Reply-To: <1357198179-10031-3-git-send-email-vbyravarasu@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jan 3, 2013, at 3:11 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-
-> On Thu, Jan 03, 2013 at 04:28:37PM +0000, Adamson, Dros wrote:
->> Hey, sorry for the late response, I've been on vacation.
->> 
->> On Dec 21, 2012, at 6:45 PM, J. Bruce Fields <bfields@fieldses.org>
->> wrote:
->> 
->>> On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
->>>> Please reread what I said. There was no obvious circular
->>>> dependency, because nfsiod and rpciod are separate workqueues, both
->>>> created with WQ_MEM_RECLAIM.
->>> 
->>> Oh, sorry, I read "rpciod" as "nfsiod"!
->>> 
->>>> Dros' experience shows, however that a call to rpc_shutdown_client
->>>> in an nfsiod work item will deadlock with rpciod if the RPC task's
->>>> work item has been assigned to the same CPU as the one running the
->>>> rpc_shutdown_client work item.
->>>> 
->>>> I can't tell right now if that is intentional (in which case the
->>>> WARN_ON in the rpc code is correct), or if it is a bug in the
->>>> workqueue code. For now, we're assuming the former.
->>> 
->>> Well, Documentation/workqueue.txt says:
->>> 
->>> 	"Each wq with WQ_MEM_RECLAIM set has an execution context
->>> 	reserved for it.  If there is dependency among multiple work
->>> 	items used during memory reclaim, they should be queued to
->>> 	separate wq each with WQ_MEM_RECLAIM."
->> 
->> The deadlock we were seeing was:
->> 
->> - task A gets queued on rpciod workqueue and assigned kworker-0:0 -
->> task B gets queued on rpciod workqueue and assigned the same kworker
->> (kworker-0:0) - task A gets run, calls rpc_shutdown_client(), which
->> will loop forever waiting for task B to run rpc_async_release() - task
->> B will never run rpc_async_release() - it can't run until kworker-0:0
->> is free, which won't happen until task A (rpc_shutdown_client) is done
->> 
->> The same deadlock happened when we tried queuing the tasks on a
->> different workqueues -- queue_work() assigns the task to a kworker
->> thread and it's luck of the draw if it's the same kworker as task A.
->> We tried the different workqueue options, but nothing changed this
->> behavior.
->> 
->> Once a work struct is queued, there is no way to back out of the
->> deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
->> 
->> * Currently, a queued barrier can't be canceled.  This is because *
->> try_to_grab_pending() can't determine whether the work to be *
->> grabbed is at the head of the queue and thus can't clear LINKED *
->> flag of the previous work while there must be a valid next work *
->> after a work with LINKED flag set.
->> 
->> So once a work struct is queued and there is an ordering dependency
->> (i.e. task A is before task B), there is no way to back task B out -
->> so we can't just call cancel_work() or something on task B in
->> rpc_shutdown_client.
->> 
->> The root of our issue is that rpc_shutdown_client is never safe to
->> call from a workqueue context - it loops until there are no more
->> tasks, marking tasks as killed and waiting for them to be cleaned up
->> in each task's own workqueue context. Any tasks that have already been
->> assigned to the same kworker thread will never have a chance to run
->> this cleanup stage.
->> 
->> When fixing this deadlock, Trond and I discussed changing how
->> rpc_shutdown_client works (making it workqueue safe), but Trond felt
->> that it'd be better to just not call it from a workqueue context and
->> print a warning if it is.
->> 
->> IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with no
->> success), but I'd argue that even if that did work it would still be
->> very easy to call rpc_shutdown_client from the wrong context and MUCH
->> harder to detect it.  It's also unclear to me if setting rpciod
->> workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
+On 01/03/2013 12:29 AM, Venu Byravarasu wrote:
+> Tegra USB host driver is using port instance number,
+> to handle some of the hardware issues on SOC e.g. reset PORT0
+> twice etc. As instance number based handling looks ugly,
+> making use of information passed through DT for achieving this.
 > 
-> Both rpciod and nfsiod already set WQ_MEM_RECLAIM.
+> Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
+> Acked-by: Alan Stern <stern@rowland.harvard.edu>
 
-Heh, oh yeah :)
-
-> 
-> But, right, looking at kernel/workqueue.c, it seems that the dedicated
-> "rescuer" threads are invoked only in the case when work is stalled
-> because a new worker thread isn't allocated quickly enough.
-> 
-> So, what to do that's simplest enough that it would work for
-> post-rc2/stable?  I was happy having just a simple dedicated
-> thread--these are only started when nfsd is, so there's no real thread
-> proliferation problem.
-
-That should work fine. The client went this way and spawns a new kthread before calling rpc_shutdown_client() from a workqueue context.  This should happen very infrequently.
-
--dros
-
-> 
-> I'll go quietly weep for a little while and then think about it some
-> more....
-
-
-
+Greg, recall that I'm hoping to take this series through the Tegra tree
+in order to manage EHCI/PHY/clock dependencies. I'm hoping to get your
+ack if required, or is Alan's sufficient for this? Thanks.
