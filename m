@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab3ACJmQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 04:42:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51124 "EHLO mx2.suse.de"
+	id S1753081Ab3ACJo1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 04:44:27 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:51172 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751967Ab3ACJmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 04:42:14 -0500
-Date: Thu, 3 Jan 2013 10:42:06 +0100 (CET)
+	id S1752906Ab3ACJoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 04:44:23 -0500
+Date: Thu, 3 Jan 2013 10:44:18 +0100 (CET)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: linux-kernel@vger.kernel.org, linux-iio@vger.kernel.org,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 4/4 RESEND] hid: iio: rename struct hid_sensor_iio_common
- to hid_sensor_common
-In-Reply-To: <1355575537-10093-4-git-send-email-holler@ahsoftware.de>
-Message-ID: <alpine.LNX.2.00.1301031041580.27348@pobox.suse.cz>
-References: <50CC6FE3.6060705@ahsoftware.de> <1355575537-10093-1-git-send-email-holler@ahsoftware.de> <1355575537-10093-4-git-send-email-holler@ahsoftware.de>
+To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Koukousoulas <pktoss@gmail.com>,
+        Anssi Hannula <anssi.hannula@gmail.com>
+Subject: Re: Rumble support for Jess/Saitek "color rumble pad"
+In-Reply-To: <1355791689.12070.4.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1301031042530.27348@pobox.suse.cz>
+References: <1355791689.12070.4.camel@localhost>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -27,212 +23,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 Dec 2012, Alexander Holler wrote:
+On Tue, 18 Dec 2012, Michael Karcher wrote:
 
-> The structure with common attributes for hid-sensors isn't specific
-> to the iio-subsystem, so rename it to hid_sensor_common.
+> Hello developers (and testers)
 > 
-> Signed-off-by: Alexander Holler <holler@ahsoftware.de>
+> The attached pad adds supports for another gamepad to the hid-pl driver.
+> The "color rumble pad P580" marketed using the "Saitek" brand in
+> Germany, and using a USB Vendor ID attributed to "Jess" seems to be
+> electronically identical to the 4-field variant of the "Green Asia"
+> gamepad.
+> 
+> The pad has been tested to support rumble strengths up to 255, not just
+> 127. Currently the patch discriminates the pads by an if on the vendor
+> ID, a bit in the driver_data field with definitely do better, but I
+> recommend the owners of the 4-field green asia pad to verify whether the
+> maximum rumble strength is indeed only 127, otherwise the condition
+> should be removed entirely and 255 used in all cases.
 
-Acked-by: Jiri Kosina <jkosina@suse.cz>
+Hi Michael,
 
-> ---
->  drivers/iio/accel/hid-sensor-accel-3d.c            |    2 +-
->  .../iio/common/hid-sensors/hid-sensor-attributes.c |   10 +++++-----
->  .../iio/common/hid-sensors/hid-sensor-trigger.c    |    4 ++--
->  .../iio/common/hid-sensors/hid-sensor-trigger.h    |    2 +-
->  drivers/iio/gyro/hid-sensor-gyro-3d.c              |    2 +-
->  drivers/iio/light/hid-sensor-als.c                 |    2 +-
->  drivers/iio/magnetometer/hid-sensor-magn-3d.c      |    2 +-
->  drivers/rtc/rtc-hid-sensor-time.c                  |    2 +-
->  include/linux/hid-sensor-hub.h                     |   12 ++++++------
->  9 files changed, 19 insertions(+), 19 deletions(-)
-> 
-> diff --git a/drivers/iio/accel/hid-sensor-accel-3d.c b/drivers/iio/accel/hid-sensor-accel-3d.c
-> index 72371aa..2133da8 100644
-> --- a/drivers/iio/accel/hid-sensor-accel-3d.c
-> +++ b/drivers/iio/accel/hid-sensor-accel-3d.c
-> @@ -43,7 +43,7 @@ enum accel_3d_channel {
->  
->  struct accel_3d_state {
->  	struct hid_sensor_hub_callbacks callbacks;
-> -	struct hid_sensor_iio_common common_attributes;
-> +	struct hid_sensor_common common_attributes;
->  	struct hid_sensor_hub_attribute_info accel[ACCEL_3D_CHANNEL_MAX];
->  	u32 accel_val[ACCEL_3D_CHANNEL_MAX];
->  };
-> diff --git a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
-> index 5873f16..75b5473 100644
-> --- a/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
-> +++ b/drivers/iio/common/hid-sensors/hid-sensor-attributes.c
-> @@ -113,7 +113,7 @@ static u32 convert_to_vtf_format(int size, int exp, int val1, int val2)
->  	return value;
->  }
->  
-> -int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_read_samp_freq_value(struct hid_sensor_common *st,
->  				int *val1, int *val2)
->  {
->  	s32 value;
-> @@ -140,7 +140,7 @@ int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
->  }
->  EXPORT_SYMBOL(hid_sensor_read_samp_freq_value);
->  
-> -int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_write_samp_freq_value(struct hid_sensor_common *st,
->  				int val1, int val2)
->  {
->  	s32 value;
-> @@ -168,7 +168,7 @@ int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
->  }
->  EXPORT_SYMBOL(hid_sensor_write_samp_freq_value);
->  
-> -int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_read_raw_hyst_value(struct hid_sensor_common *st,
->  				int *val1, int *val2)
->  {
->  	s32 value;
-> @@ -190,7 +190,7 @@ int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
->  }
->  EXPORT_SYMBOL(hid_sensor_read_raw_hyst_value);
->  
-> -int hid_sensor_write_raw_hyst_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_write_raw_hyst_value(struct hid_sensor_common *st,
->  					int val1, int val2)
->  {
->  	s32 value;
-> @@ -211,7 +211,7 @@ EXPORT_SYMBOL(hid_sensor_write_raw_hyst_value);
->  
->  int hid_sensor_parse_common_attributes(struct hid_sensor_hub_device *hsdev,
->  					u32 usage_id,
-> -					struct hid_sensor_iio_common *st)
-> +					struct hid_sensor_common *st)
->  {
->  
->  	sensor_hub_input_get_attribute_info(hsdev,
-> diff --git a/drivers/iio/common/hid-sensors/hid-sensor-trigger.c b/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
-> index b097b68..58fc108 100644
-> --- a/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
-> +++ b/drivers/iio/common/hid-sensors/hid-sensor-trigger.c
-> @@ -31,7 +31,7 @@
->  static int hid_sensor_data_rdy_trigger_set_state(struct iio_trigger *trig,
->  						bool state)
->  {
-> -	struct hid_sensor_iio_common *st = trig->private_data;
-> +	struct hid_sensor_common *st = trig->private_data;
->  	int state_val;
->  
->  	state_val = state ? 1 : 0;
-> @@ -65,7 +65,7 @@ static const struct iio_trigger_ops hid_sensor_trigger_ops = {
->  };
->  
->  int hid_sensor_setup_trigger(struct iio_dev *indio_dev, const char *name,
-> -				struct hid_sensor_iio_common *attrb)
-> +				struct hid_sensor_common *attrb)
->  {
->  	int ret;
->  	struct iio_trigger *trig;
-> diff --git a/drivers/iio/common/hid-sensors/hid-sensor-trigger.h b/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
-> index fd98297..9a87314 100644
-> --- a/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
-> +++ b/drivers/iio/common/hid-sensors/hid-sensor-trigger.h
-> @@ -20,7 +20,7 @@
->  #define _HID_SENSOR_TRIGGER_H
->  
->  int hid_sensor_setup_trigger(struct iio_dev *indio_dev, const char *name,
-> -				struct hid_sensor_iio_common *attrb);
-> +				struct hid_sensor_common *attrb);
->  void hid_sensor_remove_trigger(struct iio_dev *indio_dev);
->  
->  #endif
-> diff --git a/drivers/iio/gyro/hid-sensor-gyro-3d.c b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-> index b98cd70..85330ad 100644
-> --- a/drivers/iio/gyro/hid-sensor-gyro-3d.c
-> +++ b/drivers/iio/gyro/hid-sensor-gyro-3d.c
-> @@ -43,7 +43,7 @@ enum gyro_3d_channel {
->  
->  struct gyro_3d_state {
->  	struct hid_sensor_hub_callbacks callbacks;
-> -	struct hid_sensor_iio_common common_attributes;
-> +	struct hid_sensor_common common_attributes;
->  	struct hid_sensor_hub_attribute_info gyro[GYRO_3D_CHANNEL_MAX];
->  	u32 gyro_val[GYRO_3D_CHANNEL_MAX];
->  };
-> diff --git a/drivers/iio/light/hid-sensor-als.c b/drivers/iio/light/hid-sensor-als.c
-> index 9610989..051b88c 100644
-> --- a/drivers/iio/light/hid-sensor-als.c
-> +++ b/drivers/iio/light/hid-sensor-als.c
-> @@ -38,7 +38,7 @@
->  
->  struct als_state {
->  	struct hid_sensor_hub_callbacks callbacks;
-> -	struct hid_sensor_iio_common common_attributes;
-> +	struct hid_sensor_common common_attributes;
->  	struct hid_sensor_hub_attribute_info als_illum;
->  	u32 illum;
->  };
-> diff --git a/drivers/iio/magnetometer/hid-sensor-magn-3d.c b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> index 4957430..5c59044 100644
-> --- a/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> +++ b/drivers/iio/magnetometer/hid-sensor-magn-3d.c
-> @@ -43,7 +43,7 @@ enum magn_3d_channel {
->  
->  struct magn_3d_state {
->  	struct hid_sensor_hub_callbacks callbacks;
-> -	struct hid_sensor_iio_common common_attributes;
-> +	struct hid_sensor_common common_attributes;
->  	struct hid_sensor_hub_attribute_info magn[MAGN_3D_CHANNEL_MAX];
->  	u32 magn_val[MAGN_3D_CHANNEL_MAX];
->  };
-> diff --git a/drivers/rtc/rtc-hid-sensor-time.c b/drivers/rtc/rtc-hid-sensor-time.c
-> index 25cac6e..0438c9e 100644
-> --- a/drivers/rtc/rtc-hid-sensor-time.c
-> +++ b/drivers/rtc/rtc-hid-sensor-time.c
-> @@ -39,7 +39,7 @@ enum hid_time_channel {
->  
->  struct hid_time_state {
->  	struct hid_sensor_hub_callbacks callbacks;
-> -	struct hid_sensor_iio_common common_attributes;
-> +	struct hid_sensor_common common_attributes;
->  	struct hid_sensor_hub_attribute_info info[TIME_RTC_CHANNEL_MAX];
->  	struct rtc_time last_time;
->  	spinlock_t lock_last_time;
-> diff --git a/include/linux/hid-sensor-hub.h b/include/linux/hid-sensor-hub.h
-> index e6265f9..ecefb73 100644
-> --- a/include/linux/hid-sensor-hub.h
-> +++ b/include/linux/hid-sensor-hub.h
-> @@ -161,7 +161,7 @@ int sensor_hub_get_feature(struct hid_sensor_hub_device *hsdev, u32 report_id,
->  /* hid-sensor-attributes */
->  
->  /* Common hid sensor iio structure */
-> -struct hid_sensor_iio_common {
-> +struct hid_sensor_common {
->  	struct hid_sensor_hub_device *hsdev;
->  	struct platform_device *pdev;
->  	unsigned usage_id;
-> @@ -185,14 +185,14 @@ static inline int hid_sensor_convert_exponent(int unit_expo)
->  
->  int hid_sensor_parse_common_attributes(struct hid_sensor_hub_device *hsdev,
->  					u32 usage_id,
-> -					struct hid_sensor_iio_common *st);
-> -int hid_sensor_write_raw_hyst_value(struct hid_sensor_iio_common *st,
-> +					struct hid_sensor_common *st);
-> +int hid_sensor_write_raw_hyst_value(struct hid_sensor_common *st,
->  					int val1, int val2);
-> -int hid_sensor_read_raw_hyst_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_read_raw_hyst_value(struct hid_sensor_common *st,
->  					int *val1, int *val2);
-> -int hid_sensor_write_samp_freq_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_write_samp_freq_value(struct hid_sensor_common *st,
->  					int val1, int val2);
-> -int hid_sensor_read_samp_freq_value(struct hid_sensor_iio_common *st,
-> +int hid_sensor_read_samp_freq_value(struct hid_sensor_common *st,
->  					int *val1, int *val2);
->  
->  #endif
-> -- 
-> 1.7.8.6
-> 
+thanks for the patch. A couple of requests before I can apply it:
+
+- please provide the patch in-line in the e-mail body if your client 
+  doesn't corrupt patches. It's eaiser to review it that way
+- please add your Signed-off-by: line as described in 
+  Documentation/SubmittingPatches
+- don't forget to add the VID/PID to hid_ignore_list[], otherwise the 
+  device <-> driver binding will not work properly
+
+Thanks,
 
 -- 
 Jiri Kosina
