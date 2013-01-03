@@ -1,149 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320Ab3ACL47 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:56:59 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:34806 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab3ACL4z (ORCPT
+	id S1753282Ab3ACL7K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:59:10 -0500
+Received: from ampleforth.srv.alexanderweb.de ([89.238.79.244]:53320 "EHLO
+	ampleforth.srv.alexanderweb.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753039Ab3ACL7I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:56:55 -0500
-Date: Thu, 3 Jan 2013 17:26:45 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] uprobes: Reintroduce uprobe_consumer->filter()
-Message-ID: <20130103115645.GE8140@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121228181252.GA6120@redhat.com>
- <20121228181314.GA6141@redhat.com>
+	Thu, 3 Jan 2013 06:59:08 -0500
+Message-ID: <50E5728B.6070105@alexanderweb.de>
+Date: Thu, 03 Jan 2013 12:59:07 +0100
+From: Alexander Schremmer <alex@alexanderweb.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121228181314.GA6141@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010311-5406-0000-0000-000003D1933B
+To: Takashi Iwai <tiwai@suse.de>
+CC: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] sound: Add support for Creative BT-D1 via usb sound quirks
+References: <50DEEF81.40008@alexanderweb.de> <s5hk3rur3kk.wl%tiwai@suse.de>
+In-Reply-To: <s5hk3rur3kk.wl%tiwai@suse.de>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-12-28 19:13:14]:
+On 03.01.2013 10:58, Takashi Iwai wrote:
 
-> Finally add uprobe_consumer->filter() and change consumer_filter()
-> to actually call this method.
-> 
-> Note that ->filter() accepts mm_struct, not task_struct. Because:
-> 
-> 	1. We do not have for_each_mm_user(mm, task).
-> 
-> 	2. Even if we implement for_each_mm_user(), ->filter() can
-> 	   use it itself.
-> 
-> 	3. It is not clear who will actually need this interface to
-> 	   do the "nontrivial" filtering.
-> 
-> Another argument is "enum uprobe_filter_ctx", consumer->filter() can
-> use it to figure out why/where it was called. For example, perhaps
-> we can add UPROBE_FILTER_PRE_REGISTER used by build_map_info() to
-> quickly "nack" the unwanted mm's. In this case consumer should know
-> that it is called under ->i_mmap_mutex.
-> 
-> See the previous discussion at http://marc.info/?t=135214229700002
-> Perhaps we should pass more arguments, vma/vaddr?
-> 
-> Note: this patch obviously can't help to filter out the child created
-> by fork(), this will be addressed later.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Thanks for the patch.  The changes look OK, but could you fix trivial
+> coding issues reported by scripts/checkpatch.pl and resend?
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Oops, my sending workflow ate the tabs, here it is again (hopefully now
+working correctly):
 
-> ---
->  include/linux/uprobes.h |    9 +++++++++
->  kernel/events/uprobes.c |   18 +++++++++++-------
->  2 files changed, 20 insertions(+), 7 deletions(-)
-> 
-> diff --git a/include/linux/uprobes.h b/include/linux/uprobes.h
-> index 83742b9..c2df693 100644
-> --- a/include/linux/uprobes.h
-> +++ b/include/linux/uprobes.h
-> @@ -35,8 +35,17 @@ struct inode;
->  # include <asm/uprobes.h>
->  #endif
-> 
-> +enum uprobe_filter_ctx {
-> +	UPROBE_FILTER_REGISTER,
-> +	UPROBE_FILTER_UNREGISTER,
-> +	UPROBE_FILTER_MMAP,
-> +};
-> +
->  struct uprobe_consumer {
->  	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
-> +	bool (*filter)(struct uprobe_consumer *self,
-> +				enum uprobe_filter_ctx ctx,
-> +				struct mm_struct *mm);
-> 
->  	struct uprobe_consumer *next;
->  };
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 60b0a90..e2ebb6f 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -579,19 +579,21 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
->  	return ret;
->  }
-> 
-> -static inline bool consumer_filter(struct uprobe_consumer *uc)
-> +static inline bool consumer_filter(struct uprobe_consumer *uc,
-> +				   enum uprobe_filter_ctx ctx, struct mm_struct *mm)
->  {
-> -	return true; /* TODO: !uc->filter || uc->filter(...) */
-> +	return !uc->filter || uc->filter(uc, ctx, mm);
->  }
-> 
-> -static bool filter_chain(struct uprobe *uprobe)
-> +static bool filter_chain(struct uprobe *uprobe,
-> +			 enum uprobe_filter_ctx ctx, struct mm_struct *mm)
->  {
->  	struct uprobe_consumer *uc;
->  	bool ret = false;
-> 
->  	down_read(&uprobe->consumer_rwsem);
->  	for (uc = uprobe->consumers; uc; uc = uc->next) {
-> -		ret = consumer_filter(uc);
-> +		ret = consumer_filter(uc, ctx, mm);
->  		if (ret)
->  			break;
->  	}
-> @@ -772,10 +774,12 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
-> 
->  		if (is_register) {
->  			/* consult only the "caller", new consumer. */
-> -			if (consumer_filter(uprobe->consumers))
-> +			if (consumer_filter(uprobe->consumers,
-> +					UPROBE_FILTER_REGISTER, mm))
->  				err = install_breakpoint(uprobe, mm, vma, info->vaddr);
->  		} else if (test_bit(MMF_HAS_UPROBES, &mm->flags)) {
-> -			if (!filter_chain(uprobe))
-> +			if (!filter_chain(uprobe,
-> +					UPROBE_FILTER_UNREGISTER, mm))
->  				err |= remove_breakpoint(uprobe, mm, info->vaddr);
->  		}
-> 
-> @@ -968,7 +972,7 @@ int uprobe_mmap(struct vm_area_struct *vma)
->  	 */
->  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
->  		if (!fatal_signal_pending(current) &&
-> -		    filter_chain(uprobe)) {
-> +		    filter_chain(uprobe, UPROBE_FILTER_MMAP, vma->vm_mm)) {
->  			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
->  			install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
->  		}
-> -- 
-> 1.5.5.1
-> 
+
+From: Alexander Schremmer <alex@alexanderweb.de>
+
+Support the Creative BT-D1 Bluetooth USB audio device. Before this
+patch, Linux had trouble finding the correct USB descriptors and bailed
+out with these messages:
+
+ no or invalid class specific endpoint descriptor
+
+Now it still prints these messages on hotplug:
+
+ snd-usb-audio: probe of ...:1.0 failed with error -5
+ snd-usb-audio: probe of ...:1.2 failed with error -5
+ snd-usb-audio: probe of ...:1.3 failed with error -5
+
+But the device works correctly, including the HID support.
+
+The patch is diff'ed against 3.8-rc1 but should apply to older kernels
+as well.
+
+Signed-off-by: Alexander Schremmer <alex@alexanderweb.de>
+
+---
+diff -uprN linux-3.8-rc1/sound/usb/quirks-table.h
+linux-3.8-rc1-mod/sound/usb/quirks-table.h
+--- linux-3.8-rc1/sound/usb/quirks-table.h	2012-12-22 02:19:00.000000000
++0100
++++ linux-3.8-rc1-mod/sound/usb/quirks-table.h	2012-12-26
+11:41:28.000000000 +0100
+@@ -50,6 +50,28 @@
+ 	}
+ },
+
++{
++	/* Creative BT-D1 */
++	USB_DEVICE(0x041e, 0x0005),
++	.driver_info = (unsigned long) &(const struct snd_usb_audio_quirk) {
++		.ifnum = 1,
++		.type = QUIRK_AUDIO_FIXED_ENDPOINT,
++		.data = &(const struct audioformat) {
++			.formats = SNDRV_PCM_FMTBIT_S16_LE,
++			.channels = 2,
++			.iface = 1,
++			.altsetting = 1,
++			.altset_idx = 1,
++			.endpoint = 0x03,
++			.ep_attr = USB_ENDPOINT_XFER_ISOC,
++			.attributes = 0,
++			.rates = SNDRV_PCM_RATE_CONTINUOUS,
++			.rate_min = 48000,
++			.rate_max = 48000,
++		}
++	}
++},
++
+ /* Creative/Toshiba Multimedia Center SB-0500 */
+ {
+ 	USB_DEVICE(0x041e, 0x3048),
 
