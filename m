@@ -1,88 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709Ab3ACVov (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:44:51 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:41593 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754622Ab3ACVoO (ORCPT
+	id S1754728Ab3ACVpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:45:00 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:43872 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab3ACVoz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:44:14 -0500
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 1/3] cpuset: implement cgroup_rightmost_descendant()
-Date: Thu,  3 Jan 2013 13:44:04 -0800
-Message-Id: <1357249446-25075-2-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1357249446-25075-1-git-send-email-tj@kernel.org>
-References: <1357249446-25075-1-git-send-email-tj@kernel.org>
+	Thu, 3 Jan 2013 16:44:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <4246925.1ZrcBKvkL7@vostro.rjw.lan>
+References: <16168955.038G1kVfN2@vostro.rjw.lan> <CAErSpo7tiCn5jBKorO7UjNQbceObAg_uGqtzpBfALBcCUMe1Yw@mail.gmail.com>
+ <4246925.1ZrcBKvkL7@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 3 Jan 2013 14:44:32 -0700
+Message-ID: <CAErSpo4dvy_fK+C+TdyjP_ct15ZGM0qPmkFpdxjk=LUvL2_5hw@mail.gmail.com>
+Subject: Re: [PATCH] PCI / ACPI: Rework ACPI device nodes lookup for the PCI
+ bus type
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Wu <lekensteyn@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement cgroup_rightmost_descendant() which returns the right most
-descendant of the specified cgroup.  This can be used to skip the
-cgroup's subtree while iterating with
-cgroup_for_each_descendant_pre().
+On Thu, Jan 3, 2013 at 1:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, January 03, 2013 08:16:26 AM Bjorn Helgaas wrote:
+>> On Fri, Dec 28, 2012 at 2:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+>> >
+>> > As the kernel Bugzilla report #42696 indicates, it generally is not
+>> > sufficient to use _ADR to get an ACPI device node corresponding to
+>> > the given PCI device, because there may be multiple objects with
+>> > matching _ADR in the ACPI namespace (this probably is against the
+>> > spec, but it evidently happens in practice).
+>>
+>> I don't see anything in sec 6.1.1 (_ADR) that precludes having
+>> multiple objects that contain the same _ADR. Do you have any other
+>> pointers?
+>
+> Section 6.1 implicitly means that.  It says that for PCI devices _ADR
+> must be present to identify which device is represented by the given
+> ACPI node.  Next, Section 6.1.1 says that the parent bus should be inferred
+> from the location of the _ADR object's device package in the ACPI namespace,
+> so clearly, if that's under the PCI root bridge ACPI node, the _ADR
+> corresponds to a PCI device's bus address.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
----
- include/linux/cgroup.h |  1 +
- kernel/cgroup.c        | 26 ++++++++++++++++++++++++++
- 2 files changed, 27 insertions(+)
+I agree that for namespace Devices below a PCI host bridge, the _ADR
+value and its position in the hierarchy is required to be sufficient
+to identify a PCI device and function (or the set of all functions on
+a device #).
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 7d73905..860ca0f 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -558,6 +558,7 @@ static inline struct cgroup* task_cgroup(struct task_struct *task,
- 
- struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
- 					  struct cgroup *cgroup);
-+struct cgroup *cgroup_rightmost_descendant(struct cgroup *pos);
- 
- /**
-  * cgroup_for_each_descendant_pre - pre-order walk of a cgroup's descendants
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 4855892..6643f70 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -3017,6 +3017,32 @@ struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
- }
- EXPORT_SYMBOL_GPL(cgroup_next_descendant_pre);
- 
-+/**
-+ * cgroup_rightmost_descendant - return the rightmost descendant of a cgroup
-+ * @pos: cgroup of interest
-+ *
-+ * Return the rightmost descendant of @pos.  If there's no descendant,
-+ * @pos is returned.  This can be used during pre-order traversal to skip
-+ * subtree of @pos.
-+ */
-+struct cgroup *cgroup_rightmost_descendant(struct cgroup *pos)
-+{
-+	struct cgroup *last, *tmp;
-+
-+	WARN_ON_ONCE(!rcu_read_lock_held());
-+
-+	do {
-+		last = pos;
-+		/* ->prev isn't RCU safe, walk ->next till the end */
-+		pos = NULL;
-+		list_for_each_entry_rcu(tmp, &last->children, sibling)
-+			pos = tmp;
-+	} while (pos);
-+
-+	return last;
-+}
-+EXPORT_SYMBOL_GPL(cgroup_rightmost_descendant);
-+
- static struct cgroup *cgroup_leftmost_descendant(struct cgroup *pos)
- {
- 	struct cgroup *last;
--- 
-1.8.0.2
+> Then, Table 6-139 specifies the format of _ADR for PCI devices as being
+> euqivalent to devfn, which means that if two nodes with the same _ADR are
+> present in one scope (under one parent), then it is impossible to distinguish
+> between them and that's against Section 6.1.
 
+This is the bit I don't understand.  Where's the requirement that we
+be able to distinguish between two namespace nodes with the same _ADR?
+
+Linux assumes we can start from a PCI device and identify a single
+related ACPI namespace node, e.g., in acpi_pci_find_device().  But all
+I see in the spec is a requirement that we can start from an ACPI
+namespace node and find a PCI device.  So I'm not sure
+acpi_pci_find_device() is based on a valid assumption.
+
+Let's say we want to provide _SUN and _UID.  _SUN is a slot number
+that may apply to several PCI functions, while _UID probably refers to
+a single PCI function.  Is it legal to provide two namespace objects,
+one with _ADR 0x0003ffff and _SUN, and another with _ADR 0x00030000
+and _UID?  If so, which node should acpi_pci_find_device() return?
+
+> So I really think it *is* against the spec - not because _ADR is generally
+> required to be unique, but because _ADR *is* required to be sufficient for
+> matching ACPI nodes under a PCI root bridge's node with PCI devices.
+
+>> > One possible way to improve the situation is to use the presence of
+>> > another ACPI method to distinguish between the matching namespace
+>> > nodes.  For example, if the presence of _INI is checked in addition
+>> > to the return value of _ADR, bug #42696 goes away on the affected
+>> > machines.  Of course, this is somewhat arbitrary, but it may be
+>> > argued that executing _INI for an ACPI device node kind of means that
+>> > we are going to use that device node going forward, so we should
+>> > generally prefer the nodes where we have executed _INI to "competing"
+>> > nodes without _INI.
+>>
+>> I consider this a purely ACPI issue, and hence something that you own
+>> completely.
+>
+> OK
+>
+>> That said, my opinion is that this heuristic doesn't sound reliable to
+>> me.  It feels like an ad hoc solution that works for the case at hand,
+>> but I don't have any reason to think BIOS writers will unconsciously
+>> make the same assumptions or that other OSes will contain the same
+>> algorithm.
+>
+> It's supposed to be a heuristic that is less likely to break things. :-)
+>
+> I have a reason to believe that other OSes simply happen to work with
+> the broken machines in question, because they match _ADR in direct order,
+> while we match them in reverse order.  The original proposal was to
+> change our code to match _ADR in direct order, but Len was afraid that it
+> could break systems that we happen to handle correctly (but then they would
+> not be handled correctly by other OSes, so perhaps it's what we should do
+> after all).
+>
+>> The existence of acpi_get_child_device() means we're assuming there
+>> can only be a single child with matching _ADR.  Since that assumption
+>> turned out to be false,
+>
+> For PCI devices this is required by the spec, AFAICS.
+>
+>> maybe we need a way to deal with several children.
+>>
+>> Maybe we need a list of matching children, or maybe we
+>> search matching children for a method at the time we need it instead
+>> of trying to pick one child up front.
+>
+> It may not be entirely clear from the changelog, but for PCI devices we use
+> acpi_get_child_device(), or acpi_get_child(), to find the ACPI "companion" node
+> for a given PCI device, so we have to pick one.  Now, the spec is pretty clear
+> in that _ADR is the only thing we can use to do that.
+>
+> If _ADR doesn't work, we have to do strange things to work around breakage,
+> unless we want to use blacklists.
+>
+> Thanks,
+> Rafael
+>
+>
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
