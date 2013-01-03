@@ -1,91 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab3ACOMZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 09:12:25 -0500
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53673 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753514Ab3ACOMW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 09:12:22 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: 16
-X-BigFish: VPS16(zz98dI9371Ic89bh936eI542I1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dh177df4h17326ah61b35ih44a89mz2dh668h839h947hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h1155h)
-X-WSS-ID: 0MG1ZGF-01-9GL-02
-X-M-MSG: 
-From: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-To: Boszormenyi Zoltan <zboszor@pr.hu>, Alex Deucher <alexdeucher@gmail.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Borislav Petkov <bp@alien8.de>, Shuah Khan <shuahkhan@gmail.com>
-Subject: RE: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-Thread-Topic: radeon 0000:02:00.0: GPU lockup CP stall for more than
- 10000msec
-Thread-Index: AQHN4IP03Wy26qsx9kidcpbJk0FueJgl5OCAgAAGmICAAATLAIAAq1MAgAABuICAAAGlAIAAAzcAgAADmYCAAAV/gIAACJAAgAATOwCAApMkgIAMXioAgACtXACAAFiWAIAACugAgABMIYCAAAHigIAAEI+AgADJGwD//8WhcA==
-Date: Thu, 3 Jan 2013 14:12:15 +0000
-Message-ID: <A3397C8B8B789E45844E7EC5DEAD89D02DC2C2FF@sausexdag04.amd.com>
-References: <20121223113153.GA8918@liondog.tnic> <20121223115133.GA229@x4>
- <20121223122210.GA4460@liondog.tnic> <20121223133102.GA8153@liondog.tnic>
- <CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com>
- <50E3907C.4040106@iki.fi> <20130102120248.GC6181@x1.alien8.de>
- <CAH3drwYSrfsbKg-BYpMF3Nkxrw1toK=EmcvJfKGzdbT_BK-1HQ@mail.gmail.com>
- <50E4755E.7030209@iki.fi>
- <CAH3drwZsNL6kwufTPGR8h-U9gfrsoYj_+C+8Ei1Ab-PPXrSuTQ@mail.gmail.com>
- <20130102223807.GA242@x4>
- <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
- <50E56D66.9030807@pr.hu>
-In-Reply-To: <50E56D66.9030807@pr.hu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.224.10.174]
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1753680Ab3ACONp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:13:45 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:60743
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753504Ab3ACONo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 09:13:44 -0500
+Message-ID: <50E591CD.40802@kernel.dk>
+Date: Thu, 03 Jan 2013 15:12:29 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+To: Ed Cashin <ecashin@coraid.com>
+CC: Josh Boyer <jwboyer@redhat.com>,
+        "mitko@banksoft-bg.com" <mitko@banksoft-bg.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-team@fedoraproject.org" <kernel-team@fedoraproject.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: Oops on aoe module removal
+References: <20130103132556.GA13290@hansolo.jdub.homelinux.org> <587E85C3-7395-4BC1-B31B-426572B5080C@coraid.com> <50E5910E.7060606@kernel.dk>
+In-Reply-To: <50E5910E.7060606@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Boszormenyi Zoltan [mailto:zboszor@pr.hu]
-> Sent: Thursday, January 03, 2013 6:37 AM
-> To: Alex Deucher
-> Cc: Markus Trippelsdorf; lkml; dri-devel@lists.freedesktop.org; Deucher,
-> Alexander; Borislav Petkov; Shuah Khan
-> Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than
-> 10000msec
+On 2013-01-03 15:09, Jens Axboe wrote:
+> On 2013-01-03 15:02, Ed Cashin wrote:
+>> On Jan 3, 2013, at 8:25 AM, Josh Boyer wrote:
+>>
+>>> Hello,
+>>>
+>>> We have a user that has reported an oops when removing the aoe module.
+>>> This seems to have been happening since the 3.4 kernel, as you can see
+>>> in this bug: https://bugzilla.redhat.com/show_bug.cgi?id=853064
+>>>
+>>> The recreate steps and oops output from a 3.6.11 kernel is below.  Any
+>>> thoughts on what could be causing this?
+>>>
+>>> josh
+>>>
+>>>
+>>> I run the following commands sequentially
+>>>
+>>> - modprobe aoe
+>>> - dmesg:
+>>> [699170.611997] aoe: AoE v47 initialised.
+>>> [699170.653980] aoe: e4.1: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654106] aoe: e6.0: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: e6.2: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: e6.3: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: e8.1: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: e8.2: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: e8.10: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: e8.11: setting 8192 byte data frames on eth1:000423d36ac3
+>>> [699170.654961] aoe: 000423d36ac3 e4.1 v0100 has 33554432 sectors
+>>> [699170.654961] aoe: 000423d36ac3 e6.0 v0100 has 12582912 sectors
+>>> [699170.654961] aoe: 000423d36ac3 e6.2 v0100 has 16777216 sectors
+>>> [699170.702143] aoe: 000423d36ac3 e6.3 v0100 has 104857600 sectors
+>>> [699170.706391] aoe: 000423d36ac3 e8.1 v0100 has 272629760 sectors
+>>> [699170.710623] aoe: 000423d36ac3 e8.2 v0100 has 67108864 sectors
+>>> [699170.714851] aoe: 000423d36ac3 e8.10 v0100 has 33554432 sectors
+>>> [699170.719056] aoe: 000423d36ac3 e8.11 v0100 has 67108864 sectors
+>>> [699170.824774]  etherd/e4.1: p1
+>>> [699170.829069]  etherd/e6.0: p1 p2
+>>> [699170.833274]  etherd/e8.1: p1 p2
+>>> [699170.837329]  etherd/e8.2: p1
+>>> [699170.841204]  etherd/e8.10: p1
+>>> [699170.845030]  etherd/e8.11: p1
+>>> [699170.848706]  etherd/e6.3: unknown partition table
+>>> [699170.852384]  etherd/e6.2: unknown partition table
+>>>
+>>> - lsmod |grep aoe
+>>> aoe                    32214  0	  
+>>>
+>>> - modprobe -vr aoe
+>>> - dmesg:
+>>> [699231.304689] ------------[ cut here ]------------
+>>> [699231.308319] WARNING: at lib/list_debug.c:62 __list_del_entry+0x82/0xd0()
+>>> [699231.312031] Hardware name: S5000VSA
+>>> [699231.315658] list_del corruption. next->prev should be ffff880009fa37e8, but was ffffffff81c79c00
+>>> [699231.319352] Modules linked in: aoe(-) ip6table_filter ip6_tables ebtable_nat ebtables lockd sunrpc bridge 8021q garp stp llc vfat fat binfmt_misc iTCO_wdt iTCO_vendor_support vhost_net lpc_ich radeon tun macvtap mfd_core serio_raw coretemp i2c_algo_bit ttm i5000_edac macvlan drm_kms_helper e1000e edac_core microcode i5k_amb shpchp i2c_i801 drm kvm_intel i2c_core kvm ioatdma dca raid1
+>>> [699231.336259] Pid: 8584, comm: modprobe Not tainted 3.6.11-1.fc17.x86_64 #1
+>>> [699231.340561] Call Trace:
+>>> [699231.344865]  [<ffffffff8105c8ef>] warn_slowpath_common+0x7f/0xc0
+>>> [699231.349212]  [<ffffffff8105c9e6>] warn_slowpath_fmt+0x46/0x50
+>>> [699231.353595]  [<ffffffff812eee52>] __list_del_entry+0x82/0xd0
+>>> [699231.357954]  [<ffffffff812eeeb1>] list_del+0x11/0x40
+>>> [699231.362319]  [<ffffffff812f6458>] percpu_counter_destroy+0x28/0x50
+>>> [699231.366712]  [<ffffffff8114c513>] bdi_destroy+0x43/0x140
+>>> [699231.371127]  [<ffffffff812be20c>] blk_release_queue+0x8c/0xc0
+>>> [699231.375454]  [<ffffffff812dc322>] kobject_cleanup+0x82/0x1b0
+>>> [699231.379675]  [<ffffffff812dc1ab>] kobject_put+0x2b/0x60
+>>> [699231.383851]  [<ffffffff812b80a5>] blk_put_queue+0x15/0x20
+>>> [699231.387899]  [<ffffffff812bc659>] blk_cleanup_queue+0xc9/0xe0
+>>> [699231.391794]  [<ffffffffa01f53f5>] aoedev_freedev+0x135/0x150 [aoe]
+>>> [699231.395668]  [<ffffffffa01f59a5>] aoedev_exit+0x65/0x80 [aoe]
+>>> [699231.399493]  [<ffffffffa01f5afe>] aoe_exit+0x2e/0x40 [aoe]
+>>> [699231.403273]  [<ffffffff810bdefe>] sys_delete_module+0x16e/0x2d0
+>>> [699231.407119]  [<ffffffff8161db56>] ? __schedule+0x3c6/0x7a0
+>>> [699231.411050]  [<ffffffff8119054a>] ? sys_write+0x4a/0x90
+>>> [699231.415033]  [<ffffffff81627329>] system_call_fastpath+0x16/0x1b
+>>> [699231.419117] ---[ end trace 9e1558af1964b569 ]---
+>>> [699231.423248] ------------[ cut here ]------------
+>>
+>> Thanks for the report.  The problem seems to be older than that (see
+>> 2.6.32 below), and it seems to be related to changes that first
+>> appeared in 2.6.24.  I'm going to investigate the changes introduced
+>> in the commit below to see whether the aoe driver needed updating when
+>> they went in.  I'm Cc-ing Peter Zijlstra in case this rings any bells.
 > 
-> 2013-01-03 00:37 keltezéssel, Alex Deucher írta:
-> > On Wed, Jan 2, 2013 at 5:38 PM, Markus Trippelsdorf
-> > <markus@trippelsdorf.de> wrote:
-> >> On 2013.01.02 at 17:31 -0500, Jerome Glisse wrote:
-> >>> Please affected people can you test if patch :
-> >>> http://people.freedesktop.org/~glisse/0003-drm-radeon-fix-dma-copy-
-> on-r6xx-r7xx-evergen-ni-si-g.patch
-> >>>
-> >>> Fix the issue, you need to make sure you don't have the patch that
-> >>> disable dma on r6xx ie that line 977-978 & 1061-1062  in radeon_asic.c
-> >>> is :
-> >>>   .copy = &r600_copy_dma,
-> >>>   .copy_ring_index = R600_RING_TYPE_DMA_INDEX,
-> >> It fixes the issue for me. Thanks.
-> > The count is actually the count, not count - 1.  The real fix seems to
-> > be that r6xx requires 2 dw aligned transfers.  The attached patch
-> > fixes the issue for me.
-> >
-> > Alex
+> I highly doubt that has anything to do with it. Since it triggers
+> immediately on rmmod after modprobe (and not having set a device up,
+> presumably, being the key), it looks like a generic bug in aoeblk.
 > 
-> I tried this patch over kernel 3.8.0-rc2 but the GDM screen is mostly garbage.
-> Only some text, like "Not on the list?" below the users and small icons are
-> visible
-> but many user names are not rendered. http://tinypic.com/r/33xihit/6
-> I am on Fedora 18/x86_64, Radeon HD6570.
+> Ed, can you reproduce the issue?
 
-I don't think the issue you are seeing is related to this one.  Looks similar to:
-https://bugs.freedesktop.org/show_bug.cgi?id=55574
+Quick guess...
 
-Alex
 
+diff --git a/drivers/block/aoe/aoedev.c b/drivers/block/aoe/aoedev.c
+index 98f2965..e4473af 100644
+--- a/drivers/block/aoe/aoedev.c
++++ b/drivers/block/aoe/aoedev.c
+@@ -280,8 +280,8 @@ freedev(struct aoedev *d)
+ 	if (d->gd) {
+ 		aoedisk_rm_sysfs(d);
+ 		del_gendisk(d->gd);
+-		put_disk(d->gd);
+ 		blk_cleanup_queue(d->blkq);
++		put_disk(d->gd);
+ 	}
+ 	t = d->targets;
+ 	e = t + d->ntargets;
+
+
+-- 
+Jens Axboe
 
