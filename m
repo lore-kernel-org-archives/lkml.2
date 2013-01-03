@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab3ACQKs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:10:48 -0500
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:37691 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328Ab3ACQKq (ORCPT
+	id S1753566Ab3ACQLY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 11:11:24 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:39620 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753328Ab3ACQLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:10:46 -0500
-Subject: Re: [RFC PATCH 3/3 -v2] x86,smp: auto tune spinlock backoff delay
- factor
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Jan Beulich <JBeulich@suse.com>, Rik van Riel <riel@redhat.com>,
-        therbert@google.com, walken@google.com, jeremy@goop.org,
-        tglx@linutronix.de, aquini@redhat.com, lwoodman@redhat.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1357227169.10284.32.camel@gandalf.local.home>
-References: <20121221184940.103c31ad@annuminas.surriel.com>
-	 <20121221185147.4ae48ab5@annuminas.surriel.com>
-	 <20121221185613.1f4c9523@annuminas.surriel.com>
-	 <20121222033339.GF27621@home.goodmis.org> <50D52E0C.6000103@redhat.com>
-	 <1356549008.20133.20856.camel@edumazet-glaptop> <50DB5531.90500@redhat.com>
-	 <CANN689HeTk0jNJb4sF_0t714MvFnU0vLw0=JeXYRUwMx8GDnXQ@mail.gmail.com>
-	 <1356618448.30414.948.camel@edumazet-glaptop> <50DC5CC0.6010003@redhat.com>
-	 <50DC9662020000780009210D@nat28.tlf.novell.com>
-	 <50DC9CE1.9030709@redhat.com>
-	 <50E5580102000078000B29D1@nat28.tlf.novell.com>
-	 <1357219477.10284.23.camel@gandalf.local.home>
-	 <1357220117.21409.24539.camel@edumazet-glaptop>
-	 <1357227169.10284.32.camel@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jan 2013 08:10:39 -0800
-Message-ID: <1357229439.21409.25042.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 3 Jan 2013 11:11:22 -0500
+Message-ID: <50E5ADA6.1070904@wwwdotorg.org>
+Date: Thu, 03 Jan 2013 09:11:18 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 05/11] ARM: dt: tegra30: Add device node for APB MISC
+References: <1356619644-18565-1-git-send-email-pgaikwad@nvidia.com> <1356619644-18565-6-git-send-email-pgaikwad@nvidia.com> <50E4AE19.1060503@wwwdotorg.org> <50E520FC.4070805@nvidia.com>
+In-Reply-To: <50E520FC.4070805@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 10:32 -0500, Steven Rostedt wrote:
-> On Thu, 2013-01-03 at 05:35 -0800, Eric Dumazet wrote:
-> > On Thu, 2013-01-03 at 08:24 -0500, Steven Rostedt wrote:
-> > > On Thu, 2013-01-03 at 09:05 +0000, Jan Beulich wrote:
-> > > 
-> > > > > How much bus traffic do monitor/mwait cause behind the scenes?
-> > > > 
-> > > > I would suppose that this just snoops the bus for writes, but the
-> > > > amount of bus traffic involved in this isn't explicitly documented.
-> > > > 
-> > > > One downside of course is that unless a spin lock is made occupy
-> > > > exactly a cache line, false wakeups are possible.
-> > > 
-> > > And that would probably be very likely, as the whole purpose of Rik's
-> > > patches was to lower cache stalls due to other CPUs pounding on spin
-> > > locks that share the cache line of what is being protected (and
-> > > modified).
-> > 
-> > A monitor/mwait would be an option only if using MCS (or K42 variant)
-> > locks, where each cpu would wait on a private and dedicated cache line.
+On 01/02/2013 11:11 PM, Prashant Gaikwad wrote:
+> On Thursday 03 January 2013 03:30 AM, Stephen Warren wrote:
+>> On 12/27/2012 07:47 AM, Prashant Gaikwad wrote:
+>>> APB misc contains multiple registers required by different modules
+>>> such as CAR.
+>> I don't see a DT binding document that describes what
+>> nvidia,tegra30-apbmisc means. Also, the register range for this new node
+>> overlaps that for the pinmux node, so they can't both "request" their
+>> register region. You may need multiple entries in the apbmisc reg
+>> property to avoid this.
 > 
+> apbmisc reg for Tegra30 can be divided into following entries:
 > 
-> But then would the problem even exist? If the lock is on its own cache
-> line, it shouldn't cause a performance issue if other CPUs are spinning
-> on it. Would it?
+> strap registers
+> jtag configuration registers
+> pull_up/pull_down control registers
+> vclk control registers
+> tvdac registers
+> chip id revision registers
+> pad control registers
+> 
+> This list is not same for Tegra20 and Tegra30.
 
-Not sure I understand the question.
+OK. It sounds like we need a true APB MISC driver then, to abstract the
+differences; the clock driver really shouldn't be touching the APB MISC
+registers in all likelihood, unless a subset of the sections you mention
+above are truly dedicated to clock functionality.
 
-The lock itself would not consume a whole cache line, only the items
-chained on it would be percpu, and cache line aligned.
+> OR
+> 
+> another way is to add chip id revision register region to CAR node as
+> done for pinmux node and remove apb misc node.
 
-http://www.cs.rochester.edu/research/synchronization/pseudocode/ss.html#mcs
-
-Instead of spinning in :
-
-repeat while I->next = nil 
-
-This part could use monitor/mwait
-
-
-But :
-
-1) We dont have such lock implementation
-
-2) Trying to save power while waiting on a spinlock would be a clear
-sign something is wrong in the implementation. A spinlock should not
-protect a long critical section.
-
-
+The pinmux controller doesn't have a reg entry for the chip ID register.
+I don't understand what you mean here.
