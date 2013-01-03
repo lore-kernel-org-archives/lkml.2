@@ -1,142 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141Ab3ACUw3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 15:52:29 -0500
-Received: from fieldses.org ([174.143.236.118]:41918 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753708Ab3ACUwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 15:52:24 -0500
-Date: Thu, 3 Jan 2013 15:52:21 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Adamson, Dros" <Weston.Adamson@netapp.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Message-ID: <20130103205221.GB2533@fieldses.org>
-References: <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221234530.GA30048@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
- <20130103201120.GA2096@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259F54D@SACEXCMBX02-PRD.hq.netapp.com>
+	id S1754165Ab3ACUz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 15:55:28 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37559 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab3ACUzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 15:55:25 -0500
+Date: Thu, 3 Jan 2013 21:55:14 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>, kernel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bryan Wu <bryan.wu@canonical.com>, Richard Purdie <rpurdie@rpsys.net>,
+        linux-leds@vger.kernel.org
+Subject: Re: [PATCH] RFC: leds-pwm: don't disable pwm when setting brightness
+ to 0
+Message-ID: <20130103205514.GG14860@pengutronix.de>
+References: <20121024095603.GH639@pengutronix.de>
+ <1351086766-5837-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20121025080346.GB9921@S2101-09.ap.freescale.net>
+ <20130103090117.GA1845@avionic-0098.adnet.avionic-design.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <0EC8763B847DB24D9ADF5EBD9CD7B4191259F54D@SACEXCMBX02-PRD.hq.netapp.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130103090117.GA1845@avionic-0098.adnet.avionic-design.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 08:27:20PM +0000, Adamson, Dros wrote:
-> 
-> On Jan 3, 2013, at 3:11 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> 
-> > On Thu, Jan 03, 2013 at 04:28:37PM +0000, Adamson, Dros wrote:
-> >> Hey, sorry for the late response, I've been on vacation.
-> >> 
-> >> On Dec 21, 2012, at 6:45 PM, J. Bruce Fields <bfields@fieldses.org>
-> >> wrote:
-> >> 
-> >>> On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
-> >>>> Please reread what I said. There was no obvious circular
-> >>>> dependency, because nfsiod and rpciod are separate workqueues, both
-> >>>> created with WQ_MEM_RECLAIM.
-> >>> 
-> >>> Oh, sorry, I read "rpciod" as "nfsiod"!
-> >>> 
-> >>>> Dros' experience shows, however that a call to rpc_shutdown_client
-> >>>> in an nfsiod work item will deadlock with rpciod if the RPC task's
-> >>>> work item has been assigned to the same CPU as the one running the
-> >>>> rpc_shutdown_client work item.
-> >>>> 
-> >>>> I can't tell right now if that is intentional (in which case the
-> >>>> WARN_ON in the rpc code is correct), or if it is a bug in the
-> >>>> workqueue code. For now, we're assuming the former.
-> >>> 
-> >>> Well, Documentation/workqueue.txt says:
-> >>> 
-> >>> 	"Each wq with WQ_MEM_RECLAIM set has an execution context
-> >>> 	reserved for it.  If there is dependency among multiple work
-> >>> 	items used during memory reclaim, they should be queued to
-> >>> 	separate wq each with WQ_MEM_RECLAIM."
-> >> 
-> >> The deadlock we were seeing was:
-> >> 
-> >> - task A gets queued on rpciod workqueue and assigned kworker-0:0 -
-> >> task B gets queued on rpciod workqueue and assigned the same kworker
-> >> (kworker-0:0) - task A gets run, calls rpc_shutdown_client(), which
-> >> will loop forever waiting for task B to run rpc_async_release() - task
-> >> B will never run rpc_async_release() - it can't run until kworker-0:0
-> >> is free, which won't happen until task A (rpc_shutdown_client) is done
-> >> 
-> >> The same deadlock happened when we tried queuing the tasks on a
-> >> different workqueues -- queue_work() assigns the task to a kworker
-> >> thread and it's luck of the draw if it's the same kworker as task A.
-> >> We tried the different workqueue options, but nothing changed this
-> >> behavior.
-> >> 
-> >> Once a work struct is queued, there is no way to back out of the
-> >> deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
-> >> 
-> >> * Currently, a queued barrier can't be canceled.  This is because *
-> >> try_to_grab_pending() can't determine whether the work to be *
-> >> grabbed is at the head of the queue and thus can't clear LINKED *
-> >> flag of the previous work while there must be a valid next work *
-> >> after a work with LINKED flag set.
-> >> 
-> >> So once a work struct is queued and there is an ordering dependency
-> >> (i.e. task A is before task B), there is no way to back task B out -
-> >> so we can't just call cancel_work() or something on task B in
-> >> rpc_shutdown_client.
-> >> 
-> >> The root of our issue is that rpc_shutdown_client is never safe to
-> >> call from a workqueue context - it loops until there are no more
-> >> tasks, marking tasks as killed and waiting for them to be cleaned up
-> >> in each task's own workqueue context. Any tasks that have already been
-> >> assigned to the same kworker thread will never have a chance to run
-> >> this cleanup stage.
-> >> 
-> >> When fixing this deadlock, Trond and I discussed changing how
-> >> rpc_shutdown_client works (making it workqueue safe), but Trond felt
-> >> that it'd be better to just not call it from a workqueue context and
-> >> print a warning if it is.
-> >> 
-> >> IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with no
-> >> success), but I'd argue that even if that did work it would still be
-> >> very easy to call rpc_shutdown_client from the wrong context and MUCH
-> >> harder to detect it.  It's also unclear to me if setting rpciod
-> >> workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
+Hi Thierry,
+
+On Thu, Jan 03, 2013 at 10:01:18AM +0100, Thierry Reding wrote:
+> On Thu, Oct 25, 2012 at 04:03:49PM +0800, Shawn Guo wrote:
+> > On Wed, Oct 24, 2012 at 03:52:46PM +0200, Uwe Kleine-König wrote:
+> > > This fixes disabling the LED on i.MX28. The PWM hardware delays using
+> > > the newly set pwm-config until the beginning of a new period.  It's very
+> > > likely that pwm_disable is called before the current period ends. In
+> > > case the LED was on brightness=max before the LED stays on because in
+> > > the disabled PWM block the period never ends.
+> > > 
+> > > It's unclear if the mxs-pwm driver doesn't implement the API as expected
+> > > (i.e. it should block until the newly set config is effective) or if the
+> > > leds-pwm driver makes wrong assumptions. This patch assumes the latter.
+> > > 
+> > > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > > ---
+> > > Hello,
+> > > 
+> > > I'm not sure this is correct, but this is the workaround I'm using until
+> > > I get some feed back.
 > > 
-> > Both rpciod and nfsiod already set WQ_MEM_RECLAIM.
+> > I'm fine with it, since it fixes a real problem.  Let's see what
+> > Thierry says.
 > 
-> Heh, oh yeah :)
+> I lost track of this thread somehow, so sorry for not getting back to
+> you earlier. The root cause of this problem seems to be that it isn't
+> very well defined (actually not at all) what is supposed to happen in
+> the case when a PWM is disabled.
 > 
-> > 
-> > But, right, looking at kernel/workqueue.c, it seems that the dedicated
-> > "rescuer" threads are invoked only in the case when work is stalled
-> > because a new worker thread isn't allocated quickly enough.
-> > 
-> > So, what to do that's simplest enough that it would work for
-> > post-rc2/stable?  I was happy having just a simple dedicated
-> > thread--these are only started when nfsd is, so there's no real thread
-> > proliferation problem.
+> There really are only two ways forward: a) we need to write down what
+> the PWM subsystem expects to happen when a PWM is disabled or b) keep
+> the currently undefined behaviour. With the latter I expect this kind
+> of issue to keep popping up every once in a while with all sorts of
+> ad-hoc solutions being implemented to solve the problem.
 > 
-> That should work fine.
+> I think the best option would be to have some definition about what the
+> PWM signal should look like after a call to pwm_disable(). However this
+> doesn't turn out to be as trivial as it sounds. For instance, the most
+> straightforward definition in my opinion would be to specify that a PWM
+> signal should be constantly low after the call to pwm_disable(). It is
+> what I think most people would assume is the natural disable state of a
+> PWM.
+> 
+> However, one case where a similar problem was encountered involved a
+> hardware design that used an external inverter to change the polarity of
+> a PWM signal that was used to drive a backlight. In such a case, if the
+> controller were programmed to keep the output low when disabling, the
+> display would in fact be fully lit. This is further complicated by the
+> fact that the controller allows the output level of the disabled PWM
+> signal to be configured. This is nice because it means that pretty much
+> any scenario is covered, but it also doesn't make it any easier to put
+> this into a generic framework.
+> 
+> Having said that, I'm tempted to go with a simple definition like the
+> above anyway and handle obscure cases with board-specific quirks. I
+I don't understand what you mean with "the above" here. I guess it's
+"PWM signal should be constantly low after the call to pwm_disable".
 
-No, I meant I was happy having my workqueue handled by a single
-dedicated thread, which I don't see a trivial way to do any more.
+To cover this we could add a function pwm_disable_blurb() that accepts a
+parameter specifying the desired signal state: "high", "low" or (maybe)
+"don't care". pwm_disable would then (probably) mean
+pwm_disable_blurb("don't care"). But maybe this already contradicts your
+idea about being simple and clean?!
 
-> The client went this way and spawns a new kthread before calling rpc_shutdown_client() from a workqueue context.  This should happen very infrequently.
+Also note that I had another/alternative issue with the API, i.e. when
+the pwm routines should return.
 
-I don't think I can do that, as I was really counting on being able to
-wait for the client to shut down.  I'll think about it.
+> don't see any other alternative that would allow the PWM framework to
+> stay relatively simple and clean.
 
---b.
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
