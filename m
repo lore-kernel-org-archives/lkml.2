@@ -1,57 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009Ab3ACC3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 21:29:17 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:40291 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788Ab3ACC3Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 21:29:16 -0500
-Date: Wed, 2 Jan 2013 21:29:11 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Li Zefan <lizefan@huawei.com>, paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/13] cpuset: cleanup cpuset[_can]_attach()
-Message-ID: <20130103022911.GH11220@mtj.dyndns.org>
-References: <1354138460-19286-1-git-send-email-tj@kernel.org>
- <1354138460-19286-7-git-send-email-tj@kernel.org>
- <50DACF5B.6050705@huawei.com>
- <20121226120415.GA18193@mtj.dyndns.org>
- <87zk0s5h7c.fsf@rustcorp.com.au>
- <20130102153439.GA11220@mtj.dyndns.org>
- <871ue35bzk.fsf@rustcorp.com.au>
+	id S1753061Ab3ACCaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 21:30:09 -0500
+Received: from mail.us.es ([193.147.175.20]:46830 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752838Ab3ACCaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 21:30:07 -0500
+X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
+ (clamdscan: 0.97.6/16310. spamassassin: 3.3.2.  
+ Clear:RC:1(127.0.0.1):SA:0(-99.2/7.5):. 
+ Processed in 2.333423 secs); 03 Jan 2013 02:30:04 -0000
+X-Envelope-From: pneira@us.es
+Date: Thu, 3 Jan 2013 03:30:01 +0100
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        netfilter-devel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 2 (netfilter)
+Message-ID: <20130103023001.GA13254@1984>
+References: <20130102151216.b81cd4d4bf54fc8d1f5d9b27@canb.auug.org.au>
+ <50E47EEF.8090005@infradead.org>
+ <20130103013559.GA2323@1984>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/mixed; boundary="PEIAKu/WMn1b1Hv9"
 Content-Disposition: inline
-In-Reply-To: <871ue35bzk.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130103013559.GA2323@1984>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rusty.
 
-On Thu, Jan 03, 2013 at 11:17:11AM +1030, Rusty Russell wrote:
-> > So, I guess this currently is caught in a place which isn't here or
-> > there.  I'm pretty skeptical whether it makes sense to bother about
-> > static usages tho.  Can I keep them for static ones?
+--PEIAKu/WMn1b1Hv9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Thu, Jan 03, 2013 at 02:35:59AM +0100, Pablo Neira Ayuso wrote:
+> > when NF_CONNTRACK is not enabled (build was on i386):
+> > 
+> >   CC [M]  net/netfilter/xt_CT.o
+> > In file included from net/netfilter/xt_CT.c:16:0:
+> > include/net/netfilter/nf_conntrack.h:77:22: error: field 'ct_general' has incomplete type
+> > include/net/netfilter/nf_conntrack.h: In function 'nf_ct_get':
+> > include/net/netfilter/nf_conntrack.h:157:30: error: 'const struct sk_buff' has no member named 'nfct'
+> > include/net/netfilter/nf_conntrack.h: In function 'nf_ct_put':
+> > include/net/netfilter/nf_conntrack.h:164:2: error: implicit declaration of function 'nf_conntrack_put' [-Werror=implicit-function-declaration]
+> > net/netfilter/xt_CT.c: In function 'xt_ct_target_v0':
+> > net/netfilter/xt_CT.c:30:9: error: 'struct sk_buff' has no member named 'nfct'
+> > net/netfilter/xt_CT.c:34:5: error: 'struct sk_buff' has no member named 'nfct'
+> > net/netfilter/xt_CT.c: In function 'xt_ct_target_v1':
+> > net/netfilter/xt_CT.c:47:9: error: 'struct sk_buff' has no member named 'nfct'
+> > net/netfilter/xt_CT.c:51:5: error: 'struct sk_buff' has no member named 'nfct'
+> > net/netfilter/xt_CT.c: In function 'xt_ct_tg_check_v0':
+> > net/netfilter/xt_CT.c:155:15: error: 'struct net' has no member named 'ct'
+> > net/netfilter/xt_CT.c: In function 'xt_ct_tg_check_v1':
+> > net/netfilter/xt_CT.c:299:15: error: 'struct net' has no member named 'ct'
+> > net/netfilter/xt_CT.c: In function 'notrack_tg':
+> > net/netfilter/xt_CT.c:392:9: error: 'struct sk_buff' has no member named 'nfct'
+> > net/netfilter/xt_CT.c:395:5: error: 'struct sk_buff' has no member named 'nfct'
+> > net/netfilter/xt_CT.c:397:2: error: implicit declaration of function 'nf_conntrack_get' [-Werror=implicit-function-declaration]
+> > net/netfilter/xt_CT.c:397:22: error: 'struct sk_buff' has no member named 'nfct'
+> > cc1: some warnings being treated as errors
+> > make[3]: *** [net/netfilter/xt_CT.o] Error 1
 > 
-> I didn't realize that cpuset_attach was a fastpath.  If it is, put a
+> Sorry, I cannot reproduce the selection ...
 
-It isn't a hot path.  It's just a bit nasty to have to allocate them
-separately.
+Caught it. Patch attached, thanks for the report.
 
-> static there and I'll fix turn it into a bitmap when I need to.
-> Otherwise, please don't change the code in the first place.
+--PEIAKu/WMn1b1Hv9
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="0001-netfilter-fix-missing-dependencies-for-the-NOTRACK-t.patch"
 
-So, the plan to drop cpumask_t is still on?  If so, I'll leave
-cpumask_var_t.
+>From b8198d1ee451c00c2fd660202ad68580c35e1dd8 Mon Sep 17 00:00:00 2001
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+Date: Thu, 3 Jan 2013 03:22:36 +0100
+Subject: [PATCH] netfilter: fix missing dependencies for the NOTRACK target
 
-Thanks.
+warning: (NETFILTER_XT_TARGET_NOTRACK) selects NETFILTER_XT_TARGET_CT which has unmet direct
++dependencies (NET && INET && NETFILTER && NETFILTER_XTABLES && NF_CONNTRACK && (IP_NF_RAW ||
++IP6_NF_RAW) && NETFILTER_ADVANCED)
 
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Reported-by: kbuild test robot <fengguang.wu@intel.com>
+Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+---
+ net/netfilter/Kconfig |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
+index 390f96c..49e96df 100644
+--- a/net/netfilter/Kconfig
++++ b/net/netfilter/Kconfig
+@@ -682,6 +682,9 @@ config NETFILTER_XT_TARGET_NFQUEUE
+ 
+ config NETFILTER_XT_TARGET_NOTRACK
+ 	tristate  '"NOTRACK" target support (DEPRECATED)'
++	depends on NF_CONNTRACK
++	depends on IP_NF_RAW || IP6_NF_RAW
++	depends on NETFILTER_ADVANCED
+ 	select NETFILTER_XT_TARGET_CT
+ 
+ config NETFILTER_XT_TARGET_RATEEST
 -- 
-tejun
+1.7.10.4
+
+
+--PEIAKu/WMn1b1Hv9--
