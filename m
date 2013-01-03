@@ -1,77 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab3ACLV1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:21:27 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39187 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab3ACLVZ (ORCPT
+	id S1753084Ab3ACL3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:29:37 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:43589 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab3ACL3e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:21:25 -0500
-Date: Thu, 3 Jan 2013 11:21:02 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Tony Prisk <linux@prisktech.co.nz>,
-        Tomasz Stanislawski <t.stanislaws@samsung.com>,
-        Dan Carpenter <error27@gmail.com>,
-        Sergei Shtylyov <sshtylyov@mvista.com>,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
-	IS_ERR_OR_NULL
-Message-ID: <20130103112102.GM2631@n2100.arm.linux.org.uk>
-References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz> <1355852048-23188-7-git-send-email-linux@prisktech.co.nz> <50D62BC9.9010706@mvista.com> <50E32C06.5020104@gmail.com> <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com> <1357104713.30504.8.camel@gitbox> <20130103090520.GC7247@mwanda> <20130103100000.GJ2631@n2100.arm.linux.org.uk> <20130103111040.GD7247@mwanda>
+	Thu, 3 Jan 2013 06:29:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130103111040.GD7247@mwanda>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20130103001536.7fd1e952@annuminas.surriel.com>
+References: <20130103001536.7fd1e952@annuminas.surriel.com>
+Date: Thu, 3 Jan 2013 16:59:32 +0530
+Message-ID: <CAC4Lta05MkYw8-zMq9q5fqJN=voOGRNRdubH+3Y0k4pSsq_GpA@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] x86,smp: make ticket spinlock proportional
+ backoff w/ auto tuning
+From: Raghavendra KT <raghavendra.kt.linux@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
+        eric.dumazet@gmail.com, lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>, knoel@redhat.com,
+        Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 02:10:40PM +0300, Dan Carpenter wrote:
-> Come on...  Don't say we haven't read comment.  Obviously, the first
-> thing we did was read that comment.  I've read it many times at this
-> point and I still think we should add in a bit which says:
+[CCing my ibm id]
+On Thu, Jan 3, 2013 at 10:45 AM, Rik van Riel <riel@redhat.com> wrote:
+> Many spinlocks are embedded in data structures; having many CPUs
+> pounce on the cache line the lock is in will slow down the lock
+> holder, and can cause system performance to fall off a cliff.
+>
+> The paper "Non-scalable locks are dangerous" is a good reference:
+>
+>         http://pdos.csail.mit.edu/papers/linux:lock.pdf
+>
+> In the Linux kernel, spinlocks are optimized for the case of
+> there not being contention. After all, if there is contention,
+> the data structure can be improved to reduce or eliminate
+> lock contention.
+>
+> Likewise, the spinlock API should remain simple, and the
+> common case of the lock not being contended should remain
+> as fast as ever.
+>
+> However, since spinlock contention should be fairly uncommon,
+> we can add functionality into the spinlock slow path that keeps
+> system performance from falling off a cliff when there is lock
+> contention.
+>
+> Proportional delay in ticket locks is delaying the time between
+> checking the ticket based on a delay factor, and the number of
+> CPUs ahead of us in the queue for this lock. Checking the lock
+> less often allows the lock holder to continue running, resulting
+> in better throughput and preventing performance from dropping
+> off a cliff.
+>
+> The test case has a number of threads locking and unlocking a
+> semaphore. With just one thread, everything sits in the CPU
+> cache and throughput is around 2.6 million operations per
+> second, with a 5-10% variation.
+>
+> Once a second thread gets involved, data structures bounce
+> from CPU to CPU, and performance deteriorates to about 1.25
+> million operations per second, with a 5-10% variation.
+>
+> However, as more and more threads get added to the mix,
+> performance with the vanilla kernel continues to deteriorate.
+> Once I hit 24 threads, on a 24 CPU, 4 node test system,
+> performance is down to about 290k operations/second.
+>
+> With a proportional backoff delay added to the spinlock
+> code, performance with 24 threads goes up to about 400k
+> operations/second with a 50x delay, and about 900k operations/second
+> with a 250x delay. However, with a 250x delay, performance with
+> 2-5 threads is worse than with a 50x delay.
+>
+> Making the code auto-tune the delay factor results in a system
+> that performs well with both light and heavy lock contention,
+> and should also protect against the (likely) case of the fixed
+> delay factor being wrong for other hardware.
+>
+> The attached graph shows the performance of the multi threaded
+> semaphore lock/unlock test case, with 1-24 threads, on the
+> vanilla kernel, with 10x, 50x, and 250x proportional delay,
+> as well as the v1 patch series with autotuning for 2x and 2.7x
+> spinning before the lock is obtained, and with the v2 series.
+>
+> The v2 series integrates several ideas from Michel Lespinasse
+> and Eric Dumazet, which should result in better throughput and
+> nicer behaviour in situations with contention on multiple locks.
+>
+> Please let me know if you manage to break this code in any way,
+> so I can fix it...
+>
 
-So where does it give you in that comment permission to treat NULL any
-differently to any other non-IS_ERR() return value?
+Hi Rik,
+ Whole series looks very interesting.Thanks for posting spinlock. I am
+also curious, how the series affect virtualization cases.
+(was about to reply for V1 with Eric changes but delayed because of vacation).
 
-It is very clear: values where IS_ERR() is true are considered errors.
-Everything else is considered valid.
+I am planning try V2 on baremetal and guests and comeback.
 
-> "NOTE:  Drivers should treat the return value as an opaque cookie
-> and not dereference it.  NULL returns don't imply an error so don't
-> use IS_ERR_OR_NULL() to check for errors."
+On a related note,
+While experimenting with PV spinlock, I had tried "weighed spinlock".
+rationale behind the patch is in virtualized environment use case is
+exactly opposite.
 
-No.  The one thing I've learnt through maintaining www.arm.linux.org.uk
-is that the more of these kinds of "lets add to documentation" suggestions
-you get, the more _unclear_ the documentation becomes, and the more it is
-open to bad interpretation, and the more suggestions to add more words you
-receive.
+If head and tail difference is more, probability of getting lock is
+very less so, spin for only little time when difference is high.
+and after loop is over if we have not got lock, halt (pv spinlock)/
+yield to better guy.
 
-Concise documentation is the only way to go.  And what we have there today
-is concise and to the point.  It specifies it very clearly:
+Here is the patch for reference that I tried on top of PV spinlocks.
 
- * Returns a struct clk corresponding to the clock producer, or
- * valid IS_ERR() condition containing errno.
+summary of patch :
+looping is proportional to
 
-That one sentence gives you all the information you need about it's return
-value.  It gives you two choices.  (1) a return value where IS_ERR() is
-true, which is an error, and (2) a return value where IS_ERR() is false,
-which is a valid cookie.
+2 * SPIN_THRESHOLD
+---------------------------------
+( head - tail - 1)
 
-Maybe you don't realise, but IS_ERR(NULL) is false.  Therefore, this falls
-into category (2).
+---8<---
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index e6881fd..2f637ce 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -53,6 +53,18 @@ static inline void
+__ticket_enter_slowpath(arch_spinlock_t *lock)
+ 	set_bit(0, (volatile unsigned long *)&lock->tickets.tail);
+ }
 
-You can't get clearer than that, unless you don't understand the IS_ERR()
-and associated macro.
++static inline unsigned get_spin_threshold(int diff)
++{
++	unsigned count = SPIN_THRESHOLD;
++
++	/* handle wrap around */
++	if (unlikely(diff < 0))
++		diff += TICKETLOCK_MAX_VAL;
++
++	count = count >> ((diff - 1) >> 1);
++	return count;
++}
++
+ #else  /* !CONFIG_PARAVIRT_SPINLOCKS */
+ static __always_inline void __ticket_lock_spinning(arch_spinlock_t *lock,
+ 							__ticket_t ticket)
+@@ -62,6 +74,10 @@ static inline void
+__ticket_unlock_kick(arch_spinlock_t *lock,
+ 							__ticket_t ticket)
+ {
+ }
++static inline unsigned get_spin_threshold(int diff)
++{
++	return SPIN_THRESHOLD;
++}
 
-Moreover, it tells you the function to use to check the return value for
-errors.  IS_ERR().  It doesn't say IS_ERR_OR_NULL(), it says IS_ERR().
+ #endif /* CONFIG_PARAVIRT_SPINLOCKS */
 
-All it takes is for people to engage their grey cells and read the
-documentation as it stands, rather than trying to weasel their way around
-it and invent crap that it doesn't say.
+@@ -88,8 +104,8 @@ static __always_inline void
+arch_spin_lock(arch_spinlock_t *lock)
+
+ 	inc.tail &= ~TICKET_SLOWPATH_FLAG;
+ 	for (;;) {
+-		unsigned count = SPIN_THRESHOLD;
+-
++		unsigned count = get_spin_threshold(inc.tail -
++					ACCESS_ONCE(lock->tickets.head));
+ 		do {
+ 			if (ACCESS_ONCE(lock->tickets.head) == inc.tail)
+ 				goto out;
+diff --git a/arch/x86/include/asm/spinlock_types.h
+b/arch/x86/include/asm/spinlock_types.h
+index 4f1bea1..22e38a5 100644
+--- a/arch/x86/include/asm/spinlock_types.h
++++ b/arch/x86/include/asm/spinlock_types.h
+@@ -14,9 +14,11 @@
+ #if (CONFIG_NR_CPUS < (256 / __TICKET_LOCK_INC))
+ typedef u8  __ticket_t;
+ typedef u16 __ticketpair_t;
++#define TICKETLOCK_MAX_VAL (1 << 8)
+ #else
+ typedef u16 __ticket_t;
+ typedef u32 __ticketpair_t;
++#define TICKETLOCK_MAX_VAL (1 << 16)
+ #endif
+
+ #define TICKET_LOCK_INC	((__ticket_t)__TICKET_LOCK_INC)
