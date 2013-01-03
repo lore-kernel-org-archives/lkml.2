@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3ACHaT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 02:30:19 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:8502 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab3ACHaP (ORCPT
+	id S1753206Ab3ACHcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 02:32:09 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:50816 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751490Ab3ACHcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 02:30:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 02 Jan 2013 23:30:15 -0800
-From: Venu Byravarasu <vbyravarasu@nvidia.com>
-To: <gregkh@linuxfoundation.org>, <stern@rowland.harvard.edu>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <swarren@wwwdotorg.org>, Venu Byravarasu <vbyravarasu@nvidia.com>
-Subject: [PATCH RESEND 2/2] usb: host: tegra: Resetting PORT0 based on information received via DT.
-Date: Thu, 3 Jan 2013 12:59:39 +0530
-Message-ID: <1357198179-10031-3-git-send-email-vbyravarasu@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1357198179-10031-1-git-send-email-vbyravarasu@nvidia.com>
-References: <1357198179-10031-1-git-send-email-vbyravarasu@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Thu, 3 Jan 2013 02:32:07 -0500
+Date: Thu, 3 Jan 2013 08:31:55 +0100
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Cornelia Huck <cornelia.huck@de.ibm.com>,
+        Gleb Natapov <gleb@redhat.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: linux-next: manual merge of the kvm tree with the s390 tree
+Message-ID: <20130103083155.5cc97c31@mschwide>
+In-Reply-To: <20130103120650.a19cea9d14a664893c0a5e30@canb.auug.org.au>
+References: <20130103120650.a19cea9d14a664893c0a5e30@canb.auug.org.au>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.8.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+x-cbid: 13010307-0342-0000-0000-000003D376BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tegra USB host driver is using port instance number,
-to handle some of the hardware issues on SOC e.g. reset PORT0
-twice etc. As instance number based handling looks ugly,
-making use of information passed through DT for achieving this.
+Hi Stephen,
 
-Signed-off-by: Venu Byravarasu <vbyravarasu@nvidia.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
----
- drivers/usb/host/ehci-tegra.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+On Thu, 3 Jan 2013 12:06:50 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-diff --git a/drivers/usb/host/ehci-tegra.c b/drivers/usb/host/ehci-tegra.c
-index acf1755..55a9cde 100644
---- a/drivers/usb/host/ehci-tegra.c
-+++ b/drivers/usb/host/ehci-tegra.c
-@@ -43,6 +43,7 @@ struct tegra_ehci_hcd {
- 	struct usb_phy *transceiver;
- 	int host_resumed;
- 	int port_resuming;
-+	bool needs_double_reset;
- 	enum tegra_usb_phy_port_speed port_speed;
- };
- 
-@@ -184,7 +185,7 @@ static int tegra_ehci_hub_control(
- 	}
- 
- 	/* For USB1 port we need to issue Port Reset twice internally */
--	if (tegra->phy->instance == 0 &&
-+	if (tegra->needs_double_reset &&
- 	   (typeReq == SetPortFeature && wValue == USB_PORT_FEAT_RESET)) {
- 		spin_unlock_irqrestore(&ehci->lock, flags);
- 		return tegra_ehci_internal_port_reset(ehci, status_reg);
-@@ -666,6 +667,9 @@ static int tegra_ehci_probe(struct platform_device *pdev)
- 	clk_prepare_enable(tegra->emc_clk);
- 	clk_set_rate(tegra->emc_clk, 400000000);
- 
-+	tegra->needs_double_reset = of_property_read_bool(pdev->dev.of_node,
-+		"nvidia,needs-double-reset");
-+
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
- 		dev_err(&pdev->dev, "Failed to get I/O memory\n");
+> Today's linux-next merge of the kvm tree got conflicts in
+> arch/s390/include/asm/irq.h and arch/s390/kernel/irq.c between commit
+> bfb048f594d5 ("s390/irq: remove split irq fields from /proc/stat") from
+> the s390 tree and commit 7e64e0597fd6 ("KVM: s390: Add a channel I/O
+> based virtio transport driver") from the kvm tree.
+> 
+> I fixed it up (I think - see below) including the following merge fix
+> patch and can carry the fix as necessary (more action may be required).
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 3 Jan 2013 12:04:39 +1100
+> Subject: [PATCH] KVM: s390: fix for IOINT_VIR name change
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  drivers/s390/kvm/virtio_ccw.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/s390/kvm/virtio_ccw.c b/drivers/s390/kvm/virtio_ccw.c
+> index 1a5aff3..f94a0b1 100644
+> --- a/drivers/s390/kvm/virtio_ccw.c
+> +++ b/drivers/s390/kvm/virtio_ccw.c
+> @@ -745,7 +745,7 @@ static struct ccw_driver virtio_ccw_driver = {
+>  	.set_offline = virtio_ccw_offline,
+>  	.set_online = virtio_ccw_online,
+>  	.notify = virtio_ccw_cio_notify,
+> -	.int_class = IOINT_VIR,
+> +	.int_class = IRQIO_VIR,
+>  };
+>  
+>  static int __init pure_hex(char **cp, unsigned int *val, int min_digit,
+
+I surprises me a bit that there is only one hunk in the cleanup patch.
+I expected three, the above for virtio_ccw.c, one for irq.c and another
+for irq.h. I checked the resulting tree which is correct! The merge diff
+has a '++' line for irq.c/irq.h:
+
+irq.h:
+ +      IRQIO_PCI,
+ +      IRQIO_MSI,
+++      IRQIO_VIR,
+        NMI_NMI,
+ -      NR_IRQS,
+ +      CPU_RST,
+
+irq.c:
+ +      [IRQIO_PCI]  = {.name = "PCI", .desc = "[I/O] PCI Interrupt" },
+ +      [IRQIO_MSI]  = {.name = "MSI", .desc = "[I/O] MSI Interrupt" },
+++      [IRQIO_VIR]  = {.name = "VIR", .desc = "[I/O] Virtual I/O Devices"},
+        [NMI_NMI]    = {.name = "NMI", .desc = "[NMI] Machine Check"},
+ +      [CPU_RST]    = {.name = "RST", .desc = "[CPU] CPU Restart"},
+
+Magic ?
+
 -- 
-1.7.0.4
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
