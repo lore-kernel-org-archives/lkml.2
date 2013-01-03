@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab3ACBq7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 20:46:59 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:57651 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab3ACBq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 20:46:58 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [PATCH] ACPI / scan: Do not use dummy HID for system bus ACPI nodes
-Date: Thu, 03 Jan 2013 02:52:33 +0100
-Message-ID: <3202600.6sHYvcf502@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+	id S1752848Ab3ACBvM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 20:51:12 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:54658 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752751Ab3ACBvJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 20:51:09 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+From: Bryan Wu <cooloney@gmail.com>
+Date: Wed, 2 Jan 2013 17:50:47 -0800
+Message-ID: <CAK5ve-+rpsqfY4_UjtT5X4KKrOf+NPT6Lo6p-4+j0zi3xLmJzw@mail.gmail.com>
+Subject: [GIT PULL] a LED fix for 3.8
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi Linus:
 
-At one point acpi_device_set_id() checks if acpi_device_hid(device)
-returns NULL, but that never happens, so system bus devices with an
-empty list of PNP IDs are given the dummy HID ("device") instead of
-the "system bus HID" ("LNXSYBUS").  Fix the code to use the right
-check.
+Please consider the following changes since commit
+a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/acpi/scan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
 
-Index: linux/drivers/acpi/scan.c
-===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -1398,7 +1398,7 @@ static void acpi_device_set_id(struct ac
- 			acpi_add_id(device, ACPI_DOCK_HID);
- 		else if (!acpi_ibm_smbus_match(device))
- 			acpi_add_id(device, ACPI_SMBUS_IBM_HID);
--		else if (!acpi_device_hid(device) &&
-+		else if (list_empty(&device->pnp.ids) &&
- 			 ACPI_IS_ROOT_DEVICE(device->parent)) {
- 			acpi_add_id(device, ACPI_BUS_HID); /* \_SB, LNXSYBUS */
- 			strcpy(device->pnp.device_name, ACPI_BUS_DEVICE_NAME);
+are available in the git repository at:
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/cooloney/linux-leds.git
+fixes-for-3.8
+
+for you to fetch changes up to c36f03f2c4b6c02166a217a71e072603ee33423e:
+
+  leds: leds-gpio: set devm_gpio_request_one() flags param correctly
+(2013-01-02 17:03:49 -0800)
+
+----------------------------------------------------------------
+Javier Martinez Canillas (1):
+      leds: leds-gpio: set devm_gpio_request_one() flags param correctly
+
+ drivers/leds/leds-gpio.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
