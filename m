@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753066Ab3ACAeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 19:34:10 -0500
-Received: from fieldses.org ([174.143.236.118]:45044 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753023Ab3ACAeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 19:34:07 -0500
-Date: Wed, 2 Jan 2013 19:34:05 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: ycnian@gmail.com
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: [PATCH] nfsd: Pass correct slot number to nfsd4_put_drc_mem()
-Message-ID: <20130103003404.GC26356@fieldses.org>
-References: <1356343887-11952-1-git-send-email-ycnian@gmail.com>
+	id S1753069Ab3ACAfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 19:35:08 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:58062 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753023Ab3ACAfE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 19:35:04 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356343887-11952-1-git-send-email-ycnian@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357171594.25181.19.camel@joe-AO722>
+References: <20130102232730.5706.82243.stgit@grignak.americas.hpqcorp.net>
+ <20130102232743.5706.63153.stgit@grignak.americas.hpqcorp.net> <1357171594.25181.19.camel@joe-AO722>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Wed, 2 Jan 2013 18:34:41 -0600
+Message-ID: <CAErSpo51SUYBOj89RM7SSBPEEGW6dddjWUX53u0srZS_eqkbSA@mail.gmail.com>
+Subject: Re: [PATCH] checkpatch: prefer dev_<level>( to dev_printk(KERN_<LEVEL>
+To: Joe Perches <joe@perches.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@canonical.com>, Lance Ortiz <lance.ortiz@hp.com>,
+        lance_ortiz@hotmail.com, jiang.liu@huawei.com, tony.luck@intel.com,
+        bp@alien8.de, rostedt@goodmis.org, mchehab@redhat.com,
+        linux-acpi@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 24, 2012 at 06:11:27PM +0800, ycnian@gmail.com wrote:
-> From: Yanchuan Nian <ycnian@gmail.com>
-> 
-> In alloc_session(), numslots is the correct slot number used by the session.
-> But the slot number passed to nfsd4_put_drc_mem() is the one from nfs client.
-
-Thanks, applying for 3.9.--b.
-
-> 
-> Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+On Wed, Jan 2, 2013 at 6:06 PM, Joe Perches <joe@perches.com> wrote:
+> Add YA check to printk style.
+>
+> dev_<level> uses are functions and generate smaller
+> object code than dev_printk(KERN_<LEVEL>.
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  fs/nfsd/nfs4state.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index ac8ed96..29924a0 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -905,7 +905,7 @@ static struct nfsd4_session *alloc_session(struct nfsd4_channel_attrs *fchan,
->  
->  	new = __alloc_session(slotsize, numslots);
->  	if (!new) {
-> -		nfsd4_put_drc_mem(slotsize, fchan->maxreqs);
-> +		nfsd4_put_drc_mem(slotsize, numslots);
->  		return NULL;
->  	}
->  	init_forechannel_attrs(&new->se_fchannel, fchan, numslots, slotsize, nn);
-> -- 
-> 1.7.4.4
-> 
+>  scripts/checkpatch.pl | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 4d2c7df..f50b32d 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2430,6 +2430,16 @@ sub process {
+>                              "Prefer pr_warn(... to pr_warning(...\n" . $herecurr);
+>                 }
+>
+> +               if ($line =~ /\bdev_printk\s*\(\s*KERN_([A-Z]+)/) {
+> +                       my $orig = $1;
+> +                       my $level = lc($orig);
+> +                       $level = "warn" if ($level eq "warning");
+> +                       my $level2 = $level;
+> +                       $level2 = "dbg" if ($level eq "debug");
+> +                       WARN("PREFER_DEV_LEVEL",
+> +                            "Prefer dev_$level2(... to dev_printk(KERN_$orig, ...\n" . $herecurr);
+
+This suggests dev_dbg() instead of dev_printk(KERN_DEBUG), doesn't it?
+ Those aren't equivalent (dev_printk() always does the printk, but in
+many cases dev_dbg() does not, depending on CONFIG_DEBUG,
+CONFIG_DYNAMIC_DEBUG, etc.)
+
+> +               }
+> +
+>  # function brace can't be on same line, except for #defines of do while,
+>  # or if closed on same line
+>                 if (($line=~/$Type\s*$Ident\(.*\).*\s{/) and
+>
+>
