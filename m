@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753355Ab3ACMR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:17:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:15453 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752981Ab3ACMQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:16:34 -0500
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Nathan Straz <nstraz@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 1/4] GFS2: Initialize hex string to '0'
-Date: Thu,  3 Jan 2013 11:50:07 +0000
-Message-Id: <1357213810-3739-2-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1357213810-3739-1-git-send-email-swhiteho@redhat.com>
-References: <1357213810-3739-1-git-send-email-swhiteho@redhat.com>
+	id S1753286Ab3ACMTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:19:46 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:57191 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753052Ab3ACMTm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 07:19:42 -0500
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Dan Williams <djbw@fb.com>,
+        Vinod Koul <vinod.koul@intel.com>
+Subject: [PATCH -v2 01/26] raid6test: use prandom_bytes()
+Date: Thu,  3 Jan 2013 21:18:57 +0900
+Message-Id: <1357215562-6288-2-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
+References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nathan Straz <nstraz@redhat.com>
+Use prandom_bytes() to generate random bytes for test data.
 
-When generating the DLM lock name, a value of 0 would skip
-the loop and leave the string unchanged.  This left locks with
-a value of 0 unlabeled.  Initializing the string to '0' fixes this.
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Dan Williams <djbw@fb.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+---
 
-Signed-off-by: Nathan Straz <nstraz@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+No change from v1
 
-diff --git a/fs/gfs2/lock_dlm.c b/fs/gfs2/lock_dlm.c
-index 8dad6b0..b906ed1 100644
---- a/fs/gfs2/lock_dlm.c
-+++ b/fs/gfs2/lock_dlm.c
-@@ -241,6 +241,7 @@ static u32 make_flags(struct gfs2_glock *gl, const unsigned int gfs_flags,
+ crypto/async_tx/raid6test.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/crypto/async_tx/raid6test.c b/crypto/async_tx/raid6test.c
+index aa2b027..4a92bac 100644
+--- a/crypto/async_tx/raid6test.c
++++ b/crypto/async_tx/raid6test.c
+@@ -46,15 +46,10 @@ static void callback(void *param)
  
- static void gfs2_reverse_hex(char *c, u64 value)
+ static void makedata(int disks)
  {
-+	*c = '0';
- 	while (value) {
- 		*c-- = hex_asc[value & 0x0f];
- 		value >>= 4;
+-	int i, j;
++	int i;
+ 
+ 	for (i = 0; i < disks; i++) {
+-		for (j = 0; j < PAGE_SIZE/sizeof(u32); j += sizeof(u32)) {
+-			u32 *p = page_address(data[i]) + j;
+-
+-			*p = random32();
+-		}
+-
++		prandom_bytes(page_address(data[i]), PAGE_SIZE);
+ 		dataptrs[i] = data[i];
+ 	}
+ }
 -- 
-1.7.4
+1.7.11.7
 
