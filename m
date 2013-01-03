@@ -1,170 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab3ACVjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:39:21 -0500
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:3552 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753770Ab3ACVjQ (ORCPT
+	id S1754188Ab3ACVgY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:36:24 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:52280 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753770Ab3ACVgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:39:16 -0500
-From: Lance Ortiz <lance.ortiz@hp.com>
-Subject: [PATCH v9 3/3] aerdrv: Cleanup log output for AER
-To: bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
-        tony.luck@intel.com, bp@alien8.de, rostedt@goodmis.org,
-        mchehab@redhat.com, linux-acpi@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 03 Jan 2013 15:34:15 -0700
-Message-ID: <20130103223415.10751.17744.stgit@grignak.americas.hpqcorp.net>
-In-Reply-To: <20130103223401.10751.1838.stgit@grignak.americas.hpqcorp.net>
-References: <20130103223401.10751.1838.stgit@grignak.americas.hpqcorp.net>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jan 2013 16:36:20 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 03/13] cpuset: introduce ->css_on/offline()
+Date: Thu,  3 Jan 2013 13:35:57 -0800
+Message-Id: <1357248967-24959-4-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1357248967-24959-1-git-send-email-tj@kernel.org>
+References: <1357248967-24959-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These changes make cper_print_aer more consistent with aer_print_error
-and clean things up by elimiating the use of the prefix variable and
-replacing it with dev_printk.
+Add cpuset_css_on/offline() and rearrange css init/exit such that,
 
-v1-v2 fix some compile errors withinn the #ifdef
-v3-v4 remove agent id stuff and kept print the same to avoid
-compatibility issues
-v7-v8 Updated to use dev_printk instated of prefix. Changed
-log levels to KERN_ERR as per Mauro's suggestion.
-v8-v9 Changed dev_printk to dev_err since all log levels are KERN_ERR.
+* Allocation and clearing to the default values happen in css_alloc().
+  Allocation now uses kzalloc().
 
-Signed-off-by: Lance Ortiz <lance.ortiz@hp.com>
-Acked-by: Tony Luck <tony.luck@intel.com>
+* Config inheritance and registration happen in css_online().
+
+* css_offline() undoes what css_online() did.
+
+* css_free() frees.
+
+This doesn't introduce any visible behavior changes.  This will help
+cleaning up locking.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
+ kernel/cpuset.c | 66 ++++++++++++++++++++++++++++++++++++++-------------------
+ 1 file changed, 44 insertions(+), 22 deletions(-)
 
- drivers/pci/pcie/aer/aerdrv_errprint.c |   54 +++++++++++++++-----------------
- 1 files changed, 26 insertions(+), 28 deletions(-)
-
-diff --git a/drivers/pci/pcie/aer/aerdrv_errprint.c b/drivers/pci/pcie/aer/aerdrv_errprint.c
-index d3e5fc5..5ab1425 100644
---- a/drivers/pci/pcie/aer/aerdrv_errprint.c
-+++ b/drivers/pci/pcie/aer/aerdrv_errprint.c
-@@ -124,12 +124,11 @@ static const char *aer_agent_string[] = {
- 	"Transmitter ID"
- };
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 5372b6f..1d7a611 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1790,15 +1790,12 @@ static struct cftype files[] = {
  
--static void __aer_print_error(const char *prefix,
-+static void __aer_print_error(struct pci_dev *dev,
- 			      struct aer_err_info *info)
+ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
  {
- 	int i, status;
- 	const char *errmsg = NULL;
--
- 	status = (info->status & ~info->mask);
+-	struct cgroup *parent_cg = cont->parent;
+-	struct cgroup *tmp_cg;
+-	struct cpuset *parent, *cs;
++	struct cpuset *cs;
  
- 	for (i = 0; i < 32; i++) {
-@@ -144,26 +143,22 @@ static void __aer_print_error(const char *prefix,
- 				aer_uncorrectable_error_string[i] : NULL;
+-	if (!parent_cg)
++	if (!cont->parent)
+ 		return &top_cpuset.css;
+-	parent = cgroup_cs(parent_cg);
  
- 		if (errmsg)
--			printk("%s""   [%2d] %-22s%s\n", prefix, i, errmsg,
-+			dev_err(&dev->dev, "   [%2d] %-22s%s\n", i, errmsg,
- 				info->first_error == i ? " (First)" : "");
- 		else
--			printk("%s""   [%2d] Unknown Error Bit%s\n", prefix, i,
--				info->first_error == i ? " (First)" : "");
-+			dev_err(&dev->dev, "   [%2d] Unknown Error Bit%s\n",
-+				i, info->first_error == i ? " (First)" : "");
+-	cs = kmalloc(sizeof(*cs), GFP_KERNEL);
++	cs = kzalloc(sizeof(*cs), GFP_KERNEL);
+ 	if (!cs)
+ 		return ERR_PTR(-ENOMEM);
+ 	if (!alloc_cpumask_var(&cs->cpus_allowed, GFP_KERNEL)) {
+@@ -1806,22 +1803,34 @@ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
+ 		return ERR_PTR(-ENOMEM);
  	}
+ 
+-	cs->flags = 0;
+-	if (is_spread_page(parent))
+-		set_bit(CS_SPREAD_PAGE, &cs->flags);
+-	if (is_spread_slab(parent))
+-		set_bit(CS_SPREAD_SLAB, &cs->flags);
+ 	set_bit(CS_SCHED_LOAD_BALANCE, &cs->flags);
+ 	cpumask_clear(cs->cpus_allowed);
+ 	nodes_clear(cs->mems_allowed);
+ 	fmeter_init(&cs->fmeter);
+ 	cs->relax_domain_level = -1;
++	cs->parent = cgroup_cs(cont->parent);
++
++	return &cs->css;
++}
++
++static int cpuset_css_online(struct cgroup *cgrp)
++{
++	struct cpuset *cs = cgroup_cs(cgrp);
++	struct cpuset *parent = cs->parent;
++	struct cgroup *tmp_cg;
++
++	if (!parent)
++		return 0;
++
++	if (is_spread_page(parent))
++		set_bit(CS_SPREAD_PAGE, &cs->flags);
++	if (is_spread_slab(parent))
++		set_bit(CS_SPREAD_SLAB, &cs->flags);
+ 
+-	cs->parent = parent;
+ 	number_of_cpusets++;
+ 
+-	if (!test_bit(CGRP_CPUSET_CLONE_CHILDREN, &cont->flags))
+-		goto skip_clone;
++	if (!test_bit(CGRP_CPUSET_CLONE_CHILDREN, &cgrp->flags))
++		return 0;
+ 
+ 	/*
+ 	 * Clone @parent's configuration if CGRP_CPUSET_CLONE_CHILDREN is
+@@ -1836,19 +1845,34 @@ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
+ 	 * changed to grant parent->cpus_allowed-sibling_cpus_exclusive
+ 	 * (and likewise for mems) to the new cgroup.
+ 	 */
+-	list_for_each_entry(tmp_cg, &parent_cg->children, sibling) {
++	list_for_each_entry(tmp_cg, &cgrp->parent->children, sibling) {
+ 		struct cpuset *tmp_cs = cgroup_cs(tmp_cg);
+ 
+ 		if (is_mem_exclusive(tmp_cs) || is_cpu_exclusive(tmp_cs))
+-			goto skip_clone;
++			return 0;
+ 	}
+ 
+ 	mutex_lock(&callback_mutex);
+ 	cs->mems_allowed = parent->mems_allowed;
+ 	cpumask_copy(cs->cpus_allowed, parent->cpus_allowed);
+ 	mutex_unlock(&callback_mutex);
+-skip_clone:
+-	return &cs->css;
++
++	return 0;
++}
++
++static void cpuset_css_offline(struct cgroup *cgrp)
++{
++	struct cpuset *cs = cgroup_cs(cgrp);
++
++	/* css_offline is called w/o cgroup_mutex, grab it */
++	cgroup_lock();
++
++	if (is_sched_load_balance(cs))
++		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
++
++	number_of_cpusets--;
++
++	cgroup_unlock();
  }
  
- void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
+ /*
+@@ -1861,10 +1885,6 @@ static void cpuset_css_free(struct cgroup *cont)
  {
- 	int id = ((dev->bus->number << 8) | dev->devfn);
--	char prefix[44];
+ 	struct cpuset *cs = cgroup_cs(cont);
+ 
+-	if (is_sched_load_balance(cs))
+-		update_flag(CS_SCHED_LOAD_BALANCE, cs, 0);
 -
--	snprintf(prefix, sizeof(prefix), "%s%s %s: ",
--		 (info->severity == AER_CORRECTABLE) ? KERN_WARNING : KERN_ERR,
--		 dev_driver_string(&dev->dev), dev_name(&dev->dev));
- 
- 	if (info->status == 0) {
--		printk("%s""PCIe Bus Error: severity=%s, type=Unaccessible, "
--			"id=%04x(Unregistered Agent ID)\n", prefix,
-+		dev_err(&dev->dev,
-+			"PCIe Bus Error: severity=%s, type=Unaccessible, "
-+			"id=%04x(Unregistered Agent ID)\n",
- 			aer_error_severity_string[info->severity], id);
- 	} else {
- 		int layer, agent;
-@@ -171,22 +166,24 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- 		layer = AER_GET_LAYER_ERROR(info->severity, info->status);
- 		agent = AER_GET_AGENT(info->severity, info->status);
- 
--		printk("%s""PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
--			prefix, aer_error_severity_string[info->severity],
-+		dev_err(&dev->dev,
-+			"PCIe Bus Error: severity=%s, type=%s, id=%04x(%s)\n",
-+			aer_error_severity_string[info->severity],
- 			aer_error_layer[layer], id, aer_agent_string[agent]);
- 
--		printk("%s""  device [%04x:%04x] error status/mask=%08x/%08x\n",
--			prefix, dev->vendor, dev->device,
-+		dev_err(&dev->dev,
-+			"  device [%04x:%04x] error status/mask=%08x/%08x\n",
-+			dev->vendor, dev->device,
- 			info->status, info->mask);
- 
--		__aer_print_error(prefix, info);
-+		__aer_print_error(dev, info);
- 
- 		if (info->tlp_header_valid) {
- 			unsigned char *tlp = (unsigned char *) &info->tlp;
--			printk("%s""  TLP Header:"
-+			dev_err(&dev->dev, "  TLP Header:"
- 				" %02x%02x%02x%02x %02x%02x%02x%02x"
- 				" %02x%02x%02x%02x %02x%02x%02x%02x\n",
--				prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-+				*(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
- 				*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
- 				*(tlp + 11), *(tlp + 10), *(tlp + 9),
- 				*(tlp + 8), *(tlp + 15), *(tlp + 14),
-@@ -195,8 +192,9 @@ void aer_print_error(struct pci_dev *dev, struct aer_err_info *info)
- 	}
- 
- 	if (info->id && info->error_dev_num > 1 && info->id == id)
--		printk("%s""  Error of this Agent(%04x) is reported first\n",
--			prefix, id);
-+		dev_err(&dev->dev,
-+			   "  Error of this Agent(%04x) is reported first\n",
-+			id);
- 	trace_aer_event(dev_name(&dev->dev), (info->status & ~info->mask),
- 			info->severity);
+-	number_of_cpusets--;
+ 	free_cpumask_var(cs->cpus_allowed);
+ 	kfree(cs);
  }
-@@ -244,21 +242,21 @@ void cper_print_aer(const char *prefix, struct pci_dev *dev, int cper_severity,
- 	}
- 	layer = AER_GET_LAYER_ERROR(aer_severity, status);
- 	agent = AER_GET_AGENT(aer_severity, status);
--	printk("%s""aer_status: 0x%08x, aer_mask: 0x%08x\n",
--	       prefix, status, mask);
-+	dev_err(&dev->dev, "aer_status: 0x%08x, aer_mask: 0x%08x\n",
-+	       status, mask);
- 	cper_print_bits(prefix, status, status_strs, status_strs_size);
--	printk("%s""aer_layer=%s, aer_agent=%s\n", prefix,
-+	dev_err(&dev->dev, "aer_layer=%s, aer_agent=%s\n",
- 	       aer_error_layer[layer], aer_agent_string[agent]);
- 	if (aer_severity != AER_CORRECTABLE)
--		printk("%s""aer_uncor_severity: 0x%08x\n",
--		       prefix, aer->uncor_severity);
-+		dev_err(&dev->dev, "aer_uncor_severity: 0x%08x\n",
-+		       aer->uncor_severity);
- 	if (tlp_header_valid) {
- 		const unsigned char *tlp;
- 		tlp = (const unsigned char *)&aer->header_log;
--		printk("%s""aer_tlp_header:"
-+		dev_err(&dev->dev, "aer_tlp_header:"
- 			" %02x%02x%02x%02x %02x%02x%02x%02x"
- 			" %02x%02x%02x%02x %02x%02x%02x%02x\n",
--			prefix, *(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
-+			*(tlp + 3), *(tlp + 2), *(tlp + 1), *tlp,
- 			*(tlp + 7), *(tlp + 6), *(tlp + 5), *(tlp + 4),
- 			*(tlp + 11), *(tlp + 10), *(tlp + 9),
- 			*(tlp + 8), *(tlp + 15), *(tlp + 14),
+@@ -1872,6 +1892,8 @@ static void cpuset_css_free(struct cgroup *cont)
+ struct cgroup_subsys cpuset_subsys = {
+ 	.name = "cpuset",
+ 	.css_alloc = cpuset_css_alloc,
++	.css_online = cpuset_css_online,
++	.css_offline = cpuset_css_offline,
+ 	.css_free = cpuset_css_free,
+ 	.can_attach = cpuset_can_attach,
+ 	.attach = cpuset_attach,
+-- 
+1.8.0.2
 
