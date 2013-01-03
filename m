@@ -1,120 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229Ab3ACLzZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:55:25 -0500
-Received: from mail-bk0-f47.google.com ([209.85.214.47]:42208 "EHLO
-	mail-bk0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753039Ab3ACLzX (ORCPT
+	id S1753236Ab3ACL42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:56:28 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:55194 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753039Ab3ACL4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:55:23 -0500
-Date: Thu, 3 Jan 2013 11:55:13 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: cbou@mail.ru, Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>,
-        Robert Marklund <robert.marklund@stericsson.com>
-Subject: Re: [PATCH 01/18] power: ab8500_charger: Rename the power_loss
- function
-Message-ID: <20130103115513.GC21994@gmail.com>
-References: <1355412102-14265-1-git-send-email-lee.jones@linaro.org>
- <1355412102-14265-2-git-send-email-lee.jones@linaro.org>
+	Thu, 3 Jan 2013 06:56:24 -0500
+Date: Thu, 3 Jan 2013 17:26:13 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] uprobes: Rationalize the usage of filter_chain()
+Message-ID: <20130103115613.GD8140@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121228181252.GA6120@redhat.com>
+ <20121228181310.GA6138@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1355412102-14265-2-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20121228181310.GA6138@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010311-2398-0000-0000-00000FA772C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+* Oleg Nesterov <oleg@redhat.com> [2012-12-28 19:13:10]:
 
-Poke for the patch-set.
-
-On Thu, 13 Dec 2012, Lee Jones wrote:
-
-> From: Paer-Olof Haakansson <par-olof.hakansson@stericsson.com>
+> filter_chain() was added into install_breakpoint/remove_breakpoint to
+> simplify the initial changes but this is sub-optimal.
 > 
-> Rename the ab8500_power_loss_handling function to a more
-> descriptive name ab8500_enable_disable_sw_fallback
+> This patch shifts the callsite to the callers, register_for_each_vma()
+> and uprobe_mmap(). This way:
 > 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> Signed-off-by: Robert Marklund <robert.marklund@stericsson.com>
-> Reviewed-by: Par-Olof HAKANSSON <par-olof.hakansson@stericsson.com>
-> Reviewed-by: Karl KOMIEROWSKI <karl.komierowski@stericsson.com>
-> Tested-by: Par-Olof HAKANSSON <par-olof.hakansson@stericsson.com>
+> - It will be easier to add the new arguments. This is the main reason,
+>   we can do more optimizations later.
+> 
+> - register_for_each_vma(is_register => true) can be optimized, we only
+>   need to consult the new consumer. The previous consumers were already
+>   asked when they called uprobe_register().
+> 
+> This patch also moves the MMF_HAS_UPROBES check from remove_breakpoint(),
+> this allows to avoid the potentionally costly filter_chain(). Note that
+> register_for_each_vma(is_register => false) doesn't really need to take
+> >consumer_rwsem, but I don't think it makes sense to optimize this and
+> introduce filter_chain_lockless().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
 > ---
->  drivers/power/ab8500_charger.c |   23 +++++++++++------------
->  1 file changed, 11 insertions(+), 12 deletions(-)
+>  kernel/events/uprobes.c |   44 +++++++++++++++++++++-----------------------
+>  1 files changed, 21 insertions(+), 23 deletions(-)
 > 
-> diff --git a/drivers/power/ab8500_charger.c b/drivers/power/ab8500_charger.c
-> index 2ddface..d6e1792 100644
-> --- a/drivers/power/ab8500_charger.c
-> +++ b/drivers/power/ab8500_charger.c
-> @@ -270,20 +270,19 @@ static enum power_supply_property ab8500_charger_usb_props[] = {
->  	POWER_SUPPLY_PROP_CURRENT_NOW,
->  };
->  
-> -/**
-> - * ab8500_power_loss_handling - set how we handle powerloss.
-> - * @di:		pointer to the ab8500_charger structure
-> - *
-> - * Magic nummbers are from STE HW department.
-> +/*
-> + * Function for enabling and disabling sw fallback mode
-> + * should always be disabled when no charger is connected.
->   */
-> -static void ab8500_power_loss_handling(struct ab8500_charger *di)
-> +static void ab8500_enable_disable_sw_fallback(struct ab8500_charger *di,
-> +		bool fallback)
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 105ac0d..60b0a90 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -579,6 +579,11 @@ static int prepare_uprobe(struct uprobe *uprobe, struct file *file,
+>  	return ret;
+>  }
+> 
+> +static inline bool consumer_filter(struct uprobe_consumer *uc)
+> +{
+> +	return true; /* TODO: !uc->filter || uc->filter(...) */
+> +}
+> +
+>  static bool filter_chain(struct uprobe *uprobe)
 >  {
->  	u8 reg;
+>  	struct uprobe_consumer *uc;
+> @@ -586,8 +591,7 @@ static bool filter_chain(struct uprobe *uprobe)
+> 
+>  	down_read(&uprobe->consumer_rwsem);
+>  	for (uc = uprobe->consumers; uc; uc = uc->next) {
+> -		/* TODO: ret = uc->filter(...) */
+> -		ret = true;
+> +		ret = consumer_filter(uc);
+>  		if (ret)
+>  			break;
+>  	}
+> @@ -603,15 +607,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+>  	bool first_uprobe;
 >  	int ret;
->  
-> -	dev_dbg(di->dev, "Autopower : %d\n", di->autopower);
-> +	dev_dbg(di->dev, "SW Fallback: %d\n", fallback);
->  
-> -	/* read the autopower register */
-> +	/* read the register containing fallback bit */
->  	ret = abx500_get_register_interruptible(di->dev, 0x15, 0x00, &reg);
->  	if (ret) {
->  		dev_err(di->dev, "%d write failed\n", __LINE__);
-> @@ -297,12 +296,12 @@ static void ab8500_power_loss_handling(struct ab8500_charger *di)
->  		return;
->  	}
->  
-> -	if (di->autopower)
-> +	if (fallback)
->  		reg |= 0x8;
->  	else
->  		reg &= ~0x8;
->  
-> -	/* write back the changed value to autopower reg */
-> +	/* write back the changed fallback bit value to register */
->  	ret = abx500_set_register_interruptible(di->dev, 0x15, 0x00, reg);
->  	if (ret) {
->  		dev_err(di->dev, "%d write failed\n", __LINE__);
-> @@ -332,12 +331,12 @@ static void ab8500_power_supply_changed(struct ab8500_charger *di,
->  		    !di->ac.charger_connected &&
->  		    di->autopower) {
->  			di->autopower = false;
-> -			ab8500_power_loss_handling(di);
-> +			ab8500_enable_disable_sw_fallback(di, false);
->  		} else if (!di->autopower &&
->  			   (di->ac.charger_connected ||
->  			    di->usb.charger_connected)) {
->  			di->autopower = true;
-> -			ab8500_power_loss_handling(di);
-> +			ab8500_enable_disable_sw_fallback(di, true);
+> 
+> -	/*
+> -	 * If probe is being deleted, unregister thread could be done with
+> -	 * the vma-rmap-walk through. Adding a probe now can be fatal since
+> -	 * nobody will be able to cleanup. But in this case filter_chain()
+> -	 * must return false, all consumers have gone away.
+> -	 */
+> -	if (!filter_chain(uprobe))
+> -		return 0;
+> -
+>  	ret = prepare_uprobe(uprobe, vma->vm_file, mm, vaddr);
+>  	if (ret)
+>  		return ret;
+> @@ -636,12 +631,6 @@ install_breakpoint(struct uprobe *uprobe, struct mm_struct *mm,
+>  static int
+>  remove_breakpoint(struct uprobe *uprobe, struct mm_struct *mm, unsigned long vaddr)
+>  {
+> -	if (!test_bit(MMF_HAS_UPROBES, &mm->flags))
+> -		return 0;
+> -
+> -	if (filter_chain(uprobe))
+> -		return 0;
+> -
+>  	set_bit(MMF_RECALC_UPROBES, &mm->flags);
+>  	return set_orig_insn(&uprobe->arch, mm, vaddr);
+>  }
+> @@ -781,10 +770,14 @@ static int register_for_each_vma(struct uprobe *uprobe, bool is_register)
+>  		    vaddr_to_offset(vma, info->vaddr) != uprobe->offset)
+>  			goto unlock;
+> 
+> -		if (is_register)
+> -			err = install_breakpoint(uprobe, mm, vma, info->vaddr);
+> -		else
+> -			err |= remove_breakpoint(uprobe, mm, info->vaddr);
+> +		if (is_register) {
+> +			/* consult only the "caller", new consumer. */
+> +			if (consumer_filter(uprobe->consumers))
+> +				err = install_breakpoint(uprobe, mm, vma, info->vaddr);
+> +		} else if (test_bit(MMF_HAS_UPROBES, &mm->flags)) {
+> +			if (!filter_chain(uprobe))
+> +				err |= remove_breakpoint(uprobe, mm, info->vaddr);
+> +		}
+> 
+>   unlock:
+>  		up_write(&mm->mmap_sem);
+> @@ -968,9 +961,14 @@ int uprobe_mmap(struct vm_area_struct *vma)
+> 
+>  	mutex_lock(uprobes_mmap_hash(inode));
+>  	build_probe_list(inode, vma, vma->vm_start, vma->vm_end, &tmp_list);
+> -
+> +	/*
+> +	 * We can race with uprobe_unregister(), this uprobe can be already
+> +	 * removed. But in this case filter_chain() must return false, all
+> +	 * consumers have gone away.
+> +	 */
+>  	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> -		if (!fatal_signal_pending(current)) {
+> +		if (!fatal_signal_pending(current) &&
+> +		    filter_chain(uprobe)) {
+>  			unsigned long vaddr = offset_to_vaddr(vma, uprobe->offset);
+>  			install_breakpoint(uprobe, vma->vm_mm, vma, vaddr);
 >  		}
->  	}
->  	power_supply_changed(psy);
 > -- 
-> 1.7.9.5
+> 1.5.5.1
 > 
 
--- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
