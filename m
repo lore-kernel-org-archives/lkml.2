@@ -1,93 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab3ACUKy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 15:10:54 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:55973 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab3ACUKv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 15:10:51 -0500
-Date: Thu, 3 Jan 2013 21:10:32 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v5 0/7] leds: leds-pwm: Device tree support
-Message-ID: <20130103201032.GA7130@avionic-0098.adnet.avionic-design.de>
-References: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
- <CAK5ve-L=L2qp1A01Kui9RAMn9mZxL7P-c0sZ1bDveLoKkK0Fzg@mail.gmail.com>
- <20130103072211.GA30631@avionic-0098.adnet.avionic-design.de>
- <CAK5ve-L5uaBoTCi7CaGFOU+50U=ebh72DDxSN8CS952bDq5giQ@mail.gmail.com>
+	id S1753995Ab3ACUL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 15:11:27 -0500
+Received: from fieldses.org ([174.143.236.118]:43004 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752998Ab3ACULY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 15:11:24 -0500
+Date: Thu, 3 Jan 2013 15:11:20 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Adamson, Dros" <Weston.Adamson@netapp.com>
+Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: nfsd oops on Linus' current tree.
+Message-ID: <20130103201120.GA2096@fieldses.org>
+References: <20121221153348.GA32151@redhat.com>
+ <20121221180824.GA27729@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221230849.GB29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221232609.GC29739@fieldses.org>
+ <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
+ <20121221234530.GA30048@fieldses.org>
+ <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAK5ve-L5uaBoTCi7CaGFOU+50U=ebh72DDxSN8CS952bDq5giQ@mail.gmail.com>
+In-Reply-To: <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:C3QkXercbFeWQN6VRb2wdp5BYnmvVF8Q5TbJED6Kr//
- 0V63ltMSTGXsWUCaBNjkQ1F71HrLPI/SNrMP8Jwh/RLmv7Tmea
- wnbUGvUja7Yu+kNdGU229UFH0L86jJRcQ7aCrWLOBzMV6hsqFw
- 4DLQVi/qV/KQ90/h2YLjTKsjO6yogTAzf0Aq5hqKiG2qyzFaRF
- v7GHa046yTkQPJt8/LjMwXnzq5TpLeDjBTMnTEluOdx3Q7aCBy
- tFXCk4K/iwipenSwx+BgDNnEDf3VJd9mmyJxx7BMkKyXA9467q
- lxjkmcBDKnXB5IVgoV1yF40kFcH4deDJbV3gTuAf8/90ihqllS
- SIzfwSLfwtUVQ7mw4Nv8z0pqZ4PAQERay+K4m/GU3ICgpaTHTZ
- bsP1oMA5nVdiF3HYDwzuw4BP1CYolo+qHE=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 03, 2013 at 04:28:37PM +0000, Adamson, Dros wrote:
+> Hey, sorry for the late response, I've been on vacation.
+> 
+> On Dec 21, 2012, at 6:45 PM, J. Bruce Fields <bfields@fieldses.org>
+> wrote:
+> 
+> > On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
+> >> Please reread what I said. There was no obvious circular
+> >> dependency, because nfsiod and rpciod are separate workqueues, both
+> >> created with WQ_MEM_RECLAIM.
+> > 
+> > Oh, sorry, I read "rpciod" as "nfsiod"!
+> > 
+> >> Dros' experience shows, however that a call to rpc_shutdown_client
+> >> in an nfsiod work item will deadlock with rpciod if the RPC task's
+> >> work item has been assigned to the same CPU as the one running the
+> >> rpc_shutdown_client work item.
+> >> 
+> >> I can't tell right now if that is intentional (in which case the
+> >> WARN_ON in the rpc code is correct), or if it is a bug in the
+> >> workqueue code. For now, we're assuming the former.
+> > 
+> > Well, Documentation/workqueue.txt says:
+> > 
+> > 	"Each wq with WQ_MEM_RECLAIM set has an execution context
+> > 	reserved for it.  If there is dependency among multiple work
+> > 	items used during memory reclaim, they should be queued to
+> > 	separate wq each with WQ_MEM_RECLAIM."
+> 
+> The deadlock we were seeing was:
+> 
+> - task A gets queued on rpciod workqueue and assigned kworker-0:0 -
+> task B gets queued on rpciod workqueue and assigned the same kworker
+> (kworker-0:0) - task A gets run, calls rpc_shutdown_client(), which
+> will loop forever waiting for task B to run rpc_async_release() - task
+> B will never run rpc_async_release() - it can't run until kworker-0:0
+> is free, which won't happen until task A (rpc_shutdown_client) is done
+> 
+> The same deadlock happened when we tried queuing the tasks on a
+> different workqueues -- queue_work() assigns the task to a kworker
+> thread and it's luck of the draw if it's the same kworker as task A.
+> We tried the different workqueue options, but nothing changed this
+> behavior.
+> 
+> Once a work struct is queued, there is no way to back out of the
+> deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
+> 
+>  * Currently, a queued barrier can't be canceled.  This is because *
+>  try_to_grab_pending() can't determine whether the work to be *
+>  grabbed is at the head of the queue and thus can't clear LINKED *
+>  flag of the previous work while there must be a valid next work *
+>  after a work with LINKED flag set.
+> 
+> So once a work struct is queued and there is an ordering dependency
+> (i.e. task A is before task B), there is no way to back task B out -
+> so we can't just call cancel_work() or something on task B in
+> rpc_shutdown_client.
+> 
+> The root of our issue is that rpc_shutdown_client is never safe to
+> call from a workqueue context - it loops until there are no more
+> tasks, marking tasks as killed and waiting for them to be cleaned up
+> in each task's own workqueue context. Any tasks that have already been
+> assigned to the same kworker thread will never have a chance to run
+> this cleanup stage.
+> 
+> When fixing this deadlock, Trond and I discussed changing how
+> rpc_shutdown_client works (making it workqueue safe), but Trond felt
+> that it'd be better to just not call it from a workqueue context and
+> print a warning if it is.
+> 
+> IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with no
+> success), but I'd argue that even if that did work it would still be
+> very easy to call rpc_shutdown_client from the wrong context and MUCH
+> harder to detect it.  It's also unclear to me if setting rpciod
+> workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
 
---M9NhX3UHpAaciwkO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Both rpciod and nfsiod already set WQ_MEM_RECLAIM.
 
-On Thu, Jan 03, 2013 at 09:14:06AM -0800, Bryan Wu wrote:
-> On Wed, Jan 2, 2013 at 11:22 PM, Thierry Reding
-> <thierry.reding@avionic-design.de> wrote:
-> > On Wed, Jan 02, 2013 at 06:10:13PM -0800, Bryan Wu wrote:
-> >> Hi Peter,
-> >>
-> >> I merged this patchset into my for-next branch already.
-> >>
-> >> Thanks for pushing this.
-> >
-> > Hi Bryan,
-> >
-> > Did you also take the PWM patches (3-5)? I was going to add those to my
-> > tree, but if you already take them feel free to add my Acked-by.
-> >
-> > Thierry
->=20
-> I should ask for that before I merged this patchset. I will add you
-> Acked-by for sure.
+But, right, looking at kernel/workqueue.c, it seems that the dedicated
+"rescuer" threads are invoked only in the case when work is stalled
+because a new worker thread isn't allocated quickly enough.
 
-Okay, thanks.
+So, what to do that's simplest enough that it would work for
+post-rc2/stable?  I was happy having just a simple dedicated
+thread--these are only started when nfsd is, so there's no real thread
+proliferation problem.
 
-Thierry
+I'll go quietly weep for a little while and then think about it some
+more....
 
---M9NhX3UHpAaciwkO
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ5eW4AAoJEN0jrNd/PrOh5igQAK7HsHpShPrGYM3BUKu3x7Ld
-ORF4VynvjmnQPXUreud2Jdbp9dl0wd2Knjq8w1NZ17PG5UgMsvr/DTw7/ISl4bBd
-qYf06VW4PPweCthO9edPDP2KdQBx5VKengsLZoYcTgwmugLmHP4OQcCMoUTjfV3j
-3fTDb084ZYAU+wrni1iI1q99MKm5VDd3aR9bdMnWT+feYoAAfaVapIkZqVFffsC4
-9ewiw5TY7ptq79YY0iby2QrESXP6Mmoyt2/zsEsX+XfcB1hv0HNiPBbQRK2cMhmR
-wrwkPRmVhvNMO1utvSmJH6X9GP6lNHx0Y0LXfr02jCoCTrbg05tCGM3xWRNkX14F
-9lBv32Rn3Ghf4sTA3el6gjrng4FnfvhCQy3B/109obJqgZGUyb6PqGLlfMUbqHWJ
-C8R76eWPvEZP7rFSL01YB9xtjDggA4TN+3FKbdl7+ro3qQ99vhlE3ZdJw4OQAtT8
-eQwOAfvqT6fqiqpn41Jpz5zGDKQj8YJUEr8B6+yj2VvrusgKpPOiYozdYSLqfP0/
-nySRqGgEEwUtY42xKgqDtggFdoMl+wG9hgXDswiSyXeyyuuDUc4DXipRyRqgvPLM
-kCk2BODiA0bxoVBi3ozklcxv8EpbS34hta4oGDdncmeER8TY/ft+490gAzn2ZLAs
-3G4K83XbMqlS1Qih4g1j
-=uXBq
------END PGP SIGNATURE-----
-
---M9NhX3UHpAaciwkO--
+--b.
