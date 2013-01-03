@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab3ACJeF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 04:34:05 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50801 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134Ab3ACJeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 04:34:03 -0500
-Date: Thu, 3 Jan 2013 10:33:58 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, hsweeten@visionengravers.com
-Subject: Re: [PATCH 1/3] HID: introduce helper for hid_driver boilerplate
-In-Reply-To: <201212171526.55969.hartleys@visionengravers.com>
-Message-ID: <alpine.LNX.2.00.1301031033530.27348@pobox.suse.cz>
-References: <201212171526.55969.hartleys@visionengravers.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753054Ab3ACJe3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 04:34:29 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:50938 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751178Ab3ACJe0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 04:34:26 -0500
+X-IronPort-AV: E=Sophos;i="4.84,402,1355094000"; 
+   d="scan'208";a="188308017"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: kernel-janitors@vger.kernel.org,
+        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] drivers/i2c/busses/i2c-sh7760.c: use clk API instead of direct dereferences
+Date: Thu,  3 Jan 2013 11:34:19 +0100
+Message-Id: <1357209260-15412-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Dec 2012, H Hartley Sweeten wrote:
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-> Introduce the module_hid_driver macro which is a convenience macro
-> for HID driver modules similar to module_usb_driver. It is intended
-> to be used by drivers with init/exit sections that do nothing but
-> register/unregister the HID driver.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Jiri Kosina <jkosina@suse.cz>
-> ---
->  include/linux/hid.h | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/include/linux/hid.h b/include/linux/hid.h
-> index 7330a0f..d6c71a6 100644
-> --- a/include/linux/hid.h
-> +++ b/include/linux/hid.h
-> @@ -700,6 +700,18 @@ extern int __must_check __hid_register_driver(struct hid_driver *,
->  
->  extern void hid_unregister_driver(struct hid_driver *);
->  
-> +/**
-> + * module_hid_driver() - Helper macro for registering a HID driver
-> + * @__hid_driver: hid_driver struct
-> + *
-> + * Helper macro for HID drivers which do not do anything special in module
-> + * init/exit. This eliminates a lot of boilerplate. Each module may only
-> + * use this macro once, and calling it replaces module_init() and module_exit()
-> + */
-> +#define module_hid_driver(__hid_driver) \
-> +	module_driver(__hid_driver, hid_register_driver, \
-> +		      hid_unregister_driver)
-> +
->  extern void hidinput_hid_event(struct hid_device *, struct hid_field *, struct hid_usage *, __s32);
->  extern void hidinput_report_event(struct hid_device *hid, struct hid_report *report);
->  extern int hidinput_connect(struct hid_device *hid, unsigned int force);
+A struct clk value is intended to be an abstract pointer, so it should be
+manipulated using the various API functions.
 
-Applied, thanks.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
--- 
-Jiri Kosina
-SUSE Labs
+// <smpl>
+@@
+expression e,e1;
+identifier i;
+@@
+
+*e = clk_get(...)
+ ... when != e = e1
+     when any
+*e->i
+// </smpl>
+
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
+---
+I am not able to compile this code.  Furthermore, the documentation on
+clk_get_rate says that the result is only valid if the clock has been
+enabled, and I don't know if that is the case here.
+
+ drivers/i2c/busses/i2c-sh7760.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/i2c/busses/i2c-sh7760.c b/drivers/i2c/busses/i2c-sh7760.c
+index 3a2253e..972eafe 100644
+--- a/drivers/i2c/busses/i2c-sh7760.c
++++ b/drivers/i2c/busses/i2c-sh7760.c
+@@ -401,7 +401,7 @@ static int calc_CCR(unsigned long scl_hz)
+ 	if (IS_ERR(mclk)) {
+ 		return PTR_ERR(mclk);
+ 	} else {
+-		mck = mclk->rate;
++		mck = clk_get_rate(mclk);
+ 		clk_put(mclk);
+ 	}
+ 
+
