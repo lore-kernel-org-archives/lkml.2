@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753824Ab3ACScv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 13:32:51 -0500
-Received: from reverse.techspace.com ([216.174.116.17]:47506 "EHLO
-	hdasch-dt.enmotus.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753773Ab3ACSct (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 13:32:49 -0500
-From: Hugh Daschbach <hugh.daschbach@enmotus.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Daschbach <hugh.daschbach@enmotus.com>
-Subject: [PATCH RESEND v3.7.0] Add AHCI support for Enmotus Bobcat device.
-Date: Thu,  3 Jan 2013 10:35:07 -0800
-Message-Id: <1357238107-4630-1-git-send-email-hugh.daschbach@enmotus.com>
-X-Mailer: git-send-email 1.7.11.7
+	id S1753848Ab3ACScy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 13:32:54 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:51294 "EHLO dcvr.yhbt.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753829Ab3ACScw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 13:32:52 -0500
+Date: Thu, 3 Jan 2013 18:32:51 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20130103183251.GA10113@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <20130102200848.GA4500@dcvr.yhbt.net>
+ <20130102204712.GA17806@dcvr.yhbt.net>
+ <1357220469.21409.24574.camel@edumazet-glaptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357220469.21409.24574.camel@edumazet-glaptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Silicon does not support standard AHCI BAR assignment.  Add
-vendor/device exception to force BAR 2.
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> On Wed, 2013-01-02 at 20:47 +0000, Eric Wong wrote:
+> > Eric Wong <normalperson@yhbt.net> wrote:
+> > > [1] my full setup is very strange.
+> > > 
+> > >     Other than the FUSE component I forgot to mention, little depends on
+> > >     the kernel.  With all this, the standalone toosleepy can get stuck.
+> > >     I'll try to reproduce it with less...
+> > 
+> > I just confirmed my toosleepy processes will get stuck while just
+> > doing "rsync -a" between local disks.  So this does not depend on
+> > sendfile or FUSE to reproduce.
+> > --
+> 
+> How do you tell your 'toosleepy' is stuck ?
 
-Signed-off-by: Hugh Daschbach <hugh.daschbach@enmotus.com>
----
-Previously sent 14 Dec 2012.  Any feedback?
-Thanks,
-Hugh
+My original post showed it stuck with strace (in ppoll + send).
+I only strace after seeing it's not using any CPU in top.
 
- drivers/ata/ahci.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+http://mid.gmane.org/20121228014503.GA5017@dcvr.yhbt.net
+(lsof also confirmed the ppoll/send sockets were peers)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 7862d17..3cb008f 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -53,6 +53,7 @@
- 
- enum {
- 	AHCI_PCI_BAR_STA2X11	= 0,
-+	AHCI_PCI_BAR_ENMOTUS	= 2,
- 	AHCI_PCI_BAR_STANDARD	= 5,
- };
- 
-@@ -410,6 +411,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
- 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
- 
-+	/* Enmotus */
-+	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
-+
- 	/* Generic, PCI class code for AHCI */
- 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
- 	  PCI_CLASS_STORAGE_SATA_AHCI, 0xffffff, board_ahci },
-@@ -1101,6 +1105,8 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	/* The Connext uses non-standard BAR */
- 	if (pdev->vendor == PCI_VENDOR_ID_STMICRO && pdev->device == 0xCC06)
- 		ahci_pci_bar = AHCI_PCI_BAR_STA2X11;
-+	else if (pdev->vendor == 0x1c44 && pdev->device == 0x8000)
-+		ahci_pci_bar = AHCI_PCI_BAR_ENMOTUS;
- 
- 	/* acquire resources */
- 	rc = pcim_enable_device(pdev);
--- 
-1.7.11.7
+> If reading its output, you should change its logic, there is no
+> guarantee the recv() will deliver exactly 16384 bytes each round.
+> 
+> With the following patch, I cant reproduce the 'apparent stuck'
 
+Right, the output is just an approximation and the logic there
+was bogus.
+
+Thanks for looking at this.
