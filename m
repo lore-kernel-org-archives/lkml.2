@@ -1,127 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab3ACUL1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 15:11:27 -0500
-Received: from fieldses.org ([174.143.236.118]:43004 "EHLO fieldses.org"
+	id S1754001Ab3ACUMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 15:12:18 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:58868 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752998Ab3ACULY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 15:11:24 -0500
-Date: Thu, 3 Jan 2013 15:11:20 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Adamson, Dros" <Weston.Adamson@netapp.com>
-Cc: "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Message-ID: <20130103201120.GA2096@fieldses.org>
-References: <20121221153348.GA32151@redhat.com>
- <20121221180824.GA27729@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221234530.GA30048@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
+	id S1753430Ab3ACUMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 15:12:14 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Wu <lekensteyn@gmail.com>
+Subject: Re: [PATCH] PCI / ACPI: Rework ACPI device nodes lookup for the PCI bus type
+Date: Thu, 03 Jan 2013 21:17:50 +0100
+Message-ID: <4246925.1ZrcBKvkL7@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <CAErSpo7tiCn5jBKorO7UjNQbceObAg_uGqtzpBfALBcCUMe1Yw@mail.gmail.com>
+References: <16168955.038G1kVfN2@vostro.rjw.lan> <CAErSpo7tiCn5jBKorO7UjNQbceObAg_uGqtzpBfALBcCUMe1Yw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 04:28:37PM +0000, Adamson, Dros wrote:
-> Hey, sorry for the late response, I've been on vacation.
+On Thursday, January 03, 2013 08:16:26 AM Bjorn Helgaas wrote:
+> On Fri, Dec 28, 2012 at 2:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> >
+> > As the kernel Bugzilla report #42696 indicates, it generally is not
+> > sufficient to use _ADR to get an ACPI device node corresponding to
+> > the given PCI device, because there may be multiple objects with
+> > matching _ADR in the ACPI namespace (this probably is against the
+> > spec, but it evidently happens in practice).
 > 
-> On Dec 21, 2012, at 6:45 PM, J. Bruce Fields <bfields@fieldses.org>
-> wrote:
-> 
-> > On Fri, Dec 21, 2012 at 11:36:51PM +0000, Myklebust, Trond wrote:
-> >> Please reread what I said. There was no obvious circular
-> >> dependency, because nfsiod and rpciod are separate workqueues, both
-> >> created with WQ_MEM_RECLAIM.
-> > 
-> > Oh, sorry, I read "rpciod" as "nfsiod"!
-> > 
-> >> Dros' experience shows, however that a call to rpc_shutdown_client
-> >> in an nfsiod work item will deadlock with rpciod if the RPC task's
-> >> work item has been assigned to the same CPU as the one running the
-> >> rpc_shutdown_client work item.
-> >> 
-> >> I can't tell right now if that is intentional (in which case the
-> >> WARN_ON in the rpc code is correct), or if it is a bug in the
-> >> workqueue code. For now, we're assuming the former.
-> > 
-> > Well, Documentation/workqueue.txt says:
-> > 
-> > 	"Each wq with WQ_MEM_RECLAIM set has an execution context
-> > 	reserved for it.  If there is dependency among multiple work
-> > 	items used during memory reclaim, they should be queued to
-> > 	separate wq each with WQ_MEM_RECLAIM."
-> 
-> The deadlock we were seeing was:
-> 
-> - task A gets queued on rpciod workqueue and assigned kworker-0:0 -
-> task B gets queued on rpciod workqueue and assigned the same kworker
-> (kworker-0:0) - task A gets run, calls rpc_shutdown_client(), which
-> will loop forever waiting for task B to run rpc_async_release() - task
-> B will never run rpc_async_release() - it can't run until kworker-0:0
-> is free, which won't happen until task A (rpc_shutdown_client) is done
-> 
-> The same deadlock happened when we tried queuing the tasks on a
-> different workqueues -- queue_work() assigns the task to a kworker
-> thread and it's luck of the draw if it's the same kworker as task A.
-> We tried the different workqueue options, but nothing changed this
-> behavior.
-> 
-> Once a work struct is queued, there is no way to back out of the
-> deadlock.  From kernel/workqueue.c:insert_wq_barrier comment:
-> 
->  * Currently, a queued barrier can't be canceled.  This is because *
->  try_to_grab_pending() can't determine whether the work to be *
->  grabbed is at the head of the queue and thus can't clear LINKED *
->  flag of the previous work while there must be a valid next work *
->  after a work with LINKED flag set.
-> 
-> So once a work struct is queued and there is an ordering dependency
-> (i.e. task A is before task B), there is no way to back task B out -
-> so we can't just call cancel_work() or something on task B in
-> rpc_shutdown_client.
-> 
-> The root of our issue is that rpc_shutdown_client is never safe to
-> call from a workqueue context - it loops until there are no more
-> tasks, marking tasks as killed and waiting for them to be cleaned up
-> in each task's own workqueue context. Any tasks that have already been
-> assigned to the same kworker thread will never have a chance to run
-> this cleanup stage.
-> 
-> When fixing this deadlock, Trond and I discussed changing how
-> rpc_shutdown_client works (making it workqueue safe), but Trond felt
-> that it'd be better to just not call it from a workqueue context and
-> print a warning if it is.
-> 
-> IIRC we tried using different workqueues with WQ_MEM_RECLAIM (with no
-> success), but I'd argue that even if that did work it would still be
-> very easy to call rpc_shutdown_client from the wrong context and MUCH
-> harder to detect it.  It's also unclear to me if setting rpciod
-> workqueue to WQ_MEM_RECLAIM would limit it to one kworker, etc...
+> I don't see anything in sec 6.1.1 (_ADR) that precludes having
+> multiple objects that contain the same _ADR. Do you have any other
+> pointers?
 
-Both rpciod and nfsiod already set WQ_MEM_RECLAIM.
+Section 6.1 implicitly means that.  It says that for PCI devices _ADR
+must be present to identify which device is represented by the given
+ACPI node.  Next, Section 6.1.1 says that the parent bus should be inferred
+from the location of the _ADR object's device package in the ACPI namespace,
+so clearly, if that's under the PCI root bridge ACPI node, the _ADR
+corresponds to a PCI device's bus address.
 
-But, right, looking at kernel/workqueue.c, it seems that the dedicated
-"rescuer" threads are invoked only in the case when work is stalled
-because a new worker thread isn't allocated quickly enough.
+Then, Table 6-139 specifies the format of _ADR for PCI devices as being
+euqivalent to devfn, which means that if two nodes with the same _ADR are
+present in one scope (under one parent), then it is impossible to distinguish
+between them and that's against Section 6.1.
 
-So, what to do that's simplest enough that it would work for
-post-rc2/stable?  I was happy having just a simple dedicated
-thread--these are only started when nfsd is, so there's no real thread
-proliferation problem.
+So I really think it *is* against the spec - not because _ADR is generally
+required to be unique, but because _ADR *is* required to be sufficient for
+matching ACPI nodes under a PCI root bridge's node with PCI devices.
 
-I'll go quietly weep for a little while and then think about it some
-more....
+> > One possible way to improve the situation is to use the presence of
+> > another ACPI method to distinguish between the matching namespace
+> > nodes.  For example, if the presence of _INI is checked in addition
+> > to the return value of _ADR, bug #42696 goes away on the affected
+> > machines.  Of course, this is somewhat arbitrary, but it may be
+> > argued that executing _INI for an ACPI device node kind of means that
+> > we are going to use that device node going forward, so we should
+> > generally prefer the nodes where we have executed _INI to "competing"
+> > nodes without _INI.
+> 
+> I consider this a purely ACPI issue, and hence something that you own
+> completely.
 
---b.
+OK
+
+> That said, my opinion is that this heuristic doesn't sound reliable to
+> me.  It feels like an ad hoc solution that works for the case at hand,
+> but I don't have any reason to think BIOS writers will unconsciously
+> make the same assumptions or that other OSes will contain the same
+> algorithm.
+
+It's supposed to be a heuristic that is less likely to break things. :-)
+
+I have a reason to believe that other OSes simply happen to work with
+the broken machines in question, because they match _ADR in direct order,
+while we match them in reverse order.  The original proposal was to
+change our code to match _ADR in direct order, but Len was afraid that it
+could break systems that we happen to handle correctly (but then they would
+not be handled correctly by other OSes, so perhaps it's what we should do
+after all).
+
+> The existence of acpi_get_child_device() means we're assuming there
+> can only be a single child with matching _ADR.  Since that assumption
+> turned out to be false,
+
+For PCI devices this is required by the spec, AFAICS.
+
+> maybe we need a way to deal with several children.
+>
+> Maybe we need a list of matching children, or maybe we
+> search matching children for a method at the time we need it instead
+> of trying to pick one child up front.
+
+It may not be entirely clear from the changelog, but for PCI devices we use
+acpi_get_child_device(), or acpi_get_child(), to find the ACPI "companion" node
+for a given PCI device, so we have to pick one.  Now, the spec is pretty clear
+in that _ADR is the only thing we can use to do that.
+
+If _ADR doesn't work, we have to do strange things to work around breakage,
+unless we want to use blacklists.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
