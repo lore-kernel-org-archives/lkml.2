@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3ACXIa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 18:08:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34392 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753986Ab3ACXIR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 18:08:17 -0500
-Date: Thu, 3 Jan 2013 15:08:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu
-Subject: Re: [PATCH 13/32] wait: Add wait_event_hrtimeout()
-Message-Id: <20130103150816.f0dda169.akpm@linux-foundation.org>
-In-Reply-To: <1356573611-18590-15-git-send-email-koverstreet@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-	<1356573611-18590-15-git-send-email-koverstreet@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754261Ab3ACXK0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 18:10:26 -0500
+Received: from mga02.intel.com ([134.134.136.20]:41404 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753993Ab3ACXKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 18:10:19 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,405,1355126400"; 
+   d="scan'208";a="241821115"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>
+Cc: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Joe Perches <joe@perches.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v5 2/3] x86/nmi: export local_touch_nmi() symbol for modules
+Date: Thu,  3 Jan 2013 07:10:03 -0800
+Message-Id: <1357225804-27191-3-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357225804-27191-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1357225804-27191-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Dec 2012 17:59:51 -0800
-Kent Overstreet <koverstreet@google.com> wrote:
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ arch/x86/kernel/nmi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-> Analagous to wait_event_timeout() and friends, this adds
-> wait_event_hrtimeout() and wait_event_interruptible_hrtimeout().
-> 
-> Note that unlike the versions that use regular timers, these don't
-> return the amount of time remaining when they return - instead, they
-> return 0 or -ETIME if they timed out.
-
-Why is this?
-
-> +/**
-> + * wait_event_hrtimeout - sleep until a condition gets true or a timeout elapses
-> + * @wq: the waitqueue to wait on
-> + * @condition: a C expression for the event to wait for
-> + * @timeout: timeout, in jiffies
-> + *
-> + * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
-> + * @condition evaluates to true or a signal is received.
-> + * The @condition is checked each time the waitqueue @wq is woken up.
-> + *
-> + * wake_up() has to be called after changing any variable that could
-> + * change the result of the wait condition.
-> + *
-> + * The function returns 0 if @condition became true, or -ETIME if the timeout
-> + * elapsed.
-> + */
-
-this, methinks:
-
---- a/include/linux/wait.h~wait-add-wait_event_hrtimeout-fix
-+++ a/include/linux/wait.h
-@@ -370,7 +370,7 @@ do {									\
-  * wait_event_hrtimeout - sleep until a condition gets true or a timeout elapses
-  * @wq: the waitqueue to wait on
-  * @condition: a C expression for the event to wait for
-- * @timeout: timeout, in jiffies
-+ * @timeout: timeout, as a ktime_t
-  *
-  * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
-  * @condition evaluates to true or a signal is received.
-@@ -395,7 +395,7 @@ do {									\
-  * wait_event_interruptible_hrtimeout - sleep until a condition gets true or a timeout elapses
-  * @wq: the waitqueue to wait on
-  * @condition: a C expression for the event to wait for
-- * @timeout: timeout, in jiffies
-+ * @timeout: timeout, as a ktime_t
-  *
-  * The process is put to sleep (TASK_INTERRUPTIBLE) until the
-  * @condition evaluates to true or a signal is received.
-_
+diff --git a/arch/x86/kernel/nmi.c b/arch/x86/kernel/nmi.c
+index f84f5c5..6030805 100644
+--- a/arch/x86/kernel/nmi.c
++++ b/arch/x86/kernel/nmi.c
+@@ -509,3 +509,4 @@ void local_touch_nmi(void)
+ {
+ 	__this_cpu_write(last_nmi_rip, 0);
+ }
++EXPORT_SYMBOL_GPL(local_touch_nmi);
+-- 
+1.7.9.5
 
