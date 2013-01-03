@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab3ACQ7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 11:59:01 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:13119 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248Ab3ACQ67 (ORCPT
+	id S1753512Ab3ACRJn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 12:09:43 -0500
+Received: from mail-la0-f49.google.com ([209.85.215.49]:63723 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3ACRJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 11:58:59 -0500
-X-Authority-Analysis: v=2.0 cv=IsacgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=HQJ7cb7SADkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=MBbGe7VapwAA:10 a=drOt6m5kAAAA:8 a=2FZd5QjmWb4xnD2iZhIA:9 a=PUjeQqilurYA:10 a=P4y-9_JJIZgA:10 a=0we4vyi6cfYA:10 a=EvD2fGRHhXBul_Ku:21 a=1eg56KShIjwCFCwC:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357232337.10284.67.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] arm: make return_address available for ARM_UNWIND
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Keun-O Park <kpark3469@gmail.com>, fweisbec@gmail.com, mingo@redhat.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        sahara <keun-o.park@windriver.com>
-Date: Thu, 03 Jan 2013 11:58:57 -0500
-In-Reply-To: <20130103162359.GR2631@n2100.arm.linux.org.uk>
-References: <1357207949-3349-1-git-send-email-kpark3469@gmail.com>
-	 <1357207949-3349-2-git-send-email-kpark3469@gmail.com>
-	 <20130103103815.GL2631@n2100.arm.linux.org.uk>
-	 <CA+KhAHbmjD7zTw+wcw84Abg3V1dD=0Ea4kUpYdGENQf1UOWphw@mail.gmail.com>
-	 <1357220165.10284.30.camel@gandalf.local.home>
-	 <20130103141301.GQ2631@n2100.arm.linux.org.uk>
-	 <1357229038.10284.46.camel@gandalf.local.home>
-	 <20130103162359.GR2631@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
+	Thu, 3 Jan 2013 12:09:42 -0500
+Message-ID: <1357232977.1886.17.camel@mesosphere.localdomain>
+Subject: Re: mmap() scalability in the presence of the MAP_POPULATE flag
+From: Roman Dubtsov <dubtsov@gmail.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>
+Date: Fri, 04 Jan 2013 00:09:37 +0700
+In-Reply-To: <CANN689HqKWf2SdE+HHQum9ukpwj6HbQoh66fZciWZuQVaJaUxQ@mail.gmail.com>
+References: <1357145418.5429.17.camel@mesosphere.localdomain>
+	 <CANN689HqKWf2SdE+HHQum9ukpwj6HbQoh66fZciWZuQVaJaUxQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.2 (3.6.2-3.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 16:23 +0000, Russell King - ARM Linux wrote:
-> On Thu, Jan 03, 2013 at 11:03:58AM -0500, Steven Rostedt wrote:
-> > On Thu, 2013-01-03 at 14:13 +0000, Russell King - ARM Linux wrote:
-> > > In summary, from what I can see in the patch, the reason why the ifdefs
-> > > are the way they are, and the reason the warning is there has not been
-> > > addressed; these patches just seem to be aimed just at removing a #warning
-> > > statement to make the warning go away.
-> > 
-> > You're correct that this patch does not solve any of theses issues. Now,
-> > I'm thinking that ftrace has matured where these issues don't exist, and
-> > where they do, it will only cause noise in the trace than anything
-> > serious. But, this needs to be looked deeper to make sure.
+On Wed, 2013-01-02 at 16:09 -0800, Michel Lespinasse wrote:
+> > Is there an interest in fixing this or concurrent mmaps() from the same
+> > process are too much of a corner case to worry about it?
 > 
-> Looking back in the archives, it seems that we had a problem with ftrace
-> and the unwinder polluting the trace information:
+> Funny this comes up again. I actually have a patch series that is
+> supposed to do that:
+> [PATCH 0/9] Avoid populating unbounded num of ptes with mmap_sem held
 > 
-> http://lists.arm.linux.org.uk/lurker/message/20090604.201745.1c41ee6c.en.html
+> However, the patches are still pending, didn't get much review
+> (probably not enough for Andrew to take them at this point), and I
+> think everyone forgot about them during the winter break.
 > 
-> There's quite a bit of discussion in that thread about this which details
-> why we came up with what we have today.
+> Care to have a look at that thread and see if it works for you ?
+> 
+> (caveat: you will possibly also need "[PATCH 10/9] mm: make
+> do_mmap_pgoff return populate as a size in bytes, not as a bool" to
+> make the series actually work for you)
 
-Thanks for the link. In fact, I see I was even involved :-)
+I applied the patches on top of 3.7.1. Here're the results for 4 threads
+concurrently mmap()-ing 10 64MB buffers in a loop without munmap()-s.
+The data is from a Nehalem i7-920 single-socket 4-core CPU. I've also
+added the older data I have for the 3.6.11 (patched and not) for
+reference.
 
-http://lists.arm.linux.org.uk/lurker/message/20090609.213448.b4e4d096.en.html
+3.6.11 vanilla, do not populate: 0.001 seconds
+3.6.11 vanilla, populate via a loop: 0.216 seconds
+3.6.11 vanilla, populate via MAP_POPULATE: 0.358 seconds 
 
-Just as I explained, the problem isn't a recursion bug, but just noise
-in the trace.
+3.6.11 + crude patch, do not populate: 0.002 seconds
+3.6.11 + crude patch, populate via loop: 0.215 seconds
+3.6.11 + crude patch, populate via MAP_POPULATE: 0.217 seconds
 
-Some of what is called by unwind_frame() will always be traced, and I
-wouldn't want 'notrace' annotation on those.
+3.7.1 vanilla, do not populate: 0.001 seconds
+3.7.1 vanilla, populate via a loop: 0.216 seconds
+3.7.1 vanilla, populate via MAP_POPULATE: 0.411 seconds
 
-If anything, I would just suggest another config option that lets the
-user decide if they don't mind the messiness of the trace for the added
-benefit of where the latency output came from.
+3.7.1 + patch series, do not populate: 0.001 seconds
+3.7.1 + patch series, populate via loop: 0.216 seconds
+3.7.1 + patch series, populate via MAP_POPULATE: 0.273 seconds
 
-Also, it's rather trivial to make the entire unwind.c not traced, by
-adding in the Makefile:
+So, the patch series mentioned above do improve performance but as far
+as I can read the benchmarking data there's still some performance left
+on the table.
 
-CFLAGS_REMOVE_unwind.o = -pg
-
-But that only stops the tracing of the unwind_*. Looks to be a lot of
-those. But it wont stop the tracing of:
-
- kernel_text_address <-unwind_frame
- core_kernel_text <-unwind_frame
- search_index <-unwind_frame
- etc.
-
-Heck, the user could just keep those from being traced by doing:
-
- echo kernel_text_address core_kernel_text search_index > \
-   /sys/kernel/debug/tracing/set_ftrace_notrace
-
-If DYNAMIC_FTRACE is defined.
-
--- Steve
-
+Regards,
+Roma
 
