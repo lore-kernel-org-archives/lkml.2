@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab3ACR5n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 12:57:43 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:38616 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580Ab3ACR5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 12:57:41 -0500
-Date: Thu, 3 Jan 2013 17:57:37 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        hughd@google.com, Michel Lespinasse <walken@google.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: kernel BUG at mm/huge_memory.c:1798!
-Message-ID: <20130103175737.GA3885@suse.de>
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
- <535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+	id S1753787Ab3ACR63 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 12:58:29 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10723 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753636Ab3ACR62 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 12:58:28 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 03 Jan 2013 09:58:16 -0800
+Message-ID: <50E5C6B4.6080606@nvidia.com>
+Date: Thu, 3 Jan 2013 19:58:12 +0200
+From: =?ISO-8859-1?Q?Terje_Bergstr=F6m?= <tbergstrom@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <535932623.34838584.1356410331076.JavaMail.root@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: "airlied@linux.ie" <airlied@linux.ie>, "dev@lynxeye.de" <dev@lynxeye.de>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arto Merilainen <amerilainen@nvidia.com>
+Subject: Re: [PATCHv4 5/8] drm: tegra: Remove redundant host1x
+References: <1356089964-5265-1-git-send-email-tbergstrom@nvidia.com> <1356089964-5265-6-git-send-email-tbergstrom@nvidia.com> <20121221143614.GA16167@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20121221143614.GA16167@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding Michel and Rik to cc)
-
-On Mon, Dec 24, 2012 at 11:38:51PM -0500, Zhouping Liu wrote:
-> Hello all,
+On 21.12.2012 16:36, Thierry Reding wrote:
+> On Fri, Dec 21, 2012 at 01:39:21PM +0200, Terje Bergstrom wrote:
+>> +static void tegra_drm_close(struct drm_device *drm, struct drm_file *filp)
+>> +{
+>> +
+>> +}
+>> +
 > 
-> I found the below kernel bug using latest mainline(637704cbc95),
-> my hardware has 2 numa nodes, and it's easy to reproduce the issue
-> using LTP test case: "# ./mmap10 -a -s -c 200":
+> This can be removed, right?
+
+Yes, done.
+
 > 
+>> +static struct platform_driver tegra_drm_platform_driver = {
+>> +	.driver = {
+>> +		.name = "tegradrm",
+> 
+> This should be "tegra-drm" to match the module name.
 
-Sorry for the long delay in responding, first day back online after being
-off for a holiday. I can reproduce this problem. It takes many iterations
-but triggers within a minute. It also affects 3.8-rc2.
+Done.
 
-This BUG is triggered because the rmap walk is not finding all vmas mapping
-a page (walk found 0 avc's while the page mapcount was positive). THP
-requires this rmap walk to be correct or minimally all the pmds will not
-be marked as splitting. If PMDs are not marked splitting then all sorts
-of problems can occur. The test case triggering this is fairly simple.
+>> -struct host1x_client;
+>> +struct tegra_drm_client;
+> 
+> I don't see the point in renaming this. All of the devices are still
+> host1x clients, right? This patch would be a whole shorter if we didn't
+> rename these. None of these symbols are exported either so there's not
+> much chance for them to clash with anything.
 
-o A process creates a mapping 10MB-4KB in size
-o The process forks, then unmaps the entire mapping and exits
-o First child forks then unmaps part of the mapping and exits
-o Second child unmaps then unmaps part of the mapping and exits
+Yep, we renamed it back to make the patch smaller.
 
-The partial unmapping on a page boundary but not a THP boundary is what
-causes the THP split and allows this bug to be triggered. The two children
-are racing with each other.
+>> diff --git a/include/drm/tegra_drm.h b/include/drm/tegra_drm.h
+>> new file mode 100644
+>> index 0000000..8632f49
+>> --- /dev/null
+>> +++ b/include/drm/tegra_drm.h
+>> @@ -0,0 +1,20 @@
+>> +/*
+>> + * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>> + */
+>> +
+>> +#ifndef _TEGRA_DRM_H_
+>> +#define _TEGRA_DRM_H_
+>> +
+>> +#endif
+> 
+> This can be removed as well.
 
-I confirmed that this bug triggers on UMA and the THP migration for NUMA
-balancing is very unlikely to be a factor.  As it looked like anon_vma
-rwsem was being taken for write in the correct places, it led me to conclude
-that this must be a race within split_huge_page() itself somewhere.
+Removed.
 
-split_huge_page consists of three tasks
+I posted another proposal on how to handle initialization in tegradrm.
+It removes a lot of code and relies more on platform_bus keeping track
+of devices. Have you had time to look into it?
 
-  o __split_huge_page_splitting marks all PMDs as splitting
-
-  o __split_huge_page_refcount uses the page compound lock to serialise
-    based on the page and converts the compount page into 512 base pages
-
-  o __split_huge_page_map uses the page table lock to serialise within
-    the address space and updates the PTE
-
-None of these affect avc linkages but they might be affecting the rmap
-walk after the conversion to interval trees. I'm adding Michel and Rik
-to the cc in case they can quickly spot how the walk could be affected
-during a THP split.
-
-The patch below hides the race by serialising split_huge_page but the
-exact race needs to be identified before figuring out what the real locking
-problem is. That's as far as I got with it today and will pick it up again
-tomorrow. Better theories as to what is going wrong are welcome.
-
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 9e894ed..f815ddb 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1822,6 +1822,8 @@ int split_huge_page(struct page *page)
- 	anon_vma = page_lock_anon_vma_read(page);
- 	if (!anon_vma)
- 		goto out;
-+	page_unlock_anon_vma_read(anon_vma);
-+	anon_vma_lock_write(anon_vma);
- 	ret = 0;
- 	if (!PageCompound(page))
- 		goto out_unlock;
-@@ -1832,7 +1834,7 @@ int split_huge_page(struct page *page)
- 
- 	BUG_ON(PageCompound(page));
- out_unlock:
--	page_unlock_anon_vma_read(anon_vma);
-+	anon_vma_unlock(anon_vma);
- out:
- 	return ret;
- }
-
+Terje
