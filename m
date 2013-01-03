@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753047Ab3ACHWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 02:22:19 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:55736 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab3ACHWP (ORCPT
+	id S1753075Ab3ACH2d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 02:28:33 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:51466 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab3ACH23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 02:22:15 -0500
-Date: Thu, 3 Jan 2013 08:22:11 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Bryan Wu <cooloney@gmail.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-leds@vger.kernel.org
-Subject: Re: [PATCH v5 0/7] leds: leds-pwm: Device tree support
-Message-ID: <20130103072211.GA30631@avionic-0098.adnet.avionic-design.de>
-References: <1356083041-29179-1-git-send-email-peter.ujfalusi@ti.com>
- <CAK5ve-L=L2qp1A01Kui9RAMn9mZxL7P-c0sZ1bDveLoKkK0Fzg@mail.gmail.com>
+	Thu, 3 Jan 2013 02:28:29 -0500
+Message-ID: <50E5330B.2060007@ti.com>
+Date: Thu, 3 Jan 2013 12:58:11 +0530
+From: R Sricharan <r.sricharan@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:13.0) Gecko/20120615 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-In-Reply-To: <CAK5ve-L=L2qp1A01Kui9RAMn9mZxL7P-c0sZ1bDveLoKkK0Fzg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:KB9c8E2bXcKyRabAqgyYQeDFfMFcExFcVSI5j04zNa3
- fldb4iL/DKMlMYdwPjArX2cPUujIpFiCV+imc4sSvs/iKlIFJz
- bPchVCKij8uvuFvXWn0Qaaj1gPi9tpXnQebWCq6Rp8yxdqn3xb
- 9ldar9Sk4zm5/iTSl30XrfXCMRWkhz8DWS2mL0nI0YD9huNlwt
- 88oOpndWzNzDTMct3GVLJBV5Pdd3oF3uGapYkaWXhZ+DSPw4Tn
- bSXuYttFh/l5otZHTROrQbPcyPIthB7yofpb3G4lsKfb3SmsHK
- I3JdXL8T8ix/z7QQcEk+HMV/1X2iuqoVG10r4CGuq1a7MvNghw
- z/ZUpL+rOwMdjr3RkagSL1c2Cz9E5g5yKiGpYzzrYwy7ZDwnAz
- cpdOymyY8WWSCP7R+CElJfvYboMqblXr4Q=
+To: <ahemaily@gmail.com>
+CC: <tony@atomide.com>, <linux-omap@vger.kernel.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/1] arm :omap :DMA: fix a bug on reserving the omap SDMA
+ channels
+References: <1356813800-4705-1-git-send-email-ahemaily@gmail.com>
+In-Reply-To: <1356813800-4705-1-git-send-email-ahemaily@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sunday 30 December 2012 02:13 AM, ahemaily@gmail.com wrote:
+> From: ahemaily <ahemaily@gmail.com>
+>
+> The variable  dma_lch_count  used for comparison  (omap_dma_reserve_channels <= dma_lch_count)
+> before it initialized to the value from omap_dma_dev_attr : d->lch_count.
+>
+> I change the place of dma_lch_count initialization to be before the comparison.
+>
+> Signed-off-by: Abdelrahman Hemaily <ahemaily@gmail.com>
+> ---
+>   arch/arm/plat-omap/dma.c |    4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/plat-omap/dma.c b/arch/arm/plat-omap/dma.c
+> index c76ed8b..cb3e321 100644
+> --- a/arch/arm/plat-omap/dma.c
+> +++ b/arch/arm/plat-omap/dma.c
+> @@ -2014,12 +2014,12 @@ static int __devinit omap_system_dma_probe(struct platform_device *pdev)
+>
+>   	d			= p->dma_attr;
+>   	errata			= p->errata;
+> -
+> +	dma_lch_count           = d->lch_count;
+> +
+>   	if ((d->dev_caps & RESERVE_CHANNEL) && omap_dma_reserve_channels
+>   			&& (omap_dma_reserve_channels <= dma_lch_count))
+>   		d->lch_count	= omap_dma_reserve_channels;
+>
+> -	dma_lch_count		= d->lch_count;
+    By removing this line, you are effectively not assigning
+    d->lch_count after reserving. So the patch should only change
+    dma_lch_count in the above "if statement" to d->lch_count
 
-On Wed, Jan 02, 2013 at 06:10:13PM -0800, Bryan Wu wrote:
-> Hi Peter,
->=20
-> I merged this patchset into my for-next branch already.
->=20
-> Thanks for pushing this.
+Regards,
+  Sricharan
 
-Hi Bryan,
 
-Did you also take the PWM patches (3-5)? I was going to add those to my
-tree, but if you already take them feel free to add my Acked-by.
-
-Thierry
-
---AhhlLboLdkugWU4S
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ5TGjAAoJEN0jrNd/PrOhf4YP/RyWxS6KT6joLPklDPXj7r0U
-Q5JkAn1ztZtZaTcSFtZQvl7i/fksbWme1hYl7vBMuKE/T/gIXJDg4zTkoOmMfuJ+
-loJjB92xqPfPwcnNnPrlWTPd4tHpfTTdhv6D6e2WHYQojePcO2K75YRrsHY6bYdx
-+IdkFMqcF9PWsrwJYU10w4wEAzr+khlSVaHc52qn664w4rY0TTBd1JV6YL3zAp2/
-nlBFJoNyutxQ0b2we00dc60Zx6TvKvwHiPqqp6RnLekdY1ZtGBYRPXtdILY4ncaO
-UKFr0Z7F1uyzIWrivPZwK2YISY1G3LBlTXOXkQ+LZMwQonbI6HiIzLTRpZdVfYst
-3mevTyd9Jzc0sqlPlRWIotzdIII4R0HckDNQtiPx75l+22fnZuS0PJTnyi6tgD58
-7PnXta3jw9Apw2wzMDhePa34/PsGG3K91EiQhUDHcpP0mraXo5nbi8VfCSiWtaIS
-ORKc8ecWjMoedlqXeSZZhkj7UE8wCXbeWbwRcoHVaw36tguDEEPS7j+7sepAUqCE
-CwkS5Cq6Bjl8TzRrW+k+Gz/N4eEqP74aCRp/aJWo4u5tVIgVWkD39bKMdSnbw2gg
-2b6n0Fs/UQAohkrYjVcil50RL45u73b0KVEUFB/zxOplPMS2nRm0AEkmczSvm8MV
-xKnIihA/uMxwINQb42J+
-=8imf
------END PGP SIGNATURE-----
-
---AhhlLboLdkugWU4S--
