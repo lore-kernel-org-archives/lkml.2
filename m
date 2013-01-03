@@ -1,64 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753109Ab3ACLbP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 06:31:15 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43047 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751874Ab3ACLbO (ORCPT
+	id S1753169Ab3ACLer (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:34:47 -0500
+Received: from mail-la0-f53.google.com ([209.85.215.53]:64891 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab3ACLeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 06:31:14 -0500
-Date: Thu, 3 Jan 2013 11:31:12 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/5] lp8788-buck: fix a parent deivce in _probe()
-Message-ID: <20130103113112.GG4627@opensource.wolfsonmicro.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E11005@DQHE02.ent.ti.com>
+	Thu, 3 Jan 2013 06:34:44 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Enx9fNJ0XV5HaWRu"
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E11005@DQHE02.ent.ti.com>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LNX.2.00.1301031050060.27348@pobox.suse.cz>
+References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
+	<alpine.LNX.2.00.1301031050060.27348@pobox.suse.cz>
+Date: Thu, 3 Jan 2013 12:34:42 +0100
+Message-ID: <CAN+gG=GxiM-K6mSmQk4GVRbkkc5VwCW1wUeo1BEuXoZ+T-ir_A@mail.gmail.com>
+Subject: Re: [PATCH 00/11] Support of dual pen/multitouch and new default for
+ win 7 certified devices
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Henrik Rydberg <rydberg@euromail.se>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 3, 2013 at 10:50 AM, Jiri Kosina <jkosina@suse.cz> wrote:
+> On Fri, 23 Nov 2012, Benjamin Tissoires wrote:
+>
+>> Last week, I received two new interesting devices report:
+>> - N-trig win 8 certified pen/touch panel
+>> - Samsung Nexio 42"
+>
+> Bejmanin, Henrik, what are the plans with this patchset please? Planning
+> respin for 3.9?
+>
 
---Enx9fNJ0XV5HaWRu
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Jiri,
 
-On Thu, Jan 03, 2013 at 06:31:02AM +0000, Kim, Milo wrote:
->  The lp8788-buck is a platform driver of lp8788-mfd.
->  The platform device is allocated when mfd_add_devices() is called
->  in lp8788-mfd.
->  On the other hand, 'lp->dev' is the i2c client device.
+sure. I intend to make a respin of this patch series. I spent a lot of
+time lately to automate regressions tests for hid-multitouch. Lucky
+me, because some patches of the original series would have broken some
+devices. It also helped me to find out 2 other broken devices (they
+were broken since their inclusion in hid-multitouch)....
 
-Applied all, thanks.
+The tests automation is pretty useful, however it can not be used as
+this on a vanilla kernel due to the direct dependencies against
+usbhid.
+Henrik, you told us that you have a patch set fixing these
+dependencies on all the hid drivers, will you prepare it for 3.9? Do
+you want me to continue your work?
 
---Enx9fNJ0XV5HaWRu
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Cheers,
+Benjamin
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQ5Wv4AAoJELSic+t+oim9ubYP/0vsnfe/uAFwIii+5BiS3Kik
-xIvmJez11dDHOaLoP6mCMSUxhuvYU9f1Xt14b/OrqQNiFFczmB15bS66DIuYM43N
-25aMmaPMTb/4WPHojaRovtLewBQp7Tv+Byf0yGwjF5Nqkt1H4y09eX+/S+w1/Ku3
-ajKxmeVg77WZ/Sjt+UrAUbBUgtjhsSoYiYJTqfDe3QcXhZMpMizsxUgNddIZRJRo
-M4PSOb0dxdrfHIv1QKk5FF/dmUAJzJX6NZWVhzKIQVu22315X6xfe8Q1uOSxn5Aw
-tMMEapuGBgQ+ncjc2Z2ahY/SKIQTwSG3//q1eWsnlAD9eQqGkAWARO/W/f21yomJ
-rU3CvsfONbPgWDLGA8VQP7xzZE74Kc9a37tOFRs5QMma/qXV/dml3Fb9CfQfZqJA
-5kd/SG+eVt8G3vM1ZNUXYmyz+zMKzv3dBa/hL7u58CHVLEG48yxQ11XwfkSiMBbG
-gK7woqj7lX2Yck7WPvsvf20O/oCSm0SQ65WAV2/AsqfF1SSz7wd1t/dXB+feim3p
-Ov9SZT0CZPxdXvUiufuyQd1KbS5LLffsATzQCXy3sDhUgP5lwxzBxh/OI43rIUXV
-iqsEB5kleJ7HZ6J5KS8yvwVACq0sLW8R8HaSndUvvlB17I5J8ueHsqGRwT6wskOf
-fY/pEiayHOz6NZ6593yC
-=TvAv
------END PGP SIGNATURE-----
-
---Enx9fNJ0XV5HaWRu--
+> Thanks.
+>
+>>
+>>
+>> N-trig device
+>> -------------
+>> The first one is the origin of patches 1 to 6.
+>> The multiouch part worked flawlessly with the win 8 patches I sent before,
+>> but the pen part was completely ignored.
+>> I could have used the quirk MULTI_INPUT, but by testing this quirk against
+>> several devices report I have (https://github.com/bentiss/hid-devices), it
+>> was a pain because some of them create 4 or 5 useless inputs.
+>>
+>> I choose to allow the hid driver to control the creation of input devices, thus
+>> patches 1 to 3.
+>>
+>>
+>> Nexio device
+>> ------------
+>> The second one was more problematic. Indeed, it was not working at all with the
+>> current release of hid-multitouch. I had several ghost points, and any of the
+>> available quirks worked.
+>> I finaly found the trick, and this trick applies to all the win7 and win8
+>> devices I saw so far (same url as before).
+>>
+>> So I think I finally understood why the windows driver was better than us: it
+>> first looks at the announced contact count, and treat only the right number. It
+>> was so simple... and it works so well...
+>>
+>> However, for us, I need to get this information from the raw_event because most
+>> of the devices put the contact count field at the end of the report.
+>>
+>> I also decided to change the default class as it is much more tolerant than the
+>> previous one. I could have changed all the devices, but in the end, I changed
+>> only those that get a benefit and that I could test.
+>>
+>>
+>> Debug tool
+>> ----------
+>> I was able to discover this trick only recently because I made a small C program
+>> that allows me to replay the hid events through hid-multitouch. The code is
+>> here: https://github.com/bentiss/hid-replay and you will need a kernel 3.6
+>> to make it work (it requires uhid).
+>>
+>> However, be careful, this program can be the root of many kernel oopses if the
+>> targeted hid module tries to directly handle the usb or with any of the usbhid
+>> function.
+>> So, Henrik, I really need you to push your abstraction of usbhid in all hid
+>> modules :)
+>>
+>> Anyway, this tool can be very helpful to debug hid devices, that's why I share
+>> it there... and also because I work for an open-source company :)
+>>
+>> Happy reviewing.
+>>
+>> Cheers,
+>> Benjamin
+>>
+>> Benjamin Tissoires (11):
+>>   HID: hid-input factorize hid_input allocation
+>>   HID: hid-input: simplify hid_input allocation and registration
+>>   HID: hid-input: export hidinput_allocation function
+>>   HID: hid-multitouch: creates and handle stylus report with dual-sensors
+>>   HID: hid-multitouch: manually send sync event for pen input report
+>>   HID: hid-multitouch: append " Pen" to the name of the stylus input
+>>   HID: hid-multitouch: rename MT_CLS_DEFAULT into MT_CLS_NSMU
+>>   HID: hid-multitouch: add support for Nexio 42" panel
+>>   HID: hid-multitouch: check if ContactCount is given for default quirk
+>>   HID: hid-multitouch: fix protocol for 3 devices
+>>   HID: hid-multitouch: use MT_QUIRK_CONTACT_COUNT_ACCURATE for win 8 devices
+>>
+>>  drivers/hid/hid-ids.h        |   3 +
+>>  drivers/hid/hid-input.c      | 100 +++++++++++++---------
+>>  drivers/hid/hid-multitouch.c | 198 +++++++++++++++++++++++++++++++++++--------
+>>  include/linux/hid.h          |   1 +
+>>  4 files changed, 229 insertions(+), 73 deletions(-)
+>>
+>> --
+>> 1.8.0
+>>
+>
+> --
+> Jiri Kosina
+> SUSE Labs
