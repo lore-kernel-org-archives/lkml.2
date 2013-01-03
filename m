@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436Ab3ACPlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 10:41:50 -0500
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:38863 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753251Ab3ACPlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 10:41:47 -0500
-Message-ID: <50E5A6A1.5040508@gmail.com>
-Date: Thu, 03 Jan 2013 23:41:21 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753488Ab3ACPu4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 10:50:56 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:55104 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753426Ab3ACPux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 10:50:53 -0500
+Date: Thu, 3 Jan 2013 16:51:04 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Joe Perches <joe@perches.com>, Lance Ortiz <lance.ortiz@hp.com>,
+        bhelgaas@google.com, lance_ortiz@hotmail.com, jiang.liu@huawei.com,
+        rostedt@goodmis.org, mchehab@redhat.com, linux-acpi@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v8 3/3] aerdrv: Cleanup log output for AER
+Message-ID: <20130103155103.GE10243@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Tony Luck <tony.luck@intel.com>, Joe Perches <joe@perches.com>,
+	Lance Ortiz <lance.ortiz@hp.com>, bhelgaas@google.com,
+	lance_ortiz@hotmail.com, jiang.liu@huawei.com, rostedt@goodmis.org,
+	mchehab@redhat.com, linux-acpi@vger.kernel.org,
+	linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20130102232730.5706.82243.stgit@grignak.americas.hpqcorp.net>
+ <20130102232743.5706.63153.stgit@grignak.americas.hpqcorp.net>
+ <1357169259.25181.9.camel@joe-AO722>
+ <CA+8MBbK3Ah81TCDRTqM-XV9vEtKCC1m7YCAr75NiUwPRM4OfsQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Daniel J Blueman <daniel@quora.org>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: 3.8-rc2: pciehp waitqueue hang...
-References: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com>
-In-Reply-To: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <CA+8MBbK3Ah81TCDRTqM-XV9vEtKCC1m7YCAr75NiUwPRM4OfsQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
-	It seems like an issue caused by recursive PCIe HPC.
-Could you please help to try the patch from:
-http://www.spinics.net/lists/linux-pci/msg18625.html
-Thanks!
-Gerry
-On 01/03/2013 11:11 PM, Daniel J Blueman wrote:
-> When the Apple thunderbolt ethernet adapter comes loose on my Macbook
-> Pro Retina (Intel DSL3510), we see pci_slot_name return
-> non-deterministic data (ie varying each boot), and we see pciehp_wp
-> remain armed with events causing the kthread to get stuck:
+On Wed, Jan 02, 2013 at 03:41:19PM -0800, Tony Luck wrote:
+> On Wed, Jan 2, 2013 at 3:27 PM, Joe Perches <joe@perches.com> wrote:
+> > Just use dev_err( instead of dev_printk(KERN_ERR,
+> > It's a function and it makes the object code smaller.
 > 
-> tg3 0000:0a:00.0 eth0: Link is up at 1000 Mbps, full duplex
-> tg3 0000:0a:00.0 eth0: Flow control is on for TX and on for RX
-> <thunderbold adapter comes loose>
-> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
-> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
-> clear MAC_TX_MODE=ffffffff
-> tg3 0000:0a:00.0 eth0: No firmware running
-> tg3 0000:0a:00.0 eth0: Link is down
-> pcieport 0000:00:01.1: System wakeup enabled by ACPI
-> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
-> pciehp 0000:09:00.0:pcie24: Latch open on
-> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
-> pciehp 0000:09:00.0:pcie24: Button pressed on
-> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
-> pciehp 0000:09:00.0:pcie24: Card present on
-> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
-> pciehp 0000:09:00.0:pcie24: Power fault on slot
-> \xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
-> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
-> pciehp 0000:09:00.0:pcie24: PCI slot
-> #\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
-> - powering on due to button press.
-> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
-> pciehp 0000:09:00.0:pcie24: Failed to check link status
-> INFO: task kworker/0:1:52 blocked for more than 120 seconds.
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> kworker/0:1   D ffff880265893090   0  52   2 0x00000000
->  ffff8802655456f8 0000000000000046 ffffffff81a21a60 ffff880265545fd8
->  0000000000004000 ffff880265545fd8 ffff880265892bb0 ffff880265adc8d0
->  000000000000059e 0000000000000082 ffff880265545668 ffffffff810415aa
-> Call Trace:
->  [<ffffffff810415aa>] ? console_unlock+0x1fa/0x4a0
->  [<ffffffff8108d16d>] ? trace_hardirqs_off+0xd/0x10
->  [<ffffffff81041b19>] ? vprintk_emit+0x1c9/0x510
->  [<ffffffff81558db4>] schedule+0x24/0x70
->  [<ffffffff8155653c>] schedule_timeout+0x19c/0x1e0
->  [<ffffffff81558c43>] wait_for_common+0xe3/0x180
->  [<ffffffff8105adc1>] ? flush_workqueue+0x111/0x4d0
->  [<ffffffff81071140>] ? try_to_wake_up+0x2d0/0x2d0
->  [<ffffffff81558d88>] wait_for_completion+0x18/0x20
->  [<ffffffff8105ae86>] flush_workqueue+0x1d6/0x4d0
->  [<ffffffff8105acb0>] ? flush_workqueue_prep_cwqs+0x200/0x200
->  [<ffffffff8125e909>] pciehp_release_ctrl+0x39/0x90
->  [<ffffffff8125b945>] pciehp_remove+0x25/0x30
->  [<ffffffff81255bf2>] pcie_port_remove_service+0x52/0x70
->  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
->  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
->  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
->  [<ffffffff81303fe7>] device_del+0x127/0x1c0
->  [<ffffffff81255d70>] ? resume_iter+0x40/0x40
->  [<ffffffff81304091>] device_unregister+0x11/0x20
->  [<ffffffff81255da5>] remove_iter+0x35/0x40
->  [<ffffffff81302eb6>] device_for_each_child+0x36/0x70
->  [<ffffffff81256341>] pcie_port_device_remove+0x21/0x40
->  [<ffffffff81256588>] pcie_portdrv_remove+0x28/0x50
->  [<ffffffff8124a821>] pci_device_remove+0x41/0xc0
->  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
->  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
->  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
->  [<ffffffff81303fe7>] device_del+0x127/0x1c0
->  [<ffffffff81304091>] device_unregister+0x11/0x20
->  [<ffffffff8124566c>] pci_stop_bus_device+0x8c/0xa0
->  [<ffffffff81245615>] pci_stop_bus_device+0x35/0xa0
->  [<ffffffff81245811>] pci_stop_and_remove_bus_device+0x11/0x20
->  [<ffffffff8125cc91>] pciehp_unconfigure_device+0x91/0x190
->  [<ffffffff8125c76d>] ? pciehp_power_thread+0x2d/0x110
->  [<ffffffff8125c591>] pciehp_disable_slot+0x71/0x220
->  [<ffffffff8125c826>] pciehp_power_thread+0xe6/0x110
->  [<ffffffff8105d203>] process_one_work+0x193/0x550
->  [<ffffffff8105d1a1>] ? process_one_work+0x131/0x550
->  [<ffffffff8125c740>] ? pciehp_disable_slot+0x220/0x220
->  [<ffffffff8105d96d>] worker_thread+0x15d/0x400
->  [<ffffffff8109213d>] ? trace_hardirqs_on+0xd/0x10
->  [<ffffffff8105d810>] ? rescuer_thread+0x210/0x210
->  [<ffffffff81062bd6>] kthread+0xd6/0xe0
->  [<ffffffff8155a18b>] ? _raw_spin_unlock_irq+0x2b/0x50
->  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
->  [<ffffffff8155ae6c>] ret_from_fork+0x7c/0xb0
->  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
+> Looks like we are almost converged on a solution (Lance: thanks for
+> your patience and diligence in making changes).
 > 
+> Anyone on the "To:" list want to claim this for their tree to commit?
+> The series touches pci, acpi, RAS, and tracing ... so there are
+> several possible owners.
+> 
+> If someone else wants it, then add an:
+> Acked-by: Tony Luck <tony.luck@intel.com>
+> to all three parts.
 
+Ditto.
+
+Acked-by: Borislav Petkov <bp@alien8.de>
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
