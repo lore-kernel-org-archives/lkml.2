@@ -1,110 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab3ACCaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jan 2013 21:30:09 -0500
-Received: from mail.us.es ([193.147.175.20]:46830 "EHLO mail.us.es"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752838Ab3ACCaH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jan 2013 21:30:07 -0500
-X-Qmail-Scanner-Diagnostics: from 127.0.0.1 by antivirus3 (envelope-from <pneira@us.es>, uid 501) with qmail-scanner-2.10 
- (clamdscan: 0.97.6/16310. spamassassin: 3.3.2.  
- Clear:RC:1(127.0.0.1):SA:0(-99.2/7.5):. 
- Processed in 2.333423 secs); 03 Jan 2013 02:30:04 -0000
-X-Envelope-From: pneira@us.es
-Date: Thu, 3 Jan 2013 03:30:01 +0100
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        netfilter-devel@vger.kernel.org
-Subject: Re: linux-next: Tree for Jan 2 (netfilter)
-Message-ID: <20130103023001.GA13254@1984>
-References: <20130102151216.b81cd4d4bf54fc8d1f5d9b27@canb.auug.org.au>
- <50E47EEF.8090005@infradead.org>
- <20130103013559.GA2323@1984>
+	id S1753043Ab3ACCfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jan 2013 21:35:23 -0500
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:45948 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab3ACCfV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jan 2013 21:35:21 -0500
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="PEIAKu/WMn1b1Hv9"
-Content-Disposition: inline
-In-Reply-To: <20130103013559.GA2323@1984>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130102151242.fc6f1bee.akpm@linux-foundation.org>
+References: <cover.1357163124.git.decot@googlers.com> <bb2493cb7d0b36f35282d77c1f07727601f9c751.1357163124.git.decot@googlers.com>
+ <20130102151242.fc6f1bee.akpm@linux-foundation.org>
+From: David Decotigny <decot@googlers.com>
+Date: Wed, 2 Jan 2013 18:35:00 -0800
+Message-ID: <CAG88wWYuxY7Gi6tuBsv_tY2QqGmQgB-zER9pzpZga7uV21HorA@mail.gmail.com>
+Subject: Re: [PATCH v4] lib: cpu_rmap: avoid flushing all workqueues
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Amir Vadai <amirv@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Josh Triplett <josh@joshtriplett.org>,
+        David Howells <dhowells@redhat.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks. It is not too late to review this code. But I'd prefer not to
+address refactoring issues with this patch, which is supposed to fix a
+deadlock with some drivers. So I'd rather not to add function
+renaming, suppressions, etc. that have an effect outside cpu_rmap's
+code. Instead, I'd like to propose another patch later, which will be
+a little more intrusive in that respect, if that's ok with you.
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+I believe Ben answered your other concerns, I consider him as the
+expert as to whether there should be finer-grained locking implemented
+in this subsystem. Let me just add that I second him in saying that
+the deadlock risk was clearly identified and mentioned in the doc.
+Unfortunately, initial implementation makes this risk hard to
+work-around for some drivers, which is what this patch proposes to
+address.
 
-On Thu, Jan 03, 2013 at 02:35:59AM +0100, Pablo Neira Ayuso wrote:
-> > when NF_CONNTRACK is not enabled (build was on i386):
-> > 
-> >   CC [M]  net/netfilter/xt_CT.o
-> > In file included from net/netfilter/xt_CT.c:16:0:
-> > include/net/netfilter/nf_conntrack.h:77:22: error: field 'ct_general' has incomplete type
-> > include/net/netfilter/nf_conntrack.h: In function 'nf_ct_get':
-> > include/net/netfilter/nf_conntrack.h:157:30: error: 'const struct sk_buff' has no member named 'nfct'
-> > include/net/netfilter/nf_conntrack.h: In function 'nf_ct_put':
-> > include/net/netfilter/nf_conntrack.h:164:2: error: implicit declaration of function 'nf_conntrack_put' [-Werror=implicit-function-declaration]
-> > net/netfilter/xt_CT.c: In function 'xt_ct_target_v0':
-> > net/netfilter/xt_CT.c:30:9: error: 'struct sk_buff' has no member named 'nfct'
-> > net/netfilter/xt_CT.c:34:5: error: 'struct sk_buff' has no member named 'nfct'
-> > net/netfilter/xt_CT.c: In function 'xt_ct_target_v1':
-> > net/netfilter/xt_CT.c:47:9: error: 'struct sk_buff' has no member named 'nfct'
-> > net/netfilter/xt_CT.c:51:5: error: 'struct sk_buff' has no member named 'nfct'
-> > net/netfilter/xt_CT.c: In function 'xt_ct_tg_check_v0':
-> > net/netfilter/xt_CT.c:155:15: error: 'struct net' has no member named 'ct'
-> > net/netfilter/xt_CT.c: In function 'xt_ct_tg_check_v1':
-> > net/netfilter/xt_CT.c:299:15: error: 'struct net' has no member named 'ct'
-> > net/netfilter/xt_CT.c: In function 'notrack_tg':
-> > net/netfilter/xt_CT.c:392:9: error: 'struct sk_buff' has no member named 'nfct'
-> > net/netfilter/xt_CT.c:395:5: error: 'struct sk_buff' has no member named 'nfct'
-> > net/netfilter/xt_CT.c:397:2: error: implicit declaration of function 'nf_conntrack_get' [-Werror=implicit-function-declaration]
-> > net/netfilter/xt_CT.c:397:22: error: 'struct sk_buff' has no member named 'nfct'
-> > cc1: some warnings being treated as errors
-> > make[3]: *** [net/netfilter/xt_CT.o] Error 1
-> 
-> Sorry, I cannot reproduce the selection ...
+So, for now, I'd like to keep v4 as the current version. And some
+refactoring will be done in a later patch.
 
-Caught it. Patch attached, thanks for the report.
+Regards,
 
---PEIAKu/WMn1b1Hv9
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="0001-netfilter-fix-missing-dependencies-for-the-NOTRACK-t.patch"
+--
+David Decotigny
 
->From b8198d1ee451c00c2fd660202ad68580c35e1dd8 Mon Sep 17 00:00:00 2001
-From: Pablo Neira Ayuso <pablo@netfilter.org>
-Date: Thu, 3 Jan 2013 03:22:36 +0100
-Subject: [PATCH] netfilter: fix missing dependencies for the NOTRACK target
-
-warning: (NETFILTER_XT_TARGET_NOTRACK) selects NETFILTER_XT_TARGET_CT which has unmet direct
-+dependencies (NET && INET && NETFILTER && NETFILTER_XTABLES && NF_CONNTRACK && (IP_NF_RAW ||
-+IP6_NF_RAW) && NETFILTER_ADVANCED)
-
-Reported-by: Randy Dunlap <rdunlap@infradead.org>
-Reported-by: kbuild test robot <fengguang.wu@intel.com>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
----
- net/netfilter/Kconfig |    3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/net/netfilter/Kconfig b/net/netfilter/Kconfig
-index 390f96c..49e96df 100644
---- a/net/netfilter/Kconfig
-+++ b/net/netfilter/Kconfig
-@@ -682,6 +682,9 @@ config NETFILTER_XT_TARGET_NFQUEUE
- 
- config NETFILTER_XT_TARGET_NOTRACK
- 	tristate  '"NOTRACK" target support (DEPRECATED)'
-+	depends on NF_CONNTRACK
-+	depends on IP_NF_RAW || IP6_NF_RAW
-+	depends on NETFILTER_ADVANCED
- 	select NETFILTER_XT_TARGET_CT
- 
- config NETFILTER_XT_TARGET_RATEEST
--- 
-1.7.10.4
-
-
---PEIAKu/WMn1b1Hv9--
+On Wed, Jan 2, 2013 at 3:12 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed,  2 Jan 2013 13:52:25 -0800
+> David Decotigny <decot@googlers.com> wrote:
+>
+>> In some cases, free_irq_cpu_rmap() is called while holding a lock
+>> (eg. rtnl). This can lead to deadlocks, because it invokes
+>> flush_scheduled_work() which ends up waiting for whole system
+>> workqueue to flush, but some pending works might try to acquire the
+>> lock we are already holding.
+>>
+>> This commit uses reference-counting to replace
+>> irq_run_affinity_notifiers(). It also removes
+>> irq_run_affinity_notifiers() altogether.
+>
+> I can't say that I've ever noticed cpu_rmap.c before :( Is is too late
+> to review it?
+>
+> - The naming is chaotic.  At least these:
+>
+>         EXPORT_SYMBOL(alloc_cpu_rmap);
+>         EXPORT_SYMBOL(free_cpu_rmap);
+>         EXPORT_SYMBOL(cpu_rmap_add);
+>         EXPORT_SYMBOL(cpu_rmap_update);
+>         EXPORT_SYMBOL(free_irq_cpu_rmap);
+>         EXPORT_SYMBOL(irq_cpu_rmap_add);
+>
+>   should be consistently named cpu_rmap_foo()
+>
+> - What's the locking model?  It appears to be caller-provided, but
+>   it is undocumented.
+>
+>   drivers/net/ethernet/mellanox/mlx4/ appears to be using
+>   msix_ctl.pool_lock for exclusion, but I didn't check for coverage.
+>
+>   drivers/net/ethernet/sfc/efx.c seems to not need locking because
+>   all its cpu_rmap operations are at module_init() time.
+>
+>   The cpu_rmap code would be less of a hand grenade if each of its
+>   interface functions documented the caller's locking requirements.
+>
+>
+> As for this patch: there's no cc:stable here but it does appear that
+> the problem is sufficiently serious to justify a backport, agree?
+>
+>> --- a/include/linux/cpu_rmap.h
+>> +++ b/include/linux/cpu_rmap.h
+>>
+>> ...
+>>
+>> @@ -33,15 +36,7 @@ struct cpu_rmap {
+>>  #define CPU_RMAP_DIST_INF 0xffff
+>>
+>>  extern struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags);
+>> -
+>> -/**
+>> - * free_cpu_rmap - free CPU affinity reverse-map
+>> - * @rmap: Reverse-map allocated with alloc_cpu_rmap(), or %NULL
+>> - */
+>> -static inline void free_cpu_rmap(struct cpu_rmap *rmap)
+>> -{
+>> -     kfree(rmap);
+>> -}
+>> +extern void free_cpu_rmap(struct cpu_rmap *rmap);
+>
+> Can we do away with free_cpu_rmap() altogether?  It is a misleading
+> name - it is a put() function, not a free() function.  It would be
+> clearer (not to mention faster and smaller) to change all call sites
+> to directly call cpu_rmap_put().
+>
+>
+>>  extern int cpu_rmap_add(struct cpu_rmap *rmap, void *obj);
+>>  extern int cpu_rmap_update(struct cpu_rmap *rmap, u16 index,
+>>
+>> ...
+>>
+>> @@ -63,6 +64,44 @@ struct cpu_rmap *alloc_cpu_rmap(unsigned int size, gfp_t flags)
+>>  }
+>>  EXPORT_SYMBOL(alloc_cpu_rmap);
+>>
+>> +/**
+>> + * cpu_rmap_reclaim - internal reclaiming helper called from kref_put
+>> + * @ref: kref to struct cpu_rmap
+>> + */
+>> +static void cpu_rmap_reclaim(struct kref *ref)
+>> +{
+>> +     struct cpu_rmap *rmap = container_of(ref, struct cpu_rmap, refcount);
+>> +     kfree(rmap);
+>> +}
+>
+> I suggest this be renamed to cpu_rmap_release().  As "release" is the
+> conventional term for a kref release handler.
+>
+>>
+>> ...
+>>
+>> +/**
+>> + * cpu_rmap_put - internal helper to release ref on a cpu_rmap
+>> + * @rmap: reverse-map allocated with alloc_cpu_rmap()
+>> + */
+>> +static inline void cpu_rmap_put(struct cpu_rmap *rmap)
+>> +{
+>> +     kref_put(&rmap->refcount, cpu_rmap_reclaim);
+>> +}
+>
+> As mentioned, I suggest this become the public interface.  And I
+> suppose it should propagate kref_put()'s return value, in case someone
+> is interested.
+>
+>> +/**
+>> + * free_cpu_rmap - free CPU affinity reverse-map
+>> + * @rmap: Reverse-map allocated with alloc_cpu_rmap()
+>> + */
+>> +void free_cpu_rmap(struct cpu_rmap *rmap)
+>> +{
+>> +     cpu_rmap_put(rmap);
+>> +}
+>> +EXPORT_SYMBOL(free_cpu_rmap);
+>
+> zap.
+>
+>>  /* Reevaluate nearest object for given CPU, comparing with the given
+>>   * neighbours at the given distance.
+>>   */
+>>
+>> ...
+>>
+>
