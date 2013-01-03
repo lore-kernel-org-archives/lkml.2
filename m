@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753944Ab3ACTCP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 14:02:15 -0500
-Received: from mga09.intel.com ([134.134.136.24]:38776 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753698Ab3ACTBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 14:01:31 -0500
-X-ExtLoop1: 1
+	id S1753915Ab3ACTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 14:32:26 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53287 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753841Ab3ACTcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 14:32:24 -0500
 X-IronPort-AV: E=Sophos;i="4.84,404,1355126400"; 
-   d="scan'208";a="266915589"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Rafael Wysocki <rafael.j.wysocki@intel.com>
-Cc: Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Joe Perches <joe@perches.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH v4 1/3] tick: export nohz tick idle symbols for module use
-Date: Thu,  3 Jan 2013 03:01:13 -0800
-Message-Id: <1357210875-5025-2-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357210875-5025-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1357210875-5025-1-git-send-email-jacob.jun.pan@linux.intel.com>
+   d="scan'208";a="17574144"
+Date: Thu, 3 Jan 2013 11:32:22 -0800
+From: Pratik Patel <pratikp@codeaurora.org>
+To: Jon Hunter <jon-hunter@ti.com>
+Cc: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        linux-arm-msm@vger.kernel.org,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
+        "david.rusling@linaro.org" <david.rusling@linaro.org>,
+        "arve@android.com" <arve@android.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "john.stultz@linaro.org" <john.stultz@linaro.org>,
+        "d-deao@ti.com" <d-deao@ti.com>,
+        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: CoreSight framework and drivers
+Message-ID: <20130103193222.GC30277@pratikp-linux.qualcomm.com>
+References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
+ <20121219112314.GA26329@mudshark.cambridge.arm.com>
+ <50D1F37E.6000804@ti.com>
+ <20121219212431.GC23594@pratikp-linux.qualcomm.com>
+ <50D34EE5.8090407@ti.com>
+ <20121220195127.GA14877@pratikp-linux.qualcomm.com>
+ <50D3972E.4030607@ti.com>
+ <20121221221828.GA2658@pratikp-linux.qualcomm.com>
+ <50E491D5.3080106@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50E491D5.3080106@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow drivers such as intel_powerclamp to use these apis for
-turning on/off ticks during idle.
+On Wed, Jan 02, 2013 at 02:00:21PM -0600, Jon Hunter wrote:
+> 
+> The code is largely based upon the existing cti helpers, which just had
+> a cti_map_trigger() function. The use-case you described is not
+> supported by the current helpers and so also not supported in my initial
+> implementation (although we should add this). Hence, it would be
+> probably best to split the cti_map_trigger() into two functions say,
+> cti_map_triggerin() and cti_map_triggerout(), to map a trigger
+> input/output to a channel.
+> 
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- kernel/time/tick-sched.c |    2 ++
- 1 file changed, 2 insertions(+)
+Yes, splitting the map function will provide more flexibility.
+One possibility is to cue the enable and disable functions from
+the mapping reference count for the CTI so that enable and
+disable are internal only functions.
 
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index d58e552..a767757 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -553,6 +553,7 @@ void tick_nohz_idle_enter(void)
- 
- 	local_irq_enable();
- }
-+EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
- 
- /**
-  * tick_nohz_irq_exit - update next tick event from interrupt exit
-@@ -681,6 +682,7 @@ void tick_nohz_idle_exit(void)
- 
- 	local_irq_enable();
- }
-+EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
- 
- static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
- {
+In this case the flow would look something like:
+
+cti_get(cti1)
+cti_map_triggerin(cti1) -> enable cti1
+cti_get(cti2)
+cti_map_triggerin(cti2) -> enable cti2
+cti_map_triggerout(cti1) -> increment cti1 refcount
+
+cti_unmap_triggerin(cti2) -> disable cti2
+cti_put(cti2)
+cti_unmap_triggerout(cti1) -> decrement cti1 refcount
+cti_unmap_triggerin(cti1) -> disable cti1
+cti_put(cti1)
+
+With this, it is possible to push clock management inside enable
+and disable as opposed to get and put though it would imply
+enable being done before the actual mapping inside
+cti_map_triggerin/out and disable after unmapping in
+cti_unmap_triggerin/out. It might also mean cti_map_triggerin/out
+and cti_unmap_triggerin/out having a non-atomic context call
+semantics.
+
 -- 
-1.7.9.5
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
