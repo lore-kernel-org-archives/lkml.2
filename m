@@ -1,29 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab3ACOVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 09:21:13 -0500
-Received: from webmail.imarpe.pe ([190.116.33.201]:46530 "EHLO
-	zimbra.imarpe.gob.pe" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752378Ab3ACOVL convert rfc822-to-8bit (ORCPT
+	id S1753287Ab3ACOVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:21:46 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:36317 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab3ACOVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 09:21:11 -0500
-X-Greylist: delayed 2305 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 09:21:11 EST
-Date: Thu, 3 Jan 2013 07:49:21 -0500 (PET)
-From: CORREO <msegura@imarpe.gob.pe>
-Message-ID: <1260962858.127433.1357217361254.JavaMail.root@zimbra.imarpe.gob.pe>
-Subject: =?utf-8?Q?Advertencia_Final=E2=80=8F?=
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [64.62.201.4]
-X-Mailer: Zimbra 6.0.14_GA_2928 (zclient/6.0.14_GA_2928)
-To: undisclosed-recipients:;
+	Thu, 3 Jan 2013 09:21:44 -0500
+Date: Thu, 3 Jan 2013 14:28:21 +0000
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Daniel J Blueman <daniel@quora.org>
+Cc: Peter Jones <pjones@redhat.com>, linux-fbdev@vger.kernel.org,
+        nouveau@lists.freedesktop.org,
+        Linux Kernel <linux-kernel@vger.kernel.org>, akpm@linux-foundation.org
+Subject: Re: 3.8-rc2: EFI framebuffer lock inversion...
+Message-ID: <20130103142821.2571e2da@pyramind.ukuu.org.uk>
+In-Reply-To: <CAMVG2sv8p1wFXqOJObfKg9OvyQCsNqw1QmiwXsk7nwZS8ymcbw@mail.gmail.com>
+References: <CAMVG2ssA-B6s+F-g4mL0dbBSVsNupzT1nm1Kc70dXHGsNQuNYA@mail.gmail.com>
+	<20130103131156.214bd7a5@pyramind.ukuu.org.uk>
+	<CAMVG2sv8p1wFXqOJObfKg9OvyQCsNqw1QmiwXsk7nwZS8ymcbw@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Su buzón se ha superado el límite de almacenamiento según lo establecido por el administrador, 
-Y Usted no será capaz de recibir correos nuevos hasta que se volverá a validar. 
-De revalidar - por favor HAGA CLICK AQUÍ 
-http://www.formstack.com/forms/?1362722-lSEO7igJrS
-Administrador del sistema.
+> The only patch I could find [1] (mid Nov) looks like it needs another
+> sites updating, since we now see an i915 vs efifb lock ordering issue
+> [2].
+> 
+> I can get some time next week to take a look if it helps.
+
+That would be great. I've not got any EFI afflicted hardware and I'm
+doing my best to avoid it.
+
+Alan
