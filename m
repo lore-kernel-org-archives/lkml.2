@@ -1,62 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab3ACWPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:15:11 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:64996 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754085Ab3ACWPI (ORCPT
+	id S1754440Ab3ACWP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:15:28 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:46578 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754049Ab3ACWPY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:15:08 -0500
-Date: Thu, 3 Jan 2013 17:15:03 -0500
-From: Tejun Heo <tj@kernel.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: "Adamson, Dros" <Weston.Adamson@netapp.com>,
-        "Myklebust, Trond" <Trond.Myklebust@netapp.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: nfsd oops on Linus' current tree.
-Message-ID: <20130103221503.GC2753@mtj.dyndns.org>
-References: <4FA345DA4F4AE44899BD2B03EEEC2FA91197273D@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221230849.GB29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972C73@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221232609.GC29739@fieldses.org>
- <4FA345DA4F4AE44899BD2B03EEEC2FA911972CA1@SACEXCMBX04-PRD.hq.netapp.com>
- <20121221234530.GA30048@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259E4A2@SACEXCMBX02-PRD.hq.netapp.com>
- <20130103201120.GA2096@fieldses.org>
- <0EC8763B847DB24D9ADF5EBD9CD7B4191259F54D@SACEXCMBX02-PRD.hq.netapp.com>
- <20130103205221.GB2533@fieldses.org>
+	Thu, 3 Jan 2013 17:15:24 -0500
+Message-ID: <50E602D4.8020604@oracle.com>
+Date: Thu, 03 Jan 2013 17:14:44 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130103205221.GB2533@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] module: prevent warning when finit_module a 0 sized file
+References: <1356722837-1457-1-git-send-email-sasha.levin@oracle.com> <877gnv5c9s.fsf@rustcorp.com.au>
+In-Reply-To: <877gnv5c9s.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's getting a bit repetitive but I really wanna steer people away
-from implementing separate kthreads for wrong reasons.  kthread is
-surprisingly difficult to get right especially around freezing /
-exiting / hotplugs and people get it subtly wrong very often.
+On 01/02/2013 07:41 PM, Rusty Russell wrote:
+> Sasha Levin <sasha.levin@oracle.com> writes:
+> 
+>> If we try to finit_module on a file sized 0 bytes vmalloc will
+>> scream and spit out a warning.
+>>
+>> Since modules have to be bigger than 0 bytes anyways we can just
+>> check that beforehand and avoid the warning.
+> 
+> Applied, but I added the comment you somehow missed :)
 
-On Thu, Jan 03, 2013 at 03:52:21PM -0500, J. Bruce Fields wrote:
-> No, I meant I was happy having my workqueue handled by a single
-> dedicated thread, which I don't see a trivial way to do any more.
+Thanks!
 
-Because you don't need that.  The old workqueue didn't give you
-anything better than the current one.  It was usually more difficult
-to get right in terms of execution dependency because it introduced a
-lot of unintended execution dependencies through
-one-(per-cpu)-worker-per-workqueue rule.
+I do have a somewhat related follow-up question:
 
-If anyone can show me workqueue is deadlocking when it shouldn't I'll
-be happy to look into it and fix it, but, up until now, most if not
-all reported cases were through incorrect usage, and things definitely
-don't work like described in this thread.
+When init_module() goes through the module loading process, it will try to vmalloc()
+whatever size passed to it by the user, which may cause vmalloc() to scream and shout
+if the size passed from userspace is too big.
 
-Thanks.
+Do you think that reading just the header and doing a quick elf_header_check() on
+it before trying to read the entire file would make sense here?
 
--- 
-tejun
+
+Thanks,
+Sasha
