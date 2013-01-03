@@ -1,148 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754098Ab3ACVep (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:34:45 -0500
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:38015 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab3ACVen (ORCPT
+	id S1754133Ab3ACVgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:36:17 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:36888 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753643Ab3ACVgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:34:43 -0500
-Message-ID: <50E5F96E.2040703@gmail.com>
-Date: Thu, 03 Jan 2013 22:34:38 +0100
-From: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:11.0) Gecko/20120412 Thunderbird/11.0.1
-MIME-Version: 1.0
-To: KyongHo Cho <pullip.cho@samsung.com>
-CC: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Hyunwoong Kim <khw0178.kim@samsung.com>,
-        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Subash Patel <supash.ramaswamy@linaro.org>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v6 05/12] iommu/exynos: support for device tree
-References: <003801cde30b$d9667b90$8c3372b0$%cho@samsung.com> <50E1E62B.3090501@gmail.com> <CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
-In-Reply-To: <CAHQjnOMav9A43m4=7=N9kzEHTHE_q_ygu8x6mzY6Cus=q0c06A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jan 2013 16:36:13 -0500
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCHSET] cpuset: decouple cpuset locking from cgroup core, take#2
+Date: Thu,  3 Jan 2013 13:35:54 -0800
+Message-Id: <1357248967-24959-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.0.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/02/2013 06:53 AM, KyongHo Cho wrote:
->> > +/*
->> > + * Descriptions of Device Tree node for System MMU
->> > + *
->> > + * A System MMU should be described by a single tree node.
->> > + *
->> > + * A System MMU node should have the following properties:
->> > + * - reg: tuples of the base address and the size of the IO region
-> of System MMU
->> > + * - compatible: it must be "samsung,exynos-sysmmu".
->>
->>  I think this compatible property is too generic. It should include
->>  specific SoC
->>  name in it, e.g. samsung,exynos4210-sysmmu. Please refer to this thread
->>  http://www.spinics.net/lists/linux-omap/msg83512.html, which discusses
->>  similar issue.
->
-> Ok, I got the point. BTW , I think this will cause adding a
-> compatibility property whenever a SoC is released even though it has
-> completely sameSystem MMU. Is it inevitable?
+Hello, guys.
 
-No, there is no need for separate 'compatible' property for each SoC.
-If the iommu is same across several SoCs same 'compatible' string should be
-used for it. Please refer to the below table.
+This is the second attempt at decoupling cpuset locking from cgroup
+core.  Changes from the last take[L] are
 
-  SoC       | sysmmu type |    compatible
--------------------------------------------------------------
-exynos4210 |  A          | samsung,exynos4210-sysmmu
-exynos4212 |  A          | samsung,exynos4210-sysmmu
-exynos4412 |  B          | samsung,exynos4412-sysmmu
-exynos5250 |  C          | samsung,exynos5250-sysmmu
+* cpuset-drop-async_rebuild_sched_domains.patch moved from 0007 to
+  0009.  This reordering makes cpu hotplug handling async first and
+  removes the temporary cyclic locking dependency.
 
-In fact, the sysmmu device compatible property could contain more than one
-string, e.g.
+* 0006-cpuset-cleanup-cpuset-_can-_attach.patch no longer converts
+  cpumask_var_t to cpumask_t as per Rusty Russell.
 
-   compatible = "samsung,exynos4412-sysmmu", "samsung,exynos4210-sysmmu";
+* 0008-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch now
+  synchronously rebuilds sched domains from cpu hotplug callback.
+  This fixes various issues caused by confused scheduler puttings
+  tasks into a dead cpu including the RCU stall problem reported by Li
+  Zefan.
 
-if type A is subset of type B in terms of functionality and the register
-maps are compatible.
+Original patchset description follows.
 
-It might be useful to put in the documentation which compatible applies
-to which SoC. Then the driver can distinguish between different versions
-of the hardware by looking at the 'compatible' property.
+Depending on cgroup core locking - cgroup_mutex - is messy and makes
+cgroup prone to locking dependency problems.  The current code already
+has lock dependency loop - memcg nests get_online_cpus() inside
+cgroup_mutex.  cpuset the other way around.
 
-In patch "[PATCH v6 10/12] iommu/exynos: pass version information from DT"
-you are doing something that looks strange to me. Couldn't you use 
-compatible
-property to derive the SYSMMU major/minor version information ? Or do these
-numbers differ even within single SoC type ?
+Regardless of the locking details, whatever is protecting cgroup has
+inherently to be something outer to most other locking constructs.
+cgroup calls into a lot of major subsystems which in turn have to
+perform subsystem-specific locking.  Trying to nest cgroup
+synchronization inside other locks isn't something which can work
+well.
 
->> > + * - interrupt-parent = specify if the interrupt of System MMU is
-> generated by
->> > + *   interrupt combiner or interrupt controller.
->> > + * - interrupts: tuples of interrupt numbers. a tuple has 2 elements if
->> > + *   @interrupt-parent is '<&combiner>', 3 elements otherwise.
->>
->>  It's probably enough to say that format of the interrupts property is
->>  dependant on
->>  the interrupt controller used.
->
-> I agree that :)
->
->> > + *
->> > + * 'mmuname', 'reg' and 'interrupts' properties can be an array if
-> the System
->> > + * MMU driver controls several number of System MMUs at the same
-> time. Note that
->> > + * the number of elements in those three properties must be the same.
->>
->>  It might be useful to provide some example here.
->
-> examples are there in Documentations directory.
+cgroup now has enough API to allow subsystems to implement their own
+locking and cgroup_mutex is scheduled to be made private to cgroup
+core.  This patchset makes cpuset implement its own locking instead of
+relying on cgroup_mutex.
 
-Oops, sorry. I missed these are just comments in the code. AFAIU, there is
-no need to keep 2 copies of the binding's description. I would put it only
-under the Documentation directory.
+cpuset is rather nasty in this respect.  Some of it seems to have come
+from the implementation history - cgroup core grew out of cpuset - but
+big part stems from cpuset's need to migrate tasks to an ancestor
+cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
+memory).
 
->> > + * The following properties are optional:
->> > + * - mmuname: name of the System MMU for debugging purpose
->>
->>  Not sure if it is something that is supposed to be included in FDT. You
->>  could
->>  probably derive it from the 'compatible' property, if it is really
->>  needed. The device
->>  tree bindings should not be treated as direct replacement for platform
->>  data structures.
->
-> actually it is just for debugging purpose.
-> I understand that it should not be there.
-> Thank you.
->
->> > + * - mmu-master: reference to the node of the master device.
->> > + * - mmu-master-compat: 'compatible' proberty of the node of the
-> master device
->> > + *    of System MMU. This is ignored if @mmu-master is currectly
-> specified.
->> > + * - mmu-master-no: instance number of the master device of System
-> MMU. This is
->> > + *    ignored if @mmu-master is correctly specified. This is '0' by
-> default.
->>
->>  Maybe device node aliases would be better alternative here ? But what
->>  would be
->>  a use case where you can't set 'mmu-master' and 'mmu-master-no' is
-> needed ?
->
-> It is for platform devices that are not specified in FDT.
-> Don't we need consider that?
+This patchset decouples cpuset locking from cgroup_mutex.  After the
+patchset, cpuset uses cpuset-specific cpuset_mutex instead of
+cgroup_mutex.  This also removes the lockdep warning triggered during
+cpu offlining (see 0009).
 
-I don't think there is a need for that. But I might be missing something.
-In any case it's probably better to use aliases, e.g. like it's done with
-the exynos5 gscaler device.
+Note that this leaves memcg as the only external user of cgroup_mutex.
+Michal, Kame, can you guys please convert memcg to use its own locking
+too?
+
+This patchset contains the following thirteen patches.
+
+ 0001-cpuset-remove-unused-cpuset_unlock.patch
+ 0002-cpuset-remove-fast-exit-path-from-remove_tasks_in_em.patch
+ 0003-cpuset-introduce-css_on-offline.patch
+ 0004-cpuset-introduce-CS_ONLINE.patch
+ 0005-cpuset-introduce-cpuset_for_each_child.patch
+ 0006-cpuset-cleanup-cpuset-_can-_attach.patch
+ 0007-cpuset-reorganize-CPU-memory-hotplug-handling.patch
+ 0008-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch
+ 0009-cpuset-drop-async_rebuild_sched_domains.patch
+ 0010-cpuset-make-CPU-memory-hotplug-propagation-asynchron.patch
+ 0011-cpuset-pin-down-cpus-and-mems-while-a-task-is-being-.patch
+ 0012-cpuset-schedule-hotplug-propagation-from-cpuset_atta.patch
+ 0013-cpuset-replace-cgroup_mutex-locking-with-cpuset-inte.patch
+
+0001-0006 are prep patches.
+
+0007-0009 make cpuset nest get_online_cpus() inside cgroup_mutex, not
+the other way around.
+
+0010-0012 plug holes which would be exposed by switching to
+cpuset-specific locking.
+
+0013 replaces cgroup_mutex with cpuset_mutex.
+
+This patchset is on top of v3.8-rc2 (d1c3ed669a) and also available in
+the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-locking
+
+diffstat follows.
+
+ kernel/cpuset.c |  760 ++++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 438 insertions(+), 322 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[L] http://thread.gmane.org/gmane.linux.kernel.cgroups/5251
