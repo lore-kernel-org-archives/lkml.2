@@ -1,65 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751178Ab3ACFK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 00:10:57 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:40000 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723Ab3ACFKz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 00:10:55 -0500
-Date: Wed, 2 Jan 2013 21:10:48 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Jeons <simon.jeons@gmail.com>
-cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v7 1/2] KSM: numa awareness sysfs knob
-In-Reply-To: <1357030004.1379.4.camel@kernel.cn.ibm.com>
-Message-ID: <alpine.LNX.2.00.1301022050450.979@eggly.anvils>
-References: <20121224050817.GA25749@kroah.com> <1356658337-12540-1-git-send-email-pholasek@redhat.com> <1357030004.1379.4.camel@kernel.cn.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751670Ab3ACFVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 00:21:17 -0500
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:6195
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750855Ab3ACFVP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 00:21:15 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(z551biz9371Ic3f2I542I1432Id799hzz1de0h1202h1e76h1d1ah1d2ahzzz2dh2a8h668h839h8e2h8e3h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
+From: Sethi Varun-B16395 <B16395@freescale.com>
+To: Joerg Roedel <joro@8bytes.org>
+CC: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
+        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tabi Timur-B04825 <B04825@freescale.com>,
+        Wood Scott-B07421 <B07421@freescale.com>
+Subject: RE: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+Thread-Topic: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API
+ implementation.
+Thread-Index: AQHN2gLne8kVG5guWUGJo+hhwCHhgJgihVZggBSp75A=
+Date: Thu, 3 Jan 2013 05:21:09 +0000
+Message-ID: <C5ECD7A89D1DC44195F34B25E172658D2F58B0@039-SN2MPN1-013.039d.mgd.msft.net>
+References: <1355493114-21776-1-git-send-email-Varun.Sethi@freescale.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.214.249.36]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jan 2013, Simon Jeons wrote:
+Hi Joerg,
+It's been a while since I submitted this patch. I have tried to address your comments regarding the subwindow attribute. I would really appreciate if I can get some feedback on this patch.
+
+Regards
+Varun
+
+> -----Original Message-----
+> From: Sethi Varun-B16395
+> Sent: Friday, December 21, 2012 7:17 AM
+> To: 'Joerg Roedel'
+> Cc: Sethi Varun-B16395; joerg.roedel@amd.com; iommu@lists.linux-
+> foundation.org; linuxppc-dev@lists.ozlabs.org; linux-
+> kernel@vger.kernel.org; Tabi Timur-B04825; Wood Scott-B07421
+> Subject: RE: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API
+> implementation.
 > 
-> Hi Petr and Hugh,
+> ping!!
 > 
-> One offline question, thanks for your clarify.
+> > -----Original Message-----
+> > From: Sethi Varun-B16395
+> > Sent: Friday, December 14, 2012 7:22 PM
+> > To: joerg.roedel@amd.com; iommu@lists.linux-foundation.org; linuxppc-
+> > dev@lists.ozlabs.org; linux-kernel@vger.kernel.org; Tabi Timur-B04825;
+> > Wood Scott-B07421
+> > Cc: Sethi Varun-B16395
+> > Subject: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API
+> > implementation.
+> >
+> > This patchset provides the Freescale PAMU (Peripheral Access
+> > Management
+> > Unit) driver and the corresponding IOMMU API implementation. PAMU is
+> > the IOMMU present on Freescale QorIQ platforms. PAMU can authorize
+> > memory access, remap the memory address, and remap the I/O transaction
+> type.
+> >
+> > This set consists of the following patches:
+> > 1. Addition of new field in the device (powerpc) archdata structure
+> > for storing iommu domain information
+> >    pointer. This pointer is stored when the device is attached to a
+> > particular iommu domain.
+> > 2. Add PAMU bypass enable register to the ccsr_guts structure.
+> > 3. Addition of domain attributes required by the PAMU driver IOMMU API.
+> > 4. PAMU driver and IOMMU API implementation.
+> >
+> > This patch set is based on the next branch of the iommu git tree
+> > maintained by Joerg.
+> >
+> > Varun Sethi (4):
+> >   store iommu domain info in device arch data.
+> >   add pamu bypass enable register to guts.
+> >   Add iommu attributes for PAMU
+> >   FSL PAMU driver.
+> >
+> >  arch/powerpc/include/asm/device.h   |    4 +
+> >  arch/powerpc/include/asm/fsl_guts.h |    4 +-
+> >  drivers/iommu/Kconfig               |    8 +
+> >  drivers/iommu/Makefile              |    1 +
+> >  drivers/iommu/fsl_pamu.c            | 1152
+> > +++++++++++++++++++++++++++++++++++
+> >  drivers/iommu/fsl_pamu.h            |  398 ++++++++++++
+> >  drivers/iommu/fsl_pamu_domain.c     | 1033
+> > +++++++++++++++++++++++++++++++
+> >  drivers/iommu/fsl_pamu_domain.h     |   96 +++
+> >  include/linux/iommu.h               |   49 ++
+> >  9 files changed, 2744 insertions(+), 1 deletions(-)  create mode
+> > 100644 drivers/iommu/fsl_pamu.c  create mode 100644
+> > drivers/iommu/fsl_pamu.h create mode 100644
+> > drivers/iommu/fsl_pamu_domain.c  create mode 100644
+> > drivers/iommu/fsl_pamu_domain.h
+> >
+> > --
+> > 1.7.4.1
 
-Perhaps not as offline as you intended :)
 
-> 
-> How to understand age = (unsigned char)(ksm_scan.seqnr -
-> rmap_item->address);? It used for what?
-
-As you can see, remove_rmap_item_from_tree uses it to decide whether
-or not it should rb_erase the rmap_item from the unstable_tree.
-
-Every full scan of all the rmap_items, we increment ksm_scan.seqnr,
-forget the old unstable_tree (it would just be a waste of processing
-to remove every node one by one), and build up the unstable_tree afresh.
-
-That works fine until we need to remove an rmap_item: then we have to be
-very sure to remove it from the unstable_tree if it's already been linked
-there during this scan, but ignore its rblinkage if that's just left over
-from the previous scan.
-
-A single bit would be enough to decide this; but we got it troublesomely
-wrong in the early days of KSM (didn't always visit every rmap_item each
-scan), so it's convenient to use 8 bits (the low unsigned char, stored
-below the FLAGs and below the page-aligned address in the rmap_item -
-there's lots of them, best keep them as small as we can) and do a
-BUG_ON(age > 1) if we made a mistake.
-
-We haven't hit that BUG_ON in over three years: if we need some more
-bits for something, we can cut the age down to one or two bits.
-
-Hugh
