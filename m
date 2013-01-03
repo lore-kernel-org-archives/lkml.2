@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab3ACRRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 12:17:01 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43873 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab3ACRRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 12:17:00 -0500
-Message-ID: <50E5BD0F.9040004@redhat.com>
-Date: Thu, 03 Jan 2013 12:17:03 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753584Ab3ACRTb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 12:19:31 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:44942 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab3ACRT2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 12:19:28 -0500
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>, knoel@redhat.com
-Subject: Re: [RFC PATCH 3/5] x86,smp: auto tune spinlock backoff delay factor
-References: <20130103001536.7fd1e952@annuminas.surriel.com> <20130103002341.3cc4b7b4@annuminas.surriel.com> <CANN689Hd01BNYhcBJJBfz7VXJiFM5QikGOLVnokS4Gbq7cT=1g@mail.gmail.com>
-In-Reply-To: <CANN689Hd01BNYhcBJJBfz7VXJiFM5QikGOLVnokS4Gbq7cT=1g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1357187286-18759-1-git-send-email-minchan@kernel.org>
+References: <1357187286-18759-1-git-send-email-minchan@kernel.org>
+From: Sanjay Ghemawat <sanjay@google.com>
+Date: Thu, 3 Jan 2013 09:19:08 -0800
+Message-ID: <CAOMbAgLaFR+Et=F5+A7HPY16X-Y8VPm6mY_vE9XOJm8C-8OfPg@mail.gmail.com>
+Subject: Re: [RFC v5 0/8] Support volatile for anonymous range
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, Paul Turner <pjt@google.com>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 07:31 AM, Michel Lespinasse wrote:
+On Wed, Jan 2, 2013 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
+> This is still RFC because we need more input from user-space
+> people, more stress test, design discussion about interface/reclaim
 
-> I'll see if I can make a more concrete proposal and still keep it
-> short enough :)
+Speaking as one of the authors of tcmalloc, I don't see any particular
+need for this new system call for tcmalloc.  We are fine using
+madvise(MADV_DONTNEED) and don't notice any significant
+performance issues caused by it.  Background: we throttle how
+quickly we release memory back to the system (1-10MB/s), so
+we do not call madvise() very much, and we don't end up reusing
+madvise-ed away pages at a fast rate. My guess is that we won't
+see large enough application-level performance improvements to
+cause us to change tcmalloc to use this system call.
 
-Looking forward to that. I have thought about it some more,
-and am still not sure about a better description for the
-changelog...
-
->> +#define MIN_SPINLOCK_DELAY 1
->> +#define MAX_SPINLOCK_DELAY 16000
->> +DEFINE_PER_CPU(int, spinlock_delay) = { MIN_SPINLOCK_DELAY };
+> - What's different with madvise(DONTNEED)?
 >
-> unsigned would seem more natural here, though it's only a tiny detail
-
-I might as well make that change while addressing the issues
-you found :)
-
->> +
->> +               /*
->> +                * The lock is still busy; slowly increase the delay. If we
->> +                * end up sleeping too long, the code below will reduce the
->> +                * delay. Ideally we acquire the lock in the tight loop above.
->> +                */
->> +               if (!(head % 7) && delay < MAX_SPINLOCK_DELAY)
->> +                       delay++;
->> +
->> +               loops = delay * waiters_ahead;
+>   System call semantic
 >
-> I don't like the head % 7 thing. I think using fixed point arithmetic
-> would be nicer:
->
-> if (delay < MAX_SPINLOCK_DELAY)
->    delay += 256/7; /* Or whatever constant we choose */
->
-> loops = (delay * waiter_ahead) >> 8;
+>   DONTNEED makes sure user always can see zero-fill pages after
+>   he calls madvise while mvolatile can see old data or encounter
+>   SIGBUS.
 
-I'll do that. That could get completely rid of any artifacts
-caused by incrementing sometimes, and not other times.
-
-> Also, we should probably skip the delay increment on the first loop
-> iteration - after all, we haven't waited yet, so we can't say that the
-> delay was too short.
-
-Good point. I will do that.
-
->> -               if (head == ticket)
->> +               if (head == ticket) {
->> +                       /*
->> +                        * We overslept and have no idea how long the lock
->> +                        * went idle. Reduce the delay as a precaution.
->> +                        */
->> +                       delay -= delay/32 + 1;
->
-> There is a possibility of integer underflow here.
-
-Fixed in my local code base now.
-
-I will build a kernel with the things you pointed out fixed,
-and will give it a spin this afternoon.
-
-Expect new patches soonish :)
-
+Do you need a new system call for this?  Why not just a new flag to madvise
+with weaker guarantees than zero-filling?  All of the implementation changes
+you point out below could be triggered from that flag.
