@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab3ACGLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 01:11:22 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:4078 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751173Ab3ACGLT (ORCPT
+	id S1753202Ab3ACGNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 01:13:38 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:52542 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751173Ab3ACGNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 01:11:19 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 02 Jan 2013 22:11:14 -0800
-Message-ID: <50E520FC.4070805@nvidia.com>
-Date: Thu, 3 Jan 2013 11:41:08 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 05/11] ARM: dt: tegra30: Add device node for APB MISC
-References: <1356619644-18565-1-git-send-email-pgaikwad@nvidia.com> <1356619644-18565-6-git-send-email-pgaikwad@nvidia.com> <50E4AE19.1060503@wwwdotorg.org>
-In-Reply-To: <50E4AE19.1060503@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	Thu, 3 Jan 2013 01:13:36 -0500
+Message-ID: <1357193608.3924.37.camel@pasglop>
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@au1.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Date: Thu, 03 Jan 2013 17:13:28 +1100
+Organization: IBM Australia
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010306-5490-0000-0000-000002BCD850
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 January 2013 03:30 AM, Stephen Warren wrote:
-> On 12/27/2012 07:47 AM, Prashant Gaikwad wrote:
->> APB misc contains multiple registers required by different modules
->> such as CAR.
-> I don't see a DT binding document that describes what
-> nvidia,tegra30-apbmisc means. Also, the register range for this new node
-> overlaps that for the pinmux node, so they can't both "request" their
-> register region. You may need multiple entries in the apbmisc reg
-> property to avoid this.
+Hi Linus !
 
-apbmisc reg for Tegra30 can be divided into following entries:
+Here are a couple of small powerpc fixes. They aren't new bugs (and
+they are both CCed to stable) but I didn't see the point of sitting
+on the fixes any longer.
 
-strap registers
-jtag configuration registers
-pull_up/pull_down control registers
-vclk control registers
-tvdac registers
-chip id revision registers
-pad control registers
+Oh and happy new year !
 
-This list is not same for Tegra20 and Tegra30.
+Cheers,
+Ben.
 
-OR
+The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
 
-another way is to add chip id revision register region to CAR node as 
-done for pinmux node and remove apb misc node.
+  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
 
-What is preferred?
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git 
+
+for you to fetch changes up to e6449c9b2d90c1bd9a5985bf05ddebfd1631cd6b:
+
+  powerpc: Add missing NULL terminator to avoid boot panic on PPC40x (2013-01-03 16:45:52 +1100)
+
+----------------------------------------------------------------
+Gabor Juhos (1):
+      powerpc: Add missing NULL terminator to avoid boot panic on PPC40x
+
+Shan Hai (1):
+      powerpc/vdso: Remove redundant locking in update_vsyscall_tz()
+
+ arch/powerpc/kernel/time.c                 |    5 -----
+ arch/powerpc/platforms/40x/ppc40x_simple.c |    3 ++-
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+
