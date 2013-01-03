@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754316Ab3ACW1Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:27:16 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59290 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab3ACW1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:27:12 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Michal Simek <monstr@monstr.eu>
-Subject: Re: uapi __NR_syscalls for microblaze
-Date: Thu, 3 Jan 2013 22:27:05 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: David Howells <dhowells@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-arch@vger.kernel.org
-References: <CAHTX3d+bwTNEhzB78mqoz6prk0nw0U_-1YFR3Tje_-uQLyTMBQ@mail.gmail.com> <201301031601.00594.arnd@arndb.de> <CAHTX3dKra4vNsYPzQJbaU4jNmDT_rh-XViBD7yp3k7Ty0GsYog@mail.gmail.com>
-In-Reply-To: <CAHTX3dKra4vNsYPzQJbaU4jNmDT_rh-XViBD7yp3k7Ty0GsYog@mail.gmail.com>
+	id S1753974Ab3ACWc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:32:28 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59029 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197Ab3ACWc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 17:32:27 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Wu <lekensteyn@gmail.com>
+Subject: Re: [PATCH] PCI / ACPI: Rework ACPI device nodes lookup for the PCI bus type
+Date: Thu, 03 Jan 2013 23:38:02 +0100
+Message-ID: <3120864.cIRxUXEpl4@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <CAErSpo4dvy_fK+C+TdyjP_ct15ZGM0qPmkFpdxjk=LUvL2_5hw@mail.gmail.com>
+References: <16168955.038G1kVfN2@vostro.rjw.lan> <4246925.1ZrcBKvkL7@vostro.rjw.lan> <CAErSpo4dvy_fK+C+TdyjP_ct15ZGM0qPmkFpdxjk=LUvL2_5hw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301032227.05553.arnd@arndb.de>
-X-Provags-ID: V02:K0:tbnaYQWKmj4XPnPLgaRgct10jmVfuMhtKt/mM/84Dc7
- i0M4SktFLxnBehHttw/gEwkvNI55j/DMCgyLkNOhxmRO0hXm9d
- fb3z3I29KIwP3f7hqVt/2epKKkwCpNcvidhE9IrYrqbBYGXeXy
- XDgER9yfTiukD9Y9lcVPSHHPfpdTZ2mgPEf/iNAZkngDtkXDrl
- 3diyhDwfO63VkhFRdQ8X1ROAmJjBXMJD4cSZJ3EHmqCCHOrzwy
- RER3MFy2lD0iO7NRKG65VUJKWXJ46DroTbNianVnkDZBt7c+vE
- gNExEvaGhK5o7pmVTEGhu3YMqVZK6OqW0teD1Cj17vf9EJuN5g
- mR5zoglCMPsJ7ytMBFaI=
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 January 2013, Michal Simek wrote:
-> 
-> 2013/1/3 Arnd Bergmann <arnd@arndb.de>:
-> > On Thursday 03 January 2013, Michal Simek wrote:
-> >> 2013/1/3 David Howells <dhowells@redhat.com>:
-> >> > Michal Simek <monstr@monstr.eu> wrote:
+On Thursday, January 03, 2013 02:44:32 PM Bjorn Helgaas wrote:
+> On Thu, Jan 3, 2013 at 1:17 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > On Thursday, January 03, 2013 08:16:26 AM Bjorn Helgaas wrote:
+> >> On Fri, Dec 28, 2012 at 2:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> > From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 > >> >
-> >> >> just want to check with you if __NR_syscalls is necessary for user space. I
-> >> >> see that powerpc and arm have this macro in asm not in uapi like Microblaze.
-> >> >> If is not needed by user space, I should move it to asm/unistd.h
-> >> >
-> >> > It isn't as far as I know...  I recommend putting your question on the
-> >> > linux-arch mailing list.
+> >> > As the kernel Bugzilla report #42696 indicates, it generally is not
+> >> > sufficient to use _ADR to get an ACPI device node corresponding to
+> >> > the given PCI device, because there may be multiple objects with
+> >> > matching _ADR in the ACPI namespace (this probably is against the
+> >> > spec, but it evidently happens in practice).
 > >>
-> >> I have add linux-arch to CC.
+> >> I don't see anything in sec 6.1.1 (_ADR) that precludes having
+> >> multiple objects that contain the same _ADR. Do you have any other
+> >> pointers?
 > >
-> > Right, I'm pretty sure it's not needed, but it has traditionally been
-> > exported on a lot of platforms, so you can keep it in UAPI to be
-> > on the safe side.
+> > Section 6.1 implicitly means that.  It says that for PCI devices _ADR
+> > must be present to identify which device is represented by the given
+> > ACPI node.  Next, Section 6.1.1 says that the parent bus should be inferred
+> > from the location of the _ADR object's device package in the ACPI namespace,
+> > so clearly, if that's under the PCI root bridge ACPI node, the _ADR
+> > corresponds to a PCI device's bus address.
 > 
-> Isn't it better to be consistent across all architectures?
+> I agree that for namespace Devices below a PCI host bridge, the _ADR
+> value and its position in the hierarchy is required to be sufficient
+> to identify a PCI device and function (or the set of all functions on
+> a device #).
+> 
+> > Then, Table 6-139 specifies the format of _ADR for PCI devices as being
+> > euqivalent to devfn, which means that if two nodes with the same _ADR are
+> > present in one scope (under one parent), then it is impossible to distinguish
+> > between them and that's against Section 6.1.
+> 
+> This is the bit I don't understand.  Where's the requirement that we
+> be able to distinguish between two namespace nodes with the same _ADR?
 
-Yes, certainly.
+According to the spec we can't (if they are under the same parent) and that's
+the whole problem.
 
-> If it is wrong to exported and there is no reason to use it in userspace
-> then all architecture should move it out of uapi.
-> If there is any reason then it is should be in uapi.
+> Linux assumes we can start from a PCI device and identify a single
+> related ACPI namespace node, e.g., in acpi_pci_find_device().  But all
+> I see in the spec is a requirement that we can start from an ACPI
+> namespace node and find a PCI device.  So I'm not sure
+> acpi_pci_find_device() is based on a valid assumption.
 
-I don't really care which way we do it, I think you can rightfully argue
-either way. AFAICT x86 doesn't even define __NR_syscalls at all, so
-it's clearly not part of the ABI.
+I think it is.
 
-	Arnd
+Suppose that we have two namespace nodes with the same _ADR under one parent
+(PCI bridge ACPI node) and they both contain things like _PS0 and _PS3.  Which
+one of these are we supposed to use for the power management of the
+corresponding PCI device?  Because they both would point to the same device,
+right?
+
+> Let's say we want to provide _SUN and _UID.  _SUN is a slot number
+> that may apply to several PCI functions, while _UID probably refers to
+> a single PCI function.  Is it legal to provide two namespace objects,
+> one with _ADR 0x0003ffff and _SUN, and another with _ADR 0x00030000
+> and _UID?
+
+I don't think it is valid to do that.
+
+Thanks,
+Rafael
+
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
