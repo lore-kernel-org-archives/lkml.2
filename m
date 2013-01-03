@@ -1,58 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3ACMBB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:01:01 -0500
-Received: from mail.pr.hu ([87.242.0.5]:44374 "EHLO mail.pr.hu"
+	id S1753300Ab3ACMBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:01:49 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37972 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753039Ab3ACMA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:00:58 -0500
-X-Greylist: delayed 1412 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 07:00:58 EST
-Message-ID: <50E56D66.9030807@pr.hu>
-Date: Thu, 03 Jan 2013 12:37:10 +0100
-From: Boszormenyi Zoltan <zboszor@pr.hu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753191Ab3ACMBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 07:01:45 -0500
+Date: Thu, 3 Jan 2013 17:31:29 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] uprobes/x86: Change __skip_sstep() to actually
+ skip	the whole insn
+Message-ID: <20130103120129.GF8140@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121230154657.GA28488@redhat.com>
+ <20121230154719.GA28510@redhat.com>
 MIME-Version: 1.0
-To: Alex Deucher <alexdeucher@gmail.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        lkml <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Borislav Petkov <bp@alien8.de>, Shuah Khan <shuahkhan@gmail.com>
-Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
-References: <20121223113153.GA8918@liondog.tnic> <20121223115133.GA229@x4> <20121223122210.GA4460@liondog.tnic> <20121223133102.GA8153@liondog.tnic> <CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com> <50E3907C.4040106@iki.fi> <20130102120248.GC6181@x1.alien8.de> <CAH3drwYSrfsbKg-BYpMF3Nkxrw1toK=EmcvJfKGzdbT_BK-1HQ@mail.gmail.com> <50E4755E.7030209@iki.fi> <CAH3drwZsNL6kwufTPGR8h-U9gfrsoYj_+C+8Ei1Ab-PPXrSuTQ@mail.gmail.com> <20130102223807.GA242@x4> <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
-In-Reply-To: <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Spam-Score: -0.2 (/)
-X-Scan-Signature: 179ef3736e309226eac6e039e192467d
-X-Spam-Tracer: backend.mail.pr.hu -0.2 20130103113602Z
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20121230154719.GA28510@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010312-5806-0000-0000-00001DBA4FC8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013-01-03 00:37 keltezéssel, Alex Deucher írta:
-> On Wed, Jan 2, 2013 at 5:38 PM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
->> On 2013.01.02 at 17:31 -0500, Jerome Glisse wrote:
->>> Please affected people can you test if patch :
->>> http://people.freedesktop.org/~glisse/0003-drm-radeon-fix-dma-copy-on-r6xx-r7xx-evergen-ni-si-g.patch
->>>
->>> Fix the issue, you need to make sure you don't have the patch that
->>> disable dma on r6xx ie that line 977-978 & 1061-1062  in radeon_asic.c
->>> is :
->>>   .copy = &r600_copy_dma,
->>>   .copy_ring_index = R600_RING_TYPE_DMA_INDEX,
->> It fixes the issue for me. Thanks.
-> The count is actually the count, not count - 1.  The real fix seems to
-> be that r6xx requires 2 dw aligned transfers.  The attached patch
-> fixes the issue for me.
->
-> Alex
+* Oleg Nesterov <oleg@redhat.com> [2012-12-30 16:47:19]:
 
-I tried this patch over kernel 3.8.0-rc2 but the GDM screen is mostly garbage.
-Only some text, like "Not on the list?" below the users and small icons are visible
-but many user names are not rendered. http://tinypic.com/r/33xihit/6
-I am on Fedora 18/x86_64, Radeon HD6570.
+> __skip_sstep() doesn't update regs->ip. Currently this is correct
+> but only "by accident" and it doesn't skip the whole insn. Change
+> it to advance ->ip by the length of the detected 0x66*0x90 sequence.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Best regards,
-Zoltán Böszörményi
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  arch/x86/kernel/uprobes.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index c71025b..4e33a35 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -680,8 +680,11 @@ static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  		if (auprobe->insn[i] == 0x66)
+>  			continue;
+> 
+> -		if (auprobe->insn[i] == 0x90)
+> +		if (auprobe->insn[i] == 0x90) {
+> +			regs->ip = uprobe_get_swbp_addr(regs);
+> +			regs->ip += i + 1;
+>  			return true;
+> +		}
+> 
+>  		break;
+>  	}
+> -- 
+> 1.5.5.1
+> 
 
