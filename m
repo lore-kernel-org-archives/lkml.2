@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753081Ab3ACJo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 04:44:27 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51172 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752906Ab3ACJoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 04:44:23 -0500
-Date: Thu, 3 Jan 2013 10:44:18 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Koukousoulas <pktoss@gmail.com>,
-        Anssi Hannula <anssi.hannula@gmail.com>
-Subject: Re: Rumble support for Jess/Saitek "color rumble pad"
-In-Reply-To: <1355791689.12070.4.camel@localhost>
-Message-ID: <alpine.LNX.2.00.1301031042530.27348@pobox.suse.cz>
-References: <1355791689.12070.4.camel@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751967Ab3ACJts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 04:49:48 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:49554 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752854Ab3ACJtp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 04:49:45 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <50E4854E.8060801@suse.cz>
+References: <1355842130-15482-1-git-send-email-meltedpianoman@gmail.com>
+	<50E3FDFA.4070203@suse.cz>
+	<20130102114311.66215bf5@pyramind.ukuu.org.uk>
+	<CAMSQXEHmDb5rUQnT1JNcMCzdaN+gAr+1hR=PyPiDMu7vK5ykxA@mail.gmail.com>
+	<50E4854E.8060801@suse.cz>
+Date: Thu, 3 Jan 2013 10:49:44 +0100
+Message-ID: <CAMSQXEGU2WmhmMqP7XMK2x39GN9iDDWpg-Wa7_cAauHWx5OWbQ@mail.gmail.com>
+Subject: Re: [PATCH] tty: Only wakeup the line discipline idle queue when
+ queue is active
+From: Ivo Sieben <meltedpianoman@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-serial@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Dec 2012, Michael Karcher wrote:
+Oleg, Peter, Ingo, Andi & Preeti,
 
-> Hello developers (and testers)
-> 
-> The attached pad adds supports for another gamepad to the hid-pl driver.
-> The "color rumble pad P580" marketed using the "Saitek" brand in
-> Germany, and using a USB Vendor ID attributed to "Jess" seems to be
-> electronically identical to the 4-field variant of the "Green Asia"
-> gamepad.
-> 
-> The pad has been tested to support rumble strengths up to 255, not just
-> 127. Currently the patch discriminates the pads by an if on the vendor
-> ID, a bit in the driver_data field with definitely do better, but I
-> recommend the owners of the 4-field green asia pad to verify whether the
-> maximum rumble strength is indeed only 127, otherwise the condition
-> should be removed entirely and 255 used in all cases.
+2013/1/2 Jiri Slaby <jslaby@suse.cz>:
+> On 01/02/2013 04:21 PM, Ivo Sieben wrote:
+>> I don't understand your responses: do you suggest to implement this
+>> "if active" behavior in:
+>> * A new wake_up function called wake_up_if_active() that is part of
+>> the waitqueue layer?
+>
+> Sounds good.
+>
+> --
+> js
+> suse labs
 
-Hi Michael,
+I want to ask you 'scheduler' people for your opinion:
 
-thanks for the patch. A couple of requests before I can apply it:
+Maybe you remember my previous patch where I suggested an extra
+'waitqueue empty' check before entering the critical section of the
+wakeup() function (If you do not remember see
+https://lkml.org/lkml/2012/10/25/159)
 
-- please provide the patch in-line in the e-mail body if your client 
-  doesn't corrupt patches. It's eaiser to review it that way
-- please add your Signed-off-by: line as described in 
-  Documentation/SubmittingPatches
-- don't forget to add the VID/PID to hid_ignore_list[], otherwise the 
-  device <-> driver binding will not work properly
+Finally Oleg responded that a lot of callers do
 
-Thanks,
+	if (waitqueue_active(q))
+		wake_up(...);
 
--- 
-Jiri Kosina
-SUSE Labs
+what made my patch pointless and adds a memory barrier. I then decided
+to also implement the 'waitqueue_active' approach for my problem.
+
+But now I get a review comment by Jiri that he would like to hide this
+'if active behavior' in a wake_up_if_active() kind of function. I
+think he is right that implementing this check in the wakeup function
+would clean things up, right?
+
+I would like to have your opinion on the following two suggestions:
+- We still can do the original patch on the wake_up() that I
+suggested. I then can do an additional code cleanup patch that removes
+the double 'waitqueue_active' call (a quick grep found about 150 of
+these waitqueue active calls) on several places in the code.
+- Or - as an alternative - I could add extra _if_active() versions of
+all wake_up() functions, that implement this extra test.
+
+Regards,
+Ivo
