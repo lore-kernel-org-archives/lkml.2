@@ -1,58 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3ACWk0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:40:26 -0500
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:63699 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754080Ab3ACWkT (ORCPT
+	id S1754624Ab3ACWkB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:40:01 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:48788 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754383Ab3ACWic (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:40:19 -0500
-Subject: Re: [PATCH net-next] softirq: reduce latencies
-From: Eric Dumazet <erdnetdev@gmail.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-In-Reply-To: <1357250880.2685.29.camel@bwh-desktop.uk.solarflarecom.com>
-References: <1357216132.21409.24107.camel@edumazet-glaptop>
-	 <1357250880.2685.29.camel@bwh-desktop.uk.solarflarecom.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jan 2013 14:40:16 -0800
-Message-ID: <1357252816.21409.26384.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jan 2013 17:38:32 -0500
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] omap: Properly handle resources for omap_devices
+Date: Fri,  4 Jan 2013 00:31:34 +0200
+Message-Id: <1357252294-6024-1-git-send-email-panto@antoniou-consulting.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 22:08 +0000, Ben Hutchings wrote:
-> On Thu, 2013-01-03 at 04:28 -0800, Eric Dumazet wrote:
-> > From: Eric Dumazet <edumazet@google.com>
-> > 
-> > In various network workloads, __do_softirq() latencies can be up
-> > to 20 ms if HZ=1000, and 200 ms if HZ=100.
-> > 
-> > This is because we iterate 10 times in the softirq dispatcher,
-> > and some actions can consume a lot of cycles.
-> > 
-> > This patch changes the fallback to ksoftirqd condition to :
-> > 
-> > - A time limit of 2 ms.
-> > - need_resched() being set on current task
-> [...]
-> > --- a/kernel/softirq.c
-> > +++ b/kernel/softirq.c
-> [...]
-> > -#define MAX_SOFTIRQ_RESTART 10
-> > +#define MAX_SOFTIRQ_TIME  min(1, (2*HZ/1000))
-> [...]
-> 
-> Really?  Never iterate if HZ < 500?
-> 
+omap_device relies on the platform notifier callbacks managing resources
+behind the scenes. The resources were not properly linked causing crashes
+when removing the device.
 
-good catch, it should be max()
+Rework the resource modification code so that linking is performed properly,
+and make sure that no resources that have no parent (which can happen for DMA
+& IRQ resources) are ever left for cleanup by the core resource layer.
 
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+---
+ arch/arm/mach-omap2/omap_device.c | 232 ++++++++++++++++++++++++--------------
+ 1 file changed, 148 insertions(+), 84 deletions(-)
+
+diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
+index e065daa..9f8dba1 100644
+--- a/arch/arm/mach-omap2/omap_device.c
++++ b/arch/arm/mach-omap2/omap_device.c
+@@ -494,30 +494,156 @@ static int omap_device_fill_resources(struct omap_device *od,
+ }
+ 
+ /**
+- * _od_fill_dma_resources - fill in array of struct resource with dma resources
++ * omap_device_fixup_resources - Fix platform device resources
+  * @od: struct omap_device *
+- * @res: pointer to an array of struct resource to be filled in
+- *
+- * Populate one or more empty struct resource pointed to by @res with
+- * the dma resource data for this omap_device @od.  Used by
+- * omap_device_alloc() after calling omap_device_count_resources().
+- *
+- * Ideally this function would not be needed at all.  If we have
+- * mechanism to get dma resources from DT.
+  *
+- * Returns 0.
++ * Fixup the platform device resources so that the resources
++ * from the hwmods are included for.
+  */
+-static int _od_fill_dma_resources(struct omap_device *od,
+-				      struct resource *res)
++static int omap_device_fixup_resources(struct omap_device *od)
+ {
+-	int i, r;
++	struct platform_device *pdev = od->pdev;
++	int i, j, ret, res_count;
++	struct resource *res, *r, *rnew, *rn;
++	unsigned long type;
+ 
+-	for (i = 0; i < od->hwmods_cnt; i++) {
+-		r = omap_hwmod_fill_dma_resources(od->hwmods[i], res);
+-		res += r;
++	/*
++	 * DT Boot:
++	 *   OF framework will construct the resource structure (currently
++	 *   does for MEM & IRQ resource) and we should respect/use these
++	 *   resources, killing hwmod dependency.
++	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
++	 *   have been allocated by OF layer already (through DTB).
++	 *
++	 * Non-DT Boot:
++	 *   Here, pdev->num_resources = 0, and we should get all the
++	 *   resources from hwmod.
++	 *
++	 * TODO: Once DMA resource is available from OF layer, we should
++	 *   kill filling any resources from hwmod.
++	 */
++
++	/* count number of resources hwmod provides */
++	res_count = omap_device_count_resources(od, IORESOURCE_IRQ |
++					IORESOURCE_DMA | IORESOURCE_MEM);
++
++	/* if no resources from hwmod, we're done already */
++	if (res_count == 0)
++		return 0;
++
++	/* Allocate resources memory to account for all hwmod resources */
++	res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
++	if (!res) {
++		ret = -ENOMEM;
++		goto fail_no_res;
+ 	}
+ 
++	/* fill all the resources */
++	ret = omap_device_fill_resources(od, res);
++	if (ret != 0)
++		goto fail_no_fill;
++
++	/*
++	 * If pdev->num_resources > 0, then assume that,
++	 * MEM and IRQ resources will only come from DT and only
++	 * fill DMA resource from hwmod layer.
++	 */
++	if (pdev->num_resources > 0) {
++
++		dev_dbg(&pdev->dev, "%s(): resources allocated %d hwmod #%d\n",
++			__func__, pdev->num_resources, res_count);
++
++		/* find number of resources needing to be inserted */
++		for (i = 0, j = 0, r = res; i < res_count; i++, r++) {
++			type = resource_type(r);
++			if (type == IORESOURCE_DMA)
++				j++;
++		}
++
++		/* no need to insert anything, just return */
++		if (j == 0) {
++			kfree(res);
++			return 0;
++		}
++
++		/* we need to insert j additional resources */
++		rnew = kzalloc(sizeof(*rnew) *
++				(pdev->num_resources + j), GFP_KERNEL);
++		if (rnew == NULL)
++			goto fail_no_rnew;
++
++		/*
++		 * Unlink any resources from any lists.
++		 * This is important since the copying destroys any
++		 * linkage
++		 */
++		for (i = 0, r = pdev->resource;
++				i < pdev->num_resources; i++, r++) {
++
++			if (!r->parent)
++				continue;
++
++			dev_dbg(&pdev->dev,
++					"Releasing resource %p\n", r);
++			release_resource(r);
++			r->parent = NULL;
++			r->sibling = NULL;
++			r->child = NULL;
++		}
++
++		memcpy(rnew, pdev->resource,
++				sizeof(*rnew) * pdev->num_resources);
++
++		/* now append the resources from the hwmods */
++		rn = rnew + pdev->num_resources;
++		for (i = 0, r = res; i < res_count; i++, r++) {
++
++			type = resource_type(r);
++			if (type != IORESOURCE_DMA)
++				continue;
++
++			/* append the hwmod resource */
++			memcpy(rn, r, sizeof(*r));
++
++			/* make sure these are zeroed out */
++			rn->parent = NULL;
++			rn->child = NULL;
++			rn->sibling = NULL;
++
++			rn++;
++		}
++		kfree(res);	/* we don't need res anymore */
++
++		/* this is our new resource table */
++		res = rnew;
++		res_count = j;
++
++	} else {
++		dev_dbg(&pdev->dev, "%s(): using resources from hwmod %d\n",
++			__func__, res_count);
++	}
++
++	ret = platform_device_add_resources(pdev, res, res_count);
++	kfree(res);
++
++	/* failed to add the resources? */
++	if (ret != 0)
++		return ret;
++
++	/* finally link all the resources again */
++	ret = platform_device_link_resources(pdev);
++	if (ret != 0)
++		return ret;
++
+ 	return 0;
++
++fail_no_rnew:
++	/* nothing */
++fail_no_fill:
++	kfree(res);
++
++fail_no_res:
++	return ret;
+ }
+ 
+ /**
+@@ -541,9 +667,8 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
+ {
+ 	int ret = -ENOMEM;
+ 	struct omap_device *od;
+-	struct resource *res = NULL;
+-	int i, res_count;
+ 	struct omap_hwmod **hwmods;
++	int i;
+ 
+ 	od = kzalloc(sizeof(struct omap_device), GFP_KERNEL);
+ 	if (!od) {
+@@ -553,79 +678,18 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
+ 	od->hwmods_cnt = oh_cnt;
+ 
+ 	hwmods = kmemdup(ohs, sizeof(struct omap_hwmod *) * oh_cnt, GFP_KERNEL);
+-	if (!hwmods)
++	if (!hwmods) {
++		ret = -ENOMEM;
+ 		goto oda_exit2;
++	}
+ 
+ 	od->hwmods = hwmods;
+ 	od->pdev = pdev;
+ 
+-	/*
+-	 * Non-DT Boot:
+-	 *   Here, pdev->num_resources = 0, and we should get all the
+-	 *   resources from hwmod.
+-	 *
+-	 * DT Boot:
+-	 *   OF framework will construct the resource structure (currently
+-	 *   does for MEM & IRQ resource) and we should respect/use these
+-	 *   resources, killing hwmod dependency.
+-	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
+-	 *   have been allocated by OF layer already (through DTB).
+-	 *   As preparation for the future we examine the OF provided resources
+-	 *   to see if we have DMA resources provided already. In this case
+-	 *   there is no need to update the resources for the device, we use the
+-	 *   OF provided ones.
+-	 *
+-	 * TODO: Once DMA resource is available from OF layer, we should
+-	 *   kill filling any resources from hwmod.
+-	 */
+-	if (!pdev->num_resources) {
+-		/* Count all resources for the device */
+-		res_count = omap_device_count_resources(od, IORESOURCE_IRQ |
+-							    IORESOURCE_DMA |
+-							    IORESOURCE_MEM);
+-	} else {
+-		/* Take a look if we already have DMA resource via DT */
+-		for (i = 0; i < pdev->num_resources; i++) {
+-			struct resource *r = &pdev->resource[i];
+-
+-			/* We have it, no need to touch the resources */
+-			if (r->flags == IORESOURCE_DMA)
+-				goto have_everything;
+-		}
+-		/* Count only DMA resources for the device */
+-		res_count = omap_device_count_resources(od, IORESOURCE_DMA);
+-		/* The device has no DMA resource, no need for update */
+-		if (!res_count)
+-			goto have_everything;
+-
+-		res_count += pdev->num_resources;
+-	}
+-
+-	/* Allocate resources memory to account for new resources */
+-	res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
+-	if (!res)
+-		goto oda_exit3;
+-
+-	if (!pdev->num_resources) {
+-		dev_dbg(&pdev->dev, "%s: using %d resources from hwmod\n",
+-			__func__, res_count);
+-		omap_device_fill_resources(od, res);
+-	} else {
+-		dev_dbg(&pdev->dev,
+-			"%s: appending %d DMA resources from hwmod\n",
+-			__func__, res_count - pdev->num_resources);
+-		memcpy(res, pdev->resource,
+-		       sizeof(struct resource) * pdev->num_resources);
+-		_od_fill_dma_resources(od, &res[pdev->num_resources]);
+-	}
+-
+-	ret = platform_device_add_resources(pdev, res, res_count);
+-	kfree(res);
+-
+-	if (ret)
++	ret = omap_device_fixup_resources(od);
++	if (ret != 0)
+ 		goto oda_exit3;
+ 
+-have_everything:
+ 	if (!pm_lats) {
+ 		pm_lats = omap_default_latency;
+ 		pm_lats_cnt = ARRAY_SIZE(omap_default_latency);
+-- 
+1.7.12
 
