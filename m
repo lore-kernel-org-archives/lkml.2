@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab3ACK4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 05:56:54 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:55082 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab3ACK4w (ORCPT
+	id S1753039Ab3ACLLb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 06:11:31 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23306 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751583Ab3ACLL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 05:56:52 -0500
-Date: Thu, 3 Jan 2013 21:56:42 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Gleb Natapov <gleb@redhat.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: linux-next: manual merge of the kvm tree with the s390 tree
-Message-Id: <20130103215642.b7f641ecc107fd65bdd5eefe@canb.auug.org.au>
-In-Reply-To: <20130103083155.5cc97c31@mschwide>
-References: <20130103120650.a19cea9d14a664893c0a5e30@canb.auug.org.au>
-	<20130103083155.5cc97c31@mschwide>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c"
+	Thu, 3 Jan 2013 06:11:28 -0500
+Date: Thu, 3 Jan 2013 14:10:40 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Tony Prisk <linux@prisktech.co.nz>,
+        Tomasz Stanislawski <t.stanislaws@samsung.com>,
+        Dan Carpenter <error27@gmail.com>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH RESEND 6/6] clk: s5p-g2d: Fix incorrect usage of
+ IS_ERR_OR_NULL
+Message-ID: <20130103111040.GD7247@mwanda>
+References: <1355852048-23188-1-git-send-email-linux@prisktech.co.nz>
+ <1355852048-23188-7-git-send-email-linux@prisktech.co.nz>
+ <50D62BC9.9010706@mvista.com>
+ <50E32C06.5020104@gmail.com>
+ <CA+_b7DK2zbBzbCh15ikEAeGP5h-V9gQ_YcX15O-RNvWxCk8Zfg@mail.gmail.com>
+ <1357104713.30504.8.camel@gitbox>
+ <20130103090520.GC7247@mwanda>
+ <20130103100000.GJ2631@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130103100000.GJ2631@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Come on...  Don't say we haven't read comment.  Obviously, the first
+thing we did was read that comment.  I've read it many times at this
+point and I still think we should add in a bit which says:
 
-Hi Martin,
+"NOTE:  Drivers should treat the return value as an opaque cookie
+and not dereference it.  NULL returns don't imply an error so don't
+use IS_ERR_OR_NULL() to check for errors."
 
-On Thu, 3 Jan 2013 08:31:55 +0100 Martin Schwidefsky <schwidefsky@de.ibm.co=
-m> wrote:
->
-> I surprises me a bit that there is only one hunk in the cleanup patch.
-> I expected three, the above for virtio_ccw.c, one for irq.c and another
-> for irq.h. I checked the resulting tree which is correct! The merge diff
-> has a '++' line for irq.c/irq.h:
-
-Those bits were further down in the mail I sent you (after my signature).
-
-Thanks for checking.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ5WPqAAoJEECxmPOUX5FESTEP/0+bpw+M37ggKflO9qZj8yUf
-2DGfIVisEklAUiSDDyQ1WCQKn5V/gSnXCf2PaNi/519Iuox/nALgRW5GvVT+olg7
-pK+JA3ZNsSEv3C7VRPseorFvgPAhxBK9pYJUb6Wn3R3pea3/LQTuFLNvcsQz85hb
-j+R8weMLm8vrHXi0r5t/+ozY/xNDG1Zb3sEglXJZEmAWxB1EjZsOjgIHoC07zwD6
-VlmYaaM1FwVYFL9y3XzXXLw4cdTEdrcKp+2WCt9CZk9LuUrP1SJZ+8k568B0Puf1
-PTva/m7zVLxPSFBb8Y5x6+p/51v7X2H+mAfmhpLHOzlVQrS5sEScvCP+fMb6f1sn
-3lis1HWyp01j+bVvGI4kwaAw32D1nwV17YicE3XXitBleByeSCHPgbT/vyrip+uc
-NFdEqqQM1YjGha0zgeqRBIyNgvm10jxRBNlbNAHqg0IU7RyHKBwBseDQg5uCoE3K
-uG6YDezdq0FDHWzZGYVJ5hhy/8TpHv4lGzsc3yFvteAtR63PlI880WfOwaoCkZO9
-gS/O0UFZxLurjNafRyTJTd9bkfI8wUqXBAGyQ6ACwUwCD/ueO30PGiLm22AVAe/k
-i6esyw+MURnLT11d6JV/otVyTCKFb71V7V2tkkpPCJfMptkw7y8N/nlos41PlU0h
-03xhEOjtodg9IFcT0ceN
-=axhl
------END PGP SIGNATURE-----
-
---Signature=_Thu__3_Jan_2013_21_56_42_+1100_3rX9KnasWlg6H1_c--
+regards,
+dan carpenter
