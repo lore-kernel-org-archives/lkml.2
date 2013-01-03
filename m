@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab3ACVoZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 16:44:25 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:40072 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653Ab3ACVoS (ORCPT
+	id S1754709Ab3ACVov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 16:44:51 -0500
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:41593 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754622Ab3ACVoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 16:44:18 -0500
+	Thu, 3 Jan 2013 16:44:14 -0500
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com, paul@paulmenage.org, glommer@parallels.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         peterz@infradead.org, mhocko@suse.cz, linux-kernel@vger.kernel.org,
         Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/3] cpuset: remove cpuset->parent
-Date: Thu,  3 Jan 2013 13:44:06 -0800
-Message-Id: <1357249446-25075-4-git-send-email-tj@kernel.org>
+Subject: [PATCH 1/3] cpuset: implement cgroup_rightmost_descendant()
+Date: Thu,  3 Jan 2013 13:44:04 -0800
+Message-Id: <1357249446-25075-2-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.0.2
 In-Reply-To: <1357249446-25075-1-git-send-email-tj@kernel.org>
 References: <1357249446-25075-1-git-send-email-tj@kernel.org>
@@ -22,112 +22,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup already tracks the hierarchy.  Follow cgroup->parent to find
-the parent and drop cpuset->parent.
+Implement cgroup_rightmost_descendant() which returns the right most
+descendant of the specified cgroup.  This can be used to skip the
+cgroup's subtree while iterating with
+cgroup_for_each_descendant_pre().
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Michal Hocko <mhocko@suse.cz>
 ---
- kernel/cpuset.c | 28 +++++++++++++++++-----------
- 1 file changed, 17 insertions(+), 11 deletions(-)
+ include/linux/cgroup.h |  1 +
+ kernel/cgroup.c        | 26 ++++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b2f8dad..afadbb99 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -87,8 +87,6 @@ struct cpuset {
- 	cpumask_var_t cpus_allowed;	/* CPUs allowed to tasks in cpuset */
- 	nodemask_t mems_allowed;	/* Memory Nodes allowed to tasks */
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 7d73905..860ca0f 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -558,6 +558,7 @@ static inline struct cgroup* task_cgroup(struct task_struct *task,
  
--	struct cpuset *parent;		/* my parent */
--
- 	struct fmeter fmeter;		/* memory_pressure filter */
+ struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
+ 					  struct cgroup *cgroup);
++struct cgroup *cgroup_rightmost_descendant(struct cgroup *pos);
  
- 	/*
-@@ -120,6 +118,15 @@ static inline struct cpuset *task_cs(struct task_struct *task)
- 			    struct cpuset, css);
+ /**
+  * cgroup_for_each_descendant_pre - pre-order walk of a cgroup's descendants
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 4855892..6643f70 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3017,6 +3017,32 @@ struct cgroup *cgroup_next_descendant_pre(struct cgroup *pos,
  }
+ EXPORT_SYMBOL_GPL(cgroup_next_descendant_pre);
  
-+static inline struct cpuset *parent_cs(const struct cpuset *cs)
++/**
++ * cgroup_rightmost_descendant - return the rightmost descendant of a cgroup
++ * @pos: cgroup of interest
++ *
++ * Return the rightmost descendant of @pos.  If there's no descendant,
++ * @pos is returned.  This can be used during pre-order traversal to skip
++ * subtree of @pos.
++ */
++struct cgroup *cgroup_rightmost_descendant(struct cgroup *pos)
 +{
-+	struct cgroup *pcgrp = cs->css.cgroup->parent;
++	struct cgroup *last, *tmp;
 +
-+	if (pcgrp)
-+		return cgroup_cs(pcgrp);
-+	return NULL;
++	WARN_ON_ONCE(!rcu_read_lock_held());
++
++	do {
++		last = pos;
++		/* ->prev isn't RCU safe, walk ->next till the end */
++		pos = NULL;
++		list_for_each_entry_rcu(tmp, &last->children, sibling)
++			pos = tmp;
++	} while (pos);
++
++	return last;
 +}
++EXPORT_SYMBOL_GPL(cgroup_rightmost_descendant);
 +
- #ifdef CONFIG_NUMA
- static inline bool task_has_mempolicy(struct task_struct *task)
+ static struct cgroup *cgroup_leftmost_descendant(struct cgroup *pos)
  {
-@@ -323,7 +330,7 @@ static void guarantee_online_cpus(const struct cpuset *cs,
- 				  struct cpumask *pmask)
- {
- 	while (cs && !cpumask_intersects(cs->cpus_allowed, cpu_online_mask))
--		cs = cs->parent;
-+		cs = parent_cs(cs);
- 	if (cs)
- 		cpumask_and(pmask, cs->cpus_allowed, cpu_online_mask);
- 	else
-@@ -348,7 +355,7 @@ static void guarantee_online_mems(const struct cpuset *cs, nodemask_t *pmask)
- {
- 	while (cs && !nodes_intersects(cs->mems_allowed,
- 					node_states[N_MEMORY]))
--		cs = cs->parent;
-+		cs = parent_cs(cs);
- 	if (cs)
- 		nodes_and(*pmask, cs->mems_allowed,
- 					node_states[N_MEMORY]);
-@@ -461,7 +468,7 @@ static int validate_change(const struct cpuset *cur, const struct cpuset *trial)
- 	if (cur == &top_cpuset)
- 		goto out;
- 
--	par = cur->parent;
-+	par = parent_cs(cur);
- 
- 	/* We must be a subset of our parent cpuset */
- 	ret = -EACCES;
-@@ -1866,7 +1873,6 @@ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
- 	fmeter_init(&cs->fmeter);
- 	INIT_WORK(&cs->hotplug_work, cpuset_propagate_hotplug_workfn);
- 	cs->relax_domain_level = -1;
--	cs->parent = cgroup_cs(cont->parent);
- 
- 	return &cs->css;
- }
-@@ -1874,7 +1880,7 @@ static struct cgroup_subsys_state *cpuset_css_alloc(struct cgroup *cont)
- static int cpuset_css_online(struct cgroup *cgrp)
- {
- 	struct cpuset *cs = cgroup_cs(cgrp);
--	struct cpuset *parent = cs->parent;
-+	struct cpuset *parent = parent_cs(cs);
- 	struct cpuset *tmp_cs;
- 	struct cgroup *pos_cg;
- 
-@@ -2058,10 +2064,10 @@ static void remove_tasks_in_empty_cpuset(struct cpuset *cs)
- 	 * Find its next-highest non-empty parent, (top cpuset
- 	 * has online cpus, so can't be empty).
- 	 */
--	parent = cs->parent;
-+	parent = parent_cs(cs);
- 	while (cpumask_empty(parent->cpus_allowed) ||
- 			nodes_empty(parent->mems_allowed))
--		parent = parent->parent;
-+		parent = parent_cs(parent);
- 
- 	move_member_tasks_to_cpuset(cs, parent);
- }
-@@ -2373,8 +2379,8 @@ int cpuset_nodemask_valid_mems_allowed(nodemask_t *nodemask)
-  */
- static const struct cpuset *nearest_hardwall_ancestor(const struct cpuset *cs)
- {
--	while (!(is_mem_exclusive(cs) || is_mem_hardwall(cs)) && cs->parent)
--		cs = cs->parent;
-+	while (!(is_mem_exclusive(cs) || is_mem_hardwall(cs)) && parent_cs(cs))
-+		cs = parent_cs(cs);
- 	return cs;
- }
- 
+ 	struct cgroup *last;
 -- 
 1.8.0.2
 
