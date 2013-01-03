@@ -1,536 +1,501 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568Ab3ACOy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 09:54:58 -0500
-Received: from mail.pripojeni.net ([178.22.112.14]:60980 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752852Ab3ACOxR (ORCPT
+	id S1753624Ab3ACOzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 09:55:40 -0500
+Received: from eu1sys200aog116.obsmtp.com ([207.126.144.141]:39606 "EHLO
+	eu1sys200aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753604Ab3ACOze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 09:53:17 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: gregkh@linuxfoundation.org
-Cc: alan@linux.intel.com, jirislaby@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 05/10] TTY: move low_latency to tty_port
-Date: Thu,  3 Jan 2013 15:53:05 +0100
-Message-Id: <1357224789-2853-6-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
-References: <1357224789-2853-1-git-send-email-jslaby@suse.cz>
+	Thu, 3 Jan 2013 09:55:34 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH v3] pinctrl/nomadik: add device tree support
+Date: Thu, 3 Jan 2013 15:55:12 +0100
+Message-ID: <1357224912-22226-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One point is to have less places where we actually need tty pointer.
-The other is that low_latency is bound to buffer processing and
-buffers are now in tty_port. So it makes sense to move low_latency to
-tty_port too.
+From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+This implements pin multiplexing and pin configuration for
+the Nomadik pin controller using the device tree.
+
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+Reviewed-by: Philippe Langlais <philippe.langlais@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/ia64/hp/sim/simserial.c                | 2 +-
- arch/mn10300/kernel/mn10300-serial.c        | 6 +++---
- drivers/char/pcmcia/synclink_cs.c           | 2 +-
- drivers/isdn/gigaset/interface.c            | 2 +-
- drivers/net/caif/caif_serial.c              | 2 +-
- drivers/net/irda/irtty-sir.c                | 2 +-
- drivers/s390/char/con3215.c                 | 2 +-
- drivers/s390/char/sclp_tty.c                | 2 +-
- drivers/s390/char/sclp_vt220.c              | 2 +-
- drivers/s390/char/tty3270.c                 | 4 ++--
- drivers/tty/amiserial.c                     | 4 ++--
- drivers/tty/ipwireless/tty.c                | 2 +-
- drivers/tty/mxser.c                         | 2 +-
- drivers/tty/serial/cpm_uart/cpm_uart_core.c | 2 +-
- drivers/tty/serial/crisv10.c                | 4 ++--
- drivers/tty/serial/ifx6x60.c                | 2 +-
- drivers/tty/serial/ioc3_serial.c            | 2 +-
- drivers/tty/serial/ioc4_serial.c            | 2 +-
- drivers/tty/serial/max3100.c                | 2 +-
- drivers/tty/serial/mpsc.c                   | 2 +-
- drivers/tty/serial/mrst_max3110.c           | 2 +-
- drivers/tty/serial/msm_serial_hs.c          | 2 +-
- drivers/tty/serial/serial_core.c            | 7 +++----
- drivers/tty/synclink.c                      | 2 +-
- drivers/tty/synclink_gt.c                   | 2 +-
- drivers/tty/synclinkmp.c                    | 2 +-
- drivers/tty/tty_buffer.c                    | 9 +++++----
- include/linux/tty.h                         | 5 +++--
- net/irda/ircomm/ircomm_tty.c                | 2 +-
- 29 files changed, 42 insertions(+), 41 deletions(-)
+ChangeLog v2->v3:
+- Replace nmk_pinctrl with nmk-pinctrl to conform to common design
+  pattern everywhere.
+- Fix spelling mistakes.
+- Fix DTS compatible strings.
+- Remove surplus blank line.
+- Invert if() clause from (ret < 0) to (ret >= 0).
+---
+ .../devicetree/bindings/pinctrl/ste,nomadik.txt    | 127 ++++++++++
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ arch/arm/mach-ux500/cpu-db8500.c                   |   2 +-
+ drivers/pinctrl/pinctrl-nomadik.c                  | 261 ++++++++++++++++++++-
+ 4 files changed, 389 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
 
-diff --git a/arch/ia64/hp/sim/simserial.c b/arch/ia64/hp/sim/simserial.c
-index f8ae5d8..942022a 100644
---- a/arch/ia64/hp/sim/simserial.c
-+++ b/arch/ia64/hp/sim/simserial.c
-@@ -436,7 +436,7 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
- 	struct tty_port *port = &info->port;
- 
- 	tty->driver_data = info;
--	tty->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	port->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	/*
- 	 * figure out which console to use (should be one already)
-diff --git a/arch/mn10300/kernel/mn10300-serial.c b/arch/mn10300/kernel/mn10300-serial.c
-index 54ef40c..ae61bd6 100644
---- a/arch/mn10300/kernel/mn10300-serial.c
-+++ b/arch/mn10300/kernel/mn10300-serial.c
-@@ -537,7 +537,7 @@ static void mn10300_serial_receive_interrupt(struct mn10300_serial_port *port)
- 	count = CIRC_CNT(port->rx_inp, port->rx_outp, MNSC_BUFFER_SIZE);
- 	count = tty_buffer_request_room(port, count);
- 	if (count == 0) {
--		if (!tty->low_latency)
-+		if (!port->low_latency)
- 			tty_flip_buffer_push(tty);
- 		return;
- 	}
-@@ -546,7 +546,7 @@ try_again:
- 	/* pull chars out of the hat */
- 	ix = ACCESS_ONCE(port->rx_outp);
- 	if (CIRC_CNT(port->rx_inp, ix, MNSC_BUFFER_SIZE) == 0) {
--		if (push && !tty->low_latency)
-+		if (push && !port->low_latency)
- 			tty_flip_buffer_push(tty);
- 		return;
- 	}
-@@ -678,7 +678,7 @@ insert:
- 
- 	count--;
- 	if (count <= 0) {
--		if (!tty->low_latency)
-+		if (!port->low_latency)
- 			tty_flip_buffer_push(tty);
- 		return;
- 	}
-diff --git a/drivers/char/pcmcia/synclink_cs.c b/drivers/char/pcmcia/synclink_cs.c
-index f125f35..47cbacf 100644
---- a/drivers/char/pcmcia/synclink_cs.c
-+++ b/drivers/char/pcmcia/synclink_cs.c
-@@ -2522,7 +2522,7 @@ static int mgslpc_open(struct tty_struct *tty, struct file * filp)
- 		goto cleanup;
- 	}
- 
--	tty->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	port->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
-diff --git a/drivers/isdn/gigaset/interface.c b/drivers/isdn/gigaset/interface.c
-index dd2a57e..6dcecd4 100644
---- a/drivers/isdn/gigaset/interface.c
-+++ b/drivers/isdn/gigaset/interface.c
-@@ -164,7 +164,7 @@ static int if_open(struct tty_struct *tty, struct file *filp)
- 
- 	if (cs->port.count == 1) {
- 		tty_port_tty_set(&cs->port, tty);
--		tty->low_latency = 1;
-+		cs->port.low_latency = 1;
- 	}
- 
- 	mutex_unlock(&cs->mutex);
-diff --git a/drivers/net/caif/caif_serial.c b/drivers/net/caif/caif_serial.c
-index 5de74e7..666891a 100644
---- a/drivers/net/caif/caif_serial.c
-+++ b/drivers/net/caif/caif_serial.c
-@@ -91,7 +91,7 @@ static inline void update_tty_status(struct ser_device *ser)
- 		ser->tty->hw_stopped << 4 |
- 		ser->tty->flow_stopped << 3 |
- 		ser->tty->packet << 2 |
--		ser->tty->low_latency << 1 |
-+		ser->tty->port->low_latency << 1 |
- 		ser->tty->warned;
- }
- static inline void debugfs_init(struct ser_device *ser, struct tty_struct *tty)
-diff --git a/drivers/net/irda/irtty-sir.c b/drivers/net/irda/irtty-sir.c
-index 6e4d4b6..a412671 100644
---- a/drivers/net/irda/irtty-sir.c
-+++ b/drivers/net/irda/irtty-sir.c
-@@ -210,7 +210,7 @@ static int irtty_do_write(struct sir_dev *dev, const unsigned char *ptr, size_t
-  *    been received, which can now be decapsulated and delivered for
-  *    further processing 
-  *
-- * calling context depends on underlying driver and tty->low_latency!
-+ * calling context depends on underlying driver and tty->port->low_latency!
-  * for example (low_latency: 1 / 0):
-  * serial.c:	uart-interrupt / softint
-  * usbserial:	urb-complete-interrupt / softint
-diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
-index 4c6743d..41b75c5 100644
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -968,7 +968,7 @@ static int tty3215_open(struct tty_struct *tty, struct file * filp)
- 
- 	tty_port_tty_set(&raw->port, tty);
- 
--	tty->low_latency = 0;  /* don't use bottom half for pushing chars */
-+	raw->port.low_latency = 0; /* don't use bottom half for pushing chars */
- 	/*
- 	 * Start up 3215 device
- 	 */
-diff --git a/drivers/s390/char/sclp_tty.c b/drivers/s390/char/sclp_tty.c
-index 3ffddbb..19b7c51 100644
---- a/drivers/s390/char/sclp_tty.c
-+++ b/drivers/s390/char/sclp_tty.c
-@@ -65,7 +65,7 @@ sclp_tty_open(struct tty_struct *tty, struct file *filp)
- {
- 	tty_port_tty_set(&sclp_port, tty);
- 	tty->driver_data = NULL;
--	tty->low_latency = 0;
-+	sclp_port.low_latency = 0;
- 	return 0;
- }
- 
-diff --git a/drivers/s390/char/sclp_vt220.c b/drivers/s390/char/sclp_vt220.c
-index b5507f1..0eca99b 100644
---- a/drivers/s390/char/sclp_vt220.c
-+++ b/drivers/s390/char/sclp_vt220.c
-@@ -495,7 +495,7 @@ sclp_vt220_open(struct tty_struct *tty, struct file *filp)
- {
- 	if (tty->count == 1) {
- 		tty_port_tty_set(&sclp_vt220_port, tty);
--		tty->low_latency = 0;
-+		sclp_vt220_port.low_latency = 0;
- 		if (!tty->winsize.ws_row && !tty->winsize.ws_col) {
- 			tty->winsize.ws_row = 24;
- 			tty->winsize.ws_col = 80;
-diff --git a/drivers/s390/char/tty3270.c b/drivers/s390/char/tty3270.c
-index 43ea059..3860e79 100644
---- a/drivers/s390/char/tty3270.c
-+++ b/drivers/s390/char/tty3270.c
-@@ -860,7 +860,7 @@ static int tty3270_install(struct tty_driver *driver, struct tty_struct *tty)
- 		tty->driver_data = tp;
- 		tty->winsize.ws_row = tp->view.rows - 2;
- 		tty->winsize.ws_col = tp->view.cols;
--		tty->low_latency = 0;
-+		tp->port.low_latency = 0;
- 		/* why to reassign? */
- 		tty_port_tty_set(&tp->port, tty);
- 		tp->inattr = TF_INPUT;
-@@ -893,7 +893,7 @@ static int tty3270_install(struct tty_driver *driver, struct tty_struct *tty)
- 	}
- 
- 	tty_port_tty_set(&tp->port, tty);
--	tty->low_latency = 0;
-+	tp->port.low_latency = 0;
- 	tty->winsize.ws_row = tp->view.rows - 2;
- 	tty->winsize.ws_col = tp->view.cols;
- 
-diff --git a/drivers/tty/amiserial.c b/drivers/tty/amiserial.c
-index 2e670d0..2d1357a 100644
---- a/drivers/tty/amiserial.c
-+++ b/drivers/tty/amiserial.c
-@@ -1099,7 +1099,7 @@ static int set_serial_info(struct tty_struct *tty, struct serial_state *state,
- 	state->custom_divisor = new_serial.custom_divisor;
- 	port->close_delay = new_serial.close_delay * HZ/100;
- 	port->closing_wait = new_serial.closing_wait * HZ/100;
--	tty->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	port->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- check_and_exit:
- 	if (port->flags & ASYNC_INITIALIZED) {
-@@ -1528,7 +1528,7 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
- 	if (serial_paranoia_check(info, tty->name, "rs_open"))
- 		return -ENODEV;
- 
--	tty->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	port->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	retval = startup(tty, info);
- 	if (retval) {
-diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
-index a3ad5e1..c43da74 100644
---- a/drivers/tty/ipwireless/tty.c
-+++ b/drivers/tty/ipwireless/tty.c
-@@ -106,7 +106,7 @@ static int ipw_open(struct tty_struct *linux_tty, struct file *filp)
- 
- 	tty->port.tty = linux_tty;
- 	linux_tty->driver_data = tty;
--	linux_tty->low_latency = 1;
-+	tty->port.low_latency = 1;
- 
- 	if (tty->tty_type == TTYTYPE_MODEM)
- 		ipwireless_ppp_open(tty->network);
-diff --git a/drivers/tty/mxser.c b/drivers/tty/mxser.c
-index 450c450..e9cdfdf 100644
---- a/drivers/tty/mxser.c
-+++ b/drivers/tty/mxser.c
-@@ -1264,7 +1264,7 @@ static int mxser_set_serial_info(struct tty_struct *tty,
- 				(new_serial.flags & ASYNC_FLAGS));
- 		port->close_delay = new_serial.close_delay * HZ / 100;
- 		port->closing_wait = new_serial.closing_wait * HZ / 100;
--		tty->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+		port->low_latency = (port->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 		if ((port->flags & ASYNC_SPD_MASK) == ASYNC_SPD_CUST &&
- 				(new_serial.baud_base != info->baud_base ||
- 				new_serial.custom_divisor !=
-diff --git a/drivers/tty/serial/cpm_uart/cpm_uart_core.c b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-index 108122f..0bb2437 100644
---- a/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-+++ b/drivers/tty/serial/cpm_uart/cpm_uart_core.c
-@@ -508,7 +508,7 @@ static void cpm_uart_set_termios(struct uart_port *port,
- 
- 	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk / 16);
- 	if (baud < HW_BUF_SPD_THRESHOLD ||
--	    (pinfo->port.state && pinfo->port.state->port.tty->low_latency))
-+	    (pinfo->port.state && pinfo->port.state->port.low_latency))
- 		pinfo->rx_fifosize = 1;
- 	else
- 		pinfo->rx_fifosize = RX_BUF_SIZE;
-diff --git a/drivers/tty/serial/crisv10.c b/drivers/tty/serial/crisv10.c
-index c82601d..52449ad 100644
---- a/drivers/tty/serial/crisv10.c
-+++ b/drivers/tty/serial/crisv10.c
-@@ -3462,7 +3462,7 @@ set_serial_info(struct e100_serial *info,
- 	info->type = new_serial.type;
- 	info->close_delay = new_serial.close_delay;
- 	info->closing_wait = new_serial.closing_wait;
--	info->port.tty->low_latency = (info->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	info->port.low_latency = (info->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
-  check_and_exit:
- 	if (info->flags & ASYNC_INITIALIZED) {
-@@ -4106,7 +4106,7 @@ rs_open(struct tty_struct *tty, struct file * filp)
- 	tty->driver_data = info;
- 	info->port.tty = tty;
- 
--	tty->low_latency = !!(info->flags & ASYNC_LOW_LATENCY);
-+	info->port.low_latency = !!(info->flags & ASYNC_LOW_LATENCY);
- 
- 	/*
- 	 * If the port is in the middle of closing, bail out now
-diff --git a/drivers/tty/serial/ifx6x60.c b/drivers/tty/serial/ifx6x60.c
-index bfb634e..4bc6e47 100644
---- a/drivers/tty/serial/ifx6x60.c
-+++ b/drivers/tty/serial/ifx6x60.c
-@@ -615,7 +615,7 @@ static int ifx_port_activate(struct tty_port *port, struct tty_struct *tty)
- 	tty->driver_data = ifx_dev;
- 
- 	/* allows flip string push from int context */
--	tty->low_latency = 1;
-+	port->low_latency = 1;
- 
- 	/* set flag to allows data transfer */
- 	set_bit(IFX_SPI_STATE_IO_AVAILABLE, &ifx_dev->flags);
-diff --git a/drivers/tty/serial/ioc3_serial.c b/drivers/tty/serial/ioc3_serial.c
-index 0f25ce4..edbdc4e 100644
---- a/drivers/tty/serial/ioc3_serial.c
-+++ b/drivers/tty/serial/ioc3_serial.c
-@@ -1000,7 +1000,7 @@ ioc3_change_speed(struct uart_port *the_port,
- 
- 	the_port->ignore_status_mask = N_ALL_INPUT;
- 
--	state->port.tty->low_latency = 1;
-+	state->port.low_latency = 1;
- 
- 	if (iflag & IGNPAR)
- 		the_port->ignore_status_mask &= ~(N_PARITY_ERROR
-diff --git a/drivers/tty/serial/ioc4_serial.c b/drivers/tty/serial/ioc4_serial.c
-index 22343da..bd53669 100644
---- a/drivers/tty/serial/ioc4_serial.c
-+++ b/drivers/tty/serial/ioc4_serial.c
-@@ -1740,7 +1740,7 @@ ioc4_change_speed(struct uart_port *the_port,
- 
- 	the_port->ignore_status_mask = N_ALL_INPUT;
- 
--	state->port.tty->low_latency = 1;
-+	state->port.low_latency = 1;
- 
- 	if (iflag & IGNPAR)
- 		the_port->ignore_status_mask &= ~(N_PARITY_ERROR
-diff --git a/drivers/tty/serial/max3100.c b/drivers/tty/serial/max3100.c
-index dd6277e..cdc74bc 100644
---- a/drivers/tty/serial/max3100.c
-+++ b/drivers/tty/serial/max3100.c
-@@ -529,7 +529,7 @@ max3100_set_termios(struct uart_port *port, struct ktermios *termios,
- 			MAX3100_STATUS_OE;
- 
- 	/* we are sending char from a workqueue so enable */
--	s->port.state->port.tty->low_latency = 1;
-+	s->port.state->port.low_latency = 1;
- 
- 	if (s->poll_time > 0)
- 		del_timer_sync(&s->timer);
-diff --git a/drivers/tty/serial/mpsc.c b/drivers/tty/serial/mpsc.c
-index 4bcbc66..6f2d2ce 100644
---- a/drivers/tty/serial/mpsc.c
-+++ b/drivers/tty/serial/mpsc.c
-@@ -970,7 +970,7 @@ static int mpsc_rx_intr(struct mpsc_port_info *pi)
- #endif
- 		/* Following use of tty struct directly is deprecated */
- 		if (tty_buffer_request_room(port, bytes_in) < bytes_in) {
--			if (tty->low_latency)
-+			if (port->low_latency)
- 				tty_flip_buffer_push(tty);
- 			/*
- 			 * If this failed then we will throw away the bytes
-diff --git a/drivers/tty/serial/mrst_max3110.c b/drivers/tty/serial/mrst_max3110.c
-index 3b8df7b..4632db7 100644
---- a/drivers/tty/serial/mrst_max3110.c
-+++ b/drivers/tty/serial/mrst_max3110.c
-@@ -495,7 +495,7 @@ static int serial_m3110_startup(struct uart_port *port)
- 			| WC_BAUD_DR2;
- 
- 	/* as we use thread to handle tx/rx, need set low latency */
--	port->state->port.tty->low_latency = 1;
-+	port->state->port.low_latency = 1;
- 
- 	if (max->irq) {
- 		max->read_thread = NULL;
-diff --git a/drivers/tty/serial/msm_serial_hs.c b/drivers/tty/serial/msm_serial_hs.c
-index 11b7f5b..c356fff 100644
---- a/drivers/tty/serial/msm_serial_hs.c
-+++ b/drivers/tty/serial/msm_serial_hs.c
-@@ -1400,7 +1400,7 @@ static int msm_hs_startup(struct uart_port *uport)
- 
- 	/* do not let tty layer execute RX in global workqueue, use a
- 	 * dedicated workqueue managed by this driver */
--	uport->state->port.tty->low_latency = 1;
-+	uport->state->port.low_latency = 1;
- 
- 	/* turn on uart clk */
- 	ret = msm_hs_init_clk_locked(uport);
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 7805609..da8a025 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -866,9 +866,7 @@ static int uart_set_info(struct tty_struct *tty, struct tty_port *port,
- 	port->closing_wait    = closing_wait;
- 	if (new_info->xmit_fifo_size)
- 		uport->fifosize = new_info->xmit_fifo_size;
--	if (port->tty)
--		port->tty->low_latency =
--			(uport->flags & UPF_LOW_LATENCY) ? 1 : 0;
-+	port->low_latency = (uport->flags & UPF_LOW_LATENCY) ? 1 : 0;
- 
-  check_and_exit:
- 	retval = 0;
-@@ -1564,7 +1562,8 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
- 	 */
- 	tty->driver_data = state;
- 	state->uart_port->state = state;
--	tty->low_latency = (state->uart_port->flags & UPF_LOW_LATENCY) ? 1 : 0;
-+	state->port.low_latency =
-+		(state->uart_port->flags & UPF_LOW_LATENCY) ? 1 : 0;
- 	tty_port_tty_set(port, tty);
- 
- 	/*
-diff --git a/drivers/tty/synclink.c b/drivers/tty/synclink.c
-index b5686b5..a1891ef 100644
---- a/drivers/tty/synclink.c
-+++ b/drivers/tty/synclink.c
-@@ -3416,7 +3416,7 @@ static int mgsl_open(struct tty_struct *tty, struct file * filp)
- 		goto cleanup;
- 	}
- 	
--	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	info->port.low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
-diff --git a/drivers/tty/synclink_gt.c b/drivers/tty/synclink_gt.c
-index a0639a0..a7790b5 100644
---- a/drivers/tty/synclink_gt.c
-+++ b/drivers/tty/synclink_gt.c
-@@ -683,7 +683,7 @@ static int open(struct tty_struct *tty, struct file *filp)
- 	}
- 
- 	mutex_lock(&info->port.mutex);
--	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	info->port.low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
-diff --git a/drivers/tty/synclinkmp.c b/drivers/tty/synclinkmp.c
-index 0afabc0..27a29b5 100644
---- a/drivers/tty/synclinkmp.c
-+++ b/drivers/tty/synclinkmp.c
-@@ -762,7 +762,7 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		goto cleanup;
- 	}
- 
--	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	info->port.low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index 31873e4..1bfe97a 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -364,7 +364,7 @@ void tty_schedule_flip(struct tty_struct *tty)
- {
- 	struct tty_bufhead *buf = &tty->port->buf;
- 	unsigned long flags;
--	WARN_ON(tty->low_latency);
-+	WARN_ON(tty->port->low_latency);
- 
- 	spin_lock_irqsave(&buf->lock, flags);
- 	if (buf->tail != NULL)
-@@ -538,7 +538,7 @@ static void flush_to_ldisc(struct work_struct *work)
-  */
- void tty_flush_to_ldisc(struct tty_struct *tty)
- {
--	if (!tty->low_latency)
-+	if (!tty->port->low_latency)
- 		flush_work(&tty->port->buf.work);
+diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+new file mode 100644
+index 0000000..8639234
+--- /dev/null
++++ b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+@@ -0,0 +1,127 @@
++ST Ericsson Nomadik pinmux controller
++
++Required properties:
++- compatible: "stericsson,nmk-pinctrl", "stericsson,nmk-pinctrl-db8540",
++              "stericsson,nmk-pinctrl-stn8815"
++- reg: Should contain the register physical address and length of the PRCMU.
++
++Please refer to pinctrl-bindings.txt in this directory for details of the
++common pinctrl bindings used by client devices, including the meaning of the
++phrase "pin configuration node".
++
++ST Ericsson's pin configuration nodes act as a container for an arbitrary number of
++subnodes. Each of these subnodes represents some desired configuration for a
++pin, a group, or a list of pins or groups. This configuration can include the
++mux function to select on those pin(s)/group(s), and various pin configuration
++parameters, such as input, output, pull up, pull down...
++
++The name of each subnode is not important; all subnodes should be enumerated
++and processed purely based on their content.
++
++Required subnode-properties:
++- ste,pins : An array of strings. Each string contains the name of a pin or
++    group.
++
++Optional subnode-properties:
++- ste,function: A string containing the name of the function to mux to the
++  pin or group.
++
++- ste,input : <0/1/2/3>
++	0: input with no pull
++	1: input with pull up,
++	2: input with pull down,
++	3: input and keep last input configuration (no pull, pull up or pull down).
++
++- ste,output: <0/1/2>
++	0: output low,
++	1: output high,
++	2: output (value is not specified).
++
++- ste,sleep: <0/1>
++	0: sleep mode disable,
++	1: sleep mode enable.
++
++- ste,sleep-input: <0/1/2>
++	0: sleep input with no pull,
++	1: sleep input with pull up,
++	2: sleep input with pull down.
++
++- ste,sleep-output: <0/1/2>
++	0: sleep output low,
++	1: sleep output high,
++	2: sleep output (value is not specified).
++
++- ste,sleep-gpio: <0/1>
++	0: disable sleep gpio mode,
++	1: enable sleep gpio mode.
++
++- ste,sleep-wakeup: <0/1>
++	0: wake-up detection enabled,
++	1: wake-up detection disabled.
++
++- ste,sleep-pull-disable: <0/1>
++	0: GPIO pull-up or pull-down resistor is enabled, when pin is an input,
++	1: GPIO pull-up and pull-down resistor are disabled.
++
++Example board file extract:
++
++	pinctrl@80157000 {
++		compatible = "stericsson,nmk-pinctrl";
++		reg = <0x80157000 0x2000>;
++
++		pinctrl-names = "default";
++		pinctrl-0 = <&uart0_default_mode>;
++
++		uart0 {
++			uart0_default_mux: uart0_mux {
++				u0_default_mux {
++					ste,function = "u0";
++					ste,pins = "u0_a_1";
++					};
++			};
++			uart0_default_mode: uart0_default {
++				uart0_default_cfg1 {
++					ste,pins = "GPIO0", "GPIO2";
++					ste,input = <1>;
++				};
++
++				uart0_default_cfg2 {
++					ste,pins = "GPIO1", "GPIO3";
++					ste,output = <1>;
++				};
++			};
++			uart0_sleep_mode: uart0_sleep {
++				uart0_sleep_cfg1 {
++					ste,pins = "GPIO0", "GPIO2";
++					ste,sleep = <0>;
++					ste,sleep-input = <0>;
++					ste,sleep-wakeup = <1>;
++					ste,sleep-pull-disable = <0>;
++				};
++				uart0_sleep_cfg2 {
++					ste,pins = "GPIO1";
++					ste,sleep = <0>;
++					ste,sleep-output = <1>;
++					ste,sleep-wakeup = <1>;
++					ste,sleep-pull-disable = <0>;
++				};
++				uart0_sleep_cfg3 {
++					ste,pins = "GPIO3";
++					ste,sleep = <0>;
++					ste,sleep-output = <2>;
++					ste,sleep-wakeup = <1>;
++					ste,sleep-pull-disable = <0>;
++				};
++			};
++		};
++	};
++
++	uart@80120000 {
++		compatible = "arm,pl011", "arm,primecell";
++		reg = <0x80120000 0x1000>;
++		interrupts = <0 11 0x4>;
++
++		pinctrl-names = "default","sleep";
++		pinctrl-0 = <&uart0_default_mux>, <&uart0_default_mode>;
++		pinctrl-1 = <&uart0_sleep_mode>;
++	};
+diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+index 902b1b1..1532137 100644
+--- a/Documentation/devicetree/bindings/vendor-prefixes.txt
++++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+@@ -50,6 +50,7 @@ simtek
+ sirf	SiRF Technology, Inc.
+ snps 	Synopsys, Inc.
+ st	STMicroelectronics
++ste	ST-Ericsson
+ stericsson	ST-Ericsson
+ ti	Texas Instruments
+ via	VIA Technologies, Inc.
+diff --git a/arch/arm/mach-ux500/cpu-db8500.c b/arch/arm/mach-ux500/cpu-db8500.c
+index 5b286e0..b80ad96 100644
+--- a/arch/arm/mach-ux500/cpu-db8500.c
++++ b/arch/arm/mach-ux500/cpu-db8500.c
+@@ -285,7 +285,7 @@ static struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
+ 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x80110000, "nmk-i2c.3", NULL),
+ 	OF_DEV_AUXDATA("st,nomadik-i2c", 0x8012a000, "nmk-i2c.4", NULL),
+ 	/* Requires device name bindings. */
+-	OF_DEV_AUXDATA("stericsson,nmk_pinctrl", U8500_PRCMU_BASE,
++	OF_DEV_AUXDATA("stericsson,nmk-pinctrl", U8500_PRCMU_BASE,
+ 		"pinctrl-db8500", NULL),
+ 	/* Requires clock name and DMA bindings. */
+ 	OF_DEV_AUXDATA("stericsson,ux500-msp-i2s", 0x80123000,
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 78ab91e..b508bd7 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -25,6 +25,7 @@
+ #include <linux/irqdomain.h>
+ #include <linux/slab.h>
+ #include <linux/of_device.h>
++#include <linux/pinctrl/machine.h>
+ #include <linux/pinctrl/pinctrl.h>
+ #include <linux/pinctrl/pinmux.h>
+ #include <linux/pinctrl/pinconf.h>
+@@ -1509,11 +1510,269 @@ static void nmk_pin_dbg_show(struct pinctrl_dev *pctldev, struct seq_file *s,
+ 	nmk_gpio_dbg_show_one(s, pctldev, chip, offset - chip->base, offset);
  }
  
-@@ -547,7 +547,8 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
-  *	@tty: tty to push
-  *
-  *	Queue a push of the terminal flip buffers to the line discipline. This
-- *	function must not be called from IRQ context if tty->low_latency is set.
-+ *	function must not be called from IRQ context if port->low_latency is
-+ *	set.
-  *
-  *	In the event of the queue being busy for flipping the work will be
-  *	held off and retried later.
-@@ -565,7 +566,7 @@ void tty_flip_buffer_push(struct tty_struct *tty)
- 		buf->tail->commit = buf->tail->used;
- 	spin_unlock_irqrestore(&buf->lock, flags);
++static void nmk_pinctrl_dt_free_map(struct pinctrl_dev *pctldev,
++		struct pinctrl_map *map, unsigned num_maps)
++{
++	int i;
++
++	for (i = 0; i < num_maps; i++)
++		if (map[i].type == PIN_MAP_TYPE_CONFIGS_PIN)
++			kfree(map[i].data.configs.configs);
++	kfree(map);
++}
++
++static int nmk_dt_reserve_map(struct pinctrl_map **map, unsigned *reserved_maps,
++		unsigned *num_maps, unsigned reserve)
++{
++	unsigned old_num = *reserved_maps;
++	unsigned new_num = *num_maps + reserve;
++	struct pinctrl_map *new_map;
++
++	if (old_num >= new_num)
++		return 0;
++
++	new_map = krealloc(*map, sizeof(*new_map) * new_num, GFP_KERNEL);
++	if (!new_map)
++		return -ENOMEM;
++
++	memset(new_map + old_num, 0, (new_num - old_num) * sizeof(*new_map));
++
++	*map = new_map;
++	*reserved_maps = new_num;
++
++	return 0;
++}
++
++static int nmk_dt_add_map_mux(struct pinctrl_map **map, unsigned *reserved_maps,
++		unsigned *num_maps, const char *group,
++		const char *function)
++{
++	if (*num_maps == *reserved_maps)
++		return -ENOSPC;
++
++	(*map)[*num_maps].type = PIN_MAP_TYPE_MUX_GROUP;
++	(*map)[*num_maps].data.mux.group = group;
++	(*map)[*num_maps].data.mux.function = function;
++	(*num_maps)++;
++
++	return 0;
++}
++
++static int nmk_dt_add_map_configs(struct pinctrl_map **map,
++		unsigned *reserved_maps,
++		unsigned *num_maps, const char *group,
++		unsigned long *configs, unsigned num_configs)
++{
++	unsigned long *dup_configs;
++
++	if (*num_maps == *reserved_maps)
++		return -ENOSPC;
++
++	dup_configs = kmemdup(configs, num_configs * sizeof(*dup_configs),
++			      GFP_KERNEL);
++	if (!dup_configs)
++		return -ENOMEM;
++
++	(*map)[*num_maps].type = PIN_MAP_TYPE_CONFIGS_PIN;
++
++	(*map)[*num_maps].data.configs.group_or_pin = group;
++	(*map)[*num_maps].data.configs.configs = dup_configs;
++	(*map)[*num_maps].data.configs.num_configs = num_configs;
++	(*num_maps)++;
++
++	return 0;
++}
++
++#define NMK_CONFIG_PIN(x,y) { .property = x, .config = y, }
++#define NMK_CONFIG_PIN_ARRAY(x,y) { .property = x, .choice = y, \
++	.size = ARRAY_SIZE(y), }
++
++static const unsigned long nmk_pin_input_modes[] = {
++	PIN_INPUT_NOPULL,
++	PIN_INPUT_PULLUP,
++	PIN_INPUT_PULLDOWN,
++};
++
++static const unsigned long nmk_pin_output_modes[] = {
++	PIN_OUTPUT_LOW,
++	PIN_OUTPUT_HIGH,
++	PIN_DIR_OUTPUT,
++};
++
++static const unsigned long nmk_pin_sleep_modes[] = {
++	PIN_SLEEPMODE_DISABLED,
++	PIN_SLEEPMODE_ENABLED,
++};
++
++static const unsigned long nmk_pin_sleep_input_modes[] = {
++	PIN_SLPM_INPUT_NOPULL,
++	PIN_SLPM_INPUT_PULLUP,
++	PIN_SLPM_INPUT_PULLDOWN,
++	PIN_SLPM_DIR_INPUT,
++};
++
++static const unsigned long nmk_pin_sleep_output_modes[] = {
++	PIN_SLPM_OUTPUT_LOW,
++	PIN_SLPM_OUTPUT_HIGH,
++	PIN_SLPM_DIR_OUTPUT,
++};
++
++static const unsigned long nmk_pin_sleep_wakeup_modes[] = {
++	PIN_SLPM_WAKEUP_DISABLE,
++	PIN_SLPM_WAKEUP_ENABLE,
++};
++
++static const unsigned long nmk_pin_gpio_modes[] = {
++	PIN_GPIOMODE_DISABLED,
++	PIN_GPIOMODE_ENABLED,
++};
++
++static const unsigned long nmk_pin_sleep_pdis_modes[] = {
++	PIN_SLPM_PDIS_DISABLED,
++	PIN_SLPM_PDIS_ENABLED,
++};
++
++struct nmk_cfg_param {
++	const char *property;
++	unsigned long config;
++	const unsigned long *choice;
++	int size;
++};
++
++static const struct nmk_cfg_param nmk_cfg_params[] = {
++	NMK_CONFIG_PIN_ARRAY("ste,input",		nmk_pin_input_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,output",		nmk_pin_output_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,sleep",		nmk_pin_sleep_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,sleep-input",		nmk_pin_sleep_input_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,sleep-output",	nmk_pin_sleep_output_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,sleep-wakeup",	nmk_pin_sleep_wakeup_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,gpio",		nmk_pin_gpio_modes),
++	NMK_CONFIG_PIN_ARRAY("ste,sleep-pull-disable",	nmk_pin_sleep_pdis_modes),
++};
++
++static int nmk_dt_pin_config(int index, int val, unsigned long *config)
++{
++	int ret = 0;
++
++	if (nmk_cfg_params[index].choice == NULL)
++		*config = nmk_cfg_params[index].config;
++	else {
++		/* test if out of range */
++		if  (val < nmk_cfg_params[index].size) {
++			*config = nmk_cfg_params[index].config |
++				nmk_cfg_params[index].choice[val];
++		}
++	}
++	return ret;
++}
++
++static const char *nmk_find_pin_name(struct pinctrl_dev *pctldev, const char *pin_name)
++{
++	int i, pin_number;
++	struct nmk_pinctrl *npct = pinctrl_dev_get_drvdata(pctldev);
++
++	if (sscanf((char *)pin_name, "GPIO%d", &pin_number) == 1)
++		for (i = 0; i < npct->soc->npins; i++)
++			if (npct->soc->pins[i].number == pin_number)
++				return npct->soc->pins[i].name;
++	return NULL;
++}
++
++int nmk_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
++		struct device_node *np,
++		struct pinctrl_map **map,
++		unsigned *reserved_maps,
++		unsigned *num_maps)
++{
++	int ret, i;
++	const char *function = NULL;
++	unsigned long configs = 0;
++	bool has_config = 0;
++	unsigned reserve = 0;
++	struct property *prop;
++	const char *group, *gpio_name;
++
++	ret = of_property_read_string(np, "ste,function", &function);
++	if (ret >= 0)
++		reserve = 1;
++
++	for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
++		unsigned long cfg = 0;
++		int val;
++
++		ret = of_property_read_u32(np, nmk_cfg_params[i].property, &val);
++		if (ret != -EINVAL) {
++			if (nmk_dt_pin_config(i, val, &cfg) == 0) {
++				configs |= cfg;
++				has_config = 1;
++			}
++		}
++	}
++	ret = of_property_count_strings(np, "ste,pins");
++	if (ret < 0)
++		goto exit;
++
++	if (has_config)
++		reserve++;
++
++	reserve *= ret;
++
++	ret = nmk_dt_reserve_map(map, reserved_maps, num_maps, reserve);
++	if (ret < 0)
++		goto exit;
++
++	of_property_for_each_string(np, "ste,pins", prop, group) {
++		if (function) {
++			ret = nmk_dt_add_map_mux(map, reserved_maps, num_maps,
++					  group, function);
++			if (ret < 0)
++				goto exit;
++		}
++		if (has_config) {
++			gpio_name = nmk_find_pin_name(pctldev, group);
++
++			ret = nmk_dt_add_map_configs(map, reserved_maps, num_maps,
++					      gpio_name, &configs, 1);
++			if (ret < 0)
++				goto exit;
++		}
++
++	}
++exit:
++	return ret;
++}
++
++int nmk_pinctrl_dt_node_to_map(struct pinctrl_dev *pctldev,
++				 struct device_node *np_config,
++				 struct pinctrl_map **map, unsigned *num_maps)
++{
++	unsigned reserved_maps;
++	struct device_node *np;
++	int ret;
++
++	reserved_maps = 0;
++	*map = NULL;
++	*num_maps = 0;
++
++	for_each_child_of_node(np_config, np) {
++		ret = nmk_pinctrl_dt_subnode_to_map(pctldev, np, map,
++				&reserved_maps, num_maps);
++		if (ret < 0) {
++			nmk_pinctrl_dt_free_map(pctldev, *map, *num_maps);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
+ static struct pinctrl_ops nmk_pinctrl_ops = {
+ 	.get_groups_count = nmk_get_groups_cnt,
+ 	.get_group_name = nmk_get_group_name,
+ 	.get_group_pins = nmk_get_group_pins,
+ 	.pin_dbg_show = nmk_pin_dbg_show,
++	.dt_node_to_map = nmk_pinctrl_dt_node_to_map,
++	.dt_free_map = nmk_pinctrl_dt_free_map,
+ };
  
--	if (tty->low_latency)
-+	if (tty->port->low_latency)
- 		flush_to_ldisc(&buf->work);
- 	else
- 		schedule_work(&buf->work);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 8db1b56..f16a47a 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -202,7 +202,8 @@ struct tty_port {
- 	unsigned long		iflags;		/* TTYP_ internal flags */
- #define TTYP_FLUSHING			1  /* Flushing to ldisc in progress */
- #define TTYP_FLUSHPENDING		2  /* Queued buffer flush pending */
--	unsigned char		console:1;	/* port is a console */
-+	unsigned char		console:1,	/* port is a console */
-+				low_latency:1;	/* direct buffer flush */
- 	struct mutex		mutex;		/* Locking */
- 	struct mutex		buf_mutex;	/* Buffer alloc lock */
- 	unsigned char		*xmit_buf;	/* Optional buffer */
-@@ -254,7 +255,7 @@ struct tty_struct {
- 	int count;
- 	struct winsize winsize;		/* termios mutex */
- 	unsigned char stopped:1, hw_stopped:1, flow_stopped:1, packet:1;
--	unsigned char low_latency:1, warned:1;
-+	unsigned char warned:1;
- 	unsigned char ctrl_status;	/* ctrl_lock */
- 	unsigned int receive_room;	/* Bytes free for queue */
+ static int nmk_pmx_get_funcs_cnt(struct pinctrl_dev *pctldev)
+@@ -1847,7 +2106,7 @@ static struct pinctrl_desc nmk_pinctrl_desc = {
  
-diff --git a/net/irda/ircomm/ircomm_tty.c b/net/irda/ircomm/ircomm_tty.c
-index 14b08e3..2491f6f 100644
---- a/net/irda/ircomm/ircomm_tty.c
-+++ b/net/irda/ircomm/ircomm_tty.c
-@@ -452,7 +452,7 @@ static int ircomm_tty_open(struct tty_struct *tty, struct file *filp)
- 		   self->line, self->port.count);
- 
- 	/* Not really used by us, but lets do it anyway */
--	tty->low_latency = (self->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
-+	self->port.low_latency = (self->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	/*
- 	 * If the port is the middle of closing, bail out now
+ static const struct of_device_id nmk_pinctrl_match[] = {
+ 	{
+-		.compatible = "stericsson,nmk_pinctrl",
++		.compatible = "stericsson,nmk-pinctrl",
+ 		.data = (void *)PINCTRL_NMK_DB8500,
+ 	},
+ 	{},
 -- 
-1.8.1
-
+1.7.11.3
 
