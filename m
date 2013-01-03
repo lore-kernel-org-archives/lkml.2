@@ -1,53 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab3ACRfy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 12:35:54 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36087 "EHLO mail.zytor.com"
+	id S1753690Ab3ACRgJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 12:36:09 -0500
+Received: from brockman.in8.de ([85.214.220.56]:39065 "EHLO mail.in8.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab3ACRfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 12:35:51 -0500
-Message-ID: <50E5C167.2080908@zytor.com>
-Date: Thu, 03 Jan 2013 09:35:35 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
+	id S1753643Ab3ACRgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 12:36:08 -0500
+X-Greylist: delayed 600 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jan 2013 12:36:08 EST
+Message-ID: <50E5BF2D.20909@jan-o-sch.net>
+Date: Thu, 03 Jan 2013 18:26:05 +0100
+From: Jan Schmidt <list.btrfs@jan-o-sch.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Subject: Re: [PATCH -v2 03/26] x86: pageattr-test: remove srandom32 call
-References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com> <1357215562-6288-4-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1357215562-6288-4-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mathieu Chouquet-Stringer <mathieu@csetco.com>
+CC: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sami.liedes@iki.fi, chris.mason@fusionio.com, sensille@gmx.net
+Subject: Re: GPF in read_extent_buffer while scrubbing on 3.7.0-rc8-00014-g27d7c2a
+References: <20121206143458.GA24396@kashmir> <20121210222125.GA20072@kashmir> <20121214181149.GA15378@kashmir>
+In-Reply-To: <20121214181149.GA15378@kashmir>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 04:18 AM, Akinobu Mita wrote:
-> pageattr-test calls srandom32() once every test iteration.
-> But calling srandom32() after late_initcalls is not meaningfull.
-> Because the random states for random32() is mixed by good random numbers
-> in late_initcall prandom_reseed().
->
-> So this removes the call to srandom32().
->
-> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> ---
->
-> No change from v1
->
+Hi Mathieu,
 
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+Sorry for the late reply. I had quite a good reproducer once for what I suspect
+may be your problem here - but it suddenly stopped reproducing the problem and I
+still haven't figured out why. (see https://patchwork.kernel.org/patch/1773611/
+if you're interested)
 
-... for this and the other patch.  Do you need me to pick it up or are 
-you pushing this directly as part of your bigger patchset?
+Can you please give the following patch a try and report back if it helps you
+(apply on top of cmason/for-linus, 57ba86c)? If it doesn't, you've got three
+choices:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+a) forget about the problem
+b) send me a dump of your whole file system (space can be provided)
+c) receive debug patches, apply them and send me the output
 
+Thanks,
+-Jan
+
+------>8---------
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 65f0367..d51185e 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -3324,8 +3324,6 @@ int close_ctree(struct btrfs_root *root)
+
+ 	btrfs_dev_replace_suspend_for_unmount(fs_info);
+
+-	btrfs_scrub_cancel(fs_info);
+-
+ 	/* wait for any defraggers to finish */
+ 	wait_event(fs_info->transaction_wait,
+ 		   (atomic_read(&fs_info->defrag_running) == 0));
+@@ -3392,6 +3390,7 @@ int close_ctree(struct btrfs_root *root)
+ 	btrfs_stop_workers(&fs_info->caching_workers);
+ 	btrfs_stop_workers(&fs_info->readahead_workers);
+ 	btrfs_stop_workers(&fs_info->flush_workers);
++	btrfs_scrub_cancel(fs_info);
+
+ #ifdef CONFIG_BTRFS_FS_CHECK_INTEGRITY
+ 	if (btrfs_test_opt(root, CHECK_INTEGRITY))
