@@ -1,312 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754624Ab3ACWkB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 17:40:01 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:48788 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754383Ab3ACWic (ORCPT
+	id S1754693Ab3ACWlV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 17:41:21 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:36991 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab3ACWlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 17:38:32 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] omap: Properly handle resources for omap_devices
-Date: Fri,  4 Jan 2013 00:31:34 +0200
-Message-Id: <1357252294-6024-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
+	Thu, 3 Jan 2013 17:41:18 -0500
+Subject: Re: [PATCH net-next] softirq: reduce latencies
+From: Eric Dumazet <erdnetdev@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>
+In-Reply-To: <20130103124608.136fd65b.akpm@linux-foundation.org>
+References: <1357216132.21409.24107.camel@edumazet-glaptop>
+	 <20130103124608.136fd65b.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jan 2013 14:41:15 -0800
+Message-ID: <1357252875.21409.26390.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omap_device relies on the platform notifier callbacks managing resources
-behind the scenes. The resources were not properly linked causing crashes
-when removing the device.
+On Thu, 2013-01-03 at 12:46 -0800, Andrew Morton wrote:
+> On Thu, 03 Jan 2013 04:28:52 -0800
+> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> 
+> > From: Eric Dumazet <edumazet@google.com>
+> > 
+> > In various network workloads, __do_softirq() latencies can be up
+> > to 20 ms if HZ=1000, and 200 ms if HZ=100.
+> > 
+> > This is because we iterate 10 times in the softirq dispatcher,
+> > and some actions can consume a lot of cycles.
+> 
+> hm, where did that "20 ms" come from?  What caused it?  Is it simply
+> the case that you happened to have actions which consume 2ms if HZ=1000
+> and 20ms if HZ=100?
 
-Rework the resource modification code so that linking is performed properly,
-and make sure that no resources that have no parent (which can happen for DMA
-& IRQ resources) are ever left for cleanup by the core resource layer.
+net_rx_action() has such behavior yes.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- arch/arm/mach-omap2/omap_device.c | 232 ++++++++++++++++++++++++--------------
- 1 file changed, 148 insertions(+), 84 deletions(-)
+In the worst/busy case, we spend 2 ticks per call, and even more
+in some cases you dont want to know about (like triggering a IPv6 route
+garbage collect)
 
-diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
-index e065daa..9f8dba1 100644
---- a/arch/arm/mach-omap2/omap_device.c
-+++ b/arch/arm/mach-omap2/omap_device.c
-@@ -494,30 +494,156 @@ static int omap_device_fill_resources(struct omap_device *od,
- }
- 
- /**
-- * _od_fill_dma_resources - fill in array of struct resource with dma resources
-+ * omap_device_fixup_resources - Fix platform device resources
-  * @od: struct omap_device *
-- * @res: pointer to an array of struct resource to be filled in
-- *
-- * Populate one or more empty struct resource pointed to by @res with
-- * the dma resource data for this omap_device @od.  Used by
-- * omap_device_alloc() after calling omap_device_count_resources().
-- *
-- * Ideally this function would not be needed at all.  If we have
-- * mechanism to get dma resources from DT.
-  *
-- * Returns 0.
-+ * Fixup the platform device resources so that the resources
-+ * from the hwmods are included for.
-  */
--static int _od_fill_dma_resources(struct omap_device *od,
--				      struct resource *res)
-+static int omap_device_fixup_resources(struct omap_device *od)
- {
--	int i, r;
-+	struct platform_device *pdev = od->pdev;
-+	int i, j, ret, res_count;
-+	struct resource *res, *r, *rnew, *rn;
-+	unsigned long type;
- 
--	for (i = 0; i < od->hwmods_cnt; i++) {
--		r = omap_hwmod_fill_dma_resources(od->hwmods[i], res);
--		res += r;
-+	/*
-+	 * DT Boot:
-+	 *   OF framework will construct the resource structure (currently
-+	 *   does for MEM & IRQ resource) and we should respect/use these
-+	 *   resources, killing hwmod dependency.
-+	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
-+	 *   have been allocated by OF layer already (through DTB).
-+	 *
-+	 * Non-DT Boot:
-+	 *   Here, pdev->num_resources = 0, and we should get all the
-+	 *   resources from hwmod.
-+	 *
-+	 * TODO: Once DMA resource is available from OF layer, we should
-+	 *   kill filling any resources from hwmod.
-+	 */
-+
-+	/* count number of resources hwmod provides */
-+	res_count = omap_device_count_resources(od, IORESOURCE_IRQ |
-+					IORESOURCE_DMA | IORESOURCE_MEM);
-+
-+	/* if no resources from hwmod, we're done already */
-+	if (res_count == 0)
-+		return 0;
-+
-+	/* Allocate resources memory to account for all hwmod resources */
-+	res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
-+	if (!res) {
-+		ret = -ENOMEM;
-+		goto fail_no_res;
- 	}
- 
-+	/* fill all the resources */
-+	ret = omap_device_fill_resources(od, res);
-+	if (ret != 0)
-+		goto fail_no_fill;
-+
-+	/*
-+	 * If pdev->num_resources > 0, then assume that,
-+	 * MEM and IRQ resources will only come from DT and only
-+	 * fill DMA resource from hwmod layer.
-+	 */
-+	if (pdev->num_resources > 0) {
-+
-+		dev_dbg(&pdev->dev, "%s(): resources allocated %d hwmod #%d\n",
-+			__func__, pdev->num_resources, res_count);
-+
-+		/* find number of resources needing to be inserted */
-+		for (i = 0, j = 0, r = res; i < res_count; i++, r++) {
-+			type = resource_type(r);
-+			if (type == IORESOURCE_DMA)
-+				j++;
-+		}
-+
-+		/* no need to insert anything, just return */
-+		if (j == 0) {
-+			kfree(res);
-+			return 0;
-+		}
-+
-+		/* we need to insert j additional resources */
-+		rnew = kzalloc(sizeof(*rnew) *
-+				(pdev->num_resources + j), GFP_KERNEL);
-+		if (rnew == NULL)
-+			goto fail_no_rnew;
-+
-+		/*
-+		 * Unlink any resources from any lists.
-+		 * This is important since the copying destroys any
-+		 * linkage
-+		 */
-+		for (i = 0, r = pdev->resource;
-+				i < pdev->num_resources; i++, r++) {
-+
-+			if (!r->parent)
-+				continue;
-+
-+			dev_dbg(&pdev->dev,
-+					"Releasing resource %p\n", r);
-+			release_resource(r);
-+			r->parent = NULL;
-+			r->sibling = NULL;
-+			r->child = NULL;
-+		}
-+
-+		memcpy(rnew, pdev->resource,
-+				sizeof(*rnew) * pdev->num_resources);
-+
-+		/* now append the resources from the hwmods */
-+		rn = rnew + pdev->num_resources;
-+		for (i = 0, r = res; i < res_count; i++, r++) {
-+
-+			type = resource_type(r);
-+			if (type != IORESOURCE_DMA)
-+				continue;
-+
-+			/* append the hwmod resource */
-+			memcpy(rn, r, sizeof(*r));
-+
-+			/* make sure these are zeroed out */
-+			rn->parent = NULL;
-+			rn->child = NULL;
-+			rn->sibling = NULL;
-+
-+			rn++;
-+		}
-+		kfree(res);	/* we don't need res anymore */
-+
-+		/* this is our new resource table */
-+		res = rnew;
-+		res_count = j;
-+
-+	} else {
-+		dev_dbg(&pdev->dev, "%s(): using resources from hwmod %d\n",
-+			__func__, res_count);
-+	}
-+
-+	ret = platform_device_add_resources(pdev, res, res_count);
-+	kfree(res);
-+
-+	/* failed to add the resources? */
-+	if (ret != 0)
-+		return ret;
-+
-+	/* finally link all the resources again */
-+	ret = platform_device_link_resources(pdev);
-+	if (ret != 0)
-+		return ret;
-+
- 	return 0;
-+
-+fail_no_rnew:
-+	/* nothing */
-+fail_no_fill:
-+	kfree(res);
-+
-+fail_no_res:
-+	return ret;
- }
- 
- /**
-@@ -541,9 +667,8 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
- {
- 	int ret = -ENOMEM;
- 	struct omap_device *od;
--	struct resource *res = NULL;
--	int i, res_count;
- 	struct omap_hwmod **hwmods;
-+	int i;
- 
- 	od = kzalloc(sizeof(struct omap_device), GFP_KERNEL);
- 	if (!od) {
-@@ -553,79 +678,18 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
- 	od->hwmods_cnt = oh_cnt;
- 
- 	hwmods = kmemdup(ohs, sizeof(struct omap_hwmod *) * oh_cnt, GFP_KERNEL);
--	if (!hwmods)
-+	if (!hwmods) {
-+		ret = -ENOMEM;
- 		goto oda_exit2;
-+	}
- 
- 	od->hwmods = hwmods;
- 	od->pdev = pdev;
- 
--	/*
--	 * Non-DT Boot:
--	 *   Here, pdev->num_resources = 0, and we should get all the
--	 *   resources from hwmod.
--	 *
--	 * DT Boot:
--	 *   OF framework will construct the resource structure (currently
--	 *   does for MEM & IRQ resource) and we should respect/use these
--	 *   resources, killing hwmod dependency.
--	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
--	 *   have been allocated by OF layer already (through DTB).
--	 *   As preparation for the future we examine the OF provided resources
--	 *   to see if we have DMA resources provided already. In this case
--	 *   there is no need to update the resources for the device, we use the
--	 *   OF provided ones.
--	 *
--	 * TODO: Once DMA resource is available from OF layer, we should
--	 *   kill filling any resources from hwmod.
--	 */
--	if (!pdev->num_resources) {
--		/* Count all resources for the device */
--		res_count = omap_device_count_resources(od, IORESOURCE_IRQ |
--							    IORESOURCE_DMA |
--							    IORESOURCE_MEM);
--	} else {
--		/* Take a look if we already have DMA resource via DT */
--		for (i = 0; i < pdev->num_resources; i++) {
--			struct resource *r = &pdev->resource[i];
--
--			/* We have it, no need to touch the resources */
--			if (r->flags == IORESOURCE_DMA)
--				goto have_everything;
--		}
--		/* Count only DMA resources for the device */
--		res_count = omap_device_count_resources(od, IORESOURCE_DMA);
--		/* The device has no DMA resource, no need for update */
--		if (!res_count)
--			goto have_everything;
--
--		res_count += pdev->num_resources;
--	}
--
--	/* Allocate resources memory to account for new resources */
--	res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
--	if (!res)
--		goto oda_exit3;
--
--	if (!pdev->num_resources) {
--		dev_dbg(&pdev->dev, "%s: using %d resources from hwmod\n",
--			__func__, res_count);
--		omap_device_fill_resources(od, res);
--	} else {
--		dev_dbg(&pdev->dev,
--			"%s: appending %d DMA resources from hwmod\n",
--			__func__, res_count - pdev->num_resources);
--		memcpy(res, pdev->resource,
--		       sizeof(struct resource) * pdev->num_resources);
--		_od_fill_dma_resources(od, &res[pdev->num_resources]);
--	}
--
--	ret = platform_device_add_resources(pdev, res, res_count);
--	kfree(res);
--
--	if (ret)
-+	ret = omap_device_fixup_resources(od);
-+	if (ret != 0)
- 		goto oda_exit3;
- 
--have_everything:
- 	if (!pm_lats) {
- 		pm_lats = omap_default_latency;
- 		pm_lats_cnt = ARRAY_SIZE(omap_default_latency);
--- 
-1.7.12
+> 
+> > This patch changes the fallback to ksoftirqd condition to :
+> > 
+> > - A time limit of 2 ms.
+> > - need_resched() being set on current task
+> >
+> > When one of this condition is met, we wakeup ksoftirqd for further
+> > softirq processing if we still have pending softirqs.
+> 
+> Do we need both tests?  The need_resched() test alone might be
+> sufficient?
+> 
+
+I tried a need_resched() only, but could trigger watchdog faults and
+reboots, in case a cpu was dedicated to softirq and all other tasks run
+on other cpus.
+
+In other cases, the following RCU splat was triggered :
+
+(need_resched() doesnt know the current cpu is blocking RCU )
+
+Jan  2 21:33:40 lpq83 kernel: [  311.678050] INFO: rcu_sched self-detected stall on CPU { 2}  (t=21000 jiffies g=11416 c=11415 q=2665)
+Jan  2 21:33:40 lpq83 kernel: [  311.687314] Pid: 1460, comm: simple-watchdog Not tainted 3.8.0-smp-DEV #63
+Jan  2 21:33:40 lpq83 kernel: [  311.687316] Call Trace:
+Jan  2 21:33:40 lpq83 kernel: [  311.687317]  <IRQ>  [<ffffffff81100e92>] rcu_check_callbacks+0x212/0x7a0
+Jan  2 21:33:40 lpq83 kernel: [  311.687326]  [<ffffffff81097018>] update_process_times+0x48/0x90
+Jan  2 21:33:40 lpq83 kernel: [  311.687329]  [<ffffffff810cfe31>] tick_sched_timer+0x81/0xd0
+Jan  2 21:33:40 lpq83 kernel: [  311.687332]  [<ffffffff810ad69d>] __run_hrtimer+0x7d/0x220
+Jan  2 21:33:40 lpq83 kernel: [  311.687333]  [<ffffffff810cfdb0>] ? tick_nohz_handler+0x100/0x100
+Jan  2 21:33:40 lpq83 kernel: [  311.687337]  [<ffffffff810ca02c>] ? ktime_get_update_offsets+0x4c/0xd0
+Jan  2 21:33:40 lpq83 kernel: [  311.687339]  [<ffffffff810adfa7>] hrtimer_interrupt+0xf7/0x230
+Jan  2 21:33:40 lpq83 kernel: [  311.687343]  [<ffffffff815b7089>] smp_apic_timer_interrupt+0x69/0x99
+Jan  2 21:33:40 lpq83 kernel: [  311.687345]  [<ffffffff815b630a>] apic_timer_interrupt+0x6a/0x70
+Jan  2 21:33:40 lpq83 kernel: [  311.687348]  [<ffffffffa01a1b66>] ? ipt_do_table+0x106/0x5b0 [ip_tables]
+Jan  2 21:33:40 lpq83 kernel: [  311.687352]  [<ffffffff810fb357>] ? handle_edge_irq+0x77/0x130
+Jan  2 21:33:40 lpq83 kernel: [  311.687354]  [<ffffffff8108e9c9>] ? irq_exit+0x79/0xb0
+Jan  2 21:33:40 lpq83 kernel: [  311.687356]  [<ffffffff815b6fa3>] ? do_IRQ+0x63/0xe0
+Jan  2 21:33:40 lpq83 kernel: [  311.687359]  [<ffffffffa004a0d3>] iptable_filter_hook+0x33/0x64 [iptable_filter]
+Jan  2 21:33:40 lpq83 kernel: [  311.687362]  [<ffffffff81523dff>] nf_iterate+0x8f/0xd0
+Jan  2 21:33:40 lpq83 kernel: [  311.687364]  [<ffffffff81529fc0>] ? ip_rcv_finish+0x360/0x360
+Jan  2 21:33:40 lpq83 kernel: [  311.687366]  [<ffffffff81523ebd>] nf_hook_slow+0x7d/0x150
+Jan  2 21:33:40 lpq83 kernel: [  311.687368]  [<ffffffff81529fc0>] ? ip_rcv_finish+0x360/0x360
+Jan  2 21:33:40 lpq83 kernel: [  311.687370]  [<ffffffff8152a39e>] ip_local_deliver+0x5e/0xa0
+Jan  2 21:33:40 lpq83 kernel: [  311.687372]  [<ffffffff81529d79>] ip_rcv_finish+0x119/0x360
+Jan  2 21:33:40 lpq83 kernel: [  311.687374]  [<ffffffff8152a631>] ip_rcv+0x251/0x300
+Jan  2 21:33:40 lpq83 kernel: [  311.687377]  [<ffffffff814f4c72>] __netif_receive_skb+0x582/0x820
+Jan  2 21:33:40 lpq83 kernel: [  311.687379]  [<ffffffff81560697>] ? inet_gro_receive+0x197/0x200
+Jan  2 21:33:40 lpq83 kernel: [  311.687381]  [<ffffffff814f50ad>] netif_receive_skb+0x2d/0x90
+Jan  2 21:33:40 lpq83 kernel: [  311.687383]  [<ffffffff814f5943>] napi_gro_frags+0xf3/0x2a0
+Jan  2 21:33:40 lpq83 kernel: [  311.687387]  [<ffffffffa01aa87c>] mlx4_en_process_rx_cq+0x6cc/0x7b0 [mlx4_en]
+Jan  2 21:33:40 lpq83 kernel: [  311.687390]  [<ffffffffa01aa9ff>] mlx4_en_poll_rx_cq+0x3f/0x80 [mlx4_en]
+Jan  2 21:33:40 lpq83 kernel: [  311.687392]  [<ffffffff814f53c1>] net_rx_action+0x111/0x210
+Jan  2 21:33:40 lpq83 kernel: [  311.687393]  [<ffffffff814f3a51>] ? net_tx_action+0x81/0x1d0
+
+
+> 
+> With this change, there is a possibility that a rapidly-rescheduling
+> task will cause softirq starvation?
+> 
+
+Only if this task has higher priority than ksoftirqd, but then, people
+wanting/playing with high priority tasks know what they do ;)
+
+> 
+> Can this change cause worsened latencies in some situations?  Say there
+> are a large number of short-running actions queued.  Presently we'll
+> dispatch ten of them and return.  With this change we'll dispatch many
+> more of them - however many consume 2ms.  So worst-case latency
+> increases from "10 * not-much" to "2 ms".
+
+I tried to reproduce such workload but couldnt. 2 ms (or more exactly 1
+to 2 ms given the jiffies/HZ granularity) is about the time needed to
+process 1000 frames on current hardware.
+
+Certainly, this patch will increase number of scheduler calls in some
+situations. But with the increase of cores, it seems a bit odd to allow
+softirq to be a bad guy. The current logic was more suited for the !SMP
+age.
+
+
 
