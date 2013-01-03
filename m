@@ -1,57 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab3ACM0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:26:36 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:46284 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab3ACMTn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:19:43 -0500
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v2 02/26] uuid: use prandom_bytes()
-Date: Thu,  3 Jan 2013 21:18:58 +0900
-Message-Id: <1357215562-6288-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
-References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
+	id S1753752Ab3ACM0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:26:40 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:50273 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753035Ab3ACMTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 07:19:42 -0500
+Date: Thu, 3 Jan 2013 13:19:52 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Stefan Hasko <hasko.stevo@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: x86: boot: compressed: eboot: fix cast warnings on
+ 32b platforms
+Message-ID: <20130103121952.GB10243@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Stefan Hasko <hasko.stevo@gmail.com>,
+	Matt Fleming <matt.fleming@intel.com>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+	linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1356171805-16930-1-git-send-email-hasko.stevo@gmail.com>
+ <20121226080019.GB11555@liondog.tnic>
+ <50E31E18.5010404@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <50E31E18.5010404@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use prandom_bytes() to generate 16 bytes of pseudo-random bytes.
+On Tue, Jan 01, 2013 at 09:34:16AM -0800, H. Peter Anvin wrote:
+> Yes, but stylistically: we don't use uintptr_t in Linux, but rather
+> "unsigned long".
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Huang Ying <ying.huang@intel.com>
----
+Hmmkay,
 
-No change from v1
+Stefan, care to redo your patch and sum up this discussion to the commit
+message for further reference?
 
- lib/uuid.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+Btw, there is some funny usage of uintptr_t in
+arch/x86/include/asm/xor_avx.h and since this is not an uapi header,
+they need to be converted to unsigned long too, methinks.
 
-diff --git a/lib/uuid.c b/lib/uuid.c
-index 52a6fe6..398821e 100644
---- a/lib/uuid.c
-+++ b/lib/uuid.c
-@@ -25,13 +25,7 @@
- 
- static void __uuid_gen_common(__u8 b[16])
- {
--	int i;
--	u32 r;
--
--	for (i = 0; i < 4; i++) {
--		r = random32();
--		memcpy(b + i * 4, &r, 4);
--	}
-+	prandom_bytes(b, 16);
- 	/* reversion 0b10 */
- 	b[8] = (b[8] & 0x3F) | 0x80;
- }
+Thanks.
+
 -- 
-1.7.11.7
-
+Regards/Gruss,
+Boris.
