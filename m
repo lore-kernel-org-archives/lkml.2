@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753133Ab3ACKqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 05:46:04 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:50150 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753023Ab3ACKqC (ORCPT
+	id S1753199Ab3ACKr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 05:47:27 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:18757 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab3ACKrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 05:46:02 -0500
+	Thu, 3 Jan 2013 05:47:24 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Thu, 03 Jan 2013 02:47:21 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <sameo@linux.intel.com>, <linus.walleij@linaro.org>,
+        <grant.likely@secretlab.ca>, <akpm@linux-foundation.org>
+CC: <a.zummo@towertech.it>, <broonie@opensource.wolfsonmicro.com>,
+        <linux-kernel@vger.kernel.org>, <rtc-linux@googlegroups.com>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 0/4] mfd: palma: add RTC and GPIO support
+Date: Thu, 3 Jan 2013 16:16:56 +0530
+Message-ID: <1357210020-19876-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-In-Reply-To: <20130103001536.7fd1e952@annuminas.surriel.com>
-References: <20130103001536.7fd1e952@annuminas.surriel.com>
-Date: Thu, 3 Jan 2013 02:46:01 -0800
-Message-ID: <CANN689GPzjJW7OiYhFJi1xLSN+606auMeJCsxR_CHL_T4aETZg@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] x86,smp: make ticket spinlock proportional
- backoff w/ auto tuning
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
-        lwoodman@redhat.com, jeremy@goop.org,
-        Jan Beulich <JBeulich@novell.com>,
-        Thomas Gleixner <tglx@linutronix.de>, knoel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 2, 2013 at 9:15 PM, Rik van Riel <riel@redhat.com> wrote:
-> The v2 series integrates several ideas from Michel Lespinasse
-> and Eric Dumazet, which should result in better throughput and
-> nicer behaviour in situations with contention on multiple locks.
->
-> Please let me know if you manage to break this code in any way,
-> so I can fix it...
+This series add the RTC and gpio driver for the TI Palma series PMIC.
+The changes are splitted so that easy to apply in different sub systems.
 
-I'm seeing some very weird things on my 3 test machines. Looks like
-the spinlock delay sometimes gets crazy, at which point spinlock
-performance becomes unbearable and the network driver freaks out.
+Laxman Dewangan (4):
+  mfd: palmas: add rtc irq number as irq resource for palmas-rtc
+  mfd: palmas: add apis to access the Palmas' registers
+  gpio: palmas: Add support for Palams GPIO
+  rtc: palmas: add RTC driver Palmas series PMIC
 
-# ./spinlock_load_test
- 1 spinlocks: 24159990
- 2 spinlocks: 12900657
- 3 spinlocks: 11547771
- 4 spinlocks: 9113
- 6 spinlocks: 259
- 8 spinlocks: 310
-12 spinlocks: 283
-16 spinlocks:
-<seems to be stuck here; meanwhile my serial console fills up with
-network driver cries>
+ drivers/gpio/Kconfig       |    7 +
+ drivers/gpio/Makefile      |    1 +
+ drivers/gpio/gpio-palmas.c |  184 ++++++++++++++++++++++++
+ drivers/mfd/palmas.c       |   14 ++-
+ drivers/rtc/Kconfig        |   10 ++
+ drivers/rtc/Makefile       |    1 +
+ drivers/rtc/rtc-palmas.c   |  339 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/palmas.h |   52 +++++++
+ 8 files changed, 606 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/gpio/gpio-palmas.c
+ create mode 100644 drivers/rtc/rtc-palmas.c
 
-Well, I take it as an incitation to pay special attention to this code review :)
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
