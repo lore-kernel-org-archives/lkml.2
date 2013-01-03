@@ -1,101 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510Ab3ACM27 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 07:28:59 -0500
-Received: from mail-da0-f51.google.com ([209.85.210.51]:45707 "EHLO
-	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753117Ab3ACM24 (ORCPT
+	id S1753310Ab3ACMbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 07:31:05 -0500
+Received: from mail-vc0-f175.google.com ([209.85.220.175]:61766 "EHLO
+	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752524Ab3ACMbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 07:28:56 -0500
-Subject: [PATCH net-next] softirq: reduce latencies
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jan 2013 04:28:52 -0800
-Message-ID: <1357216132.21409.24107.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jan 2013 07:31:01 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130103002341.3cc4b7b4@annuminas.surriel.com>
+References: <20130103001536.7fd1e952@annuminas.surriel.com>
+	<20130103002341.3cc4b7b4@annuminas.surriel.com>
+Date: Thu, 3 Jan 2013 04:31:00 -0800
+Message-ID: <CANN689Hd01BNYhcBJJBfz7VXJiFM5QikGOLVnokS4Gbq7cT=1g@mail.gmail.com>
+Subject: Re: [RFC PATCH 3/5] x86,smp: auto tune spinlock backoff delay factor
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, eric.dumazet@gmail.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>,
+        Thomas Gleixner <tglx@linutronix.de>, knoel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <edumazet@google.com>
+On Wed, Jan 2, 2013 at 9:23 PM, Rik van Riel <riel@redhat.com> wrote:
+> Proportional spinlock delay with a high delay factor works well
+> when there is lots contention on a lock. Likewise, a smaller
+> delay factor works well when a lock is lightly contended.
+>
+> Making the code auto-tune the delay factor results in a system
+> that performs well with both light and heavy lock contention.
 
-In various network workloads, __do_softirq() latencies can be up
-to 20 ms if HZ=1000, and 200 ms if HZ=100.
+I don't quite like that part of the explanation - Ideally I would like
+to explain that there are huge benefits in having the delay be at
+least equivalent to the time taken by a no-load spin/release section,
+and that beyond that there are small additional benefits to using a
+longer delay when the spinlock hold times are larger, and an
+explanation of why linear increase / exponential delay works nicely
+here.
 
-This is because we iterate 10 times in the softirq dispatcher,
-and some actions can consume a lot of cycles.
+I'll see if I can make a more concrete proposal and still keep it
+short enough :)
 
-This patch changes the fallback to ksoftirqd condition to :
+> +#define MIN_SPINLOCK_DELAY 1
+> +#define MAX_SPINLOCK_DELAY 16000
+> +DEFINE_PER_CPU(int, spinlock_delay) = { MIN_SPINLOCK_DELAY };
 
-- A time limit of 2 ms.
-- need_resched() being set on current task
+unsigned would seem more natural here, though it's only a tiny detail
 
-When one of this condition is met, we wakeup ksoftirqd for further
-softirq processing if we still have pending softirqs.
+>  void ticket_spin_lock_wait(arch_spinlock_t *lock, struct __raw_tickets inc)
+>  {
+>         __ticket_t head = inc.head, ticket = inc.tail;
+>         __ticket_t waiters_ahead;
+> +       int delay = __this_cpu_read(spinlock_delay);
 
-I ran several benchmarks and got no significant difference in
-throughput, but a very significant reduction of maximum latencies.
+I like that you used __this_cpu_read() - your v1 version wasn't as nice.
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: David Miller <davem@davemloft.net>
-Cc: Tom Herbert <therbert@google.com>
----
- kernel/softirq.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+> +
+> +               /*
+> +                * The lock is still busy; slowly increase the delay. If we
+> +                * end up sleeping too long, the code below will reduce the
+> +                * delay. Ideally we acquire the lock in the tight loop above.
+> +                */
+> +               if (!(head % 7) && delay < MAX_SPINLOCK_DELAY)
+> +                       delay++;
+> +
+> +               loops = delay * waiters_ahead;
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index ed567ba..64d61ea 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -195,21 +195,21 @@ void local_bh_enable_ip(unsigned long ip)
- EXPORT_SYMBOL(local_bh_enable_ip);
- 
- /*
-- * We restart softirq processing MAX_SOFTIRQ_RESTART times,
-- * and we fall back to softirqd after that.
-+ * We restart softirq processing for at most 2 ms,
-+ * and if need_resched() is not set.
-  *
-- * This number has been established via experimentation.
-+ * These limits have been established via experimentation.
-  * The two things to balance is latency against fairness -
-  * we want to handle softirqs as soon as possible, but they
-  * should not be able to lock up the box.
-  */
--#define MAX_SOFTIRQ_RESTART 10
-+#define MAX_SOFTIRQ_TIME  min(1, (2*HZ/1000))
- 
- asmlinkage void __do_softirq(void)
- {
- 	struct softirq_action *h;
- 	__u32 pending;
--	int max_restart = MAX_SOFTIRQ_RESTART;
-+	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
- 	int cpu;
- 	unsigned long old_flags = current->flags;
- 
-@@ -264,11 +264,12 @@ restart:
- 	local_irq_disable();
- 
- 	pending = local_softirq_pending();
--	if (pending && --max_restart)
--		goto restart;
-+	if (pending) {
-+		if (time_before(jiffies, end) && !need_resched())
-+			goto restart;
- 
--	if (pending)
- 		wakeup_softirqd();
-+	}
- 
- 	lockdep_softirq_exit();
- 
+I don't like the head % 7 thing. I think using fixed point arithmetic
+would be nicer:
 
+if (delay < MAX_SPINLOCK_DELAY)
+  delay += 256/7; /* Or whatever constant we choose */
 
+loops = (delay * waiter_ahead) >> 8;
+
+Also, we should probably skip the delay increment on the first loop
+iteration - after all, we haven't waited yet, so we can't say that the
+delay was too short.
+
+> -               if (head == ticket)
+> +               if (head == ticket) {
+> +                       /*
+> +                        * We overslept and have no idea how long the lock
+> +                        * went idle. Reduce the delay as a precaution.
+> +                        */
+> +                       delay -= delay/32 + 1;
+
+There is a possibility of integer underflow here. It seems that the
+window to hit it would be quite small, but it can happen (at the very
+least, imagine getting an interrupt at an inopportune time which would
+make it look like you overslept). I think this may be what was causing
+the stability issues I noticed.
+
+I'll try to come up with a custom version of this patch. I do feel
+that we're going in a good direction in general, though.
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
