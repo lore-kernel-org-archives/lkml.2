@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab3ACXZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 18:25:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34426 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab3ACXZO (ORCPT
+	id S1754709Ab3ACX1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 18:27:00 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48714 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab3ACX05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 18:25:14 -0500
-Date: Thu, 3 Jan 2013 15:25:12 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu
-Subject: Re: [PATCH 20/32] aio: Give shared kioctx fields their own
- cachelines
-Message-Id: <20130103152512.009513a1.akpm@linux-foundation.org>
-In-Reply-To: <1356573611-18590-23-git-send-email-koverstreet@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-	<1356573611-18590-23-git-send-email-koverstreet@google.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jan 2013 18:26:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130103223801.GA4479@kroah.com>
+References: <20130103214114.GA12392@kroah.com> <20130103223801.GA4479@kroah.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 3 Jan 2013 15:26:35 -0800
+X-Google-Sender-Auth: jgEI1Cmk4o94Jxz9mmiVqxd4ztk
+Message-ID: <CA+55aFxOjYvT6iEC51sga+rRy7Oc5oZ_P5OOz6PC=tytrp5gsw@mail.gmail.com>
+Subject: Re: [GIT PATCH] Driver core __dev* removal patches for 3.8-rc2
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Dec 2012 17:59:59 -0800
-Kent Overstreet <koverstreet@google.com> wrote:
+On Thu, Jan 3, 2013 at 2:38 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+>
+> Crap, I accidentally committed this file as part of the merge, sorry
+> about that.  I can either recreate the tree without this file in it, or
+> delete the file in a commit on top of this, or just let you remove the
+> file.  Which is easier for you?
 
->  	struct {
-> -		struct mutex	ring_lock;
-> +		atomic_t	reqs_active;
->  	} ____cacheline_aligned;
+Just recreate the tree.
 
-Is there a reason why this guy remains aligned on CONFIG_SMP=n?
+In fact, why isn't this all just one single scripted commit?
 
+                  Linus
