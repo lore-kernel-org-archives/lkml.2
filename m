@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab3ADAuB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 19:50:01 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30310 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754801Ab3ADAt6 (ORCPT
+	id S1754795Ab3ADAt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 19:49:57 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:26807 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753816Ab3ADAtu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 19:49:58 -0500
+	Thu, 3 Jan 2013 19:49:50 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
@@ -14,95 +14,44 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v7u1 12/31] x86: add get_ramdisk_image/size()
-Date: Thu,  3 Jan 2013 16:48:32 -0800
-Message-Id: <1357260531-11115-13-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Jarkko Sakkinen <jarkko.sakkinen@intel.com>
+Subject: [PATCH v7u1 06/31] x86, 64bit, realmode: use init_level4_pgt to set trapmoline_pgt directly
+Date: Thu,  3 Jan 2013 16:48:26 -0800
+Message-Id: <1357260531-11115-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
 References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several places to find ramdisk information early for reserving
-and relocating.
+with #PF handler way to set early page table, level3_ident will go away with
+64bit native path.
 
-Use functions to make code more readable and consistent.
-
-Later will add ext_ramdisk_image/size in those functions to support
-loading ramdisk above 4g.
+So just use entries in init_level4_pgt to set them in tramopline_pgt
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Jarkko Sakkinen <jarkko.sakkinen@intel.com>
 ---
- arch/x86/kernel/setup.c |   29 +++++++++++++++++++++--------
- 1 file changed, 21 insertions(+), 8 deletions(-)
+ arch/x86/realmode/init.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 1b8a8cc..644a123 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -294,12 +294,25 @@ static void __init reserve_brk(void)
+diff --git a/arch/x86/realmode/init.c b/arch/x86/realmode/init.c
+index b96fe6f..384b3f4 100644
+--- a/arch/x86/realmode/init.c
++++ b/arch/x86/realmode/init.c
+@@ -78,8 +78,8 @@ void __init setup_real_mode(void)
+ 	*trampoline_cr4_features = read_cr4();
  
- #ifdef CONFIG_BLK_DEV_INITRD
- 
-+static u64 __init get_ramdisk_image(void)
-+{
-+	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
-+
-+	return ramdisk_image;
-+}
-+static u64 __init get_ramdisk_size(void)
-+{
-+	u64 ramdisk_size = boot_params.hdr.ramdisk_size;
-+
-+	return ramdisk_size;
-+}
-+
- #define MAX_MAP_CHUNK	(NR_FIX_BTMAPS << PAGE_SHIFT)
- static void __init relocate_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 area_size     = PAGE_ALIGN(ramdisk_size);
- 	u64 ramdisk_here;
- 	unsigned long slop, clen, mapaddr;
-@@ -338,8 +351,8 @@ static void __init relocate_initrd(void)
- 		ramdisk_size  -= clen;
- 	}
- 
--	ramdisk_image = boot_params.hdr.ramdisk_image;
--	ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	ramdisk_image = get_ramdisk_image();
-+	ramdisk_size  = get_ramdisk_size();
- 	printk(KERN_INFO "Move RAMDISK from [mem %#010llx-%#010llx] to"
- 		" [mem %#010llx-%#010llx]\n",
- 		ramdisk_image, ramdisk_image + ramdisk_size - 1,
-@@ -363,8 +376,8 @@ static u64 __init get_mem_size(unsigned long limit_pfn)
- static void __init early_reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 
- 	if (!boot_params.hdr.type_of_loader ||
-@@ -376,8 +389,8 @@ static void __init early_reserve_initrd(void)
- static void __init reserve_initrd(void)
- {
- 	/* Assume only end is not page aligned */
--	u64 ramdisk_image = boot_params.hdr.ramdisk_image;
--	u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
-+	u64 ramdisk_image = get_ramdisk_image();
-+	u64 ramdisk_size  = get_ramdisk_size();
- 	u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
- 	u64 mapped_size;
+ 	trampoline_pgd = (u64 *) __va(real_mode_header->trampoline_pgd);
+-	trampoline_pgd[0] = __pa_symbol(level3_ident_pgt) + _KERNPG_TABLE;
+-	trampoline_pgd[511] = __pa_symbol(level3_kernel_pgt) + _KERNPG_TABLE;
++	trampoline_pgd[0] = init_level4_pgt[pgd_index(__PAGE_OFFSET)].pgd;
++	trampoline_pgd[511] = init_level4_pgt[511].pgd;
+ #endif
+ }
  
 -- 
 1.7.10.4
