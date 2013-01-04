@@ -1,82 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab3ADNTo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 08:19:44 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37533 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745Ab3ADNTm (ORCPT
+	id S1754792Ab3ADNYX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 08:24:23 -0500
+Received: from mail-vc0-f170.google.com ([209.85.220.170]:60998 "EHLO
+	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab3ADNYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 08:19:42 -0500
-Date: Fri, 4 Jan 2013 13:25:57 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Borislav Petkov <bp@alien8.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Florian Tobias Schandinat <florianSchandinat@gmx.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-fbdev@vger.kernel.org, Bernie Thompson <bernie@plugable.com>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Dave Airlie <airlied@redhat.com>
-Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
-Message-ID: <20130104132557.70e0c527@pyramind.ukuu.org.uk>
-In-Reply-To: <50E6D01D.6040304@ahsoftware.de>
-References: <20121116192606.11799.35711.stgit@localhost.localdomain>
-	<CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com>
-	<20121121125310.00625f55@pyramind.ukuu.org.uk>
-	<CA+5PVA5iQwYOcoSYtLOoRBHaTNJANdv+X-C78474n3SzZg_m9w@mail.gmail.com>
-	<CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com>
-	<CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com>
-	<CA+1xoqf0d5ckDZ3o1-Y+qd61nvVA7EECeH20U+WjDpNVb4E=pw@mail.gmail.com>
-	<20121227045301.GB17472@x1.alien8.de>
-	<20121228115022.GA28009@S2101-09.ap.freescale.net>
-	<20121228124026.GB12918@x1.alien8.de>
-	<50E6D01D.6040304@ahsoftware.de>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jan 2013 08:24:21 -0500
+MIME-Version: 1.0
+In-Reply-To: <1356938303.16700.23.camel@ThinkPad-T5421.cn.ibm.com>
+References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
+	<1356799386-4212-7-git-send-email-fweisbec@gmail.com>
+	<1356938303.16700.23.camel@ThinkPad-T5421.cn.ibm.com>
+Date: Fri, 4 Jan 2013 14:24:19 +0100
+Message-ID: <CAFTL4hympKcagG5hzat6emwbGOVRzvUN=pKq-UjpZ+bojFzzNw@mail.gmail.com>
+Subject: Re: [PATCH 06/27] nohz: Basic full dynticks interface
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jan 2013 13:50:37 +0100
-Alexander Holler <holler@ahsoftware.de> wrote:
+2012/12/31 Li Zhong <zhong@linux.vnet.ibm.com>:
+> On Sat, 2012-12-29 at 17:42 +0100, Frederic Weisbecker wrote:
+>> Start with a very simple interface to define full dynticks CPU:
+>> use a boot time option defined cpumask through the "full_nohz="
+>> kernel parameter.
+>>
+>> Make sure you keep at least one CPU outside this range to handle
+>> the timekeeping.
+>>
+>> Also full_nohz= must match rcu_nocb= value.
+>>
+>> Suggested-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Alessio Igor Bogani <abogani@kernel.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Chris Metcalf <cmetcalf@tilera.com>
+>> Cc: Christoph Lameter <cl@linux.com>
+>> Cc: Geoff Levand <geoff@infradead.org>
+>> Cc: Gilad Ben Yossef <gilad@benyossef.com>
+>> Cc: Hakan Akkan <hakanakkan@gmail.com>
+>> Cc: Ingo Molnar <mingo@kernel.org>
+>> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Steven Rostedt <rostedt@goodmis.org>
+>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>> ---
+>>  include/linux/tick.h     |    7 +++++++
+>>  kernel/time/Kconfig      |    9 +++++++++
+>>  kernel/time/tick-sched.c |   23 +++++++++++++++++++++++
+>>  3 files changed, 39 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/include/linux/tick.h b/include/linux/tick.h
+>> index 553272e..2d4f6f0 100644
+>> --- a/include/linux/tick.h
+>> +++ b/include/linux/tick.h
+>> @@ -157,6 +157,13 @@ static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
+>>  static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
+>>  # endif /* !NO_HZ */
+>>
+>> +#ifdef CONFIG_NO_HZ_FULL
+>> +int tick_nohz_full_cpu(int cpu);
+>> +#else
+>> +static inline int tick_nohz_full_cpu(int cpu) { return 0; }
+>> +#endif
+>> +
+>> +
+>>  # ifdef CONFIG_CPU_IDLE_GOV_MENU
+>>  extern void menu_hrtimer_cancel(void);
+>>  # else
+>> diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
+>> index 8601f0d..dc6381d 100644
+>> --- a/kernel/time/Kconfig
+>> +++ b/kernel/time/Kconfig
+>> @@ -70,6 +70,15 @@ config NO_HZ
+>>         only trigger on an as-needed basis both when the system is
+>>         busy and when the system is idle.
+>>
+>> +config NO_HZ_FULL
+>> +       bool "Full tickless system"
+>> +       depends on NO_HZ && RCU_USER_QS && VIRT_CPU_ACCOUNTING_GEN && RCU_NOCB_CPU && SMP
+>
+> Does that mean for archs like PPC64, which HAVE_VIRT_CPU_ACCOUNTING, to
+> get NO_HZ_FULL supported, we need to use VIRT_CPU_ACCOUTING_GEN instead
+> of VIRT_CPU_ACCOUNTING_NATIVE? ( I think the two, *_NATIVE and *_GEN,
+> shouldn't be both enabled at the same time? )
 
-> Am 28.12.2012 13:40, schrieb Borislav Petkov:
-> > On Fri, Dec 28, 2012 at 07:50:27PM +0800, Shawn Guo wrote:
-> >> +1
-> >>
-> >> http://thread.gmane.org/gmane.linux.kernel/1413953/focus=1415070
-> >
-> > Cool, works fine here too. Is Linus on CC? (/me checks.. ) Yes he is,
-> > good.
-> >
-> > Linus, Alan's patch works at least in 2 cases, you might consider
-> > picking it up directly since the fb maintainer is absent, reportedly.
-> 
-> 
-> Btw. I think all the usb-fb's (udlfb, smscufx and udl) are broken, at 
-> least on ARM(v5). When I have linked in udlfb the following happens on 
-> boot (with an attached USB-LCD and with or without the "Rework locking 
-> patch):
+Indeed! This sounds  silly in the first place but _GEN does a context
+tracking that _NATIVE doesn't perform. And this context tracking must
+also be well ordered and serialized against the cputime snapshots.
+This is important when we remotely fix up the time from the read side.
+ie: if we read the cputime of a task that runs tickless for some time,
+we need to know where it runs (user or kernel) then pick either
+tsk->utime or tsk->stime as a result and add to it the delta of time
+it has been running tickless.
 
-They are broken if used as the system console (has been known for years).
-Perhaps your x86 test has the system console still on another device ?
+This fixup is performed in task_cputime() using seqlock() for
+ordering/serializing. And the write side use seqlocks too from vtime
+accounting APIs. But this is not handled by _NATIVE.
 
-For the udl layer it shouldn't matter as Dave Airlie wrote a DRM driver
-for udl which obsoletes the old fb layer one and works much better
-(although the error handling is still totally broken and leaks like a
-sieve if it fails)
+>
+> When I tried it on a ppc64 machine, it seems that after I select
+> VIRT_CPU_ACCOUNTING, VIRT_CPU_ACCOUNTING_NATIVE is automatically
+> selected. And I have no way to enable VIRT_CPU_ACCOUTING_GEN, or disable
+> VIRT_CPU_ACCOUNTING_NATIVE. It seems that's because these two don't have
+> a configuration name (input prompt).
 
-Fixing the console isn't that difficult - you just need to make your
-device queue the console I/O to a worker thread of some kind. We don't
-want to do that by default because we want to get the messages out
-reliably and immediately on saner hardware. Given there are several
-such cases a general helper and a console "I am crap" flag might be better
-than hacking each driver.
+Yeah I need to fix that. The user should be able to choose between
+VIRT_CPU_ACCOUTING_GEN and VIRT_CPU_ACCOUNTING_NATIVE.
 
-Alan
+I'll fix that for the next release.
 
+>
+>> +       select CONTEXT_TRACKING_FORCE
+>> +       help
+>> +         Try to be tickless everywhere, not just in idle. (You need
+>> +      to fill up the full_nohz_mask boot parameter).
+>
+> Maybe it is better to use the name of the boot parameter full_nohz here
+> than the name of the mask variable used in the code?
+>
+
+Right!
+
+Thanks for your reviews!
