@@ -1,201 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3ADQNu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 11:13:50 -0500
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:38554 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755117Ab3ADQNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 11:13:47 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] pinctrl/nomadik: Add "ste,config" property
-Date: Fri, 4 Jan 2013 17:13:30 +0100
-Message-ID: <1357316010-677-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	id S1755147Ab3ADQSh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 11:18:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:48645 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754899Ab3ADQSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 11:18:35 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1357316128.8203.33.camel@mfleming-mobl1.ger.corp.intel.com>
+References: <1357219085-4312-1-git-send-email-matt@console-pimps.org> <1357219085-4312-2-git-send-email-matt@console-pimps.org> <50E6F086.5020209@gmail.com> <1357316128.8203.33.camel@mfleming-mobl1.ger.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [RFC PATCH 1/2] efi: Make 'efi_enabled' a function to query EFI facilities
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, 04 Jan 2013 08:17:51 -0800
+To: Matt Fleming <matt@console-pimps.org>,
+        Tim Gardner <rtg.canonical@gmail.com>
+CC: Steve Langasek <steve.langasek@canonical.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        Tony Luck <tony.luck@intel.com>, David Airlie <airlied@linux.ie>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Dave Jiang <dave.jiang@intel.com>, Peter Jones <pjones@redhat.com>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, tim.gardner@canonical.com
+Message-ID: <0adaa194-413d-497e-aecf-3ac7c16c9134@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Well, *I* am confused as heck.  They look like bitmasks, we normally use decimal numbers for bit numbers as a matter of style.
 
-The "ste,config" property will contain the pin config node.
-It will be easier to define a pin configuration and use it by
-reference without duplicating lines tedious.
+Matt Fleming <matt@console-pimps.org> wrote:
 
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-This is made as an add-on patch to the first device-tree patch
-instead of respinning it for ease-of-review. We may squash it in
-the end if this approach is OK.
----
- .../devicetree/bindings/pinctrl/ste,nomadik.txt    | 56 +++++++++++++++-------
- drivers/pinctrl/pinctrl-nomadik.c                  | 24 ++++++----
- 2 files changed, 53 insertions(+), 27 deletions(-)
+>On Fri, 2013-01-04 at 08:08 -0700, Tim Gardner wrote:
+>> On 01/03/2013 06:18 AM, Matt Fleming wrote:
+>> > From: Matt Fleming <matt.fleming@intel.com>
+>> > 
+>> 
+>> snip
+>> 
+>> >  /*
+>> > - * We play games with efi_enabled so that the compiler will, if
+>possible, remove
+>> > - * EFI-related code altogether.
+>> > + * We play games with efi_enabled so that the compiler will, if
+>> > + * possible, remove EFI-related code altogether.
+>> >   */
+>> > +#define EFI_BOOT		0x00000001 /* Were we booted from EFI? */
+>> > +#define EFI_SYSTEM_TABLES	0x00000002 /* Can we use EFI system
+>tables? */
+>> > +#define EFI_CONFIG_TABLES	0x00000004 /* Can we use EFI config
+>tables? */
+>> > +#define EFI_RUNTIME_SERVICES	0x00000004 /* Can we use runtime
+>services? */
+>> > +#define EFI_MEMMAP		0x00000008 /* Can we use EFI memory map? */
+>> > +#define EFI_64BIT		0x00000010 /* Is the firmware 64-bit? */
+>> > +
+>> 
+>> Your use of test_bit() and set_bit() imply that these macros should
+>be
+>> bit numbers, not bit masks. It'll work until you define a mask with
+>an
+>> integer value greater then 31.
+>
+>They're not intended to be bitmasks in the sense that no two bits are
+>set in each constant (and I am aware of the upper limit).
+>
+>I have no problem changing the above values to bit numbers if that
+>would
+>be less confusing.
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-index 8639234..8ee860c 100644
---- a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-@@ -26,11 +26,12 @@ Optional subnode-properties:
- - ste,function: A string containing the name of the function to mux to the
-   pin or group.
- 
--- ste,input : <0/1/2/3>
-+- ste,config: Handle of pin configuration node (ste,config = <&in_pu>)
-+
-+- ste,input : <0/1/2>
- 	0: input with no pull
- 	1: input with pull up,
- 	2: input with pull down,
--	3: input and keep last input configuration (no pull, pull up or pull down).
- 
- - ste,output: <0/1/2>
- 	0: output low,
-@@ -41,10 +42,11 @@ Optional subnode-properties:
- 	0: sleep mode disable,
- 	1: sleep mode enable.
- 
--- ste,sleep-input: <0/1/2>
-+- ste,sleep-input: <0/1/2/3>
- 	0: sleep input with no pull,
- 	1: sleep input with pull up,
- 	2: sleep input with pull down.
-+	3: sleep input and keep last input configuration (no pull, pull up or pull down).
- 
- - ste,sleep-output: <0/1/2>
- 	0: sleep output low,
-@@ -65,12 +67,39 @@ Optional subnode-properties:
- 
- Example board file extract:
- 
-+	in_pu: input_pull_up {
-+		ste,input = <1>;
-+	};
-+
-+	out_hi: output_high {
-+		ste,output = <1>;
-+	};
-+
-+	slpm_in_wkup_pdis: slpm_in_wkup_pdis {
-+		ste,sleep = <1>;
-+		ste,sleep-input = <3>;
-+		ste,sleep-wakeup = <1>;
-+		ste,sleep-pull-disable = <0>;
-+	};
-+
-+	slpm_out_hi_wkup_pdis: slpm_out_hi_wkup_pdis {
-+		ste,sleep = <1>;
-+		ste,sleep-output = <1>;
-+		ste,sleep-wakeup = <1>;
-+		ste,sleep-pull-disable = <0>;
-+	};
-+	slpm_out_wkup_pdis: slpm_out_wkup_pdis {
-+		ste,sleep = <1>;
-+		ste,sleep-output = <2>;
-+		ste,sleep-wakeup = <1>;
-+		ste,sleep-pull-disable = <0>;
-+	};
-+
- 	pinctrl@80157000 {
- 		compatible = "stericsson,nmk-pinctrl";
- 		reg = <0x80157000 0x2000>;
- 
- 		pinctrl-names = "default";
--		pinctrl-0 = <&uart0_default_mode>;
- 
- 		uart0 {
- 			uart0_default_mux: uart0_mux {
-@@ -82,35 +111,26 @@ Example board file extract:
- 			uart0_default_mode: uart0_default {
- 				uart0_default_cfg1 {
- 					ste,pins = "GPIO0", "GPIO2";
--					ste,input = <1>;
-+					ste,config = <&in_pu>;
- 				};
- 
- 				uart0_default_cfg2 {
- 					ste,pins = "GPIO1", "GPIO3";
--					ste,output = <1>;
-+					ste,config = <&out_hi>;
- 				};
- 			};
- 			uart0_sleep_mode: uart0_sleep {
- 				uart0_sleep_cfg1 {
- 					ste,pins = "GPIO0", "GPIO2";
--					ste,sleep = <0>;
--					ste,sleep-input = <0>;
--					ste,sleep-wakeup = <1>;
--					ste,sleep-pull-disable = <0>;
-+					ste,config = <&slpm_in_wkup_pdis>;
- 				};
- 				uart0_sleep_cfg2 {
- 					ste,pins = "GPIO1";
--					ste,sleep = <0>;
--					ste,sleep-output = <1>;
--					ste,sleep-wakeup = <1>;
--					ste,sleep-pull-disable = <0>;
-+					ste,config = <&slpm_out_hi_wkup_pdis>;
- 				};
- 				uart0_sleep_cfg3 {
- 					ste,pins = "GPIO3";
--					ste,sleep = <0>;
--					ste,sleep-output = <2>;
--					ste,sleep-wakeup = <1>;
--					ste,sleep-pull-disable = <0>;
-+					ste,config = <&slpm_out_wkup_pdis>;
- 				};
- 			};
- 		};
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index b508bd7..0355786 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1691,23 +1691,29 @@ int nmk_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 	unsigned reserve = 0;
- 	struct property *prop;
- 	const char *group, *gpio_name;
-+	struct device_node *np_config;
- 
- 	ret = of_property_read_string(np, "ste,function", &function);
- 	if (ret >= 0)
- 		reserve = 1;
- 
--	for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
--		unsigned long cfg = 0;
--		int val;
--
--		ret = of_property_read_u32(np, nmk_cfg_params[i].property, &val);
--		if (ret != -EINVAL) {
--			if (nmk_dt_pin_config(i, val, &cfg) == 0) {
--				configs |= cfg;
--				has_config = 1;
-+	np_config = of_parse_phandle(np, "ste,config", 0);
-+	if (np_config) {
-+		for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
-+			unsigned long cfg = 0;
-+			int val;
-+
-+			ret = of_property_read_u32(np_config,
-+					nmk_cfg_params[i].property, &val);
-+			if (ret != -EINVAL) {
-+				if (nmk_dt_pin_config(i, val, &cfg) == 0) {
-+					configs |= cfg;
-+					has_config = 1;
-+				}
- 			}
- 		}
- 	}
-+
- 	ret = of_property_count_strings(np, "ste,pins");
- 	if (ret < 0)
- 		goto exit;
 -- 
-1.7.11.3
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
