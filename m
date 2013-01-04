@@ -1,49 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755075Ab3ADVIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 16:08:19 -0500
-Received: from mga11.intel.com ([192.55.52.93]:35131 "EHLO mga11.intel.com"
+	id S1755163Ab3ADVMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 16:12:08 -0500
+Received: from fieldses.org ([174.143.236.118]:48850 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754775Ab3ADVIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 16:08:17 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,412,1355126400"; 
-   d="scan'208";a="270074366"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Ingo Molnar <mingo@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, Lance Ortiz <lance.ortiz@hp.com>
-Subject: [GIT PULL] Use perf/event tracing to report PCI Express advanced errors
-Date: Fri, 04 Jan 2013 13:08:17 -0800
-Message-Id: <50e744c134281a8f8@agluck-desk.sc.intel.com>
+	id S1754681Ab3ADVMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 16:12:06 -0500
+Date: Fri, 4 Jan 2013 16:12:05 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: ycnian@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Subject: Re: [PATCH] nfsd: Remove write permission from file content
+Message-ID: <20130104211204.GA14712@fieldses.org>
+References: <1357299935-9321-1-git-send-email-ycnian@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357299935-9321-1-git-send-email-ycnian@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+On Fri, Jan 04, 2013 at 07:45:35PM +0800, ycnian@gmail.com wrote:
+> From: Yanchuan Nian <ycnian@gmail.com>
+> 
+> The write function doesn't be implemented in file content, and it's meaningless
+> to write data into this file directly. Remove write permission from it.
 
-  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+So does it really matter either way?
 
-are available in the git repository at:
+OK, applying, but I wonder.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-aer-trace
+--b.
 
-for you to fetch changes up to 2cced2d95961acd318e9395578a60ee424d9db80:
-
-  aerdrv: Cleanup log output for AER (2013-01-03 14:35:41 -0800)
-
-----------------------------------------------------------------
-Use perf/event tracing to report PCI Express advanced errors.
-
-----------------------------------------------------------------
-Lance Ortiz (3):
-      aerdrv: Trace Event for PCI Express Advanced Error Reporting
-      aerdrv: Enhanced AER logging
-      aerdrv: Cleanup log output for AER
-
- drivers/acpi/apei/cper.c               |   19 ++++++--
- drivers/pci/pcie/aer/aerdrv_errprint.c |   63 ++++++++++++++------------
- include/linux/aer.h                    |    4 +-
- include/trace/events/ras.h             |   77 ++++++++++++++++++++++++++++++++
- 4 files changed, 129 insertions(+), 34 deletions(-)
- create mode 100644 include/trace/events/ras.h
+> 
+> Signed-off-by: Yanchuan Nian <ycnian@gmail.com>
+> ---
+>  net/sunrpc/cache.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
+> index 9afa439..9f84703 100644
+> --- a/net/sunrpc/cache.c
+> +++ b/net/sunrpc/cache.c
+> @@ -1614,7 +1614,7 @@ static int create_cache_proc_entries(struct cache_detail *cd, struct net *net)
+>  			goto out_nomem;
+>  	}
+>  	if (cd->cache_show) {
+> -		p = proc_create_data("content", S_IFREG|S_IRUSR|S_IWUSR,
+> +		p = proc_create_data("content", S_IFREG|S_IRUSR,
+>  				cd->u.procfs.proc_ent,
+>  				&content_file_operations_procfs, cd);
+>  		cd->u.procfs.content_ent = p;
+> -- 
+> 1.7.4.4
+> 
