@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab3ADXDh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 18:03:37 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:62940 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab3ADXDe (ORCPT
+	id S1755435Ab3ADXLx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 18:11:53 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:41748 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab3ADXLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 18:03:34 -0500
-Date: Fri, 4 Jan 2013 15:03:28 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Jeons <simon.jeons@gmail.com>
-cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v7 1/2] KSM: numa awareness sysfs knob
-In-Reply-To: <1357259044.4930.4.camel@kernel.cn.ibm.com>
-Message-ID: <alpine.LNX.2.00.1301041446340.4863@eggly.anvils>
-References: <20121224050817.GA25749@kroah.com> <1356658337-12540-1-git-send-email-pholasek@redhat.com> <1357030004.1379.4.camel@kernel.cn.ibm.com> <alpine.LNX.2.00.1301022050450.979@eggly.anvils> <1357259044.4930.4.camel@kernel.cn.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 4 Jan 2013 18:11:51 -0500
+Date: Fri, 04 Jan 2013 15:11:46 -0800 (PST)
+Message-Id: <20130104.151146.1432785010798255784.davem@davemloft.net>
+To: peterhuewe@gmx.de
+Cc: mcarlson@broadcom.com, nsujir@broadcom.com, mchan@broadcom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, kbuild@01.org
+Subject: Re: [PATCH net-next/master] ethernet/broadcom/tg3: Fix sparse
+ warning: constant 0x7fffffffffffffff is so big it is long long
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1357223030-29155-1-git-send-email-peterhuewe@gmx.de>
+References: <50beaf6a.HF5L0P4z6BqrUx/x%fengguang.wu@intel.com>
+	<1357223030-29155-1-git-send-email-peterhuewe@gmx.de>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jan 2013, Simon Jeons wrote:
-> On Wed, 2013-01-02 at 21:10 -0800, Hugh Dickins wrote:
-> > 
-> > As you can see, remove_rmap_item_from_tree uses it to decide whether
-> > or not it should rb_erase the rmap_item from the unstable_tree.
-> > 
-> > Every full scan of all the rmap_items, we increment ksm_scan.seqnr,
-> > forget the old unstable_tree (it would just be a waste of processing
-> > to remove every node one by one), and build up the unstable_tree afresh.
-> > 
-> 
-> When the rmap_items left over from the previous scan will be removed?
+From: Peter Huewe <peterhuewe@gmx.de>
+Date: Thu,  3 Jan 2013 15:23:50 +0100
 
-Removed from the unstable rbtree?  Not at all, it's simply restarted
-afresh, and the old rblinkages ignored.  Freed back to slab?  When the
-scan passes that mm+address and realizes that rmap_item is not wanted
-any more.  (Or when ksm is shut down with KSM_RUN_UNMERGE.)
-
+> Sparse complains that:
+> drivers/net/ethernet/broadcom/tg3.c:5670:55: sparse: constant
+> 0x7fffffffffffffff is so big it is long long (on x86/32 bit)
 > 
-> > That works fine until we need to remove an rmap_item: then we have to be
-> > very sure to remove it from the unstable_tree if it's already been linked
-> > there during this scan, but ignore its rblinkage if that's just left over
-> > from the previous scan.
-> > 
-> > A single bit would be enough to decide this; but we got it troublesomely
-> > wrong in the early days of KSM (didn't always visit every rmap_item each
-> > scan), so it's convenient to use 8 bits (the low unsigned char, stored
+> so we suffix the constant with LL in the header file.
 > 
-> When the scenario didn't always visit every rmap_item each scan can
-> occur? 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 
-You're asking me about a stage of KSM development 3.5 years ago:
-I don't remember the details.
-
-> 
-> > below the FLAGs and below the page-aligned address in the rmap_item -
-> > there's lots of them, best keep them as small as we can) and do a
-> > BUG_ON(age > 1) if we made a mistake.
-> > 
-> > We haven't hit that BUG_ON in over three years: if we need some more
-> > bits for something, we can cut the age down to one or two bits.
-> > 
-> > Hugh
+Applied.
