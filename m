@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab3ADW0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 17:26:07 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:44643 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749Ab3ADW0F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 17:26:05 -0500
+	id S1755378Ab3ADW2A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 17:28:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:14926 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754749Ab3ADW15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 17:27:57 -0500
+Date: Fri, 4 Jan 2013 20:21:35 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 3/5] KVM: x86: clean up reexecute_instruction
+Message-ID: <20130104222135.GA13481@amt.cnet>
+References: <50E6DEDC.7040800@linux.vnet.ibm.com>
+ <50E6DF5C.2000103@linux.vnet.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-Date: Fri, 4 Jan 2013 15:26:03 -0700
-Message-ID: <CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50E6DF5C.2000103@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 3:10 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Fri, Jan 4, 2013 at 1:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->> Pani'cing the system doesn't sound like a good option to me in this
->> case. This change to disable swiotlb is made for kdump. However, with
->> this change several system fail to boot, unless crashkernel_low=72M is
->> specified.
->
-> this patchset is new feature to put second kdump kernel above 4G.
->
-I understand this is just one of the patches to implement the new
-kdump feature. However, I think regression on existing behavior with a
-panic is a bit of a big hammer. Thie change causes panic on systems
-even when kdump is not enabled, if I understand it correctly.
+On Fri, Jan 04, 2013 at 09:55:40PM +0800, Xiao Guangrong wrote:
+> Little cleanup for reexecute_instruction, also use gpa_to_gfn in
+> retry_instruction
+> 
+> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+> ---
+>  arch/x86/kvm/x86.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 1c9c834..ad39018 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4761,19 +4761,18 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
+>  	if (tdp_enabled)
+>  		return false;
+> 
+> +	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
+> +	if (gpa == UNMAPPED_GVA)
+> +		return true; /* let cpu generate fault */
+> +
 
-Granted kdump gets enabled by several distros, but it is not a
-required feature. However, expecting system to boot with devices that
-require swiotlb fully functioning is a basic feature. So I would argue
-that not breaking the basic functionality is a higher priority over
-enabling kdump in this case.
+Why change from _system to _read here? Purely cleanup patch should
+have no logical changes.
 
--- Shuah
+BTW, there is not much logic in using reexecute_instruction() at
+for x86_decode_insn (checks in reexecute_instruction() assume 
+write to the cr2, for instance).
+Fault propagation for x86_decode_insn seems completly broken
+(which is perhaps why reexecute_instruction() there survived).
+
+>  	/*
+>  	 * if emulation was due to access to shadowed page table
+>  	 * and it failed try to unshadow page and re-enter the
+>  	 * guest to let CPU execute the instruction.
+>  	 */
+> -	if (kvm_mmu_unprotect_page_virt(vcpu, gva))
+> +	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
+>  		return true;
+> 
+> -	gpa = kvm_mmu_gva_to_gpa_system(vcpu, gva, NULL);
+> -
+> -	if (gpa == UNMAPPED_GVA)
+> -		return true; /* let cpu generate fault */
+> -
+>  	/*
+>  	 * Do not retry the unhandleable instruction if it faults on the
+>  	 * readonly host memory, otherwise it will goto a infinite loop:
+> @@ -4828,7 +4827,7 @@ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+>  	if (!vcpu->arch.mmu.direct_map)
+>  		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
+> 
+> -	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
+> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
+> 
+>  	return true;
+>  }
+> -- 
+> 1.7.7.6
