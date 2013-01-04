@@ -1,152 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab3ADORW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 09:17:22 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:56378 "EHLO bear.ext.ti.com"
+	id S1754909Ab3ADORx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 09:17:53 -0500
+Received: from norkia.v3.sk ([91.210.183.14]:32841 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754822Ab3ADORS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 09:17:18 -0500
-Message-ID: <50E6E45E.6010004@ti.com>
-Date: Fri, 4 Jan 2013 16:17:02 +0200
-From: Roger Quadros <rogerq@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: <sameo@linux.intel.com>
-CC: Roger Quadros <rogerq@ti.com>, <balbi@ti.com>, <tony@atomide.com>,
-        <keshava_mgowda@ti.com>, <sshtylyov@mvista.com>, <bjorn@mork.no>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 00/22] OMAP USB Host cleanup
-References: <1357138842-28964-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1357138842-28964-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1754781Ab3ADORu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 09:17:50 -0500
+X-Greylist: delayed 643 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 09:17:50 EST
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Lennert Buytenhek <buytenh@wantstofly.org>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lubomir Rintel <lkundrak@v3.sk>
+Subject: [PATCH] mv643xx_eth: Fix a possible deadlock upon ifdown
+Date: Fri,  4 Jan 2013 15:17:43 +0100
+Message-Id: <1357309063-20236-1-git-send-email-lkundrak@v3.sk>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1357308422-19639-1-git-send-email-lkundrak@v3.sk>
+References: <1357308422-19639-1-git-send-email-lkundrak@v3.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+=================================
+[ INFO: inconsistent lock state ]
+3.7.0-6.luboskovo.fc19.armv5tel.kirkwood #1 Tainted: G        W
+---------------------------------
+inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
+NetworkManager/337 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ (_xmit_ETHER#2){+.?...}, at: [<bf07adfc>] txq_reclaim+0x54/0x264 [mv643xx_eth]
+{IN-SOFTIRQ-W} state was registered at:
+  [<c0068480>] __lock_acquire+0x5b4/0x17d0
+  [<c0069d7c>] lock_acquire+0x160/0x1e0
+  [<c04f41a0>] _raw_spin_lock+0x50/0x88
+  [<c0407178>] sch_direct_xmit+0x4c/0x2d4
+  [<c03ec978>] dev_queue_xmit+0x4b8/0x8d8
+  [<c0492dc8>] ip6_finish_output2+0x350/0x42c
+  [<c04b7fd8>] mld_sendpack+0x2d0/0x514
+  [<c04b8834>] mld_ifc_timer_expire+0x228/0x278
+  [<c002afe8>] call_timer_fn+0x140/0x33c
+  [<c002bbf0>] run_timer_softirq+0x278/0x32c
+  [<c0024288>] __do_softirq+0x16c/0x398
+  [<c002488c>] irq_exit+0x5c/0xc0
+  [<c0009c64>] handle_IRQ+0x6c/0x8c
+  [<c04f5218>] __irq_svc+0x38/0x80
+  [<c0065684>] lock_is_held+0x4/0x54
+  [<c004d5a0>] __might_sleep+0x44/0x228
+  [<c04f25a4>] down_read+0x28/0x88
+  [<c0263c94>] __copy_to_user_memcpy+0xa8/0x140
+  [<c01374d0>] seq_read+0x3ac/0x474
+  [<c011623c>] vfs_read+0xac/0x184
+  [<c0116354>] sys_read+0x40/0x6c
+  [<c0008cc0>] ret_fast_syscall+0x0/0x38
+irq event stamp: 115119
+hardirqs last  enabled at (115119): [<c04f4cf0>] _raw_spin_unlock_irqrestore+0x44/0x64
+hardirqs last disabled at (115118): [<c04f430c>] _raw_spin_lock_irqsave+0x28/0xa0
+softirqs last  enabled at (114880): [<c00243d4>] __do_softirq+0x2b8/0x398
+softirqs last disabled at (114873): [<c002488c>] irq_exit+0x5c/0xc0
 
-Below is the pull request for this series. I've addressed the recent
-indentation issue pointed out by Sergei.
+other info that might help us debug this:
+ Possible unsafe locking scenario:
 
-The following changes since commit cfa7abd7a92396923889fc870090b5d748c603ab:
+       CPU0
+       ----
+  lock(_xmit_ETHER#2);
+  <Interrupt>
+    lock(_xmit_ETHER#2);
 
-  Merge branch 'heads/fixes' into for-next (2013-01-02 12:40:04 -0800)
+ *** DEADLOCK ***
 
-are available in the git repository at:
+1 lock held by NetworkManager/337:
+ #0:  (rtnl_mutex){+.+.+.}, at: [<c03fad04>] rtnetlink_rcv+0x14/0x2c
 
-  git://github.com/rogerq/linux.git arm-for-next-usbhost9-part
+stack backtrace:
+[<c000f5a8>] (unwind_backtrace+0x0/0x124) from [<c04ebea8>] (print_usage_bug.part.29+0x20c/0x26c)
+[<c04ebea8>] (print_usage_bug.part.29+0x20c/0x26c) from [<c0067cc4>] (mark_lock+0x404/0x60c)
+[<c0067cc4>] (mark_lock+0x404/0x60c) from [<c0068504>] (__lock_acquire+0x638/0x17d0)
+[<c0068504>] (__lock_acquire+0x638/0x17d0) from [<c0069d7c>] (lock_acquire+0x160/0x1e0)
+[<c0069d7c>] (lock_acquire+0x160/0x1e0) from [<c04f41a0>] (_raw_spin_lock+0x50/0x88)
+[<c04f41a0>] (_raw_spin_lock+0x50/0x88) from [<bf07adfc>] (txq_reclaim+0x54/0x264 [mv643xx_eth])
+[<bf07adfc>] (txq_reclaim+0x54/0x264 [mv643xx_eth]) from [<bf07b03c>] (txq_deinit+0x30/0xec [mv643xx_eth])
+[<bf07b03c>] (txq_deinit+0x30/0xec [mv643xx_eth]) from [<bf07b21c>] (mv643xx_eth_stop+0x124/0x140 [mv643xx_eth])
+[<bf07b21c>] (mv643xx_eth_stop+0x124/0x140 [mv643xx_eth]) from [<c03e8bbc>] (__dev_close_many+0xb0/0xec)
+[<c03e8bbc>] (__dev_close_many+0xb0/0xec) from [<c03e8c28>] (__dev_close+0x30/0x44)
+[<c03e8c28>] (__dev_close+0x30/0x44) from [<c03ed154>] (__dev_change_flags+0x94/0x120)
+[<c03ed154>] (__dev_change_flags+0x94/0x120) from [<c03ed260>] (dev_change_flags+0x18/0x4c)
+[<c03ed260>] (dev_change_flags+0x18/0x4c) from [<c03fb174>] (do_setlink+0x2cc/0x7ac)
+[<c03fb174>] (do_setlink+0x2cc/0x7ac) from [<c03fc5ec>] (rtnl_newlink+0x26c/0x4a8)
+[<c03fc5ec>] (rtnl_newlink+0x26c/0x4a8) from [<c03fc104>] (rtnetlink_rcv_msg+0x280/0x29c)
+[<c03fc104>] (rtnetlink_rcv_msg+0x280/0x29c) from [<c041245c>] (netlink_rcv_skb+0x58/0xb4)
+[<c041245c>] (netlink_rcv_skb+0x58/0xb4) from [<c03fad10>] (rtnetlink_rcv+0x20/0x2c)
+[<c03fad10>] (rtnetlink_rcv+0x20/0x2c) from [<c0411dec>] (netlink_unicast+0x158/0x208)
+[<c0411dec>] (netlink_unicast+0x158/0x208) from [<c0412254>] (netlink_sendmsg+0x310/0x3c0)
+[<c0412254>] (netlink_sendmsg+0x310/0x3c0) from [<c03d209c>] (sock_sendmsg+0xa8/0xd0)
+[<c03d209c>] (sock_sendmsg+0xa8/0xd0) from [<c03d2314>] (__sys_sendmsg+0x1d8/0x280)
+[<c03d2314>] (__sys_sendmsg+0x1d8/0x280) from [<c03d4054>] (sys_sendmsg+0x44/0x68)
+[<c03d4054>] (sys_sendmsg+0x44/0x68) from [<c0008cc0>] (ret_fast_syscall+0x0/0x38)
 
-Roger Quadros (22):
-      mfd: omap-usb-tll: Avoid creating copy of platform data
-      mfd: omap-usb-tll: Fix channel count detection
-      mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
-      mfd: omap-usb-tll: Clean up clock handling
-      mfd: omap-usb-tll: introduce and use mode_needs_tll()
-      mfd: omap-usb-tll: Check for missing platform data in probe
-      mfd: omap-usb-tll: Fix error message
-      mfd: omap-usb-tll: serialize access to TLL device
-      mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
-      mfd: omap_usb_host: Avoid creating copy of platform_data
-      mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
-      mfd: omap-usb-host: know about number of ports from revision register
-      mfd: omap-usb-host: override number of ports from platform data
-      mfd: omap-usb-host: cleanup clock management code
-      mfd: omap-usb-host: Manage HSIC clocks for HSIC mode
-      mfd: omap-usb-host: Get rid of unnecessary spinlock
-      mfd: omap-usb-host: clean up omap_usbhs_init()
-      USB: ehci-omap: Don't free gpios that we didn't request
-      ARM: OMAP3: clock data: get rid of unused USB host clock aliases
-and dummies
-      ARM: OMAP4: clock data: get rid of unused USB host clock aliases
-      mfd: omap-usb-host: Don't spam console on clk_set_parent failure
-      mdf: omap-usb-host: get rid of build warning
+Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+---
 
- arch/arm/mach-omap2/cclock3xxx_data.c  |   11 -
- arch/arm/mach-omap2/cclock44xx_data.c  |    7 -
- arch/arm/mach-omap2/usb-host.c         |    1 +
- arch/arm/mach-omap2/usb.h              |    1 +
- drivers/mfd/omap-usb-host.c            |  499
-+++++++++++++++++++-------------
- drivers/mfd/omap-usb-tll.c             |  244 +++++++++-------
- drivers/usb/host/ehci-omap.c           |    8 -
- include/linux/platform_data/usb-omap.h |    1 +
- 8 files changed, 435 insertions(+), 337 deletions(-)
+I've sent an incorrect version; resending with a proper signoff and headers 
+this time; sorry about that.
 
---
-cheers,
--roger
+ drivers/net/ethernet/marvell/mv643xx_eth.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-On 01/02/2013 05:00 PM, Roger Quadros wrote:
-> Hi,
-> 
-> This patchset addresses the following
-> 
-> - Avoid addressing clocks one by one by name and use a for loop + bunch
->   of cleanups.
-> - Get number of channels/ports dynamically either from revision register
->   or from platform data. Avoids getting clocks that are not present.
-> - Add OMAP5 and HSIC mode (Not tested)
-> 
-> v5:
-> - Rebased on top of todays arm-soc/for-next
-> - Removed the clock merging patch from the list.
-> - Updated patches 14, 19 and 20 to accomodate the above change.
-> - Added patch 22 to fix a build warning.
-> 
-> v4:
-> - Added appropriate maintainers in to/cc
-> - minor print message fix in patch 23 to maintain consistency
-> 
-> v3:
-> - Rebased on arm-soc/for-next commit f979306c4d38d213c6977aaf3b1115e8ded71e3a
-> - Rearranged patch that get rids of cpu_is_omap..() macros
-> - Coding style fixes
-> 
-> v2:
-> - Clocks are allocated dynamically based on number of ports available
-> on the platform
-> - Reduced console spam if non critical clocks are not found on the platform.
-> - Get rid of cpu_is_.. macros from USB host driver.
-> 
-> cheers,
-> -roger
-> 
-> ---
-> Roger Quadros (22):
->   mfd: omap-usb-tll: Avoid creating copy of platform data
->   mfd: omap-usb-tll: Fix channel count detection
->   mfd: omap-usb-tll: Use devm_kzalloc/ioremap and clean up error path
->   mfd: omap-usb-tll: Clean up clock handling
->   mfd: omap-usb-tll: introduce and use mode_needs_tll()
->   mfd: omap-usb-tll: Check for missing platform data in probe
->   mfd: omap-usb-tll: Fix error message
->   mfd: omap-usb-tll: serialize access to TLL device
->   mfd: omap-usb-tll: Add OMAP5 revision and HSIC support
->   mfd: omap_usb_host: Avoid creating copy of platform_data
->   mfd: omap-usb-host: Use devm_kzalloc() and devm_request_and_ioremap()
->   mfd: omap-usb-host: know about number of ports from revision register
->   mfd: omap-usb-host: override number of ports from platform data
->   mfd: omap-usb-host: cleanup clock management code
->   mfd: omap-usb-host: Manage HSIC clocks for HSIC mode
->   mfd: omap-usb-host: Get rid of unnecessary spinlock
->   mfd: omap-usb-host: clean up omap_usbhs_init()
->   USB: ehci-omap: Don't free gpios that we didn't request
->   ARM: OMAP3: clock data: get rid of unused USB host clock aliases and
->     dummies
->   ARM: OMAP4: clock data: get rid of unused USB host clock aliases
->   mfd: omap-usb-host: Don't spam console on clk_set_parent failure
->   mdf: omap-usb-host: get rid of build warning
-> 
->  arch/arm/mach-omap2/cclock3xxx_data.c  |   11 -
->  arch/arm/mach-omap2/cclock44xx_data.c  |    7 -
->  arch/arm/mach-omap2/usb-host.c         |    1 +
->  arch/arm/mach-omap2/usb.h              |    1 +
->  drivers/mfd/omap-usb-host.c            |  499 +++++++++++++++++++-------------
->  drivers/mfd/omap-usb-tll.c             |  244 +++++++++-------
->  drivers/usb/host/ehci-omap.c           |    8 -
->  include/linux/platform_data/usb-omap.h |    1 +
->  8 files changed, 435 insertions(+), 337 deletions(-)
-> 
+diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
+index 84c1326..67a3e78 100644
+--- a/drivers/net/ethernet/marvell/mv643xx_eth.c
++++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
+@@ -943,7 +943,7 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
+ 	struct netdev_queue *nq = netdev_get_tx_queue(mp->dev, txq->index);
+ 	int reclaimed;
+ 
+-	__netif_tx_lock(nq, smp_processor_id());
++	__netif_tx_lock_bh(nq);
+ 
+ 	reclaimed = 0;
+ 	while (reclaimed < budget && txq->tx_desc_count > 0) {
+@@ -989,7 +989,7 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
+ 		dev_kfree_skb(skb);
+ 	}
+ 
+-	__netif_tx_unlock(nq);
++	__netif_tx_unlock_bh(nq);
+ 
+ 	if (reclaimed < budget)
+ 		mp->work_tx &= ~(1 << txq->index);
+-- 
+1.7.1
 
