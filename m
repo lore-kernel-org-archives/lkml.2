@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab3ADPnC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 10:43:02 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:36472 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754751Ab3ADPnA (ORCPT
+	id S1754991Ab3ADPvo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 10:51:44 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:64150 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754837Ab3ADPvl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 10:43:00 -0500
-Message-ID: <50E6F862.2030703@linux.vnet.ibm.com>
-Date: Fri, 04 Jan 2013 09:42:26 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 4 Jan 2013 10:51:41 -0500
+X-IronPort-AV: E=Sophos;i="4.84,411,1355126400"; 
+   d="scan'208";a="4725516"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: "ycnian@gmail.com" <ycnian@gmail.com>
+CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pnfs: Increase the refcount when LAYOUTGET fails the
+ first time
+Thread-Topic: [PATCH] pnfs: Increase the refcount when LAYOUTGET fails the
+ first time
+Thread-Index: AQHN6ncmtnPdp7uFNEWmjt4lAOkA95g51++A
+Date: Fri, 4 Jan 2013 15:51:39 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91198A99A@SACEXCMBX04-PRD.hq.netapp.com>
+References: <1357301989-10278-1-git-send-email-ycnian@gmail.com>
+In-Reply-To: <1357301989-10278-1-git-send-email-ycnian@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <A8E92EF911B0A8468D0AD6CC18B970FE@tahoe.netapp.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 7/8] zswap: add to mm/
-References: <<1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>> <<1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>> <0e91c1e5-7a62-4b89-9473-09fff384a334@default> <50E32255.60901@linux.vnet.ibm.com> <26bb76b3-308e-404f-b2bf-3d19b28b393a@default> <50E4C1FA.4070701@linux.vnet.ibm.com> <640d712e-0217-456a-a2d1-d03dd7914a55@default>
-In-Reply-To: <640d712e-0217-456a-a2d1-d03dd7914a55@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010415-5518-0000-0000-00000A7906AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 04:33 PM, Dan Magenheimer wrote:
->> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
->>
->> However, once the flushing code was introduced and could free an entry
->> from the zswap_fs_store() path, it became necessary to add a per-entry
->> refcount to make sure that the entry isn't freed while another code
->> path was operating on it.
-> 
-> Hmmm... doesn't the refcount at least need to be an atomic_t?
+On Fri, 2013-01-04 at 20:19 +-0800, ycnian+AEA-gmail.com wrote:
++AD4- From: Yanchuan Nian +ADw-ycnian+AEA-gmail.com+AD4-
++AD4- 
++AD4- The layout will be set unusable if LAYOUTGET fails. Is it reasonable to
++AD4- increase the refcount iff LAYOUTGET fails the first time?
++AD4- 
++AD4- Signed-off-by: Yanchuan Nian +ADw-ycnian+AEA-gmail.com+AD4-
++AD4- ---
++AD4-  fs/nfs/pnfs.c +AHw-    2 +--
++AD4-  1 files changed, 1 insertions(+-), 1 deletions(-)
++AD4- 
++AD4- diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
++AD4- index e7165d9..d00260b 100644
++AD4- --- a/fs/nfs/pnfs.c
++AD4- +-+-+- b/fs/nfs/pnfs.c
++AD4- +AEAAQA- -254,7 +-254,7 +AEAAQA- static void
++AD4-  pnfs+AF8-layout+AF8-set+AF8-fail+AF8-bit(struct pnfs+AF8-layout+AF8-hdr +ACo-lo, int fail+AF8-bit)
++AD4-  +AHs-
++AD4-  	lo-+AD4-plh+AF8-retry+AF8-timestamp +AD0- jiffies+ADs-
++AD4- -	if (test+AF8-and+AF8-set+AF8-bit(fail+AF8-bit, +ACY-lo-+AD4-plh+AF8-flags))
++AD4- +-	if (+ACE-test+AF8-and+AF8-set+AF8-bit(fail+AF8-bit, +ACY-lo-+AD4-plh+AF8-flags))
++AD4-  		atomic+AF8-inc(+ACY-lo-+AD4-plh+AF8-refcount)+ADs-
++AD4-  +AH0-
++AD4-  
+Thank for spotting this+ACE- Applying to the bugfixes branch...
 
-An entry's refcount is only ever changed under the tree lock, so
-making them atomic_t would be redundantly atomic.
+-- 
+Trond Myklebust
+Linux NFS client maintainer
 
-I should add a comment to that effect though, including all elements
-that are protected by the tree lock which include:
-* the tree structure
-* the lru list
-* the per-entry refcounts
-
-I'll put that change in the queue for v2.
-
-> Also, how can you "free" any entry of an rbtree while another
-> thread is walking the rbtree?  (Deleting an entry from an rbtree
-> causes rebalancing... afaik there is no equivalent RCU
-> implementation for rbtrees... not that RCU would necessarily
-> work well for this anyway.)
-
-This also can't happen since a thread must obtain the tree lock before
-accessing or changing the tree.
-
-Regarding RCU, I saw that some work had been done on RCU aware rbtree
-functions but they weren't ready yet.
-
-> BTW, in case it appears otherwise, I'm trying to be helpful, not
-> critical.  In the end, I think we are in agreement that in-kernel
-> compression is very important and that the frontswap (and/or
-> cleancache) interface(s) are the right way to identify compressible
-> data, and we are mostly arguing allocation and implementation details.
-
-Yes. I'm always grateful for comments about the code :)  At the very
-least, it rehashes the justifications for design decisions.
-
-Thanks,
-Seth
-
+NetApp
+Trond.Myklebust+AEA-netapp.com
+www.netapp.com
