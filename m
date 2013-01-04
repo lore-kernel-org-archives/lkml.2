@@ -1,118 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3ADMJQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 07:09:16 -0500
-Received: from server109-228-6-235.live-servers.net ([109.228.6.235]:55803
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751269Ab3ADMJN (ORCPT
+	id S1754003Ab3ADMNv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 07:13:51 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:58954 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751513Ab3ADMNs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 07:09:13 -0500
-X-Greylist: delayed 1703 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 07:09:13 EST
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Alexey Zaytsev <alexey.zaytsev@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] drm/i915: Treat crtc->mode.clock == 0 as disabled
-Date: Fri,  4 Jan 2013 11:39:55 +0000
-Message-Id: <1357299595-16037-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <CAB9v_DE0qMdQ2poxv++FGd2zo+Tw5_m6kgTOoBZSCUOGZf+fNA@mail.gmail.com>
-References: <CAB9v_DE0qMdQ2poxv++FGd2zo+Tw5_m6kgTOoBZSCUOGZf+fNA@mail.gmail.com>
-X-Originating-IP: 78.156.73.22
+	Fri, 4 Jan 2013 07:13:48 -0500
+Message-ID: <50E6C776.7060707@mvista.com>
+Date: Fri, 04 Jan 2013 16:13:42 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, mhocko@suse.cz, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] Revert "nohz: Fix idle ticks in cpu summary line
+ of /proc/stat" (commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f).
+References: <1357268337-8025-1-git-send-email-vatsa@codeaurora.org>
+In-Reply-To: <1357268337-8025-1-git-send-email-vatsa@codeaurora.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prevent a divide-by-zero by consistently treating an 'active' CRTC
-without a mode set as actually disabled.
----
- drivers/gpu/drm/i915/intel_pm.c |   22 +++++++++++++---------
- 1 file changed, 13 insertions(+), 9 deletions(-)
+Hello.
 
-diff --git a/drivers/gpu/drm/i915/intel_pm.c b/drivers/gpu/drm/i915/intel_pm.c
-index e6f54ff..c929a4e 100644
---- a/drivers/gpu/drm/i915/intel_pm.c
-+++ b/drivers/gpu/drm/i915/intel_pm.c
-@@ -44,6 +44,11 @@
-  * i915.i915_enable_fbc parameter
-  */
- 
-+static bool intel_crtc_active(struct drm_crtc *crtc)
-+{
-+	return to_intel_crtc(crtc)->active && crtc->fb && crtc->mode.clock;
-+}
-+
- static void i8xx_disable_fbc(struct drm_device *dev)
- {
- 	struct drm_i915_private *dev_priv = dev->dev_private;
-@@ -405,9 +410,8 @@ void intel_update_fbc(struct drm_device *dev)
- 	 *   - going to an unsupported config (interlace, pixel multiply, etc.)
- 	 */
- 	list_for_each_entry(tmp_crtc, &dev->mode_config.crtc_list, head) {
--		if (to_intel_crtc(tmp_crtc)->active &&
--		    !to_intel_crtc(tmp_crtc)->primary_disabled &&
--		    tmp_crtc->fb) {
-+		if (intel_crtc_active(tmp_crtc) &&
-+		    !to_intel_crtc(tmp_crtc)->primary_disabled) {
- 			if (crtc) {
- 				DRM_DEBUG_KMS("more than one pipe active, disabling compression\n");
- 				dev_priv->no_fbc_reason = FBC_MULTIPLE_PIPES;
-@@ -992,7 +996,7 @@ static struct drm_crtc *single_enabled_crtc(struct drm_device *dev)
- 	struct drm_crtc *crtc, *enabled = NULL;
- 
- 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
--		if (to_intel_crtc(crtc)->active && crtc->fb) {
-+		if (intel_crtc_active(crtc)) {
- 			if (enabled)
- 				return NULL;
- 			enabled = crtc;
-@@ -1086,7 +1090,7 @@ static bool g4x_compute_wm0(struct drm_device *dev,
- 	int entries, tlb_miss;
- 
- 	crtc = intel_get_crtc_for_plane(dev, plane);
--	if (crtc->fb == NULL || !to_intel_crtc(crtc)->active) {
-+	if (!intel_crtc_active(crtc)) {
- 		*cursor_wm = cursor->guard_size;
- 		*plane_wm = display->guard_size;
- 		return false;
-@@ -1215,7 +1219,7 @@ static bool vlv_compute_drain_latency(struct drm_device *dev,
- 	int entries;
- 
- 	crtc = intel_get_crtc_for_plane(dev, plane);
--	if (crtc->fb == NULL || !to_intel_crtc(crtc)->active)
-+	if (!intel_crtc_active(crtc))
- 		return false;
- 
- 	clock = crtc->mode.clock;	/* VESA DOT Clock */
-@@ -1476,7 +1480,7 @@ static void i9xx_update_wm(struct drm_device *dev)
- 
- 	fifo_size = dev_priv->display.get_fifo_size(dev, 0);
- 	crtc = intel_get_crtc_for_plane(dev, 0);
--	if (to_intel_crtc(crtc)->active && crtc->fb) {
-+	if (intel_crtc_active(crtc)) {
- 		int cpp = crtc->fb->bits_per_pixel / 8;
- 		if (IS_GEN2(dev))
- 			cpp = 4;
-@@ -1490,7 +1494,7 @@ static void i9xx_update_wm(struct drm_device *dev)
- 
- 	fifo_size = dev_priv->display.get_fifo_size(dev, 1);
- 	crtc = intel_get_crtc_for_plane(dev, 1);
--	if (to_intel_crtc(crtc)->active && crtc->fb) {
-+	if (intel_crtc_active(crtc)) {
- 		int cpp = crtc->fb->bits_per_pixel / 8;
- 		if (IS_GEN2(dev))
- 			cpp = 4;
-@@ -2044,7 +2048,7 @@ sandybridge_compute_sprite_wm(struct drm_device *dev, int plane,
- 	int entries, tlb_miss;
- 
- 	crtc = intel_get_crtc_for_plane(dev, plane);
--	if (crtc->fb == NULL || !to_intel_crtc(crtc)->active) {
-+	if (!intel_crtc_active(crtc)) {
- 		*sprite_wm = display->guard_size;
- 		return false;
- 	}
--- 
-1.7.10.4
+On 04-01-2013 6:58, Srivatsa Vaddagiri wrote:
+
+> With offline cpus no longer beeing seen in nohz mode (ts->idle_active=0), we
+> don't need the check for cpu_online() introduced in commit 7386cdbf. Offline
+
+    Please also specify the summary of that commit in parens (or however you 
+like).
+
+> cpu's idle time as last recorded in its ts->idle_sleeptime will be reported
+> (thus excluding its offline time as part of idle time statistics).
+
+> Cc: mhocko@suse.cz
+> Cc: srivatsa.bhat@linux.vnet.ibm.com
+> Signed-off-by: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+
+WBR, Sergei
 
