@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab3ADT2q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:28:46 -0500
-Received: from mail.vyatta.com ([76.74.103.46]:33845 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754060Ab3ADT2n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:28:43 -0500
-Date: Fri, 4 Jan 2013 11:27:16 -0800
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        bridge@lists.linux-foundation.org
-Subject: Re: linux-next: Tree for Jan 4 (net/bridge)
-Message-ID: <20130104112716.596f9085@nehalam.linuxnetplumber.net>
-In-Reply-To: <50E72977.7030605@infradead.org>
-References: <20130104152814.3a3cf74bdec76cea09d3e134@canb.auug.org.au>
-	<50E72977.7030605@infradead.org>
-Organization: Vyatta
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754858Ab3ADT3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:29:40 -0500
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:35515 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060Ab3ADT3g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 14:29:36 -0500
+X-IronPort-AV: E=Sophos;i="4.84,412,1355126400"; 
+   d="scan'208";a="17972381"
+Date: Fri, 4 Jan 2013 11:29:34 -0800
+From: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, mhocko@suse.cz, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] Revert "nohz: Fix idle ticks in cpu summary line
+ of /proc/stat" (commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f).
+Message-ID: <20130104192934.GB29866@quicinc.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+References: <1357268337-8025-1-git-send-email-vatsa@codeaurora.org>
+ <50E6C776.7060707@mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <50E6C776.7060707@mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jan 2013 11:11:51 -0800
-Randy Dunlap <rdunlap@infradead.org> wrote:
+* Sergei Shtylyov <sshtylyov@mvista.com> [2013-01-04 16:13:42]:
 
-> On 01/03/13 20:28, Stephen Rothwell wrote:
-> > Hi all,
-> > 
-> > Changes since 20130103:
-> > 
+> >With offline cpus no longer beeing seen in nohz mode (ts->idle_active=0), we
+> >don't need the check for cpu_online() introduced in commit 7386cdbf. Offline
 > 
-> on i386 and x86_64:
-> 
->   CC      net/bridge/br_netlink.o
-> net/bridge/br_netlink.c: In function 'br_netlink_init':
-> net/bridge/br_netlink.c:307:2: error: implicit declaration of function 'br_mdb_init' [-Werror=implicit-function-declaration]
-> net/bridge/br_netlink.c:314:2: error: implicit declaration of function 'br_mdb_uninit' [-Werror=implicit-function-declaration]
-> cc1: some warnings being treated as errors
-> make[3]: *** [net/bridge/br_netlink.o] Error 1
-> 
-> 
-> Full randconfig file is attached.
-> 
-> 
+>    Please also specify the summary of that commit in parens (or
+> however you like).
 
-Problem not observed with current net-next and your configuration.
-Probably already fixed.
+I had that in Subject line, but yes would be good to include in commit message
+as well. I will incorporate that change alongwith anything else required in
+next version of this patch.
+
+- vatsa
