@@ -1,84 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab3ACX4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 18:56:38 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:48512 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab3ACX4g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 18:56:36 -0500
+	id S1754358Ab3ADAHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 19:07:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59162 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753797Ab3ADAHD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 19:07:03 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 12/12] ACPI: Use system level attribute of wakeup power resources
+Date: Fri, 04 Jan 2013 01:10:18 +0100
+Message-ID: <4222987.iOLcPTWjtZ@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <1418767.4KIZOTK1lk@vostro.rjw.lan>
+References: <1418767.4KIZOTK1lk@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <6c3329$7ukf5e@orsmga002.jf.intel.com>
-References: <CA+55aFxQ9vH70UrqC0ypm-diNbGcZbWbdhYa3FLH+0Vbrk4hUQ@mail.gmail.com>
-	<CAB9v_DHJYAEcZDuPd3XBEib_nGca=_sKbZngV3z1N6H8KcJJGQ@mail.gmail.com>
-	<CA+55aFzQtxET9JWdaLGi52OL=A9yRbj+vaa7RfniuBvfB5K04Q@mail.gmail.com>
-	<6c3329$7ukf5e@orsmga002.jf.intel.com>
-Date: Thu, 3 Jan 2013 16:56:34 -0700
-Message-ID: <CAKocOOOSGDp644fCEdeJ22GCOW00PVB3fedA_3O81q-1rp247Q@mail.gmail.com>
-Subject: Re: Linux 3.8-rc2
-From: Shuah Khan <shuahkhan@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Alexey Zaytsev <alexey.zaytsev@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Peter Ujfalusi <peter.ujfalusi@gmail.com>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 3, 2013 at 3:45 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
-> On Thu, 3 Jan 2013 13:32:04 -0800, Linus Torvalds <torvalds@linux-foundation.org> wrote:
->> On Thu, Jan 3, 2013 at 1:09 PM, Alexey Zaytsev <alexey.zaytsev@gmail.com> wrote:
->> >
->> > i915 got broken on my machine (Lenovo ThinkPad SL500) by this -rc. The screen
->> > goes blank after loading the module. I've bisected the problem to
->> > b0a2658acb5bf9ca86b4aab011b7106de3af0add "drm/i915: don't disable
->> > disconnected outputs".
->>
->> Hmm. Daniel - should I just revert it, or do you have a patch to
->> possibly fix the divide-by-zero error in g4x_compute_wm0() (which may
->> involve not getting that deep in the call chain to begin with or
->> whatever)? Maybe that fixes the blank screen too without a revert..
->
-> The issue appears to be a disagreement between intel_crtc->active, an
-> attached framebuffer and there not being a valid mode set on the crtc.
->
-> It looks like we end up in that situation with further confusion over
-> intel_crtc->base.enabled vs intel_crtc->active. I suspect the answer is
-> something like:
->
-> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-> index a9fb046..5e4b818 100644
-> --- a/drivers/gpu/drm/i915/intel_display.c
-> +++ b/drivers/gpu/drm/i915/intel_display.c
-> @@ -7940,10 +7940,8 @@ bool intel_set_mode(struct drm_crtc *crtc,
->                 }
->         }
->
-> -       for_each_intel_crtc_masked(dev, prepare_pipes, intel_crtc) {
-> -               if (intel_crtc->base.enabled)
-> -                       dev_priv->display.crtc_disable(&intel_crtc->base);
-> -       }
-> +       for_each_intel_crtc_masked(dev, prepare_pipes, intel_crtc)
-> +               dev_priv->display.crtc_disable(&intel_crtc->base);
->
->         /* crtc->mode is already used by the ->mode_set callbacks, hence we need
->          * to set it here already despite that we pass it down the callchain.
->
-> However, until that confusion is unravelled, reverting b0a2658ac, seems
-> the most sensible approach.
-> -Chris
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-There is a "radeon 0000:02:00.0: GPU lockup CP stall for more than
-10000msec" issue that was in 3.8.-rc1 which is related to drm changes.
+The system level attribute of ACPI power resources is the lowest
+system sleep level (S0, S2 etc.) in which the given resource can be
+"on" (ACPI 5.0, Section 7.1).  On the other hand, wakeup power
+resources have to be "on" for devices depending on them to be able to
+signal wakeup.  Therefore devices cannot wake up the system from
+sleep states higher than the minimum of the system level attributes
+of their wakeup power resources.
 
-Reference:  https://lkml.org/lkml/2013/1/2/289
+Use the wakeup power resources' system level values to get the
+deepest system sleep state (highest system sleep level) the given
+device can wake up the system from.
 
-Good to get that fix into 3.8-rc2.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/internal.h |    1 +
+ drivers/acpi/power.c    |   14 ++++++++++++++
+ drivers/acpi/scan.c     |   11 +++++++++++
+ 3 files changed, 26 insertions(+)
 
--- Shuah
+Index: linux/drivers/acpi/internal.h
+===================================================================
+--- linux.orig/drivers/acpi/internal.h
++++ linux/drivers/acpi/internal.h
+@@ -55,6 +55,7 @@ int acpi_extract_power_resources(union a
+ 				 struct list_head *list);
+ int acpi_add_power_resource(acpi_handle handle);
+ void acpi_power_add_remove_device(struct acpi_device *adev, bool add);
++int acpi_power_min_system_level(struct list_head *list);
+ int acpi_device_sleep_wake(struct acpi_device *dev,
+                            int enable, int sleep_state, int dev_state);
+ int acpi_power_get_inferred_state(struct acpi_device *device, int *state);
+Index: linux/drivers/acpi/power.c
+===================================================================
+--- linux.orig/drivers/acpi/power.c
++++ linux/drivers/acpi/power.c
+@@ -429,6 +429,20 @@ void acpi_power_add_remove_device(struct
+ 	}
+ }
+ 
++int acpi_power_min_system_level(struct list_head *list)
++{
++	struct acpi_power_resource_entry *entry;
++	int system_level = 5;
++
++	list_for_each_entry(entry, list, node) {
++		struct acpi_power_resource *resource = entry->resource;
++
++		if (system_level > resource->system_level)
++			system_level = resource->system_level;
++	}
++	return system_level;
++}
++
+ /* --------------------------------------------------------------------------
+                              Device Power Management
+    -------------------------------------------------------------------------- */
+Index: linux/drivers/acpi/scan.c
+===================================================================
+--- linux.orig/drivers/acpi/scan.c
++++ linux/drivers/acpi/scan.c
+@@ -954,6 +954,17 @@ static int acpi_bus_extract_wakeup_devic
+ 	if (err)
+ 		goto out;
+ 
++	if (!list_empty(&wakeup->resources)) {
++		int sleep_state;
++
++		sleep_state = acpi_power_min_system_level(&wakeup->resources);
++		if (sleep_state < wakeup->sleep_state) {
++			acpi_handle_warn(handle, "Overriding _PRW sleep state "
++					 "(S%d) by S%d from power resources\n",
++				 	 (int)wakeup->sleep_state, sleep_state);
++			wakeup->sleep_state = sleep_state;
++		}
++	}
+ 	acpi_setup_gpe_for_wake(handle, wakeup->gpe_device, wakeup->gpe_number);
+ 
+  out:
+
