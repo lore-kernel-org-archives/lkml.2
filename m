@@ -1,101 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab3ADAuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 19:50:06 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30343 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754857Ab3ADAuC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 19:50:02 -0500
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v7u1 14/31] x86, boot: move checking of cmd_line_ptr out of common path
-Date: Thu,  3 Jan 2013 16:48:34 -0800
-Message-Id: <1357260531-11115-15-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1754261Ab3ADAxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 19:53:52 -0500
+Received: from fieldses.org ([174.143.236.118]:34342 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753819Ab3ADAxs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 19:53:48 -0500
+Date: Thu, 3 Jan 2013 19:53:45 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Andriy Skulysh <andriy_skulysh@xyratex.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] sunrpc: Fix lockd sleeping until timeout
+Message-ID: <20130104005345.GA4407@fieldses.org>
+References: <CADug+U6-=+_Xy41Lw3hnOqSR84Bo7MjKDL_PykiZVdUx=b8tAA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CADug+U6-=+_Xy41Lw3hnOqSR84Bo7MjKDL_PykiZVdUx=b8tAA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cmdline.c::__cmdline_find_option... are shared between 16-bit setup code
-and 32/64 bit decompressor code.
+On Wed, Dec 26, 2012 at 05:09:07PM +0200, Andriy Skulysh wrote:
+> There is a race in enqueueing thread to a pool and
+> waking up a thread.
+> lockd doesn't wake up on reception of lock granted callback
+> if svc_wake_up() is called before lockd's thread is added
+> to a pool.
+> 
+> Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+> ---
+>  include/linux/sunrpc/svc.h |    1 +
+>  net/sunrpc/svc_xprt.c      |    9 ++++++++-
+>  2 files changed, 9 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+> index 676ddf5..1f0216b 100644
+> --- a/include/linux/sunrpc/svc.h
+> +++ b/include/linux/sunrpc/svc.h
+> @@ -50,6 +50,7 @@ struct svc_pool {
+>  	unsigned int		sp_nrthreads;	/* # of threads in pool */
+>  	struct list_head	sp_all_threads;	/* all server threads */
+>  	struct svc_pool_stats	sp_stats;	/* statistics on pool operation */
+> +	int			sp_task_pending;/* has pending task */
+>  } ____cacheline_aligned_in_smp;
+> 
+>  /*
+> diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+> index b8e47fa..c7ab6f5 100644
+> --- a/net/sunrpc/svc_xprt.c
+> +++ b/net/sunrpc/svc_xprt.c
+> @@ -499,7 +499,8 @@ void svc_wake_up(struct svc_serv *serv)
+>  			rqstp->rq_xprt = NULL;
+>  			 */
+>  			wake_up(&rqstp->rq_wait);
+> -		}
+> +		} else
+> +			pool->sp_task_pending = 1;
+>  		spin_unlock_bh(&pool->sp_lock);
+>  	}
+>  }
+> @@ -634,7 +635,13 @@ struct svc_xprt *svc_get_next_xprt(struct
+> svc_rqst *rqstp, long timeout)
+>  		 * long for cache updates.
+>  		 */
+>  		rqstp->rq_chandle.thread_wait = 1*HZ;
+> +		pool->sp_task_pending = 0;
+>  	} else {
+> +		if (pool->sp_task_pending) {
+> +			pool->sp_task_pending = 0;
+> +			spin_unlock_bh(&pool->sp_lock);
+> +			return -EAGAIN;
 
-for 32/64 only path via kexec, we should not check if ptr is less 1M.
-as those cmdline could be put above 1M, or even 4G.
+That should be ERR_PTR(-EAGAIN).
 
-Move out accessible checking out of __cmdline_find_option()
-So decompressor in misc.c can parse cmdline correctly.
+Other than this this looks right to me....
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/boot/boot.h    |   14 ++++++++++++--
- arch/x86/boot/cmdline.c |    8 ++++----
- 2 files changed, 16 insertions(+), 6 deletions(-)
+Out of curiosity: how did you run across this problem, and how did you
+test the fix?
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 18997e5..7fadf80 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -289,12 +289,22 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
- int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
- static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
- {
--	return __cmdline_find_option(boot_params.hdr.cmd_line_ptr, option, buffer, bufsize);
-+	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+	if (cmd_line_ptr >= 0x100000)
-+		return -1;      /* inaccessible */
-+
-+	return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
- }
- 
- static inline int cmdline_find_option_bool(const char *option)
- {
--	return __cmdline_find_option_bool(boot_params.hdr.cmd_line_ptr, option);
-+	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
-+
-+	if (cmd_line_ptr >= 0x100000)
-+		return -1;      /* inaccessible */
-+
-+	return __cmdline_find_option_bool(cmd_line_ptr, option);
- }
- 
- 
-diff --git a/arch/x86/boot/cmdline.c b/arch/x86/boot/cmdline.c
-index 6b3b6f7..768f00f 100644
---- a/arch/x86/boot/cmdline.c
-+++ b/arch/x86/boot/cmdline.c
-@@ -41,8 +41,8 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
- 		st_bufcpy	/* Copying this to buffer */
- 	} state = st_wordstart;
- 
--	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--		return -1;	/* No command line, or inaccessible */
-+	if (!cmdline_ptr)
-+		return -1;      /* No command line */
- 
- 	cptr = cmdline_ptr & 0xf;
- 	set_fs(cmdline_ptr >> 4);
-@@ -111,8 +111,8 @@ int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option)
- 		st_wordskip,	/* Miscompare, skip */
- 	} state = st_wordstart;
- 
--	if (!cmdline_ptr || cmdline_ptr >= 0x100000)
--		return -1;	/* No command line, or inaccessible */
-+	if (!cmdline_ptr)
-+		return -1;      /* No command line */
- 
- 	cptr = cmdline_ptr & 0xf;
- 	set_fs(cmdline_ptr >> 4);
--- 
-1.7.10.4
+--b.
 
+> +		}
+>  		/* No data pending. Go to sleep */
+>  		svc_thread_enqueue(pool, rqstp);
+> 
+> -- 
+> 1.7.1
