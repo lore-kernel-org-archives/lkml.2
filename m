@@ -1,99 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3ADQpw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 11:45:52 -0500
-Received: from mail.free-electrons.com ([94.23.32.191]:35447 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3ADQpi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 11:45:38 -0500
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 2/2] ARM: sunxi: Add the GPIOs node to the device tree
-Date: Fri,  4 Jan 2013 17:45:09 +0100
-Message-Id: <1357317909-12458-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1357317909-12458-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1357317909-12458-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1755187Ab3ADQvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 11:51:19 -0500
+Received: from mga03.intel.com ([143.182.124.21]:35810 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755018Ab3ADQvQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 11:51:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,411,1355126400"; 
+   d="scan'208";a="239992611"
+Date: Fri, 4 Jan 2013 08:51:13 -0800
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Joe Perches <joe@perches.com>
+Cc: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v5 3/3] PM: Introduce Intel PowerClamp Driver
+Message-ID: <20130104085113.00001574@unknown>
+In-Reply-To: <1357271464.5452.31.camel@joe-AO722>
+References: <1357225804-27191-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1357225804-27191-4-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1357271464.5452.31.camel@joe-AO722>
+Organization: OTC
+X-Mailer: Claws Mail 3.7.8cvs47 (GTK+ 2.16.6; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
----
- arch/arm/boot/dts/sun5i-a13.dtsi |   51 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 51 insertions(+)
+On Thu, 03 Jan 2013 19:51:04 -0800
+Joe Perches <joe@perches.com> wrote:
 
-diff --git a/arch/arm/boot/dts/sun5i-a13.dtsi b/arch/arm/boot/dts/sun5i-a13.dtsi
-index e112189..dc650a6 100644
---- a/arch/arm/boot/dts/sun5i-a13.dtsi
-+++ b/arch/arm/boot/dts/sun5i-a13.dtsi
-@@ -14,6 +14,15 @@
- /include/ "sunxi.dtsi"
- 
- / {
-+	aliases {
-+		gpio1 = &pb;
-+		gpio2 = &pc;
-+		gpio3 = &pd;
-+		gpio4 = &pe;
-+		gpio5 = &pf;
-+		gpio6 = &pg;
-+	};
-+
- 	memory {
- 		reg = <0x40000000 0x20000000>;
- 	};
-@@ -39,5 +48,47 @@
- 				allwinner,pull = <0>;
- 			};
- 		};
-+
-+		pb: gpio@01c20824 {
-+			compatible = "allwinner,sunxi-gpio";
-+			reg = <0x01c20824 0x24>;
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+		};
-+
-+		pc: gpio@01c20848 {
-+			compatible = "allwinner,sunxi-gpio";
-+			reg = <0x01c20848 0x24>;
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+		};
-+
-+		pd: gpio@01c2086c {
-+			compatible = "allwinner,sunxi-gpio";
-+			reg = <0x01c2086c 0x24>;
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+		};
-+
-+		pe: gpio@01c20890 {
-+			compatible = "allwinner,sunxi-gpio";
-+			reg = <0x01c20890 0x24>;
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+		};
-+
-+		pf: gpio@01c208b4 {
-+			compatible = "allwinner,sunxi-gpio";
-+			reg = <0x01c208b4 0x24>;
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+		};
-+
-+		pg: gpio@01c208d8 {
-+			compatible = "allwinner,sunxi-gpio";
-+			reg = <0x01c208d8 0x24>;
-+			gpio-controller;
-+			#gpio-cells = <1>;
-+		};
- 	};
- };
--- 
-1.7.10.4
+> On Thu, 2013-01-03 at 07:10 -0800, Jacob Pan wrote:
+> > Intel PowerClamp driver performs synchronized idle injection across
+> > all online CPUs. The goal is to maintain a given package level
+> > C-state ratio.
+> 
+> []
+> 
+> > +static int window_size_set(const char *arg, const struct
+> > kernel_param *kp) +{
+> > +	int ret = 0;
+> > +	unsigned long new_window_size;
+> > +
+> > +	ret = kstrtoul(arg, 10, &new_window_size);
+> > +	if (ret)
+> > +		goto exit_win;
+> > +	if (new_window_size > 10 || new_window_size < 2) {
+> > +		pr_err("Invalid window size %lu, between 2-10\n",
+> > +			new_window_size);
+> > +		ret = -EINVAL;
+> > +	}
+> > +
+> > +	window_size = new_window_size;
+> 
+> Possible assignment of known invalid windows size?
+> Maybe you should add
+> 	goto exit;
+> after
+> 	ret = -EINVAL;
+> 
+> or add
+> 	new_window_size = clamp(new_window_size, 2ul, 10ul);
+Good catch. The window size range 2-10 is somewhat arbitrary, greater
+than 10 should also work just not recommended. I will reword that. But
+it is good to clamp it as you suggested, i will do that for the
+duration parameter also.
 
+Thanks,
+
+Jacob
