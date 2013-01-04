@@ -1,142 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755193Ab3ADUca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 15:32:30 -0500
-Received: from fw.wantstofly.org ([80.101.37.227]:63905 "EHLO
-	mail.wantstofly.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754794Ab3ADUc2 (ORCPT
+	id S1755207Ab3ADUez (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 15:34:55 -0500
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:60452 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab3ADUex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 15:32:28 -0500
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 15:32:27 EST
-Date: Fri, 4 Jan 2013 21:25:09 +0100
-From: Lennert Buytenhek <buytenh@wantstofly.org>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Lubomir Rintel <lubo.rintel@gooddata.com>
-Subject: Re: [PATCH] mv643xx_eth: Fix a possible deadlock upon ifdown
-Message-ID: <20130104202509.GX27530@wantstofly.org>
-References: <1357308422-19639-1-git-send-email-lkundrak@v3.sk>
+	Fri, 4 Jan 2013 15:34:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357308422-19639-1-git-send-email-lkundrak@v3.sk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+Date: Fri, 4 Jan 2013 12:34:51 -0800
+X-Google-Sender-Auth: RWoa5QS7z7zqgZAyo9rKptoWsdA
+Message-ID: <CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>
+Content-Type: multipart/mixed; boundary=0015174c19e054d86404d27c69c4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 03:07:02PM +0100, Lubomir Rintel wrote:
+--0015174c19e054d86404d27c69c4
+Content-Type: text/plain; charset=ISO-8859-1
 
-> From: Lubomir Rintel <lubo.rintel@gooddata.com>
-> 
-> =================================
-> [ INFO: inconsistent lock state ]
-> 3.7.0-6.luboskovo.fc19.armv5tel.kirkwood #1 Tainted: G        W
-> ---------------------------------
-> inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
-> NetworkManager/337 [HC0[0]:SC0[0]:HE1:SE1] takes:
->  (_xmit_ETHER#2){+.?...}, at: [<bf07adfc>] txq_reclaim+0x54/0x264 [mv643xx_eth]
-> {IN-SOFTIRQ-W} state was registered at:
->   [<c0068480>] __lock_acquire+0x5b4/0x17d0
->   [<c0069d7c>] lock_acquire+0x160/0x1e0
->   [<c04f41a0>] _raw_spin_lock+0x50/0x88
->   [<c0407178>] sch_direct_xmit+0x4c/0x2d4
->   [<c03ec978>] dev_queue_xmit+0x4b8/0x8d8
->   [<c0492dc8>] ip6_finish_output2+0x350/0x42c
->   [<c04b7fd8>] mld_sendpack+0x2d0/0x514
->   [<c04b8834>] mld_ifc_timer_expire+0x228/0x278
->   [<c002afe8>] call_timer_fn+0x140/0x33c
->   [<c002bbf0>] run_timer_softirq+0x278/0x32c
->   [<c0024288>] __do_softirq+0x16c/0x398
->   [<c002488c>] irq_exit+0x5c/0xc0
->   [<c0009c64>] handle_IRQ+0x6c/0x8c
->   [<c04f5218>] __irq_svc+0x38/0x80
->   [<c0065684>] lock_is_held+0x4/0x54
->   [<c004d5a0>] __might_sleep+0x44/0x228
->   [<c04f25a4>] down_read+0x28/0x88
->   [<c0263c94>] __copy_to_user_memcpy+0xa8/0x140
->   [<c01374d0>] seq_read+0x3ac/0x474
->   [<c011623c>] vfs_read+0xac/0x184
->   [<c0116354>] sys_read+0x40/0x6c
->   [<c0008cc0>] ret_fast_syscall+0x0/0x38
-> irq event stamp: 115119
-> hardirqs last  enabled at (115119): [<c04f4cf0>] _raw_spin_unlock_irqrestore+0x44/0x64
-> hardirqs last disabled at (115118): [<c04f430c>] _raw_spin_lock_irqsave+0x28/0xa0
-> softirqs last  enabled at (114880): [<c00243d4>] __do_softirq+0x2b8/0x398
-> softirqs last disabled at (114873): [<c002488c>] irq_exit+0x5c/0xc0
-> 
-> other info that might help us debug this:
->  Possible unsafe locking scenario:
-> 
->        CPU0
->        ----
->   lock(_xmit_ETHER#2);
->   <Interrupt>
->     lock(_xmit_ETHER#2);
-> 
->  *** DEADLOCK ***
-> 
-> 1 lock held by NetworkManager/337:
->  #0:  (rtnl_mutex){+.+.+.}, at: [<c03fad04>] rtnetlink_rcv+0x14/0x2c
-> 
-> stack backtrace:
-> [<c000f5a8>] (unwind_backtrace+0x0/0x124) from [<c04ebea8>] (print_usage_bug.part.29+0x20c/0x26c)
-> [<c04ebea8>] (print_usage_bug.part.29+0x20c/0x26c) from [<c0067cc4>] (mark_lock+0x404/0x60c)
-> [<c0067cc4>] (mark_lock+0x404/0x60c) from [<c0068504>] (__lock_acquire+0x638/0x17d0)
-> [<c0068504>] (__lock_acquire+0x638/0x17d0) from [<c0069d7c>] (lock_acquire+0x160/0x1e0)
-> [<c0069d7c>] (lock_acquire+0x160/0x1e0) from [<c04f41a0>] (_raw_spin_lock+0x50/0x88)
-> [<c04f41a0>] (_raw_spin_lock+0x50/0x88) from [<bf07adfc>] (txq_reclaim+0x54/0x264 [mv643xx_eth])
-> [<bf07adfc>] (txq_reclaim+0x54/0x264 [mv643xx_eth]) from [<bf07b03c>] (txq_deinit+0x30/0xec [mv643xx_eth])
-> [<bf07b03c>] (txq_deinit+0x30/0xec [mv643xx_eth]) from [<bf07b21c>] (mv643xx_eth_stop+0x124/0x140 [mv643xx_eth])
-> [<bf07b21c>] (mv643xx_eth_stop+0x124/0x140 [mv643xx_eth]) from [<c03e8bbc>] (__dev_close_many+0xb0/0xec)
-> [<c03e8bbc>] (__dev_close_many+0xb0/0xec) from [<c03e8c28>] (__dev_close+0x30/0x44)
-> [<c03e8c28>] (__dev_close+0x30/0x44) from [<c03ed154>] (__dev_change_flags+0x94/0x120)
-> [<c03ed154>] (__dev_change_flags+0x94/0x120) from [<c03ed260>] (dev_change_flags+0x18/0x4c)
-> [<c03ed260>] (dev_change_flags+0x18/0x4c) from [<c03fb174>] (do_setlink+0x2cc/0x7ac)
-> [<c03fb174>] (do_setlink+0x2cc/0x7ac) from [<c03fc5ec>] (rtnl_newlink+0x26c/0x4a8)
-> [<c03fc5ec>] (rtnl_newlink+0x26c/0x4a8) from [<c03fc104>] (rtnetlink_rcv_msg+0x280/0x29c)
-> [<c03fc104>] (rtnetlink_rcv_msg+0x280/0x29c) from [<c041245c>] (netlink_rcv_skb+0x58/0xb4)
-> [<c041245c>] (netlink_rcv_skb+0x58/0xb4) from [<c03fad10>] (rtnetlink_rcv+0x20/0x2c)
-> [<c03fad10>] (rtnetlink_rcv+0x20/0x2c) from [<c0411dec>] (netlink_unicast+0x158/0x208)
-> [<c0411dec>] (netlink_unicast+0x158/0x208) from [<c0412254>] (netlink_sendmsg+0x310/0x3c0)
-> [<c0412254>] (netlink_sendmsg+0x310/0x3c0) from [<c03d209c>] (sock_sendmsg+0xa8/0xd0)
-> [<c03d209c>] (sock_sendmsg+0xa8/0xd0) from [<c03d2314>] (__sys_sendmsg+0x1d8/0x280)
-> [<c03d2314>] (__sys_sendmsg+0x1d8/0x280) from [<c03d4054>] (sys_sendmsg+0x44/0x68)
-> [<c03d4054>] (sys_sendmsg+0x44/0x68) from [<c0008cc0>] (ret_fast_syscall+0x0/0x38)
-> ---
->  drivers/net/ethernet/marvell/mv643xx_eth.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/marvell/mv643xx_eth.c b/drivers/net/ethernet/marvell/mv643xx_eth.c
-> index 84c1326..67a3e78 100644
-> --- a/drivers/net/ethernet/marvell/mv643xx_eth.c
-> +++ b/drivers/net/ethernet/marvell/mv643xx_eth.c
-> @@ -943,7 +943,7 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
->  	struct netdev_queue *nq = netdev_get_tx_queue(mp->dev, txq->index);
->  	int reclaimed;
->  
-> -	__netif_tx_lock(nq, smp_processor_id());
-> +	__netif_tx_lock_bh(nq);
->  
->  	reclaimed = 0;
->  	while (reclaimed < budget && txq->tx_desc_count > 0) {
-> @@ -989,7 +989,7 @@ static int txq_reclaim(struct tx_queue *txq, int budget, int force)
->  		dev_kfree_skb(skb);
->  	}
->  
-> -	__netif_tx_unlock(nq);
-> +	__netif_tx_unlock_bh(nq);
->  
->  	if (reclaimed < budget)
->  		mp->work_tx &= ~(1 << txq->index);
-> -- 
+On Fri, Jan 4, 2013 at 9:50 AM, Shuah Khan <shuahkhan@gmail.com> wrote:
+>
+> This change doesn't take into account what swiolb was when
+> pci_swiotlb_detect_override() is called. Instead of returning
+> use_swiotlb like the original code did, it returns swiotlb which could
+> be zero, if !enough_mem_for_swiotlb().
+>
+> Might work fine on Intel platforms, but not on systems where the IOMMU
+> driver wants to enable swiotlb for some devices as in the case of AMD.
+>
+> AMD IOMMU driver enables swiotlb for devices that are not specified in
+> IVRs and/or not in the AMD IOMMU scope, after it successfully
+> initializes IOMMU. It will explicitely set switolb=1 to make sure
+> reserved swiotlb memory is not released. This change will break that
+> case.
 
-Maybe I'm not reading it right, but I doubt that this is an actual
-deadlock or that the patch is needed.
+in that case, we have to panic....
 
-txq_reclaim() indeed doesn't disable BHs, but that's because it's
-always called in BH context.  Almost always -- the only exception is
-txq_deinit(), called from ->ndo_stop(), but by that time we've
-already napi_disable()'d and netif_carrier_off()'d and free_irq()'d.
+please check attached patch.
 
-How to explain that to lockdep, though, I don't know.
+Also for those kind of systems, users must specify crashkernel_low=72M or
+what ever for kdump.
+
+Thanks
+
+Yinghai
+
+--0015174c19e054d86404d27c69c4
+Content-Type: application/octet-stream; name="auto_switch_off_swiotlb.patch"
+Content-Disposition: attachment; filename="auto_switch_off_swiotlb.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbjs5dth0
+
+U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IGVuYWJsZSBzd2lvdGxiIGlmIHRoZXJlIGlzIG5v
+dCBlbm91Z2ggcmFtIGZvciBpdAoKTm9ybWFsIGJvb3QgcGF0aCBvbiBzeXN0ZW0gd2l0aCBpb21t
+dSBzdXBwb3J0Ogpzd2lvdGxiIGJ1ZmZlciB3aWxsIGJlIGFsbG9jYXRlZCBlYXJseSBhdCBmaXJz
+dCBhbmQgdGhlbiB0cnkgdG8gaW5pdGlhbGl6ZQppb21tdSwgaWYgaW9tbXUgZm9yIGludGVsIG9y
+IGFtZCBjb3VsZCBzZXR1cCBwcm9wZXJseSwgc3dpb3RsYiBidWZmZXIKd2lsbCBiZSBmcmVlZC4K
+ClRoZSBlYXJseSBhbGxvY2F0aW5nIGlzIHdpdGggYm9vdG1lbSwgYW5kIGdldCBwYW5pYyB3aGVu
+IHdlIHRyeSB0byB1c2UKa2R1bXAgd2l0aCBidWZmZXIgYWJvdmUgNEcgb25seSBpZiBzd2lvdGxi
+IGlzIGVuYWJsZWQuCgpiZWNhdXNlIGFjdHVhbGx5IHRoZSBrZXJuZWwgY2FuIGdvIG9uIHdpdGhv
+dXQgc3dpb3RsYiwgYW5kIHVzZSBpbnRlbCBpb21tdS4KClRyeSBkaXNhYmxlIHN3aW90bGIgaWYg
+dGhlcmUgaXMgbm90IGVub3VnaCByYW0gZm9yIGl0LgoKVGhhdCBpcyBmb3Iga2R1bXAgdG8gdXNl
+IGtlcm5lbCBhYm92ZSA0Ry4KCi12MjogU2h1YWggS2hhbiA8c2h1YWhraGFuQGdtYWlsLmNvbT4g
+cG9pbnRlZCBvdXQgdGhhdCBBTUQgaW9tbXUgdW5oYW5kbGVkCiAgICAgZGV2aWNlcyB0aGF0IG5l
+ZWQgc3dpb3RsYiB3aWxsIGhhdmUgcHJvYmxlbS4KICAgICBJbiB0aGF0IGNhc2UsIHdlIGhhdmUg
+dG8gcGFuaWMsIGJlY2F1c2Ugd2UgZG8gbm90IGVuYWJsZSBzd2lvdGxiCiAgICAgYmVmb3JlLgoK
+U3VnZ2VzdGVkLWJ5OiBFcmljIFcuIEJpZWRlcm1hbiA8ZWJpZWRlcm1AeG1pc3Npb24uY29tPgpT
+aWduZWQtb2ZmLWJ5OiBZaW5naGFpIEx1IDx5aW5naGFpQGtlcm5lbC5vcmc+CkNjOiBLb25yYWQg
+Unplc3p1dGVrIFdpbGsgPGtvbnJhZC53aWxrQG9yYWNsZS5jb20+CkNjOiBKb2VyZyBSb2VkZWwg
+PGpvcm9AOGJ5dGVzLm9yZz4KCi0tLQogYXJjaC94ODYva2VybmVsL3BjaS1zd2lvdGxiLmMgfCAg
+IDE0ICsrKysrKysrKystLS0tCiBkcml2ZXJzL2lvbW11L2FtZF9pb21tdS5jICAgICB8ICAgIDQg
+KysrKwogMiBmaWxlcyBjaGFuZ2VkLCAxNCBpbnNlcnRpb25zKCspLCA0IGRlbGV0aW9ucygtKQoK
+SW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9rZXJuZWwvcGNpLXN3aW90bGIuYwo9PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4Ni9rZXJuZWwvcGNpLXN3aW90bGIuYworKysgbGlu
+dXgtMi42L2FyY2gveDg2L2tlcm5lbC9wY2ktc3dpb3RsYi5jCkBAIC02LDYgKzYsNyBAQAogI2lu
+Y2x1ZGUgPGxpbnV4L3N3aW90bGIuaD4KICNpbmNsdWRlIDxsaW51eC9ib290bWVtLmg+CiAjaW5j
+bHVkZSA8bGludXgvZG1hLW1hcHBpbmcuaD4KKyNpbmNsdWRlIDxsaW51eC9tZW1ibG9jay5oPgog
+CiAjaW5jbHVkZSA8YXNtL2lvbW11Lmg+CiAjaW5jbHVkZSA8YXNtL3N3aW90bGIuaD4KQEAgLTUw
+LDYgKzUxLDExIEBAIHN0YXRpYyBzdHJ1Y3QgZG1hX21hcF9vcHMgc3dpb3RsYl9kbWFfb3AKIAku
+ZG1hX3N1cHBvcnRlZCA9IE5VTEwsCiB9OwogCitzdGF0aWMgYm9vbCBfX2luaXQgZW5vdWdoX21l
+bV9mb3Jfc3dpb3RsYih2b2lkKQoreworCS8qIGRvIHdlIGhhdmUgbGVzcyB0aGFuIDFNIFJBTSB1
+bmRlciA0RyA/ICovCisJcmV0dXJuIG1lbWJsb2NrX21lbV9zaXplKDFVTEw8PCgzMi1QQUdFX1NI
+SUZUKSkgPiAoMVVMTDw8MjApOworfQogLyoKICAqIHBjaV9zd2lvdGxiX2RldGVjdF9vdmVycmlk
+ZSAtIHNldCBzd2lvdGxiIHRvIDEgaWYgbmVjZXNzYXJ5CiAgKgpAQCAtNTgsMTIgKzY0LDEyIEBA
+IHN0YXRpYyBzdHJ1Y3QgZG1hX21hcF9vcHMgc3dpb3RsYl9kbWFfb3AKICAqLwogaW50IF9faW5p
+dCBwY2lfc3dpb3RsYl9kZXRlY3Rfb3ZlcnJpZGUodm9pZCkKIHsKLQlpbnQgdXNlX3N3aW90bGIg
+PSBzd2lvdGxiIHwgc3dpb3RsYl9mb3JjZTsKLQogCWlmIChzd2lvdGxiX2ZvcmNlKQogCQlzd2lv
+dGxiID0gMTsKKwllbHNlIGlmICghZW5vdWdoX21lbV9mb3Jfc3dpb3RsYigpKQorCQlzd2lvdGxi
+ID0gMDsKIAotCXJldHVybiB1c2Vfc3dpb3RsYjsKKwlyZXR1cm4gc3dpb3RsYjsKIH0KIElPTU1V
+X0lOSVRfRklOSVNIKHBjaV9zd2lvdGxiX2RldGVjdF9vdmVycmlkZSwKIAkJICBwY2lfeGVuX3N3
+aW90bGJfZGV0ZWN0LApAQCAtNzgsNyArODQsNyBAQCBpbnQgX19pbml0IHBjaV9zd2lvdGxiX2Rl
+dGVjdF80Z2Iodm9pZCkKIHsKIAkvKiBkb24ndCBpbml0aWFsaXplIHN3aW90bGIgaWYgaW9tbXU9
+b2ZmIChub19pb21tdT0xKSAqLwogI2lmZGVmIENPTkZJR19YODZfNjQKLQlpZiAoIW5vX2lvbW11
+ICYmIG1heF9wZm4gPiBNQVhfRE1BMzJfUEZOKQorCWlmICghbm9faW9tbXUgJiYgbWF4X3BmbiA+
+IE1BWF9ETUEzMl9QRk4gJiYgZW5vdWdoX21lbV9mb3Jfc3dpb3RsYigpKQogCQlzd2lvdGxiID0g
+MTsKICNlbmRpZgogCXJldHVybiBzd2lvdGxiOwpJbmRleDogbGludXgtMi42L2RyaXZlcnMvaW9t
+bXUvYW1kX2lvbW11LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvZHJpdmVycy9pb21t
+dS9hbWRfaW9tbXUuYworKysgbGludXgtMi42L2RyaXZlcnMvaW9tbXUvYW1kX2lvbW11LmMKQEAg
+LTMxNDQsNiArMzE0NCw3IEBAIGludCBfX2luaXQgYW1kX2lvbW11X2luaXRfZG1hX29wcyh2b2lk
+KQogewogCXN0cnVjdCBhbWRfaW9tbXUgKmlvbW11OwogCWludCByZXQsIHVuaGFuZGxlZDsKKwlp
+bnQgc3dpb3RsYl9vcmlnOwogCiAJLyoKIAkgKiBmaXJzdCBhbGxvY2F0ZSBhIGRlZmF1bHQgcHJv
+dGVjdGlvbiBkb21haW4gZm9yIGV2ZXJ5IElPTU1VIHdlCkBAIC0zMTY2LDEyICszMTY3LDE1IEBA
+IGludCBfX2luaXQgYW1kX2lvbW11X2luaXRfZG1hX29wcyh2b2lkKQogCXByZWFsbG9jX3Byb3Rl
+Y3Rpb25fZG9tYWlucygpOwogCiAJaW9tbXVfZGV0ZWN0ZWQgPSAxOworCXN3aW90bGJfb3JpZyA9
+IHN3aW90bGI7CiAJc3dpb3RsYiA9IDA7CiAKIAkvKiBNYWtlIHRoZSBkcml2ZXIgZmluYWxseSB2
+aXNpYmxlIHRvIHRoZSBkcml2ZXJzICovCiAJdW5oYW5kbGVkID0gZGV2aWNlX2RtYV9vcHNfaW5p
+dCgpOwogCWlmICh1bmhhbmRsZWQgJiYgbWF4X3BmbiA+IE1BWF9ETUEzMl9QRk4pIHsKIAkJLyog
+VGhlcmUgYXJlIHVuaGFuZGxlZCBkZXZpY2VzIC0gaW5pdGlhbGl6ZSBzd2lvdGxiIGZvciB0aGVt
+ICovCisJCWlmICghc3dpb3RsYl9vcmlnKQorCQkJcGFuaWMoImNhbiBub3QgZW5hYmxlIHN3aW90
+bGIgZm9yIHVuaGFuZGxlZCBkZXZpY2VzIGJ5IEFNRCBpb21tdSFcbiIpOwogCQlzd2lvdGxiID0g
+MTsKIAl9CiAK
+--0015174c19e054d86404d27c69c4--
