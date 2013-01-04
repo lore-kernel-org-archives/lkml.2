@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab3ADWed (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 17:34:33 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38146 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934Ab3ADWeb (ORCPT
+	id S1755334Ab3ADWhE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 17:37:04 -0500
+Received: from reverse.techspace.com ([216.174.116.17]:34930 "EHLO
+	hdasch-dt.enmotus.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754618Ab3ADWhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 17:34:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
-Date: Fri, 4 Jan 2013 14:34:28 -0800
-X-Google-Sender-Auth: YyLraEk9AiSVuxU1fqmYwpozSKM
-Message-ID: <CAE9FiQUPJixU2e0T2DWJN1Uz5zLYJPzWZRryqG388d7A1Me6LQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
+	Fri, 4 Jan 2013 17:37:02 -0500
+From: Hugh Daschbach <hugh.daschbach@enmotus.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Hugh Daschbach <hugh.daschbach@enmotus.com>
+Subject: [PATCH v2 v3.7.0] Add AHCI support for Enmotus Bobcat device.
+Date: Fri,  4 Jan 2013 14:39:09 -0800
+Message-Id: <1357339149-22284-1-git-send-email-hugh.daschbach@enmotus.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <50E5E153.9040801@mvista.com>
+References: <50E5E153.9040801@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 2:26 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+Silicon does not support standard AHCI BAR assignment.  Add
+vendor/device exception to force BAR 2.
 
-> However, I think regression on existing behavior with a
-> panic is a bit of a big hammer. Thie change causes panic on systems
-> even when kdump is not enabled, if I understand it correctly.
+Signed-off-by: Hugh Daschbach <hugh.daschbach@enmotus.com>
+---
+v2: Corrected comment in response to Sergei's review.  Thanks, Sergei.
 
-I don't think so.
+ drivers/ata/ahci.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-+static bool __init enough_mem_for_swiotlb(void)
-+{
-+       /* do we have less than 1M RAM under 4G ? */
-+       return memblock_mem_size(1ULL<<(32-PAGE_SHIFT)) > (1ULL<<20);
-+}
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 7862d17..4979127 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -53,6 +53,7 @@
+ 
+ enum {
+ 	AHCI_PCI_BAR_STA2X11	= 0,
++	AHCI_PCI_BAR_ENMOTUS	= 2,
+ 	AHCI_PCI_BAR_STANDARD	= 5,
+ };
+ 
+@@ -410,6 +411,9 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 
++	/* Enmotus */
++	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
++
+ 	/* Generic, PCI class code for AHCI */
+ 	{ PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID, PCI_ANY_ID,
+ 	  PCI_CLASS_STORAGE_SATA_AHCI, 0xffffff, board_ahci },
+@@ -1098,9 +1102,11 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 		dev_info(&pdev->dev,
+ 			 "PDC42819 can only drive SATA devices with this driver\n");
+ 
+-	/* The Connext uses non-standard BAR */
++	/* Both Connext and Enmotus devices use non-standard BARs */
+ 	if (pdev->vendor == PCI_VENDOR_ID_STMICRO && pdev->device == 0xCC06)
+ 		ahci_pci_bar = AHCI_PCI_BAR_STA2X11;
++	else if (pdev->vendor == 0x1c44 && pdev->device == 0x8000)
++		ahci_pci_bar = AHCI_PCI_BAR_ENMOTUS;
+ 
+ 	/* acquire resources */
+ 	rc = pcim_enable_device(pdev);
+-- 
+1.7.11.7
 
-enough_mem_for_swiotlb could return false for them?
-
-and
-
- int __init pci_swiotlb_detect_override(void)
- {
--       int use_swiotlb = swiotlb | swiotlb_force;
--
-        if (swiotlb_force)
-                swiotlb = 1;
-+       else if (!enough_mem_for_swiotlb())
-+               swiotlb = 0;
-
--       return use_swiotlb;
-+       return swiotlb;
- }
-
-it only disable swiotlb when there is less 1M mem under 4G.
