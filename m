@@ -1,74 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab3ADR0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 12:26:16 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:43917 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208Ab3ADR0O (ORCPT
+	id S1755264Ab3ADR13 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 12:27:29 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:58707 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926Ab3ADR11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 12:26:14 -0500
-Date: Fri, 4 Jan 2013 18:25:38 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: andrew.cooper3@citrix.com, x86@kernel.org, tglx@linutronix.de,
-        kexec@lists.infradead.org, virtualization@lists.linux-foundation.org,
-        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
-        maxim.uvarov@oracle.com, mingo@redhat.com, vgoyal@redhat.com,
-        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
-Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition
- page table PGD, PUD, PMD and PTE
-Message-ID: <20130104172538.GC3472@host-192-168-1-59.local.net-space.pl>
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
- <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
- <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
- <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
- <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
- <50E70D8002000078000B336D@nat28.tlf.novell.com>
+	Fri, 4 Jan 2013 12:27:27 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50E70D8002000078000B336D@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <1357287829-21701-1-git-send-email-tushar.behera@linaro.org>
+References: <1357287829-21701-1-git-send-email-tushar.behera@linaro.org>
+Date: Fri, 4 Jan 2013 09:21:11 -0800
+Message-ID: <CAJuYYwQx0hFQmkLaggd2NdA_xommXGPBDbhj1AuSH5YuASWA-w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: DTS: exynos4210-origen: Add MAX8997 node entry
+From: Thomas Abraham <thomas.abraham@linaro.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-samsung-soc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kgene.kim@samsung.com,
+        linux@arm.linux.org.uk, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 04:12:32PM +0000, Jan Beulich wrote:
-> >>> On 04.01.13 at 16:15, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> > On Thu, Jan 03, 2013 at 09:34:55AM +0000, Jan Beulich wrote:
-> >> >>> On 27.12.12 at 03:18, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> >> > Some implementations (e.g. Xen PVOPS) could not use part of identity page table
-> >> > to construct transition page table. It means that they require separate PUDs,
-> >> > PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
-> >> > requirement add extra pointer to PGD, PUD, PMD and PTE and align existing
-> >> > code.
-> >>
-> >> So you keep posting this despite it having got pointed out on each
-> >> earlier submission that this is unnecessary, proven by the fact that
-> >> the non-pvops Xen kernels can get away without it. Why?
-> >
-> > Sorry but I forgot to reply for your email last time.
-> >
-> > I am still not convinced. I have tested SUSE kernel itself and it does not work.
-> > Maybe I missed something but... Please check
-> > arch/x86/kernel/machine_kexec_64.c:init_transition_pgtable()
-> >
-> > I can see:
-> >
-> > vaddr = (unsigned long)relocate_kernel;
-> >
-> > and later:
-> >
-> > pgd += pgd_index(vaddr);
-> > ...
+On 4 January 2013 00:23, Tushar Behera <tushar.behera@linaro.org> wrote:
+> The node entry is added as per documentation and legacy board file.
 >
-> I think that mapping is simply irrelevant, as the code at
-> relocate_kernel gets copied to the control page and
-> invoked there (other than in the native case, where
-> relocate_kernel() gets invoked directly).
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+> The patch is rebased on v3.8-rc1.
+>
+>  arch/arm/boot/dts/exynos4210-origen.dts |  150 +++++++++++++++++++++++++++++++
+>  1 files changed, 150 insertions(+), 0 deletions(-)
 
-Right, so where is virtual mapping of control page established?
-I could not find relevant code in SLES kernel which does that.
+This patch has already been posted. Here is the link:
+https://patchwork.kernel.org/patch/1794501/
 
-Daniel
+Thanks,
+Thomas.
