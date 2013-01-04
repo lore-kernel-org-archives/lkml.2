@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571Ab3ADTP2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:15:28 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:34475 "EHLO
+	id S1754634Ab3ADTQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:16:14 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:34484 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754060Ab3ADTPZ (ORCPT
+	by vger.kernel.org with ESMTP id S1754060Ab3ADTQM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:15:25 -0500
+	Fri, 4 Jan 2013 14:16:12 -0500
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 To: Jon Loeliger <jdl@jdl.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>,
@@ -14,9 +14,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
         Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 3/4] Fix test relying in wrong behavior of is_printable
-Date: Fri,  4 Jan 2013 21:15:21 +0200
-Message-Id: <1357326921-13085-1-git-send-email-panto@antoniou-consulting.com>
+Subject: Fix test relying in wrong behavior of is_printable
+Date: Fri,  4 Jan 2013 21:16:08 +0200
+Message-Id: <1357326968-13124-1-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
