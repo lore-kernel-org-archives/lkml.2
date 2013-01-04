@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753631Ab3ADIVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:21:45 -0500
-Received: from mail-ia0-f176.google.com ([209.85.210.176]:52377 "EHLO
-	mail-ia0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab3ADIVm (ORCPT
+	id S1753906Ab3ADIXN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:23:13 -0500
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:32798 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751448Ab3ADIXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 03:21:42 -0500
-Message-ID: <50E6910E.7030103@ozlabs.ru>
-Date: Fri, 04 Jan 2013 19:21:34 +1100
-From: Alexey Kardashevskiy <aik@ozlabs.ru>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: linux-kernel@vger.kernel.org, iommu <iommu@lists.linux-foundation.org>
-Subject: Re: [PATCH] iommu: moving initialization earlier
-References: <1355365763.19932.75.camel@pasglop> <1355380115-4518-1-git-send-email-aik@ozlabs.ru> <1355413735.2229.1.camel@ul30vt.home> <20121216112024.GJ1806@8bytes.org>
-In-Reply-To: <20121216112024.GJ1806@8bytes.org>
-Content-Type: text/plain; charset=KOI8-R; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jan 2013 03:23:09 -0500
+From: Xi Wang <xi.wang@gmail.com>
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Xi Wang <xi.wang@gmail.com>, stable@vger.kernel.org
+Subject: [PATCH] nfs: fix null checking in nfs_get_option_str()
+Date: Fri,  4 Jan 2013 03:22:57 -0500
+Message-Id: <1357287777-12052-1-git-send-email-xi.wang@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/12/12 22:20, Joerg Roedel wrote:
-> Alexey,
->
-> On Thu, Dec 13, 2012 at 08:48:55AM -0700, Alex Williamson wrote:
->> Probably a good idea to CC the iommu list and maintainer...
->>
->> On Thu, 2012-12-13 at 17:28 +1100, Alexey Kardashevskiy wrote:
->>> Signed-off-by: Alexey Kardashevskiy <aik@ozlabs.ru>
->
-> Please resend the patch when the merge-window is closed.
+The following null pointer check is broken.
 
-is it closed now? not sure I entirely understand what window you kept in 
-mind :)
+	*option = match_strdup(args);
+	return !option;
 
+The pointer `option' must be non-null, and thus `!option' is always false.
+Use `!*option' instead.
 
+The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
+cut-and-paste code.").
+
+Signed-off-by: Xi Wang <xi.wang@gmail.com>
+Cc: stable@vger.kernel.org
+---
+ fs/nfs/super.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/nfs/super.c b/fs/nfs/super.c
+index c25cadf8..2e7e8c8 100644
+--- a/fs/nfs/super.c
++++ b/fs/nfs/super.c
+@@ -1152,7 +1152,7 @@ static int nfs_get_option_str(substring_t args[], char **option)
+ {
+ 	kfree(*option);
+ 	*option = match_strdup(args);
+-	return !option;
++	return !*option;
+ }
+ 
+ static int nfs_get_option_ul(substring_t args[], unsigned long *option)
 -- 
-Alexey
+1.7.10.4
+
