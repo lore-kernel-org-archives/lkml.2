@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab3ADW2A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 17:28:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:14926 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab3ADW15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 17:27:57 -0500
-Date: Fri, 4 Jan 2013 20:21:35 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 3/5] KVM: x86: clean up reexecute_instruction
-Message-ID: <20130104222135.GA13481@amt.cnet>
-References: <50E6DEDC.7040800@linux.vnet.ibm.com>
- <50E6DF5C.2000103@linux.vnet.ibm.com>
+	id S1755331Ab3ADWed (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 17:34:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38146 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab3ADWeb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 17:34:31 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50E6DF5C.2000103@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
+Date: Fri, 4 Jan 2013 14:34:28 -0800
+X-Google-Sender-Auth: YyLraEk9AiSVuxU1fqmYwpozSKM
+Message-ID: <CAE9FiQUPJixU2e0T2DWJN1Uz5zLYJPzWZRryqG388d7A1Me6LQ@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 09:55:40PM +0800, Xiao Guangrong wrote:
-> Little cleanup for reexecute_instruction, also use gpa_to_gfn in
-> retry_instruction
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-> ---
->  arch/x86/kvm/x86.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 1c9c834..ad39018 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4761,19 +4761,18 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t gva)
->  	if (tdp_enabled)
->  		return false;
-> 
-> +	gpa = kvm_mmu_gva_to_gpa_read(vcpu, gva, NULL);
-> +	if (gpa == UNMAPPED_GVA)
-> +		return true; /* let cpu generate fault */
-> +
+On Fri, Jan 4, 2013 at 2:26 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
 
-Why change from _system to _read here? Purely cleanup patch should
-have no logical changes.
+> However, I think regression on existing behavior with a
+> panic is a bit of a big hammer. Thie change causes panic on systems
+> even when kdump is not enabled, if I understand it correctly.
 
-BTW, there is not much logic in using reexecute_instruction() at
-for x86_decode_insn (checks in reexecute_instruction() assume 
-write to the cr2, for instance).
-Fault propagation for x86_decode_insn seems completly broken
-(which is perhaps why reexecute_instruction() there survived).
+I don't think so.
 
->  	/*
->  	 * if emulation was due to access to shadowed page table
->  	 * and it failed try to unshadow page and re-enter the
->  	 * guest to let CPU execute the instruction.
->  	 */
-> -	if (kvm_mmu_unprotect_page_virt(vcpu, gva))
-> +	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
->  		return true;
-> 
-> -	gpa = kvm_mmu_gva_to_gpa_system(vcpu, gva, NULL);
-> -
-> -	if (gpa == UNMAPPED_GVA)
-> -		return true; /* let cpu generate fault */
-> -
->  	/*
->  	 * Do not retry the unhandleable instruction if it faults on the
->  	 * readonly host memory, otherwise it will goto a infinite loop:
-> @@ -4828,7 +4827,7 @@ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
->  	if (!vcpu->arch.mmu.direct_map)
->  		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
-> 
-> -	kvm_mmu_unprotect_page(vcpu->kvm, gpa >> PAGE_SHIFT);
-> +	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
-> 
->  	return true;
->  }
-> -- 
-> 1.7.7.6
++static bool __init enough_mem_for_swiotlb(void)
++{
++       /* do we have less than 1M RAM under 4G ? */
++       return memblock_mem_size(1ULL<<(32-PAGE_SHIFT)) > (1ULL<<20);
++}
+
+enough_mem_for_swiotlb could return false for them?
+
+and
+
+ int __init pci_swiotlb_detect_override(void)
+ {
+-       int use_swiotlb = swiotlb | swiotlb_force;
+-
+        if (swiotlb_force)
+                swiotlb = 1;
++       else if (!enough_mem_for_swiotlb())
++               swiotlb = 0;
+
+-       return use_swiotlb;
++       return swiotlb;
+ }
+
+it only disable swiotlb when there is less 1M mem under 4G.
