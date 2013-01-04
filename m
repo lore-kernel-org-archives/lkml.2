@@ -1,123 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755161Ab3ADQ4G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 11:56:06 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754984Ab3ADQ4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 11:56:04 -0500
-Message-ID: <50E70A4D.6050601@redhat.com>
-Date: Sat, 05 Jan 2013 00:58:53 +0800
-From: Zhouping Liu <zliu@redhat.com>
+	id S1755205Ab3ADQ5K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 11:57:10 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:58798 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754984Ab3ADQ5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 11:57:07 -0500
+Message-ID: <50E709DE.2020906@gmail.com>
+Date: Sat, 05 Jan 2013 00:57:02 +0800
+From: Jiang Liu <liuj97@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        hughd@google.com, Michel Lespinasse <walken@google.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: kernel BUG at mm/huge_memory.c:1798!
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com> <535932623.34838584.1356410331076.JavaMail.root@redhat.com> <20130103175737.GA3885@suse.de>
-In-Reply-To: <20130103175737.GA3885@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Daniel J Blueman <daniel@quora.org>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Yijing Wang <wangyijing@huawei.com>
+Subject: Re: 3.8-rc2: pciehp waitqueue hang...
+References: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com> <50E5A6A1.5040508@gmail.com> <CAMVG2svLEwaY3OdJ_w-YX0OZRS+Je5NZage+niebVE2rNGCMfw@mail.gmail.com>
+In-Reply-To: <CAMVG2svLEwaY3OdJ_w-YX0OZRS+Je5NZage+niebVE2rNGCMfw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2013 01:57 AM, Mel Gorman wrote:
-> (Adding Michel and Rik to cc)
->
-> On Mon, Dec 24, 2012 at 11:38:51PM -0500, Zhouping Liu wrote:
->> Hello all,
->>
->> I found the below kernel bug using latest mainline(637704cbc95),
->> my hardware has 2 numa nodes, and it's easy to reproduce the issue
->> using LTP test case: "# ./mmap10 -a -s -c 200":
->>
-> Sorry for the long delay in responding, first day back online after being
-> off for a holiday. I can reproduce this problem. It takes many iterations
-> but triggers within a minute. It also affects 3.8-rc2.
->
-> This BUG is triggered because the rmap walk is not finding all vmas mapping
-> a page (walk found 0 avc's while the page mapcount was positive). THP
-> requires this rmap walk to be correct or minimally all the pmds will not
-> be marked as splitting. If PMDs are not marked splitting then all sorts
-> of problems can occur. The test case triggering this is fairly simple.
->
-> o A process creates a mapping 10MB-4KB in size
-> o The process forks, then unmaps the entire mapping and exits
-> o First child forks then unmaps part of the mapping and exits
-> o Second child unmaps then unmaps part of the mapping and exits
->
-> The partial unmapping on a page boundary but not a THP boundary is what
-> causes the THP split and allows this bug to be triggered. The two children
-> are racing with each other.
->
-> I confirmed that this bug triggers on UMA and the THP migration for NUMA
-> balancing is very unlikely to be a factor.  As it looked like anon_vma
-> rwsem was being taken for write in the correct places, it led me to conclude
-> that this must be a race within split_huge_page() itself somewhere.
->
-> split_huge_page consists of three tasks
->
->    o __split_huge_page_splitting marks all PMDs as splitting
->
->    o __split_huge_page_refcount uses the page compound lock to serialise
->      based on the page and converts the compount page into 512 base pages
->
->    o __split_huge_page_map uses the page table lock to serialise within
->      the address space and updates the PTE
->
-> None of these affect avc linkages but they might be affecting the rmap
-> walk after the conversion to interval trees. I'm adding Michel and Rik
-> to the cc in case they can quickly spot how the walk could be affected
-> during a THP split.
->
-> The patch below hides the race by serialising split_huge_page but the
-> exact race needs to be identified before figuring out what the real locking
-> problem is. That's as far as I got with it today and will pick it up again
-> tomorrow. Better theories as to what is going wrong are welcome.
-
-Hello Mel,
-
-I have tested the below patch, and run the reproducer for a long time, 
-the issue
-couldn't be triggered any more with the patch.
-
-Thanks for your patch, and I will tested your new patch(it seemed that 
-this one
-is a little different with the new one), provide the feedback ASAP.
-
-Zhouping
-
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 9e894ed..f815ddb 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -1822,6 +1822,8 @@ int split_huge_page(struct page *page)
->   	anon_vma = page_lock_anon_vma_read(page);
->   	if (!anon_vma)
->   		goto out;
-> +	page_unlock_anon_vma_read(anon_vma);
-> +	anon_vma_lock_write(anon_vma);
->   	ret = 0;
->   	if (!PageCompound(page))
->   		goto out_unlock;
-> @@ -1832,7 +1834,7 @@ int split_huge_page(struct page *page)
->   
->   	BUG_ON(PageCompound(page));
->   out_unlock:
-> -	page_unlock_anon_vma_read(anon_vma);
-> +	anon_vma_unlock(anon_vma);
->   out:
->   	return ret;
->   }
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+On 01/04/2013 09:08 AM, Daniel J Blueman wrote:
+> On 3 January 2013 23:41, Jiang Liu <liuj97@gmail.com> wrote:
+>> On 01/03/2013 11:11 PM, Daniel J Blueman wrote:
+>>> When the Apple thunderbolt ethernet adapter comes loose on my Macbook
+>>> Pro Retina (Intel DSL3510), we see pci_slot_name return
+>>> non-deterministic data (ie varying each boot), and we see pciehp_wp
+>>> remain armed with events causing the kthread to get stuck:
+>>>
+>>> tg3 0000:0a:00.0 eth0: Link is up at 1000 Mbps, full duplex
+>>> tg3 0000:0a:00.0 eth0: Flow control is on for TX and on for RX
+>>> <thunderbold adapter comes loose>
+>>> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
+>>> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
+>>> clear MAC_TX_MODE=ffffffff
+>>> tg3 0000:0a:00.0 eth0: No firmware running
+>>> tg3 0000:0a:00.0 eth0: Link is down
+>>> pcieport 0000:00:01.1: System wakeup enabled by ACPI
+>>> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+>>> pciehp 0000:09:00.0:pcie24: Latch open on
+>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
+>>> pciehp 0000:09:00.0:pcie24: Button pressed on
+>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
+>>> pciehp 0000:09:00.0:pcie24: Card present on
+>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
+>>> pciehp 0000:09:00.0:pcie24: Power fault on slot
+>>> \xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
+>>> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
+>>> pciehp 0000:09:00.0:pcie24: PCI slot
+>>> #\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
+>>> - powering on due to button press.
+>>> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
+>>> pciehp 0000:09:00.0:pcie24: Failed to check link status
+>>> INFO: task kworker/0:1:52 blocked for more than 120 seconds.
+> [...]
+> 
+>> Hi Daniel,
+>>         It seems like an issue caused by recursive PCIe HPC.
+>> Could you please help to try the patch from:
+>> http://www.spinics.net/lists/linux-pci/msg18625.html
+>> Thanks!
+>> Gerry
+> 
+> (adding Yijing)
+> 
+> Splendid; this fixes this failure nicely [1], finally releasing the bus.
+> 
+> If nothing else, I feel this should be queud for 3.8-rc3.
+> 
+> Many thanks,
+>   Daniel
+> 
+> --- [1]
+> 
+> <thunderbolt ethernet adapter disengagement>
+> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
+> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
+> clear MAC_TX_MODE=ffffffff
+> tg3 0000:0a:00.0 eth0: No firmware running
+> tg3 0000:0a:00.0 eth0: Link is down
+> [sched_delayed] sched: RT throttling activated
+> pcieport 0000:00:01.1: System wakeup enabled by ACPI
+> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+> pciehp 0000:09:00.0:pcie24: Latch open on
+> Slot(\xffffffb0\x04Pd\x02\xffffff88\xffffffff\xffffffff\xffffff98\x04Pd\x02\xffffff88\xffffffff\xfffffffffbcon)
+> pciehp 0000:09:00.0:pcie24: Button pressed on
+> Slot(\xffffffb0\x04Pd\x02\xffffff88\xffffffff\xffffffff\xffffff98\x04Pd\x02\xffffff88\xffffffff\xfffffffffbcon)
+> pciehp 0000:09:00.0:pcie24: Card present on
+> Slot(\xffffffb0\x04Pd\x02\xffffff88\xffffffff\xffffffff\xffffff98\x04Pd\x02\xffffff88\xffffffff\xfffffffffbcon)
+> pciehp 0000:09:00.0:pcie24: Power fault on slot
+> \xffffffb0\x04Pd\x02\xffffff88\xffffffff\xffffffff\xffffff98\x04Pd\x02\xffffff88\xffffffff\xfffffffffbcon
+Hi Daniel,
+	I have worked on a patch which may solve the random output above,
+but need to rebase it to the latest kernel. Will send the patch to you once
+rebased.
+	Thanks!
+	Gerry
+> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
+> pciehp 0000:09:00.0:pcie24: PCI slot
+> #\xffffffb0\x04Pd\x02\xffffff88\xffffffff\xffffffff\xffffff98\x04Pd\x02\xffffff88\xffffffff\xfffffffffbcon
+> - powering on due to button press.
+> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
+> pciehp 0000:09:00.0:pcie24: Failed to check link status
+> pci_bus 0000:0a: busn_res: [bus 0a] is released
+> pci_bus 0000:09: busn_res: [bus 09-0a] is released
+> 
 
