@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab3ADMxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 07:53:22 -0500
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:36417 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754540Ab3ADMxT convert rfc822-to-8bit (ORCPT
+	id S1754677Ab3ADNBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 08:01:45 -0500
+Received: from mail-vb0-f52.google.com ([209.85.212.52]:60836 "EHLO
+	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab3ADNBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 07:53:19 -0500
+	Fri, 4 Jan 2013 08:01:43 -0500
 MIME-Version: 1.0
-In-Reply-To: <87bod8rmxm.fsf@sejong.aot.lge.com>
-References: <1356799386-4212-1-git-send-email-fweisbec@gmail.com>
-	<1356799386-4212-22-git-send-email-fweisbec@gmail.com>
-	<87bod8rmxm.fsf@sejong.aot.lge.com>
-Date: Fri, 4 Jan 2013 13:53:19 +0100
-Message-ID: <CAFTL4hz9uErzuHkWDPj-SzA83uh52gjUCmU+cNgq9gaRTrUHFg@mail.gmail.com>
-Subject: Re: [PATCH 21/27] nohz: Only stop the tick on RCU nocb CPUs
+In-Reply-To: <50E3DE29.6020403@synopsys.com>
+References: <1352281674-2186-1-git-send-email-vgupta@synopsys.com>
+	<1352281674-2186-16-git-send-email-vgupta@synopsys.com>
+	<alpine.LFD.2.02.1211122110230.10000@ionos>
+	<50E3DE29.6020403@synopsys.com>
+Date: Fri, 4 Jan 2013 14:01:42 +0100
+Message-ID: <CAFTL4hz95LF0qetu+tjR3ZyHf0PWKwc40Sx-puJaUdrsSXgvKw@mail.gmail.com>
+Subject: Re: [RFC PATCH v1 15/31] ARC: Process/scheduling/clock/Timers/Delay Management
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/2 Namhyung Kim <namhyung@kernel.org>:
-> You may want to add the following also to shut up the gcc:
+2013/1/2 Vineet Gupta <Vineet.Gupta1@synopsys.com>:
+> On Tuesday 13 November 2012 01:59 AM, Thomas Gleixner wrote:
+>> On Wed, 7 Nov 2012, Vineet Gupta wrote:
+>>> +void cpu_idle(void)
+>>> +{
+>>> +    /* Since we SLEEP in idle loop, TIF_POLLING_NRFLAG can't be set */
+>>> +
+>>> +    /* endless idle loop with no priority at all */
+>>> +    while (1) {
+>>> +            tick_nohz_idle_enter();
+>>> +
+>>> +            while (!need_resched())
+>>> +                    arch_idle();
+>>> +
+>>> +            tick_nohz_idle_exit();
+>>> +
+>>> +            preempt_enable_no_resched();
+>>> +            schedule();
+>>> +            preempt_disable();
+>>
+>>               schedule_preempt_disabled() please
 >
->       CC      kernel/rcutree.o
->     In file included from /home/namhyung/project/linux/kernel/rcutree.c:58:0:
->     /home/namhyung/project/linux/kernel/rcutree.h:539:13: warning: ‘is_nocb_cpu’ declared ‘static’ but never defined [-Wunused-function]
 >
->
-> Thanks,
-> Namhyung
->
->
-> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-> index 4b69291b093d..fbbad931c36a 100644
-> --- a/kernel/rcutree.h
-> +++ b/kernel/rcutree.h
-> @@ -536,7 +536,6 @@ static void print_cpu_stall_info(struct rcu_state *rsp, int cpu);
->  static void print_cpu_stall_info_end(void);
->  static void zero_cpu_stall_ticks(struct rcu_data *rdp);
->  static void increment_cpu_stall_ticks(void);
-> -static bool is_nocb_cpu(int cpu);
->  static bool __call_rcu_nocb(struct rcu_data *rdp, struct rcu_head *rhp,
->                             bool lazy);
->  static bool rcu_nocb_adopt_orphan_cbs(struct rcu_state *rsp,
+> OK ! And it seems I was also missing the calls to rcu_idle_enter()/exit() to track
+> commit 1268fbc746ea  "nohz: Remove tick_nohz_idle_enter_norcu() / ..."
 
-I'm folding that fix for the next version.
+Right!
 
-Thanks Namhyung!
+They must be placed around the code that sets the low power mode, when
+you know there is no use of RCU between rcu_idle_enter() /
+rcu_idle_exit(). Here this would be likely:
+
+while (1) {
+        tick_nohz_idle_enter();
+
++      rcu_idle_enter();
+        while (!need_resched())
+                arch_idle();
++      rcu_idle_exit()
+
+        tick_nohz_idle_exit();
+        schedule_preempt_disabled();
+}
