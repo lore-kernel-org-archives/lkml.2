@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755023Ab3ADPJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 10:09:35 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:62025 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab3ADPJc (ORCPT
+	id S1754987Ab3ADPQS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 10:16:18 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:37831 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754854Ab3ADPQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 10:09:32 -0500
-Date: Fri, 4 Jan 2013 10:09:28 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Vincent Guittot <vincent.guittot@linaro.org>, pjt@google.com,
-        paul.mckenney@linaro.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, rostedt@goodmis.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-Message-ID: <20130104150928.GC15633@mtj.dyndns.org>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
- <ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
- <20121126171539.GZ15971@htj.dyndns.org>
- <CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
- <CAKohpokBMhto6xzp3MPGRJqstEkkC=kzgrKNhVXzi1Y8GejkXg@mail.gmail.com>
+	Fri, 4 Jan 2013 10:16:15 -0500
+Date: Fri, 4 Jan 2013 16:15:42 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: andrew.cooper3@citrix.com, x86@kernel.org, tglx@linutronix.de,
+        kexec@lists.infradead.org, virtualization@lists.linux-foundation.org,
+        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
+        maxim.uvarov@oracle.com, mingo@redhat.com, vgoyal@redhat.com,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition
+ page table PGD, PUD, PMD and PTE
+Message-ID: <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
+References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
+ <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKohpokBMhto6xzp3MPGRJqstEkkC=kzgrKNhVXzi1Y8GejkXg@mail.gmail.com>
+In-Reply-To: <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Viresh.
+On Thu, Jan 03, 2013 at 09:34:55AM +0000, Jan Beulich wrote:
+> >>> On 27.12.12 at 03:18, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> > Some implementations (e.g. Xen PVOPS) could not use part of identity page table
+> > to construct transition page table. It means that they require separate PUDs,
+> > PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
+> > requirement add extra pointer to PGD, PUD, PMD and PTE and align existing
+> > code.
+>
+> So you keep posting this despite it having got pointed out on each
+> earlier submission that this is unnecessary, proven by the fact that
+> the non-pvops Xen kernels can get away without it. Why?
 
-On Fri, Jan 04, 2013 at 04:41:47PM +0530, Viresh Kumar wrote:
-> I got a list of files where cpu/processor_id strings are found, which
-> may break with
-> this patch (still can't guarantee as i don't have knowledge of these drivers)...
+Sorry but I forgot to reply for your email last time.
+
+I am still not convinced. I have tested SUSE kernel itself and it does not work.
+Maybe I missed something but... Please check arch/x86/kernel/machine_kexec_64.c:init_transition_pgtable()
+
+I can see:
+
+vaddr = (unsigned long)relocate_kernel;
+
+and later:
+
+pgd += pgd_index(vaddr);
 ...
-> I am not sure what to do now :) , can you assist ?
 
-I don't know either.  Changing behavior subtly like this is hard.  I
-usually try to spot some problem cases and try to identify patterns
-there.  Once you identify a few of them, understanding and detecting
-other problem cases get a lot easier.  In this case, maybe there are
-too many places to audit and the problems are too subtle, and, if we
-*have* to do it, the only thing we can do is implementing a debug
-option to make such problems more visible - say, always schedule to a
-different cpu on queue_work().
+It is wrong. relocate_kernel() virtual address in Xen is different
+than its virtual address in Linux Kernel. That is why transition
+page table could not be established in Linux Kernel and so on...
+How does this work in SUSE? I do not have an idea.
 
-That said, at this point, the patchset doesn't seem all that
-convincing to me and if I'm comprehending responses from others
-correctly that seems to be the consensus.  It might be a better
-approach to identify the specific offending workqueue users and make
-them handle the situation more intelligently than trying to impose the
-behavior on all workqueue users.  At any rate, we need way more data
-showing this actually helps and if so why.
+I am happy to fix that but whatever fix for it is
+I would like to be sure that it works.
 
-Thanks.
-
--- 
-tejun
+Daniel
