@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754500Ab3ADIx2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:53:28 -0500
-Received: from mail-ea0-f169.google.com ([209.85.215.169]:36352 "EHLO
-	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753677Ab3ADItg (ORCPT
+	id S1753897Ab3ADI4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:56:51 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:44486 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752710Ab3ADI4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 03:49:36 -0500
-From: Jiri Pirko <jiri@resnulli.us>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
-        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        fubar@us.ibm.com, andy@greyhouse.net, divy@chelsio.com,
-        jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
-        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
-        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
-        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
-        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
-        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
-        bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V6 06/15] bridge: remove usage of netdev_set_master()
-Date: Fri,  4 Jan 2013 09:48:54 +0100
-Message-Id: <1357289343-817-7-git-send-email-jiri@resnulli.us>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1357289343-817-1-git-send-email-jiri@resnulli.us>
-References: <1357289343-817-1-git-send-email-jiri@resnulli.us>
+	Fri, 4 Jan 2013 03:56:48 -0500
+Date: Fri, 4 Jan 2013 00:56:44 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.8-rc2
+Message-ID: <20130104085644.GA29725@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jiri Pirko <jiri@resnulli.us>
----
- net/bridge/br_if.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-index 1edd71d..2148d47 100644
---- a/net/bridge/br_if.c
-+++ b/net/bridge/br_if.c
-@@ -148,7 +148,7 @@ static void del_nbp(struct net_bridge_port *p)
- 	netdev_rx_handler_unregister(dev);
- 	synchronize_net();
- 
--	netdev_set_master(dev, NULL);
-+	netdev_upper_dev_unlink(dev, br->dev);
- 
- 	br_multicast_del_port(p);
- 
-@@ -364,7 +364,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
- 	if (br_netpoll_info(br) && ((err = br_netpoll_enable(p, GFP_KERNEL))))
- 		goto err3;
- 
--	err = netdev_set_master(dev, br->dev);
-+	err = netdev_master_upper_dev_link(dev, br->dev);
- 	if (err)
- 		goto err4;
- 
-@@ -403,7 +403,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
- 	return 0;
- 
- err5:
--	netdev_set_master(dev, NULL);
-+	netdev_upper_dev_unlink(dev, br->dev);
- err4:
- 	br_netpoll_disable(p);
- err3:
--- 
-1.8.0
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Linus,
+
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem. Just a couple of driver
+fixes this time.
+
+Thanks!
+
+Changelog:
+---------
+
+Christophe TORDEUX (1):
+      Input: sentelic - only report position of first finger as ST coordina=
+tes
+
+Dmitry Torokhov (1):
+      Input: gpio_keys - defer probing if GPIO probing is deferred
+
+Gabor Juhos (1):
+      Input: gpio_keys_polled - defer probing if GPIO probing is deferred
+
+
+Diffstat:
+--------
+
+ drivers/input/keyboard/gpio_keys.c        | 13 ++++++++++++-
+ drivers/input/keyboard/gpio_keys_polled.c | 13 ++++++++++++-
+ drivers/input/mouse/sentelic.c            |  2 +-
+ 3 files changed, 25 insertions(+), 3 deletions(-)
+
+--=20
+Dmitry
+
+
+--DocE+STaALJfprDB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ5plMAAoJEH70+W8r6ZYqUYwP/jXM3wMwIA3pZdKvGq8DuWiq
+giGPY53XP67MxIeC6VvVVeXMAGL5Y3LXegW1P6pguN6ISx7jGIm/Aj4mO8ocXRv3
+T5zTiEOfJSXdyr+c9Ae4Lc4TcQZg6wlMZ+b5UelYAJhjQu4JjuaOyOr87aD2bXDb
+fGYeTG+6PhebErR2ZSzg0rSP6uPjnc4U6JWJsZfzlpgKmd7ySxRkc7ufe/rhnG7n
+dSVEhRC0x8Y8rTm2uflsF+H49GYNFalVotnKewa9lM8ro/rXv/fjK8L7YzBS5/xY
+HFGaygFeXAPRw49kDHP/LSzylDteuYWkRJeRM9CwkjfaPFaYoY8lFt5AJbCghUSe
+NQR/qjxSKx4Nw7tSWXVqAAJKwcbsjx0zP001N7HUrUTjg5oYRGRdT3S0DrgHaO0U
+wQU6FVc2K1U3dLBElON7ktwl0+wtSAOM3NevpoD12ZYY/pCu6YplRS4Zj6PGzoh/
+lNBjYbbPePDju8uc9iiLEtnktRTWs24Tpl2D+iMMBJD3YzNmMvuKNi6anXpyMnAk
+JrLlD0TL1kvgtpDJnvbhcwSWcV0WzFrxiyjlC6fKGrK125BQPTTZyjdNmCzsIRcK
+LKB/9iqusDac2kLOruff6KdELo3GYjxdxHKASEtGSimS2fDIhcpiBTFQSOP/imPS
+gbd1ni9kQgxJOE53J0Vi
+=ksdY
+-----END PGP SIGNATURE-----
+
+--DocE+STaALJfprDB--
