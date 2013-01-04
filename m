@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab3ADL1W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 06:27:22 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:59784 "EHLO hydra.sisk.pl"
+	id S1754490Ab3ADLdD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 06:33:03 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59787 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837Ab3ADL1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 06:27:17 -0500
+	id S1753801Ab3ADLc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 06:32:59 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-dev@lists.linaro.org, nicolas.pitre@linaro.org,
-        amit.kucheria@linaro.org, mathieu.poirier@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        pdsw-power-team@arm.com, linux-pm@vger.kernel.org
-Subject: Re: [PATCH 1/3] cpufreq: Manage only online cpus
-Date: Fri, 04 Jan 2013 12:32:54 +0100
-Message-ID: <1908625.BmKqKVnVdj@vostro.rjw.lan>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <liuj97@gmail.com>, Myron Stowe <myron.stowe@redhat.com>
+Subject: Re: [Alternative 2][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+Date: Fri, 04 Jan 2013 12:38:35 +0100
+Message-ID: <1832392.tD5dEjQMy4@vostro.rjw.lan>
 User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <CAKohpo=ok5aH77ycMKPAdHgUkf2HcwMgik+6eZp1Du1QVYxPZQ@mail.gmail.com>
-References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org> <6008147.vspAd29d9L@vostro.rjw.lan> <CAKohpo=ok5aH77ycMKPAdHgUkf2HcwMgik+6eZp1Du1QVYxPZQ@mail.gmail.com>
+In-Reply-To: <20130104010038.GA11155@google.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <113112384.JZ1gZKlJRa@vostro.rjw.lan> <20130104010038.GA11155@google.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -25,22 +27,92 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, January 04, 2013 10:44:36 AM Viresh Kumar wrote:
-> On 3 January 2013 17:32, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > True, but have those bugs been introduced recently (ie. in v3.8-rc1 or later)?
+On Thursday, January 03, 2013 06:00:38 PM Bjorn Helgaas wrote:
+> On Thu, Jan 03, 2013 at 11:56:55PM +0100, Rafael J. Wysocki wrote:
 > 
-> Don't know... I feel they were always there, its just that nobody
-> tested it that way :)
+> > OK, I now have sent no less than three working version of the patch that fixes
+> > the current code which _is_ insane.  You haven't even responded to the last
+> > one, but for the first two the reason why you didn't like them was something
+> > similar to "it may conflict with some future changes I'm planning".  Well,
+> > that might be used to reject prety much any change and I'm not considering it
+> > as a good enough reason for blocking a fix.  Sorry about that.
+> 
+> I think your memory is faulty.  My response to the first
+> (https://lkml.org/lkml/2012/12/20/407) was "Thanks for cleaning this up, I
+> have an interface concern, here's an outline of a possible alternative."
+> 
+> My response to the second (https://lkml.org/lkml/2012/12/26/72) was "I like
+> this much better, Acked-by: Bjorn Helgaas."  Then Yinghai noticed the issue
+> with non-ACPI host bridges, and you abandoned that approach.
 
-That exactly is my point. :-)
+I thought it was helpelss, but I was clearly wrong.  I should have spent more
+time on figuring out why it failed, so thank for taking the time to do that.
 
-If they have always been there, I don't see much reason for hurrying with the
-fixes, so I'll queue them up for v3.9.
+> I took a few days of vacation, then spent the better part of yesterday
+> exploring the reasons why x86 and ia64 don't use the "parent" argument when
+> several other arches do, and worked up a patch
+> (https://lkml.org/lkml/2013/1/2/285).  It turned out to have a fatal flaw,
+> but was done in good faith.
+
+I know.
+
+> It's true I haven't responded to the third one, posted about 12 hours ago.
+
+Oh, that's a simple patch. ;-)
+
+But you're right, I should be more patient.  Sorry about that.
+
+> I still like the approach of the second patch.  What would you think
+> of the following incremental change to it?
+
+I'm fine with it.
+
+> I did reproduce Yinghai's
+> issue with non-ACPI host bridges, and this change resolves it for me.
+
+If you don't mind, I'll fold the patch below into
+
+https://patchwork.kernel.org/patch/1910181/
+
+and post the complete patch.
 
 Thanks,
 Rafael
 
 
+> diff -u b/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+> --- b/arch/x86/pci/acpi.c
+> +++ b/arch/x86/pci/acpi.c
+> @@ -522,6 +522,7 @@
+>  	sd = &info->sd;
+>  	sd->domain = domain;
+>  	sd->node = node;
+> +	sd->acpi_handle = device->handle;
+>  	/*
+>  	 * Maybe the desired pci bus has been already scanned. In such case
+>  	 * it is unnecessary to scan the pci bus with the given domain,busnum.
+> @@ -596,9 +597,8 @@
+>  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+>  {
+>  	struct pci_sysdata *sd = bridge->bus->sysdata;
+> -	struct pci_root_info *info = container_of(sd, struct pci_root_info, sd);
+>  
+> -	ACPI_HANDLE_SET(&bridge->dev, info->bridge->handle);
+> +	ACPI_HANDLE_SET(&bridge->dev, sd->acpi_handle);
+>  	return 0;
+>  }
+>  
+> --- a/arch/x86/include/asm/pci.h
+> +++ b/arch/x86/include/asm/pci.h
+> @@ -14,6 +14,7 @@
+>  struct pci_sysdata {
+>  	int		domain;		/* PCI domain */
+>  	int		node;		/* NUMA node */
+> +	void		*acpi_handle;
+>  #ifdef CONFIG_X86_64
+>  	void		*iommu;		/* IOMMU private data */
+>  #endif
+> 
 -- 
 I speak only for myself.
 Rafael J. Wysocki, Intel Open Source Technology Center.
