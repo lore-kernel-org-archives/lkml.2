@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512Ab3ADJls (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 04:41:48 -0500
-Received: from [216.228.121.35] ([216.228.121.35]:11283 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752817Ab3ADJlo (ORCPT
+	id S1754519Ab3ADJmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 04:42:09 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:11311 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754427Ab3ADJli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 04:41:44 -0500
+	Fri, 4 Jan 2013 04:41:38 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Fri, 04 Jan 2013 01:41:23 -0800
+	by hqnvupgp07.nvidia.com on Fri, 04 Jan 2013 01:37:34 -0800
 From: Prashant Gaikwad <pgaikwad@nvidia.com>
 To: <mturquette@linaro.org>, <swarren@nvidia.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH v3 5/9] ARM: Tegra: Define Tegra30 CAR binding
-Date: Fri, 4 Jan 2013 15:10:49 +0530
-Message-ID: <1357292453-28418-6-git-send-email-pgaikwad@nvidia.com>
+Subject: [PATCH v3 8/9] arm: tegra: Migrate to new clock code
+Date: Fri, 4 Jan 2013 15:10:52 +0530
+Message-ID: <1357292453-28418-9-git-send-email-pgaikwad@nvidia.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1357292453-28418-1-git-send-email-pgaikwad@nvidia.com>
 References: <1357292453-28418-1-git-send-email-pgaikwad@nvidia.com>
@@ -26,309 +26,568 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device tree binding models Tegra30 CAR (Clock And Reset)
-as a single monolithic clock provider.
+Migrate tegra clock support to drivers/clk/tegra, this involves
+moving
+1. definition of tegra_cpu_car_ops to clk.c
+2. definition of reset functions to clk-peripheral.c
+3. change parent of cpu clock.
+4. Remove legacy clock initialization.
+5. Initialize clocks using DT.
+6. Remove all instance of mach/clk.h
 
 Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 ---
- .../bindings/clock/nvidia,tegra30-car.txt          |  270 ++++++++++++++++++++
- arch/arm/boot/dts/tegra30.dtsi                     |    6 +
- 2 files changed, 276 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt
+ arch/arm/mach-tegra/board-dt-tegra20.c |   30 ---------------------
+ arch/arm/mach-tegra/board-dt-tegra30.c |   31 ----------------------
+ arch/arm/mach-tegra/clock.c            |   19 -------------
+ arch/arm/mach-tegra/common.c           |   44 +------------------------------
+ arch/arm/mach-tegra/cpu-tegra.c        |    2 +-
+ arch/arm/mach-tegra/include/mach/clk.h |    3 --
+ arch/arm/mach-tegra/pcie.c             |    2 +-
+ arch/arm/mach-tegra/powergate.c        |    2 +-
+ drivers/clk/tegra/clk-periph.c         |   38 +++++++++++++++++++++++++++
+ drivers/clk/tegra/clk.c                |   16 +++++++++++
+ drivers/dma/tegra20-apb-dma.c          |    2 +-
+ drivers/gpu/drm/tegra/dc.c             |    3 +-
+ drivers/gpu/drm/tegra/drm.c            |    1 -
+ drivers/gpu/drm/tegra/hdmi.c           |    3 +-
+ drivers/i2c/busses/i2c-tegra.c         |    3 +-
+ drivers/input/keyboard/tegra-kbc.c     |    2 +-
+ drivers/spi/spi-tegra20-sflash.c       |    2 +-
+ drivers/spi/spi-tegra20-slink.c        |    2 +-
+ drivers/staging/nvec/nvec.c            |    3 +-
+ include/linux/clk/tegra.h              |    5 +++
+ sound/soc/tegra/tegra30_ahub.c         |    2 +-
+ 21 files changed, 73 insertions(+), 142 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt b/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt
-new file mode 100644
-index 0000000..6169493
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/nvidia,tegra30-car.txt
-@@ -0,0 +1,270 @@
-+NVIDIA Tegra30 Clock And Reset Controller
-+
-+This binding uses the common clock binding:
-+Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+The CAR (Clock And Reset) Controller on Tegra is the HW module responsible
-+for muxing and gating Tegra's clocks, and setting their rates.
-+
-+Required properties :
-+- compatible : Should be "nvidia,tegra30-car"
-+- reg : Should contain CAR registers location and length
-+- clocks : Should contain phandle and clock specifiers for two clocks:
-+  the 32 KHz "32k_in", and the board-specific oscillator "osc".
-+- #clock-cells : Should be 1.
-+  In clock consumers, this cell represents the clock ID exposed by the CAR.
-+
-+  The first 130 clocks are numbered to match the bits in the CAR's CLK_OUT_ENB
-+  registers. These IDs often match those in the CAR's RST_DEVICES registers,
-+  but not in all cases. Some bits in CLK_OUT_ENB affect multiple clocks. In
-+  this case, those clocks are assigned IDs above 160 in order to highlight
-+  this issue. Implementations that interpret these clock IDs as bit values
-+  within the CLK_OUT_ENB or RST_DEVICES registers should be careful to
-+  explicitly handle these special cases.
-+
-+  The balance of the clocks controlled by the CAR are assigned IDs of 160 and
-+  above.
-+
-+  0	cpu
-+  1	unassigned
-+  2	unassigned
-+  3	unassigned
-+  4	rtc
-+  5	timer
-+  6	uarta
-+  7	unassigned	(register bit affects uartb and vfir)
-+  8	gpio
-+  9	sdmmc2
-+  10	unassigned	(register bit affects spdif_in and spdif_out)
-+  11	i2s1
-+  12	i2c1
-+  13	ndflash
-+  14	sdmmc1
-+  15	sdmmc4
-+  16	unassigned
-+  17	pwm
-+  18	i2s2
-+  19	epp
-+  20	unassigned	(register bit affects vi and vi_sensor)
-+  21	2d
-+  22	usbd
-+  23	isp
-+  24	3d
-+  25	unassigned
-+  26	disp2
-+  27	disp1
-+  28	host1x
-+  29	vcp
-+  30	i2s0
-+  31	cop_cache
-+
-+  32	mc
-+  33	ahbdma
-+  34	apbdma
-+  35	unassigned
-+  36	kbc
-+  37	statmon
-+  38	pmc
-+  39	unassigned	(register bit affects fuse and fuse_burn)
-+  40	kfuse
-+  41	sbc1
-+  42	nor
-+  43	unassigned
-+  44	sbc2
-+  45	unassigned
-+  46	sbc3
-+  47	i2c5
-+  48	dsia
-+  49	unassigned	(register bit affects cve and tvo)
-+  50	mipi
-+  51	hdmi
-+  52	csi
-+  53	tvdac
-+  54	i2c2
-+  55	uartc
-+  56	unassigned
-+  57	emc
-+  58	usb2
-+  59	usb3
-+  60	mpe
-+  61	vde
-+  62	bsea
-+  63	bsev
-+
-+  64	speedo
-+  65	uartd
-+  66	uarte
-+  67	i2c3
-+  68	sbc4
-+  69	sdmmc3
-+  70	pcie
-+  71	owr
-+  72	afi
-+  73	csite
-+  74	pciex
-+  75	avpucq
-+  76	la
-+  77	unassigned
-+  78	unassigned
-+  79	dtv
-+  80	ndspeed
-+  81	i2cslow
-+  82	dsib
-+  83	unassigned
-+  84	irama
-+  85	iramb
-+  86	iramc
-+  87	iramd
-+  88	cram2
-+  89	unassigned
-+  90	audio_2x	a/k/a audio_2x_sync_clk
-+  91	unassigned
-+  92	csus
-+  93	cdev2
-+  94	cdev1
-+  95	unassigned
-+
-+  96	cpu_g
-+  97	cpu_lp
-+  98	3d2
-+  99	mselect
-+  100	tsensor
-+  101	i2s3
-+  102	i2s4
-+  103	i2c4
-+  104	sbc5
-+  105	sbc6
-+  106	d_audio
-+  107	apbif
-+  108	dam0
-+  109	dam1
-+  110	dam2
-+  111	hda2codec_2x
-+  112	atomics
-+  113	audio0_2x
-+  114	audio1_2x
-+  115	audio2_2x
-+  116	audio3_2x
-+  117	audio4_2x
-+  118	audio5_2x
-+  119	actmon
-+  120	extern1
-+  121	extern2
-+  122	extern3
-+  123	sata_oob
-+  124	sata
-+  125	hda
-+  127	se
-+  128	hda2hdmi
-+  129	sata_cold
-+
-+  160	uartb
-+  161	vfir
-+  162	spdif_in
-+  163	spdif_out
-+  164	vi
-+  165	vi_sensor
-+  166	fuse
-+  167	fuse_burn
-+  168	cve
-+  169	tvo
-+
-+  170	clk_32k
-+  171	clk_m
-+  172	clk_m_div2
-+  173	clk_m_div4
-+  174	pll_ref
-+  175	pll_c
-+  176	pll_c_out1
-+  177	pll_m
-+  178	pll_m_out1
-+  179	pll_p
-+  180	pll_p_out1
-+  181	pll_p_out2
-+  182	pll_p_out3
-+  183	pll_p_out4
-+  184	pll_a
-+  185	pll_a_out0
-+  186	pll_d
-+  187	pll_d_out0
-+  188	pll_d2
-+  189	pll_d2_out0
-+  190	pll_u
-+  191	pll_x
-+  192	pll_x_out0
-+  193	pll_e
-+  194	spdif_in_sync
-+  195	i2s0_sync
-+  196	i2s1_sync
-+  197	i2s2_sync
-+  198	i2s3_sync
-+  199	i2s4_sync
-+  200	vimclk
-+  201	audio0
-+  202	audio1
-+  203	audio2
-+  204	audio3
-+  205	audio4
-+  206	audio5
-+  207	clk_out_1 (extern1)
-+  208	clk_out_2 (extern2)
-+  209	clk_out_3 (extern3)
-+  210	sclk
-+  211	blink
-+  212	cclk_g
-+  213	cclk_lp
-+  214	twd
-+  215	cml0
-+  216	cml1
-+  217	i2cslow
-+  218	i2c1_fast
-+  219	i2c2_fast
-+  220	i2c3_fast
-+  221	i2c4_fast
-+  222	i2c5_fast
-+  223	dsi1_fast
-+  224	dsi2_fast
-+  225	hclk
-+  226	pclk
-+
-+Example SoC include file:
-+
-+/ {
-+	tegra_car: clock {
-+		compatible = "nvidia,tegra30-car";
-+		reg = <0x60006000 0x1000>;
-+		#clock-cells = <1>;
-+	};
-+
-+	usb@c5004000 {
-+		clocks = <&tegra_car 58>; /* usb2 */
-+	};
-+};
-+
-+Example board file:
-+
-+/ {
-+	clocks {
-+		compatible = "simple-bug";
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		osc: clock@0 {
-+			compatible = "fixed-clock";
-+			reg = <0>;
-+			#clock-cells = <0>;
-+			clock-frequency = <12000000>;
-+		};
-+
-+		clk_32k: clock@1 {
-+			compatible = "fixed-clock";
-+			reg = <1>;
-+			#clock-cells = <0>;
-+			clock-frequency = <32768>;
-+		};
-+	};
-+
-+	&tegra_car {
-+		clocks = <&clk_32k> <&osc>;
-+	};
-+};
-diff --git a/arch/arm/boot/dts/tegra30.dtsi b/arch/arm/boot/dts/tegra30.dtsi
-index f534a50..e254d59 100644
---- a/arch/arm/boot/dts/tegra30.dtsi
-+++ b/arch/arm/boot/dts/tegra30.dtsi
-@@ -133,6 +133,12 @@
- 			      0 122 0x04>;
- 	};
+diff --git a/arch/arm/mach-tegra/board-dt-tegra20.c b/arch/arm/mach-tegra/board-dt-tegra20.c
+index 8e35aae..c774a80 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra20.c
++++ b/arch/arm/mach-tegra/board-dt-tegra20.c
+@@ -42,7 +42,6 @@
+ #include <asm/setup.h>
  
-+	tegra_car: clock {
-+		compatible = "nvidia,tegra30-car";
-+		reg = <0x60006000 0x1000>;
-+		#clock-cells = <1>;
-+	};
+ #include "board.h"
+-#include "clock.h"
+ #include "common.h"
+ #include "iomap.h"
+ 
+@@ -104,37 +103,8 @@ struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
+ 	{}
+ };
+ 
+-static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+-	/* name		parent		rate		enabled */
+-	{ "uarta",	"pll_p",	216000000,	true },
+-	{ "uartd",	"pll_p",	216000000,	true },
+-	{ "usbd",	"clk_m",	12000000,	false },
+-	{ "usb2",	"clk_m",	12000000,	false },
+-	{ "usb3",	"clk_m",	12000000,	false },
+-	{ "pll_a",      "pll_p_out1",   56448000,       true },
+-	{ "pll_a_out0", "pll_a",        11289600,       true },
+-	{ "cdev1",      NULL,           0,              true },
+-	{ "blink",      "clk_32k",      32768,          true },
+-	{ "i2s1",       "pll_a_out0",   11289600,       false},
+-	{ "i2s2",       "pll_a_out0",   11289600,       false},
+-	{ "sdmmc1",	"pll_p",	48000000,	false},
+-	{ "sdmmc3",	"pll_p",	48000000,	false},
+-	{ "sdmmc4",	"pll_p",	48000000,	false},
+-	{ "spi",	"pll_p",	20000000,	false },
+-	{ "sbc1",	"pll_p",	100000000,	false },
+-	{ "sbc2",	"pll_p",	100000000,	false },
+-	{ "sbc3",	"pll_p",	100000000,	false },
+-	{ "sbc4",	"pll_p",	100000000,	false },
+-	{ "host1x",	"pll_c",	150000000,	false },
+-	{ "disp1",	"pll_p",	600000000,	false },
+-	{ "disp2",	"pll_p",	600000000,	false },
+-	{ NULL,		NULL,		0,		0},
+-};
+-
+ static void __init tegra_dt_init(void)
+ {
+-	tegra_clk_init_from_table(tegra_dt_clk_init_table);
+-
+ 	/*
+ 	 * Finished with the static registrations now; fill in the missing
+ 	 * devices
+diff --git a/arch/arm/mach-tegra/board-dt-tegra30.c b/arch/arm/mach-tegra/board-dt-tegra30.c
+index a9ed15d..35ddf72 100644
+--- a/arch/arm/mach-tegra/board-dt-tegra30.c
++++ b/arch/arm/mach-tegra/board-dt-tegra30.c
+@@ -35,7 +35,6 @@
+ #include <asm/hardware/gic.h>
+ 
+ #include "board.h"
+-#include "clock.h"
+ #include "common.h"
+ #include "iomap.h"
+ 
+@@ -67,38 +66,8 @@ struct of_dev_auxdata tegra30_auxdata_lookup[] __initdata = {
+ 	{}
+ };
+ 
+-static __initdata struct tegra_clk_init_table tegra_dt_clk_init_table[] = {
+-	/* name		parent		rate		enabled */
+-	{ "uarta",	"pll_p",	408000000,	true },
+-	{ "pll_a",	"pll_p_out1",	564480000,	true },
+-	{ "pll_a_out0",	"pll_a",	11289600,	true },
+-	{ "extern1",	"pll_a_out0",	0,		true },
+-	{ "clk_out_1",	"extern1",	0,		true },
+-	{ "blink",	"clk_32k",	32768,		true },
+-	{ "i2s0",	"pll_a_out0",	11289600,	false},
+-	{ "i2s1",	"pll_a_out0",	11289600,	false},
+-	{ "i2s2",	"pll_a_out0",	11289600,	false},
+-	{ "i2s3",	"pll_a_out0",	11289600,	false},
+-	{ "i2s4",	"pll_a_out0",	11289600,	false},
+-	{ "sdmmc1",	"pll_p",	48000000,	false},
+-	{ "sdmmc3",	"pll_p",	48000000,	false},
+-	{ "sdmmc4",	"pll_p",	48000000,	false},
+-	{ "sbc1",	"pll_p",	100000000,	false},
+-	{ "sbc2",	"pll_p",	100000000,	false},
+-	{ "sbc3",	"pll_p",	100000000,	false},
+-	{ "sbc4",	"pll_p",	100000000,	false},
+-	{ "sbc5",	"pll_p",	100000000,	false},
+-	{ "sbc6",	"pll_p",	100000000,	false},
+-	{ "host1x",	"pll_c",	150000000,	false},
+-	{ "disp1",	"pll_p",	600000000,	false},
+-	{ "disp2",	"pll_p",	600000000,	false},
+-	{ NULL,		NULL,		0,		0},
+-};
+-
+ static void __init tegra30_dt_init(void)
+ {
+-	tegra_clk_init_from_table(tegra_dt_clk_init_table);
+-
+ 	of_platform_populate(NULL, of_default_bus_match_table,
+ 				tegra30_auxdata_lookup, NULL);
+ }
+diff --git a/arch/arm/mach-tegra/clock.c b/arch/arm/mach-tegra/clock.c
+index 8c0ff06..baa0c5b 100644
+--- a/arch/arm/mach-tegra/clock.c
++++ b/arch/arm/mach-tegra/clock.c
+@@ -31,9 +31,6 @@
+ #include "board.h"
+ #include "clock.h"
+ 
+-/* Global data of Tegra CPU CAR ops */
+-struct tegra_cpu_car_ops *tegra_cpu_car_ops;
+-
+ /*
+  * Locking:
+  *
+@@ -131,22 +128,6 @@ void tegra_clk_init_from_table(struct tegra_clk_init_table *table)
+ 		tegra_clk_init_one_from_table(table);
+ }
+ 
+-void tegra_periph_reset_deassert(struct clk *c)
+-{
+-	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
+-	BUG_ON(!clk->reset);
+-	clk->reset(__clk_get_hw(c), false);
+-}
+-EXPORT_SYMBOL(tegra_periph_reset_deassert);
+-
+-void tegra_periph_reset_assert(struct clk *c)
+-{
+-	struct clk_tegra *clk = to_clk_tegra(__clk_get_hw(c));
+-	BUG_ON(!clk->reset);
+-	clk->reset(__clk_get_hw(c), true);
+-}
+-EXPORT_SYMBOL(tegra_periph_reset_assert);
+-
+ /* Several extended clock configuration bits (e.g., clock routing, clock
+  * phase control) are included in PLL and peripheral clock source
+  * registers. */
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index d54cfc5..3a7280d 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -22,6 +22,7 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/of_irq.h>
++#include <linux/clk/tegra.h>
+ 
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/hardware/gic.h>
+@@ -29,7 +30,6 @@
+ #include <mach/powergate.h>
+ 
+ #include "board.h"
+-#include "clock.h"
+ #include "common.h"
+ #include "fuse.h"
+ #include "iomap.h"
+@@ -64,6 +64,7 @@ static const struct of_device_id tegra_dt_irq_match[] __initconst = {
+ 
+ void __init tegra_dt_init_irq(void)
+ {
++	tegra_clocks_init();
+ 	tegra_init_irq();
+ 	of_irq_init(tegra_dt_irq_match);
+ }
+@@ -79,43 +80,6 @@ void tegra_assert_system_reset(char mode, const char *cmd)
+ 	writel_relaxed(reg, reset);
+ }
+ 
+-#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+-static __initdata struct tegra_clk_init_table tegra20_clk_init_table[] = {
+-	/* name		parent		rate		enabled */
+-	{ "clk_m",	NULL,		0,		true },
+-	{ "pll_p",	"clk_m",	216000000,	true },
+-	{ "pll_p_out1",	"pll_p",	28800000,	true },
+-	{ "pll_p_out2",	"pll_p",	48000000,	true },
+-	{ "pll_p_out3",	"pll_p",	72000000,	true },
+-	{ "pll_p_out4",	"pll_p",	24000000,	true },
+-	{ "pll_c",	"clk_m",	600000000,	true },
+-	{ "pll_c_out1",	"pll_c",	120000000,	true },
+-	{ "sclk",	"pll_c_out1",	120000000,	true },
+-	{ "hclk",	"sclk",		120000000,	true },
+-	{ "pclk",	"hclk",		60000000,	true },
+-	{ "csite",	NULL,		0,		true },
+-	{ "emc",	NULL,		0,		true },
+-	{ "cpu",	NULL,		0,		true },
+-	{ NULL,		NULL,		0,		0},
+-};
+-#endif
+-
+-#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+-static __initdata struct tegra_clk_init_table tegra30_clk_init_table[] = {
+-	/* name		parent		rate		enabled */
+-	{ "clk_m",	NULL,		0,		true },
+-	{ "pll_p",	"pll_ref",	408000000,	true },
+-	{ "pll_p_out1",	"pll_p",	9600000,	true },
+-	{ "pll_p_out4",	"pll_p",	102000000,	true },
+-	{ "sclk",	"pll_p_out4",	102000000,	true },
+-	{ "hclk",	"sclk",		102000000,	true },
+-	{ "pclk",	"hclk",		51000000,	true },
+-	{ "csite",	NULL,		0,		true },
+-	{ NULL,		NULL,		0,		0},
+-};
+-#endif
+-
+-
+ static void __init tegra_init_cache(void)
+ {
+ #ifdef CONFIG_CACHE_L2X0
+@@ -139,8 +103,6 @@ void __init tegra20_init_early(void)
+ {
+ 	tegra_apb_io_init();
+ 	tegra_init_fuse();
+-	tegra2_init_clocks();
+-	tegra_clk_init_from_table(tegra20_clk_init_table);
+ 	tegra_init_cache();
+ 	tegra_pmc_init();
+ 	tegra_powergate_init();
+@@ -152,8 +114,6 @@ void __init tegra30_init_early(void)
+ {
+ 	tegra_apb_io_init();
+ 	tegra_init_fuse();
+-	tegra30_init_clocks();
+-	tegra_clk_init_from_table(tegra30_clk_init_table);
+ 	tegra_init_cache();
+ 	tegra_pmc_init();
+ 	tegra_powergate_init();
+diff --git a/arch/arm/mach-tegra/cpu-tegra.c b/arch/arm/mach-tegra/cpu-tegra.c
+index 85d4a23..ebffed6 100644
+--- a/arch/arm/mach-tegra/cpu-tegra.c
++++ b/arch/arm/mach-tegra/cpu-tegra.c
+@@ -266,7 +266,7 @@ static int __init tegra_cpufreq_init(void)
+ 	if (IS_ERR(pll_x_clk))
+ 		return PTR_ERR(pll_x_clk);
+ 
+-	pll_p_clk = clk_get_sys(NULL, "pll_p");
++	pll_p_clk = clk_get_sys(NULL, "pll_p_cclk");
+ 	if (IS_ERR(pll_p_clk))
+ 		return PTR_ERR(pll_p_clk);
+ 
+diff --git a/arch/arm/mach-tegra/include/mach/clk.h b/arch/arm/mach-tegra/include/mach/clk.h
+index 95f3a54..85bbf10 100644
+--- a/arch/arm/mach-tegra/include/mach/clk.h
++++ b/arch/arm/mach-tegra/include/mach/clk.h
+@@ -31,9 +31,6 @@ enum tegra_clk_ex_param {
+ 	TEGRA_CLK_PLLD_MIPI_MUX_SEL,
+ };
+ 
+-void tegra_periph_reset_deassert(struct clk *c);
+-void tegra_periph_reset_assert(struct clk *c);
+-
+ #ifndef CONFIG_COMMON_CLK
+ unsigned long clk_get_rate_all_locked(struct clk *c);
+ #endif
+diff --git a/arch/arm/mach-tegra/pcie.c b/arch/arm/mach-tegra/pcie.c
+index 53d0858..73993ce 100644
+--- a/arch/arm/mach-tegra/pcie.c
++++ b/arch/arm/mach-tegra/pcie.c
+@@ -33,11 +33,11 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/export.h>
++#include <linux/clk/tegra.h>
+ 
+ #include <asm/sizes.h>
+ #include <asm/mach/pci.h>
+ 
+-#include <mach/clk.h>
+ #include <mach/powergate.h>
+ 
+ #include "board.h"
+diff --git a/arch/arm/mach-tegra/powergate.c b/arch/arm/mach-tegra/powergate.c
+index 2cc1185..c6bc8f8 100644
+--- a/arch/arm/mach-tegra/powergate.c
++++ b/arch/arm/mach-tegra/powergate.c
+@@ -26,8 +26,8 @@
+ #include <linux/io.h>
+ #include <linux/seq_file.h>
+ #include <linux/spinlock.h>
++#include <linux/clk/tegra.h>
+ 
+-#include <mach/clk.h>
+ #include <mach/powergate.h>
+ 
+ #include "fuse.h"
+diff --git a/drivers/clk/tegra/clk-periph.c b/drivers/clk/tegra/clk-periph.c
+index ed0ded2..c4ccb01 100644
+--- a/drivers/clk/tegra/clk-periph.c
++++ b/drivers/clk/tegra/clk-periph.c
+@@ -112,6 +112,44 @@ static void clk_periph_disable(struct clk_hw *hw)
+ 	gate_ops->disable(gate_hw);
+ }
+ 
++void tegra_periph_reset_deassert(struct clk *c)
++{
++	struct clk_hw *hw = __clk_get_hw(c);
++	struct tegra_clk_periph *periph = to_clk_periph(hw);
++	struct tegra_clk_periph_gate *gate;
 +
- 	apbdma: dma {
- 		compatible = "nvidia,tegra30-apbdma", "nvidia,tegra20-apbdma";
- 		reg = <0x6000a000 0x1400>;
++	if (periph->magic != TEGRA_CLK_PERIPH_MAGIC) {
++		gate = container_of(hw, struct tegra_clk_periph_gate, hw);
++		if (gate->magic != TEGRA_CLK_PERIPH_GATE_MAGIC) {
++			WARN_ON(1);
++			return;
++		}
++	} else {
++		gate = &periph->gate;
++	}
++
++	tegra_periph_reset(gate, 0);
++}
++
++void tegra_periph_reset_assert(struct clk *c)
++{
++	struct clk_hw *hw = __clk_get_hw(c);
++	struct tegra_clk_periph *periph = to_clk_periph(hw);
++	struct tegra_clk_periph_gate *gate;
++
++	if (periph->magic != TEGRA_CLK_PERIPH_MAGIC) {
++		gate = container_of(hw, struct tegra_clk_periph_gate, hw);
++		if (gate->magic != TEGRA_CLK_PERIPH_GATE_MAGIC) {
++			WARN_ON(1);
++			return;
++		}
++	} else {
++		gate = &periph->gate;
++	}
++
++	tegra_periph_reset(gate, 1);
++}
++
+ const struct clk_ops tegra_clk_periph_ops = {
+ 	.get_parent = clk_periph_get_parent,
+ 	.set_parent = clk_periph_set_parent,
+diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+index cf023a9..a603b9a 100644
+--- a/drivers/clk/tegra/clk.c
++++ b/drivers/clk/tegra/clk.c
+@@ -16,9 +16,14 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/clk-provider.h>
++#include <linux/of.h>
++#include <linux/clk/tegra.h>
+ 
+ #include "clk.h"
+ 
++/* Global data of Tegra CPU CAR ops */
++struct tegra_cpu_car_ops *tegra_cpu_car_ops;
++
+ void __init tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
+ 				struct clk *clks[], int clk_max)
+ {
+@@ -67,3 +72,14 @@ void __init tegra_init_from_table(struct tegra_clk_init_table *tbl,
+ 			}
+ 	}
+ }
++
++static const struct of_device_id tegra_dt_clk_match[] = {
++	{ .compatible = "nvidia,tegra20-car", .data = tegra20_clock_init },
++	{ .compatible = "nvidia,tegra30-car", .data = tegra30_clock_init },
++	{ }
++};
++
++void __init tegra_clocks_init(void)
++{
++	of_clk_init(tegra_dt_clk_match);
++}
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index efdfffa..f5f8a52 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -31,8 +31,8 @@
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/slab.h>
++#include <linux/clk/tegra.h>
+ 
+-#include <mach/clk.h>
+ #include "dmaengine.h"
+ 
+ #define TEGRA_APBDMA_GENERAL			0x0
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 0744103..cd2f8fa 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -12,8 +12,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+-
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ 
+ #include "drm.h"
+ #include "dc.h"
+diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
+index 3a503c9..d980dc7 100644
+--- a/drivers/gpu/drm/tegra/drm.c
++++ b/drivers/gpu/drm/tegra/drm.c
+@@ -11,7 +11,6 @@
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
+ 
+-#include <mach/clk.h>
+ #include <linux/dma-mapping.h>
+ #include <asm/dma-iommu.h>
+ 
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index ab40164..2f39d3b 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -14,8 +14,7 @@
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/regulator/consumer.h>
+-
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ 
+ #include "hdmi.h"
+ #include "drm.h"
+diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
+index dcea77b..c048c98 100644
+--- a/drivers/i2c/busses/i2c-tegra.c
++++ b/drivers/i2c/busses/i2c-tegra.c
+@@ -29,11 +29,10 @@
+ #include <linux/of_i2c.h>
+ #include <linux/of_device.h>
+ #include <linux/module.h>
++#include <linux/clk/tegra.h>
+ 
+ #include <asm/unaligned.h>
+ 
+-#include <mach/clk.h>
+-
+ #define TEGRA_I2C_TIMEOUT (msecs_to_jiffies(1000))
+ #define BYTES_PER_FIFO_WORD 4
+ 
+diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+index c76f968..54ac1dc 100644
+--- a/drivers/input/keyboard/tegra-kbc.c
++++ b/drivers/input/keyboard/tegra-kbc.c
+@@ -30,7 +30,7 @@
+ #include <linux/clk.h>
+ #include <linux/slab.h>
+ #include <linux/input/tegra_kbc.h>
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ 
+ #define KBC_MAX_DEBOUNCE_CNT	0x3ffu
+ 
+diff --git a/drivers/spi/spi-tegra20-sflash.c b/drivers/spi/spi-tegra20-sflash.c
+index 448a8cc..02feaa5 100644
+--- a/drivers/spi/spi-tegra20-sflash.c
++++ b/drivers/spi/spi-tegra20-sflash.c
+@@ -34,7 +34,7 @@
+ #include <linux/of_device.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/spi-tegra.h>
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ 
+ #define SPI_COMMAND				0x000
+ #define SPI_GO					BIT(30)
+diff --git a/drivers/spi/spi-tegra20-slink.c b/drivers/spi/spi-tegra20-slink.c
+index 651167f..fa208a5 100644
+--- a/drivers/spi/spi-tegra20-slink.c
++++ b/drivers/spi/spi-tegra20-slink.c
+@@ -35,7 +35,7 @@
+ #include <linux/of_device.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/spi-tegra.h>
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ 
+ #define SLINK_COMMAND			0x000
+ #define SLINK_BIT_LENGTH(x)		(((x) & 0x1f) << 0)
+diff --git a/drivers/staging/nvec/nvec.c b/drivers/staging/nvec/nvec.c
+index 2830946..d51615b 100644
+--- a/drivers/staging/nvec/nvec.c
++++ b/drivers/staging/nvec/nvec.c
+@@ -37,8 +37,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/workqueue.h>
+-
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ 
+ #include "nvec.h"
+ 
+diff --git a/include/linux/clk/tegra.h b/include/linux/clk/tegra.h
+index 0977f2a..a7e5a39 100644
+--- a/include/linux/clk/tegra.h
++++ b/include/linux/clk/tegra.h
+@@ -17,6 +17,8 @@
+ #ifndef __LINUX_CLK_TEGRA_H_
+ #define __LINUX_CLK_TEGRA_H_
+ 
++#include <linux/clk.h>
++
+ /*
+  * Tegra CPU clock and reset control ops
+  *
+@@ -120,5 +122,8 @@ static inline void tegra_cpu_clock_resume(void)
+ 
+ void tegra20_cpu_car_ops_init(void);
+ void tegra30_cpu_car_ops_init(void);
++void tegra_periph_reset_deassert(struct clk *c);
++void tegra_periph_reset_assert(struct clk *c);
++void tegra_clocks_init(void);
+ 
+ #endif /* __LINUX_CLK_TEGRA_H_ */
+diff --git a/sound/soc/tegra/tegra30_ahub.c b/sound/soc/tegra/tegra30_ahub.c
+index f354dc3..bb31c41 100644
+--- a/sound/soc/tegra/tegra30_ahub.c
++++ b/sound/soc/tegra/tegra30_ahub.c
+@@ -25,7 +25,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/regmap.h>
+ #include <linux/slab.h>
+-#include <mach/clk.h>
++#include <linux/clk/tegra.h>
+ #include <sound/soc.h>
+ #include "tegra30_ahub.h"
+ 
 -- 
 1.7.4.1
 
