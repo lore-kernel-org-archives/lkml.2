@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754078Ab3ADHBx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:01:53 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18335 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab3ADHBs (ORCPT
+	id S1754144Ab3ADHB7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:01:59 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10707 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab3ADHBz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:01:48 -0500
+	Fri, 4 Jan 2013 02:01:55 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 03 Jan 2013 22:59:03 -0800
+	by hqnvupgp07.nvidia.com on Thu, 03 Jan 2013 22:57:42 -0800
 From: Prashant Gaikwad <pgaikwad@nvidia.com>
 To: <mturquette@linaro.org>, <swarren@nvidia.com>, <grant.likely@secretlab.ca>,
         <linus.walleij@linaro.org>, <rob.herring@calxeda.com>,
@@ -16,9 +16,9 @@ To: <mturquette@linaro.org>, <swarren@nvidia.com>, <grant.likely@secretlab.ca>,
         <josh.cartwright@ni.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH 5/7] clk: vt8500: Use common of_clk_init() function
-Date: Fri, 4 Jan 2013 12:30:56 +0530
-Message-ID: <1357282858-2112-5-git-send-email-pgaikwad@nvidia.com>
+Subject: [PATCH 6/7] clk: zynq: Use common of_clk_init() function
+Date: Fri, 4 Jan 2013 12:30:57 +0530
+Message-ID: <1357282858-2112-6-git-send-email-pgaikwad@nvidia.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
 References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
@@ -33,50 +33,48 @@ Use common of_clk_init() function for clock initialization.
 
 Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 ---
- drivers/clk/clk-vt8500.c |   15 ++++-----------
- 1 files changed, 4 insertions(+), 11 deletions(-)
+ drivers/clk/clk-zynq.c |   14 ++++----------
+ 1 files changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/clk/clk-vt8500.c b/drivers/clk/clk-vt8500.c
-index fe25570..3ce1c3e 100644
---- a/drivers/clk/clk-vt8500.c
-+++ b/drivers/clk/clk-vt8500.c
-@@ -272,7 +272,7 @@ static __init void vtwm_device_clk_init(struct device_node *node)
- 	rc = of_clk_add_provider(node, of_clk_src_simple_get, clk);
- 	clk_register_clkdev(clk, clk_name, NULL);
+diff --git a/drivers/clk/clk-zynq.c b/drivers/clk/clk-zynq.c
+index 37a3051..b14a25f 100644
+--- a/drivers/clk/clk-zynq.c
++++ b/drivers/clk/clk-zynq.c
+@@ -81,6 +81,7 @@ static void __init zynq_pll_clk_setup(struct device_node *np)
+ 	if (WARN_ON(ret))
+ 		return;
+ }
++CLK_OF_DECLARE(zynq_pll, "xlnx,zynq-pll", zynq_pll_clk_setup);
+ 
+ struct zynq_periph_clk {
+ 	struct clk_hw		hw;
+@@ -187,6 +188,7 @@ static void __init zynq_periph_clk_setup(struct device_node *np)
+ 	if (WARN_ON(err))
+ 		return;
+ }
++CLK_OF_DECLARE(zynq_periph, "xlnx,zynq-periph-clock", zynq_periph_clk_setup);
+ 
+ /* CPU Clock domain is modelled as a mux with 4 children subclks, whose
+  * derivative rates depend on CLK_621_TRUE
+@@ -366,18 +368,10 @@ static void __init zynq_cpu_clk_setup(struct device_node *np)
+ 	if (WARN_ON(err))
+ 		return;
  }
 -
-+CLK_OF_DECLARE(vt8500_device, "via,vt8500-device-clock", vtwm_device_clk_init);
- 
- /* PLL clock related functions */
- 
-@@ -502,20 +502,13 @@ static void __init vt8500_pll_init(struct device_node *node)
- {
- 	vtwm_pll_clk_init(node, PLL_TYPE_VT8500);
- }
-+CLK_OF_DECLARE(vt8500_pll, "via,vt8500-pll-clock", vt8500_pll_init);
- 
- static void __init wm8650_pll_init(struct device_node *node)
- {
- 	vtwm_pll_clk_init(node, PLL_TYPE_WM8650);
- }
--
--static const __initconst struct of_device_id clk_match[] = {
+-static const __initconst struct of_device_id zynq_clk_match[] = {
 -	{ .compatible = "fixed-clock", .data = of_fixed_clk_setup, },
--	{ .compatible = "via,vt8500-pll-clock", .data = vt8500_pll_init, },
--	{ .compatible = "wm,wm8650-pll-clock", .data = wm8650_pll_init, },
--	{ .compatible = "via,vt8500-device-clock",
--					.data = vtwm_device_clk_init, },
--	{ /* sentinel */ }
+-	{ .compatible = "xlnx,zynq-pll", .data = zynq_pll_clk_setup, },
+-	{ .compatible = "xlnx,zynq-periph-clock",
+-		.data = zynq_periph_clk_setup, },
+-	{ .compatible = "xlnx,zynq-cpu-clock", .data = zynq_cpu_clk_setup, },
+-	{}
 -};
-+CLK_OF_DECLARE(wm8650_pll, "wm,wm8650-pll-clock", wm8650_pll_init);
++CLK_OF_DECLARE(zynq_cpu, "xlnx,zynq-cpu-clock", zynq_cpu_clk_setup);
  
- void __init vtwm_clk_init(void __iomem *base)
+ void __init xilinx_zynq_clocks_init(void __iomem *slcr)
  {
-@@ -524,5 +517,5 @@ void __init vtwm_clk_init(void __iomem *base)
- 
- 	pmc_base = base;
- 
--	of_clk_init(clk_match);
+ 	slcr_base = slcr;
+-	of_clk_init(zynq_clk_match);
 +	of_clk_init(NULL);
  }
 -- 
