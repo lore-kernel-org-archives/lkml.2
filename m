@@ -1,91 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436Ab3ADEl6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 23:41:58 -0500
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:56019 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754397Ab3ADElz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 23:41:55 -0500
-Subject: Re: [PATCH net-next] softirq: reduce latencies
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rick Jones <rick.jones2@hp.com>
-Cc: sedat.dilek@gmail.com, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <50E5DEEF.2080009@hp.com>
-References: <CA+icZUVEvzyrPsQG1QWLnHxhtaewaWTOVzBpTnLqjKuHMjjFHg@mail.gmail.com>
-	 <1357219919.21409.24519.camel@edumazet-glaptop>  <50E5DEEF.2080009@hp.com>
+	id S1754479Ab3ADEnt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 23:43:49 -0500
+Received: from gate.crashing.org ([63.228.1.57]:52321 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753995Ab3ADEnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 23:43:47 -0500
+Message-ID: <1357274575.2500.23.camel@pasglop>
+Subject: Re: [PATCH v2 1/4] kprobes/powerpc: Do not disable External
+ interrupts during single step
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>, bigeasy@linutronix.de,
+        oleg@redhat.com, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
+        peterz@infradead.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, anton@redhat.com, mingo@elte.hu
+Date: Fri, 04 Jan 2013 15:42:55 +1100
+In-Reply-To: <50C6C930.90206@in.ibm.com>
+References: <20121203150438.7727.74924.stgit@suzukikp>
+	 <20121203150720.7727.91582.stgit@suzukikp> <50C6C930.90206@in.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jan 2013 20:41:50 -0800
-Message-ID: <1357274510.21409.27807.camel@edumazet-glaptop>
+X-Mailer: Evolution 3.6.0-0ubuntu3 
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 11:41 -0800, Rick Jones wrote:
+On Tue, 2012-12-11 at 11:18 +0530, Suzuki K. Poulose wrote:
+> On 12/03/2012 08:37 PM, Suzuki K. Poulose wrote:
+> > From: Suzuki K. Poulose <suzuki@in.ibm.com>
+> >
+> > External/Decrement exceptions have lower priority than the Debug Exception.
+> > So, we don't have to disable the External interrupts before a single step.
+> > However, on BookE, Critical Input Exception(CE) has higher priority than a
+> > Debug Exception. Hence we mask them.
 
-> In terms of netperf overhead, once you specify P99_LATENCY, you are 
-> already in for the pound of cost but only getting the penny of output 
-> (so to speak).  While it would clutter the output, one could go ahead 
-> and ask for the other latency stats and it won't "cost" anything more:
-> 
-> ... -- -k 
-> RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
-> 
-> Additional information about how the omni output selectors work can be 
-> found at 
-> http://www.netperf.org/svn/netperf2/trunk/doc/netperf.html#Omni-Output-Selection
-> 
-> happy benchmarking,
-> 
-> rick jones
-> 
-> BTW - you will likely see some differences between RT_LATENCY, which is 
-> calculated from the average transactions per second, and MEAN_LATENCY, 
-> which is calculated from the histogram of individual latencies 
-> maintained when any of the _LATENCY outputs other than RT_LATENCY is 
-> requested.  Kudos to the folks at Google who did the extensions to the 
-> then-existing histogram code to enable it to be used for more reasonably 
-> accurate statistics.
-> 
+I'm not sure about that one ...
 
-Yeah ;)
+>From memory, 4xx has that interesting issue which is that if you have
+single step enabled and an interrupt (of *any kind* occurs), the
+processor *will* step into the first instruction of the interrupt
+handler. (In fact, some silicons have a bug where it can even be the
+*second* instruction of the handler, which can be problematic when the
+first one is a branch).
 
-Here are the before/after_patch results, cpu 2 handling the NIC irqs :
+This is why you may notice that whole business we have in the handling
+of debug/crit interrupts where we try to figure out if that happened,
+and return with DE off if it did.
 
+Now, the above mentioned workaround means we might not need to disable
+EE indeed.
 
-Before patch :
+However, in any case, I don't see what your patch fixes or improves, nor
+do I understand what you mean by "it is possible we'd get the single
+step reported for CE". Please explain in more details and describe the
+problematic scenario.
 
-# netperf -H 7.7.7.84 -t TCP_RR -T2,2 -- -k
-RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
-MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET
-to 7.7.7.84 () port 0 AF_INET : first burst 0 : cpu bind
-RT_LATENCY=550110.424
-MIN_LATENCY=146858
-MAX_LATENCY=997109
-P50_LATENCY=305000
-P90_LATENCY=550000
-P99_LATENCY=710000
-MEAN_LATENCY=376989.12
-STDDEV_LATENCY=184046.92
-
-After patch :
-
-# netperf -H 7.7.7.84 -t TCP_RR -T2,2 -- -k
-RT_LATENCY,MIN_LATENCY,MAX_LATENCY,P50_LATENCY,P90_LATENCY,P99_LATENCY,MEAN_LATENCY,STDDEV_LATENCY
-MIGRATED TCP REQUEST/RESPONSE TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET
-to 7.7.7.84 () port 0 AF_INET : first burst 0 : cpu bind
-RT_LATENCY=40545.492
-MIN_LATENCY=9834
-MAX_LATENCY=78366
-P50_LATENCY=33583
-P90_LATENCY=59000
-P99_LATENCY=69000
-MEAN_LATENCY=38364.67
-STDDEV_LATENCY=12865.26
-
+Cheers,
+Ben.
 
 
