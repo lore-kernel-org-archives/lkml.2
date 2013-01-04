@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752253Ab3ADFQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 00:16:58 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:54670 "EHLO
-	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727Ab3ADFQ4 (ORCPT
+	id S1752316Ab3ADFTO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 00:19:14 -0500
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:47779 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936Ab3ADFTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 00:16:56 -0500
-X-AuditID: 9c930179-b7becae000000e51-e4-50e665c5a85e
-From: Namhyung Kim <namhyung@kernel.org>
-To: Eric Dumazet <erdnetdev@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-Subject: Re: [PATCH net-next] softirq: reduce latencies
-References: <1357216132.21409.24107.camel@edumazet-glaptop>
-	<20130103124608.136fd65b.akpm@linux-foundation.org>
-	<1357252875.21409.26390.camel@edumazet-glaptop>
-Date: Fri, 04 Jan 2013 14:16:53 +0900
-In-Reply-To: <1357252875.21409.26390.camel@edumazet-glaptop> (Eric Dumazet's
-	message of "Thu, 03 Jan 2013 14:41:15 -0800")
-Message-ID: <87r4m1r0hm.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Fri, 4 Jan 2013 00:19:11 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Brightmail-Tracker: AAAAAA==
+In-Reply-To: <50E594F2.4000800@linux.vnet.ibm.com>
+References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org>
+	<1fe21314c2e17585e22c546e2cac12544f8f9733.1355636864.git.viresh.kumar@linaro.org>
+	<50E594F2.4000800@linux.vnet.ibm.com>
+Date: Fri, 4 Jan 2013 10:49:10 +0530
+Message-ID: <CAKohpo=Z=nA2Mr23ior8c0Qmt75+bOVLvZwNdc7OXq-+rH1dWQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] cpufreq: Don't use cpu removed during cpufreq_driver_unregister
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: rjw@sisk.pl, rafael.j.wysocki@intel.com, linaro-dev@lists.linaro.org,
+        nicolas.pitre@linaro.org, amit.kucheria@linaro.org,
+        mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, pdsw-power-team@arm.com,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 3 January 2013 19:55, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> I took a quick look at the problem you described above, and the cpufreq code..
+> If we cannot avoid calling cpufreq_add_dev() from cpufreq_remove_dev(), then I can't
+> think of anything better than what your patch does.
 
-On Thu, 03 Jan 2013 14:41:15 -0800, Eric Dumazet wrote:
-> On Thu, 2013-01-03 at 12:46 -0800, Andrew Morton wrote:
->> Can this change cause worsened latencies in some situations?  Say there
->> are a large number of short-running actions queued.  Presently we'll
->> dispatch ten of them and return.  With this change we'll dispatch many
->> more of them - however many consume 2ms.  So worst-case latency
->> increases from "10 * not-much" to "2 ms".
+Good :)
+
+> BTW, off-topic, while going through that path, I think I found a memory leak
+> in __cpufreq_remove_dev():
 >
-> I tried to reproduce such workload but couldnt. 2 ms (or more exactly 1
-> to 2 ms given the jiffies/HZ granularity) is about the time needed to
-> process 1000 frames on current hardware.
+>         if (unlikely(cpumask_weight(data->cpus) > 1)) {
+>                 for_each_cpu(j, data->cpus) {
+>                         if (j == cpu)
+>                                 continue;
+>                         per_cpu(cpufreq_cpu_data, j) = NULL;
+>                 }
+>         }
+>
+> We are assigning NULL without freeing that memory.
 
-Probably a silly question:
+Not really. All cpus in affected_cpus (data->cpus), share the same
+policy structure.
+We have already taken backup of cpufreq_cpu_data for the first cpu in "data" and
+are freeing it here:
 
-Why not using ktime rather than jiffies for this?
-
-Thanks,
-Namhyung
+	kfree(data);
