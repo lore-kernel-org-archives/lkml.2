@@ -1,55 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab3ADJSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 04:18:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60643 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752910Ab3ADJS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 04:18:29 -0500
-Date: Fri, 4 Jan 2013 10:18:24 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Holler <holler@ahsoftware.de>, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
-        Lars-Peter Clausen <lars@metafoo.de>, rtc-linux@googlegroups.com,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        srinivas pandruvada <srinivas.pandruvada@intel.com>
-Subject: Re: [PATCH 3/4 v5 RESEND] rtc: add rtc-driver for HID sensors of
- type time
-In-Reply-To: <20130103143913.16d4e867.akpm@linux-foundation.org>
-Message-ID: <alpine.LNX.2.00.1301041017540.9143@pobox.suse.cz>
-References: <50CC6FE3.6060705@ahsoftware.de> <1355575537-10093-1-git-send-email-holler@ahsoftware.de> <1355575537-10093-3-git-send-email-holler@ahsoftware.de> <20130103143913.16d4e867.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754072Ab3ADJX5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 04:23:57 -0500
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36221
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752920Ab3ADJXx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 04:23:53 -0500
+Message-ID: <50E69F5B.8060902@kernel.dk>
+Date: Fri, 04 Jan 2013 10:22:35 +0100
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Kent Overstreet <koverstreet@google.com>
+CC: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
+        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
+        jmoyer@redhat.com, viro@zeniv.linux.org.uk, tytso@mit.edu
+Subject: Re: [PATCH 29/32] block, aio: Batch completion for bios/kiocbs
+References: <1356573611-18590-1-git-send-email-koverstreet@google.com> <1356573611-18590-32-git-send-email-koverstreet@google.com>
+In-Reply-To: <1356573611-18590-32-git-send-email-koverstreet@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jan 2013, Andrew Morton wrote:
-
-> > This driver makes the time from HID sensors (hubs) which are offering
-> > such available like any other RTC does.
-> > 
-> > It is necessary that all values like year, month etc, are send as
-> > 8bit values (1 byte each) and all of them in 1 report. Also the
-> > spec HUTRR39b doesn't define the range of the year field, we
-> > tread it as 0 - 99 because that's what most RTCs I know about are
-> > offering.
-> > 
-> > Currently the time can only be read. Setting the time must be done
-> > through sending a report (or a feature). The spec currently doesn't
-> > define how and I'm not sure if I just should define something by myself.
-> > 
+On 2012-12-27 03:00, Kent Overstreet wrote:
+> When completing a kiocb, there's some fixed overhead from touching the
+> kioctx's ring buffer the kiocb belongs to. Some newer high end block
+> devices can complete multiple IOs per interrupt, much like many network
+> interfaces have been for some time.
 > 
-> Looks OK to me.  It sounds like Jonathan will be merging these patches
-> when he's happy with them - please do proceed that way.
+> This plumbs through infrastructure so we can take advantage of multiple
+> completions at the interrupt level, and complete multiple kiocbs at the
+> same time.
+> 
+> Drivers have to be converted to take advantage of this, but it's a
+> simple change and the next patches will convert a few drivers.
+> 
+> To use it, an interrupt handler (or any code that completes bios or
+> requests) declares and initializes a struct batch_complete:
+> 
+> struct batch_complete batch;
+> batch_complete_init(&batch);
+> 
+> Then, instead of calling bio_endio(), it calls
+> bio_endio_batch(bio, err, &batch). This just adds the bio to a list in
+> the batch_complete.
+> 
+> At the end, it calls
+> 
+> batch_complete(&batch);
+> 
+> This completes all the bios all at once, building up a list of kiocbs;
+> then the list of kiocbs are completed all at once.
+> 
+> Also, in order to batch up the kiocbs we have to add a different
+> bio_endio function to struct bio, that takes a pointer to the
+> batch_complete - this patch converts the dio code's bio_endio function.
+> In order to avoid changing every bio_endio function in the kernel (there
+> are many), we currently use a union and a flag to indicate what kind of
+> bio endio function to call. This is admittedly a hack, but should
+> suffice for now.
 
-Yes, fine by me as well -- that's why I have provided by explicit Acks to 
-those.
+It is indeed a hack... Famous last words as well, I'm sure that'll stick
+around forever if it goes in! Any ideas on how we can clean this up
+before that?
 
-Jonathan, are you taking those, please?
+Apart from that, I think the batching makes functional sense. For the
+devices where we do get batches of completions (most of them), it's the
+right thing to do. Would be nice it were better integrated though, not a
+side hack.
+
+Is the rbtree really faster than a basic (l)list and a sort before
+completing them? Would be simpler.
+
+A few small comments below.
+
+> +void bio_endio_batch(struct bio *bio, int error, struct batch_complete *batch)
+> +{
+> +	if (error)
+> +		bio->bi_error = error;
+> +
+> +	if (batch)
+> +		bio_list_add(&batch->bio, bio);
+> +	else
+> +		__bio_endio(bio, batch);
+> +
+> +}
+
+Ugh, get rid of this 'batch' checking.
+
+> +static inline void bio_endio(struct bio *bio, int error)
+> +{
+> +	bio_endio_batch(bio, error, NULL);
+> +}
+> +
+
+Just make that __bio_endio().
+
+Same thing exists on the rq side, iirc.
 
 -- 
-Jiri Kosina
-SUSE Labs
+Jens Axboe
+
