@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab3ADIxa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:53:30 -0500
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:64406 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753697Ab3ADItZ (ORCPT
+	id S1754500Ab3ADIx2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:53:28 -0500
+Received: from mail-ea0-f169.google.com ([209.85.215.169]:36352 "EHLO
+	mail-ea0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab3ADItg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 03:49:25 -0500
-X-Greylist: delayed 159626 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 03:49:24 EST
+	Fri, 4 Jan 2013 03:49:36 -0500
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -21,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V6 03/15] vlan: add link to upper device
-Date: Fri,  4 Jan 2013 09:48:51 +0100
-Message-Id: <1357289343-817-4-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next V6 06/15] bridge: remove usage of netdev_set_master()
+Date: Fri,  4 Jan 2013 09:48:54 +0100
+Message-Id: <1357289343-817-7-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1357289343-817-1-git-send-email-jiri@resnulli.us>
 References: <1357289343-817-1-git-send-email-jiri@resnulli.us>
@@ -33,46 +32,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- net/8021q/vlan.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ net/bridge/br_if.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
-index a292e80..babfde9 100644
---- a/net/8021q/vlan.c
-+++ b/net/8021q/vlan.c
-@@ -105,6 +105,8 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
- 	 */
- 	unregister_netdevice_queue(dev, head);
+diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
+index 1edd71d..2148d47 100644
+--- a/net/bridge/br_if.c
++++ b/net/bridge/br_if.c
+@@ -148,7 +148,7 @@ static void del_nbp(struct net_bridge_port *p)
+ 	netdev_rx_handler_unregister(dev);
+ 	synchronize_net();
  
-+	netdev_upper_dev_unlink(real_dev, dev);
-+
- 	if (grp->nr_vlan_devs == 0)
- 		vlan_gvrp_uninit_applicant(real_dev);
+-	netdev_set_master(dev, NULL);
++	netdev_upper_dev_unlink(dev, br->dev);
  
-@@ -162,9 +164,13 @@ int register_vlan_dev(struct net_device *dev)
- 	if (err < 0)
- 		goto out_uninit_applicant;
+ 	br_multicast_del_port(p);
  
-+	err = netdev_upper_dev_link(real_dev, dev);
-+	if (err)
-+		goto out_uninit_applicant;
-+
- 	err = register_netdevice(dev);
- 	if (err < 0)
--		goto out_uninit_applicant;
-+		goto out_upper_dev_unlink;
+@@ -364,7 +364,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
+ 	if (br_netpoll_info(br) && ((err = br_netpoll_enable(p, GFP_KERNEL))))
+ 		goto err3;
  
- 	/* Account for reference in struct vlan_dev_priv */
- 	dev_hold(real_dev);
-@@ -180,6 +186,8 @@ int register_vlan_dev(struct net_device *dev)
+-	err = netdev_set_master(dev, br->dev);
++	err = netdev_master_upper_dev_link(dev, br->dev);
+ 	if (err)
+ 		goto err4;
  
+@@ -403,7 +403,7 @@ int br_add_if(struct net_bridge *br, struct net_device *dev)
  	return 0;
  
-+out_upper_dev_unlink:
-+	netdev_upper_dev_unlink(real_dev, dev);
- out_uninit_applicant:
- 	if (grp->nr_vlan_devs == 0)
- 		vlan_gvrp_uninit_applicant(real_dev);
+ err5:
+-	netdev_set_master(dev, NULL);
++	netdev_upper_dev_unlink(dev, br->dev);
+ err4:
+ 	br_netpoll_disable(p);
+ err3:
 -- 
 1.8.0
 
