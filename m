@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab3ADIpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:45:53 -0500
-Received: from mail-ia0-f194.google.com ([209.85.210.194]:60965 "EHLO
-	mail-ia0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557Ab3ADIpu (ORCPT
+	id S1753630Ab3ADItP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:49:15 -0500
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:37722 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab3ADItM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 03:45:50 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357232337.10284.67.camel@gandalf.local.home>
-References: <1357207949-3349-1-git-send-email-kpark3469@gmail.com>
-	<1357207949-3349-2-git-send-email-kpark3469@gmail.com>
-	<20130103103815.GL2631@n2100.arm.linux.org.uk>
-	<CA+KhAHbmjD7zTw+wcw84Abg3V1dD=0Ea4kUpYdGENQf1UOWphw@mail.gmail.com>
-	<1357220165.10284.30.camel@gandalf.local.home>
-	<20130103141301.GQ2631@n2100.arm.linux.org.uk>
-	<1357229038.10284.46.camel@gandalf.local.home>
-	<20130103162359.GR2631@n2100.arm.linux.org.uk>
-	<1357232337.10284.67.camel@gandalf.local.home>
-Date: Fri, 4 Jan 2013 17:45:49 +0900
-Message-ID: <CA+KhAHYbDU0Ajr5uPEjPxX2ECitvnK2ENOjmqjC=3G657GvG7w@mail.gmail.com>
-Subject: Re: [PATCH 2/2] arm: make return_address available for ARM_UNWIND
-From: Keun-O Park <kpark3469@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>, fweisbec@gmail.com,
-        mingo@redhat.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sahara <keun-o.park@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 4 Jan 2013 03:49:12 -0500
+From: Jiri Pirko <jiri@resnulli.us>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
+        roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        fubar@us.ibm.com, andy@greyhouse.net, divy@chelsio.com,
+        jitendra.kalsaria@qlogic.com, sony.chacko@qlogic.com,
+        linux-driver@qlogic.com, kaber@trash.net, ursula.braun@de.ibm.com,
+        blaschka@linux.vnet.ibm.com, linux390@de.ibm.com,
+        shemminger@vyatta.com, bhutchings@solarflare.com, therbert@google.com,
+        xiyou.wangcong@gmail.com, joe@perches.com, gregory.v.rose@intel.com,
+        john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        bridge@lists.linux-foundation.org, fbl@redhat.com
+Subject: [patch net-next V6 00/15] net: introduce upper device lists and remove dev->master
+Date: Fri,  4 Jan 2013 09:48:48 +0100
+Message-Id: <1357289343-817-1-git-send-email-jiri@resnulli.us>
+X-Mailer: git-send-email 1.8.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 1:58 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 2013-01-03 at 16:23 +0000, Russell King - ARM Linux wrote:
->> On Thu, Jan 03, 2013 at 11:03:58AM -0500, Steven Rostedt wrote:
->> > On Thu, 2013-01-03 at 14:13 +0000, Russell King - ARM Linux wrote:
->> > > In summary, from what I can see in the patch, the reason why the ifdefs
->> > > are the way they are, and the reason the warning is there has not been
->> > > addressed; these patches just seem to be aimed just at removing a #warning
->> > > statement to make the warning go away.
->> >
->> > You're correct that this patch does not solve any of theses issues. Now,
->> > I'm thinking that ftrace has matured where these issues don't exist, and
->> > where they do, it will only cause noise in the trace than anything
->> > serious. But, this needs to be looked deeper to make sure.
->>
->> Looking back in the archives, it seems that we had a problem with ftrace
->> and the unwinder polluting the trace information:
->>
->> http://lists.arm.linux.org.uk/lurker/message/20090604.201745.1c41ee6c.en.html
->>
->> There's quite a bit of discussion in that thread about this which details
->> why we came up with what we have today.
->
-> Thanks for the link. In fact, I see I was even involved :-)
->
-> http://lists.arm.linux.org.uk/lurker/message/20090609.213448.b4e4d096.en.html
->
-> Just as I explained, the problem isn't a recursion bug, but just noise
-> in the trace.
->
-> Some of what is called by unwind_frame() will always be traced, and I
-> wouldn't want 'notrace' annotation on those.
->
-> If anything, I would just suggest another config option that lets the
-> user decide if they don't mind the messiness of the trace for the added
-> benefit of where the latency output came from.
->
-> Also, it's rather trivial to make the entire unwind.c not traced, by
-> adding in the Makefile:
->
-> CFLAGS_REMOVE_unwind.o = -pg
->
-> But that only stops the tracing of the unwind_*. Looks to be a lot of
-> those. But it wont stop the tracing of:
->
->  kernel_text_address <-unwind_frame
->  core_kernel_text <-unwind_frame
->  search_index <-unwind_frame
->  etc.
->
-> Heck, the user could just keep those from being traced by doing:
->
->  echo kernel_text_address core_kernel_text search_index > \
->    /sys/kernel/debug/tracing/set_ftrace_notrace
->
-> If DYNAMIC_FTRACE is defined.
->
-> -- Steve
->
->
+This is a V6 of a repost of my previous patchset:
+"[patch net-next v2 00/15] net: introduce upper device lists and remove dev->master" from Aug 14
 
-With "CFLAGS_REMOVE_unwind.o = -pg" and with CONFIG_PROVE_LOCKING
-turned on, I confirmed that
-there's no trace output like Steve mentioned.
-However, if I turn off CONFIG_PROVE_LOCKING, "irqsoff" and
-"preemptirqsoff" ftracer prints these lines :
+The discussion around
+"[net-next] bonding: don't allow the master to become its slave"
+forced me to think about upper<->lower device connections.
 
-kernel_text_address <-unwind_frame
-core_kernel_text <-unwind_frame
-search_index <-unwind_frame
+This patchset adds a possibility to record upper device linkage.
+All upper<->lower devices are converted to use this mechanism right after.
+That leads to dev->master removal because this info becomes redundant since
+"master links" have the same value.
 
-While I investigated the reason, I just found out there's two function
-with same name, trace_hardirqs_off.
-One in kernel/trace/trace_irqsoff.c and another in kernel/lockdep.c.
-And both symbols are exported.
-I am wondering whether it is intentionally maintained code to
-manipulate ftrace and lockdep or not.
-I guess it's probably not.
+After all changes, there is no longer possible to do things as:
+"bond->someotherdevice->samebond"
 
--- Kpark
+Also I think that drivers like cxgb3, qlcnic, qeth would benefit by this
+in future by being able to get more appropriate info about l3 addresses.
+
+v5->v6:
+- netdev_has_upper_dev() - added statement to comment that this is looking at
+  the immediate upper devices only.
+- renamed "RTNL semaphore" -> "RTNL lock" in all comments
+- renamed __netdev_has_upper_dev() to __netdev_search_upper_dev() to emhasize
+  the difference to netdev_has_upper_dev()
+
+v4->v5:
+- fixed missed typo in drivers/infiniband/hw/nes/nes_cm.c
+
+v3->v4:
+- comments in __netdev_upper_dev_link() squashed into one line
+- kfree_rcu used instead of call_rcu in netdev_upper_dev_unlink()
+
+v2->v3:
+- removed recursion in __netdev_has_upper_dev()
+- refreshed bits to be applicable on current net-next
+
+v1->v2:
+- s/unique/master/ better naming + stays closer to the past
+- fixed vlan err goto
+- original patch 15 (WARN_ON change) is squashed into the first patch
+
+
+Jiri Pirko (15):
+  net: introduce upper device lists
+  macvlan: add link to upper device
+  vlan: add link to upper device
+  rtnetlink: remove usage of dev->master
+  team: remove usage of netdev_set_master()
+  bridge: remove usage of netdev_set_master()
+  netpoll: remove usage of dev->master
+  cxgb3: remove usage of dev->master
+  qlcnic: guard __vlan_find_dev_deep() by rcu_read_lock
+  qeth: ensure that __vlan_find_dev_deep() is called with rcu_read_lock
+  vlan: remove usage of dev->master in __vlan_find_dev_deep()
+  nes: remove usage of dev->master
+  bonding: remove usage of dev->master
+  net: remove no longer used netdev_set_bond_master() and
+    netdev_set_master()
+  net: kill dev->master
+
+ drivers/infiniband/hw/nes/nes.c                    |   8 +-
+ drivers/infiniband/hw/nes/nes_cm.c                 |   2 +-
+ drivers/net/bonding/bond_3ad.c                     |  30 +--
+ drivers/net/bonding/bond_alb.c                     |   6 +-
+ drivers/net/bonding/bond_main.c                    |  94 ++++----
+ drivers/net/bonding/bonding.h                      |  14 +-
+ drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c |  11 +-
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c   |   2 +
+ drivers/net/macvlan.c                              |   9 +-
+ drivers/net/team/team.c                            |  13 +-
+ drivers/s390/net/qeth_l3_main.c                    |  21 +-
+ include/linux/netdevice.h                          |  22 +-
+ net/8021q/vlan.c                                   |  10 +-
+ net/8021q/vlan_core.c                              |  18 +-
+ net/bridge/br_if.c                                 |   6 +-
+ net/core/dev.c                                     | 246 +++++++++++++++++----
+ net/core/netpoll.c                                 |   9 +-
+ net/core/rtnetlink.c                               |  70 +++---
+ 18 files changed, 409 insertions(+), 182 deletions(-)
+
+-- 
+1.8.0
+
