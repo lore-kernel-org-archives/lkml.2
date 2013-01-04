@@ -1,203 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab3ADN5M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 08:57:12 -0500
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:36558 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754733Ab3ADN5J (ORCPT
+	id S1754827Ab3ADOFU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 09:05:20 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21558 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754613Ab3ADOFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 08:57:09 -0500
-Message-ID: <50E6DFAB.6050008@linux.vnet.ibm.com>
-Date: Fri, 04 Jan 2013 21:56:59 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Fri, 4 Jan 2013 09:05:18 -0500
+Date: Fri, 4 Jan 2013 15:04:26 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: ebiederm@xmission.com
+Cc: kexec@lists.infradead.org, xen-devel@lists.xensource.com,
+        konrad.wilk@oracle.com, tglx@linutronix.de, maxim.uvarov@oracle.com,
+        andrew.cooper3@citrix.com, hpa@zytor.com, jbeulich@suse.com,
+        mingo@redhat.com, x86@kernel.org,
+        virtualization@lists.linux-foundation.org, vgoyal@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 01/11] kexec: introduce kexec firmware support
+Message-ID: <20130104140122.GA3346@host-192-168-1-59.local.net-space.pl>
+References: <2f3acfe3-c608-43d8-b76a-6ba69a872692@default>
+ <874nj6ooyi.fsf@xmission.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v4 5/5] KVM: x86: improve reexecute_instruction
-References: <50E6DEDC.7040800@linux.vnet.ibm.com>
-In-Reply-To: <50E6DEDC.7040800@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010413-8878-0000-0000-0000056555CE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <874nj6ooyi.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current reexecute_instruction can not well detect the failed instruction
-emulation. It allows guest to retry all the instructions except it accesses
-on error pfn
+On Thu, Dec 27, 2012 at 07:06:13PM -0800, ebiederm@xmission.com wrote:
+> Daniel Kiper <daniel.kiper@oracle.com> writes:
+>
+> >> Daniel Kiper <daniel.kiper@oracle.com> writes:
+> >>
+> >> > Some kexec/kdump implementations (e.g. Xen PVOPS) could not use default
+> >> > Linux infrastructure and require some support from firmware and/or hypervisor.
+> >> > To cope with that problem kexec firmware infrastructure was introduced.
+> >> > It allows a developer to use all kexec/kdump features of given firmware
+> >> > or hypervisor.
+> >>
+> >> As this stands this patch is wrong.
+> >>
+> >> You need to pass an additional flag from userspace through /sbin/kexec
+> >> that says load the kexec image in the firmware.  A global variable here
+> >> is not ok.
+> >>
+> >> As I understand it you are loading a kexec on xen panic image.  Which
+> >> is semantically different from a kexec on linux panic image.  It is not
+> >> ok to do have a silly global variable kexec_use_firmware.
+> >
+> > Earlier we agreed that /sbin/kexec should call kexec syscall with
+> > special flag. However, during work on Xen kexec/kdump v3 patch
+> > I stated that this is insufficient because e.g. crash_kexec()
+> > should execute different code in case of use of firmware support too.
+>
+> That implies you have the wrong model of userspace.
+>
+> Very simply there is:
+> linux kexec pass through to xen kexec.
+>
+> And
+> linux kexec (ultimately pv kexec because the pv machine is a slightly
+> different architecture).
 
-For example, some cases are nested-write-protect - if the page we want to
-write is used as PDE but it chains to itself. Under this case, we should
-stop the emulation and report the case to userspace
+As I understand in Xen dom0 kexec/kdump case machine_kexec() should call
+stub which should call relevant hypercall to initiate kexec/kdump in
+Xen itself. Right?
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/include/asm/kvm_host.h |    7 +++++
- arch/x86/kvm/paging_tmpl.h      |   24 +++++++++++++-----
- arch/x86/kvm/x86.c              |   50 ++++++++++++++++++++++++--------------
- 3 files changed, 55 insertions(+), 26 deletions(-)
+> > Sadly syscall does not save this flag anywhere.
+>
+> > Additionally, I stated
+> > that kernel itself has the best knowledge which code path should be
+> > used (firmware or plain Linux). If this decision will be left to userspace
+> > then simple kexec syscall could crash system at worst case (e.g. when
+> > plain Linux kexec will be used in case when firmware kaxec should be
+> > used).
+>
+> And that path selection bit is strongly non-sense.  You are advocating
+> hardcoding unnecessary policy in the kernel.
+>
+> If for dom0 you need crash_kexec to do something different from domU
+> you should be able to load a small piece of code via kexec that makes
+> the hypervisor calls you need.
+>
+> > However, if you wish I could add this flag to syscall.
+>
+> I do wish.  We need to distinguish between the kexec firmware pass
+> through, and normal kexec.
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c431b33..de229e6 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
- 		u64 msr_val;
- 		struct gfn_to_hva_cache data;
- 	} pv_eoi;
-+
-+	/*
-+	 * Indicate whether the gfn is used as page table in guest which
-+	 * is set when fix page fault and used to detect unhandeable
-+	 * instruction.
-+	 */
-+	bool target_gfn_is_pt;
- };
+OK.
 
- struct kvm_lpage_info {
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 0453fa0..ca1be75 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -507,20 +507,27 @@ out_gpte_changed:
-  */
- static bool
- FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
--			      struct guest_walker *walker, int user_fault)
-+			      struct guest_walker *walker, int user_fault,
-+			      bool *target_gfn_is_pt)
- {
- 	int level;
- 	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
-+	bool self_changed = false;
-+
-+	*target_gfn_is_pt = false;
+> > Additionally, I could
+> > add function which enables firmware support and then kexec_use_firmware
+> > variable will be global only in kexec.c module.
+>
+> No.  kexec_use_firmware is the wrong mental model.
+>
+> Do not mix the kexec pass through and the normal kexec case.
+>
+> We most definitely need to call different code in the kexec firmware
+> pass through case.
+>
+> For normal kexec we just need to use a paravirt aware version of
+> machine_kexec and machine_kexec_shutdown.
 
- 	if (!(walker->pte_access & ACC_WRITE_MASK ||
- 	      (!is_write_protection(vcpu) && !user_fault)))
- 		return false;
+OK, but this solves problem in crash_kexec() only. However, kernel_kexec()
+still calls machine_shutdown() which breaks kexec on Xen dom0 (to be precise
+it shutdown machine via hypercall). Should I add machine_kexec_shutdown()
+(like machine_crash_shutdown()) which would call, let's say,
+machine_ops.kexec_shutdown()?
 
--	for (level = walker->level; level <= walker->max_level; level++)
--		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
--			return true;
-+	for (level = walker->level; level <= walker->max_level; level++) {
-+		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
-+
-+		self_changed |= !(gfn & mask);
-+		*target_gfn_is_pt |= !gfn;
-+	}
+Additionally, crash_shrink_memory() does not make sens in Xen dom0 case.
+How do you wish disable it if kexec_use_firmware is the wrong mental model?
 
--	return false;
-+	return self_changed;
- }
+> >> Furthermore it is not ok to have a conditional
+> >> code outside of header files.
+> >
+> > I agree but how to dispatch execution e.g. in crash_kexec()
+> > if we would like (I suppose) compile kexec firmware
+> > support conditionally?
+>
+> The classic pattern is to have the #ifdefs in the header and have an
+> noop function that is inlined when the functionality is compiled out.
+> This allows all of the logic to always be compiled.
 
- /*
-@@ -548,7 +555,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	int level = PT_PAGE_TABLE_LEVEL;
- 	int force_pt_level;
- 	unsigned long mmu_seq;
--	bool map_writable;
-+	bool map_writable, is_self_change_mapping;
+OK.
 
- 	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
-
-@@ -576,9 +583,12 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 		return 0;
- 	}
-
-+	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
-+		      &walker, user_fault, &vcpu->arch.target_gfn_is_pt);
-+
- 	if (walker.level >= PT_DIRECTORY_LEVEL)
- 		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
--		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
-+		   || is_self_change_mapping;
- 	else
- 		force_pt_level = 1;
- 	if (!force_pt_level) {
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b0a3678..44c6992 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4756,15 +4756,8 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
- static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
- {
- 	gpa_t gpa = cr2;
-+	gfn_t gfn;
- 	pfn_t pfn;
--	unsigned int indirect_shadow_pages;
--
--	spin_lock(&vcpu->kvm->mmu_lock);
--	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
--	spin_unlock(&vcpu->kvm->mmu_lock);
--
--	if (!indirect_shadow_pages)
--		return false;
-
- 	if (!vcpu->arch.mmu.direct_map) {
- 		/*
-@@ -4781,13 +4774,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
- 			return true;
- 	}
-
--	/*
--	 * if emulation was due to access to shadowed page table
--	 * and it failed try to unshadow page and re-enter the
--	 * guest to let CPU execute the instruction.
--	 */
--	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
--		return true;
-+	gfn = gpa_to_gfn(gpa);
-
- 	/*
- 	 * Do not retry the unhandleable instruction if it faults on the
-@@ -4795,13 +4782,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
- 	 * retry instruction -> write #PF -> emulation fail -> retry
- 	 * instruction -> ...
- 	 */
--	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
--	if (!is_error_noslot_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
-+	pfn = gfn_to_pfn(vcpu->kvm, gfn);
-+
-+	/*
-+	 * If the instruction failed on the error pfn, it can not be fixed,
-+	 * report the error to userspace.
-+	 */
-+	if (is_error_noslot_pfn(pfn))
-+		return false;
-+
-+	kvm_release_pfn_clean(pfn);
-+
-+	/* The instructions are well-emulated on direct mmu. */
-+	if (vcpu->arch.mmu.direct_map) {
-+		unsigned int indirect_shadow_pages;
-+
-+		spin_lock(&vcpu->kvm->mmu_lock);
-+		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
-+
-+		if (indirect_shadow_pages)
-+			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-+
- 		return true;
- 	}
-
--	return false;
-+	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-+
-+	/* If the target gfn is used as page table, the fault can
-+	 * not be avoided by unprotecting shadow page and it will
-+	 * be reported to userspace.
-+	 */
-+	return !vcpu->arch.target_gfn_is_pt;
- }
-
- static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
--- 
-1.7.7.6
-
+Daniel
