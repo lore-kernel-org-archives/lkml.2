@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3ADTcH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:32:07 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:37662 "EHLO
+	id S1755147Ab3ADTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:32:26 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:37661 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755093Ab3ADTcD (ORCPT
+	by vger.kernel.org with ESMTP id S1754565Ab3ADTcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:32:03 -0500
+	Fri, 4 Jan 2013 14:32:04 -0500
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
 Cc: Grant Likely <grant.likely@secretlab.ca>,
         Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
@@ -23,9 +23,9 @@ Cc: Grant Likely <grant.likely@secretlab.ca>,
         Jason Kridner <jkridner@beagleboard.org>,
         Matt Ranostay <mranostay@gmail.com>,
         Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 5/6] OF: Introduce Device Tree resolve support.
-Date: Fri,  4 Jan 2013 21:31:09 +0200
-Message-Id: <1357327870-13615-6-git-send-email-panto@antoniou-consulting.com>
+Subject: [PATCH 6/6] OF: Introduce DT overlay support.
+Date: Fri,  4 Jan 2013 21:31:10 +0200
+Message-Id: <1357327870-13615-7-git-send-email-panto@antoniou-consulting.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
 References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
@@ -34,88 +34,243 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce support for dynamic device tree resolution.
-Using it, it is possible to prepare a device tree that's
-been loaded on runtime to be modified and inserted at the kernel
-live tree.
+Introduce DT overlay support.
+Using this functionality it is possible to dynamically overlay a part of
+the kernel's tree with another tree that's been dynamically loaded.
+It is also possible to remove node and properties.
 
 Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
- .../devicetree/dynamic-resolution-notes.txt        |  25 ++
- drivers/of/Kconfig                                 |   9 +
- drivers/of/Makefile                                |   1 +
- drivers/of/resolver.c                              | 394 +++++++++++++++++++++
- include/linux/of.h                                 |  17 +
- 5 files changed, 446 insertions(+)
- create mode 100644 Documentation/devicetree/dynamic-resolution-notes.txt
- create mode 100644 drivers/of/resolver.c
+ Documentation/devicetree/overlay-notes.txt | 179 +++++++
+ drivers/of/Kconfig                         |  10 +
+ drivers/of/Makefile                        |   1 +
+ drivers/of/overlay.c                       | 831 +++++++++++++++++++++++++++++
+ include/linux/of.h                         | 107 ++++
+ 5 files changed, 1128 insertions(+)
+ create mode 100644 Documentation/devicetree/overlay-notes.txt
+ create mode 100644 drivers/of/overlay.c
 
-diff --git a/Documentation/devicetree/dynamic-resolution-notes.txt b/Documentation/devicetree/dynamic-resolution-notes.txt
+diff --git a/Documentation/devicetree/overlay-notes.txt b/Documentation/devicetree/overlay-notes.txt
 new file mode 100644
-index 0000000..0b396c4
+index 0000000..5289cbb
 --- /dev/null
-+++ b/Documentation/devicetree/dynamic-resolution-notes.txt
-@@ -0,0 +1,25 @@
-+Device Tree Dynamic Resolver Notes
-+----------------------------------
++++ b/Documentation/devicetree/overlay-notes.txt
+@@ -0,0 +1,179 @@
++Device Tree Overlay Notes
++-------------------------
 +
 +This document describes the implementation of the in-kernel
-+Device Tree resolver, residing in drivers/of/resolver.c and is a
-+companion document to Documentation/devicetree/dt-object-internal.txt[1]
++device tree overlay functionality residing in drivers/of/overlay.c and is a
++companion document to Documentation/devicetree/dt-object-internal.txt[1] &
++Documentation/devicetree/dynamic-resolution-notes.txt[2]
 +
-+How the resolver works
-+----------------------
++How overlays work
++-----------------
 +
-+The resolver is given as an input an arbitrary tree compiled with the
-+proper dtc option and having a /plugin/ tag. This generates the
-+appropriate __fixups__ & __local_fixups__ nodes as described in [1].
++A Device Tree's overlay purpose is to modify the kernel's live tree, and
++have the modification affecting the state of the the kernel in a way that
++is reflecting the changes.
++Since the kernel mainly deals with devices, any new device node that result
++in an active device should have it created while if the device node is either
++disabled or removed all together, the affected device should be deregistered.
 +
-+In sequence the resolver works by the following steps:
++Lets take an example where we have a foo board with the following base tree
++which is taken from [1].
 +
-+1. Get the maximum device tree phandle value from the live tree + 1.
-+2. Adjust all the local phandles of the tree to resolve by that amount.
-+3. Using the __local__fixups__ node information adjust all local references
-+   by the same amount.
-+4. For each property in the __fixups__ node locate the node it references
-+   in the live tree. This is the label used to tag the node.
-+5. Retrieve the phandle of the target of the fixup.
-+5. For each fixup in the property locate the node:property:offset location
-+   and replace it with the phandle value.
++---- foo.dts -----------------------------------------------------------------
++	/* FOO platform */
++	/ {
++		compatible = "corp,foo";
++
++		/* shared resources */
++		res: res {
++		};
++
++		/* On chip peripherals */
++		ocp: ocp {
++			/* peripherals that are always instantiated */
++			peripheral1 { ... };
++		}
++	};
++---- foo.dts -----------------------------------------------------------------
++
++The overlay bar.dts, when loaded (and resolved as described in [2]) should
++
++---- bar.dts -----------------------------------------------------------------
++/plugin/;	/* allow undefined label references and record them */
++/ {
++	....	/* various properties for loader use; i.e. part id etc. */
++	fragment@0 {
++		target = <&ocp>;
++		__overlay__ {
++			/* bar peripheral */
++			bar {
++				compatible = "corp,bar";
++				... /* various properties and child nodes */
++			}
++		};
++	};
++};
++---- bar.dts -----------------------------------------------------------------
++
++result in foo+bar.dts
++
++---- foo+bar.dts -------------------------------------------------------------
++	/* FOO platform + bar peripheral */
++	/ {
++		compatible = "corp,foo";
++
++		/* shared resources */
++		res: res {
++		};
++
++		/* On chip peripherals */
++		ocp: ocp {
++			/* peripherals that are always instantiated */
++			peripheral1 { ... };
++
++			/* bar peripheral */
++			bar {
++				compatible = "corp,bar";
++				... /* various properties and child nodes */
++			}
++		}
++	};
++---- foo+bar.dts -------------------------------------------------------------
++
++As a result of the the overlay, a new device node (bar) has been created
++so a bar platform device will be registered and if a matching device driver
++is loaded the device will be created as expected.
++
++Overlay in-kernel API
++---------------------
++
++The steps typically required to get an overlay to work are as follows:
++
++1. Use of_build_overlay_info() to create an array of initialized and
++ready to use of_overlay_info structures.
++2. Call of_overlay() to apply the overlays declared in the array.
++3. If the overlay needs to be removed, call of_overlay_revert().
++4. Finally release the memory taken by the overlay info array by
++of_free_overlay_info().
++
++/**
++ * of_build_overlay_info	- Build an overlay info array
++ * @tree:	Device node containing all the overlays
++ * @cntp:	Pointer to where the overlay info count will be help
++ * @ovinfop:	Pointer to the pointer of an overlay info structure.
++ *
++ * Helper function that given a tree containing overlay information,
++ * allocates and builds an overlay info array containing it, ready
++ * for use using of_overlay.
++ *
++ * Returns 0 on success with the @cntp @ovinfop pointers valid,
++ * while on error a negative error value is returned.
++ */
++int of_build_overlay_info(struct device_node *tree,
++		int *cntp, struct of_overlay_info **ovinfop);
++
++/**
++ * of_free_overlay_info	- Free an overlay info array
++ * @count:	Number of of_overlay_info's
++ * @ovinfo_tab:	Array of overlay_info's to free
++ *
++ * Releases the memory of a previously allocate ovinfo array
++ * by of_build_overlay_info.
++ * Returns 0, or an error if the arguments are bogus.
++ */
++int of_free_overlay_info(int count, struct of_overlay_info *ovinfo_tab);
++
++/**
++ * of_overlay	- Apply @count overlays pointed at by @ovinfo_tab
++ * @count:	Number of of_overlay_info's
++ * @ovinfo_tab:	Array of overlay_info's to apply
++ *
++ * Applies the overlays given, while handling all error conditions
++ * appropriately. Either the operation succeeds, or if it fails the
++ * live tree is reverted to the state before the attempt.
++ * Returns 0, or an error if the overlay attempt failed.
++ */
++int of_overlay(int count, struct of_overlay_info *ovinfo_tab);
++
++/**
++ * of_overlay_revert	- Revert a previously applied overlay
++ * @count:	Number of of_overlay_info's
++ * @ovinfo_tab:	Array of overlay_info's to apply
++ *
++ * Revert a previous overlay. The state of the live tree
++ * is reverted to the one before the overlay.
++ * Returns 0, or an error if the overlay table is not given.
++ */
++int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab);
++
++Overlay DTS Format
++------------------
++
++The DTS of an overlay should have the following format:
++
++{
++	/* ignored properties by the overlay */
++
++	fragment@0 {	/* first child node */
++		target=<phandle>;	/* target of the overlay */
++		__overlay__ {
++			property-a;	/* add property-a to the target */
++			-property-b;	/* remove property-b from target */
++			node-a {	/* add to an existing, or create a node-a */
++				...
++			};
++			-node-b {	/* remove an existing node-b */
++				...
++			};
++		};
++	}
++	fragment@1 {	/* second child node */
++		...
++	};
++	/* more fragments follow */
++}
++
++It should be noted that the DT overlay format described is the one expected
++by the of_build_overlay_info() function, which is a helper function. There
++is nothing stopping someone coming up with his own DTS format and that will
++end up filling in the fields of the of_overlay_info array. 
 diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index d37bfcf..f9a6193 100644
+index f9a6193..964a1c2 100644
 --- a/drivers/of/Kconfig
 +++ b/drivers/of/Kconfig
-@@ -83,4 +83,13 @@ config OF_MTD
- 	depends on MTD
- 	def_bool y
+@@ -92,4 +92,14 @@ config OF_RESOLVE
+ 	  Enable OF dynamic resolution support. This allows you to
+ 	  load Device Tree object fragments are run time.
  
-+config OF_RESOLVE
-+	bool "OF Dynamic resolution support"
++config OF_OVERLAY
++	bool "OF overlay support"
 +	depends on OF
 +	select OF_DYNAMIC
 +	select OF_DEVICE
++	select OF_RESOLVE
 +	help
-+	  Enable OF dynamic resolution support. This allows you to
-+	  load Device Tree object fragments are run time.
++	  OpenFirmware overlay support. Allows you to modify on runtime the
++	  live tree using overlays.
 +
  endmenu # OF
 diff --git a/drivers/of/Makefile b/drivers/of/Makefile
-index abcc08a..9a809c9 100644
+index 9a809c9..bc06912 100644
 --- a/drivers/of/Makefile
 +++ b/drivers/of/Makefile
-@@ -11,3 +11,4 @@ obj-$(CONFIG_OF_MDIO)	+= of_mdio.o
- obj-$(CONFIG_OF_PCI)	+= of_pci.o
+@@ -12,3 +12,4 @@ obj-$(CONFIG_OF_PCI)	+= of_pci.o
  obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
  obj-$(CONFIG_OF_MTD)	+= of_mtd.o
-+obj-$(CONFIG_OF_RESOLVE)  += resolver.o
-diff --git a/drivers/of/resolver.c b/drivers/of/resolver.c
+ obj-$(CONFIG_OF_RESOLVE)  += resolver.o
++obj-$(CONFIG_OF_OVERLAY) += overlay.o
+diff --git a/drivers/of/overlay.c b/drivers/of/overlay.c
 new file mode 100644
-index 0000000..016d7da
+index 0000000..f65c3a3
 --- /dev/null
-+++ b/drivers/of/resolver.c
-@@ -0,0 +1,394 @@
++++ b/drivers/of/overlay.c
+@@ -0,0 +1,831 @@
 +/*
-+ * Functions for dealing with DT resolution
++ * Functions for working with device tree overlays
 + *
 + * Copyright (C) 2012 Pantelis Antoniou <panto@antoniou-consulting.com>
 + * Copyright (C) 2012 Texas Instruments Inc.
@@ -129,404 +284,931 @@ index 0000000..016d7da
 +#include <linux/module.h>
 +#include <linux/of.h>
 +#include <linux/of_device.h>
-+#include <linux/of_fdt.h>
 +#include <linux/string.h>
 +#include <linux/ctype.h>
 +#include <linux/errno.h>
 +#include <linux/string.h>
 +#include <linux/slab.h>
++#include <linux/err.h>
 +
 +/**
-+ * Find a subtree's maximum phandle value.
++ * Apply a single overlay node recursively.
++ *
++ * Property or node names that start with '-' signal that
++ * the property/node is to be removed.
++ *
++ * All the property notifiers are appropriately called.
++ * Note that the in case of an error the target node is left
++ * in a inconsistent state. Error recovery should be performed
++ * by recording the modification using the of notifiers.
 + */
-+static phandle __of_get_tree_max_phandle(struct device_node *node,
-+		phandle max_phandle)
++static int of_overlay_apply_one(struct device_node *target,
++		const struct device_node *overlay)
 +{
-+	struct device_node *child;
++	const char *pname, *cname;
++	struct device_node *child, *tchild;
++	struct property *prop, *propn, *tprop;
++	int remove;
++	char *full_name;
++	const char *suffix;
++	int ret;
 +
-+	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL &&
-+			node->phandle > max_phandle)
-+		max_phandle = node->phandle;
++	/* sanity checks */
++	if (target == NULL || overlay == NULL)
++		return -EINVAL;
 +
-+	__for_each_child_of_node(node, child)
-+		max_phandle = __of_get_tree_max_phandle(child, max_phandle);
++	for_each_property_of_node(overlay, prop) {
 +
-+	return max_phandle;
++		/* don't touch, 'name' */
++		if (of_prop_cmp(prop->name, "name") == 0)
++			continue;
++
++		/* default is add */
++		remove = 0;
++		pname = prop->name;
++		if (*pname == '-') {	/* skip, - notes removal */
++			pname++;
++			remove = 1;
++			propn = NULL;
++		} else {
++			propn = __of_copy_property(prop,
++					GFP_KERNEL);
++			if (propn == NULL)
++				return -ENOMEM;
++		}
++
++		tprop = of_find_property(target, pname, NULL);
++
++		/* found? */
++		if (tprop != NULL) {
++			if (propn != NULL)
++				ret = of_update_property(target, propn);
++			else
++				ret = of_remove_property(target, tprop);
++		} else {
++			if (propn != NULL)
++				ret = of_add_property(target, propn);
++			else
++				ret = 0;
++		}
++		if (ret != 0)
++			return ret;
++	}
++
++	__for_each_child_of_node(overlay, child) {
++
++		/* default is add */
++		remove = 0;
++		cname = child->name;
++		if (*cname == '-') {	/* skip, - notes removal */
++			cname++;
++			remove = 1;
++		}
++
++		/* special case for nodes with a suffix */
++		suffix = strrchr(child->full_name, '@');
++		if (suffix != NULL) {
++			cname = kbasename(child->full_name);
++			WARN_ON(cname == NULL);	/* sanity check */
++			if (cname == NULL)
++				continue;
++			if (*cname == '-')
++				cname++;
++		}
++
++		tchild = of_get_child_by_name(target, cname);
++		if (tchild != NULL) {
++
++			if (!remove) {
++
++				/* apply overlay recursively */
++				ret = of_overlay_apply_one(tchild, child);
++				of_node_put(tchild);
++
++				if (ret != 0)
++					return ret;
++
++			} else {
++
++				ret = of_detach_node(tchild);
++				of_node_put(tchild);
++			}
++
++		} else {
++
++			if (!remove) {
++				full_name = kasprintf(GFP_KERNEL, "%s/%s",
++						target->full_name, cname);
++				if (full_name == NULL)
++					return -ENOMEM;
++
++				/* create empty tree as a target */
++				tchild = __of_create_empty_node(cname,
++						child->type, full_name,
++						child->phandle, GFP_KERNEL);
++
++				/* free either way */
++				kfree(full_name);
++
++				if (tchild == NULL)
++					return -ENOMEM;
++
++				/* point to parent */
++				tchild->parent = target;
++
++				ret = of_attach_node(tchild);
++				if (ret != 0)
++					return ret;
++
++				/* apply the overlay */
++				ret = of_overlay_apply_one(tchild, child);
++				if (ret != 0) {
++					__of_free_tree(tchild);
++					return ret;
++				}
++			}
++		}
++	}
++
++	return 0;
 +}
 +
 +/**
-+ * Find live tree's maximum phandle value.
++ * Lookup an overlay device entry
 + */
-+static phandle of_get_tree_max_phandle(void)
++struct of_overlay_device_entry *of_overlay_device_entry_lookup(
++		struct of_overlay_info *ovinfo, struct device_node *node)
++{
++	struct of_overlay_device_entry *re;
++
++	/* no need for locks, we're under the ovinfo->lock */
++	list_for_each_entry(re, &ovinfo->de_list, node) {
++		if (re->np == node)
++			return re;
++	}
++	return NULL;
++}
++
++/**
++ * Add an overlay log entry
++ */
++static int of_overlay_log_entry_entry_add(struct of_overlay_info *ovinfo,
++		unsigned long action, struct device_node *dn,
++		struct property *prop)
++{
++	struct of_overlay_log_entry *le;
++
++	/* check */
++	if (ovinfo == NULL || dn == NULL)
++		return -EINVAL;
++
++	le = kzalloc(sizeof(*le), GFP_KERNEL);
++	if (le == NULL) {
++		pr_err("%s: Failed to allocate\n", __func__);
++		return -ENOMEM;
++	}
++
++	/* get a reference to the node */
++	le->action = action;
++	le->np = of_node_get(dn);
++	le->prop = prop;
++
++	if (action == OF_RECONFIG_UPDATE_PROPERTY && prop)
++		le->old_prop = of_find_property(dn, prop->name, NULL);
++
++	list_add_tail(&le->node, &ovinfo->le_list);
++
++	return 0;
++}
++
++/**
++ * Add an overlay device entry
++ */
++static void of_overlay_device_entry_entry_add(struct of_overlay_info *ovinfo,
++		struct device_node *node, struct platform_device *pdev,
++		int state)
++{
++	struct of_overlay_device_entry *re;
++	int fresh;
++
++	/* check */
++	if (ovinfo == NULL)
++		return;
++
++	fresh = 0;
++	re = of_overlay_device_entry_lookup(ovinfo, node);
++	if (re == NULL) {
++		re = kzalloc(sizeof(*re), GFP_KERNEL);
++		if (re == NULL) {
++			pr_err("%s: Failed to allocate\n", __func__);
++			return;
++		}
++		fresh = 1;
++	}
++
++	if (re->np == NULL)
++		re->np = of_node_get(node);
++	if (re->pdev == NULL)
++		re->pdev = of_dev_get(pdev);
++	re->state = state;
++
++	if (fresh)
++		list_add_tail(&re->node, &ovinfo->de_list);
++}
++
++/**
++ * Overlay OF notifier
++ *
++ * Called every time there's a property/node modification
++ * Every modification causes a log entry addition, while
++ * any modification that causes a node's state to change
++ * from/to disabled to/from enabled causes a device entry
++ * addition.
++ */
++static int of_overlay_notify(struct notifier_block *nb,
++				unsigned long action, void *arg)
++{
++#ifdef DEBUG
++	char *propstr = NULL, *spropstr = NULL;
++#endif
++	struct of_overlay_info *ovinfo;
++	struct device_node *node;
++	struct property *prop, *sprop, *cprop;
++	struct of_prop_reconfig *pr;
++	struct platform_device *pdev;
++	int state;
++	int err = 0;
++
++	ovinfo = container_of(nb, struct of_overlay_info, notifier);
++
++	/* prep vars */
++	switch (action) {
++	case OF_RECONFIG_ATTACH_NODE:
++	case OF_RECONFIG_DETACH_NODE:
++		node = arg;
++		if (node == NULL)
++			return notifier_from_errno(-EINVAL);
++		prop = NULL;
++#ifdef DEBUG
++		propstr = NULL;
++#endif
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++	case OF_RECONFIG_REMOVE_PROPERTY:
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		pr = arg;
++		if (pr == NULL)
++			return notifier_from_errno(-EINVAL);
++		node = pr->dn;
++		if (node == NULL)
++			return notifier_from_errno(-EINVAL);
++		prop = pr->prop;
++		if (prop == NULL)
++			return notifier_from_errno(-EINVAL);
++#ifdef DEBUG
++		propstr = __of_dump_prop(prop);
++#endif
++		break;
++	default:
++		return notifier_from_errno(0);
++	}
++
++	/* add to the log */
++	err = of_overlay_log_entry_entry_add(ovinfo, action, node, prop);
++	if (err != 0)
++		return notifier_from_errno(err);
++
++#ifdef DEBUG
++	switch (action) {
++	case OF_RECONFIG_ATTACH_NODE:
++		pr_debug("ATTACH_NODE: %s\n", node->full_name);
++		break;
++	case OF_RECONFIG_DETACH_NODE:
++		pr_debug("DETACH_NODE: %s\n", node->full_name);
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++		pr_debug("ADD_PROP:    %s %s%s\n", node->full_name,
++				prop->name, propstr);
++		break;
++	case OF_RECONFIG_REMOVE_PROPERTY:
++		pr_debug("REMOVE_PROP: %s %s%s\n", node->full_name,
++				prop->name, propstr);
++		break;
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		sprop = of_find_property(node, prop->name, NULL);
++		if (sprop)
++			spropstr = __of_dump_prop(sprop);
++		pr_debug("UPDATE_PROP: %s '%s%s' -> '%s%s'\n", node->full_name,
++				prop->name, spropstr,
++				prop->name, propstr);
++		break;
++
++	}
++
++	/* NULL is fine */
++	kfree(propstr);
++	kfree(spropstr);
++#endif
++
++	/* come up with the device entry (if any) */
++	pdev = NULL;
++	state = 0;
++
++	/* determine the state the node will end up */
++	switch (action) {
++	case OF_RECONFIG_ATTACH_NODE:
++		/* we demand that a compatible node is present */
++		state = of_find_property(node, "compatible", NULL) &&
++			of_device_is_available(node);
++		break;
++	case OF_RECONFIG_DETACH_NODE:
++		state = 0;
++		pdev = of_find_device_by_node(node);
++		break;
++	case OF_RECONFIG_ADD_PROPERTY:
++	case OF_RECONFIG_REMOVE_PROPERTY:
++	case OF_RECONFIG_UPDATE_PROPERTY:
++		/* either one cause a change in state */
++		if (strcmp(prop->name, "status") != 0 &&
++				strcmp(prop->name, "compatible") != 0)
++			return notifier_from_errno(0);
++
++		if (strcmp(prop->name, "status") == 0) {
++			/* status */
++			cprop = of_find_property(node, "compatible", NULL);
++			sprop = action != OF_RECONFIG_REMOVE_PROPERTY ?
++				prop : NULL;
++		} else {
++			/* compatible */
++			sprop = of_find_property(node, "status", NULL);
++			cprop = action != OF_RECONFIG_REMOVE_PROPERTY ?
++				prop : NULL;
++		}
++
++		state = cprop && cprop->length > 0 &&
++			    (!sprop || (sprop->length > 0 &&
++				(strcmp(sprop->value, "okay") == 0 ||
++				 strcmp(sprop->value, "ok") == 0)));
++		break;
++
++	default:
++		return notifier_from_errno(0);
++	}
++
++	if (state == 0)
++		pdev = of_find_device_by_node(node);
++
++	of_overlay_device_entry_entry_add(ovinfo, node, pdev, state);
++
++	return notifier_from_errno(err);
++}
++
++/**
++ * Prepare for the overlay, for now it just registers the
++ * notifier.
++ */
++static int of_overlay_prep_one(struct of_overlay_info *ovinfo)
++{
++	int err;
++
++	err = of_reconfig_notifier_register(&ovinfo->notifier);
++	if (err != 0) {
++		pr_err("%s: failed to register notifier for '%s'\n",
++			__func__, ovinfo->target->full_name);
++		return err;
++	}
++	return 0;
++}
++
++/**
++ * Revert one overlay
++ * Either due to an error, or due to normal overlay removal.
++ * Using the log entries, we revert any change to the live tree.
++ * In the same manner, using the device entries we enable/disable
++ * the platform devices appropriately.
++ */
++static void of_overlay_revert_one(struct of_overlay_info *ovinfo)
++{
++	struct of_overlay_device_entry *re, *ren;
++	struct of_overlay_log_entry *le, *len;
++	struct property *prop, **propp;
++	struct platform_device *pdev, *parent_pdev;
++	int ret;
++	unsigned long flags;
++
++	if (!ovinfo || !ovinfo->target || !ovinfo->overlay)
++		return;
++
++	pr_debug("%s: Reverting overlay on '%s'\n", __func__,
++			ovinfo->target->full_name);
++
++	/* overlay applied correctly, now create/destroy pdevs */
++	list_for_each_entry_safe_reverse(re, ren, &ovinfo->de_list, node) {
++
++		if (!re->state) {
++
++			parent_pdev = of_find_device_by_node(re->np->parent);
++
++			pr_debug("%s: creating new platform device "
++					"new_node='%s' %p\n",
++					__func__, re->np->full_name, re->np);
++
++			pdev = of_platform_device_create(re->np, NULL,
++					parent_pdev ? &parent_pdev->dev : NULL);
++			of_dev_put(parent_pdev);
++
++			if (pdev == NULL) {
++				pr_warn("%s: Failed to create platform device "
++						"for '%s'\n",
++						__func__, re->np->full_name);
++			}
++
++		} else {
++
++			if (re->pdev) {
++				pr_debug("%s: removing pdev %s\n", __func__,
++						dev_name(&re->pdev->dev));
++				platform_device_unregister(re->pdev);
++			}
++		}
++
++		of_node_put(re->np);
++
++		list_del(&re->node);
++
++		kfree(re);
++	}
++
++	list_for_each_entry_safe_reverse(le, len, &ovinfo->le_list, node) {
++
++		ret = 0;
++		switch (le->action) {
++		case OF_RECONFIG_ATTACH_NODE:
++			pr_debug("Reverting ATTACH_NODE %s\n",
++					le->np->full_name);
++			ret = of_detach_node(le->np);
++			break;
++
++		case OF_RECONFIG_DETACH_NODE:
++			pr_debug("Reverting DETACH_NODE %s\n",
++					le->np->full_name);
++			ret = of_attach_node(le->np);
++			break;
++
++		case OF_RECONFIG_ADD_PROPERTY:
++			pr_debug("Reverting ADD_PROPERTY %s %s\n",
++					le->np->full_name, le->prop->name);
++			ret = of_remove_property(le->np, le->prop);
++			break;
++
++		case OF_RECONFIG_REMOVE_PROPERTY:
++		case OF_RECONFIG_UPDATE_PROPERTY:
++
++			pr_debug("Reverting %s_PROPERTY %s %s\n",
++				le->action == OF_RECONFIG_REMOVE_PROPERTY ?
++					"REMOVE" : "UPDATE",
++					le->np->full_name, le->prop->name);
++
++			/* property is possibly on deadprops (avoid alloc) */
++			write_lock_irqsave(&devtree_lock, flags);
++			prop = le->action == OF_RECONFIG_REMOVE_PROPERTY ?
++				le->prop : le->old_prop;
++			propp = &le->np->deadprops;
++			while (*propp != NULL) {
++				if (*propp == prop)
++					break;
++				propp = &(*propp)->next;
++			}
++			if (*propp != NULL) {
++				/* remove it from deadprops */
++				(*propp)->next = prop->next;
++				write_unlock_irqrestore(&devtree_lock, flags);
++			} else {
++				write_unlock_irqrestore(&devtree_lock, flags);
++				/* not found, just make a copy */
++				prop = __of_copy_property(prop, GFP_KERNEL);
++				if (prop == NULL) {
++					pr_err("%s: Failed to copy property\n",
++							__func__);
++					break;
++				}
++			}
++
++			if (le->action == OF_RECONFIG_REMOVE_PROPERTY)
++				ret = of_add_property(le->np, prop);
++			else
++				ret = of_update_property(le->np, prop);
++			break;
++
++		default:
++			/* nothing */
++			break;
++		}
++
++		if (ret != 0)
++			pr_err("%s: revert on node %s Failed!\n",
++					__func__, le->np->full_name);
++
++		of_node_put(le->np);
++
++		list_del(&le->node);
++
++		kfree(le);
++	}
++}
++
++/**
++ * Perform the post overlay work.
++ *
++ * We unregister the notifier, and in the case on an error we
++ * revert the overlay.
++ * If the overlay applied correctly, we iterare over the device entries
++ * and create/destroy the platform devices appropriately.
++ */
++static int of_overlay_post_one(struct of_overlay_info *ovinfo, int err)
++{
++	struct of_overlay_device_entry *re, *ren;
++	struct platform_device *pdev, *parent_pdev;
++
++	of_reconfig_notifier_unregister(&ovinfo->notifier);
++
++	if (err != 0) {
++		/* revert this (possible partially applied) overlay */
++		of_overlay_revert_one(ovinfo);
++		return 0;
++	}
++
++	/* overlay applied correctly, now create/destroy pdevs */
++	list_for_each_entry_safe(re, ren, &ovinfo->de_list, node) {
++
++		if (re->state) {
++
++			parent_pdev = of_find_device_by_node(re->np->parent);
++
++			pr_debug("%s: creating new platform device "
++					"new_node='%s' %p\n",
++					__func__, re->np->full_name, re->np);
++
++			pdev = of_platform_device_create(re->np, NULL,
++					parent_pdev ? &parent_pdev->dev : NULL);
++			of_dev_put(parent_pdev);
++
++			if (pdev == NULL) {
++				pr_warn("%s: Failed to create platform device "
++						"for '%s'\n",
++						__func__, re->np->full_name);
++			}
++
++			/* keep it around */
++			re->pdev = pdev;
++
++		} else {
++
++			if (re->pdev) {
++				platform_device_unregister(re->pdev);
++			}
++		}
++	}
++
++	return 0;
++}
++
++/**
++ * of_overlay	- Apply @count overlays pointed at by @ovinfo_tab
++ * @count:	Number of of_overlay_info's
++ * @ovinfo_tab:	Array of overlay_info's to apply
++ *
++ * Applies the overlays given, while handling all error conditions
++ * appropriately. Either the operation succeeds, or if it fails the
++ * live tree is reverted to the state before the attempt.
++ * Returns 0, or an error if the overlay attempt failed.
++ */
++int of_overlay(int count, struct of_overlay_info *ovinfo_tab)
++{
++	struct of_overlay_info *ovinfo;
++	int i, err;
++
++	if (!ovinfo_tab)
++		return -EINVAL;
++
++	/* first we apply the overlays atomically */
++	for (i = 0; i < count; i++) {
++
++		ovinfo = &ovinfo_tab[i];
++
++		mutex_lock(&ovinfo->lock);
++
++		err = of_overlay_prep_one(ovinfo);
++		if (err == 0)
++			err = of_overlay_apply_one(ovinfo->target,
++					ovinfo->overlay);
++		of_overlay_post_one(ovinfo, err);
++
++		mutex_unlock(&ovinfo->lock);
++
++		if (err != 0) {
++			pr_err("%s: overlay failed '%s'\n",
++				__func__, ovinfo->target->full_name);
++			goto err_fail;
++		}
++	}
++
++	return 0;
++
++err_fail:
++	while (--i >= 0) {
++		ovinfo = &ovinfo_tab[i];
++
++		mutex_lock(&ovinfo->lock);
++		of_overlay_revert_one(ovinfo);
++		mutex_unlock(&ovinfo->lock);
++	}
++
++	return err;
++}
++
++/**
++ * of_overlay_revert	- Revert a previously applied overlay
++ * @count:	Number of of_overlay_info's
++ * @ovinfo_tab:	Array of overlay_info's to apply
++ *
++ * Revert a previous overlay. The state of the live tree
++ * is reverted to the one before the overlay.
++ * Returns 0, or an error if the overlay table is not given.
++ */
++int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab)
++{
++	struct of_overlay_info *ovinfo;
++	int i;
++
++	if (!ovinfo_tab)
++		return -EINVAL;
++
++	/* revert the overlays in reverse */
++	for (i = count - 1; i >= 0; i--) {
++
++		ovinfo = &ovinfo_tab[i];
++
++		mutex_lock(&ovinfo->lock);
++		of_overlay_revert_one(ovinfo);
++		mutex_unlock(&ovinfo->lock);
++
++	}
++
++	return 0;
++}
++
++/**
++ * of_init_overlay_info	- Initialize a single of_overlay_info structure
++ * @ovinfo:	Pointer to the overlay info structure to initialize
++ *
++ * Initialize a single overlay info structure.
++ */
++void of_init_overlay_info(struct of_overlay_info *ovinfo)
++{
++	memset(ovinfo, 0, sizeof(ovinfo));
++	mutex_init(&ovinfo->lock);
++	INIT_LIST_HEAD(&ovinfo->de_list);
++	INIT_LIST_HEAD(&ovinfo->le_list);
++
++	ovinfo->notifier.notifier_call = of_overlay_notify;
++}
++
++/**
++ * of_fill_overlay_info	- Fill an overlay info structure
++ * @info_node:	Device node containing the overlay
++ * @ovinfo:	Pointer to the overlay info structure to fill
++ *
++ * Fills an overlay info structure with the overlay information
++ * from a device node. This device node must have a target property
++ * which contains a phandle of the overlay target node, and an
++ * __overlay__ child node which has the overlay contents.
++ * Both ovinfo->target & ovinfo->overlay have their references taken.
++ *
++ * Returns 0 on success, or a negative error value.
++ */
++int of_fill_overlay_info(struct device_node *info_node,
++		struct of_overlay_info *ovinfo)
++{
++	u32 val;
++	int ret;
++
++	if (!info_node || !ovinfo)
++		return -EINVAL;
++
++	ret = of_property_read_u32(info_node, "target", &val);
++	if (ret != 0)
++		goto err_fail;
++
++	ovinfo->target = of_find_node_by_phandle(val);
++	if (ovinfo->target == NULL)
++		goto err_fail;
++
++	ovinfo->overlay = of_get_child_by_name(info_node, "__overlay__");
++	if (ovinfo->overlay == NULL)
++		goto err_fail;
++
++	return 0;
++
++err_fail:
++	of_node_put(ovinfo->target);
++	of_node_put(ovinfo->overlay);
++
++	memset(ovinfo, 0, sizeof(*ovinfo));
++	return -EINVAL;
++}
++
++/**
++ * of_build_overlay_info	- Build an overlay info array
++ * @tree:	Device node containing all the overlays
++ * @cntp:	Pointer to where the overlay info count will be help
++ * @ovinfop:	Pointer to the pointer of an overlay info structure.
++ *
++ * Helper function that given a tree containing overlay information,
++ * allocates and builds an overlay info array containing it, ready
++ * for use using of_overlay.
++ *
++ * Returns 0 on success with the @cntp @ovinfop pointers valid,
++ * while on error a negative error value is returned.
++ */
++int of_build_overlay_info(struct device_node *tree,
++		int *cntp, struct of_overlay_info **ovinfop)
 +{
 +	struct device_node *node;
-+	phandle phandle;
++	struct of_overlay_info *ovinfo;
++	int cnt, err;
 +
-+	/* get root node */
-+	node = of_find_node_by_path("/");
-+	if (node == NULL)
-+		return OF_PHANDLE_ILLEGAL;
-+
-+	/* now search recursively */
-+	read_lock(&devtree_lock);
-+	phandle = __of_get_tree_max_phandle(node, 0);
-+	read_unlock(&devtree_lock);
-+
-+	of_node_put(node);
-+
-+	return phandle;
-+}
-+
-+/**
-+ * Adjust a subtree's phandle values by a given delta.
-+ * Makes sure not to just adjust the device node's phandle value,
-+ * but modify the phandle properties values as well.
-+ */
-+static void __of_adjust_tree_phandles(struct device_node *node,
-+		int phandle_delta)
-+{
-+	struct device_node *child;
-+	struct property *prop;
-+	phandle phandle;
-+
-+	/* first adjust the node's phandle direct value */
-+	if (node->phandle != 0 && node->phandle != OF_PHANDLE_ILLEGAL)
-+		node->phandle += phandle_delta;
-+
-+	/* now adjust phandle & linux,phandle values */
-+	for_each_property_of_node(node, prop) {
-+
-+		/* only look for these two */
-+		if (of_prop_cmp(prop->name, "phandle") != 0 &&
-+		    of_prop_cmp(prop->name, "linux,phandle") != 0)
-+			continue;
-+
-+		/* must be big enough */
-+		if (prop->length < 4)
-+			continue;
-+
-+		/* read phandle value */
-+		phandle = be32_to_cpu(*(uint32_t *)prop->value);
-+		if (phandle == OF_PHANDLE_ILLEGAL)	/* unresolved */
-+			continue;
-+
-+		/* adjust */
-+		*(uint32_t *)prop->value = cpu_to_be32(node->phandle);
-+	}
-+
-+	/* now do the children recursively */
-+	__for_each_child_of_node(node, child)
-+		__of_adjust_tree_phandles(child, phandle_delta);
-+}
-+
-+/**
-+ * Adjust the local phandle references by the given phandle delta.
-+ * Assumes the existances of a __local_fixups__ node at the root
-+ * of the tree. Does not take any devtree locks so make sure you
-+ * call this on a tree which is at the detached state.
-+ */
-+static int __of_adjust_tree_phandle_references(struct device_node *node,
-+		int phandle_delta)
-+{
-+	phandle phandle;
-+	struct device_node *refnode, *child;
-+	struct property *rprop, *sprop;
-+	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
-+	int offset, propcurlen;
-+	int err;
-+
-+	/* locate the symbols & fixups nodes on resolve */
-+	__for_each_child_of_node(node, child)
-+		if (of_node_cmp(child->name, "__local_fixups__") == 0)
-+			break;
-+
-+	/* no local fixups */
-+	if (child == NULL)
-+		return 0;
-+
-+	/* find the local fixups property */
-+	for_each_property_of_node(child, rprop) {
-+
-+		/* skip properties added automatically */
-+		if (of_prop_cmp(rprop->name, "name") == 0)
-+			continue;
-+
-+		/* make a copy */
-+		propval = kmalloc(rprop->length, GFP_KERNEL);
-+		if (propval == NULL) {
-+			pr_err("%s: Could not copy value of '%s'\n",
-+					__func__, rprop->name);
-+			return -ENOMEM;
-+		}
-+		memcpy(propval, rprop->value, rprop->length);
-+
-+		propend = propval + rprop->length;
-+		for (propcur = propval; propcur < propend;
-+				propcur += propcurlen + 1) {
-+
-+			propcurlen = strlen(propcur);
-+
-+			nodestr = propcur;
-+			s = strchr(propcur, ':');
-+			if (s == NULL) {
-+				pr_err("%s: Illegal symbol entry '%s' (1)\n",
-+					__func__, propcur);
-+				err = -EINVAL;
-+				goto err_fail;
-+			}
-+			*s++ = '\0';
-+
-+			propstr = s;
-+			s = strchr(s, ':');
-+			if (s == NULL) {
-+				pr_err("%s: Illegal symbol entry '%s' (2)\n",
-+					__func__, (char *)rprop->value);
-+				err = -EINVAL;
-+				goto err_fail;
-+			}
-+
-+			*s++ = '\0';
-+			offset = simple_strtoul(s, NULL, 10);
-+
-+			/* look into the resolve node for the full path */
-+			refnode = __of_find_node_by_full_name(node, nodestr);
-+			if (refnode == NULL) {
-+				pr_warn("%s: Could not find refnode '%s'\n",
-+					__func__, (char *)rprop->value);
-+				continue;
-+			}
-+
-+			/* now find the property */
-+			for_each_property_of_node(refnode, sprop) {
-+				if (of_prop_cmp(sprop->name, propstr) == 0)
-+					break;
-+			}
-+
-+			if (sprop == NULL) {
-+				pr_err("%s: Could not find property '%s'\n",
-+					__func__, (char *)rprop->value);
-+				err = -ENOENT;
-+				goto err_fail;
-+			}
-+
-+			phandle = be32_to_cpu(*(uint32_t *)
-+					(sprop->value + offset));
-+			*(uint32_t *)(sprop->value + offset) =
-+				cpu_to_be32(phandle + phandle_delta);
-+		}
-+
-+		kfree(propval);
-+	}
-+
-+	return 0;
-+
-+err_fail:
-+	kfree(propval);
-+	return err;
-+}
-+
-+/**
-+ * of_resolve	- Resolve the given node against the live tree.
-+ *
-+ * @resolve:	Node to resolve
-+ *
-+ * Perform dynamic Device Tree resolution against the live tree
-+ * to the given node to resolve. This depends on the live tree
-+ * having a __symbols__ node, and the resolve node the __fixups__ &
-+ * __local_fixups__ nodes (if needed).
-+ * The result of the operation is a resolve node that it's contents
-+ * are fit to be inserted or operate upon the live tree.
-+ * Returns 0 on success or a negative error value on error.
-+ */
-+int of_resolve(struct device_node *resolve)
-+{
-+	struct device_node *child, *refnode;
-+	struct device_node *root_sym, *resolve_sym, *resolve_fix;
-+	struct property *rprop, *sprop;
-+	const char *refpath;
-+	char *propval, *propcur, *propend, *nodestr, *propstr, *s;
-+	int offset, propcurlen;
-+	phandle phandle, phandle_delta;
-+	int err;
-+
-+	/* the resolve node must exist, and be detached */
-+	if (resolve == NULL ||
-+			!of_node_check_flag(resolve, OF_DETACHED)) {
-+		return -EINVAL;
-+	}
-+
-+	/* first we need to adjust the phandles */
-+	phandle_delta = of_get_tree_max_phandle() + 1;
-+	__of_adjust_tree_phandles(resolve, phandle_delta);
-+	err = __of_adjust_tree_phandle_references(resolve, phandle_delta);
-+	if (err != 0)
-+		return err;
-+
-+	root_sym = NULL;
-+	resolve_sym = NULL;
-+	resolve_fix = NULL;
-+
-+	/* this may fail (if no fixups are required) */
-+	root_sym = of_find_node_by_path("/__symbols__");
-+
-+	/* locate the symbols & fixups nodes on resolve */
-+	__for_each_child_of_node(resolve, child) {
-+
-+		if (resolve_sym == NULL &&
-+				of_node_cmp(child->name, "__symbols__") == 0)
-+			resolve_sym = child;
-+
-+		if (resolve_fix == NULL &&
-+				of_node_cmp(child->name, "__fixups__") == 0)
-+			resolve_fix = child;
-+
-+		/* both found, don't bother anymore */
-+		if (resolve_sym != NULL && resolve_fix != NULL)
-+			break;
-+	}
-+
-+	/* we do allow for the case where no fixups are needed */
-+	if (resolve_fix == NULL)
-+		goto merge_sym;
-+
-+	/* we need to fixup, but no root symbols... */
-+	if (root_sym == NULL)
++	if (tree == NULL || cntp == NULL || ovinfop == NULL)
 +		return -EINVAL;
 +
-+	for_each_property_of_node(resolve_fix, rprop) {
++	/* worst case; every child is a node */
++	cnt = 0;
++	for_each_child_of_node(tree, node)
++		cnt++;
 +
-+		/* skip properties added automatically */
-+		if (of_prop_cmp(rprop->name, "name") == 0)
-+			continue;
++	ovinfo = kzalloc(cnt * sizeof(*ovinfo), GFP_KERNEL);
++	if (ovinfo == NULL)
++		return -ENOMEM;
 +
-+		err = of_property_read_string(root_sym,
-+				rprop->name, &refpath);
-+		if (err != 0) {
-+			pr_err("%s: Could not find symbol '%s'\n",
-+					__func__, rprop->name);
-+			goto err_fail;
-+		}
++	cnt = 0;
++	for_each_child_of_node(tree, node) {
 +
-+		refnode = of_find_node_by_path(refpath);
-+		if (refnode == NULL) {
-+			pr_err("%s: Could not find node by path '%s'\n",
-+					__func__, refpath);
-+			err = -ENOENT;
-+			goto err_fail;
-+		}
-+
-+		phandle = refnode->phandle;
-+		of_node_put(refnode);
-+
-+		pr_debug("%s: %s phandle is 0x%08x\n",
-+				__func__, rprop->name, phandle);
-+
-+		/* make a copy */
-+		propval = kmalloc(rprop->length, GFP_KERNEL);
-+		if (propval == NULL) {
-+			pr_err("%s: Could not copy value of '%s'\n",
-+					__func__, rprop->name);
-+			err = -ENOMEM;
-+			goto err_fail;
-+		}
-+
-+		memcpy(propval, rprop->value, rprop->length);
-+
-+		propend = propval + rprop->length;
-+		for (propcur = propval; propcur < propend;
-+				propcur += propcurlen + 1) {
-+			propcurlen = strlen(propcur);
-+
-+			nodestr = propcur;
-+			s = strchr(propcur, ':');
-+			if (s == NULL) {
-+				pr_err("%s: Illegal symbol "
-+					"entry '%s' (1)\n",
-+					__func__, (char *)rprop->value);
-+				kfree(propval);
-+				err = -EINVAL;
-+				goto err_fail;
-+			}
-+			*s++ = '\0';
-+
-+			propstr = s;
-+			s = strchr(s, ':');
-+			if (s == NULL) {
-+				pr_err("%s: Illegal symbol "
-+					"entry '%s' (2)\n",
-+					__func__, (char *)rprop->value);
-+				kfree(propval);
-+				err = -EINVAL;
-+				goto err_fail;
-+			}
-+
-+			*s++ = '\0';
-+			offset = simple_strtoul(s, NULL, 10);
-+
-+			/* look into the resolve node for the full path */
-+			refnode = __of_find_node_by_full_name(resolve,
-+					nodestr);
-+			if (refnode == NULL) {
-+				pr_err("%s: Could not find refnode '%s'\n",
-+					__func__, (char *)rprop->value);
-+				kfree(propval);
-+				err = -ENOENT;
-+				goto err_fail;
-+			}
-+
-+			/* now find the property */
-+			for_each_property_of_node(refnode, sprop) {
-+				if (of_prop_cmp(sprop->name, propstr) == 0)
-+					break;
-+			}
-+
-+			if (sprop == NULL) {
-+				pr_err("%s: Could not find property '%s'\n",
-+					__func__, (char *)rprop->value);
-+				kfree(propval);
-+				err = -ENOENT;
-+				goto err_fail;
-+			}
-+
-+			*(uint32_t *)(sprop->value + offset) =
-+				cpu_to_be32(phandle);
-+		}
-+
-+		kfree(propval);
++		of_init_overlay_info(&ovinfo[cnt]);
++		err = of_fill_overlay_info(node, &ovinfo[cnt]);
++		if (err == 0)
++			cnt++;
 +	}
 +
-+merge_sym:
++	/* if nothing filled, return error */
++	if (cnt == 0) {
++		kfree(ovinfo);
++		return -ENODEV;
++	}
 +
-+	of_node_put(root_sym);
++	*cntp = cnt;
++	*ovinfop = ovinfo;
 +
 +	return 0;
-+
-+err_fail:
-+
-+	if (root_sym != NULL)
-+		of_node_put(root_sym);
-+
-+	return err;
 +}
++
++/**
++ * of_free_overlay_info	- Free an overlay info array
++ * @count:	Number of of_overlay_info's
++ * @ovinfo_tab:	Array of overlay_info's to free
++ *
++ * Releases the memory of a previously allocate ovinfo array
++ * by of_build_overlay_info.
++ * Returns 0, or an error if the arguments are bogus.
++ */
++int of_free_overlay_info(int count, struct of_overlay_info *ovinfo_tab)
++{
++	struct of_overlay_info *ovinfo;
++	int i;
++
++	if (!ovinfo_tab || count < 0)
++		return -EINVAL;
++
++	/* do it in reverse */
++	for (i = count - 1; i >= 0; i--) {
++		ovinfo = &ovinfo_tab[i];
++
++		of_node_put(ovinfo->target);
++		of_node_put(ovinfo->overlay);
++	}
++	kfree(ovinfo_tab);
++
++	return 0;
++}
++
 diff --git a/include/linux/of.h b/include/linux/of.h
-index c38e41a..ab52243 100644
+index ab52243..8a908f0 100644
 --- a/include/linux/of.h
 +++ b/include/linux/of.h
-@@ -650,4 +650,21 @@ static inline int of_multi_prop_cmp(const struct property *prop, const char *val
+@@ -667,4 +667,111 @@ static inline int of_resolve(struct device_node *resolve)
  
- #endif	/* !CONFIG_OF */
+ #endif
  
++/**
++ * Overlay support
++ */
 +
-+/* illegal phandle value (set when unresolved) */
-+#define OF_PHANDLE_ILLEGAL	0xdeadbeef
++/**
++ * struct of_overlay_log_entry	- Holds a DT log entry
++ * @node:	list_head for the log list
++ * @action:	notifier action
++ * @np:		pointer to the device node affected
++ * @prop:	pointer to the property affected
++ * @old_prop:	hold a pointer to the original property
++ *
++ * Every modification of the device tree during application of the
++ * overlay is held in a list of of_overlay_log_entry structures.
++ * That way we can recover from a partial application, or we can
++ * revert the overlay properly.
++ */
++struct of_overlay_log_entry {
++	struct list_head node;
++	unsigned long action;
++	struct device_node *np;
++	struct property *prop;
++	struct property *old_prop;
++};
 +
-+#ifdef CONFIG_OF_RESOLVE
++/**
++ * struct of_overlay_device_entry	- Holds an overlay device entry
++ * @node:	list_head for the device list
++ * @np:		device node pointer to the device node affected
++ * @pdev:	pointer to the platform device affected
++ * @state:	new device state
++ *
++ * When the overlay results in a device node's state to change this
++ * fact is recorded in a list of device entries. After the overlay
++ * is applied we can create/destroy the platform devices according
++ * to the new state of the live tree.
++ */
++struct of_overlay_device_entry {
++	struct list_head node;
++	struct device_node *np;
++	struct platform_device *pdev;
++	int state;
++};
 +
-+int of_resolve(struct device_node *resolve);
++/**
++ * struct of_overlay_info	- Holds a single overlay info
++ * @target:	target of the overlay operation
++ * @overlay:	pointer to the overlay contents node
++ * @lock:	Lock to hold when accessing the lists
++ * @le_list:	List of the overlay logs
++ * @de_list:	List of the overlay records
++ * @notifier:	of reconfiguration notifier
++ *
++ * Holds a single overlay state, including all the overlay logs &
++ * records.
++ */
++struct of_overlay_info {
++	struct device_node *target;
++	struct device_node *overlay;
++	struct mutex lock;
++	struct list_head le_list;
++	struct list_head de_list;
++	struct notifier_block notifier;
++};
++
++#ifdef CONFIG_OF_OVERLAY
++
++int of_overlay(int count, struct of_overlay_info *ovinfo_tab);
++int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab);
++
++int of_fill_overlay_info(struct device_node *info_node,
++		struct of_overlay_info *ovinfo);
++int of_build_overlay_info(struct device_node *tree,
++		int *cntp, struct of_overlay_info **ovinfop);
++int of_free_overlay_info(int cnt, struct of_overlay_info *ovinfo);
 +
 +#else
 +
-+static inline int of_resolve(struct device_node *resolve)
++static inline int of_overlay(int count, struct of_overlay_info *ovinfo_tab)
++{
++	return -ENOTSUPP;
++}
++
++static inline int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab)
++{
++	return -ENOTSUPP;
++}
++
++static inline int of_fill_overlay_info(struct device_node *info_node,
++		struct of_overlay_info *ovinfo)
++{
++	return -ENOTSUPP;
++}
++
++static inline int of_build_overlay_info(struct device_node *tree,
++		int *cntp, struct of_overlay_info **ovinfop)
++{
++	return -ENOTSUPP;
++}
++
++int of_free_overlay_info(int cnt, struct of_overlay_info *ovinfo)
 +{
 +	return -ENOTSUPP;
 +}
