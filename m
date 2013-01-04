@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab3ADWWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 17:22:16 -0500
-Received: from mga14.intel.com ([143.182.124.37]:44639 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab3ADWWM convert rfc822-to-8bit (ORCPT
+	id S1755338Ab3ADW0H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 17:26:07 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:44643 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749Ab3ADW0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 17:22:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,412,1355126400"; 
-   d="scan'208";a="187836138"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Bjorn Helgaas <bhelgaas@google.com>, Lance Ortiz <lance.ortiz@hp.com>
-CC: "lance_ortiz@hotmail.com" <lance_ortiz@hotmail.com>,
-        "jiang.liu@huawei.com" <jiang.liu@huawei.com>,
-        "bp@alien8.de" <bp@alien8.de>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "mchehab@redhat.com" <mchehab@redhat.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v9 3/3] aerdrv: Cleanup log output for AER
-Thread-Topic: [PATCH v9 3/3] aerdrv: Cleanup log output for AER
-Thread-Index: AQHN6frIwd9UuPay0k62xJs9cHg035g6Qe0A//98gUA=
-Date: Fri, 4 Jan 2013 22:22:09 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F1C9750EE@ORSMSX108.amr.corp.intel.com>
-References: <20130103223401.10751.1838.stgit@grignak.americas.hpqcorp.net>
- <20130103223415.10751.17744.stgit@grignak.americas.hpqcorp.net>
- <CAErSpo5LV5QApKqVVV7FdpjdFFZ9=+8JJfaDtDqJ2AzFpxM+HA@mail.gmail.com>
-In-Reply-To: <CAErSpo5LV5QApKqVVV7FdpjdFFZ9=+8JJfaDtDqJ2AzFpxM+HA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.140]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Jan 2013 17:26:05 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+Date: Fri, 4 Jan 2013 15:26:03 -0700
+Message-ID: <CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Shuah Khan <shuahkhan@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I sent a "please pull" to Ingo/Peter/Thomas about an hour ago ... if they
-push back (or ignore) we can fold your ack and nit-picks into another
-version.
+On Fri, Jan 4, 2013 at 3:10 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Jan 4, 2013 at 1:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+>> Pani'cing the system doesn't sound like a good option to me in this
+>> case. This change to disable swiotlb is made for kdump. However, with
+>> this change several system fail to boot, unless crashkernel_low=72M is
+>> specified.
+>
+> this patchset is new feature to put second kdump kernel above 4G.
+>
+I understand this is just one of the patches to implement the new
+kdump feature. However, I think regression on existing behavior with a
+panic is a bit of a big hammer. Thie change causes panic on systems
+even when kdump is not enabled, if I understand it correctly.
 
-> s/elimiating/eliminating/ above.
-Ugh ... nobody spotted this one ("many eyes" really does work!)
+Granted kdump gets enabled by several distros, but it is not a
+required feature. However, expecting system to boot with devices that
+require swiotlb fully functioning is a basic feature. So I would argue
+that not breaking the basic functionality is a higher priority over
+enabling kdump in this case.
 
-> I remove the "v1-v2" notes when I merge patches because I don't think
-> they're useful any more.  But if Tony applies these, he can use his
-> judgment.
-
-Yes - I do too.  In fact it is easier on the maintainer if this sort of meta-commentary
-goes *after* the "---" in the patch. Then it is available for review (where it is
-most helpful), but tools will automatically drop it when applying the patch.
-
--Tony
+-- Shuah
