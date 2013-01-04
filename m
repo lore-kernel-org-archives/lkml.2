@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab3ADTyr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:54:47 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:41688 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3ADTym convert rfc822-to-8bit (ORCPT
+	id S1755216Ab3ADTy6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:54:58 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:52573 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755075Ab3ADTyy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:54:42 -0500
+	Fri, 4 Jan 2013 14:54:54 -0500
 MIME-Version: 1.0
-Message-ID: <ea7e4623-0983-4b1d-9d0d-8a523669adca@default>
-Date: Fri, 4 Jan 2013 11:53:37 -0800 (PST)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, Nitin Gupta <ngupta@vflare.org>,
-        Minchan Kim <minchan@kernel.org>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Subject: [RFC/PATCH] drivers/staging/zcache: remove (old) zcache
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.7  (607090) [OL
- 12.0.6665.5003 (x86)]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <20130104112716.596f9085@nehalam.linuxnetplumber.net>
+References: <20130104152814.3a3cf74bdec76cea09d3e134@canb.auug.org.au>
+	<50E72977.7030605@infradead.org>
+	<20130104112716.596f9085@nehalam.linuxnetplumber.net>
+Date: Fri, 4 Jan 2013 21:54:52 +0200
+Message-ID: <CAKoUArn=6UMjcKC6rnUmpkXFxQvSWnc=1N44iZFPKn80aMBNvA@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 4 (net/bridge)
+From: Rami Rosen <roszenrami@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        bridge@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since Seth Jennings has moved on to zswap [1], I believe further
-effort on the older version of zcache has been abandoned.
-Unless there are objections, I can submit a patch to
-Greg to remove drivers/staging/zcache and, at some point,
-follow up with a patch to re-invert drivers/staging/ramster
-so that the newer version of zcache (aka zcache2) becomes
-drivers/staging/zcache, with ramster as a subdirectory.
+Hi,
 
-If I've missed anyone on the cc list who possibly cares about
-the old version of zcache, kindly forward.
+The cause of the problem in net tree (but **not** net-next tree) is:
+commit 3ec8e9f085bcaef0de1077f555c2c5102c223390
+"bridge: Correctly unregister MDB rtnetlink handlers"
+and it is fixed by a patch from me, for the net tree, from yesterday.
 
-Greg, assuming no objections, do you want an official patch,
-i.e. removing each individual line of each file in
-drivers/staging/zcache?  Or will you just do a git rm?
-If the latter and you need a SOB, I am the original author so:
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com> 
+see:
+http://www.spinics.net/lists/netdev/msg221168.html
 
-[1] https://lkml.org/lkml/2012/12/12/310 
+probably this patch, which was applied to net,  was not pulled yet.
 
-Thanks,
-Dan
+I believe that since the commit above was not to net-next, this
+problem is not observed in your tree.
+
+Rami Rosen
+http://ramirose.wix.com/ramirosen
+
+On Fri, Jan 4, 2013 at 9:27 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
+> On Fri, 04 Jan 2013 11:11:51 -0800
+> Randy Dunlap <rdunlap@infradead.org> wrote:
+>
+>> On 01/03/13 20:28, Stephen Rothwell wrote:
+>> > Hi all,
+>> >
+>> > Changes since 20130103:
+>> >
+>>
+>> on i386 and x86_64:
+>>
+>>   CC      net/bridge/br_netlink.o
+>> net/bridge/br_netlink.c: In function 'br_netlink_init':
+>> net/bridge/br_netlink.c:307:2: error: implicit declaration of function 'br_mdb_init' [-Werror=implicit-function-declaration]
+>> net/bridge/br_netlink.c:314:2: error: implicit declaration of function 'br_mdb_uninit' [-Werror=implicit-function-declaration]
+>> cc1: some warnings being treated as errors
+>> make[3]: *** [net/bridge/br_netlink.o] Error 1
+>>
+>>
+>> Full randconfig file is attached.
+>>
+>>
+>
+> Problem not observed with current net-next and your configuration.
+> Probably already fixed.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
