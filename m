@@ -1,59 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753994Ab3ADJLs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 04:11:48 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:44717 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752719Ab3ADJLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 04:11:46 -0500
-X-IronPort-AV: E=Sophos;i="4.84,409,1355068800"; 
-   d="scan'208";a="6521578"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, tj@kernel.org
-Cc: mingo@kernel.org, yinghai@kernel.org, liwanp@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, tangchen@cn.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
-Subject: [RFC PATCH] mm: memblock: fix wrong memmove size in memblock_merge_regions()
-Date: Fri, 4 Jan 2013 17:10:50 +0800
-Message-Id: <1357290650-25544-1-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/04 17:11:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/04 17:11:18,
-	Serialize complete at 2013/01/04 17:11:18
+	id S1754316Ab3ADJMI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 04:12:08 -0500
+Received: from perches-mx.perches.com ([206.117.179.246]:37500 "EHLO
+	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754090Ab3ADJMC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 04:12:02 -0500
+Message-ID: <1357290721.5452.55.camel@joe-AO722>
+Subject: Re: [PATCH v2 net-next] softirq: reduce latencies
+From: Joe Perches <joe@perches.com>
+To: Eric Dumazet <erdnetdev@gmail.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>
+Date: Fri, 04 Jan 2013 01:12:01 -0800
+In-Reply-To: <1357287786.1678.87.camel@edumazet-glaptop>
+References: <1357216132.21409.24107.camel@edumazet-glaptop>
+	 <1357250880.2685.29.camel@bwh-desktop.uk.solarflarecom.com>
+	 <1357252816.21409.26384.camel@edumazet-glaptop>
+	 <1357285780.21409.28416.camel@edumazet-glaptop>
+	 <1357287351.5452.44.camel@joe-AO722>
+	 <1357287786.1678.87.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.6.0-0ubuntu3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memmove span covers from (next+1) to the end of the array, and the index
-of next is (i+1), so the index of (next+1) is (i+2). So the size of remaining
-array elements is (type->cnt - (i + 2)).
+On Fri, 2013-01-04 at 00:23 -0800, Eric Dumazet wrote:
+> On Fri, 2013-01-04 at 00:15 -0800, Joe Perches wrote:
+> > Perhaps MAX_SOFTIRQ_TIME should be
+> > #define MAX_SOFTIRQ_TIME msecs_to_jiffies(2)
+> > though it would be nicer if it were a compile time constant.
+> 
+> If you send a patch to convert msecs_to_jiffies() to an inline function
+> when HZ = 1000, I will gladly use it instead of (2*HZ/1000)
+> 
+> Right now, max(1, msecs_to_jiffies(2)) uses way too many instructions,
+> while it should be the constant 2, known at compile time.
 
-PS. It seems that memblock_merge_regions() could be made some improvement:
-we need't memmove the remaining array elements until we find a none-mergable
-element, but now we memmove everytime we find a neighboring compatible region.
-I'm not sure if the trial is worth though.
+Something like this might work.
 
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
----
- mm/memblock.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This is incomplete, it just does msecs_to_jiffies,
+and it should convert usecs_to_jiffies and the
+jiffies_to_<foo> types too.
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 6259055..85ce056 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -314,7 +314,7 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
- 		}
- 
- 		this->size += next->size;
--		memmove(next, next + 1, (type->cnt - (i + 1)) * sizeof(*next));
-+		memmove(next, next + 1, (type->cnt - (i + 2)) * sizeof(*next));
- 		type->cnt--;
- 	}
+Maybe it's worthwhile.
+
+It does reduce object size by 16 bytes per call site
+(x86-32) when the argument is a constant. There are
+about 800 of these jiffies conversions in kernel sources.
+
+What do you think?
+
+ include/linux/jiffies.h | 49 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ kernel/time.c           | 42 +++---------------------------------------
+ 2 files changed, 51 insertions(+), 40 deletions(-)
+
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 82ed068..c67ddcf 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -291,7 +291,54 @@ extern unsigned long preset_lpj;
+  */
+ extern unsigned int jiffies_to_msecs(const unsigned long j);
+ extern unsigned int jiffies_to_usecs(const unsigned long j);
+-extern unsigned long msecs_to_jiffies(const unsigned int m);
++extern unsigned long __msecs_to_jiffies(const unsigned int m);
++
++static inline unsigned long __inline_msecs_to_jiffies(const unsigned int m)
++{
++	/*
++	 * Negative value, means infinite timeout:
++	 */
++	if ((int)m < 0)
++		return MAX_JIFFY_OFFSET;
++
++#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
++	/*
++	 * HZ is equal to or smaller than 1000, and 1000 is a nice
++	 * round multiple of HZ, divide with the factor between them,
++	 * but round upwards:
++	 */
++	return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
++#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
++	/*
++	 * HZ is larger than 1000, and HZ is a nice round multiple of
++	 * 1000 - simply multiply with the factor between them.
++	 *
++	 * But first make sure the multiplication result cannot
++	 * overflow:
++	 */
++	if (m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
++		return MAX_JIFFY_OFFSET;
++
++	return m * (HZ / MSEC_PER_SEC);
++#else
++	/*
++	 * Generic case - multiply, round and divide. But first
++	 * check that if we are doing a net multiplication, that
++	 * we wouldn't overflow:
++	 */
++	if (HZ > MSEC_PER_SEC && m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
++		return MAX_JIFFY_OFFSET;
++
++	return (MSEC_TO_HZ_MUL32 * m + MSEC_TO_HZ_ADJ32)
++		>> MSEC_TO_HZ_SHR32;
++#endif
++}
++
++#define msecs_to_jiffies(x)			\
++	(__builtin_constant_p(x) ?		\
++	 __inline_msecs_to_jiffies(x) :		\
++	 __msecs_to_jiffies(x))
++
+ extern unsigned long usecs_to_jiffies(const unsigned int u);
+ extern unsigned long timespec_to_jiffies(const struct timespec *value);
+ extern void jiffies_to_timespec(const unsigned long jiffies,
+diff --git a/kernel/time.c b/kernel/time.c
+index d226c6a..231f2ac 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -425,47 +425,11 @@ EXPORT_SYMBOL(ns_to_timeval);
+  *
+  * We must also be careful about 32-bit overflows.
+  */
+-unsigned long msecs_to_jiffies(const unsigned int m)
++unsigned long __msecs_to_jiffies(const unsigned int m)
+ {
+-	/*
+-	 * Negative value, means infinite timeout:
+-	 */
+-	if ((int)m < 0)
+-		return MAX_JIFFY_OFFSET;
+-
+-#if HZ <= MSEC_PER_SEC && !(MSEC_PER_SEC % HZ)
+-	/*
+-	 * HZ is equal to or smaller than 1000, and 1000 is a nice
+-	 * round multiple of HZ, divide with the factor between them,
+-	 * but round upwards:
+-	 */
+-	return (m + (MSEC_PER_SEC / HZ) - 1) / (MSEC_PER_SEC / HZ);
+-#elif HZ > MSEC_PER_SEC && !(HZ % MSEC_PER_SEC)
+-	/*
+-	 * HZ is larger than 1000, and HZ is a nice round multiple of
+-	 * 1000 - simply multiply with the factor between them.
+-	 *
+-	 * But first make sure the multiplication result cannot
+-	 * overflow:
+-	 */
+-	if (m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
+-		return MAX_JIFFY_OFFSET;
+-
+-	return m * (HZ / MSEC_PER_SEC);
+-#else
+-	/*
+-	 * Generic case - multiply, round and divide. But first
+-	 * check that if we are doing a net multiplication, that
+-	 * we wouldn't overflow:
+-	 */
+-	if (HZ > MSEC_PER_SEC && m > jiffies_to_msecs(MAX_JIFFY_OFFSET))
+-		return MAX_JIFFY_OFFSET;
+-
+-	return (MSEC_TO_HZ_MUL32 * m + MSEC_TO_HZ_ADJ32)
+-		>> MSEC_TO_HZ_SHR32;
+-#endif
++	return __inline_msecs_to_jiffies(m);
  }
--- 
-1.7.11.7
+-EXPORT_SYMBOL(msecs_to_jiffies);
++EXPORT_SYMBOL(__msecs_to_jiffies);
+ 
+ unsigned long usecs_to_jiffies(const unsigned int u)
+ {
+
 
