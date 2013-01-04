@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab3ADTy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:54:58 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:52573 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075Ab3ADTyy (ORCPT
+	id S1754794Ab3ADT5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:57:12 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:34207 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439Ab3ADT5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:54:54 -0500
+	Fri, 4 Jan 2013 14:57:10 -0500
+Message-ID: <50E73412.1040404@wwwdotorg.org>
+Date: Fri, 04 Jan 2013 12:57:06 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130104112716.596f9085@nehalam.linuxnetplumber.net>
-References: <20130104152814.3a3cf74bdec76cea09d3e134@canb.auug.org.au>
-	<50E72977.7030605@infradead.org>
-	<20130104112716.596f9085@nehalam.linuxnetplumber.net>
-Date: Fri, 4 Jan 2013 21:54:52 +0200
-Message-ID: <CAKoUArn=6UMjcKC6rnUmpkXFxQvSWnc=1N44iZFPKn80aMBNvA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 4 (net/bridge)
-From: Rami Rosen <roszenrami@gmail.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        bridge@lists.linux-foundation.org
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "mturquette@linaro.org" <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 05/11] ARM: dt: tegra30: Add device node for APB MISC
+References: <1356619644-18565-1-git-send-email-pgaikwad@nvidia.com> <1356619644-18565-6-git-send-email-pgaikwad@nvidia.com> <50E4AE19.1060503@wwwdotorg.org> <50E520FC.4070805@nvidia.com> <50E5ADA6.1070904@wwwdotorg.org> <50E634D0.6080702@nvidia.com> <50E6470E.8090206@wwwdotorg.org> <50E64B18.8060806@nvidia.com> <50E653E3.5060901@wwwdotorg.org> <50E6C37C.5050605@nvidia.com>
+In-Reply-To: <50E6C37C.5050605@nvidia.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/04/2013 04:56 AM, Laxman Dewangan wrote:
+> On Friday 04 January 2013 09:30 AM, Stephen Warren wrote:
+>> On 01/03/2013 08:23 PM, Prashant Gaikwad wrote:
+>>> On Friday 04 January 2013 08:35 AM, Stephen Warren wrote:
+>>>> On 01/03/2013 06:48 PM, Prashant Gaikwad wrote:
+>>>>> On Thursday 03 January 2013 09:41 PM, Stephen Warren wrote:
+>> ...
+>>>>>> OK. It sounds like we need a true APB MISC driver then, to
+>>>>>> abstract the
+>>>>>> differences; the clock driver really shouldn't be touching the APB
+>>>>>> MISC
+>>>>>> registers in all likelihood, unless a subset of the sections you
+>>>>>> mention
+>>>>>> above are truly dedicated to clock functionality.
+>>>>> I don't think it is a good idea to create a driver for APB MISC, all
+>>>>> registers are used by different drivers.
+>>>> Well, it's even worse to have a bunch of other drivers randomly trample
+>>>> on a set of registers they don't own.
+>>>>
+>>>>> Only chip id revision registers are used in clock driver.
+>>>> There are already global variables exposed by the Tegra fuse driver;
+>>>> can
+>>>> you just read those?
+>>> It is not about variables or some value, we have to read some apb
+>>> register to flush the write operation in apb bus before we disable
+>>> peripheral clock.
+>>> We are using chip id revision register for this purpose.
+>> Ah. That's definitely not something the clock driver should be doing
+>> directly. It's probably OK to add a custom Tegra-specific function to
+>> some file in arch/arm/mach-tegra to implement this. Even better would be
+>> a full bus driver for the APB bus, but that's probably too much bloat
+>> for now.
+> 
+> I think individual driver should take care of flushing the write
+> operation inplace of clock driver.
+> Atleast I moved flushing to i2c and spi for these drivers. Polluting
+> clock driver here does not make sense here.
 
-The cause of the problem in net tree (but **not** net-next tree) is:
-commit 3ec8e9f085bcaef0de1077f555c2c5102c223390
-"bridge: Correctly unregister MDB rtnetlink handlers"
-and it is fixed by a patch from me, for the net tree, from yesterday.
+That does seem like a reasonable assertion.
 
-see:
-http://www.spinics.net/lists/netdev/msg221168.html
+Still, I believe the clock driver currently does this already today, so
+removing it might be a regression. I think we want to:
 
-probably this patch, which was applied to net,  was not pulled yet.
+a) Maintain this feature in the clock driver rework for now.
+b) Audit and fix any device drivers.
+c) Remove the feature from the clock driver.
 
-I believe that since the commit above was not to net-next, this
-problem is not observed in your tree.
-
-Rami Rosen
-http://ramirose.wix.com/ramirosen
-
-On Fri, Jan 4, 2013 at 9:27 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
-> On Fri, 04 Jan 2013 11:11:51 -0800
-> Randy Dunlap <rdunlap@infradead.org> wrote:
->
->> On 01/03/13 20:28, Stephen Rothwell wrote:
->> > Hi all,
->> >
->> > Changes since 20130103:
->> >
->>
->> on i386 and x86_64:
->>
->>   CC      net/bridge/br_netlink.o
->> net/bridge/br_netlink.c: In function 'br_netlink_init':
->> net/bridge/br_netlink.c:307:2: error: implicit declaration of function 'br_mdb_init' [-Werror=implicit-function-declaration]
->> net/bridge/br_netlink.c:314:2: error: implicit declaration of function 'br_mdb_uninit' [-Werror=implicit-function-declaration]
->> cc1: some warnings being treated as errors
->> make[3]: *** [net/bridge/br_netlink.o] Error 1
->>
->>
->> Full randconfig file is attached.
->>
->>
->
-> Problem not observed with current net-next and your configuration.
-> Probably already fixed.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Of course, if (b) is so easy to do that you don't need to do (a) or (c)
+at all, that's fine too, but I believe Prashant is under time pressure
+to get the common clock rework done before his vacation.
