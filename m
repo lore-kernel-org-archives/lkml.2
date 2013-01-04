@@ -1,54 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab3ADNyP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 08:54:15 -0500
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:64748 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab3ADNyL (ORCPT
+	id S1754847Ab3ADNyb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 08:54:31 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:52974 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754579Ab3ADNy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 08:54:11 -0500
+	Fri, 4 Jan 2013 08:54:28 -0500
+Message-ID: <50E6DF0B.5050901@linux.vnet.ibm.com>
+Date: Fri, 04 Jan 2013 21:54:19 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-In-Reply-To: <50E5C167.2080908@zytor.com>
-References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
-	<1357215562-6288-4-git-send-email-akinobu.mita@gmail.com>
-	<50E5C167.2080908@zytor.com>
-Date: Fri, 4 Jan 2013 22:48:38 +0900
-Message-ID: <CAC5umyigTnBqJe4Eb70jBtyQWkYMrsQ4SS6GnQ006iVyVY+xnw@mail.gmail.com>
-Subject: Re: [PATCH -v2 03/26] x86: pageattr-test: remove srandom32 call
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: [PATCH v4 1/5] KVM: MMU: fix Dirty bit missed if CR0.WP = 0
+References: <50E6DEDC.7040800@linux.vnet.ibm.com>
+In-Reply-To: <50E6DEDC.7040800@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010413-5490-0000-0000-000002BFB250
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/4 H. Peter Anvin <hpa@zytor.com>:
-> On 01/03/2013 04:18 AM, Akinobu Mita wrote:
->>
->> pageattr-test calls srandom32() once every test iteration.
->> But calling srandom32() after late_initcalls is not meaningfull.
->> Because the random states for random32() is mixed by good random numbers
->> in late_initcall prandom_reseed().
->>
->> So this removes the call to srandom32().
->>
->> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
->> Cc: x86@kernel.org
->> ---
->>
->> No change from v1
->>
->
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
->
-> ... for this and the other patch.  Do you need me to pick it up or are you
-> pushing this directly as part of your bigger patchset?
+If the write-fault access is from supervisor and CR0.WP is not set on the
+vcpu, kvm will fix it by adjusting pte access - it sets the W bit on pte
+and clears U bit. This is the chance that kvm can change pte access from
+readonly to writable
 
-Please pick up the patches for x86.
-Thanks for taking care of it.
+Unfortunately, the pte access is the access of 'direct' shadow page table,
+means direct sp.role.access = pte_access, then we will create a writable
+spte entry on the readonly shadow page table. It will cause Dirty bit is
+not tracked when two guest ptes point to the same large page. Note, it
+does not have other impact except Dirty bit since cr0.wp is encoded into
+sp.role
+
+It can be fixed by adjusting pte access before establishing shadow page
+table. Also, after that, no mmu specified code exists in the common function
+and drop two parameters in set_spte
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+---
+ arch/x86/kvm/mmu.c         |   47 ++++++++++++-------------------------------
+ arch/x86/kvm/paging_tmpl.h |   30 +++++++++++++++++++++++----
+ 2 files changed, 38 insertions(+), 39 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 01d7c2a..2a3c890 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2342,8 +2342,7 @@ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ }
+
+ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+-		    unsigned pte_access, int user_fault,
+-		    int write_fault, int level,
++		    unsigned pte_access, int level,
+ 		    gfn_t gfn, pfn_t pfn, bool speculative,
+ 		    bool can_unsync, bool host_writable)
+ {
+@@ -2378,9 +2377,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+
+ 	spte |= (u64)pfn << PAGE_SHIFT;
+
+-	if ((pte_access & ACC_WRITE_MASK)
+-	    || (!vcpu->arch.mmu.direct_map && write_fault
+-		&& !is_write_protection(vcpu) && !user_fault)) {
++	if (pte_access & ACC_WRITE_MASK) {
+
+ 		/*
+ 		 * There are two cases:
+@@ -2399,19 +2396,6 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+
+ 		spte |= PT_WRITABLE_MASK | SPTE_MMU_WRITEABLE;
+
+-		if (!vcpu->arch.mmu.direct_map
+-		    && !(pte_access & ACC_WRITE_MASK)) {
+-			spte &= ~PT_USER_MASK;
+-			/*
+-			 * If we converted a user page to a kernel page,
+-			 * so that the kernel can write to it when cr0.wp=0,
+-			 * then we should prevent the kernel from executing it
+-			 * if SMEP is enabled.
+-			 */
+-			if (kvm_read_cr4_bits(vcpu, X86_CR4_SMEP))
+-				spte |= PT64_NX_MASK;
+-		}
+-
+ 		/*
+ 		 * Optimization: for pte sync, if spte was writable the hash
+ 		 * lookup is unnecessary (and expensive). Write protection
+@@ -2442,18 +2426,15 @@ done:
+
+ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			 unsigned pt_access, unsigned pte_access,
+-			 int user_fault, int write_fault,
+-			 int *emulate, int level, gfn_t gfn,
+-			 pfn_t pfn, bool speculative,
+-			 bool host_writable)
++			 int write_fault, int *emulate, int level, gfn_t gfn,
++			 pfn_t pfn, bool speculative, bool host_writable)
+ {
+ 	int was_rmapped = 0;
+ 	int rmap_count;
+
+-	pgprintk("%s: spte %llx access %x write_fault %d"
+-		 " user_fault %d gfn %llx\n",
++	pgprintk("%s: spte %llx access %x write_fault %d gfn %llx\n",
+ 		 __func__, *sptep, pt_access,
+-		 write_fault, user_fault, gfn);
++		 write_fault, gfn);
+
+ 	if (is_rmap_spte(*sptep)) {
+ 		/*
+@@ -2477,9 +2458,8 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+ 			was_rmapped = 1;
+ 	}
+
+-	if (set_spte(vcpu, sptep, pte_access, user_fault, write_fault,
+-		      level, gfn, pfn, speculative, true,
+-		      host_writable)) {
++	if (set_spte(vcpu, sptep, pte_access, level, gfn, pfn, speculative,
++	      true, host_writable)) {
+ 		if (write_fault)
+ 			*emulate = 1;
+ 		kvm_mmu_flush_tlb(vcpu);
+@@ -2571,10 +2551,9 @@ static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
+ 		return -1;
+
+ 	for (i = 0; i < ret; i++, gfn++, start++)
+-		mmu_set_spte(vcpu, start, ACC_ALL,
+-			     access, 0, 0, NULL,
+-			     sp->role.level, gfn,
+-			     page_to_pfn(pages[i]), true, true);
++		mmu_set_spte(vcpu, start, ACC_ALL, access, 0, NULL,
++			     sp->role.level, gfn, page_to_pfn(pages[i]),
++			     true, true);
+
+ 	return 0;
+ }
+@@ -2636,8 +2615,8 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
+ 			unsigned pte_access = ACC_ALL;
+
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, pte_access,
+-				     0, write, &emulate,
+-				     level, gfn, pfn, prefault, map_writable);
++				     write, &emulate, level, gfn, pfn,
++				     prefault, map_writable);
+ 			direct_pte_prefetch(vcpu, iterator.sptep);
+ 			++vcpu->stat.pf_fixed;
+ 			break;
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 891eb6d..c1e01b6 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -330,7 +330,7 @@ FNAME(prefetch_gpte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+ 	 * we call mmu_set_spte() with host_writable = true because
+ 	 * pte_prefetch_gfn_to_pfn always gets a writable pfn.
+ 	 */
+-	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0, 0,
++	mmu_set_spte(vcpu, spte, sp->role.access, pte_access, 0,
+ 		     NULL, PT_PAGE_TABLE_LEVEL, gfn, pfn, true, true);
+
+ 	return true;
+@@ -405,7 +405,7 @@ static void FNAME(pte_prefetch)(struct kvm_vcpu *vcpu, struct guest_walker *gw,
+  */
+ static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+ 			 struct guest_walker *gw,
+-			 int user_fault, int write_fault, int hlevel,
++			 int write_fault, int hlevel,
+ 			 pfn_t pfn, bool map_writable, bool prefault)
+ {
+ 	struct kvm_mmu_page *sp = NULL;
+@@ -478,7 +478,7 @@ static int FNAME(fetch)(struct kvm_vcpu *vcpu, gva_t addr,
+
+ 	clear_sp_write_flooding_count(it.sptep);
+ 	mmu_set_spte(vcpu, it.sptep, access, gw->pte_access,
+-		     user_fault, write_fault, &emulate, it.level,
++		     write_fault, &emulate, it.level,
+ 		     gw->gfn, pfn, prefault, map_writable);
+ 	FNAME(pte_prefetch)(vcpu, gw, it.sptep);
+
+@@ -564,6 +564,26 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 				walker.gfn, pfn, walker.pte_access, &r))
+ 		return r;
+
++	/*
++	 * Do not change pte_access if the pfn is a mmio page, otherwise
++	 * we will cache the incorrect access into mmio spte.
++	 */
++	if (write_fault && !(walker.pte_access & ACC_WRITE_MASK) &&
++	     !is_write_protection(vcpu) && !user_fault &&
++	      !is_noslot_pfn(pfn)) {
++		walker.pte_access |= ACC_WRITE_MASK;
++		walker.pte_access &= ~ACC_USER_MASK;
++
++		/*
++		 * If we converted a user page to a kernel page,
++		 * so that the kernel can write to it when cr0.wp=0,
++		 * then we should prevent the kernel from executing it
++		 * if SMEP is enabled.
++		 */
++		if (kvm_read_cr4_bits(vcpu, X86_CR4_SMEP))
++			walker.pte_access &= ~ACC_EXEC_MASK;
++	}
++
+ 	spin_lock(&vcpu->kvm->mmu_lock);
+ 	if (mmu_notifier_retry(vcpu->kvm, mmu_seq))
+ 		goto out_unlock;
+@@ -572,7 +592,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 	kvm_mmu_free_some_pages(vcpu);
+ 	if (!force_pt_level)
+ 		transparent_hugepage_adjust(vcpu, &walker.gfn, &pfn, &level);
+-	r = FNAME(fetch)(vcpu, addr, &walker, user_fault, write_fault,
++	r = FNAME(fetch)(vcpu, addr, &walker, write_fault,
+ 			 level, pfn, map_writable, prefault);
+ 	++vcpu->stat.pf_fixed;
+ 	kvm_mmu_audit(vcpu, AUDIT_POST_PAGE_FAULT);
+@@ -747,7 +767,7 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+
+ 		host_writable = sp->spt[i] & SPTE_HOST_WRITEABLE;
+
+-		set_spte(vcpu, &sp->spt[i], pte_access, 0, 0,
++		set_spte(vcpu, &sp->spt[i], pte_access,
+ 			 PT_PAGE_TABLE_LEVEL, gfn,
+ 			 spte_to_pfn(sp->spt[i]), true, false,
+ 			 host_writable);
+-- 
+1.7.7.6
+
