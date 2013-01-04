@@ -1,73 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab3ADVQe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 16:16:34 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:39573 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755243Ab3ADVQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 16:16:31 -0500
-MIME-Version: 1.0
-Date: Fri, 4 Jan 2013 16:10:45 -0500
-Message-ID: <CAGh4K3Kq7n7YjqomZbT7S-KVTMXfN96S1kLnWrUM5KM=DpJfUA@mail.gmail.com>
-Subject: PATCH: Pagemap.h check PAGE_CACHE_SIZE > PAGE_SIZE
-From: Christopher Sacchi <chris.sacchi@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755304Ab3ADVR4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 16:17:56 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52998 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755023Ab3ADVRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 16:17:54 -0500
+Message-ID: <1357334395.18825.0.camel@dcbw.foobar.com>
+Subject: Re: [PATCH 20/25] wimax/i2400m: fix i2400m->wake_tx_skb handling
+From: Dan Williams <dcbw@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, wimax@linuxwimax.org,
+        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        linux-wimax@intel.com
+Date: Fri, 04 Jan 2013 15:19:55 -0600
+In-Reply-To: <1356141435-17340-21-git-send-email-tj@kernel.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+	 <1356141435-17340-21-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is for Linux 3.8-rc2. Checked with checkpatch.pl and formatted
-correctly with git.
+On Fri, 2012-12-21 at 17:57 -0800, Tejun Heo wrote:
+> i2400m_net_wake_tx() sets ->wake_tx_skb with the given skb if
+> ->wake_tx_ws is not pending; however, i2400m_wake_tx_work() could have
+> just started execution and haven't fetched -><wake_tx_skb yet.  The
+> previous packet will be leaked.
+> 
+> Update ->wake_tx_skb handling.
+> 
+> * i2400m_net_wake_tx() now tests whether the previous ->wake_tx_skb
+>   has been consumed by ->wake_tx_ws instead of testing work_pending().
+> 
+> * i2400m_net_wake_stop() is simplified similarly.  It always puts
+>   ->wake_tx_skb if non-NULL.
+> 
+> * Spurious ->wake_tx_skb dereference outside critical section dropped
+>   from i2400m_wake_tx_work().
+> 
+> Only compile tested.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+
+Acked-by: Dan Williams <dcbw@redhat.com>
+
+No regressions in a quick connection check to Clear and browsing a bunch
+of pages.
+
+Dan
+
+> Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+> Cc: linux-wimax@intel.com
+> Cc: wimax@linuxwimax.org
+> ---
+> Please let me know how this patch should be routed.  I can take it
+> through the workqueue tree if necessary.
+> 
+> Thanks.
+> 
+>  drivers/net/wimax/i2400m/netdev.c | 31 +++++++++++++++++--------------
+>  1 file changed, 17 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/net/wimax/i2400m/netdev.c b/drivers/net/wimax/i2400m/netdev.c
+> index 1d76ae8..530581c 100644
+> --- a/drivers/net/wimax/i2400m/netdev.c
+> +++ b/drivers/net/wimax/i2400m/netdev.c
+> @@ -156,7 +156,7 @@ void i2400m_wake_tx_work(struct work_struct *ws)
+>  	struct i2400m *i2400m = container_of(ws, struct i2400m, wake_tx_ws);
+>  	struct net_device *net_dev = i2400m->wimax_dev.net_dev;
+>  	struct device *dev = i2400m_dev(i2400m);
+> -	struct sk_buff *skb = i2400m->wake_tx_skb;
+> +	struct sk_buff *skb;
+>  	unsigned long flags;
+>  
+>  	spin_lock_irqsave(&i2400m->tx_lock, flags);
+> @@ -236,23 +236,26 @@ void i2400m_tx_prep_header(struct sk_buff *skb)
+>  void i2400m_net_wake_stop(struct i2400m *i2400m)
+>  {
+>  	struct device *dev = i2400m_dev(i2400m);
+> +	struct sk_buff *wake_tx_skb;
+> +	unsigned long flags;
+>  
+>  	d_fnstart(3, dev, "(i2400m %p)\n", i2400m);
+> -	/* See i2400m_hard_start_xmit(), references are taken there
+> -	 * and here we release them if the work was still
+> -	 * pending. Note we can't differentiate work not pending vs
+> -	 * never scheduled, so the NULL check does that. */
+> -	if (cancel_work_sync(&i2400m->wake_tx_ws) == 0
+> -	    && i2400m->wake_tx_skb != NULL) {
+> -		unsigned long flags;
+> -		struct sk_buff *wake_tx_skb;
+> -		spin_lock_irqsave(&i2400m->tx_lock, flags);
+> -		wake_tx_skb = i2400m->wake_tx_skb;	/* compat help */
+> -		i2400m->wake_tx_skb = NULL;	/* compat help */
+> -		spin_unlock_irqrestore(&i2400m->tx_lock, flags);
+> +	/*
+> +	 * See i2400m_hard_start_xmit(), references are taken there and
+> +	 * here we release them if the packet was still pending.
+> +	 */
+> +	cancel_work_sync(&i2400m->wake_tx_ws);
+> +
+> +	spin_lock_irqsave(&i2400m->tx_lock, flags);
+> +	wake_tx_skb = i2400m->wake_tx_skb;
+> +	i2400m->wake_tx_skb = NULL;
+> +	spin_unlock_irqrestore(&i2400m->tx_lock, flags);
+> +
+> +	if (wake_tx_skb) {
+>  		i2400m_put(i2400m);
+>  		kfree_skb(wake_tx_skb);
+>  	}
+> +
+>  	d_fnend(3, dev, "(i2400m %p) = void\n", i2400m);
+>  }
+>  
+> @@ -288,7 +291,7 @@ int i2400m_net_wake_tx(struct i2400m *i2400m, struct net_device *net_dev,
+>  	 * and if pending, release those resources. */
+>  	result = 0;
+>  	spin_lock_irqsave(&i2400m->tx_lock, flags);
+> -	if (!work_pending(&i2400m->wake_tx_ws)) {
+> +	if (!i2400m->wake_tx_skb) {
+>  		netif_stop_queue(net_dev);
+>  		i2400m_get(i2400m);
+>  		i2400m->wake_tx_skb = skb_get(skb);	/* transfer ref count */
 
 
->From 039fbd466cfadaaea0ea1215cc19d5e0d06577ea Mon Sep 17 00:00:00 2001
-From: "Christopher P. Sacchi" <chris.sacchi@gmail.com>
-Date: Fri, 4 Jan 2013 15:56:44 -0500
-Subject: [PATCH] pagemap.h: Adds an if to check to see if PAGE_CACHE_SIZE >
- PAGE_SIZE.
-
-
-Signed-off-by: Christopher P. Sacchi <chris.sacchi@gmail.com>
----
- pagemap.patch |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
- create mode 100644 pagemap.patch
-
-diff --git a/pagemap.patch b/pagemap.patch
-new file mode 100644
-index 0000000..ed12893
---- /dev/null
-+++ b/pagemap.patch
-@@ -0,0 +1,24 @@
-+Signed-off-by: Christopher P. Sacchi chris.sacchi@gmail.com
-+--- pagemap.h	2013-01-04 15:44:17.713123984 -0500
-++++ pagemap.h	2013-01-04 15:46:35.681120547 -0500
-+@@ -1,3 +1,4 @@
-++START:
-+ #ifndef _LINUX_PAGEMAP_H
-+ #define _LINUX_PAGEMAP_H
-+
-+@@ -424,8 +425,14 @@ extern void add_page_wait_queue(struct p
-+  * Fault a userspace page into pagetables.  Return non-zero on a fault.
-+  *
-+  * This assumes that two userspace pages are always sufficient.  That's
-+- * not true if PAGE_CACHE_SIZE > PAGE_SIZE.
-++ * not true if PAGE_CACHE_SIZE > PAGE_SIZE. Check if
-++ * PAGE_CACHE_SIZE > PAGE_SIZE; return 1 if true,
-++ * then goto START.
-+  */
-++if (PAGE_CACHE_SIZE > PAGE_SIZE) {
-++	return 1;
-++	goto START;
-++}
-+ static inline int fault_in_pages_writeable(char __user *uaddr, int size)
-+ {
-+ 	int ret;
--- 
-1.7.9.5
-
-Regards,
-
-Christopher
