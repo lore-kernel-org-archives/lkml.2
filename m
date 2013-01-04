@@ -1,170 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752607Ab3ADFwZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 00:52:25 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:13123 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab3ADFwW (ORCPT
+	id S1752478Ab3ADGFA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 01:05:00 -0500
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39000 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab3ADGE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 00:52:22 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 03 Jan 2013 21:49:45 -0800
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-To: <mturquette@linaro.org>, <swarren@nvidia.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH 2/2] clk: tegra30: Convert clk out to composite clk
-Date: Fri, 4 Jan 2013 11:21:46 +0530
-Message-ID: <1357278706-28149-2-git-send-email-pgaikwad@nvidia.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com>
-References: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
+	Fri, 4 Jan 2013 01:04:57 -0500
+Message-ID: <50E6709D.5080709@linux.vnet.ibm.com>
+Date: Fri, 04 Jan 2013 11:33:09 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@sisk.pl, rafael.j.wysocki@intel.com, linaro-dev@lists.linaro.org,
+        nicolas.pitre@linaro.org, amit.kucheria@linaro.org,
+        mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, pdsw-power-team@arm.com,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH 3/3] cpufreq: Don't use cpu removed during cpufreq_driver_unregister
+References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org>	<1fe21314c2e17585e22c546e2cac12544f8f9733.1355636864.git.viresh.kumar@linaro.org>	<50E594F2.4000800@linux.vnet.ibm.com> <CAKohpo=Z=nA2Mr23ior8c0Qmt75+bOVLvZwNdc7OXq-+rH1dWQ@mail.gmail.com>
+In-Reply-To: <CAKohpo=Z=nA2Mr23ior8c0Qmt75+bOVLvZwNdc7OXq-+rH1dWQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010406-7014-0000-0000-0000026A81FF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert clk out to composite clock type which removes
-the mux clock.
+On 01/04/2013 10:49 AM, Viresh Kumar wrote:
+> On 3 January 2013 19:55, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> I took a quick look at the problem you described above, and the cpufreq code..
+>> If we cannot avoid calling cpufreq_add_dev() from cpufreq_remove_dev(), then I can't
+>> think of anything better than what your patch does.
+> 
+> Good :)
+> 
+>> BTW, off-topic, while going through that path, I think I found a memory leak
+>> in __cpufreq_remove_dev():
+>>
+>>         if (unlikely(cpumask_weight(data->cpus) > 1)) {
+>>                 for_each_cpu(j, data->cpus) {
+>>                         if (j == cpu)
+>>                                 continue;
+>>                         per_cpu(cpufreq_cpu_data, j) = NULL;
+>>                 }
+>>         }
+>>
+>> We are assigning NULL without freeing that memory.
+> 
+> Not really. All cpus in affected_cpus (data->cpus), share the same
+> policy structure.
+> We have already taken backup of cpufreq_cpu_data for the first cpu in "data" and
+> are freeing it here:
+> 
+> 	kfree(data);
+> 
 
-Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
----
-This patch is rebased on ccf-rework for Tegra patch series. It is just to show
-how clk-composite can be used, not to be merged. If patch 1 is accepted then
-I would like to merge this patch to ccf-rework series.
----
- drivers/clk/tegra/clk-tegra30.c |   51 +++++++++++++-------------------------
- drivers/clk/tegra/clk.h         |   49 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 67 insertions(+), 33 deletions(-)
+Ah, ok, got it. Thanks!
 
-diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
-index 30fb743..4c16c11 100644
---- a/drivers/clk/tegra/clk-tegra30.c
-+++ b/drivers/clk/tegra/clk-tegra30.c
-@@ -1191,43 +1191,28 @@ static void __init tegra30_audio_clk_init(void)
- 	clks[spdif_2x] = clk;
- }
- 
-+static struct tegra_clk_out_init_data tegra_clk_out_list[] = {
-+	TEGRA_CLK_OUT_INIT_DATA("clk_out_1", "extern1", "clk_out_1", clk_out1_parents, PMC_CLK_OUT_CNTRL, 6, 3, 0, 2, 0, &clk_out_lock, clk_out_1),
-+	TEGRA_CLK_OUT_INIT_DATA("clk_out_2", "extern2", "clk_out_2", clk_out2_parents, PMC_CLK_OUT_CNTRL, 14, 3, 0, 10, 0, &clk_out_lock, clk_out_2),
-+	TEGRA_CLK_OUT_INIT_DATA("clk_out_3", "extern3", "clk_out_3", clk_out3_parents, PMC_CLK_OUT_CNTRL, 22, 3, 0, 18, 0, &clk_out_lock, clk_out_3),
-+};
-+
- static void __init tegra30_pmc_clk_init(void)
- {
- 	struct clk *clk;
-+	int i;
- 
--	/* clk_out_1 */
--	clk = clk_register_mux(NULL, "clk_out_1_mux", clk_out1_parents,
--			       ARRAY_SIZE(clk_out1_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 6, 3, 0,
--			       &clk_out_lock);
--	clks[clk_out_1_mux] = clk;
--	clk = clk_register_gate(NULL, "clk_out_1", "clk_out_1_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 2, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern1", "clk_out_1");
--	clks[clk_out_1] = clk;
--
--	/* clk_out_2 */
--	clk = clk_register_mux(NULL, "clk_out_2_mux", clk_out2_parents,
--			       ARRAY_SIZE(clk_out1_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 14, 3, 0,
--			       &clk_out_lock);
--	clk = clk_register_gate(NULL, "clk_out_2", "clk_out_2_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 10, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern2", "clk_out_2");
--	clks[clk_out_2] = clk;
--
--	/* clk_out_3 */
--	clk = clk_register_mux(NULL, "clk_out_3_mux", clk_out3_parents,
--			       ARRAY_SIZE(clk_out1_parents), 0,
--			       pmc_base + PMC_CLK_OUT_CNTRL, 22, 3, 0,
--			       &clk_out_lock);
--	clk = clk_register_gate(NULL, "clk_out_3", "clk_out_3_mux", 0,
--				pmc_base + PMC_CLK_OUT_CNTRL, 18, 0,
--				&clk_out_lock);
--	clk_register_clkdev(clk, "extern3", "clk_out_3");
--	clks[clk_out_3] = clk;
-+	for (i = 0; i < ARRAY_SIZE(tegra_clk_out_list); i++) {
-+		struct tegra_clk_out_init_data *out = &tegra_clk_out_list[i];
-+
-+		out->out.mux.reg = pmc_base + out->offset;
-+		out->out.gate.reg = pmc_base + out->offset;
-+
-+		clk = clk_register_composite(NULL, out->name, out->parent_names,
-+			out->num_parents, &out->out.mux.hw, &clk_mux_ops,
-+			NULL, NULL, &out->out.gate.hw, &clk_gate_ops, 0);
-+		clks[out->clk_id] = clk;
-+	}
- 
- 	/* blink */
- 	clk = clk_register_gate(NULL, "blink_override", "clk_32k", 0,
-diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
-index f1ed1d0..47c536d 100644
---- a/drivers/clk/tegra/clk.h
-+++ b/drivers/clk/tegra/clk.h
-@@ -437,6 +437,55 @@ struct clk *tegra_clk_super_mux(const char *name, const char **parent_names,
- 				u8 width, u8 pllx_index, u8 div2_index,
- 				spinlock_t *lock);
- 
-+struct tegra_clk_out {
-+	struct clk_hw	hw;
-+	struct clk_mux	mux;
-+	struct clk_gate	gate;
-+};
-+
-+#define TEGRA_CLK_OUT(_mux_shift, _mux_width, _mux_flags,	\
-+			_gate_bit_idx, _gate_flags, _lock)	\
-+	{							\
-+		.mux = {					\
-+			.shift = _mux_shift,			\
-+			.width = _mux_width,			\
-+			.flags = _mux_flags,			\
-+			.lock = _lock,				\
-+		},						\
-+		.gate = {					\
-+			.bit_idx = _gate_bit_idx,		\
-+			.flags = _gate_flags,			\
-+			.lock = _lock,				\
-+		},						\
-+	}
-+
-+struct tegra_clk_out_init_data {
-+	const char *name;
-+	int clk_id;
-+	const char **parent_names;
-+	int num_parents;
-+	struct tegra_clk_out out;
-+	u32 offset;
-+	const char *con_id;
-+	const char *dev_id;
-+};
-+
-+#define TEGRA_CLK_OUT_INIT_DATA(_name, _con_id, _dev_id, _parent_names,	\
-+			_offset, _mux_shift, _mux_width, _mux_flags,	\
-+			_gate_bit_idx, _gate_flags, _lock, _clk_id)	\
-+	{								\
-+		.name = _name,						\
-+		.clk_id = _clk_id,					\
-+		.parent_names = _parent_names,				\
-+		.num_parents = ARRAY_SIZE(_parent_names),		\
-+		.out = TEGRA_CLK_OUT(_mux_shift, _mux_width,		\
-+			 	     _mux_flags, _gate_bit_idx,		\
-+				     _gate_flags, _lock),		\
-+		.offset = _offset,					\
-+		.con_id = _con_id,					\
-+		.dev_id = _dev_id,					\
-+	}
-+
- /**
-  * struct clk_init_tabel - clock initialization table
-  * @clk_id:	clock id as mentioned in device tree bindings
--- 
-1.7.4.1
+Regards,
+Srivatsa S. Bhat
 
