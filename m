@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab3ADJwA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 04:52:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33520 "EHLO mx2.suse.de"
+	id S1754210Ab3ADJyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 04:54:37 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:47082 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752988Ab3ADJv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 04:51:56 -0500
-Date: Fri, 4 Jan 2013 10:51:51 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: chris@zankel.net, jcmvbkbc@gmail.com, linux-xtensa@linux-xtensa.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][trivial] xtensa: Fix home page URL in Kconfig
-In-Reply-To: <1357288158-29654-1-git-send-email-standby24x7@gmail.com>
-Message-ID: <alpine.LNX.2.00.1301041051430.9143@pobox.suse.cz>
-References: <1357288158-29654-1-git-send-email-standby24x7@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752988Ab3ADJye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 04:54:34 -0500
+From: Hebbar Gururaja <gururaja.hebbar@ti.com>
+To: <broonie@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <linux-arm-kernel@lists.infradead.org>
+CC: <tony@atomide.com>, <lrg@ti.com>, <perex@perex.cz>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, <linux-kernel@vger.kernel.org>,
+        <devicetree-discuss@lists.ozlabs.org>, <linux-doc@vger.kernel.org>,
+        <rob@landley.net>
+Subject: [PATCH V2 1/2] ASoC: davinci-mcasp: Add pinctrl support
+Date: Fri, 4 Jan 2013 15:24:36 +0530
+Message-ID: <1357293277-25543-2-git-send-email-gururaja.hebbar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
+References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jan 2013, Masanari Iida wrote:
+From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
 
-> This home page address has moved to new one.
-> 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  arch/xtensa/Kconfig | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/xtensa/Kconfig b/arch/xtensa/Kconfig
-> index 0d1f36a..75fb260 100644
-> --- a/arch/xtensa/Kconfig
-> +++ b/arch/xtensa/Kconfig
-> @@ -22,7 +22,7 @@ config XTENSA
->  	  configurable and extensible.  The Linux port to the Xtensa
->  	  architecture supports all processor configurations and extensions,
->  	  with reasonable minimum requirements.  The Xtensa Linux project has
-> -	  a home page at <http://xtensa.sourceforge.net/>.
-> +	  a home page at <http://www.linux-xtensa.org/>.
->  
->  config RWSEM_XCHGADD_ALGORITHM
->  	def_bool y
+Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
+---
+Changes in V2
+	- no change
 
-I am taking it, thanks.
+:100644 100644 55e2bf6... 83d96eb... M	sound/soc/davinci/davinci-mcasp.c
+ sound/soc/davinci/davinci-mcasp.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
+diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
+index 55e2bf6..83d96eb 100644
+--- a/sound/soc/davinci/davinci-mcasp.c
++++ b/sound/soc/davinci/davinci-mcasp.c
+@@ -25,6 +25,7 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/of_device.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ #include <sound/core.h>
+ #include <sound/pcm.h>
+@@ -1080,6 +1081,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
+ 	struct resource *mem, *ioarea, *res;
+ 	struct snd_platform_data *pdata;
+ 	struct davinci_audio_dev *dev;
++	struct pinctrl *pinctrl;
+ 	int ret;
+ 
+ 	if (!pdev->dev.platform_data && !pdev->dev.of_node) {
+@@ -1111,6 +1113,11 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
+ 		return -EBUSY;
+ 	}
+ 
++	pinctrl = devm_pinctrl_get_select_default(&pdev->dev);
++	if (IS_ERR(pinctrl))
++		dev_warn(&pdev->dev,
++				"pins are not configured from the driver\n");
++
+ 	pm_runtime_enable(&pdev->dev);
+ 
+ 	ret = pm_runtime_get_sync(&pdev->dev);
 -- 
-Jiri Kosina
-SUSE Labs
+1.7.9.5
+
