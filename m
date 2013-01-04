@@ -1,76 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754588Ab3ADLlb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 06:41:31 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:57649 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab3ADLl3 (ORCPT
+	id S1754635Ab3ADLlq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 06:41:46 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:35534 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594Ab3ADLlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 06:41:29 -0500
-Message-ID: <1357299679.4578.31.camel@marge.simpson.net>
-Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
- Metric into the Load Balancer
-From: Mike Galbraith <bitbucket@online.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Alex Shi <alex.shi@intel.com>,
-        srikar@linux.vnet.ibm.com
-Date: Fri, 04 Jan 2013 12:41:19 +0100
-In-Reply-To: <50E55F99.6090104@linux.vnet.ibm.com>
-References: <50E3B61A.3040808@linux.vnet.ibm.com>
-	 <1357114354.5586.39.camel@marge.simpson.net>
-	 <50E55F99.6090104@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:1TXdh0JBuvA0MqtFQzl3+cRsU0KhfwO5puHdcmVRkio
- DtPuhafYMr0q8dnruwUTmETocZ88x8qAzu7UszXVaEpPfhEXct
- VmvwgZqnOqZfU60Wn/yf2cbP+kS2X3leTsdI7Cz4+M+0bj7eM/
- Ea8/+1/BkvSqwgGSB1defjBy/4TYYBnNE3XvGfzRIVtYglzcPb
- XWCktLg7RbK18iUmKocTD8IdpfrHEwX4794eUszqA085ae/E2H
- ecdLeIUKGZXF1aNNAY2pjtX/ntFKG3tw5E+hf3Qeory4V9hGsF
- 6sE5x+udAFc8dMC+2CC9M7YdwZ1pdSmFji/2VjEooOLTKbM9vc
- B0N1Dqup7m/RW0Fka08dXel3wtTToleVesQvwzURiDnnpsVMkc
- JRQEABgLM/pWQ==
+	Fri, 4 Jan 2013 06:41:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <14685.1357230917@warthog.procyon.org.uk>
+References: <CAHTX3d+P_UQK8nPfN8BKLdTkVY2VMKhty1rkCKbfHCrQBa+Nyw@mail.gmail.com>
+	<14685.1357230917@warthog.procyon.org.uk>
+Date: Fri, 4 Jan 2013 12:41:39 +0100
+Message-ID: <CAHTX3d+BhEaTW8=0=bKQZSVQbfHtAf_fa9WDe2gsCVEnA0uxkw@mail.gmail.com>
+Subject: Re: Add #includes needed to permit the removal of asm/system.h - sha1 96f951edb1f1bdbbc99b0cd458f9808bb83d58ae
+From: Michal Simek <monstr@monstr.eu>
+To: David Howells <dhowells@redhat.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 16:08 +0530, Preeti U Murthy wrote: 
-> Hi Mike,
-> 
-> Thank you very much for your feedback.Considering your suggestions,I have posted out a 
-> proposed solution to prevent select_idle_sibling() from becoming a disadvantage to normal
-> load balancing,rather aiding it.
-> 
-> **This patch is *without* the enablement of the per entity load tracking metric.**
-> 
-> This is with an intention to correct the existing select_idle_sibling() mess before
-> going ahead.
+2013/1/3 David Howells <dhowells@redhat.com>:
+> Michal Simek <monstr@monstr.eu> wrote:
+>
+>> It is because microblaze uses cmpxchg_local which is defined
+>> asm-generic/atomic.h file.
+>> Arnds patch has added it to atomic.h
+>> asm-generic: add generic atomic.h and io.h
+>> (sha1: 3f7e212df82ca0459d44c91d9e019efd1b5f936c)
+>>
+>> What about to move cmpxchg_local and cmpxchg64_local from atomic.h to
+>> cmpxchg-local.h?
+>
+> Hmmm...  cmpxchg_local() should be obtained through asm/cmpxchg.h, not
+> asm/atomic.h.  See:
+>
+>         grep -r define\\s*cmpxchg_local arch
 
-Well, on the bright side, this is much kinder to light load tbench on
-4x10 core (+ht) box than current bounce happy select_idle_sibling().  At
-the heavy load end I'm losing heaping truckloads of throughput though,
-likely some migration rate limiting would fix that up.
+But it is also here which Microblaze uses.
 
-select_idle_sibling() doesn't have much of a pretty face these days, but
-its evil hag face shows more prominently than ever, so making it dead is
-a great goal ;-)
+[linux-2.6.x]$ grep -r define\\s*cmpxchg_local include/asm-generic/
+include/asm-generic/atomic.h:#define cmpxchg_local(ptr, o, n)				  	       \
 
--Mike
+(not checked on the latest but probably it is the same)
+m68k, arm contains the same copy for one case
+c6x, unicore, cris, blackfin, h8300, sparc32
 
+Probably make sense to move these two macros
+cmpxchg64_local and cmpxchg_local to asm-generic/cmpxchg-local.h
+with #ifndef cmpxchg_local ...etc. and remove it from architectures above.
+
+Thanks,
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian
