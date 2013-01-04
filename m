@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab3ADHB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:01:29 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:18288 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752478Ab3ADHB1 (ORCPT
+	id S1753627Ab3ADHBh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:01:37 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:10648 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126Ab3ADHBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:01:27 -0500
+	Fri, 4 Jan 2013 02:01:33 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Thu, 03 Jan 2013 22:57:12 -0800
+	by hqnvupgp05.nvidia.com on Thu, 03 Jan 2013 23:01:22 -0800
 From: Prashant Gaikwad <pgaikwad@nvidia.com>
 To: <mturquette@linaro.org>, <swarren@nvidia.com>, <grant.likely@secretlab.ca>,
         <linus.walleij@linaro.org>, <rob.herring@calxeda.com>,
@@ -16,10 +16,12 @@ To: <mturquette@linaro.org>, <swarren@nvidia.com>, <grant.likely@secretlab.ca>,
         <josh.cartwright@ni.com>
 CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         Prashant Gaikwad <pgaikwad@nvidia.com>
-Subject: [PATCH 1/7] clk: add common of_clk_init() function
-Date: Fri, 4 Jan 2013 12:30:52 +0530
-Message-ID: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+Subject: [PATCH 2/7] clk: tegra: Use common of_clk_init() function
+Date: Fri, 4 Jan 2013 12:30:53 +0530
+Message-ID: <1357282858-2112-2-git-send-email-pgaikwad@nvidia.com>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
+References: <1357282858-2112-1-git-send-email-pgaikwad@nvidia.com>
 X-NVConfidentiality: public
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -27,111 +29,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Modify of_clk_init function so that it will determine which
-driver to initialize based on device tree instead of each driver
-registering to it.
-
-Based on a similar patch for drivers/irqchip by Thomas Petazzoni and
-drivers/clocksource by Stephen Warren.
+Use common of_clk_init() function for clocks initialization.
 
 Signed-off-by: Prashant Gaikwad <pgaikwad@nvidia.com>
 ---
- drivers/clk/clk-fixed-rate.c      |    1 +
- drivers/clk/clk.c                 |    9 +++++++++
- include/asm-generic/vmlinux.lds.h |   10 ++++++++++
- include/linux/clk-provider.h      |    6 ++++++
- 4 files changed, 26 insertions(+), 0 deletions(-)
+ arch/arm/mach-tegra/common.c    |    4 ++--
+ drivers/clk/tegra/clk-tegra20.c |    3 ++-
+ drivers/clk/tegra/clk-tegra30.c |    3 ++-
+ drivers/clk/tegra/clk.c         |   11 -----------
+ drivers/clk/tegra/clk.h         |   12 ------------
+ include/linux/clk/tegra.h       |    1 -
+ 6 files changed, 6 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-index af78ed6..f2104df 100644
---- a/drivers/clk/clk-fixed-rate.c
-+++ b/drivers/clk/clk-fixed-rate.c
-@@ -101,4 +101,5 @@ void __init of_fixed_clk_setup(struct device_node *node)
- 		of_clk_add_provider(node, of_clk_src_simple_get, clk);
- }
- EXPORT_SYMBOL_GPL(of_fixed_clk_setup);
-+CLK_OF_DECLARE(fixed_clk, "fixed-clock", of_fixed_clk_setup);
- #endif
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 037b48a..fb38dd8 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- #include <linux/of.h>
- #include <linux/device.h>
-+#include <linux/init.h>
+diff --git a/arch/arm/mach-tegra/common.c b/arch/arm/mach-tegra/common.c
+index 3a7280d..4fde6a9 100644
+--- a/arch/arm/mach-tegra/common.c
++++ b/arch/arm/mach-tegra/common.c
+@@ -22,7 +22,7 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/of_irq.h>
+-#include <linux/clk/tegra.h>
++#include <linux/clk-provider.h>
  
- static DEFINE_SPINLOCK(enable_lock);
- static DEFINE_MUTEX(prepare_lock);
-@@ -1805,6 +1806,11 @@ struct of_clk_provider {
- 	void *data;
- };
+ #include <asm/hardware/cache-l2x0.h>
+ #include <asm/hardware/gic.h>
+@@ -64,7 +64,7 @@ static const struct of_device_id tegra_dt_irq_match[] __initconst = {
  
-+extern struct of_device_id __clk_of_table[];
-+
-+static const struct of_device_id __clk_of_table_sentinel
-+	__used __section(__clk_of_table_end);
-+
- static LIST_HEAD(of_clk_providers);
- static DEFINE_MUTEX(of_clk_lock);
- 
-@@ -1933,6 +1939,9 @@ void __init of_clk_init(const struct of_device_id *matches)
+ void __init tegra_dt_init_irq(void)
  {
- 	struct device_node *np;
- 
-+	if (!matches)
-+		matches = __clk_of_table;
-+
- 	for_each_matching_node(np, matches) {
- 		const struct of_device_id *match = of_match_node(matches, np);
- 		of_clk_init_cb_t clk_init_cb = match->data;
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 1e744c5..8282f7c 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -158,6 +158,15 @@
- #define CLKSRC_OF_TABLES()
- #endif
- 
-+#ifdef CONFIG_COMMON_CLK
-+#define CLK_OF_TABLES() . = ALIGN(8);				\
-+			VMLINUX_SYMBOL(__clk_of_table) = .;	\
-+			*(__clk_of_table)			\
-+			*(__clk_of_table_end)
-+#else
-+#define CLK_OF_TABLES()
-+#endif
-+
- #define KERNEL_DTB()							\
- 	STRUCT_ALIGN();							\
- 	VMLINUX_SYMBOL(__dtb_start) = .;				\
-@@ -502,6 +511,7 @@
- 	CPU_DISCARD(init.rodata)					\
- 	MEM_DISCARD(init.rodata)					\
- 	CLKSRC_OF_TABLES()						\
-+	CLK_OF_TABLES()							\
- 	KERNEL_DTB()
- 
- #define INIT_TEXT							\
-diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
-index 4989b8a..7f197d7 100644
---- a/include/linux/clk-provider.h
-+++ b/include/linux/clk-provider.h
-@@ -379,7 +379,13 @@ struct clk_onecell_data {
+-	tegra_clocks_init();
++	of_clk_init(NULL);
+ 	tegra_init_irq();
+ 	of_irq_init(tegra_dt_irq_match);
+ }
+diff --git a/drivers/clk/tegra/clk-tegra20.c b/drivers/clk/tegra/clk-tegra20.c
+index 32a3d81..3436ad9 100644
+--- a/drivers/clk/tegra/clk-tegra20.c
++++ b/drivers/clk/tegra/clk-tegra20.c
+@@ -1193,7 +1193,7 @@ static const struct of_device_id apb_match[] __initconst = {
+ 	{},
  };
- struct clk *of_clk_src_onecell_get(struct of_phandle_args *clkspec, void *data);
- const char *of_clk_get_parent_name(struct device_node *np, int index);
-+
- void of_clk_init(const struct of_device_id *matches);
  
-+#define CLK_OF_DECLARE(name, compat, fn)			\
-+	static const struct of_device_id __clk_of_table_##name	\
-+		__used __section(__clk_of_table)		\
-+		= { .compatible = compat, .data = fn };
-+
- #endif /* CONFIG_COMMON_CLK */
- #endif /* CLK_PROVIDER_H */
+-void __init tegra20_clock_init(struct device_node *np)
++static void __init tegra20_clock_init(struct device_node *np)
+ {
+ 	int i;
+ 	struct device_node *node;
+@@ -1253,3 +1253,4 @@ void __init tegra20_clock_init(struct device_node *np)
+ 
+ 	tegra_cpu_car_ops = &tegra20_cpu_car_ops;
+ }
++CLK_OF_DECLARE(tegra20, "nvidia,tegra20-car", tegra20_clock_init);
+diff --git a/drivers/clk/tegra/clk-tegra30.c b/drivers/clk/tegra/clk-tegra30.c
+index 30fb743..f17e857 100644
+--- a/drivers/clk/tegra/clk-tegra30.c
++++ b/drivers/clk/tegra/clk-tegra30.c
+@@ -1971,7 +1971,7 @@ static const struct of_device_id apb_match[] __initconst = {
+ 	{},
+ };
+ 
+-void __init tegra30_clock_init(struct device_node *np)
++static void __init tegra30_clock_init(struct device_node *np)
+ {
+ 	struct device_node *node;
+ 	int i;
+@@ -2031,3 +2031,4 @@ void __init tegra30_clock_init(struct device_node *np)
+ 
+ 	tegra_cpu_car_ops = &tegra30_cpu_car_ops;
+ }
++CLK_OF_DECLARE(tegra30, "nvidia,tegra30-car", tegra30_clock_init);
+diff --git a/drivers/clk/tegra/clk.c b/drivers/clk/tegra/clk.c
+index a603b9a..ce4441a 100644
+--- a/drivers/clk/tegra/clk.c
++++ b/drivers/clk/tegra/clk.c
+@@ -72,14 +72,3 @@ void __init tegra_init_from_table(struct tegra_clk_init_table *tbl,
+ 			}
+ 	}
+ }
+-
+-static const struct of_device_id tegra_dt_clk_match[] = {
+-	{ .compatible = "nvidia,tegra20-car", .data = tegra20_clock_init },
+-	{ .compatible = "nvidia,tegra30-car", .data = tegra30_clock_init },
+-	{ }
+-};
+-
+-void __init tegra_clocks_init(void)
+-{
+-	of_clk_init(tegra_dt_clk_match);
+-}
+diff --git a/drivers/clk/tegra/clk.h b/drivers/clk/tegra/clk.h
+index f1ed1d0..7fdf8e6 100644
+--- a/drivers/clk/tegra/clk.h
++++ b/drivers/clk/tegra/clk.h
+@@ -476,16 +476,4 @@ void tegra_init_from_table(struct tegra_clk_init_table *tbl,
+ void tegra_init_dup_clks(struct tegra_clk_duplicate *dup_list,
+ 				struct clk *clks[], int clk_max);
+ 
+-#ifdef CONFIG_ARCH_TEGRA_2x_SOC
+-void tegra20_clock_init(struct device_node *np);
+-#else
+-static inline void tegra20_clock_init(struct device_node *np) {}
+-#endif /* CONFIG_ARCH_TEGRA_2x_SOC */
+-
+-#ifdef CONFIG_ARCH_TEGRA_3x_SOC
+-void tegra30_clock_init(struct device_node *np);
+-#else
+-static inline void tegra30_clock_init(struct device_node *np) {}
+-#endif /* CONFIG_ARCH_TEGRA_3x_SOC */
+-
+ #endif /* TEGRA_CLK_H */
+diff --git a/include/linux/clk/tegra.h b/include/linux/clk/tegra.h
+index 404d6f9..2e8b399 100644
+--- a/include/linux/clk/tegra.h
++++ b/include/linux/clk/tegra.h
+@@ -122,6 +122,5 @@ static inline void tegra_cpu_clock_resume(void)
+ 
+ void tegra_periph_reset_deassert(struct clk *c);
+ void tegra_periph_reset_assert(struct clk *c);
+-void tegra_clocks_init(void);
+ 
+ #endif /* __LINUX_CLK_TEGRA_H_ */
 -- 
 1.7.4.1
 
