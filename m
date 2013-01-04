@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab3ADFcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 00:32:32 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:11963 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab3ADFcb (ORCPT
+	id S1752091Ab3ADFvL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 00:51:11 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:31992 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab3ADFvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 00:32:31 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Thu, 03 Jan 2013 21:29:46 -0800
-Message-ID: <50E6694E.2050704@nvidia.com>
-Date: Fri, 4 Jan 2013 11:01:58 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+	Fri, 4 Jan 2013 00:51:07 -0500
+Date: Fri, 4 Jan 2013 08:50:31 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: wwang <wei_wang@realsil.com.cn>
+Cc: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "oakad@yahoo.com" <oakad@yahoo.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 05/11] ARM: dt: tegra30: Add device node for APB MISC
-References: <1356619644-18565-1-git-send-email-pgaikwad@nvidia.com> <1356619644-18565-6-git-send-email-pgaikwad@nvidia.com> <50E4AE19.1060503@wwwdotorg.org> <50E520FC.4070805@nvidia.com> <50E5ADA6.1070904@wwwdotorg.org> <50E634D0.6080702@nvidia.com> <50E6470E.8090206@wwwdotorg.org> <50E64B18.8060806@nvidia.com> <50E653E3.5060901@wwwdotorg.org> <50E659F4.7020009@nvidia.com> <50E666C0.50200@wwwdotorg.org>
-In-Reply-To: <50E666C0.50200@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "bp@alien8.de" <bp@alien8.de>, "cjb@laptop.org" <cjb@laptop.org>
+Subject: Re: [PATCH v3 3/8] MFD:rtsx: Declare that the DMA address
+ limitationis32bit explicitly
+Message-ID: <20130104055031.GQ7247@mwanda>
+References: <cover.1356662293.git.wei_wang@realsil.com.cn>
+ <cd92be49bee917165009311d62e10a5f60a85a48.1356662293.git.wei_wang@realsil.com.cn>
+ <20130103122559.GF7247@mwanda>
+ <50E6427E.1050809@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <50E6427E.1050809@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 04 January 2013 10:51 AM, Stephen Warren wrote:
-> On 01/03/2013 09:26 PM, Prashant Gaikwad wrote:
->> On Friday 04 January 2013 09:30 AM, Stephen Warren wrote:
->>> On 01/03/2013 08:23 PM, Prashant Gaikwad wrote:
->>>> On Friday 04 January 2013 08:35 AM, Stephen Warren wrote:
->>>>> On 01/03/2013 06:48 PM, Prashant Gaikwad wrote:
->>>>>> On Thursday 03 January 2013 09:41 PM, Stephen Warren wrote:
->>> ...
->>>>>>> OK. It sounds like we need a true APB MISC driver then, to
->>>>>>> abstract the
->>>>>>> differences; the clock driver really shouldn't be touching the APB
->>>>>>> MISC
->>>>>>> registers in all likelihood, unless a subset of the sections you
->>>>>>> mention
->>>>>>> above are truly dedicated to clock functionality.
->>>>>> I don't think it is a good idea to create a driver for APB MISC, all
->>>>>> registers are used by different drivers.
->>>>> Well, it's even worse to have a bunch of other drivers randomly trample
->>>>> on a set of registers they don't own.
->>>>>
->>>>>> Only chip id revision registers are used in clock driver.
->>>>> There are already global variables exposed by the Tegra fuse driver;
->>>>> can
->>>>> you just read those?
->>>> It is not about variables or some value, we have to read some apb
->>>> register to flush the write operation in apb bus before we disable
->>>> peripheral clock.
->>>> We are using chip id revision register for this purpose.
->>> Ah. That's definitely not something the clock driver should be doing
->>> directly. It's probably OK to add a custom Tegra-specific function to
->>> some file in arch/arm/mach-tegra to implement this. Even better would be
->>> a full bus driver for the APB bus, but that's probably too much bloat
->>> for now.
->> tegra_init_fuse in arch/arm/mach-tegra/fuse.c is already reading chip id
->> revision register, so I can implement one function to read this register
->> in fuse.c, which will be used by clock driver and tegra_init_fuse.
->> But then we need to add it to some header file in include/mach or
->> include/linux, where? any suggestion?
-> Somewhere other than arch/arm/mach-tega/include/mach/ would be good, so
-> we don't have to move it later when we enable multi-platform zImage for
-> Tegra. Perhaps include/linux/tegra-soc.h? I guess we could move the
-> existing mach/powergate.h contents into that file later too.
+On Fri, Jan 04, 2013 at 10:46:22AM +0800, wwang wrote:
+> 于 2013年01月03日 20:25, Dan Carpenter 写道:
+> > On Fri, Dec 28, 2012 at 10:41:28AM +0800, wei_wang@realsil.com.cn wrote:
+> >> From: Wei WANG <wei_wang@realsil.com.cn>
+> >>
+> >> Realtek PCIe card reader only supports 32bit DMA
+> >>
+> > Is this a bugfix?  If so what does the bug look like?
+> >
+> > regards,
+> > dan carpenter
+> >
+> Hi Dan:
+> 
+> No, this is not a bugfix. In default, the kernel will allocate 32bit
+> address for DMA. This declaration can improve the readability.
+> 
 
-include/linux/tegra-soc.h seems fine, I will send updated patch series.
+Ah ok.  Really none of the things I mentioned were stuff that
+prevented the patch from being merged or couldn't be fixed in follow
+on patches.
 
+The thing is that the commit message should always say why a patch
+is needed.
+
+regards,
+dan carpenter
 
