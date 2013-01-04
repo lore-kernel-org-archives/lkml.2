@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab3ADXrT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 18:47:19 -0500
-Received: from ozlabs.org ([203.10.76.45]:33264 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab3ADXrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 18:47:17 -0500
-Date: Sat, 5 Jan 2013 10:38:41 +1100
-From: David Gibson <david@gibson.dropbear.id.au>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Jon Loeliger <jdl@jdl.com>, Matt Porter <mporter@ti.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>, Russ Dill <Russ.Dill@ti.com>
-Subject: Re: fdtdump: properly handle multi-string properties
-Message-ID: <20130104233841.GA4674@truffula.fritz.box>
-References: <1357326766-12691-1-git-send-email-panto@antoniou-consulting.com>
+	id S1755451Ab3ADXzx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 18:55:53 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:53950 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab3ADXzu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 18:55:50 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
-Content-Disposition: inline
-In-Reply-To: <1357326766-12691-1-git-send-email-panto@antoniou-consulting.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAKocOONJQ3cZCdE4GDJgtk6BdnS4En+uH8H2b_dPs3naujczBg@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
+	<87k3rslg5a.fsf@xmission.com>
+	<CAKocOOOXx+65rh4f8_++SwYMZdEO2FaOpLiW=dQ6uXZpwM1PYQ@mail.gmail.com>
+	<CAE9FiQVpAfDb1_5TP=CqAQZQZKq=5AqQWo1NE3Sedijg+ML-gA@mail.gmail.com>
+	<CAKocOONJQ3cZCdE4GDJgtk6BdnS4En+uH8H2b_dPs3naujczBg@mail.gmail.com>
+Date: Fri, 4 Jan 2013 15:55:48 -0800
+X-Google-Sender-Auth: pjB_fA6HI8qgwkOOirKQWc57wfo
+Message-ID: <CAE9FiQXs5mC-oCpPWNVvQgn00LVbr70NqWtgaMVU088xSkkAqg@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 4, 2013 at 3:21 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Please see attached dmesg for full log. I can do some testing on this
+> system with your patch if you would like.
 
-On Fri, Jan 04, 2013 at 09:12:46PM +0200, Pantelis Antoniou wrote:
-> Device tree can store multiple strings in a single property.
-> We didn't handle that case properly.
->=20
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+That would be great.
 
-Acked-by: David Gibson <david@gibson.dropbear.id.au>
+Please try
+git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
+for-x86-boot
+or just this patch.
 
---=20
-David Gibson			| I'll have my music baroque, and my code
-david AT gibson.dropbear.id.au	| minimalist, thank you.  NOT _the_ _other_
-				| _way_ _around_!
-http://www.ozlabs.org/~dgibson
+Too bad, I can not access AMD systems with IOMMU support.
 
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Thanks a lot.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iEYEARECAAYFAlDnaAEACgkQaILKxv3ab8ac3ACdGbLdu6uBCrxtKhqWzfKCIFih
-T4AAoIrAOP5ZSz5Vxl3xL349Mq5XY2nU
-=uwxD
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
+Yinghai
