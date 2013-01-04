@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab3ADLZS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 06:25:18 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:57715 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752650Ab3ADLZQ (ORCPT
+	id S1754517Ab3ADL0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 06:26:20 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:9401 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478Ab3ADL0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 06:25:16 -0500
-X-Sasl-enc: odfoY5n3I0dGuEyvxAD7HX6QxqqdIZiWCCzu/5c/+7/1 1357298715
-Message-ID: <50E6BC10.3040505@imap.cc>
-Date: Fri, 04 Jan 2013 12:25:04 +0100
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 4 Jan 2013 06:26:18 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 04 Jan 2013 03:26:02 -0800
+Subject: Re: [PATCH v3 0/9] Migrate Tegra to common clock framework
+From: Joseph Lo <josephl@nvidia.com>
+To: Prashant Gaikwad <pgaikwad@nvidia.com>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1357292453-28418-1-git-send-email-pgaikwad@nvidia.com>
+References: <1357292453-28418-1-git-send-email-pgaikwad@nvidia.com>
+Date: Fri, 4 Jan 2013 19:20:32 +0800
+Message-ID: <1357298432.12574.2.camel@jlo-ubuntu-64.nvidia.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Regression: Bacula jobs fail with kernel 3.8-rc1
-References: <50E1AA27.5000508@imap.cc>
-In-Reply-To: <50E1AA27.5000508@imap.cc>
-X-Enigmail-Version: 1.4.3
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigB80563E730C8DA85922E45AC"
+X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigB80563E730C8DA85922E45AC
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2013-01-04 at 17:40 +0800, Prashant Gaikwad wrote:
+> This patchset does following:
+> 1. Decompose single tegra clock structure into multiple clocks.
+> 2. Try to use standard clock types supported by common clock framework.
+> 3. Use dynamic initialization.
+> 4. Move all clock code to drivers/clk/tegra from mach-tegra.
+> 5. Add device tree support for Tegra20 and Tegra30 clocks.
+> 6. Remove all legacy clock code from mach-tegra.
+> 
+> Tested on Tegra30 (Cardhu) and Tegra20 (Ventana).
+> 
+> Changes from v2:
+> Removed APB MISC node.
+> Fixed some issues reported by Joseph Lo.
+> Added function to read chip id revision register.
+> 
+> Changes from v1:
+> Rebased on linux-next for 20121224.
+> 
+> Prashant Gaikwad (8):
+>   ARM: tegra: Add function to read chipid
+>   clk: tegra: Add tegra specific clocks
+>   arm: tegra: Move tegra_cpu_car.h to linux/clk/tegra.h
+>   ARM: Tegra: Define Tegra30 CAR binding
+>   clk: tegra: add clock support for tegra20
+>   clk: tegra: add clock support for tegra30
+>   arm: tegra: Migrate to new clock code
+>   arm: tegra: Remove legacy clock code
+> 
+> Stephen Warren (1):
+>   ARM: tegra: Define Tegra20 CAR binding
+> 
 
-On 31.12.2012 16:07, /me wrote:
-> With kernel 3.8-rc1, my nightly Bacula backup job reproducibly aborts
-> 20 minutes into spooling with a "broken pipe" error on the network
-> socket connecting the file and storage daemons:
-[...]
-> Returning to kernel 3.7.1 makes it work again.
+Good job, Prashant. :-)
 
-Update/correction: in the meantime
-
-- I had some jobs succeed on kernel 3.8-rc1,
-  so the failure is not fully reproducible
-
-- it happened with kernel 3.7.1 too, though much less frequently
-
-- I went back to 3.6.11 where I the failure hasn't occurred so far
-
-BTW the fact that the job spends 20 minutes spooling appears to be
-part of the problem; a job which aborted after 20 mins on 3.7.1
-completed in 3 mins on 3.6.11.
-
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
+This series :
+Tested-by: Joseph Lo <josephl@nvidia.com>
 
 
-
---------------enigB80563E730C8DA85922E45AC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (MingW32)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAlDmvBkACgkQMdB4Whm86/l5ZACfQTZW35PcOf4Cn/GYQUkz1/v+
-+ZMAn2w4q9VKxMSUnXFYW9kwa/8IiJaj
-=S2CX
------END PGP SIGNATURE-----
-
---------------enigB80563E730C8DA85922E45AC--
