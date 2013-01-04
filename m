@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab3ADWAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 17:00:31 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60453 "EHLO hydra.sisk.pl"
+	id S1755376Ab3ADWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 17:00:28 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60472 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755023Ab3ADV6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 16:58:54 -0500
+	id S1755286Ab3ADV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 16:58:55 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
         Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>
-Subject: [PATCH 6/6] ACPI / PM: Consolidate suspend-specific and hibernate-specific code
-Date: Fri, 04 Jan 2013 23:04:23 +0100
-Message-ID: <22254228.kgHDl5ggU0@vostro.rjw.lan>
+Subject: [PATCH 1/6] ACPI / PM: Change the way power transitions to D3cold are carried out
+Date: Fri, 04 Jan 2013 23:00:26 +0100
+Message-ID: <3421785.2lTFog1i8W@vostro.rjw.lan>
 User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
 In-Reply-To: <2311196.icSMDvAsYg@vostro.rjw.lan>
 References: <2311196.icSMDvAsYg@vostro.rjw.lan>
@@ -25,141 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Move some suspend-specific and hibernate-specific code from
-acpi_sleep_init() into separate functions to get rid of explicit
-#ifdefs in acpi_sleep_init().  Use pr_info() to start and pr_cont()
-to continue printing the supported ACPI sleep states line.
+During power transitions into D3cold from any shallower power states
+we are supposed to transition the device into D3hot and remove power
+from it afterward, but the current code in acpi_device_set_power()
+doesn't work this way.
+
+At the same time, though, we need to be careful enough to preserve
+backwards compatibility for systems that don't distinguish between
+D3hot and D3cold (e.g. designed before ACPI 4).
+
+Modify acpi_device_set_power() so that it works in accordance with
+the expectations in both cases.
 
 Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 ---
- drivers/acpi/sleep.c |   87 +++++++++++++++++++++++++++++----------------------
- 1 file changed, 51 insertions(+), 36 deletions(-)
+ drivers/acpi/bus.c |   12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-Index: linux/drivers/acpi/sleep.c
+Index: linux/drivers/acpi/bus.c
 ===================================================================
---- linux.orig/drivers/acpi/sleep.c
-+++ linux/drivers/acpi/sleep.c
-@@ -579,7 +579,28 @@ static const struct platform_suspend_ops
- 	.end = acpi_pm_end,
- 	.recover = acpi_pm_finish,
- };
--#endif /* CONFIG_SUSPEND */
-+
-+static void acpi_sleep_suspend_setup(void)
-+{
-+	int i;
-+
-+	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++) {
-+		acpi_status status;
-+		u8 type_a, type_b;
-+
-+		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
-+		if (ACPI_SUCCESS(status)) {
-+			sleep_states[i] = 1;
-+			pr_cont(" S%d", i);
-+		}
-+	}
-+
-+	suspend_set_ops(old_suspend_ordering ?
-+		&acpi_suspend_ops_old : &acpi_suspend_ops);
-+}
-+#else /* !CONFIG_SUSPEND */
-+static inline void acpi_sleep_suspend_setup(void) {}
-+#endif /* !CONFIG_SUSPEND */
+--- linux.orig/drivers/acpi/bus.c
++++ linux/drivers/acpi/bus.c
+@@ -270,6 +270,7 @@ int acpi_device_set_power(struct acpi_de
+ 	int result = 0;
+ 	acpi_status status = AE_OK;
+ 	char object_name[5] = { '_', 'P', 'S', '0' + state, '\0' };
++	bool cut_power = false;
  
- #ifdef CONFIG_HIBERNATION
- static unsigned long s4_hardware_signature;
-@@ -700,7 +721,30 @@ static const struct platform_hibernation
- 	.restore_cleanup = acpi_pm_thaw,
- 	.recover = acpi_pm_finish,
- };
--#endif /* CONFIG_HIBERNATION */
-+
-+static void acpi_sleep_hibernate_setup(void)
-+{
-+	acpi_status status;
-+	u8 type_a, type_b;
-+
-+	status = acpi_get_sleep_type_data(ACPI_STATE_S4, &type_a, &type_b);
-+	if (ACPI_FAILURE(status))
-+		return;
-+
-+	hibernation_set_ops(old_suspend_ordering ?
-+			&acpi_hibernation_ops_old : &acpi_hibernation_ops);
-+	sleep_states[ACPI_STATE_S4] = 1;
-+	pr_cont(KERN_CONT " S4");
-+	if (nosigcheck)
-+		return;
-+
-+	acpi_get_table(ACPI_SIG_FACS, 1, (struct acpi_table_header **)&facs);
-+	if (facs)
-+		s4_hardware_signature = facs->hardware_signature;
-+}
-+#else /* !CONFIG_HIBERNATION */
-+static inline void acpi_sleep_hibernate_setup(void) {}
-+#endif /* !CONFIG_HIBERNATION */
- 
- int acpi_suspend(u32 acpi_state)
- {
-@@ -736,9 +780,6 @@ int __init acpi_sleep_init(void)
- {
- 	acpi_status status;
- 	u8 type_a, type_b;
--#ifdef CONFIG_SUSPEND
--	int i = 0;
--#endif
- 
- 	if (acpi_disabled)
- 		return 0;
-@@ -746,45 +787,19 @@ int __init acpi_sleep_init(void)
- 	acpi_sleep_dmi_check();
- 
- 	sleep_states[ACPI_STATE_S0] = 1;
--	printk(KERN_INFO PREFIX "(supports S0");
--
--#ifdef CONFIG_SUSPEND
--	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++) {
--		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
--		if (ACPI_SUCCESS(status)) {
--			sleep_states[i] = 1;
--			printk(KERN_CONT " S%d", i);
--		}
--	}
-+	pr_info(PREFIX "(supports S0");
- 
--	suspend_set_ops(old_suspend_ordering ?
--		&acpi_suspend_ops_old : &acpi_suspend_ops);
--#endif
-+	acpi_sleep_suspend_setup();
-+	acpi_sleep_hibernate_setup();
- 
--#ifdef CONFIG_HIBERNATION
--	status = acpi_get_sleep_type_data(ACPI_STATE_S4, &type_a, &type_b);
--	if (ACPI_SUCCESS(status)) {
--		hibernation_set_ops(old_suspend_ordering ?
--			&acpi_hibernation_ops_old : &acpi_hibernation_ops);
--		sleep_states[ACPI_STATE_S4] = 1;
--		printk(KERN_CONT " S4");
--		if (!nosigcheck) {
--			acpi_get_table(ACPI_SIG_FACS, 1,
--				(struct acpi_table_header **)&facs);
--			if (facs)
--				s4_hardware_signature =
--					facs->hardware_signature;
--		}
--	}
--#endif
- 	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
- 	if (ACPI_SUCCESS(status)) {
- 		sleep_states[ACPI_STATE_S5] = 1;
--		printk(KERN_CONT " S5");
-+		pr_cont(" S5");
- 		pm_power_off_prepare = acpi_power_off_prepare;
- 		pm_power_off = acpi_power_off;
+ 	if (!device || (state < ACPI_STATE_D0) || (state > ACPI_STATE_D3_COLD))
+ 		return -EINVAL;
+@@ -294,9 +295,13 @@ int acpi_device_set_power(struct acpi_de
+ 		return -ENODEV;
  	}
--	printk(KERN_CONT ")\n");
-+	pr_cont(")\n");
+ 
+-	/* For D3cold we should execute _PS3, not _PS4. */
+-	if (state == ACPI_STATE_D3_COLD)
++	/* For D3cold we should first transition into D3hot. */
++	if (state == ACPI_STATE_D3_COLD
++	    && device->power.states[ACPI_STATE_D3_COLD].flags.os_accessible) {
++		state = ACPI_STATE_D3_HOT;
+ 		object_name[3] = '3';
++		cut_power = true;
++	}
+ 
  	/*
- 	 * Register the tts_notifier to reboot notifier list so that the _TTS
- 	 * object can also be evaluated when the system enters S5.
+ 	 * Transition Power
+@@ -341,6 +346,9 @@ int acpi_device_set_power(struct acpi_de
+ 		}
+ 	}
+ 
++	if (cut_power)
++		result = acpi_power_transition(device, ACPI_STATE_D3_COLD);
++
+       end:
+ 	if (result)
+ 		printk(KERN_WARNING PREFIX
 
