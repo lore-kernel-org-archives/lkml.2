@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab3ADJYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 04:24:07 -0500
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:36228
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752563Ab3ADJYD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 04:24:03 -0500
-Message-ID: <50E69F67.6050407@kernel.dk>
-Date: Fri, 04 Jan 2013 10:22:47 +0100
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Kent Overstreet <koverstreet@google.com>
-CC: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, viro@zeniv.linux.org.uk, tytso@mit.edu
-Subject: Re: [PATCH 00/32] AIO performance improvements/cleanups, v3
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-In-Reply-To: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753804Ab3ADJfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 04:35:38 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:28877 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752817Ab3ADJfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 04:35:36 -0500
+X-IronPort-AV: E=Sophos;i="4.84,409,1355068800"; 
+   d="scan'208";a="6521726"
+From: Lin Feng <linfeng@cn.fujitsu.com>
+To: akpm@linux-foundation.org, tj@kernel.org
+Cc: mingo@kernel.org, yinghai@kernel.org, liwanp@linux.vnet.ibm.com,
+        benh@kernel.crashing.org, tangchen@cn.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
+Subject: [RFC PATCH] mm: memblock: optimize memblock_find_in_range_node() to minimize the search work
+Date: Fri, 4 Jan 2013 17:24:53 +0800
+Message-Id: <1357291493-25773-1-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.11.7
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/04 17:25:25,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/04 17:35:10,
+	Serialize complete at 2013/01/04 17:35:10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2012-12-27 02:59, Kent Overstreet wrote:
-> Last posting: http://article.gmane.org/gmane.linux.kernel.aio.general/3242
-> 
-> As before, changes should mostly be noted in the patch descriptions. 
-> 
-> Some random bits:
->  * flush_dcache_page() patch is new
->  * Rewrote the aio_read_evt() stuff again
->  * Fixed a few comments
->  * Included some more patches, notably the batch completion stuff
-> 
-> My git repo has Jens' aio/dio patches on top of this stuff. As of the
-> latest version, I'm seeing a couple percent better throughput with the
-> ring buffer, and I think Jens was seeing a couple percent better with
-> his linked list approach - at this point I think the difference is
-> noise, we're both testing with fairly crappy drivers.
+The memblock array is in ascending order and we traverse the memblock array in
+reverse order so we can add some simple check to reduce the search work.
 
-I still see 10-15% better performance with my non-ring method, so it's a
-bit faster than that. That's on the single device, driving that to the
-maximum.
+Tejun fix a underflow bug in 5d53cb27d8, but I think we could break there for
+the same reason.
 
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+---
+ mm/memblock.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 6259055..a710557 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -111,11 +111,18 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+ 	end = max(start, end);
+ 
+ 	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
++		/*
++		 * exclude the regions out of the candidate range, since it's
++		 * likely to find a suitable range, we ignore the worst case.
++		 */
++		if (this_start >= end)
++			continue;
++
+ 		this_start = clamp(this_start, start, end);
+ 		this_end = clamp(this_end, start, end);
+ 
+ 		if (this_end < size)
+-			continue;
++			break;
+ 
+ 		cand = round_down(this_end - size, align);
+ 		if (cand >= this_start)
 -- 
-Jens Axboe
+1.7.11.7
 
