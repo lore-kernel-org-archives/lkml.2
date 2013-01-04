@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164Ab3ADHJh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:09:37 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:51174 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900Ab3ADHJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:09:34 -0500
-Date: Fri, 4 Jan 2013 08:09:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7u1 00/31] x86, boot, 64bit: Add support for loading
- ramdisk and bzImage above 4G
-Message-ID: <20130104070946.GA20671@x1.alien8.de>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	id S1753454Ab3ADHQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:16:17 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:11772 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab3ADHQP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 02:16:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Thu, 03 Jan 2013 23:16:13 -0800
+From: Hiroshi Doyu <hdoyu@nvidia.com>
+To: "arnd@arndb.de" <arnd@arndb.de>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob@landley.net" <rob@landley.net>, "olof@lixom.net" <olof@lixom.net>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
+Date: Fri, 4 Jan 2013 08:16:07 +0100
+Subject: Re: [PATCH 9/9] ARM: tegra: Add initial support for Tegra 114 SoC.
+Thread-Topic: [PATCH 9/9] ARM: tegra: Add initial support for Tegra 114 SoC.
+Thread-Index: Ac3qS17RAMxlxT2vQq6eZr7JI58n0g==
+Message-ID: <20130104.091607.1562807518754570421.hdoyu@nvidia.com>
+References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-10-git-send-email-hdoyu@nvidia.com><201301031628.19743.arnd@arndb.de>
+In-Reply-To: <201301031628.19743.arnd@arndb.de>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-nvconfidentiality: public
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 04:48:20PM -0800, Yinghai Lu wrote:
+Arnd Bergmann <arnd@arndb.de> wrote @ Thu, 3 Jan 2013 17:28:19 +0100:
 
->         git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git for-x86-boot
+> On Thursday 20 December 2012, Hiroshi Doyu wrote:
+> > +
+> > +DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
+> > +       .smp            = smp_ops(tegra_smp_ops),
+> > +       .map_io         = tegra_map_common_io,
+> > +       .init_early     = tegra30_init_early,
+> > +       .init_irq       = tegra_dt_init_irq,
+> > +       .handle_irq     = gic_handle_irq,
+> > +       .init_time      = clocksource_of_init,
+> > +       .init_machine   = tegra114_dt_init,
+> > +       .init_late      = tegra_init_late,
+> > +       .restart        = tegra_assert_system_reset,
+> > +       .dt_compat      = tegra114_dt_board_compat,
+> > +MACHINE_END
 > 
-> and it is on top of linus's tree 2013-01-03
-> plus tip:x86/mm, tip:x86/mm2
+> This one is so similar to Tegra30 that I wonder if it's actually worth keeping
+> them separate still. The only difference I see is the clock initialization.
+> Maybe that can be factored out to keep this the same as Tegra30.
+> 
+> Or are you planning to add more SoC specific here that would make this harder?
 
-This is causing a merge conflict when merging tip:x86/mm2
-after having merged tip:x86/mm ontop of -rc2+ (today's Linus'
-tree) in mm/nobootmem.c. free_all_bootmem_node has gained a
-reset_node_lowmem_managed_pages() call which got added in
-9feedc9d831e18ae6d0d15aa562e5e46ba53647b.
-
-Now, you have a patch in tip:x86/mm2 which kills that
-free_all_bootmem_node() function but the commit above adds that
-reset_node_lowmem_managed_pages() call to it.
-
-A proper merge conflict resolve would need to be added to the pull
-request which sends tip:x86/mm2 upstream and then you'd need to rebase
-your stuff ontop. Or something better which I'm not thinking of right
-now...
-
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
+That was the original plan, but I'll consider if your proposal works
+or not once again. Thanks.
