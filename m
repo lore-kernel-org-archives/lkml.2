@@ -1,156 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab3ADLiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 06:38:07 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:59804 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab3ADLiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 06:38:05 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH v7u1 31/31] x86, 64bit, mm: hibernate use generic mapping_init
-Date: Fri, 04 Jan 2013 12:43:39 +0100
-Message-ID: <61708402.lBGARq0J34@vostro.rjw.lan>
-User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <1357260531-11115-32-git-send-email-yinghai@kernel.org>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org> <1357260531-11115-32-git-send-email-yinghai@kernel.org>
+	id S1754616Ab3ADLiM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 06:38:12 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45032 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753469Ab3ADLiI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 06:38:08 -0500
+Date: Fri, 4 Jan 2013 11:38:04 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Hebbar Gururaja <gururaja.hebbar@ti.com>
+Cc: alsa-devel@alsa-project.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        linux-arm-kernel@lists.infradead.org, tony@atomide.com, lrg@ti.com,
+        perex@perex.cz, nsekhar@ti.com, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        rob@landley.net
+Subject: Re: [PATCH V2 1/2] ASoC: davinci-mcasp: Add pinctrl support
+Message-ID: <20130104113803.GL4627@opensource.wolfsonmicro.com>
+References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
+ <1357293277-25543-2-git-send-email-gururaja.hebbar@ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0+35XlDF45POFHfm"
+Content-Disposition: inline
+In-Reply-To: <1357293277-25543-2-git-send-email-gururaja.hebbar@ti.com>
+X-Cookie: Long life is in store for you.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 03, 2013 04:48:51 PM Yinghai Lu wrote:
-> Make it only map range in pfn_mapped array.
 
-Can you please explain why that should be sufficient?
+--0+35XlDF45POFHfm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Have you tested it?
+On Fri, Jan 04, 2013 at 03:24:36PM +0530, Hebbar Gururaja wrote:
+> From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+>=20
+> Signed-off-by: Hebbar, Gururaja <gururaja.hebbar@ti.com>
 
-> and it has kernel mapping with EXEC.
+Linus has a change for this in the core which currently looks like it'll
+get merged in v3.8 so there doesn't seem to be any pressing need for
+driver specific changes that just set the defaults.
 
-That's because it needs to execute code from one of those pages and it
-doesn't know in advance which one that's going to be.
+--0+35XlDF45POFHfm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks,
-Rafael
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQ5r8DAAoJELSic+t+oim98s4P/Au5bb0PLI6Sstk4p7TK/BEb
+V9UoEbaER+W7387AVbou41RDx6W/ntKHwERjR6Is6Haa8cYXeXqFyeYmsuPfRy2u
+6NvuQz1h+I8pr5WJDP3/rJICbIvhP4vsl/3h/6tOCyP/JfHoia3hUbPCSMULOpls
+enFHDf6VsMkbLFU3IhKnTuLRRQ+nUVCgZ4QHR33vLs94KVFn2K7DGmiDcMfcXK0/
+8Mw9oqtemjpAsN9oXiqe5Sb0epWd0T9XbisvAtPfEP+j3vevhMoMsX01T3UcfTU4
+GAZmsLh4Jo6cHdGqm6wJhrmoFlQ8Vfq5wRBjz/QWjFchMGJTgxNQvzRkkCBUZ4Lv
+S2LW0s+Jab94ThXbqnbXAlGwOce9xmcv1W7cnnLCkTL88te3Si6l8YZvSAelpu7G
+ljRfdeqtPNDYj/qkFNoCsUiODUMSc9X2qCFx3jjOPDyEsqHj/BnixFPfQHVES8Lm
++uWrWtTyZ5TudtluADu/+omFTMX2y4u3dXSfPtFhxf5KJEm5dunQ92Q57I5vFoHY
+VBZSgiZVdsozDSVaUQ0ZnM5a6bCGfay6HcZYbf7/hTCqLB41iyFoH9Pxue9eRHiX
+5334eakJkFsQKubjs0tsUSOIUcxw6L1F/2wNIUiMIM6ZCzZ/eWvInKFc+5tuSxK8
+VvzOHiu2brZ0vSJQD0IG
+=J/m1
+-----END PGP SIGNATURE-----
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Pavel Machek <pavel@ucw.cz>
-> Cc: Rafael J. Wysocki <rjw@sisk.pl>
-> Cc: linux-pm@vger.kernel.org
-> ---
->  arch/x86/power/hibernate_64.c |   66 ++++++++++++++---------------------------
->  1 file changed, 22 insertions(+), 44 deletions(-)
-> 
-> diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
-> index 460f314..a0fde91 100644
-> --- a/arch/x86/power/hibernate_64.c
-> +++ b/arch/x86/power/hibernate_64.c
-> @@ -11,6 +11,8 @@
->  #include <linux/gfp.h>
->  #include <linux/smp.h>
->  #include <linux/suspend.h>
-> +
-> +#include <asm/init.h>
->  #include <asm/proto.h>
->  #include <asm/page.h>
->  #include <asm/pgtable.h>
-> @@ -39,41 +41,21 @@ pgd_t *temp_level4_pgt;
->  
->  void *relocated_restore_code;
->  
-> -static int res_phys_pud_init(pud_t *pud, unsigned long address, unsigned long end)
-> +static void *alloc_pgt_page(void *context)
->  {
-> -	long i, j;
-> -
-> -	i = pud_index(address);
-> -	pud = pud + i;
-> -	for (; i < PTRS_PER_PUD; pud++, i++) {
-> -		unsigned long paddr;
-> -		pmd_t *pmd;
-> -
-> -		paddr = address + i*PUD_SIZE;
-> -		if (paddr >= end)
-> -			break;
-> -
-> -		pmd = (pmd_t *)get_safe_page(GFP_ATOMIC);
-> -		if (!pmd)
-> -			return -ENOMEM;
-> -		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
-> -		for (j = 0; j < PTRS_PER_PMD; pmd++, j++, paddr += PMD_SIZE) {
-> -			unsigned long pe;
-> -
-> -			if (paddr >= end)
-> -				break;
-> -			pe = __PAGE_KERNEL_LARGE_EXEC | paddr;
-> -			pe &= __supported_pte_mask;
-> -			set_pmd(pmd, __pmd(pe));
-> -		}
-> -	}
-> -	return 0;
-> +	return (void *)get_safe_page(GFP_ATOMIC);
->  }
->
->  static int set_up_temporary_mappings(void)
->  {
-> -	unsigned long start, end, next;
-> -	int error;
-> +	struct x86_mapping_info info = {
-> +		.alloc_pgt_page	= alloc_pgt_page,
-> +		.pmd_flag	= __PAGE_KERNEL_LARGE_EXEC,
-> +		.kernel_mapping = true,
-> +	};
-> +	unsigned long mstart, mend;
-> +	int result;
-> +	int i;
->  
->  	temp_level4_pgt = (pgd_t *)get_safe_page(GFP_ATOMIC);
->  	if (!temp_level4_pgt)
-> @@ -84,21 +66,17 @@ static int set_up_temporary_mappings(void)
->  		init_level4_pgt[pgd_index(__START_KERNEL_map)]);
->  
->  	/* Set up the direct mapping from scratch */
-> -	start = (unsigned long)pfn_to_kaddr(0);
-> -	end = (unsigned long)pfn_to_kaddr(max_pfn);
-> -
-> -	for (; start < end; start = next) {
-> -		pud_t *pud = (pud_t *)get_safe_page(GFP_ATOMIC);
-> -		if (!pud)
-> -			return -ENOMEM;
-> -		next = start + PGDIR_SIZE;
-> -		if (next > end)
-> -			next = end;
-> -		if ((error = res_phys_pud_init(pud, __pa(start), __pa(next))))
-> -			return error;
-> -		set_pgd(temp_level4_pgt + pgd_index(start),
-> -			mk_kernel_pgd(__pa(pud)));
-> +	for (i = 0; i < nr_pfn_mapped; i++) {
-> +		mstart = pfn_mapped[i].start << PAGE_SHIFT;
-> +		mend   = pfn_mapped[i].end << PAGE_SHIFT;
-> +
-> +		result = kernel_ident_mapping_init(&info, temp_level4_pgt,
-> +						   mstart, mend);
-> +
-> +		if (result)
-> +			return result;
->  	}
-> +
->  	return 0;
->  }
->  
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+--0+35XlDF45POFHfm--
