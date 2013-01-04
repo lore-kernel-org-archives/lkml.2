@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490Ab3ADLdD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 06:33:03 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:59787 "EHLO hydra.sisk.pl"
+	id S1754565Ab3ADLiH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 06:38:07 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59804 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753801Ab3ADLc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 06:32:59 -0500
+	id S1753677Ab3ADLiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 06:38:05 -0500
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <liuj97@gmail.com>, Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [Alternative 2][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
-Date: Fri, 04 Jan 2013 12:38:35 +0100
-Message-ID: <1832392.tD5dEjQMy4@vostro.rjw.lan>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org
+Subject: Re: [PATCH v7u1 31/31] x86, 64bit, mm: hibernate use generic mapping_init
+Date: Fri, 04 Jan 2013 12:43:39 +0100
+Message-ID: <61708402.lBGARq0J34@vostro.rjw.lan>
 User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <20130104010038.GA11155@google.com>
-References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <113112384.JZ1gZKlJRa@vostro.rjw.lan> <20130104010038.GA11155@google.com>
+In-Reply-To: <1357260531-11115-32-git-send-email-yinghai@kernel.org>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org> <1357260531-11115-32-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,91 +29,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 03, 2013 06:00:38 PM Bjorn Helgaas wrote:
-> On Thu, Jan 03, 2013 at 11:56:55PM +0100, Rafael J. Wysocki wrote:
-> 
-> > OK, I now have sent no less than three working version of the patch that fixes
-> > the current code which _is_ insane.  You haven't even responded to the last
-> > one, but for the first two the reason why you didn't like them was something
-> > similar to "it may conflict with some future changes I'm planning".  Well,
-> > that might be used to reject prety much any change and I'm not considering it
-> > as a good enough reason for blocking a fix.  Sorry about that.
-> 
-> I think your memory is faulty.  My response to the first
-> (https://lkml.org/lkml/2012/12/20/407) was "Thanks for cleaning this up, I
-> have an interface concern, here's an outline of a possible alternative."
-> 
-> My response to the second (https://lkml.org/lkml/2012/12/26/72) was "I like
-> this much better, Acked-by: Bjorn Helgaas."  Then Yinghai noticed the issue
-> with non-ACPI host bridges, and you abandoned that approach.
+On Thursday, January 03, 2013 04:48:51 PM Yinghai Lu wrote:
+> Make it only map range in pfn_mapped array.
 
-I thought it was helpelss, but I was clearly wrong.  I should have spent more
-time on figuring out why it failed, so thank for taking the time to do that.
+Can you please explain why that should be sufficient?
 
-> I took a few days of vacation, then spent the better part of yesterday
-> exploring the reasons why x86 and ia64 don't use the "parent" argument when
-> several other arches do, and worked up a patch
-> (https://lkml.org/lkml/2013/1/2/285).  It turned out to have a fatal flaw,
-> but was done in good faith.
+Have you tested it?
 
-I know.
+> and it has kernel mapping with EXEC.
 
-> It's true I haven't responded to the third one, posted about 12 hours ago.
-
-Oh, that's a simple patch. ;-)
-
-But you're right, I should be more patient.  Sorry about that.
-
-> I still like the approach of the second patch.  What would you think
-> of the following incremental change to it?
-
-I'm fine with it.
-
-> I did reproduce Yinghai's
-> issue with non-ACPI host bridges, and this change resolves it for me.
-
-If you don't mind, I'll fold the patch below into
-
-https://patchwork.kernel.org/patch/1910181/
-
-and post the complete patch.
+That's because it needs to execute code from one of those pages and it
+doesn't know in advance which one that's going to be.
 
 Thanks,
 Rafael
 
 
-> diff -u b/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
-> --- b/arch/x86/pci/acpi.c
-> +++ b/arch/x86/pci/acpi.c
-> @@ -522,6 +522,7 @@
->  	sd = &info->sd;
->  	sd->domain = domain;
->  	sd->node = node;
-> +	sd->acpi_handle = device->handle;
->  	/*
->  	 * Maybe the desired pci bus has been already scanned. In such case
->  	 * it is unnecessary to scan the pci bus with the given domain,busnum.
-> @@ -596,9 +597,8 @@
->  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
->  {
->  	struct pci_sysdata *sd = bridge->bus->sysdata;
-> -	struct pci_root_info *info = container_of(sd, struct pci_root_info, sd);
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> Cc: linux-pm@vger.kernel.org
+> ---
+>  arch/x86/power/hibernate_64.c |   66 ++++++++++++++---------------------------
+>  1 file changed, 22 insertions(+), 44 deletions(-)
+> 
+> diff --git a/arch/x86/power/hibernate_64.c b/arch/x86/power/hibernate_64.c
+> index 460f314..a0fde91 100644
+> --- a/arch/x86/power/hibernate_64.c
+> +++ b/arch/x86/power/hibernate_64.c
+> @@ -11,6 +11,8 @@
+>  #include <linux/gfp.h>
+>  #include <linux/smp.h>
+>  #include <linux/suspend.h>
+> +
+> +#include <asm/init.h>
+>  #include <asm/proto.h>
+>  #include <asm/page.h>
+>  #include <asm/pgtable.h>
+> @@ -39,41 +41,21 @@ pgd_t *temp_level4_pgt;
 >  
-> -	ACPI_HANDLE_SET(&bridge->dev, info->bridge->handle);
-> +	ACPI_HANDLE_SET(&bridge->dev, sd->acpi_handle);
+>  void *relocated_restore_code;
+>  
+> -static int res_phys_pud_init(pud_t *pud, unsigned long address, unsigned long end)
+> +static void *alloc_pgt_page(void *context)
+>  {
+> -	long i, j;
+> -
+> -	i = pud_index(address);
+> -	pud = pud + i;
+> -	for (; i < PTRS_PER_PUD; pud++, i++) {
+> -		unsigned long paddr;
+> -		pmd_t *pmd;
+> -
+> -		paddr = address + i*PUD_SIZE;
+> -		if (paddr >= end)
+> -			break;
+> -
+> -		pmd = (pmd_t *)get_safe_page(GFP_ATOMIC);
+> -		if (!pmd)
+> -			return -ENOMEM;
+> -		set_pud(pud, __pud(__pa(pmd) | _KERNPG_TABLE));
+> -		for (j = 0; j < PTRS_PER_PMD; pmd++, j++, paddr += PMD_SIZE) {
+> -			unsigned long pe;
+> -
+> -			if (paddr >= end)
+> -				break;
+> -			pe = __PAGE_KERNEL_LARGE_EXEC | paddr;
+> -			pe &= __supported_pte_mask;
+> -			set_pmd(pmd, __pmd(pe));
+> -		}
+> -	}
+> -	return 0;
+> +	return (void *)get_safe_page(GFP_ATOMIC);
+>  }
+>
+>  static int set_up_temporary_mappings(void)
+>  {
+> -	unsigned long start, end, next;
+> -	int error;
+> +	struct x86_mapping_info info = {
+> +		.alloc_pgt_page	= alloc_pgt_page,
+> +		.pmd_flag	= __PAGE_KERNEL_LARGE_EXEC,
+> +		.kernel_mapping = true,
+> +	};
+> +	unsigned long mstart, mend;
+> +	int result;
+> +	int i;
+>  
+>  	temp_level4_pgt = (pgd_t *)get_safe_page(GFP_ATOMIC);
+>  	if (!temp_level4_pgt)
+> @@ -84,21 +66,17 @@ static int set_up_temporary_mappings(void)
+>  		init_level4_pgt[pgd_index(__START_KERNEL_map)]);
+>  
+>  	/* Set up the direct mapping from scratch */
+> -	start = (unsigned long)pfn_to_kaddr(0);
+> -	end = (unsigned long)pfn_to_kaddr(max_pfn);
+> -
+> -	for (; start < end; start = next) {
+> -		pud_t *pud = (pud_t *)get_safe_page(GFP_ATOMIC);
+> -		if (!pud)
+> -			return -ENOMEM;
+> -		next = start + PGDIR_SIZE;
+> -		if (next > end)
+> -			next = end;
+> -		if ((error = res_phys_pud_init(pud, __pa(start), __pa(next))))
+> -			return error;
+> -		set_pgd(temp_level4_pgt + pgd_index(start),
+> -			mk_kernel_pgd(__pa(pud)));
+> +	for (i = 0; i < nr_pfn_mapped; i++) {
+> +		mstart = pfn_mapped[i].start << PAGE_SHIFT;
+> +		mend   = pfn_mapped[i].end << PAGE_SHIFT;
+> +
+> +		result = kernel_ident_mapping_init(&info, temp_level4_pgt,
+> +						   mstart, mend);
+> +
+> +		if (result)
+> +			return result;
+>  	}
+> +
 >  	return 0;
 >  }
 >  
-> --- a/arch/x86/include/asm/pci.h
-> +++ b/arch/x86/include/asm/pci.h
-> @@ -14,6 +14,7 @@
->  struct pci_sysdata {
->  	int		domain;		/* PCI domain */
->  	int		node;		/* NUMA node */
-> +	void		*acpi_handle;
->  #ifdef CONFIG_X86_64
->  	void		*iommu;		/* IOMMU private data */
->  #endif
 > 
 -- 
 I speak only for myself.
