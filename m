@@ -1,73 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab3ADOrA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 09:47:00 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:54586 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754765Ab3ADOq5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 09:46:57 -0500
-Date: Fri, 4 Jan 2013 14:46:51 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Patrice CHOTARD <patrice.chotard@st.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/21] gpio: ab8500: Bring AB8500 back to life
-Message-ID: <20130104144651.GK21994@gmail.com>
-References: <1355501979-1157-1-git-send-email-lee.jones@linaro.org>
- <CACRpkdatZTFNFKL+8+EPkj0yRX8HSnwUu44dXrrWL1VBRPmwrA@mail.gmail.com>
- <CACRpkdYvYLh-C2TxLuc_KB+LwQHL66NqhXGcpDgW_FB8e-4f=w@mail.gmail.com>
+	id S1754844Ab3ADOwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 09:52:25 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44199 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754750Ab3ADOwX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 09:52:23 -0500
+Date: Fri, 4 Jan 2013 15:52:16 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Tejun Heo <htejun@gmail.com>,
+        Glauber Costa <glommer@parallels.com>, Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH -repost] memcg,vmscan: do not break out targeted reclaim
+ without reclaimed pages
+Message-ID: <20130104145216.GC22073@dhcp22.suse.cz>
+References: <20130103180901.GA22067@dhcp22.suse.cz>
+ <20130103122404.033eeb20.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdYvYLh-C2TxLuc_KB+LwQHL66NqhXGcpDgW_FB8e-4f=w@mail.gmail.com>
+In-Reply-To: <20130103122404.033eeb20.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jan 2013, Linus Walleij wrote:
+On Thu 03-01-13 12:24:04, Andrew Morton wrote:
+> On Thu, 3 Jan 2013 19:09:01 +0100
+> Michal Hocko <mhocko@suse.cz> wrote:
+> 
+> > Hi,
+> > I have posted this quite some time ago
+> > (https://lkml.org/lkml/2012/12/14/102) but it probably slipped through
+> > ---
+> > >From 28b4e10bc3c18b82bee695b76f4bf25c03baa5f8 Mon Sep 17 00:00:00 2001
+> > From: Michal Hocko <mhocko@suse.cz>
+> > Date: Fri, 14 Dec 2012 11:12:43 +0100
+> > Subject: [PATCH] memcg,vmscan: do not break out targeted reclaim without
+> >  reclaimed pages
+> > 
+> > Targeted (hard resp. soft) reclaim has traditionally tried to scan one
+> > group with decreasing priority until nr_to_reclaim (SWAP_CLUSTER_MAX
+> > pages) is reclaimed or all priorities are exhausted. The reclaim is
+> > then retried until the limit is met.
+> > 
+> > This approach, however, doesn't work well with deeper hierarchies where
+> > groups higher in the hierarchy do not have any or only very few pages
+> > (this usually happens if those groups do not have any tasks and they
+> > have only re-parented pages after some of their children is removed).
+> > Those groups are reclaimed with decreasing priority pointlessly as there
+> > is nothing to reclaim from them.
+> > 
+> > An easiest fix is to break out of the memcg iteration loop in shrink_zone
+> > only if the whole hierarchy has been visited or sufficient pages have
+> > been reclaimed. This is also more natural because the reclaimer expects
+> > that the hierarchy under the given root is reclaimed. As a result we can
+> > simplify the soft limit reclaim which does its own iteration.
+> > 
+> > Reported-by: Ying Han <yinghan@google.com>
+> 
+> But what was in that report?
 
-> On Wed, Dec 19, 2012 at 3:18 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> > On Fri, Dec 14, 2012 at 5:19 PM, Lee Jones <lee.jones@linaro.org> wrote:
-> >
-> >> The ab8500 GPIO driver is currently 'BROKEN', due to a lack of
-> >> updates and recent frame-work adoption. This patch-set aims to
-> >> bring the driver back to life so we may make use of it again.
-> >>
-> >> This first stage is to bring it into line with ST-Ericsson's
-> >> internal track, which has been keeping up-to-date. After these
-> >> patches have been accepted I will then overhaul the driver to
-> >> use the most recent APIs and frame-works, such as pinctrl and
-> >> Device Tree.
-> >>
-> >> Please give these patches an easy ride. I know they're not
-> >> perfect, but they do provide a great base on with I can form
-> >> the overhaul. Thanks for your understanding.
-> >
-> > OK I've applied these 21 patches on a branch in the pinctrl
-> > tree to be used as a merge base.
-> 
-> No I'll have to scrap this topic branch, as it does not compile.
-> 
-> Analysing the problem I see that part of the reason why it does
-> not compile is that it is adding stuff referencing the global
-> numberspace, like biasing.
-> 
-> Which is pinctrl business. So the proper feedback is that it
-> should be rewritten to use pinctrl.
-> 
-> Which is in the works.
-> 
-> So the plan is to mail out an all-in-one pinctrl replacement
-> patch instead, deleting the old AB8500 GPIO driver and
-> replacing it fully with a pinctrl driver.
+Well, Ying was complaining that targeted reclaim differs a lot from
+the global one regarding iteration because we reclaim each group in at
+the same priority because falling to lower one which targeted reclaim
+hammers one group for each zone and priority first before it visits a
+next group.
+More on that here: https://lkml.org/lkml/2012/12/13/712
 
-Makes sense, although that's going to be a hell of a patch-set.
+> My guess would be "excessive CPU consumption", and perhaps "excessive
+> reclaim in the higher-level memcgs".
+> IOW, what are the user-visible effects of this change?
 
+I would expect a smaller CPU consumption because save a lot of
+per-zone-in-zonelist * per-prio loops without any useful work to do with
+deeper hierarchies. I haven't measured that though. I do not expect the
+win would be huge because shrink_lruvec should be mostly noop for groups
+without any pages (after Johannes recent changes in that area). The
+patch is more trying to make it more consistent with the global reclaim.
+
+> (And congrats - you're the first person I've sent that sentence to this
+> year!  But not, I fear, the last)
+>
+> I don't really understand what prevents limit reclaim from stealing
+> lots of pages from the top-level groups.  How do we ensure
+> balancing/fairness in this case?
+
+All groups in a hierarchy (with root_mem_cgroup for the global
+reclaim) are visited in the round robin fashion (per-node
+per-zone per-priority).  Last visited group is cached in iterator
+(mem_cgroup_per_zone::mem_cgroup_reclaim_iter) and the following reclaim
+will start with the next one.
+Over reclaim is not an issue because of nr_to_reclaim checks both up the
+way in do_try_to_free_pages and shrink_lruvec which make sure we back
+off after SWAP_CLUSTER_MAX have been reclaimed.
+
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1973,18 +1973,17 @@ static void shrink_zone(struct zone *zone, struct scan_control *sc)
+> 
+> shrink_zone() might be getting a bit bloaty for CONFIG_MEMCG=n kernels.
+
+Most of the code should be compiled out because global_reclaim is
+compile time true and mem_cgroup_iter returns NULL right away. So all we
+do is we waste mem_cgroup_reclaim_cookie on the stack but I guess gcc
+should be able to optimize that one out as well (mine does that).
+
+If you are talking about uncompiled code then yes it is getting messy.
+Maybe we want to have something like mem_cgroup_shrink_zone and keep
+only:
+	do {
+		mem_cgroup_shrink_zone();
+	} while (should_continue_reclaim(...));
+
+here. Dunno if that is a huge win though.
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michal Hocko
+SUSE Labs
