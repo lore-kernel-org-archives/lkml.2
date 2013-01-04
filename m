@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755422Ab3ADXAq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 18:00:46 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:43790 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab3ADXAp (ORCPT
+	id S1755367Ab3ADXDh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 18:03:37 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:62940 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754865Ab3ADXDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 18:00:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKocOOOXx+65rh4f8_++SwYMZdEO2FaOpLiW=dQ6uXZpwM1PYQ@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
-	<87k3rslg5a.fsf@xmission.com>
-	<CAKocOOOXx+65rh4f8_++SwYMZdEO2FaOpLiW=dQ6uXZpwM1PYQ@mail.gmail.com>
-Date: Fri, 4 Jan 2013 15:00:43 -0800
-X-Google-Sender-Auth: GCo53THxOBAjSnvqBaH7E3SNQKQ
-Message-ID: <CAE9FiQVpAfDb1_5TP=CqAQZQZKq=5AqQWo1NE3Sedijg+ML-gA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	Fri, 4 Jan 2013 18:03:34 -0500
+Date: Fri, 4 Jan 2013 15:03:28 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Simon Jeons <simon.jeons@gmail.com>
+cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v7 1/2] KSM: numa awareness sysfs knob
+In-Reply-To: <1357259044.4930.4.camel@kernel.cn.ibm.com>
+Message-ID: <alpine.LNX.2.00.1301041446340.4863@eggly.anvils>
+References: <20121224050817.GA25749@kroah.com> <1356658337-12540-1-git-send-email-pholasek@redhat.com> <1357030004.1379.4.camel@kernel.cn.ibm.com> <alpine.LNX.2.00.1301022050450.979@eggly.anvils> <1357259044.4930.4.camel@kernel.cn.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 2:56 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->
-> AMD IOMMU driver is using this lever to leave swiotlb enabled when it
-> detects devices that can't be supported by iommu. My concern is that
-> this change for kdump removes that handshake ability between iommu and
-> swiolb.
+On Thu, 3 Jan 2013, Simon Jeons wrote:
+> On Wed, 2013-01-02 at 21:10 -0800, Hugh Dickins wrote:
+> > 
+> > As you can see, remove_rmap_item_from_tree uses it to decide whether
+> > or not it should rb_erase the rmap_item from the unstable_tree.
+> > 
+> > Every full scan of all the rmap_items, we increment ksm_scan.seqnr,
+> > forget the old unstable_tree (it would just be a waste of processing
+> > to remove every node one by one), and build up the unstable_tree afresh.
+> > 
+> 
+> When the rmap_items left over from the previous scan will be removed?
 
-No, it does not remove that ability.
+Removed from the unstable rbtree?  Not at all, it's simply restarted
+afresh, and the old rblinkages ignored.  Freed back to slab?  When the
+scan passes that mm+address and realizes that rmap_item is not wanted
+any more.  (Or when ksm is shut down with KSM_RUN_UNMERGE.)
 
-I'd like to see the boot log on system that could be affected by this patch.
+> 
+> > That works fine until we need to remove an rmap_item: then we have to be
+> > very sure to remove it from the unstable_tree if it's already been linked
+> > there during this scan, but ignore its rblinkage if that's just left over
+> > from the previous scan.
+> > 
+> > A single bit would be enough to decide this; but we got it troublesomely
+> > wrong in the early days of KSM (didn't always visit every rmap_item each
+> > scan), so it's convenient to use 8 bits (the low unsigned char, stored
+> 
+> When the scenario didn't always visit every rmap_item each scan can
+> occur? 
+
+You're asking me about a stage of KSM development 3.5 years ago:
+I don't remember the details.
+
+> 
+> > below the FLAGs and below the page-aligned address in the rmap_item -
+> > there's lots of them, best keep them as small as we can) and do a
+> > BUG_ON(age > 1) if we made a mistake.
+> > 
+> > We haven't hit that BUG_ON in over three years: if we need some more
+> > bits for something, we can cut the age down to one or two bits.
+> > 
+> > Hugh
