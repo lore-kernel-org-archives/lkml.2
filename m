@@ -1,153 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426Ab3ADHzc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:55:32 -0500
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:49510 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab3ADHz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:55:29 -0500
-Message-ID: <50E68AD7.9010008@linux.vnet.ibm.com>
-Date: Fri, 04 Jan 2013 15:55:03 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753804Ab3ADH5C (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:57:02 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:50457 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242Ab3ADH45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 02:56:57 -0500
+From: Philip Avinash <avinashphilip@ti.com>
+To: <dwmw2@infradead.org>, <artem.bityutskiy@linux.intel.com>,
+        <tony@atomide.com>, <rmk+kernel@arm.linux.org.uk>,
+        <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <rob@landley.net>, <zonque@gmail.com>
+CC: <afzal@ti.com>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <nsekhar@ti.com>,
+        <gururaja.hebbar@ti.com>, <ivan.djelic@parrot.com>,
+        Philip Avinash <avinashphilip@ti.com>
+Subject: [PATCH v4 0/3] mtd: nand: OMAP: ELM error correction support for BCH ecc
+Date: Fri, 4 Jan 2013 13:26:48 +0530
+Message-ID: <1357286211-5012-1-git-send-email-avinashphilip@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 5/5] KVM: x86: improve reexecute_instruction
-References: <50CC1F62.4050701@linux.vnet.ibm.com> <50CC2038.4060500@linux.vnet.ibm.com> <20121223150217.GS17584@redhat.com>
-In-Reply-To: <20121223150217.GS17584@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010407-1396-0000-0000-0000025F241C
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gleb,
+Support to use ELM as BCH 4 & 8 bit error correction module. Also performance
+enhancement by adding single shot read_page and write_page functions for the
+nand flashes with page size less than 4 KB.
 
-Thanks for your review and sorry for the delay reply since i was on my vacation.
+ELM module can be used to correct errors reported by BCH 4, 8 & 16 bit
+ECC scheme. For now only 4 & 8 bit support is added.
 
-On 12/23/2012 11:02 PM, Gleb Natapov wrote:
-> On Sat, Dec 15, 2012 at 03:01:12PM +0800, Xiao Guangrong wrote:
+BCH 4 & 8 bit error detection support is already available in mainline
+kernel and works with software error correction.
 
->>
->> +	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu, addr,
->> +				       &walker, user_fault);
->> +
-> is_self_change_mapping() has a subtle side-effect by setting
-> vcpu->arch.target_gfn_is_pt. From reading the page_fault() function
-> you cannot guess why is_self_change_mapping() is not called inside "if
-> (walker.level >= PT_DIRECTORY_LEVEL)" since this is the only place where
-> its output is used. May be pass it pointer to target_gfn_is_pt as a
-> parameter to make it clear that return value is not the only output of
-> the function.
+This series is based on linux 3.8-rc2 and tested with [1].
+Also this patch series depend on [1] for NAND flash device
+tree data and gpmc nand device tree binding documentation updates.
 
-Yes, it is clearer, will do it in the next version.
+1. [PATCH v7 0/5] OMAP GPMC DT bindings
+http://www.spinics.net/lists/linux-omap/msg83505.html
 
-> 
->>  	if (walker.level >= PT_DIRECTORY_LEVEL)
->>  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
->> -		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
->> +		   || is_self_change_mapping;
->>  	else
->>  		force_pt_level = 1;
->>  	if (!force_pt_level) {
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index bf66169..fc33563 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4756,29 +4756,25 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
->>  static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->>  {
->>  	gpa_t gpa = cr2;
->> +	gfn_t gfn;
->>  	pfn_t pfn;
->> -	unsigned int indirect_shadow_pages;
->> -
->> -	spin_lock(&vcpu->kvm->mmu_lock);
->> -	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
->> -	spin_unlock(&vcpu->kvm->mmu_lock);
->> -
->> -	if (!indirect_shadow_pages)
->> -		return false;
->>
->>  	if (!vcpu->arch.mmu.direct_map) {
->> -		gpa = kvm_mmu_gva_to_gpa_read(vcpu, cr2, NULL);
->> +		/*
->> +		 * Write permission should be allowed since only
->> +		 * write access need to be emulated.
->> +		 */
->> +		gpa = kvm_mmu_gva_to_gpa_write(vcpu, cr2, NULL);
->> +
->> +		/*
->> +		 * If the mapping is invalid in guest, let cpu retry
->> +		 * it to generate fault.
->> +		 */
->>  		if (gpa == UNMAPPED_GVA)
->> -			return true; /* let cpu generate fault */
->> +			return true;
->>  	}
-> Why not fold this change to if (!vcpu->arch.mmu.direct_map) into
-> previous patch where it was introduced. This looks independent of
-> what you are doing in this patch.
+Tested on am335x-evm for BCH 4 and 8 bit error correction.
 
-Fine to me.
+Changes since v1:
+	- Erased page is identified by checking byte [13/7] in read
+	  ecc. To filter out bit flips in OOB area, check 0 bits in
+	  the byte greater than 4.
+	- GPMC ecc engine configuration moves to omap2.c NAND driver.
 
-> 
->>
->> -	/*
->> -	 * if emulation was due to access to shadowed page table
->> -	 * and it failed try to unshadow page and re-enter the
->> -	 * guest to let CPU execute the instruction.
->> -	 */
->> -	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
->> -		return true;
->> +	gfn = gpa_to_gfn(gpa);
->>
->>  	/*
->>  	 * Do not retry the unhandleable instruction if it faults on the
->> @@ -4786,13 +4782,33 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->>  	 * retry instruction -> write #PF -> emulation fail -> retry
->>  	 * instruction -> ...
->>  	 */
->> -	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
->> -	if (!is_error_noslot_pfn(pfn)) {
->> -		kvm_release_pfn_clean(pfn);
->> +	pfn = gfn_to_pfn(vcpu->kvm, gfn);
->> +
->> +	/*
->> +	 * If the instruction failed on the error pfn, it can not be fixed,
->> +	 * report the error to userspace.
->> +	 */
->> +	if (is_error_noslot_pfn(pfn))
->> +		return false;
->> +
->> +	kvm_release_pfn_clean(pfn);
->> +
->> +	/* The instructions are well-emulated on direct mmu. */
->> +	if (vcpu->arch.mmu.direct_map) {
->> +		unsigned int indirect_shadow_pages;
->> +
->> +		spin_lock(&vcpu->kvm->mmu_lock);
->> +		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
->> +		spin_unlock(&vcpu->kvm->mmu_lock);
->> +
->> +		if (indirect_shadow_pages)
->> +			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
->> +
->>  		return true;
->>  	}
->>
->> -	return false;
->> +	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
->> +	return !(vcpu->arch.fault_addr == cr2 && vcpu->arch.target_gfn_is_pt);
-> Do you store fault_addr only to avoid using stale target_gfn_is_pt? If
-> yes why not reset target_gfn_is_pt to false at the beginning of a page
-> fault and get rid of fault_addr?
+Changes since v2:
+	- Added runtime detection of elm module, instead of depending
+	  on platform data.
+	- Added bit flip correction in OOB ecc data if bit flip happen
+	  OOB data.
 
-Good suggestion, will do. :)
+Changes since v3:
+	- Availability and usability of ELM module is detected from device
+	  tree nodes by checking availability of ELM node in device tree.
 
+Philip Avinash (3):
+  mtd: nand: omap2: Update nerrors using ecc.strength
+  mtd: devices: elm: Add support for ELM error correction
+  mtd: nand: omap2: Support for hardware BCH error correction.
+
+ Documentation/devicetree/bindings/mtd/elm.txt      |   16 +
+ .../devicetree/bindings/mtd/gpmc-nand.txt          |    4 +
+ drivers/mtd/devices/Makefile                       |    4 +-
+ drivers/mtd/devices/elm.c                          |  405 ++++++++++++++
+ drivers/mtd/nand/omap2.c                           |  583 ++++++++++++++++++--
+ include/linux/platform_data/elm.h                  |   54 ++
+ 6 files changed, 1023 insertions(+), 43 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mtd/elm.txt
+ create mode 100644 drivers/mtd/devices/elm.c
+ create mode 100644 include/linux/platform_data/elm.h
+
+-- 
+1.7.9.5
 
