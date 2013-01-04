@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab3ADEnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 23:43:49 -0500
-Received: from gate.crashing.org ([63.228.1.57]:52321 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753995Ab3ADEnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 23:43:47 -0500
-Message-ID: <1357274575.2500.23.camel@pasglop>
-Subject: Re: [PATCH v2 1/4] kprobes/powerpc: Do not disable External
- interrupts during single step
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>, bigeasy@linutronix.de,
-        oleg@redhat.com, ananth@in.ibm.com, srikar@linux.vnet.ibm.com,
-        peterz@infradead.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, anton@redhat.com, mingo@elte.hu
-Date: Fri, 04 Jan 2013 15:42:55 +1100
-In-Reply-To: <50C6C930.90206@in.ibm.com>
-References: <20121203150438.7727.74924.stgit@suzukikp>
-	 <20121203150720.7727.91582.stgit@suzukikp> <50C6C930.90206@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751138Ab3ADFLh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 00:11:37 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:44684 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750711Ab3ADFLf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 00:11:35 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LMML <linux-media@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: [PATCH v2] adv7343: use devm_kzalloc() instead of kzalloc()
+Date: Fri,  4 Jan 2013 10:41:15 +0530
+Message-Id: <1357276277-21812-1-git-send-email-prabhakar.lad@ti.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2012-12-11 at 11:18 +0530, Suzuki K. Poulose wrote:
-> On 12/03/2012 08:37 PM, Suzuki K. Poulose wrote:
-> > From: Suzuki K. Poulose <suzuki@in.ibm.com>
-> >
-> > External/Decrement exceptions have lower priority than the Debug Exception.
-> > So, we don't have to disable the External interrupts before a single step.
-> > However, on BookE, Critical Input Exception(CE) has higher priority than a
-> > Debug Exception. Hence we mask them.
+I2C drivers can use devm_kzalloc() too in their .probe() methods. Doing so
+simplifies their clean up paths.
 
-I'm not sure about that one ...
+Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+---
+ Changes for v2:
+ 1: Fixed comments pointed out by Laurent.
 
->From memory, 4xx has that interesting issue which is that if you have
-single step enabled and an interrupt (of *any kind* occurs), the
-processor *will* step into the first instruction of the interrupt
-handler. (In fact, some silicons have a bug where it can even be the
-*second* instruction of the handler, which can be problematic when the
-first one is a branch).
+ drivers/media/i2c/adv7343.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-This is why you may notice that whole business we have in the handling
-of debug/crit interrupts where we try to figure out if that happened,
-and return with DE off if it did.
-
-Now, the above mentioned workaround means we might not need to disable
-EE indeed.
-
-However, in any case, I don't see what your patch fixes or improves, nor
-do I understand what you mean by "it is possible we'd get the single
-step reported for CE". Please explain in more details and describe the
-problematic scenario.
-
-Cheers,
-Ben.
-
+diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
+index 2b5aa67..432eb5f 100644
+--- a/drivers/media/i2c/adv7343.c
++++ b/drivers/media/i2c/adv7343.c
+@@ -397,7 +397,8 @@ static int adv7343_probe(struct i2c_client *client,
+ 	v4l_info(client, "chip found @ 0x%x (%s)\n",
+ 			client->addr << 1, client->adapter->name);
+ 
+-	state = kzalloc(sizeof(struct adv7343_state), GFP_KERNEL);
++	state = devm_kzalloc(&client->dev, sizeof(struct adv7343_state),
++			     GFP_KERNEL);
+ 	if (state == NULL)
+ 		return -ENOMEM;
+ 
+@@ -431,16 +432,13 @@ static int adv7343_probe(struct i2c_client *client,
+ 		int err = state->hdl.error;
+ 
+ 		v4l2_ctrl_handler_free(&state->hdl);
+-		kfree(state);
+ 		return err;
+ 	}
+ 	v4l2_ctrl_handler_setup(&state->hdl);
+ 
+ 	err = adv7343_initialize(&state->sd);
+-	if (err) {
++	if (err)
+ 		v4l2_ctrl_handler_free(&state->hdl);
+-		kfree(state);
+-	}
+ 	return err;
+ }
+ 
+@@ -451,7 +449,6 @@ static int adv7343_remove(struct i2c_client *client)
+ 
+ 	v4l2_device_unregister_subdev(sd);
+ 	v4l2_ctrl_handler_free(&state->hdl);
+-	kfree(state);
+ 
+ 	return 0;
+ }
+-- 
+1.7.4.1
 
