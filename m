@@ -1,127 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab3ADV66 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 16:58:58 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60461 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab3ADV6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 16:58:54 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Len Brown <lenb@kernel.org>,
-        Lv Zheng <lv.zheng@intel.com>, Huang Ying <ying.huang@intel.com>
-Subject: [PATCH 4/6] ACPI / PM: Export power states of ACPI devices via sysfs
-Date: Fri, 04 Jan 2013 23:03:01 +0100
-Message-ID: <6722291.GNv0dQuq4j@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <2311196.icSMDvAsYg@vostro.rjw.lan>
-References: <2311196.icSMDvAsYg@vostro.rjw.lan>
+	id S1755323Ab3ADV7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 16:59:41 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:52838 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755041Ab3ADV7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 16:59:35 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+In-Reply-To: <61708402.lBGARq0J34@vostro.rjw.lan>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-32-git-send-email-yinghai@kernel.org>
+	<61708402.lBGARq0J34@vostro.rjw.lan>
+Date: Fri, 4 Jan 2013 13:59:33 -0800
+X-Google-Sender-Auth: EZ0CAbKVwcGTi6VZ2SNyZLoLiSo
+Message-ID: <CAE9FiQX6pPE9EbqRNCRvN+a_rSU6Zdt4QKa4hNGApyYfVYySzw@mail.gmail.com>
+Subject: Re: [PATCH v7u1 31/31] x86, 64bit, mm: hibernate use generic mapping_init
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        linux-pm@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On Fri, Jan 4, 2013 at 3:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, January 03, 2013 04:48:51 PM Yinghai Lu wrote:
+>> Make it only map range in pfn_mapped array.
+>
+> Can you please explain why that should be sufficient?
 
-Make it possible to retrieve the current power state of an ACPI
-device from user space via sysfs by adding a new attribute
-power_state to the power subdirectory of the sysfs directory
-associated with the struct acpi_device representing the device's
-ACPI node.
+It is needed.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- Documentation/ABI/testing/sysfs-devices-power |   13 ++++++++
- drivers/acpi/scan.c                           |   41 ++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+)
+http://git.kernel.org/?p=linux/kernel/git/tip/tip.git;a=commitdiff;h=66520ebc2df3fe52eb4792f8101fac573b766baf
 
-Index: linux/drivers/acpi/scan.c
-===================================================================
---- linux.orig/drivers/acpi/scan.c
-+++ linux/drivers/acpi/scan.c
-@@ -184,6 +184,43 @@ err_out:
- }
- EXPORT_SYMBOL(acpi_bus_hot_remove_device);
- 
-+#ifdef CONFIG_PM
-+static ssize_t power_state_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct acpi_device *adev = to_acpi_device(dev);
-+	int state;
-+	int ret;
-+
-+	ret = acpi_device_get_power(adev, &state);
-+	return ret ? ret : sprintf(buf, "%s\n", acpi_power_state_string(state));
-+}
-+
-+static DEVICE_ATTR(power_state, 0444, power_state_show, NULL);
-+
-+static struct attribute *acpi_dev_pm_attrs[] = {
-+	&dev_attr_power_state.attr,
-+	NULL,
-+};
-+static struct attribute_group acpi_dev_pm_attr_group = {
-+	.name	= power_group_name,
-+	.attrs	= acpi_dev_pm_attrs,
-+};
-+
-+static void acpi_dev_pm_sysfs_add(struct device *dev)
-+{
-+	sysfs_merge_group(&dev->kobj, &acpi_dev_pm_attr_group);
-+}
-+
-+static void acpi_dev_pm_sysfs_remove(struct device *dev)
-+{
-+	sysfs_unmerge_group(&dev->kobj, &acpi_dev_pm_attr_group);
-+}
-+#else /* !CONFIG_PM */
-+static inline void acpi_dev_pm_sysfs_add(struct device *dev) {}
-+static inline void acpi_dev_pm_sysfs_remove(struct device *dev) {}
-+#endif /* !CONFIG_PM */
-+
- static ssize_t
- acpi_eject_store(struct device *d, struct device_attribute *attr,
- 		const char *buf, size_t count)
-@@ -377,6 +414,9 @@ static int acpi_device_setup_files(struc
- 	status = acpi_get_handle(dev->handle, "_EJ0", &temp);
- 	if (ACPI_SUCCESS(status))
- 		result = device_create_file(&dev->dev, &dev_attr_eject);
-+
-+	acpi_dev_pm_sysfs_add(&dev->dev);
-+
- end:
- 	return result;
- }
-@@ -386,6 +426,7 @@ static void acpi_device_remove_files(str
- 	acpi_status status;
- 	acpi_handle temp;
- 
-+	acpi_dev_pm_sysfs_remove(&dev->dev);
- 	/*
- 	 * If device has _STR, remove 'description' file
- 	 */
-Index: linux/Documentation/ABI/testing/sysfs-devices-power
-===================================================================
---- linux.orig/Documentation/ABI/testing/sysfs-devices-power
-+++ linux/Documentation/ABI/testing/sysfs-devices-power
-@@ -235,3 +235,16 @@ Description:
- 
- 		This attribute has no effect on system-wide suspend/resume and
- 		hibernation.
-+
-+What:		/sys/devices/.../power/power_state
-+Date:		December 2012
-+Contact:	Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-+Description:
-+		The /sys/devices/.../power/power_state attribute is only present
-+		for ACPI device nodes (i.e. objects of type struct acpi_device).
-+
-+		If present, it contains the string representation of the current
-+		ACPI power state of the device represented by the given ACPI
-+		device node.
-+
-+		This attribute is read-only.
+Subject: [PATCH] x86, mm: Only direct map addresses that are marked as
+ E820_RAM
 
+Currently direct mappings are created for [ 0 to max_low_pfn<<PAGE_SHIFT )
+and [ 4GB to max_pfn<<PAGE_SHIFT ), which may include regions that are not
+backed by actual DRAM. This is fine for holes under 4GB which are covered
+by fixed and variable range MTRRs to be UC. However, we run into trouble
+on higher memory addresses which cannot be covered by MTRRs.
+
+Our system with 1TB of RAM has an e820 that looks like this:
+
+ BIOS-e820: [mem 0x0000000000000000-0x00000000000983ff] usable
+ BIOS-e820: [mem 0x0000000000098400-0x000000000009ffff] reserved
+ BIOS-e820: [mem 0x00000000000d0000-0x00000000000fffff] reserved
+ BIOS-e820: [mem 0x0000000000100000-0x00000000c7ebffff] usable
+ BIOS-e820: [mem 0x00000000c7ec0000-0x00000000c7ed7fff] ACPI data
+ BIOS-e820: [mem 0x00000000c7ed8000-0x00000000c7ed9fff] ACPI NVS
+ BIOS-e820: [mem 0x00000000c7eda000-0x00000000c7ffffff] reserved
+ BIOS-e820: [mem 0x00000000fec00000-0x00000000fec0ffff] reserved
+ BIOS-e820: [mem 0x00000000fee00000-0x00000000fee00fff] reserved
+ BIOS-e820: [mem 0x00000000fff00000-0x00000000ffffffff] reserved
+ BIOS-e820: [mem 0x0000000100000000-0x000000e037ffffff] usable
+ BIOS-e820: [mem 0x000000e038000000-0x000000fcffffffff] reserved
+ BIOS-e820: [mem 0x0000010000000000-0x0000011ffeffffff] usable
+
+and so direct mappings are created for huge memory hole between
+0x000000e038000000 to 0x0000010000000000. Even though the kernel never
+generates memory accesses in that region, since the page tables mark
+them incorrectly as being WB, our (AMD) processor ends up causing a MCE
+while doing some memory bookkeeping/optimizations around that area.
+
+This patch iterates through e820 and only direct maps ranges that are
+marked as E820_RAM, and keeps track of those pfn ranges. Depending on
+the alignment of E820 ranges, this may possibly result in using smaller
+size (i.e. 4K instead of 2M or 1G) page tables.
+
+>
+> Have you tested it?
+>
+
+No
+
+will update to
+
+Subject: [PATCH] x86, 64bit, mm: hibernate use generic mapping_init
+
+We should not set mapping for all under max_pfn.
+That causes same problem that is fixed by
+        x86, mm: Only direct map addresses that are marked as E820_RAM
+
+Make it only map range in pfn_mapped array.
