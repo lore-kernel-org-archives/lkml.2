@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab3ADAIu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 19:08:50 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:58905 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753811Ab3ADAIr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 19:08:47 -0500
-X-Sasl-enc: oOLp+Bv0k4q0x3TnN02OS3FfnNO9WfHjXvrH14YoMaZ4 1357258126
-Date: Thu, 3 Jan 2013 16:08:45 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Bill Pemberton <wfp5p@virginia.edu>
-Subject: Re: linux-next: bad merge in driver-core.current tree
-Message-ID: <20130104000845.GA27734@kroah.com>
-References: <20130104100540.3671b46eb7de73374db7f786@canb.auug.org.au>
+	id S1754932Ab3ADAHz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 19:07:55 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:59166 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754316Ab3ADAHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jan 2013 19:07:07 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 5/12] ACPI: Do not use device power states of power resources
+Date: Fri, 04 Jan 2013 01:04:49 +0100
+Message-ID: <26620799.HxovvlWMgm@vostro.rjw.lan>
+User-Agent: KMail/4.9.4 (Linux/3.8.0-rc1+; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <1418767.4KIZOTK1lk@vostro.rjw.lan>
+References: <1418767.4KIZOTK1lk@vostro.rjw.lan>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130104100540.3671b46eb7de73374db7f786@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 10:05:40AM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Happy New year!  ;-)
-> 
-> Today you added a merge of v3.8-rc2 to the driver-core.current tree.  It
-> added the file drivers/i2c/Module.symvers which is a generated file :-(
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-Yeah, I realized that after sending it to Linus :(
+ACPI power resource objects have struct acpi_device components, but
+they are only used for registering those resources in the device
+hierarchy.  In particular, power state information stored in them is
+completely useless (amnong other things, because the power resources
+"devices" are not power manageable), so there is no reason for the
+power resources management code to keep it up to date.
 
-> Please consider rebuilding your tree to get rid of it.
+Remove the code updating device power states of power resources from
+drivers/acpi/power.c.
 
-It's now rebuilt.
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ drivers/acpi/power.c |   23 +++--------------------
+ 1 file changed, 3 insertions(+), 20 deletions(-)
 
-> Also, you might consider removing all the patches that remove the
-> __dev* stuff as they are really not urgent, cause many conflicts (and
-> will continue to do so) and most (if not all) are not acked by the
-> maintainers of the subsystems that they should be applied to (did you
-> send your revised versions of Bill's patches to those maintainers?).
-> You might consider sending separate patches to fix the coding style
-> problems after Bill's patches rather than modifying Bill's patches as
-> some of Bill's patches are turning up in other subsystems (as happened
-> with i2c).
+Index: linux/drivers/acpi/power.c
+===================================================================
+--- linux.orig/drivers/acpi/power.c
++++ linux/drivers/acpi/power.c
+@@ -193,9 +193,6 @@ static int __acpi_power_on(struct acpi_p
+ 	if (ACPI_FAILURE(status))
+ 		return -ENODEV;
+ 
+-	/* Update the power resource's _device_ power state */
+-	resource->device.power.state = ACPI_STATE_D0;
+-
+ 	ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Power resource [%s] turned on\n",
+ 			  resource->name));
+ 
+@@ -261,16 +258,12 @@ static int acpi_power_off(acpi_handle ha
+ 	}
+ 
+ 	status = acpi_evaluate_object(resource->device.handle, "_OFF", NULL, NULL);
+-	if (ACPI_FAILURE(status)) {
++	if (ACPI_FAILURE(status))
+ 		result = -ENODEV;
+-	} else {
+-		/* Update the power resource's _device_ power state */
+-		resource->device.power.state = ACPI_STATE_D3;
+-
++	else
+ 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+ 				  "Power resource [%s] turned off\n",
+ 				  resource->name));
+-	}
+ 
+  unlock:
+ 	mutex_unlock(&resource->resource_lock);
+@@ -659,6 +652,7 @@ void acpi_add_power_resource(acpi_handle
+ 	resource->name = device->pnp.bus_id;
+ 	strcpy(acpi_device_name(device), ACPI_POWER_DEVICE_NAME);
+ 	strcpy(acpi_device_class(device), ACPI_POWER_CLASS);
++	device->power.state = ACPI_STATE_UNKNOWN;
+ 
+ 	/* Evalute the object to get the system level and resource order. */
+ 	status = acpi_evaluate_object(handle, NULL, NULL, &buffer);
+@@ -672,17 +666,6 @@ void acpi_add_power_resource(acpi_handle
+ 	if (result)
+ 		goto err;
+ 
+-	switch (state) {
+-	case ACPI_POWER_RESOURCE_STATE_ON:
+-		device->power.state = ACPI_STATE_D0;
+-		break;
+-	case ACPI_POWER_RESOURCE_STATE_OFF:
+-		device->power.state = ACPI_STATE_D3;
+-		break;
+-	default:
+-		device->power.state = ACPI_STATE_UNKNOWN;
+-	}
+-
+ 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n", acpi_device_name(device),
+ 	       acpi_device_bid(device), state ? "on" : "off");
+ 
 
-I'd really like to just be rid of these __dev* markings now, instead of
-dragging it out over two kernel releases.  The patches are now all fixed
-up properly, and I'll be sending a new merge request to Linus right
-after this after the git tree is mirrored properly.
-
-thanks,
-
-greg k-h
