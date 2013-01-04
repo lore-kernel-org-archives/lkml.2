@@ -1,75 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258Ab3ADRWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 12:22:52 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:49206 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121Ab3ADRWt (ORCPT
+	id S1755261Ab3ADR0Q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 12:26:16 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:43917 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754208Ab3ADR0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 12:22:49 -0500
-Message-ID: <50E70FE5.9010001@wwwdotorg.org>
-Date: Fri, 04 Jan 2013 10:22:45 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Fri, 4 Jan 2013 12:26:14 -0500
+Date: Fri, 4 Jan 2013 18:25:38 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: andrew.cooper3@citrix.com, x86@kernel.org, tglx@linutronix.de,
+        kexec@lists.infradead.org, virtualization@lists.linux-foundation.org,
+        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
+        maxim.uvarov@oracle.com, mingo@redhat.com, vgoyal@redhat.com,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition
+ page table PGD, PUD, PMD and PTE
+Message-ID: <20130104172538.GC3472@host-192-168-1-59.local.net-space.pl>
+References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
+ <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
+ <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
+ <50E70D8002000078000B336D@nat28.tlf.novell.com>
 MIME-Version: 1.0
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: mturquette@linaro.org, swarren@nvidia.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 0/9] Migrate Tegra to common clock framework
-References: <1357292453-28418-1-git-send-email-pgaikwad@nvidia.com>
-In-Reply-To: <1357292453-28418-1-git-send-email-pgaikwad@nvidia.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50E70D8002000078000B336D@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2013 02:40 AM, Prashant Gaikwad wrote:
-> This patchset does following:
-> 1. Decompose single tegra clock structure into multiple clocks.
-> 2. Try to use standard clock types supported by common clock framework.
-> 3. Use dynamic initialization.
-> 4. Move all clock code to drivers/clk/tegra from mach-tegra.
-> 5. Add device tree support for Tegra20 and Tegra30 clocks.
-> 6. Remove all legacy clock code from mach-tegra.
+On Fri, Jan 04, 2013 at 04:12:32PM +0000, Jan Beulich wrote:
+> >>> On 04.01.13 at 16:15, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> > On Thu, Jan 03, 2013 at 09:34:55AM +0000, Jan Beulich wrote:
+> >> >>> On 27.12.12 at 03:18, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> >> > Some implementations (e.g. Xen PVOPS) could not use part of identity page table
+> >> > to construct transition page table. It means that they require separate PUDs,
+> >> > PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
+> >> > requirement add extra pointer to PGD, PUD, PMD and PTE and align existing
+> >> > code.
+> >>
+> >> So you keep posting this despite it having got pointed out on each
+> >> earlier submission that this is unnecessary, proven by the fact that
+> >> the non-pvops Xen kernels can get away without it. Why?
+> >
+> > Sorry but I forgot to reply for your email last time.
+> >
+> > I am still not convinced. I have tested SUSE kernel itself and it does not work.
+> > Maybe I missed something but... Please check
+> > arch/x86/kernel/machine_kexec_64.c:init_transition_pgtable()
+> >
+> > I can see:
+> >
+> > vaddr = (unsigned long)relocate_kernel;
+> >
+> > and later:
+> >
+> > pgd += pgd_index(vaddr);
+> > ...
+>
+> I think that mapping is simply irrelevant, as the code at
+> relocate_kernel gets copied to the control page and
+> invoked there (other than in the native case, where
+> relocate_kernel() gets invoked directly).
 
-I think there are bugs here. I applied all your clock patches on top of
-Tegra's for-next (see list below), and found that the following don't
-work on Springbank:
+Right, so where is virtual mapping of control page established?
+I could not find relevant code in SLES kernel which does that.
 
-* HDMI display
-* Audio playback
-* WiFi
-
-I imagine the same issue would be seen on Harmony or Ventana since
-they're very similar. All of those functions work fine with Tegra's
-for-next branch (commit 5e30b49 "Merge branch 'for-3.9/defconfig' into
-for-next").
-
-I didn't try Tegra30. I assume you'll test both SoCs...
-
-864e964 clk: vexpress: Use common of_clk_init() function
-c4e8389 clk: zynq: Use common of_clk_init() function
-2c9ff0c clk: vt8500: Use common of_clk_init() function
-db9c59c clk: highbank: Use common of_clk_init() function
-b40949b clk: sunxi: Use common of_clk_init() function
-f6d1492 clk: tegra: Use common of_clk_init() function
-f6fd2eb clk: add common of_clk_init() function
-70a8ea3 clk: tegra30: remove unused TEGRA_CLK_DUPLICATE()s
-3945e4f clk: tegra20: remove unused TEGRA_CLK_DUPLICATE()s
-587bcca arm: tegra30: remove auxdata
-52b982f arm: tegra20: remove auxdata
-3381359 ASoC: tegra: remove auxdata
-d31ea1b ARM: dt: tegra30: Add clock information
-542ddb5 ARM: dt: tegra20: Add clock information
-dd19f5f arm: tegra: Remove legacy clock code
-aaf17b6 arm: tegra: Migrate to new clock code
-458a3ae clk: tegra: add clock support for tegra30
-edb65f1 clk: tegra: add clock support for tegra20
-1786e1f ARM: Tegra: Define Tegra30 CAR binding
-7d77415 ARM: tegra: Define Tegra20 CAR binding
-a4798fa arm: tegra: Move tegra_cpu_car.h to linux/clk/tegra.h
-df05a02 clk: tegra: Add tegra specific clocks
-ad00a81 ARM: tegra: Add function to read chipid
-
+Daniel
