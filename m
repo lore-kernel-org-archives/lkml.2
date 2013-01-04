@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab3ADHQR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:16:17 -0500
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:11772 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751900Ab3ADHQP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:16:15 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Thu, 03 Jan 2013 23:16:13 -0800
-From: Hiroshi Doyu <hdoyu@nvidia.com>
-To: "arnd@arndb.de" <arnd@arndb.de>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob@landley.net" <rob@landley.net>, "olof@lixom.net" <olof@lixom.net>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "plagnioj@jcrosoft.com" <plagnioj@jcrosoft.com>
-Date: Fri, 4 Jan 2013 08:16:07 +0100
-Subject: Re: [PATCH 9/9] ARM: tegra: Add initial support for Tegra 114 SoC.
-Thread-Topic: [PATCH 9/9] ARM: tegra: Add initial support for Tegra 114 SoC.
-Thread-Index: Ac3qS17RAMxlxT2vQq6eZr7JI58n0g==
-Message-ID: <20130104.091607.1562807518754570421.hdoyu@nvidia.com>
-References: <1355996654-6579-1-git-send-email-hdoyu@nvidia.com><1355996654-6579-10-git-send-email-hdoyu@nvidia.com><201301031628.19743.arnd@arndb.de>
-In-Reply-To: <201301031628.19743.arnd@arndb.de>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-nvconfidentiality: public
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	id S1753697Ab3ADHR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:17:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33157 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752316Ab3ADHRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 02:17:25 -0500
+Date: Fri, 4 Jan 2013 08:17:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 01/31] x86, mm: Fix page table early allocation
+ offset checking
+Message-ID: <20130104071737.GA20905@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-2-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1357260531-11115-2-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> wrote @ Thu, 3 Jan 2013 17:28:19 +0100:
-
-> On Thursday 20 December 2012, Hiroshi Doyu wrote:
-> > +
-> > +DT_MACHINE_START(TEGRA114_DT, "NVIDIA Tegra114 (Flattened Device Tree)")
-> > +       .smp            = smp_ops(tegra_smp_ops),
-> > +       .map_io         = tegra_map_common_io,
-> > +       .init_early     = tegra30_init_early,
-> > +       .init_irq       = tegra_dt_init_irq,
-> > +       .handle_irq     = gic_handle_irq,
-> > +       .init_time      = clocksource_of_init,
-> > +       .init_machine   = tegra114_dt_init,
-> > +       .init_late      = tegra_init_late,
-> > +       .restart        = tegra_assert_system_reset,
-> > +       .dt_compat      = tegra114_dt_board_compat,
-> > +MACHINE_END
+On Thu, Jan 03, 2013 at 04:48:21PM -0800, Yinghai Lu wrote:
+> During debugging loading kernel above 4G, found one page if is not used
+> in BRK with early page allocation.
 > 
-> This one is so similar to Tegra30 that I wonder if it's actually worth keeping
-> them separate still. The only difference I see is the clock initialization.
-> Maybe that can be factored out to keep this the same as Tegra30.
+> pgt_buf_top is address that can not be used, so should check if that new
+> end is above that top, otherwise last page will not be used.
 > 
-> Or are you planning to add more SoC specific here that would make this harder?
+> Fix that checking and also add print out for every allocation from BRK.
 
-That was the original plan, but I'll consider if your proposal works
-or not once again. Thanks.
+This commit message still bothers the hell out of me. Please, fix it up
+to something more readable like the below, for example:
+
+"pgt_buf_top is an address which cannot be used so we should check
+whether the new 'end' is above it. Otherwise, the last BRK page remains
+unused.
+
+Fix that check and add a debug printout of every BRK allocation."
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
