@@ -1,95 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab3ADTbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:31:31 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:37578 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754552Ab3ADTb2 (ORCPT
+	id S1755036Ab3ADToS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:44:18 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:36428 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754844Ab3ADToP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:31:28 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH 2/6] OF: export of_property_notify
-Date: Fri,  4 Jan 2013 21:31:06 +0200
-Message-Id: <1357327870-13615-3-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
-References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
-To: unlisted-recipients:; (no To-header on input)
+	Fri, 4 Jan 2013 14:44:15 -0500
+Message-ID: <50E73EB6.9090100@mvista.com>
+Date: Fri, 04 Jan 2013 23:42:30 +0300
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, mhocko@suse.cz, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/2] Revert "nohz: Fix idle ticks in cpu summary line
+ of /proc/stat" (commit 7386cdbf2f57ea8cff3c9fde93f206e58b9fe13f).
+References: <1357268337-8025-1-git-send-email-vatsa@codeaurora.org> <50E6C776.7060707@mvista.com> <20130104192934.GB29866@quicinc.com>
+In-Reply-To: <20130104192934.GB29866@quicinc.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_property_notify can be utilized by other users too, export it.
+Hello.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- drivers/of/base.c  |  8 +-------
- include/linux/of.h | 11 +++++++++++
- 2 files changed, 12 insertions(+), 7 deletions(-)
+On 01/04/2013 10:29 PM, Srivatsa Vaddagiri wrote:
 
-diff --git a/drivers/of/base.c b/drivers/of/base.c
-index 2390ddb..d598216 100644
---- a/drivers/of/base.c
-+++ b/drivers/of/base.c
-@@ -1115,7 +1115,7 @@ int of_parse_phandle_with_args(const struct device_node *np, const char *list_na
- EXPORT_SYMBOL(of_parse_phandle_with_args);
- 
- #if defined(CONFIG_OF_DYNAMIC)
--static int of_property_notify(int action, struct device_node *np,
-+int of_property_notify(int action, struct device_node *np,
- 			      struct property *prop)
- {
- 	struct of_prop_reconfig pr;
-@@ -1124,12 +1124,6 @@ static int of_property_notify(int action, struct device_node *np,
- 	pr.prop = prop;
- 	return of_reconfig_notify(action, &pr);
- }
--#else
--static int of_property_notify(int action, struct device_node *np,
--			      struct property *prop)
--{
--	return 0;
--}
- #endif
- 
- /**
-diff --git a/include/linux/of.h b/include/linux/of.h
-index 2ff35b5..aea3694 100644
---- a/include/linux/of.h
-+++ b/include/linux/of.h
-@@ -298,6 +298,17 @@ extern int of_parse_phandle_with_args(const struct device_node *np,
- 	const char *list_name, const char *cells_name, int index,
- 	struct of_phandle_args *out_args);
- 
-+#if defined(CONFIG_OF_DYNAMIC)
-+extern int of_property_notify(int action, struct device_node *np,
-+			      struct property *prop);
-+#else
-+static inline int of_property_notify(int action, struct device_node *np,
-+			      struct property *prop)
-+{
-+	return 0;
-+}
-+#endif
-+
- extern void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align));
- extern int of_alias_get_id(struct device_node *np, const char *stem);
- 
--- 
-1.7.12
+>>> With offline cpus no longer beeing seen in nohz mode (ts->idle_active=0), we
+>>> don't need the check for cpu_online() introduced in commit 7386cdbf. Offline
+
+>>    Please also specify the summary of that commit in parens (or
+>> however you like).
+
+> I had that in Subject line, but yes would be good to include in commit message
+> as well. I will incorporate that change alongwith anything else required in
+> next version of this patch.
+
+   Ah, that was a revert with atypical subject -- didn't notice. Then there's no
+need to specify it twice.
+
+> - vatsa
+
+WBR, Sergei
 
