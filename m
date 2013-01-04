@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513Ab3ADA5I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 19:57:08 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30161 "EHLO
+	id S1755488Ab3ADA5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 19:57:04 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:30162 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753907Ab3ADAt3 (ORCPT
+	with ESMTP id S1753908Ab3ADAt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jan 2013 19:49:29 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,11 +14,10 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Alexander Duyck <alexander.h.duyck@intel.com>
-Subject: [PATCH v7u1 21/31] x86, kexec: only set ident mapping for ram.
-Date: Thu,  3 Jan 2013 16:48:41 -0800
-Message-Id: <1357260531-11115-22-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v7u1 02/31] x86, 64bit, mm: make pgd next calculation consistent with pud/pmd
+Date: Thu,  3 Jan 2013 16:48:22 -0800
+Message-Id: <1357260531-11115-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
 References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
@@ -27,79 +26,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should not set mapping for all under max_pfn.
-That causes same problem that is fixed by
+Just like the way we calculate next for pud and pmd, aka
+round down and add size.
 
-	x86, mm: Only direct map addresses that are marked as E820_RAM
-
-This patch expose pfn_mapped array, and only set ident mapping for ranges
-in that array.
-
-This patch rely on new ident_mapping_init that could handle existing
-pgd/pud between different calling.
+Also, do not do boundary-checking with 'next', and just pass 'end' down
+to phys_pud_init() instead. Because the loop in phys_pud_init() stops at
+PTRS_PER_PUD and thus can handle a possibly bigger 'end' properly.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Alexander Duyck <alexander.h.duyck@intel.com>
 ---
- arch/x86/include/asm/page.h        |    4 ++++
- arch/x86/kernel/machine_kexec_64.c |   13 +++++++++----
- arch/x86/mm/init.c                 |    4 ++--
- 3 files changed, 15 insertions(+), 6 deletions(-)
+ arch/x86/mm/init_64.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 3698a6a..c878924 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -17,6 +17,10 @@
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 167439c..b1178eb 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -530,9 +530,7 @@ kernel_physical_mapping_init(unsigned long start,
+ 		pgd_t *pgd = pgd_offset_k(start);
+ 		pud_t *pud;
  
- struct page;
+-		next = (start + PGDIR_SIZE) & PGDIR_MASK;
+-		if (next > end)
+-			next = end;
++		next = (start & PGDIR_MASK) + PGDIR_SIZE;
  
-+#include <linux/range.h>
-+extern struct range pfn_mapped[];
-+extern int nr_pfn_mapped;
-+
- static inline void clear_user_page(void *page, unsigned long vaddr,
- 				   struct page *pg)
- {
-diff --git a/arch/x86/kernel/machine_kexec_64.c b/arch/x86/kernel/machine_kexec_64.c
-index d2d7e02..4eabc16 100644
---- a/arch/x86/kernel/machine_kexec_64.c
-+++ b/arch/x86/kernel/machine_kexec_64.c
-@@ -100,10 +100,15 @@ static int init_pgtable(struct kimage *image, unsigned long start_pgtable)
+ 		if (pgd_val(*pgd)) {
+ 			pud = (pud_t *)pgd_page_vaddr(*pgd);
+@@ -542,7 +540,7 @@ kernel_physical_mapping_init(unsigned long start,
+ 		}
  
- 	level4p = (pgd_t *)__va(start_pgtable);
- 	clear_page(level4p);
--	result = kernel_ident_mapping_init(&info, level4p,
--						0, max_pfn << PAGE_SHIFT);
--	if (result)
--		return result;
-+	for (i = 0; i < nr_pfn_mapped; i++) {
-+		mstart = pfn_mapped[i].start << PAGE_SHIFT;
-+		mend   = pfn_mapped[i].end << PAGE_SHIFT;
-+
-+		result = kernel_ident_mapping_init(&info,
-+						 level4p, mstart, mend);
-+		if (result)
-+			return result;
-+	}
+ 		pud = alloc_low_page();
+-		last_map_addr = phys_pud_init(pud, __pa(start), __pa(next),
++		last_map_addr = phys_pud_init(pud, __pa(start), __pa(end),
+ 						 page_size_mask);
  
- 	/*
- 	 * segments's mem ranges could be outside 0 ~ max_pfn,
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index ab26a15..d704b36 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -300,8 +300,8 @@ static int __meminit split_mem_range(struct map_range *mr, int nr_range,
- 	return nr_range;
- }
- 
--static struct range pfn_mapped[E820_X_MAX];
--static int nr_pfn_mapped;
-+struct range pfn_mapped[E820_X_MAX];
-+int nr_pfn_mapped;
- 
- static void add_pfn_range_mapped(unsigned long start_pfn, unsigned long end_pfn)
- {
+ 		spin_lock(&init_mm.page_table_lock);
 -- 
 1.7.10.4
 
