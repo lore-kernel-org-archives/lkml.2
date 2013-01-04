@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab3ADGFA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 01:05:00 -0500
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:39000 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab3ADGE5 (ORCPT
+	id S1752538Ab3ADGLi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 01:11:38 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:43390 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750989Ab3ADGLf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 01:04:57 -0500
-Message-ID: <50E6709D.5080709@linux.vnet.ibm.com>
-Date: Fri, 04 Jan 2013 11:33:09 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 4 Jan 2013 01:11:35 -0500
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@sisk.pl, rafael.j.wysocki@intel.com, linaro-dev@lists.linaro.org,
-        nicolas.pitre@linaro.org, amit.kucheria@linaro.org,
-        mathieu.poirier@linaro.org, linux-kernel@vger.kernel.org,
-        cpufreq@vger.kernel.org, pdsw-power-team@arm.com,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH 3/3] cpufreq: Don't use cpu removed during cpufreq_driver_unregister
-References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org>	<1fe21314c2e17585e22c546e2cac12544f8f9733.1355636864.git.viresh.kumar@linaro.org>	<50E594F2.4000800@linux.vnet.ibm.com> <CAKohpo=Z=nA2Mr23ior8c0Qmt75+bOVLvZwNdc7OXq-+rH1dWQ@mail.gmail.com>
-In-Reply-To: <CAKohpo=Z=nA2Mr23ior8c0Qmt75+bOVLvZwNdc7OXq-+rH1dWQ@mail.gmail.com>
+In-Reply-To: <20130101011158.GA7601@joi.lan>
+References: <1356917699-19479-1-git-send-email-aaro.koskinen@iki.fi>
+	<20130101011158.GA7601@joi.lan>
+Date: Fri, 4 Jan 2013 16:11:34 +1000
+Message-ID: <CAPM=9tx6GsQ4CygSrzUj9MoCyvAtU1L++=OGnxCWRZCgRa7VYw@mail.gmail.com>
+Subject: Re: [RESEND PATCH] drm/nouveau: fix init with agpgart-uninorth
+From: Dave Airlie <airlied@gmail.com>
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Ben Skeggs <skeggsb@gmail.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, stefan@konink.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010406-7014-0000-0000-0000026A81FF
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/04/2013 10:49 AM, Viresh Kumar wrote:
-> On 3 January 2013 19:55, Srivatsa S. Bhat
-> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> I took a quick look at the problem you described above, and the cpufreq code..
->> If we cannot avoid calling cpufreq_add_dev() from cpufreq_remove_dev(), then I can't
->> think of anything better than what your patch does.
-> 
-> Good :)
-> 
->> BTW, off-topic, while going through that path, I think I found a memory leak
->> in __cpufreq_remove_dev():
+On Tue, Jan 1, 2013 at 11:21 AM, Marcin Slusarz
+<marcin.slusarz@gmail.com> wrote:
+> On Mon, Dec 31, 2012 at 03:34:59AM +0200, Aaro Koskinen wrote:
+>> Check that the AGP aperture can be mapped. This follows a similar change
+>> done for Radeon (commit 365048ff, drm/radeon: AGP memory is only I/O if
+>> the aperture can be mapped by the CPU.).
 >>
->>         if (unlikely(cpumask_weight(data->cpus) > 1)) {
->>                 for_each_cpu(j, data->cpus) {
->>                         if (j == cpu)
->>                                 continue;
->>                         per_cpu(cpufreq_cpu_data, j) = NULL;
->>                 }
->>         }
+>> The patch fixes the following error seen on G5 iMac:
 >>
->> We are assigning NULL without freeing that memory.
-> 
-> Not really. All cpus in affected_cpus (data->cpus), share the same
-> policy structure.
-> We have already taken backup of cpufreq_cpu_data for the first cpu in "data" and
-> are freeing it here:
-> 
-> 	kfree(data);
-> 
+>>       nouveau E[     DRM] failed to create kernel channel, -12
+>>
+>> Reviewed-by: Michel Dänzer <michel@daenzer.net>
+>> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+>> ---
+>
+> This patch fixes https://bugs.freedesktop.org/show_bug.cgi?id=58806.
+> For some (weird) reason Nouveau worked on this configuration on 3.6 kernel,
+> so cc'ing stable@vger seems to be appropriate.
 
-Ah, ok, got it. Thanks!
+Cool I've picked this up and applied it for stable into fixes now.
 
-Regards,
-Srivatsa S. Bhat
-
+Dave.
