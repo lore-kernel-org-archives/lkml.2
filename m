@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab3ADIXN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:23:13 -0500
-Received: from mail-vc0-f181.google.com ([209.85.220.181]:32798 "EHLO
-	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab3ADIXJ (ORCPT
+	id S1753801Ab3ADIXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:23:12 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:38661 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab3ADIXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jan 2013 03:23:09 -0500
-From: Xi Wang <xi.wang@gmail.com>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Xi Wang <xi.wang@gmail.com>, stable@vger.kernel.org
-Subject: [PATCH] nfs: fix null checking in nfs_get_option_str()
-Date: Fri,  4 Jan 2013 03:22:57 -0500
-Message-Id: <1357287777-12052-1-git-send-email-xi.wang@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
+Subject: Re: [PATCH v2 net-next] softirq: reduce latencies
+From: Eric Dumazet <erdnetdev@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>,
+        David Miller <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tom Herbert <therbert@google.com>
+In-Reply-To: <1357287351.5452.44.camel@joe-AO722>
+References: <1357216132.21409.24107.camel@edumazet-glaptop>
+	 <1357250880.2685.29.camel@bwh-desktop.uk.solarflarecom.com>
+	 <1357252816.21409.26384.camel@edumazet-glaptop>
+	 <1357285780.21409.28416.camel@edumazet-glaptop>
+	 <1357287351.5452.44.camel@joe-AO722>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Jan 2013 00:23:06 -0800
+Message-ID: <1357287786.1678.87.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following null pointer check is broken.
+On Fri, 2013-01-04 at 00:15 -0800, Joe Perches wrote:
+> On Thu, 2013-01-03 at 23:49 -0800, Eric Dumazet wrote:
+> > In various network workloads, __do_softirq() latencies can be up
+> > to 20 ms if HZ=1000, and 200 ms if HZ=100.
+> > This patch changes the fallback to ksoftirqd condition to :
+> > - A time limit of 2 ms.
+> 
+> []
+> > diff --git a/kernel/softirq.c b/kernel/softirq.c
+> []
+> > +#define MAX_SOFTIRQ_TIME  max(1, (2*HZ/1000))
+> 
+> And if HZ is 10000?
+>  
 
-	*option = match_strdup(args);
-	return !option;
+Then its OK.  2*10000/1000 -> 20 ticks -> 2 ms
 
-The pointer `option' must be non-null, and thus `!option' is always false.
-Use `!*option' instead.
 
-The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
-cut-and-paste code.").
+> >  asmlinkage void __do_softirq(void)
+> >  {
+> []
+> > +	unsigned long end = jiffies + MAX_SOFTIRQ_TIME;
+> 
+> Perhaps MAX_SOFTIRQ_TIME should be
+> 
+> #define MAX_SOFTIRQ_TIME msecs_to_jiffies(2)
+> 
+> though it would be nicer if it were a compile time constant.
 
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
-Cc: stable@vger.kernel.org
----
- fs/nfs/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+If you send a patch to convert msecs_to_jiffies() to an inline function
+when HZ = 1000, I will gladly use it instead of (2*HZ/1000)
 
-diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-index c25cadf8..2e7e8c8 100644
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1152,7 +1152,7 @@ static int nfs_get_option_str(substring_t args[], char **option)
- {
- 	kfree(*option);
- 	*option = match_strdup(args);
--	return !option;
-+	return !*option;
- }
- 
- static int nfs_get_option_ul(substring_t args[], unsigned long *option)
--- 
-1.7.10.4
+Right now, max(1, msecs_to_jiffies(2)) uses way too many instructions,
+while it should be the constant 2, known at compile time.
+
+
 
