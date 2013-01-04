@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab3ADPvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 10:51:44 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:64150 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754837Ab3ADPvl convert rfc822-to-8bit (ORCPT
+	id S1755021Ab3ADPwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 10:52:35 -0500
+Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:43691 "EHLO
+	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754837Ab3ADPwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 10:51:41 -0500
-X-IronPort-AV: E=Sophos;i="4.84,411,1355126400"; 
-   d="scan'208";a="4725516"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: "ycnian@gmail.com" <ycnian@gmail.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pnfs: Increase the refcount when LAYOUTGET fails the
- first time
-Thread-Topic: [PATCH] pnfs: Increase the refcount when LAYOUTGET fails the
- first time
-Thread-Index: AQHN6ncmtnPdp7uFNEWmjt4lAOkA95g51++A
-Date: Fri, 4 Jan 2013 15:51:39 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91198A99A@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1357301989-10278-1-git-send-email-ycnian@gmail.com>
-In-Reply-To: <1357301989-10278-1-git-send-email-ycnian@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <A8E92EF911B0A8468D0AD6CC18B970FE@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Jan 2013 10:52:33 -0500
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 10:52:32 EST
+Date: Fri, 4 Jan 2013 15:45:01 +0000
+From: Catalin Marinas <Catalin.Marinas@arm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arm64 fixes for 3.8
+Message-ID: <20130104154501.GG7148@arm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+user-agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-04 at 20:19 +-0800, ycnian+AEA-gmail.com wrote:
-+AD4- From: Yanchuan Nian +ADw-ycnian+AEA-gmail.com+AD4-
-+AD4- 
-+AD4- The layout will be set unusable if LAYOUTGET fails. Is it reasonable to
-+AD4- increase the refcount iff LAYOUTGET fails the first time?
-+AD4- 
-+AD4- Signed-off-by: Yanchuan Nian +ADw-ycnian+AEA-gmail.com+AD4-
-+AD4- ---
-+AD4-  fs/nfs/pnfs.c +AHw-    2 +--
-+AD4-  1 files changed, 1 insertions(+-), 1 deletions(-)
-+AD4- 
-+AD4- diff --git a/fs/nfs/pnfs.c b/fs/nfs/pnfs.c
-+AD4- index e7165d9..d00260b 100644
-+AD4- --- a/fs/nfs/pnfs.c
-+AD4- +-+-+- b/fs/nfs/pnfs.c
-+AD4- +AEAAQA- -254,7 +-254,7 +AEAAQA- static void
-+AD4-  pnfs+AF8-layout+AF8-set+AF8-fail+AF8-bit(struct pnfs+AF8-layout+AF8-hdr +ACo-lo, int fail+AF8-bit)
-+AD4-  +AHs-
-+AD4-  	lo-+AD4-plh+AF8-retry+AF8-timestamp +AD0- jiffies+ADs-
-+AD4- -	if (test+AF8-and+AF8-set+AF8-bit(fail+AF8-bit, +ACY-lo-+AD4-plh+AF8-flags))
-+AD4- +-	if (+ACE-test+AF8-and+AF8-set+AF8-bit(fail+AF8-bit, +ACY-lo-+AD4-plh+AF8-flags))
-+AD4-  		atomic+AF8-inc(+ACY-lo-+AD4-plh+AF8-refcount)+ADs-
-+AD4-  +AH0-
-+AD4-  
-Thank for spotting this+ACE- Applying to the bugfixes branch...
+Hi Linus,
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Please pull the arm64 fixes below. Thanks.
 
-NetApp
-Trond.Myklebust+AEA-netapp.com
-www.netapp.com
+The following changes since commit a49f0d1ea3ec94fc7cf33a7c36a16343b74bd565:
+
+  Linux 3.8-rc1 (2012-12-21 17:19:00 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-aarch64.git tags/arm64-fixes
+
+for you to fetch changes up to 25c92a37a8191b5fdbbba7bdc917e14766a52461:
+
+  arm64: Always select ARM_AMBA and GENERIC_GPIO (2013-01-04 13:20:09 +0000)
+
+----------------------------------------------------------------
+- Missing include in asm/compat.h.
+- Kconfig updates.
+
+----------------------------------------------------------------
+Catalin Marinas (3):
+      arm64: Include linux/ptrace.h in asm/compat.h
+      arm64: Keep the ARM64 Kconfig selects sorted
+      arm64: Always select ARM_AMBA and GENERIC_GPIO
+
+ arch/arm64/Kconfig              | 6 +++++-
+ arch/arm64/include/asm/compat.h | 1 +
+ 2 files changed, 6 insertions(+), 1 deletion(-)
