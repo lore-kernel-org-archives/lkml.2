@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab3ADAvP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 19:51:15 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:30582 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755144Ab3ADAuw (ORCPT
+	id S1755273Ab3ADAvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 19:51:18 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27104 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755217Ab3ADAuw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jan 2013 19:50:52 -0500
 From: Yinghai Lu <yinghai@kernel.org>
@@ -14,91 +14,86 @@ Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
         Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not enough ram for it
-Date: Thu,  3 Jan 2013 16:48:46 -0800
-Message-Id: <1357260531-11115-27-git-send-email-yinghai@kernel.org>
+        linux-kernel@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH v7u1 30/31] x86, 64bit, mm: Mark data/bss/brk to nx
+Date: Thu,  3 Jan 2013 16:48:50 -0800
+Message-Id: <1357260531-11115-31-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
 References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Normal boot path on system with iommu support:
-swiotlb buffer will be allocated early at first and then try to initialize
-iommu, if iommu for intel or amd could setup properly, swiotlb buffer
-will be freed.
+HPA said, we should not have RW and +x set at the time.
 
-The early allocating is with bootmem, and get panic when we try to use
-kdump with buffer above 4G only if swiotlb is enabled.
+for kernel layout:
+[    0.000000] Kernel Layout:
+[    0.000000]   .text: [0x01000000-0x021434f8]
+[    0.000000] .rodata: [0x02200000-0x02a13fff]
+[    0.000000]   .data: [0x02c00000-0x02dc763f]
+[    0.000000]   .init: [0x02dc9000-0x0312cfff]
+[    0.000000]    .bss: [0x0313b000-0x03dd6fff]
+[    0.000000]    .brk: [0x03dd7000-0x03dfffff]
 
-because actually the kernel can go on without swiotlb, and use intel iommu.
+before the patch, we have
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
+0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82dc9000        1828K     RW             GLB x  pte
+0xffffffff82dc9000-0xffffffff82e00000         220K     RW             GLB NX pte
+0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
+0xffffffff83000000-0xffffffff8313a000        1256K     RW             GLB NX pte
+0xffffffff8313a000-0xffffffff83200000         792K     RW             GLB x  pte
+0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB x  pmd
+0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
 
-Try disable swiotlb if there is not enough ram for it.
+after patch,, we get
+---[ High Kernel Mapping ]---
+0xffffffff80000000-0xffffffff81000000          16M                           pmd
+0xffffffff81000000-0xffffffff82200000          18M     ro         PSE GLB x  pmd
+0xffffffff82200000-0xffffffff82c00000          10M     ro         PSE GLB NX pmd
+0xffffffff82c00000-0xffffffff82e00000           2M     RW             GLB NX pte
+0xffffffff82e00000-0xffffffff83000000           2M     RW         PSE GLB NX pmd
+0xffffffff83000000-0xffffffff83200000           2M     RW             GLB NX pte
+0xffffffff83200000-0xffffffff83e00000          12M     RW         PSE GLB NX pmd
+0xffffffff83e00000-0xffffffffa0000000         450M                           pmd
 
-That is for kdump to use kernel above 4G.
+so data, bss, brk get NX ...
 
-Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Joerg Roedel <joro@8bytes.org>
 ---
- arch/x86/kernel/pci-swiotlb.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ arch/x86/mm/init_64.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/pci-swiotlb.c b/arch/x86/kernel/pci-swiotlb.c
-index 6c483ba..949ebfe 100644
---- a/arch/x86/kernel/pci-swiotlb.c
-+++ b/arch/x86/kernel/pci-swiotlb.c
-@@ -6,6 +6,7 @@
- #include <linux/swiotlb.h>
- #include <linux/bootmem.h>
- #include <linux/dma-mapping.h>
-+#include <linux/memblock.h>
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 98385a2..9653411 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -820,6 +820,7 @@ void mark_rodata_ro(void)
+ 	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
+ 	unsigned long text_end = PFN_ALIGN(&__stop___ex_table);
+ 	unsigned long rodata_end = PFN_ALIGN(&__end_rodata);
++	unsigned long all_end = PFN_ALIGN(&_end);
  
- #include <asm/iommu.h>
- #include <asm/swiotlb.h>
-@@ -50,6 +51,11 @@ static struct dma_map_ops swiotlb_dma_ops = {
- 	.dma_supported = NULL,
- };
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -828,10 +829,10 @@ void mark_rodata_ro(void)
+ 	kernel_set_to_readonly = 1;
  
-+static bool __init enough_mem_for_swiotlb(void)
-+{
-+	/* do we have less than 1M RAM under 4G ? */
-+	return memblock_mem_size(1ULL<<(32-PAGE_SHIFT)) > (1ULL<<20);
-+}
- /*
-  * pci_swiotlb_detect_override - set swiotlb to 1 if necessary
-  *
-@@ -58,12 +64,12 @@ static struct dma_map_ops swiotlb_dma_ops = {
-  */
- int __init pci_swiotlb_detect_override(void)
- {
--	int use_swiotlb = swiotlb | swiotlb_force;
--
- 	if (swiotlb_force)
- 		swiotlb = 1;
-+	else if (!enough_mem_for_swiotlb())
-+		swiotlb = 0;
+ 	/*
+-	 * The rodata section (but not the kernel text!) should also be
+-	 * not-executable.
++	 * The rodata/data/bss/brk section (but not the kernel text!)
++	 * should also be not-executable.
+ 	 */
+-	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
++	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
  
--	return use_swiotlb;
-+	return swiotlb;
- }
- IOMMU_INIT_FINISH(pci_swiotlb_detect_override,
- 		  pci_xen_swiotlb_detect,
-@@ -78,7 +84,7 @@ int __init pci_swiotlb_detect_4gb(void)
- {
- 	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
- #ifdef CONFIG_X86_64
--	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
-+	if (!no_iommu && max_pfn > MAX_DMA32_PFN && enough_mem_for_swiotlb())
- 		swiotlb = 1;
- #endif
- 	return swiotlb;
+ 	rodata_test();
+ 
 -- 
 1.7.10.4
 
