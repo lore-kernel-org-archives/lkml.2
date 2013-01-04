@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753697Ab3ADHR1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:17:27 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:33157 "EHLO mail.skyhub.de"
+	id S1753389Ab3ADH1h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:27:37 -0500
+Received: from mga01.intel.com ([192.55.52.88]:20564 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752316Ab3ADHRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:17:25 -0500
-Date: Fri, 4 Jan 2013 08:17:37 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
+	id S1752316Ab3ADH1g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 02:27:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,408,1355126400"; 
+   d="scan'208";a="272754603"
+Message-ID: <1357284451.2152.1.camel@rzhang1-mobl4>
+Subject: Re: [PATCH] drivers/thermal/spear_thermal.c: use devm_clk_get
+From: Zhang Rui <rui.zhang@intel.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7u1 01/31] x86, mm: Fix page table early allocation
- offset checking
-Message-ID: <20130104071737.GA20905@x1.alien8.de>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-2-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1357260531-11115-2-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 04 Jan 2013 15:27:31 +0800
+In-Reply-To: <1354876172-1634-1-git-send-email-Julia.Lawall@lip6.fr>
+References: <1354876172-1634-1-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 04:48:21PM -0800, Yinghai Lu wrote:
-> During debugging loading kernel above 4G, found one page if is not used
-> in BRK with early page allocation.
+On Fri, 2012-12-07 at 11:29 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> pgt_buf_top is address that can not be used, so should check if that new
-> end is above that top, otherwise last page will not be used.
+> devm_clk_get allocates a resource that is released when a driver detaches.
+> This patch uses devm_clk_get for data that is allocated in the probe
+> function of a platform device and is only released in the remove function.
 > 
-> Fix that checking and also add print out for every allocation from BRK.
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+applied to thermal-next.
 
-This commit message still bothers the hell out of me. Please, fix it up
-to something more readable like the below, for example:
+thanks,
+rui
 
-"pgt_buf_top is an address which cannot be used so we should check
-whether the new 'end' is above it. Otherwise, the last BRK page remains
-unused.
+> ---
+> I was not able to compile this code.  At one point, devm_clk_get was not
+> supported for all architectures.  If that is still the case, and the code
+> doesn't compile, then just ignore the patch.
+> 
+>  drivers/thermal/spear_thermal.c |    7 ++-----
+>  1 file changed, 2 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/thermal/spear_thermal.c b/drivers/thermal/spear_thermal.c
+> index 6b2d8b2..3c5ee56 100644
+> --- a/drivers/thermal/spear_thermal.c
+> +++ b/drivers/thermal/spear_thermal.c
+> @@ -131,7 +131,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	stdev->clk = clk_get(&pdev->dev, NULL);
+> +	stdev->clk = devm_clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(stdev->clk)) {
+>  		dev_err(&pdev->dev, "Can't get clock\n");
+>  		return PTR_ERR(stdev->clk);
+> @@ -140,7 +140,7 @@ static int spear_thermal_probe(struct platform_device *pdev)
+>  	ret = clk_enable(stdev->clk);
+>  	if (ret) {
+>  		dev_err(&pdev->dev, "Can't enable clock\n");
+> -		goto put_clk;
+> +		return ret;
+>  	}
+>  
+>  	stdev->flags = val;
+> @@ -163,8 +163,6 @@ static int spear_thermal_probe(struct platform_device *pdev)
+>  
+>  disable_clk:
+>  	clk_disable(stdev->clk);
+> -put_clk:
+> -	clk_put(stdev->clk);
+>  
+>  	return ret;
+>  }
+> @@ -183,7 +181,6 @@ static int spear_thermal_exit(struct platform_device *pdev)
+>  	writel_relaxed(actual_mask & ~stdev->flags, stdev->thermal_base);
+>  
+>  	clk_disable(stdev->clk);
+> -	clk_put(stdev->clk);
+>  
+>  	return 0;
+>  }
+> 
 
-Fix that check and add a debug printout of every BRK allocation."
 
-Thanks.
-
--- 
-Regards/Gruss,
-Boris.
