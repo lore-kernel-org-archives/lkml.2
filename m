@@ -1,198 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845Ab3ADHhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 02:37:32 -0500
-Received: from mx3-phx2.redhat.com ([209.132.183.24]:34832 "EHLO
-	mx3-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752346Ab3ADHha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 02:37:30 -0500
-Date: Fri, 4 Jan 2013 02:37:19 -0500 (EST)
-From: CAI Qian <caiqian@redhat.com>
-To: netdev@vger.kernel.org
-Cc: Dave Miller <davem@redhat.com>, stable@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Glauber Costa <glommer@parallels.com>
-Message-ID: <2084106232.8072575.1357285039431.JavaMail.root@redhat.com>
-In-Reply-To: <812526530.7851499.1357264663718.JavaMail.root@redhat.com>
-Subject: Re: load/unload dccp module caused oops
+	id S1753697Ab3ADHkr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 02:40:47 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:42971 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752091Ab3ADHkp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 02:40:45 -0500
+Date: Fri, 4 Jan 2013 08:40:55 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Jerome Glisse <j.glisse@gmail.com>, Antti Palosaari <crope@iki.fi>,
+        Shuah Khan <shuahkhan@gmail.com>, Andy Furniss <andyqos@ukfsn.org>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        dri-devel@lists.freedesktop.org, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: radeon 0000:02:00.0: GPU lockup CP stall for more than 10000msec
+Message-ID: <20130104074054.GB20905@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alex Deucher <alexdeucher@gmail.com>,
+	Markus Trippelsdorf <markus@trippelsdorf.de>,
+	Jerome Glisse <j.glisse@gmail.com>, Antti Palosaari <crope@iki.fi>,
+	Shuah Khan <shuahkhan@gmail.com>, Andy Furniss <andyqos@ukfsn.org>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	dri-devel@lists.freedesktop.org,
+	lkml <linux-kernel@vger.kernel.org>
+References: <20121223122210.GA4460@liondog.tnic>
+ <20121223133102.GA8153@liondog.tnic>
+ <CAKocOOPO7ZhybEgKfCkpna+KbpGgajMp6HuHbO9m9uT3gUtP0g@mail.gmail.com>
+ <50E3907C.4040106@iki.fi>
+ <20130102120248.GC6181@x1.alien8.de>
+ <CAH3drwYSrfsbKg-BYpMF3Nkxrw1toK=EmcvJfKGzdbT_BK-1HQ@mail.gmail.com>
+ <50E4755E.7030209@iki.fi>
+ <CAH3drwZsNL6kwufTPGR8h-U9gfrsoYj_+C+8Ei1Ab-PPXrSuTQ@mail.gmail.com>
+ <20130102223807.GA242@x4>
+ <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.66.13.37]
-X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
+Content-Disposition: inline
+In-Reply-To: <CADnq5_OuhJordwCQArknpdvzYLryouZ+u+a+tm37n3K+hmB9uw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bisecting pointed out this commit fixed the problem in
-the mainline.
-
-3c58346525d82625e68e24f071804c2dc057b6f4
-slab: Simplify bootstrap
-
-However, simply back-ported this single commit to the 3.7.1
-stable wasn't enough to fix it. My guess is that there are
-some other slab/slub commits required to fix this. Keep digging...
-
-The kernel config used the SLUB,
-http://people.redhat.com/qcai/stable/.config
-
-CAI Qian
-
------ Original Message -----
-> From: "CAI Qian" <caiqian@redhat.com>
-> To: netdev@vger.kernel.org
-> Cc: "Dave Miller" <davem@redhat.com>, stable@vger.kernel.org
-> Sent: Friday, January 4, 2013 9:57:43 AM
-> Subject: Re: load/unload dccp module caused
+On Wed, Jan 02, 2013 at 06:37:23PM -0500, Alex Deucher wrote:
+> From: Alex Deucher <alexander.deucher@amd.com>
+> Date: Wed, 2 Jan 2013 18:30:21 -0500
+> Subject: [PATCH] drm/radeon/r6xx: fix DMA engine for ttm bo transfers
 > 
-> Adding the netdev as Dave suggested.
+> count must be a multiple of 2.
 > 
-> ----- Original Message -----
-> > From: "CAI Qian" <caiqian@redhat.com>
-> > To: stable@vger.kernel.org
-> > Cc: "Dave Miller" <davem@redhat.com>
-> > Sent: Monday, December 31, 2012 5:42:59 PM
-> > Subject: load/unload dccp module caused
-> > 
-> > Just a head up that load and then unload the dccp module
-> > caused an oops below using the current stable kernel - v3.7.1.
-> > Some additional data point here: the mainline v3.6 release has
-> > no such problem, so this looks like a regression. The mainline
-> > v3.8-rc1 also has no such problem, so it looks like it has
-> > already been fixed there but looks like yet queued up for the
-> > stable yet (tested a few commits in Greg's stable-queue and
-> > Dave's net-stable queue did not find anything obvious to fix
-> > this). I am in-process to bisect to figure out the one that
-> > need to back-port right now.
-> > 
-> > [   93.809573]
-> > =============================================================================
-> > [   93.809577] BUG kmalloc-16 (Tainted: G    B       ): Objects
-> > remaining in kmalloc-16 on kmem_cache_close()
-> > [   93.809580]
-> > -----------------------------------------------------------------------------
-> > [   93.809580]
-> > ...
-> > [  356.336244] INFO: Object 0xc0000000fa1f0aa0 @offset=2720
-> > [  356.336247] INFO: Object 0xc0000000fa1f0ab0 @offset=2736
-> > [  356.336249] INFO: Object 0xc0000000fa1f0ac0 @offset=2752
-> > [  356.336254] INFO: Object 0xc0000000fa1f0ad0 @offset=2768
-> > [  356.336257] INFO: Object 0xc0000000fa1f0ae0 @offset=2784
-> > [  356.336259] INFO: Object 0xc0000000fa1f0af0 @offset=2800
-> > [  356.336262] INFO: Object 0xc0000000fa1f0b80 @offset=2944
-> > [  356.336264] INFO: Object 0xc0000000fa1f0bd0 @offset=3024
-> > [  356.336271] INFO: Object 0xc0000000fa1f1870 @offset=6256
-> > [  356.336274] INFO: Object 0xc0000000fa1f1880 @offset=6272
-> > [  356.336276] INFO: Object 0xc0000000fa1f1890 @offset=6288
-> > [  356.346976] INFO: Object 0xc0000000fa1f18a0 @offset=6304
-> > [  356.346979] INFO: Object 0xc0000000fa1f18b0 @offset=6320
-> > [  356.346981] INFO: Object 0xc0000000fa1f1950 @offset=6480
-> > [  356.346986] INFO: Object 0xc0000000fa1f1960 @offset=6496
-> > [  356.346989] INFO: Object 0xc0000000fa1f1970 @offset=6512
-> > [  356.346991] INFO: Object 0xc0000000fa1f1980 @offset=6528
-> > [  356.346994] INFO: Object 0xc0000000fa1f1990 @offset=6544
-> > [  356.346997] INFO: Object 0xc0000000fa1f19a0 @offset=6560
-> > [  356.346999] INFO: Object 0xc0000000fa1f19b0 @offset=6576
-> > [  356.347005] INFO: Object 0xc0000000fa1f19c0 @offset=6592
-> > [  356.347008] INFO: Object 0xc0000000fa1f19d0 @offset=6608
-> > [  356.347010] INFO: Object 0xc0000000fa1f19e0 @offset=6624
-> > [  356.347012] INFO: Object 0xc0000000fa1f19f0 @offset=6640
-> > [  356.347081] kmem_cache_destroy kmalloc-16: Slab cache still has
-> > objects
-> > ...
-> > [441283.322161] BUG: unable to handle kernel NULL pointer
-> > dereference
-> > at           (null)
-> > [441283.331020] IP: [<ffffffff811785f9>]
-> > __kmem_cache_shutdown+0xa9/0x2f0
-> > [441283.338320] PGD 105568f067 PUD 104a086067 PMD 0
-> > [441283.343600] Oops: 0000 [#1] SMP
-> > [441283.347318] Modules linked in: dccp(-) nf_tproxy_core deflate
-> > zlib_deflate lzo nls_koi8_u nls_cp932 ts_kmp sctp libcrc32c
-> > binfmt_misc des_generic md4 nls_utf8 cifs dns_resolver sg iTCO_wdt
-> > kvm_intel igb iTCO_vendor_support coretemp kvm crc32c_intel lpc_ich
-> > i7core_edac edac_core i2c_i801 i2c_core mfd_core pcspkr microcode
-> > ioatdma dca sr_mod cdrom ata_generic sd_mod pata_acpi crc_t10dif
-> > ata_piix libata megaraid_sas dm_mirror dm_region_hash dm_log dm_mod
-> > [last unloaded: inet_diag]
-> > [441283.395187] CPU 6
-> > [441283.397337] Pid: 40979, comm: modprobe Tainted: G    B
-> >        3.7.1+ #10 QCI QSSC-S4R/QSSC-S4R
-> > [441283.407245] RIP: 0010:[<ffffffff811785f9>]
-> >  [<ffffffff811785f9>]
-> > __kmem_cache_shutdown+0xa9/0x2f0
-> > [441283.417256] RSP: 0018:ffff88205247de08  EFLAGS: 00010292
-> > [441283.423280] RAX: ffff881059780001 RBX: ffff88085acfa000 RCX:
-> > 00000000001c7d72
-> > [441283.431336] RDX: 00000000001c7d71 RSI: 0000000000000ff0 RDI:
-> > ffff88085f802600
-> > [441283.439394] RBP: ffff88205247de68 R08: 0000000000016940 R09:
-> > ffff88105fd36940
-> > [441283.447451] R10: ffffea004165e000 R11: ffffffff81178721 R12:
-> > ffffffffffffffe0
-> > [441283.455508] R13: ffff88085acf9000 R14: ffff88085f802500 R15:
-> > ffffea00216b3e40
-> > [441283.463565] FS:  00007fd36f206740(0000)
-> > GS:ffff88105fc20000(0000)
-> > knlGS:0000000000000000
-> > [441283.472687] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> > [441283.479194] CR2: 00007fd545ae9c74 CR3: 000000104a273000 CR4:
-> > 00000000000007e0
-> > [441283.487251] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-> > 0000000000000000
-> > [441283.495308] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-> > 0000000000000400
-> > [441283.503366] Process modprobe (pid: 40979, threadinfo
-> > ffff88205247c000, task ffff8820493fb240)
-> > [441283.512974] Stack:
-> > [441283.515312]  ffffffffa0169760 ffff8810597800c0 0000000000000000
-> > 0000000000000000
-> > [441283.523705]  ffff88085f8010d0 ffff88085f8010c0 ffff88205247de68
-> > ffff88085f802500
-> > [441283.532104]  ffff88085f802568 0000000000000000 00000000011ec578
-> > 0000000000000000
-> > [441283.540499] Call Trace:
-> > [441283.543328]  [<ffffffff8114993a>] kmem_cache_destroy+0x3a/0xe0
-> > [441283.549941]  [<ffffffffa0164c0a>] tfrc_li_exit+0x1a/0x30 [dccp]
-> > [441283.556649]  [<ffffffffa01635e8>] tfrc_lib_exit+0x18/0x20
-> > [dccp]
-> > [441283.563451]  [<ffffffffa01583e6>]
-> > ccid_cleanup_builtins+0x26/0x30
-> > [dccp]
-> > [441283.571032]  [<ffffffffa0164e33>] dccp_fini+0xe/0x1db [dccp]
-> > [441283.577449]  [<ffffffffa0164e25>] ? scaled_div.part.0+0x6/0x6
-> > [dccp]
-> > [441283.584639]  [<ffffffff810bc3fe>] sys_delete_module+0x16e/0x2d0
-> > [441283.591342]  [<ffffffff810d851c>] ?
-> > __audit_syscall_entry+0xcc/0x300
-> > [441283.598530]  [<ffffffff810d8b3c>] ?
-> > __audit_syscall_exit+0x3ec/0x450
-> > [441283.605719]  [<ffffffff815d3b99>]
-> > system_call_fastpath+0x16/0x1b
-> > [441283.612516] Code: 48 39 d7 4d 89 ec 75 41 e9 55 01 00 00 0f 1f
-> > 44
-> > 00 00 e8 0b f7 16 00 48 8b 55 c8 4c 89 fe 4c 89 f7 48 83 6a 08 01
-> > e8
-> > 97 c6 ff ff <49> 8b 44 24 20 49 8d 7c 24 20 4d 89 e7 48 83 e8 20 48
-> > 39 7d c0
-> > [441283.634440] RIP  [<ffffffff811785f9>]
-> > __kmem_cache_shutdown+0xa9/0x2f0
-> > [441283.641831]  RSP <ffff88205247de08>
-> > [441283.645817] CR2: 0000000000000000
-> > [441283.649815] ---[ end trace 8e20d31634421a27 ]---
-> > 
-> > CAI Qian
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe stable"
-> > in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Cc: Borislav Petkov <bp@alien8.de>
+> Cc: Markus Trippelsdorf <markus@trippelsdorf.de>
+> Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+
+Thanks, will run it on the box in question next week when I have access.
+
+Btw, you could add the note about count needing to be a multiple of 2 as
+a comment in the code below, for future reference.
+
+> ---
+>  drivers/gpu/drm/radeon/r600.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
 > 
+> diff --git a/drivers/gpu/drm/radeon/r600.c b/drivers/gpu/drm/radeon/r600.c
+> index 2aaf147..9f4ce5e 100644
+> --- a/drivers/gpu/drm/radeon/r600.c
+> +++ b/drivers/gpu/drm/radeon/r600.c
+> @@ -2636,8 +2636,8 @@ int r600_copy_dma(struct radeon_device *rdev,
+>  
+>  	for (i = 0; i < num_loops; i++) {
+>  		cur_size_in_dw = size_in_dw;
+> -		if (cur_size_in_dw > 0xFFFF)
+> -			cur_size_in_dw = 0xFFFF;
+> +		if (cur_size_in_dw > 0xFFFE)
+> +			cur_size_in_dw = 0xFFFE;
+>  		size_in_dw -= cur_size_in_dw;
+>  		radeon_ring_write(ring, DMA_PACKET(DMA_PACKET_COPY, 0, 0, cur_size_in_dw));
+>  		radeon_ring_write(ring, dst_offset & 0xfffffffc);
+> -- 
+> 1.7.7.5
+
+-- 
+Regards/Gruss,
+Boris.
