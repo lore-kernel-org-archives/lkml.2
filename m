@@ -1,87 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab3ADQLu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 11:11:50 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:55600 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754901Ab3ADQLr convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Fri, 4 Jan 2013 11:11:47 -0500
-Message-Id: <50E70D8002000078000B336D@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 04 Jan 2013 16:12:32 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Kiper" <daniel.kiper@oracle.com>
-Cc: <andrew.cooper3@citrix.com>, <x86@kernel.org>, <tglx@linutronix.de>,
-        <kexec@lists.infradead.org>,
-        <virtualization@lists.linux-foundation.org>,
-        "xen-devel" <xen-devel@lists.xen.org>, <konrad.wilk@oracle.com>,
-        <maxim.uvarov@oracle.com>, <mingo@redhat.com>, <vgoyal@redhat.com>,
-        <linux-kernel@vger.kernel.org>, <ebiederm@xmission.com>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to
- transition page table PGD, PUD, PMD and PTE
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
- <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
- <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
- <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
- <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
-In-Reply-To: <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755155Ab3ADQNu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 11:13:50 -0500
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:38554 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755117Ab3ADQNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 11:13:47 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] pinctrl/nomadik: Add "ste,config" property
+Date: Fri, 4 Jan 2013 17:13:30 +0100
+Message-ID: <1357316010-677-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 04.01.13 at 16:15, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> On Thu, Jan 03, 2013 at 09:34:55AM +0000, Jan Beulich wrote:
->> >>> On 27.12.12 at 03:18, Daniel Kiper <daniel.kiper@oracle.com> wrote:
->> > Some implementations (e.g. Xen PVOPS) could not use part of identity page 
-> table
->> > to construct transition page table. It means that they require separate 
-> PUDs,
->> > PMDs and PTEs for virtual and physical (identity) mapping. To satisfy that
->> > requirement add extra pointer to PGD, PUD, PMD and PTE and align existing
->> > code.
->>
->> So you keep posting this despite it having got pointed out on each
->> earlier submission that this is unnecessary, proven by the fact that
->> the non-pvops Xen kernels can get away without it. Why?
-> 
-> Sorry but I forgot to reply for your email last time.
-> 
-> I am still not convinced. I have tested SUSE kernel itself and it does not 
-> work.
-> Maybe I missed something but... Please check 
-> arch/x86/kernel/machine_kexec_64.c:init_transition_pgtable()
-> 
-> I can see:
-> 
-> vaddr = (unsigned long)relocate_kernel;
-> 
-> and later:
-> 
-> pgd += pgd_index(vaddr);
-> ...
+From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
 
-I think that mapping is simply irrelevant, as the code at
-relocate_kernel gets copied to the control page and
-invoked there (other than in the native case, where
-relocate_kernel() gets invoked directly).
+The "ste,config" property will contain the pin config node.
+It will be easier to define a pin configuration and use it by
+reference without duplicating lines tedious.
 
-Jan
+Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+This is made as an add-on patch to the first device-tree patch
+instead of respinning it for ease-of-review. We may squash it in
+the end if this approach is OK.
+---
+ .../devicetree/bindings/pinctrl/ste,nomadik.txt    | 56 +++++++++++++++-------
+ drivers/pinctrl/pinctrl-nomadik.c                  | 24 ++++++----
+ 2 files changed, 53 insertions(+), 27 deletions(-)
 
-> It is wrong. relocate_kernel() virtual address in Xen is different
-> than its virtual address in Linux Kernel. That is why transition
-> page table could not be established in Linux Kernel and so on...
-> How does this work in SUSE? I do not have an idea.
-> 
-> I am happy to fix that but whatever fix for it is
-> I would like to be sure that it works.
-> 
-> Daniel
-
-
+diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+index 8639234..8ee860c 100644
+--- a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
++++ b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
+@@ -26,11 +26,12 @@ Optional subnode-properties:
+ - ste,function: A string containing the name of the function to mux to the
+   pin or group.
+ 
+-- ste,input : <0/1/2/3>
++- ste,config: Handle of pin configuration node (ste,config = <&in_pu>)
++
++- ste,input : <0/1/2>
+ 	0: input with no pull
+ 	1: input with pull up,
+ 	2: input with pull down,
+-	3: input and keep last input configuration (no pull, pull up or pull down).
+ 
+ - ste,output: <0/1/2>
+ 	0: output low,
+@@ -41,10 +42,11 @@ Optional subnode-properties:
+ 	0: sleep mode disable,
+ 	1: sleep mode enable.
+ 
+-- ste,sleep-input: <0/1/2>
++- ste,sleep-input: <0/1/2/3>
+ 	0: sleep input with no pull,
+ 	1: sleep input with pull up,
+ 	2: sleep input with pull down.
++	3: sleep input and keep last input configuration (no pull, pull up or pull down).
+ 
+ - ste,sleep-output: <0/1/2>
+ 	0: sleep output low,
+@@ -65,12 +67,39 @@ Optional subnode-properties:
+ 
+ Example board file extract:
+ 
++	in_pu: input_pull_up {
++		ste,input = <1>;
++	};
++
++	out_hi: output_high {
++		ste,output = <1>;
++	};
++
++	slpm_in_wkup_pdis: slpm_in_wkup_pdis {
++		ste,sleep = <1>;
++		ste,sleep-input = <3>;
++		ste,sleep-wakeup = <1>;
++		ste,sleep-pull-disable = <0>;
++	};
++
++	slpm_out_hi_wkup_pdis: slpm_out_hi_wkup_pdis {
++		ste,sleep = <1>;
++		ste,sleep-output = <1>;
++		ste,sleep-wakeup = <1>;
++		ste,sleep-pull-disable = <0>;
++	};
++	slpm_out_wkup_pdis: slpm_out_wkup_pdis {
++		ste,sleep = <1>;
++		ste,sleep-output = <2>;
++		ste,sleep-wakeup = <1>;
++		ste,sleep-pull-disable = <0>;
++	};
++
+ 	pinctrl@80157000 {
+ 		compatible = "stericsson,nmk-pinctrl";
+ 		reg = <0x80157000 0x2000>;
+ 
+ 		pinctrl-names = "default";
+-		pinctrl-0 = <&uart0_default_mode>;
+ 
+ 		uart0 {
+ 			uart0_default_mux: uart0_mux {
+@@ -82,35 +111,26 @@ Example board file extract:
+ 			uart0_default_mode: uart0_default {
+ 				uart0_default_cfg1 {
+ 					ste,pins = "GPIO0", "GPIO2";
+-					ste,input = <1>;
++					ste,config = <&in_pu>;
+ 				};
+ 
+ 				uart0_default_cfg2 {
+ 					ste,pins = "GPIO1", "GPIO3";
+-					ste,output = <1>;
++					ste,config = <&out_hi>;
+ 				};
+ 			};
+ 			uart0_sleep_mode: uart0_sleep {
+ 				uart0_sleep_cfg1 {
+ 					ste,pins = "GPIO0", "GPIO2";
+-					ste,sleep = <0>;
+-					ste,sleep-input = <0>;
+-					ste,sleep-wakeup = <1>;
+-					ste,sleep-pull-disable = <0>;
++					ste,config = <&slpm_in_wkup_pdis>;
+ 				};
+ 				uart0_sleep_cfg2 {
+ 					ste,pins = "GPIO1";
+-					ste,sleep = <0>;
+-					ste,sleep-output = <1>;
+-					ste,sleep-wakeup = <1>;
+-					ste,sleep-pull-disable = <0>;
++					ste,config = <&slpm_out_hi_wkup_pdis>;
+ 				};
+ 				uart0_sleep_cfg3 {
+ 					ste,pins = "GPIO3";
+-					ste,sleep = <0>;
+-					ste,sleep-output = <2>;
+-					ste,sleep-wakeup = <1>;
+-					ste,sleep-pull-disable = <0>;
++					ste,config = <&slpm_out_wkup_pdis>;
+ 				};
+ 			};
+ 		};
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index b508bd7..0355786 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -1691,23 +1691,29 @@ int nmk_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
+ 	unsigned reserve = 0;
+ 	struct property *prop;
+ 	const char *group, *gpio_name;
++	struct device_node *np_config;
+ 
+ 	ret = of_property_read_string(np, "ste,function", &function);
+ 	if (ret >= 0)
+ 		reserve = 1;
+ 
+-	for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
+-		unsigned long cfg = 0;
+-		int val;
+-
+-		ret = of_property_read_u32(np, nmk_cfg_params[i].property, &val);
+-		if (ret != -EINVAL) {
+-			if (nmk_dt_pin_config(i, val, &cfg) == 0) {
+-				configs |= cfg;
+-				has_config = 1;
++	np_config = of_parse_phandle(np, "ste,config", 0);
++	if (np_config) {
++		for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
++			unsigned long cfg = 0;
++			int val;
++
++			ret = of_property_read_u32(np_config,
++					nmk_cfg_params[i].property, &val);
++			if (ret != -EINVAL) {
++				if (nmk_dt_pin_config(i, val, &cfg) == 0) {
++					configs |= cfg;
++					has_config = 1;
++				}
+ 			}
+ 		}
+ 	}
++
+ 	ret = of_property_count_strings(np, "ste,pins");
+ 	if (ret < 0)
+ 		goto exit;
+-- 
+1.7.11.3
 
