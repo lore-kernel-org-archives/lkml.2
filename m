@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab3ADJfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 04:35:38 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:28877 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752817Ab3ADJfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 04:35:36 -0500
-X-IronPort-AV: E=Sophos;i="4.84,409,1355068800"; 
-   d="scan'208";a="6521726"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, tj@kernel.org
-Cc: mingo@kernel.org, yinghai@kernel.org, liwanp@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, tangchen@cn.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
-Subject: [RFC PATCH] mm: memblock: optimize memblock_find_in_range_node() to minimize the search work
-Date: Fri, 4 Jan 2013 17:24:53 +0800
-Message-Id: <1357291493-25773-1-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/04 17:25:25,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/04 17:35:10,
-	Serialize complete at 2013/01/04 17:35:10
+	id S1754013Ab3ADJjz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 04:39:55 -0500
+Received: from zoneX.GCU-Squad.org ([194.213.125.0]:17816 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752817Ab3ADJjw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 04:39:52 -0500
+Date: Fri, 4 Jan 2013 10:39:11 +0100
+From: Jean Delvare <khali@linux-fr.org>
+To: Amaury =?ISO-8859-1?B?RGVjcuptZQ==?= <amaury.decreme@gmail.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, nelson@sis.com,
+        mhoffman@lightlink.com, amalysh@web.de, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH resend 0/2] I2C: sis630: add sis964 support
+Message-ID: <20130104103911.47b0b17d@endymion.delvare>
+In-Reply-To: <20121228192400.GA11968@gentoo>
+References: <1346204115-30293-1-git-send-email-amaury.decreme@gmail.com>
+	<20121218125105.25c2cbb6@endymion.delvare>
+	<20121228192400.GA11968@gentoo>
+X-Mailer: Claws Mail 3.7.10 (GTK+ 2.24.7; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memblock array is in ascending order and we traverse the memblock array in
-reverse order so we can add some simple check to reduce the search work.
+On Fri, 28 Dec 2012 20:24:00 +0100, Amaury Decrême wrote:
+> On Tue, Dec 18, 2012 at 12:51:05PM +0100, Jean Delvare wrote:
+> > On Wed, 29 Aug 2012 03:35:13 +0200, Amaury Decrême wrote:
+> > 
+> > I reviewed these two patches 2 months ago, but did not hear back from
+> > you since then. Do you plan to resubmit these patches with the
+> > improvements I suggested? I would hate to see your work time and mine
+> > wasted.
+> 
+> I'm sorry I gave no news. I read your improvments with interests
+> when you sent it.
+> 
+> I changed my job at the very same moment  and didn't have a minute
+> until xmas season..
+> It's getting a bit better and I hope to send a working solution
+> in early 2013 if the schedule is still ok.
 
-Tejun fix a underflow bug in 5d53cb27d8, but I think we could break there for
-the same reason.
+Yes, that would be OK.
 
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
----
- mm/memblock.c | 9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 6259055..a710557 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -111,11 +111,18 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
- 	end = max(start, end);
- 
- 	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
-+		/*
-+		 * exclude the regions out of the candidate range, since it's
-+		 * likely to find a suitable range, we ignore the worst case.
-+		 */
-+		if (this_start >= end)
-+			continue;
-+
- 		this_start = clamp(this_start, start, end);
- 		this_end = clamp(this_end, start, end);
- 
- 		if (this_end < size)
--			continue;
-+			break;
- 
- 		cand = round_down(this_end - size, align);
- 		if (cand >= this_start)
+Thanks,
 -- 
-1.7.11.7
-
+Jean Delvare
