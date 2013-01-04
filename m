@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab3ADPzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 10:55:18 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:34627 "EHLO mx12.netapp.com"
+	id S1755104Ab3ADPze (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 10:55:34 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:58730 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754966Ab3ADPzO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 10:55:14 -0500
-X-IronPort-AV: E=Sophos;i="4.84,411,1355126400"; 
-   d="scan'208";a="4726586"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Xi Wang <xi.wang@gmail.com>
-CC: "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Subject: Re: [PATCH] nfs: fix null checking in nfs_get_option_str()
-Thread-Topic: [PATCH] nfs: fix null checking in nfs_get_option_str()
-Thread-Index: AQHN6lS73LR1xiXb7keBR/K9mZxOtpg52S6A
-Date: Fri, 4 Jan 2013 15:55:09 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91198A9EC@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1357287777-12052-1-git-send-email-xi.wang@gmail.com>
-In-Reply-To: <1357287777-12052-1-git-send-email-xi.wang@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <6A9BBB99A0312748B10A36BED130B31E@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+	id S1755080Ab3ADPzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 10:55:31 -0500
+Message-ID: <50E6FB66.7020805@linux.vnet.ibm.com>
+Date: Fri, 04 Jan 2013 09:55:18 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH 7/8] zswap: add to mm/
+References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com> <1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com> <0e91c1e5-7a62-4b89-9473-09fff384a334@default> <50E32255.60901@linux.vnet.ibm.com> <50E4588E.6080001@linux.vnet.ibm.com> <28a63847-7659-44c4-9c33-87f5d50b2ea0@default> <50E479AD.9030502@linux.vnet.ibm.com> <9955b9e0-731b-4cbf-9db0-683fcd32f944@default> <20130103073339.GF3120@dastard> <ac37f7ce-b15a-40f8-9da7-858dea3651b9@default> <20130104023030.GK3120@dastard>
+In-Reply-To: <20130104023030.GK3120@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010415-7182-0000-0000-00000432A253
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-04 at 03:22 -0500, Xi Wang wrote:
-+AD4- The following null pointer check is broken.
-+AD4- 
-+AD4- 	+ACo-option +AD0- match+AF8-strdup(args)+ADs-
-+AD4- 	return +ACE-option+ADs-
-+AD4- 
-+AD4- The pointer +AGA-option' must be non-null, and thus +AGAAIQ-option' is always false.
-+AD4- Use +AGAAIQAq-option' instead.
-+AD4- 
-+AD4- The bug was introduced in commit c5cb09b6f8 (+ACI-Cleanup: Factor out some
-+AD4- cut-and-paste code.+ACI-).
-+AD4- 
-+AD4- Signed-off-by: Xi Wang +ADw-xi.wang+AEA-gmail.com+AD4-
-+AD4- Cc: stable+AEA-vger.kernel.org
-+AD4- ---
-+AD4-  fs/nfs/super.c +AHw-    2 +--
-+AD4-  1 file changed, 1 insertion(+-), 1 deletion(-)
-+AD4- 
-+AD4- diff --git a/fs/nfs/super.c b/fs/nfs/super.c
-+AD4- index c25cadf8..2e7e8c8 100644
-+AD4- --- a/fs/nfs/super.c
-+AD4- +-+-+- b/fs/nfs/super.c
-+AD4- +AEAAQA- -1152,7 +-1152,7 +AEAAQA- static int nfs+AF8-get+AF8-option+AF8-str(substring+AF8-t args+AFsAXQ-, char +ACoAKg-option)
-+AD4-  +AHs-
-+AD4-  	kfree(+ACo-option)+ADs-
-+AD4-  	+ACo-option +AD0- match+AF8-strdup(args)+ADs-
-+AD4- -	return +ACE-option+ADs-
-+AD4- +-	return +ACEAKg-option+ADs-
-+AD4-  +AH0-
-+AD4-  
-+AD4-  static int nfs+AF8-get+AF8-option+AF8-ul(substring+AF8-t args+AFsAXQ-, unsigned long +ACo-option)
+On 01/03/2013 08:30 PM, Dave Chinner wrote:
+>>> And so the two subsystems need different reclaim implementations.
+>>> > > And, well, that's exactly what we have shrinkers for - implmenting
+>>> > > subsystem specific reclaim policy. The shrinker infrastructure is
+>>> > > responsible for them keeping balance between all the caches that
+>>> > > have shrinkers and the size of the page cache...
+>> > 
+>> > Given the above, do you think either compressed-anonymous-pages or
+>> > compressed-pagecache-pages are suitable candidates for the shrinker
+>> > infrastructure?
+> I don't know all the details of what you are trying to do, but you
+> seem to be describing a two-level heirarchy - a pool of compressed
+> data and a pool of uncompressed data, and under memory pressure are
+> migrating data from the uncompressed pool to the compressed pool. On
+> access, you are migrating back the other way.  Hence it seems to me
+> that you could implement the process of migration from the
+> uncompressed pool to the compressed pool as a shrinker so that it
+> only happens as a result of memory pressure....
 
-Thank you+ACE- Applied to the bugfixes branch.
+In our case, the mechanism for moving pages from the uncompressed pool
+(anonymous memory) to the compressed pool is the swapping mechanism
+itself.  The mechanism for moving pages the other way is the page
+fault handler.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+To summarize my ideas wrt to zswap and the shrinker interface, I don't
+think there is a good use case here because all of the compressed
+pages in zswap are conceptually dirty.  The writeback for these pages
+is both slow (bio write) and requires memory allocation.  So zswap
+isn't a cache in the usual sense, where cache contents are clean,
+exist in RAM only for performance reasons, and can be freed in a
+lightweight way at any time.
 
-NetApp
-Trond.Myklebust+AEA-netapp.com
-www.netapp.com
+Thanks,
+Seth
+
