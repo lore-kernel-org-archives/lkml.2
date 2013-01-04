@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab3ADIwz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:52:55 -0500
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:61338 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754237Ab3ADItk (ORCPT
+	id S1754615Ab3ADIxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:53:30 -0500
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:64406 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753697Ab3ADItZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 03:49:40 -0500
+	Fri, 4 Jan 2013 03:49:25 -0500
+X-Greylist: delayed 159626 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 03:49:24 EST
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +21,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V6 07/15] netpoll: remove usage of dev->master
-Date: Fri,  4 Jan 2013 09:48:55 +0100
-Message-Id: <1357289343-817-8-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next V6 03/15] vlan: add link to upper device
+Date: Fri,  4 Jan 2013 09:48:51 +0100
+Message-Id: <1357289343-817-4-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1357289343-817-1-git-send-email-jiri@resnulli.us>
 References: <1357289343-817-1-git-send-email-jiri@resnulli.us>
@@ -32,37 +33,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- net/core/netpoll.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ net/8021q/vlan.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-index 3151acf..d2bda8e 100644
---- a/net/core/netpoll.c
-+++ b/net/core/netpoll.c
-@@ -210,9 +210,12 @@ static void netpoll_poll_dev(struct net_device *dev)
+diff --git a/net/8021q/vlan.c b/net/8021q/vlan.c
+index a292e80..babfde9 100644
+--- a/net/8021q/vlan.c
++++ b/net/8021q/vlan.c
+@@ -105,6 +105,8 @@ void unregister_vlan_dev(struct net_device *dev, struct list_head *head)
+ 	 */
+ 	unregister_netdevice_queue(dev, head);
  
- 	if (dev->flags & IFF_SLAVE) {
- 		if (ni) {
--			struct net_device *bond_dev = dev->master;
-+			struct net_device *bond_dev;
- 			struct sk_buff *skb;
--			struct netpoll_info *bond_ni = rcu_dereference_bh(bond_dev->npinfo);
-+			struct netpoll_info *bond_ni;
++	netdev_upper_dev_unlink(real_dev, dev);
 +
-+			bond_dev = netdev_master_upper_dev_get_rcu(dev);
-+			bond_ni = rcu_dereference_bh(bond_dev->npinfo);
- 			while ((skb = skb_dequeue(&ni->arp_tx))) {
- 				skb->dev = bond_dev;
- 				skb_queue_tail(&bond_ni->arp_tx, skb);
-@@ -815,7 +818,7 @@ int netpoll_setup(struct netpoll *np)
- 		return -ENODEV;
- 	}
+ 	if (grp->nr_vlan_devs == 0)
+ 		vlan_gvrp_uninit_applicant(real_dev);
  
--	if (ndev->master) {
-+	if (netdev_master_upper_dev_get(ndev)) {
- 		np_err(np, "%s is a slave device, aborting\n", np->dev_name);
- 		err = -EBUSY;
- 		goto put;
+@@ -162,9 +164,13 @@ int register_vlan_dev(struct net_device *dev)
+ 	if (err < 0)
+ 		goto out_uninit_applicant;
+ 
++	err = netdev_upper_dev_link(real_dev, dev);
++	if (err)
++		goto out_uninit_applicant;
++
+ 	err = register_netdevice(dev);
+ 	if (err < 0)
+-		goto out_uninit_applicant;
++		goto out_upper_dev_unlink;
+ 
+ 	/* Account for reference in struct vlan_dev_priv */
+ 	dev_hold(real_dev);
+@@ -180,6 +186,8 @@ int register_vlan_dev(struct net_device *dev)
+ 
+ 	return 0;
+ 
++out_upper_dev_unlink:
++	netdev_upper_dev_unlink(real_dev, dev);
+ out_uninit_applicant:
+ 	if (grp->nr_vlan_devs == 0)
+ 		vlan_gvrp_uninit_applicant(real_dev);
 -- 
 1.8.0
 
