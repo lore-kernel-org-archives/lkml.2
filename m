@@ -1,158 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab3ADOIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 09:08:23 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42856 "EHLO mx2.suse.de"
+	id S1754874Ab3ADOMZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 09:12:25 -0500
+Received: from multi.imgtec.com ([194.200.65.239]:55567 "EHLO multi.imgtec.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738Ab3ADOIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 09:08:20 -0500
-Date: Fri, 4 Jan 2013 14:08:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        hughd@google.com, Michel Lespinasse <walken@google.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: [PATCH] mm: thp: Acquire the anon_vma rwsem for lock during split
-Message-ID: <20130104140815.GA26005@suse.de>
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
- <535932623.34838584.1356410331076.JavaMail.root@redhat.com>
- <20130103175737.GA3885@suse.de>
+	id S1754738Ab3ADOMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 09:12:20 -0500
+Message-ID: <50E6E322.8070108@imgtec.com>
+Date: Fri, 4 Jan 2013 14:11:46 +0000
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130103175737.GA3885@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        "Arnd Bergmann" <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH v2 43/44] tty/metag_da: Add metag DA TTY driver
+References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-44-git-send-email-james.hogan@imgtec.com> <20121205172446.41aa464e@pyramind.ukuu.org.uk>
+In-Reply-To: <20121205172446.41aa464e@pyramind.ukuu.org.uk>
+X-Enigmail-Version: 1.4.4
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.154.65]
+X-SEF-Processed: 7_3_0_01181__2013_01_04_14_11_47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zhouping, please test this patch.
+Hi Alan,
 
-Andrea and Hugh, any comments on whether this could be improved?
+Thanks for your feedback, and sorry for the delay responding. I'll send
+an updated (i.e. largely rewritten) driver soon.
 
----8<---
-mm: thp: Acquire the anon_vma rwsem for lock during split
+On 05/12/12 17:24, Alan Cox wrote:
+>> +/* One struct dashtty exists per open channel. */
+>> +struct dashtty {
+>> +	struct tty_struct *tty;
+>> +	struct tty_port *port;
+>> +};
+> 
+> We have tty->port as of 3.7 so you shouldn't need this any more
 
-Zhouping Liu reported the following against 3.8-rc1 when running a mmap
-testcase from LTP.
+Thanks, I've converted the driver to make use of this
 
-[  588.143072] mapcount 0 page_mapcount 3
-[  588.147471] ------------[ cut here ]------------
-[  588.152856] kernel BUG at mm/huge_memory.c:1798!
-[  588.158125] invalid opcode: 0000 [#1] SMP
-[  588.162882] Modules linked in: ip6table_filter ip6_tables ebtable_nat ebtables bnep bluetooth rfkill iptable_mangle ipt_REJECT nf_conntrack_ipv4 nf_defrag_ipv4 xt_conntrack nf_conntrack iptable_filter
-+ip_tables be2iscsi iscsi_boot_sysfs bnx2i cnic uio cxgb4i cxgb4 cxgb3i cxgb3 mdio libcxgbi ib_iser rdma_cm ib_addr iw_cm ib_cm ib_sa ib_mad ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi vfat fat
-+dm_mirror dm_region_hash dm_log dm_mod cdc_ether iTCO_wdt i7core_edac coretemp usbnet iTCO_vendor_support mii crc32c_intel edac_core lpc_ich shpchp ioatdma mfd_core i2c_i801 pcspkr serio_raw bnx2 microcode dca
-+vhost_net tun macvtap macvlan kvm_intel kvm uinput mgag200 sr_mod cdrom i2c_algo_bit sd_mod drm_kms_helper crc_t10dif ata_generic pata_acpi ttm ata_piix drm libata i2c_core megaraid_sas
+> 
+>> +
+>> +static struct tty_port dashtty_ports[NUM_TTY_CHANNELS];
+>> +
+>> +struct dashbuf {
+>> +	struct list_head entry;
+>> +	struct dashtty *tty;
+>> +	unsigned char *buf;
+>> +	int count;
+>> +	int chan;
+>> +};
+> 
+>> +/*
+>> + * Attempts to fetch count bytes from channel channel and returns actual count.
+>> + */
+>> +static int fetch_data(int channel)
+>> +{
+>> +	struct dashtty *dashtty = dashtty_ttys[channel];
+> 
+> krefs for the tty ?, what if the tty is closing at the same moment ?
 
-[  588.246517] CPU 1
-[  588.248636] Pid: 23217, comm: mmap10 Not tainted 3.8.0-rc1mainline+ #17 IBM IBM System x3400 M3 Server -[7379I08]-/69Y4356
-[  588.262171] RIP: 0010:[<ffffffff8118fac7>]  [<ffffffff8118fac7>] __split_huge_page+0x677/0x6d0
-[  588.272067] RSP: 0000:ffff88017a03fc08  EFLAGS: 00010293
-[  588.278235] RAX: 0000000000000003 RBX: ffff88027a6c22e0 RCX: 00000000000034d2
-[  588.286394] RDX: 000000000000748b RSI: 0000000000000046 RDI: 0000000000000246
-[  588.294216] RBP: ffff88017a03fcb8 R08: ffffffff819d2440 R09: 000000000000054a
-[  588.302441] R10: 0000000000aaaaaa R11: 00000000ffffffff R12: 0000000000000000
-[  588.310495] R13: 00007f4f11a00000 R14: ffff880179e96e00 R15: ffffea0005c08000
-[  588.318640] FS:  00007f4f11f4a740(0000) GS:ffff88017bc20000(0000) knlGS:0000000000000000
-[  588.327894] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  588.334569] CR2: 00000037e9ebb404 CR3: 000000017a436000 CR4: 00000000000007e0
-[  588.342718] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  588.350861] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  588.359134] Process mmap10 (pid: 23217, threadinfo ffff88017a03e000, task ffff880172dd32e0)
-[  588.368667] Stack:
-[  588.370960]  ffff88017a540ec8 ffff88017a03fc20 ffffffff816017b5 ffff88017a03fc88
-[  588.379566]  ffffffff812fa014 0000000000000000 ffff880279ebd5c0 00000000f4f11a4c
-[  588.388150]  00000007f4f11f49 00000007f4f11a00 ffff88017a540ef0 ffff88017a540ee8
-[  588.396711] Call Trace:
-[  588.455106]  [<ffffffff816017b5>] ? rwsem_down_read_failed+0x15/0x17
-[  588.518106]  [<ffffffff812fa014>] ? call_rwsem_down_read_failed+0x14/0x30
-[  588.580897]  [<ffffffff815ffc04>] ? down_read+0x24/0x2b
-[  588.642630]  [<ffffffff8118fb88>] split_huge_page+0x68/0xb0
-[  588.703814]  [<ffffffff81190ed4>] __split_huge_page_pmd+0x134/0x330
-[  588.766064]  [<ffffffff8104b997>] ? pte_alloc_one+0x37/0x50
-[  588.826460]  [<ffffffff81191121>] split_huge_page_pmd_mm+0x51/0x60
-[  588.887746]  [<ffffffff8119116b>] split_huge_page_address+0x3b/0x50
-[  588.948673]  [<ffffffff8119121c>] __vma_adjust_trans_huge+0x9c/0xf0
-[  589.008660]  [<ffffffff811650f4>] vma_adjust+0x684/0x750
-[  589.066328]  [<ffffffff811653ba>] __split_vma.isra.28+0x1fa/0x220
-[  589.123497]  [<ffffffff810135d1>] ? __switch_to+0x181/0x4a0
-[  589.180704]  [<ffffffff811661a9>] do_munmap+0xf9/0x420
-[  589.237461]  [<ffffffff8160026c>] ? __schedule+0x3cc/0x7b0
-[  589.294520]  [<ffffffff8116651e>] vm_munmap+0x4e/0x70
-[  589.350784]  [<ffffffff8116741b>] sys_munmap+0x2b/0x40
-[  589.406971]  [<ffffffff8160a159>] system_call_fastpath+0x16/0x1b
+Thanks, I've fixed that now.
 
-Alexander Beregalov reported a very similar bug and Hillf Danton identified
-that commit 5a505085 (mm/rmap: Convert the struct anon_vma::mutex to an
-rwsem) and commit 4fc3f1d6 (mm/rmap, migration: Make rmap_walk_anon()
-and try_to_unmap_anon() more scalable) were likely the problem. Reverting
-these commits was reported to solve the problem.
+> 
+>> +
+>> +static int put_data(void *arg)
+>> +{
+>> +	struct dashbuf *dbuf;
+>> +	int number_written;
+>> +
+>> +	__set_current_state(TASK_RUNNING);
+>> +	while (!kthread_should_stop()) {
+>> +		/*
+>> +		 * Pick up all the output buffers and write them out.
+>> +		 *
+>> +		 * FIXME: should we check with ASE how much room we have?
+>> +		 * Ideally, this will already have been done by write_room ??
+>> +		 */
+> 
+> 
+> No because your writer is asynchronous to your query so you need to
+> manage the difference yourself. You also need to get it right on the
+> queue length for close to work right.
 
-Despite the reason for these commits, NUMA balancing is not the direct
-source of the problem. split_huge_page() expected the anon_vma lock to be
-exclusive to serialise the whole split operation. Ordinarily it is expected
-that the anon_vma lock would only be required when updating the avcs but
-THP also uses it. The locking requirements for THP are complex and there
-is some overlap but broadly speaking they include the following
+Regarding closing working right, do you mean making sure that all data
+in the asynchronous output buffer is written out by the final close
+(e.g. port_shutdown before freeing it)? Is that something the driver
+needs to do itself? (at the moment it does seem to be necessary, however
+I could be missing something)
 
-1. mmap_sem for read or write prevents THPs being created underneath
-2. anon_vma is taken for write if collapsing a huge page
-3. mm->page_table_lock should be taken when checking if pmd_trans_huge as
-   split_huge_page can run in parallel
-4. wait_split_huge_page uses anon_vma taken for write mode to serialise
-   against other THP operations
-5. compound_lock is used to serialise between
-   __split_huge_page_refcount() and gup
+> 
+>> +
+>> +/*
+>> + *	This gets called every DA_TTY_POLL and polls the channels for data
+>> + */
+>> +static void dashtty_timer(unsigned long ignored)
+>> +{
+>> +	struct dashtty *dtty;
+>> +	int this_channel;
+>> +
+>> +	/* If there are no ports open do nothing and don't poll again. */
+> 
+> Why are we polling - is this just an architectural limit ?
 
-split_huge_page takes anon_vma for read but that does not serialise against
-parallel split_huge_page operations on the same page (rule 2). One process
-could be modifying the ref counts while the other modifies the page tables
-leading to counters not being reliable. This patch takes the anon_vma
-lock for write to serialise against parallel split_huge_page and parallel
-collapse operations as it is the most fine-grained lock available that
-protects against both.
+Yes, the only way to know whether the debugger has written anything to
+the buffer in the debug pod is to ask it, hence the polling. Actually
+it's more like halt the hardware thread with a SWITCH instruction and
+wait patiently for the DA to notice and to handle it.
 
-Reported-by: Zhouping Liu <zliu@redhat.com>
-Reported-by: Alexander Beregalov <a.beregalov@gmail.com>
-Signed-off-by: Mel Gorman <mgorman@suse.de>
----
- mm/huge_memory.c |   15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+> 
+>> +}
+>> +
+>> +static int dashtty_open(struct tty_struct *tty, struct file *filp)
+>> +{
+>> +	struct dashtty *dashtty;
+> 
+> No - use the full helpers - your sematics are wrong otherwise.
 
-diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-index 9e894ed..6001ee6 100644
---- a/mm/huge_memory.c
-+++ b/mm/huge_memory.c
-@@ -1819,9 +1819,19 @@ int split_huge_page(struct page *page)
- 
- 	BUG_ON(is_huge_zero_pfn(page_to_pfn(page)));
- 	BUG_ON(!PageAnon(page));
--	anon_vma = page_lock_anon_vma_read(page);
-+
-+	/*
-+	 * The caller does not necessarily hold an mmap_sem that would prevent
-+	 * the anon_vma disappearing so we first we take a reference to it
-+	 * and then lock the anon_vma for write. This is similar to
-+	 * page_lock_anon_vma_read except the write lock is taken to serialise
-+	 * against parallel split or collapse operations.
-+	 */
-+	anon_vma = page_get_anon_vma(page);
- 	if (!anon_vma)
- 		goto out;
-+	anon_vma_lock_write(anon_vma);
-+
- 	ret = 0;
- 	if (!PageCompound(page))
- 		goto out_unlock;
-@@ -1832,7 +1842,8 @@ int split_huge_page(struct page *page)
- 
- 	BUG_ON(PageCompound(page));
- out_unlock:
--	page_unlock_anon_vma_read(anon_vma);
-+	anon_vma_unlock(anon_vma);
-+	put_anon_vma(anon_vma);
- out:
- 	return ret;
- }
+I presume you're referring to tty_port_open. I've converted to use that now.
+
+> 
+>> +static void dashtty_close(struct tty_struct *tty, struct file *filp)
+> 
+> No.. we have helpers - use them.
+> 
+>> +	if (num_channels_need_poll <= 0)
+>> +		del_timer(&poll_timer);
+> 
+> _sync 
+> 
+> This seems to be a repeated error so it may be worth checking your other
+> drivers.
+
+Ok
+
+>> +}
+>> +
+>> +static int dashtty_write(struct tty_struct *tty, const unsigned char *buf,
+>> +			 int count)
+>> +{
+>> +	struct dashtty *dtty;
+>> +	struct dashbuf *dbuf;
+>> +	int channel;
+>> +
+>> +	if (count <= 0)
+>> +		return 0;
+> 
+> How can it be <= 0 ?
+
+It probably can't. I've removed it now (and the new version is safe even
+if it was 0 anyway).
+
+> 
+>> +	/* Determine the channel */
+>> +	channel = FIRST_TTY_CHANNEL + tty->index;
+>> +	dtty = dashtty_ttys[channel];
+>> +	BUG_ON(!dtty);
+> 
+> What is your locking model to prevent this ?
+> What is your reference counting model for the ttys - I don't see one.
+
+The new version has an array of dashtty_ports (not pointers, each
+containing a tty_port) and uses that to get at the output buffer.
+
+Would it need to ensure that the tty isn't hung up though, or is a write
+prevented from occurring in that case?
+
+> 
+>> +
+>> +	dbuf = kzalloc(sizeof(*dbuf), GFP_KERNEL);
+>> +	if (!dbuf)
+>> +		return 0;
+>> +
+>> +	dbuf->buf = kzalloc(count, GFP_KERNEL);
+>> +	if (!dbuf->buf) {
+>> +		kfree(dbuf);
+>> +		return 0;
+>> +	}
+>> +
+>> +	memcpy(dbuf->buf, buf, count);
+> 
+> So you'll spend all your CPU time doing itty bitty allocations. Just
+> allocate a buffer at open (there's even a tty_port helper for buffer
+> management), free it when you've finished using the port. (and don't
+> report > the buffer size is write room)
+
+Agreed and done. I didn't realise the TTY layer was so prone to
+providing lots of itty bitty fragments (even with a single 4k write from
+userland). The thing that really hurt was not the allocations but that
+each one was written out to the DA separately each incurring it's own
+large latency. Using a write buffer makes it a lot faster :)
+
+> 
+>> +	/*
+>> +	 * FIXME: This is slightly optimistic. Because we're deferring
+>> +	 * the output until later it is impossible to predict whether we
+>> +	 * will actually write "count" bytes.
+>> +	 */
+>> +	return count;
+> 
+> Fair enough but is then your chars_in_buffer and write_room methods are
+> both wrong (you need to avoid offering space you've queued into).
+
+This is now rewritten so that the deferred write takes note of the
+number of bytes written out to the DA and doesn't discard any data. The
+chars_in_buffer and write_room methods now return the size/space in the
+output buffer.
+
+It's still possible that the debugger isn't draining the DA buffers in
+which case they'll fill up, and the output buffer in the driver will
+fill and then the space reported to the tty layer will drop to 0.
+
+> 
+>> +}
+> 
+>> +static const struct tty_operations dashtty_ops = {
+>> +	.open = dashtty_open,
+>> +	.close = dashtty_close,
+>> +	.write = dashtty_write,
+> 
+> You need a hangup method. You may need a termios method.
+
+Is it sufficient for a hangup method to just call tty_port_hangup or
+should it drop the contents of the output buffer too? (as opposed to
+waiting for it to drain in port_shutdown).
+
+As far as I can tell none of the termios stuff is really relevant to
+this driver.
+
+> 
+>> +	.write_room = dashtty_write_room,
+>> +	.chars_in_buffer = dashtty_chars_in_buffer,
+>> +};
+>> +
+>> +static int __init dashtty_init(void)
+>> +{
+>> +	int ret;
+>> +	int nport;
+>> +
+>> +	if (!metag_da_enabled())
+>> +		return -ENODEV;
+>> +
+>> +	channel_driver = tty_alloc_driver(NUM_TTY_CHANNELS, 0);
+>> +	if (IS_ERR(channel_driver))
+>> +		return PTR_ERR(channel_driver);
+>> +
+>> +	channel_driver->owner = THIS_MODULE;
+>> +	channel_driver->driver_name = "ttyDA";
+>> +	channel_driver->name = "ttyDA";
+>> +	channel_driver->major = DA_TTY_MAJOR;
+>> +	channel_driver->minor_start = 0;
+>> +	channel_driver->type = TTY_DRIVER_TYPE_SERIAL;
+>> +	channel_driver->subtype = SERIAL_TYPE_NORMAL;
+>> +	channel_driver->init_termios = tty_std_termios;
+>> +	channel_driver->init_termios.c_cflag =
+>> +	    B38400 | CS8 | CREAD | HUPCL | CLOCAL;
+>> +	channel_driver->flags = TTY_DRIVER_REAL_RAW;
+> 
+> Need to set the speed flags
+
+Do you mean c_ispeed, and c_ospeed? These are set in tty_std_termios,
+and they aren't meaningful in the context of this driver anyway, so are
+they still necessary?
+
+> 
+>> +static void dashtty_exit(void)
+>> +{
+>> +	kthread_stop(dashtty_thread);
+>> +	del_timer(&poll_timer);
+> 
+> 
+> del_timer_sync or your box will sometimes crash on exit as the timer is
+> still running on another thread
+> 
+
+Thanks again for taking the time to review it
+
+James
+
