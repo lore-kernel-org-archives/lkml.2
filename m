@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab3ADItl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 03:49:41 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:50662 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab3ADItb (ORCPT
+	id S1754552Ab3ADIwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 03:52:55 -0500
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:61338 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754237Ab3ADItk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 03:49:31 -0500
+	Fri, 4 Jan 2013 03:49:40 -0500
 From: Jiri Pirko <jiri@resnulli.us>
 To: netdev@vger.kernel.org
 Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
@@ -20,9 +20,9 @@ Cc: davem@davemloft.net, edumazet@google.com, faisal.latif@intel.com,
         john.r.fastabend@intel.com, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
         bridge@lists.linux-foundation.org, fbl@redhat.com
-Subject: [patch net-next V6 05/15] team: remove usage of netdev_set_master()
-Date: Fri,  4 Jan 2013 09:48:53 +0100
-Message-Id: <1357289343-817-6-git-send-email-jiri@resnulli.us>
+Subject: [patch net-next V6 07/15] netpoll: remove usage of dev->master
+Date: Fri,  4 Jan 2013 09:48:55 +0100
+Message-Id: <1357289343-817-8-git-send-email-jiri@resnulli.us>
 X-Mailer: git-send-email 1.8.0
 In-Reply-To: <1357289343-817-1-git-send-email-jiri@resnulli.us>
 References: <1357289343-817-1-git-send-email-jiri@resnulli.us>
@@ -32,49 +32,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jiri Pirko <jiri@resnulli.us>
 ---
- drivers/net/team/team.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+ net/core/netpoll.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/team/team.c b/drivers/net/team/team.c
-index 78c7d87..5f35d6b 100644
---- a/drivers/net/team/team.c
-+++ b/drivers/net/team/team.c
-@@ -1055,10 +1055,11 @@ static int team_port_add(struct team *team, struct net_device *port_dev)
- 		}
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 3151acf..d2bda8e 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -210,9 +210,12 @@ static void netpoll_poll_dev(struct net_device *dev)
+ 
+ 	if (dev->flags & IFF_SLAVE) {
+ 		if (ni) {
+-			struct net_device *bond_dev = dev->master;
++			struct net_device *bond_dev;
+ 			struct sk_buff *skb;
+-			struct netpoll_info *bond_ni = rcu_dereference_bh(bond_dev->npinfo);
++			struct netpoll_info *bond_ni;
++
++			bond_dev = netdev_master_upper_dev_get_rcu(dev);
++			bond_ni = rcu_dereference_bh(bond_dev->npinfo);
+ 			while ((skb = skb_dequeue(&ni->arp_tx))) {
+ 				skb->dev = bond_dev;
+ 				skb_queue_tail(&bond_ni->arp_tx, skb);
+@@ -815,7 +818,7 @@ int netpoll_setup(struct netpoll *np)
+ 		return -ENODEV;
  	}
  
--	err = netdev_set_master(port_dev, dev);
-+	err = netdev_master_upper_dev_link(port_dev, dev);
- 	if (err) {
--		netdev_err(dev, "Device %s failed to set master\n", portname);
--		goto err_set_master;
-+		netdev_err(dev, "Device %s failed to set upper link\n",
-+			   portname);
-+		goto err_set_upper_link;
- 	}
- 
- 	err = netdev_rx_handler_register(port_dev, team_handle_frame,
-@@ -1091,9 +1092,9 @@ err_option_port_add:
- 	netdev_rx_handler_unregister(port_dev);
- 
- err_handler_register:
--	netdev_set_master(port_dev, NULL);
-+	netdev_upper_dev_unlink(port_dev, dev);
- 
--err_set_master:
-+err_set_upper_link:
- 	team_port_disable_netpoll(port);
- 
- err_enable_netpoll:
-@@ -1137,7 +1138,7 @@ static int team_port_del(struct team *team, struct net_device *port_dev)
- 	team_port_disable(team, port);
- 	list_del_rcu(&port->list);
- 	netdev_rx_handler_unregister(port_dev);
--	netdev_set_master(port_dev, NULL);
-+	netdev_upper_dev_unlink(port_dev, dev);
- 	team_port_disable_netpoll(port);
- 	vlan_vids_del_by_dev(port_dev, dev);
- 	dev_close(port_dev);
+-	if (ndev->master) {
++	if (netdev_master_upper_dev_get(ndev)) {
+ 		np_err(np, "%s is a slave device, aborting\n", np->dev_name);
+ 		err = -EBUSY;
+ 		goto put;
 -- 
 1.8.0
 
