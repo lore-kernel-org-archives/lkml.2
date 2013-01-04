@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538Ab3ADGLi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 01:11:38 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:43390 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab3ADGLf convert rfc822-to-8bit (ORCPT
+	id S1752563Ab3ADGRt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 01:17:49 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:48597 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750899Ab3ADGRq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 01:11:35 -0500
+	Fri, 4 Jan 2013 01:17:46 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Hans Verkuil <hans.verkuil@cisco.com>,
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
+        Manjunath Hadli <manjunath.hadli@ti.com>
+Subject: Re: [PATCH v2] adv7343: use devm_kzalloc() instead of kzalloc()
+Date: Fri, 04 Jan 2013 07:19:19 +0100
+Message-ID: <1742549.yh29KufX9Q@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.6.11-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <1357276277-21812-1-git-send-email-prabhakar.lad@ti.com>
+References: <1357276277-21812-1-git-send-email-prabhakar.lad@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <20130101011158.GA7601@joi.lan>
-References: <1356917699-19479-1-git-send-email-aaro.koskinen@iki.fi>
-	<20130101011158.GA7601@joi.lan>
-Date: Fri, 4 Jan 2013 16:11:34 +1000
-Message-ID: <CAPM=9tx6GsQ4CygSrzUj9MoCyvAtU1L++=OGnxCWRZCgRa7VYw@mail.gmail.com>
-Subject: Re: [RESEND PATCH] drm/nouveau: fix init with agpgart-uninorth
-From: Dave Airlie <airlied@gmail.com>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Aaro Koskinen <aaro.koskinen@iki.fi>, Ben Skeggs <skeggsb@gmail.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, stefan@konink.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 1, 2013 at 11:21 AM, Marcin Slusarz
-<marcin.slusarz@gmail.com> wrote:
-> On Mon, Dec 31, 2012 at 03:34:59AM +0200, Aaro Koskinen wrote:
->> Check that the AGP aperture can be mapped. This follows a similar change
->> done for Radeon (commit 365048ff, drm/radeon: AGP memory is only I/O if
->> the aperture can be mapped by the CPU.).
->>
->> The patch fixes the following error seen on G5 iMac:
->>
->>       nouveau E[     DRM] failed to create kernel channel, -12
->>
->> Reviewed-by: Michel Dänzer <michel@daenzer.net>
->> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
->> ---
->
-> This patch fixes https://bugs.freedesktop.org/show_bug.cgi?id=58806.
-> For some (weird) reason Nouveau worked on this configuration on 3.6 kernel,
-> so cc'ing stable@vger seems to be appropriate.
+Hi Prabhakar,
 
-Cool I've picked this up and applied it for stable into fixes now.
+Thank you for the patches.
 
-Dave.
+For the whole set,
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+On Friday 04 January 2013 10:41:15 Lad, Prabhakar wrote:
+> I2C drivers can use devm_kzalloc() too in their .probe() methods. Doing so
+> simplifies their clean up paths.
+> 
+> Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
+> Signed-off-by: Manjunath Hadli <manjunath.hadli@ti.com>
+> ---
+>  Changes for v2:
+>  1: Fixed comments pointed out by Laurent.
+> 
+>  drivers/media/i2c/adv7343.c |    9 +++------
+>  1 files changed, 3 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/media/i2c/adv7343.c b/drivers/media/i2c/adv7343.c
+> index 2b5aa67..432eb5f 100644
+> --- a/drivers/media/i2c/adv7343.c
+> +++ b/drivers/media/i2c/adv7343.c
+> @@ -397,7 +397,8 @@ static int adv7343_probe(struct i2c_client *client,
+>  	v4l_info(client, "chip found @ 0x%x (%s)\n",
+>  			client->addr << 1, client->adapter->name);
+> 
+> -	state = kzalloc(sizeof(struct adv7343_state), GFP_KERNEL);
+> +	state = devm_kzalloc(&client->dev, sizeof(struct adv7343_state),
+> +			     GFP_KERNEL);
+>  	if (state == NULL)
+>  		return -ENOMEM;
+> 
+> @@ -431,16 +432,13 @@ static int adv7343_probe(struct i2c_client *client,
+>  		int err = state->hdl.error;
+> 
+>  		v4l2_ctrl_handler_free(&state->hdl);
+> -		kfree(state);
+>  		return err;
+>  	}
+>  	v4l2_ctrl_handler_setup(&state->hdl);
+> 
+>  	err = adv7343_initialize(&state->sd);
+> -	if (err) {
+> +	if (err)
+>  		v4l2_ctrl_handler_free(&state->hdl);
+> -		kfree(state);
+> -	}
+>  	return err;
+>  }
+> 
+> @@ -451,7 +449,6 @@ static int adv7343_remove(struct i2c_client *client)
+> 
+>  	v4l2_device_unregister_subdev(sd);
+>  	v4l2_ctrl_handler_free(&state->hdl);
+> -	kfree(state);
+> 
+>  	return 0;
+>  }
+-- 
+Regards,
+
+Laurent Pinchart
+
