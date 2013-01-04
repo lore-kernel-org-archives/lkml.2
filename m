@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754682Ab3ADTNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 14:13:06 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:56767 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754316Ab3ADTNC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 14:13:02 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Jon Loeliger <jdl@jdl.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: Fix util_is_printable_string
-Date: Fri,  4 Jan 2013 21:12:58 +0200
-Message-Id: <1357326778-12725-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
+	id S1754811Ab3ADTNR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 14:13:17 -0500
+Received: from mga02.intel.com ([134.134.136.20]:32520 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754316Ab3ADTNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 14:13:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,412,1355126400"; 
+   d="scan'208";a="267479578"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Linux PM <linux-pm@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Rafael Wysocki <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Zhang Rui <rui.zhang@intel.com>, Joe Perches <joe@perches.com>,
+        Rob Landley <rob@landley.net>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH v6 1/3] tick: export nohz tick idle symbols for module use
+Date: Fri,  4 Jan 2013 03:12:43 -0800
+Message-Id: <1357297965-17839-2-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1357297965-17839-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The method used did not account for multi-part strings.
+Allow drivers such as intel_powerclamp to use these apis for
+turning on/off ticks during idle.
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 ---
- util.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ kernel/time/tick-sched.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/util.c b/util.c
-index 2422c34..45f186b 100644
---- a/util.c
-+++ b/util.c
-@@ -72,7 +72,7 @@ char *join_path(const char *path, const char *name)
- int util_is_printable_string(const void *data, int len)
- {
- 	const char *s = data;
--	const char *ss;
-+	const char *ss, *se;
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index d58e552..a767757 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -553,6 +553,7 @@ void tick_nohz_idle_enter(void)
  
- 	/* zero length is not */
- 	if (len == 0)
-@@ -82,13 +82,19 @@ int util_is_printable_string(const void *data, int len)
- 	if (s[len - 1] != '\0')
- 		return 0;
- 
--	ss = s;
--	while (*s && isprint(*s))
--		s++;
-+	se = s + len;
- 
--	/* not zero, or not done yet */
--	if (*s != '\0' || (s + 1 - ss) < len)
--		return 0;
-+	while (s < se) {
-+		ss = s;
-+		while (s < se && *s && isprint(*s))
-+			s++;
-+
-+		/* not zero, or not done yet */
-+		if (*s != '\0' || s == ss)
-+			return 0;
-+
-+		s++;
-+	}
- 
- 	return 1;
+ 	local_irq_enable();
  }
++EXPORT_SYMBOL_GPL(tick_nohz_idle_enter);
+ 
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+@@ -681,6 +682,7 @@ void tick_nohz_idle_exit(void)
+ 
+ 	local_irq_enable();
+ }
++EXPORT_SYMBOL_GPL(tick_nohz_idle_exit);
+ 
+ static int tick_nohz_reprogram(struct tick_sched *ts, ktime_t now)
+ {
 -- 
-1.7.12
+1.7.9.5
 
