@@ -1,79 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab3ADBsO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jan 2013 20:48:14 -0500
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:17637 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753630Ab3ADBsM (ORCPT
+	id S1754883Ab3ADCN4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jan 2013 21:13:56 -0500
+Received: from contumacia.investici.org ([178.255.144.35]:36049 "EHLO
+	contumacia.investici.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754372Ab3ADCNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jan 2013 20:48:12 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Thu, 03 Jan 2013 17:48:06 -0800
-Message-ID: <50E634D0.6080702@nvidia.com>
-Date: Fri, 4 Jan 2013 07:18:00 +0530
-From: Prashant Gaikwad <pgaikwad@nvidia.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Thu, 3 Jan 2013 21:13:54 -0500
+X-DKIM: Sendmail DKIM Filter v2.8.2 contumacia.investici.org 3F500E8A55
+Date: Fri, 4 Jan 2013 03:12:53 +0100
+From: Antonio Quartulli <ordex@autistici.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Marek Lindner <lindner_marek@yahoo.de>,
+        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+        b.a.t.m.a.n@lists.open-mesh.org,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: [PATCH -v2 19/26] batman-adv: rename random32() to prandom_u32()
+Message-ID: <20130104021252.GE27589@ritirata.org>
+References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
+ <1357215562-6288-20-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>
-CC: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 05/11] ARM: dt: tegra30: Add device node for APB MISC
-References: <1356619644-18565-1-git-send-email-pgaikwad@nvidia.com> <1356619644-18565-6-git-send-email-pgaikwad@nvidia.com> <50E4AE19.1060503@wwwdotorg.org> <50E520FC.4070805@nvidia.com> <50E5ADA6.1070904@wwwdotorg.org>
-In-Reply-To: <50E5ADA6.1070904@wwwdotorg.org>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="wTWi5aaYRw9ix9vO"
+Content-Disposition: inline
+In-Reply-To: <1357215562-6288-20-git-send-email-akinobu.mita@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 January 2013 09:41 PM, Stephen Warren wrote:
-> On 01/02/2013 11:11 PM, Prashant Gaikwad wrote:
->> On Thursday 03 January 2013 03:30 AM, Stephen Warren wrote:
->>> On 12/27/2012 07:47 AM, Prashant Gaikwad wrote:
->>>> APB misc contains multiple registers required by different modules
->>>> such as CAR.
->>> I don't see a DT binding document that describes what
->>> nvidia,tegra30-apbmisc means. Also, the register range for this new node
->>> overlaps that for the pinmux node, so they can't both "request" their
->>> register region. You may need multiple entries in the apbmisc reg
->>> property to avoid this.
->> apbmisc reg for Tegra30 can be divided into following entries:
->>
->> strap registers
->> jtag configuration registers
->> pull_up/pull_down control registers
->> vclk control registers
->> tvdac registers
->> chip id revision registers
->> pad control registers
->>
->> This list is not same for Tegra20 and Tegra30.
-> OK. It sounds like we need a true APB MISC driver then, to abstract the
-> differences; the clock driver really shouldn't be touching the APB MISC
-> registers in all likelihood, unless a subset of the sections you mention
-> above are truly dedicated to clock functionality.
 
-I don't think it is a good idea to create a driver for APB MISC, all 
-registers are used by different drivers.
-Only chip id revision registers are used in clock driver.
+--wTWi5aaYRw9ix9vO
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->> OR
->>
->> another way is to add chip id revision register region to CAR node as
->> done for pinmux node and remove apb misc node.
-> The pinmux controller doesn't have a reg entry for the chip ID register.
-> I don't understand what you mean here.
+On Thu, Jan 03, 2013 at 09:19:15PM +0900, Akinobu Mita wrote:
+> Use more preferable function name which implies using a pseudo-random
+> number generator.
+>=20
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Acked-by: Antonio Quartulli <ordex@autistici.org>
+> Cc: Marek Lindner <lindner_marek@yahoo.de>
+> Cc: Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+> Cc: Antonio Quartulli <ordex@autistici.org>
+> Cc: b.a.t.m.a.n@lists.open-mesh.org
+> Cc: "David S. Miller" <davem@davemloft.net>
+> Cc: netdev@vger.kernel.org
+> ---
 
-I mean as we have separate entry for PAD control registers region in 
-pinmux node we can have also have separate entry for chid id revision 
-register region in CAR node.
+Hello Akinobu,
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+as you can see in <201301021952.49979.lindner_marek@yahoo.de>, Marek Lindner
+already applied this change onto our tree. You didn't need to resend this p=
+atch
+to netdev, it will be sent by us through a future pull request.
 
+
+Thanks a lot.
+Cheers,
+
+--=20
+Antonio Quartulli
+
+=2E.each of us alone is worth nothing..
+Ernesto "Che" Guevara
+
+--wTWi5aaYRw9ix9vO
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ5jqkAAoJEADl0hg6qKeO4/wP/11xG2Bo310vl+gCHHVGJL44
+e0vYKg/Jpb89sjXerAhAAUzVodMLCoUz/35W6ix8RJtzCkU7b6PCIe25eZtbfvIW
+VLnThzhzwrKaXvbsIgydtqOXaMyhjdytkZho0UAnAn8AT39qv+M4nBvjjFFEvs/T
+rFIXz9gz7Q7y0CzHxT/3ITRUvE9x8/8aMGcdMsgOmmo8ELQiHa45/cwumUHutVif
+dOnK2sSO1GKVQeWG9LkhbCmjY6A+si/q59A4bIcZAi5v75kNqastbi9fm4/G/LuY
+gP+g+MrIle9h/bPnrCvjPNHsUl9qcZuFJQEtpuuOIISbqmMKVM63yWeZ8W7+oVc8
+lT2NY+uR2gYG0nk3OM2mi9SWqtyh9cATr2dP6nLMlYIDCw3JwqjDqkz1/8BtaBQB
+v5gk29b0XkKQ7znoPQGSnBCzHoq91JNsXhLrvEJH0i7DdYGtzTgvU8E/NLSHib7p
+D0EU5j37VbgTZW/Ul6Luds4T+slY5TSU9H0NIoSFNkYQtDxK5kDabys4s63r9WKC
+AS8Nv6BRxitTTRl287RL18VZQCDsFAdb+hFgKwF5AL8t8FoKCZjpqOLiKTWj9CRs
+cLwIEQc/+RCfouG63YW1boXRH/ck4Lt+KKmhHZWHgdf0Zmk0BNkw9uUZ4jAGrM7e
+wh3HZikTXjjjc4RyuL6d
+=Mkl9
+-----END PGP SIGNATURE-----
+
+--wTWi5aaYRw9ix9vO--
