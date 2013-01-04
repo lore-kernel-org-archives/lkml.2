@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab3ADOke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 09:40:34 -0500
-Received: from nat28.tlf.novell.com ([130.57.49.28]:43758 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754741Ab3ADOkc convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:9:1>);
-	Fri, 4 Jan 2013 09:40:32 -0500
-Message-Id: <50E6F81D02000078000B3245@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 12.0.1 
-Date: Fri, 04 Jan 2013 14:41:17 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Kiper" <daniel.kiper@oracle.com>
-Cc: "Andrew Cooper" <andrew.cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
- <50DBC856.6030208@zytor.com>
- <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
- <50DC58C4.3000307@citrix.com> <874nj7qsor.fsf@xmission.com>
- <50E41973.9050705@citrix.com>
- <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
-In-Reply-To: <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
+	id S1754923Ab3ADOrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 09:47:01 -0500
+Received: from elasmtp-spurfowl.atl.sa.earthlink.net ([209.86.89.66]:41487
+	"EHLO elasmtp-spurfowl.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754822Ab3ADOq6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 09:46:58 -0500
+X-Greylist: delayed 1304 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jan 2013 09:46:58 EST
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=FEuOJKZ/G7p7j3svp3SIpyPRLE+nuj4b02yI3Jtk5zeASLTBXZfCNoIGqn+sV3Nb;
+  h=Message-ID:Date:From:Reply-To:To:Subject:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <19235668.1357309514415.JavaMail.root@mswamui-valley.atl.sa.earthlink.net>
+Date: Fri, 4 Jan 2013 09:25:14 -0500 (GMT-05:00)
+From: "Steven A. DuChene" <linux-clusters@mindspring.com>
+Reply-To: "Steven A. DuChene" <linux-clusters@mindspring.com>
+To: linux-kernel@vger.kernel.org
+Subject: no config opt for k8temp in 3.6.11
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: EarthLink Zoo Mail 1.0
+X-ELNK-Trace: ea4808abc3da2865808dd114cae72f675e89bb4777695beb0630c2ba6cdcad3040eb7a32dcc0016b430c2c76f9f60f22350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 209.86.224.52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 04.01.13 at 15:22, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> On Wed, Jan 02, 2013 at 11:26:43AM +0000, Andrew Cooper wrote:
->> /sbin/kexec can load the "Xen" crash kernel itself by issuing
->> hypercalls using /dev/xen/privcmd.  This would remove the need for
->> the dom0 kernel to distinguish between loading a crash kernel for
->> itself and loading a kernel for Xen.
->>
->> Or is this just a silly idea complicating the matter?
-> 
-> This is impossible with current Xen kexec/kdump interface.
+I have a few systems with AMD processors. One is a AMD Phenom II based system which uses a k10temp kernel module to get the CPU temperature. Another system has an Athlon64 processor which apparently is supposed to use a k8temp module to do the same thing. I have built a 3.6.11 kernel for each system that otherwise runs OpenSuSE-11.X. On the Phenom system the k10temp module is gets built and performs as expected. However on the Atlnon system even though I see the k8temp.c source file in the drivers/hwmon directory there does not seem to be a way in the kernel config files available from the 3.6.11 kernel sources to actually select that the k8temp module should be built. Is this some oversight in the makeup of the kernel config files or am I missing something obvious?
 
-Why?
+Please CC me on replies as I am not normally subscribed to the kernel mailing list.
 
-> It should be changed to do that. However, I suppose that
-> Xen community would not be interested in such changes.
+Thanks
+--
+Steven DuChene
 
-And again - why?
-
-Jan
 
