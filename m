@@ -1,71 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab3ADPze (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 10:55:34 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:58730 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755080Ab3ADPzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 10:55:31 -0500
-Message-ID: <50E6FB66.7020805@linux.vnet.ibm.com>
-Date: Fri, 04 Jan 2013 09:55:18 -0600
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755082Ab3ADP7V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 10:59:21 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:58218 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754955Ab3ADP7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 10:59:19 -0500
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Wilk <konrad.wilk@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH 7/8] zswap: add to mm/
-References: <1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com> <1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com> <0e91c1e5-7a62-4b89-9473-09fff384a334@default> <50E32255.60901@linux.vnet.ibm.com> <50E4588E.6080001@linux.vnet.ibm.com> <28a63847-7659-44c4-9c33-87f5d50b2ea0@default> <50E479AD.9030502@linux.vnet.ibm.com> <9955b9e0-731b-4cbf-9db0-683fcd32f944@default> <20130103073339.GF3120@dastard> <ac37f7ce-b15a-40f8-9da7-858dea3651b9@default> <20130104023030.GK3120@dastard>
-In-Reply-To: <20130104023030.GK3120@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010415-7182-0000-0000-00000432A253
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com>
+References: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com>
+Date: Fri, 4 Jan 2013 16:59:18 +0100
+Message-ID: <CA+icZUXrQ4aq+cKXj3qEwnhtTGPBfHcJ6q_zTm3xSBUUh9W8dQ@mail.gmail.com>
+Subject: Re: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
+ Emask 0x1
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Shane Huang <shane.huang@amd.com>, Aaron Lu <aaron.lu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/2013 08:30 PM, Dave Chinner wrote:
->>> And so the two subsystems need different reclaim implementations.
->>> > > And, well, that's exactly what we have shrinkers for - implmenting
->>> > > subsystem specific reclaim policy. The shrinker infrastructure is
->>> > > responsible for them keeping balance between all the caches that
->>> > > have shrinkers and the size of the page cache...
->> > 
->> > Given the above, do you think either compressed-anonymous-pages or
->> > compressed-pagecache-pages are suitable candidates for the shrinker
->> > infrastructure?
-> I don't know all the details of what you are trying to do, but you
-> seem to be describing a two-level heirarchy - a pool of compressed
-> data and a pool of uncompressed data, and under memory pressure are
-> migrating data from the uncompressed pool to the compressed pool. On
-> access, you are migrating back the other way.  Hence it seems to me
-> that you could implement the process of migration from the
-> uncompressed pool to the compressed pool as a shrinker so that it
-> only happens as a result of memory pressure....
+On Fri, Jan 4, 2013 at 4:40 PM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
+> Hi,
+>
+> I noticed messages like the following in my syslogs with Linux
+> v3.8-rc1 and v3.8-rc2:
+>
+> ata1.00: failed to get Identify Device Data, Emask 0x1
+>
+> In this Samsung ultrabook there exists a small SSD and a 500GiB HDD.
+> I had no look which of the two is "ata1" or "ata2".
+> NOTE: With ata2 I do not see the messages.
+> I haven't checked older Linux-kernel versions.
+>
+> I followed the thread in [1] a bit and Aaron Lu pointed to the commit
+> which causes these messages.
+> Shane wanted to submit a patch [3] which I first didn't found.
+> But I guess it's the one from [4], building right now...
+>
 
-In our case, the mechanism for moving pages from the uncompressed pool
-(anonymous memory) to the compressed pool is the swapping mechanism
-itself.  The mechanism for moving pages the other way is the page
-fault handler.
+[ monologue ]
 
-To summarize my ideas wrt to zswap and the shrinker interface, I don't
-think there is a good use case here because all of the compressed
-pages in zswap are conceptually dirty.  The writeback for these pages
-is both slow (bio write) and requires memory allocation.  So zswap
-isn't a cache in the usual sense, where cache contents are clean,
-exist in RAM only for performance reasons, and can be freed in a
-lightweight way at any time.
+YES, that patch [4] fixes the problem here.
+ata1 is the internal HDD drive and ata2 the SSD.
 
-Thanks,
-Seth
+Jeff, didn't you do a git-pull-request-for-3.8 with "upstream-linus" GIT branch?
 
+- Sedat -
+
+[1] http://git.kernel.org/?p=linux/kernel/git/jgarzik/libata-dev.git;a=shortlog;h=refs/tags/upstream-linus
+
+P.S.: Excerpts from new kernel's dmesg checking ATA stuff...
+
+$ dmesg | egrep -i 'ata1|ata2|libata|ahci|scsi'
+[    0.172529] SCSI subsystem initialized
+[    0.172532] ACPI: bus type scsi registered
+[    0.172577] libata version 3.00 loaded.
+[    0.273212] Block layer SCSI generic (bsg) driver version 0.4
+loaded (major 252)
+[    0.286268] ahci 0000:00:1f.2: version 3.0
+[    0.286329] ahci 0000:00:1f.2: irq 40 for MSI/MSI-X
+[    0.286368] ahci: SSS flag set, parallel bus scan disabled
+[    0.300666] ahci 0000:00:1f.2: AHCI 0001.0300 32 slots 6 ports 6
+Gbps 0x1b impl SATA mode
+[    0.300682] ahci 0000:00:1f.2: flags: 64bit ncq sntf ilck stag pm
+led clo pio slum part ems sxs apst
+[    0.300698] ahci 0000:00:1f.2: setting latency timer to 64
+[    0.324967] scsi0 : ahci
+[    0.325034] scsi1 : ahci
+[    0.325091] scsi2 : ahci
+[    0.325148] scsi3 : ahci
+[    0.325202] scsi4 : ahci
+[    0.325255] scsi5 : ahci
+[    0.325288] ata1: SATA max UDMA/133 abar m2048@0xf0708000 port
+0xf0708100 irq 40
+[    0.325294] ata2: SATA max UDMA/133 abar m2048@0xf0708000 port
+0xf0708180 irq 40
+[    0.644494] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[    0.645724] ata1.00: ATA-8: Hitachi HTS545050A7E380, GG2OA6C0, max UDMA/133
+[    0.645742] ata1.00: 976773168 sectors, multi 16: LBA48 NCQ (depth 31/32), AA
+[    0.646987] ata1.00: configured for UDMA/133
+[    0.647248] scsi 0:0:0:0: Direct-Access     ATA      Hitachi
+HTS54505 GG2O PQ: 0 ANSI: 5
+[    0.647419] sd 0:0:0:0: Attached scsi generic sg0 type 0
+[    0.657964] sd 0:0:0:0: [sda] Attached SCSI disk
+[    0.964266] ata2: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[    0.964889] ata2.00: ATA-8: SanDisk iSSD P4 16GB, SSD 9.14, max UDMA/133
+[    0.964896] ata2.00: 31277232 sectors, multi 1: LBA48
+[    0.965579] ata2.00: configured for UDMA/133
+[    0.965794] scsi 1:0:0:0: Direct-Access     ATA      SanDisk iSSD
+P4  SSD  PQ: 0 ANSI: 5
+[    0.965955] sd 1:0:0:0: Attached scsi generic sg1 type 0
+[    0.967281] sd 1:0:0:0: [sdb] Attached SCSI disk
+
+[ /monologue ]
+
+> Hope this helps a bit to narrow down the problem.
+>
+> Regards,
+> - Sedat -
+>
+> [1] https://lkml.org/lkml/2012/10/16/557
+> [2] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=commitdiff;h=65fe1f0f66a57380229a4ced844188103135f37b
+> [3] https://lkml.org/lkml/2012/11/16/369
+> [4] http://git.kernel.org/?p=linux/kernel/git/jgarzik/libata-dev.git;a=patch;h=de90cd71f68e947d3bd6c3f2ef5731ead010a768
+>
+> P.S.: Excerpts from the quoted commit:
+>
+> [ drivers/ata/libata-core.c ]
+> ...
+> +               /* check and mark DevSlp capability */
+> +               if (ata_id_has_devslp(dev->id))
+> +                       dev->flags |= ATA_DFLAG_DEVSLP;
+> +
+> +
+> +               /* Obtain SATA Settings page from Identify Device Data Log,
+> +                * which contains DevSlp timing variables etc.
+> +                * Exclude old devices with ata_id_has_ncq()
+> +                */
+> +               if (ata_id_has_ncq(dev->id)) {
+> +                       err_mask = ata_read_log_page(dev,
+> +                                                    ATA_LOG_SATA_ID_DEV_DATA,
+> +                                                    ATA_LOG_SATA_SETTINGS,
+> +                                                    dev->sata_settings,
+> +                                                    1);
+> +                       if (err_mask)
+> +                               ata_dev_dbg(dev,
+> +                                           "failed to get Identify
+> Device Data, Emask 0x%x\n",
+> +                                           err_mask);
+> +               }
+> +
+> - EOT -
