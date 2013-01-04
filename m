@@ -1,34 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751448Ab3ADFOj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 00:14:39 -0500
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:34463 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750931Ab3ADFOh (ORCPT
+	id S1751990Ab3ADFPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 00:15:23 -0500
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:61183 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750931Ab3ADFPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 00:14:37 -0500
+	Fri, 4 Jan 2013 00:15:20 -0500
+X-AuditID: 9c93016f-b7b54ae000000e9e-9a-50e665669ef1
+Date: Fri, 4 Jan 2013 14:15:18 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Sanjay Ghemawat <sanjay@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+        Arun Sharma <asharma@fb.com>, Paul Turner <pjt@google.com>,
+        David Rientjes <rientjes@google.com>,
+        John Stultz <john.stultz@linaro.org>, Christoph Lameter <cl@linux.com>,
+        Android Kernel Team <kernel-team@android.com>,
+        Robert Love <rlove@google.com>, Mel Gorman <mel@csn.ul.ie>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>, Dave Chinner <david@fromorbit.com>,
+        Neil Brown <neilb@suse.de>, Mike Hommey <mh@glandium.org>,
+        Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC v5 0/8] Support volatile for anonymous range
+Message-ID: <20130104051518.GD2617@blaptop>
+References: <1357187286-18759-1-git-send-email-minchan@kernel.org>
+ <CAOMbAgLaFR+Et=F5+A7HPY16X-Y8VPm6mY_vE9XOJm8C-8OfPg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <6008147.vspAd29d9L@vostro.rjw.lan>
-References: <98330b2deb910453a356404b8cf774c94326bc42.1355636864.git.viresh.kumar@linaro.org>
-	<7569403.CvHy03LdiU@vostro.rjw.lan>
-	<CAKohponGtLNBnWWX1miV3zjO4pJPumbWoPwoQ2+adCE5t2w5Dw@mail.gmail.com>
-	<6008147.vspAd29d9L@vostro.rjw.lan>
-Date: Fri, 4 Jan 2013 10:44:36 +0530
-Message-ID: <CAKohpo=ok5aH77ycMKPAdHgUkf2HcwMgik+6eZp1Du1QVYxPZQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] cpufreq: Manage only online cpus
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linaro-dev@lists.linaro.org, nicolas.pitre@linaro.org,
-        amit.kucheria@linaro.org, mathieu.poirier@linaro.org,
-        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
-        pdsw-power-team@arm.com, linux-pm@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOMbAgLaFR+Et=F5+A7HPY16X-Y8VPm6mY_vE9XOJm8C-8OfPg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3 January 2013 17:32, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> True, but have those bugs been introduced recently (ie. in v3.8-rc1 or later)?
+Hello,
 
-Don't know... I feel they were always there, its just that nobody
-tested it that way :)
+On Thu, Jan 03, 2013 at 09:19:08AM -0800, Sanjay Ghemawat wrote:
+> On Wed, Jan 2, 2013 at 8:27 PM, Minchan Kim <minchan@kernel.org> wrote:
+> > This is still RFC because we need more input from user-space
+> > people, more stress test, design discussion about interface/reclaim
+> 
+> Speaking as one of the authors of tcmalloc, I don't see any particular
+> need for this new system call for tcmalloc.  We are fine using
+> madvise(MADV_DONTNEED) and don't notice any significant
+> performance issues caused by it.  Background: we throttle how
+> quickly we release memory back to the system (1-10MB/s), so
+> we do not call madvise() very much, and we don't end up reusing
+> madvise-ed away pages at a fast rate. My guess is that we won't
+
+It means TCmalloc controls madvise's rate dynamically without
+user's intervention? Smart TCmalloc!
+
+Let me ask some questions.
+What is your policy for control of throttling of madvise?
+I guess policy is following as.
+
+The madvise's frequent calling is bad because pte zap overhead of
+madvise + next page fault/memset + page access bit emulatation
+page fault in some architecture like ARM when reused the range.
+So we should call it fast rate only when memory pressure happens
+very carefully. Is it similar to your throttling logic?
+
+If my assumption isn't totally wrong, how could a process know
+the memory pressure at the moment by just per-process view, NOT
+system view?
+
+If your logic takes some mistake, (for instace, memory pressure
+is severe but it doesn't call madvise) working set could be reclaimed
+like file-backed pages, which could minimize your benefit via madvise
+throttling. I guess it's very fragile. It's more severe in embedded
+world because they don't use swap so system encounters OOM instead of
+swappout.
+
+In this point, mvolatile's concept is light weight system call by
+just mark the flag in the vma and auto free when system suffers from
+memory pressure(about this, my plan is zap all pages if kswapd is active
+when movlatile system call is called) by reclaimer with preventing
+working set page eviction, otherwise enhance application's speed with
+removing (minor fault + page allocation + memset). Also, it would make
+allocator simple through removing control logic, which is less error-prone
+and even might make smart TCmalloc better than now althoug it doesn't have
+any significat performance issue.
+
+> see large enough application-level performance improvements to
+> cause us to change tcmalloc to use this system call.
+> 
+> > - What's different with madvise(DONTNEED)?
+> >
+> >   System call semantic
+> >
+> >   DONTNEED makes sure user always can see zero-fill pages after
+> >   he calls madvise while mvolatile can see old data or encounter
+> >   SIGBUS.
+> 
+> Do you need a new system call for this?  Why not just a new flag to madvise
+> with weaker guarantees than zero-filling?  All of the implementation changes
+> you point out below could be triggered from that flag.
+
+Agreed and actually, I tried it but changed my mind because it required
+adding many hacky codes in madvise due to return value and error's semantic
+is totally different with normal madvise and needs three flags at least at
+the moment but not sure we need more flags during discussion.
+
+MADV_VOLATILE, MADV_NOVOLATILE, MADV_[NO]VOLATILE|MADV_PARTIAL_DISCARD
+
+I don't want to make madvise dirty and consume lots of new flags of madvise
+for a volatile feature. But if everybody want to fold into madivse,
+I can do it, too.
+
+Thanks for the feedback, Sanjay!
+
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
