@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab3ADRAe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 12:00:34 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:53901 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755119Ab3ADRA2 (ORCPT
+	id S1755240Ab3ADRBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 12:01:09 -0500
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:37415 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754984Ab3ADRBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 12:00:28 -0500
-Subject: Re: [PATCH v2 net-next] softirq: reduce latencies
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tom Herbert <therbert@google.com>
-In-Reply-To: <1357290721.5452.55.camel@joe-AO722>
-References: <1357216132.21409.24107.camel@edumazet-glaptop>
-	 <1357250880.2685.29.camel@bwh-desktop.uk.solarflarecom.com>
-	 <1357252816.21409.26384.camel@edumazet-glaptop>
-	 <1357285780.21409.28416.camel@edumazet-glaptop>
-	 <1357287351.5452.44.camel@joe-AO722>
-	 <1357287786.1678.87.camel@edumazet-glaptop>
-	 <1357290721.5452.55.camel@joe-AO722>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Jan 2013 09:00:24 -0800
-Message-ID: <1357318824.1678.1678.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jan 2013 12:01:08 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Patrice Chotard <patrice.chotard@stericsson.com>
+Subject: [PATCH] pinctrl: add pinconf-generic defines for output
+Date: Fri, 4 Jan 2013 18:00:49 +0100
+Message-ID: <1357318849-12616-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-04 at 01:12 -0800, Joe Perches wrote:
-> On Fri, 2013-01-04 at 00:23 -0800, Eric Dumazet wrote:
-> > On Fri, 2013-01-04 at 00:15 -0800, Joe Perches wrote:
-> > > Perhaps MAX_SOFTIRQ_TIME should be
-> > > #define MAX_SOFTIRQ_TIME msecs_to_jiffies(2)
-> > > though it would be nicer if it were a compile time constant.
-> > 
-> > If you send a patch to convert msecs_to_jiffies() to an inline function
-> > when HZ = 1000, I will gladly use it instead of (2*HZ/1000)
-> > 
-> > Right now, max(1, msecs_to_jiffies(2)) uses way too many instructions,
-> > while it should be the constant 2, known at compile time.
-> 
-> Something like this might work.
-> 
-> This is incomplete, it just does msecs_to_jiffies,
-> and it should convert usecs_to_jiffies and the
-> jiffies_to_<foo> types too.
-> 
-> Maybe it's worthwhile.
-> 
-> It does reduce object size by 16 bytes per call site
-> (x86-32) when the argument is a constant. There are
-> about 800 of these jiffies conversions in kernel sources.
-> 
-> What do you think?
-> 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-I think this is something to discuss in another thread, and definitely
-worth to do, at least for msecs_to_jiffies()
+This adds a definition of a generic output configuration
+for a certain pin when using the generic pin configuration
+library. Whereas driving pins low/high is usually a GPIO
+business, you may want to set up pins into a default state
+using hogs, and never touch them again. This helps out
+with that scenario.
 
-We have many HZ references everywhere that could be cleaned up using
-this.
+Based on a patch from Patrice Chotard.
 
+Signed-off-by: Patrice Chotard <patrice.chotard@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinconf-generic.c       | 1 +
+ include/linux/pinctrl/pinconf-generic.h | 3 +++
+ 2 files changed, 4 insertions(+)
 
+diff --git a/drivers/pinctrl/pinconf-generic.c b/drivers/pinctrl/pinconf-generic.c
+index 833a364..bcf8157 100644
+--- a/drivers/pinctrl/pinconf-generic.c
++++ b/drivers/pinctrl/pinconf-generic.c
+@@ -46,6 +46,7 @@ struct pin_config_item conf_items[] = {
+ 	PCONFDUMP(PIN_CONFIG_INPUT_DEBOUNCE, "input debounce", "time units"),
+ 	PCONFDUMP(PIN_CONFIG_POWER_SOURCE, "pin power source", "selector"),
+ 	PCONFDUMP(PIN_CONFIG_LOW_POWER_MODE, "pin low power", "mode"),
++	PCONFDUMP(PIN_CONFIG_OUTPUT, "pin output", "level"),
+ };
+ 
+ void pinconf_generic_dump_pin(struct pinctrl_dev *pctldev,
+diff --git a/include/linux/pinctrl/pinconf-generic.h b/include/linux/pinctrl/pinconf-generic.h
+index 47a1bdd..b23d99d 100644
+--- a/include/linux/pinctrl/pinconf-generic.h
++++ b/include/linux/pinctrl/pinconf-generic.h
+@@ -62,6 +62,8 @@
+  *	operation, if several modes of operation are supported these can be
+  *	passed in the argument on a custom form, else just use argument 1
+  *	to indicate low power mode, argument 0 turns low power mode off.
++ * @PIN_CONFIG_OUTPUT: this will configure the pin in output, use argument
++ *	1 to indicate high level, argument 0 to indicate low level.
+  * @PIN_CONFIG_END: this is the last enumerator for pin configurations, if
+  *	you need to pass in custom configurations to the pin controller, use
+  *	PIN_CONFIG_END+1 as the base offset.
+@@ -79,6 +81,7 @@ enum pin_config_param {
+ 	PIN_CONFIG_INPUT_DEBOUNCE,
+ 	PIN_CONFIG_POWER_SOURCE,
+ 	PIN_CONFIG_LOW_POWER_MODE,
++	PIN_CONFIG_OUTPUT,
+ 	PIN_CONFIG_END = 0x7FFF,
+ };
+ 
+-- 
+1.7.11.3
 
