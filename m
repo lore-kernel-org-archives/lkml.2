@@ -1,137 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755230Ab3ADQxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 11:53:32 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:37761 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755056Ab3ADQxa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 11:53:30 -0500
-Date: Fri, 4 Jan 2013 17:00:13 +0000
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 43/44] tty/metag_da: Add metag DA TTY driver
-Message-ID: <20130104170013.74b6dbe2@pyramind.ukuu.org.uk>
-In-Reply-To: <50E6E322.8070108@imgtec.com>
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com>
-	<1354723742-6195-44-git-send-email-james.hogan@imgtec.com>
-	<20121205172446.41aa464e@pyramind.ukuu.org.uk>
-	<50E6E322.8070108@imgtec.com>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.8; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755161Ab3ADQ4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 11:56:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754984Ab3ADQ4E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 11:56:04 -0500
+Message-ID: <50E70A4D.6050601@redhat.com>
+Date: Sat, 05 Jan 2013 00:58:53 +0800
+From: Zhouping Liu <zliu@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Mel Gorman <mgorman@suse.de>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        hughd@google.com, Michel Lespinasse <walken@google.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: kernel BUG at mm/huge_memory.c:1798!
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com> <535932623.34838584.1356410331076.JavaMail.root@redhat.com> <20130103175737.GA3885@suse.de>
+In-Reply-To: <20130103175737.GA3885@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/04/2013 01:57 AM, Mel Gorman wrote:
+> (Adding Michel and Rik to cc)
+>
+> On Mon, Dec 24, 2012 at 11:38:51PM -0500, Zhouping Liu wrote:
+>> Hello all,
+>>
+>> I found the below kernel bug using latest mainline(637704cbc95),
+>> my hardware has 2 numa nodes, and it's easy to reproduce the issue
+>> using LTP test case: "# ./mmap10 -a -s -c 200":
+>>
+> Sorry for the long delay in responding, first day back online after being
+> off for a holiday. I can reproduce this problem. It takes many iterations
+> but triggers within a minute. It also affects 3.8-rc2.
+>
+> This BUG is triggered because the rmap walk is not finding all vmas mapping
+> a page (walk found 0 avc's while the page mapcount was positive). THP
+> requires this rmap walk to be correct or minimally all the pmds will not
+> be marked as splitting. If PMDs are not marked splitting then all sorts
+> of problems can occur. The test case triggering this is fairly simple.
+>
+> o A process creates a mapping 10MB-4KB in size
+> o The process forks, then unmaps the entire mapping and exits
+> o First child forks then unmaps part of the mapping and exits
+> o Second child unmaps then unmaps part of the mapping and exits
+>
+> The partial unmapping on a page boundary but not a THP boundary is what
+> causes the THP split and allows this bug to be triggered. The two children
+> are racing with each other.
+>
+> I confirmed that this bug triggers on UMA and the THP migration for NUMA
+> balancing is very unlikely to be a factor.  As it looked like anon_vma
+> rwsem was being taken for write in the correct places, it led me to conclude
+> that this must be a race within split_huge_page() itself somewhere.
+>
+> split_huge_page consists of three tasks
+>
+>    o __split_huge_page_splitting marks all PMDs as splitting
+>
+>    o __split_huge_page_refcount uses the page compound lock to serialise
+>      based on the page and converts the compount page into 512 base pages
+>
+>    o __split_huge_page_map uses the page table lock to serialise within
+>      the address space and updates the PTE
+>
+> None of these affect avc linkages but they might be affecting the rmap
+> walk after the conversion to interval trees. I'm adding Michel and Rik
+> to the cc in case they can quickly spot how the walk could be affected
+> during a THP split.
+>
+> The patch below hides the race by serialising split_huge_page but the
+> exact race needs to be identified before figuring out what the real locking
+> problem is. That's as far as I got with it today and will pick it up again
+> tomorrow. Better theories as to what is going wrong are welcome.
 
-> >> +static int put_data(void *arg)
-> >> +{
-> >> +	struct dashbuf *dbuf;
-> >> +	int number_written;
-> >> +
-> >> +	__set_current_state(TASK_RUNNING);
-> >> +	while (!kthread_should_stop()) {
-> >> +		/*
-> >> +		 * Pick up all the output buffers and write them out.
-> >> +		 *
-> >> +		 * FIXME: should we check with ASE how much room we have?
-> >> +		 * Ideally, this will already have been done by write_room ??
-> >> +		 */
-> > 
-> > 
-> > No because your writer is asynchronous to your query so you need to
-> > manage the difference yourself. You also need to get it right on the
-> > queue length for close to work right.
-> 
-> Regarding closing working right, do you mean making sure that all data
-> in the asynchronous output buffer is written out by the final close
-> (e.g. port_shutdown before freeing it)? Is that something the driver
-> needs to do itself? (at the moment it does seem to be necessary, however
-> I could be missing something)
+Hello Mel,
 
-You have no locking guaranteeing that the write_room is correct any given
-put while put_data is running - both threads of execution can end up
-changing it at the same time.
+I have tested the below patch, and run the reproducer for a long time, 
+the issue
+couldn't be triggered any more with the patch.
 
-> >> +	/* Determine the channel */
-> >> +	channel = FIRST_TTY_CHANNEL + tty->index;
-> >> +	dtty = dashtty_ttys[channel];
-> >> +	BUG_ON(!dtty);
-> > 
-> > What is your locking model to prevent this ?
-> > What is your reference counting model for the ttys - I don't see one.
-> 
-> The new version has an array of dashtty_ports (not pointers, each
-> containing a tty_port) and uses that to get at the output buffer.
-> 
-> Would it need to ensure that the tty isn't hung up though, or is a write
-> prevented from occurring in that case?
+Thanks for your patch, and I will tested your new patch(it seemed that 
+this one
+is a little different with the new one), provide the feedback ASAP.
 
-The core tty code will hold a reference to the tty object when calling
-your methods which pass a "tty" pointer, so it won't vanish itself under
-those conditions. For any other way of accessing you need to handle any
-locking between write and hangup yourself - eg by deferring any clearing
-down of the array until the tty_port itself is destroyed.
+Zhouping
 
-> Agreed and done. I didn't realise the TTY layer was so prone to
-> providing lots of itty bitty fragments (even with a single 4k write from
-> userland). The thing that really hurt was not the allocations but that
-> each one was written out to the DA separately each incurring it's own
-> large latency. Using a write buffer makes it a lot faster :)
+>
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 9e894ed..f815ddb 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -1822,6 +1822,8 @@ int split_huge_page(struct page *page)
+>   	anon_vma = page_lock_anon_vma_read(page);
+>   	if (!anon_vma)
+>   		goto out;
+> +	page_unlock_anon_vma_read(anon_vma);
+> +	anon_vma_lock_write(anon_vma);
+>   	ret = 0;
+>   	if (!PageCompound(page))
+>   		goto out_unlock;
+> @@ -1832,7 +1834,7 @@ int split_huge_page(struct page *page)
+>   
+>   	BUG_ON(PageCompound(page));
+>   out_unlock:
+> -	page_unlock_anon_vma_read(anon_vma);
+> +	anon_vma_unlock(anon_vma);
+>   out:
+>   	return ret;
+>   }
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Think about typing a command and the echo - you get a lot of very small
-writes !
-
-> It's still possible that the debugger isn't draining the DA buffers in
-> which case they'll fill up, and the output buffer in the driver will
-> fill and then the space reported to the tty layer will drop to 0.
-
-At that point the tty layer will throttle.
-
-> 
-> > 
-> >> +}
-> > 
-> >> +static const struct tty_operations dashtty_ops = {
-> >> +	.open = dashtty_open,
-> >> +	.close = dashtty_close,
-> >> +	.write = dashtty_write,
-> > 
-> > You need a hangup method. You may need a termios method.
-> 
-> Is it sufficient for a hangup method to just call tty_port_hangup or
-> should it drop the contents of the output buffer too? (as opposed to
-> waiting for it to drain in port_shutdown).
-
-The behaviour there is undefined - up to you, whatever makes sense.
-
-> As far as I can tell none of the termios stuff is really relevant to
-> this driver.
-
-In which case the default behaviour will be fine - and it will allow non
-hardware parameters to change but not hardware ones like baud rates.
-
-> >> +	channel_driver->init_termios = tty_std_termios;
-> >> +	channel_driver->init_termios.c_cflag =
-> >> +	    B38400 | CS8 | CREAD | HUPCL | CLOCAL;
-> >> +	channel_driver->flags = TTY_DRIVER_REAL_RAW;
-> > 
-> > Need to set the speed flags
-> 
-> Do you mean c_ispeed, and c_ospeed? These are set in tty_std_termios,
-> and they aren't meaningful in the context of this driver anyway, so are
-> they still necessary?
-
-You update c_cflag to B38400 so you should set c_ispeed/c_ospeed
-accordingly. For a virtual interface it really only exists so that
-applications have an answer. You want a higher speed like 38400 so that
-apps don't try and do clever stuff for low speed links, that is all
-really.
-
-Alan
