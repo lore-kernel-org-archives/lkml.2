@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755453Ab3ADX5j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 18:57:39 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:60561 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754749Ab3ADX5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 18:57:35 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>, Russ Anderson <rja@sgi.com>
-Cc: linux-pm@vger.kernel.org, pdeschrijver@nvidia.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        rja@americas.sgi.com
-Subject: Re: [PATCH] cpuidle - fix lock contention in the idle path
-Date: Sat, 05 Jan 2013 01:03:11 +0100
-Message-ID: <3077900.eue4T2ZoF8@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <50E6764C.9060608@linaro.org>
-References: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org> <20130102211314.GA29447@sgi.com> <50E6764C.9060608@linaro.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	id S1755416Ab3AEABu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 19:01:50 -0500
+Received: from usindpps06.hds.com ([207.126.252.19]:40081 "EHLO
+	usindpps06.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab3AEABq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 19:01:46 -0500
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Luck, Tony (tony.luck@intel.com)" <tony.luck@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "anton.vorontsov@linaro.org" <anton.vorontsov@linaro.org>
+Subject: RE: [PATCH v3 0/2] pstore,efi_pstore: Avoid deadlock in
+ non-blocking paths
+Thread-Topic: [PATCH v3 0/2] pstore,efi_pstore: Avoid deadlock in
+ non-blocking paths
+Thread-Index: Ac3ewyNm+rP2IEnER5GHHHxmid334AATErOAADDDBKAACuFPgAK2aw+Q
+Date: Sat, 5 Jan 2013 00:01:29 +0000
+Message-ID: <A5ED84D3BB3A384992CBB9C77DEDA4D414A3635F@USINDEM103.corp.hds.com>
+References: <A5ED84D3BB3A384992CBB9C77DEDA4D414A2A03B@USINDEM103.corp.hds.com>
+ <20121220190923.GP88797@redhat.com>
+ <A5ED84D3BB3A384992CBB9C77DEDA4D414A2B22C@USINDEM103.corp.hds.com>
+ <20121221233706.GA29709@lizard.sbx05280.losalca.wayport.net>
+In-Reply-To: <20121221233706.GA29709@lizard.sbx05280.losalca.wayport.net>
+Accept-Language: ja-JP, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.74.43.113]
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-04_06:2013-01-04,2013-01-04,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_policy_notspam policy=outbound_policy score=0 spamscore=0
+ ipscore=0 suspectscore=1 phishscore=0 bulkscore=0 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=6.0.2-1211240000
+ definitions=main-1301040278
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r0501qw6016882
 
-On Friday, January 04, 2013 07:27:24 AM Daniel Lezcano wrote:
-> On 01/02/2013 10:13 PM, Russ Anderson wrote:
-> > On Wed, Dec 26, 2012 at 11:01:48AM +0100, Daniel Lezcano wrote:
-> >> The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
-> >> a lock in the cpuidle_get_cpu_driver function. This function
-> >> is used in the idle_call function.
-> >>
-> >> The problem is the contention with a large number of cpus because
-> >> they try to access the idle routine at the same time.
-> >>
-> >> The lock could be safely removed because of how is used the
-> >> cpuidle api. The cpuidle_register_driver is called first but
-> >> until the cpuidle_register_device is not called we don't
-> >> enter in the cpuidle idle call function because the device
-> >> is not enabled.
-> >>
-> >> The cpuidle_unregister_driver function, leading the a NULL driver,
-> >> is not called before the cpuidle_unregister_device.
-> >>
-> >> This is how is used the cpuidle api from the different drivers.
-> >>
-> >> However, a cleanup around the lock and a proper refcounting
-> >> mechanism should be used to ensure the consistency in the api,
-> >> like cpuidle_unregister_driver should failed if its refcounting
-> >> is not 0.
-> >>
-> >> These modifications will need some code reorganization and rewrite
-> >> which does not fit with a fix.
-> > 
-> > I agree.
-> > 
-> >> The following patch is a hot fix by returning to the initial behavior
-> >> by removing the lock when getting the driver.
-> > 
-> > The patch fixes the problem.  Verified on a system with 1024 cpus.
-> > Thanks.
-> > 
-> >> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> > 
-> > Reported-by: Russ Anderson <rja@sgi.com>
-> > Acked-by: Russ Anderson <rja@sgi.com>
+Tony,
+
+Can you review this patchset?
+
+Seiji
+
+> -----Original Message-----
+> From: Anton Vorontsov [mailto:cbouatmailru@gmail.com]
+> Sent: Friday, December 21, 2012 6:37 PM
+> To: Seiji Aguchi
+> Cc: Luck, Tony (tony.luck@intel.com); linux-kernel@vger.kernel.org; ccross@android.com; keescook@chromium.org; Satoru Moriya;
+> dle-develop@lists.sourceforge.net; dzickus@redhat.com
+> Subject: Re: [PATCH v3 0/2] pstore,efi_pstore: Avoid deadlock in non-blocking paths
 > 
-> Hi Rafael,
+> On Fri, Dec 21, 2012 at 11:27:00PM +0000, Seiji Aguchi wrote:
+> > Tony,
+> >
+> > Could you please apply this patchset to your tree?
 > 
-> could you consider this patch for merging ?
-
-Yes, I've taken it already.
-
-I'll include it into the next pull request.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> Actually, I'd prefer to take both patches via pstore tree. The EFI part is isolated and small, so even if it conflicts, it would be easy to
+> resolve, unlike to pstore core part.
+> 
+> So, would be great if Tony could give an Ack for EFI part and we'd merge this via pstore tree.
+> 
+> Thanks,
+> Anton
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
