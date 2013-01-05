@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974Ab3AEX3W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 18:29:22 -0500
-Received: from 1wt.eu ([62.212.114.60]:37505 "EHLO 1wt.eu"
+	id S1755971Ab3AEXeH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 18:34:07 -0500
+Received: from linode.aoot.com ([69.164.194.13]:38769 "EHLO linode.aoot.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755898Ab3AEX3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 18:29:18 -0500
-Date: Sun, 6 Jan 2013 00:29:13 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Major network performance regression in 3.7
-Message-ID: <20130105232913.GQ16031@1wt.eu>
-References: <20130105214958.GA19814@1wt.eu> <1357427926.1678.4771.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357427926.1678.4771.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+	id S1755898Ab3AEXeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 18:34:06 -0500
+Message-ID: <50E8B85F.9030605@opengridcomputing.com>
+Date: Sat, 05 Jan 2013 17:33:51 -0600
+From: Steve Wise <swise@opengridcomputing.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Akinobu Mita <akinobu.mita@gmail.com>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org
+Subject: Re: [PATCH -v2 09/26] infiniband: rename random32() to prandom_u32()
+References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com> <1357215562-6288-10-git-send-email-akinobu.mita@gmail.com> <50E5B183.4030706@opengridcomputing.com> <CAC5umygnMMC2sH2c88P_gEWTgwM=CBCUcqBbo+NX=fOZ2rEGxw@mail.gmail.com> <50E70E48.3010900@opengridcomputing.com> <CAC5umyjpA4_J-1RRv0O72GiPW5O6-1b+dypg746vOphEkpKyYw@mail.gmail.com>
+In-Reply-To: <CAC5umyjpA4_J-1RRv0O72GiPW5O6-1b+dypg746vOphEkpKyYw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+On 1/5/2013 7:37 AM, Akinobu Mita wrote:
+> 2013/1/5 Steve Wise <swise@opengridcomputing.com>:
+>> I'm asking: why are you bothering with renaming the functions?  This seems
+>> like a needless change, _unless_ there are really non-pseudo-random services
+>> being added.
+> We already have get_random_byte() which is not pseudo-random number
+> generator.
+>
+> Apart from that, the naming scheme was confusing without "prandom" prefix.
+> Because I introduced new functions in the commit 6582c665 ("prandom:
+> introduce prandom_bytes() and prandom_bytes_state()").
 
-On Sat, Jan 05, 2013 at 03:18:46PM -0800, Eric Dumazet wrote:
-> Hi Willy, another good finding during the week end ! ;)
-
-Yes, I wanted to experiment with TFO and stopped on this :-)
-
-> 1) This looks like interrupts are spreaded on multiple cpus, and this
-> give Out Of Order problems with TCP stack.
-
-No, I forgot to mention this, I have tried to bind IRQs to a single
-core, with the server either on the same or another one, but the
-problem remained.
-
-Also, the loopback is much more affected and doesn't use IRQs. And
-BTW tcpdump on the loopback shouldn't drop that many packets (up to
-90% even at low rate). I just noticed something, transferring data
-using netcat on the loopback doesn't affect tcpdump. So it's likely
-only the spliced data that are affected.
-
-> 2) Another possibility would be that Myri card/driver doesnt like very
-> well high order pages.
-
-It looks like it has not changed much since 3.6 :-/ I really suspect
-something is wrong with memory allocation. I have tried reverting many
-patches affecting the mm/ directory just in case but I did not come to
-anything useful yet.
-
-I'm continuing to dig.
-
-Thanks,
-Willy
-
+Ok, thanks for the explanation.
