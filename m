@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab3AESnq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 13:43:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:18510 "EHLO mx1.redhat.com"
+	id S1755872Ab3AETGL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 14:06:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:17055 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755821Ab3AESnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 13:43:43 -0500
-Date: Sat, 5 Jan 2013 19:43:29 +0100
+	id S1755821Ab3AETGJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 14:06:09 -0500
+Date: Sat, 5 Jan 2013 20:05:52 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Stephane Eranian <eranian@google.com>
 Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
         ak@linux.intel.com, acme@redhat.com, namhyung.kim@lge.com
-Subject: Re: [PATCH v4 08/18] perf/x86: add memory profiling via PEBS Load
- Latency
-Message-ID: <20130105184329.GB995@krava.brq.redhat.com>
+Subject: Re: [PATCH v4 07/18] perf: add generic memory sampling interface
+Message-ID: <20130105190552.GC995@krava.brq.redhat.com>
 References: <1356018108-6081-1-git-send-email-eranian@google.com>
- <1356018108-6081-9-git-send-email-eranian@google.com>
+ <1356018108-6081-8-git-send-email-eranian@google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356018108-6081-9-git-send-email-eranian@google.com>
+In-Reply-To: <1356018108-6081-8-git-send-email-eranian@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 20, 2012 at 04:41:38PM +0100, Stephane Eranian wrote:
-> This patch adds support for memory profiling using the
-> PEBS Load Latency facility.
+On Thu, Dec 20, 2012 at 04:41:37PM +0100, Stephane Eranian wrote:
+> This patch adds PERF_SAMPLE_COST and PERF_SAMPLE_DSRC.
+> The first collects a cost associated with the sampled
+> event. In case of memory access, the cost would be
+> the latency of the load, otherwise it defaults to
+> the sampling period.
 > 
-> Load accesses are sampled by HW and the instruction
-> address, data address, load latency, data source, tlb,
-> locked information can be saved in the sampling buffer
-> if using the PERF_SAMPLE_COST (for latency),
-
-PERF_SAMPLE_WEIGHT ?
-
-> PERF_SAMPLE_ADDR, PERF_SAMPLE_DSRC types.
-> 
-> To enable PEBS Load Latency, users have to use the
-> model specific event:
-> - on NHM/WSM: MEM_INST_RETIRED:LATENCY_ABOVE_THRESHOLD
-> - on SNB/IVB: MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
-> 
-> To make things easier, this patch also exports a generic
-> alias via sysfs: mem-loads. It export the right event
-> encoding based on the host CPU and can be used directly
-> by the perf tool.
-> 
-> Loosely based on Intel's Lin Ming patch posted on LKML
-> in July 2011.
+> PERF_SAMPLE_DSRC collects the data source, i.e., where
+> did the data associated with the sampled instruction
+> come from. Information is stored in a perf_mem_dsrc
+> structure. It contains opcode, mem level, tlb, snoop,
+> lock information, subject to availability in hardware.
 > 
 > Signed-off-by: Stephane Eranian <eranian@google.com>
 
 SNIP
 
-> +/*
-> + * Map PEBS Load Latency Data Source encodings to generic
-> + * memory data source information
-> + */
-> +#define P(a, b) PERF_MEM_S(a, b)
-> +#define OP_LH (P(OP, LOAD) | P(LVL, HIT))
-> +#define SNOOP_NONE_MISS (P(SNOOP, NONE) | P(SNOOP, MISS))
 > +
+> +/* type of opcode (load/store/prefetch,code) */
+> +#define PERF_MEM_OP_NA		0x01 /* not available */
+> +#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
+> +#define PERF_MEM_OP_STORE	0x04 /* store instruction */
+> +#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
+> +#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
+> +#define PERF_MEM_OP_SHIFT	0
+> +
+> +/* memory hierarchy (memory level, hit or miss) */
+> +#define PERF_MEM_LVL_NA		0x01  /* not available */
+> +#define PERF_MEM_LVL_HIT	0x02  /* hit level */
+> +#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
+> +#define PERF_MEM_LVL_L1		0x08  /* L1 */
+> +#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
+> +#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
+> +#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
+> +#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
+> +#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
+> +#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
+> +#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
+> +#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
+> +#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
+> +#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
+> +#define PERF_MEM_LVL_SHIFT	5
+> +
+> +/* snoop mode */
+> +#define PERF_MEM_SNOOP_NA	0x01 /* not available */
+> +#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
+> +#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
+> +#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
+> +#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
+> +#define PERF_MEM_SNOOP_SHIFT	19
+> +
+> +/* locked instruction */
+> +#define PERF_MEM_LOCK_NA	0x01 /* not available */
+> +#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
+> +#define PERF_MEM_LOCK_SHIFT	24
+> +
+> +/* TLB access */
+> +#define PERF_MEM_TLB_NA		0x01 /* not available */
+> +#define PERF_MEM_TLB_HIT	0x02 /* hit level */
+> +#define PERF_MEM_TLB_MISS	0x04 /* miss level */
+> +#define PERF_MEM_TLB_L1		0x08 /* L1 */
+> +#define PERF_MEM_TLB_L2		0x10 /* L2 */
+> +#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
+> +#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
+> +#define PERF_MEM_TLB_SHIFT	26
+> +
+> +#define PERF_MEM_S(a, s) \
+> +	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
 
-I checked Intel SDM 'Table 18-13. Data Source Encoding for Load Latency Record'
-and it seems to be different (below) at some points.. did you use another source?
+Why dont use enums for this?
 
-> +static const u64 pebs_data_source[] = {
-> +	P(OP, LOAD) | P(LVL, MISS) | P(LVL, L3) | P(SNOOP, NA),/* 0x00:ukn L3 */
-> +	OP_LH | P(LVL, L1) | P(SNOOP, NONE),	/* 0x01: L1 local */
-> +	OP_LH | P(LVL, LFB)| P(SNOOP, NONE),	/* 0x02: LFB hit */
-> +	OP_LH | P(LVL, L2) | P(SNOOP, NONE),	/* 0x03: L2 hit */
-> +	OP_LH | P(LVL, L3) | P(SNOOP, NONE),	/* 0x04: L3 hit */
-> +	OP_LH | P(LVL, L3) | P(SNOOP, MISS),	/* 0x05: L3 hit, snoop miss */
-> +	OP_LH | P(LVL, L3) | P(SNOOP, HIT),	/* 0x06: L3 hit, snoop hit */
-
-0x6:
-L3 HIT. Local or Remote home requests that hit the L3 cache and was serviced by
-another processor core with a cross core snoop where modified copies were found.
-(HITM).
-
-
-> +	OP_LH | P(LVL, L3) | P(SNOOP, HITM),	/* 0x07: L3 hit, snoop hitm */
-
-0x7:
-Reserved
-
-> +	OP_LH | P(LVL, REM_CCE1) | P(SNOOP, HIT),  /* 0x08: L3 miss snoop hit */
-> +	OP_LH | P(LVL, REM_CCE1) | P(SNOOP, HITM), /* 0x09: L3 miss snoop hitm*/
-
-0x9:
-Reserved
-
-> +	OP_LH | P(LVL, LOC_RAM)  | P(SNOOP, HIT),  /* 0x0a: L3 miss, shared */
-> +	OP_LH | P(LVL, REM_RAM1) | P(SNOOP, HIT),  /* 0x0b: L3 miss, shared */
-> +	OP_LH | P(LVL, LOC_RAM)  | SNOOP_NONE_MISS,/* 0x0c: L3 miss, excl */
-> +	OP_LH | P(LVL, REM_RAM1) | SNOOP_NONE_MISS,/* 0x0d: L3 miss, excl */
-> +	OP_LH | P(LVL, IO) | P(SNOOP, NONE), /* 0x0e: I/O */
-> +	OP_LH | P(LVL,UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
-> +};
-
-thanks,
 jirka
