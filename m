@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab3AEBcU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 20:32:20 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:51843 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab3AEBcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 20:32:18 -0500
+	id S1755493Ab3AEBru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 20:47:50 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:44689 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755290Ab3AEBrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 20:47:47 -0500
+Date: Fri, 4 Jan 2013 17:47:41 -0800
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Anton Blanchard <anton@au1.ibm.com>, robert.richter@amd.com,
+        linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/5] perf: Make EVENT_ATTR and EVENT_PTR global
+Message-ID: <20130105014741.GA4438@us.ibm.com>
+References: <20121219072802.GA30790@us.ibm.com>
+ <20130102145850.GE931@krava.brq.redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20130104140815.GA26005@suse.de>
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
-	<535932623.34838584.1356410331076.JavaMail.root@redhat.com>
-	<20130103175737.GA3885@suse.de>
-	<20130104140815.GA26005@suse.de>
-Date: Fri, 4 Jan 2013 17:32:17 -0800
-Message-ID: <CANN689E8S5mmszQoeaYgL_SYe1piBDTWCk-Gy1kxcg6hPfUPwA@mail.gmail.com>
-Subject: Re: [PATCH] mm: thp: Acquire the anon_vma rwsem for lock during split
-From: Michel Lespinasse <walken@google.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Johannes Weiner <jweiner@redhat.com>, hughd@google.com,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130102145850.GE931@krava.brq.redhat.com>
+X-Operating-System: Linux 2.0.32 on an i486
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010501-9360-0000-0000-00000ECA40F4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 6:08 AM, Mel Gorman <mgorman@suse.de> wrote:
-> Despite the reason for these commits, NUMA balancing is not the direct
-> source of the problem. split_huge_page() expected the anon_vma lock to be
-> exclusive to serialise the whole split operation. Ordinarily it is expected
-> that the anon_vma lock would only be required when updating the avcs but
-> THP also uses it. The locking requirements for THP are complex and there
-> is some overlap but broadly speaking they include the following
->
-> 1. mmap_sem for read or write prevents THPs being created underneath
-> 2. anon_vma is taken for write if collapsing a huge page
-> 3. mm->page_table_lock should be taken when checking if pmd_trans_huge as
->    split_huge_page can run in parallel
-> 4. wait_split_huge_page uses anon_vma taken for write mode to serialise
->    against other THP operations
-> 5. compound_lock is used to serialise between
->    __split_huge_page_refcount() and gup
->
-> split_huge_page takes anon_vma for read but that does not serialise against
-> parallel split_huge_page operations on the same page (rule 2). One process
-> could be modifying the ref counts while the other modifies the page tables
-> leading to counters not being reliable. This patch takes the anon_vma
-> lock for write to serialise against parallel split_huge_page and parallel
-> collapse operations as it is the most fine-grained lock available that
-> protects against both.
+Jiri Olsa [jolsa@redhat.com] wrote:
+| On Tue, Dec 18, 2012 at 11:28:02PM -0800, Sukadev Bhattiprolu wrote:
+| > 
+| > Rename EVENT_ATTR() and EVENT_PTR() PMU_EVENT_ATTR() and PMU_EVENT_PTR().
+| > Make them global so they are available to all architectures.
+| > 
+| > Further to allow architectures flexibility, have PMU_EVENT_PTR() pass in the
+| > variable name as a parameter.
+| > 
+| hi,
+| the change looks ok apart from some nits below.
+| 
+| There' another version of the x86 event attributes change
+| I mentioned earlier:
+| 
+| http://marc.info/?l=linux-kernel&m=135601815224373&w=2
+| 
+| I'm not sure which one will make it in first, but you
+| guys need to sync ;-) CC-ing Andi and Stephane.
 
-Your comment about this being the most fine-grained lock made me
-think, couldn't we use lock_page() on the THP page here ?
+One change that would help powerpc (and other architectures) is to move
+the 'struct perf_pmu_events_attr' to say, include/linux/perf_event.h.
 
-Now I don't necessarily want to push you that direction, because I
-haven't fully thought it trough and because what you propose brings us
-closer to what happened before anon_vma became an rwlock, which is
-more obviously safe. But I felt I should still mention it, since we're
-really only trying to protect from concurrent operations on the same
-THP page, so locking at just that granularity would seem desirable.
+Each architecture can define EVENT_VAR(), EVENT_PTR() etc as needed.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+| 
+| thanks,
+| jirka
+| 
+
+<snip>
+
+| > +struct perf_pmu_events_attr {
+| > +	struct device_attribute attr;
+| > +	u64 id;
+| > +};
+| > +
+| > +#define PMU_EVENT_PTR(_var)	&_var.attr.attr
+| 
+| this one seems superfluous as well, could be replaced by '&'
+
+I guess that would encode the assumption that both the 'attr' fields are 
+the first in their respective structures. If so, an explicit comment beside
+the fields would be useful.
+
+Sukadev
+
