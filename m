@@ -1,42 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab3AELRN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 06:17:13 -0500
-Received: from mail-ia0-f173.google.com ([209.85.210.173]:51087 "EHLO
-	mail-ia0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab3AELRL (ORCPT
+	id S1755724Ab3AELVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 06:21:47 -0500
+Received: from [216.228.121.35] ([216.228.121.35]:3357 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3AELVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 06:17:11 -0500
+	Sat, 5 Jan 2013 06:21:45 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Sat, 05 Jan 2013 03:18:31 -0800
+Message-ID: <50E80C9A.7040404@nvidia.com>
+Date: Sat, 5 Jan 2013 16:50:58 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-In-Reply-To: <50CAA1F2.9000003@asianux.com>
-References: <50CAA1F2.9000003@asianux.com>
-Date: Sat, 5 Jan 2013 05:17:10 -0600
-Message-ID: <CAJ6Av5MP8gjck=WqjLJMLEtHbbaMOT2aFxExP4YkGScE-O0L8A@mail.gmail.com>
-Subject: Re: [Suggestion] drivers/staging/tidspbridge: strcpy and strncpy, src
- length checking issue.
-From: Omar Ramirez Luna <omar.ramirez@copitl.com>
-To: Chen Gang <gang.chen@asianux.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
+ allocation
+References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com> <1357371910-3164-3-git-send-email-ldewangan@nvidia.com> <20130105080658.GA1315@core.coreip.homeip.net>
+In-Reply-To: <20130105080658.GA1315@core.coreip.homeip.net>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+HI Dmitry,
+Thanks for quick review.
 
-On Thu, Dec 13, 2012 at 9:50 PM, Chen Gang <gang.chen@asianux.com> wrote:
->   in drivers/staging/tidspbridge/rmgr/proc.c:
+I will take care of your comment in next version. Some have my answer.
+
+
+On Saturday 05 January 2013 01:36 PM, Dmitry Torokhov wrote:
+> Hi Laxman,
 >
->     if strlen(drv_datap->base_img) == size, will pass checking (line 397)
->     the size is the full length of exec_file (line 382, line 468..469)
->     strcpy causes issue: src len is strlen(drv_datap->base_img) + '\0'. (line 400)
+> On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan wrote:
+>> Use devm_* for memory, clock, input device allocation. This reduces
+>> code for freeing these resources.
 
-Good catch.
+>>   	err = tegra_kbd_setup_keymap(kbc);
+>> -	if (err) {
+>> +	if (err < 0) {
+> Why is this change? As far as I can see tegra_kbd_setup_keymap() never
+> returns positive values.
 
->     strncpy seems also has issue: need use size instead of strlen(iva_img) + 1. (line 402..403)
+Ok, mostly errors are in negative and hence this change, I will revert 
+it and will keep original.
 
-This code is not used, it is best to remove it.
+>
+>>   		dev_err(&pdev->dev, "failed to setup keymap\n");
+>> -		goto err_put_clk;
+>> +		return err;
+>>   	}
+>>   
+>>   	__set_bit(EV_REP, input_dev->evbit);
+>> @@ -790,15 +784,15 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+>>   
+>>   	err = request_irq(kbc->irq, tegra_kbc_isr,
+>>   			  IRQF_NO_SUSPEND | IRQF_TRIGGER_HIGH, pdev->name, kbc);
+>> -	if (err) {
+>> +	if (err < 0) {
+> Neither request_irq(). BTW, why not devm_request_irq?
 
-Cheers,
+I understand from Mark B on different patches that using 
+devm_request_irq() can create race condition when removing device. 
+Interrupt can occur when device resource release is in process and so it 
+can cause isr call which can use the freed pointer. devm_request_irq() 
+should be avoided.
 
-Omar
+
+Thanks,
+Laxman
