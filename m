@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab3AEIh4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:37:56 -0500
+	id S1755706Ab3AEIhx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:37:53 -0500
 Received: from mga11.intel.com ([192.55.52.93]:44979 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755344Ab3AEIhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:37:42 -0500
+	id S1755556Ab3AEIhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 03:37:38 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,415,1355126400"; 
-   d="scan'208";a="270210155"
+   d="scan'208";a="270210141"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         alex.shi@intel.com
-Subject: [PATCH v3 17/22] sched: packing small tasks in wake/exec balancing
-Date: Sat,  5 Jan 2013 16:37:46 +0800
-Message-Id: <1357375071-11793-18-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v3 15/22] sched: log the cpu utilization at rq
+Date: Sat,  5 Jan 2013 16:37:44 +0800
+Message-Id: <1357375071-11793-16-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
 References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
@@ -26,99 +26,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the wake/exec task is small enough, utils < 12.5%, it will
-has the chance to be packed into a cpu which is busy but still has space to
-handle it.
+The cpu's utilization is to measure how busy is the cpu.
+        util = cpu_rq(cpu)->avg.runnable_avg_sum
+                / cpu_rq(cpu)->avg.runnable_avg_period;
+
+Since the util is no more than 1, we use its percentage value in later
+caculations. And set the the FULL_UTIL as 99%.
+
+In later power aware scheduling, we are sensitive for how busy of the
+cpu, not how weight of its load. As to power consuming, it is more
+related with busy time, not the load weight.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 51 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 45 insertions(+), 6 deletions(-)
+ kernel/sched/debug.c | 1 +
+ kernel/sched/fair.c  | 4 ++++
+ kernel/sched/sched.h | 4 ++++
+ 3 files changed, 9 insertions(+)
 
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index 2cd3c1b..e4035f7 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -318,6 +318,7 @@ do {									\
+ 
+ 	P(ttwu_count);
+ 	P(ttwu_local);
++	P(util);
+ 
+ #undef P
+ #undef P64
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 8d0d3af..0596e81 100644
+index ee015b8..7bfbd69 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3471,19 +3471,57 @@ static inline int get_sd_sched_policy(struct sched_domain *sd,
- }
+@@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
  
- /*
-+ * find_leader_cpu - find the busiest but still has enough leisure time cpu
-+ * among the cpus in group.
-+ */
-+static int
-+find_leader_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
-+{
-+	unsigned vacancy, min_vacancy = UINT_MAX;
-+	int idlest = -1;
-+	int i;
-+	/* percentage the task's util */
-+	unsigned putil = p->se.avg.runnable_avg_sum * 100
-+				/ (p->se.avg.runnable_avg_period + 1);
-+
-+	/* Traverse only the allowed CPUs */
-+	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
-+		struct rq *rq = cpu_rq(i);
-+		int nr_running = rq->nr_running > 0 ? rq->nr_running : 1;
-+
-+		/* only pack task which putil < 12.5% */
-+		vacancy = FULL_UTIL - (rq->util * nr_running + putil * 8);
-+
-+		/* bias toward local cpu */
-+		if (vacancy > 0 && (i == this_cpu))
-+			return i;
-+
-+		if (vacancy > 0 && vacancy < min_vacancy) {
-+			min_vacancy = vacancy;
-+			idlest = i;
-+		}
-+	}
-+	return idlest;
-+}
-+
-+/*
-  * If power policy is eligible for this domain, and it has task allowed cpu.
-  * we will select CPU from this domain.
-  */
- static int get_cpu_for_power_policy(struct sched_domain *sd, int cpu,
--		struct task_struct *p, struct sd_lb_stats *sds)
-+		struct task_struct *p, struct sd_lb_stats *sds, int fork)
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
  {
- 	int policy;
- 	int new_cpu = -1;
- 
- 	policy = get_sd_sched_policy(sd, cpu, p, sds);
--	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader)
--		new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
--
-+	if (policy != SCHED_POLICY_PERFORMANCE && sds->group_leader) {
-+		if (!fork)
-+			new_cpu = find_leader_cpu(sds->group_leader, p, cpu);
-+		/* for fork balancing and a little busy task */
-+		if (new_cpu == -1)
-+			new_cpu = find_idlest_cpu(sds->group_leader, p, cpu);
-+	}
- 	return new_cpu;
++	u32 period;
+ 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
++
++	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
++	rq->util = rq->avg.runnable_avg_sum * 100 / period;
  }
  
-@@ -3534,14 +3572,15 @@ select_task_rq_fair(struct task_struct *p, int sd_flag, int flags)
- 		if (tmp->flags & sd_flag) {
- 			sd = tmp;
+ /* Add the load generated by se into cfs_rq's child load-average */
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 66b08a1..3c6e803 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -350,6 +350,9 @@ extern struct root_domain def_root_domain;
  
--			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds);
-+			new_cpu = get_cpu_for_power_policy(sd, cpu, p, &sds,
-+						flags & SD_BALANCE_FORK);
- 			if (new_cpu != -1)
- 				goto unlock;
- 		}
- 	}
+ #endif /* CONFIG_SMP */
  
- 	if (affine_sd) {
--		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds);
-+		new_cpu = get_cpu_for_power_policy(affine_sd, cpu, p, &sds, 0);
- 		if (new_cpu != -1)
- 			goto unlock;
++/* Take as full load, if the cpu percentage util is up to 99 */
++#define FULL_UTIL	99
++
+ /*
+  * This is the main, per-CPU runqueue data structure.
+  *
+@@ -481,6 +484,7 @@ struct rq {
+ #endif
  
+ 	struct sched_avg avg;
++	unsigned int util;
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
 -- 
 1.7.12
 
