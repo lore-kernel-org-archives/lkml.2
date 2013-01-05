@@ -1,199 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab3AEHrN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 02:47:13 -0500
-Received: from [216.228.121.35] ([216.228.121.35]:15067 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab3AEHqZ (ORCPT
+	id S1755176Ab3AEIHi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:07:38 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:43134 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab3AEIHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 02:46:25 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Fri, 04 Jan 2013 23:41:41 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <dmitry.torokhov@gmail.com>
-CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
-        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-input@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH v2] input: keyboard: tegra: add support for rows/cols configuration from dt
-Date: Sat, 5 Jan 2013 13:15:09 +0530
-Message-ID: <1357371910-3164-4-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
+	Sat, 5 Jan 2013 03:07:36 -0500
+Date: Sat, 5 Jan 2013 00:06:58 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Laxman Dewangan <ldewangan@nvidia.com>
+Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, swarren@nvidia.com,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
+ allocation
+Message-ID: <20130105080658.GA1315@core.coreip.homeip.net>
 References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
+ <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The NVIDIA's Tegra KBC has maximum 24 pins to make matrix keypad.
-Any pin can be configured as row or column. The maximum column pin
-can be 8 and maximum row pin can be 16.
+Hi Laxman,
 
-Remove the assumption that all first 16 pins will be used as row
-and remaining as columns and Add the property for configuring pins
-to either row or column from DT. Update the devicetree binding
-document accordingly.
+On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan wrote:
+> Use devm_* for memory, clock, input device allocation. This reduces
+> code for freeing these resources.
+> 
+> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+> ---
+> Changes from V1:
+> None
+> 
+>  drivers/input/keyboard/tegra-kbc.c |   93 +++++++++++-------------------------
+>  1 files changed, 28 insertions(+), 65 deletions(-)
+> 
+> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
+> index f1d3ba0..c036425 100644
+> --- a/drivers/input/keyboard/tegra-kbc.c
+> +++ b/drivers/input/keyboard/tegra-kbc.c
+> @@ -618,7 +618,7 @@ static struct tegra_kbc_platform_data *tegra_kbc_dt_parse_pdata(
+>  	if (!np)
+>  		return NULL;
+>  
+> -	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
+> +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
+>  	if (!pdata)
+>  		return NULL;
+>  
+> @@ -700,33 +700,36 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+>  	if (!pdata)
+>  		pdata = tegra_kbc_dt_parse_pdata(pdev);
+>  
+> -	if (!pdata)
+> +	if (!pdata) {
+> +		dev_err(&pdev->dev, "Platform data missing\n");
+>  		return -EINVAL;
+> -
+> -	if (!tegra_kbc_check_pin_cfg(pdata, &pdev->dev, &num_rows)) {
+> -		err = -EINVAL;
+> -		goto err_free_pdata;
+>  	}
+>  
+> +	if (!tegra_kbc_check_pin_cfg(pdata, &pdev->dev, &num_rows))
+> +		return -EINVAL;
+> +
+>  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>  	if (!res) {
+>  		dev_err(&pdev->dev, "failed to get I/O memory\n");
+> -		err = -ENXIO;
+> -		goto err_free_pdata;
+> +		return -ENXIO;
+>  	}
+>  
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0) {
+>  		dev_err(&pdev->dev, "failed to get keyboard IRQ\n");
+> -		err = -ENXIO;
+> -		goto err_free_pdata;
+> +		return -ENXIO;
+> +	}
+> +
+> +	kbc = devm_kzalloc(&pdev->dev, sizeof(*kbc), GFP_KERNEL);
+> +	if (!kbc) {
+> +		dev_err(&pdev->dev, "failed to alloc memory for kbc\n");
+> +		return -ENOMEM;
+>  	}
+>  
+> -	kbc = kzalloc(sizeof(*kbc), GFP_KERNEL);
+> -	input_dev = input_allocate_device();
+> -	if (!kbc || !input_dev) {
+> -		err = -ENOMEM;
+> -		goto err_free_mem;
+> +	input_dev = devm_input_allocate_device(&pdev->dev);
+> +	if (!input_dev) {
+> +		dev_err(&pdev->dev, "failed to allocate input device\n");
+> +		return -ENOMEM;
+>  	}
+>  
+>  	kbc->pdata = pdata;
+> @@ -735,25 +738,16 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+>  	spin_lock_init(&kbc->lock);
+>  	setup_timer(&kbc->timer, tegra_kbc_keypress_timer, (unsigned long)kbc);
+>  
+> -	res = request_mem_region(res->start, resource_size(res), pdev->name);
+> -	if (!res) {
+> -		dev_err(&pdev->dev, "failed to request I/O memory\n");
+> -		err = -EBUSY;
+> -		goto err_free_mem;
+> -	}
+> -
+> -	kbc->mmio = ioremap(res->start, resource_size(res));
+> +	kbc->mmio = devm_request_and_ioremap(&pdev->dev, res);
+>  	if (!kbc->mmio) {
+> -		dev_err(&pdev->dev, "failed to remap I/O memory\n");
+> -		err = -ENXIO;
+> -		goto err_free_mem_region;
+> +		dev_err(&pdev->dev, "Cannot request memregion/iomap address\n");
+> +		return -EADDRNOTAVAIL;
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
-Changes from V1:
-- renames kbc-rows and kbc-cols to kbc-row-pins and kbc-col-pins.
-- cleanusp.
+Erm, no, -EBUSY please.
 
- .../bindings/input/nvidia,tegra20-kbc.txt          |   22 ++++++
- drivers/input/keyboard/tegra-kbc.c                 |   74 +++++++++++++++-----
- 2 files changed, 79 insertions(+), 17 deletions(-)
+>  	}
+>  
+> -	kbc->clk = clk_get(&pdev->dev, NULL);
+> +	kbc->clk = devm_clk_get(&pdev->dev, NULL);
+>  	if (IS_ERR(kbc->clk)) {
+>  		dev_err(&pdev->dev, "failed to get keyboard clock\n");
+> -		err = PTR_ERR(kbc->clk);
+> -		goto err_iounmap;
+> +		return PTR_ERR(kbc->clk);
+>  	}
+>  
+>  	/*
+> @@ -778,9 +772,9 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+>  	input_dev->close = tegra_kbc_close;
+>  
+>  	err = tegra_kbd_setup_keymap(kbc);
+> -	if (err) {
+> +	if (err < 0) {
 
-diff --git a/Documentation/devicetree/bindings/input/nvidia,tegra20-kbc.txt b/Documentation/devicetree/bindings/input/nvidia,tegra20-kbc.txt
-index 72683be..2995fae 100644
---- a/Documentation/devicetree/bindings/input/nvidia,tegra20-kbc.txt
-+++ b/Documentation/devicetree/bindings/input/nvidia,tegra20-kbc.txt
-@@ -1,7 +1,18 @@
- * Tegra keyboard controller
-+The key controller has maximum 24 pins to make matrix keypad. Any pin
-+can be configured as row or column. The maximum column pin can be 8
-+and maximum row pins can be 16 for Tegra20/Tegra30.
- 
- Required properties:
- - compatible: "nvidia,tegra20-kbc"
-+- reg: Register base address of KBC.
-+- interrupts: Interrupt number for the KBC.
-+- nvidia,kbc-row-pins: The KBC pins which are configured as row. This is an
-+  array of pin numbers which is used as rows.
-+- nvidia,kbc-col-pins: The KBC pins which are configured as column. This is an
-+  array of pin numbers which is used as column.
-+- linux,keymap: The keymap for keys as described in the binding document
-+  devicetree/bindings/input/matrix-keymap.txt.
- 
- Optional properties, in addition to those specified by the shared
- matrix-keyboard bindings:
-@@ -19,5 +30,16 @@ Example:
- keyboard: keyboard {
- 	compatible = "nvidia,tegra20-kbc";
- 	reg = <0x7000e200 0x100>;
-+	interrupts = <0 85 0x04>;
- 	nvidia,ghost-filter;
-+	nvidia,debounce-delay-ms = <640>;
-+	nvidia,kbc-row-pins = <0 1 2>;    /* pin 0, 1, 2 as rows */
-+	nvidia,kbc-col-pins = <11 12 13>; /* pin 11, 12, 13 as columns */
-+	linux,keymap = <0x00000074
-+			0x00010067
-+			0x00020066
-+			0x01010068
-+			0x02000069
-+			0x02010070
-+			0x02020071>;
- };
-diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-index c036425..b65971d 100644
---- a/drivers/input/keyboard/tegra-kbc.c
-+++ b/drivers/input/keyboard/tegra-kbc.c
-@@ -614,13 +614,16 @@ static struct tegra_kbc_platform_data *tegra_kbc_dt_parse_pdata(
- 	struct device_node *np = pdev->dev.of_node;
- 	u32 prop;
- 	int i;
--
--	if (!np)
--		return NULL;
-+	u32 num_rows = 0;
-+	u32 num_cols = 0;
-+	u32 cols_cfg[KBC_MAX_GPIO];
-+	u32 rows_cfg[KBC_MAX_GPIO];
-+	int proplen;
-+	int ret;
- 
- 	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
- 	if (!pdata)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
- 
- 	if (!of_property_read_u32(np, "nvidia,debounce-delay-ms", &prop))
- 		pdata->debounce_cnt = prop;
-@@ -634,18 +637,55 @@ static struct tegra_kbc_platform_data *tegra_kbc_dt_parse_pdata(
- 	if (of_find_property(np, "nvidia,wakeup-source", NULL))
- 		pdata->wakeup = true;
- 
--	/*
--	 * All currently known keymaps with device tree support use the same
--	 * pin_cfg, so set it up here.
--	 */
--	for (i = 0; i < KBC_MAX_ROW; i++) {
--		pdata->pin_cfg[i].num = i;
--		pdata->pin_cfg[i].type = PIN_CFG_ROW;
-+	if (!of_get_property(np, "nvidia,kbc-row-pins", &proplen)) {
-+		dev_err(&pdev->dev, "property nvidia,kbc-row-pins not found\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+	num_rows = proplen / sizeof(u32);
-+
-+	if (!of_get_property(np, "nvidia,kbc-col-pins", &proplen)) {
-+		dev_err(&pdev->dev, "property nvidia,kbc-col-pins not found\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+	num_cols = proplen / sizeof(u32);
-+
-+	if (!of_get_property(np, "linux,keymap", &proplen)) {
-+		dev_err(&pdev->dev, "property linux,keymap not found\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+
-+	if (!num_rows || !num_cols || ((num_rows + num_cols) > KBC_MAX_GPIO)) {
-+		dev_err(&pdev->dev,
-+			"keypad rows/columns not porperly specified\n");
-+		return ERR_PTR(-EINVAL);
- 	}
- 
--	for (i = 0; i < KBC_MAX_COL; i++) {
--		pdata->pin_cfg[KBC_MAX_ROW + i].num = i;
--		pdata->pin_cfg[KBC_MAX_ROW + i].type = PIN_CFG_COL;
-+	/* Set all pins as non-configured */
-+	for (i = 0; i < KBC_MAX_GPIO; i++)
-+		pdata->pin_cfg[i].type = PIN_CFG_IGNORE;
-+
-+	ret = of_property_read_u32_array(np, "nvidia,kbc-row-pins",
-+				rows_cfg, num_rows);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Rows configurations are not proper\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+
-+	ret = of_property_read_u32_array(np, "nvidia,kbc-col-pins",
-+				cols_cfg, num_cols);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Cols configurations are not proper\n");
-+		return ERR_PTR(-ENOENT);
-+	}
-+
-+	for (i = 0; i < num_rows; i++) {
-+		pdata->pin_cfg[rows_cfg[i]].type = PIN_CFG_ROW;
-+		pdata->pin_cfg[rows_cfg[i]].num = i;
-+	}
-+
-+	for (i = 0; i < num_cols; i++) {
-+		pdata->pin_cfg[cols_cfg[i]].type = PIN_CFG_COL;
-+		pdata->pin_cfg[cols_cfg[i]].num = i;
- 	}
- 
- 	return pdata;
-@@ -697,12 +737,12 @@ static int tegra_kbc_probe(struct platform_device *pdev)
- 	unsigned int debounce_cnt;
- 	unsigned int scan_time_rows;
- 
--	if (!pdata)
-+	if (!pdata && pdev->dev.of_node)
- 		pdata = tegra_kbc_dt_parse_pdata(pdev);
- 
--	if (!pdata) {
-+	if (IS_ERR_OR_NULL(pdata)) {
- 		dev_err(&pdev->dev, "Platform data missing\n");
--		return -EINVAL;
-+		return pdata ? PTR_ERR(pdata) : -EINVAL;
- 	}
- 
- 	if (!tegra_kbc_check_pin_cfg(pdata, &pdev->dev, &num_rows))
+Why is this change? As far as I can see tegra_kbd_setup_keymap() never
+returns positive values.
+
+>  		dev_err(&pdev->dev, "failed to setup keymap\n");
+> -		goto err_put_clk;
+> +		return err;
+>  	}
+>  
+>  	__set_bit(EV_REP, input_dev->evbit);
+> @@ -790,15 +784,15 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+>  
+>  	err = request_irq(kbc->irq, tegra_kbc_isr,
+>  			  IRQF_NO_SUSPEND | IRQF_TRIGGER_HIGH, pdev->name, kbc);
+> -	if (err) {
+> +	if (err < 0) {
+
+Neither request_irq(). BTW, why not devm_request_irq?
+
+>  		dev_err(&pdev->dev, "failed to request keyboard IRQ\n");
+> -		goto err_put_clk;
+> +		return err;
+>  	}
+>  
+>  	disable_irq(kbc->irq);
+>  
+>  	err = input_register_device(kbc->idev);
+> -	if (err) {
+> +	if (err < 0) {
+
+Again, input_register_device() returns 0 on success.
+
+>  		dev_err(&pdev->dev, "failed to register input device\n");
+>  		goto err_free_irq;
+>  	}
+> @@ -810,46 +804,15 @@ static int tegra_kbc_probe(struct platform_device *pdev)
+>  
+>  err_free_irq:
+>  	free_irq(kbc->irq, pdev);
+> -err_put_clk:
+> -	clk_put(kbc->clk);
+> -err_iounmap:
+> -	iounmap(kbc->mmio);
+> -err_free_mem_region:
+> -	release_mem_region(res->start, resource_size(res));
+> -err_free_mem:
+> -	input_free_device(input_dev);
+> -	kfree(kbc);
+> -err_free_pdata:
+> -	if (!pdev->dev.platform_data)
+> -		kfree(pdata);
+> -
+>  	return err;
+>  }
+>  
+>  static int tegra_kbc_remove(struct platform_device *pdev)
+>  {
+>  	struct tegra_kbc *kbc = platform_get_drvdata(pdev);
+> -	struct resource *res;
+> -
+> -	platform_set_drvdata(pdev, NULL);
+>  
+>  	free_irq(kbc->irq, pdev);
+> -	clk_put(kbc->clk);
+> -
+>  	input_unregister_device(kbc->idev);
+
+You do not need to call input_unregister_device for managed input
+devices, and if you switch request_irq to managed variant you can remove 
+tegra_kbc_remove() altogether.
+
+> -	iounmap(kbc->mmio);
+> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> -	release_mem_region(res->start, resource_size(res));
+> -
+> -	/*
+> -	 * If we do not have platform data attached to the device we
+> -	 * allocated it ourselves and thus need to free it.
+> -	 */
+> -	if (!pdev->dev.platform_data)
+> -		kfree(kbc->pdata);
+> -
+> -	kfree(kbc);
+> -
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.7.1.1
+> 
+
+Thanks.
+
 -- 
-1.7.1.1
-
+Dmitry
