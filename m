@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755891Ab3AERV0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 12:21:26 -0500
-Received: from mail.digium.com ([216.207.245.2]:39551 "EHLO mail.digium.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755802Ab3AERVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 12:21:23 -0500
-Date: Sat, 5 Jan 2013 11:21:16 -0600
-From: Shaun Ruffell <sruffell@digium.com>
-To: Sadasivan Shaiju <sshaiju@mvista.com>
-Cc: linux-kernel@vger.kernel.org, venki@google.com, a.p.zijlstra@chello.nl
-Subject: Re: Incorrect accounting of irq into the running task
-Message-ID: <20130105172116.GA65150@digium.com>
-References: <aba006370d1e788a3ff0612afca6d3e7@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755870Ab3AERZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 12:25:21 -0500
+Received: from violet.fr.zoreil.com ([92.243.8.30]:43718 "EHLO
+	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab3AERZR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 12:25:17 -0500
+Date: Sat, 5 Jan 2013 17:57:35 +0100
+From: Francois Romieu <romieu@fr.zoreil.com>
+To: =?utf-8?B?SsO2cmc=?= Otte <jrg.otte@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: [3.8-rc] regression: NETDEV WATCHDOG: eth0 (r8169): transmit queue 0 timed out
+Message-ID: <20130105165735.GB4906@electric-eye.fr.zoreil.com>
+References: <CADDKRnBqxSwC7HUP_aN1QELrv2+7jnncXj7EP0Pqv8E8FFTpPw@mail.gmail.com> <20130105093718.GA938@electric-eye.fr.zoreil.com> <CADDKRnBCrDz2X=5qpGE+r92ZFX5cA+jnSGt3wS8TR0RE8hi1HA@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <aba006370d1e788a3ff0612afca6d3e7@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADDKRnBCrDz2X=5qpGE+r92ZFX5cA+jnSGt3wS8TR0RE8hi1HA@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
+X-Organisation: Land of Sunshine Inc.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 10:22:12AM -0800, Sadasivan Shaiju wrote:
-> Hi  Venkatesh,
-> 
-> I have applied the following patches for the incorrect accounting
-> of irq into the running task .
-> 
-> 
-> [PATCH] x86: Add IRQ_TIME_ACCOUNTING
-> [e82b8e4ea4f3dffe6e7939f90e78da675fcc450e]
-> [PATCH] sched: Add IRQ_TIME_ACCOUNTING, finer accounting of irq time
-> [b52bfee445d315549d41eacf2fa7c156e7d153d5]
-> 
-> [PATCH] sched: Do not account irq time to current task
-> [305e6835e05513406fa12820e40e4a8ecb63743c]
-> [PATCH] sched: Export ns irqtimes through /proc/stat
-> [abb74cefa9c682fb38ba86c17ca3c86fed6cc464]
-> 
-> 
-> 
-> But still the stime and utime of the process in /proc/pid/stat is
-> high. I think the above patches does not update The stime and
-> utime values in /proc/pid/stat.
-> 
-> 
-> Or am I missing anything?
+Jörg Otte <jrg.otte@gmail.com> :
+[...]
+> jojo@ahorn:~$ dmesg | grep XID
+> [    1.808847] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at
+> 0xffffc90000054000, 5c:9a:d8:69:2b:39, XID 0c900800 IRQ 42
 
-Just checking that you do have CONFIG_IRQ_TIME_ACCOUNTING=y in your
-kernel config?
+Can you check if things improve with v3.8-rc2 after removing :
 
-Cheers,
-Shaun
+1. 9ecb9aabaf634677c77af467f4e3028b09d7bcda 
+   r8169: workaround for missing extended GigaMAC registers
+2. d64ec841517a25f6d468bde9f67e5b4cffdc67c7
+   r8169: enable internal ASPM and clock request settings
+3. e0c075577965d1c01b30038d38bf637b027a1df3
+   r8169: enable ALDPS for power saving
+
+(you can directly try v3.7 r8169.c with v3.8-rc2 if it worked for you
+so far) 
+
+If the regression is still there, please apply the patch below to both
+v3.8-rc2 unpatched and a known working version then send me their dmesg
+after you 'ip link set dev eth0 up'.
+
+diff --git a/drivers/net/ethernet/realtek/r8169.c b/drivers/net/ethernet/realtek/r8169.c
+index ed96f30..3d2d2446 100644
+--- a/drivers/net/ethernet/realtek/r8169.c
++++ b/drivers/net/ethernet/realtek/r8169.c
+@@ -90,10 +90,28 @@ static const int multicast_filter_limit = 32;
+ #define RTL8169_TX_TIMEOUT	(6*HZ)
+ #define RTL8169_PHY_TIMEOUT	(10*HZ)
+ 
++static void rw8(void __iomem *ioaddr, u8 b)
++{
++	printk(KERN_DEBUG PFX "w %p %02x\n", ioaddr, b);
++	writeb(b, ioaddr);
++}
++
++static void rw16(void __iomem *ioaddr, u16 w)
++{
++	printk(KERN_DEBUG PFX "w %p %04x\n", ioaddr, w);
++	writew(w, ioaddr);
++}
++
++static void rw32(void __iomem *ioaddr, u32 d)
++{
++	printk(KERN_DEBUG PFX "w %p %08x\n", ioaddr, d);
++	writel(d, ioaddr);
++}
++
+ /* write/read MMIO register */
+-#define RTL_W8(reg, val8)	writeb ((val8), ioaddr + (reg))
+-#define RTL_W16(reg, val16)	writew ((val16), ioaddr + (reg))
+-#define RTL_W32(reg, val32)	writel ((val32), ioaddr + (reg))
++#define RTL_W8(reg, val8)	rw8(ioaddr + (reg), (val8))
++#define RTL_W16(reg, val16)	rw16(ioaddr + (reg), (val16))
++#define RTL_W32(reg, val32)	rw32(ioaddr + (reg), (val32))
+ #define RTL_R8(reg)		readb (ioaddr + (reg))
+ #define RTL_R16(reg)		readw (ioaddr + (reg))
+ #define RTL_R32(reg)		readl (ioaddr + (reg))
