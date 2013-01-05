@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab3AED2U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 22:28:20 -0500
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:40010 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755562Ab3AED2T (ORCPT
+	id S1755090Ab3AEDlN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 22:41:13 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:57618 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754519Ab3AEDlI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 22:28:19 -0500
-Date: Sat, 5 Jan 2013 11:28:09 +0800
-From: Guo Chao <yan@linux.vnet.ibm.com>
-To: matt@console-pimps.org
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/2] efi: Make 'efi_enabled' a function to
-Message-ID: <20130105032809.GA15166@yanx>
+	Fri, 4 Jan 2013 22:41:08 -0500
+Date: Sat, 5 Jan 2013 04:35:42 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>
+Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
+Message-ID: <20130105033541.GA2501@netboy.at.omicron.at>
+References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010503-0260-0000-0000-0000025DA8A8
+In-Reply-To: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-query EFI facilities
-Reply-To: <1357219085-4312-2-git-send-email-matt@console-pimps.org> 
-In-Reply-To: <1357219085-4312-2-git-send-email-matt@console-pimps.org> 
+On Fri, Jan 04, 2013 at 09:31:04PM +0200, Pantelis Antoniou wrote:
+> The following patchset introduces Device Tree overlays, a method
+> of dynamically altering the kernel's live Device Tree.
 
-> diff --git a/init/main.c b/init/main.c
-> index e33e09d..e71d924 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -604,7 +604,7 @@ asmlinkage void __init start_kernel(void)
->  	pidmap_init();
->  	anon_vma_init();
->  #ifdef CONFIG_X86
-> -	if (efi_enabled)
-> +	if (efi_enabled(EFI_RUNTIME_SERVICES))
->  		efi_enter_virtual_mode();
->  #endif
->  	thread_info_cache_init();
-> @@ -632,7 +632,7 @@ asmlinkage void __init start_kernel(void)
->  	acpi_early_init(); /* before LAPIC and SMP init */
->  	sfi_init_late();
-> 
-> -	if (efi_enabled) {
-> +	if (efi_enabled(EFI_RUNTIME_SERVICES)) {
->  		efi_late_init();
->  		efi_free_boot_services();
->  	}
+It would be nice to know the motivation for this code.
 
-I just wonder why we compile efi code away explicitly by CONFIG_X86 in
-one place and implicitly by if (0) in another place, in the same
-function.
+What is the use case? What problem or issue is being addressed?
 
 Thanks,
-Guo Chao
-
+Richard
