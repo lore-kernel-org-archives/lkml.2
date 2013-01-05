@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab3ADXzx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 18:55:53 -0500
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:53950 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab3ADXzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 18:55:50 -0500
+	id S1755453Ab3ADX5j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 18:57:39 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:60561 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754749Ab3ADX5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 18:57:35 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, Russ Anderson <rja@sgi.com>
+Cc: linux-pm@vger.kernel.org, pdeschrijver@nvidia.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        rja@americas.sgi.com
+Subject: Re: [PATCH] cpuidle - fix lock contention in the idle path
+Date: Sat, 05 Jan 2013 01:03:11 +0100
+Message-ID: <3077900.eue4T2ZoF8@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <50E6764C.9060608@linaro.org>
+References: <1356516108-11191-1-git-send-email-daniel.lezcano@linaro.org> <20130102211314.GA29447@sgi.com> <50E6764C.9060608@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <CAKocOONJQ3cZCdE4GDJgtk6BdnS4En+uH8H2b_dPs3naujczBg@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
-	<87k3rslg5a.fsf@xmission.com>
-	<CAKocOOOXx+65rh4f8_++SwYMZdEO2FaOpLiW=dQ6uXZpwM1PYQ@mail.gmail.com>
-	<CAE9FiQVpAfDb1_5TP=CqAQZQZKq=5AqQWo1NE3Sedijg+ML-gA@mail.gmail.com>
-	<CAKocOONJQ3cZCdE4GDJgtk6BdnS4En+uH8H2b_dPs3naujczBg@mail.gmail.com>
-Date: Fri, 4 Jan 2013 15:55:48 -0800
-X-Google-Sender-Auth: pjB_fA6HI8qgwkOOirKQWc57wfo
-Message-ID: <CAE9FiQXs5mC-oCpPWNVvQgn00LVbr70NqWtgaMVU088xSkkAqg@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 3:21 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+On Friday, January 04, 2013 07:27:24 AM Daniel Lezcano wrote:
+> On 01/02/2013 10:13 PM, Russ Anderson wrote:
+> > On Wed, Dec 26, 2012 at 11:01:48AM +0100, Daniel Lezcano wrote:
+> >> The commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 introduces
+> >> a lock in the cpuidle_get_cpu_driver function. This function
+> >> is used in the idle_call function.
+> >>
+> >> The problem is the contention with a large number of cpus because
+> >> they try to access the idle routine at the same time.
+> >>
+> >> The lock could be safely removed because of how is used the
+> >> cpuidle api. The cpuidle_register_driver is called first but
+> >> until the cpuidle_register_device is not called we don't
+> >> enter in the cpuidle idle call function because the device
+> >> is not enabled.
+> >>
+> >> The cpuidle_unregister_driver function, leading the a NULL driver,
+> >> is not called before the cpuidle_unregister_device.
+> >>
+> >> This is how is used the cpuidle api from the different drivers.
+> >>
+> >> However, a cleanup around the lock and a proper refcounting
+> >> mechanism should be used to ensure the consistency in the api,
+> >> like cpuidle_unregister_driver should failed if its refcounting
+> >> is not 0.
+> >>
+> >> These modifications will need some code reorganization and rewrite
+> >> which does not fit with a fix.
+> > 
+> > I agree.
+> > 
+> >> The following patch is a hot fix by returning to the initial behavior
+> >> by removing the lock when getting the driver.
+> > 
+> > The patch fixes the problem.  Verified on a system with 1024 cpus.
+> > Thanks.
+> > 
+> >> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> > 
+> > Reported-by: Russ Anderson <rja@sgi.com>
+> > Acked-by: Russ Anderson <rja@sgi.com>
+> 
+> Hi Rafael,
+> 
+> could you consider this patch for merging ?
 
-> Please see attached dmesg for full log. I can do some testing on this
-> system with your patch if you would like.
+Yes, I've taken it already.
 
-That would be great.
+I'll include it into the next pull request.
 
-Please try
-git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-yinghai.git
-for-x86-boot
-or just this patch.
+Thanks,
+Rafael
 
-Too bad, I can not access AMD systems with IOMMU support.
 
-Thanks a lot.
-
-Yinghai
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
