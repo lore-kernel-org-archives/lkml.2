@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab3AEXTH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 18:19:07 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:49557 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab3AEXTD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 18:19:03 -0500
-X-Greylist: delayed 54719 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Jan 2013 18:19:03 EST
-Date: Sat, 5 Jan 2013 15:18:58 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
- allocation
-Message-ID: <20130105231858.GD6475@core.coreip.homeip.net>
-References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
- <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
- <20130105080658.GA1315@core.coreip.homeip.net>
- <50E80C9A.7040404@nvidia.com>
-MIME-Version: 1.0
+	id S1755974Ab3AEX3W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 18:29:22 -0500
+Received: from 1wt.eu ([62.212.114.60]:37505 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755898Ab3AEX3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 18:29:18 -0500
+Date: Sun, 6 Jan 2013 00:29:13 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Major network performance regression in 3.7
+Message-ID: <20130105232913.GQ16031@1wt.eu>
+References: <20130105214958.GA19814@1wt.eu> <1357427926.1678.4771.camel@edumazet-glaptop>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50E80C9A.7040404@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357427926.1678.4771.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 04:50:58PM +0530, Laxman Dewangan wrote:
-> HI Dmitry,
-> Thanks for quick review.
-> 
-> I will take care of your comment in next version. Some have my answer.
-> 
-> 
-> On Saturday 05 January 2013 01:36 PM, Dmitry Torokhov wrote:
-> >Hi Laxman,
-> >
-> >On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan wrote:
-> >>Use devm_* for memory, clock, input device allocation. This reduces
-> >>code for freeing these resources.
-> 
-> >>  	err = tegra_kbd_setup_keymap(kbc);
-> >>-	if (err) {
-> >>+	if (err < 0) {
-> >Why is this change? As far as I can see tegra_kbd_setup_keymap() never
-> >returns positive values.
-> 
-> Ok, mostly errors are in negative and hence this change, I will
-> revert it and will keep original.
-> 
-> >
-> >>  		dev_err(&pdev->dev, "failed to setup keymap\n");
-> >>-		goto err_put_clk;
-> >>+		return err;
-> >>  	}
-> >>  	__set_bit(EV_REP, input_dev->evbit);
-> >>@@ -790,15 +784,15 @@ static int tegra_kbc_probe(struct platform_device *pdev)
-> >>  	err = request_irq(kbc->irq, tegra_kbc_isr,
-> >>  			  IRQF_NO_SUSPEND | IRQF_TRIGGER_HIGH, pdev->name, kbc);
-> >>-	if (err) {
-> >>+	if (err < 0) {
-> >Neither request_irq(). BTW, why not devm_request_irq?
-> 
-> I understand from Mark B on different patches that using
-> devm_request_irq() can create race condition when removing device.
-> Interrupt can occur when device resource release is in process and
-> so it can cause isr call which can use the freed pointer.
-> devm_request_irq() should be avoided.
+Hi Eric,
 
-devm_request_irq() has a potential of creating a race condition, but it
-depents on the driver. In this particular case tegra driver ensures that
-interrupts are inhibited when input device is unregistered by providing
-tegra_kbc_close() method, so in this particular case it is safe to
-use devm_request_irq().
+On Sat, Jan 05, 2013 at 03:18:46PM -0800, Eric Dumazet wrote:
+> Hi Willy, another good finding during the week end ! ;)
 
-Also, when using managed input devices, the unregistering and final
-freeing is a 2-step process, so even in absence of close() method, if
-initialization sequence was:
+Yes, I wanted to experiment with TFO and stopped on this :-)
 
-	devm_input_allocate_device()
-	...
-	devm_request_irq()
-	...
-	input_unregister_device()
+> 1) This looks like interrupts are spreaded on multiple cpus, and this
+> give Out Of Order problems with TCP stack.
 
-then order of freeing resources (behind the scenes) will be
+No, I forgot to mention this, I have tried to bind IRQs to a single
+core, with the server either on the same or another one, but the
+problem remained.
 
-	devm_input_device_unregister();
-	/* input device is still present in memory and can
-	 * handle input_event() calls.
-	 */
-	free_irq();
-	devm_input_device_release();
+Also, the loopback is much more affected and doesn't use IRQs. And
+BTW tcpdump on the loopback shouldn't drop that many packets (up to
+90% even at low rate). I just noticed something, transferring data
+using netcat on the loopback doesn't affect tcpdump. So it's likely
+only the spliced data that are affected.
 
-So using managed request_irq() _together_ with managed input devices is
-OK.
+> 2) Another possibility would be that Myri card/driver doesnt like very
+> well high order pages.
 
-Thanks.
+It looks like it has not changed much since 3.6 :-/ I really suspect
+something is wrong with memory allocation. I have tried reverting many
+patches affecting the mm/ directory just in case but I did not come to
+anything useful yet.
 
--- 
-Dmitry
+I'm continuing to dig.
+
+Thanks,
+Willy
+
