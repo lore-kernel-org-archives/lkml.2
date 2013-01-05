@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab3AEJ0r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 04:26:47 -0500
-Received: from nm15-vm1.bullet.mail.ird.yahoo.com ([77.238.189.194]:26804 "EHLO
-	nm15-vm1.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755316Ab3AEJ0o convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 04:26:44 -0500
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 104695.89748.bm@omp1031.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.fr;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=DPWSczqyWNd4cJo6TqMi9QB1li1oKzbfWBK6KatGGGoDGmdkL7zu9zSQs33AA+LtxPUMyLsjGjBFb/KKKy/m8dBNAbFZTZakMAxX8W8u+it2dChjl/GW/02DHBm7zGbVLUBuHhzNJJLrUkGdSfwpgkDPeVo6RL3Y6RnCTkyjrj0=;
-X-YMail-OSG: jOqlgVIVM1k2AOLOd7QN.dZI4rFCgrEXTZ3AQRrvkfLqITK
- uuqrrLZZNs_2EGHi3DKsY5EMJjSJ1U4hVNuxKghj_7x2kd5m7shgsmRlOboD
- R8M5ms28Uu58q_v7dn.cNGkFSkEw4nPxtsgbmjDulNygg.f3ECyl9msxaIDk
- yWVfhlNe8DmO8fi2aHBMpzcOxCugQAisouNGJ4Nf81ShR1rt08yhA7PfFbCW
- uUXWeBPKQ6DjKgM9ULEJXSNHp.MdBTq7LKj0j9t2QCm9LfGz2V_ONvmcW9Be
- FMRTsQbIFTQkK.WKnDYfojwt6s9hQkKFitThV5f4eEEec45YM5uyJPA7FJWs
- i0CO1tjEJSvYJjiLmePnHbrPOOTEHQkfBlfNALfQsp31TmzeixOdpPAA4t5q
- HbRNEoWBM7z.KLkCGFLjTrGRgNXB4Ys7c3bRAjau28NdVjDernWBhLgNsl_.
- gcWJirzMhUzD3h.JtgZQG0fJvNbXD788EpZPeSxY4G5j9eoa8u7G.YWmEWAl
- UFkm_EA8PYjj4JSvzWiSaJvJ9VYfL3yKQoZAILy6roNtOFPhvrwYx1ZC14cv
- Mrt7.Bh6Ts1BDNvEupv2TrgG.L8OPSgbPHeFa2HgPdLpVHU9xy8pJ5rzE5b7
- maqeApM9qtULHmdTxsKyUtA--
-X-Rocket-MIMEInfo: 001.001,CkRlYXIgRnJpZW5kLAoKSSBrbm93IHRoYXQgdGhpcyBtYWlsIHdpbGwgY29tZSB0byB5b3UgYXMgYSBzdXJwcmlzZSBhcyB3ZSBoYXZlIG5ldmVyIG1ldCBiZWZvcmUsIGJ1dCBuZWVkIG5vdCB0byB3b3JyeSBhcyBJIGFtIGNvbnRhY3RpbmcgeW91IGluZGVwZW5kZW50bHkgb2YgbXkgaW52ZXN0aWdhdGlvbiBhbmQgbm8gb25lIGlzIGluZm9ybWVkIG9mIHRoaXMgY29tbXVuaWNhdGlvbi4gSSBuZWVkIHlvdXIgdXJnZW50IGFzc2lzdGFuY2UgaW4gdHJhbnNmZXJyaW5nIHRoZSBzdW0gb2YgJDExLjNtaWxsaW8BMAEBAQE-
-X-RocketYMMF: schoolas12
-X-Mailer: YahooMailClassic/15.1.2 YahooMailWebService/0.8.129.483
-Message-ID: <1357378002.5768.YahooMailClassic@web132405.mail.ird.yahoo.com>
-Date: Sat, 5 Jan 2013 09:26:42 +0000 (GMT)
-From: Amidu Hassan <aamiduhassan@gmail.com>
-Reply-To: hassann_amidu@yahoo.fr
-Subject: URGENT REPLY
-To: undisclosed recipients:;
+	id S1755410Ab3AEJbT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 04:31:19 -0500
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:39136 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755336Ab3AEJbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 04:31:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Reply-To: sedat.dilek@gmail.com
+Date: Sat, 5 Jan 2013 10:31:11 +0100
+Message-ID: <CA+icZUUMTfbAj81NVkP9dJjacp+SYAN+=Fo1EM6+5sjfgTo42g@mail.gmail.com>
+Subject: Re: [PATCH 0/6] ACPI / PM: ACPI power management update
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Rafael,
 
-Dear Friend,
-
-I know that this mail will come to you as a surprise as we have never met before, but need not to worry as I am contacting you independently of my investigation and no one is informed of this communication. I need your urgent assistance in transferring the sum of $11.3million immediately to your private account.The money has been here in our Bank lying dormant for years now without anybody coming for the claim of it.
-I want to release the money to you as the relative to our deceased customer (the account owner) who died a long with her supposed NEXT OF KIN since 31 January 2000. The Banking laws here does not allow such money to stay more than 14 years,because the money will be recalled to the Bank treasury account as unclaimed fund.
-By indicating your interest I will send you the full details on how the business will be executed.
-Please respond urgently and delete if you are not interested
+against which Linux-kernel version is your patchset?
+Linux v3.8-rc2?
+Mambo number 5 [1] aka patch 5/6 does not apply cleanly.
 
 Regards,
-Mr Hassan Amidu
+- Sedat -
+
+[1] http://www.youtube.com/watch?v=QQ4Ht5xfD5E
+
+P.S.: GIT AM and APPLY sessions
+
+GIT AM...
+
+wearefam@fambox:~/src/linux-kernel/linux$ git checkout Linux-v3.8-rc2
+Already on 'Linux-v3.8-rc2'
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$ GIT_BRANCH="acpi-pm-fixes" ;
+git branch $GIT_BRANCH && git checkout $GIT_BRANCH
+Switched to branch 'acpi-pm-fixes'
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$ git am
+../patches/acpi-pm-fixes/1-6-ACPI-PM-Change-the-way-power-transitions-to-D3cold-are-carried-out.patch
+Applying: ACPI / PM: Change the way power transitions to D3cold are carried out
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$ git am
+../patches/acpi-pm-fixes/2-6-ACPI-PM-More-visible-function-for-retrieving-device-power-states.patch
+Applying: ACPI / PM: More visible function for retrieving device power states
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$ git am
+../patches/acpi-pm-fixes/3-6-ACPI-PM-Common-string-representations-of-device-power-states.patch
+Applying: ACPI / PM: Common string representations of device power states
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$ git am
+../patches/acpi-pm-fixes/4-6-ACPI-PM-Export-power-states-of-ACPI-devices-via-sysfs.patch
+Applying: ACPI / PM: Export power states of ACPI devices via sysfs
+wearefam@fambox:~/src/linux-kernel/linux$
+wearefam@fambox:~/src/linux-kernel/linux$ git am
+../patches/acpi-pm-fixes/5-6-ACPI-PM-Move-device-power-management-functions-to-device_pm.c.patch
+Applying: ACPI / PM: Move device power management functions to device_pm.c
+error: patch failed: include/acpi/acpi_bus.h:333
+error: include/acpi/acpi_bus.h: patch does not apply
+Patch failed at 0001 ACPI / PM: Move device power management functions
+to device_pm.c
+When you have resolved this problem run "git am --resolved".
+If you would prefer to skip this patch, instead run "git am --skip".
+To restore the original branch and stop patching run "git am --abort".
+
+Same with GIT APPLY...
+
+[...]
+wearefam@fambox:~/src/linux-kernel/linux$ git apply --check --verbose
+../patches/acpi-pm-fixes/5*
+Checking patch drivers/acpi/device_pm.c...
+Checking patch include/acpi/acpi_bus.h...
+error: while searching for:
+acpi_status acpi_bus_get_status_handle(acpi_handle handle,
+                                       unsigned long long *sta);
+int acpi_bus_get_status(struct acpi_device *device);
+int acpi_bus_set_power(acpi_handle handle, int state);
+const char *acpi_power_state_string(int state);
+int acpi_device_get_power(struct acpi_device *device, int *state);
+int acpi_device_set_power(struct acpi_device *device, int state);
+int acpi_bus_update_power(acpi_handle handle, int *state_p);
+bool acpi_bus_power_manageable(acpi_handle handle);
+bool acpi_bus_can_wakeup(acpi_handle handle);
+#ifdef CONFIG_ACPI_PROC_EVENT
+int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
+int acpi_bus_generate_proc_event4(const char *class, const char *bid,
+u8 type, int data);
+
+error: patch failed: include/acpi/acpi_bus.h:333
+error: include/acpi/acpi_bus.h: patch does not apply
+Checking patch drivers/acpi/internal.h...
+Hunk #1 succeeded at 43 (offset -18 lines).
+Checking patch drivers/acpi/bus.c...
+- EOT-
