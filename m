@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab3AEIhZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:37:25 -0500
+	id S1755587Ab3AEIli (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:41:38 -0500
 Received: from mga11.intel.com ([192.55.52.93]:44979 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755317Ab3AEIhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:37:11 -0500
+	id S1755419Ab3AEIh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 03:37:26 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,415,1355126400"; 
-   d="scan'208";a="270210044"
+   d="scan'208";a="270210101"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         alex.shi@intel.com
-Subject: [PATCH v3 03/22] sched: fix find_idlest_group mess logical
-Date: Sat,  5 Jan 2013 16:37:32 +0800
-Message-Id: <1357375071-11793-4-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v3 10/22] sched: consider runnable load average in move_tasks
+Date: Sat,  5 Jan 2013 16:37:39 +0800
+Message-Id: <1357375071-11793-11-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
 References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
@@ -26,64 +26,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is 4 situations in the function:
-1, no task allowed group;
-	so min_load = ULONG_MAX, this_load = 0, idlest = NULL
-2, only local group task allowed;
-	so min_load = ULONG_MAX, this_load assigned, idlest = NULL
-3, only non-local task group allowed;
-	so min_load assigned, this_load = 0, idlest != NULL
-4, local group + another group are task allowed.
-	so min_load assigned, this_load assigned, idlest != NULL
-
-Current logical will return NULL in first 3 kinds of scenarios.
-And still return NULL, if idlest group is heavier then the
-local group in the 4th situation.
-
-Actually, I thought groups in situation 2,3 are also eligible to host
-the task. And in 4th situation, agree to bias toward local group.
-So, has this patch.
+Except using runnable load average in background, move_tasks is also
+the key functions in load balance. We need consider the runnable load
+average in it in order to the apple to apple load comparison.
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/fair.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
+ kernel/sched/fair.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 6d3a95d..3c7b09a 100644
+index 84a6517..cab62aa 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -3181,6 +3181,7 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
- 		  int this_cpu, int load_idx)
- {
- 	struct sched_group *idlest = NULL, *group = sd->groups;
-+	struct sched_group *this_group = NULL;
- 	unsigned long min_load = ULONG_MAX, this_load = 0;
- 	int imbalance = 100 + (sd->imbalance_pct-100)/2;
+@@ -3967,6 +3967,15 @@ static unsigned long task_h_load(struct task_struct *p);
  
-@@ -3215,14 +3216,19 @@ find_idlest_group(struct sched_domain *sd, struct task_struct *p,
+ static const unsigned int sched_nr_migrate_break = 32;
  
- 		if (local_group) {
- 			this_load = avg_load;
--		} else if (avg_load < min_load) {
-+			this_group = group;
-+		}
-+		if (avg_load < min_load) {
- 			min_load = avg_load;
- 			idlest = group;
- 		}
- 	} while (group = group->next, group != sd->groups);
- 
--	if (!idlest || 100*this_load < imbalance*min_load)
--		return NULL;
-+	if (this_group && idlest != this_group)
-+		/* Bias toward our group again */
-+		if (100*this_load < imbalance*min_load)
-+			idlest = this_group;
++static unsigned long task_h_load_avg(struct task_struct *p)
++{
++	u32 period = p->se.avg.runnable_avg_period;
++	if (!period)
++		return 0;
 +
- 	return idlest;
- }
++	return task_h_load(p) * p->se.avg.runnable_avg_sum / period;
++}
++
+ /*
+  * move_tasks tries to move up to imbalance weighted load from busiest to
+  * this_rq, as part of a balancing operation within domain "sd".
+@@ -4002,7 +4011,7 @@ static int move_tasks(struct lb_env *env)
+ 		if (throttled_lb_pair(task_group(p), env->src_cpu, env->dst_cpu))
+ 			goto next;
  
+-		load = task_h_load(p);
++		load = task_h_load_avg(p);
+ 
+ 		if (sched_feat(LB_MIN) && load < 16 && !env->sd->nr_balance_failed)
+ 			goto next;
 -- 
 1.7.12
 
