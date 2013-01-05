@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab3AEKNx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 05:13:53 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:33221 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755483Ab3AEKNv convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 05:13:51 -0500
-References: <1357327870-13615-1-git-send-email-panto@antoniou-consulting.com> <20130105033541.GA2501@netboy.at.omicron.at> <CAD=GYpZp+QJqPkbejj6Kujv7XHHFrymriM5TCDJ626eaE7zPzw@mail.gmail.com> <20130105093558.GA31408@netboy.at.omicron.at>
-Mime-Version: 1.0 (1.0)
-In-Reply-To: <20130105093558.GA31408@netboy.at.omicron.at>
-Content-Type: text/plain;
-	charset=utf-8
+	id S1755601Ab3AEKPb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 05:15:31 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:49894 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab3AEKP2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 05:15:28 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130105093718.GA938@electric-eye.fr.zoreil.com>
+References: <CADDKRnBqxSwC7HUP_aN1QELrv2+7jnncXj7EP0Pqv8E8FFTpPw@mail.gmail.com>
+	<20130105093718.GA938@electric-eye.fr.zoreil.com>
+Date: Sat, 5 Jan 2013 11:15:27 +0100
+Message-ID: <CADDKRnBCrDz2X=5qpGE+r92ZFX5cA+jnSGt3wS8TR0RE8hi1HA@mail.gmail.com>
+Subject: Re: [3.8-rc] regression: NETDEV WATCHDOG: eth0 (r8169): transmit
+ queue 0 timed out
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <55B9348E-31B8-45C0-9DA2-7102480F55E5@antoniou-consulting.com>
-Cc: Joel A Fernandes <agnel.joel@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-X-Mailer: iPad Mail (10A523)
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: Re: [PATCH 0/6] Introducing Device Tree Overlays
-Date: Sat, 5 Jan 2013 12:13:39 +0200
-To: Richard Cochran <richardcochran@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+2013/1/5 Francois Romieu <romieu@fr.zoreil.com>:
+> Jörg Otte <jrg.otte@gmail.com> :
+> [...]
+>> It's a regression, it never happend before 3.8-rc.
+>
+> Please check that 'dmesg | grep XID' exhibits a 8168evl.
 
-It should, but there are a few differences in the syntax plus the fact that I didn't write it.
-It should go in by a separate patch by the original author. 
+jojo@ahorn:~$ dmesg | grep XID
+[    1.808847] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at
+0xffffc90000054000, 5c:9a:d8:69:2b:39, XID 0c900800 IRQ 42
+jojo@ahorn:~$
 
-Regards
+>
+> I'll showe and dig it. It's epidemic.
+>
 
--- Pantelis
-
-Από το iPad μου
-
-5 Ιαν 2013, 11:35 π.μ., ο/η Richard Cochran <richardcochran@gmail.com> έγραψε:
-
-> On Sat, Jan 05, 2013 at 12:16:51AM -0600, Joel A Fernandes wrote:
->> 
->> The problem being addressed is discussed in this thread:
->> http://permalink.gmane.org/gmane.linux.kernel/1389017
-> 
-> Thanks for the link.
-> 
-> Since the motivation is already documented in that post, why not add
-> it into Documentation/devicetree/overlay-notes.txt as well?
-> 
-> Thanks,
-> Richard
+Thanks, Jörg
