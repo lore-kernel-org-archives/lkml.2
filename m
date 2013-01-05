@@ -1,54 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570Ab3AECUn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 21:20:43 -0500
-Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:27331
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755549Ab3AECUl (ORCPT
+	id S1755582Ab3AEC0N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 21:26:13 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:45500 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755555Ab3AEC0L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 21:20:41 -0500
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VPS-1(zz4015Izz1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
-X-WSS-ID: 0MG4RUB-01-C6N-02
-X-M-MSG: 
-From: "Huang, Shane" <Shane.Huang@amd.com>
-To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>,
-        Jeff Garzik <jgarzik@pobox.com>
-CC: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>,
-        "Huang, Shane" <Shane.Huang@amd.com>
-Subject: RE: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
- Emask 0x1
-Thread-Topic: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
- Emask 0x1
-Thread-Index: AQHN6pHLLI+J+/ZF2Ei4qcz2gokWg5g4zacAgAAH+QCAASnakA==
-Date: Sat, 5 Jan 2013 02:20:31 +0000
-Message-ID: <43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com>
-References: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com>
-	<CA+icZUXrQ4aq+cKXj3qEwnhtTGPBfHcJ6q_zTm3xSBUUh9W8dQ@mail.gmail.com>
- <CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com>
-In-Reply-To: <CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.73]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: amd.com
+	Fri, 4 Jan 2013 21:26:11 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-mm@kvack.org,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Oliver Neukum <oneukum@suse.de>, Minchan Kim <minchan@kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <axboe@kernel.dk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH v7 0/6] solve deadlock caused by memory allocation with I/O
+Date: Sat,  5 Jan 2013 10:25:38 +0800
+Message-Id: <1357352744-8138-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r052Kuns017145
 
-> OK, I see the patch I mentioned to fix the problem was later reverted [1].
-> The real fix is "libata: replace sata_settings with devslp_timing" [2].
+Hi,
 
-Yes, please use [2] which can also be found in kernel bugzilla #51881
-and is pending on Jeff's acceptance. Sorry for the trouble to you guys.
+This patchset try to solve one deadlock problem which might be caused
+by memory allocation with block I/O during runtime PM and block device
+error handling path. Traditionly, the problem is addressed by passing
+GFP_NOIO statically to mm, but that is not a effective solution, see
+detailed description in patch 1's commit log.
+
+This patch set introduces one process flag and trys to fix the deadlock
+problem on block device/network device during runtime PM or usb bus reset.
+
+The 1st one is the change on include/sched.h and mm.
+
+The 2nd patch introduces the flag of memalloc_noio on 'dev_pm_info',
+and pm_runtime_set_memalloc_noio(), so that PM Core can teach mm to not
+allocate mm with GFP_IO during the runtime_resume callback only on
+device with the flag set.
+
+The following 2 patches apply the introduced pm_runtime_set_memalloc_noio()
+to mark all devices as memalloc_noio_resume in the path from the block or
+network device to the root device in device tree.
+
+The last 2 patches are applied again PM and USB subsystem to demonstrate
+how to use the introduced mechanism to fix the deadlock problem.
+
+Andrew, could you queue these patches into your tree since V6 fixes all
+your concerns and looks no one objects these patches?
+
+Change logs:
+V7:
+	- rebase on v3.8-rc2-next-20130104
+	- move memalloc_noio_save/memalloc_noio_restore into
+        rpm_callback to avoid code duplication, as suggested
+        by Rafael
+	- optimize on pm_runtime_set_memalloc_noio(true)
+	- fix type of 'flags' in memalloc_noio_save()/memalloc_noio_restore()
+V6:
+        - fix one compile failure(1/6), and only one line change
+V5:
+        - don't clear GFP_FS
+        - coding style fix
+        - add comments
+        - see details in individual change logs
+V4:
+        - patches from the 2nd to the 6th changed
+        - call pm_runtime_set_memalloc_noio() after device_add() as pointed
+        by Alan
+        - set PF_MEMALLOC_NOIO during runtime_suspend()
+V3:
+        - patch 2/6 and 5/6 changed, see their commit log
+        - remove RFC from title since several guys have expressed that
+        it is a reasonable solution
+V2:
+        - remove changes on 'may_writepage' and 'may_swap'(1/6)
+        - unset GFP_IOFS in try_to_free_pages() path(1/6)
+        - introduce pm_runtime_set_memalloc_noio()
+        - only apply the meachnism on block/network device and its ancestors
+        for runtime resume context
+V1:
+        - take Minchan's change to avoid the check in alloc_page hot path
+        - change the helpers' style into save/restore as suggested by Alan
+        - memory allocation with no io in usb bus reset path for all devices
+        as suggested by Greg and Oliver
+
+ block/genhd.c                |   10 +++++
+ drivers/base/power/runtime.c |   89 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/usb/core/hub.c       |   13 ++++++
+ include/linux/pm.h           |    1 +
+ include/linux/pm_runtime.h   |    3 ++
+ include/linux/sched.h        |   22 +++++++++++
+ mm/page_alloc.c              |    9 ++++-
+ mm/vmscan.c                  |    4 +-
+ net/core/net-sysfs.c         |    5 +++
+ 9 files changed, 152 insertions(+), 4 deletions(-)
+
 
 Thanks,
-Shane
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+--
+Ming Lei
+
