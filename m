@@ -1,157 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab3AELmy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 06:42:54 -0500
-Received: from h1446028.stratoserver.net ([85.214.92.142]:48298 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab3AELmw (ORCPT
+	id S1755039Ab3AELnu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 06:43:50 -0500
+Received: from [216.228.121.35] ([216.228.121.35]:3851 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887Ab3AELnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 06:42:52 -0500
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: linux-fbdev@vger.kernel.org, Bernie Thompson <bernie@plugable.com>,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Steve Glendinning <steve.glendinning@shawell.net>,
-        Dave Airlie <airlied@redhat.com>,
-        Alexander Holler <holler@ahsoftware.de>, <stable@vger.kernel.org>
-Subject: [PATCH] fb: udlfb: fix scheduling while atomic.
-Date: Sat,  5 Jan 2013 12:42:09 +0100
-Message-Id: <1357386129-763-1-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <50E81166.6050605@ahsoftware.de>
-References: <50E81166.6050605@ahsoftware.de>
+	Sat, 5 Jan 2013 06:43:47 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Sat, 05 Jan 2013 03:43:05 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <dmitry.torokhov@gmail.com>
+CC: <grant.likely@secretlab.ca>, <rob.herring@calxeda.com>,
+        <swarren@nvidia.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-input@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+        Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V3 0/4] input: keyboard: tegra: cleanups and DT supports
+Date: Sat, 5 Jan 2013 17:11:47 +0530
+Message-ID: <1357386111-19971-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The console functions are using spinlocks while calling fb-driver ops
-but udlfb waits for a semaphore in many ops. This results in the BUG
-"scheduling while atomic". One of those call flows is e.g.
+This patch series:
+ - fix build warning,
+ - use devm_* for allocation,
+ - make column/rows configuration through DT and 
+ - remove the rarely used  key mapping table.
 
-vt_console_print() (spinlock printing_lock)
-	(...)
-	dlfb_ops_imageblit()
-                        dlfb_handle_damage()
-                                dlfb_get_urb()
-					down_timeout(semaphore)
-BUG: scheduling while atomic
-(...)
-vt_console_print() (release spinlock printing_lock)
+Changes from V1:
+- renames the rows and pins property array.
+- nit cleanups.
 
-Fix this through a workqueue for dlfb_handle_damage().
+Changes from V2:
+- remove the error checks changes from original.
+- return -EBUSY when reg mapping fail.
+- remove unregister_input_device() devm_* version is used.
+- Pass correct argument in free_irq.
 
-Cc: <stable@vger.kernel.org>
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
----
- drivers/video/udlfb.c | 53 +++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 51 insertions(+), 2 deletions(-)
+Laxman Dewangan (4):
+  input: keyboard: tegra: fix build warning
+  input: keyboard: tegra: use devm_* for resource allocation
+  input: keyboard: tegra: add support for rows/cols configuration from
+    dt
+  input: keyboard: tegra: remove default key mapping
 
-diff --git a/drivers/video/udlfb.c b/drivers/video/udlfb.c
-index 86d449e..5aadcb2 100644
---- a/drivers/video/udlfb.c
-+++ b/drivers/video/udlfb.c
-@@ -569,7 +569,7 @@ static int dlfb_render_hline(struct dlfb_data *dev, struct urb **urb_ptr,
- 	return 0;
- }
- 
--int dlfb_handle_damage(struct dlfb_data *dev, int x, int y,
-+int dlfb_handle_damage_queued(struct dlfb_data *dev, int x, int y,
- 	       int width, int height, char *data)
- {
- 	int i, ret;
-@@ -630,6 +630,44 @@ error:
- 	return 0;
- }
- 
-+static struct workqueue_struct *dlfb_handle_damage_wq;
-+
-+struct dlfb_handle_damage_work {
-+	struct work_struct my_work;
-+	struct dlfb_data *dev;
-+	char *data;
-+	int x, y, width, height;
-+};
-+
-+static void dlfb_handle_damage_work(struct work_struct *work)
-+{
-+	struct dlfb_handle_damage_work *my_work =
-+		(struct dlfb_handle_damage_work *)work;
-+
-+	dlfb_handle_damage_queued(my_work->dev, my_work->x, my_work->y,
-+			my_work->width, my_work->height, my_work->data);
-+	kfree(work);
-+	return;
-+}
-+
-+void dlfb_handle_damage(struct dlfb_data *dev, int x, int y,
-+	       int width, int height, char *data)
-+{
-+	struct dlfb_handle_damage_work *work =
-+		kmalloc(sizeof(struct dlfb_handle_damage_work), GFP_KERNEL);
-+
-+	if (work) {
-+		INIT_WORK((struct work_struct *)work, dlfb_handle_damage_work);
-+		work->dev = dev;
-+		work->x = x;
-+		work->y = y;
-+		work->width = width;
-+		work->height = height;
-+		work->data = data;
-+		queue_work(dlfb_handle_damage_wq, (struct work_struct *)work);
-+	}
-+}
-+
- /*
-  * Path triggered by usermode clients who write to filesystem
-  * e.g. cat filename > /dev/fb1
-@@ -945,6 +983,9 @@ static void dlfb_free_framebuffer(struct dlfb_data *dev)
- 
- 		unregister_framebuffer(info);
- 
-+		if (dlfb_handle_damage_wq)
-+			destroy_workqueue(dlfb_handle_damage_wq);
-+
- 		if (info->cmap.len != 0)
- 			fb_dealloc_cmap(&info->cmap);
- 		if (info->monspecs.modedb)
-@@ -1626,13 +1667,13 @@ static int dlfb_usb_probe(struct usb_interface *interface,
- 		dev->sku_pixel_limit = pixel_limit;
- 	}
- 
--
- 	if (!dlfb_alloc_urb_list(dev, WRITES_IN_FLIGHT, MAX_TRANSFER)) {
- 		retval = -ENOMEM;
- 		pr_err("dlfb_alloc_urb_list failed\n");
- 		goto error;
- 	}
- 
-+
- 	kref_get(&dev->kref); /* matching kref_put in free_framebuffer_work */
- 
- 	/* We don't register a new USB class. Our client interface is fbdev */
-@@ -1694,6 +1735,13 @@ static void dlfb_init_framebuffer_work(struct work_struct *work)
- 		goto error;
- 	}
- 
-+	dlfb_handle_damage_wq = alloc_workqueue("udlfb_damage",
-+						WQ_MEM_RECLAIM, 0);
-+	if (dlfb_handle_damage_wq == NULL) {
-+		pr_err("unable to allocate workqueue\n");
-+		goto error;
-+	}
-+
- 	/* ready to begin using device */
- 
- 	atomic_set(&dev->usb_active, 1);
-@@ -1702,6 +1750,7 @@ static void dlfb_init_framebuffer_work(struct work_struct *work)
- 	dlfb_ops_check_var(&info->var, info);
- 	dlfb_ops_set_par(info);
- 
-+
- 	retval = register_framebuffer(info);
- 	if (retval < 0) {
- 		pr_err("register_framebuffer failed %d\n", retval);
--- 
-1.7.11.7
+ .../bindings/input/nvidia,tegra20-kbc.txt          |   22 ++
+ drivers/input/keyboard/tegra-kbc.c                 |  345 ++++++--------------
+ 2 files changed, 118 insertions(+), 249 deletions(-)
 
