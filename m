@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab3AEAfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 19:35:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60709 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754934Ab3AEAft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 19:35:49 -0500
-Date: Sat, 5 Jan 2013 01:35:45 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 2/2] mm: mmap: annotate vm_lock_anon_vma locking properly
- for lockdep
-In-Reply-To: <alpine.LNX.2.00.1301050134420.2946@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1301050135050.2946@pobox.suse.cz>
-References: <alpine.LNX.2.00.1301041317150.9143@pobox.suse.cz> <alpine.LNX.2.00.1301050134420.2946@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755489Ab3AEAhV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 19:37:21 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:56514 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755289Ab3AEAhR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 19:37:17 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CAE9FiQWzc+tYTnJx96po+dY-3k-Bbv_Sg943jvGJcbGPDLfMmA@mail.gmail.com>
+References: <1558789.gX8cmBgyDV@vostro.rjw.lan> <1832392.tD5dEjQMy4@vostro.rjw.lan>
+ <CAE9FiQVSaC=D-KzSPJaP0=HGRnNgxBYv+S6=PqF_3Li+ihTnEQ@mail.gmail.com>
+ <2913597.xNs4ttWDNI@vostro.rjw.lan> <CAE9FiQWzc+tYTnJx96po+dY-3k-Bbv_Sg943jvGJcbGPDLfMmA@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Fri, 4 Jan 2013 17:36:55 -0700
+Message-ID: <CAErSpo6y6TmoGA6FXSoV2TZ5ihvC6d-j_EWqvzL1m84dhBYoJQ@mail.gmail.com>
+Subject: Re: [Alternative 2][PATCH] ACPI / PCI: Set root bridge ACPI handle in advance
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Jiang Liu <liuj97@gmail.com>,
+        Myron Stowe <myron.stowe@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5a505085f04 ("mm/rmap: Convert the struct anon_vma::mutex to an 
-rwsem") turned anon_vma mutex to rwsem.
+On Fri, Jan 4, 2013 at 5:19 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Fri, Jan 4, 2013 at 4:14 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> On Friday, January 04, 2013 04:03:01 PM Yinghai Lu wrote:
+>>> On Fri, Jan 4, 2013 at 3:38 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>>> >> --- a/arch/x86/include/asm/pci.h
+>>> >> +++ b/arch/x86/include/asm/pci.h
+>>> >> @@ -14,6 +14,7 @@
+>>> >>  struct pci_sysdata {
+>>> >>       int             domain;         /* PCI domain */
+>>> >>       int             node;           /* NUMA node */
+>>> >> +     void            *acpi_handle;
+>>> >>  #ifdef CONFIG_X86_64
+>>> >>       void            *iommu;         /* IOMMU private data */
+>>> >>  #endif
+>>> >>
+>>>
+>>> acpi_handle is not good name and it is confusing.
+>>
+>> Well, what would be a better name in your opinion?
+>>
+>> I was going to put that into a #ifdef CONFIG_ACPI / #endif, so what about
+>> calling it acpi_data?
+>
+> yes, with #ifdef, you can use acpi_handle type directly.
+>
+> it is acpi handle for pci_root.
+>
+> so would call int pci_root_acpi_handle ?
 
-However, the properly annotated nested locking in mm_take_all_locks() has 
-been converted from
+I just copied the name from the corresponding ia64 code.  I don't care
+if you want to change it, but I think there is *some* value in keeping
+the x86 and ia64 code as similar as possible because it would be nice
+to converge it some day.
 
-	mutex_lock_nest_lock(&anon_vma->root->mutex, &mm->mmap_sem);
-
-to
-
-	down_write(&anon_vma->root->rwsem);
-
-which is incomplete, and causes the false positive report from lockdep below.
-
-Annotate the fact that mmap_sem is used as an outter lock to serialize taking
-of all the anon_vma rwsems at once no matter the order, using the
-down_write_nest_lock() primitive.
-
-This patch fixes this lockdep report:
-
- =============================================
- [ INFO: possible recursive locking detected ]
- 3.8.0-rc2-00036-g5f73896 #171 Not tainted
- ---------------------------------------------
- qemu-kvm/2315 is trying to acquire lock:
-  (&anon_vma->rwsem){+.+...}, at: [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
-
- but task is already holding lock:
-  (&anon_vma->rwsem){+.+...}, at: [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
-
- other info that might help us debug this:
-  Possible unsafe locking scenario:
-
-        CPU0
-        ----
-   lock(&anon_vma->rwsem);
-   lock(&anon_vma->rwsem);
-
-  *** DEADLOCK ***
-
-  May be due to missing lock nesting notation
-
- 4 locks held by qemu-kvm/2315:
-  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff81177f1c>] do_mmu_notifier_register+0xfc/0x170
-  #1:  (mm_all_locks_mutex){+.+...}, at: [<ffffffff8115d436>] mm_take_all_locks+0x36/0x1b0
-  #2:  (&mapping->i_mmap_mutex){+.+...}, at: [<ffffffff8115d4c9>] mm_take_all_locks+0xc9/0x1b0
-  #3:  (&anon_vma->rwsem){+.+...}, at: [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
-
- stack backtrace:
- Pid: 2315, comm: qemu-kvm Not tainted 3.8.0-rc2-00036-g5f73896 #171
- Call Trace:
-  [<ffffffff810afea2>] print_deadlock_bug+0xf2/0x100
-  [<ffffffff810b1a76>] validate_chain+0x4f6/0x720
-  [<ffffffff810b1ff9>] __lock_acquire+0x359/0x580
-  [<ffffffff810b0e7d>] ? trace_hardirqs_on_caller+0x12d/0x1b0
-  [<ffffffff810b2341>] lock_acquire+0x121/0x190
-  [<ffffffff8115d549>] ? mm_take_all_locks+0x149/0x1b0
-  [<ffffffff815a12bf>] down_write+0x3f/0x70
-  [<ffffffff8115d549>] ? mm_take_all_locks+0x149/0x1b0
-  [<ffffffff8115d549>] mm_take_all_locks+0x149/0x1b0
-  [<ffffffff81177e88>] do_mmu_notifier_register+0x68/0x170
-  [<ffffffff81177fae>] mmu_notifier_register+0xe/0x10
-  [<ffffffffa04bd6ab>] kvm_create_vm+0x22b/0x330 [kvm]
-  [<ffffffffa04bd8a8>] kvm_dev_ioctl+0xf8/0x1a0 [kvm]
-  [<ffffffff811a45bd>] do_vfs_ioctl+0x9d/0x350
-  [<ffffffff815ad215>] ? sysret_check+0x22/0x5d
-  [<ffffffff811a4901>] sys_ioctl+0x91/0xb0
-  [<ffffffff815ad1e9>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- mm/mmap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/mmap.c b/mm/mmap.c
-index f54b235..35730ee 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2886,7 +2886,7 @@ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
- 		 * The LSB of head.next can't change from under us
- 		 * because we hold the mm_all_locks_mutex.
- 		 */
--		down_write(&anon_vma->root->rwsem);
-+		down_write_nest_lock(&anon_vma->root->rwsem, &mm->mmap_sem);
- 		/*
- 		 * We can safely modify head.next after taking the
- 		 * anon_vma->root->rwsem. If some other vma in this mm shares
--- 
-Jiri Kosina
-SUSE Labs
+Bjorn
