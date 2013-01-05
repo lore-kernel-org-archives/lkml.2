@@ -1,177 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510Ab3AEB2i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 20:28:38 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:58709 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755254Ab3AEB2g (ORCPT
+	id S1755503Ab3AEBcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 20:32:20 -0500
+Received: from mail-vb0-f43.google.com ([209.85.212.43]:51843 "EHLO
+	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755254Ab3AEBcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 20:28:36 -0500
-Message-ID: <50E781A7.8070607@huawei.com>
-Date: Sat, 5 Jan 2013 09:28:07 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Fri, 4 Jan 2013 20:32:18 -0500
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <liuj97@gmail.com>, Daniel J Blueman <daniel@quora.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: 3.8-rc2: pciehp waitqueue hang...
-References: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com> <50E5A6A1.5040508@gmail.com> <CAErSpo6KJvEkiqkU--sF_vySk2YUgL_9t1OEYAAGBp9Ebom26w@mail.gmail.com> <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com>
-In-Reply-To: <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+In-Reply-To: <20130104140815.GA26005@suse.de>
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
+	<535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+	<20130103175737.GA3885@suse.de>
+	<20130104140815.GA26005@suse.de>
+Date: Fri, 4 Jan 2013 17:32:17 -0800
+Message-ID: <CANN689E8S5mmszQoeaYgL_SYe1piBDTWCk-Gy1kxcg6hPfUPwA@mail.gmail.com>
+Subject: Re: [PATCH] mm: thp: Acquire the anon_vma rwsem for lock during split
+From: Michel Lespinasse <walken@google.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Zhouping Liu <zliu@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Johannes Weiner <jweiner@redhat.com>, hughd@google.com,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/5 5:50, Bjorn Helgaas wrote:
-> [+to Yijing, +cc Kenji]
-> 
-> On Fri, Jan 4, 2013 at 1:01 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Thu, Jan 3, 2013 at 8:41 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>> Hi Daniel,
->>>         It seems like an issue caused by recursive PCIe HPC.
->>> Could you please help to try the patch from:
->>> http://www.spinics.net/lists/linux-pci/msg18625.html
->>
->> Hi Gerry,
->>
->> I'm working on merging this patch.  Seems like something that might be
->> appropriate for stable as well.
->>
->> Did you look for similar problems in other hotplug drivers?
-> 
-> Oops, sorry, I forgot that Yijing is the author of the patch in question.
-> 
-> Yijing, please check for the same problem in other hotplug drivers.
-> Questions I have after a quick look:
-> 
+On Fri, Jan 4, 2013 at 6:08 AM, Mel Gorman <mgorman@suse.de> wrote:
+> Despite the reason for these commits, NUMA balancing is not the direct
+> source of the problem. split_huge_page() expected the anon_vma lock to be
+> exclusive to serialise the whole split operation. Ordinarily it is expected
+> that the anon_vma lock would only be required when updating the avcs but
+> THP also uses it. The locking requirements for THP are complex and there
+> is some overlap but broadly speaking they include the following
+>
+> 1. mmap_sem for read or write prevents THPs being created underneath
+> 2. anon_vma is taken for write if collapsing a huge page
+> 3. mm->page_table_lock should be taken when checking if pmd_trans_huge as
+>    split_huge_page can run in parallel
+> 4. wait_split_huge_page uses anon_vma taken for write mode to serialise
+>    against other THP operations
+> 5. compound_lock is used to serialise between
+>    __split_huge_page_refcount() and gup
+>
+> split_huge_page takes anon_vma for read but that does not serialise against
+> parallel split_huge_page operations on the same page (rule 2). One process
+> could be modifying the ref counts while the other modifies the page tables
+> leading to counters not being reliable. This patch takes the anon_vma
+> lock for write to serialise against parallel split_huge_page and parallel
+> collapse operations as it is the most fine-grained lock available that
+> protects against both.
 
-OK, I will check the similar problems for other hotplug drivers, my pleasure.
+Your comment about this being the most fine-grained lock made me
+think, couldn't we use lock_page() on the THP page here ?
 
-Thanks!
-Yijing.
-
->   - shpchp_wq looks like it might have the same deadlock issue.
-> 
->   - pciehp_wq (and your per-slot replacement) are allocated with
-> alloc_workqueue().  shpchp_wq is allocated with
-> alloc_ordered_workqueue().  Why the difference?
-> 
->   - The alloc/alloc_ordered difference might be related to 486b10b9f4,
-> where Kenji removed alloc_ordered from pciehp.  Should a similar
-> change be made to shpchp?
-> 
->   - acpiphp uses the global kacpi_hotplug_wq.  We never flush or drain
-> kacpi_hotplug_wq, so I doubt there's a deadlock issue, but I wonder if
-> there are any ordering issues there because we *don't* ever wait for
-> things in that queue to be completed.
-> 
->>> Thanks!
->>> Gerry
->>> On 01/03/2013 11:11 PM, Daniel J Blueman wrote:
->>>> When the Apple thunderbolt ethernet adapter comes loose on my Macbook
->>>> Pro Retina (Intel DSL3510), we see pci_slot_name return
->>>> non-deterministic data (ie varying each boot), and we see pciehp_wp
->>>> remain armed with events causing the kthread to get stuck:
->>>>
->>>> tg3 0000:0a:00.0 eth0: Link is up at 1000 Mbps, full duplex
->>>> tg3 0000:0a:00.0 eth0: Flow control is on for TX and on for RX
->>>> <thunderbold adapter comes loose>
->>>> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
->>>> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
->>>> clear MAC_TX_MODE=ffffffff
->>>> tg3 0000:0a:00.0 eth0: No firmware running
->>>> tg3 0000:0a:00.0 eth0: Link is down
->>>> pcieport 0000:00:01.1: System wakeup enabled by ACPI
->>>> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
->>>> pciehp 0000:09:00.0:pcie24: Latch open on
->>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
->>>> pciehp 0000:09:00.0:pcie24: Button pressed on
->>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
->>>> pciehp 0000:09:00.0:pcie24: Card present on
->>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
->>>> pciehp 0000:09:00.0:pcie24: Power fault on slot
->>>> \xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
->>>> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
->>>> pciehp 0000:09:00.0:pcie24: PCI slot
->>>> #\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
->>>> - powering on due to button press.
->>>> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
->>>> pciehp 0000:09:00.0:pcie24: Failed to check link status
->>>> INFO: task kworker/0:1:52 blocked for more than 120 seconds.
->>>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->>>> kworker/0:1   D ffff880265893090   0  52   2 0x00000000
->>>>  ffff8802655456f8 0000000000000046 ffffffff81a21a60 ffff880265545fd8
->>>>  0000000000004000 ffff880265545fd8 ffff880265892bb0 ffff880265adc8d0
->>>>  000000000000059e 0000000000000082 ffff880265545668 ffffffff810415aa
->>>> Call Trace:
->>>>  [<ffffffff810415aa>] ? console_unlock+0x1fa/0x4a0
->>>>  [<ffffffff8108d16d>] ? trace_hardirqs_off+0xd/0x10
->>>>  [<ffffffff81041b19>] ? vprintk_emit+0x1c9/0x510
->>>>  [<ffffffff81558db4>] schedule+0x24/0x70
->>>>  [<ffffffff8155653c>] schedule_timeout+0x19c/0x1e0
->>>>  [<ffffffff81558c43>] wait_for_common+0xe3/0x180
->>>>  [<ffffffff8105adc1>] ? flush_workqueue+0x111/0x4d0
->>>>  [<ffffffff81071140>] ? try_to_wake_up+0x2d0/0x2d0
->>>>  [<ffffffff81558d88>] wait_for_completion+0x18/0x20
->>>>  [<ffffffff8105ae86>] flush_workqueue+0x1d6/0x4d0
->>>>  [<ffffffff8105acb0>] ? flush_workqueue_prep_cwqs+0x200/0x200
->>>>  [<ffffffff8125e909>] pciehp_release_ctrl+0x39/0x90
->>>>  [<ffffffff8125b945>] pciehp_remove+0x25/0x30
->>>>  [<ffffffff81255bf2>] pcie_port_remove_service+0x52/0x70
->>>>  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
->>>>  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
->>>>  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
->>>>  [<ffffffff81303fe7>] device_del+0x127/0x1c0
->>>>  [<ffffffff81255d70>] ? resume_iter+0x40/0x40
->>>>  [<ffffffff81304091>] device_unregister+0x11/0x20
->>>>  [<ffffffff81255da5>] remove_iter+0x35/0x40
->>>>  [<ffffffff81302eb6>] device_for_each_child+0x36/0x70
->>>>  [<ffffffff81256341>] pcie_port_device_remove+0x21/0x40
->>>>  [<ffffffff81256588>] pcie_portdrv_remove+0x28/0x50
->>>>  [<ffffffff8124a821>] pci_device_remove+0x41/0xc0
->>>>  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
->>>>  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
->>>>  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
->>>>  [<ffffffff81303fe7>] device_del+0x127/0x1c0
->>>>  [<ffffffff81304091>] device_unregister+0x11/0x20
->>>>  [<ffffffff8124566c>] pci_stop_bus_device+0x8c/0xa0
->>>>  [<ffffffff81245615>] pci_stop_bus_device+0x35/0xa0
->>>>  [<ffffffff81245811>] pci_stop_and_remove_bus_device+0x11/0x20
->>>>  [<ffffffff8125cc91>] pciehp_unconfigure_device+0x91/0x190
->>>>  [<ffffffff8125c76d>] ? pciehp_power_thread+0x2d/0x110
->>>>  [<ffffffff8125c591>] pciehp_disable_slot+0x71/0x220
->>>>  [<ffffffff8125c826>] pciehp_power_thread+0xe6/0x110
->>>>  [<ffffffff8105d203>] process_one_work+0x193/0x550
->>>>  [<ffffffff8105d1a1>] ? process_one_work+0x131/0x550
->>>>  [<ffffffff8125c740>] ? pciehp_disable_slot+0x220/0x220
->>>>  [<ffffffff8105d96d>] worker_thread+0x15d/0x400
->>>>  [<ffffffff8109213d>] ? trace_hardirqs_on+0xd/0x10
->>>>  [<ffffffff8105d810>] ? rescuer_thread+0x210/0x210
->>>>  [<ffffffff81062bd6>] kthread+0xd6/0xe0
->>>>  [<ffffffff8155a18b>] ? _raw_spin_unlock_irq+0x2b/0x50
->>>>  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
->>>>  [<ffffffff8155ae6c>] ret_from_fork+0x7c/0xb0
->>>>  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
->>>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> .
-> 
-
+Now I don't necessarily want to push you that direction, because I
+haven't fully thought it trough and because what you propose brings us
+closer to what happened before anon_vma became an rwlock, which is
+more obviously safe. But I felt I should still mention it, since we're
+really only trying to protect from concurrent operations on the same
+THP page, so locking at just that granularity would seem desirable.
 
 -- 
-Thanks!
-Yijing
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
