@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab3AEVYZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 16:24:25 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:37719 "EHLO smtp3-g21.free.fr"
+	id S1755929Ab3AEVsA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 16:48:00 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:32937 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755854Ab3AEVYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 16:24:22 -0500
-Message-ID: <1357421043.3912.13.camel@lamella>
-Subject: Re: [3.6.9 -> 3.7.1 regression] sound: snd_hda_intel codec probing
- issue?
-From: Vincent Blut <vincent.debian@free.fr>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Date: Sat, 05 Jan 2013 22:24:03 +0100
-In-Reply-To: <s5hvcber5cz.wl%tiwai@suse.de>
-References: <1356704740.3953.26.camel@lamella>
-	 <s5hvcber5cz.wl%tiwai@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755851Ab3AEVr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 16:47:57 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Woody Suwalski <terraluna977@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: 3.8-rc[12] cpufreq build errors...
+Date: Sat, 05 Jan 2013 22:53:35 +0100
+Message-ID: <2446683.GzoeULsVfp@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <50E83B2D.9000609@gmail.com>
+References: <50E83B2D.9000609@gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 03 janvier 2013 à 10:19 +0100, Takashi Iwai a écrit :
-> At Fri, 28 Dec 2012 15:25:40 +0100,
-> Vincent Blut wrote:
-> > 
-> > Hi,
-> > 
-> > Since I updated to Linux 3.7.1, listening to some audio/video bits
-> > frequently cause the following:
-> > 
-> > [ 7896.166946] hda-intel: azx_get_response timeout, switching to polling
-> > mode: last cmd=0x020c0000
-> > [ 7897.173444] hda-intel: No response from codec, disabling MSI: last
-> > cmd=0x020c0000
-> > [ 7898.179932] hda_intel: azx_get_response timeout, switching to
-> > single_cmd mode: last cmd=0x020c0000
-> > [ 7898.179983] hda-codec: out of range cmd 0:0:20:400:fffff7ff
-> > [ 9445.034371] plugin-containe[5873]: segfault at 7f44bb95e639 ip
-> > 00007f44e454bca0 sp 00007f44c91165f8 error 4 in
-> > libc-2.13.so[7f44e442c000+180000]
-> > 
-> > It seems to be a codec probing failure (?). This is really fatal because
-> > the sound become very choppy and can't recover until I reboot.
-> > I'll try to play with 'probe_mask' kernel parameter to see if I can
-> > narrow the correct codec slots!
-> > 
-> > By the way I can't reproduce this on 3.6.9, so is there something that
-> > changed in this area in 3.7.1?
+On Saturday, January 05, 2013 09:39:41 AM Woody Suwalski wrote:
+> Rafael, in 3.8 kernel part of the common logic has been moved to a 
+> separate cpufreq_governor.c file.
+> According to the Makefile, the cpufreq_governor.o is to be linked to 
+> other cpufreq  modules.
 > 
-> If it's new in 3.7, this could be a regression by runtime D3.
-> Try to pass power_save_controller=0 option to snd-hda-intel module
-> (or change it via sysfs dynamically).
+> However I see that a separate malformed cpufreq_governor.ko is created, 
+> and then the real modules can not work without the common logic either.
 > 
+> The build config is a simple 32-bit config, on top of vanilla source.
 > 
-> thanks,
+> I submit a verbose build log with "ls *.ko" and some "modinfo" outputs 
+> attached to the bottom.
+> Clearly the build subsystem is misinterpreting the build intentions.
 > 
-> Takashi
+> Could you please check if you see the same issue in your builds?
+> I am using a 32-bit October-ish Debian Testing as a build machine (Eeepc 
+> netbook).
 
-Hi Takashi,
+This issue has already been reported and there's a fix scheduled for
+inclusion in the master branch of the linux-pm.git tree.
 
-Well, power_save_controller=0 seems to do the trick but I get plenty of:
-
-
-[   15.389270] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[   25.178725] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[   72.296536] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[ 2318.147505] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[ 6086.029839] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
-[ 7390.772818] pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x37
-[snd_hda_intel] returns -11
+Thanks,
+Rafael
 
 
-which I think is fixed in 3.8 by commit 6eb827d23577
-
-So what's the next step? Adding a quirk for this sound card? Or is there
-a way to fix the root cause? 
-
-Cheers,
-Vincent
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
