@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564Ab3AECGV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 21:06:21 -0500
-Received: from mga11.intel.com ([192.55.52.93]:23318 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755545Ab3AECGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 21:06:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,413,1355126400"; 
-   d="scan'208";a="270146694"
-Date: Sat, 5 Jan 2013 09:12:55 -0500
-From: Youquan Song <youquan.song@linux.intel.com>
-To: Youquan Song <youquan.song@intel.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        mingo@kernel.org, Stephane Eranian <eranian@google.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Andi Kleen <andi@firstfloor.org>, tglx@linutronix.de,
-        Youquan Song <youquan.song@linux.intel.com>
-Subject: Re: [PATCH] x86,perf: Add IvyBridge EP support
-Message-ID: <20130105141255.GA32169@linux-youquan.bj.intel.com>
-References: <1355851223-27705-1-git-send-email-youquan.song@intel.com>
+	id S1755570Ab3AECUn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 21:20:43 -0500
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:27331
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755549Ab3AECUl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jan 2013 21:20:41 -0500
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPV:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(zz4015Izz1de0h1202h1e76h1d1ah1d2ahzzz2dh668h839h93fhd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758h1155h)
+X-WSS-ID: 0MG4RUB-01-C6N-02
+X-M-MSG: 
+From: "Huang, Shane" <Shane.Huang@amd.com>
+To: "sedat.dilek@gmail.com" <sedat.dilek@gmail.com>,
+        Jeff Garzik <jgarzik@pobox.com>
+CC: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>,
+        "Huang, Shane" <Shane.Huang@amd.com>
+Subject: RE: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
+ Emask 0x1
+Thread-Topic: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
+ Emask 0x1
+Thread-Index: AQHN6pHLLI+J+/ZF2Ei4qcz2gokWg5g4zacAgAAH+QCAASnakA==
+Date: Sat, 5 Jan 2013 02:20:31 +0000
+Message-ID: <43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com>
+References: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com>
+	<CA+icZUXrQ4aq+cKXj3qEwnhtTGPBfHcJ6q_zTm3xSBUUh9W8dQ@mail.gmail.com>
+ <CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com>
+In-Reply-To: <CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.237.72.73]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1355851223-27705-1-git-send-email-youquan.song@intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r052Kuns017145
 
+> OK, I see the patch I mentioned to fix the problem was later reverted [1].
+> The real fix is "libata: replace sata_settings with devslp_timing" [2].
 
-Would you like to take it? It is needed by Linux OSVs.
+Yes, please use [2] which can also be found in kernel bugzilla #51881
+and is pending on Jeff's acceptance. Sorry for the trouble to you guys.
 
-Thanks
--Youquan
-
-On Tue, Dec 18, 2012 at 12:20:23PM -0500, Youquan Song wrote:
-> Run in perf utility at Ivybridge EP server, encouter "not supported" event
-> 
->    <not supported> L1-dcache-loads         
->    <not supported> L1-dcache-load-misses   
->    <not supported> L1-dcache-stores        
->    <not supported> L1-dcache-store-misses  
->    <not supported> L1-dcache-prefetches    
->    <not supported> L1-dcache-prefetch-misses
-> 
-> This patch add the support for this processor.
-> 
-> Reviewed-by: Andi Kleen <ak@linux.intel.com>
-> Signed-off-by: Youquan Song <youquan.song@intel.com>
-> ---
->  arch/x86/kernel/cpu/perf_event_intel.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-> index 324bb52..aea3503 100644
-> --- a/arch/x86/kernel/cpu/perf_event_intel.c
-> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-> @@ -2075,6 +2075,7 @@ __init int intel_pmu_init(void)
->  		pr_cont("SandyBridge events, ");
->  		break;
->  	case 58: /* IvyBridge */
-> +	case 62: /* IvyBridge EP */
->  		memcpy(hw_cache_event_ids, snb_hw_cache_event_ids,
->  		       sizeof(hw_cache_event_ids));
->  		memcpy(hw_cache_extra_regs, snb_hw_cache_extra_regs,
-> -- 
-> 1.6.4.2
-> 
- 
+Thanks,
+Shane
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
