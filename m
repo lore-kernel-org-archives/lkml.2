@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3AEIbi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:31:38 -0500
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49131 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754773Ab3AEIbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:31:36 -0500
-Message-ID: <1357374665.716.32.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [PATCH] Remove WARN_ON_ONCE in __smp_call_function_single and
- smp_call_function_single
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Hui Zhu <teawater@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
-        yan@linux.vnet.ibm.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Sat, 05 Jan 2013 16:31:05 +0800
-In-Reply-To: <CANFwon03L14jDhLAE66F936WytwtN=+43QetETOG5ndUGptnow@mail.gmail.com>
-References: <CANFwon03L14jDhLAE66F936WytwtN=+43QetETOG5ndUGptnow@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010508-5816-0000-0000-0000061E71E9
+	id S1755304Ab3AEIhI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:37:08 -0500
+Received: from mga11.intel.com ([192.55.52.93]:44979 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754903Ab3AEIhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 03:37:05 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,415,1355126400"; 
+   d="scan'208";a="270210029"
+From: Alex Shi <alex.shi@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
+        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
+        pjt@google.com, namhyung@kernel.org, efault@gmx.de
+Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
+        preeti@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        alex.shi@intel.com
+Subject: [PATCH V3 0/22] sched: simplified fork, enable load average into LB and power awareness scheduling
+Date: Sat,  5 Jan 2013 16:37:29 +0800
+Message-Id: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-05 at 12:26 +0800, Hui Zhu wrote:
-> The comments of these WARN_ON_ONCE said "Can deadlock when called with
-> interrupts disabled".
-> But I didn't find anything that will block this function.
+The patch set base on Linus tree, includes 3 parts,
+1, bug fix and fork/wake balancing clean up. patch 1~6,
+the first patch remove one domain level. patch 2~6 simplified fork/wake
+balancing, it can increase 10+% hackbench performance on our 4 sockets
+SNB EP machine.
 
-It seems that if two cpus try to IPI each other with wait equals true,
-they will deadlock if interrupts are disabled, because neither of them
-can take the interrupt. 
+V3 change:
+a, added the first patch to remove one domain level on x86 platform.
+b, some small changes according to Namhyung Kim's comments, thanks!
 
-If wait equals false, it seems deadlock is still possible, for example,
-if smp_call_function_single() is called from interrupt context, then one
-cpu might
-	-->call smp_call_function_single()
-	-->csd_lock()
-	-->be interrupted before sending the ipi out
-	-->in interrupt context, call smp_call_function_single() again
-	-->csd_lock_wait() forever in csd_lock() 
+2, bug fix for load average and implement it into LB, patch 7~12,
+That using load average in load balancing, with a initial runnable load
+value bug fix.
 
-I'm not sure whether it is possible that irqs be enabled in interrupt
-context? If so, maybe we also need check that if wait equals false?
+V3 change:
+a, use rq->cfs.runnable_load_avg as cpu load not
+rq->avg.load_avg_contrib, since the latter need much time to accumulate
+for new forked task,
+b, a build issue fixed with Namhyung Kim's reminder.
 
-Thanks, Zhong
+3, power awareness scheduling, patch 13~22,
+The subset implement my previous power aware scheduling proposal:
+https://lkml.org/lkml/2012/8/13/139
+It defines 2 new power aware policy balance and powersaving, and then
+try to spread or pack tasks on each of sched group level according the
+different scheduler policy. That can save much power when task number in
+system is no more then LCPU number.
 
-> So I think maybe this WARN_ON_ONCE is not need now.  So I post a patch for that.
-> 
-> Signed-off-by: Hui Zhu <teawater@gmail.com>
-> Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
-> 
-> --- a/kernel/smp.c
-> +++ b/kernel/smp.c
-> @@ -303,25 +303,13 @@ int smp_call_function_single(int cpu, sm
->  		.flags = 0,
->  	};
->  	unsigned long flags;
-> -	int this_cpu;
->  	int err = 0;
-> 
->  	/*
->  	 * prevent preemption and reschedule on another processor,
->  	 * as well as CPU removal
->  	 */
-> -	this_cpu = get_cpu();
-> -
-> -	/*
-> -	 * Can deadlock when called with interrupts disabled.
-> -	 * We allow cpu's that are not yet online though, as no one else can
-> -	 * send smp call function interrupt to this cpu and as such deadlocks
-> -	 * can't happen.
-> -	 */
-> -	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
-> -		     && !oops_in_progress);
-> -
-> -	if (cpu == this_cpu) {
-> +	if (cpu == get_cpu()) {
->  		local_irq_save(flags);
->  		func(info);
->  		local_irq_restore(flags);
-> @@ -409,17 +397,7 @@ void __smp_call_function_single(int cpu,
->  	unsigned int this_cpu;
->  	unsigned long flags;
-> 
-> -	this_cpu = get_cpu();
-> -	/*
-> -	 * Can deadlock when called with interrupts disabled.
-> -	 * We allow cpu's that are not yet online though, as no one else can
-> -	 * send smp call function interrupt to this cpu and as such deadlocks
-> -	 * can't happen.
-> -	 */
-> -	WARN_ON_ONCE(cpu_online(smp_processor_id()) && wait && irqs_disabled()
-> -		     && !oops_in_progress);
-> -
-> -	if (cpu == this_cpu) {
-> +	if (cpu == get_cpu()) {
->  		local_irq_save(flags);
->  		data->func(data->info);
->  		local_irq_restore(flags);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+V3 change:
+a, engaged nr_running in max potential utils consideration in periodic
+power balancing.
+b, try exec/wake small tasks on running cpu not idle cpu.
 
+Thanks comments on previous version. and Any more comments are appreciated!
+
+-- Thanks Alex
 
