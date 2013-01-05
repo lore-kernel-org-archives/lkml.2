@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab3AEMG0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 07:06:26 -0500
-Received: from [216.228.121.35] ([216.228.121.35]:4505 "EHLO
+	id S1755506Ab3AEMHU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 07:07:20 -0500
+Received: from [216.228.121.35] ([216.228.121.35]:4554 "EHLO
 	hqemgate04.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123Ab3AEMGV (ORCPT
+	with ESMTP id S1755123Ab3AEMHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 07:06:21 -0500
+	Sat, 5 Jan 2013 07:07:18 -0500
 X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Sat, 05 Jan 2013 04:05:04 -0800
+	by hqnvupgp06.nvidia.com on Sat, 05 Jan 2013 04:03:43 -0800
 From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <w.sang@pengutronix.de>
-CC: <swarren@nvidia.com>, <khali@linux-fr.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
+To: <vinod.koul@intel.com>, <djbw@fb.com>
+CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
         Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] i2c: tegra: add support for Tegra114 SoC
-Date: Sat, 5 Jan 2013 17:34:46 +0530
-Message-ID: <1357387486-25966-1-git-send-email-ldewangan@nvidia.com>
+Subject: [PATCH] dma: tegra: add support for Tegra114 SoC
+Date: Sat, 5 Jan 2013 17:36:08 +0530
+Message-ID: <1357387568-26010-1-git-send-email-ldewangan@nvidia.com>
 X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,191 +23,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra114 has following enhanced feature in i2c controller:
-- Enable/disable control for per packet transfer complete interrupt.
-  Earlier SoCs could not disable this.
-- Single clock source for standard/fast and HS mode clock speed.
-  The clock divisor for fast/standard mode is added into the i2c
-  controller to meet the HS and standard/fast mode of clock speed
-  from single source.
+NVIDIA's Tegra114 has APB DMA controller which supports channel wise
+pause control. The global pause is used for clock gating and hence
+DMA registers are not accessible if DMAs are globally disabled.
 
-Add support for the above feature to make it functional on T114 SOCs.
+Add support for use of channel wise pause feature for Tegra114 SOCs.
 
 Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
 ---
- drivers/i2c/busses/i2c-tegra.c |   77 ++++++++++++++++++++++++++++++++-------
- 1 files changed, 63 insertions(+), 14 deletions(-)
+ drivers/dma/tegra20-apb-dma.c |   54 +++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 49 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 7b38877..2dadb96 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -71,6 +71,8 @@
- #define I2C_INT_TX_FIFO_DATA_REQ		(1<<1)
- #define I2C_INT_RX_FIFO_DATA_REQ		(1<<0)
- #define I2C_CLK_DIVISOR				0x06c
-+#define I2C_CLK_DIVISOR_STD_FAST_MODE_SHIFT	16
-+#define I2C_CLK_MULTIPLIER_STD_FAST_MODE	8
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index c39e61b..d33c1ae 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -62,6 +62,9 @@
+ #define TEGRA_APBDMA_STATUS_COUNT_SHIFT		2
+ #define TEGRA_APBDMA_STATUS_COUNT_MASK		0xFFFC
  
- #define DVC_CTRL_REG1				0x000
- #define DVC_CTRL_REG1_INTR_EN			(1<<10)
-@@ -117,10 +119,23 @@ enum msg_end_type {
- /**
-  * struct tegra_i2c_hw_feature : Different HW support on Tegra
-  * @has_continue_xfer_support: Continue transfer supports.
-+ * @has_per_pkt_xfer_complete_irq: Has enable/disable capability for transfer
-+ *		complete interrupt per packet basis.
-+ * @has_single_clk_source: The i2c controller has single clock source. Tegra30
-+ *		and earlier Socs has two clock sources i.e. div-clk and
-+ *		fast-clk.
-+ * @clk_divisor_hs_mode: Clock divisor in HS mode.
-+ * @clk_divisor_std_fast_mode: Clock divisor in standard/fast mode. It is
-+ *		applicable if there is no fast clock source i.e. single clock
-+ *		source.
++#define TEGRA_APBDMA_CHAN_CSRE			0x00C
++#define TEGRA_APBDMA_CHAN_CSRE_PAUSE		(1 << 31)
++
+ /* AHB memory address */
+ #define TEGRA_APBDMA_CHAN_AHBPTR		0x010
+ 
+@@ -112,10 +115,12 @@ struct tegra_dma;
+  * tegra_dma_chip_data Tegra chip specific DMA data
+  * @nr_channels: Number of channels available in the controller.
+  * @max_dma_count: Maximum DMA transfer count supported by DMA controller.
++ * @support_channel_pause: Support channel wise pause of dma.
   */
- 
- struct tegra_i2c_hw_feature {
- 	bool has_continue_xfer_support;
-+	bool has_per_pkt_xfer_complete_irq;
-+	bool has_single_clk_source;
-+	int clk_divisor_hs_mode;
-+	int clk_divisor_std_fast_mode;
+ struct tegra_dma_chip_data {
+ 	int nr_channels;
+ 	int max_dma_count;
++	bool support_channel_pause;
  };
  
- /**
-@@ -366,11 +381,13 @@ static void tegra_dvc_init(struct tegra_i2c_dev *i2c_dev)
- static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
- {
- 	int ret;
--	ret = clk_prepare_enable(i2c_dev->fast_clk);
--	if (ret < 0) {
--		dev_err(i2c_dev->dev,
--			"Enabling fast clk failed, err %d\n", ret);
--		return ret;
-+	if (!i2c_dev->hw->has_single_clk_source) {
-+		ret = clk_prepare_enable(i2c_dev->fast_clk);
-+		if (ret < 0) {
-+			dev_err(i2c_dev->dev,
-+				"Enabling fast clk failed, err %d\n", ret);
-+			return ret;
-+		}
- 	}
- 	ret = clk_prepare_enable(i2c_dev->div_clk);
- 	if (ret < 0) {
-@@ -384,13 +401,16 @@ static inline int tegra_i2c_clock_enable(struct tegra_i2c_dev *i2c_dev)
- static inline void tegra_i2c_clock_disable(struct tegra_i2c_dev *i2c_dev)
- {
- 	clk_disable_unprepare(i2c_dev->div_clk);
--	clk_disable_unprepare(i2c_dev->fast_clk);
-+	if (!i2c_dev->hw->has_single_clk_source)
-+		clk_disable_unprepare(i2c_dev->fast_clk);
+ /* DMA channel registers */
+@@ -353,6 +358,32 @@ static void tegra_dma_global_resume(struct tegra_dma_channel *tdc)
+ 	spin_unlock(&tdma->global_lock);
  }
  
- static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
++static void tegra_dma_pause(struct tegra_dma_channel *tdc,
++	bool wait_for_burst_complete)
++{
++	struct tegra_dma *tdma = tdc->tdma;
++
++	if (tdma->chip_data->support_channel_pause) {
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSRE,
++				TEGRA_APBDMA_CHAN_CSRE_PAUSE);
++		if (wait_for_burst_complete)
++			udelay(TEGRA_APBDMA_BURST_COMPLETE_TIME);
++	} else {
++		tegra_dma_global_pause(tdc, wait_for_burst_complete);
++	}
++}
++
++static void tegra_dma_resume(struct tegra_dma_channel *tdc)
++{
++	struct tegra_dma *tdma = tdc->tdma;
++
++	if (tdma->chip_data->support_channel_pause) {
++		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSRE, 0);
++	} else {
++		tegra_dma_global_resume(tdc);
++	}
++}
++
+ static void tegra_dma_stop(struct tegra_dma_channel *tdc)
  {
- 	u32 val;
- 	int err = 0;
-+	int clk_multiplier = I2C_CLK_MULTIPLIER_STD_FAST_MODE;
-+	u32 clk_divisor;
+ 	u32 csr;
+@@ -408,7 +439,7 @@ static void tegra_dma_configure_for_next(struct tegra_dma_channel *tdc,
+ 	 * If there is already IEC status then interrupt handler need to
+ 	 * load new configuration.
+ 	 */
+-	tegra_dma_global_pause(tdc, false);
++	tegra_dma_pause(tdc, false);
+ 	status  = tdc_read(tdc, TEGRA_APBDMA_CHAN_STATUS);
  
- 	tegra_i2c_clock_enable(i2c_dev);
+ 	/*
+@@ -418,7 +449,7 @@ static void tegra_dma_configure_for_next(struct tegra_dma_channel *tdc,
+ 	if (status & TEGRA_APBDMA_STATUS_ISE_EOC) {
+ 		dev_err(tdc2dev(tdc),
+ 			"Skipping new configuration as interrupt is pending\n");
+-		tegra_dma_global_resume(tdc);
++		tegra_dma_resume(tdc);
+ 		return;
+ 	}
  
-@@ -405,7 +425,15 @@ static int tegra_i2c_init(struct tegra_i2c_dev *i2c_dev)
- 		(0x2 << I2C_CNFG_DEBOUNCE_CNT_SHIFT);
- 	i2c_writel(i2c_dev, val, I2C_CNFG);
- 	i2c_writel(i2c_dev, 0, I2C_INT_MASK);
--	clk_set_rate(i2c_dev->div_clk, i2c_dev->bus_clk_rate * 8);
-+
-+	clk_multiplier *= (i2c_dev->hw->clk_divisor_std_fast_mode + 1);
-+	clk_set_rate(i2c_dev->div_clk, i2c_dev->bus_clk_rate * clk_multiplier);
-+
-+	/* Make sure clock divisor programmed correctly */
-+	clk_divisor = i2c_dev->hw->clk_divisor_hs_mode;
-+	clk_divisor |= i2c_dev->hw->clk_divisor_std_fast_mode <<
-+					I2C_CLK_DIVISOR_STD_FAST_MODE_SHIFT;
-+	i2c_writel(i2c_dev, clk_divisor, I2C_CLK_DIVISOR);
+@@ -429,7 +460,7 @@ static void tegra_dma_configure_for_next(struct tegra_dma_channel *tdc,
+ 				nsg_req->ch_regs.csr | TEGRA_APBDMA_CSR_ENB);
+ 	nsg_req->configured = true;
  
- 	if (!i2c_dev->is_dvc) {
- 		u32 sl_cfg = i2c_readl(i2c_dev, I2C_SL_CNFG);
-@@ -547,6 +575,8 @@ static int tegra_i2c_xfer_msg(struct tegra_i2c_dev *i2c_dev,
- 		tegra_i2c_fill_tx_fifo(i2c_dev);
+-	tegra_dma_global_resume(tdc);
++	tegra_dma_resume(tdc);
+ }
  
- 	int_mask = I2C_INT_NO_ACK | I2C_INT_ARBITRATION_LOST;
-+	if (i2c_dev->hw->has_per_pkt_xfer_complete_irq)
-+		int_mask |= I2C_INT_PACKET_XFER_COMPLETE;
- 	if (msg->flags & I2C_M_RD)
- 		int_mask |= I2C_INT_RX_FIFO_DATA_REQ;
- 	else if (i2c_dev->msg_buf_remaining)
-@@ -634,15 +664,32 @@ static const struct i2c_algorithm tegra_i2c_algo = {
+ static void tdc_start_head_req(struct tegra_dma_channel *tdc)
+@@ -690,7 +721,7 @@ static void tegra_dma_terminate_all(struct dma_chan *dc)
+ 		goto skip_dma_stop;
  
- static const struct tegra_i2c_hw_feature tegra20_i2c_hw = {
- 	.has_continue_xfer_support = false,
-+	.has_per_pkt_xfer_complete_irq = false,
-+	.has_single_clk_source = false,
-+	.clk_divisor_hs_mode = 3,
-+	.clk_divisor_std_fast_mode = 0,
- };
+ 	/* Pause DMA before checking the queue status */
+-	tegra_dma_global_pause(tdc, true);
++	tegra_dma_pause(tdc, true);
  
- static const struct tegra_i2c_hw_feature tegra30_i2c_hw = {
- 	.has_continue_xfer_support = true,
-+	.has_per_pkt_xfer_complete_irq = false,
-+	.has_single_clk_source = false,
-+	.clk_divisor_hs_mode = 3,
-+	.clk_divisor_std_fast_mode = 0,
-+};
-+
-+static const struct tegra_i2c_hw_feature tegra114_i2c_hw = {
-+	.has_continue_xfer_support = true,
-+	.has_per_pkt_xfer_complete_irq = true,
-+	.has_single_clk_source = true,
-+	.clk_divisor_hs_mode = 1,
-+	.clk_divisor_std_fast_mode = 0x19,
+ 	status = tdc_read(tdc, TEGRA_APBDMA_CHAN_STATUS);
+ 	if (status & TEGRA_APBDMA_STATUS_ISE_EOC) {
+@@ -708,7 +739,7 @@ static void tegra_dma_terminate_all(struct dma_chan *dc)
+ 		sgreq->dma_desc->bytes_transferred +=
+ 				get_current_xferred_count(tdc, sgreq, status);
+ 	}
+-	tegra_dma_global_resume(tdc);
++	tegra_dma_resume(tdc);
+ 
+ skip_dma_stop:
+ 	tegra_dma_abort_all(tdc);
+@@ -1175,6 +1206,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
+ static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
+ 	.nr_channels		= 16,
+ 	.max_dma_count		= 1024UL * 64,
++	.support_channel_pause	= false,
  };
  
  #if defined(CONFIG_OF)
- /* Match table for of_platform binding */
- static const struct of_device_id tegra_i2c_of_match[] = {
-+	{ .compatible = "nvidia,tegra114-i2c", .data = &tegra114_i2c_hw, },
- 	{ .compatible = "nvidia,tegra30-i2c", .data = &tegra30_i2c_hw, },
- 	{ .compatible = "nvidia,tegra20-i2c", .data = &tegra20_i2c_hw, },
- 	{ .compatible = "nvidia,tegra20-i2c-dvc", .data = &tegra20_i2c_hw, },
-@@ -688,12 +735,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 		return PTR_ERR(div_clk);
- 	}
+@@ -1182,10 +1214,22 @@ static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
+ static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
+ 	.nr_channels		= 32,
+ 	.max_dma_count		= 1024UL * 64,
++	.support_channel_pause	= false,
+ };
  
--	fast_clk = devm_clk_get(&pdev->dev, "fast-clk");
--	if (IS_ERR(fast_clk)) {
--		dev_err(&pdev->dev, "missing bus clock");
--		return PTR_ERR(fast_clk);
--	}
--
- 	i2c_dev = devm_kzalloc(&pdev->dev, sizeof(*i2c_dev), GFP_KERNEL);
- 	if (!i2c_dev) {
- 		dev_err(&pdev->dev, "Could not allocate struct tegra_i2c_dev");
-@@ -702,7 +743,6 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 
- 	i2c_dev->base = base;
- 	i2c_dev->div_clk = div_clk;
--	i2c_dev->fast_clk = fast_clk;
- 	i2c_dev->adapter.algo = &tegra_i2c_algo;
- 	i2c_dev->irq = irq;
- 	i2c_dev->cont_id = pdev->id;
-@@ -733,6 +773,15 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	}
- 	init_completion(&i2c_dev->msg_complete);
- 
-+	if (!i2c_dev->hw->has_single_clk_source) {
-+		fast_clk = devm_clk_get(&pdev->dev, "fast-clk");
-+		if (IS_ERR(fast_clk)) {
-+			dev_err(&pdev->dev, "missing fast clock");
-+			return PTR_ERR(fast_clk);
-+		}
-+		i2c_dev->fast_clk = fast_clk;
-+	}
++/* Tegra114 specific DMA controller information */
++static const struct tegra_dma_chip_data tegra114_dma_chip_data = {
++	.nr_channels		= 32,
++	.max_dma_count		= 1024UL * 64,
++	.support_channel_pause	= true,
++};
 +
- 	platform_set_drvdata(pdev, i2c_dev);
- 
- 	ret = tegra_i2c_init(i2c_dev);
++
+ static const struct of_device_id tegra_dma_of_match[] = {
+ 	{
++		.compatible = "nvidia,tegra114-apbdma",
++		.data = &tegra114_dma_chip_data,
++	}, {
+ 		.compatible = "nvidia,tegra30-apbdma",
+ 		.data = &tegra30_dma_chip_data,
+ 	}, {
 -- 
 1.7.1.1
 
