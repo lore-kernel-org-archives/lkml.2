@@ -1,144 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445Ab3AEJl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 04:41:57 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:57531 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755338Ab3AEJlx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 04:41:53 -0500
-Message-ID: <1357378914.8716.3.camel@kernel.cn.ibm.com>
-Subject: Re: [PATCH] writeback: fix writeback cache thrashing
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Dave Chinner <dchinner@redhat.com>
-Date: Sat, 05 Jan 2013 03:41:54 -0600
-In-Reply-To: <20130105073846.GA11811@localhost>
-References: <1356847190-7986-1-git-send-email-linkinjeon@gmail.com>
-	 <20121231113054.GC7564@quack.suse.cz>
-	 <20130102134334.GB30633@quack.suse.cz>
-	 <CAKYAXd8-sZo0XcdHuyOQ1qT_s3kJXyphXsjSS7e1-sJ1QaAOgg@mail.gmail.com>
-	 <1357261151.5105.2.camel@kernel.cn.ibm.com>
-	 <CAKYAXd-kcnxm6Do9VcbdyrCBvArrjz1iHOpxXHnyUyNcqP7Ofg@mail.gmail.com>
-	 <1357346803.5273.10.camel@kernel.cn.ibm.com>
-	 <20130105032642.GA8188@localhost>
-	 <1357363603.5273.16.camel@kernel.cn.ibm.com>
-	 <20130105073846.GA11811@localhost>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1755493Ab3AEJm0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 04:42:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:22985 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755338Ab3AEJmX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 04:42:23 -0500
+From: Jason Wang <jasowang@redhat.com>
+To: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH V2 0/3] handle polling errors in vhost/vhost_net
+Date: Sat,  5 Jan 2013 17:34:03 +0800
+Message-Id: <1357378446-19656-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-05 at 15:38 +0800, Fengguang Wu wrote:
-> On Fri, Jan 04, 2013 at 11:26:43PM -0600, Simon Jeons wrote:
-> > On Sat, 2013-01-05 at 11:26 +0800, Fengguang Wu wrote:
-> > > > > > Hi Namjae,
-> > > > > >
-> > > > > > Why use bdi_stat_error here? What's the meaning of its comment "maximal
-> > > > > > error of a stat counter"?
-> > > > > Hi Simon,
-> > > > > 
-> > > > > As you know bdi stats (BDI_RECLAIMABLE, BDI_WRITEBACK …) are kept in
-> > > > > percpu counters.
-> > > > > When these percpu counters are incremented/decremented simultaneously
-> > > > > on multiple CPUs by small amount (individual cpu counter less than
-> > > > > threshold BDI_STAT_BATCH),
-> > > > > it is possible that we get approximate value (not exact value) of
-> > > > > these percpu counters.
-> > > > > In order, to handle these percpu counter error we have used
-> > > > > bdi_stat_error. bdi_stat_error is the maximum error which can happen
-> > > > > in percpu bdi stats accounting.
-> > > > > 
-> > > > > bdi_stat(bdi, BDI_RECLAIMABLE);
-> > > > >  -> This will give approximate value of BDI_RECLAIMABLE by reading
-> > > > > previous value of percpu count.
-> > > > > 
-> > > > > bdi_stat_sum(bdi, BDI_RECLAIMABLE);
-> > > > >  ->This will give exact value of BDI_RECLAIMABLE. It will take lock
-> > > > > and add current percpu count of individual CPUs.
-> > > > >    It is not recommended to use it frequently as it is expensive. We
-> > > > > can better use “bdi_stat” and work with approx value of bdi stats.
-> > > > > 
-> > > > 
-> > > > Hi Namjae, thanks for your clarify.
-> > > > 
-> > > > But why compare error stat count to bdi_bground_thresh? What's the
-> > > 
-> > > It's not comparing bdi_stat_error to bdi_bground_thresh, but rather,
-> > > in concept, comparing bdi_stat (with error bound adjustments) to
-> > > bdi_bground_thresh.
-> > > 
-> > > > relationship between them? I also see bdi_stat_error compare to
-> > > > bdi_thresh/bdi_dirty in function balance_dirty_pages. 
-> > > 
-> > 
-> > Hi Fengguang,
-> > 
-> > > Here, it's trying to use bdi_stat_sum(), the accurate (however more
-> > > costly) version of bdi_stat(), if the error would possibly be large:
-> > 
-> > Why error is large use bdi_stat_sum and error is few use bdi_stat?
-> 
+This is an update version of last version to fix the handling of polling errors
+in vhost/vhost_net.
 
-Thanks for your response Fengguang! :)
+Currently, vhost and vhost_net ignores errors of polling which can lead kernel
+crashing for buggy/malicious userspace. Fix this by extending the idea of tx
+polling state to all other vhost_polls and changing the state only when polling
+succeed.
 
-> It's the opposite. Please check this per-cpu counter routine to get an idea:
-> 
-> /*
->  * Add up all the per-cpu counts, return the result.  This is a more accurate
->  * but much slower version of percpu_counter_read_positive()
->  */                                                 
-> s64 __percpu_counter_sum(struct percpu_counter *fbc)
-> 
-> > > 
-> > >                 if (bdi_thresh < 2 * bdi_stat_error(bdi)) {
-> > >                         bdi_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
-> > >                         //...
-> > >                 } else {
-> > >                         bdi_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
-> > >                         //...
-> > >                 }
-> > > 
+Jason Wang (3):
+  vhost_net: correct error handling in vhost_net_set_backend()
+  vhost: handle polling errors
+  tuntap: don't add to waitqueue when POLLERR
 
-The comment above these codes:
-
-                 * In order to avoid the stacked BDI deadlock we need
-                 * to ensure we accurately count the 'dirty' pages when
-                 * the threshold is low.
-
-Why your meaning threshold low is error large? 
-
-
-> > > Here the comment should have explained it well:
-> > > 
-> > >                  * In theory 1 page is enough to keep the comsumer-producer
-> > >                  * pipe going: the flusher cleans 1 page => the task dirties 1
-> > >                  * more page. However bdi_dirty has accounting errors.  So use
-> > 
-> > Why bdi_dirty has accounting errors?
-> 
-> Because it typically uses bdi_stat() to get the rough sum of the per-cpu
-> counters.
->  
-> Thanks,
-> Fengguang
-> 
-> > >                  * the larger and more IO friendly bdi_stat_error.
-> > >                  */
-> > >                 if (bdi_dirty <= bdi_stat_error(bdi))
-> > >                         break;
-> > > 
-> > > 
-> > > Thanks,
-> > > Fengguang
-> > 
-
+ drivers/net/tun.c     |    5 +--
+ drivers/vhost/net.c   |   89 ++++++++++++++++++++----------------------------
+ drivers/vhost/vhost.c |   25 +++++++++++---
+ drivers/vhost/vhost.h |   11 +++++-
+ 4 files changed, 68 insertions(+), 62 deletions(-)
 
