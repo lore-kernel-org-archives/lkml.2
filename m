@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab3AEIl5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:41:57 -0500
-Received: from mga11.intel.com ([192.55.52.93]:44979 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755301Ab3AEIhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:37:24 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,415,1355126400"; 
-   d="scan'208";a="270210093"
-From: Alex Shi <alex.shi@intel.com>
-To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
-        akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
-        pjt@google.com, namhyung@kernel.org, efault@gmx.de
-Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        alex.shi@intel.com
-Subject: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
-Date: Sat,  5 Jan 2013 16:37:38 +0800
-Message-Id: <1357375071-11793-10-git-send-email-alex.shi@intel.com>
-X-Mailer: git-send-email 1.7.12
-In-Reply-To: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
+	id S1755354Ab3AEItq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:49:46 -0500
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:43755 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab3AEItm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 03:49:42 -0500
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com>
+References: <CA+icZUUCB3K1=DuM6Nonu+Qc+qg3cM_ODk9TDZ-uYCfLVOhrdw@mail.gmail.com>
+	<CA+icZUXrQ4aq+cKXj3qEwnhtTGPBfHcJ6q_zTm3xSBUUh9W8dQ@mail.gmail.com>
+	<CA+icZUVBdsAa7ZA7e_UNpBsAOpVOXcawhUncbHNdkC-MGY4qLw@mail.gmail.com>
+	<43EB3AB3EEFE8D43B525F4D2EAF507E107F4160E@SCYBEXDAG04.amd.com>
+Date: Sat, 5 Jan 2013 09:49:41 +0100
+Message-ID: <CA+icZUWKSGzziU4Lbs2C=TM0zvGr9acW7=1aNmVEAF+e1EwLAA@mail.gmail.com>
+Subject: Re: [3.8-{rc1,rc2}] ata1.00: failed to get Identify Device Data,
+ Emask 0x1
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: "Huang, Shane" <Shane.Huang@amd.com>
+Cc: Jeff Garzik <jgarzik@pobox.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are the base values in load balance, update them with rq runnable
-load average, then the load balance will consider runnable load avg
-naturally.
+On Sat, Jan 5, 2013 at 3:20 AM, Huang, Shane <Shane.Huang@amd.com> wrote:
+>> OK, I see the patch I mentioned to fix the problem was later reverted [1].
+>> The real fix is "libata: replace sata_settings with devslp_timing" [2].
+>
+> Yes, please use [2] which can also be found in kernel bugzilla #51881
+> and is pending on Jeff's acceptance. Sorry for the trouble to you guys.
+>
+> Thanks,
+> Shane
 
-Signed-off-by: Alex Shi <alex.shi@intel.com>
----
- kernel/sched/core.c | 8 ++++++++
- kernel/sched/fair.c | 4 ++--
- 2 files changed, 10 insertions(+), 2 deletions(-)
+"Shane shane shane on you"... (that song text was different) :-).
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 06d27af..5feed5e 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2544,7 +2544,11 @@ static void __update_cpu_load(struct rq *this_rq, unsigned long this_load,
- void update_idle_cpu_load(struct rq *this_rq)
- {
- 	unsigned long curr_jiffies = ACCESS_ONCE(jiffies);
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-+	unsigned long load = (unsigned long)this_rq->cfs.runnable_load_avg;
-+#else
- 	unsigned long load = this_rq->load.weight;
-+#endif
- 	unsigned long pending_updates;
- 
- 	/*
-@@ -2594,7 +2598,11 @@ static void update_cpu_load_active(struct rq *this_rq)
- 	 * See the mess around update_idle_cpu_load() / update_cpu_load_nohz().
- 	 */
- 	this_rq->last_load_update_tick = jiffies;
-+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
-+	__update_cpu_load(this_rq, this_rq->cfs.runnable_load_avg, 1);
-+#else
- 	__update_cpu_load(this_rq, this_rq->load.weight, 1);
-+#endif
- 
- 	calc_load_account_active(this_rq);
- }
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5c545e4..84a6517 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2906,7 +2906,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
- /* Used instead of source_load when we know the type == 0 */
- static unsigned long weighted_cpuload(const int cpu)
- {
--	return cpu_rq(cpu)->load.weight;
-+	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
- }
- 
- /*
-@@ -2953,7 +2953,7 @@ static unsigned long cpu_avg_load_per_task(int cpu)
- 	unsigned long nr_running = ACCESS_ONCE(rq->nr_running);
- 
- 	if (nr_running)
--		return rq->load.weight / nr_running;
-+		return (unsigned long)rq->cfs.runnable_load_avg / nr_running;
- 
- 	return 0;
- }
--- 
-1.7.12
+- Sedat -
 
+[1] http://www.youtube.com/watch?v=6J9iSpA9QTs
