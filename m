@@ -1,130 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab3AEHiv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 02:38:51 -0500
-Received: from mga01.intel.com ([192.55.52.88]:12348 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754649Ab3AEHit (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 02:38:49 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,415,1355126400"; 
-   d="scan'208";a="270201995"
-Date: Sat, 5 Jan 2013 15:38:46 +0800
-From: Fengguang Wu <fengguang.wu@intel.com>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Namjae Jeon <linkinjeon@gmail.com>, Jan Kara <jack@suse.cz>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Namjae Jeon <namjae.jeon@samsung.com>,
-        Vivek Trivedi <t.vivek@samsung.com>,
-        Dave Chinner <dchinner@redhat.com>
-Subject: Re: [PATCH] writeback: fix writeback cache thrashing
-Message-ID: <20130105073846.GA11811@localhost>
-References: <1356847190-7986-1-git-send-email-linkinjeon@gmail.com>
- <20121231113054.GC7564@quack.suse.cz>
- <20130102134334.GB30633@quack.suse.cz>
- <CAKYAXd8-sZo0XcdHuyOQ1qT_s3kJXyphXsjSS7e1-sJ1QaAOgg@mail.gmail.com>
- <1357261151.5105.2.camel@kernel.cn.ibm.com>
- <CAKYAXd-kcnxm6Do9VcbdyrCBvArrjz1iHOpxXHnyUyNcqP7Ofg@mail.gmail.com>
- <1357346803.5273.10.camel@kernel.cn.ibm.com>
- <20130105032642.GA8188@localhost>
- <1357363603.5273.16.camel@kernel.cn.ibm.com>
+	id S1754871Ab3AEHnJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 02:43:09 -0500
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:62114 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754713Ab3AEHnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 02:43:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1357363603.5273.16.camel@kernel.cn.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357368032.1927.5.camel@mesosphere.localdomain>
+References: <1357145418.5429.17.camel@mesosphere.localdomain>
+	<CANN689HqKWf2SdE+HHQum9ukpwj6HbQoh66fZciWZuQVaJaUxQ@mail.gmail.com>
+	<1357232977.1886.17.camel@mesosphere.localdomain>
+	<20130104115748.GA8830@google.com>
+	<1357368032.1927.5.camel@mesosphere.localdomain>
+Date: Fri, 4 Jan 2013 23:43:05 -0800
+Message-ID: <CANN689HUyc4WyM5irQ6ru+80tf=Fk53QH3ynNJFSTg2ig3dk9A@mail.gmail.com>
+Subject: Re: mmap() scalability in the presence of the MAP_POPULATE flag
+From: Michel Lespinasse <walken@google.com>
+To: Roman Dubtsov <dubtsov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andy Lutomirski <luto@amacapital.net>,
+        Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 11:26:43PM -0600, Simon Jeons wrote:
-> On Sat, 2013-01-05 at 11:26 +0800, Fengguang Wu wrote:
-> > > > > Hi Namjae,
-> > > > >
-> > > > > Why use bdi_stat_error here? What's the meaning of its comment "maximal
-> > > > > error of a stat counter"?
-> > > > Hi Simon,
-> > > > 
-> > > > As you know bdi stats (BDI_RECLAIMABLE, BDI_WRITEBACK …) are kept in
-> > > > percpu counters.
-> > > > When these percpu counters are incremented/decremented simultaneously
-> > > > on multiple CPUs by small amount (individual cpu counter less than
-> > > > threshold BDI_STAT_BATCH),
-> > > > it is possible that we get approximate value (not exact value) of
-> > > > these percpu counters.
-> > > > In order, to handle these percpu counter error we have used
-> > > > bdi_stat_error. bdi_stat_error is the maximum error which can happen
-> > > > in percpu bdi stats accounting.
-> > > > 
-> > > > bdi_stat(bdi, BDI_RECLAIMABLE);
-> > > >  -> This will give approximate value of BDI_RECLAIMABLE by reading
-> > > > previous value of percpu count.
-> > > > 
-> > > > bdi_stat_sum(bdi, BDI_RECLAIMABLE);
-> > > >  ->This will give exact value of BDI_RECLAIMABLE. It will take lock
-> > > > and add current percpu count of individual CPUs.
-> > > >    It is not recommended to use it frequently as it is expensive. We
-> > > > can better use “bdi_stat” and work with approx value of bdi stats.
-> > > > 
-> > > 
-> > > Hi Namjae, thanks for your clarify.
-> > > 
-> > > But why compare error stat count to bdi_bground_thresh? What's the
-> > 
-> > It's not comparing bdi_stat_error to bdi_bground_thresh, but rather,
-> > in concept, comparing bdi_stat (with error bound adjustments) to
-> > bdi_bground_thresh.
-> > 
-> > > relationship between them? I also see bdi_stat_error compare to
-> > > bdi_thresh/bdi_dirty in function balance_dirty_pages. 
-> > 
-> 
-> Hi Fengguang,
-> 
-> > Here, it's trying to use bdi_stat_sum(), the accurate (however more
-> > costly) version of bdi_stat(), if the error would possibly be large:
-> 
-> Why error is large use bdi_stat_sum and error is few use bdi_stat?
+On Fri, Jan 4, 2013 at 10:40 PM, Roman Dubtsov <dubtsov@gmail.com> wrote:
+> On Fri, 2013-01-04 at 03:57 -0800, Michel Lespinasse wrote:
+>> If this doesn't help, could you please send me your test case ? I
+>> think you described enough of it that I would be able to reproduce it
+>> given some time, but it's just easier if you send me a short C file :)
+>
+> It does not, the results are more or less the same. I've attached my
+> testcase. It does map anonymous memory. It also uses OpenMP for
+> threading because I'm lazy, so it requires passing -fopenmp to gcc and
+> the number of threads it runs is defined via OMP_NUM_THREADS environment
+> variable. There are also two macros that influence test's behavior:
+>
+> - POPULATE_VIA_LOOP -- makes the test populate memory using a loop
+> - POPULATE_VIA_MMAP -- makes the test populate memory via MAP_POPULATE
+>
+> If none of the macros are defined, the test does not populate memory.
 
-It's the opposite. Please check this per-cpu counter routine to get an idea:
+Heh, very interesting. As it turns out, the problem gets MUCH worse as
+the number of threads increase.
 
-/*
- * Add up all the per-cpu counts, return the result.  This is a more accurate
- * but much slower version of percpu_counter_read_positive()
- */                                                 
-s64 __percpu_counter_sum(struct percpu_counter *fbc)
+We are populating the anon mapping with huge pages. In the
+POPULATE_VIA_LOOP case, we are just taking a page fault every 2MB and
+filling it up with a zeroed huge page - most of the runtime comes from
+clearing the huge page.
 
-> > 
-> >                 if (bdi_thresh < 2 * bdi_stat_error(bdi)) {
-> >                         bdi_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
-> >                         //...
-> >                 } else {
-> >                         bdi_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
-> >                         //...
-> >                 }
-> > 
-> > Here the comment should have explained it well:
-> > 
-> >                  * In theory 1 page is enough to keep the comsumer-producer
-> >                  * pipe going: the flusher cleans 1 page => the task dirties 1
-> >                  * more page. However bdi_dirty has accounting errors.  So use
-> 
-> Why bdi_dirty has accounting errors?
+In the POPULATE_VIA_MMAP, follow_page() is called at 4KB increment
+addresses, and it takes the mm->page_table_lock 511 times out of 512
+(that is, every time it falls within a huge page that's just been
+populated). So all OMP_NUM_THREADS threads are constantly bouncing
+over the mm->page_table_lock, and getting terrible performance as a
+result.
 
-Because it typically uses bdi_stat() to get the rough sum of the per-cpu
-counters.
- 
-Thanks,
-Fengguang
+Thanks for the report. I don't have a patch just now, but this does
+seem very solvable.
 
-> >                  * the larger and more IO friendly bdi_stat_error.
-> >                  */
-> >                 if (bdi_dirty <= bdi_stat_error(bdi))
-> >                         break;
-> > 
-> > 
-> > Thanks,
-> > Fengguang
-> 
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
