@@ -1,49 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab3AECdJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 21:33:09 -0500
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:55341 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755561Ab3AECdH (ORCPT
+	id S1755603Ab3AECex (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 21:34:53 -0500
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:46221 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755550Ab3AECeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 21:33:07 -0500
-X-Sasl-enc: p3unOcTb4p/TWSU7dfaOwPybYsR6tzu+Jb/FLgzaHhyo 1357353185
-Date: Fri, 4 Jan 2013 18:33:20 -0800
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Bill Pemberton <wfp5p@virginia.edu>,
-        Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: linux-next: manual merge of the driver-core.current tree with
- Linus tree
-Message-ID: <20130105023320.GA9606@kroah.com>
-References: <20130102103726.edc15af3340bb990991ed0c1@canb.auug.org.au>
+	Fri, 4 Jan 2013 21:34:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130102103726.edc15af3340bb990991ed0c1@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50DCEA3D.1030501@jp.fujitsu.com>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+	<1356456156-14535-1-git-send-email-handai.szj@taobao.com>
+	<50DCEA3D.1030501@jp.fujitsu.com>
+Date: Sat, 5 Jan 2013 10:34:50 +0800
+Message-ID: <CAFj3OHWJhaghOQ_xT7+rWOGiY0b2KLm68QHz4+yiOqtNf=Sz7A@mail.gmail.com>
+Subject: Re: [PATCH V3 2/8] Make TestSetPageDirty and dirty page accounting in
+ one func
+From: Sha Zhengju <handai.szj@gmail.com>
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, dchinner@redhat.com, mhocko@suse.cz,
+        akpm@linux-foundation.org, gthelen@google.com, fengguang.wu@intel.com,
+        glommer@parallels.com, Sha Zhengju <handai.szj@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 02, 2013 at 10:37:26AM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the driver-core.current tree got a conflict
-> in drivers/i2c/busses/i2c-au1550.c between commit 0b255e927d47 ("i2c:
-> remove __dev* attributes from subsystem") from Linus' tree and commit
-> eeb30d064414 ("Drivers: i2c: remove __dev* attributes") from the
-> driver-core.current tree.
-> 
-> I fixed it up (I used the driver-core.current version) and can carry the
-> fix as necessary (no action is required).
+Hi Kame,
 
-All of these should no longer be an issue due to the driver-core.current
-tree getting merged into Linus's tree.
+Sorry for the late response, I'm just back from vocation. : )
 
-Hopefully it should not be a merge issue for you anymore as well.
+On Fri, Dec 28, 2012 at 8:39 AM, Kamezawa Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> (2012/12/26 2:22), Sha Zhengju wrote:
+>> From: Sha Zhengju <handai.szj@taobao.com>
+>>
+>> Commit a8e7d49a(Fix race in create_empty_buffers() vs __set_page_dirty_buffers())
+>> extracts TestSetPageDirty from __set_page_dirty and is far away from
+>> account_page_dirtied. But it's better to make the two operations in one single
+>> function to keep modular. So in order to avoid the potential race mentioned in
+>> commit a8e7d49a, we can hold private_lock until __set_page_dirty completes.
+>> There's no deadlock between ->private_lock and ->tree_lock after confirmation.
+>> It's a prepare patch for following memcg dirty page accounting patches.
+>>
+>>
+>> Here is some test numbers that before/after this patch:
+>> Test steps(Mem-4g, ext4):
+>> drop_cache; sync
+>> fio (ioengine=sync/write/buffered/bs=4k/size=1g/numjobs=2/group_reporting/thread)
+>>
+>> We test it for 10 times and get the average numbers:
+>> Before:
+>> write: io=2048.0MB, bw=254117KB/s, iops=63528.9 , runt=  8279msec
+>> lat (usec): min=1 , max=742361 , avg=30.918, stdev=1601.02
+>> After:
+>> write: io=2048.0MB, bw=254044KB/s, iops=63510.3 , runt=  8274.4msec
+>> lat (usec): min=1 , max=856333 , avg=31.043, stdev=1769.32
+>>
+>> Note that the impact is little(<1%).
+>>
+>>
+>> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+>> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> Hmm,..this change should be double-checked by vfs, I/O guys...
+>
 
-thanks,
+Now it seems they haven't paid attention here... I'll push it soon for
+more review.
 
-greg k-h
+> increasing hold time of mapping->private_lock doesn't affect performance ?
+>
+>
+
+Yes, pointed by Fengguang in the previous round, mapping->private_lock and
+mapping->tree_lock are often contented locks that in a dd testcase
+they have the top
+ #1 and #2 contention.
+So the numbers above are trying to find the impaction of lock
+contention by multiple
+threads(numjobs=2) writing to the same file in parallel and it seems
+the impact is
+little (<1%).
+I'm not sure if the test case is enough, any advice is welcomed! : )
