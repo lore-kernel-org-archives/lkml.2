@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab3AERtg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 12:49:36 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:36057 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab3AERta (ORCPT
+	id S1755947Ab3AERt4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 12:49:56 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:50240 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755894Ab3AERtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 12:49:30 -0500
+	Sat, 5 Jan 2013 12:49:24 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,115 +17,104 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 12/14] rcu: Rename n_nocb_gp_requests to need_future_gp
-Date: Sat,  5 Jan 2013 09:49:02 -0800
-Message-Id: <1357408144-15830-12-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 05/14] rcu: Distinguish "rcuo" kthreads by RCU flavor
+Date: Sat,  5 Jan 2013 09:48:55 -0800
+Message-Id: <1357408144-15830-5-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130105174844.GA14172@linux.vnet.ibm.com>
  <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010517-2876-0000-0000-000003CFC667
+x-cbid: 13010517-7606-0000-0000-00000726CA87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-CPUs going idle need to be able to indicate their need for future grace
-periods.  A mechanism for doing this already exists for no-callbacks
-CPUs, so the idea is to re-use that mechanism.  This commit therefore
-moves the ->n_nocb_gp_requests field of the rcu_node structure out from
-under the CONFIG_RCU_NOCB_CPU #ifdef and renames it to ->need_future_gp.
+Currently, the per-no-CBs-CPU kthreads are named "rcuo" followed by
+the CPU number, for example, "rcuo".  This is problematic given that
+there are either two or three RCU flavors, each of which gets a per-CPU
+kthread with exactly the same name.  This commit therefore introduces
+a one-letter abbreviation for each RCU flavor, namely 'b' for RCU-bh,
+'p' for RCU-preempt, and 's' for RCU-sched.  This abbreviation use used
+to distinguish the "rcuo" kthreads, for example, for CPU 0 we would have
+"rcuo0b", "rcuo0p", and "rcuo0s".
 
 Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
 ---
- kernel/rcutree.h        |    4 ++--
- kernel/rcutree_plugin.h |   18 +++++++++---------
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ kernel/rcutree.c        |    7 ++++---
+ kernel/rcutree.h        |    1 +
+ kernel/rcutree_plugin.h |    5 +++--
+ 3 files changed, 8 insertions(+), 5 deletions(-)
 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 8b110fa..4ec797e 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -64,7 +64,7 @@
+ static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+ 
+-#define RCU_STATE_INITIALIZER(sname, cr) { \
++#define RCU_STATE_INITIALIZER(sname, sabbr, cr) { \
+ 	.level = { &sname##_state.node[0] }, \
+ 	.call = cr, \
+ 	.fqs_state = RCU_GP_IDLE, \
+@@ -76,13 +76,14 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+ 	.barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+ 	.onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+ 	.name = #sname, \
++	.abbr = sabbr, \
+ }
+ 
+ struct rcu_state rcu_sched_state =
+-	RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
++	RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
+ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
+ 
+-struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
++struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
+ DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+ 
+ static struct rcu_state *rcu_state;
 diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 282b1d7..775d96c 100644
+index ef26eab..c865117 100644
 --- a/kernel/rcutree.h
 +++ b/kernel/rcutree.h
-@@ -198,9 +198,9 @@ struct rcu_node {
- #ifdef CONFIG_RCU_NOCB_CPU
- 	wait_queue_head_t nocb_gp_wq[2];
- 				/* Place for rcu_nocb_kthread() to wait GP. */
--	int n_nocb_gp_requests[2];
--				/* Counts of upcoming no-CB GP requests. */
- #endif /* #ifdef CONFIG_RCU_NOCB_CPU */
-+	int need_future_gp[2];
-+				/* Counts of upcoming no-CB GP requests. */
- 	raw_spinlock_t fqslock ____cacheline_internodealigned_in_smp;
- } ____cacheline_internodealigned_in_smp;
+@@ -452,6 +452,7 @@ struct rcu_state {
+ 	unsigned long gp_max;			/* Maximum GP duration in */
+ 						/*  jiffies. */
+ 	char *name;				/* Name of structure. */
++	char abbr;				/* Abbreviated name. */
+ 	struct list_head flavors;		/* List of RCU flavors. */
+ };
  
 diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 736dd2c..e4037bd 100644
+index eb9b473..ab1bdde 100644
 --- a/kernel/rcutree_plugin.h
 +++ b/kernel/rcutree_plugin.h
-@@ -2057,7 +2057,7 @@ static int rcu_nocb_needs_gp(struct rcu_state *rsp)
- {
- 	struct rcu_node *rnp = rcu_get_root(rsp);
+@@ -111,7 +111,7 @@ static void __init rcu_bootup_announce_oddness(void)
+ #ifdef CONFIG_TREE_PREEMPT_RCU
  
--	return rnp->n_nocb_gp_requests[(ACCESS_ONCE(rnp->completed) + 1) & 0x1];
-+	return rnp->need_future_gp[(ACCESS_ONCE(rnp->completed) + 1) & 0x1];
- }
+ struct rcu_state rcu_preempt_state =
+-	RCU_STATE_INITIALIZER(rcu_preempt, call_rcu);
++	RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
+ DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+ static struct rcu_state *rcu_state = &rcu_preempt_state;
  
- /*
-@@ -2071,8 +2071,8 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- 	int needmore;
- 
- 	wake_up_all(&rnp->nocb_gp_wq[c & 0x1]);
--	rnp->n_nocb_gp_requests[c & 0x1] = 0;
--	needmore = rnp->n_nocb_gp_requests[(c + 1) & 0x1];
-+	rnp->need_future_gp[c & 0x1] = 0;
-+	needmore = rnp->need_future_gp[(c + 1) & 0x1];
- 	trace_rcu_future_grace_period(rsp->name, rnp->gpnum, rnp->completed,
- 				      c, rnp->level, rnp->grplo, rnp->grphi,
- 				      needmore ? "CleanupMore" : "Cleanup");
-@@ -2080,7 +2080,7 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
- }
- 
- /*
-- * Set the root rcu_node structure's ->n_nocb_gp_requests field
-+ * Set the root rcu_node structure's ->need_future_gp field
-  * based on the sum of those of all rcu_node structures.  This does
-  * double-count the root rcu_node structure's requests, but this
-  * is necessary to handle the possibility of a rcu_nocb_kthread()
-@@ -2089,7 +2089,7 @@ static int rcu_nocb_gp_cleanup(struct rcu_state *rsp, struct rcu_node *rnp)
-  */
- static void rcu_nocb_gp_set(struct rcu_node *rnp, int nrq)
- {
--	rnp->n_nocb_gp_requests[(rnp->completed + 1) & 0x1] += nrq;
-+	rnp->need_future_gp[(rnp->completed + 1) & 0x1] += nrq;
- }
- 
- static void rcu_init_one_nocb(struct rcu_node *rnp)
-@@ -2220,7 +2220,7 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 	c = rnp->completed + 2;
- 
- 	/* Count our request for a grace period. */
--	rnp->n_nocb_gp_requests[c & 0x1]++;
-+	rnp->need_future_gp[c & 0x1]++;
- 	trace_rcu_future_grace_period(rdp->rsp->name, rnp->gpnum,
- 				      rnp->completed, c, rnp->level,
- 				      rnp->grplo, rnp->grphi, "Startleaf");
-@@ -2264,10 +2264,10 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
- 			 * Adjust counters accordingly and start the
- 			 * needed grace period.
- 			 */
--			rnp->n_nocb_gp_requests[c & 0x1]--;
-+			rnp->need_future_gp[c & 0x1]--;
- 			c = rnp_root->completed + 1;
--			rnp->n_nocb_gp_requests[c & 0x1]++;
--			rnp_root->n_nocb_gp_requests[c & 0x1]++;
-+			rnp->need_future_gp[c & 0x1]++;
-+			rnp_root->need_future_gp[c & 0x1]++;
- 			trace_rcu_future_grace_period(rdp->rsp->name,
- 						      rnp->gpnum,
- 						      rnp->completed,
+@@ -2510,7 +2510,8 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+ 		return;
+ 	for_each_cpu(cpu, rcu_nocb_mask) {
+ 		rdp = per_cpu_ptr(rsp->rda, cpu);
+-		t = kthread_run(rcu_nocb_kthread, rdp, "rcuo%d", cpu);
++		t = kthread_run(rcu_nocb_kthread, rdp,
++				"rcuo%d%c", cpu, rsp->abbr);
+ 		BUG_ON(IS_ERR(t));
+ 		ACCESS_ONCE(rdp->nocb_kthread) = t;
+ 	}
 -- 
 1.7.8
 
