@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab3AERuh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 12:50:37 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:50217 "EHLO
+	id S1755996Ab3AERua (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 12:50:30 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:50223 "EHLO
 	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755815Ab3AERtV (ORCPT
+	with ESMTP id S1755883Ab3AERtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 12:49:21 -0500
+	Sat, 5 Jan 2013 12:49:22 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -17,107 +17,139 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
         "Paul E. McKenney" <paul.mckenney@linaro.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 06/14] rcu: Export RCU_FAST_NO_HZ parameters to sysfs
-Date: Sat,  5 Jan 2013 09:48:56 -0800
-Message-Id: <1357408144-15830-6-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 11/14] rcu: Push lock release to rcu_start_gp()'s callers
+Date: Sat,  5 Jan 2013 09:49:01 -0800
+Message-Id: <1357408144-15830-11-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.8
 In-Reply-To: <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
 References: <20130105174844.GA14172@linux.vnet.ibm.com>
  <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010517-7606-0000-0000-00000726CA5E
+x-cbid: 13010517-7606-0000-0000-00000726CA78
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 
-RCU_FAST_NO_HZ operation is controlled by four compile-time C-preprocessor
-macros, but some use cases benefit greatly from runtime adjustment,
-particularly when tuning devices.  This commit therefore creates the
-corresponding sysfs entries.
+If CPUs are to give prior notice of needed grace periods, it will be
+necessary to invoke rcu_start_gp() without dropping the root rcu_node
+structure's ->lock.  This commit takes a second step in this direction
+by moving the release of this lock to rcu_start_gp()'s callers.
 
-Reported-by: Robin Randhawa <robin.randhawa@arm.com>
+Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree_plugin.h |   31 ++++++++++++++++++++-----------
- 1 files changed, 20 insertions(+), 11 deletions(-)
+ kernel/rcutree.c        |   24 ++++++++++--------------
+ kernel/rcutree_plugin.h |    5 ++---
+ 2 files changed, 12 insertions(+), 17 deletions(-)
 
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index ab1bdde..0997e9f 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -1617,6 +1617,15 @@ static void rcu_idle_count_callbacks_posted(void)
- #define RCU_IDLE_GP_DELAY 4		/* Roughly one grace period. */
- #define RCU_IDLE_LAZY_GP_DELAY (6 * HZ)	/* Roughly six seconds. */
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index 7207435..8ca18ec 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1525,16 +1525,14 @@ static int __noreturn rcu_gp_kthread(void *arg)
+ /*
+  * Start a new RCU grace period if warranted, re-initializing the hierarchy
+  * in preparation for detecting the next grace period.  The caller must hold
+- * the root node's ->lock, which is released before return.  Hard irqs must
+- * be disabled.
++ * the root node's ->lock and hard irqs must be disabled.
+  *
+  * Note that it is legal for a dying CPU (which is marked as offline) to
+  * invoke this function.  This can happen when the dying CPU reports its
+  * quiescent state.
+  */
+ static void
+-rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+-	__releases(rcu_get_root(rsp)->lock)
++rcu_start_gp(struct rcu_state *rsp)
+ {
+ 	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+@@ -1548,15 +1546,13 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 	 */
+ 	rcu_advance_cbs(rsp, rnp, rdp);
  
-+static int rcu_idle_flushes = RCU_IDLE_FLUSHES;
-+module_param(rcu_idle_flushes, int, 0644);
-+static int rcu_idle_opt_flushes = RCU_IDLE_OPT_FLUSHES;
-+module_param(rcu_idle_opt_flushes, int, 0644);
-+static int rcu_idle_gp_delay = RCU_IDLE_GP_DELAY;
-+module_param(rcu_idle_gp_delay, int, 0644);
-+static int rcu_idle_lazy_gp_delay = RCU_IDLE_LAZY_GP_DELAY;
-+module_param(rcu_idle_lazy_gp_delay, int, 0644);
-+
- extern int tick_nohz_enabled;
+-	if (!rsp->gp_kthread ||
+-	    !cpu_needs_another_gp(rsp, rdp)) {
++	if (!rsp->gp_kthread || !cpu_needs_another_gp(rsp, rdp)) {
+ 		/*
+ 		 * Either we have not yet spawned the grace-period
+ 		 * task, this CPU does not need another grace period,
+ 		 * or a grace period is already in progress.
+ 		 * Either way, don't start a new grace period.
+ 		 */
+-		raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ 		return;
+ 	}
+ 	rsp->gp_flags = RCU_GP_FLAG_INIT;
+@@ -1566,15 +1562,14 @@ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 
+ 	/* Wake up rcu_gp_kthread() to start the grace period. */
+ 	wake_up(&rsp->gp_wq);
+-	raw_spin_unlock_irqrestore(&rnp->lock, flags);
+ }
  
  /*
-@@ -1696,10 +1705,10 @@ int rcu_needs_cpu(int cpu, unsigned long *delta_jiffies)
- 	}
- 	/* Set up for the possibility that RCU will post a timer. */
- 	if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
--		*delta_jiffies = round_up(RCU_IDLE_GP_DELAY + jiffies,
--					  RCU_IDLE_GP_DELAY) - jiffies;
-+		*delta_jiffies = round_up(rcu_idle_gp_delay + jiffies,
-+					  rcu_idle_gp_delay) - jiffies;
+  * Report a full set of quiescent states to the specified rcu_state
+  * data structure.  This involves cleaning up after the prior grace
+  * period and letting rcu_start_gp() start up the next grace period
+- * if one is needed.  Note that the caller must hold rnp->lock, as
+- * required by rcu_start_gp(), which will release it.
++ * if one is needed.  Note that the caller must hold rnp->lock, which
++ * is released before return.
+  */
+ static void rcu_report_qs_rsp(struct rcu_state *rsp, unsigned long flags)
+ 	__releases(rcu_get_root(rsp)->lock)
+@@ -2172,7 +2167,8 @@ __rcu_process_callbacks(struct rcu_state *rsp)
+ 	local_irq_save(flags);
+ 	if (cpu_needs_another_gp(rsp, rdp)) {
+ 		raw_spin_lock(&rcu_get_root(rsp)->lock); /* irqs disabled. */
+-		rcu_start_gp(rsp, flags);  /* releases above lock */
++		rcu_start_gp(rsp);
++		raw_spin_unlock_irqrestore(&rcu_get_root(rsp)->lock, flags);
  	} else {
--		*delta_jiffies = jiffies + RCU_IDLE_LAZY_GP_DELAY;
-+		*delta_jiffies = jiffies + rcu_idle_lazy_gp_delay;
- 		*delta_jiffies = round_jiffies(*delta_jiffies) - jiffies;
+ 		local_irq_restore(flags);
  	}
- 	return 0;
-@@ -1805,11 +1814,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
- 			trace_rcu_prep_idle("User dyntick with callbacks");
- 			rdtp->idle_gp_timer_expires =
--				round_up(jiffies + RCU_IDLE_GP_DELAY,
--					 RCU_IDLE_GP_DELAY);
-+				round_up(jiffies + rcu_idle_gp_delay,
-+					 rcu_idle_gp_delay);
- 		} else if (rcu_cpu_has_callbacks(cpu)) {
- 			rdtp->idle_gp_timer_expires =
--				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
- 			trace_rcu_prep_idle("User dyntick with lazy callbacks");
+@@ -2252,11 +2248,11 @@ static void __call_rcu_core(struct rcu_state *rsp, struct rcu_data *rdp,
+ 
+ 		/* Start a new grace period if one not already started. */
+ 		if (!rcu_gp_in_progress(rsp)) {
+-			unsigned long nestflag;
+ 			struct rcu_node *rnp_root = rcu_get_root(rsp);
+ 
+-			raw_spin_lock_irqsave(&rnp_root->lock, nestflag);
+-			rcu_start_gp(rsp, nestflag);  /* rlses rnp_root->lock */
++			raw_spin_lock(&rnp_root->lock);
++			rcu_start_gp(rsp);
++			raw_spin_lock(&rnp_root->lock);
  		} else {
- 			return;
-@@ -1861,8 +1870,8 @@ static void rcu_prepare_for_idle(int cpu)
- 	/* Check and update the ->dyntick_drain sequencing. */
- 	if (rdtp->dyntick_drain <= 0) {
- 		/* First time through, initialize the counter. */
--		rdtp->dyntick_drain = RCU_IDLE_FLUSHES;
--	} else if (rdtp->dyntick_drain <= RCU_IDLE_OPT_FLUSHES &&
-+		rdtp->dyntick_drain = rcu_idle_flushes;
-+	} else if (rdtp->dyntick_drain <= rcu_idle_opt_flushes &&
- 		   !rcu_pending(cpu) &&
- 		   !local_softirq_pending()) {
- 		/* Can we go dyntick-idle despite still having callbacks? */
-@@ -1871,11 +1880,11 @@ static void rcu_prepare_for_idle(int cpu)
- 		if (rcu_cpu_has_nonlazy_callbacks(cpu)) {
- 			trace_rcu_prep_idle("Dyntick with callbacks");
- 			rdtp->idle_gp_timer_expires =
--				round_up(jiffies + RCU_IDLE_GP_DELAY,
--					 RCU_IDLE_GP_DELAY);
-+				round_up(jiffies + rcu_idle_gp_delay,
-+					 rcu_idle_gp_delay);
- 		} else {
- 			rdtp->idle_gp_timer_expires =
--				round_jiffies(jiffies + RCU_IDLE_LAZY_GP_DELAY);
-+				round_jiffies(jiffies + rcu_idle_lazy_gp_delay);
- 			trace_rcu_prep_idle("Dyntick with lazy callbacks");
+ 			/* Give the grace period a kick. */
+ 			rdp->blimit = LONG_MAX;
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index d09acdf..736dd2c 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -2213,7 +2213,6 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 	unsigned long c;
+ 	bool d;
+ 	unsigned long flags;
+-	unsigned long flags1;
+ 	struct rcu_node *rnp = rdp->mynode;
+ 	struct rcu_node *rnp_root = rcu_get_root(rdp->rsp);
+ 
+@@ -2275,8 +2274,8 @@ static void rcu_nocb_wait_gp(struct rcu_data *rdp)
+ 						      c, rnp->level,
+ 						      rnp->grplo, rnp->grphi,
+ 						      "Startedroot");
+-			local_save_flags(flags1);
+-			rcu_start_gp(rdp->rsp, flags1); /* Rlses ->lock. */
++			rcu_start_gp(rdp->rsp);
++			raw_spin_unlock(&rnp->lock);
  		}
- 		tp = &rdtp->idle_gp_timer;
+ 
+ 		/* Clean up locking and irq state. */
 -- 
 1.7.8
 
