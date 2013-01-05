@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755878Ab3AERVF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 12:21:05 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:36129 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802Ab3AERVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 12:21:03 -0500
+	id S1755891Ab3AERV0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 12:21:26 -0500
+Received: from mail.digium.com ([216.207.245.2]:39551 "EHLO mail.digium.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755802Ab3AERVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 12:21:23 -0500
+Date: Sat, 5 Jan 2013 11:21:16 -0600
+From: Shaun Ruffell <sruffell@digium.com>
+To: Sadasivan Shaiju <sshaiju@mvista.com>
+Cc: linux-kernel@vger.kernel.org, venki@google.com, a.p.zijlstra@chello.nl
+Subject: Re: Incorrect accounting of irq into the running task
+Message-ID: <20130105172116.GA65150@digium.com>
+References: <aba006370d1e788a3ff0612afca6d3e7@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1357405131-13421-1-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <20130105165817.GA13260@linux.vnet.ibm.com>
-	<1357405131-13421-1-git-send-email-paulmck@linux.vnet.ibm.com>
-Date: Sat, 5 Jan 2013 18:21:01 +0100
-Message-ID: <CAFTL4hyYh=C6-jPBm0pWjn2xeDRGtYVGYD46hSr=OfPjNtuDGg@mail.gmail.com>
-Subject: Re: [PATCH tip/core/urgent 1/2] rcu: Prevent soft-lockup complaints
- about no-CBs CPUs
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu, patches@linaro.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <aba006370d1e788a3ff0612afca6d3e7@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+On Fri, Jan 04, 2013 at 10:22:12AM -0800, Sadasivan Shaiju wrote:
+> Hi  Venkatesh,
+> 
+> I have applied the following patches for the incorrect accounting
+> of irq into the running task .
+> 
+> 
+> [PATCH] x86: Add IRQ_TIME_ACCOUNTING
+> [e82b8e4ea4f3dffe6e7939f90e78da675fcc450e]
+> [PATCH] sched: Add IRQ_TIME_ACCOUNTING, finer accounting of irq time
+> [b52bfee445d315549d41eacf2fa7c156e7d153d5]
+> 
+> [PATCH] sched: Do not account irq time to current task
+> [305e6835e05513406fa12820e40e4a8ecb63743c]
+> [PATCH] sched: Export ns irqtimes through /proc/stat
+> [abb74cefa9c682fb38ba86c17ca3c86fed6cc464]
+> 
+> 
+> 
+> But still the stime and utime of the process in /proc/pid/stat is
+> high. I think the above patches does not update The stime and
+> utime values in /proc/pid/stat.
+> 
+> 
+> Or am I missing anything?
 
-2013/1/5 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> From: Paul Gortmaker <paul.gortmaker@windriver.com>
->
-> The wait_event() at the head of the rcu_nocb_kthread() can result in
-> soft-lockup complaints if the CPU in question does not register RCU
-> callbacks for an extended period.  This commit therefore changes
-> the wait_event() to a wait_event_interruptible().
->
-> Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcutree_plugin.h |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-> index f6e5ec2..43dba2d 100644
-> --- a/kernel/rcutree_plugin.h
-> +++ b/kernel/rcutree_plugin.h
-> @@ -2366,10 +2366,11 @@ static int rcu_nocb_kthread(void *arg)
->         for (;;) {
->                 /* If not polling, wait for next batch of callbacks. */
->                 if (!rcu_nocb_poll)
-> -                       wait_event(rdp->nocb_wq, rdp->nocb_head);
-> +                       wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
->                 list = ACCESS_ONCE(rdp->nocb_head);
->                 if (!list) {
->                         schedule_timeout_interruptible(1);
-> +                       flush_signals(current);
+Just checking that you do have CONFIG_IRQ_TIME_ACCOUNTING=y in your
+kernel config?
 
-Why is that needed?
+Cheers,
+Shaun
