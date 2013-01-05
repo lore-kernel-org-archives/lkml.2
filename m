@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab3AELLR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 06:11:17 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:52701 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755470Ab3AELLP (ORCPT
+	id S1755682Ab3AELRA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 06:17:00 -0500
+Received: from mail-ia0-f181.google.com ([209.85.210.181]:47853 "EHLO
+	mail-ia0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755501Ab3AELQ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 06:11:15 -0500
+	Sat, 5 Jan 2013 06:16:58 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sat, 5 Jan 2013 12:11:14 +0100
-Message-ID: <CA+icZUVpK2NLUd2tGnvq8y-CWUGk1UDQsso5SQRPPZgp7=ekQA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] mm: mmap: annotate vm_lock_anon_vma locking properly
- for lockdep
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <50E10658.4000507@asianux.com>
+References: <50CAA1F2.9000003@asianux.com>
+	<50E10658.4000507@asianux.com>
+Date: Sat, 5 Jan 2013 05:16:57 -0600
+Message-ID: <CAJ6Av5O3Fz5NB9Cb2wwwiFtWdUO=Cay74R++w4AWc=0NYE=QLQ@mail.gmail.com>
+Subject: Re: [Suggestion] drivers/staging/tidspbridge: strcpy and strncpy, src
+ length checking issue.
+From: Omar Ramirez Luna <omar.ramirez@copitl.com>
+To: Chen Gang <gang.chen@asianux.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi,
 
-see my other reply to "[PATCH 1/2] lockdep, rwsem: provide
-down_write_nest_lock()" in [1]...
+On Sun, Dec 30, 2012 at 9:28 PM, Chen Gang <gang.chen@asianux.com> wrote:
+>   is it suitable to send a patch for it, by me ?
 
-...and feel free to add...
+Thanks for your suggestions, I have created the patches and will
+submit them soon, but feel free to submit patches for any other
+suggestions in future.
 
-     Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
+Cheers,
 
-Thanks!
-
-Regards,
-- Sedat -
-
-[1] http://marc.info/?l=linux-mm&m=135738411200967&w=2
+Omar
