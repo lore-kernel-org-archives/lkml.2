@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3AEWOt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 17:14:49 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:34002 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab3AEWOr (ORCPT
+	id S1755940Ab3AEWSz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 17:18:55 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.182]:38727 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755898Ab3AEWSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 17:14:47 -0500
-Date: Sat, 5 Jan 2013 14:11:15 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Donggeun Kim <dg77.kim@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 01/25] charger_manager: don't use [delayed_]work_pending()
-Message-ID: <20130105221115.GC1246@lizard.mcd00620.sjc.wayport.net>
-References: <1356141435-17340-1-git-send-email-tj@kernel.org>
- <1356141435-17340-2-git-send-email-tj@kernel.org>
+	Sat, 5 Jan 2013 17:18:53 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtsGAG6Zu08Y1OVO/2dsb2JhbABEgXuyFoEIghUBAQU4HgYcARALCw0JFg8JAwIBAgERFh4GDQEHAod7AQ0BC6dTiAIKGYELiHuQRAOIQoIWikOBD4RAiiGDBw
+X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
+   d="scan'208";a="211474047"
+Message-ID: <50E8A6D5.8020608@gmail.com>
+Date: Sat, 05 Jan 2013 17:19:01 -0500
+From: Woody Suwalski <terraluna977@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:18.0) Gecko/20100101 Firefox/18.0 SeaMonkey/2.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1356141435-17340-2-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Larry Finger <Larry.Finger@lwfinger.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.8-rc[12] cpufreq build errors...
+References: <50E8893E.8090502@lwfinger.net>
+In-Reply-To: <50E8893E.8090502@lwfinger.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 21, 2012 at 05:56:51PM -0800, Tejun Heo wrote:
-> There's no need to test whether a (delayed) work item in pending
-> before queueing, flushing or cancelling it.  Most uses are unnecessary
-> and quite a few of them are buggy.
-> 
-> Remove unnecessary pending tests and rewrite _setup_polling() so that
-> it uses mod_delayed_work() if the next polling interval is sooner than
-> currently scheduled.  queue_delayed_work() is used otherwise.
-> 
-> Only compile tested.  I noticed that two work items - setup_polling
-> and cm_monitor_work - schedule each other.  It's a very unusual
-> construct and I'm fairly sure it's racy.  You can't break such
-> circular dependency by calling cancel on each.  I strongly recommend
-> revising the mechanism.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Anton Vorontsov <cbou@mail.ru>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Donggeun Kim <dg77.kim@samsung.com>
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> ---
-> Please let me know how this patch should be routed.  I can take it
-> through the workqueue tree if necessary.
+Larry Finger wrote:
+> Woody,
+>
+> There is a patch pending that fixes this problem. See
+> http://lkml.indiana.edu/hypermail/linux/kernel/1212.3/01201.html. Note 
+> that Rafael wrote "If you don't mind, I'll rename 
+> CONFIG_CPU_FREQ_GOVERNOR to
+> CONFIG_CPU_FREQ_GOV_COMMON when applying it, though". I think this 
+> patch is working its way through the system, but I have not seem it in 
+> mainline yet.
+>
+> Larry
+Thanks, that fix does not work directly for me - cpufreq_governor.o is 
+not even built now... But maybe I have missed something - had to do it 
+"by hand"...
 
-Charger manager is a fast moving target, so it is prone to conflict; it is
-better if I take it via battery-2.6.git tree. It is merged, thanks a lot!
+Rafael has confirmed that he will include a fix...
 
-Anton
+Thanks, Woody
