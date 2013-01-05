@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3AET34 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 14:29:56 -0500
-Received: from toccata.ens-lyon.org ([140.77.166.68]:57803 "EHLO
-	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab3AET3w (ORCPT
+	id S1755889Ab3AEThf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 14:37:35 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:48477 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab3AEThe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 14:29:52 -0500
-Date: Sat, 5 Jan 2013 20:29:44 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Nickolai Zeldovich <nickolai@csail.mit.edu>, gregkh@linuxfoundation.org
-Cc: William Hubbs <w.d.hubbs@gmail.com>,
-        Chris Brannon <chris@the-brannons.com>,
-        Kirk Reiser <kirk@braille.uwo.ca>, linux-kernel@vger.kernel.org,
-        speakup@braille.uwo.ca
-Subject: Re: [PATCH] drivers/staging/speakup: avoid out-of-range access
-Message-ID: <20130105192944.GL5965@type.youpi.perso.aquilenet.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Nickolai Zeldovich <nickolai@csail.mit.edu>,
-	gregkh@linuxfoundation.org, William Hubbs <w.d.hubbs@gmail.com>,
-	Chris Brannon <chris@the-brannons.com>,
-	Kirk Reiser <kirk@braille.uwo.ca>, linux-kernel@vger.kernel.org,
-	speakup@braille.uwo.ca
-References: <1357413465-42357-1-git-send-email-nickolai@csail.mit.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357413465-42357-1-git-send-email-nickolai@csail.mit.edu>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+	Sat, 5 Jan 2013 14:37:34 -0500
+Subject: Re: [PATCH V2 3/3] tuntap: don't add to waitqueue when POLLERR
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1357378446-19656-4-git-send-email-jasowang@redhat.com>
+References: <1357378446-19656-1-git-send-email-jasowang@redhat.com>
+	 <1357378446-19656-4-git-send-email-jasowang@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Jan 2013 11:37:30 -0800
+Message-ID: <1357414650.1678.4092.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Indeed. The same happens in synth_add, so Greg please use this instead:
+On Sat, 2013-01-05 at 17:34 +0800, Jason Wang wrote:
+> Currently, tun_chr_poll() returns POLLERR after waitqueue adding during device
+> unregistration. This would confuse some of its user such as vhost which assume
+> when POLLERR is returned, it wasn't added to the waitqueue. Fix this by
+> returning POLLERR before adding to waitqueue.
+> 
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
+> ---
+>  drivers/net/tun.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index fbd106e..f9c0049 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -886,7 +886,7 @@ static unsigned int tun_chr_poll(struct file *file, poll_table *wait)
+>  	struct sock *sk;
+>  	unsigned int mask = 0;
+>  
+> -	if (!tun)
+> +	if (!tun || tun->dev->reg_state != NETREG_REGISTERED)
+>  		return POLLERR;
+>  
+>  	sk = tfile->socket.sk;
+> @@ -903,9 +903,6 @@ static unsigned int tun_chr_poll(struct file *file, poll_table *wait)
+>  	     sock_writeable(sk)))
+>  		mask |= POLLOUT | POLLWRNORM;
+>  
+> -	if (tun->dev->reg_state != NETREG_REGISTERED)
+> -		mask = POLLERR;
+> -
+>  	tun_put(tun);
+>  	return mask;
+>  }
+
+This patch is buggy.
+
+First, the caller assuming POLLERR means poll_wait() was not called is
+wrong.
+
+Secondly, you add a ref leak.
 
 
-Check that array index is in-bounds before accessing the synths[] array.
 
-Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
-Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
-
----
- drivers/staging/speakup/synth.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/staging/speakup/synth.c b/drivers/staging/speakup/synth.c
-index df95337..b91d22b 100644
---- a/drivers/staging/speakup/synth.c
-+++ b/drivers/staging/speakup/synth.c
-@@ -342,7 +342,7 @@ int synth_init(char *synth_name)
- 
- 	mutex_lock(&spk_mutex);
- 	/* First, check if we already have it loaded. */
--	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
-+	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
- 		if (strcmp(synths[i]->name, synth_name) == 0)
- 			synth = synths[i];
- 
-@@ -423,7 +423,7 @@ int synth_add(struct spk_synth *in_synth
- 	int i;
- 	int status = 0;
- 	mutex_lock(&spk_mutex);
--	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
-+	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
- 		/* synth_remove() is responsible for rotating the array down */
- 		if (in_synth == synths[i]) {
- 			mutex_unlock(&spk_mutex);
