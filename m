@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab3AEKpq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 05:45:46 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:42122 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755640Ab3AEKpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 05:45:42 -0500
-Date: Sat, 5 Jan 2013 11:45:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 2/8] Make TestSetPageDirty and dirty page accounting
- in one func
-Message-ID: <20130105104538.GB24698@dhcp22.suse.cz>
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
- <1356456156-14535-1-git-send-email-handai.szj@taobao.com>
- <20130102090803.GB22160@dhcp22.suse.cz>
- <CAFj3OHUCQkqB2+ky9wxFpkNYcn2=6t9Qd7XFf3RBY0F4Wxyqcg@mail.gmail.com>
+	id S1755691Ab3AEKvB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 05:51:01 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:37048 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755564Ab3AEKu7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 05:50:59 -0500
+Message-ID: <50E8058F.6060104@gmail.com>
+Date: Sat, 05 Jan 2013 11:50:55 +0100
+From: Arend van Spriel <aspriel@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFj3OHUCQkqB2+ky9wxFpkNYcn2=6t9Qd7XFf3RBY0F4Wxyqcg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: David Airlie <airlied@linux.ie>, Ben Skeggs <bskeggs@redhat.com>
+CC: dri-devel@lists.freedesktop.org, dev@lists.compiz.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: 3.8-rc1: nouveau: X window session not starting
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 05-01-13 10:49:00, Sha Zhengju wrote:
-[...]
-> >> Here is some test numbers that before/after this patch:
-> >> Test steps(Mem-4g, ext4):
-> >> drop_cache; sync
-> >> fio (ioengine=sync/write/buffered/bs=4k/size=1g/numjobs=2/group_reporting/thread)
-> >
-> > Could also add some rationale why you think this test is relevant?
-> >
-> 
-> The test is aiming at finding the impact of performance due to lock
-> contention by writing parallel
-> to the same file. I'll add the reason next version too.
+Not sure if it is a kernel issue or user-space. Truth is probably
+somewhere in the middle. It popped up moving to 3.8-rc1 using nouveau.
+Using nvidia's driver works fine. With nouveau, after entering login
+credentials in lightDM the user session does not start and I am back at
+the lightDM login screen. This is shown in the syslog:
 
-Please make sure to describe which locks are exercised during that test
-and how much.
+Jan  5 11:28:34 linux-e6410-1 rtkit-daemon[1888]: Successfully made
+thread 4920 of process 4920 (n/a) owned by '110' high priority at nice
+level -11.
+Jan  5 11:28:34 linux-e6410-1 rtkit-daemon[1888]: Supervising 9 threads
+of 3 processes of 2 users.
+Jan  5 11:28:34 linux-e6410-1 pulseaudio[4920]: [pulseaudio] pid.c:
+Daemon already running.
+Jan  5 11:28:53 linux-e6410-1 pulseaudio[2767]: [pulseaudio] x11wrap.c:
+XOpenDisplay() failed
+Jan  5 11:28:53 linux-e6410-1 pulseaudio[2767]: [pulseaudio] module.c:
+Failed to load module "module-x11-publish" (argument: "display=:0"):
+initialization failed.
+Jan  5 11:28:54 linux-e6410-1 kernel: [ 2454.499025] nouveau E[    4780]
+failed to idle channel 0xcccc0000
 
-Thanks
-[...]
--- 
-Michal Hocko
-SUSE Labs
+I can start sessions for Xfce and 'Gnome Classic (without Effects)' so I
+suspect compiz to fail. Did not try xcompmgr.
+
+Gr. AvS
