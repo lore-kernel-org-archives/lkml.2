@@ -1,122 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab3AEAWd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 19:22:33 -0500
-Received: from mail-la0-f42.google.com ([209.85.215.42]:63075 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab3AEAWb (ORCPT
+	id S1755481Ab3AEAaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 19:30:12 -0500
+Received: from mail-ia0-f170.google.com ([209.85.210.170]:52494 "EHLO
+	mail-ia0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754934Ab3AEAaH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 19:22:31 -0500
-From: Max Filippov <jcmvbkbc@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        Joonsoo Kim <js1304@gmail.com>, Max Filippov <jcmvbkbc@gmail.com>
-Subject: [PATCH] mm: bootmem: fix free_all_bootmem_core with odd bitmap alignment
-Date: Sat,  5 Jan 2013 04:22:08 +0400
-Message-Id: <1357345328-11822-1-git-send-email-jcmvbkbc@gmail.com>
-X-Mailer: git-send-email 1.7.7.6
+	Fri, 4 Jan 2013 19:30:07 -0500
+Message-ID: <1357345807.5273.6.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH v7 1/2] KSM: numa awareness sysfs knob
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
+Date: Fri, 04 Jan 2013 18:30:07 -0600
+In-Reply-To: <alpine.LNX.2.00.1301041446340.4863@eggly.anvils>
+References: <20121224050817.GA25749@kroah.com>
+	 <1356658337-12540-1-git-send-email-pholasek@redhat.com>
+	 <1357030004.1379.4.camel@kernel.cn.ibm.com>
+	 <alpine.LNX.2.00.1301022050450.979@eggly.anvils>
+	 <1357259044.4930.4.camel@kernel.cn.ibm.com>
+	 <alpine.LNX.2.00.1301041446340.4863@eggly.anvils>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently free_all_bootmem_core ignores that node_min_pfn may be not
-multiple of BITS_PER_LONG. E.g. commit 6dccdcbe "mm: bootmem: fix
-checking the bitmap when finally freeing bootmem" shifts vec by lower
-bits of start instead of lower bits of idx. Also
+On Fri, 2013-01-04 at 15:03 -0800, Hugh Dickins wrote:
+> On Thu, 3 Jan 2013, Simon Jeons wrote:
+> > On Wed, 2013-01-02 at 21:10 -0800, Hugh Dickins wrote:
+> > > 
+> > > As you can see, remove_rmap_item_from_tree uses it to decide whether
+> > > or not it should rb_erase the rmap_item from the unstable_tree.
+> > > 
+> > > Every full scan of all the rmap_items, we increment ksm_scan.seqnr,
+> > > forget the old unstable_tree (it would just be a waste of processing
+> > > to remove every node one by one), and build up the unstable_tree afresh.
+> > > 
+> > 
+> > When the rmap_items left over from the previous scan will be removed?
+> 
+> Removed from the unstable rbtree?  Not at all, it's simply restarted
+> afresh, and the old rblinkages ignored.  Freed back to slab?  When the
+> scan passes that mm+address and realizes that rmap_item is not wanted
+> any more.  (Or when ksm is shut down with KSM_RUN_UNMERGE.)
+> 
 
-  if (IS_ALIGNED(start, BITS_PER_LONG) && vec == ~0UL)
+Make sense. Thanks Hugh. :)
 
-assumes that vec bit 0 corresponds to start pfn, which is only true when
-node_min_pfn is a multiple of BITS_PER_LONG. Also loop in the else
-clause can double-free pages (e.g. with node_min_pfn == start == 1,
-map[0] == ~0 on 32-bit machine page 32 will be double-freed).
+> > 
+> > > That works fine until we need to remove an rmap_item: then we have to be
+> > > very sure to remove it from the unstable_tree if it's already been linked
+> > > there during this scan, but ignore its rblinkage if that's just left over
+> > > from the previous scan.
+> > > 
+> > > A single bit would be enough to decide this; but we got it troublesomely
+> > > wrong in the early days of KSM (didn't always visit every rmap_item each
+> > > scan), so it's convenient to use 8 bits (the low unsigned char, stored
+> > 
+> > When the scenario didn't always visit every rmap_item each scan can
+> > occur? 
+> 
+> You're asking me about a stage of KSM development 3.5 years ago:
+> I don't remember the details.
+> 
+> > 
+> > > below the FLAGs and below the page-aligned address in the rmap_item -
+> > > there's lots of them, best keep them as small as we can) and do a
+> > > BUG_ON(age > 1) if we made a mistake.
+> > > 
+> > > We haven't hit that BUG_ON in over three years: if we need some more
+> > > bits for something, we can cut the age down to one or two bits.
+> > > 
+> > > Hugh
 
-This bug causes the following message during xtensa kernel boot:
-
-[    0.000000] bootmem::free_all_bootmem_core nid=0 start=1 end=8000
-[    0.000000] BUG: Bad page state in process swapper  pfn:00001
-[    0.000000] page:d04bd020 count:0 mapcount:-127 mapping:  (null) index:0x2
-[    0.000000] page flags: 0x0()
-[    0.000000]
-[    0.000000] Stack: 00000000 00000002 00000004 ffffffff d0193e44 ffffff81 00000000 00000002
-[    0.000000]        90038c66 d0193e90 d04bd020 000001a8 00000000 ffffffff 00000000 00000020
-[    0.000000]        90039a4c d0193eb0 d04bd020 00000001 d04b7b20 ffff8ad0 00000000 00000000
-[    0.000000] Call Trace:
-[    0.000000]  [<d0038bf8>] bad_page+0x8c/0x9c
-[    0.000000]  [<d0038c66>] free_pages_prepare+0x5e/0x88
-[    0.000000]  [<d0039a4c>] free_hot_cold_page+0xc/0xa0
-[    0.000000]  [<d0039b28>] __free_pages+0x24/0x38
-[    0.000000]  [<d01b8230>] __free_pages_bootmem+0x54/0x56
-[    0.000000]  [<d01b1667>] free_all_bootmem_core$part$11+0xeb/0x138
-[    0.000000]  [<d01b179e>] free_all_bootmem+0x46/0x58
-[    0.000000]  [<d01ae7a9>] mem_init+0x25/0xa4
-[    0.000000]  [<d01ad13e>] start_kernel+0x11e/0x25c
-[    0.000000]  [<d01a9121>] should_never_return+0x0/0x3be7
-
-The fix is the following:
-- always align vec so that its bit 0 corresponds to start
-- provide BITS_PER_LONG bits in vec, if those bits are available in the map
-- don't free pages past next start position in the else clause.
-
-Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
----
- mm/bootmem.c |   23 +++++++++++++++++------
- 1 files changed, 17 insertions(+), 6 deletions(-)
-
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 1324cd7..ece83ca 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -185,10 +185,23 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
- 
- 	while (start < end) {
- 		unsigned long *map, idx, vec;
-+		unsigned shift;
- 
- 		map = bdata->node_bootmem_map;
- 		idx = start - bdata->node_min_pfn;
-+		shift = idx & (BITS_PER_LONG - 1);
-+		/*
-+		 * vec holds at most BITS_PER_LONG map bits,
-+		 * bit 0 corresponds to start.
-+		 */
- 		vec = ~map[idx / BITS_PER_LONG];
-+
-+		if (shift) {
-+			vec >>= shift;
-+			if (end - start >= BITS_PER_LONG)
-+				vec |= ~map[idx / BITS_PER_LONG + 1] <<
-+					(BITS_PER_LONG - shift);
-+		}
- 		/*
- 		 * If we have a properly aligned and fully unreserved
- 		 * BITS_PER_LONG block of pages in front of us, free
-@@ -201,19 +214,17 @@ static unsigned long __init free_all_bootmem_core(bootmem_data_t *bdata)
- 			count += BITS_PER_LONG;
- 			start += BITS_PER_LONG;
- 		} else {
--			unsigned long off = 0;
-+			unsigned long cur;
- 
--			vec >>= start & (BITS_PER_LONG - 1);
--			while (vec) {
-+			start = ALIGN(start + 1, BITS_PER_LONG);
-+			while (cur = start; vec && cur != start; ++cur) {
- 				if (vec & 1) {
--					page = pfn_to_page(start + off);
-+					page = pfn_to_page(cur);
- 					__free_pages_bootmem(page, 0);
- 					count++;
- 				}
- 				vec >>= 1;
--				off++;
- 			}
--			start = ALIGN(start + 1, BITS_PER_LONG);
- 		}
- 	}
- 
--- 
-1.7.7.6
 
