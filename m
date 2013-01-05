@@ -1,282 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215Ab3AEIQs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:16:48 -0500
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47601 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab3AEIQr (ORCPT
+	id S1755163Ab3AEIbi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:31:38 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49131 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab3AEIbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:16:47 -0500
-Message-ID: <50E7E165.6000107@linux.vnet.ibm.com>
-Date: Sat, 05 Jan 2013 16:16:37 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 5/5] KVM: x86: improve reexecute_instruction
-References: <50E6DEDC.7040800@linux.vnet.ibm.com> <50E6DFAB.6050008@linux.vnet.ibm.com> <20130104224432.GB13481@amt.cnet>
-In-Reply-To: <20130104224432.GB13481@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 5 Jan 2013 03:31:36 -0500
+Message-ID: <1357374665.716.32.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [PATCH] Remove WARN_ON_ONCE in __smp_call_function_single and
+ smp_call_function_single
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Hui Zhu <teawater@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
+        yan@linux.vnet.ibm.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Date: Sat, 05 Jan 2013 16:31:05 +0800
+In-Reply-To: <CANFwon03L14jDhLAE66F936WytwtN=+43QetETOG5ndUGptnow@mail.gmail.com>
+References: <CANFwon03L14jDhLAE66F936WytwtN=+43QetETOG5ndUGptnow@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010508-5490-0000-0000-000002C068C0
+x-cbid: 13010508-5816-0000-0000-0000061E71E9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/05/2013 06:44 AM, Marcelo Tosatti wrote:
+On Sat, 2013-01-05 at 12:26 +0800, Hui Zhu wrote:
+> The comments of these WARN_ON_ONCE said "Can deadlock when called with
+> interrupts disabled".
+> But I didn't find anything that will block this function.
 
->> index b0a3678..44c6992 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -4756,15 +4756,8 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
->>  static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->>  {
->>  	gpa_t gpa = cr2;
->> +	gfn_t gfn;
->>  	pfn_t pfn;
->> -	unsigned int indirect_shadow_pages;
->> -
->> -	spin_lock(&vcpu->kvm->mmu_lock);
->> -	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
->> -	spin_unlock(&vcpu->kvm->mmu_lock);
->> -
->> -	if (!indirect_shadow_pages)
->> -		return false;
+It seems that if two cpus try to IPI each other with wait equals true,
+they will deadlock if interrupts are disabled, because neither of them
+can take the interrupt. 
+
+If wait equals false, it seems deadlock is still possible, for example,
+if smp_call_function_single() is called from interrupt context, then one
+cpu might
+	-->call smp_call_function_single()
+	-->csd_lock()
+	-->be interrupted before sending the ipi out
+	-->in interrupt context, call smp_call_function_single() again
+	-->csd_lock_wait() forever in csd_lock() 
+
+I'm not sure whether it is possible that irqs be enabled in interrupt
+context? If so, maybe we also need check that if wait equals false?
+
+Thanks, Zhong
+
+> So I think maybe this WARN_ON_ONCE is not need now.  So I post a patch for that.
 > 
-> This renders the previous patch obsolete, pretty much (please fold).
-
-Will try.
-
+> Signed-off-by: Hui Zhu <teawater@gmail.com>
+> Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
 > 
->>  	if (!vcpu->arch.mmu.direct_map) {
->>  		/*
->> @@ -4781,13 +4774,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->>  			return true;
->>  	}
->>
->> -	/*
->> -	 * if emulation was due to access to shadowed page table
->> -	 * and it failed try to unshadow page and re-enter the
->> -	 * guest to let CPU execute the instruction.
->> -	 */
->> -	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
->> -		return true;
->> +	gfn = gpa_to_gfn(gpa);
->>
->>  	/*
->>  	 * Do not retry the unhandleable instruction if it faults on the
->> @@ -4795,13 +4782,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->>  	 * retry instruction -> write #PF -> emulation fail -> retry
->>  	 * instruction -> ...
->>  	 */
->> -	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
->> -	if (!is_error_noslot_pfn(pfn)) {
->> -		kvm_release_pfn_clean(pfn);
->> +	pfn = gfn_to_pfn(vcpu->kvm, gfn);
->> +
->> +	/*
->> +	 * If the instruction failed on the error pfn, it can not be fixed,
->> +	 * report the error to userspace.
->> +	 */
->> +	if (is_error_noslot_pfn(pfn))
->> +		return false;
->> +
->> +	kvm_release_pfn_clean(pfn);
->> +
->> +	/* The instructions are well-emulated on direct mmu. */
->> +	if (vcpu->arch.mmu.direct_map) {
+> --- a/kernel/smp.c
+> +++ b/kernel/smp.c
+> @@ -303,25 +303,13 @@ int smp_call_function_single(int cpu, sm
+>  		.flags = 0,
+>  	};
+>  	unsigned long flags;
+> -	int this_cpu;
+>  	int err = 0;
 > 
-> !direct_map?
-
-No. This logic is, if it is direct mmu, we just unprotect the page shadowed by
-nested mmu, then let guest retry the instruction, no need to detect unhandlable
-instruction.
-
+>  	/*
+>  	 * prevent preemption and reschedule on another processor,
+>  	 * as well as CPU removal
+>  	 */
+> -	this_cpu = get_cpu();
+> -
+> -	/*
+> -	 * Can deadlock when called with interrupts disabled.
+> -	 * We allow cpu's that are not yet online though, as no one else can
+> -	 * send smp call function interrupt to this cpu and as such deadlocks
+> -	 * can't happen.
+> -	 */
+> -	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+> -		     && !oops_in_progress);
+> -
+> -	if (cpu == this_cpu) {
+> +	if (cpu == get_cpu()) {
+>  		local_irq_save(flags);
+>  		func(info);
+>  		local_irq_restore(flags);
+> @@ -409,17 +397,7 @@ void __smp_call_function_single(int cpu,
+>  	unsigned int this_cpu;
+>  	unsigned long flags;
 > 
->> +		unsigned int indirect_shadow_pages;
->> +
->> +		spin_lock(&vcpu->kvm->mmu_lock);
->> +		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
->> +		spin_unlock(&vcpu->kvm->mmu_lock);
->> +
->> +		if (indirect_shadow_pages)
->> +			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
->> +
->>  		return true;
->>  	}
->>
->> -	return false;
->> +	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
->> +
->> +	/* If the target gfn is used as page table, the fault can
->> +	 * not be avoided by unprotecting shadow page and it will
->> +	 * be reported to userspace.
->> +	 */
->> +	return !vcpu->arch.target_gfn_is_pt;
->>  }
+> -	this_cpu = get_cpu();
+> -	/*
+> -	 * Can deadlock when called with interrupts disabled.
+> -	 * We allow cpu's that are not yet online though, as no one else can
+> -	 * send smp call function interrupt to this cpu and as such deadlocks
+> -	 * can't happen.
+> -	 */
+> -	WARN_ON_ONCE(cpu_online(smp_processor_id()) && wait && irqs_disabled()
+> -		     && !oops_in_progress);
+> -
+> -	if (cpu == this_cpu) {
+> +	if (cpu == get_cpu()) {
+>  		local_irq_save(flags);
+>  		data->func(data->info);
+>  		local_irq_restore(flags);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> The idea was
-> 
-> How about recording the gfn number for shadow pages that have been
-> shadowed in the current pagefault run? (which is cheap, compared to
-> shadowing these pages).
-> 
-> If failed instruction emulation is write to one of these gfns, then
-> fail.
 
-If i understood correctly, i do not think it is simpler than the way in this
-patch.
-
-There is the change to apply the idea:
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c431b33..2163de8 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -502,6 +502,8 @@ struct kvm_vcpu_arch {
- 		u64 msr_val;
- 		struct gfn_to_hva_cache data;
- 	} pv_eoi;
-+
-+	gfn_t pt_gfns[4];
- };
-
- struct kvm_lpage_info {
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 0453fa0..ac4210f 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -523,6 +523,18 @@ FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
- 	return false;
- }
-
-+static void FNAME(cache_pt_gfns)(struct kvm_vcpu *vcpu, struct guest_walker *walker)
-+{
-+	int level;
-+
-+	/* Reset all gfns to -1, then we can detect the levels which is not used in guest. */
-+	for (level = 0; level < 4; level++)
-+		vcpu->arch.pt_gfns[level] = (gfn_t)(-1);
-+
-+	for (level = walker->level; level <= walker->max_level; level++)
-+		vcpu->arch.pt_gfns[level - 1] = walker->table_gfn[level - 1];
-+}
-+
- /*
-  * Page fault handler.  There are several causes for a page fault:
-  *   - there is no shadow pte for the guest pte
-@@ -576,6 +588,8 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 		return 0;
- 	}
-
-+	 FNAME(cache_pt_gfns)(vcpu, &walker);
-+
- 	if (walker.level >= PT_DIRECTORY_LEVEL)
- 		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
- 		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index b0a3678..b86ee24 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4753,18 +4753,25 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
- 	return r;
- }
-
-+static bool is_gfn_used_as_pt(struct kvm_vcpu *vcpu, gfn_t gfn)
-+{
-+	int level;
-+
-+	for (level = 0; level < 4; level++) {
-+		if (vcpu->arch.pt_gfns[level] == (gfn_t)-1)
-+			continue;
-+		if (gfn == vcpu->arch.pt_gfns[level])
-+			return true;
-+	}
-+
-+	return false;
-+}
-+
- static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
- {
- 	gpa_t gpa = cr2;
-+	gfn_t gfn;
- 	pfn_t pfn;
--	unsigned int indirect_shadow_pages;
--
--	spin_lock(&vcpu->kvm->mmu_lock);
--	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
--	spin_unlock(&vcpu->kvm->mmu_lock);
--
--	if (!indirect_shadow_pages)
--		return false;
-
- 	if (!vcpu->arch.mmu.direct_map) {
- 		/*
-@@ -4781,13 +4788,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
- 			return true;
- 	}
-
--	/*
--	 * if emulation was due to access to shadowed page table
--	 * and it failed try to unshadow page and re-enter the
--	 * guest to let CPU execute the instruction.
--	 */
--	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
--		return true;
-+	gfn = gpa_to_gfn(gpa);
-
- 	/*
- 	 * Do not retry the unhandleable instruction if it faults on the
-@@ -4795,13 +4796,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
- 	 * retry instruction -> write #PF -> emulation fail -> retry
- 	 * instruction -> ...
- 	 */
--	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
--	if (!is_error_noslot_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
-+	pfn = gfn_to_pfn(vcpu->kvm, gfn);
-+
-+	/*
-+	 * If the instruction failed on the error pfn, it can not be fixed,
-+	 * report the error to userspace.
-+	 */
-+	if (is_error_noslot_pfn(pfn))
-+		return false;
-+
-+	kvm_release_pfn_clean(pfn);
-+
-+	/* The instructions are well-emulated on direct mmu. */
-+	if (vcpu->arch.mmu.direct_map) {
-+		unsigned int indirect_shadow_pages;
-+
-+		spin_lock(&vcpu->kvm->mmu_lock);
-+		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
-+		spin_unlock(&vcpu->kvm->mmu_lock);
-+
-+		if (indirect_shadow_pages)
-+			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-+
- 		return true;
- 	}
-
--	return false;
-+	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-+
-+	/* If the target gfn is used as page table, the fault can
-+	 * not be avoided by unprotecting shadow page and it will
-+	 * be reported to userspace.
-+	 */
-+	return !is_gfn_used_as_pt(vcpu, gfn);
- }
-
- static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
-
-
-You can see we need to record more things in the vcpu struct (bool vs. gfn_t [4])
-and my patch can fold is_gfn_used_as_pt into a existed function FNAME(is_self_change_mapping).
-
-Hmm?
 
