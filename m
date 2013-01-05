@@ -1,102 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab3AEJbT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 04:31:19 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:39136 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336Ab3AEJbN (ORCPT
+	id S1755428Ab3AEJfy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 04:35:54 -0500
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:35609 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755346Ab3AEJfv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 04:31:13 -0500
+	Sat, 5 Jan 2013 04:35:51 -0500
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sat, 5 Jan 2013 10:31:11 +0100
-Message-ID: <CA+icZUUMTfbAj81NVkP9dJjacp+SYAN+=Fo1EM6+5sjfgTo42g@mail.gmail.com>
-Subject: Re: [PATCH 0/6] ACPI / PM: ACPI power management update
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>
+In-Reply-To: <87wqvtl0we.fsf@devron.myhome.or.jp>
+References: <2597526.usDRg4h3X1@mars> <201301011406.19983.Martin@lichtvoll.de>
+ <1492866.3ugQ2fqrP0@mars> <201301011537.08466.Martin@lichtvoll.de>
+ <alpine.LFD.2.03.1301021144280.10305@gmail.com> <87wqvtl0we.fsf@devron.myhome.or.jp>
+From: Shentino <shentino@gmail.com>
+Date: Sat, 5 Jan 2013 01:35:10 -0800
+Message-ID: <CAGDaZ_p5F9S0kRkikOi4kG0SYLfRrSEN=hK0cFaje_s+Or=Ahg@mail.gmail.com>
+Subject: Re: Tux3 report: New news for the new year
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Tero Roponen <tero.roponen@gmail.com>,
+        Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        Daniel Phillips <lkml@phunq.net>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Great to see you guys wroking on this.
 
-against which Linux-kernel version is your patchset?
-Linux v3.8-rc2?
-Mambo number 5 [1] aka patch 5/6 does not apply cleanly.
+I can almost taste tux3 on my desktop.
 
-Regards,
-- Sedat -
-
-[1] http://www.youtube.com/watch?v=QQ4Ht5xfD5E
-
-P.S.: GIT AM and APPLY sessions
-
-GIT AM...
-
-wearefam@fambox:~/src/linux-kernel/linux$ git checkout Linux-v3.8-rc2
-Already on 'Linux-v3.8-rc2'
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$ GIT_BRANCH="acpi-pm-fixes" ;
-git branch $GIT_BRANCH && git checkout $GIT_BRANCH
-Switched to branch 'acpi-pm-fixes'
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$ git am
-../patches/acpi-pm-fixes/1-6-ACPI-PM-Change-the-way-power-transitions-to-D3cold-are-carried-out.patch
-Applying: ACPI / PM: Change the way power transitions to D3cold are carried out
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$ git am
-../patches/acpi-pm-fixes/2-6-ACPI-PM-More-visible-function-for-retrieving-device-power-states.patch
-Applying: ACPI / PM: More visible function for retrieving device power states
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$ git am
-../patches/acpi-pm-fixes/3-6-ACPI-PM-Common-string-representations-of-device-power-states.patch
-Applying: ACPI / PM: Common string representations of device power states
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$ git am
-../patches/acpi-pm-fixes/4-6-ACPI-PM-Export-power-states-of-ACPI-devices-via-sysfs.patch
-Applying: ACPI / PM: Export power states of ACPI devices via sysfs
-wearefam@fambox:~/src/linux-kernel/linux$
-wearefam@fambox:~/src/linux-kernel/linux$ git am
-../patches/acpi-pm-fixes/5-6-ACPI-PM-Move-device-power-management-functions-to-device_pm.c.patch
-Applying: ACPI / PM: Move device power management functions to device_pm.c
-error: patch failed: include/acpi/acpi_bus.h:333
-error: include/acpi/acpi_bus.h: patch does not apply
-Patch failed at 0001 ACPI / PM: Move device power management functions
-to device_pm.c
-When you have resolved this problem run "git am --resolved".
-If you would prefer to skip this patch, instead run "git am --skip".
-To restore the original branch and stop patching run "git am --abort".
-
-Same with GIT APPLY...
-
-[...]
-wearefam@fambox:~/src/linux-kernel/linux$ git apply --check --verbose
-../patches/acpi-pm-fixes/5*
-Checking patch drivers/acpi/device_pm.c...
-Checking patch include/acpi/acpi_bus.h...
-error: while searching for:
-acpi_status acpi_bus_get_status_handle(acpi_handle handle,
-                                       unsigned long long *sta);
-int acpi_bus_get_status(struct acpi_device *device);
-int acpi_bus_set_power(acpi_handle handle, int state);
-const char *acpi_power_state_string(int state);
-int acpi_device_get_power(struct acpi_device *device, int *state);
-int acpi_device_set_power(struct acpi_device *device, int state);
-int acpi_bus_update_power(acpi_handle handle, int *state_p);
-bool acpi_bus_power_manageable(acpi_handle handle);
-bool acpi_bus_can_wakeup(acpi_handle handle);
-#ifdef CONFIG_ACPI_PROC_EVENT
-int acpi_bus_generate_proc_event(struct acpi_device *device, u8 type, int data);
-int acpi_bus_generate_proc_event4(const char *class, const char *bid,
-u8 type, int data);
-
-error: patch failed: include/acpi/acpi_bus.h:333
-error: include/acpi/acpi_bus.h: patch does not apply
-Checking patch drivers/acpi/internal.h...
-Hunk #1 succeeded at 43 (offset -18 lines).
-Checking patch drivers/acpi/bus.c...
-- EOT-
+On Fri, Jan 4, 2013 at 2:04 AM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+> Tero Roponen <tero.roponen@gmail.com> writes:
+>
+>>> martin@merkaba:~[…]> sudo ./tux3fuse tux3.img /mnt/zeit
+>>> [sudo] password for martin:
+>>>
+>>> martin@merkaba:~[…]> mount | grep fuse
+>>> fusectl on /sys/fs/fuse/connections type fusectl (rw,relatime)
+>>> tux3.img on /mnt/zeit type fuse.tux3.img (rw,nosuid,nodev,relatime,user_id=0,group_id=0)
+>>>
+>>>
+>>>
+>>> But I am stuck with accessing it:
+>>>
+>>> martin@merkaba:~[…]> LANG=C ls -l /mnt/zeit
+>>> ls: cannot access /mnt/zeit: Permission denied
+>>>
+>>> martin@merkaba:~[…]> LANG=C sudo chown martin:martin /mnt/zeit
+>>> chown: cannot access '/mnt/zeit': Transport endpoint is not connected
+>>> martin@merkaba:~[…]> LANG=C sudo ls -l /mnt/zeit
+>>> ls: cannot access /mnt/zeit: Transport endpoint is not connected
+>>> martin@merkaba:~[…]>
+>>
+>> Hi,
+>>
+>> I have not looked at Tux3 for a long time, but there seems to be
+>> a simple fix for at least this problem, and two workarounds:
+>>
+>> 1) Run the program in foreground (-f):
+>>
+>>    sudo ./tux3fuse tux3.img /mnt/zeit -f
+>>
+>> 2) Use absolute path for image file:
+>>
+>>    sudo ./tux3fuse $(pwd)/tux3.img /mnt/zeit
+>>
+>> The following patch should hopefully fix this for good.
+>
+> Thanks for report, Martin. Thanks for fixing, Tero.
+>
+> Applied with free() for make valgrind happy to temp-atomic-commit branch
+> (will be merged to master soon).
+>
+> Thanks!
+>
+>> commit efc0cf49f6dd00dfbb84e88336d2c5d147a09ed0
+>> Author: Tero Roponen <tero.roponen@gmail.com>
+>> Date:   Wed Jan 2 11:20:46 2013 +0200
+>>
+>>     Use absolute path for volume name
+>>
+>>     If fuse_daemonize() puts us into background it also switches our
+>>     working directory to '/', breaking the use of relative paths.
+>>
+>>     This patch fixes the problem by converting the relative path to
+>>     an absolute one.
+>>
+>>     Signed-off-by: Tero Roponen <tero.roponen@gmail.com>
+>>
+>> diff --git a/user/tux3fuse.c b/user/tux3fuse.c
+>> index 6401204..5047cab 100644
+>> --- a/user/tux3fuse.c
+>> +++ b/user/tux3fuse.c
+>> @@ -993,7 +993,7 @@ int main(int argc, char *argv[])
+>>               goto error;
+>>
+>>       struct tux3fuse tux3fuse = {
+>> -             .volname = argv[1],
+>> +             .volname = canonicalize_file_name(argv[1]),
+>>       };
+>>       fs = fuse_lowlevel_new(&args, &tux3_ops, sizeof(tux3_ops), &tux3fuse);
+>>       if (fs) {
+>
+> --
+> OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
