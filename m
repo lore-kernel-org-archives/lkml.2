@@ -1,243 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab3AEIHi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:07:38 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:43134 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754753Ab3AEIHg (ORCPT
+	id S1754997Ab3AEIN2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:13:28 -0500
+Received: from moutng.kundenserver.de ([212.227.126.187]:51079 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706Ab3AEINZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:07:36 -0500
-Date: Sat, 5 Jan 2013 00:06:58 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Laxman Dewangan <ldewangan@nvidia.com>
-Cc: grant.likely@secretlab.ca, rob.herring@calxeda.com, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
- allocation
-Message-ID: <20130105080658.GA1315@core.coreip.homeip.net>
-References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
- <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 5 Jan 2013 03:13:25 -0500
+Message-ID: <1357373590.5690.172.camel@marge.simpson.net>
+Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
+ Metric into the Load Balancer
+From: Mike Galbraith <bitbucket@online.de>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Amit Kucheria <amit.kucheria@linaro.org>,
+        Morten Rasmussen <Morten.Rasmussen@arm.com>,
+        Paul McKenney <paul.mckenney@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
+        Venki Pallipadi <venki@google.com>,
+        Robin Randhawa <robin.randhawa@arm.com>,
+        Lists linaro-dev <linaro-dev@lists.linaro.org>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Alex Shi <alex.shi@intel.com>,
+        srikar@linux.vnet.ibm.com
+Date: Sat, 05 Jan 2013 09:13:10 +0100
+In-Reply-To: <50E55F99.6090104@linux.vnet.ibm.com>
+References: <50E3B61A.3040808@linux.vnet.ibm.com>
+	 <1357114354.5586.39.camel@marge.simpson.net>
+	 <50E55F99.6090104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-Provags-ID: V02:K0:P+aHOFj6BGjR4MCHFrwIVHofw5l+Hsf5/fwANLKCSP3
+ o1Z2ZXA6kH7xvHba/lOhJ8iDDr2FYtVBdRCo8CCtjN1jw+ncY+
+ af7SuNP+hFHu3YJOFGNmi/BDZiX/uV6CjRcS1O01zssT1WaQPG
+ RlrDzEpIPs1KGLnS+sA4EqxA3LfYVRHWN9CSEJ++1oniVARHUS
+ +xiOucrFMoYYQYjMvUaRTDLKEMSdzfueKKYjqbp/wglmPwATky
+ cGlqtc8VkkUvpxa+H3cjDRmnpPaRvzxiVVI6zg6xMlweY0bI4/
+ HJBhkz+RzYfdLmYrBwE+8ydJAW3j7ir0JdEvh/3V9r3QOXoKjD
+ HqewnO5KDG7GiwmLJbXuxGcpZHXFeoNBojUE4rYv/Ijyfu1Koj
+ 0SqIiQQFpO06w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Laxman,
+On Thu, 2013-01-03 at 16:08 +0530, Preeti U Murthy wrote:
 
-On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan wrote:
-> Use devm_* for memory, clock, input device allocation. This reduces
-> code for freeing these resources.
+> Subject: [PATCH] sched: Merge select_idle_sibling with the behaviour of SD_BALANCE_WAKE
 > 
-> Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
-> ---
-> Changes from V1:
-> None
+> The function of select_idle_sibling() is to place the woken up task in the
+> vicinity of the waking cpu or on the previous cpu depending on what wake_affine() says.
+> This placement being only in an idle group.If an idle group is not found,the
+> fallback cpu is either the waking cpu or the previous cpu accordingly.
 > 
->  drivers/input/keyboard/tegra-kbc.c |   93 +++++++++++-------------------------
->  1 files changed, 28 insertions(+), 65 deletions(-)
+> This results in the runqueue of the waking cpu or the previous cpu getting
+> overloaded when the system is committed,which is a latency hit to these tasks.
 > 
-> diff --git a/drivers/input/keyboard/tegra-kbc.c b/drivers/input/keyboard/tegra-kbc.c
-> index f1d3ba0..c036425 100644
-> --- a/drivers/input/keyboard/tegra-kbc.c
-> +++ b/drivers/input/keyboard/tegra-kbc.c
-> @@ -618,7 +618,7 @@ static struct tegra_kbc_platform_data *tegra_kbc_dt_parse_pdata(
->  	if (!np)
->  		return NULL;
->  
-> -	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
-> +	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
->  	if (!pdata)
->  		return NULL;
->  
-> @@ -700,33 +700,36 @@ static int tegra_kbc_probe(struct platform_device *pdev)
->  	if (!pdata)
->  		pdata = tegra_kbc_dt_parse_pdata(pdev);
->  
-> -	if (!pdata)
-> +	if (!pdata) {
-> +		dev_err(&pdev->dev, "Platform data missing\n");
->  		return -EINVAL;
-> -
-> -	if (!tegra_kbc_check_pin_cfg(pdata, &pdev->dev, &num_rows)) {
-> -		err = -EINVAL;
-> -		goto err_free_pdata;
->  	}
->  
-> +	if (!tegra_kbc_check_pin_cfg(pdata, &pdev->dev, &num_rows))
-> +		return -EINVAL;
-> +
->  	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
->  	if (!res) {
->  		dev_err(&pdev->dev, "failed to get I/O memory\n");
-> -		err = -ENXIO;
-> -		goto err_free_pdata;
-> +		return -ENXIO;
->  	}
->  
->  	irq = platform_get_irq(pdev, 0);
->  	if (irq < 0) {
->  		dev_err(&pdev->dev, "failed to get keyboard IRQ\n");
-> -		err = -ENXIO;
-> -		goto err_free_pdata;
-> +		return -ENXIO;
-> +	}
-> +
-> +	kbc = devm_kzalloc(&pdev->dev, sizeof(*kbc), GFP_KERNEL);
-> +	if (!kbc) {
-> +		dev_err(&pdev->dev, "failed to alloc memory for kbc\n");
-> +		return -ENOMEM;
->  	}
->  
-> -	kbc = kzalloc(sizeof(*kbc), GFP_KERNEL);
-> -	input_dev = input_allocate_device();
-> -	if (!kbc || !input_dev) {
-> -		err = -ENOMEM;
-> -		goto err_free_mem;
-> +	input_dev = devm_input_allocate_device(&pdev->dev);
-> +	if (!input_dev) {
-> +		dev_err(&pdev->dev, "failed to allocate input device\n");
-> +		return -ENOMEM;
->  	}
->  
->  	kbc->pdata = pdata;
-> @@ -735,25 +738,16 @@ static int tegra_kbc_probe(struct platform_device *pdev)
->  	spin_lock_init(&kbc->lock);
->  	setup_timer(&kbc->timer, tegra_kbc_keypress_timer, (unsigned long)kbc);
->  
-> -	res = request_mem_region(res->start, resource_size(res), pdev->name);
-> -	if (!res) {
-> -		dev_err(&pdev->dev, "failed to request I/O memory\n");
-> -		err = -EBUSY;
-> -		goto err_free_mem;
-> -	}
-> -
-> -	kbc->mmio = ioremap(res->start, resource_size(res));
-> +	kbc->mmio = devm_request_and_ioremap(&pdev->dev, res);
->  	if (!kbc->mmio) {
-> -		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-> -		err = -ENXIO;
-> -		goto err_free_mem_region;
-> +		dev_err(&pdev->dev, "Cannot request memregion/iomap address\n");
-> +		return -EADDRNOTAVAIL;
-
-Erm, no, -EBUSY please.
-
->  	}
->  
-> -	kbc->clk = clk_get(&pdev->dev, NULL);
-> +	kbc->clk = devm_clk_get(&pdev->dev, NULL);
->  	if (IS_ERR(kbc->clk)) {
->  		dev_err(&pdev->dev, "failed to get keyboard clock\n");
-> -		err = PTR_ERR(kbc->clk);
-> -		goto err_iounmap;
-> +		return PTR_ERR(kbc->clk);
->  	}
->  
->  	/*
-> @@ -778,9 +772,9 @@ static int tegra_kbc_probe(struct platform_device *pdev)
->  	input_dev->close = tegra_kbc_close;
->  
->  	err = tegra_kbd_setup_keymap(kbc);
-> -	if (err) {
-> +	if (err < 0) {
-
-Why is this change? As far as I can see tegra_kbd_setup_keymap() never
-returns positive values.
-
->  		dev_err(&pdev->dev, "failed to setup keymap\n");
-> -		goto err_put_clk;
-> +		return err;
->  	}
->  
->  	__set_bit(EV_REP, input_dev->evbit);
-> @@ -790,15 +784,15 @@ static int tegra_kbc_probe(struct platform_device *pdev)
->  
->  	err = request_irq(kbc->irq, tegra_kbc_isr,
->  			  IRQF_NO_SUSPEND | IRQF_TRIGGER_HIGH, pdev->name, kbc);
-> -	if (err) {
-> +	if (err < 0) {
-
-Neither request_irq(). BTW, why not devm_request_irq?
-
->  		dev_err(&pdev->dev, "failed to request keyboard IRQ\n");
-> -		goto err_put_clk;
-> +		return err;
->  	}
->  
->  	disable_irq(kbc->irq);
->  
->  	err = input_register_device(kbc->idev);
-> -	if (err) {
-> +	if (err < 0) {
-
-Again, input_register_device() returns 0 on success.
-
->  		dev_err(&pdev->dev, "failed to register input device\n");
->  		goto err_free_irq;
->  	}
-> @@ -810,46 +804,15 @@ static int tegra_kbc_probe(struct platform_device *pdev)
->  
->  err_free_irq:
->  	free_irq(kbc->irq, pdev);
-> -err_put_clk:
-> -	clk_put(kbc->clk);
-> -err_iounmap:
-> -	iounmap(kbc->mmio);
-> -err_free_mem_region:
-> -	release_mem_region(res->start, resource_size(res));
-> -err_free_mem:
-> -	input_free_device(input_dev);
-> -	kfree(kbc);
-> -err_free_pdata:
-> -	if (!pdev->dev.platform_data)
-> -		kfree(pdata);
-> -
->  	return err;
->  }
->  
->  static int tegra_kbc_remove(struct platform_device *pdev)
->  {
->  	struct tegra_kbc *kbc = platform_get_drvdata(pdev);
-> -	struct resource *res;
-> -
-> -	platform_set_drvdata(pdev, NULL);
->  
->  	free_irq(kbc->irq, pdev);
-> -	clk_put(kbc->clk);
-> -
->  	input_unregister_device(kbc->idev);
-
-You do not need to call input_unregister_device for managed input
-devices, and if you switch request_irq to managed variant you can remove 
-tegra_kbc_remove() altogether.
-
-> -	iounmap(kbc->mmio);
-> -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> -	release_mem_region(res->start, resource_size(res));
-> -
-> -	/*
-> -	 * If we do not have platform data attached to the device we
-> -	 * allocated it ourselves and thus need to free it.
-> -	 */
-> -	if (!pdev->dev.platform_data)
-> -		kfree(kbc->pdata);
-> -
-> -	kfree(kbc);
-> -
->  	return 0;
->  }
->  
-> -- 
-> 1.7.1.1
+> What is required is that the newly woken up tasks be placed close to the wake
+> up cpu or the previous cpu,whichever is best, for reasons to avoid latency hit and cache
+> coldness respectively.This is achieved with wake_affine() deciding which
+> cache domain the task should be placed on.
 > 
+> Once this is decided,instead of searching for a completely idle group,let us
+> search for the idlest group.This will anyway return a completely idle group
+> if it exists and its mechanism will fall back to what select_idle_sibling()
+> was doing.But if this fails,find_idlest_group() continues the search for a
+> relatively more idle group.
+> 
+> The argument could be that,we wish to avoid migration of the newly woken up
+> task to any other group unless it is completely idle.But in this case, to
+> begin with we choose a sched domain,within which a migration could be less
+> harmful.We enable the SD_BALANCE_WAKE flag on the SMT and MC domains to co-operate
+> with the same.
 
-Thanks.
+What if..
 
--- 
-Dmitry
+Fast movers currently suffer from traversing large package, mostly due
+to traversal order walking 1:1 buddies hand in hand across the whole
+package endlessly.  With only one buddy pair running, it's horrific.
+
+Even if you change the order to be friendlier, perturbation induces
+bouncing.  More spots to bounce too equals more bouncing.  Ergo, I cross
+coupled cpu pairs to eliminate that.  If buddies are perturbed, having
+one and only one buddy cpu pulls them back together, so can't induce a
+bounce fest, only correct.  That worked well, but had the down side that
+some loads really REALLY want maximum spread, so suffer when you remove
+migration options as I did.  There's in_interrupt() consideration I'm
+not so sure of too, in that case, going the extra mile to find an idle
+hole to plug _may_ be worth some extra cost too.. dunno.  
+
+So wrt integration, what if a buddy cpu were made a FIRST choice of
+generic wake balancing vs the ONLY choice of select_idle_sibling() as I
+did?  If buddy cpu is available, cool, perturbed pairs find each other
+and pair back up, if not, and you were here too recently, you stay with
+prev_cpu, avoid bounce and traversal at high frequency.  All tasks can
+try the cheap buddy cpu first, all can try full domain as well, just not
+at insane rates.  The heavier the short term load average (or such, with
+instant decay on longish idle ala idle balance throttle so you ramp
+well), the longer the 'forget eating full balance' interval becomes,
+with cutoff affecting the cheap but also not free cross coupled buddy
+cpu as well at some point.  Looking for an idle cpu at hefty load is a
+waste of cycles at best, plugging micro-holes does nothing good even if
+you find one, forget wake balance entirely at some cutoff, let periodic
+balancing do it's thing in peace.
+
+Hrmph, that's too many words, but basically, I think whacking
+select_idle_sibling() integration into wake balance makes loads of
+sense, but needs a bit more to not end up just moving the problems to a
+different spot.
+
+I still have a 2.6-rt problem I need to find time to squabble with, but
+maybe I'll soonish see if what you did plus what I did combined works
+out on that 4x10 core box where current is _so_ unbelievably horrible.
+Heck, it can't get any worse, and the restricted wake balance alone
+kinda sorta worked.
+
+-Mike
+
