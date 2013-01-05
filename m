@@ -1,108 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835Ab3AERqj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 12:46:39 -0500
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:41066 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755802Ab3AERqh (ORCPT
+	id S1755856Ab3AERs5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 12:48:57 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:53156 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755802Ab3AERsz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 12:46:37 -0500
-Date: Sat, 5 Jan 2013 11:46:32 -0600
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+	Sat, 5 Jan 2013 12:48:55 -0500
+Date: Sat, 5 Jan 2013 09:48:44 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org
-Subject: kernel BUG at kernel/sched_rt.c:493!
-Message-ID: <20130105174632.GB19226@u1004.rgmadvisors.com>
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@efficios.com,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: [PATCH tip/core/rcu 0/14] RCU idle/no-CB changes for 3.9
+Message-ID: <20130105174844.GA14172@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010517-4834-0000-0000-0000023FCA6E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We recently managed to crash 10 of our test machines at the same time.
-Half of the machines were running a 3.1.9 kernel and half were running
-3.4.9.  I realize that these are both fairly old kernels but I've
-skimmed the list of fixes in the 3.4.* stable series and didn't see
-anything that appeared to be relevant to this issue.
+Hello!
 
-All we managed to get was some screenshots of the stacks from the
-consoles. On one of the 3.1.9 machines you can see we hit the
-BUG_ON(want) statement in __disable_runtime() at
-kernel/sched_rt.c:493, and all of the machines had essentially the
-same stack showing:
+This series contains changes to RCU_FAST_NO_HZ idle entry/exit and also
+removes restrictions on no-CBs CPUs.  This series contains some commits
+that are still rather experimental, so you should avoid using these patches
+unless you would like to help debug them.  ;-)
 
-rt_offline_rt
-rq_attach_root
-cpu_attach_domain
-partition_sched_domains
-do_rebuild_sched_domains
+1.	Tag callback lists with the grace-period number that they are
+	waiting for.  This change enables a number of optimizations
+	for RCU_FAST_NO_HZ, and though it add a bit of code, it greatly
+	simplifies RCU's callback handling.
+2.	Trace callback acceleration (which is when RCU notices that a
+	group of callbacks doesn't actually need to wait as long as it
+	previously thought).
+3.	Remove restrictions on no-CBs CPUs.  This patch is probably the
+	highest-risk of the group.
+4.	Allow some control of no-CBs CPUs at kernel-build time.  The option
+	of most interest is probably the one that makes -all- CPUs be
+	no-CBs CPUs.
+5.	Distinguish the no-CBs kthreads for the various RCU flavors.
+	Without this patch, CPU 0 would have up to three kthreads all
+	named "rcuo0", which is less than optimal.
+6.	Export RCU_FAST_NO_HZ parameters to sysfs to allow run-time
+	adjustment.
+7.	Re-introduce callback acceleration during grace-period cleanup.
+	Now that the callbacks are associated with specific grace periods,
+	such acceleration is idempotent, and it is now safe to accelerate
+	more than needed.  (In contrast, in the past, too-frequent callback
+	acceleration resulted in infrequent RCU failures.)
+8.	Use the newly numbered callbacks to greatly reduce the CPU overhead
+	incurred at idle entry by RCU_FAST_NO_HZ.  The fact that the
+	callbacks are now numbered means that instead of repeatedly
+	cranking the RCU state machine to try to get all callbacks
+	invoked, we can instead rely on the numbering so that the CPU
+	can take full advantage of any grace periods that elapse while
+	it is asleep.  CPUs with callbacks still have limited sleep times,
+	especially if they have at least one non-lazy callback queued.
+9-14.	Allow CPUs to make known their need for future grace periods,
+	which is also used to reduce the need for frenetic RCU
+	state-machine cranking upon RCU_FAST_NO_HZ entry to idle.
+	9.	Move the release of the root rcu_node structure's ->lock
+		to then end of rcu_start_gp().
+	10.	Repurpose no-CB's grace-period event tracing to that of
+		future grace periods, which share no-CB's grace-period
+		mechanism.
+	11.	Move the release of the root rcu_node structure's ->lock
+		to rcu_start_gp()'s callers.
+	12.	Rename the rcu_node ->n_nocb_gp_requests field to
+		->need_future_gp.
+	13.	Abstract rcu_start_future_gp() from rcu_nocb_wait_gp()
+		to that RCU_FAST_NO_HZ can use the no-CB CPUs mechanism
+		for allowing a CPU to record its need for future grace
+		periods.
+	14.	Make rcu_accelerate_cbs() note the need for future
+		grace periods, thus avoiding delays in starting grace
+		periods that currently happen due to the CPUs needing
+		those grace periods being out of action when the previous
+		grace period ends.
 
-Here is one of the screenshots of the 3.1.9 machines:
+								Thanx, Paul
 
-https://dl.dropbox.com/u/84066079/berbox38.png
 
-And here is one from a 3.4.9 machine:
+ b/include/linux/rcupdate.h   |    1 
+ b/include/trace/events/rcu.h |   77 +++
+ b/init/Kconfig               |   17 
+ b/kernel/rcutree.c           |  475 ++++++++++++++++++-----
+ b/kernel/rcutree.h           |   39 -
+ b/kernel/rcutree_plugin.h    |  859 ++++++++++++++++++-------------------------
+ b/kernel/rcutree_trace.c     |    2 
+ 7 files changed, 848 insertions(+), 622 deletions(-)
 
-https://dl.dropbox.com/u/84066079/berbox18.png
-
-Three of the five 3.4.9 machines also managed to print
-"[sched_delayed] sched: RT throttling activated" ~7 minutes before the
-machines locked up.
-
-I've tried reproducing the issue, but so far I've been unsuccessful
-but I believe that is because my RT tasks aren't using enough CPU
-cause borrowing from the other runqueues.  Normally our RT tasks use
-very little CPU so I'm not entirely sure what conditions caused them
-to run into throttling on the day that this happened.
-
-The details that I do know about the workload that caused this are as
-follows.
-
-1) These are all dual socket 4 core X5460 systems with no
-hyperthreading.  Thus there are 8 cores total in the system.
-2) We use the cpuset cgroup to apply CPU affinity to various types of
-processes.  Initially everything starts out in a single cpuset and the
-top level cpuset has cpuset.sched_load_balance=1 thus there is only a
-single scheduling domain.
-3) In this case tasks were then placed into four non overlapping
-cpusets.  1 containing a single core and single SCHED_FIFO task, 2
-containing two cores, and multiple SCHED_FIFO tasks, and 1 containing
-3 cores and everything else on the system running as SCHED_OTHER.
-4) In the case of cpusets that contain SCHED_FIFO tasks, the tasks
-start out as SCHED_OTHER are placed into the cpuset then change their
-policy to SCHED_FIFO.
-5) Once all tasks are placed into non overlapping cpusets the top
-level cpuset.sched_load_balance is set to 0 to split the system into
-four scheduling domains.
-6) The system ran like this for some unknown amount of time.
-7) All the processes are then sent a signal to exit, and at the same
-time the top level cpuset.sched_load_balance is set back to 1.  This
-is when the systems locked up.
-
-Hopefully that is enough information to give someone more familiar
-with the scheduler code an idea of where the bug is here.  I will
-point out that in step #5 above there is a small window where the RT
-tasks could encounter runtime limits but are still in a single big
-scheduling domain.  I don't know if that is what happened or if it is
-simply sufficient to hit the runtime limits while the system is split
-into four domains.  For the curious we are using the default RT
-runtime limits:
-
-# grep . /proc/sys/kernel/sched_rt_*
-/proc/sys/kernel/sched_rt_period_us:1000000
-/proc/sys/kernel/sched_rt_runtime_us:950000
-
-Let me know if you anyone needs any more information about this issue.
-
-Thanks,
-Shawn
-
--- 
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
