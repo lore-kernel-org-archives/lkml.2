@@ -1,156 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755765Ab3AECtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 21:49:06 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:43878 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab3AECtB (ORCPT
+	id S1755759Ab3AECul (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 21:50:41 -0500
+Received: from [216.228.121.140] ([216.228.121.140]:16404 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1755623Ab3AECuj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 21:49:01 -0500
+	Fri, 4 Jan 2013 21:50:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Fri, 04 Jan 2013 18:49:58 -0800
+Message-ID: <50E794D0.7040907@nvidia.com>
+Date: Sat, 5 Jan 2013 08:19:52 +0530
+From: Prashant Gaikwad <pgaikwad@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
 MIME-Version: 1.0
-In-Reply-To: <20130102090803.GB22160@dhcp22.suse.cz>
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
-	<1356456156-14535-1-git-send-email-handai.szj@taobao.com>
-	<20130102090803.GB22160@dhcp22.suse.cz>
-Date: Sat, 5 Jan 2013 10:49:00 +0800
-Message-ID: <CAFj3OHUCQkqB2+ky9wxFpkNYcn2=6t9Qd7XFf3RBY0F4Wxyqcg@mail.gmail.com>
-Subject: Re: [PATCH V3 2/8] Make TestSetPageDirty and dirty page accounting in
- one func
-From: Sha Zhengju <handai.szj@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, dchinner@redhat.com,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
-        Sha Zhengju <handai.szj@taobao.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Boyd <sboyd@codeaurora.org>
+CC: "mturquette@linaro.org" <mturquette@linaro.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] clk: Add composite clock type
+References: <1357278706-28149-1-git-send-email-pgaikwad@nvidia.com> <50E75538.5010706@codeaurora.org>
+In-Reply-To: <50E75538.5010706@codeaurora.org>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+On Saturday 05 January 2013 03:48 AM, Stephen Boyd wrote:
+> On 01/03/13 21:51, Prashant Gaikwad wrote:
+>> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+>> index f0b269a..baf7608 100644
+>> --- a/drivers/clk/Makefile
+>> +++ b/drivers/clk/Makefile
+>> @@ -2,7 +2,8 @@
+>>   obj-$(CONFIG_HAVE_CLK)		+= clk-devres.o
+>>   obj-$(CONFIG_CLKDEV_LOOKUP)	+= clkdev.o
+>>   obj-$(CONFIG_COMMON_CLK)	+= clk.o clk-fixed-rate.o clk-gate.o \
+>> -				   clk-mux.o clk-divider.o clk-fixed-factor.o
+>> +				   clk-mux.o clk-divider.o clk-fixed-factor.o \
+>> +				   clk-composite.o
+> This list is getting a little out of hand. Should we sort it
+> alphabetically and put each file on one line?
 
-Sorry for my late response, I'm just back from vocation. : )
+Do you want me to do it in this patch?
 
-On Wed, Jan 2, 2013 at 5:08 PM, Michal Hocko <mhocko@suse.cz> wrote:
-> On Wed 26-12-12 01:22:36, Sha Zhengju wrote:
->> From: Sha Zhengju <handai.szj@taobao.com>
->>
->> Commit a8e7d49a(Fix race in create_empty_buffers() vs __set_page_dirty_buffers())
->> extracts TestSetPageDirty from __set_page_dirty and is far away from
->> account_page_dirtied. But it's better to make the two operations in one single
->> function to keep modular. So in order to avoid the potential race mentioned in
->> commit a8e7d49a, we can hold private_lock until __set_page_dirty completes.
->> There's no deadlock between ->private_lock and ->tree_lock after confirmation.
 >
-> Could you be more specific here? E.g. quote mm/filemap.c comment I have
-> mentioned during the first round of review?
->
-
-Okay, sorry for forgetting the comment. I'll add it next round.
-
->> It's a prepare patch for following memcg dirty page accounting patches.
->>
->>
->> Here is some test numbers that before/after this patch:
->> Test steps(Mem-4g, ext4):
->> drop_cache; sync
->> fio (ioengine=sync/write/buffered/bs=4k/size=1g/numjobs=2/group_reporting/thread)
->
-> Could also add some rationale why you think this test is relevant?
->
-
-The test is aiming at finding the impact of performance due to lock
-contention by writing parallel
-to the same file. I'll add the reason next version too.
-
-Thanks for reviewing!
-
-
-Regards,
-Sha
-
->> We test it for 10 times and get the average numbers:
->> Before:
->> write: io=2048.0MB, bw=254117KB/s, iops=63528.9 , runt=  8279msec
->> lat (usec): min=1 , max=742361 , avg=30.918, stdev=1601.02
->> After:
->> write: io=2048.0MB, bw=254044KB/s, iops=63510.3 , runt=  8274.4msec
->> lat (usec): min=1 , max=856333 , avg=31.043, stdev=1769.32
->>
->> Note that the impact is little(<1%).
->>
->>
->> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
->> Reviewed-by: Michal Hocko <mhocko@suse.cz>
->> ---
->>  fs/buffer.c |   24 ++++++++++++------------
->>  1 file changed, 12 insertions(+), 12 deletions(-)
->>
->> diff --git a/fs/buffer.c b/fs/buffer.c
->> index c017a2d..3b032b9 100644
->> --- a/fs/buffer.c
->> +++ b/fs/buffer.c
->> @@ -609,9 +609,15 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
->>   * If warn is true, then emit a warning if the page is not uptodate and has
->>   * not been truncated.
->>   */
->> -static void __set_page_dirty(struct page *page,
->> +static int __set_page_dirty(struct page *page,
->>               struct address_space *mapping, int warn)
->>  {
->> +     if (unlikely(!mapping))
->> +             return !TestSetPageDirty(page);
+>>   # SoCs specific
+>>   obj-$(CONFIG_ARCH_BCM2835)	+= clk-bcm2835.o
+>>   obj-$(CONFIG_ARCH_NOMADIK)	+= clk-nomadik.o
+>> diff --git a/drivers/clk/clk-composite.c b/drivers/clk/clk-composite.c
+>> new file mode 100644
+>> index 0000000..8634dbf
+>> --- /dev/null
+>> +++ b/drivers/clk/clk-composite.c
+>> @@ -0,0 +1,208 @@
+>> +/*
+>> + * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms and conditions of the GNU General Public License,
+>> + * version 2, as published by the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+>> + */
 >> +
->> +     if (TestSetPageDirty(page))
->> +             return 0;
+>> +#include <linux/clk.h>
+>> +#include <linux/clk-provider.h>
+>> +#include <linux/err.h>
+>> +#include <linux/slab.h>
 >> +
->>       spin_lock_irq(&mapping->tree_lock);
->>       if (page->mapping) {    /* Race with truncate? */
->>               WARN_ON_ONCE(warn && !PageUptodate(page));
->> @@ -621,6 +627,8 @@ static void __set_page_dirty(struct page *page,
->>       }
->>       spin_unlock_irq(&mapping->tree_lock);
->>       __mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
+>> +#define to_clk_composite(_hw) container_of(_hw, struct clk_composite, hw)
 >> +
->> +     return 1;
->>  }
+>> +static u8 clk_composite_get_parent(struct clk_hw *hw)
+>> +{
+>> +	struct clk_composite *composite = to_clk_composite(hw);
+>> +	const struct clk_ops *mux_ops = composite->mux_ops;
+>> +	struct clk_hw *mux_hw = composite->mux_hw;
+>> +
+>> +	mux_hw->clk = hw->clk;
+> Looks like this is already done down in the register function. Why are
+> we doing it again here and in each op?
+
+Some ops gets called during clk_init which is before clk_register returns.
+
+
+>> +
+>> +	return mux_ops->get_parent(mux_hw);
+>> +}
+> [snip]
+>> +struct clk *clk_register_composite(struct device *dev, const char *name,
+>> +			const char **parent_names, int num_parents,
+>> +			struct clk_hw *mux_hw, const struct clk_ops *mux_ops,
+>> +			struct clk_hw *div_hw, const struct clk_ops *div_ops,
+>> +			struct clk_hw *gate_hw, const struct clk_ops *gate_ops,
+>> +			unsigned long flags)
+>> +{
+>> +	struct clk *clk;
+>> +	struct clk_init_data init;
+>> +	struct clk_composite *composite;
+>> +	struct clk_ops *clk_composite_ops;
+>> +
+>> +	composite = kzalloc(sizeof(struct clk_ops), GFP_KERNEL);
+> sizeof(*composite) != sizeof(struct clk_ops)
+
+Thanks.
+
+>> +	if (!composite) {
+>> +		pr_err("%s: could not allocate composite clk\n", __func__);
+>> +		return ERR_PTR(-ENOMEM);
+>> +	}
+>> +
+>> +	init.name = name;
+>> +	init.flags = flags | CLK_IS_BASIC;
+>> +	init.parent_names = parent_names;
+>> +	init.num_parents = num_parents;
+>> +
+>> +	/* allocate the clock ops */
+>> +	clk_composite_ops = kzalloc(sizeof(struct clk_ops), GFP_KERNEL);
+> This one looks right though. Perhaps you should change style to use
+> sizeof(*clk_composite_ops) so that the above mistake doesn't happen.
+
+Sure.
+
+>> +	if (!clk_composite_ops) {
+>> +		pr_err("%s: could not allocate clk ops\n", __func__);
+>> +		kfree(composite);
+>> +		return ERR_PTR(-ENOMEM);
+>> +	}
+>> +
+>> +	if (mux_hw && mux_ops) {
+>> +		if (!mux_ops->get_parent || !mux_ops->set_parent) {
+>> +			clk = ERR_PTR(-EINVAL);
+>> +			goto err;
+>> +		}
+>> +
+>> +		composite->mux_hw = mux_hw;
+>> +		composite->mux_ops = mux_ops;
+>> +		clk_composite_ops->get_parent = clk_composite_get_parent;
+>> +		clk_composite_ops->set_parent = clk_composite_set_parent;
+>> +	}
+>> +
+>> +	if (div_hw && div_ops) {
+>> +		if (!div_ops->recalc_rate || !div_ops->round_rate ||
+>> +		    !div_ops->set_rate) {
+>> +			clk = ERR_PTR(-EINVAL);
+>> +			goto err;
+>> +		}
+>> +
+>> +		composite->div_hw = div_hw;
+>> +		composite->div_ops = div_ops;
+>> +		clk_composite_ops->recalc_rate = clk_composite_recalc_rate;
+>> +		clk_composite_ops->round_rate = clk_composite_round_rate;
+>> +		clk_composite_ops->set_rate = clk_composite_set_rate;
+>> +	}
+>> +
+>> +	if (gate_hw && gate_ops) {
+>> +		if (!gate_ops->is_enabled || !gate_ops->enable ||
+>> +		    !gate_ops->disable) {
+>> +			clk = ERR_PTR(-EINVAL);
+>> +			goto err;
+>> +		}
+>> +
+>> +		composite->gate_hw = gate_hw;
+>> +		composite->gate_ops = gate_ops;
+>> +		clk_composite_ops->is_enabled = clk_composite_is_enabled;
+>> +		clk_composite_ops->enable = clk_composite_enable;
+>> +		clk_composite_ops->disable = clk_composite_disable;
+>> +	}
+>> +
+>> +	init.ops = clk_composite_ops;
+>> +	composite->hw.init = &init;
+>> +
+>> +	clk = clk_register(NULL, &composite->hw);
+> Please pass dev here.
+
+Yes.
+
+>> +	if (IS_ERR(clk))
+>> +		goto err;
+>> +
+>> +	if (composite->mux_hw)
+>> +		composite->mux_hw->clk = clk;
+>> +
+>> +	if (composite->div_hw)
+>> +		composite->div_hw->clk = clk;
+>> +
+>> +	if (composite->gate_hw)
+>> +		composite->gate_hw->clk = clk;
+>> +
+>> +	return clk;
+>> +
+>> +err:
+>> +	kfree(clk_composite_ops);
+>> +	kfree(composite);
+>> +	return clk;
+>> +}
 >>
->>  /*
->> @@ -666,11 +674,9 @@ int __set_page_dirty_buffers(struct page *page)
->>                       bh = bh->b_this_page;
->>               } while (bh != head);
->>       }
->> -     newly_dirty = !TestSetPageDirty(page);
->> +     newly_dirty = __set_page_dirty(page, mapping, 1);
->>       spin_unlock(&mapping->private_lock);
->>
->> -     if (newly_dirty)
->> -             __set_page_dirty(page, mapping, 1);
->>       return newly_dirty;
->>  }
->>  EXPORT_SYMBOL(__set_page_dirty_buffers);
->> @@ -1125,14 +1131,8 @@ void mark_buffer_dirty(struct buffer_head *bh)
->>                       return;
->>       }
->>
->> -     if (!test_set_buffer_dirty(bh)) {
->> -             struct page *page = bh->b_page;
->> -             if (!TestSetPageDirty(page)) {
->> -                     struct address_space *mapping = page_mapping(page);
->> -                     if (mapping)
->> -                             __set_page_dirty(page, mapping, 0);
->> -             }
->> -     }
->> +     if (!test_set_buffer_dirty(bh))
->> +             __set_page_dirty(bh->b_page, page_mapping(bh->b_page), 0);
->>  }
->>  EXPORT_SYMBOL(mark_buffer_dirty);
->>
->> --
->> 1.7.9.5
->>
->
-> --
-> Michal Hocko
-> SUSE Labs
+
