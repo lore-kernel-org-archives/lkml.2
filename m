@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755264Ab3AEEPn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 23:15:43 -0500
-Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:59252 "EHLO
-	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755002Ab3AEEPl (ORCPT
+	id S1755296Ab3AEEea (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 23:34:30 -0500
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:39150 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755002Ab3AEEe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 23:15:41 -0500
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=T4bMgRIiL9JN6XRL5SCQUozkR0bUmQLYDkni8TKNGuGcx15TFVEeQyghQmtZ/ywU;
-  h=Message-ID:Date:From:Reply-To:To:Subject:Cc:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <18814090.1357359340232.JavaMail.root@mswamui-bichon.atl.sa.earthlink.net>
-Date: Fri, 4 Jan 2013 23:15:39 -0500 (GMT-05:00)
-From: "Steven A. DuChene" <linux-clusters@mindspring.com>
-Reply-To: "Steven A. DuChene" <linux-clusters@mindspring.com>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: no config opt for k8temp in 3.6.11
-Cc: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Mailer: EarthLink Zoo Mail 1.0
-X-ELNK-Trace: ea4808abc3da2865808dd114cae72f675e89bb4777695beb0630c2ba6cdcad306d82c3b4fdfb511ce9ba93f03882d750350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 209.86.224.26
+	Fri, 4 Jan 2013 23:34:28 -0500
+MIME-Version: 1.0
+From: Hui Zhu <teawater@gmail.com>
+Date: Sat, 5 Jan 2013 12:26:42 +0800
+Message-ID: <CANFwon03L14jDhLAE66F936WytwtN=+43QetETOG5ndUGptnow@mail.gmail.com>
+Subject: [PATCH] Remove WARN_ON_ONCE in __smp_call_function_single and smp_call_function_single
+To: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Nazarewicz <mina86@mina86.org>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Cc: Zhu Yanhai <gaoyang.zyh@taobao.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I do a grep for K8 in my .config file all I get is the following:
+The comments of these WARN_ON_ONCE said "Can deadlock when called with
+interrupts disabled".
+But I didn't find anything that will block this function.
 
-> grep -i k8 /usr/local/hugedisk/src/linux-3.6.11/.config
-CONFIG_MK8=y
-CONFIG_X86_POWERNOW_K8=y
+So I think maybe this WARN_ON_ONCE is not need now.  So I post a patch for that.
 
-When I try your grep command I get:
+Signed-off-by: Hui Zhu <teawater@gmail.com>
+Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
 
-> grep -E "^CONFIG_SENSORS" /usr/local/hugedisk/src/linux-3.6.11/.config|grep K
-CONFIG_SENSORS_K10TEMP=m
+--- a/kernel/smp.c
++++ b/kernel/smp.c
+@@ -303,25 +303,13 @@ int smp_call_function_single(int cpu, sm
+ 		.flags = 0,
+ 	};
+ 	unsigned long flags;
+-	int this_cpu;
+ 	int err = 0;
 
-I will try doing a make mrproper and see if anything changes.
+ 	/*
+ 	 * prevent preemption and reschedule on another processor,
+ 	 * as well as CPU removal
+ 	 */
+-	this_cpu = get_cpu();
+-
+-	/*
+-	 * Can deadlock when called with interrupts disabled.
+-	 * We allow cpu's that are not yet online though, as no one else can
+-	 * send smp call function interrupt to this cpu and as such deadlocks
+-	 * can't happen.
+-	 */
+-	WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
+-		     && !oops_in_progress);
+-
+-	if (cpu == this_cpu) {
++	if (cpu == get_cpu()) {
+ 		local_irq_save(flags);
+ 		func(info);
+ 		local_irq_restore(flags);
+@@ -409,17 +397,7 @@ void __smp_call_function_single(int cpu,
+ 	unsigned int this_cpu;
+ 	unsigned long flags;
 
-Thanks for the reply.
---
-Steven DuChene
-
-
------Original Message-----
->From: Borislav Petkov <bp@alien8.de>
->Sent: Jan 4, 2013 3:35 PM
->To: "Steven A. DuChene" <linux-clusters@mindspring.com>
->Cc: linux-kernel@vger.kernel.org
->Subject: Re: no config opt for k8temp in 3.6.11
->
->On Fri, Jan 04, 2013 at 09:25:14AM -0500, Steven A. DuChene wrote:
->> I have a few systems with AMD processors. One is a AMD Phenom II based
->> system which uses a k10temp kernel module to get the CPU temperature.
->> Another system has an Athlon64 processor which apparently is supposed
->> to use a k8temp module to do the same thing. I have built a 3.6.11
->> kernel for each system that otherwise runs OpenSuSE-11.X. On the
->> Phenom system the k10temp module is gets built and performs as
->> expected. However on the Atlnon system even though I see the k8temp.c
->> source file in the drivers/hwmon directory there does not seem to be
->> a way in the kernel config files available from the 3.6.11 kernel
->> sources to actually select that the k8temp module should be built. Is
->> this some oversight in the makeup of the kernel config files or am I
->> missing something obvious?
->
->That's strange, I can select all the AMD power drivers on 3.6.11:
->
->$ grep -E "^CONFIG_SENSORS" .config
->CONFIG_SENSORS_K8TEMP=m
->CONFIG_SENSORS_K10TEMP=m
->CONFIG_SENSORS_FAM15H_POWER=m
->
->Can you do 'make mrproper' and try regenerating your config? But
->remember, mrproper will remove your .config so you might want to save
->that upfront in case you need it.
->
->HTH.
->
->-- 
->Regards/Gruss,
->Boris.
-
-
-
+-	this_cpu = get_cpu();
+-	/*
+-	 * Can deadlock when called with interrupts disabled.
+-	 * We allow cpu's that are not yet online though, as no one else can
+-	 * send smp call function interrupt to this cpu and as such deadlocks
+-	 * can't happen.
+-	 */
+-	WARN_ON_ONCE(cpu_online(smp_processor_id()) && wait && irqs_disabled()
+-		     && !oops_in_progress);
+-
+-	if (cpu == this_cpu) {
++	if (cpu == get_cpu()) {
+ 		local_irq_save(flags);
+ 		data->func(data->info);
+ 		local_irq_restore(flags);
