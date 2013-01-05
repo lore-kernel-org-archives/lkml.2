@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163Ab3AEEHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 23:07:45 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:19335 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab3AEEHn (ORCPT
+	id S1755235Ab3AEEKd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 23:10:33 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:50393 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754775Ab3AEEKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 23:07:43 -0500
-X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=NbYD9KISzMsA:10 a=VwQbUJbxAAAA:8 a=McBH7g3nOM8yVcyLo5cA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357358860.10284.68.camel@gandalf.local.home>
-Subject: [ANNOUNCE] 3.2.36-rt54
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>
-Date: Fri, 04 Jan 2013 23:07:40 -0500
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jan 2013 23:10:31 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKocOOMNokQ4U3RqP=O_1naP_7b97x=x44kAnXy2nc5Vofzk6Q@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
+	<87k3rslg5a.fsf@xmission.com>
+	<CAKocOOOXx+65rh4f8_++SwYMZdEO2FaOpLiW=dQ6uXZpwM1PYQ@mail.gmail.com>
+	<CAE9FiQVpAfDb1_5TP=CqAQZQZKq=5AqQWo1NE3Sedijg+ML-gA@mail.gmail.com>
+	<CAKocOONJQ3cZCdE4GDJgtk6BdnS4En+uH8H2b_dPs3naujczBg@mail.gmail.com>
+	<CAE9FiQXs5mC-oCpPWNVvQgn00LVbr70NqWtgaMVU088xSkkAqg@mail.gmail.com>
+	<CAKocOOMNokQ4U3RqP=O_1naP_7b97x=x44kAnXy2nc5Vofzk6Q@mail.gmail.com>
+Date: Fri, 4 Jan 2013 20:10:29 -0800
+X-Google-Sender-Auth: YF34s5i2PPVkiES_30tdRY7KdKE
+Message-ID: <CAE9FiQVtZg6O4e6yH_yNfGcm0dqJOp1=Mh8iN3y4GAL4vH=5QA@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Shuah Khan <shuahkhan@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Joerg Roedel <joro@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 4, 2013 at 6:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> I applied your patch to 3.6.11 and changed the panic() to pr_info()
+> and also changed enough_mem_for_swiotlb() to always return false to
+> simulate not enough memory condition as this system does have enough
+> memory.
+>
+> So at least on this AMD system, your patch will result in a panic.
 
-Dear RT Folks,
+ok, thanks for testing.
 
-I'm pleased to announce the 3.2.36-rt54 stable release.
+if enough_mem_for_swiotlb() return false really,  allocating buffer
+for swiotlb with bootmem would panic already, right?
 
+so this patch just delay the panic a while for AMD system with
+unhandled devices by IOMMU.
 
-This release is just an update to the new stable 3.2.36 version
-and no RT specific changes have been made.
+Thanks
 
-
-You can get this release via the git tree at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
-
-  Head SHA1: cb81da1cc94200564e52411e0f31f3f867a80141
-
-
-Or to build 3.2.36-rt54 directly, the following patches should be applied:
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.2.tar.xz
-
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.2.36.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.2/patch-3.2.36-rt54.patch.xz
-
-
-
-Enjoy,
-
--- Steve
-
-
-
+Yinghai
