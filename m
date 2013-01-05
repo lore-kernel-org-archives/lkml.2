@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab3AEKQa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 05:16:30 -0500
-Received: from mout.gmx.net ([212.227.15.19]:52156 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451Ab3AEKQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 05:16:28 -0500
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/ByeIFIffB/YkIoBFYM/ZmoXF3r511swGJDRmX2f
-	YUvcB2XBIO/2IH
-Message-ID: <50E7FD79.1080605@gmx.de>
-Date: Sat, 05 Jan 2013 11:16:25 +0100
-From: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755695Ab3AEKoV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 05:44:21 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40527 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755600Ab3AEKoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 05:44:20 -0500
+Date: Sat, 5 Jan 2013 10:36:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, mhocko@suse.cz, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 1/2] cpuhotplug/nohz: Remove offline cpus from
+	nohz-idle state
+Message-ID: <20130105103627.GU2631@n2100.arm.linux.org.uk>
+References: <1357268318-7993-1-git-send-email-vatsa@codeaurora.org>
 MIME-Version: 1.0
-To: Maxim Krasnyansky <maxk@qti.qualcomm.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: why does kernel 3.8-rc1 put all TAP devices into state RUNNING during
- boot
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357268318-7993-1-git-send-email-vatsa@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At my stable Gentoo Linux I'm observed a change behaviour for the
-configured TAP devices after the boot process.
+On Thu, Jan 03, 2013 at 06:58:38PM -0800, Srivatsa Vaddagiri wrote:
+> I also think that the
+> wait_for_completion() based wait in ARM's __cpu_die() can be replaced with a
+> busy-loop based one, as the wait there in general should be terminated within
+> few cycles.
 
-$ diff 3.7.1 3.8.0-rc1+ | grep UP
-< br0: flags=4355<UP,BROADCAST,PROMISC,MULTICAST>  mtu 1500
-> br0: flags=4419<UP,BROADCAST,RUNNING,PROMISC,MULTICAST>  mtu 1500
-< tap0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
-> tap0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+Why open-code this stuff when we have infrastructure already in the kernel
+for waiting for stuff to happen?  I chose to use the standard infrastructure
+because its better tested, and avoids having to think about whether we need
+CPU barriers and such like to ensure that updates are seen in a timely
+manner.
 
-
-May I ask you if this changed behaviour is intended ?
-
-
-FWIW I configured those devices at that system in this way :
-
-$ head -n 20 /etc/conf.d/net
-# /etc/conf.d/net
-#
-
-#       KVM
-#
-bridge_br0="tap0 tap1 tap2 tap3"
-config_br0="192.168.0.254/8"
-brctl_br0="setfd 0
-sethello 10
-stp off"
-rc_net_br0_need="net.tap0 net.tap1 net.tap2 net.tap3"
-
-config_tap0="null"
-tuntap_tap0="tap"
-tunctl_tap0="-u <me>"
-
-...
-
--- 
-MfG/Sincerely
-Toralf Förster
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+My stance on a lot of this idle/cpu dying code is that much of it can
+probably be cleaned up and merged into a single common implementation -
+in which case the use of standard infrastructure for things like waiting
+for other CPUs do stuff is even more justified.
