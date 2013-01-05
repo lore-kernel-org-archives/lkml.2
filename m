@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755884Ab3AET2o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 14:28:44 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:55924 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab3AET2n (ORCPT
+	id S1755895Ab3AET30 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 14:29:26 -0500
+Received: from mx12.netapp.com ([216.240.18.77]:29155 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755832Ab3AET3W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 14:28:43 -0500
+	Sat, 5 Jan 2013 14:29:22 -0500
 X-IronPort-AV: E=Sophos;i="4.84,416,1355126400"; 
-   d="scan'208";a="18130690"
-From: Laura Abbott <lauraa@codeaurora.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Laura Abbott <lauraa@codeaurora.org>
-Subject: [RESEND][PATCH v3] mm: Use aligned zone start for pfn_to_bitidx calculation
-Date: Sat,  5 Jan 2013 11:28:31 -0800
-Message-Id: <1357414111-20736-1-git-send-email-lauraa@codeaurora.org>
-X-Mailer: git-send-email 1.7.8.3
+   d="scan'208";a="4983464"
+From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
+To: Nickolai Zeldovich <nickolai@csail.mit.edu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
+Subject: Re: [PATCH] nfs: avoid dereferencing null pointer in
+ initiate_bulk_draining
+Thread-Topic: [PATCH] nfs: avoid dereferencing null pointer in
+ initiate_bulk_draining
+Thread-Index: AQHN63ms8ffCB+iuBkGCnyBUHCBir5g7pRKA
+Date: Sat, 5 Jan 2013 19:29:20 +0000
+Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91198F775@SACEXCMBX04-PRD.hq.netapp.com>
+References: <1357413591-42579-1-git-send-email-nickolai@csail.mit.edu>
+In-Reply-To: <1357413591-42579-1-git-send-email-nickolai@csail.mit.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.104.60.115]
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <333DB13E661D094BAA9D2CF0841DB9B7@tahoe.netapp.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current calculation in pfn_to_bitidx assumes that
-(pfn - zone->zone_start_pfn) >> pageblock_order will return the
-same bit for all pfn in a pageblock. If zone_start_pfn is not
-aligned to pageblock_nr_pages, this may not always be correct.
+On Sat, 2013-01-05 at 14:19 -0500, Nickolai Zeldovich wrote:
++AD4- Fix an inverted null pointer check in initiate+AF8-bulk+AF8-draining().
++AD4- 
++AD4- Signed-off-by: Nickolai Zeldovich +ADw-nickolai+AEA-csail.mit.edu+AD4-
++AD4- ---
++AD4-  fs/nfs/callback+AF8-proc.c +AHw-    2 +--
++AD4-  1 file changed, 1 insertion(+-), 1 deletion(-)
++AD4- 
++AD4- diff --git a/fs/nfs/callback+AF8-proc.c b/fs/nfs/callback+AF8-proc.c
++AD4- index c89b26b..264d1aa 100644
++AD4- --- a/fs/nfs/callback+AF8-proc.c
++AD4- +-+-+- b/fs/nfs/callback+AF8-proc.c
++AD4- +AEAAQA- -206,7 +-206,7 +AEAAQA- static u32 initiate+AF8-bulk+AF8-draining(struct nfs+AF8-client +ACo-clp,
++AD4-  
++AD4-  		list+AF8-for+AF8-each+AF8-entry(lo, +ACY-server-+AD4-layouts, plh+AF8-layouts) +AHs-
++AD4-  			ino +AD0- igrab(lo-+AD4-plh+AF8-inode)+ADs-
++AD4- -			if (ino)
++AD4- +-			if (+ACE-ino)
++AD4-  				continue+ADs-
++AD4-  			spin+AF8-lock(+ACY-ino-+AD4-i+AF8-lock)+ADs-
++AD4-  			/+ACo- Is this layout in the process of being freed? +ACo-/
 
-Consider the following with pageblock order = 10, zone start 2MB:
+Thanks for spotting. Applied to the 'bugfixes' branch.
 
-pfn     | pfn - zone start | (pfn - zone start) >> page block order
-----------------------------------------------------------------
-0x26000 | 0x25e00	   |  0x97
-0x26100 | 0x25f00	   |  0x97
-0x26200 | 0x26000	   |  0x98
-0x26300 | 0x26100	   |  0x98
-
-This means that calling {get,set}_pageblock_migratetype on a single
-page will not set the migratetype for the full block. Fix this by
-rounding down zone_start_pfn when doing the bitidx calculation.
-
-Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-Acked-by: Mel Gorman <mgorman@suse.de>
----
- mm/page_alloc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 92dd060..b6a2510 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -5422,7 +5422,7 @@ static inline int pfn_to_bitidx(struct zone *zone, unsigned long pfn)
- 	pfn &= (PAGES_PER_SECTION-1);
- 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
- #else
--	pfn = pfn - zone->zone_start_pfn;
-+	pfn = pfn - round_down(zone->zone_start_pfn, pageblock_nr_pages);
- 	return (pfn >> pageblock_order) * NR_PAGEBLOCK_BITS;
- #endif /* CONFIG_SPARSEMEM */
- }
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Trond Myklebust
+Linux NFS client maintainer
 
+NetApp
+Trond.Myklebust+AEA-netapp.com
+www.netapp.com
