@@ -1,32 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab3AEUMv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 15:12:51 -0500
-Received: from mail-da0-f54.google.com ([209.85.210.54]:40438 "EHLO
-	mail-da0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755825Ab3AEUMt (ORCPT
+	id S1755900Ab3AEVXv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 16:23:51 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:46407 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755854Ab3AEVXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 15:12:49 -0500
-Message-ID: <50E8893E.8090502@lwfinger.net>
-Date: Sat, 05 Jan 2013 14:12:46 -0600
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Sat, 5 Jan 2013 16:23:49 -0500
+Date: Sat, 5 Jan 2013 13:20:17 -0800
+From: Anton Vorontsov <anton.vorontsov@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/18] AB8500 battery management series upgrade
+Message-ID: <20130105212014.GA1246@lizard.mcd00620.sjc.wayport.net>
+References: <1355412102-14265-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Woody Suwalski <terraluna977@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.8-rc[12] cpufreq build errors...
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1355412102-14265-1-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Woody,
+On Thu, Dec 13, 2012 at 03:21:23PM +0000, Lee Jones wrote:
+> Please find the next instalment of the AB8500 Power drivers upgrade.
+> A lot of work has taken place on the internal development track, but
+> little effort has gone into mainlining it. At last count there were
+> around 70+ patches which are in need of forward-porting, then
+> upstreaming. This patch-set aims to make a good start. :)
 
-There is a patch pending that fixes this problem. See
-http://lkml.indiana.edu/hypermail/linux/kernel/1212.3/01201.html. Note that 
-Rafael wrote "If you don't mind, I'll rename CONFIG_CPU_FREQ_GOVERNOR to
-CONFIG_CPU_FREQ_GOV_COMMON when applying it, though". I think this patch is 
-working its way through the system, but I have not seem it in mainline yet.
+Lee,
 
-Larry
+The series seem like a part of a larger 57-patches series that I reviewed
+in late September (it took me 3 days to review it back then :).
+
+So, today I took a look at the first few patches, and I see that none of
+my comments were addressed. I guess there is some internal
+miscommunication between the teams, so maybe you didn't know about the
+previous effort of upstreaming the fixes.
+
+So, please take a look at these comments:
+
+	http://lkml.org/lkml/2012/9/25/587
+
+Thanks!
+Anton
