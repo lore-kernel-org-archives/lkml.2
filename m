@@ -1,126 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997Ab3AEIN2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:13:28 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:51079 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754706Ab3AEINZ (ORCPT
+	id S1755215Ab3AEIQs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:16:48 -0500
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:47601 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754753Ab3AEIQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:13:25 -0500
-Message-ID: <1357373590.5690.172.camel@marge.simpson.net>
-Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
- Metric into the Load Balancer
-From: Mike Galbraith <bitbucket@online.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, Alex Shi <alex.shi@intel.com>,
-        srikar@linux.vnet.ibm.com
-Date: Sat, 05 Jan 2013 09:13:10 +0100
-In-Reply-To: <50E55F99.6090104@linux.vnet.ibm.com>
-References: <50E3B61A.3040808@linux.vnet.ibm.com>
-	 <1357114354.5586.39.camel@marge.simpson.net>
-	 <50E55F99.6090104@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Sat, 5 Jan 2013 03:16:47 -0500
+Message-ID: <50E7E165.6000107@linux.vnet.ibm.com>
+Date: Sat, 05 Jan 2013 16:16:37 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/5] KVM: x86: improve reexecute_instruction
+References: <50E6DEDC.7040800@linux.vnet.ibm.com> <50E6DFAB.6050008@linux.vnet.ibm.com> <20130104224432.GB13481@amt.cnet>
+In-Reply-To: <20130104224432.GB13481@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:P+aHOFj6BGjR4MCHFrwIVHofw5l+Hsf5/fwANLKCSP3
- o1Z2ZXA6kH7xvHba/lOhJ8iDDr2FYtVBdRCo8CCtjN1jw+ncY+
- af7SuNP+hFHu3YJOFGNmi/BDZiX/uV6CjRcS1O01zssT1WaQPG
- RlrDzEpIPs1KGLnS+sA4EqxA3LfYVRHWN9CSEJ++1oniVARHUS
- +xiOucrFMoYYQYjMvUaRTDLKEMSdzfueKKYjqbp/wglmPwATky
- cGlqtc8VkkUvpxa+H3cjDRmnpPaRvzxiVVI6zg6xMlweY0bI4/
- HJBhkz+RzYfdLmYrBwE+8ydJAW3j7ir0JdEvh/3V9r3QOXoKjD
- HqewnO5KDG7GiwmLJbXuxGcpZHXFeoNBojUE4rYv/Ijyfu1Koj
- 0SqIiQQFpO06w==
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010508-5490-0000-0000-000002C068C0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2013-01-03 at 16:08 +0530, Preeti U Murthy wrote:
+On 01/05/2013 06:44 AM, Marcelo Tosatti wrote:
 
-> Subject: [PATCH] sched: Merge select_idle_sibling with the behaviour of SD_BALANCE_WAKE
+>> index b0a3678..44c6992 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -4756,15 +4756,8 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
+>>  static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+>>  {
+>>  	gpa_t gpa = cr2;
+>> +	gfn_t gfn;
+>>  	pfn_t pfn;
+>> -	unsigned int indirect_shadow_pages;
+>> -
+>> -	spin_lock(&vcpu->kvm->mmu_lock);
+>> -	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
+>> -	spin_unlock(&vcpu->kvm->mmu_lock);
+>> -
+>> -	if (!indirect_shadow_pages)
+>> -		return false;
 > 
-> The function of select_idle_sibling() is to place the woken up task in the
-> vicinity of the waking cpu or on the previous cpu depending on what wake_affine() says.
-> This placement being only in an idle group.If an idle group is not found,the
-> fallback cpu is either the waking cpu or the previous cpu accordingly.
+> This renders the previous patch obsolete, pretty much (please fold).
+
+Will try.
+
 > 
-> This results in the runqueue of the waking cpu or the previous cpu getting
-> overloaded when the system is committed,which is a latency hit to these tasks.
+>>  	if (!vcpu->arch.mmu.direct_map) {
+>>  		/*
+>> @@ -4781,13 +4774,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+>>  			return true;
+>>  	}
+>>
+>> -	/*
+>> -	 * if emulation was due to access to shadowed page table
+>> -	 * and it failed try to unshadow page and re-enter the
+>> -	 * guest to let CPU execute the instruction.
+>> -	 */
+>> -	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
+>> -		return true;
+>> +	gfn = gpa_to_gfn(gpa);
+>>
+>>  	/*
+>>  	 * Do not retry the unhandleable instruction if it faults on the
+>> @@ -4795,13 +4782,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+>>  	 * retry instruction -> write #PF -> emulation fail -> retry
+>>  	 * instruction -> ...
+>>  	 */
+>> -	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
+>> -	if (!is_error_noslot_pfn(pfn)) {
+>> -		kvm_release_pfn_clean(pfn);
+>> +	pfn = gfn_to_pfn(vcpu->kvm, gfn);
+>> +
+>> +	/*
+>> +	 * If the instruction failed on the error pfn, it can not be fixed,
+>> +	 * report the error to userspace.
+>> +	 */
+>> +	if (is_error_noslot_pfn(pfn))
+>> +		return false;
+>> +
+>> +	kvm_release_pfn_clean(pfn);
+>> +
+>> +	/* The instructions are well-emulated on direct mmu. */
+>> +	if (vcpu->arch.mmu.direct_map) {
 > 
-> What is required is that the newly woken up tasks be placed close to the wake
-> up cpu or the previous cpu,whichever is best, for reasons to avoid latency hit and cache
-> coldness respectively.This is achieved with wake_affine() deciding which
-> cache domain the task should be placed on.
+> !direct_map?
+
+No. This logic is, if it is direct mmu, we just unprotect the page shadowed by
+nested mmu, then let guest retry the instruction, no need to detect unhandlable
+instruction.
+
 > 
-> Once this is decided,instead of searching for a completely idle group,let us
-> search for the idlest group.This will anyway return a completely idle group
-> if it exists and its mechanism will fall back to what select_idle_sibling()
-> was doing.But if this fails,find_idlest_group() continues the search for a
-> relatively more idle group.
+>> +		unsigned int indirect_shadow_pages;
+>> +
+>> +		spin_lock(&vcpu->kvm->mmu_lock);
+>> +		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
+>> +		spin_unlock(&vcpu->kvm->mmu_lock);
+>> +
+>> +		if (indirect_shadow_pages)
+>> +			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
+>> +
+>>  		return true;
+>>  	}
+>>
+>> -	return false;
+>> +	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
+>> +
+>> +	/* If the target gfn is used as page table, the fault can
+>> +	 * not be avoided by unprotecting shadow page and it will
+>> +	 * be reported to userspace.
+>> +	 */
+>> +	return !vcpu->arch.target_gfn_is_pt;
+>>  }
 > 
-> The argument could be that,we wish to avoid migration of the newly woken up
-> task to any other group unless it is completely idle.But in this case, to
-> begin with we choose a sched domain,within which a migration could be less
-> harmful.We enable the SD_BALANCE_WAKE flag on the SMT and MC domains to co-operate
-> with the same.
+> The idea was
+> 
+> How about recording the gfn number for shadow pages that have been
+> shadowed in the current pagefault run? (which is cheap, compared to
+> shadowing these pages).
+> 
+> If failed instruction emulation is write to one of these gfns, then
+> fail.
 
-What if..
+If i understood correctly, i do not think it is simpler than the way in this
+patch.
 
-Fast movers currently suffer from traversing large package, mostly due
-to traversal order walking 1:1 buddies hand in hand across the whole
-package endlessly.  With only one buddy pair running, it's horrific.
+There is the change to apply the idea:
 
-Even if you change the order to be friendlier, perturbation induces
-bouncing.  More spots to bounce too equals more bouncing.  Ergo, I cross
-coupled cpu pairs to eliminate that.  If buddies are perturbed, having
-one and only one buddy cpu pulls them back together, so can't induce a
-bounce fest, only correct.  That worked well, but had the down side that
-some loads really REALLY want maximum spread, so suffer when you remove
-migration options as I did.  There's in_interrupt() consideration I'm
-not so sure of too, in that case, going the extra mile to find an idle
-hole to plug _may_ be worth some extra cost too.. dunno.  
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index c431b33..2163de8 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -502,6 +502,8 @@ struct kvm_vcpu_arch {
+ 		u64 msr_val;
+ 		struct gfn_to_hva_cache data;
+ 	} pv_eoi;
++
++	gfn_t pt_gfns[4];
+ };
 
-So wrt integration, what if a buddy cpu were made a FIRST choice of
-generic wake balancing vs the ONLY choice of select_idle_sibling() as I
-did?  If buddy cpu is available, cool, perturbed pairs find each other
-and pair back up, if not, and you were here too recently, you stay with
-prev_cpu, avoid bounce and traversal at high frequency.  All tasks can
-try the cheap buddy cpu first, all can try full domain as well, just not
-at insane rates.  The heavier the short term load average (or such, with
-instant decay on longish idle ala idle balance throttle so you ramp
-well), the longer the 'forget eating full balance' interval becomes,
-with cutoff affecting the cheap but also not free cross coupled buddy
-cpu as well at some point.  Looking for an idle cpu at hefty load is a
-waste of cycles at best, plugging micro-holes does nothing good even if
-you find one, forget wake balance entirely at some cutoff, let periodic
-balancing do it's thing in peace.
+ struct kvm_lpage_info {
+diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
+index 0453fa0..ac4210f 100644
+--- a/arch/x86/kvm/paging_tmpl.h
++++ b/arch/x86/kvm/paging_tmpl.h
+@@ -523,6 +523,18 @@ FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
+ 	return false;
+ }
 
-Hrmph, that's too many words, but basically, I think whacking
-select_idle_sibling() integration into wake balance makes loads of
-sense, but needs a bit more to not end up just moving the problems to a
-different spot.
++static void FNAME(cache_pt_gfns)(struct kvm_vcpu *vcpu, struct guest_walker *walker)
++{
++	int level;
++
++	/* Reset all gfns to -1, then we can detect the levels which is not used in guest. */
++	for (level = 0; level < 4; level++)
++		vcpu->arch.pt_gfns[level] = (gfn_t)(-1);
++
++	for (level = walker->level; level <= walker->max_level; level++)
++		vcpu->arch.pt_gfns[level - 1] = walker->table_gfn[level - 1];
++}
++
+ /*
+  * Page fault handler.  There are several causes for a page fault:
+  *   - there is no shadow pte for the guest pte
+@@ -576,6 +588,8 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
+ 		return 0;
+ 	}
 
-I still have a 2.6-rt problem I need to find time to squabble with, but
-maybe I'll soonish see if what you did plus what I did combined works
-out on that 4x10 core box where current is _so_ unbelievably horrible.
-Heck, it can't get any worse, and the restricted wake balance alone
-kinda sorta worked.
++	 FNAME(cache_pt_gfns)(vcpu, &walker);
++
+ 	if (walker.level >= PT_DIRECTORY_LEVEL)
+ 		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
+ 		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index b0a3678..b86ee24 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -4753,18 +4753,25 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
+ 	return r;
+ }
 
--Mike
++static bool is_gfn_used_as_pt(struct kvm_vcpu *vcpu, gfn_t gfn)
++{
++	int level;
++
++	for (level = 0; level < 4; level++) {
++		if (vcpu->arch.pt_gfns[level] == (gfn_t)-1)
++			continue;
++		if (gfn == vcpu->arch.pt_gfns[level])
++			return true;
++	}
++
++	return false;
++}
++
+ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+ {
+ 	gpa_t gpa = cr2;
++	gfn_t gfn;
+ 	pfn_t pfn;
+-	unsigned int indirect_shadow_pages;
+-
+-	spin_lock(&vcpu->kvm->mmu_lock);
+-	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
+-	spin_unlock(&vcpu->kvm->mmu_lock);
+-
+-	if (!indirect_shadow_pages)
+-		return false;
+
+ 	if (!vcpu->arch.mmu.direct_map) {
+ 		/*
+@@ -4781,13 +4788,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+ 			return true;
+ 	}
+
+-	/*
+-	 * if emulation was due to access to shadowed page table
+-	 * and it failed try to unshadow page and re-enter the
+-	 * guest to let CPU execute the instruction.
+-	 */
+-	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
+-		return true;
++	gfn = gpa_to_gfn(gpa);
+
+ 	/*
+ 	 * Do not retry the unhandleable instruction if it faults on the
+@@ -4795,13 +4796,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
+ 	 * retry instruction -> write #PF -> emulation fail -> retry
+ 	 * instruction -> ...
+ 	 */
+-	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
+-	if (!is_error_noslot_pfn(pfn)) {
+-		kvm_release_pfn_clean(pfn);
++	pfn = gfn_to_pfn(vcpu->kvm, gfn);
++
++	/*
++	 * If the instruction failed on the error pfn, it can not be fixed,
++	 * report the error to userspace.
++	 */
++	if (is_error_noslot_pfn(pfn))
++		return false;
++
++	kvm_release_pfn_clean(pfn);
++
++	/* The instructions are well-emulated on direct mmu. */
++	if (vcpu->arch.mmu.direct_map) {
++		unsigned int indirect_shadow_pages;
++
++		spin_lock(&vcpu->kvm->mmu_lock);
++		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
++		spin_unlock(&vcpu->kvm->mmu_lock);
++
++		if (indirect_shadow_pages)
++			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
++
+ 		return true;
+ 	}
+
+-	return false;
++	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
++
++	/* If the target gfn is used as page table, the fault can
++	 * not be avoided by unprotecting shadow page and it will
++	 * be reported to userspace.
++	 */
++	return !is_gfn_used_as_pt(vcpu, gfn);
+ }
+
+ static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
+
+
+You can see we need to record more things in the vcpu struct (bool vs. gfn_t [4])
+and my patch can fold is_gfn_used_as_pt into a existed function FNAME(is_self_change_mapping).
+
+Hmm?
 
