@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab3AEWSz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 17:18:55 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.182]:38727 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755898Ab3AEWSx (ORCPT
+	id S1755962Ab3AEXBd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 18:01:33 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:63858 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab3AEXBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 17:18:53 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtsGAG6Zu08Y1OVO/2dsb2JhbABEgXuyFoEIghUBAQU4HgYcARALCw0JFg8JAwIBAgERFh4GDQEHAod7AQ0BC6dTiAIKGYELiHuQRAOIQoIWikOBD4RAiiGDBw
-X-IronPort-AV: E=Sophos;i="4.75,637,1330923600"; 
-   d="scan'208";a="211474047"
-Message-ID: <50E8A6D5.8020608@gmail.com>
-Date: Sat, 05 Jan 2013 17:19:01 -0500
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:18.0) Gecko/20100101 Firefox/18.0 SeaMonkey/2.15
+	Sat, 5 Jan 2013 18:01:30 -0500
+Date: Sat, 5 Jan 2013 15:01:25 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Nickolai Zeldovich <nickolai@csail.mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] drivers/input/keyboard/lm8323.c: fix incorrect left shift
+Message-ID: <20130105230125.GA6475@core.coreip.homeip.net>
+References: <1357412945-41774-1-git-send-email-nickolai@csail.mit.edu>
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.8-rc[12] cpufreq build errors...
-References: <50E8893E.8090502@lwfinger.net>
-In-Reply-To: <50E8893E.8090502@lwfinger.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357412945-41774-1-git-send-email-nickolai@csail.mit.edu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Larry Finger wrote:
-> Woody,
->
-> There is a patch pending that fixes this problem. See
-> http://lkml.indiana.edu/hypermail/linux/kernel/1212.3/01201.html. Note 
-> that Rafael wrote "If you don't mind, I'll rename 
-> CONFIG_CPU_FREQ_GOVERNOR to
-> CONFIG_CPU_FREQ_GOV_COMMON when applying it, though". I think this 
-> patch is working its way through the system, but I have not seem it in 
-> mainline yet.
->
-> Larry
-Thanks, that fix does not work directly for me - cpufreq_governor.o is 
-not even built now... But maybe I have missed something - had to do it 
-"by hand"...
+On Sat, Jan 05, 2013 at 02:09:05PM -0500, Nickolai Zeldovich wrote:
+> In drivers/input/keyboard/lm8323.c, INT_PWM1 is already a bitmask,
+> not the bit number, so shifting by INT_PWM1 is incorrect.
+> 
+> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
 
-Rafael has confirmed that he will include a fix...
+Applied, thank you Nickolai.
 
-Thanks, Woody
+> ---
+>  drivers/input/keyboard/lm8323.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/input/keyboard/lm8323.c b/drivers/input/keyboard/lm8323.c
+> index 93c8126..0de23f4 100644
+> --- a/drivers/input/keyboard/lm8323.c
+> +++ b/drivers/input/keyboard/lm8323.c
+> @@ -398,7 +398,7 @@ static irqreturn_t lm8323_irq(int irq, void *_lm)
+>  			lm8323_configure(lm);
+>  		}
+>  		for (i = 0; i < LM8323_NUM_PWMS; i++) {
+> -			if (ints & (1 << (INT_PWM1 + i))) {
+> +			if (ints & (INT_PWM1 << i)) {
+>  				dev_vdbg(&lm->client->dev,
+>  					 "pwm%d engine completed\n", i);
+>  				pwm_done(&lm->pwm[i]);
+> -- 
+> 1.7.10.4
+> 
+
+-- 
+Dmitry
