@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab3AEIhx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 03:37:53 -0500
+	id S1755729Ab3AEIiP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 03:38:15 -0500
 Received: from mga11.intel.com ([192.55.52.93]:44979 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755556Ab3AEIhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 03:37:38 -0500
+	id S1755711Ab3AEIhy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 03:37:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,415,1355126400"; 
-   d="scan'208";a="270210141"
+   d="scan'208";a="270210190"
 From: Alex Shi <alex.shi@intel.com>
 To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
         akpm@linux-foundation.org, arjan@linux.intel.com, bp@alien8.de,
@@ -16,9 +16,9 @@ To: mingo@redhat.com, peterz@infradead.org, tglx@linutronix.de,
 Cc: vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
         preeti@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
         alex.shi@intel.com
-Subject: [PATCH v3 15/22] sched: log the cpu utilization at rq
-Date: Sat,  5 Jan 2013 16:37:44 +0800
-Message-Id: <1357375071-11793-16-git-send-email-alex.shi@intel.com>
+Subject: [PATCH v3 22/22] sched: lazy powersaving balance
+Date: Sat,  5 Jan 2013 16:37:51 +0800
+Message-Id: <1357375071-11793-23-git-send-email-alex.shi@intel.com>
 X-Mailer: git-send-email 1.7.12
 In-Reply-To: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
 References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
@@ -26,75 +26,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpu's utilization is to measure how busy is the cpu.
-        util = cpu_rq(cpu)->avg.runnable_avg_sum
-                / cpu_rq(cpu)->avg.runnable_avg_period;
+When active task number in sched domain wave around the powersaving
+scheduling creteria, scheduling will thresh between the powersaving
+balance and performance balance, bring unnecessary task migration.
+The typical benchmark generate the issue is 'make -j x'.
 
-Since the util is no more than 1, we use its percentage value in later
-caculations. And set the the FULL_UTIL as 99%.
+To remove such issue, introduce a u64 perf_lb_record variable to record
+performance load balance history. If there is no performance LB for
+continuing 32 times load balancing, or no LB for 8 times max_interval ms,
+or only 4 times performance LB in last 64 times load balancing, then we
+accept a powersaving LB. Otherwise, give up this power awareness
+LB chance.
 
-In later power aware scheduling, we are sensitive for how busy of the
-cpu, not how weight of its load. As to power consuming, it is more
-related with busy time, not the load weight.
+With this patch, the worst case for power scheduling -- kbuild, gets
+similar even better performance/power value between balance and
+performance policy, while powersaving is worse.
+
+So, maybe we'd better to use 'balance' policy in general scenarios.
+
+On my SNB EP 2 sockets machine with 8 cores * HT: 'make -j x' results:
+
+		powersaving		balance		performance
+x = 1    175.603 /417 13          175.220 /416 13        176.073 /407 13
+x = 2    186.026 /246 21          190.182 /208 25        200.873 /210 23
+x = 4    198.883 /145 34          204.856 /120 40        218.843 /116 39
+x = 6    208.458 /106 45          214.981 /93 50         233.561 /86 49
+x = 8    218.304 /86 53           223.527 /76 58         233.008 /75 57
+x = 12   231.829 /71 60           268.98  /55 67         247.013 /60 67
+x = 16   262.112 /53 71           267.898 /50 74         344.589 /41 70
+x = 32   306.969 /36 90           310.774 /37 86         313.359 /38 83
+
+data explains: 175.603 /417 13
+	175.603: avagerage Watts
+	417: seconds(compile time)
+	13:  scaled performance/power = 1000000 / time / power
 
 Signed-off-by: Alex Shi <alex.shi@intel.com>
 ---
- kernel/sched/debug.c | 1 +
- kernel/sched/fair.c  | 4 ++++
- kernel/sched/sched.h | 4 ++++
- 3 files changed, 9 insertions(+)
+ include/linux/sched.h |  1 +
+ kernel/sched/fair.c   | 67 +++++++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 55 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
-index 2cd3c1b..e4035f7 100644
---- a/kernel/sched/debug.c
-+++ b/kernel/sched/debug.c
-@@ -318,6 +318,7 @@ do {									\
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2b309c6..b0354a5 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -941,6 +941,7 @@ struct sched_domain {
+ 	unsigned long last_balance;	/* init to jiffies. units in jiffies */
+ 	unsigned int balance_interval;	/* initialise to 1. units in ms. */
+ 	unsigned int nr_balance_failed; /* initialise to 0 */
++	u64	perf_lb_record;	/* performance balance record */
  
- 	P(ttwu_count);
- 	P(ttwu_local);
-+	P(util);
+ 	u64 last_update;
  
- #undef P
- #undef P64
 diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index ee015b8..7bfbd69 100644
+index c82536f..604d0ee 100644
 --- a/kernel/sched/fair.c
 +++ b/kernel/sched/fair.c
-@@ -1495,8 +1495,12 @@ static void update_cfs_rq_blocked_load(struct cfs_rq *cfs_rq, int force_update)
- 
- static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
- {
-+	u32 period;
- 	__update_entity_runnable_avg(rq->clock_task, &rq->avg, runnable);
- 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
-+
-+	period = rq->avg.runnable_avg_period ? rq->avg.runnable_avg_period : 1;
-+	rq->util = rq->avg.runnable_avg_sum * 100 / period;
+@@ -4496,6 +4496,58 @@ static inline void update_sd_lb_power_stats(struct lb_env *env,
+ 	}
  }
  
- /* Add the load generated by se into cfs_rq's child load-average */
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 66b08a1..3c6e803 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -350,6 +350,9 @@ extern struct root_domain def_root_domain;
- 
- #endif /* CONFIG_SMP */
- 
-+/* Take as full load, if the cpu percentage util is up to 99 */
-+#define FULL_UTIL	99
++#define PERF_LB_HH_MASK		0xffffffff00000000ULL
++#define PERF_LB_LH_MASK		0xffffffffULL
 +
- /*
-  * This is the main, per-CPU runqueue data structure.
-  *
-@@ -481,6 +484,7 @@ struct rq {
- #endif
++/**
++ * need_perf_balance - Check if the performance load balance needed
++ * in the sched_domain.
++ *
++ * @env: The load balancing environment.
++ * @sds: Variable containing the statistics of the sched_domain
++ */
++static int need_perf_balance(struct lb_env *env, struct sd_lb_stats *sds)
++{
++	env->sd->perf_lb_record <<= 1;
++
++	if (env->perf_lb) {
++		env->sd->perf_lb_record |= 0x1;
++		return 1;
++	}
++
++	/*
++	 * The situtatoin isn't egligible for performance balance. If this_cpu
++	 * is not egligible or the timing is not suitable for lazy powersaving
++	 * balance, we will stop both powersaving and performance balance.
++	 */
++	if (env->power_lb && sds->this == sds->group_leader
++			&& sds->group_leader != sds->group_min) {
++		int interval;
++
++		/* powersaving balance interval set as 8 * max_interval */
++		interval = msecs_to_jiffies(8 * env->sd->max_interval);
++		if (time_after(jiffies, env->sd->last_balance + interval))
++			env->sd->perf_lb_record = 0;
++
++		/*
++		 * A eligible timing is no performance balance in last 32
++		 * balance and performance balance is no more than 4 times
++		 * in last 64 balance, or no balance in powersaving interval
++		 * time.
++		 */
++		if ((hweight64(env->sd->perf_lb_record & PERF_LB_HH_MASK) <= 4)
++			&& !(env->sd->perf_lb_record & PERF_LB_LH_MASK)) {
++
++			env->imbalance = sds->min_load_per_task;
++			return 0;
++		}
++
++	}
++	env->power_lb = 0;
++	sds->group_min = NULL;
++	return 0;
++}
++
+ /**
+  * get_sd_load_idx - Obtain the load index for a given sched domain.
+  * @sd: The sched_domain whose load_idx is to be obtained.
+@@ -5086,7 +5138,6 @@ static inline void calculate_imbalance(struct lb_env *env, struct sd_lb_stats *s
+ }
  
- 	struct sched_avg avg;
-+	unsigned int util;
- };
+ /******* find_busiest_group() helpers end here *********************/
+-
+ /**
+  * find_busiest_group - Returns the busiest group within the sched_domain
+  * if there is an imbalance. If there isn't an imbalance, and
+@@ -5119,18 +5170,8 @@ find_busiest_group(struct lb_env *env, int *balance)
+ 	 */
+ 	update_sd_lb_stats(env, balance, &sds);
  
- static inline int cpu_of(struct rq *rq)
+-	if (!env->perf_lb && !env->power_lb)
+-		return  NULL;
+-
+-	if (env->power_lb) {
+-		if (sds.this == sds.group_leader &&
+-				sds.group_leader != sds.group_min) {
+-			env->imbalance = sds.min_load_per_task;
+-			return sds.group_min;
+-		}
+-		env->power_lb = 0;
+-		return NULL;
+-	}
++	if (!need_perf_balance(env, &sds))
++		return sds.group_min;
+ 
+ 	/*
+ 	 * this_cpu is not the appropriate cpu to perform load balancing at
 -- 
 1.7.12
 
