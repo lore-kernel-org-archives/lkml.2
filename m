@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab3AEEKd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jan 2013 23:10:33 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:50393 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754775Ab3AEEKb (ORCPT
+	id S1755264Ab3AEEPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jan 2013 23:15:43 -0500
+Received: from elasmtp-mealy.atl.sa.earthlink.net ([209.86.89.69]:59252 "EHLO
+	elasmtp-mealy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755002Ab3AEEPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jan 2013 23:10:31 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAKocOOMNokQ4U3RqP=O_1naP_7b97x=x44kAnXy2nc5Vofzk6Q@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<CAKocOON8_5RNp0oQZWFoTKDscdpcwkUNe9wX+B3uG9ET4h9e9g@mail.gmail.com>
-	<87k3rslg5a.fsf@xmission.com>
-	<CAKocOOOXx+65rh4f8_++SwYMZdEO2FaOpLiW=dQ6uXZpwM1PYQ@mail.gmail.com>
-	<CAE9FiQVpAfDb1_5TP=CqAQZQZKq=5AqQWo1NE3Sedijg+ML-gA@mail.gmail.com>
-	<CAKocOONJQ3cZCdE4GDJgtk6BdnS4En+uH8H2b_dPs3naujczBg@mail.gmail.com>
-	<CAE9FiQXs5mC-oCpPWNVvQgn00LVbr70NqWtgaMVU088xSkkAqg@mail.gmail.com>
-	<CAKocOOMNokQ4U3RqP=O_1naP_7b97x=x44kAnXy2nc5Vofzk6Q@mail.gmail.com>
-Date: Fri, 4 Jan 2013 20:10:29 -0800
-X-Google-Sender-Auth: YF34s5i2PPVkiES_30tdRY7KdKE
-Message-ID: <CAE9FiQVtZg6O4e6yH_yNfGcm0dqJOp1=Mh8iN3y4GAL4vH=5QA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 4 Jan 2013 23:15:41 -0500
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=mindspring.com;
+  b=T4bMgRIiL9JN6XRL5SCQUozkR0bUmQLYDkni8TKNGuGcx15TFVEeQyghQmtZ/ywU;
+  h=Message-ID:Date:From:Reply-To:To:Subject:Cc:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <18814090.1357359340232.JavaMail.root@mswamui-bichon.atl.sa.earthlink.net>
+Date: Fri, 4 Jan 2013 23:15:39 -0500 (GMT-05:00)
+From: "Steven A. DuChene" <linux-clusters@mindspring.com>
+Reply-To: "Steven A. DuChene" <linux-clusters@mindspring.com>
+To: Borislav Petkov <bp@alien8.de>
+Subject: Re: no config opt for k8temp in 3.6.11
+Cc: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: EarthLink Zoo Mail 1.0
+X-ELNK-Trace: ea4808abc3da2865808dd114cae72f675e89bb4777695beb0630c2ba6cdcad306d82c3b4fdfb511ce9ba93f03882d750350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 209.86.224.26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 4, 2013 at 6:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> I applied your patch to 3.6.11 and changed the panic() to pr_info()
-> and also changed enough_mem_for_swiotlb() to always return false to
-> simulate not enough memory condition as this system does have enough
-> memory.
+When I do a grep for K8 in my .config file all I get is the following:
+
+> grep -i k8 /usr/local/hugedisk/src/linux-3.6.11/.config
+CONFIG_MK8=y
+CONFIG_X86_POWERNOW_K8=y
+
+When I try your grep command I get:
+
+> grep -E "^CONFIG_SENSORS" /usr/local/hugedisk/src/linux-3.6.11/.config|grep K
+CONFIG_SENSORS_K10TEMP=m
+
+I will try doing a make mrproper and see if anything changes.
+
+Thanks for the reply.
+--
+Steven DuChene
+
+
+-----Original Message-----
+>From: Borislav Petkov <bp@alien8.de>
+>Sent: Jan 4, 2013 3:35 PM
+>To: "Steven A. DuChene" <linux-clusters@mindspring.com>
+>Cc: linux-kernel@vger.kernel.org
+>Subject: Re: no config opt for k8temp in 3.6.11
 >
-> So at least on this AMD system, your patch will result in a panic.
+>On Fri, Jan 04, 2013 at 09:25:14AM -0500, Steven A. DuChene wrote:
+>> I have a few systems with AMD processors. One is a AMD Phenom II based
+>> system which uses a k10temp kernel module to get the CPU temperature.
+>> Another system has an Athlon64 processor which apparently is supposed
+>> to use a k8temp module to do the same thing. I have built a 3.6.11
+>> kernel for each system that otherwise runs OpenSuSE-11.X. On the
+>> Phenom system the k10temp module is gets built and performs as
+>> expected. However on the Atlnon system even though I see the k8temp.c
+>> source file in the drivers/hwmon directory there does not seem to be
+>> a way in the kernel config files available from the 3.6.11 kernel
+>> sources to actually select that the k8temp module should be built. Is
+>> this some oversight in the makeup of the kernel config files or am I
+>> missing something obvious?
+>
+>That's strange, I can select all the AMD power drivers on 3.6.11:
+>
+>$ grep -E "^CONFIG_SENSORS" .config
+>CONFIG_SENSORS_K8TEMP=m
+>CONFIG_SENSORS_K10TEMP=m
+>CONFIG_SENSORS_FAM15H_POWER=m
+>
+>Can you do 'make mrproper' and try regenerating your config? But
+>remember, mrproper will remove your .config so you might want to save
+>that upfront in case you need it.
+>
+>HTH.
+>
+>-- 
+>Regards/Gruss,
+>Boris.
 
-ok, thanks for testing.
 
-if enough_mem_for_swiotlb() return false really,  allocating buffer
-for swiotlb with bootmem would panic already, right?
 
-so this patch just delay the panic a while for AMD system with
-unhandled devices by IOMMU.
-
-Thanks
-
-Yinghai
