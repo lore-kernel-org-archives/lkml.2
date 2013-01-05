@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755895Ab3AET30 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 14:29:26 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:29155 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab3AET3W convert rfc822-to-8bit (ORCPT
+	id S1755901Ab3AET34 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 14:29:56 -0500
+Received: from toccata.ens-lyon.org ([140.77.166.68]:57803 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab3AET3w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 14:29:22 -0500
-X-IronPort-AV: E=Sophos;i="4.84,416,1355126400"; 
-   d="scan'208";a="4983464"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Nickolai Zeldovich <nickolai@csail.mit.edu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-Subject: Re: [PATCH] nfs: avoid dereferencing null pointer in
- initiate_bulk_draining
-Thread-Topic: [PATCH] nfs: avoid dereferencing null pointer in
- initiate_bulk_draining
-Thread-Index: AQHN63ms8ffCB+iuBkGCnyBUHCBir5g7pRKA
-Date: Sat, 5 Jan 2013 19:29:20 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA91198F775@SACEXCMBX04-PRD.hq.netapp.com>
-References: <1357413591-42579-1-git-send-email-nickolai@csail.mit.edu>
-In-Reply-To: <1357413591-42579-1-git-send-email-nickolai@csail.mit.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.115]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <333DB13E661D094BAA9D2CF0841DB9B7@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
+	Sat, 5 Jan 2013 14:29:52 -0500
+Date: Sat, 5 Jan 2013 20:29:44 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Nickolai Zeldovich <nickolai@csail.mit.edu>, gregkh@linuxfoundation.org
+Cc: William Hubbs <w.d.hubbs@gmail.com>,
+        Chris Brannon <chris@the-brannons.com>,
+        Kirk Reiser <kirk@braille.uwo.ca>, linux-kernel@vger.kernel.org,
+        speakup@braille.uwo.ca
+Subject: Re: [PATCH] drivers/staging/speakup: avoid out-of-range access
+Message-ID: <20130105192944.GL5965@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Nickolai Zeldovich <nickolai@csail.mit.edu>,
+	gregkh@linuxfoundation.org, William Hubbs <w.d.hubbs@gmail.com>,
+	Chris Brannon <chris@the-brannons.com>,
+	Kirk Reiser <kirk@braille.uwo.ca>, linux-kernel@vger.kernel.org,
+	speakup@braille.uwo.ca
+References: <1357413465-42357-1-git-send-email-nickolai@csail.mit.edu>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357413465-42357-1-git-send-email-nickolai@csail.mit.edu>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-05 at 14:19 -0500, Nickolai Zeldovich wrote:
-+AD4- Fix an inverted null pointer check in initiate+AF8-bulk+AF8-draining().
-+AD4- 
-+AD4- Signed-off-by: Nickolai Zeldovich +ADw-nickolai+AEA-csail.mit.edu+AD4-
-+AD4- ---
-+AD4-  fs/nfs/callback+AF8-proc.c +AHw-    2 +--
-+AD4-  1 file changed, 1 insertion(+-), 1 deletion(-)
-+AD4- 
-+AD4- diff --git a/fs/nfs/callback+AF8-proc.c b/fs/nfs/callback+AF8-proc.c
-+AD4- index c89b26b..264d1aa 100644
-+AD4- --- a/fs/nfs/callback+AF8-proc.c
-+AD4- +-+-+- b/fs/nfs/callback+AF8-proc.c
-+AD4- +AEAAQA- -206,7 +-206,7 +AEAAQA- static u32 initiate+AF8-bulk+AF8-draining(struct nfs+AF8-client +ACo-clp,
-+AD4-  
-+AD4-  		list+AF8-for+AF8-each+AF8-entry(lo, +ACY-server-+AD4-layouts, plh+AF8-layouts) +AHs-
-+AD4-  			ino +AD0- igrab(lo-+AD4-plh+AF8-inode)+ADs-
-+AD4- -			if (ino)
-+AD4- +-			if (+ACE-ino)
-+AD4-  				continue+ADs-
-+AD4-  			spin+AF8-lock(+ACY-ino-+AD4-i+AF8-lock)+ADs-
-+AD4-  			/+ACo- Is this layout in the process of being freed? +ACo-/
+Indeed. The same happens in synth_add, so Greg please use this instead:
 
-Thanks for spotting. Applied to the 'bugfixes' branch.
 
--- 
-Trond Myklebust
-Linux NFS client maintainer
+Check that array index is in-bounds before accessing the synths[] array.
 
-NetApp
-Trond.Myklebust+AEA-netapp.com
-www.netapp.com
+Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+
+---
+ drivers/staging/speakup/synth.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/speakup/synth.c b/drivers/staging/speakup/synth.c
+index df95337..b91d22b 100644
+--- a/drivers/staging/speakup/synth.c
++++ b/drivers/staging/speakup/synth.c
+@@ -342,7 +342,7 @@ int synth_init(char *synth_name)
+ 
+ 	mutex_lock(&spk_mutex);
+ 	/* First, check if we already have it loaded. */
+-	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
++	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+ 		if (strcmp(synths[i]->name, synth_name) == 0)
+ 			synth = synths[i];
+ 
+@@ -423,7 +423,7 @@ int synth_add(struct spk_synth *in_synth
+ 	int i;
+ 	int status = 0;
+ 	mutex_lock(&spk_mutex);
+-	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
++	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+ 		/* synth_remove() is responsible for rotating the array down */
+ 		if (in_synth == synths[i]) {
+ 			mutex_unlock(&spk_mutex);
