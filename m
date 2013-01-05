@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab3AES33 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 13:29:29 -0500
-Received: from mail-vb0-f51.google.com ([209.85.212.51]:42236 "EHLO
-	mail-vb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755817Ab3AES31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 13:29:27 -0500
+	id S1755860Ab3AESih (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 13:38:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61441 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755821Ab3AESif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 13:38:35 -0500
+Date: Sat, 5 Jan 2013 19:38:16 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+        ak@linux.intel.com, acme@redhat.com, namhyung.kim@lge.com
+Subject: Re: [PATCH v4 07/18] perf: add generic memory sampling interface
+Message-ID: <20130105183816.GA995@krava.brq.redhat.com>
+References: <1356018108-6081-1-git-send-email-eranian@google.com>
+ <1356018108-6081-8-git-send-email-eranian@google.com>
 MIME-Version: 1.0
-In-Reply-To: <20130105175440.GE19783@linux.vnet.ibm.com>
-References: <20130105165817.GA13260@linux.vnet.ibm.com>
-	<1357405131-13421-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	<CAFTL4hyYh=C6-jPBm0pWjn2xeDRGtYVGYD46hSr=OfPjNtuDGg@mail.gmail.com>
-	<20130105175440.GE19783@linux.vnet.ibm.com>
-Date: Sat, 5 Jan 2013 19:29:27 +0100
-Message-ID: <CAFTL4hwtKfmdAg1xHeYBXB12zWoEca0AdWW_JNUjyewaffGKwg@mail.gmail.com>
-Subject: Re: [PATCH tip/core/urgent 1/2] rcu: Prevent soft-lockup complaints
- about no-CBs CPUs
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, sbw@mit.edu, patches@linaro.org,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356018108-6081-8-git-send-email-eranian@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/5 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> On Sat, Jan 05, 2013 at 06:21:01PM +0100, Frederic Weisbecker wrote:
->> Hi Paul,
->>
->> 2013/1/5 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
->> > From: Paul Gortmaker <paul.gortmaker@windriver.com>
->> >
->> > The wait_event() at the head of the rcu_nocb_kthread() can result in
->> > soft-lockup complaints if the CPU in question does not register RCU
->> > callbacks for an extended period.  This commit therefore changes
->> > the wait_event() to a wait_event_interruptible().
->> >
->> > Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
->> > Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> > ---
->> >  kernel/rcutree_plugin.h |    3 ++-
->> >  1 files changed, 2 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
->> > index f6e5ec2..43dba2d 100644
->> > --- a/kernel/rcutree_plugin.h
->> > +++ b/kernel/rcutree_plugin.h
->> > @@ -2366,10 +2366,11 @@ static int rcu_nocb_kthread(void *arg)
->> >         for (;;) {
->> >                 /* If not polling, wait for next batch of callbacks. */
->> >                 if (!rcu_nocb_poll)
->> > -                       wait_event(rdp->nocb_wq, rdp->nocb_head);
->> > +                       wait_event_interruptible(rdp->nocb_wq, rdp->nocb_head);
->> >                 list = ACCESS_ONCE(rdp->nocb_head);
->> >                 if (!list) {
->> >                         schedule_timeout_interruptible(1);
->> > +                       flush_signals(current);
->>
->> Why is that needed?
->
-> To satisfy my paranoia.  ;-)  And in case someone ever figures out some
-> way to send a signal to a kthread.
+On Thu, Dec 20, 2012 at 04:41:37PM +0100, Stephane Eranian wrote:
+> This patch adds PERF_SAMPLE_COST and PERF_SAMPLE_DSRC.
 
-Ok. I don't want to cause any insomnia to anyone, so I won't insist ;)
+I guess PERF_SAMPLE_COST was replaced by PERF_SAMPLE_WEIGHT added by Andi
+
+jirka
+
+> The first collects a cost associated with the sampled
+> event. In case of memory access, the cost would be
+> the latency of the load, otherwise it defaults to
+> the sampling period.
+> 
+> PERF_SAMPLE_DSRC collects the data source, i.e., where
+> did the data associated with the sampled instruction
+> come from. Information is stored in a perf_mem_dsrc
+> structure. It contains opcode, mem level, tlb, snoop,
+> lock information, subject to availability in hardware.
+> 
+> Signed-off-by: Stephane Eranian <eranian@google.com>
