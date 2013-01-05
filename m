@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755750Ab3AENZb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 08:25:31 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:41411 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755435Ab3AENZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 08:25:30 -0500
-Date: Sat, 5 Jan 2013 14:25:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7u1 03/31] x86, realmode: set real_mode permissions early
-Message-ID: <20130105132546.GE4297@x1.alien8.de>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-4-git-send-email-yinghai@kernel.org>
- <20130104201516.GA24228@x1.alien8.de>
- <CAE9FiQWvp7UPY7f33B9cG05S4ALCN-ezMi2N=-z++9w-Dp_+ZQ@mail.gmail.com>
- <20130104210407.GB24228@x1.alien8.de>
- <CAE9FiQXBCtCGAZ33RqwG8+hD+NxB0a7KJxU0gKbe0A=TTi-B4Q@mail.gmail.com>
+	id S1755729Ab3AENhR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 08:37:17 -0500
+Received: from mail-oa0-f46.google.com ([209.85.219.46]:52534 "EHLO
+	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755186Ab3AENhO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 08:37:14 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CAE9FiQXBCtCGAZ33RqwG8+hD+NxB0a7KJxU0gKbe0A=TTi-B4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50E70E48.3010900@opengridcomputing.com>
+References: <1357215562-6288-1-git-send-email-akinobu.mita@gmail.com>
+	<1357215562-6288-10-git-send-email-akinobu.mita@gmail.com>
+	<50E5B183.4030706@opengridcomputing.com>
+	<CAC5umygnMMC2sH2c88P_gEWTgwM=CBCUcqBbo+NX=fOZ2rEGxw@mail.gmail.com>
+	<50E70E48.3010900@opengridcomputing.com>
+Date: Sat, 5 Jan 2013 22:37:13 +0900
+Message-ID: <CAC5umyjpA4_J-1RRv0O72GiPW5O6-1b+dypg746vOphEkpKyYw@mail.gmail.com>
+Subject: Re: [PATCH -v2 09/26] infiniband: rename random32() to prandom_u32()
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Steve Wise <swise@opengridcomputing.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Steve Wise <swise@chelsio.com>, linux-rdma@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 02:13:11PM -0800, Yinghai Lu wrote:
-> On Fri, Jan 4, 2013 at 1:04 PM, Borislav Petkov <bp@alien8.de> wrote:
-> > On Fri, Jan 04, 2013 at 12:58:15PM -0800, Yinghai Lu wrote:
-> >> more than that, that set_real_mode_permissions reference is wrong,
-> >> actually it is set_real_mode.
-> >
-> > Huh, set_real_mode_permissions is the name of the function above which the
-> > comment is located. There's no set_real_mode. What do you mean?
-> 
-> old comments is wrong.
-> 
-> setup_read_mode reserve from low ram under 1M and copy etc.
-> 
-> set_real_mode_permissions will change to +x etc....
+2013/1/5 Steve Wise <swise@opengridcomputing.com>:
+> I'm asking: why are you bothering with renaming the functions?  This seems
+> like a needless change, _unless_ there are really non-pseudo-random services
+> being added.
 
-Ok, let me shout it out to you, hopefully you can understand me now:
+We already have get_random_byte() which is not pseudo-random number
+generator.
 
-THERE ARE NO FUNCTIONS BY THE NAME setup_read_mode OR set_real_mode IN
-YOUR BRANCH OR ANYWHERE IN THE KERNEL!!!
-
-$ git log -p yinghai/for-x86-boot-v7 | grep -EriIn '(setup_read_mode|set_real_mode)\W'
-$ git log -p yinghai/for-x86-boot-v8 | grep -EriIn '(setup_read_mode|set_real_mode)\W'
-$
-
-Or do you mean that the function naming is wrong? WTF?
-
--- 
-Regards/Gruss,
-Boris.
+Apart from that, the naming scheme was confusing without "prandom" prefix.
+Because I introduced new functions in the commit 6582c665 ("prandom:
+introduce prandom_bytes() and prandom_bytes_state()").
