@@ -1,175 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3AEMHU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 07:07:20 -0500
-Received: from [216.228.121.35] ([216.228.121.35]:4554 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1755123Ab3AEMHS (ORCPT
+	id S1755603Ab3AEMH2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 07:07:28 -0500
+Received: from h1446028.stratoserver.net ([85.214.92.142]:37302 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755123Ab3AEMHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 07:07:18 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Sat, 05 Jan 2013 04:03:43 -0800
-From: Laxman Dewangan <ldewangan@nvidia.com>
-To: <vinod.koul@intel.com>, <djbw@fb.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-tegra@vger.kernel.org>,
-        Laxman Dewangan <ldewangan@nvidia.com>
-Subject: [PATCH] dma: tegra: add support for Tegra114 SoC
-Date: Sat, 5 Jan 2013 17:36:08 +0530
-Message-ID: <1357387568-26010-1-git-send-email-ldewangan@nvidia.com>
-X-Mailer: git-send-email 1.7.1.1
+	Sat, 5 Jan 2013 07:07:23 -0500
+Message-ID: <50E81763.1070501@ahsoftware.de>
+Date: Sat, 05 Jan 2013 13:06:59 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Borislav Petkov <bp@alien8.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Sasha Levin <levinsasha928@gmail.com>,
+        Cong Wang <xiyou.wangcong@gmail.com>, Josh Boyer <jwboyer@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Florian Tobias Schandinat <florianSchandinat@gmx.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-fbdev@vger.kernel.org, Bernie Thompson <bernie@plugable.com>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Dave Airlie <airlied@redhat.com>
+Subject: Re: [PATCH] fb: Rework locking to fix lock ordering on takeover
+References: <20121116192606.11799.35711.stgit@localhost.localdomain> <CA+5PVA6nKNZY70UoeDUhQo9Rj4Ck+k+XTHL++gwErgzqAdy6Aw@mail.gmail.com> <20121121125310.00625f55@pyramind.ukuu.org.uk> <CA+5PVA5iQwYOcoSYtLOoRBHaTNJANdv+X-C78474n3SzZg_m9w@mail.gmail.com> <CA+1xoqe0G4rha5bDcoQQUcACYbQ8BCO7AE_JE8z5VjJLeNUdyA@mail.gmail.com> <CAM_iQpWLgnxQR+oYD+Dnh9NprR1-QLjXa6T+dtHUs3A-_N2wmQ@mail.gmail.com> <CA+1xoqf0d5ckDZ3o1-Y+qd61nvVA7EECeH20U+WjDpNVb4E=pw@mail.gmail.com> <20121227045301.GB17472@x1.alien8.de> <20121228115022.GA28009@S2101-09.ap.freescale.net> <20121228124026.GB12918@x1.alien8.de> <50E6D01D.6040304@ahsoftware.de> <20130104132557.70e0c527@pyramind.ukuu.org.uk> <50E6DAC9.802@ahsoftware.de> <50E81166.6050605@ahsoftware.de> <20130105120729.7677c333@pyramind.ukuu.org.uk>
+In-Reply-To: <20130105120729.7677c333@pyramind.ukuu.org.uk>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NVIDIA's Tegra114 has APB DMA controller which supports channel wise
-pause control. The global pause is used for clock gating and hence
-DMA registers are not accessible if DMAs are globally disabled.
+Am 05.01.2013 13:07, schrieb Alan Cox:
+>> So to add such an "I am crap" flag my idea would be to add an
+>> .fb_handle_damage to struct fb_ops and then call that (if exists)
+>> whenever something was changed.
+>
+> I was thinking much higher level - ie at the printk kind of level
+>
+>> My patch (for udlfb) follows as an reply to this message. If that patch
+>> is ok, it should be applied to smscufx too (I would make it). In regard
+>> to udl I don't know, I haven't had a deeper look at it nor used it up to
+>> now.
+>
+> Looks pretty clean as a solution to me.
 
-Add support for use of channel wise pause feature for Tegra114 SOCs.
+Thanks and sorry for the two empty lines in the patch. I swear I had a 
+look at the patch before sending it out, but haven't seen them.
 
-Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
----
- drivers/dma/tegra20-apb-dma.c |   54 +++++++++++++++++++++++++++++++++++++----
- 1 files changed, 49 insertions(+), 5 deletions(-)
+So should I make the same patch for smscufx  and while beeing there, 
+send out at v2 without those 2 empty lines?
 
-diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
-index c39e61b..d33c1ae 100644
---- a/drivers/dma/tegra20-apb-dma.c
-+++ b/drivers/dma/tegra20-apb-dma.c
-@@ -62,6 +62,9 @@
- #define TEGRA_APBDMA_STATUS_COUNT_SHIFT		2
- #define TEGRA_APBDMA_STATUS_COUNT_MASK		0xFFFC
- 
-+#define TEGRA_APBDMA_CHAN_CSRE			0x00C
-+#define TEGRA_APBDMA_CHAN_CSRE_PAUSE		(1 << 31)
-+
- /* AHB memory address */
- #define TEGRA_APBDMA_CHAN_AHBPTR		0x010
- 
-@@ -112,10 +115,12 @@ struct tegra_dma;
-  * tegra_dma_chip_data Tegra chip specific DMA data
-  * @nr_channels: Number of channels available in the controller.
-  * @max_dma_count: Maximum DMA transfer count supported by DMA controller.
-+ * @support_channel_pause: Support channel wise pause of dma.
-  */
- struct tegra_dma_chip_data {
- 	int nr_channels;
- 	int max_dma_count;
-+	bool support_channel_pause;
- };
- 
- /* DMA channel registers */
-@@ -353,6 +358,32 @@ static void tegra_dma_global_resume(struct tegra_dma_channel *tdc)
- 	spin_unlock(&tdma->global_lock);
- }
- 
-+static void tegra_dma_pause(struct tegra_dma_channel *tdc,
-+	bool wait_for_burst_complete)
-+{
-+	struct tegra_dma *tdma = tdc->tdma;
-+
-+	if (tdma->chip_data->support_channel_pause) {
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSRE,
-+				TEGRA_APBDMA_CHAN_CSRE_PAUSE);
-+		if (wait_for_burst_complete)
-+			udelay(TEGRA_APBDMA_BURST_COMPLETE_TIME);
-+	} else {
-+		tegra_dma_global_pause(tdc, wait_for_burst_complete);
-+	}
-+}
-+
-+static void tegra_dma_resume(struct tegra_dma_channel *tdc)
-+{
-+	struct tegra_dma *tdma = tdc->tdma;
-+
-+	if (tdma->chip_data->support_channel_pause) {
-+		tdc_write(tdc, TEGRA_APBDMA_CHAN_CSRE, 0);
-+	} else {
-+		tegra_dma_global_resume(tdc);
-+	}
-+}
-+
- static void tegra_dma_stop(struct tegra_dma_channel *tdc)
- {
- 	u32 csr;
-@@ -408,7 +439,7 @@ static void tegra_dma_configure_for_next(struct tegra_dma_channel *tdc,
- 	 * If there is already IEC status then interrupt handler need to
- 	 * load new configuration.
- 	 */
--	tegra_dma_global_pause(tdc, false);
-+	tegra_dma_pause(tdc, false);
- 	status  = tdc_read(tdc, TEGRA_APBDMA_CHAN_STATUS);
- 
- 	/*
-@@ -418,7 +449,7 @@ static void tegra_dma_configure_for_next(struct tegra_dma_channel *tdc,
- 	if (status & TEGRA_APBDMA_STATUS_ISE_EOC) {
- 		dev_err(tdc2dev(tdc),
- 			"Skipping new configuration as interrupt is pending\n");
--		tegra_dma_global_resume(tdc);
-+		tegra_dma_resume(tdc);
- 		return;
- 	}
- 
-@@ -429,7 +460,7 @@ static void tegra_dma_configure_for_next(struct tegra_dma_channel *tdc,
- 				nsg_req->ch_regs.csr | TEGRA_APBDMA_CSR_ENB);
- 	nsg_req->configured = true;
- 
--	tegra_dma_global_resume(tdc);
-+	tegra_dma_resume(tdc);
- }
- 
- static void tdc_start_head_req(struct tegra_dma_channel *tdc)
-@@ -690,7 +721,7 @@ static void tegra_dma_terminate_all(struct dma_chan *dc)
- 		goto skip_dma_stop;
- 
- 	/* Pause DMA before checking the queue status */
--	tegra_dma_global_pause(tdc, true);
-+	tegra_dma_pause(tdc, true);
- 
- 	status = tdc_read(tdc, TEGRA_APBDMA_CHAN_STATUS);
- 	if (status & TEGRA_APBDMA_STATUS_ISE_EOC) {
-@@ -708,7 +739,7 @@ static void tegra_dma_terminate_all(struct dma_chan *dc)
- 		sgreq->dma_desc->bytes_transferred +=
- 				get_current_xferred_count(tdc, sgreq, status);
- 	}
--	tegra_dma_global_resume(tdc);
-+	tegra_dma_resume(tdc);
- 
- skip_dma_stop:
- 	tegra_dma_abort_all(tdc);
-@@ -1175,6 +1206,7 @@ static void tegra_dma_free_chan_resources(struct dma_chan *dc)
- static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
- 	.nr_channels		= 16,
- 	.max_dma_count		= 1024UL * 64,
-+	.support_channel_pause	= false,
- };
- 
- #if defined(CONFIG_OF)
-@@ -1182,10 +1214,22 @@ static const struct tegra_dma_chip_data tegra20_dma_chip_data = {
- static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
- 	.nr_channels		= 32,
- 	.max_dma_count		= 1024UL * 64,
-+	.support_channel_pause	= false,
- };
- 
-+/* Tegra114 specific DMA controller information */
-+static const struct tegra_dma_chip_data tegra114_dma_chip_data = {
-+	.nr_channels		= 32,
-+	.max_dma_count		= 1024UL * 64,
-+	.support_channel_pause	= true,
-+};
-+
-+
- static const struct of_device_id tegra_dma_of_match[] = {
- 	{
-+		.compatible = "nvidia,tegra114-apbdma",
-+		.data = &tegra114_dma_chip_data,
-+	}, {
- 		.compatible = "nvidia,tegra30-apbdma",
- 		.data = &tegra30_dma_chip_data,
- 	}, {
--- 
-1.7.1.1
+Regards,
+
+Alexander
+
 
