@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab3AFWOD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 17:14:03 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20260 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab3AFWN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 17:13:59 -0500
-X-Authority-Analysis: v=2.0 cv=IsacgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=HPITk8MfdfgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=puLyrkSRlPIA:10 a=e-rsuqKjle7C72hddlMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357510436.10284.69.camel@gandalf.local.home>
-Subject: Re: [PATCH/RFC 0/1] Delete legacy power trace API
-From: Steven Rostedt <rostedt@goodmis.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-pm@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Date: Sun, 06 Jan 2013 17:13:56 -0500
-In-Reply-To: <5190666.Mu6UtpjCCL@vostro.rjw.lan>
-References: <1357350544-32704-1-git-send-email-paul.gortmaker@windriver.com>
-	 <5190666.Mu6UtpjCCL@vostro.rjw.lan>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753263Ab3AFWOa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 17:14:30 -0500
+Received: from jdl.com ([208.123.74.7]:33449 "EHLO jdl.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753139Ab3AFWO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 17:14:27 -0500
+X-Greylist: delayed 2303 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jan 2013 17:14:27 EST
+Message-Id: <E1TryU3-0001K5-Iy@jdl.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+cc: David Gibson <david@gibson.dropbear.id.au>, Matt Porter <mporter@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>, Russ Dill <Russ.Dill@ti.com>
+Subject: Re: Fix test relying in wrong behavior of is_printable
+In-reply-to: <5B13DF52-26BE-4BA1-8BD7-25863B04A3B6@antoniou-consulting.com>
+References: <1357326968-13124-1-git-send-email-panto@antoniou-consulting.com> <20130106035809.GG4674@truffula.fritz.box> <5B13DF52-26BE-4BA1-8BD7-25863B04A3B6@antoniou-consulting.com>
+Comments: In-reply-to Pantelis Antoniou <panto@antoniou-consulting.com>
+   message dated "Sun, 06 Jan 2013 13:41:56 +0200."
+Date: Sun, 06 Jan 2013 16:14:23 -0600
+From: Jon Loeliger <jdl@jdl.com>
+X-Spam-Score: -0.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2013-01-05 at 23:10 +0100, Rafael J. Wysocki wrote:
-> On Friday, January 04, 2013 08:49:03 PM Paul Gortmaker wrote:
-> > The actual deletion is mind-numbingly simple; and if you go by the
-> > comments in the code, it is well overdue.  However, in discussions
-> > with Frederic, he suggested to me that those comments might have
-> > been overly optimistic, and that there may still be people out
-> > there who are still unknowingly using this dead API.
-> > 
-> > So, that is the crux of the RFC component -- to check whether the
-> > comments saying "delete by v3.1" can be taken at face value, or
-> > whether they were overly optimistic, and hence this stuff is still
-> > actively used even though it is overdue for deletion.
+> Hi David
 > 
-> Do you want me or the tracing maintainers to handle this?
+> =CE=91=CF=80=CF=8C =CF=84=CE=BF iPhone =CE=BC=CE=BF=CF=85
 > 
+> 6 =CE=99=CE=B1=CE=BD 2013, 5:58, =CE=BF/=CE=B7 David Gibson <david@gibson.dr=
+> opbear.id.au> =CE=AD=CE=B3=CF=81=CE=B1=CF=88=CE=B5:
+> 
+> > On Fri, Jan 04, 2013 at 09:16:08PM +0200, Pantelis Antoniou wrote:
+> >> After fixing the is_printable bug the test suite fails.
+> >> Fix it with this patch
+> >>=20
+> >> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> >=20
+> > Rather than just removing the test, it would be better to still run it
+> > using an explicit -t bi to force the byte output.
+> 
+> Perhaps it wasn't exactly clear in the patch. The old test case output is co=
+> mmented out but there is test case output for the new patch.=20
+> 
+> So the test is not removed.=20
 
-You can take it. If you want you can add:
+Uh, yeah, something needs to be done here still.
+(There is a failing test still.)
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Could we get a resubmission of the fix, please?
 
--- Steve
-
-
+Thanks,
+jdl
