@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab3AFWWZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 17:22:25 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:33632 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab3AFWWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 17:22:24 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-pm@vger.kernel.org,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH/RFC 0/1] Delete legacy power trace API
-Date: Sun, 06 Jan 2013 23:28:03 +0100
-Message-ID: <6941120.WfD5vZUxk3@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357510436.10284.69.camel@gandalf.local.home>
-References: <1357350544-32704-1-git-send-email-paul.gortmaker@windriver.com> <5190666.Mu6UtpjCCL@vostro.rjw.lan> <1357510436.10284.69.camel@gandalf.local.home>
+	id S1753241Ab3AFWZl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 17:25:41 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:45455 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab3AFWZk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 17:25:40 -0500
+Date: Sun, 6 Jan 2013 14:22:09 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] lp8788-charger: fix a parent device in _probe()
+Message-ID: <20130106222209.GH26928@lizard.sbx05280.losalca.wayport.net>
+References: <A874F61F95741C4A9BA573A70FE3998F69E10FE8@DQHE02.ent.ti.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E10FE8@DQHE02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, January 06, 2013 05:13:56 PM Steven Rostedt wrote:
-> On Sat, 2013-01-05 at 23:10 +0100, Rafael J. Wysocki wrote:
-> > On Friday, January 04, 2013 08:49:03 PM Paul Gortmaker wrote:
-> > > The actual deletion is mind-numbingly simple; and if you go by the
-> > > comments in the code, it is well overdue.  However, in discussions
-> > > with Frederic, he suggested to me that those comments might have
-> > > been overly optimistic, and that there may still be people out
-> > > there who are still unknowingly using this dead API.
-> > > 
-> > > So, that is the crux of the RFC component -- to check whether the
-> > > comments saying "delete by v3.1" can be taken at face value, or
-> > > whether they were overly optimistic, and hence this stuff is still
-> > > actively used even though it is overdue for deletion.
-> > 
-> > Do you want me or the tracing maintainers to handle this?
-> > 
+On Thu, Jan 03, 2013 at 06:30:16AM +0000, Kim, Milo wrote:
+>  The lp8788-charger is a platform driver of lp8788-mfd.
+>  The platform device is allocated when mfd_add_devices() is called
+>  in lp8788-mfd.
+>  On the other hand, 'lp->dev' is the i2c client device.
 > 
-> You can take it. If you want you can add:
+>  Therefore, this 'platform_device' is a proper parent device in case of
+>  resource managed mem alloc and device kernel message.
 > 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Milo(Woogyom) Kim <milo.kim@ti.com>
+> ---
 
-Cool, that helps. :-)
-
-I'll take it.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Both applied, thank you.
