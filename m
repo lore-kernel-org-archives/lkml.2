@@ -1,117 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab3AFVUX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 16:20:23 -0500
-Received: from mail-da0-f48.google.com ([209.85.210.48]:33427 "EHLO
-	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab3AFVUV (ORCPT
+	id S1753211Ab3AFVXX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 16:23:23 -0500
+Received: from smtp24.services.sfr.fr ([93.17.128.83]:14292 "EHLO
+	smtp24.services.sfr.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab3AFVXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 16:20:21 -0500
-Date: Sun, 6 Jan 2013 13:16:50 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Julia Lawall <julia.lawall@lip6.fr>
-Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/power/88pm860x_battery.c: eliminate possible
- references to released resources
-Message-ID: <20130106211649.GA26928@lizard.sbx05280.losalca.wayport.net>
-References: <1354986995-2324-1-git-send-email-Julia.Lawall@lip6.fr>
- <20130106050953.GH6919@lizard.sbx05280.losalca.wayport.net>
- <alpine.DEB.2.02.1301060941400.2070@localhost6.localdomain6>
+	Sun, 6 Jan 2013 16:23:20 -0500
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jan 2013 16:23:19 EST
+X-SFR-UUID: 20130106211255650.9ECD37000098@msfrf2411.sfr.fr
+Message-ID: <50E9E8D3.6080504@sfr.fr>
+Date: Sun, 06 Jan 2013 22:12:51 +0100
+From: Patrice Chotard <patrice.chotard@sfr.fr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0
+	Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1301060941400.2070@localhost6.localdomain6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Emil Goode <emilgoode@gmail.com>
+CC: patricechotard@free.fr, martin.blumenstingl@googlemail.com,
+        gregkh@linuxfoundation.org, crope@iki.fi, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] [media] ngene: Use newly created function
+References: <1357505952-14439-1-git-send-email-emilgoode@gmail.com>
+In-Reply-To: <1357505952-14439-1-git-send-email-emilgoode@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 09:43:10AM +0100, Julia Lawall wrote:
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi Emil,
+
+You are right, there was a missing piece of code.
+
+During merge, part of the orignal patch was missing. I have signaled it
+to Mauro who have fixed it in media_tree.
+
+Regards.
+
+Le 06/01/2013 21:59, Emil Goode a écrit :
+> The function demod_attach_drxd was split into two by commit 36a495a3.
+> This resulted in a new function tuner_attach_dtt7520x that is not used.
+> We should register tuner_attach_dtt7520x as a callback in the ngene_info
+> struct in the same way as done with the other part of the split function.
 > 
-> devm_kzalloc should not be followed by kfree, as this results in a double
-> free.  The problem was found using the following semantic match
-> (http://coccinelle.lip6.fr/):
+> Sparse warning:
 > 
-> // <smpl>
-> @@
-> expression x,e;
-> @@
-> x = devm_kzalloc(...)
-> ... when != x = e
-> ?-kfree(x,...);
-> // </smpl>
+> drivers/media/pci/ngene/ngene-cards.c:333:12: warning:
+>         ‘tuner_attach_dtt7520x’ defined but not used [-Wunused-function]
 > 
-> Furthermore, in the remove function, the calls to free_irq are moved up to
-> prevent a possible reference in the interrupt handler to resources freed by
-> power_supply_unregister.
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
+> Signed-off-by: Emil Goode <emilgoode@gmail.com>
 > ---
-> V2, moving up the calls to free_irq, instead of removing them and using
-> devm_request_threaded_irq.
-
-The patch is whitespace-damaged (for some reason there are two spaces in
-the beginning of each non-change line). I repeated changes manually, but
-you might want to fix your mail/patch setup anyway. :)
-
-Thanks.
-
->  drivers/power/88pm860x_battery.c |   13 ++++---------
->  1 file changed, 4 insertions(+), 9 deletions(-)
+> This patch is a guess at what was intended. I'm not familiar with this code
+> and I don't have the hardware to test it.
 > 
-> diff --git a/drivers/power/88pm860x_battery.c b/drivers/power/88pm860x_battery.c
-> index 8bc80b0..d338c1c 100644
-> --- a/drivers/power/88pm860x_battery.c
-> +++ b/drivers/power/88pm860x_battery.c
-> @@ -915,15 +915,13 @@ static int pm860x_battery_probe(struct platform_device *pdev)
->  	info->irq_cc = platform_get_irq(pdev, 0);
->  	if (info->irq_cc <= 0) {
->  		dev_err(&pdev->dev, "No IRQ resource!\n");
-> -		ret = -EINVAL;
-> -		goto out;
-> +		return -EINVAL;
->  	}
+>  drivers/media/pci/ngene/ngene-cards.c |    1 +
+>  1 file changed, 1 insertion(+)
 > 
->  	info->irq_batt = platform_get_irq(pdev, 1);
->  	if (info->irq_batt <= 0) {
->  		dev_err(&pdev->dev, "No IRQ resource!\n");
-> -		ret = -EINVAL;
-> -		goto out;
-> +		return -EINVAL;
->  	}
-> 
->  	info->chip = chip;
-> @@ -957,7 +955,7 @@ static int pm860x_battery_probe(struct platform_device *pdev)
-> 
->  	ret = power_supply_register(&pdev->dev, &info->battery);
->  	if (ret)
-> -		goto out;
-> +		return ret;
->  	info->battery.dev->parent = &pdev->dev;
-> 
->  	ret = request_threaded_irq(info->irq_cc, NULL,
-> @@ -984,8 +982,6 @@ out_coulomb:
->  	free_irq(info->irq_cc, info);
->  out_reg:
->  	power_supply_unregister(&info->battery);
-> -out:
-> -	kfree(info);
->  	return ret;
->  }
-> 
-> @@ -993,10 +989,9 @@ static int pm860x_battery_remove(struct platform_device *pdev)
->  {
->  	struct pm860x_battery_info *info = platform_get_drvdata(pdev);
-> 
-> -	power_supply_unregister(&info->battery);
->  	free_irq(info->irq_batt, info);
->  	free_irq(info->irq_cc, info);
-> -	kfree(info);
-> +	power_supply_unregister(&info->battery);
->  	platform_set_drvdata(pdev, NULL);
->  	return 0;
->  }
+> diff --git a/drivers/media/pci/ngene/ngene-cards.c b/drivers/media/pci/ngene/ngene-cards.c
+> index c99f779..60605c8 100644
+> --- a/drivers/media/pci/ngene/ngene-cards.c
+> +++ b/drivers/media/pci/ngene/ngene-cards.c
+> @@ -732,6 +732,7 @@ static struct ngene_info ngene_info_terratec = {
+>  	.name           = "Terratec Integra/Cinergy2400i Dual DVB-T",
+>  	.io_type        = {NGENE_IO_TSIN, NGENE_IO_TSIN},
+>  	.demod_attach   = {demod_attach_drxd, demod_attach_drxd},
+> +	.tuner_attach   = {tuner_attach_dtt7520x, tuner_attach_dtt7520x},
+>  	.fe_config      = {&fe_terratec_dvbt_0, &fe_terratec_dvbt_1},
+>  	.i2c_access     = 1,
+>  };
 > 
