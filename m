@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab3AFSbg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 13:31:36 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:51965 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab3AFSbe (ORCPT
+	id S1756122Ab3AFSjH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 13:39:07 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:52187 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756047Ab3AFSjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 13:31:34 -0500
-MIME-Version: 1.0
-In-Reply-To: <50E92DC3.4050906@intel.com>
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com>
- <1357375071-11793-10-git-send-email-alex.shi@intel.com> <50E7EAB1.6020302@intel.com>
- <50E92DC3.4050906@intel.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 6 Jan 2013 10:31:12 -0800
-X-Google-Sender-Auth: S57qJS-P0Rg7VkDI09ekiu58RB0
-Message-ID: <CA+55aFxbS-u1Zfwg2oKOmHq6FBF+dRRhrdssqc9PpC_gXoV3+g@mail.gmail.com>
-Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load and cpu_avg_load_per_task
-To: Alex Shi <alex.shi@intel.com>
-Cc: Paul Turner <pjt@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Borislav Petkov <bp@alien8.de>, namhyung@kernel.org,
-        Mike Galbraith <efault@gmx.de>,
-        Vincent Guittot <vincent.guittot@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        preeti@linux.vnet.ibm.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 6 Jan 2013 13:39:05 -0500
+Subject: Re: Major network performance regression in 3.7
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130106173543.GB22432@1wt.eu>
+References: <1357437086.1678.5135.camel@edumazet-glaptop>
+	 <1357438591.1678.5205.camel@edumazet-glaptop>
+	 <20130106025256.GY16031@1wt.eu>
+	 <1357457724.1678.5941.camel@edumazet-glaptop>
+	 <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop>
+	 <20130106155123.GB16031@1wt.eu>
+	 <1357490393.6919.267.camel@edumazet-glaptop>
+	 <20130106164416.GF16031@1wt.eu>
+	 <1357492255.6919.336.camel@edumazet-glaptop>
+	 <20130106173543.GB22432@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Jan 2013 10:39:01 -0800
+Message-ID: <1357497541.6919.519.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 5, 2013 at 11:54 PM, Alex Shi <alex.shi@intel.com> wrote:
->
-> I just looked into the aim9 benchmark, in this case it forks 2000 tasks,
-> after all tasks ready, aim9 give a signal than all tasks burst waking up
-> and run until all finished.
-> Since each of tasks are finished very quickly, a imbalanced empty cpu
-> may goes to sleep till a regular balancing give it some new tasks. That
-> causes the performance dropping. cause more idle entering.
+On Sun, 2013-01-06 at 18:35 +0100, Willy Tarreau wrote:
 
-Sounds like for AIM (and possibly for other really bursty loads), we
-might want to do some load-balancing at wakeup time by *just* looking
-at the number of running tasks, rather than at the load average. Hmm?
+> Unfortunately it does not work any better, which means to me
+> that we don't leave via this code path. I tried other tricks
+> which failed too. I need to understand this part better before
+> randomly fiddling with it.
+> 
 
-The load average is fundamentally always going to run behind a bit,
-and while you want to use it for long-term balancing, a short-term you
-might want to do just a "if we have a huge amount of runnable
-processes, do a load balancing *now*". Where "huge amount" should
-probably be relative to the long-term load balancing (ie comparing the
-number of runnable processes on this CPU right *now* with the load
-average over the last second or so would show a clear spike, and a
-reason for quick action).
+OK, now I have your test program, I can work on a fix, dont worry ;)
 
-           Linus
+The MSG_SENDPAGE_NOTLAST logic needs to be tweaked.
+
+
