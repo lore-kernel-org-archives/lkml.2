@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756147Ab3AFRfk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 12:35:40 -0500
-Received: from mail.free-electrons.com ([94.23.32.191]:38268 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756119Ab3AFRfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 12:35:17 -0500
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: [PATCH 2/3] gpio: pca953x: add support for pca9505
-Date: Sun,  6 Jan 2013 18:34:47 +0100
-Message-Id: <1357493688-25061-3-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com>
+	id S1756160Ab3AFRfx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 12:35:53 -0500
+Received: from 1wt.eu ([62.212.114.60]:37708 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756102Ab3AFRfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 12:35:50 -0500
+Date: Sun, 6 Jan 2013 18:35:43 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Major network performance regression in 3.7
+Message-ID: <20130106173543.GB22432@1wt.eu>
+References: <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop> <20130106025256.GY16031@1wt.eu> <1357457724.1678.5941.camel@edumazet-glaptop> <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop> <20130106155123.GB16031@1wt.eu> <1357490393.6919.267.camel@edumazet-glaptop> <20130106164416.GF16031@1wt.eu> <1357492255.6919.336.camel@edumazet-glaptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357492255.6919.336.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that pca953x driver can handle GPIO expanders with more than 32
-bits this patch adds the support for the pca9505 which cam with 40
-GPIOs.
+On Sun, Jan 06, 2013 at 09:10:55AM -0800, Eric Dumazet wrote:
+> On Sun, 2013-01-06 at 17:44 +0100, Willy Tarreau wrote:
+> > On Sun, Jan 06, 2013 at 08:39:53AM -0800, Eric Dumazet wrote:
+> > > Hmm, I'll have to check if this really can be reverted without hurting
+> > > vmsplice() again.
+> > 
+> > Looking at the code I've been wondering whether we shouldn't transform
+> > the condition to perform the push if we can't push more segments, but
+> > I don't know what to rely on. It would be something like this :
+> > 
+> >        if (copied &&
+> >           (!(flags & MSG_SENDPAGE_NOTLAST) || cant_push_more))
+> >                 tcp_push(sk, flags, mss_now, tp->nonagle);
+> 
+> Good point !
+> 
+> Maybe the following fix then ?
+> 
+> 
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index 1ca2536..7ba0717 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -941,8 +941,10 @@ out:
+>  	return copied;
+>  
+>  do_error:
+> -	if (copied)
+> +	if (copied) {
+> +		flags &= ~MSG_SENDPAGE_NOTLAST;
+>  		goto out;
+> +	}
+>  out_err:
+>  	return sk_stream_error(sk, flags, err);
+>  }
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- drivers/gpio/gpio-pca953x.c |    2 ++
- 1 file changed, 2 insertions(+)
+Unfortunately it does not work any better, which means to me
+that we don't leave via this code path. I tried other tricks
+which failed too. I need to understand this part better before
+randomly fiddling with it.
 
-diff --git a/drivers/gpio/gpio-pca953x.c b/drivers/gpio/gpio-pca953x.c
-index aa9b6b2..8bf70a2 100644
---- a/drivers/gpio/gpio-pca953x.c
-+++ b/drivers/gpio/gpio-pca953x.c
-@@ -46,6 +46,7 @@
- #define PCA957X_TYPE		0x2000
- 
- static const struct i2c_device_id pca953x_id[] = {
-+	{ "pca9505", 40 | PCA953X_TYPE | PCA_INT, },
- 	{ "pca9534", 8  | PCA953X_TYPE | PCA_INT, },
- 	{ "pca9535", 16 | PCA953X_TYPE | PCA_INT, },
- 	{ "pca9536", 4  | PCA953X_TYPE, },
-@@ -829,6 +830,7 @@ static int pca953x_remove(struct i2c_client *client)
- }
- 
- static const struct of_device_id pca953x_dt_ids[] = {
-+	{ .compatible = "nxp,pca9505", },
- 	{ .compatible = "nxp,pca9534", },
- 	{ .compatible = "nxp,pca9535", },
- 	{ .compatible = "nxp,pca9536", },
--- 
-1.7.9.5
+Willy
 
