@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab3AFJvh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 04:51:37 -0500
-Received: from 8bytes.org ([85.214.48.195]:49840 "EHLO mail.8bytes.org"
+	id S1755929Ab3AFJ4m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 04:56:42 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:38007 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067Ab3AFJvf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 04:51:35 -0500
-Date: Sun, 6 Jan 2013 10:51:33 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Sethi Varun-B16395 <B16395@freescale.com>
-Cc: "joerg.roedel@amd.com" <joerg.roedel@amd.com>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tabi Timur-B04825 <B04825@freescale.com>,
-        Wood Scott-B07421 <B07421@freescale.com>
-Subject: Re: [PATCH 0/4] iommu/fsl: Freescale PAMU driver and IOMMU API
- implementation.
-Message-ID: <20130106095133.GE25591@8bytes.org>
-References: <1355493114-21776-1-git-send-email-Varun.Sethi@freescale.com>
- <C5ECD7A89D1DC44195F34B25E172658D2F58B0@039-SN2MPN1-013.039d.mgd.msft.net>
+	id S1753067Ab3AFJ4l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 04:56:41 -0500
+From: "Kim, Milo" <Milo.Kim@ti.com>
+To: Bryan Wu <cooloney@gmail.com>
+CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
+Thread-Topic: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
+Thread-Index: Ac3YcO0CDWQUo8AuS62wk1akhW9wsQElCMwAAILAn5AC1itxgABif42w
+Date: Sun, 6 Jan 2013 09:56:37 +0000
+Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E1168A@DQHE02.ent.ti.com>
+References: <A874F61F95741C4A9BA573A70FE3998F69E0AAA1@DQHE02.ent.ti.com>
+ <CAK5ve-KcCbgcHSRiMX0t3vxXNk=BOXBVm=e820K=KLs5nGRzBg@mail.gmail.com>
+ <A874F61F95741C4A9BA573A70FE3998F69E107F3@DQHE02.ent.ti.com>
+ <CAK5ve-K_U8Gs4Mp=BVurpV_SyUTM+iTW9Pt227M4mUpcu+xzhg@mail.gmail.com>
+In-Reply-To: <CAK5ve-K_U8Gs4Mp=BVurpV_SyUTM+iTW9Pt227M4mUpcu+xzhg@mail.gmail.com>
+Accept-Language: ko-KR, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.16.34.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C5ECD7A89D1DC44195F34B25E172658D2F58B0@039-SN2MPN1-013.039d.mgd.msft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Sun Jan  6 10:51:34 2013
-X-DSPAM-Confidence: 0.9991
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 50e9492622971759439588
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Varun,
+> -----Original Message-----
+> From: Bryan Wu [mailto:cooloney@gmail.com]
+> Sent: Saturday, January 05, 2013 3:46 AM
+> To: Kim, Milo
+> Cc: linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
+> 
+> On Thu, Dec 20, 2012 at 4:17 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
+> >> Hi Kim
+> >>
+> >> This patchset looks good, but I need some time to review it more
+> >> carefully especially during this merge window + holiday time.
+> >
+> > OK, thanks for the reply.
+> > Please let me know if any problem in the git tree.
+> > Happy holidays!
+> >
+> 
+> Hi Milo,
+> 
+> Since we got several updates in our leds.git for-next branch, could
+> you please update your patch on top of my latest for-next branch? And
+> publish it somewhere, I can pull it cleanly.
 
-On Thu, Jan 03, 2013 at 05:21:09AM +0000, Sethi Varun-B16395 wrote:
-> It's been a while since I submitted this patch. I have tried to
-> address your comments regarding the subwindow attribute. I would
-> really appreciate if I can get some feedback on this patch.
+Hi Bryan,
 
-I have some ideas in mind how we can abstract this in the IOMMU-API
-(with an extension to the API). I will send a RFC patchset soon to add
-these changes and then we can discuss it.
+New git place is here. You can pull them from the location below.
 
+ git://github.com/milokim/lp55xx.git lp55xx-for-next
 
-	Joerg
+This branch is based on latest 'for-next' branch of linux-leds.
+And same patches have been sent to linux-leds mailing list.
 
-
+Many thanks!
+Milo
