@@ -1,70 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3AFJ4m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 04:56:42 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:38007 "EHLO bear.ext.ti.com"
+	id S1755588Ab3AFKZd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 05:25:33 -0500
+Received: from 1wt.eu ([62.212.114.60]:37527 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753067Ab3AFJ4l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 04:56:41 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Bryan Wu <cooloney@gmail.com>
-CC: "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
-Thread-Topic: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
-Thread-Index: Ac3YcO0CDWQUo8AuS62wk1akhW9wsQElCMwAAILAn5AC1itxgABif42w
-Date: Sun, 6 Jan 2013 09:56:37 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E1168A@DQHE02.ent.ti.com>
-References: <A874F61F95741C4A9BA573A70FE3998F69E0AAA1@DQHE02.ent.ti.com>
- <CAK5ve-KcCbgcHSRiMX0t3vxXNk=BOXBVm=e820K=KLs5nGRzBg@mail.gmail.com>
- <A874F61F95741C4A9BA573A70FE3998F69E107F3@DQHE02.ent.ti.com>
- <CAK5ve-K_U8Gs4Mp=BVurpV_SyUTM+iTW9Pt227M4mUpcu+xzhg@mail.gmail.com>
-In-Reply-To: <CAK5ve-K_U8Gs4Mp=BVurpV_SyUTM+iTW9Pt227M4mUpcu+xzhg@mail.gmail.com>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1752712Ab3AFKZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 05:25:32 -0500
+Date: Sun, 6 Jan 2013 11:25:25 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Major network performance regression in 3.7
+Message-ID: <20130106102525.GA22151@1wt.eu>
+References: <1357430523.1678.4901.camel@edumazet-glaptop> <20130106005053.GS16031@1wt.eu> <1357435276.1678.5067.camel@edumazet-glaptop> <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop> <20130106025256.GY16031@1wt.eu> <1357457724.1678.5941.camel@edumazet-glaptop> <20130106092435.GZ16031@1wt.eu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130106092435.GZ16031@1wt.eu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Bryan Wu [mailto:cooloney@gmail.com]
-> Sent: Saturday, January 05, 2013 3:46 AM
-> To: Kim, Milo
-> Cc: linux-leds@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 00/33] leds: cleanup LP5521/5523 LED driver
-> 
-> On Thu, Dec 20, 2012 at 4:17 PM, Kim, Milo <Milo.Kim@ti.com> wrote:
-> >> Hi Kim
-> >>
-> >> This patchset looks good, but I need some time to review it more
-> >> carefully especially during this merge window + holiday time.
-> >
-> > OK, thanks for the reply.
-> > Please let me know if any problem in the git tree.
-> > Happy holidays!
-> >
-> 
-> Hi Milo,
-> 
-> Since we got several updates in our leds.git for-next branch, could
-> you please update your patch on top of my latest for-next branch? And
-> publish it somewhere, I can pull it cleanly.
+On Sun, Jan 06, 2013 at 10:24:35AM +0100, Willy Tarreau wrote:
+> But before that I'll try to find the recent one causing the myri10ge to
+> slow down, it should take less time to bisect.
 
-Hi Bryan,
+OK good news here, the performance drop on the myri was caused by a
+problem between the keyboard and the chair. After the reboot series,
+I forgot to reload the firmware so the driver used the less efficient
+firmware from the NIC (it performs just as if LRO is disabled).
 
-New git place is here. You can pull them from the location below.
+That makes me think that I should try 3.8-rc2 since LRO was removed
+there :-/
 
- git://github.com/milokim/lp55xx.git lp55xx-for-next
+The only remaining issue really is the loopback then.
 
-This branch is based on latest 'for-next' branch of linux-leds.
-And same patches have been sent to linux-leds mailing list.
+Cheers,
+Willy
 
-Many thanks!
-Milo
