@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab3AFNDF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 08:03:05 -0500
-Received: from casper.infradead.org ([85.118.1.10]:36315 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753293Ab3AFNDD (ORCPT
+	id S1755996Ab3AFNDm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 08:03:42 -0500
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:45231 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753293Ab3AFNDk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 08:03:03 -0500
-Date: Sun, 6 Jan 2013 11:02:25 -0200
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        Laurent Pinchart <laurent.pinchart@skynet.be>,
-        Archit Taneja <archit@ti.com>, Prabhakar Lad <prabhakar.lad@ti.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>
-Subject: Re: [PATCH] omap_vout: find_vma() needs ->mmap_sem held
-Message-ID: <20130106110225.49b03d4e@infradead.org>
-In-Reply-To: <20121215203828.GX4939@ZenIV.linux.org.uk>
-References: <20121215201237.GW4939@ZenIV.linux.org.uk>
-	<20121215203828.GX4939@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 6 Jan 2013 08:03:40 -0500
+MIME-Version: 1.0
+In-Reply-To: <20130105165735.GB4906@electric-eye.fr.zoreil.com>
+References: <CADDKRnBqxSwC7HUP_aN1QELrv2+7jnncXj7EP0Pqv8E8FFTpPw@mail.gmail.com>
+	<20130105093718.GA938@electric-eye.fr.zoreil.com>
+	<CADDKRnBCrDz2X=5qpGE+r92ZFX5cA+jnSGt3wS8TR0RE8hi1HA@mail.gmail.com>
+	<20130105165735.GB4906@electric-eye.fr.zoreil.com>
+Date: Sun, 6 Jan 2013 14:03:39 +0100
+Message-ID: <CADDKRnCkDS5rMSSi12ti5PV_RSP6s3S15YOJz8b98ehcsyKaOA@mail.gmail.com>
+Subject: Re: [3.8-rc] regression: NETDEV WATCHDOG: eth0 (r8169): transmit
+ queue 0 timed out
+From: =?UTF-8?Q?J=C3=B6rg_Otte?= <jrg.otte@gmail.com>
+To: Francois Romieu <romieu@fr.zoreil.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viro,
+2013/1/5 Francois Romieu <romieu@fr.zoreil.com>:
+> Can you check if things improve with v3.8-rc2 after removing :
+>
+> 1. 9ecb9aabaf634677c77af467f4e3028b09d7bcda
+>    r8169: workaround for missing extended GigaMAC registers
+> 2. d64ec841517a25f6d468bde9f67e5b4cffdc67c7
+>    r8169: enable internal ASPM and clock request settings
 
-Em Sat, 15 Dec 2012 20:38:29 +0000
-Al Viro <viro@ZenIV.linux.org.uk> escreveu:
+Doesn't help for this problem.
 
-> On Sat, Dec 15, 2012 at 08:12:37PM +0000, Al Viro wrote:
-> > 	Walking rbtree while it's modified is a Bad Idea(tm); besides,
-> > the result of find_vma() can be freed just as it's getting returned
-> > to caller.  Fortunately, it's easy to fix - just take ->mmap_sem a bit
-> > earlier (and don't bother with find_vma() at all if virtp >= PAGE_OFFSET -
-> > in that case we don't even look at its result).
-> 
-> 	While we are at it, what prevents VIDIOC_PREPARE_BUF calling
-> v4l_prepare_buf() -> (e.g) vb2_ioctl_prepare_buf() -> vb2_prepare_buf() ->
-> __buf_prepare() -> __qbuf_userptr() -> vb2_vmalloc_get_userptr() -> find_vma(),
-> AFAICS without having taken ->mmap_sem anywhere in process?  The code flow
-> is bloody convoluted and depends on a bunch of things done by initialization,
-> so I certainly might've missed something...
+However this fixes a second issue for me:
+In 3.7.1 at startup the link came up after 15 sec.:
+grep r8169 dmesg.3.7.1
+[    1.956842] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+[    1.957059] r8169 0000:02:00.0: irq 42 for MSI/MSI-X
+[    1.957161] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at..
+[    1.957163] r8169 0000:02:00.0 eth0: jumbo features [frames..
+[   13.575452] r8169 0000:02:00.0 eth0: link down
+[   13.575475] r8169 0000:02:00.0 eth0: link down
+[   15.181317] r8169 0000:02:00.0 eth0: link up
 
-This driver is currently missing an active maintainer, as it is for an old
-hardware (AFAIK, omap is now at version 4, and this is for the first one),
-but I'm c/c a few developers that might help to test and analyze it.
+In 3.8rc the time increased to 24 seconds:
+grep r8169 dmesg.3.8.0
+[    1.852546] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+[    1.852765] r8169 0000:02:00.0: irq 42 for MSI/MSI-X
+[    1.852872] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at...
+[    1.852874] r8169 0000:02:00.0 eth0: jumbo features [frames...
+[   14.150212] r8169 0000:02:00.0 eth0: link down
+[   14.150229] r8169 0000:02:00.0 eth0: link down
+[   24.140263] r8169 0000:02:00.0 eth0: link up
 
-In any case, /me is assuming that your patch is right (as nobody complained),
-and I'm applying it right now on my tree. This will hopefully allow some
-people to test.
+But with this revert I get the old performance:
+dmesg | grep r8169
+[    1.816613] r8169 Gigabit Ethernet driver 2.3LK-NAPI loaded
+[    1.816832] r8169 0000:02:00.0: irq 42 for MSI/MSI-X
+[    1.816947] r8169 0000:02:00.0 eth0: RTL8168evl/8111evl at...
+[    1.816948] r8169 0000:02:00.0 eth0: jumbo features [frames...
+[   13.986401] r8169 0000:02:00.0 eth0: link down
+[   13.986422] r8169 0000:02:00.0 eth0: link down
+[   15.623631] r8169 0000:02:00.0 eth0: link up
 
-Cheers,
-Mauro
+Thus I recommend to revert this too.
+
+> 3. e0c075577965d1c01b30038d38bf637b027a1df3
+>    r8169: enable ALDPS for power saving
+
+That's it! This fixes the problem for me!
+
+
+Thanks, Jörg
