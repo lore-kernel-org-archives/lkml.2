@@ -1,94 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926Ab3AFJRK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 04:17:10 -0500
-Received: from mail.active-venture.com ([67.228.131.205]:54750 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740Ab3AFJRI (ORCPT
+	id S1751997Ab3AFJTx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 04:19:53 -0500
+Received: from mail-da0-f44.google.com ([209.85.210.44]:51889 "EHLO
+	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab3AFJTr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 04:17:08 -0500
-X-Virus-Scan: Scanned by ClamAV 0.97.2 (no viruses);
-  Sun, 06 Jan 2013 03:17:07 -0600
-X-Originating-IP: 108.223.40.66
-From: Guenter Roeck <linux@roeck-us.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] mfd: vexpress: export global functions to fix build error
-Date: Sun,  6 Jan 2013 01:16:19 -0800
-Message-Id: <1357463779-28096-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 1.7.9.7
+	Sun, 6 Jan 2013 04:19:47 -0500
+Message-ID: <1357463980.1454.0.camel@kernel.cn.ibm.com>
+Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return
+ error issue
+From: Simon Jeons <simon.jeons@gmail.com>
+To: Liu Hui-R64343 <r64343@freescale.com>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Sun, 06 Jan 2013 03:19:40 -0600
+In-Reply-To: <AD13664F485EE54694E29A7F9D5BE1AF4E5E1F@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+	 <20130106075940.GA22985@hacker.(null)>
+	 <AD13664F485EE54694E29A7F9D5BE1AF4E5BCD@039-SN2MPN1-021.039d.mgd.msft.net>
+	 <20130106084610.GA26483@hacker.(null)>
+	 <AD13664F485EE54694E29A7F9D5BE1AF4E5E1F@039-SN2MPN1-021.039d.mgd.msft.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compiling vexpress client drivers as module results in error messages such as
+On Sun, 2013-01-06 at 08:48 +0000, Liu Hui-R64343 wrote:
+> >-----Original Message-----
+> >From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
+> >Sent: Sunday, January 06, 2013 4:46 PM
+> >To: Liu Hui-R64343
+> >Cc: linux-kernel@vger.kernel.org; mgorman@suse.de; akpm@linux-
+> >foundation.org; riel@redhat.com; minchan@kernel.org;
+> >kamezawa.hiroyu@jp.fujitsu.com; linux-mm@kvack.org
+> >Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return
+> >error issue
+> >
+> >On Sun, Jan 06, 2013 at 08:11:58AM +0000, Liu Hui-R64343 wrote:
+> >>>-----Original Message-----
+> >>>From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
+> >>>Sent: Sunday, January 06, 2013 4:00 PM
+> >>>To: Liu Hui-R64343
+> >>>Cc: linux-kernel@vger.kernel.org; mgorman@suse.de; akpm@linux-
+> >>>foundation.org; riel@redhat.com; minchan@kernel.org;
+> >>>kamezawa.hiroyu@jp.fujitsu.com; linux-mm@kvack.org
+> >>>Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory
+> >>>return error issue
+> >>>
+> >>>On Sun, Jan 06, 2013 at 03:44:33PM +0800, Jason Liu wrote:
+> >>>
+> >>>Hi Jason,
+> >>>
+> >>>>when run the folloing command under shell, it will return error sh/$
+> >>>>echo 1 > /proc/sys/vm/compact_memory sh/$ sh: write error: Bad
+> >>>>address
+> >>>>
+> >>>
+> >>>How can you modify the value through none privileged user since the
+> >>>mode == 0200?
+> >>
+> >>I write it through privileged user(root). I'm using the GNOME_Mobile rootfs.
+> >>
+> >>>
+> >>>>After strace, I found the following log:
+> >>>>...
+> >>>>write(1, "1\n", 2)               = 3
+> >>>>write(1, "", 4294967295)         = -1 EFAULT (Bad address)
+> >>>>write(2, "echo: write error: Bad address\n", 31echo: write error: Bad
+> >>>>address
+> >>>>) = 31
+> >>>>
+> >>>>This tells system return 3(COMPACT_COMPLETE) after write data to
+> >>>compact_memory.
+> >>>>
+> >>>>The fix is to make the system just return 0 instead
+> >>>>3(COMPACT_COMPLETE) from sysctl_compaction_handler after
+> >compaction_nodes finished.
+> >>>
+> >>>What's the special scenario you are in? I couldn't figure out the
+> >>>similar error against latest 3.8-rc2, how could you reproduce it?
+> >>
+> >>I'm using the BusyBox v1.20.2 () built-in shell (ash), it reproduces the issue:
+> >100%.
+> >>
+> >>root@freescale /$ sh
+> >>
+> >>
+> >>BusyBox v1.20.2 () built-in shell (ash) Enter 'help' for a list of
+> >>built-in commands.
+> >>
+> >>Could you run strace and see the log:  strace echo 1 >
+> >>/proc/sys/vm/compact_memory
+> >>
+> >
+> >I test it on my desktop against latest 3.8-rc2, can't repoduce it. :)
+> >
+> >write(1, "1\n", 2)                      = 3
+> 
+> Here it tells it.  
 
-ERROR: "__vexpress_config_func_get" [drivers/hwmon/vexpress.ko] undefined!
-ERROR: "vexpress_config_func_put" [drivers/hwmon/vexpress.ko] undefined!
+Why this value trouble you?
 
-This is because the global functions in drivers/mfd/vexpress-config.c are not
-exported. Fix it.
+> 
+> >close(1)                                = 0
+> >munmap(0xb779c000, 4096)                = 0
+> >close(2)                                = 0
+> >exit_group(0)                           = ?
+> >+++ exited with 0 +++
+> >
+> >Regards,
+> >Wanpeng Li
+> >
+> >>>
+> >>>Regards,
+> >>>Wanpeng Li
+> >>>
+> >>>>
+> >>>>Suggested-by:David Rientjes <rientjes@google.com> Cc:Mel Gorman
+> >>>><mgorman@suse.de> Cc:Andrew Morton <akpm@linux-foundation.org>
+> >>>Cc:Rik
+> >>>>van Riel <riel@redhat.com> Cc:Minchan Kim <minchan@kernel.org>
+> >>>>Cc:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >>>>Signed-off-by: Jason Liu <r64343@freescale.com>
+> >>>>---
+> >>>> mm/compaction.c |    6 ++----
+> >>>> 1 files changed, 2 insertions(+), 4 deletions(-)
+> >>>>
+> >>>>diff --git a/mm/compaction.c b/mm/compaction.c index 6b807e4..f8f5c11
+> >>>>100644
+> >>>>--- a/mm/compaction.c
+> >>>>+++ b/mm/compaction.c
+> >>>>@@ -1210,7 +1210,7 @@ static int compact_node(int nid)  }
+> >>>>
+> >>>> /* Compact all nodes in the system */ -static int
+> >>>>compact_nodes(void)
+> >>>>+static void compact_nodes(void)
+> >>>> {
+> >>>> 	int nid;
+> >>>>
+> >>>>@@ -1219,8 +1219,6 @@ static int compact_nodes(void)
+> >>>>
+> >>>> 	for_each_online_node(nid)
+> >>>> 		compact_node(nid);
+> >>>>-
+> >>>>-	return COMPACT_COMPLETE;
+> >>>> }
+> >>>>
+> >>>> /* The written value is actually unused, all memory is compacted */
+> >>>>@@
+> >>>>-1231,7 +1229,7 @@ int sysctl_compaction_handler(struct ctl_table
+> >>>>*table,
+> >>>int write,
+> >>>> 			void __user *buffer, size_t *length, loff_t *ppos)  {
+> >>>> 	if (write)
+> >>>>-		return compact_nodes();
+> >>>>+		compact_nodes();
+> >>>>
+> >>>> 	return 0;
+> >>>> }
+> >>>>--
+> >>>>1.7.5.4
+> >>>>
+> >>>>
+> >>>>--
+> >>>>To unsubscribe, send a message with 'unsubscribe linux-mm' in the
+> >>>>body to majordomo@kvack.org.  For more info on Linux MM,
+> >>>>see: http://www.linux-mm.org/ .
+> >>>>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> >>>
+> >>
+> >
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
- drivers/mfd/vexpress-config.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/mfd/vexpress-config.c b/drivers/mfd/vexpress-config.c
-index fae15d8..82fed98 100644
---- a/drivers/mfd/vexpress-config.c
-+++ b/drivers/mfd/vexpress-config.c
-@@ -67,6 +67,7 @@ struct vexpress_config_bridge *vexpress_config_bridge_register(
- 
- 	return bridge;
- }
-+EXPORT_SYMBOL(vexpress_config_bridge_register);
- 
- void vexpress_config_bridge_unregister(struct vexpress_config_bridge *bridge)
- {
-@@ -83,6 +84,7 @@ void vexpress_config_bridge_unregister(struct vexpress_config_bridge *bridge)
- 	while (!list_empty(&__bridge.transactions))
- 		cpu_relax();
- }
-+EXPOPORT_SYMBOL(vexpress_config_bridge_unregister);
- 
- 
- struct vexpress_config_func {
-@@ -142,6 +144,7 @@ struct vexpress_config_func *__vexpress_config_func_get(struct device *dev,
- 
- 	return func;
- }
-+EXPORT_SYMBOL(__vexpress_config_func_get);
- 
- void vexpress_config_func_put(struct vexpress_config_func *func)
- {
-@@ -149,7 +152,7 @@ void vexpress_config_func_put(struct vexpress_config_func *func)
- 	of_node_put(func->bridge->node);
- 	kfree(func);
- }
--
-+EXPORT_SYMBOL(vexpress_config_func_put);
- 
- struct vexpress_config_trans {
- 	struct vexpress_config_func *func;
-@@ -229,6 +232,7 @@ void vexpress_config_complete(struct vexpress_config_bridge *bridge,
- 
- 	complete(&trans->completion);
- }
-+EXPORT_SYMBOL(vexpress_config_complete);
- 
- int vexpress_config_wait(struct vexpress_config_trans *trans)
- {
-@@ -236,7 +240,7 @@ int vexpress_config_wait(struct vexpress_config_trans *trans)
- 
- 	return trans->status;
- }
--
-+EXPORT_SYMBOL(vexpress_config_wait);
- 
- int vexpress_config_read(struct vexpress_config_func *func, int offset,
- 		u32 *data)
--- 
-1.7.9.7
 
