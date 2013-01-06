@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401Ab3AFWoO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 17:44:14 -0500
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:45089 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753229Ab3AFWoK (ORCPT
+	id S1753414Ab3AFWoW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 17:44:22 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:43261 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753229Ab3AFWoR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 17:44:10 -0500
+	Sun, 6 Jan 2013 17:44:17 -0500
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
         Anmar Oueja <anmar.oueja@linaro.org>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 5/8] dma: coh901318: push header down into the DMA subsystem
-Date: Sun, 6 Jan 2013 23:43:45 +0100
-Message-ID: <1357512225-5742-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 7/8] dma: coh901318: merge header files
+Date: Sun, 6 Jan 2013 23:44:01 +0100
+Message-ID: <1357512241-5813-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.11.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,594 +24,294 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Walleij <linus.walleij@linaro.org>
 
-The defines in U300's <mach/coh901318.h> are now only used by
-the DMA engine driver itself, so move the header down into the
-DMA subsystem.
+We do not need two header files for the two parts of the driver
+to talk to each other so merge them into one.
 
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-u300/core.c                   |   1 -
- arch/arm/mach-u300/include/mach/coh901318.h | 249 ----------------------------
- arch/arm/mach-u300/spi.c                    |   1 -
- drivers/dma/coh901318.c                     |   2 +-
- drivers/dma/coh901318.h                     | 245 +++++++++++++++++++++++++++
- drivers/dma/coh901318_lli.c                 |   2 +-
- drivers/dma/coh901318_lli.h                 |   2 -
- 7 files changed, 247 insertions(+), 255 deletions(-)
- delete mode 100644 arch/arm/mach-u300/include/mach/coh901318.h
- create mode 100644 drivers/dma/coh901318.h
+ drivers/dma/coh901318.c     |   1 -
+ drivers/dma/coh901318.h     | 108 +++++++++++++++++++++++++++++++++++++++
+ drivers/dma/coh901318_lli.c |   1 -
+ drivers/dma/coh901318_lli.h | 122 --------------------------------------------
+ 4 files changed, 108 insertions(+), 124 deletions(-)
+ delete mode 100644 drivers/dma/coh901318_lli.h
 
-diff --git a/arch/arm/mach-u300/core.c b/arch/arm/mach-u300/core.c
-index 834d0bd..19f5c53 100644
---- a/arch/arm/mach-u300/core.c
-+++ b/arch/arm/mach-u300/core.c
-@@ -41,7 +41,6 @@
- #include <asm/mach-types.h>
- #include <asm/mach/arch.h>
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index f7100dc..0604273 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -24,7 +24,6 @@
+ #include <linux/platform_data/dma-coh901318.h>
  
--#include <mach/coh901318.h>
- #include <mach/hardware.h>
- #include <mach/syscon.h>
- #include <mach/irqs.h>
-diff --git a/arch/arm/mach-u300/include/mach/coh901318.h b/arch/arm/mach-u300/include/mach/coh901318.h
+ #include "coh901318.h"
+-#include "coh901318_lli.h"
+ #include "dmaengine.h"
+ 
+ #define COH901318_MOD32_MASK					(0x1F)
+diff --git a/drivers/dma/coh901318.h b/drivers/dma/coh901318.h
+index 275a36e..95ce1e2 100644
+--- a/drivers/dma/coh901318.h
++++ b/drivers/dma/coh901318.h
+@@ -11,6 +11,18 @@
+ #define MAX_DMA_PACKET_SIZE_SHIFT 11
+ #define MAX_DMA_PACKET_SIZE (1 << MAX_DMA_PACKET_SIZE_SHIFT)
+ 
++struct device;
++
++struct coh901318_pool {
++	spinlock_t lock;
++	struct dma_pool *dmapool;
++	struct device *dev;
++
++#ifdef CONFIG_DEBUG_FS
++	int debugfs_pool_counter;
++#endif
++};
++
+ /**
+  * struct coh901318_lli - linked list item for DMAC
+  * @control: control settings for DMAC
+@@ -30,4 +42,100 @@ struct coh901318_lli {
+ 	dma_addr_t phy_this;
+ };
+ 
++/**
++ * coh901318_pool_create() - Creates an dma pool for lli:s
++ * @pool: pool handle
++ * @dev: dma device
++ * @lli_nbr: number of lli:s in the pool
++ * @algin: address alignemtn of lli:s
++ * returns 0 on success otherwise none zero
++ */
++int coh901318_pool_create(struct coh901318_pool *pool,
++			  struct device *dev,
++			  size_t lli_nbr, size_t align);
++
++/**
++ * coh901318_pool_destroy() - Destroys the dma pool
++ * @pool: pool handle
++ * returns 0 on success otherwise none zero
++ */
++int coh901318_pool_destroy(struct coh901318_pool *pool);
++
++/**
++ * coh901318_lli_alloc() - Allocates a linked list
++ *
++ * @pool: pool handle
++ * @len: length to list
++ * return: none NULL if success otherwise NULL
++ */
++struct coh901318_lli *
++coh901318_lli_alloc(struct coh901318_pool *pool,
++		    unsigned int len);
++
++/**
++ * coh901318_lli_free() - Returns the linked list items to the pool
++ * @pool: pool handle
++ * @lli: reference to lli pointer to be freed
++ */
++void coh901318_lli_free(struct coh901318_pool *pool,
++			struct coh901318_lli **lli);
++
++/**
++ * coh901318_lli_fill_memcpy() - Prepares the lli:s for dma memcpy
++ * @pool: pool handle
++ * @lli: allocated lli
++ * @src: src address
++ * @size: transfer size
++ * @dst: destination address
++ * @ctrl_chained: ctrl for chained lli
++ * @ctrl_last: ctrl for the last lli
++ * returns number of CPU interrupts for the lli, negative on error.
++ */
++int
++coh901318_lli_fill_memcpy(struct coh901318_pool *pool,
++			  struct coh901318_lli *lli,
++			  dma_addr_t src, unsigned int size,
++			  dma_addr_t dst, u32 ctrl_chained, u32 ctrl_last);
++
++/**
++ * coh901318_lli_fill_single() - Prepares the lli:s for dma single transfer
++ * @pool: pool handle
++ * @lli: allocated lli
++ * @buf: transfer buffer
++ * @size: transfer size
++ * @dev_addr: address of periphal
++ * @ctrl_chained: ctrl for chained lli
++ * @ctrl_last: ctrl for the last lli
++ * @dir: direction of transfer (to or from device)
++ * returns number of CPU interrupts for the lli, negative on error.
++ */
++int
++coh901318_lli_fill_single(struct coh901318_pool *pool,
++			  struct coh901318_lli *lli,
++			  dma_addr_t buf, unsigned int size,
++			  dma_addr_t dev_addr, u32 ctrl_chained, u32 ctrl_last,
++			  enum dma_transfer_direction dir);
++
++/**
++ * coh901318_lli_fill_single() - Prepares the lli:s for dma scatter list transfer
++ * @pool: pool handle
++ * @lli: allocated lli
++ * @sg: scatter gather list
++ * @nents: number of entries in sg
++ * @dev_addr: address of periphal
++ * @ctrl_chained: ctrl for chained lli
++ * @ctrl: ctrl of middle lli
++ * @ctrl_last: ctrl for the last lli
++ * @dir: direction of transfer (to or from device)
++ * @ctrl_irq_mask: ctrl mask for CPU interrupt
++ * returns number of CPU interrupts for the lli, negative on error.
++ */
++int
++coh901318_lli_fill_sg(struct coh901318_pool *pool,
++		      struct coh901318_lli *lli,
++		      struct scatterlist *sg, unsigned int nents,
++		      dma_addr_t dev_addr, u32 ctrl_chained,
++		      u32 ctrl, u32 ctrl_last,
++		      enum dma_transfer_direction dir, u32 ctrl_irq_mask);
++
+ #endif /* COH901318_H */
+diff --git a/drivers/dma/coh901318_lli.c b/drivers/dma/coh901318_lli.c
+index b2e284f..3e96610 100644
+--- a/drivers/dma/coh901318_lli.c
++++ b/drivers/dma/coh901318_lli.c
+@@ -14,7 +14,6 @@
+ #include <linux/dmaengine.h>
+ 
+ #include "coh901318.h"
+-#include "coh901318_lli.h"
+ 
+ #if (defined(CONFIG_DEBUG_FS) && defined(CONFIG_U300_DEBUG))
+ #define DEBUGFS_POOL_COUNTER_RESET(pool) (pool->debugfs_pool_counter = 0)
+diff --git a/drivers/dma/coh901318_lli.h b/drivers/dma/coh901318_lli.h
 deleted file mode 100644
-index 185fc59..0000000
---- a/arch/arm/mach-u300/include/mach/coh901318.h
+index 0c7cace..0000000
+--- a/drivers/dma/coh901318_lli.h
 +++ /dev/null
-@@ -1,249 +0,0 @@
+@@ -1,122 +0,0 @@
 -/*
-- *
-- * include/linux/coh901318.h
-- *
+- * driver/dma/coh901318_lli.h
 - *
 - * Copyright (C) 2007-2009 ST-Ericsson
 - * License terms: GNU General Public License (GPL) version 2
-- * DMA driver for COH 901 318
+- * Support functions for handling lli for coh901318
 - * Author: Per Friden <per.friden@stericsson.com>
 - */
 -
--#ifndef COH901318_H
--#define COH901318_H
+-#ifndef COH901318_LLI_H
+-#define COH901318_LLI_H
 -
--#include <linux/device.h>
--#include <linux/dmaengine.h>
+-struct device;
 -
--#define MAX_DMA_PACKET_SIZE_SHIFT 11
--#define MAX_DMA_PACKET_SIZE (1 << MAX_DMA_PACKET_SIZE_SHIFT)
--
--/**
-- * struct coh901318_lli - linked list item for DMAC
-- * @control: control settings for DMAC
-- * @src_addr: transfer source address
-- * @dst_addr: transfer destination address
-- * @link_addr:  physical address to next lli
-- * @virt_link_addr: virtual address of next lli (only used by pool_free)
-- * @phy_this: physical address of current lli (only used by pool_free)
-- */
--struct coh901318_lli {
--	u32 control;
--	dma_addr_t src_addr;
--	dma_addr_t dst_addr;
--	dma_addr_t link_addr;
--
--	void *virt_link_addr;
--	dma_addr_t phy_this;
--};
--/**
-- * struct coh901318_params - parameters for DMAC configuration
-- * @config: DMA config register
-- * @ctrl_lli_last: DMA control register for the last lli in the list
-- * @ctrl_lli: DMA control register for an lli
-- * @ctrl_lli_chained: DMA control register for a chained lli
-- */
--struct coh901318_params {
--	u32 config;
--	u32 ctrl_lli_last;
--	u32 ctrl_lli;
--	u32 ctrl_lli_chained;
--};
--/**
-- * struct coh_dma_channel - dma channel base
-- * @name: ascii name of dma channel
-- * @number: channel id number
-- * @desc_nbr_max: number of preallocated descriptors
-- * @priority_high: prio of channel, 0 low otherwise high.
-- * @param: configuration parameters
-- */
--struct coh_dma_channel {
--	const char name[32];
--	const int number;
--	const int desc_nbr_max;
--	const int priority_high;
--	const struct coh901318_params param;
--};
--
--/**
-- * dma_access_memory_state_t - register dma for memory access
-- *
-- * @dev: The dma device
-- * @active:  1 means dma intends to access memory
-- *           0 means dma wont access memory
-- */
--typedef void (*dma_access_memory_state_t)(struct device *dev,
--					  bool active);
--
--/**
-- * struct powersave - DMA power save structure
-- * @lock: lock protecting data in this struct
-- * @started_channels: bit mask indicating active dma channels
-- */
--struct powersave {
+-struct coh901318_pool {
 -	spinlock_t lock;
--	u64 started_channels;
+-	struct dma_pool *dmapool;
+-	struct device *dev;
+-
+-#ifdef CONFIG_DEBUG_FS
+-	int debugfs_pool_counter;
+-#endif
 -};
+-
+-struct device;
 -/**
-- * struct coh901318_platform - platform arch structure
-- * @chans_slave: specifying dma slave channels
-- * @chans_memcpy: specifying dma memcpy channels
-- * @access_memory_state: requesting DMA memory access (on / off)
-- * @chan_conf: dma channel configurations
-- * @max_channels: max number of dma chanenls
+- * coh901318_pool_create() - Creates an dma pool for lli:s
+- * @pool: pool handle
+- * @dev: dma device
+- * @lli_nbr: number of lli:s in the pool
+- * @algin: address alignemtn of lli:s
+- * returns 0 on success otherwise none zero
 - */
--struct coh901318_platform {
--	const int *chans_slave;
--	const int *chans_memcpy;
--	const dma_access_memory_state_t access_memory_state;
--	const struct coh_dma_channel *chan_conf;
--	const int max_channels;
--};
+-int coh901318_pool_create(struct coh901318_pool *pool,
+-			  struct device *dev,
+-			  size_t lli_nbr, size_t align);
 -
--/*
-- * DMA Controller - this access the static mappings of the coh901318 dma.
+-/**
+- * coh901318_pool_destroy() - Destroys the dma pool
+- * @pool: pool handle
+- * returns 0 on success otherwise none zero
+- */
+-int coh901318_pool_destroy(struct coh901318_pool *pool);
+-
+-/**
+- * coh901318_lli_alloc() - Allocates a linked list
 - *
+- * @pool: pool handle
+- * @len: length to list
+- * return: none NULL if success otherwise NULL
 - */
+-struct coh901318_lli *
+-coh901318_lli_alloc(struct coh901318_pool *pool,
+-		    unsigned int len);
 -
--#define COH901318_MOD32_MASK					(0x1F)
--#define COH901318_WORD_MASK					(0xFFFFFFFF)
--/* INT_STATUS - Interrupt Status Registers 32bit (R/-) */
--#define COH901318_INT_STATUS1					(0x0000)
--#define COH901318_INT_STATUS2					(0x0004)
--/* TC_INT_STATUS - Terminal Count Interrupt Status Registers 32bit (R/-) */
--#define COH901318_TC_INT_STATUS1				(0x0008)
--#define COH901318_TC_INT_STATUS2				(0x000C)
--/* TC_INT_CLEAR - Terminal Count Interrupt Clear Registers 32bit (-/W) */
--#define COH901318_TC_INT_CLEAR1					(0x0010)
--#define COH901318_TC_INT_CLEAR2					(0x0014)
--/* RAW_TC_INT_STATUS - Raw Term Count Interrupt Status Registers 32bit (R/-) */
--#define COH901318_RAW_TC_INT_STATUS1				(0x0018)
--#define COH901318_RAW_TC_INT_STATUS2				(0x001C)
--/* BE_INT_STATUS - Bus Error Interrupt Status Registers 32bit (R/-) */
--#define COH901318_BE_INT_STATUS1				(0x0020)
--#define COH901318_BE_INT_STATUS2				(0x0024)
--/* BE_INT_CLEAR - Bus Error Interrupt Clear Registers 32bit (-/W) */
--#define COH901318_BE_INT_CLEAR1					(0x0028)
--#define COH901318_BE_INT_CLEAR2					(0x002C)
--/* RAW_BE_INT_STATUS - Raw Term Count Interrupt Status Registers 32bit (R/-) */
--#define COH901318_RAW_BE_INT_STATUS1				(0x0030)
--#define COH901318_RAW_BE_INT_STATUS2				(0x0034)
--
--/*
-- * CX_CFG - Channel Configuration Registers 32bit (R/W)
+-/**
+- * coh901318_lli_free() - Returns the linked list items to the pool
+- * @pool: pool handle
+- * @lli: reference to lli pointer to be freed
 - */
--#define COH901318_CX_CFG					(0x0100)
--#define COH901318_CX_CFG_SPACING				(0x04)
--/* Channel enable activates tha dma job */
--#define COH901318_CX_CFG_CH_ENABLE				(0x00000001)
--#define COH901318_CX_CFG_CH_DISABLE				(0x00000000)
--/* Request Mode */
--#define COH901318_CX_CFG_RM_MASK				(0x00000006)
--#define COH901318_CX_CFG_RM_MEMORY_TO_MEMORY			(0x0 << 1)
--#define COH901318_CX_CFG_RM_PRIMARY_TO_MEMORY			(0x1 << 1)
--#define COH901318_CX_CFG_RM_MEMORY_TO_PRIMARY			(0x1 << 1)
--#define COH901318_CX_CFG_RM_PRIMARY_TO_SECONDARY		(0x3 << 1)
--#define COH901318_CX_CFG_RM_SECONDARY_TO_PRIMARY		(0x3 << 1)
--/* Linked channel request field. RM must == 11 */
--#define COH901318_CX_CFG_LCRF_SHIFT				3
--#define COH901318_CX_CFG_LCRF_MASK				(0x000001F8)
--#define COH901318_CX_CFG_LCR_DISABLE				(0x00000000)
--/* Terminal Counter Interrupt Request Mask */
--#define COH901318_CX_CFG_TC_IRQ_ENABLE				(0x00000200)
--#define COH901318_CX_CFG_TC_IRQ_DISABLE				(0x00000000)
--/* Bus Error interrupt Mask */
--#define COH901318_CX_CFG_BE_IRQ_ENABLE				(0x00000400)
--#define COH901318_CX_CFG_BE_IRQ_DISABLE				(0x00000000)
+-void coh901318_lli_free(struct coh901318_pool *pool,
+-			struct coh901318_lli **lli);
 -
--/*
-- * CX_STAT - Channel Status Registers 32bit (R/-)
+-/**
+- * coh901318_lli_fill_memcpy() - Prepares the lli:s for dma memcpy
+- * @pool: pool handle
+- * @lli: allocated lli
+- * @src: src address
+- * @size: transfer size
+- * @dst: destination address
+- * @ctrl_chained: ctrl for chained lli
+- * @ctrl_last: ctrl for the last lli
+- * returns number of CPU interrupts for the lli, negative on error.
 - */
--#define COH901318_CX_STAT					(0x0200)
--#define COH901318_CX_STAT_SPACING				(0x04)
--#define COH901318_CX_STAT_RBE_IRQ_IND				(0x00000008)
--#define COH901318_CX_STAT_RTC_IRQ_IND				(0x00000004)
--#define COH901318_CX_STAT_ACTIVE				(0x00000002)
--#define COH901318_CX_STAT_ENABLED				(0x00000001)
+-int
+-coh901318_lli_fill_memcpy(struct coh901318_pool *pool,
+-			  struct coh901318_lli *lli,
+-			  dma_addr_t src, unsigned int size,
+-			  dma_addr_t dst, u32 ctrl_chained, u32 ctrl_last);
 -
--/*
-- * CX_CTRL - Channel Control Registers 32bit (R/W)
+-/**
+- * coh901318_lli_fill_single() - Prepares the lli:s for dma single transfer
+- * @pool: pool handle
+- * @lli: allocated lli
+- * @buf: transfer buffer
+- * @size: transfer size
+- * @dev_addr: address of periphal
+- * @ctrl_chained: ctrl for chained lli
+- * @ctrl_last: ctrl for the last lli
+- * @dir: direction of transfer (to or from device)
+- * returns number of CPU interrupts for the lli, negative on error.
 - */
--#define COH901318_CX_CTRL					(0x0400)
--#define COH901318_CX_CTRL_SPACING				(0x10)
--/* Transfer Count Enable */
--#define COH901318_CX_CTRL_TC_ENABLE				(0x00001000)
--#define COH901318_CX_CTRL_TC_DISABLE				(0x00000000)
--/* Transfer Count Value 0 - 4095 */
--#define COH901318_CX_CTRL_TC_VALUE_MASK				(0x00000FFF)
--/* Burst count */
--#define COH901318_CX_CTRL_BURST_COUNT_MASK			(0x0000E000)
--#define COH901318_CX_CTRL_BURST_COUNT_64_BYTES			(0x7 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_48_BYTES			(0x6 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_32_BYTES			(0x5 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_16_BYTES			(0x4 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_8_BYTES			(0x3 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_4_BYTES			(0x2 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_2_BYTES			(0x1 << 13)
--#define COH901318_CX_CTRL_BURST_COUNT_1_BYTE			(0x0 << 13)
--/* Source bus size  */
--#define COH901318_CX_CTRL_SRC_BUS_SIZE_MASK			(0x00030000)
--#define COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS			(0x2 << 16)
--#define COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS			(0x1 << 16)
--#define COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS			(0x0 << 16)
--/* Source address increment */
--#define COH901318_CX_CTRL_SRC_ADDR_INC_ENABLE			(0x00040000)
--#define COH901318_CX_CTRL_SRC_ADDR_INC_DISABLE			(0x00000000)
--/* Destination Bus Size */
--#define COH901318_CX_CTRL_DST_BUS_SIZE_MASK			(0x00180000)
--#define COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS			(0x2 << 19)
--#define COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS			(0x1 << 19)
--#define COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS			(0x0 << 19)
--/* Destination address increment */
--#define COH901318_CX_CTRL_DST_ADDR_INC_ENABLE			(0x00200000)
--#define COH901318_CX_CTRL_DST_ADDR_INC_DISABLE			(0x00000000)
--/* Master Mode (Master2 is only connected to MSL) */
--#define COH901318_CX_CTRL_MASTER_MODE_MASK			(0x00C00000)
--#define COH901318_CX_CTRL_MASTER_MODE_M2R_M1W			(0x3 << 22)
--#define COH901318_CX_CTRL_MASTER_MODE_M1R_M2W			(0x2 << 22)
--#define COH901318_CX_CTRL_MASTER_MODE_M2RW			(0x1 << 22)
--#define COH901318_CX_CTRL_MASTER_MODE_M1RW			(0x0 << 22)
--/* Terminal Count flag to PER enable */
--#define COH901318_CX_CTRL_TCP_ENABLE				(0x01000000)
--#define COH901318_CX_CTRL_TCP_DISABLE				(0x00000000)
--/* Terminal Count flags to CPU enable */
--#define COH901318_CX_CTRL_TC_IRQ_ENABLE				(0x02000000)
--#define COH901318_CX_CTRL_TC_IRQ_DISABLE			(0x00000000)
--/* Hand shake to peripheral */
--#define COH901318_CX_CTRL_HSP_ENABLE				(0x04000000)
--#define COH901318_CX_CTRL_HSP_DISABLE				(0x00000000)
--#define COH901318_CX_CTRL_HSS_ENABLE				(0x08000000)
--#define COH901318_CX_CTRL_HSS_DISABLE				(0x00000000)
--/* DMA mode */
--#define COH901318_CX_CTRL_DDMA_MASK				(0x30000000)
--#define COH901318_CX_CTRL_DDMA_LEGACY				(0x0 << 28)
--#define COH901318_CX_CTRL_DDMA_DEMAND_DMA1			(0x1 << 28)
--#define COH901318_CX_CTRL_DDMA_DEMAND_DMA2			(0x2 << 28)
--/* Primary Request Data Destination */
--#define COH901318_CX_CTRL_PRDD_MASK				(0x40000000)
--#define COH901318_CX_CTRL_PRDD_DEST				(0x1 << 30)
--#define COH901318_CX_CTRL_PRDD_SOURCE				(0x0 << 30)
+-int
+-coh901318_lli_fill_single(struct coh901318_pool *pool,
+-			  struct coh901318_lli *lli,
+-			  dma_addr_t buf, unsigned int size,
+-			  dma_addr_t dev_addr, u32 ctrl_chained, u32 ctrl_last,
+-			  enum dma_transfer_direction dir);
 -
--/*
-- * CX_SRC_ADDR - Channel Source Address Registers 32bit (R/W)
+-/**
+- * coh901318_lli_fill_single() - Prepares the lli:s for dma scatter list transfer
+- * @pool: pool handle
+- * @lli: allocated lli
+- * @sg: scatter gather list
+- * @nents: number of entries in sg
+- * @dev_addr: address of periphal
+- * @ctrl_chained: ctrl for chained lli
+- * @ctrl: ctrl of middle lli
+- * @ctrl_last: ctrl for the last lli
+- * @dir: direction of transfer (to or from device)
+- * @ctrl_irq_mask: ctrl mask for CPU interrupt
+- * returns number of CPU interrupts for the lli, negative on error.
 - */
--#define COH901318_CX_SRC_ADDR					(0x0404)
--#define COH901318_CX_SRC_ADDR_SPACING				(0x10)
+-int
+-coh901318_lli_fill_sg(struct coh901318_pool *pool,
+-		      struct coh901318_lli *lli,
+-		      struct scatterlist *sg, unsigned int nents,
+-		      dma_addr_t dev_addr, u32 ctrl_chained,
+-		      u32 ctrl, u32 ctrl_last,
+-		      enum dma_transfer_direction dir, u32 ctrl_irq_mask);
 -
--/*
-- * CX_DST_ADDR - Channel Destination Address Registers 32bit R/W
-- */
--#define COH901318_CX_DST_ADDR					(0x0408)
--#define COH901318_CX_DST_ADDR_SPACING				(0x10)
--
--/*
-- * CX_LNK_ADDR - Channel Link Address Registers 32bit (R/W)
-- */
--#define COH901318_CX_LNK_ADDR					(0x040C)
--#define COH901318_CX_LNK_ADDR_SPACING				(0x10)
--#define COH901318_CX_LNK_LINK_IMMEDIATE				(0x00000001)
--#endif /* COH901318_H */
-diff --git a/arch/arm/mach-u300/spi.c b/arch/arm/mach-u300/spi.c
-index b34567f..9106982 100644
---- a/arch/arm/mach-u300/spi.c
-+++ b/arch/arm/mach-u300/spi.c
-@@ -12,7 +12,6 @@
- #include <linux/amba/pl022.h>
- #include <linux/platform_data/dma-coh901318.h>
- #include <linux/err.h>
--#include <mach/coh901318.h>
- 
- /*
-  * The following is for the actual devices on the SSP/SPI bus
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index 7fa54fb..1be69b8 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -22,8 +22,8 @@
- #include <linux/uaccess.h>
- #include <linux/debugfs.h>
- #include <linux/platform_data/dma-coh901318.h>
--#include <mach/coh901318.h>
- 
-+#include "coh901318.h"
- #include "coh901318_lli.h"
- #include "dmaengine.h"
- 
-diff --git a/drivers/dma/coh901318.h b/drivers/dma/coh901318.h
-new file mode 100644
-index 0000000..9353c40
---- /dev/null
-+++ b/drivers/dma/coh901318.h
-@@ -0,0 +1,245 @@
-+/*
-+ * Copyright (C) 2007-2013 ST-Ericsson
-+ * License terms: GNU General Public License (GPL) version 2
-+ * DMA driver for COH 901 318
-+ * Author: Per Friden <per.friden@stericsson.com>
-+ */
-+
-+#ifndef COH901318_H
-+#define COH901318_H
-+
-+#include <linux/device.h>
-+#include <linux/dmaengine.h>
-+
-+#define MAX_DMA_PACKET_SIZE_SHIFT 11
-+#define MAX_DMA_PACKET_SIZE (1 << MAX_DMA_PACKET_SIZE_SHIFT)
-+
-+/**
-+ * struct coh901318_lli - linked list item for DMAC
-+ * @control: control settings for DMAC
-+ * @src_addr: transfer source address
-+ * @dst_addr: transfer destination address
-+ * @link_addr:  physical address to next lli
-+ * @virt_link_addr: virtual address of next lli (only used by pool_free)
-+ * @phy_this: physical address of current lli (only used by pool_free)
-+ */
-+struct coh901318_lli {
-+	u32 control;
-+	dma_addr_t src_addr;
-+	dma_addr_t dst_addr;
-+	dma_addr_t link_addr;
-+
-+	void *virt_link_addr;
-+	dma_addr_t phy_this;
-+};
-+/**
-+ * struct coh901318_params - parameters for DMAC configuration
-+ * @config: DMA config register
-+ * @ctrl_lli_last: DMA control register for the last lli in the list
-+ * @ctrl_lli: DMA control register for an lli
-+ * @ctrl_lli_chained: DMA control register for a chained lli
-+ */
-+struct coh901318_params {
-+	u32 config;
-+	u32 ctrl_lli_last;
-+	u32 ctrl_lli;
-+	u32 ctrl_lli_chained;
-+};
-+/**
-+ * struct coh_dma_channel - dma channel base
-+ * @name: ascii name of dma channel
-+ * @number: channel id number
-+ * @desc_nbr_max: number of preallocated descriptors
-+ * @priority_high: prio of channel, 0 low otherwise high.
-+ * @param: configuration parameters
-+ */
-+struct coh_dma_channel {
-+	const char name[32];
-+	const int number;
-+	const int desc_nbr_max;
-+	const int priority_high;
-+	const struct coh901318_params param;
-+};
-+
-+/**
-+ * dma_access_memory_state_t - register dma for memory access
-+ *
-+ * @dev: The dma device
-+ * @active:  1 means dma intends to access memory
-+ *           0 means dma wont access memory
-+ */
-+typedef void (*dma_access_memory_state_t)(struct device *dev,
-+					  bool active);
-+
-+/**
-+ * struct powersave - DMA power save structure
-+ * @lock: lock protecting data in this struct
-+ * @started_channels: bit mask indicating active dma channels
-+ */
-+struct powersave {
-+	spinlock_t lock;
-+	u64 started_channels;
-+};
-+/**
-+ * struct coh901318_platform - platform arch structure
-+ * @chans_slave: specifying dma slave channels
-+ * @chans_memcpy: specifying dma memcpy channels
-+ * @access_memory_state: requesting DMA memory access (on / off)
-+ * @chan_conf: dma channel configurations
-+ * @max_channels: max number of dma chanenls
-+ */
-+struct coh901318_platform {
-+	const int *chans_slave;
-+	const int *chans_memcpy;
-+	const dma_access_memory_state_t access_memory_state;
-+	const struct coh_dma_channel *chan_conf;
-+	const int max_channels;
-+};
-+
-+/*
-+ * DMA Controller - this access the static mappings of the coh901318 dma.
-+ *
-+ */
-+
-+#define COH901318_MOD32_MASK					(0x1F)
-+#define COH901318_WORD_MASK					(0xFFFFFFFF)
-+/* INT_STATUS - Interrupt Status Registers 32bit (R/-) */
-+#define COH901318_INT_STATUS1					(0x0000)
-+#define COH901318_INT_STATUS2					(0x0004)
-+/* TC_INT_STATUS - Terminal Count Interrupt Status Registers 32bit (R/-) */
-+#define COH901318_TC_INT_STATUS1				(0x0008)
-+#define COH901318_TC_INT_STATUS2				(0x000C)
-+/* TC_INT_CLEAR - Terminal Count Interrupt Clear Registers 32bit (-/W) */
-+#define COH901318_TC_INT_CLEAR1					(0x0010)
-+#define COH901318_TC_INT_CLEAR2					(0x0014)
-+/* RAW_TC_INT_STATUS - Raw Term Count Interrupt Status Registers 32bit (R/-) */
-+#define COH901318_RAW_TC_INT_STATUS1				(0x0018)
-+#define COH901318_RAW_TC_INT_STATUS2				(0x001C)
-+/* BE_INT_STATUS - Bus Error Interrupt Status Registers 32bit (R/-) */
-+#define COH901318_BE_INT_STATUS1				(0x0020)
-+#define COH901318_BE_INT_STATUS2				(0x0024)
-+/* BE_INT_CLEAR - Bus Error Interrupt Clear Registers 32bit (-/W) */
-+#define COH901318_BE_INT_CLEAR1					(0x0028)
-+#define COH901318_BE_INT_CLEAR2					(0x002C)
-+/* RAW_BE_INT_STATUS - Raw Term Count Interrupt Status Registers 32bit (R/-) */
-+#define COH901318_RAW_BE_INT_STATUS1				(0x0030)
-+#define COH901318_RAW_BE_INT_STATUS2				(0x0034)
-+
-+/*
-+ * CX_CFG - Channel Configuration Registers 32bit (R/W)
-+ */
-+#define COH901318_CX_CFG					(0x0100)
-+#define COH901318_CX_CFG_SPACING				(0x04)
-+/* Channel enable activates tha dma job */
-+#define COH901318_CX_CFG_CH_ENABLE				(0x00000001)
-+#define COH901318_CX_CFG_CH_DISABLE				(0x00000000)
-+/* Request Mode */
-+#define COH901318_CX_CFG_RM_MASK				(0x00000006)
-+#define COH901318_CX_CFG_RM_MEMORY_TO_MEMORY			(0x0 << 1)
-+#define COH901318_CX_CFG_RM_PRIMARY_TO_MEMORY			(0x1 << 1)
-+#define COH901318_CX_CFG_RM_MEMORY_TO_PRIMARY			(0x1 << 1)
-+#define COH901318_CX_CFG_RM_PRIMARY_TO_SECONDARY		(0x3 << 1)
-+#define COH901318_CX_CFG_RM_SECONDARY_TO_PRIMARY		(0x3 << 1)
-+/* Linked channel request field. RM must == 11 */
-+#define COH901318_CX_CFG_LCRF_SHIFT				3
-+#define COH901318_CX_CFG_LCRF_MASK				(0x000001F8)
-+#define COH901318_CX_CFG_LCR_DISABLE				(0x00000000)
-+/* Terminal Counter Interrupt Request Mask */
-+#define COH901318_CX_CFG_TC_IRQ_ENABLE				(0x00000200)
-+#define COH901318_CX_CFG_TC_IRQ_DISABLE				(0x00000000)
-+/* Bus Error interrupt Mask */
-+#define COH901318_CX_CFG_BE_IRQ_ENABLE				(0x00000400)
-+#define COH901318_CX_CFG_BE_IRQ_DISABLE				(0x00000000)
-+
-+/*
-+ * CX_STAT - Channel Status Registers 32bit (R/-)
-+ */
-+#define COH901318_CX_STAT					(0x0200)
-+#define COH901318_CX_STAT_SPACING				(0x04)
-+#define COH901318_CX_STAT_RBE_IRQ_IND				(0x00000008)
-+#define COH901318_CX_STAT_RTC_IRQ_IND				(0x00000004)
-+#define COH901318_CX_STAT_ACTIVE				(0x00000002)
-+#define COH901318_CX_STAT_ENABLED				(0x00000001)
-+
-+/*
-+ * CX_CTRL - Channel Control Registers 32bit (R/W)
-+ */
-+#define COH901318_CX_CTRL					(0x0400)
-+#define COH901318_CX_CTRL_SPACING				(0x10)
-+/* Transfer Count Enable */
-+#define COH901318_CX_CTRL_TC_ENABLE				(0x00001000)
-+#define COH901318_CX_CTRL_TC_DISABLE				(0x00000000)
-+/* Transfer Count Value 0 - 4095 */
-+#define COH901318_CX_CTRL_TC_VALUE_MASK				(0x00000FFF)
-+/* Burst count */
-+#define COH901318_CX_CTRL_BURST_COUNT_MASK			(0x0000E000)
-+#define COH901318_CX_CTRL_BURST_COUNT_64_BYTES			(0x7 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_48_BYTES			(0x6 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_32_BYTES			(0x5 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_16_BYTES			(0x4 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_8_BYTES			(0x3 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_4_BYTES			(0x2 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_2_BYTES			(0x1 << 13)
-+#define COH901318_CX_CTRL_BURST_COUNT_1_BYTE			(0x0 << 13)
-+/* Source bus size  */
-+#define COH901318_CX_CTRL_SRC_BUS_SIZE_MASK			(0x00030000)
-+#define COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS			(0x2 << 16)
-+#define COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS			(0x1 << 16)
-+#define COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS			(0x0 << 16)
-+/* Source address increment */
-+#define COH901318_CX_CTRL_SRC_ADDR_INC_ENABLE			(0x00040000)
-+#define COH901318_CX_CTRL_SRC_ADDR_INC_DISABLE			(0x00000000)
-+/* Destination Bus Size */
-+#define COH901318_CX_CTRL_DST_BUS_SIZE_MASK			(0x00180000)
-+#define COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS			(0x2 << 19)
-+#define COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS			(0x1 << 19)
-+#define COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS			(0x0 << 19)
-+/* Destination address increment */
-+#define COH901318_CX_CTRL_DST_ADDR_INC_ENABLE			(0x00200000)
-+#define COH901318_CX_CTRL_DST_ADDR_INC_DISABLE			(0x00000000)
-+/* Master Mode (Master2 is only connected to MSL) */
-+#define COH901318_CX_CTRL_MASTER_MODE_MASK			(0x00C00000)
-+#define COH901318_CX_CTRL_MASTER_MODE_M2R_M1W			(0x3 << 22)
-+#define COH901318_CX_CTRL_MASTER_MODE_M1R_M2W			(0x2 << 22)
-+#define COH901318_CX_CTRL_MASTER_MODE_M2RW			(0x1 << 22)
-+#define COH901318_CX_CTRL_MASTER_MODE_M1RW			(0x0 << 22)
-+/* Terminal Count flag to PER enable */
-+#define COH901318_CX_CTRL_TCP_ENABLE				(0x01000000)
-+#define COH901318_CX_CTRL_TCP_DISABLE				(0x00000000)
-+/* Terminal Count flags to CPU enable */
-+#define COH901318_CX_CTRL_TC_IRQ_ENABLE				(0x02000000)
-+#define COH901318_CX_CTRL_TC_IRQ_DISABLE			(0x00000000)
-+/* Hand shake to peripheral */
-+#define COH901318_CX_CTRL_HSP_ENABLE				(0x04000000)
-+#define COH901318_CX_CTRL_HSP_DISABLE				(0x00000000)
-+#define COH901318_CX_CTRL_HSS_ENABLE				(0x08000000)
-+#define COH901318_CX_CTRL_HSS_DISABLE				(0x00000000)
-+/* DMA mode */
-+#define COH901318_CX_CTRL_DDMA_MASK				(0x30000000)
-+#define COH901318_CX_CTRL_DDMA_LEGACY				(0x0 << 28)
-+#define COH901318_CX_CTRL_DDMA_DEMAND_DMA1			(0x1 << 28)
-+#define COH901318_CX_CTRL_DDMA_DEMAND_DMA2			(0x2 << 28)
-+/* Primary Request Data Destination */
-+#define COH901318_CX_CTRL_PRDD_MASK				(0x40000000)
-+#define COH901318_CX_CTRL_PRDD_DEST				(0x1 << 30)
-+#define COH901318_CX_CTRL_PRDD_SOURCE				(0x0 << 30)
-+
-+/*
-+ * CX_SRC_ADDR - Channel Source Address Registers 32bit (R/W)
-+ */
-+#define COH901318_CX_SRC_ADDR					(0x0404)
-+#define COH901318_CX_SRC_ADDR_SPACING				(0x10)
-+
-+/*
-+ * CX_DST_ADDR - Channel Destination Address Registers 32bit R/W
-+ */
-+#define COH901318_CX_DST_ADDR					(0x0408)
-+#define COH901318_CX_DST_ADDR_SPACING				(0x10)
-+
-+/*
-+ * CX_LNK_ADDR - Channel Link Address Registers 32bit (R/W)
-+ */
-+#define COH901318_CX_LNK_ADDR					(0x040C)
-+#define COH901318_CX_LNK_ADDR_SPACING				(0x10)
-+#define COH901318_CX_LNK_LINK_IMMEDIATE				(0x00000001)
-+#endif /* COH901318_H */
-diff --git a/drivers/dma/coh901318_lli.c b/drivers/dma/coh901318_lli.c
-index 780e042..e25cac0 100644
---- a/drivers/dma/coh901318_lli.c
-+++ b/drivers/dma/coh901318_lli.c
-@@ -11,8 +11,8 @@
- #include <linux/memory.h>
- #include <linux/gfp.h>
- #include <linux/dmapool.h>
--#include <mach/coh901318.h>
- 
-+#include "coh901318.h"
- #include "coh901318_lli.h"
- 
- #if (defined(CONFIG_DEBUG_FS) && defined(CONFIG_U300_DEBUG))
-diff --git a/drivers/dma/coh901318_lli.h b/drivers/dma/coh901318_lli.h
-index abff371..0c7cace 100644
---- a/drivers/dma/coh901318_lli.h
-+++ b/drivers/dma/coh901318_lli.h
-@@ -10,8 +10,6 @@
- #ifndef COH901318_LLI_H
- #define COH901318_LLI_H
- 
--#include <mach/coh901318.h>
--
- struct device;
- 
- struct coh901318_pool {
+-#endif /* COH901318_LLI_H */
 -- 
 1.7.11.3
 
