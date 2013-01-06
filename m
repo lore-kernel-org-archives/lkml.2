@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab3AFEnu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 23:43:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:7456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755292Ab3AFEnt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 23:43:49 -0500
-Message-ID: <50E900FC.6050908@redhat.com>
-Date: Sun, 06 Jan 2013 12:43:40 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: davem@davemloft.net, mst@redhat.com, netdev@vger.kernel.org,
+	id S1750910Ab3AFFUZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 00:20:25 -0500
+Received: from mail-gg0-f179.google.com ([209.85.161.179]:45686 "EHLO
+	mail-gg0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab3AFFUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 00:20:23 -0500
+X-Greylist: delayed 419 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jan 2013 00:20:22 EST
+Date: Sat, 5 Jan 2013 21:09:53 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 3/3] tuntap: don't add to waitqueue when POLLERR
-References: <1357378446-19656-1-git-send-email-jasowang@redhat.com>  <1357378446-19656-4-git-send-email-jasowang@redhat.com> <1357414650.1678.4092.camel@edumazet-glaptop>
-In-Reply-To: <1357414650.1678.4092.camel@edumazet-glaptop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH] drivers/power/88pm860x_battery.c: use
+ devm_request_threaded_irq
+Message-ID: <20130106050953.GH6919@lizard.sbx05280.losalca.wayport.net>
+References: <1354986995-2324-1-git-send-email-Julia.Lawall@lip6.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1354986995-2324-1-git-send-email-Julia.Lawall@lip6.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/06/2013 03:37 AM, Eric Dumazet wrote:
-> On Sat, 2013-01-05 at 17:34 +0800, Jason Wang wrote:
->> Currently, tun_chr_poll() returns POLLERR after waitqueue adding during device
->> unregistration. This would confuse some of its user such as vhost which assume
->> when POLLERR is returned, it wasn't added to the waitqueue. Fix this by
->> returning POLLERR before adding to waitqueue.
->>
->> Signed-off-by: Jason Wang <jasowang@redhat.com>
->> ---
->>  drivers/net/tun.c |    5 +----
->>  1 files changed, 1 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
->> index fbd106e..f9c0049 100644
->> --- a/drivers/net/tun.c
->> +++ b/drivers/net/tun.c
->> @@ -886,7 +886,7 @@ static unsigned int tun_chr_poll(struct file *file, poll_table *wait)
->>  	struct sock *sk;
->>  	unsigned int mask = 0;
->>  
->> -	if (!tun)
->> +	if (!tun || tun->dev->reg_state != NETREG_REGISTERED)
->>  		return POLLERR;
->>  
->>  	sk = tfile->socket.sk;
->> @@ -903,9 +903,6 @@ static unsigned int tun_chr_poll(struct file *file, poll_table *wait)
->>  	     sock_writeable(sk)))
->>  		mask |= POLLOUT | POLLWRNORM;
->>  
->> -	if (tun->dev->reg_state != NETREG_REGISTERED)
->> -		mask = POLLERR;
->> -
->>  	tun_put(tun);
->>  	return mask;
->>  }
-> This patch is buggy.
->
-> First, the caller assuming POLLERR means poll_wait() was not called is
-> wrong.
+On Sat, Dec 08, 2012 at 06:16:35PM +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> devm_request_threaded_irq requests and irq that is freed when a driver
+> detaches.  This patch uses devm_request_threaded_irq for irqs that are
+> requested in the probe function of a platform device and are only freed in
+> the remove function.
+> 
+> Additionally, the original code used devm_kzalloc, but kfree.  This would
+> lead to a double free.  The problem was found using the following semantic
+> match (http://coccinelle.lip6.fr/):
+> 
+> // <smpl>
+> @@
+> expression x,e;
+> @@
+> x = devm_kzalloc(...)
+> ... when != x = e
+> ?-kfree(x,...);
+> // </smpl>
+> 
+> The error handling code in the probe function is also simplified in the
+> cases where there is now nothing to do other than return.
+> 
+> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> 
+> ---
+[....]
+> @@ -994,9 +989,6 @@ static int pm860x_battery_remove(struct platform_device *pdev)
+>  	struct pm860x_battery_info *info = platform_get_drvdata(pdev);
+>  
+>  	power_supply_unregister(&info->battery);
+> -	free_irq(info->irq_batt, info);
+> -	free_irq(info->irq_cc, info);
+> -	kfree(info);
 
-True, looks like vhost need to check the poll->wqh before trying to
-remove from waitqueue instead of this wrong assumption. And then we can
-drop the whole tx polling state.
->
-> Secondly, you add a ref leak.
+It is not safe to access battery ('struct power_supply') object after
+_unregister() (and irq handlers will surely do). Instead of removing
+free_irq(), the right fix would be to place the two calls before
+_unregister().
 
-Yes, will drop this patch.
+Thanks,
+Anton
 
-Thanks.
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+>  	platform_set_drvdata(pdev, NULL);
+>  	return 0;
+>  }
+> 
+> 
