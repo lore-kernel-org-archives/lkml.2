@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab3AFXmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 18:42:46 -0500
-Received: from ozlabs.org ([203.10.76.45]:49158 "EHLO ozlabs.org"
+	id S1753391Ab3AFXmo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 18:42:44 -0500
+Received: from ozlabs.org ([203.10.76.45]:55243 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753277Ab3AFXmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753311Ab3AFXmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Jan 2013 18:42:39 -0500
 From: Rusty Russell <rusty@rustcorp.com.au>
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org, hutao@cn.fujitsu.com, linux-scsi@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, mst@redhat.com,
-        asias@redhat.com, stefanha@redhat.com, nab@linux-iscsi.org,
-        Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of buffers
-In-Reply-To: <50E5481E.20801@cn.fujitsu.com>
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-2-git-send-email-pbonzini@redhat.com> <87r4m45g88.fsf@rustcorp.com.au> <50E5481E.20801@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zefan <lizefan@huawei.com>, paul@paulmenage.org, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/13] cpuset: cleanup cpuset[_can]_attach()
+In-Reply-To: <20130103022911.GH11220@mtj.dyndns.org>
+References: <1354138460-19286-1-git-send-email-tj@kernel.org> <1354138460-19286-7-git-send-email-tj@kernel.org> <50DACF5B.6050705@huawei.com> <20121226120415.GA18193@mtj.dyndns.org> <87zk0s5h7c.fsf@rustcorp.com.au> <20130102153439.GA11220@mtj.dyndns.org> <871ue35bzk.fsf@rustcorp.com.au> <20130103022911.GH11220@mtj.dyndns.org>
 User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 07 Jan 2013 10:02:57 +1030
-Message-ID: <87sj6d51li.fsf@rustcorp.com.au>
+Date: Mon, 07 Jan 2013 09:58:22 +1030
+Message-ID: <87vcb951t5.fsf@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wanlong Gao <gaowanlong@cn.fujitsu.com> writes:
-> On 01/02/2013 01:03 PM, Rusty Russell wrote:
->> Paolo Bonzini <pbonzini@redhat.com> writes:
->>> The virtqueue_add_buf function has two limitations:
->>>
->>> 1) it requires the caller to provide all the buffers in a single call;
->>>
->>> 2) it does not support chained scatterlists: the buffers must be
->>> provided as an array of struct scatterlist;
->> 
->> Chained scatterlists are a horrible interface, but that doesn't mean we
->> shouldn't support them if there's a need.
->> 
->> I think I once even had a patch which passed two chained sgs, rather
->> than a combo sg and two length numbers.  It's very old, but I've pasted
->> it below.
->> 
->> Duplicating the implementation by having another interface is pretty
->> nasty; I think I'd prefer the chained scatterlists, if that's optimal
->> for you.
+Tejun Heo <tj@kernel.org> writes:
+
+> Hello, Rusty.
 >
-> I rebased against virtio-next and use it in virtio-scsi, and tested it with 4 targets
-> virtio-scsi devices and host cpu idle=poll. Saw a little performance regression here.
+> On Thu, Jan 03, 2013 at 11:17:11AM +1030, Rusty Russell wrote:
+>> > So, I guess this currently is caught in a place which isn't here or
+>> > there.  I'm pretty skeptical whether it makes sense to bother about
+>> > static usages tho.  Can I keep them for static ones?
+>> 
+>> I didn't realize that cpuset_attach was a fastpath.  If it is, put a
+>
+> It isn't a hot path.  It's just a bit nasty to have to allocate them
+> separately.
+>
+>> static there and I'll fix turn it into a bitmap when I need to.
+>> Otherwise, please don't change the code in the first place.
+>
+> So, the plan to drop cpumask_t is still on?  If so, I'll leave
+> cpumask_var_t.
 
-Sure, but now you should be able to eliminate virtscsi_map_sgl(), right?
-You should be able to use scsi_out(sc) and scsi_in(sc) directly, which
-is what Paulo wanted to do...
-
-Right Paulo?
+Yep!
 
 Thanks,
 Rusty.
