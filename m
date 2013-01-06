@@ -1,151 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab3AFJYo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 04:24:44 -0500
-Received: from 1wt.eu ([62.212.114.60]:37525 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751828Ab3AFJYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 04:24:42 -0500
-Date: Sun, 6 Jan 2013 10:24:35 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Major network performance regression in 3.7
-Message-ID: <20130106092435.GZ16031@1wt.eu>
-References: <20130105232913.GQ16031@1wt.eu> <1357430523.1678.4901.camel@edumazet-glaptop> <20130106005053.GS16031@1wt.eu> <1357435276.1678.5067.camel@edumazet-glaptop> <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop> <20130106025256.GY16031@1wt.eu> <1357457724.1678.5941.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357457724.1678.5941.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+	id S1752207Ab3AFJ2u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 04:28:50 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:25094 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751591Ab3AFJ2r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 04:28:47 -0500
+Message-ID: <50E94392.2050509@huawei.com>
+Date: Sun, 6 Jan 2013 17:27:46 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <paul@paulmenage.org>, <glommer@parallels.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <peterz@infradead.org>, <mhocko@suse.cz>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET] cpuset: drop cpuset->stack_list and ->parent, take#2
+References: <1357249446-25075-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1357249446-25075-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 11:35:24PM -0800, Eric Dumazet wrote:
-> On Sun, 2013-01-06 at 03:52 +0100, Willy Tarreau wrote:
+On 2013/1/4 5:44, Tejun Heo wrote:
+> Hello, guys.
 > 
-> > OK so I observed no change with this patch, either on the loopback
-> > data rate at >16kB MTU, or on the myri. I'm keeping it at hand for
-> > experimentation anyway.
-> > 
+> This is the second take of "drop cpuset->stack_list and ->parent"
+> patchset.  Other than being rebased on top of v3.8-rc2 + "cpuset:
+> decouple cpuset locking from cgroup core, take#2", nothing really has
+> changed.
 > 
-> Yeah, there was no bug. I rewrote it for net-next as a cleanup/optim
-> only.
-
-I have re-applied your last rewrite and noticed a small but nice
-performance improvement on a single stream over the loopback :
-
-                        1 session       10 sessions
-  - without the patch :   55.8 Gbps       68.4 Gbps
-  - with the patch    :   56.4 Gbps       70.4 Gbps
-
-This was with the loopback reverted to 16kB MTU of course.
-
-> > Concerning the loopback MTU, I find it strange that the MTU changes
-> > the splice() behaviour and not send/recv. I thought that there could
-> > be a relation between the MTU and the pipe size, but it does not
-> > appear to be the case either, as I tried various sizes between 16kB
-> > and 256kB without achieving original performance.
+> The original patchset description follows.
 > 
+> cpuset implements its own descendant iteration using
+> cpuset->stack_list and has its own ->parent pointer.  There's nothing
+> cpuset specific about descendant walking or finding the parent.  This
+> patchset makes cpuset use cgroup generic API instead.
 > 
-> It probably is related to a too small receive window, given the MTU was
-> multiplied by 4, I guess we need to make some adjustments
-
-In fact even if I set it to 32kB it breaks.
-
-I have tried to progressively increase the loopback's MTU from the default
-16436, by steps of 4096 :
-
-            tcp_rmem = 256 kB           tcp_rmem = 256 kB
-            pipe size = 64 kB           pipe size = 256 kB
-
-    16436 : 55.8 Gbps                   65.2 Gbps
-    20532 : 32..48 Gbps unstable        24..45 Gbps unstable
-    24628 : 56.0 Gbps                   66.4 Gbps
-    28724 : 58.6 Gbps                   67.8 Gbps
-    32820 : 54.5 Gbps                   61.7 Gbps
-    36916 : 56.8 Gbps                   65.5 Gbps
-    41012 : 57.8..58.2 Gbps ~stable     67.5..68.8 Gbps ~stable
-    45108 : 59.4 Gbps                   70.0 Gbps
-    49204 : 61.2 Gbps                   71.1 Gbps
-    53300 : 58.8 Gbps                   70.6 Gbps
-    57396 : 60.2 Gbps                   70.8 Gbps
-    61492 : 61.4 Gbps                   71.1 Gbps
-
-            tcp_rmem = 1 MB             tcp_rmem = 1 MB
-            pipe size = 64 kB           pipe size = 256 kB
-
-    16436 : 16..34 Gbps unstable        49.5 or 65.2 Gbps (unstable)
-    20532 :  7..15 Gbps unstable        15..32 Gbps unstable
-    24628 : 36..48 Gbps unstable        34..61 Gbps unstable
-    28724 : 40..51 Gbps unstable        40..69 Gbps unstable
-    32820 : 40..55 Gbps unstable        59.9..62.3 Gbps ~stable
-    36916 : 38..51 Gbps unstable        66.0 Gbps
-    41012 : 30..42 Gbps unstable        47..66 Gbps unstable
-    45108 : 59.5 Gbps                   71.2 Gbps
-    49204 : 61.3 Gbps                   74.0 Gbps
-    53300 : 63.1 Gbps                   74.5 Gbps
-    57396 : 64.6 Gbps                   74.7 Gbps
-    61492 : 61..66 Gbps unstable        76.5 Gbps
-
-So as long as we maintain the MTU to n*4096 + 52, performance is still
-almost OK. It is interesting to see that the transfer rate is unstable
-at many values and that it depends both on the rmem and pipe size, just
-as if some segments sometimes remained stuck for too long.
-
-And if I pick a value which does not match n*4096+52, such as
-61492+2048 = 63540, then the transfer falls to about 50-100 Mbps again.
-
-So there's clearly something related to the copy of segments from
-incomplete pages instead of passing them via the pipe.
-
-It is possible that this bug has been there for a long time and that
-we never detected it because nobody plays with the loopback MTU.
-
-I have tried with 2.6.35 :
-
-    16436 : 31..33 Gbps
-    61492 : 48..50 Gbps
-    63540 : 50..53 Gbps  => so at least it's not affected
-
-Even forcing the MTU to 16384 maintains 30..33 Gbps almost stable.
-
-On 3.5.7.2 :
-
-    16436 : 23..27 Gbps
-    61492 : 61..64 Gbps
-    63540 : 40..100 Mbps  => the problem was already there.
-
-Since there were many splice changes in 3.5, I'd suspect that the issue
-appeared there though I could be wrong.
-
-> You also could try :
+>  0001-cpuset-implement-cgroup_rightmost_descendant.patch
+>  0002-cpuset-replace-cpuset-stack_list-with-cpuset_for_eac.patch
+>  0003-cpuset-remove-cpuset-parent.patch
 > 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index 1ca2536..b68cdfb 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -1482,6 +1482,9 @@ int tcp_read_sock(struct sock *sk, read_descriptor_t *desc,
->  					break;
->  			}
->  			used = recv_actor(desc, skb, offset, len);
-> +			/* Clean up data we have read: This will do ACK frames. */
-> +			if (used > 0)
-> +				tcp_cleanup_rbuf(sk, used);
->  			if (used < 0) {
->  				if (!copied)
->  					copied = used;
+> 0001 implements cgroup_rightmost_descendant() which can be used to
+> skip subtree during pre-order tree walk.  Michal, maybe memcg can use
+> it too?
+> 
+> 0002 replaces cpuset->stack_list with generic
+> for_each_descendasnt_pre().
+> 
+> 0003 replaces cpuset->parent with cgroup->parent.
+> 
+> This patchset is on top of
+> 
+> v3.8-rc2 d1c3ed669a2d452cacfb48c2d171a1f364dae2ed
+> + [1] "[PATCHSET cgroup/for-3.8] cpuset: decouple cpuset locking from cgroup core, take#2"
+> 
+> and available in the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-iter
+> 
+>  include/linux/cgroup.h |    1 
+>  kernel/cgroup.c        |   26 ++++++++
+>  kernel/cpuset.c        |  151 +++++++++++++++++++++----------------------------
+>  3 files changed, 92 insertions(+), 86 deletions(-)
+> 
 
-It does not change anything to the tests above unfortunately. It did not
-even stabilize the unstable runs.
-
-I'll check if I can spot the original commit which caused the regression
-for MTUs that are not n*4096+52.
-
-But before that I'll try to find the recent one causing the myri10ge to
-slow down, it should take less time to bisect.
-
-Regards,
-Willy
+Acked-by: Li Zefan <lizefan@huawei.com>
 
