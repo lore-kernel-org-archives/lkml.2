@@ -1,51 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391Ab3AFXmo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 18:42:44 -0500
-Received: from ozlabs.org ([203.10.76.45]:55243 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab3AFXmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 18:42:39 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>, paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
-        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/13] cpuset: cleanup cpuset[_can]_attach()
-In-Reply-To: <20130103022911.GH11220@mtj.dyndns.org>
-References: <1354138460-19286-1-git-send-email-tj@kernel.org> <1354138460-19286-7-git-send-email-tj@kernel.org> <50DACF5B.6050705@huawei.com> <20121226120415.GA18193@mtj.dyndns.org> <87zk0s5h7c.fsf@rustcorp.com.au> <20130102153439.GA11220@mtj.dyndns.org> <871ue35bzk.fsf@rustcorp.com.au> <20130103022911.GH11220@mtj.dyndns.org>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Mon, 07 Jan 2013 09:58:22 +1030
-Message-ID: <87vcb951t5.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753356Ab3AFXvO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 18:51:14 -0500
+Received: from mail-ye0-f172.google.com ([209.85.213.172]:43124 "EHLO
+	mail-ye0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228Ab3AFXvL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 18:51:11 -0500
+From: Amit Daniel Kachhap <amit.daniel@samsung.com>
+To: linux-pm@lists.linux-foundation.org, linux-pm@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>
+Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5 RESEND] thermal: exynos: Miscellaneous fixes to support falling threshold interrupt
+Date: Sun,  6 Jan 2013 15:50:48 -0800
+Message-Id: <1357516248-31350-1-git-send-email-amit.daniel@samsung.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1353937640-9939-3-git-send-email-amit.kachhap@linaro.org>
+References: <1353937640-9939-3-git-send-email-amit.kachhap@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> writes:
+Below fixes are done to support falling threshold interrupt,
+* Falling interrupt status macro corrected according to exynos5 data sheet.
+* The get trend function modified to calculate trip temperature correctly.
+* The clearing of interrupt status in the isr is now done after handling
+  the event that caused the interrupt.
 
-> Hello, Rusty.
->
-> On Thu, Jan 03, 2013 at 11:17:11AM +1030, Rusty Russell wrote:
->> > So, I guess this currently is caught in a place which isn't here or
->> > there.  I'm pretty skeptical whether it makes sense to bother about
->> > static usages tho.  Can I keep them for static ones?
->> 
->> I didn't realize that cpuset_attach was a fastpath.  If it is, put a
->
-> It isn't a hot path.  It's just a bit nasty to have to allocate them
-> separately.
->
->> static there and I'll fix turn it into a bitmap when I need to.
->> Otherwise, please don't change the code in the first place.
->
-> So, the plan to drop cpumask_t is still on?  If so, I'll leave
-> cpumask_var_t.
+Signed-off-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+---
+ drivers/thermal/exynos_thermal.c |   19 ++++++++++++-------
+ 1 files changed, 12 insertions(+), 7 deletions(-)
 
-Yep!
+diff --git a/drivers/thermal/exynos_thermal.c b/drivers/thermal/exynos_thermal.c
+index dcd13f7..0d17d41 100644
+--- a/drivers/thermal/exynos_thermal.c
++++ b/drivers/thermal/exynos_thermal.c
+@@ -82,7 +82,7 @@
+ 
+ #define EXYNOS_TRIMINFO_RELOAD		0x1
+ #define EXYNOS_TMU_CLEAR_RISE_INT	0x111
+-#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 16)
++#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
+ #define EXYNOS_MUX_ADDR_VALUE		6
+ #define EXYNOS_MUX_ADDR_SHIFT		20
+ #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+@@ -373,12 +373,19 @@ static int exynos_get_temp(struct thermal_zone_device *thermal,
+ static int exynos_get_trend(struct thermal_zone_device *thermal,
+ 			int trip, enum thermal_trend *trend)
+ {
+-	if (thermal->temperature >= trip)
++	int ret = 0;
++	unsigned long trip_temp;
++
++	ret = exynos_get_trip_temp(thermal, trip, &trip_temp);
++	if (ret < 0)
++		return ret;
++
++	if (thermal->temperature >= trip_temp)
+ 		*trend = THERMAL_TREND_RAISING;
+ 	else
+ 		*trend = THERMAL_TREND_DROPPING;
+ 
+-	return 0;
++	return ret;
+ }
+ /* Operation callback functions for thermal zone */
+ static struct thermal_zone_device_ops const exynos_dev_ops = {
+@@ -712,10 +719,9 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	struct exynos_tmu_data *data = container_of(work,
+ 			struct exynos_tmu_data, irq_work);
+ 
++	exynos_report_trigger();
+ 	mutex_lock(&data->lock);
+ 	clk_enable(data->clk);
+-
+-
+ 	if (data->soc == SOC_ARCH_EXYNOS)
+ 		writel(EXYNOS_TMU_CLEAR_RISE_INT |
+ 				EXYNOS_TMU_CLEAR_FALL_INT,
+@@ -723,10 +729,9 @@ static void exynos_tmu_work(struct work_struct *work)
+ 	else
+ 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
+ 				data->base + EXYNOS_TMU_REG_INTCLEAR);
+-
+ 	clk_disable(data->clk);
+ 	mutex_unlock(&data->lock);
+-	exynos_report_trigger();
++
+ 	enable_irq(data->irq);
+ }
+ 
+-- 
+1.7.5.4
 
-Thanks,
-Rusty.
