@@ -1,227 +1,1036 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755745Ab3AFMOS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 07:14:18 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:19445 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab3AFMOP (ORCPT
+	id S1755657Ab3AFM0r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 07:26:47 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:38333 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752489Ab3AFM0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 07:14:15 -0500
-Message-ID: <50E96A59.1080602@huawei.com>
-Date: Sun, 6 Jan 2013 20:13:13 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	Sun, 6 Jan 2013 07:26:43 -0500
+Date: Sun, 6 Jan 2013 13:26:26 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: uClinux development list <uclinux-dev@uclinux.org>,
+        Greg Ungerer <gerg@uclinux.org>
+Subject: m68k nommu: build failure in v3.8-rc2
+Message-ID: <20130106122626.GA15524@netboy.at.omicron.at>
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <liuj97@gmail.com>, Daniel J Blueman <daniel@quora.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: 3.8-rc2: pciehp waitqueue hang...
-References: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com> <50E5A6A1.5040508@gmail.com> <CAErSpo6KJvEkiqkU--sF_vySk2YUgL_9t1OEYAAGBp9Ebom26w@mail.gmail.com> <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com>
-In-Reply-To: <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.135.76.69]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2013/1/5 5:50, Bjorn Helgaas wrote:
-> [+to Yijing, +cc Kenji]
-> 
-> On Fri, Jan 4, 2013 at 1:01 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->> On Thu, Jan 3, 2013 at 8:41 AM, Jiang Liu <liuj97@gmail.com> wrote:
->>> Hi Daniel,
->>>         It seems like an issue caused by recursive PCIe HPC.
->>> Could you please help to try the patch from:
->>> http://www.spinics.net/lists/linux-pci/msg18625.html
->>
->> Hi Gerry,
->>
->> I'm working on merging this patch.  Seems like something that might be
->> appropriate for stable as well.
->>
->> Did you look for similar problems in other hotplug drivers?
-> 
-> Oops, sorry, I forgot that Yijing is the author of the patch in question.
-> 
-> Yijing, please check for the same problem in other hotplug drivers.
-> Questions I have after a quick look:
-> 
+I see the following error, using the .config inline, below.
 
-Hi Bjorn,
-   Sorry for delay reply. There are some busy work these days.
+arch/m68k/mm/init.c: In function 'print_memmap':
+arch/m68k/mm/init.c:139:2: error: 'KMAP_START' undeclared (first use in this function)
+arch/m68k/mm/init.c:139:2: note: each undeclared identifier is reported only once for each function it appears in
+arch/m68k/mm/init.c:139:2: error: 'KMAP_END' undeclared (first use in this function)
 
->   - shpchp_wq looks like it might have the same deadlock issue.
+Looks to me like KMAP_START is only meant for the MMU case. This error
+was possibly caused by one of these two patches.
 
-shpchp driver uses two workqueues shpchp_wq and shpchp_ordered_wq, they are created by alloc_ordered_workqueue
-which set the "max_active" parameter to 1. So only one pci hotplug slot can do hotplug at the same time.
-shpchp introduced these workqueue to remove the use of flush_scheduled_work() which is deprecated and scheduled for removal.
+$ pr v3.7.. -- arch/m68k/mm/init.c
+f50bf88 m68k: move to a single instance of free_initmem()
+dd1cb3a m68k: merge MMU and non-MMU versions of mm/init.c
 
-hot remove path is:
- button press
-       shpc_isr(interrupt handler)
-	    shpchp_handle_attention_button
-                queue_interrupt_event
-                   queue_work "interrupt_event_handler" into "shpchp_wq"
-                       interrupt_event_handler
-			     handle_button_press_event
-		      		   queue_delayed_work "shpchp_queue_pushbutton_work" into "shpchp_wq"
-					 queue_work "shpchp_pushbutton_thread" into "shpchp_ordered_wq"
-                                               shpchp_pushbutton_thread
-                                                      shpchp_disable_slot
-                                                            pci_stop_and_remove_bus_device
-                                                                ......
-                                                               shpc_remove()   if the hotplug slot connected a iobox which contains some hotplug pcieport, shpc_remove will be called when remove pcie port device.
-                                                                   hpc_release_ctlr
-                                                                       flush_workqueue(shpchp_wq);
-                                                                       flush_workqueue(shpchp_ordered_wq);
-                                                                       So hotplug task hang.
-shpchp driver has the same deadlock issue like pciehp driver, I think we should fix the issue, I will send out the patch if you agree this, but I have no machine support shpchp hotplug,
-so I can't test this patch in real machine.
+What is the right fix for this?
 
+Thanks,
+Richard
+---
+#
+# Automatically generated file; DO NOT EDIT.
+# Linux/m68k 3.8.0-rc2 Kernel Configuration
+#
+CONFIG_M68K=y
+CONFIG_RWSEM_GENERIC_SPINLOCK=y
+CONFIG_GENERIC_GPIO=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_GENERIC_CSUM=y
+CONFIG_TIME_LOW_RES=y
+CONFIG_NO_IOPORT=y
+# CONFIG_NO_DMA is not set
+CONFIG_ZONE_DMA=y
+CONFIG_HZ=100
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
 
->   - pciehp_wq (and your per-slot replacement) are allocated with
-> alloc_workqueue().  shpchp_wq is allocated with
-> alloc_ordered_workqueue().  Why the difference?
+#
+# General setup
+#
+CONFIG_EXPERIMENTAL=y
+CONFIG_BROKEN_ON_SMP=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+CONFIG_LOCALVERSION_AUTO=y
+CONFIG_DEFAULT_HOSTNAME="(none)"
+# CONFIG_SYSVIPC is not set
+# CONFIG_POSIX_MQUEUE is not set
+# CONFIG_FHANDLE is not set
+# CONFIG_AUDIT is not set
+CONFIG_HAVE_GENERIC_HARDIRQS=y
 
-alloc_workqueue(name, 0, 0) set max_active to 0(0 is default value used and support 256 work items of the wq can be executing at the same time per CPU).
-So pciehp driver can handle push button event asynchronously.
+#
+# IRQ subsystem
+#
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
 
-alloc_ordered_workqueue can only one handle push button event at the same time.
+#
+# Timers subsystem
+#
+# CONFIG_NO_HZ is not set
+# CONFIG_HIGH_RES_TIMERS is not set
 
-> 
->   - The alloc/alloc_ordered difference might be related to 486b10b9f4,
-> where Kenji removed alloc_ordered from pciehp.  Should a similar
-> change be made to shpchp?
+#
+# CPU/Task time and stats accounting
+#
+CONFIG_TICK_CPU_ACCOUNTING=y
+# CONFIG_BSD_PROCESS_ACCT is not set
+# CONFIG_TASKSTATS is not set
 
-Yes, I agree, we can use per-slot workqueue to fix this issue.
+#
+# RCU Subsystem
+#
+CONFIG_TINY_RCU=y
+# CONFIG_PREEMPT_RCU is not set
+# CONFIG_TREE_RCU_TRACE is not set
+# CONFIG_IKCONFIG is not set
+CONFIG_LOG_BUF_SHIFT=14
+# CONFIG_CGROUPS is not set
+# CONFIG_CHECKPOINT_RESTORE is not set
+# CONFIG_NAMESPACES is not set
+CONFIG_UIDGID_CONVERTED=y
+# CONFIG_UIDGID_STRICT_TYPE_CHECKS is not set
+# CONFIG_SCHED_AUTOGROUP is not set
+# CONFIG_SYSFS_DEPRECATED is not set
+# CONFIG_RELAY is not set
+# CONFIG_BLK_DEV_INITRD is not set
+# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_EXPERT=y
+CONFIG_HAVE_UID16=y
+# CONFIG_UID16 is not set
+# CONFIG_SYSCTL_SYSCALL is not set
+# CONFIG_KALLSYMS is not set
+CONFIG_HOTPLUG=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+# CONFIG_BASE_FULL is not set
+# CONFIG_FUTEX is not set
+# CONFIG_EPOLL is not set
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_AIO=y
+CONFIG_EMBEDDED=y
 
-> 
->   - acpiphp uses the global kacpi_hotplug_wq.  We never flush or drain
-> kacpi_hotplug_wq, so I doubt there's a deadlock issue, but I wonder if
-> there are any ordering issues there because we *don't* ever wait for
-> things in that queue to be completed.
+#
+# Kernel Performance Events And Counters
+#
+# CONFIG_VM_EVENT_COUNTERS is not set
+# CONFIG_SLUB_DEBUG is not set
+CONFIG_COMPAT_BRK=y
+# CONFIG_SLAB is not set
+CONFIG_SLUB=y
+# CONFIG_SLOB is not set
+# CONFIG_MMAP_ALLOW_UNINITIALIZED is not set
+# CONFIG_PROFILING is not set
+CONFIG_HAVE_CLK=y
+CONFIG_ARCH_WANT_IPC_PARSE_VERSION=y
+CONFIG_HAVE_MOD_ARCH_SPECIFIC=y
+CONFIG_MODULES_USE_ELF_RELA=y
+CONFIG_MODULES_USE_ELF_REL=y
 
-acpiphp driver is not attach to a pci device, so when hot remove pci device, driver will not to flush or drain kacpi_hotplug_wq.
-But if we do acpiphp hot remove in sequence like this, there maybe cause some unexpected errors, I think.
-slot(A)------pcie port----slot(B)
-slot A and slot B both support acpiphp hotplug.
-1、press attention button on slot A;
-2、press attention button on slot B quickly after step 1;
-Because kacpi_hotplug_wq is a ordered workqueue, slot B hot remove won't run unless slot A hot remove action completed.
-After Slot B hot remove completed, some resources of slot A also has been destroyed. So slot B hot remove will cause some unexpected errors.
-Because my hotplug machine's bios don't support iobox hotplug(slot-connected-slot), I can't verify this situation.
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
+CONFIG_BASE_SMALL=1
+# CONFIG_MODULES is not set
+CONFIG_BLOCK=y
+# CONFIG_LBDAF is not set
+# CONFIG_BLK_DEV_BSG is not set
+# CONFIG_BLK_DEV_BSGLIB is not set
+# CONFIG_BLK_DEV_INTEGRITY is not set
 
+#
+# Partition Types
+#
+# CONFIG_PARTITION_ADVANCED is not set
+CONFIG_MSDOS_PARTITION=y
+CONFIG_EFI_PARTITION=y
 
-Thanks!
-Yijing.
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+# CONFIG_IOSCHED_DEADLINE is not set
+CONFIG_IOSCHED_CFQ=y
+CONFIG_DEFAULT_CFQ=y
+# CONFIG_DEFAULT_NOOP is not set
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_INLINE_SPIN_UNLOCK_IRQ=y
+CONFIG_INLINE_READ_UNLOCK=y
+CONFIG_INLINE_READ_UNLOCK_IRQ=y
+CONFIG_INLINE_WRITE_UNLOCK=y
+CONFIG_INLINE_WRITE_UNLOCK_IRQ=y
+# CONFIG_FREEZER is not set
+# CONFIG_MMU is not set
 
+#
+# Platform setup
+#
 
-> 
->>> Thanks!
->>> Gerry
->>> On 01/03/2013 11:11 PM, Daniel J Blueman wrote:
->>>> When the Apple thunderbolt ethernet adapter comes loose on my Macbook
->>>> Pro Retina (Intel DSL3510), we see pci_slot_name return
->>>> non-deterministic data (ie varying each boot), and we see pciehp_wp
->>>> remain armed with events causing the kthread to get stuck:
->>>>
->>>> tg3 0000:0a:00.0 eth0: Link is up at 1000 Mbps, full duplex
->>>> tg3 0000:0a:00.0 eth0: Flow control is on for TX and on for RX
->>>> <thunderbold adapter comes loose>
->>>> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
->>>> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
->>>> clear MAC_TX_MODE=ffffffff
->>>> tg3 0000:0a:00.0 eth0: No firmware running
->>>> tg3 0000:0a:00.0 eth0: Link is down
->>>> pcieport 0000:00:01.1: System wakeup enabled by ACPI
->>>> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
->>>> pciehp 0000:09:00.0:pcie24: Latch open on
->>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
->>>> pciehp 0000:09:00.0:pcie24: Button pressed on
->>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
->>>> pciehp 0000:09:00.0:pcie24: Card present on
->>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
->>>> pciehp 0000:09:00.0:pcie24: Power fault on slot
->>>> \xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
->>>> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
->>>> pciehp 0000:09:00.0:pcie24: PCI slot
->>>> #\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
->>>> - powering on due to button press.
->>>> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
->>>> pciehp 0000:09:00.0:pcie24: Failed to check link status
->>>> INFO: task kworker/0:1:52 blocked for more than 120 seconds.
->>>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
->>>> kworker/0:1   D ffff880265893090   0  52   2 0x00000000
->>>>  ffff8802655456f8 0000000000000046 ffffffff81a21a60 ffff880265545fd8
->>>>  0000000000004000 ffff880265545fd8 ffff880265892bb0 ffff880265adc8d0
->>>>  000000000000059e 0000000000000082 ffff880265545668 ffffffff810415aa
->>>> Call Trace:
->>>>  [<ffffffff810415aa>] ? console_unlock+0x1fa/0x4a0
->>>>  [<ffffffff8108d16d>] ? trace_hardirqs_off+0xd/0x10
->>>>  [<ffffffff81041b19>] ? vprintk_emit+0x1c9/0x510
->>>>  [<ffffffff81558db4>] schedule+0x24/0x70
->>>>  [<ffffffff8155653c>] schedule_timeout+0x19c/0x1e0
->>>>  [<ffffffff81558c43>] wait_for_common+0xe3/0x180
->>>>  [<ffffffff8105adc1>] ? flush_workqueue+0x111/0x4d0
->>>>  [<ffffffff81071140>] ? try_to_wake_up+0x2d0/0x2d0
->>>>  [<ffffffff81558d88>] wait_for_completion+0x18/0x20
->>>>  [<ffffffff8105ae86>] flush_workqueue+0x1d6/0x4d0
->>>>  [<ffffffff8105acb0>] ? flush_workqueue_prep_cwqs+0x200/0x200
->>>>  [<ffffffff8125e909>] pciehp_release_ctrl+0x39/0x90
->>>>  [<ffffffff8125b945>] pciehp_remove+0x25/0x30
->>>>  [<ffffffff81255bf2>] pcie_port_remove_service+0x52/0x70
->>>>  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
->>>>  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
->>>>  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
->>>>  [<ffffffff81303fe7>] device_del+0x127/0x1c0
->>>>  [<ffffffff81255d70>] ? resume_iter+0x40/0x40
->>>>  [<ffffffff81304091>] device_unregister+0x11/0x20
->>>>  [<ffffffff81255da5>] remove_iter+0x35/0x40
->>>>  [<ffffffff81302eb6>] device_for_each_child+0x36/0x70
->>>>  [<ffffffff81256341>] pcie_port_device_remove+0x21/0x40
->>>>  [<ffffffff81256588>] pcie_portdrv_remove+0x28/0x50
->>>>  [<ffffffff8124a821>] pci_device_remove+0x41/0xc0
->>>>  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
->>>>  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
->>>>  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
->>>>  [<ffffffff81303fe7>] device_del+0x127/0x1c0
->>>>  [<ffffffff81304091>] device_unregister+0x11/0x20
->>>>  [<ffffffff8124566c>] pci_stop_bus_device+0x8c/0xa0
->>>>  [<ffffffff81245615>] pci_stop_bus_device+0x35/0xa0
->>>>  [<ffffffff81245811>] pci_stop_and_remove_bus_device+0x11/0x20
->>>>  [<ffffffff8125cc91>] pciehp_unconfigure_device+0x91/0x190
->>>>  [<ffffffff8125c76d>] ? pciehp_power_thread+0x2d/0x110
->>>>  [<ffffffff8125c591>] pciehp_disable_slot+0x71/0x220
->>>>  [<ffffffff8125c826>] pciehp_power_thread+0xe6/0x110
->>>>  [<ffffffff8105d203>] process_one_work+0x193/0x550
->>>>  [<ffffffff8105d1a1>] ? process_one_work+0x131/0x550
->>>>  [<ffffffff8125c740>] ? pciehp_disable_slot+0x220/0x220
->>>>  [<ffffffff8105d96d>] worker_thread+0x15d/0x400
->>>>  [<ffffffff8109213d>] ? trace_hardirqs_on+0xd/0x10
->>>>  [<ffffffff8105d810>] ? rescuer_thread+0x210/0x210
->>>>  [<ffffffff81062bd6>] kthread+0xd6/0xe0
->>>>  [<ffffffff8155a18b>] ? _raw_spin_unlock_irq+0x2b/0x50
->>>>  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
->>>>  [<ffffffff8155ae6c>] ret_from_fork+0x7c/0xb0
->>>>  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
->>>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> .
-> 
+#
+# Processor Type
+#
+# CONFIG_M68KCLASSIC is not set
+CONFIG_COLDFIRE=y
+# CONFIG_M5206 is not set
+# CONFIG_M5206e is not set
+# CONFIG_M520x is not set
+CONFIG_M523x=y
+# CONFIG_M5249 is not set
+# CONFIG_M525x is not set
+# CONFIG_M5271 is not set
+# CONFIG_M5272 is not set
+# CONFIG_M5275 is not set
+# CONFIG_M528x is not set
+# CONFIG_M5307 is not set
+# CONFIG_M532x is not set
+# CONFIG_M5407 is not set
+# CONFIG_M547x is not set
+# CONFIG_M548x is not set
+# CONFIG_M5441x is not set
 
+#
+# Processor Specific Options
+#
+# CONFIG_ARCH_DISCONTIGMEM_ENABLE is not set
+CONFIG_NODES_SHIFT=3
+CONFIG_CPU_HAS_NO_BITFIELDS=y
+CONFIG_CPU_HAS_NO_MULDIV64=y
+CONFIG_HAVE_CACHE_SPLIT=y
+CONFIG_HAVE_IPSBAR=y
+CONFIG_CLOCK_SET=y
+CONFIG_CLOCK_FREQ=150000000
+CONFIG_CACHE_I=y
+# CONFIG_CACHE_D is not set
+# CONFIG_CACHE_BOTH is not set
 
--- 
-Thanks!
-Yijing
+#
+# Machine Types
+#
+CONFIG_FREESCALE=y
+CONFIG_M5235EVB=y
+# CONFIG_SAVANTrosie1 is not set
+
+#
+# Machine Options
+#
+# CONFIG_UBOOT is not set
+CONFIG_4KSTACKS=y
+
+#
+# RAM configuration
+#
+CONFIG_RAMBASE=0x00000000
+CONFIG_RAMSIZE=0x01000000
+CONFIG_VECTORBASE=0x00000000
+CONFIG_IPSBAR=0x40000000
+CONFIG_KERNELBASE=0x00020000
+
+#
+# ROM configuration
+#
+# CONFIG_ROM is not set
+CONFIG_RAMKERNEL=y
+# CONFIG_ROMKERNEL is not set
+CONFIG_ISA_DMA_API=y
+# CONFIG_PCCARD is not set
+
+#
+# Kernel Features
+#
+CONFIG_PREEMPT_NONE=y
+# CONFIG_PREEMPT_VOLUNTARY is not set
+# CONFIG_PREEMPT is not set
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_FLATMEM_MANUAL=y
+CONFIG_FLATMEM=y
+CONFIG_FLAT_NODE_MEM_MAP=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+# CONFIG_PHYS_ADDR_T_64BIT is not set
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_VIRT_TO_BUS=y
+CONFIG_NOMMU_INITIAL_TRIM_EXCESS=1
+CONFIG_NEED_PER_CPU_KM=y
+# CONFIG_CLEANCACHE is not set
+
+#
+# Executable file formats
+#
+CONFIG_BINFMT_FLAT=y
+# CONFIG_BINFMT_ZFLAT is not set
+# CONFIG_BINFMT_SHARED_FLAT is not set
+# CONFIG_HAVE_AOUT is not set
+# CONFIG_BINFMT_MISC is not set
+# CONFIG_COREDUMP is not set
+
+#
+# Power management options
+#
+# CONFIG_PM is not set
+CONFIG_NET=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=y
+# CONFIG_PACKET_DIAG is not set
+CONFIG_UNIX=y
+# CONFIG_UNIX_DIAG is not set
+CONFIG_XFRM=y
+# CONFIG_XFRM_USER is not set
+# CONFIG_XFRM_SUB_POLICY is not set
+# CONFIG_XFRM_MIGRATE is not set
+# CONFIG_XFRM_STATISTICS is not set
+# CONFIG_NET_KEY is not set
+CONFIG_INET=y
+# CONFIG_IP_MULTICAST is not set
+# CONFIG_IP_ADVANCED_ROUTER is not set
+# CONFIG_IP_PNP is not set
+# CONFIG_NET_IPIP is not set
+# CONFIG_NET_IPGRE_DEMUX is not set
+# CONFIG_ARPD is not set
+# CONFIG_SYN_COOKIES is not set
+# CONFIG_NET_IPVTI is not set
+# CONFIG_INET_AH is not set
+# CONFIG_INET_ESP is not set
+# CONFIG_INET_IPCOMP is not set
+# CONFIG_INET_XFRM_TUNNEL is not set
+# CONFIG_INET_TUNNEL is not set
+CONFIG_INET_XFRM_MODE_TRANSPORT=y
+CONFIG_INET_XFRM_MODE_TUNNEL=y
+CONFIG_INET_XFRM_MODE_BEET=y
+# CONFIG_INET_LRO is not set
+CONFIG_INET_DIAG=y
+CONFIG_INET_TCP_DIAG=y
+# CONFIG_INET_UDP_DIAG is not set
+# CONFIG_TCP_CONG_ADVANCED is not set
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_DEFAULT_TCP_CONG="cubic"
+# CONFIG_TCP_MD5SIG is not set
+# CONFIG_IPV6 is not set
+# CONFIG_NETWORK_SECMARK is not set
+CONFIG_NETWORK_PHY_TIMESTAMPING=y
+# CONFIG_NETFILTER is not set
+# CONFIG_IP_DCCP is not set
+# CONFIG_IP_SCTP is not set
+# CONFIG_RDS is not set
+# CONFIG_TIPC is not set
+# CONFIG_ATM is not set
+# CONFIG_L2TP is not set
+# CONFIG_BRIDGE is not set
+CONFIG_HAVE_NET_DSA=y
+# CONFIG_VLAN_8021Q is not set
+# CONFIG_DECNET is not set
+# CONFIG_LLC2 is not set
+# CONFIG_IPX is not set
+# CONFIG_ATALK is not set
+# CONFIG_X25 is not set
+# CONFIG_LAPB is not set
+# CONFIG_WAN_ROUTER is not set
+# CONFIG_PHONET is not set
+# CONFIG_IEEE802154 is not set
+# CONFIG_NET_SCHED is not set
+# CONFIG_DCB is not set
+# CONFIG_BATMAN_ADV is not set
+# CONFIG_OPENVSWITCH is not set
+CONFIG_BQL=y
+
+#
+# Network testing
+#
+# CONFIG_NET_PKTGEN is not set
+# CONFIG_HAMRADIO is not set
+# CONFIG_CAN is not set
+# CONFIG_IRDA is not set
+# CONFIG_BT is not set
+# CONFIG_AF_RXRPC is not set
+CONFIG_WIRELESS=y
+# CONFIG_CFG80211 is not set
+# CONFIG_LIB80211 is not set
+
+#
+# CFG80211 needs to be enabled for MAC80211
+#
+# CONFIG_WIMAX is not set
+# CONFIG_RFKILL is not set
+# CONFIG_NET_9P is not set
+# CONFIG_CAIF is not set
+# CONFIG_CEPH_LIB is not set
+# CONFIG_NFC is not set
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER_PATH=""
+# CONFIG_DEVTMPFS is not set
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+# CONFIG_FW_LOADER is not set
+# CONFIG_DEBUG_DRIVER is not set
+# CONFIG_DEBUG_DEVRES is not set
+# CONFIG_SYS_HYPERVISOR is not set
+CONFIG_GENERIC_CPU_DEVICES=y
+# CONFIG_DMA_SHARED_BUFFER is not set
+
+#
+# Bus devices
+#
+# CONFIG_CONNECTOR is not set
+CONFIG_MTD=y
+# CONFIG_MTD_REDBOOT_PARTS is not set
+# CONFIG_MTD_CMDLINE_PARTS is not set
+# CONFIG_MTD_AR7_PARTS is not set
+
+#
+# User Modules And Translation Layers
+#
+CONFIG_MTD_CHAR=y
+CONFIG_MTD_BLKDEVS=y
+CONFIG_MTD_BLOCK=y
+# CONFIG_FTL is not set
+# CONFIG_NFTL is not set
+# CONFIG_INFTL is not set
+# CONFIG_RFD_FTL is not set
+# CONFIG_SSFDC is not set
+# CONFIG_SM_FTL is not set
+# CONFIG_MTD_OOPS is not set
+
+#
+# RAM/ROM/Flash chip drivers
+#
+# CONFIG_MTD_CFI is not set
+# CONFIG_MTD_JEDECPROBE is not set
+CONFIG_MTD_MAP_BANK_WIDTH_1=y
+CONFIG_MTD_MAP_BANK_WIDTH_2=y
+CONFIG_MTD_MAP_BANK_WIDTH_4=y
+# CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
+CONFIG_MTD_CFI_I1=y
+CONFIG_MTD_CFI_I2=y
+# CONFIG_MTD_CFI_I4 is not set
+# CONFIG_MTD_CFI_I8 is not set
+CONFIG_MTD_RAM=y
+# CONFIG_MTD_ROM is not set
+# CONFIG_MTD_ABSENT is not set
+
+#
+# Mapping drivers for chip access
+#
+# CONFIG_MTD_COMPLEX_MAPPINGS is not set
+CONFIG_MTD_UCLINUX=y
+# CONFIG_MTD_PLATRAM is not set
+
+#
+# Self-contained MTD device drivers
+#
+# CONFIG_MTD_SLRAM is not set
+# CONFIG_MTD_PHRAM is not set
+# CONFIG_MTD_MTDRAM is not set
+# CONFIG_MTD_BLOCK2MTD is not set
+
+#
+# Disk-On-Chip Device Drivers
+#
+# CONFIG_MTD_DOCG3 is not set
+# CONFIG_MTD_NAND is not set
+# CONFIG_MTD_ONENAND is not set
+
+#
+# LPDDR flash memory drivers
+#
+# CONFIG_MTD_LPDDR is not set
+# CONFIG_MTD_UBI is not set
+# CONFIG_PARPORT is not set
+CONFIG_BLK_DEV=y
+# CONFIG_BLK_DEV_COW_COMMON is not set
+# CONFIG_BLK_DEV_LOOP is not set
+# CONFIG_BLK_DEV_DRBD is not set
+# CONFIG_BLK_DEV_NBD is not set
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_COUNT=16
+CONFIG_BLK_DEV_RAM_SIZE=4096
+# CONFIG_BLK_DEV_XIP is not set
+# CONFIG_CDROM_PKTCDVD is not set
+# CONFIG_ATA_OVER_ETH is not set
+# CONFIG_BLK_DEV_HD is not set
+# CONFIG_BLK_DEV_RBD is not set
+
+#
+# Misc devices
+#
+# CONFIG_ATMEL_PWM is not set
+# CONFIG_ENCLOSURE_SERVICES is not set
+# CONFIG_C2PORT is not set
+
+#
+# EEPROM support
+#
+# CONFIG_EEPROM_93CX6 is not set
+
+#
+# Texas Instruments shared transport line discipline
+#
+
+#
+# Altera FPGA firmware download module
+#
+CONFIG_HAVE_IDE=y
+# CONFIG_IDE is not set
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=y
+# CONFIG_RAID_ATTRS is not set
+# CONFIG_SCSI is not set
+# CONFIG_SCSI_DMA is not set
+# CONFIG_SCSI_NETLINK is not set
+# CONFIG_MD is not set
+CONFIG_NETDEVICES=y
+CONFIG_NET_CORE=y
+# CONFIG_BONDING is not set
+# CONFIG_DUMMY is not set
+# CONFIG_EQUALIZER is not set
+# CONFIG_MII is not set
+# CONFIG_NET_TEAM is not set
+# CONFIG_MACVLAN is not set
+# CONFIG_VXLAN is not set
+# CONFIG_NETCONSOLE is not set
+# CONFIG_NETPOLL is not set
+# CONFIG_NET_POLL_CONTROLLER is not set
+# CONFIG_TUN is not set
+# CONFIG_VETH is not set
+
+#
+# CAIF transport drivers
+#
+
+#
+# Distributed Switch Architecture drivers
+#
+# CONFIG_NET_DSA_MV88E6XXX is not set
+# CONFIG_NET_DSA_MV88E6060 is not set
+# CONFIG_NET_DSA_MV88E6XXX_NEED_PPU is not set
+# CONFIG_NET_DSA_MV88E6131 is not set
+# CONFIG_NET_DSA_MV88E6123_61_65 is not set
+CONFIG_ETHERNET=y
+# CONFIG_NET_CADENCE is not set
+# CONFIG_NET_VENDOR_BROADCOM is not set
+# CONFIG_NET_CALXEDA_XGMAC is not set
+# CONFIG_DM9000 is not set
+# CONFIG_DNET is not set
+CONFIG_NET_VENDOR_FREESCALE=y
+CONFIG_FEC=y
+# CONFIG_NET_VENDOR_INTEL is not set
+# CONFIG_NET_VENDOR_MARVELL is not set
+# CONFIG_NET_VENDOR_MICREL is not set
+# CONFIG_NET_VENDOR_NATSEMI is not set
+# CONFIG_ETHOC is not set
+# CONFIG_NET_VENDOR_SEEQ is not set
+# CONFIG_NET_VENDOR_SMSC is not set
+# CONFIG_NET_VENDOR_STMICRO is not set
+# CONFIG_NET_VENDOR_WIZNET is not set
+CONFIG_PHYLIB=y
+
+#
+# MII PHY device drivers
+#
+# CONFIG_AT803X_PHY is not set
+# CONFIG_AMD_PHY is not set
+# CONFIG_MARVELL_PHY is not set
+# CONFIG_DAVICOM_PHY is not set
+# CONFIG_QSEMI_PHY is not set
+# CONFIG_LXT_PHY is not set
+# CONFIG_CICADA_PHY is not set
+# CONFIG_VITESSE_PHY is not set
+# CONFIG_SMSC_PHY is not set
+# CONFIG_BROADCOM_PHY is not set
+# CONFIG_BCM87XX_PHY is not set
+# CONFIG_ICPLUS_PHY is not set
+# CONFIG_REALTEK_PHY is not set
+# CONFIG_NATIONAL_PHY is not set
+# CONFIG_STE10XP is not set
+# CONFIG_LSI_ET1011C_PHY is not set
+# CONFIG_MICREL_PHY is not set
+# CONFIG_FIXED_PHY is not set
+# CONFIG_MDIO_BITBANG is not set
+# CONFIG_PPP is not set
+# CONFIG_SLIP is not set
+# CONFIG_WLAN is not set
+
+#
+# Enable WiMAX (Networking options) to see the WiMAX drivers
+#
+# CONFIG_WAN is not set
+# CONFIG_ISDN is not set
+
+#
+# Input device support
+#
+# CONFIG_INPUT is not set
+
+#
+# Hardware I/O ports
+#
+# CONFIG_SERIO is not set
+# CONFIG_GAMEPORT is not set
+
+#
+# Character devices
+#
+# CONFIG_VT is not set
+CONFIG_UNIX98_PTYS=y
+# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
+# CONFIG_LEGACY_PTYS is not set
+# CONFIG_SERIAL_NONSTANDARD is not set
+# CONFIG_N_GSM is not set
+# CONFIG_TRACE_SINK is not set
+CONFIG_DEVKMEM=y
+
+#
+# Serial drivers
+#
+# CONFIG_SERIAL_8250 is not set
+
+#
+# Non-8250 serial port support
+#
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+CONFIG_SERIAL_MCF=y
+CONFIG_SERIAL_MCF_BAUDRATE=115200
+CONFIG_SERIAL_MCF_CONSOLE=y
+# CONFIG_SERIAL_SCCNXP is not set
+# CONFIG_SERIAL_TIMBERDALE is not set
+# CONFIG_SERIAL_ALTERA_JTAGUART is not set
+# CONFIG_SERIAL_ALTERA_UART is not set
+# CONFIG_SERIAL_ARC is not set
+# CONFIG_TTY_PRINTK is not set
+# CONFIG_IPMI_HANDLER is not set
+# CONFIG_HW_RANDOM is not set
+# CONFIG_GEN_RTC is not set
+# CONFIG_R3964 is not set
+# CONFIG_RAW_DRIVER is not set
+# CONFIG_TCG_TPM is not set
+# CONFIG_I2C is not set
+# CONFIG_SPI is not set
+# CONFIG_HSI is not set
+
+#
+# PPS support
+#
+CONFIG_PPS=y
+# CONFIG_PPS_DEBUG is not set
+# CONFIG_NTP_PPS is not set
+
+#
+# PPS clients support
+#
+# CONFIG_PPS_CLIENT_KTIMER is not set
+# CONFIG_PPS_CLIENT_LDISC is not set
+# CONFIG_PPS_CLIENT_GPIO is not set
+
+#
+# PPS generators support
+#
+
+#
+# PTP clock support
+#
+CONFIG_PTP_1588_CLOCK=y
+CONFIG_DP83640_PHY=y
+# CONFIG_PTP_1588_CLOCK_PCH is not set
+CONFIG_ARCH_HAVE_CUSTOM_GPIO_H=y
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+# CONFIG_GPIOLIB is not set
+# CONFIG_W1 is not set
+# CONFIG_POWER_SUPPLY is not set
+# CONFIG_POWER_AVS is not set
+# CONFIG_HWMON is not set
+# CONFIG_THERMAL is not set
+# CONFIG_WATCHDOG is not set
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+# CONFIG_SSB is not set
+CONFIG_BCMA_POSSIBLE=y
+
+#
+# Broadcom specific AMBA
+#
+# CONFIG_BCMA is not set
+
+#
+# Multifunction device drivers
+#
+# CONFIG_MFD_CORE is not set
+# CONFIG_MFD_SM501 is not set
+# CONFIG_MFD_TI_AM335X_TSCADC is not set
+# CONFIG_HTC_PASIC3 is not set
+# CONFIG_MFD_TMIO is not set
+# CONFIG_ABX500_CORE is not set
+# CONFIG_REGULATOR is not set
+# CONFIG_MEDIA_SUPPORT is not set
+
+#
+# Graphics support
+#
+# CONFIG_VGASTATE is not set
+# CONFIG_VIDEO_OUTPUT_CONTROL is not set
+# CONFIG_FB is not set
+# CONFIG_EXYNOS_VIDEO is not set
+# CONFIG_BACKLIGHT_LCD_SUPPORT is not set
+# CONFIG_SOUND is not set
+# CONFIG_USB_ARCH_HAS_OHCI is not set
+# CONFIG_USB_ARCH_HAS_EHCI is not set
+# CONFIG_USB_ARCH_HAS_XHCI is not set
+# CONFIG_USB_SUPPORT is not set
+# CONFIG_MMC is not set
+# CONFIG_MEMSTICK is not set
+# CONFIG_NEW_LEDS is not set
+# CONFIG_ACCESSIBILITY is not set
+# CONFIG_RTC_CLASS is not set
+# CONFIG_DMADEVICES is not set
+# CONFIG_AUXDISPLAY is not set
+# CONFIG_UIO is not set
+
+#
+# Virtio drivers
+#
+# CONFIG_VIRTIO_MMIO is not set
+
+#
+# Microsoft Hyper-V guest support
+#
+# CONFIG_STAGING is not set
+
+#
+# Hardware Spinlock drivers
+#
+# CONFIG_IOMMU_SUPPORT is not set
+
+#
+# Remoteproc drivers (EXPERIMENTAL)
+#
+# CONFIG_STE_MODEM_RPROC is not set
+
+#
+# Rpmsg drivers (EXPERIMENTAL)
+#
+# CONFIG_VIRT_DRIVERS is not set
+# CONFIG_PM_DEVFREQ is not set
+# CONFIG_EXTCON is not set
+# CONFIG_MEMORY is not set
+# CONFIG_IIO is not set
+# CONFIG_PWM is not set
+# CONFIG_IPACK_BUS is not set
+
+#
+# File systems
+#
+# CONFIG_EXT2_FS is not set
+# CONFIG_EXT3_FS is not set
+# CONFIG_EXT4_FS is not set
+# CONFIG_EXT4_FS_POSIX_ACL is not set
+# CONFIG_EXT4_FS_SECURITY is not set
+# CONFIG_REISERFS_FS is not set
+# CONFIG_JFS_FS is not set
+# CONFIG_XFS_FS is not set
+# CONFIG_BTRFS_FS is not set
+# CONFIG_NILFS2_FS is not set
+# CONFIG_FS_POSIX_ACL is not set
+# CONFIG_FILE_LOCKING is not set
+# CONFIG_FSNOTIFY is not set
+# CONFIG_DNOTIFY is not set
+# CONFIG_INOTIFY_USER is not set
+# CONFIG_FANOTIFY is not set
+# CONFIG_QUOTA is not set
+# CONFIG_QUOTACTL is not set
+# CONFIG_AUTOFS4_FS is not set
+# CONFIG_FUSE_FS is not set
+
+#
+# Caches
+#
+# CONFIG_FSCACHE is not set
+
+#
+# CD-ROM/DVD Filesystems
+#
+# CONFIG_ISO9660_FS is not set
+# CONFIG_UDF_FS is not set
+
+#
+# DOS/FAT/NT Filesystems
+#
+# CONFIG_MSDOS_FS is not set
+# CONFIG_VFAT_FS is not set
+# CONFIG_NTFS_FS is not set
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_SYSFS=y
+# CONFIG_HUGETLB_PAGE is not set
+# CONFIG_CONFIGFS_FS is not set
+CONFIG_MISC_FILESYSTEMS=y
+# CONFIG_ADFS_FS is not set
+# CONFIG_AFFS_FS is not set
+# CONFIG_HFS_FS is not set
+# CONFIG_HFSPLUS_FS is not set
+# CONFIG_BEFS_FS is not set
+# CONFIG_BFS_FS is not set
+# CONFIG_EFS_FS is not set
+# CONFIG_JFFS2_FS is not set
+# CONFIG_LOGFS is not set
+# CONFIG_CRAMFS is not set
+# CONFIG_SQUASHFS is not set
+# CONFIG_VXFS_FS is not set
+# CONFIG_MINIX_FS is not set
+# CONFIG_MINIX_FS_NATIVE_ENDIAN is not set
+# CONFIG_OMFS_FS is not set
+# CONFIG_HPFS_FS is not set
+# CONFIG_QNX4FS_FS is not set
+# CONFIG_QNX6FS_FS is not set
+CONFIG_ROMFS_FS=y
+CONFIG_ROMFS_BACKED_BY_BLOCK=y
+# CONFIG_ROMFS_BACKED_BY_MTD is not set
+# CONFIG_ROMFS_BACKED_BY_BOTH is not set
+CONFIG_ROMFS_ON_BLOCK=y
+# CONFIG_PSTORE is not set
+# CONFIG_SYSV_FS is not set
+# CONFIG_UFS_FS is not set
+# CONFIG_F2FS_FS is not set
+# CONFIG_NETWORK_FILESYSTEMS is not set
+# CONFIG_NLS is not set
+
+#
+# Kernel hacking
+#
+# CONFIG_PRINTK_TIME is not set
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_ENABLE_WARN_DEPRECATED=y
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=1024
+# CONFIG_MAGIC_SYSRQ is not set
+# CONFIG_STRIP_ASM_SYMS is not set
+# CONFIG_READABLE_ASM is not set
+# CONFIG_UNUSED_SYMBOLS is not set
+# CONFIG_DEBUG_FS is not set
+# CONFIG_HEADERS_CHECK is not set
+# CONFIG_DEBUG_SECTION_MISMATCH is not set
+CONFIG_DEBUG_KERNEL=y
+# CONFIG_DEBUG_SHIRQ is not set
+# CONFIG_LOCKUP_DETECTOR is not set
+# CONFIG_PANIC_ON_OOPS is not set
+CONFIG_PANIC_ON_OOPS_VALUE=0
+# CONFIG_DETECT_HUNG_TASK is not set
+# CONFIG_SCHED_DEBUG is not set
+# CONFIG_SCHEDSTATS is not set
+# CONFIG_TIMER_STATS is not set
+# CONFIG_DEBUG_OBJECTS is not set
+# CONFIG_SLUB_STATS is not set
+# CONFIG_DEBUG_SPINLOCK is not set
+# CONFIG_DEBUG_MUTEXES is not set
+# CONFIG_SPARSE_RCU_POINTER is not set
+# CONFIG_DEBUG_ATOMIC_SLEEP is not set
+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+# CONFIG_DEBUG_STACK_USAGE is not set
+# CONFIG_DEBUG_KOBJECT is not set
+CONFIG_HAVE_DEBUG_BUGVERBOSE=y
+# CONFIG_DEBUG_BUGVERBOSE is not set
+# CONFIG_DEBUG_INFO is not set
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_NOMMU_REGIONS is not set
+# CONFIG_DEBUG_WRITECOUNT is not set
+# CONFIG_DEBUG_MEMORY_INIT is not set
+# CONFIG_DEBUG_LIST is not set
+# CONFIG_TEST_LIST_SORT is not set
+# CONFIG_DEBUG_SG is not set
+# CONFIG_DEBUG_NOTIFIERS is not set
+# CONFIG_DEBUG_CREDENTIALS is not set
+# CONFIG_FRAME_POINTER is not set
+# CONFIG_BOOT_PRINTK_DELAY is not set
+# CONFIG_RCU_TORTURE_TEST is not set
+# CONFIG_RCU_TRACE is not set
+# CONFIG_BACKTRACE_SELF_TEST is not set
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
+# CONFIG_NOTIFIER_ERROR_INJECTION is not set
+# CONFIG_FAULT_INJECTION is not set
+# CONFIG_DEBUG_PAGEALLOC is not set
+# CONFIG_ATOMIC64_SELFTEST is not set
+# CONFIG_SAMPLES is not set
+# CONFIG_TEST_KSTRTOX is not set
+CONFIG_BOOTPARAM=y
+CONFIG_BOOTPARAM_STRING="root=/dev/mtdblock0"
+# CONFIG_FULLDEBUG is not set
+# CONFIG_HIGHPROFILE is not set
+# CONFIG_NO_KERNEL_MSG is not set
+# CONFIG_BDM_DISABLE is not set
+
+#
+# Security options
+#
+# CONFIG_KEYS is not set
+# CONFIG_SECURITY_DMESG_RESTRICT is not set
+# CONFIG_SECURITY is not set
+# CONFIG_SECURITYFS is not set
+CONFIG_DEFAULT_SECURITY_DAC=y
+CONFIG_DEFAULT_SECURITY=""
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+# CONFIG_CRYPTO_MANAGER is not set
+# CONFIG_CRYPTO_MANAGER2 is not set
+# CONFIG_CRYPTO_USER is not set
+# CONFIG_CRYPTO_GF128MUL is not set
+# CONFIG_CRYPTO_NULL is not set
+# CONFIG_CRYPTO_CRYPTD is not set
+# CONFIG_CRYPTO_AUTHENC is not set
+
+#
+# Authenticated Encryption with Associated Data
+#
+# CONFIG_CRYPTO_CCM is not set
+# CONFIG_CRYPTO_GCM is not set
+# CONFIG_CRYPTO_SEQIV is not set
+
+#
+# Block modes
+#
+# CONFIG_CRYPTO_CBC is not set
+# CONFIG_CRYPTO_CTR is not set
+# CONFIG_CRYPTO_CTS is not set
+# CONFIG_CRYPTO_ECB is not set
+# CONFIG_CRYPTO_LRW is not set
+# CONFIG_CRYPTO_PCBC is not set
+# CONFIG_CRYPTO_XTS is not set
+
+#
+# Hash modes
+#
+# CONFIG_CRYPTO_HMAC is not set
+# CONFIG_CRYPTO_XCBC is not set
+# CONFIG_CRYPTO_VMAC is not set
+
+#
+# Digest
+#
+# CONFIG_CRYPTO_CRC32C is not set
+# CONFIG_CRYPTO_GHASH is not set
+# CONFIG_CRYPTO_MD4 is not set
+# CONFIG_CRYPTO_MD5 is not set
+# CONFIG_CRYPTO_MICHAEL_MIC is not set
+# CONFIG_CRYPTO_RMD128 is not set
+# CONFIG_CRYPTO_RMD160 is not set
+# CONFIG_CRYPTO_RMD256 is not set
+# CONFIG_CRYPTO_RMD320 is not set
+# CONFIG_CRYPTO_SHA1 is not set
+# CONFIG_CRYPTO_SHA256 is not set
+# CONFIG_CRYPTO_SHA512 is not set
+# CONFIG_CRYPTO_TGR192 is not set
+# CONFIG_CRYPTO_WP512 is not set
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=y
+# CONFIG_CRYPTO_ANUBIS is not set
+# CONFIG_CRYPTO_ARC4 is not set
+# CONFIG_CRYPTO_BLOWFISH is not set
+# CONFIG_CRYPTO_CAMELLIA is not set
+# CONFIG_CRYPTO_CAST5 is not set
+# CONFIG_CRYPTO_CAST6 is not set
+# CONFIG_CRYPTO_DES is not set
+# CONFIG_CRYPTO_FCRYPT is not set
+# CONFIG_CRYPTO_KHAZAD is not set
+# CONFIG_CRYPTO_SALSA20 is not set
+# CONFIG_CRYPTO_SEED is not set
+# CONFIG_CRYPTO_SERPENT is not set
+# CONFIG_CRYPTO_TEA is not set
+# CONFIG_CRYPTO_TWOFISH is not set
+
+#
+# Compression
+#
+# CONFIG_CRYPTO_DEFLATE is not set
+# CONFIG_CRYPTO_ZLIB is not set
+# CONFIG_CRYPTO_LZO is not set
+
+#
+# Random Number Generation
+#
+# CONFIG_CRYPTO_ANSI_CPRNG is not set
+# CONFIG_CRYPTO_USER_API_HASH is not set
+# CONFIG_CRYPTO_USER_API_SKCIPHER is not set
+# CONFIG_CRYPTO_HW is not set
+# CONFIG_BINARY_PRINTF is not set
+
+#
+# Library routines
+#
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_IO=y
+CONFIG_PERCPU_RWSEM=y
+# CONFIG_CRC_CCITT is not set
+# CONFIG_CRC16 is not set
+# CONFIG_CRC_T10DIF is not set
+# CONFIG_CRC_ITU_T is not set
+CONFIG_CRC32=y
+# CONFIG_CRC32_SELFTEST is not set
+# CONFIG_CRC32_SLICEBY8 is not set
+# CONFIG_CRC32_SLICEBY4 is not set
+# CONFIG_CRC32_SARWATE is not set
+CONFIG_CRC32_BIT=y
+# CONFIG_CRC7 is not set
+# CONFIG_LIBCRC32C is not set
+# CONFIG_CRC8 is not set
+# CONFIG_XZ_DEC is not set
+# CONFIG_XZ_DEC_BCJ is not set
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_DMA=y
+CONFIG_DQL=y
+CONFIG_NLATTR=y
+CONFIG_GENERIC_ATOMIC64=y
+CONFIG_ARCH_HAS_ATOMIC64_DEC_IF_POSITIVE=y
+# CONFIG_AVERAGE is not set
+# CONFIG_CORDIC is not set
+# CONFIG_DDR is not set
 
