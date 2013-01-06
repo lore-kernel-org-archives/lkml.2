@@ -1,93 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753241Ab3AFWMR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 17:12:17 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:41085 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753166Ab3AFWMQ (ORCPT
+	id S1753247Ab3AFWOD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 17:14:03 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:20260 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab3AFWN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 17:12:16 -0500
-MIME-Version: 1.0
-In-Reply-To: <20130104005345.GA4407@fieldses.org>
-References: <CADug+U6-=+_Xy41Lw3hnOqSR84Bo7MjKDL_PykiZVdUx=b8tAA@mail.gmail.com>
-	<20130104005345.GA4407@fieldses.org>
-Date: Mon, 7 Jan 2013 00:12:15 +0200
-Message-ID: <CADug+U698gbtJnxUEOn0b7MhejYugSSRsV9i_b7jMaRs08Wpog@mail.gmail.com>
-Subject: Re: [PATCH 1/1] sunrpc: Fix lockd sleeping until timeout
-From: Andriy Skulysh <andriy_skulysh@xyratex.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 6 Jan 2013 17:13:59 -0500
+X-Authority-Analysis: v=2.0 cv=IsacgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=HPITk8MfdfgA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=puLyrkSRlPIA:10 a=e-rsuqKjle7C72hddlMA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357510436.10284.69.camel@gandalf.local.home>
+Subject: Re: [PATCH/RFC 0/1] Delete legacy power trace API
+From: Steven Rostedt <rostedt@goodmis.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>, linux-pm@vger.kernel.org,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org
+Date: Sun, 06 Jan 2013 17:13:56 -0500
+In-Reply-To: <5190666.Mu6UtpjCCL@vostro.rjw.lan>
+References: <1357350544-32704-1-git-send-email-paul.gortmaker@windriver.com>
+	 <5190666.Mu6UtpjCCL@vostro.rjw.lan>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race in enqueueing thread to a pool and
-waking up a thread.
-lockd doesn't wake up on reception of lock granted callback
-if svc_wake_up() is called before lockd's thread is added
-to a pool.
+On Sat, 2013-01-05 at 23:10 +0100, Rafael J. Wysocki wrote:
+> On Friday, January 04, 2013 08:49:03 PM Paul Gortmaker wrote:
+> > The actual deletion is mind-numbingly simple; and if you go by the
+> > comments in the code, it is well overdue.  However, in discussions
+> > with Frederic, he suggested to me that those comments might have
+> > been overly optimistic, and that there may still be people out
+> > there who are still unknowingly using this dead API.
+> > 
+> > So, that is the crux of the RFC component -- to check whether the
+> > comments saying "delete by v3.1" can be taken at face value, or
+> > whether they were overly optimistic, and hence this stuff is still
+> > actively used even though it is overdue for deletion.
+> 
+> Do you want me or the tracing maintainers to handle this?
+> 
 
-Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
----
- include/linux/sunrpc/svc.h |    1 +
- net/sunrpc/svc_xprt.c      |    9 ++++++++-
- 2 files changed, 9 insertions(+), 1 deletions(-)
+You can take it. If you want you can add:
 
-diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
-index 676ddf5..1f0216b 100644
---- a/include/linux/sunrpc/svc.h
-+++ b/include/linux/sunrpc/svc.h
-@@ -50,6 +50,7 @@ struct svc_pool {
- 	unsigned int		sp_nrthreads;	/* # of threads in pool */
- 	struct list_head	sp_all_threads;	/* all server threads */
- 	struct svc_pool_stats	sp_stats;	/* statistics on pool operation */
-+	int			sp_task_pending;/* has pending task */
- } ____cacheline_aligned_in_smp;
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
- /*
-diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-index b8e47fa..5a9d40c 100644
---- a/net/sunrpc/svc_xprt.c
-+++ b/net/sunrpc/svc_xprt.c
-@@ -499,7 +499,8 @@ void svc_wake_up(struct svc_serv *serv)
- 			rqstp->rq_xprt = NULL;
- 			 */
- 			wake_up(&rqstp->rq_wait);
--		}
-+		} else
-+			pool->sp_task_pending = 1;
- 		spin_unlock_bh(&pool->sp_lock);
- 	}
- }
-@@ -634,7 +635,13 @@ struct svc_xprt *svc_get_next_xprt(struct
-svc_rqst *rqstp, long timeout)
- 		 * long for cache updates.
- 		 */
- 		rqstp->rq_chandle.thread_wait = 1*HZ;
-+		pool->sp_task_pending = 0;
- 	} else {
-+		if (pool->sp_task_pending) {
-+			pool->sp_task_pending = 0;
-+			spin_unlock_bh(&pool->sp_lock);
-+			return ERR_PTR(-EAGAIN);
-+		}
- 		/* No data pending. Go to sleep */
- 		svc_thread_enqueue(pool, rqstp);
-
--- 
-1.7.1
+-- Steve
 
 
-On 4 January 2013 02:53, J. Bruce Fields <bfields@fieldses.org> wrote:
-> That should be ERR_PTR(-EAGAIN).
-fixed.
->
-> Other than this this looks right to me....
->
-> Out of curiosity: how did you run across this problem, and how did you
-> test the fix?
-I can reproduce it with single ping_pong with nfs on top of Lustre filesystem.
-
-Andriy.
