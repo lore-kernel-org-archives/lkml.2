@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab3AFXgJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 18:36:09 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:51304 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab3AFXgH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 18:36:07 -0500
+	id S1753414Ab3AFXmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 18:42:46 -0500
+Received: from ozlabs.org ([203.10.76.45]:49158 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753277Ab3AFXmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 18:42:39 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, hutao@cn.fujitsu.com, linux-scsi@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, mst@redhat.com,
+        asias@redhat.com, stefanha@redhat.com, nab@linux-iscsi.org,
+        Wanlong Gao <gaowanlong@cn.fujitsu.com>
+Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of buffers
+In-Reply-To: <50E5481E.20801@cn.fujitsu.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-2-git-send-email-pbonzini@redhat.com> <87r4m45g88.fsf@rustcorp.com.au> <50E5481E.20801@cn.fujitsu.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 07 Jan 2013 10:02:57 +1030
+Message-ID: <87sj6d51li.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20121219095616.GV2261@intel.com>
-References: <1355818296.11831.287.camel@bichao>
-	<20121219095616.GV2261@intel.com>
-Date: Mon, 7 Jan 2013 00:36:07 +0100
-Message-ID: <CACRpkdaw7Yc0OetPWK7Cv=JsVPOs6b1Tr-=4jE5Vz4oTD6f07Q@mail.gmail.com>
-Subject: Re: [PATCH] SPI: SSP SPI Controller driver v3
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: chao bi <chao.bi@intel.com>, grant.likely@secretlab.ca,
-        linux-kernel@vger.kernel.org, sylvain.centelles@intel.com,
-        ken.k.mills@intel.com, jun.d.chen@intel.com, alan@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 19, 2012 at 10:56 AM, Mika Westerberg
-<mika.westerberg@linux.intel.com> wrote:
-> On Tue, Dec 18, 2012 at 04:11:36PM +0800, chao bi wrote:
->>
->> This patch is to implement SSP SPI controller driver, which has been applied and
->> validated on intel Moorestown & Medfield platform. The patch are originated by
->> Ken Mills <ken.k.mills@intel.com> and Sylvain Centelles <sylvain.centelles@intel.com>,
->> migrating to lateset Linux mainline SPI framework by Channing <chao.bi@intel.com>
->> and Chen Jun <jun.d.chen@intel.com> according to their integration & validation
->> on Medfield platform.
+Wanlong Gao <gaowanlong@cn.fujitsu.com> writes:
+> On 01/02/2013 01:03 PM, Rusty Russell wrote:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>>> The virtqueue_add_buf function has two limitations:
+>>>
+>>> 1) it requires the caller to provide all the buffers in a single call;
+>>>
+>>> 2) it does not support chained scatterlists: the buffers must be
+>>> provided as an array of struct scatterlist;
+>> 
+>> Chained scatterlists are a horrible interface, but that doesn't mean we
+>> shouldn't support them if there's a need.
+>> 
+>> I think I once even had a patch which passed two chained sgs, rather
+>> than a combo sg and two length numbers.  It's very old, but I've pasted
+>> it below.
+>> 
+>> Duplicating the implementation by having another interface is pretty
+>> nasty; I think I'd prefer the chained scatterlists, if that's optimal
+>> for you.
 >
-> This is the same IP block as used in PXA, right? With few modifications
-> here and there. Is there a reason not to use spi-pxa2xx.c?
+> I rebased against virtio-next and use it in virtio-scsi, and tested it with 4 targets
+> virtio-scsi devices and host cpu idle=poll. Saw a little performance regression here.
 
-This needs to be investigated. Two drivers for the same or closely related
-hardware block is never a good sign...
+Sure, but now you should be able to eliminate virtscsi_map_sgl(), right?
+You should be able to use scsi_out(sc) and scsi_in(sc) directly, which
+is what Paulo wanted to do...
 
-Yours,
-Linus Walleij
+Right Paulo?
+
+Thanks,
+Rusty.
