@@ -1,152 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab3AFIMG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 03:12:06 -0500
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:36596
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751062Ab3AFIME convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 03:12:04 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -3
-X-BigFish: VS-3(zz98dI9371I542I1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dh17326ahz2dh2a8h668h839h8e2h8e3h946hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
-From: Liu Hui-R64343 <r64343@freescale.com>
-To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mgorman@suse.de" <mgorman@suse.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "riel@redhat.com" <riel@redhat.com>,
-        "minchan@kernel.org" <minchan@kernel.org>,
-        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: RE: [PATCH] mm: compaction: fix echo 1 > compact_memory return
- error issue
-Thread-Topic: [PATCH] mm: compaction: fix echo 1 > compact_memory return
- error issue
-Thread-Index: AQHN6+PQVZX6o0pR+0esPX7n7xyjzZg78a0Q
-Date: Sun, 6 Jan 2013 08:11:58 +0000
-Message-ID: <AD13664F485EE54694E29A7F9D5BE1AF4E5BCD@039-SN2MPN1-021.039d.mgd.msft.net>
-References: <1357458273-28558-1-git-send-email-r64343@freescale.com>
- <20130106075940.GA22985@hacker.(null)>
-In-Reply-To: <20130106075940.GA22985@hacker.(null)>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.192.242.64]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1751591Ab3AFI2f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 03:28:35 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:17850 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab3AFI2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 03:28:32 -0500
+Message-ID: <50E93554.3070102@huawei.com>
+Date: Sun, 6 Jan 2013 16:27:00 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Tejun Heo <tj@kernel.org>
+CC: <paul@paulmenage.org>, <glommer@parallels.com>,
+        <containers@lists.linux-foundation.org>, <cgroups@vger.kernel.org>,
+        <peterz@infradead.org>, <mhocko@suse.cz>, <bsingharora@gmail.com>,
+        <hannes@cmpxchg.org>, <kamezawa.hiroyu@jp.fujitsu.com>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHSET] cpuset: decouple cpuset locking from cgroup core,
+ take#2
+References: <1357248967-24959-1-git-send-email-tj@kernel.org>
+In-Reply-To: <1357248967-24959-1-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
->Sent: Sunday, January 06, 2013 4:00 PM
->To: Liu Hui-R64343
->Cc: linux-kernel@vger.kernel.org; mgorman@suse.de; akpm@linux-
->foundation.org; riel@redhat.com; minchan@kernel.org;
->kamezawa.hiroyu@jp.fujitsu.com; linux-mm@kvack.org
->Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return
->error issue
->
->On Sun, Jan 06, 2013 at 03:44:33PM +0800, Jason Liu wrote:
->
->Hi Jason,
->
->>when run the folloing command under shell, it will return error sh/$
->>echo 1 > /proc/sys/vm/compact_memory sh/$ sh: write error: Bad address
->>
->
->How can you modify the value through none privileged user since the mode
->== 0200?
+On 2013/1/4 5:35, Tejun Heo wrote:
+> Hello, guys.
+> 
+> This is the second attempt at decoupling cpuset locking from cgroup
+> core.  Changes from the last take[L] are
+> 
+> * cpuset-drop-async_rebuild_sched_domains.patch moved from 0007 to
+>   0009.  This reordering makes cpu hotplug handling async first and
+>   removes the temporary cyclic locking dependency.
+> 
+> * 0006-cpuset-cleanup-cpuset-_can-_attach.patch no longer converts
+>   cpumask_var_t to cpumask_t as per Rusty Russell.
+> 
+> * 0008-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch now
+>   synchronously rebuilds sched domains from cpu hotplug callback.
+>   This fixes various issues caused by confused scheduler puttings
+>   tasks into a dead cpu including the RCU stall problem reported by Li
+>   Zefan.
+> 
+> Original patchset description follows.
+> 
+> Depending on cgroup core locking - cgroup_mutex - is messy and makes
+> cgroup prone to locking dependency problems.  The current code already
+> has lock dependency loop - memcg nests get_online_cpus() inside
+> cgroup_mutex.  cpuset the other way around.
+> 
+> Regardless of the locking details, whatever is protecting cgroup has
+> inherently to be something outer to most other locking constructs.
+> cgroup calls into a lot of major subsystems which in turn have to
+> perform subsystem-specific locking.  Trying to nest cgroup
+> synchronization inside other locks isn't something which can work
+> well.
+> 
+> cgroup now has enough API to allow subsystems to implement their own
+> locking and cgroup_mutex is scheduled to be made private to cgroup
+> core.  This patchset makes cpuset implement its own locking instead of
+> relying on cgroup_mutex.
+> 
+> cpuset is rather nasty in this respect.  Some of it seems to have come
+> from the implementation history - cgroup core grew out of cpuset - but
+> big part stems from cpuset's need to migrate tasks to an ancestor
+> cgroup when an hotunplug event makes a cpuset empty (w/o any cpu or
+> memory).
+> 
+> This patchset decouples cpuset locking from cgroup_mutex.  After the
+> patchset, cpuset uses cpuset-specific cpuset_mutex instead of
+> cgroup_mutex.  This also removes the lockdep warning triggered during
+> cpu offlining (see 0009).
+> 
+> Note that this leaves memcg as the only external user of cgroup_mutex.
+> Michal, Kame, can you guys please convert memcg to use its own locking
+> too?
+> 
+> This patchset contains the following thirteen patches.
+> 
+>  0001-cpuset-remove-unused-cpuset_unlock.patch
+>  0002-cpuset-remove-fast-exit-path-from-remove_tasks_in_em.patch
+>  0003-cpuset-introduce-css_on-offline.patch
+>  0004-cpuset-introduce-CS_ONLINE.patch
+>  0005-cpuset-introduce-cpuset_for_each_child.patch
+>  0006-cpuset-cleanup-cpuset-_can-_attach.patch
+>  0007-cpuset-reorganize-CPU-memory-hotplug-handling.patch
+>  0008-cpuset-don-t-nest-cgroup_mutex-inside-get_online_cpu.patch
+>  0009-cpuset-drop-async_rebuild_sched_domains.patch
+>  0010-cpuset-make-CPU-memory-hotplug-propagation-asynchron.patch
+>  0011-cpuset-pin-down-cpus-and-mems-while-a-task-is-being-.patch
+>  0012-cpuset-schedule-hotplug-propagation-from-cpuset_atta.patch
+>  0013-cpuset-replace-cgroup_mutex-locking-with-cpuset-inte.patch
+> 
+> 0001-0006 are prep patches.
+> 
+> 0007-0009 make cpuset nest get_online_cpus() inside cgroup_mutex, not
+> the other way around.
+> 
+> 0010-0012 plug holes which would be exposed by switching to
+> cpuset-specific locking.
+> 
+> 0013 replaces cgroup_mutex with cpuset_mutex.
+> 
+> This patchset is on top of v3.8-rc2 (d1c3ed669a) and also available in
+> the following git branch.
+> 
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-cpuset-locking
+> 
+> diffstat follows.
+> 
+>  kernel/cpuset.c |  760 ++++++++++++++++++++++++++++++++------------------------
+>  1 file changed, 438 insertions(+), 322 deletions(-)
 
-I write it through privileged user(root). I'm using the GNOME_Mobile rootfs.
+I've reviewed and tested the patchset, and it looks good to me!
 
->
->>After strace, I found the following log:
->>...
->>write(1, "1\n", 2)               = 3
->>write(1, "", 4294967295)         = -1 EFAULT (Bad address)
->>write(2, "echo: write error: Bad address\n", 31echo: write error: Bad
->>address
->>) = 31
->>
->>This tells system return 3(COMPACT_COMPLETE) after write data to
->compact_memory.
->>
->>The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE)
->>from sysctl_compaction_handler after compaction_nodes finished.
->
->What's the special scenario you are in? I couldn't figure out the similar error
->against latest 3.8-rc2, how could you reproduce it?
-
-I'm using the BusyBox v1.20.2 () built-in shell (ash), it reproduces the issue: 100%.
-
-root@freescale /$ sh
-
-
-BusyBox v1.20.2 () built-in shell (ash)
-Enter 'help' for a list of built-in commands.
-
-Could you run strace and see the log:  strace echo 1 > /proc/sys/vm/compact_memory
-
->
->Regards,
->Wanpeng Li
->
->>
->>Suggested-by:David Rientjes <rientjes@google.com> Cc:Mel Gorman
->><mgorman@suse.de> Cc:Andrew Morton <akpm@linux-foundation.org>
->Cc:Rik
->>van Riel <riel@redhat.com> Cc:Minchan Kim <minchan@kernel.org>
->>Cc:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->>Signed-off-by: Jason Liu <r64343@freescale.com>
->>---
->> mm/compaction.c |    6 ++----
->> 1 files changed, 2 insertions(+), 4 deletions(-)
->>
->>diff --git a/mm/compaction.c b/mm/compaction.c index 6b807e4..f8f5c11
->>100644
->>--- a/mm/compaction.c
->>+++ b/mm/compaction.c
->>@@ -1210,7 +1210,7 @@ static int compact_node(int nid)  }
->>
->> /* Compact all nodes in the system */
->>-static int compact_nodes(void)
->>+static void compact_nodes(void)
->> {
->> 	int nid;
->>
->>@@ -1219,8 +1219,6 @@ static int compact_nodes(void)
->>
->> 	for_each_online_node(nid)
->> 		compact_node(nid);
->>-
->>-	return COMPACT_COMPLETE;
->> }
->>
->> /* The written value is actually unused, all memory is compacted */ @@
->>-1231,7 +1229,7 @@ int sysctl_compaction_handler(struct ctl_table *table,
->int write,
->> 			void __user *buffer, size_t *length, loff_t *ppos)  {
->> 	if (write)
->>-		return compact_nodes();
->>+		compact_nodes();
->>
->> 	return 0;
->> }
->>--
->>1.7.5.4
->>
->>
->>--
->>To unsubscribe, send a message with 'unsubscribe linux-mm' in the body
->>to majordomo@kvack.org.  For more info on Linux MM,
->>see: http://www.linux-mm.org/ .
->>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-
+Acked-by: Li Zefan <lizefan@huawei.com>
 
