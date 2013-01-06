@@ -1,257 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab3AFMHE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 07:07:04 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:42335 "EHLO dcvr.yhbt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752129Ab3AFMHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 07:07:01 -0500
-Date: Sun, 6 Jan 2013 12:07:00 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130106120700.GA24671@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130104160148.GB3885@suse.de>
+	id S1755745Ab3AFMOS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 07:14:18 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:19445 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab3AFMOP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 07:14:15 -0500
+Message-ID: <50E96A59.1080602@huawei.com>
+Date: Sun, 6 Jan 2013 20:13:13 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130104160148.GB3885@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Bjorn Helgaas <bhelgaas@google.com>
+CC: Jiang Liu <liuj97@gmail.com>, Daniel J Blueman <daniel@quora.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Subject: Re: 3.8-rc2: pciehp waitqueue hang...
+References: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com> <50E5A6A1.5040508@gmail.com> <CAErSpo6KJvEkiqkU--sF_vySk2YUgL_9t1OEYAAGBp9Ebom26w@mail.gmail.com> <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com>
+In-Reply-To: <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.135.76.69]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> wrote:
-> Using a 3.7.1 or 3.8-rc2 kernel, can you reproduce the problem and then
-> answer the following questions please?
+On 2013/1/5 5:50, Bjorn Helgaas wrote:
+> [+to Yijing, +cc Kenji]
+> 
+> On Fri, Jan 4, 2013 at 1:01 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Thu, Jan 3, 2013 at 8:41 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>> Hi Daniel,
+>>>         It seems like an issue caused by recursive PCIe HPC.
+>>> Could you please help to try the patch from:
+>>> http://www.spinics.net/lists/linux-pci/msg18625.html
+>>
+>> Hi Gerry,
+>>
+>> I'm working on merging this patch.  Seems like something that might be
+>> appropriate for stable as well.
+>>
+>> Did you look for similar problems in other hotplug drivers?
+> 
+> Oops, sorry, I forgot that Yijing is the author of the patch in question.
+> 
+> Yijing, please check for the same problem in other hotplug drivers.
+> Questions I have after a quick look:
+> 
 
-This is on my main machine running 3.8-rc2
+Hi Bjorn,
+   Sorry for delay reply. There are some busy work these days.
 
-> 1. What are the contents of /proc/vmstat at the time it is stuck?
+>   - shpchp_wq looks like it might have the same deadlock issue.
 
-===> /proc/vmstat <===
-nr_free_pages 40305
-nr_inactive_anon 25023
-nr_active_anon 85684
-nr_inactive_file 2614786
-nr_active_file 209440
-nr_unevictable 0
-nr_mlock 0
-nr_anon_pages 73510
-nr_mapped 6017
-nr_file_pages 2843997
-nr_dirty 695934
-nr_writeback 629239
-nr_slab_reclaimable 68414
-nr_slab_unreclaimable 14178
-nr_page_table_pages 3136
-nr_kernel_stack 314
-nr_unstable 0
-nr_bounce 0
-nr_vmscan_write 12220042
-nr_vmscan_immediate_reclaim 31213310
-nr_writeback_temp 0
-nr_isolated_anon 0
-nr_isolated_file 0
-nr_shmem 24101
-nr_dirtied 534655274
-nr_written 281872191
-nr_anon_transparent_hugepages 24
-nr_free_cma 0
-nr_dirty_threshold 2790220
-nr_dirty_background_threshold 29370
-pgpgin 6961109514
-pgpgout 1124854772
-pswpin 3940
-pswpout 127109
-pgalloc_dma 6
-pgalloc_dma32 7750674038
-pgalloc_normal 78295989795
-pgalloc_movable 0
-pgfree 86049272519
-pgactivate 21397174
-pgdeactivate 423853
-pgfault 473074235
-pgmajfault 20093
-pgrefill_dma 0
-pgrefill_dma32 158720
-pgrefill_normal 233024
-pgrefill_movable 0
-pgsteal_kswapd_dma 0
-pgsteal_kswapd_dma32 450844931
-pgsteal_kswapd_normal 1288388818
-pgsteal_kswapd_movable 0
-pgsteal_direct_dma 0
-pgsteal_direct_dma32 71774371
-pgsteal_direct_normal 197326432
-pgsteal_direct_movable 0
-pgscan_kswapd_dma 0
-pgscan_kswapd_dma32 459780161
-pgscan_kswapd_normal 1334016908
-pgscan_kswapd_movable 0
-pgscan_direct_dma 0
-pgscan_direct_dma32 75632525
-pgscan_direct_normal 222990090
-pgscan_direct_movable 0
-pgscan_direct_throttle 0
-pginodesteal 228906
-slabs_scanned 4077568
-kswapd_inodesteal 2591027
-kswapd_low_wmark_hit_quickly 674289
-kswapd_high_wmark_hit_quickly 39642
-kswapd_skip_congestion_wait 506
-pageoutrun 2908071
-allocstall 431220
-pgrotated 15736438
-pgmigrate_success 865182
-pgmigrate_fail 78157
-compact_migrate_scanned 17276417
-compact_free_scanned 204979571
-compact_isolated 3463801
-compact_stall 349792
-compact_fail 160801
-compact_success 188991
-htlb_buddy_alloc_success 0
-htlb_buddy_alloc_fail 0
-unevictable_pgs_culled 0
-unevictable_pgs_scanned 0
-unevictable_pgs_rescued 0
-unevictable_pgs_mlocked 0
-unevictable_pgs_munlocked 0
-unevictable_pgs_cleared 0
-unevictable_pgs_stranded 0
-thp_fault_alloc 720
-thp_fault_fallback 1719
-thp_collapse_alloc 8631
-thp_collapse_alloc_failed 4110
-thp_split 700
-thp_zero_page_alloc 0
-thp_zero_page_alloc_failed 0
+shpchp driver uses two workqueues shpchp_wq and shpchp_ordered_wq, they are created by alloc_ordered_workqueue
+which set the "max_active" parameter to 1. So only one pci hotplug slot can do hotplug at the same time.
+shpchp introduced these workqueue to remove the use of flush_scheduled_work() which is deprecated and scheduled for removal.
 
-> 2. What are the contents of /proc/PID/stack for every toosleepy
->    process when they are stuck?
+hot remove path is:
+ button press
+       shpc_isr(interrupt handler)
+	    shpchp_handle_attention_button
+                queue_interrupt_event
+                   queue_work "interrupt_event_handler" into "shpchp_wq"
+                       interrupt_event_handler
+			     handle_button_press_event
+		      		   queue_delayed_work "shpchp_queue_pushbutton_work" into "shpchp_wq"
+					 queue_work "shpchp_pushbutton_thread" into "shpchp_ordered_wq"
+                                               shpchp_pushbutton_thread
+                                                      shpchp_disable_slot
+                                                            pci_stop_and_remove_bus_device
+                                                                ......
+                                                               shpc_remove()   if the hotplug slot connected a iobox which contains some hotplug pcieport, shpc_remove will be called when remove pcie port device.
+                                                                   hpc_release_ctlr
+                                                                       flush_workqueue(shpchp_wq);
+                                                                       flush_workqueue(shpchp_ordered_wq);
+                                                                       So hotplug task hang.
+shpchp driver has the same deadlock issue like pciehp driver, I think we should fix the issue, I will send out the patch if you agree this, but I have no machine support shpchp hotplug,
+so I can't test this patch in real machine.
 
-pid and tid stack info, 28018 is the thread I used to automate
-reporting (pushed to git://bogomips.org/toosleepy.git)
 
-===> 28014[28014]/stack <===
-[<ffffffff8105a97b>] futex_wait_queue_me+0xb7/0xd2
-[<ffffffff8105b7fc>] futex_wait+0xf6/0x1f6
-[<ffffffff811bb3af>] cpumask_next_and+0x2b/0x37
-[<ffffffff8104ebfa>] select_task_rq_fair+0x518/0x59a
-[<ffffffff8105c8f1>] do_futex+0xa9/0x88f
-[<ffffffff810509a4>] check_preempt_wakeup+0x10d/0x1a7
-[<ffffffff8104757d>] check_preempt_curr+0x25/0x62
-[<ffffffff8104d4cc>] wake_up_new_task+0x96/0xc2
-[<ffffffff8105d1e9>] sys_futex+0x112/0x14d
-[<ffffffff81322a49>] stub_clone+0x69/0x90
-[<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 28014[28015]/stack <===
-[<ffffffff812ae316>] dev_hard_start_xmit+0x281/0x3f1
-[<ffffffff81041010>] add_wait_queue+0x14/0x40
-[<ffffffff810de0bc>] poll_schedule_timeout+0x43/0x5d
-[<ffffffff810deb46>] do_sys_poll+0x314/0x39b
-[<ffffffff810de220>] pollwake+0x0/0x4e
-[<ffffffff8129fc1d>] release_sock+0xe5/0x11b
-[<ffffffff812d7f61>] tcp_recvmsg+0x713/0x846
-[<ffffffff812f432c>] inet_recvmsg+0x64/0x75
-[<ffffffff8129a26b>] sock_recvmsg+0x86/0x9e
-[<ffffffff8100541c>] emulate_vsyscall+0x1e6/0x28e
-[<ffffffff8129a3bc>] sockfd_lookup_light+0x1a/0x50
-[<ffffffff8129c18b>] sys_recvfrom+0x110/0x128
-[<ffffffff81000e34>] __switch_to+0x235/0x3c5
-[<ffffffff810ca402>] kmem_cache_free+0x32/0xb9
-[<ffffffff810b809d>] remove_vma+0x44/0x4c
-[<ffffffff810df0a5>] sys_ppoll+0xaf/0x123
-[<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 28014[28016]/stack <===
-[<ffffffff812ae7ad>] dev_queue_xmit+0x327/0x336
-[<ffffffff8102cb9f>] _local_bh_enable_ip+0x7a/0x8b
-[<ffffffff81041010>] add_wait_queue+0x14/0x40
-[<ffffffff810de0bc>] poll_schedule_timeout+0x43/0x5d
-[<ffffffff810deb46>] do_sys_poll+0x314/0x39b
-[<ffffffff810de220>] pollwake+0x0/0x4e
-[<ffffffff8129fc1d>] release_sock+0xe5/0x11b
-[<ffffffff812d7f61>] tcp_recvmsg+0x713/0x846
-[<ffffffff812f432c>] inet_recvmsg+0x64/0x75
-[<ffffffff8129a26b>] sock_recvmsg+0x86/0x9e
-[<ffffffff8100541c>] emulate_vsyscall+0x1e6/0x28e
-[<ffffffff8129a3bc>] sockfd_lookup_light+0x1a/0x50
-[<ffffffff8129c18b>] sys_recvfrom+0x110/0x128
-[<ffffffff81000e34>] __switch_to+0x235/0x3c5
-[<ffffffff810df0a5>] sys_ppoll+0xaf/0x123
-[<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 28014[28017]/stack <===
-[<ffffffff8129fc1d>] release_sock+0xe5/0x11b
-[<ffffffff812a642c>] sk_stream_wait_memory+0x1f7/0x1fc
-[<ffffffff81040d5e>] autoremove_wake_function+0x0/0x2a
-[<ffffffff812d8fc3>] tcp_sendmsg+0x710/0x86d
-[<ffffffff8129a33e>] sock_sendmsg+0x7b/0x93
-[<ffffffff8129a642>] sys_sendto+0xee/0x145
-[<ffffffff8129a3bc>] sockfd_lookup_light+0x1a/0x50
-[<ffffffff8129a668>] sys_sendto+0x114/0x145
-[<ffffffff81000e34>] __switch_to+0x235/0x3c5
-[<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 28014[28018]/stack <===
-[<ffffffff8102b23e>] do_wait+0x1a6/0x21a
-[<ffffffff8104757d>] check_preempt_curr+0x25/0x62
-[<ffffffff8102b34a>] sys_wait4+0x98/0xb5
-[<ffffffff81026321>] do_fork+0x12c/0x1a7
-[<ffffffff810297b0>] child_wait_callback+0x0/0x48
-[<ffffffff8131c688>] page_fault+0x28/0x30
-[<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
+>   - pciehp_wq (and your per-slot replacement) are allocated with
+> alloc_workqueue().  shpchp_wq is allocated with
+> alloc_ordered_workqueue().  Why the difference?
 
-> 3. Can you do a sysrq+m and post the resulting dmesg?
+alloc_workqueue(name, 0, 0) set max_active to 0(0 is default value used and support 256 work items of the wq can be executing at the same time per CPU).
+So pciehp driver can handle push button event asynchronously.
 
-SysRq : Show Memory
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-CPU    2: hi:    0, btch:   1 usd:   0
-CPU    3: hi:    0, btch:   1 usd:   0
-DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd:   4
-CPU    1: hi:  186, btch:  31 usd: 181
-CPU    2: hi:  186, btch:  31 usd:  46
-CPU    3: hi:  186, btch:  31 usd:  13
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 106
-CPU    1: hi:  186, btch:  31 usd: 183
-CPU    2: hi:  186, btch:  31 usd:  20
-CPU    3: hi:  186, btch:  31 usd:  76
-active_anon:85782 inactive_anon:25023 isolated_anon:0
- active_file:209440 inactive_file:2610279 isolated_file:0
- unevictable:0 dirty:696664 writeback:629020 unstable:0
- free:44152 slab_reclaimable:68414 slab_unreclaimable:14178
- mapped:6017 shmem:24101 pagetables:3136 bounce:0
- free_cma:0
-DMA free:15872kB min:84kB low:104kB high:124kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15640kB managed:15896kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:24kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-lowmem_reserve[]: 0 3132 12078 12078
-DMA32 free:85264kB min:17504kB low:21880kB high:26256kB active_anon:46808kB inactive_anon:21212kB active_file:122040kB inactive_file:2833064kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:3208020kB managed:3185856kB mlocked:0kB dirty:92120kB writeback:225356kB mapped:356kB shmem:6776kB slab_reclaimable:67156kB slab_unreclaimable:7412kB kernel_stack:80kB pagetables:816kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 8946 8946
-Normal free:75472kB min:49988kB low:62484kB high:74980kB active_anon:296320kB inactive_anon:78880kB active_file:715720kB inactive_file:7608052kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:9160704kB managed:9084264kB mlocked:0kB dirty:2694536kB writeback:2290724kB mapped:23712kB shmem:89628kB slab_reclaimable:206500kB slab_unreclaimable:49276kB kernel_stack:2432kB pagetables:11728kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 0*4kB 0*8kB 0*16kB 0*32kB 2*64kB (U) 1*128kB (U) 1*256kB (U) 0*512kB 1*1024kB (U) 1*2048kB (R) 3*4096kB (M) = 15872kB
-DMA32: 1681*4kB (UEM) 3196*8kB (UEM) 3063*16kB (UEM) 63*32kB (UEM) 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 1*2048kB (R) 0*4096kB = 85364kB
-Normal: 8874*4kB (UEM) 1885*8kB (UEM) 581*16kB (UEM) 412*32kB (UM) 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 1*2048kB (R) 0*4096kB = 75104kB
-2839464 total pagecache pages
-891 pages in swap cache
-Swap cache stats: add 131049, delete 130158, find 1103447/1103954
-Free swap  = 4152384kB
-Total swap = 4194300kB
-3145712 pages RAM
-73642 pages reserved
-3313060 pages shared
-1432170 pages non-shared
+alloc_ordered_workqueue can only one handle push button event at the same time.
+
+> 
+>   - The alloc/alloc_ordered difference might be related to 486b10b9f4,
+> where Kenji removed alloc_ordered from pciehp.  Should a similar
+> change be made to shpchp?
+
+Yes, I agree, we can use per-slot workqueue to fix this issue.
+
+> 
+>   - acpiphp uses the global kacpi_hotplug_wq.  We never flush or drain
+> kacpi_hotplug_wq, so I doubt there's a deadlock issue, but I wonder if
+> there are any ordering issues there because we *don't* ever wait for
+> things in that queue to be completed.
+
+acpiphp driver is not attach to a pci device, so when hot remove pci device, driver will not to flush or drain kacpi_hotplug_wq.
+But if we do acpiphp hot remove in sequence like this, there maybe cause some unexpected errors, I think.
+slot(A)------pcie port----slot(B)
+slot A and slot B both support acpiphp hotplug.
+1、press attention button on slot A;
+2、press attention button on slot B quickly after step 1;
+Because kacpi_hotplug_wq is a ordered workqueue, slot B hot remove won't run unless slot A hot remove action completed.
+After Slot B hot remove completed, some resources of slot A also has been destroyed. So slot B hot remove will cause some unexpected errors.
+Because my hotplug machine's bios don't support iobox hotplug(slot-connected-slot), I can't verify this situation.
+
+
+Thanks!
+Yijing.
+
+
+> 
+>>> Thanks!
+>>> Gerry
+>>> On 01/03/2013 11:11 PM, Daniel J Blueman wrote:
+>>>> When the Apple thunderbolt ethernet adapter comes loose on my Macbook
+>>>> Pro Retina (Intel DSL3510), we see pci_slot_name return
+>>>> non-deterministic data (ie varying each boot), and we see pciehp_wp
+>>>> remain armed with events causing the kthread to get stuck:
+>>>>
+>>>> tg3 0000:0a:00.0 eth0: Link is up at 1000 Mbps, full duplex
+>>>> tg3 0000:0a:00.0 eth0: Flow control is on for TX and on for RX
+>>>> <thunderbold adapter comes loose>
+>>>> pciehp 0000:06:03.0:pcie24: Card not present on Slot(3)
+>>>> tg3 0000:0a:00.0: tg3_abort_hw timed out, TX_MODE_ENABLE will not
+>>>> clear MAC_TX_MODE=ffffffff
+>>>> tg3 0000:0a:00.0 eth0: No firmware running
+>>>> tg3 0000:0a:00.0 eth0: Link is down
+>>>> pcieport 0000:00:01.1: System wakeup enabled by ACPI
+>>>> pciehp 0000:09:00.0:pcie24: unloading service driver pciehp
+>>>> pciehp 0000:09:00.0:pcie24: Latch open on
+>>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
+>>>> pciehp 0000:09:00.0:pcie24: Button pressed on
+>>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
+>>>> pciehp 0000:09:00.0:pcie24: Card present on
+>>>> Slot(\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon)
+>>>> pciehp 0000:09:00.0:pcie24: Power fault on slot
+>>>> \xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
+>>>> pciehp 0000:09:00.0:pcie24: Power fault bit 0 set
+>>>> pciehp 0000:09:00.0:pcie24: PCI slot
+>>>> #\xfffffff89\xffffffbbe\x02\xffffff88\xffffffff\xffffffff\xffffffe09\xffffffbbe\x02\xffffff88\xffffffff\xfffffffffbcon
+>>>> - powering on due to button press.
+>>>> pciehp 0000:09:00.0:pcie24: Link Training Error occurs
+>>>> pciehp 0000:09:00.0:pcie24: Failed to check link status
+>>>> INFO: task kworker/0:1:52 blocked for more than 120 seconds.
+>>>> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>>>> kworker/0:1   D ffff880265893090   0  52   2 0x00000000
+>>>>  ffff8802655456f8 0000000000000046 ffffffff81a21a60 ffff880265545fd8
+>>>>  0000000000004000 ffff880265545fd8 ffff880265892bb0 ffff880265adc8d0
+>>>>  000000000000059e 0000000000000082 ffff880265545668 ffffffff810415aa
+>>>> Call Trace:
+>>>>  [<ffffffff810415aa>] ? console_unlock+0x1fa/0x4a0
+>>>>  [<ffffffff8108d16d>] ? trace_hardirqs_off+0xd/0x10
+>>>>  [<ffffffff81041b19>] ? vprintk_emit+0x1c9/0x510
+>>>>  [<ffffffff81558db4>] schedule+0x24/0x70
+>>>>  [<ffffffff8155653c>] schedule_timeout+0x19c/0x1e0
+>>>>  [<ffffffff81558c43>] wait_for_common+0xe3/0x180
+>>>>  [<ffffffff8105adc1>] ? flush_workqueue+0x111/0x4d0
+>>>>  [<ffffffff81071140>] ? try_to_wake_up+0x2d0/0x2d0
+>>>>  [<ffffffff81558d88>] wait_for_completion+0x18/0x20
+>>>>  [<ffffffff8105ae86>] flush_workqueue+0x1d6/0x4d0
+>>>>  [<ffffffff8105acb0>] ? flush_workqueue_prep_cwqs+0x200/0x200
+>>>>  [<ffffffff8125e909>] pciehp_release_ctrl+0x39/0x90
+>>>>  [<ffffffff8125b945>] pciehp_remove+0x25/0x30
+>>>>  [<ffffffff81255bf2>] pcie_port_remove_service+0x52/0x70
+>>>>  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
+>>>>  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
+>>>>  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
+>>>>  [<ffffffff81303fe7>] device_del+0x127/0x1c0
+>>>>  [<ffffffff81255d70>] ? resume_iter+0x40/0x40
+>>>>  [<ffffffff81304091>] device_unregister+0x11/0x20
+>>>>  [<ffffffff81255da5>] remove_iter+0x35/0x40
+>>>>  [<ffffffff81302eb6>] device_for_each_child+0x36/0x70
+>>>>  [<ffffffff81256341>] pcie_port_device_remove+0x21/0x40
+>>>>  [<ffffffff81256588>] pcie_portdrv_remove+0x28/0x50
+>>>>  [<ffffffff8124a821>] pci_device_remove+0x41/0xc0
+>>>>  [<ffffffff81306a27>] __device_release_driver+0x77/0xe0
+>>>>  [<ffffffff81306ab9>] device_release_driver+0x29/0x40
+>>>>  [<ffffffff813064b1>] bus_remove_device+0xf1/0x140
+>>>>  [<ffffffff81303fe7>] device_del+0x127/0x1c0
+>>>>  [<ffffffff81304091>] device_unregister+0x11/0x20
+>>>>  [<ffffffff8124566c>] pci_stop_bus_device+0x8c/0xa0
+>>>>  [<ffffffff81245615>] pci_stop_bus_device+0x35/0xa0
+>>>>  [<ffffffff81245811>] pci_stop_and_remove_bus_device+0x11/0x20
+>>>>  [<ffffffff8125cc91>] pciehp_unconfigure_device+0x91/0x190
+>>>>  [<ffffffff8125c76d>] ? pciehp_power_thread+0x2d/0x110
+>>>>  [<ffffffff8125c591>] pciehp_disable_slot+0x71/0x220
+>>>>  [<ffffffff8125c826>] pciehp_power_thread+0xe6/0x110
+>>>>  [<ffffffff8105d203>] process_one_work+0x193/0x550
+>>>>  [<ffffffff8105d1a1>] ? process_one_work+0x131/0x550
+>>>>  [<ffffffff8125c740>] ? pciehp_disable_slot+0x220/0x220
+>>>>  [<ffffffff8105d96d>] worker_thread+0x15d/0x400
+>>>>  [<ffffffff8109213d>] ? trace_hardirqs_on+0xd/0x10
+>>>>  [<ffffffff8105d810>] ? rescuer_thread+0x210/0x210
+>>>>  [<ffffffff81062bd6>] kthread+0xd6/0xe0
+>>>>  [<ffffffff8155a18b>] ? _raw_spin_unlock_irq+0x2b/0x50
+>>>>  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
+>>>>  [<ffffffff8155ae6c>] ret_from_fork+0x7c/0xb0
+>>>>  [<ffffffff81062b00>] ? __init_kthread_worker+0x70/0x70
+>>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-pci" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
+
