@@ -1,120 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab3AFQpr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 11:45:47 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:40036 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756041Ab3AFQpo (ORCPT
+	id S1756075Ab3AFRF6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 12:05:58 -0500
+Received: from mail-ea0-f176.google.com ([209.85.215.176]:33005 "EHLO
+	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3AFRFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 11:45:44 -0500
-Subject: Re: Major network performance regression in 3.7
-From: Eric Dumazet <erdnetdev@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20130106155123.GB16031@1wt.eu>
-References: <20130106005053.GS16031@1wt.eu>
-	 <1357435276.1678.5067.camel@edumazet-glaptop>
-	 <20130106013027.GV16031@1wt.eu>
-	 <1357436430.1678.5111.camel@edumazet-glaptop>
-	 <1357437086.1678.5135.camel@edumazet-glaptop>
-	 <1357438591.1678.5205.camel@edumazet-glaptop>
-	 <20130106025256.GY16031@1wt.eu>
-	 <1357457724.1678.5941.camel@edumazet-glaptop>
-	 <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop>
-	 <20130106155123.GB16031@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Jan 2013 08:39:53 -0800
-Message-ID: <1357490393.6919.267.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Jan 2013 12:05:55 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
+        "'Pawel Osciak'" <pawel@osciak.com>,
+        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
+        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Jonathan Corbet'" <corbet@lwn.net>,
+        sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Alessandro Rubini <rubini@gnudd.com>
+Subject: Re: [PATCH v3 2/4] videobuf2-dma-streaming: new videobuf2 memory allocator
+Date: Sun, 06 Jan 2013 18:04:39 +0100
+Message-ID: <3892735.vLSnhhCRFi@harkonnen>
+User-Agent: KMail/4.9.4 (Linux/3.6.10-2.fc17.x86_64; KDE/4.9.4; x86_64; ; )
+In-Reply-To: <12929800.xFTBAueAE0@harkonnen>
+References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <1399400.izKZgEHXnP@harkonnen> <12929800.xFTBAueAE0@harkonnen>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-06 at 16:51 +0100, Willy Tarreau wrote:
-> Hi Eric,
-> 
+> I have more information about DMA on the board that I'm using; probably, I
+> can make dma-contig work with my device.
 
-> Oh sorry, I didn't really want to pollute the list with links and configs,
-> especially during the initial report with various combined issues :-(
-> 
-> The client is my old "inject" tool, available here :
-> 
->      http://git.1wt.eu/web?p=inject.git
-> 
-> The server is my "httpterm" tool, available here :
-> 
->      http://git.1wt.eu/web?p=httpterm.git
->      Use "-O3 -DENABLE_POLL -DENABLE_EPOLL -DENABLE_SPLICE" for CFLAGS.
-> 
-> I'm starting httpterm this way :
->     httpterm -D -L :8000 -P 256
->     => it starts a server on port 8000, and sets pipe size to 256 kB. It
->        uses SPLICE_F_MORE on output data but removing it did not fix the
->        issue one of the early tests.
-> 
-> Then I'm starting inject this way :
->     inject -o 1 -u 1 -G 0:8000/?s=1g
->     => 1 user, 1 object at a time, and fetch /?s=1g from the loopback.
->        The server will then emit 1 GB of data using splice().
-> 
-> It's possible to disable splicing on the server using -dS. The client
-> "eats" data using recv(MSG_TRUNC) to avoid a useless copy.
-> 
-> > TCP has very low defaults concerning initial window, and it appears you
-> > set RCVBUF to even smaller values.
-> 
-> Yes, you're right, my bootup scripts still change the default value, though
-> I increase them to larger values during the tests (except the one where you
-> saw win 8030 due to the default rmem set to 16060). I've been using this
-> value in the past with older kernels because it allowed an integer number
-> of segments to fit into the default window, and offered optimal performance
-> with large numbers of concurrent connections. Since 2.6, tcp_moderate_rcvbuf
-> works very well and this is not needed anymore.
-> 
-> Anyway, it does not affect the test here. Good kernels are OK whatever the
-> default value, and bad kernels are bad whatever the default value too.
-> 
-> Hmmm finally it's this commit again :
-> 
->    2f53384 tcp: allow splice() to build full TSO packets
-> 
-> I'm saying "again" because we already diagnosed a similar effect several
-> months ago that was revealed by this patch and we fixed it with the
-> following  one, though I remember that we weren't completely sure it
-> would fix everything :
-> 
->    bad115c tcp: do_tcp_sendpages() must try to push data out on oom conditions
-> 
-> Just out of curiosity, I tried to re-apply the patch above just after the
-> first one but it did not change anything (after all it changed a symptom
-> which appeared in different conditions).
-> 
-> Interestingly, this commit (2f53384) significantly improved performance
-> on spliced data over the loopback (more than 50% in this test). In 3.7,
-> it seems to have no positive effect anymore. I reverted it using the
-> following patch and now the problem is fixed (mtu=64k works fine now) :
-> 
-> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-> index e457c7a..61e4517 100644
-> --- a/net/ipv4/tcp.c
-> +++ b/net/ipv4/tcp.c
-> @@ -935,7 +935,7 @@ wait_for_memory:
->  	}
->  
->  out:
-> -	if (copied && !(flags & MSG_SENDPAGE_NOTLAST))
-> +	if (copied)
->  		tcp_push(sk, flags, mss_now, tp->nonagle);
->  	return copied;
-> 
-> Regards,
-> Willy
-> 
+Ok, the driver STA2X11 now works with a patched dma-contig allocator. So, my 
+streaming allocator it is not mandatory. 
 
-Hmm, I'll have to check if this really can be reverted without hurting
-vmsplice() again.
+I based my work on the previous work made by Windriver, but now I understand 
+the DMA problem and the solution easy.
+I investigated (asked to Alessandro Rubini who worked on this board) about 
+this DMA issue. The problem is that on the sta2x11 architecture only the first 
+512MB are available through the PCI bus, but the allocator can allocate memory 
+for DMA above this limit. By using GFP_DMA flags the allocation take place 
+under the 16MB so it works.
 
+If you think that the streaming allocator can be useful for someone else (who 
+has performance problem with uncached DMA like Jonathan when he did dma-nc 
+allocator), I can resend the patch.
+I cannot do performance test at the moment because I don't have the time, so I 
+cannot personally justify the presence of a new allocator. I think that I will 
+do some performance test with this driver; if I will find that dma-streaming 
+works better I will propose it again.
 
+I will propose V4 patches soon.
 
+-- 
+Federico Vaga
