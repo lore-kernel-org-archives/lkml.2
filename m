@@ -1,101 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751390Ab3AFHxh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 02:53:37 -0500
-Received: from mga02.intel.com ([134.134.136.20]:52114 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab3AFHxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 02:53:35 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,419,1355126400"; 
-   d="scan'208";a="268106636"
-Message-ID: <50E92DC3.4050906@intel.com>
-Date: Sun, 06 Jan 2013 15:54:43 +0800
-From: Alex Shi <alex.shi@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
+	id S1751456Ab3AFIMG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 03:12:06 -0500
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:36596
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751062Ab3AFIME convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 03:12:04 -0500
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VS-3(zz98dI9371I542I1432Izz1de0h1202h1e76h1d1ah1d2ahzz8275bh8275dh17326ahz2dh2a8h668h839h8e2h8e3h946hd25hf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh15d0h162dh1631h1758hbe9i1155h)
+From: Liu Hui-R64343 <r64343@freescale.com>
+To: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mgorman@suse.de" <mgorman@suse.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "riel@redhat.com" <riel@redhat.com>,
+        "minchan@kernel.org" <minchan@kernel.org>,
+        "kamezawa.hiroyu@jp.fujitsu.com" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: RE: [PATCH] mm: compaction: fix echo 1 > compact_memory return
+ error issue
+Thread-Topic: [PATCH] mm: compaction: fix echo 1 > compact_memory return
+ error issue
+Thread-Index: AQHN6+PQVZX6o0pR+0esPX7n7xyjzZg78a0Q
+Date: Sun, 6 Jan 2013 08:11:58 +0000
+Message-ID: <AD13664F485EE54694E29A7F9D5BE1AF4E5BCD@039-SN2MPN1-021.039d.mgd.msft.net>
+References: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+ <20130106075940.GA22985@hacker.(null)>
+In-Reply-To: <20130106075940.GA22985@hacker.(null)>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.192.242.64]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Alex Shi <alex.shi@intel.com>, pjt@google.com, mingo@redhat.com
-CC: peterz@infradead.org, tglx@linutronix.de, akpm@linux-foundation.org,
-        arjan@linux.intel.com, bp@alien8.de, namhyung@kernel.org,
-        efault@gmx.de, vincent.guittot@linaro.org, gregkh@linuxfoundation.org,
-        preeti@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v3 09/22] sched: compute runnable load avg in cpu_load
- and cpu_avg_load_per_task
-References: <1357375071-11793-1-git-send-email-alex.shi@intel.com> <1357375071-11793-10-git-send-email-alex.shi@intel.com> <50E7EAB1.6020302@intel.com>
-In-Reply-To: <50E7EAB1.6020302@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>-----Original Message-----
+>From: Wanpeng Li [mailto:liwanp@linux.vnet.ibm.com]
+>Sent: Sunday, January 06, 2013 4:00 PM
+>To: Liu Hui-R64343
+>Cc: linux-kernel@vger.kernel.org; mgorman@suse.de; akpm@linux-
+>foundation.org; riel@redhat.com; minchan@kernel.org;
+>kamezawa.hiroyu@jp.fujitsu.com; linux-mm@kvack.org
+>Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return
+>error issue
+>
+>On Sun, Jan 06, 2013 at 03:44:33PM +0800, Jason Liu wrote:
+>
+>Hi Jason,
+>
+>>when run the folloing command under shell, it will return error sh/$
+>>echo 1 > /proc/sys/vm/compact_memory sh/$ sh: write error: Bad address
+>>
+>
+>How can you modify the value through none privileged user since the mode
+>== 0200?
 
->>  static unsigned long weighted_cpuload(const int cpu)
->>  {
->> -	return cpu_rq(cpu)->load.weight;
->> +	return (unsigned long)cpu_rq(cpu)->cfs.runnable_load_avg;
-> 
-> Above line change cause aim9 multitask benchmark drop about 10%
-> performance on many x86 machines. Profile just show there are more
-> cpuidle enter called.
-> The testing command:
-> 
-> #( echo $hostname ; echo test ; echo 1 ; echo 2000 ; echo 2 ; echo 2000
-> ; echo 100 ) | ./multitask -nl
-> 
-> The oprofile output here:
-> with this patch set
-> 101978 total                                      0.0134
->  54406 cpuidle_wrap_enter                       499.1376
->   2098 __do_page_fault                            2.0349
->   1976 rwsem_wake                                29.0588
->   1824 finish_task_switch                        12.4932
->   1560 copy_user_generic_string                  24.3750
->   1346 clear_page_c                              84.1250
->   1249 unmap_single_vma                           0.6885
->   1141 copy_page_rep                             71.3125
->   1093 anon_vma_interval_tree_insert              8.1567
-> 
-> 3.8-rc2
->  68982 total                                      0.0090
->  22166 cpuidle_wrap_enter                       203.3578
->   2188 rwsem_wake                                32.1765
->   2136 __do_page_fault                            2.0718
->   1920 finish_task_switch                        13.1507
->   1724 poll_idle                                 15.2566
->   1433 copy_user_generic_string                  22.3906
->   1237 clear_page_c                              77.3125
->   1222 unmap_single_vma                           0.6736
->   1053 anon_vma_interval_tree_insert              7.8582
-> 
-> Without load avg in periodic balancing, each cpu will weighted with all
-> tasks load.
-> 
-> with new load tracking, we just update the cfs_rq load avg with each
-> task at enqueue/dequeue moment, and with just update current task in
-> scheduler_tick. I am wondering if it's the sample is a bit rare.
-> 
-> What's your opinion of this, Paul?
-> 
+I write it through privileged user(root). I'm using the GNOME_Mobile rootfs.
 
-Ingo & Paul:
+>
+>>After strace, I found the following log:
+>>...
+>>write(1, "1\n", 2)               = 3
+>>write(1, "", 4294967295)         = -1 EFAULT (Bad address)
+>>write(2, "echo: write error: Bad address\n", 31echo: write error: Bad
+>>address
+>>) = 31
+>>
+>>This tells system return 3(COMPACT_COMPLETE) after write data to
+>compact_memory.
+>>
+>>The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE)
+>>from sysctl_compaction_handler after compaction_nodes finished.
+>
+>What's the special scenario you are in? I couldn't figure out the similar error
+>against latest 3.8-rc2, how could you reproduce it?
 
-I just looked into the aim9 benchmark, in this case it forks 2000 tasks,
-after all tasks ready, aim9 give a signal than all tasks burst waking up
-and run until all finished.
-Since each of tasks are finished very quickly, a imbalanced empty cpu
-may goes to sleep till a regular balancing give it some new tasks. That
-causes the performance dropping. cause more idle entering.
+I'm using the BusyBox v1.20.2 () built-in shell (ash), it reproduces the issue: 100%.
 
-According to load avg's design, it needs time to accumulate its load
-weight. So, it's hard to find a way resolving this problem.
+root@freescale /$ sh
 
-As to other scheduler related benchmarks, like kbuild, specjbb2005,
-hachbench, sysbench etc, I didn't find clear improvement or regression
-on the load avg balancing.
 
-Any comments for this problem?
+BusyBox v1.20.2 () built-in shell (ash)
+Enter 'help' for a list of built-in commands.
 
--- 
-Thanks Alex
+Could you run strace and see the log:  strace echo 1 > /proc/sys/vm/compact_memory
+
+>
+>Regards,
+>Wanpeng Li
+>
+>>
+>>Suggested-by:David Rientjes <rientjes@google.com> Cc:Mel Gorman
+>><mgorman@suse.de> Cc:Andrew Morton <akpm@linux-foundation.org>
+>Cc:Rik
+>>van Riel <riel@redhat.com> Cc:Minchan Kim <minchan@kernel.org>
+>>Cc:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>Signed-off-by: Jason Liu <r64343@freescale.com>
+>>---
+>> mm/compaction.c |    6 ++----
+>> 1 files changed, 2 insertions(+), 4 deletions(-)
+>>
+>>diff --git a/mm/compaction.c b/mm/compaction.c index 6b807e4..f8f5c11
+>>100644
+>>--- a/mm/compaction.c
+>>+++ b/mm/compaction.c
+>>@@ -1210,7 +1210,7 @@ static int compact_node(int nid)  }
+>>
+>> /* Compact all nodes in the system */
+>>-static int compact_nodes(void)
+>>+static void compact_nodes(void)
+>> {
+>> 	int nid;
+>>
+>>@@ -1219,8 +1219,6 @@ static int compact_nodes(void)
+>>
+>> 	for_each_online_node(nid)
+>> 		compact_node(nid);
+>>-
+>>-	return COMPACT_COMPLETE;
+>> }
+>>
+>> /* The written value is actually unused, all memory is compacted */ @@
+>>-1231,7 +1229,7 @@ int sysctl_compaction_handler(struct ctl_table *table,
+>int write,
+>> 			void __user *buffer, size_t *length, loff_t *ppos)  {
+>> 	if (write)
+>>-		return compact_nodes();
+>>+		compact_nodes();
+>>
+>> 	return 0;
+>> }
+>>--
+>>1.7.5.4
+>>
+>>
+>>--
+>>To unsubscribe, send a message with 'unsubscribe linux-mm' in the body
+>>to majordomo@kvack.org.  For more info on Linux MM,
+>>see: http://www.linux-mm.org/ .
+>>Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
+
+
