@@ -1,96 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755938Ab3AFCxF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 21:53:05 -0500
-Received: from 1wt.eu ([62.212.114.60]:37523 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755572Ab3AFCxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 21:53:03 -0500
-Date: Sun, 6 Jan 2013 03:52:56 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Major network performance regression in 3.7
-Message-ID: <20130106025256.GY16031@1wt.eu>
-References: <20130105214958.GA19814@1wt.eu> <1357427926.1678.4771.camel@edumazet-glaptop> <20130105232913.GQ16031@1wt.eu> <1357430523.1678.4901.camel@edumazet-glaptop> <20130106005053.GS16031@1wt.eu> <1357435276.1678.5067.camel@edumazet-glaptop> <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755630Ab3AFCx7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 21:53:59 -0500
+Received: from mail-da0-f48.google.com ([209.85.210.48]:45742 "EHLO
+	mail-da0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab3AFCxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 21:53:55 -0500
+Date: Sat, 5 Jan 2013 18:50:24 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+Cc: linux-kernel@vger.kernel.org, Jenny TC <jenny.tc@intel.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH 1/2] power_supply: Add charge control struct in power
+ supply class
+Message-ID: <20130106025024.GC6919@lizard.sbx05280.losalca.wayport.net>
+References: <1354002423-24587-1-git-send-email-ramakrishna.pallala@intel.com>
+ <1354002423-24587-2-git-send-email-ramakrishna.pallala@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1357438591.1678.5205.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <1354002423-24587-2-git-send-email-ramakrishna.pallala@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 06:16:31PM -0800, Eric Dumazet wrote:
-> On Sat, 2013-01-05 at 17:51 -0800, Eric Dumazet wrote:
-> > On Sat, 2013-01-05 at 17:40 -0800, Eric Dumazet wrote:
-> > > On Sun, 2013-01-06 at 02:30 +0100, Willy Tarreau wrote:
-> > > 
-> > > > Ah interesting because these were some of the mm patches that I had
-> > > > tried to revert.
-> > > 
-> > > Hmm, or we should fix __skb_splice_bits()
-> > > 
-> > > I'll send a patch.
-> > > 
-> > 
-> > Could you try the following ?
-> 
-> Or more exactly...
-> 
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 3ab989b..01f222c 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -1736,11 +1736,8 @@ static bool __splice_segment(struct page *page, unsigned int poff,
->  		return false;
->  	}
+On Tue, Nov 27, 2012 at 01:17:02PM +0530, Ramakrishna Pallala wrote:
+[...]
+> +++ b/drivers/power/power_supply_core.c
+> @@ -158,6 +158,24 @@ struct power_supply *power_supply_get_by_name(char *name)
+>  }
+>  EXPORT_SYMBOL_GPL(power_supply_get_by_name);
 >  
-> -	/* ignore any bits we already processed */
-> -	if (*off) {
-> -		__segment_seek(&page, &poff, &plen, *off);
-> -		*off = 0;
-> -	}
-> +	__segment_seek(&page, &poff, &plen, *off);
-> +	*off = 0;
->  
->  	do {
->  		unsigned int flen = min(*len, plen);
-> @@ -1768,14 +1765,15 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
->  			      struct splice_pipe_desc *spd, struct sock *sk)
+> +#ifdef CONFIG_PSY_CM_LOW_LEVEL_SUPPORT
+> +struct power_supply_charger_control
+> +		*power_supply_get_chrg_cntl_by_name(const char *name)
+> +{
+> +	struct device *dev = class_find_device(power_supply_class, NULL,
+> +			(char *)name, power_supply_match_device_by_name);
+> +
+> +	return dev ? ((struct power_supply *)dev_get_drvdata(dev))->chrg_cntl : NULL;
+> +}
+> +#else
+> +struct power_supply_charger_control
+> +		*power_supply_get_chrg_cntl_by_name(const char *name)
+> +{
+> +	return NULL;
+> +}
+> +#endif
+> +EXPORT_SYMBOL_GPL(power_supply_get_chrg_cntl_by_name);
+
+>  int power_supply_powers(struct power_supply *psy, struct device *dev)
 >  {
->  	int seg;
-> +	struct page *page = virt_to_page(skb->data);
-> +	unsigned int poff = skb->data - (unsigned char *)page_address(page);
+>  	return sysfs_create_link(&psy->dev->kobj, &dev->kobj, "powers");
+> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+> index 1f0ab90..35cdf2c 100644
+> --- a/include/linux/power_supply.h
+> +++ b/include/linux/power_supply.h
+> @@ -191,6 +191,10 @@ struct power_supply {
+>  	struct thermal_cooling_device *tcd;
+>  #endif
 >  
->  	/* map the linear part :
->  	 * If skb->head_frag is set, this 'linear' part is backed by a
->  	 * fragment, and if the head is not shared with any clones then
->  	 * we can avoid a copy since we own the head portion of this page.
->  	 */
-> -	if (__splice_segment(virt_to_page(skb->data),
-> -			     (unsigned long) skb->data & (PAGE_SIZE - 1),
-> +	if (__splice_segment(page, poff,
->  			     skb_headlen(skb),
->  			     offset, len, skb, spd,
->  			     skb_head_is_locked(skb),
-> 
+> +#ifdef CONFIG_PSY_CM_LOW_LEVEL_SUPPORT
+> +	struct power_supply_charger_control *chrg_cntl;
+> +#endif
+> +
+>  #ifdef CONFIG_LEDS_TRIGGERS
+>  	struct led_trigger *charging_full_trig;
+>  	char *charging_full_trig_name;
+> @@ -224,7 +228,29 @@ struct power_supply_info {
+>  	int use_for_apm;
+>  };
+>  
+> +struct power_supply_charger_control {
+> +	const char *name;
+> +	/* get charging status */
+> +	int (*is_charging_enabled)(void);
+> +	int (*is_charger_enabled)(void);
+> +
+> +	/* set charging parameters */
+> +	int (*set_in_current_limit)(int uA);
+> +	int (*set_charge_current)(int uA);
+> +	int (*set_charge_voltage)(int uV);
+> +
+> +	/* control battery charging */
+> +	int (*enable_charging)(void);
+> +	int (*disable_charging)(void);
+> +
+> +	/* control VSYS or system supply */
+> +	int (*turnon_charger)(void);
+> +	int (*turnoff_charger)(void);
+> +};
+> +
 
-OK so I observed no change with this patch, either on the loopback
-data rate at >16kB MTU, or on the myri. I'm keeping it at hand for
-experimentation anyway.
+I'm all for this patch, but why do you need to place it into
+power_supply.h and power_supply_core.c? :) I see nothing generic here,
+it's pure charger-manager stuff. So, place everything into
+charger-manager.{c,h}.
 
-Concerning the loopback MTU, I find it strange that the MTU changes
-the splice() behaviour and not send/recv. I thought that there could
-be a relation between the MTU and the pipe size, but it does not
-appear to be the case either, as I tried various sizes between 16kB
-and 256kB without achieving original performance.
+You can still add this:
 
-I've started to bisect the 10GE issue again (since both issues are
-unrelated), but I'll finish tomorrow, it's time to get some sleep
-now.
+> +#ifdef CONFIG_PSY_CM_LOW_LEVEL_SUPPORT
+> +	struct power_supply_charger_control *chrg_cntl;
+> +#endif
 
-Best regards,
-Willy
+to power_supply.h, of course. It's OK.
 
+>  extern struct power_supply *power_supply_get_by_name(char *name);
+> +extern struct power_supply_charger_control
+> +		*power_supply_get_chrg_cntl_by_name(const char *name);
+>  extern void power_supply_changed(struct power_supply *psy);
+>  extern int power_supply_am_i_supplied(struct power_supply *psy);
+>  extern int power_supply_set_battery_charged(struct power_supply *psy);
+> -- 
+> 1.7.0.4
