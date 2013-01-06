@@ -1,180 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab3AFRc1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 12:32:27 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:44954 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab3AFRcZ (ORCPT
+	id S1756104Ab3AFRfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 12:35:10 -0500
+Received: from mail.free-electrons.com ([94.23.32.191]:38253 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab3AFRfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 12:32:25 -0500
-MIME-Version: 1.0
-In-Reply-To: <1356116342-2121-1-git-send-email-sasha.levin@oracle.com>
-References: <1356116342-2121-1-git-send-email-sasha.levin@oracle.com>
-From: Sasha Levin <levinsasha928@gmail.com>
-Date: Sun, 6 Jan 2013 12:32:04 -0500
-Message-ID: <CA+1xoqeBPyRwrXRAV5F5ttdTrB7Vr2-NYLP73DS-S9SzMJ3xxQ@mail.gmail.com>
-Subject: Re: [PATCH] mm/huge_memory: use new hashtable implementation
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: rientjes@google.com, Andrew Morton <akpm@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 6 Jan 2013 12:35:08 -0500
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: [PATCH 0/3] Add support for gpio expander pca9505 used on Mirabox
+Date: Sun,  6 Jan 2013 18:34:45 +0100
+Message-Id: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+Hello,
 
-On Fri, Dec 21, 2012 at 1:59 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> Switch hugemem to use the new hashtable implementation. This reduces the
-> amount of generic unrelated code in the hugemem.
->
-> This also removes the dymanic allocation of the hash table. The upside is that
-> we save a pointer dereference when accessing the hashtable, but we lose 8KB
-> if CONFIG_TRANSPARENT_HUGEPAGE is enabled but the processor doesn't
-> support hugepages.
->
-> This patch depends on d9b482c ("hashtable: introduce a small and naive
-> hashtable") which was merged in v3.6.
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
-> Changes in v2:
->  - Addressed comments by David Rientjes.
->
->  mm/huge_memory.c | 54 +++++++++---------------------------------------------
->  1 file changed, 9 insertions(+), 45 deletions(-)
->
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 9e894ed..f62654c 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -20,6 +20,7 @@
->  #include <linux/mman.h>
->  #include <linux/pagemap.h>
->  #include <linux/migrate.h>
-> +#include <linux/hashtable.h>
->
->  #include <asm/tlb.h>
->  #include <asm/pgalloc.h>
-> @@ -62,12 +63,11 @@ static DECLARE_WAIT_QUEUE_HEAD(khugepaged_wait);
->  static unsigned int khugepaged_max_ptes_none __read_mostly = HPAGE_PMD_NR-1;
->
->  static int khugepaged(void *none);
-> -static int mm_slots_hash_init(void);
->  static int khugepaged_slab_init(void);
-> -static void khugepaged_slab_free(void);
->
-> -#define MM_SLOTS_HASH_HEADS 1024
-> -static struct hlist_head *mm_slots_hash __read_mostly;
-> +#define MM_SLOTS_HASH_BITS 10
-> +static __read_mostly DEFINE_HASHTABLE(mm_slots_hash, MM_SLOTS_HASH_BITS);
-> +
->  static struct kmem_cache *mm_slot_cache __read_mostly;
->
->  /**
-> @@ -634,12 +634,6 @@ static int __init hugepage_init(void)
->         if (err)
->                 goto out;
->
-> -       err = mm_slots_hash_init();
-> -       if (err) {
-> -               khugepaged_slab_free();
-> -               goto out;
-> -       }
-> -
->         register_shrinker(&huge_zero_page_shrinker);
->
->         /*
-> @@ -1893,12 +1887,6 @@ static int __init khugepaged_slab_init(void)
->         return 0;
->  }
->
-> -static void __init khugepaged_slab_free(void)
-> -{
-> -       kmem_cache_destroy(mm_slot_cache);
-> -       mm_slot_cache = NULL;
-> -}
-> -
->  static inline struct mm_slot *alloc_mm_slot(void)
->  {
->         if (!mm_slot_cache)     /* initialization failed */
-> @@ -1911,47 +1899,23 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
->         kmem_cache_free(mm_slot_cache, mm_slot);
->  }
->
-> -static int __init mm_slots_hash_init(void)
-> -{
-> -       mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
-> -                               GFP_KERNEL);
-> -       if (!mm_slots_hash)
-> -               return -ENOMEM;
-> -       return 0;
-> -}
-> -
-> -#if 0
-> -static void __init mm_slots_hash_free(void)
-> -{
-> -       kfree(mm_slots_hash);
-> -       mm_slots_hash = NULL;
-> -}
-> -#endif
-> -
->  static struct mm_slot *get_mm_slot(struct mm_struct *mm)
->  {
->         struct mm_slot *mm_slot;
-> -       struct hlist_head *bucket;
->         struct hlist_node *node;
->
-> -       bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
-> -                               % MM_SLOTS_HASH_HEADS];
-> -       hlist_for_each_entry(mm_slot, node, bucket, hash) {
-> +       hash_for_each_possible(mm_slots_hash, mm_slot, node, hash, (unsigned long) mm)
->                 if (mm == mm_slot->mm)
->                         return mm_slot;
-> -       }
-> +
->         return NULL;
->  }
->
->  static void insert_to_mm_slots_hash(struct mm_struct *mm,
->                                     struct mm_slot *mm_slot)
->  {
-> -       struct hlist_head *bucket;
-> -
-> -       bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
-> -                               % MM_SLOTS_HASH_HEADS];
->         mm_slot->mm = mm;
-> -       hlist_add_head(&mm_slot->hash, bucket);
-> +       hash_add(mm_slots_hash, &mm_slot->hash, (long)mm);
->  }
->
->  static inline int khugepaged_test_exit(struct mm_struct *mm)
-> @@ -2020,7 +1984,7 @@ void __khugepaged_exit(struct mm_struct *mm)
->         spin_lock(&khugepaged_mm_lock);
->         mm_slot = get_mm_slot(mm);
->         if (mm_slot && khugepaged_scan.mm_slot != mm_slot) {
-> -               hlist_del(&mm_slot->hash);
-> +               hash_del(&mm_slot->hash);
->                 list_del(&mm_slot->mm_node);
->                 free = 1;
->         }
-> @@ -2469,7 +2433,7 @@ static void collect_mm_slot(struct mm_slot *mm_slot)
->
->         if (khugepaged_test_exit(mm)) {
->                 /* free mm_slot */
-> -               hlist_del(&mm_slot->hash);
-> +               hash_del(&mm_slot->hash);
->                 list_del(&mm_slot->mm_node);
->
->                 /*
-> --
-> 1.8.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patch set adds the support for the i2c gpio expander pca9505 used
+on the JTAG/GPIO box which can be connected to the Mirabox.
+
+To be able to use the pca9505 I had to do several changes in the
+driver. Indeed, until now the pca953x driver accessed all the bank of
+a given register in a single command using only a 32 bits
+variable. This expander comes with 40 GPIOs which no more fits in a 32
+variable. This patch set makes the accesses to the registers more
+generic by relying on an array of u8 variables. This fits exactly the
+way the registers are represented in the hardware.
+
+Once the per-bank representation was added, it was easier to introduce
+helpers to access to a single register of a bank instead of reading or
+writing all the banks for a given register. As the GPIO API allows
+only the accesses to a single GPIO at a time there was no point to read
+and write all the other banks. Hence it should help to decrease the
+latency especially for the pca9505.
+
+However as the block GPIO API from Roland Stigge is incoming I kept
+the helpers used to access all the banks in the same time. I had to
+make some modifications in the arguments that these functions
+received, so it will have a conflict here. Currently my patch set is
+based on v3.8-rc2, but I am willing to rebase onto gpio-for-next once
+the GPIO block will be merged into it.
+
+I also expected some tested-by as I was only able to test the pca9505
+and I didn't test the IRQ part.
+
+Thanks!
+
+Gregory CLEMENT (3):
+  gpio: pca953x: make the register access by GPIO bank
+  gpio: pca953x: add support for pca9505
+  arm: mvebu: enable gpio expander over i2c on Mirabox platform
+
+ arch/arm/boot/dts/armada-370-mirabox.dts |   10 ++
+ drivers/gpio/gpio-pca953x.c              |  235 +++++++++++++++++++-----------
+ 2 files changed, 160 insertions(+), 85 deletions(-)
+
+-- 
+1.7.9.5
+
