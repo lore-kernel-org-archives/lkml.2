@@ -1,36 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756106Ab3AFRxo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 12:53:44 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:54161 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756069Ab3AFRxm (ORCPT
+	id S1756109Ab3AFSFA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 13:05:00 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:58118 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756074Ab3AFSE5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 12:53:42 -0500
+	Sun, 6 Jan 2013 13:04:57 -0500
+Date: Sun, 6 Jan 2013 19:06:52 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: "Hangcheck timer elapsed... GPU hung" in 3.8.0-rc2
+Message-ID: <20130106180652.GQ5737@phenom.ffwll.local>
+Mail-Followup-To: "J. Bruce Fields" <bfields@fieldses.org>,
+	Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+	dri-devel@lists.freedesktop.org
+References: <20130103204624.GA2533@fieldses.org>
+ <CA+5PVA6PSsWGVAvSkdZXgoPaaroTuC0LvJ6-3mo1aU9LEUA1Sw@mail.gmail.com>
+ <20130103231123.GD3238@fieldses.org>
 MIME-Version: 1.0
-In-Reply-To: <CAN_LGv2RVeE88iJTeeYrin+_gKb9Pcg4feBcbKgEGEy8YmpCpQ@mail.gmail.com>
-References: <CAN_LGv2RVeE88iJTeeYrin+_gKb9Pcg4feBcbKgEGEy8YmpCpQ@mail.gmail.com>
-Date: Sun, 6 Jan 2013 23:53:41 +0600
-Message-ID: <CAN_LGv1L3RLrwnzdN7oYM8ewjRoptGuK-4wQ9+oXWd+NK9CgNw@mail.gmail.com>
-Subject: Re: linux-3.7.1: disable and reenable NMI watchdog => panic
-From: "Alexander E. Patrakov" <patrakov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130103231123.GD3238@fieldses.org>
+X-Operating-System: Linux phenom 3.7.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Thu, Jan 03, 2013 at 06:11:23PM -0500, J. Bruce Fields wrote:
+> On Thu, Jan 03, 2013 at 04:16:24PM -0500, Josh Boyer wrote:
+> > On Thu, Jan 3, 2013 at 3:46 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+> > > I got a crash after a few minutes of running 3.8.0-rc2, was able to
+> > > switch to a vt and look at dmesg:
+> > >
+> > >   [  490.962545] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> > >   [  490.963019] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> > >   [  492.961446] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> > >   [  492.965613] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
+> > >   [  492.965621] [drm:i915_reset] *ERROR* Failed to reset chip.
+> > >
+> > > Previously I was on 3.6.10-2.fc17.x86_64, which didn't have any such
+> > > problem.
+> > 
+> > I'm not questioning that you haven't seen that error in F17, but we have
+> > had quite a few bug reports with similar error messages for a while now.
+> > Apparently there are lots of ways GPUs can get hung, so they might be
+> > different from what you're seeing.  Just wanted to point out that it
+> > might not be a new 3.8 change that caused it.
+> 
+> OK, sure.  It reproduced very quickly after the upgrade, so I assumed it
+> was a regression.
+> 
+> I'm running 3.7.0 now which hasn't shown any problem.
+> 
+> I'll try a newer kernel again to see if it's really that easy for me to
+> reproduce.
 
-As illustrated by the screen photo [1] (sorry for bad quality),
-disabling and then reenabling the NMI watchdog panics the kernel
-(3.7.1). This is reproducible in qemu-kvm as well, but I could not get
-the nice panic message to pop up there (most of the time, the real
-machine just locks up, too). This bug is rather important, as
-laptop-mode-tools, by default, try to reenable this NMI watchdog when
-AC power appears, and this is how I caught the bug the first time.
+If you hit this again (even better if you have a way to reproduce) please
+grab the i915_error_state file from debugfs and file a bug on
+bugs.freedesktop.org against DRM - DRI (Intel). We do know of a few recent
+issues introduced around 3.7 kernels, preliminary patches are floating
+around. The error state should be good enough to decide whether you're
+hitting the same issues.
 
-[1] http://postimage.org/image/mjjifj1ip/
-
+Thanks, Daniel
 -- 
-Alexander E. Patrakov
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
