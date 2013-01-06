@@ -1,38 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab3AFQoZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 11:44:25 -0500
-Received: from 1wt.eu ([62.212.114.60]:37699 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756056Ab3AFQoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 11:44:22 -0500
-Date: Sun, 6 Jan 2013 17:44:16 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <erdnetdev@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1756084Ab3AFQpr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 11:45:47 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:40036 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756041Ab3AFQpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 11:45:44 -0500
 Subject: Re: Major network performance regression in 3.7
-Message-ID: <20130106164416.GF16031@1wt.eu>
-References: <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop> <20130106025256.GY16031@1wt.eu> <1357457724.1678.5941.camel@edumazet-glaptop> <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop> <20130106155123.GB16031@1wt.eu> <1357490393.6919.267.camel@edumazet-glaptop>
+From: Eric Dumazet <erdnetdev@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130106155123.GB16031@1wt.eu>
+References: <20130106005053.GS16031@1wt.eu>
+	 <1357435276.1678.5067.camel@edumazet-glaptop>
+	 <20130106013027.GV16031@1wt.eu>
+	 <1357436430.1678.5111.camel@edumazet-glaptop>
+	 <1357437086.1678.5135.camel@edumazet-glaptop>
+	 <1357438591.1678.5205.camel@edumazet-glaptop>
+	 <20130106025256.GY16031@1wt.eu>
+	 <1357457724.1678.5941.camel@edumazet-glaptop>
+	 <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop>
+	 <20130106155123.GB16031@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Jan 2013 08:39:53 -0800
+Message-ID: <1357490393.6919.267.camel@edumazet-glaptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357490393.6919.267.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 08:39:53AM -0800, Eric Dumazet wrote:
-> Hmm, I'll have to check if this really can be reverted without hurting
-> vmsplice() again.
+On Sun, 2013-01-06 at 16:51 +0100, Willy Tarreau wrote:
+> Hi Eric,
+> 
 
-Looking at the code I've been wondering whether we shouldn't transform
-the condition to perform the push if we can't push more segments, but
-I don't know what to rely on. It would be something like this :
+> Oh sorry, I didn't really want to pollute the list with links and configs,
+> especially during the initial report with various combined issues :-(
+> 
+> The client is my old "inject" tool, available here :
+> 
+>      http://git.1wt.eu/web?p=inject.git
+> 
+> The server is my "httpterm" tool, available here :
+> 
+>      http://git.1wt.eu/web?p=httpterm.git
+>      Use "-O3 -DENABLE_POLL -DENABLE_EPOLL -DENABLE_SPLICE" for CFLAGS.
+> 
+> I'm starting httpterm this way :
+>     httpterm -D -L :8000 -P 256
+>     => it starts a server on port 8000, and sets pipe size to 256 kB. It
+>        uses SPLICE_F_MORE on output data but removing it did not fix the
+>        issue one of the early tests.
+> 
+> Then I'm starting inject this way :
+>     inject -o 1 -u 1 -G 0:8000/?s=1g
+>     => 1 user, 1 object at a time, and fetch /?s=1g from the loopback.
+>        The server will then emit 1 GB of data using splice().
+> 
+> It's possible to disable splicing on the server using -dS. The client
+> "eats" data using recv(MSG_TRUNC) to avoid a useless copy.
+> 
+> > TCP has very low defaults concerning initial window, and it appears you
+> > set RCVBUF to even smaller values.
+> 
+> Yes, you're right, my bootup scripts still change the default value, though
+> I increase them to larger values during the tests (except the one where you
+> saw win 8030 due to the default rmem set to 16060). I've been using this
+> value in the past with older kernels because it allowed an integer number
+> of segments to fit into the default window, and offered optimal performance
+> with large numbers of concurrent connections. Since 2.6, tcp_moderate_rcvbuf
+> works very well and this is not needed anymore.
+> 
+> Anyway, it does not affect the test here. Good kernels are OK whatever the
+> default value, and bad kernels are bad whatever the default value too.
+> 
+> Hmmm finally it's this commit again :
+> 
+>    2f53384 tcp: allow splice() to build full TSO packets
+> 
+> I'm saying "again" because we already diagnosed a similar effect several
+> months ago that was revealed by this patch and we fixed it with the
+> following  one, though I remember that we weren't completely sure it
+> would fix everything :
+> 
+>    bad115c tcp: do_tcp_sendpages() must try to push data out on oom conditions
+> 
+> Just out of curiosity, I tried to re-apply the patch above just after the
+> first one but it did not change anything (after all it changed a symptom
+> which appeared in different conditions).
+> 
+> Interestingly, this commit (2f53384) significantly improved performance
+> on spliced data over the loopback (more than 50% in this test). In 3.7,
+> it seems to have no positive effect anymore. I reverted it using the
+> following patch and now the problem is fixed (mtu=64k works fine now) :
+> 
+> diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+> index e457c7a..61e4517 100644
+> --- a/net/ipv4/tcp.c
+> +++ b/net/ipv4/tcp.c
+> @@ -935,7 +935,7 @@ wait_for_memory:
+>  	}
+>  
+>  out:
+> -	if (copied && !(flags & MSG_SENDPAGE_NOTLAST))
+> +	if (copied)
+>  		tcp_push(sk, flags, mss_now, tp->nonagle);
+>  	return copied;
+> 
+> Regards,
+> Willy
+> 
 
-       if (copied &&
-          (!(flags & MSG_SENDPAGE_NOTLAST) || cant_push_more))
-                tcp_push(sk, flags, mss_now, tp->nonagle);
+Hmm, I'll have to check if this really can be reverted without hurting
+vmsplice() again.
 
-Willy
+
 
