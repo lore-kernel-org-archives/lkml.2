@@ -1,59 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756075Ab3AFRF6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 12:05:58 -0500
-Received: from mail-ea0-f176.google.com ([209.85.215.176]:33005 "EHLO
-	mail-ea0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab3AFRFz (ORCPT
+	id S1756089Ab3AFRLA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 12:11:00 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:64462 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3AFRK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 12:05:55 -0500
-From: Federico Vaga <federico.vaga@gmail.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Mauro Carvalho Chehab'" <mchehab@infradead.org>,
-        "'Pawel Osciak'" <pawel@osciak.com>,
-        "'Hans Verkuil'" <hans.verkuil@cisco.com>,
-        "'Giancarlo Asnaghi'" <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Alessandro Rubini <rubini@gnudd.com>
-Subject: Re: [PATCH v3 2/4] videobuf2-dma-streaming: new videobuf2 memory allocator
-Date: Sun, 06 Jan 2013 18:04:39 +0100
-Message-ID: <3892735.vLSnhhCRFi@harkonnen>
-User-Agent: KMail/4.9.4 (Linux/3.6.10-2.fc17.x86_64; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <12929800.xFTBAueAE0@harkonnen>
-References: <1348484332-8106-1-git-send-email-federico.vaga@gmail.com> <1399400.izKZgEHXnP@harkonnen> <12929800.xFTBAueAE0@harkonnen>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Sun, 6 Jan 2013 12:10:57 -0500
+Subject: Re: Major network performance regression in 3.7
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20130106164416.GF16031@1wt.eu>
+References: <20130106013027.GV16031@1wt.eu>
+	 <1357436430.1678.5111.camel@edumazet-glaptop>
+	 <1357437086.1678.5135.camel@edumazet-glaptop>
+	 <1357438591.1678.5205.camel@edumazet-glaptop>
+	 <20130106025256.GY16031@1wt.eu>
+	 <1357457724.1678.5941.camel@edumazet-glaptop>
+	 <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop>
+	 <20130106155123.GB16031@1wt.eu>
+	 <1357490393.6919.267.camel@edumazet-glaptop>
+	 <20130106164416.GF16031@1wt.eu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Jan 2013 09:10:55 -0800
+Message-ID: <1357492255.6919.336.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have more information about DMA on the board that I'm using; probably, I
-> can make dma-contig work with my device.
+On Sun, 2013-01-06 at 17:44 +0100, Willy Tarreau wrote:
+> On Sun, Jan 06, 2013 at 08:39:53AM -0800, Eric Dumazet wrote:
+> > Hmm, I'll have to check if this really can be reverted without hurting
+> > vmsplice() again.
+> 
+> Looking at the code I've been wondering whether we shouldn't transform
+> the condition to perform the push if we can't push more segments, but
+> I don't know what to rely on. It would be something like this :
+> 
+>        if (copied &&
+>           (!(flags & MSG_SENDPAGE_NOTLAST) || cant_push_more))
+>                 tcp_push(sk, flags, mss_now, tp->nonagle);
 
-Ok, the driver STA2X11 now works with a patched dma-contig allocator. So, my 
-streaming allocator it is not mandatory. 
+Good point !
 
-I based my work on the previous work made by Windriver, but now I understand 
-the DMA problem and the solution easy.
-I investigated (asked to Alessandro Rubini who worked on this board) about 
-this DMA issue. The problem is that on the sta2x11 architecture only the first 
-512MB are available through the PCI bus, but the allocator can allocate memory 
-for DMA above this limit. By using GFP_DMA flags the allocation take place 
-under the 16MB so it works.
+Maybe the following fix then ?
 
-If you think that the streaming allocator can be useful for someone else (who 
-has performance problem with uncached DMA like Jonathan when he did dma-nc 
-allocator), I can resend the patch.
-I cannot do performance test at the moment because I don't have the time, so I 
-cannot personally justify the presence of a new allocator. I think that I will 
-do some performance test with this driver; if I will find that dma-streaming 
-works better I will propose it again.
 
-I will propose V4 patches soon.
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 1ca2536..7ba0717 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -941,8 +941,10 @@ out:
+ 	return copied;
+ 
+ do_error:
+-	if (copied)
++	if (copied) {
++		flags &= ~MSG_SENDPAGE_NOTLAST;
+ 		goto out;
++	}
+ out_err:
+ 	return sk_stream_error(sk, flags, err);
+ }
 
--- 
-Federico Vaga
+
