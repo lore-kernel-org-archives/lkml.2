@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756057Ab3AFQKq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 11:10:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28735 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756009Ab3AFQKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 11:10:44 -0500
-Date: Sun, 6 Jan 2013 11:10:30 -0500
-From: Dave Jones <davej@redhat.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: oops in copy_page_rep()
-Message-ID: <20130106161030.GA16777@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hillf Danton <dhillf@gmail.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20130105152208.GA3386@redhat.com>
- <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
+	id S1756075Ab3AFQXR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 11:23:17 -0500
+Received: from [216.228.121.140] ([216.228.121.140]:2827 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1756043Ab3AFQXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 11:23:15 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sun, 06 Jan 2013 08:18:06 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <vinod.koul@intel.com>
+CC: <djbw@fb.com>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH 2/2] dma: tegra: add support for Tegra114 SoC
+Date: Sun, 6 Jan 2013 21:52:03 +0530
+Message-ID: <1357489323-21359-3-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1357489323-21359-1-git-send-email-ldewangan@nvidia.com>
+References: <1357489323-21359-1-git-send-email-ldewangan@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 07:55:53PM +0800, Hillf Danton wrote:
+NVIDIA's Tegra114 has APB DMA controller which has 32 dma channels
+and support support channel wise pause control.
 
- > On Sat, Jan 5, 2013 at 11:22 PM, Dave Jones <davej@redhat.com> wrote:
- > > I have no idea what happened here, but this is the first time I've seen this one.
- > > This was running a tree pulled yesterday afternoon.
- > >
- > Would you please try the following patch?
+Add support for Tegra114 which uses the channel wise pause control
+hardware feature.
 
-I can, though it took a long time for me to hit this, so I can't guarantee
-I'll be able to say with certainty whether it's working.
-(perhaps there's a printk we could add for debugging to say "would have crashed here" ?)
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+---
+ drivers/dma/tegra20-apb-dma.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-(The fuzzer frequently walks into other bugs first, it's unusual that
-it ran for the length of time it did when this happened)
-
-	Dave
+diff --git a/drivers/dma/tegra20-apb-dma.c b/drivers/dma/tegra20-apb-dma.c
+index 1f3ea0f..d33c1ae 100644
+--- a/drivers/dma/tegra20-apb-dma.c
++++ b/drivers/dma/tegra20-apb-dma.c
+@@ -1217,8 +1217,19 @@ static const struct tegra_dma_chip_data tegra30_dma_chip_data = {
+ 	.support_channel_pause	= false,
+ };
+ 
++/* Tegra114 specific DMA controller information */
++static const struct tegra_dma_chip_data tegra114_dma_chip_data = {
++	.nr_channels		= 32,
++	.max_dma_count		= 1024UL * 64,
++	.support_channel_pause	= true,
++};
++
++
+ static const struct of_device_id tegra_dma_of_match[] = {
+ 	{
++		.compatible = "nvidia,tegra114-apbdma",
++		.data = &tegra114_dma_chip_data,
++	}, {
+ 		.compatible = "nvidia,tegra30-apbdma",
+ 		.data = &tegra30_dma_chip_data,
+ 	}, {
+-- 
+1.7.1.1
 
