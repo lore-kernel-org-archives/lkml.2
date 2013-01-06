@@ -1,227 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177Ab3AFU7h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 15:59:37 -0500
-Received: from mail-ee0-f74.google.com ([74.125.83.74]:58298 "EHLO
-	mail-ee0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752968Ab3AFU7e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 15:59:34 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, mhocko@suse.cz,
-        akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com,
-        fengguang.wu@intel.com, glommer@parallels.com, dchinner@redhat.com,
-        Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
-	<1356456367-14660-1-git-send-email-handai.szj@taobao.com>
-Date: Sun, 06 Jan 2013 12:07:32 -0800
-Message-ID: <xr93obh2krcr.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753138Ab3AFVMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 16:12:42 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:59830 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004Ab3AFVMj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 16:12:39 -0500
+Date: Mon, 7 Jan 2013 08:12:20 +1100
+From: NeilBrown <neilb@suse.de>
+To: Jon Hunter <jon-hunter@ti.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Grant Erickson <marathon96@gmail.com>, <linux-omap@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] OMAP: add pwm driver using dmtimers.
+Message-ID: <20130107081220.3c39617b@notabene.brown>
+In-Reply-To: <50CA0B4D.2000302@ti.com>
+References: <20121212192430.50cea126@notabene.brown>
+	<50C8ABFC.3080309@ti.com>
+	<20121213140635.4eda5858@notabene.brown>
+	<50CA0B4D.2000302@ti.com>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/jPMJkBpUO_mukbphZx5us6Y"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25 2012, Sha Zhengju wrote:
+--Sig_/jPMJkBpUO_mukbphZx5us6Y
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> From: Sha Zhengju <handai.szj@taobao.com>
->
-> This patch adds memcg routines to count dirty pages, which allows memory controller
-> to maintain an accurate view of the amount of its dirty memory and can provide some
-> info for users while cgroup's direct reclaim is working.
->
-> After Kame's commit 89c06bd5(memcg: use new logic for page stat accounting), we can
-> use 'struct page' flag to test page state instead of per page_cgroup flag. But memcg
-> has a feature to move a page from a cgroup to another one and may have race between
-> "move" and "page stat accounting". So in order to avoid the race we have designed a
-> bigger lock:
->
->          mem_cgroup_begin_update_page_stat()
->          modify page information        -->(a)
->          mem_cgroup_update_page_stat()  -->(b)
->          mem_cgroup_end_update_page_stat()
-> It requires (a) and (b)(dirty pages accounting) can stay close enough.
-> In the previous two prepare patches, we have reworked the vfs set page dirty routines
-> and now the interfaces are more explicit:
->         incrementing (2):
->                 __set_page_dirty
->                 __set_page_dirty_nobuffers
->         decrementing (2):
->                 clear_page_dirty_for_io
->                 cancel_dirty_page
->
-> To prevent AB/BA deadlock mentioned by Greg Thelen in previous version
-> (https://lkml.org/lkml/2012/7/30/227), we adjust the lock order:
-> ->private_lock --> mapping->tree_lock --> memcg->move_lock.
-> So we need to make mapping->tree_lock ahead of TestSetPageDirty in __set_page_dirty()
-> and __set_page_dirty_nobuffers(). But in order to avoiding useless spinlock contention,
-> a prepare PageDirty() checking is added.
->
->
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujtisu.com>
-> Acked-by: Fengguang Wu <fengguang.wu@intel.com>
-> ---
->  fs/buffer.c                |   14 +++++++++++++-
->  include/linux/memcontrol.h |    1 +
->  mm/filemap.c               |   10 ++++++++++
->  mm/memcontrol.c            |   29 ++++++++++++++++++++++-------
->  mm/page-writeback.c        |   39 ++++++++++++++++++++++++++++++++-------
->  mm/truncate.c              |    6 ++++++
->  6 files changed, 84 insertions(+), 15 deletions(-)
+On Thu, 13 Dec 2012 11:07:25 -0600 Jon Hunter <jon-hunter@ti.com> wrote:
 
-__nilfs_clear_page_dirty() clears PageDirty, does it need modification
-for this patch series?
+>=20
+> On 12/12/2012 09:06 PM, NeilBrown wrote:
+> >=20
 
-> diff --git a/fs/buffer.c b/fs/buffer.c
-> index 762168a..53402d2 100644
-> --- a/fs/buffer.c
-> +++ b/fs/buffer.c
-> @@ -612,19 +612,31 @@ EXPORT_SYMBOL(mark_buffer_dirty_inode);
->  int __set_page_dirty(struct page *page,
->  		struct address_space *mapping, int warn)
->  {
-> +	bool locked;
-> +	unsigned long flags;
-> +
->  	if (unlikely(!mapping))
->  		return !TestSetPageDirty(page);
->  
-> -	if (TestSetPageDirty(page))
-> +	if (PageDirty(page))
->  		return 0;
->  
->  	spin_lock_irq(&mapping->tree_lock);
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
-> +
-> +	if (TestSetPageDirty(page)) {
-> +		mem_cgroup_end_update_page_stat(page, &locked, &flags);
-> +		spin_unlock_irq(&mapping->tree_lock);
-> +		return 0;
-> +	}
-> +
->  	if (page->mapping) {	/* Race with truncate? */
->  		WARN_ON_ONCE(warn && !PageUptodate(page));
->  		account_page_dirtied(page, mapping);
->  		radix_tree_tag_set(&mapping->page_tree,
->  				page_index(page), PAGECACHE_TAG_DIRTY);
->  	}
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	spin_unlock_irq(&mapping->tree_lock);
->  	__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
->  
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 5421b8a..2685d8a 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -44,6 +44,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
-> +	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 83efee7..b589be5 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -62,6 +62,11 @@
->   *      ->swap_lock		(exclusive_swap_page, others)
->   *        ->mapping->tree_lock
->   *
-> + *    ->private_lock		(__set_page_dirty_buffers)
-> + *      ->mapping->tree_lock
-> + *        ->memcg->move_lock	(mem_cgroup_begin_update_page_stat->
-> + *							move_lock_mem_cgroup)
-> + *
->   *  ->i_mutex
->   *    ->i_mmap_mutex		(truncate->unmap_mapping_range)
->   *
-> @@ -112,6 +117,8 @@
->  void __delete_from_page_cache(struct page *page)
->  {
->  	struct address_space *mapping = page->mapping;
-> +	bool locked;
-> +	unsigned long flags;
->  
->  	/*
->  	 * if we're uptodate, flush out into the cleancache, otherwise
-> @@ -139,10 +146,13 @@ void __delete_from_page_cache(struct page *page)
->  	 * Fix it up by doing a final dirty accounting check after
->  	 * having removed the page entirely.
->  	 */
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
->  	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
-> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_FILE_DIRTY);
->  		dec_zone_page_state(page, NR_FILE_DIRTY);
->  		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->  	}
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  }
->  
->  /**
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index d450c04..c884640 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -95,6 +95,7 @@ static const char * const mem_cgroup_stat_names[] = {
->  	"rss",
->  	"mapped_file",
->  	"swap",
-> +	"dirty",
->  };
->  
->  enum mem_cgroup_events_index {
-> @@ -3609,6 +3610,19 @@ void mem_cgroup_split_huge_fixup(struct page *head)
->  }
->  #endif /* CONFIG_TRANSPARENT_HUGEPAGE */
->  
-> +static inline
-> +void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-> +					struct mem_cgroup *to,
-> +					unsigned int nr_pages,
-> +					enum mem_cgroup_stat_index idx)
-> +{
-> +	/* Update stat data for mem_cgroup */
-> +	preempt_disable();
-> +	__this_cpu_add(from->stat->count[idx], -nr_pages);
+> >>> +
+> >>> +#if CONFIG_PM
+> >>> +static int omap_pwm_suspend(struct platform_device *pdev, pm_message=
+_t state)
+> >>> +{
+> >>> +	struct omap_chip *omap =3D platform_get_drvdata(pdev);
+> >>> +	/* No one preserve these values during suspend so reset them
+> >>> +	 * Otherwise driver leaves PWM unconfigured if same values
+> >>> +	 * passed to pwm_config
+> >>> +	 */
+> >>> +	omap->period_ns =3D 0;
+> >>> +	omap->duty_ns =3D 0;
+> >>
+> >>
+> >> Hmmm, looks like you are trying to force a reconfiguration after suspe=
+nd
+> >> if the same values are used. Is there an underlying problem here that
+> >> you are trying to workaround?
+> >=20
+> > I copied that from pwm-samsung.c.
+> >=20
+> > The key question is: does a dmtimer preserve all register values over s=
+uspend.
+> > If so, then I guess we don't need this.
+> > If not, we do (because omap_pwm_config short circuits if it thinks the =
+config
+> > hasn't changed).
+>=20
+> I gave it a quick test on omap3/4 when just operating the timer as a
+> counter (not driving a pwm output) and suspend/resume works fine.
+> However, it does not work if I enable off mode (via the debugfs). This
+> is not enabled by default and may be I should put that on my to-do list
+> as well.
 
-What you do think about adding a WARN_ON_ONCE() here to check for
-underflow?  A check might help catch:
-a) unresolved races between move accounting vs setting/clearing
-   dirtying.
-b) future modifications that mess with PageDirty/Writeback flags without
-   considering memcg.
+I've been playing with off-mode and discovered that the first attempt to set
+the PWM after resume didn't work, but subsequent ones did.
+I did some digging and came up with the following patch. =20
+With this in place, the omap_pwm_suspend() above is definitely pointless (w=
+as
+wasn't really useful even without it).
 
-> +	__this_cpu_add(to->stat->count[idx], nr_pages);
-> +	preempt_enable();
-> +}
-> +
->  /**
->   * mem_cgroup_move_account - move account of the page
->   * @page: the page
-> @@ -3654,13 +3668,14 @@ static int mem_cgroup_move_account(struct page *page,
->  
->  	move_lock_mem_cgroup(from, &flags);
->  
-> -	if (!anon && page_mapped(page)) {
-> -		/* Update mapped_file data for mem_cgroup */
-> -		preempt_disable();
-> -		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
-> -		preempt_enable();
-> -	}
-> +	if (!anon && page_mapped(page))
-> +		mem_cgroup_move_account_page_stat(from, to, nr_pages,
-> +			MEM_CGROUP_STAT_FILE_MAPPED);
-> +
-> +	if (PageDirty(page))
+NeilBrown
 
-Is (!anon && PageDirty(page)) better?  If dirty anon pages are moved
-between memcg M1 and M2 I think that we'd mistakenly underflow M1 if it
-was not previously accounting for the dirty anon page.
+
+From: NeilBrown <neilb@suse.de>
+Date: Mon, 7 Jan 2013 07:53:03 +1100
+Subject: [PATCH] OMAP dmtimer - simplify context-loss handling.
+
+The context loss handling in dmtimer appears to assume that
+   omap_dm_timer_set_load_start() or omap_dm_timer_start()
+and
+   omap_dm_timer_stop()
+
+bracket all interactions.  Only the first two restore the context and
+the last updates the context loss counter.
+However omap_dm_timer_set_load() or omap_dm_timer_set_match() can
+reasonably be called outside this bracketing, and the fact that they
+call omap_dm_timer_enable() / omap_dm_timer_disable() suggest that
+is expected.
+
+So if, after a transition into and out of off-mode which would cause
+the dm timer to loose all state, omap_dm_timer_set_match() is called
+before omap_dm_timer_start(), the value read from OMAP_TIMER_CTRL_REG
+will be 'wrong' and this wrong value will be stored context.tclr so
+a subsequent omap_dm_timer_start() can fail (As the control register
+is wrong).
+
+Simplify this be doing the restore-from-context in
+omap_dm_timer_enable() so that whenever the timer is enabled, the
+context is correct.
+Also update the ctx_loss_count at the same time as we notice it is
+wrong - these is no value in delaying this until the
+omap_dm_timer_disable() as it cannot change while the timer is
+enabled.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+
+diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+index 938b50a..c216696 100644
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -253,6 +253,15 @@ EXPORT_SYMBOL_GPL(omap_dm_timer_free);
+ void omap_dm_timer_enable(struct omap_dm_timer *timer)
+ {
+ 	pm_runtime_get_sync(&timer->pdev->dev);
++
++	if (!(timer->capability & OMAP_TIMER_ALWON)) {
++		int loss_count =3D
++			omap_pm_get_dev_context_loss_count(&timer->pdev->dev);
++		if (loss_count !=3D timer->ctx_loss_count) {
++			omap_timer_restore_context(timer);
++			timer->ctx_loss_count =3D loss_count;
++		}
++	}
+ }
+ EXPORT_SYMBOL_GPL(omap_dm_timer_enable);
+=20
+@@ -347,12 +356,6 @@ int omap_dm_timer_start(struct omap_dm_timer *timer)
+=20
+ 	omap_dm_timer_enable(timer);
+=20
+-	if (!(timer->capability & OMAP_TIMER_ALWON)) {
+-		if (omap_pm_get_dev_context_loss_count(&timer->pdev->dev) !=3D
+-				timer->ctx_loss_count)
+-			omap_timer_restore_context(timer);
+-	}
+-
+ 	l =3D omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
+ 	if (!(l & OMAP_TIMER_CTRL_ST)) {
+ 		l |=3D OMAP_TIMER_CTRL_ST;
+@@ -377,10 +380,6 @@ int omap_dm_timer_stop(struct omap_dm_timer *timer)
+=20
+ 	__omap_dm_timer_stop(timer, timer->posted, rate);
+=20
+-	if (!(timer->capability & OMAP_TIMER_ALWON))
+-		timer->ctx_loss_count =3D
+-			omap_pm_get_dev_context_loss_count(&timer->pdev->dev);
+-
+ 	/*
+ 	 * Since the register values are computed and written within
+ 	 * __omap_dm_timer_stop, we need to use read to retrieve the
+@@ -494,12 +493,6 @@ int omap_dm_timer_set_load_start(struct omap_dm_timer =
+*timer, int autoreload,
+=20
+ 	omap_dm_timer_enable(timer);
+=20
+-	if (!(timer->capability & OMAP_TIMER_ALWON)) {
+-		if (omap_pm_get_dev_context_loss_count(&timer->pdev->dev) !=3D
+-				timer->ctx_loss_count)
+-			omap_timer_restore_context(timer);
+-	}
+-
+ 	l =3D omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
+ 	if (autoreload) {
+ 		l |=3D OMAP_TIMER_CTRL_AR;
+
+--Sig_/jPMJkBpUO_mukbphZx5us6Y
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIVAwUBUOnotDnsnt1WYoG5AQJ+BA//Vgzcy0IF30TpG7FqArw2aGXkAFvhiFB1
+B72T47gM0i88N4ySPQnqJJcZwzTvk9G3SrWlrR/tHRzbZXJIaYWzTBk7U1VZ2Bwv
+9CK7DVdPwrvTsALNX+l7xeHayC9zL4Eot/VJTLm3/LVLChwyeZdpZ7ltUSG9Tq55
+3imBnNfUeHk6z5AbyT/WU/BRquB/Hm0SslmHQGgXOHgwbj3FmrcL1HHLAQcOmtdx
+vfFSByAVBMkt6GmPIuiJMFxsjqi/QpEneZi1Bb47o09pR4h11MuEvoeitkqpuFzL
+4EsXeazJHrlAivs4MZ3iuX4uFGZRkczB11SR3j94oEoLZjS0p4r1oCTzaZ3MBQtF
+VHhcvd1fvn2c7jsdtqqPdVX67wzurLnyVNu6rlOqOExpq+XD3lLzaE6EGXxUFco9
+MGgi+jXGVfPGZDJq9+YIm4ld85f3v708NnCdPhIwMf75PRgYs2zkO4AWtuhsJOHu
+v7sPZ7anLoESSGOef907n10ko814m8xiNzuh9HpSqqAzzUfdNtxzI5kOnqWv94Z9
+mlHaud2htGg7actqsyyghZYNsfnThOfwIyBdPXGTmLTAwuT3knedzSC+t4optc4G
+Lh5yY8WdibsvQkaAHquNt+2MIZDmBEQBmLFn6jrVMhz4XtqOY/KLuQqBmehDVWx8
+bWJU0yEUFtU=
+=7y+B
+-----END PGP SIGNATURE-----
+
+--Sig_/jPMJkBpUO_mukbphZx5us6Y--
