@@ -1,161 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab3AFImK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 03:42:10 -0500
-Received: from mga11.intel.com ([192.55.52.93]:18177 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab3AFIlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 03:41:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,419,1355126400"; 
-   d="scan'208";a="270466427"
-From: Aaron Lu <aaron.lu@intel.com>
-To: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>
-Cc: linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Aaron Lu <aaron.lu@intel.com>, Shane Huang <shane.huang@amd.com>
-Subject: [PATCH v6 3/4] block: implement runtime pm strategy
-Date: Sun,  6 Jan 2013 16:41:36 +0800
-Message-Id: <1357461697-4219-4-git-send-email-aaron.lu@intel.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1357461697-4219-1-git-send-email-aaron.lu@intel.com>
-References: <1357461697-4219-1-git-send-email-aaron.lu@intel.com>
+	id S1751868Ab3AFInP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 03:43:15 -0500
+Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:43057
+	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751456Ab3AFInN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 03:43:13 -0500
+X-IronPort-AV: E=Sophos;i="4.84,419,1355094000"; 
+   d="scan'208";a="167531338"
+Date: Sun, 6 Jan 2013 09:43:10 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Anton Vorontsov <anton@enomsg.org>
+cc: kernel-janitors@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/power/88pm860x_battery.c: eliminate possible references
+ to released resources
+In-Reply-To: <20130106050953.GH6919@lizard.sbx05280.losalca.wayport.net>
+Message-ID: <alpine.DEB.2.02.1301060941400.2070@localhost6.localdomain6>
+References: <1354986995-2324-1-git-send-email-Julia.Lawall@lip6.fr> <20130106050953.GH6919@lizard.sbx05280.losalca.wayport.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Julia Lawall <Julia.Lawall@lip6.fr>
 
-When a request is added:
-    If device is suspended or is suspending and the request is not a
-    PM request, resume the device.
+devm_kzalloc should not be followed by kfree, as this results in a double
+free.  The problem was found using the following semantic match
+(http://coccinelle.lip6.fr/):
 
-When the last request finishes:
-    Call pm_runtime_mark_last_busy() and pm_runtime_autosuspend().
+// <smpl>
+@@
+expression x,e;
+@@
+x = devm_kzalloc(...)
+... when != x = e
+?-kfree(x,...);
+// </smpl>
 
-When pick a request:
-    If device is resuming/suspending, then only PM request is allowed to go.
-    Return NULL for other cases.
+Furthermore, in the remove function, the calls to free_irq are moved up to
+prevent a possible reference in the interrupt handler to resources freed by
+power_supply_unregister.
 
-[aaron.lu@intel.com: PM request does not involve nr_pending counting]
-[aaron.lu@intel.com: No need to check q->dev]
-[aaron.lu@intel.com: Autosuspend when the last request finished]
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+
 ---
- block/blk-core.c       |  7 +++++++
- block/elevator.c       |  4 ++++
- include/linux/blkdev.h | 41 +++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 52 insertions(+)
+V2, moving up the calls to free_irq, instead of removing them and using
+devm_request_threaded_irq.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 6fc24bb..93c1461 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1274,6 +1274,8 @@ void __blk_put_request(struct request_queue *q, struct request *req)
- 	if (unlikely(--req->ref_count))
- 		return;
- 
-+	blk_pm_put_request(req);
-+
- 	elv_completed_request(q, req);
- 
- 	/* this is a bio leak */
-@@ -2080,6 +2082,11 @@ struct request *blk_peek_request(struct request_queue *q)
- 	int ret;
- 
- 	while ((rq = __elv_next_request(q)) != NULL) {
-+
-+		rq = blk_pm_peek_request(q, rq);
-+		if (!rq)
-+			break;
-+
- 		if (!(rq->cmd_flags & REQ_STARTED)) {
- 			/*
- 			 * This is the first time the device driver
-diff --git a/block/elevator.c b/block/elevator.c
-index 9edba1b..61e9b49 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -544,6 +544,8 @@ void elv_requeue_request(struct request_queue *q, struct request *rq)
- 
- 	rq->cmd_flags &= ~REQ_STARTED;
- 
-+	blk_pm_requeue_request(rq);
-+
- 	__elv_add_request(q, rq, ELEVATOR_INSERT_REQUEUE);
- }
- 
-@@ -566,6 +568,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
- {
- 	trace_block_rq_insert(q, rq);
- 
-+	blk_pm_add_request(q, rq);
-+
- 	rq->q = q;
- 
- 	if (rq->cmd_flags & REQ_SOFTBARRIER) {
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index a96e144..884c405 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -974,6 +974,40 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
- extern void blk_post_runtime_suspend(struct request_queue *q, int err);
- extern void blk_pre_runtime_resume(struct request_queue *q);
- extern void blk_post_runtime_resume(struct request_queue *q, int err);
-+
-+static inline void blk_pm_put_request(struct request *rq)
-+{
-+	if (!(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending) {
-+		pm_runtime_mark_last_busy(rq->q->dev);
-+		pm_runtime_autosuspend(rq->q->dev);
-+	}
-+}
-+
-+static inline struct request *blk_pm_peek_request(
-+	struct request_queue *q, struct request *rq)
-+{
-+	if (q->rpm_status == RPM_SUSPENDED ||
-+		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
-+		return NULL;
-+	else
-+		return rq;
-+}
-+
-+static inline void blk_pm_requeue_request(struct request *rq)
-+{
-+	if (!(rq->cmd_flags & REQ_PM))
-+		rq->q->nr_pending--;
-+}
-+
-+static inline void blk_pm_add_request(struct request_queue *q,
-+	struct request *rq)
-+{
-+	if (!(rq->cmd_flags & REQ_PM) &&
-+	    q->nr_pending++ == 0 &&
-+	    (q->rpm_status == RPM_SUSPENDED ||
-+	     q->rpm_status == RPM_SUSPENDING))
-+		pm_request_resume(q->dev);
-+}
- #else
- static inline void blk_pm_runtime_init(struct request_queue *q,
- 	struct device *dev) {}
-@@ -984,6 +1018,13 @@ static inline int blk_pre_runtime_suspend(struct request_queue *q)
- static inline void blk_post_runtime_suspend(struct request_queue *q, int err) {}
- static inline void blk_pre_runtime_resume(struct request_queue *q) {}
- static inline void blk_post_runtime_resume(struct request_queue *q, int err) {}
-+
-+static inline void blk_pm_put_request(struct request *rq) {}
-+static inline struct request *blk_pm_peek_request(
-+	struct request_queue *q, struct request *rq) { return rq; }
-+static inline void blk_pm_requeue_request(struct request *rq) {}
-+static inline void blk_pm_add_request(struct request_queue *q,
-+	struct request *req) {}
- #endif
- 
- /*
--- 
-1.7.11.7
+  drivers/power/88pm860x_battery.c |   13 ++++---------
+  1 file changed, 4 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/power/88pm860x_battery.c b/drivers/power/88pm860x_battery.c
+index 8bc80b0..d338c1c 100644
+--- a/drivers/power/88pm860x_battery.c
++++ b/drivers/power/88pm860x_battery.c
+@@ -915,15 +915,13 @@ static int pm860x_battery_probe(struct platform_device *pdev)
+  	info->irq_cc = platform_get_irq(pdev, 0);
+  	if (info->irq_cc <= 0) {
+  		dev_err(&pdev->dev, "No IRQ resource!\n");
+-		ret = -EINVAL;
+-		goto out;
++		return -EINVAL;
+  	}
+
+  	info->irq_batt = platform_get_irq(pdev, 1);
+  	if (info->irq_batt <= 0) {
+  		dev_err(&pdev->dev, "No IRQ resource!\n");
+-		ret = -EINVAL;
+-		goto out;
++		return -EINVAL;
+  	}
+
+  	info->chip = chip;
+@@ -957,7 +955,7 @@ static int pm860x_battery_probe(struct platform_device *pdev)
+
+  	ret = power_supply_register(&pdev->dev, &info->battery);
+  	if (ret)
+-		goto out;
++		return ret;
+  	info->battery.dev->parent = &pdev->dev;
+
+  	ret = request_threaded_irq(info->irq_cc, NULL,
+@@ -984,8 +982,6 @@ out_coulomb:
+  	free_irq(info->irq_cc, info);
+  out_reg:
+  	power_supply_unregister(&info->battery);
+-out:
+-	kfree(info);
+  	return ret;
+  }
+
+@@ -993,10 +989,9 @@ static int pm860x_battery_remove(struct platform_device *pdev)
+  {
+  	struct pm860x_battery_info *info = platform_get_drvdata(pdev);
+
+-	power_supply_unregister(&info->battery);
+  	free_irq(info->irq_batt, info);
+  	free_irq(info->irq_cc, info);
+-	kfree(info);
++	power_supply_unregister(&info->battery);
+  	platform_set_drvdata(pdev, NULL);
+  	return 0;
+  }
 
