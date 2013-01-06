@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755704Ab3AFCcQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 21:32:16 -0500
-Received: from 1wt.eu ([62.212.114.60]:37521 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300Ab3AFCcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 21:32:12 -0500
-Date: Sun, 6 Jan 2013 03:32:06 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Major network performance regression in 3.7
-Message-ID: <20130106023206.GX16031@1wt.eu>
-References: <20130105232913.GQ16031@1wt.eu> <1357430523.1678.4901.camel@edumazet-glaptop> <20130106005053.GS16031@1wt.eu> <1357435276.1678.5067.camel@edumazet-glaptop> <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop> <20130106021824.GW16031@1wt.eu> <1357438933.1678.5223.camel@edumazet-glaptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755578Ab3AFClF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 21:41:05 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:45068 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab3AFClD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 21:41:03 -0500
+Date: Sat, 5 Jan 2013 18:37:30 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, patches@linaro.org
+Subject: Re: [PATCH] power: 88pm860x_battery: Add a few more devm_* APIs
+Message-ID: <20130106023730.GA6919@lizard.sbx05280.losalca.wayport.net>
+References: <1353674512-16119-1-git-send-email-tushar.behera@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1357438933.1678.5223.camel@edumazet-glaptop>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <1353674512-16119-1-git-send-email-tushar.behera@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 06:22:13PM -0800, Eric Dumazet wrote:
-> On Sun, 2013-01-06 at 03:18 +0100, Willy Tarreau wrote:
-> > On Sat, Jan 05, 2013 at 06:16:31PM -0800, Eric Dumazet wrote:
-> > > On Sat, 2013-01-05 at 17:51 -0800, Eric Dumazet wrote:
-> > > > On Sat, 2013-01-05 at 17:40 -0800, Eric Dumazet wrote:
-> > > > > On Sun, 2013-01-06 at 02:30 +0100, Willy Tarreau wrote:
-> > > > > 
-> > > > > > Ah interesting because these were some of the mm patches that I had
-> > > > > > tried to revert.
-> > > > > 
-> > > > > Hmm, or we should fix __skb_splice_bits()
-> > > > > 
-> > > > > I'll send a patch.
-> > > > > 
-> > > > 
-> > > > Could you try the following ?
-> > > 
-> > > Or more exactly...
-> > 
-> > The first one did not change a iota unfortunately. I'm about to
-> > spot the commit causing the loopback regression. It's a few patches
-> > before the first one you pointed. It's almost finished and I test
-> > your patch below immediately after.
+On Fri, Nov 23, 2012 at 06:11:52PM +0530, Tushar Behera wrote:
+> Add devm_* APIs for threaded IRQ.
 > 
-> I bet you are going to find commit
-> 69b08f62e17439ee3d436faf0b9a7ca6fffb78db
-> (net: use bigger pages in __netdev_alloc_frag )
+> Also since devres managed objects are removed when the device gets
+> detached, remove explicit freeing of them.
 > 
-> Am I wrong ?
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+[...]
+> @@ -994,9 +988,6 @@ static int __devexit pm860x_battery_remove(struct platform_device *pdev)
+>  	struct pm860x_battery_info *info = platform_get_drvdata(pdev);
+>  
+>  	power_supply_unregister(&info->battery);
+> -	free_irq(info->irq_batt, info);
+> -	free_irq(info->irq_cc, info);
+> -	kfree(info);
 
-Yes this time you guessed wrong :-) Well maybe it's participating
-to the issue.
+It is not safe to access battery ('struct power_supply') object after
+_unregister() (and irq handlers will surely do). Instead of removing
+free_irq(), you should place the two calls before _unregister().
 
-It's 0cf833ae (net: loopback: set default mtu to 64K). And I could
-reproduce it with 3.6 by setting loopback's MTU to 65536 by hand.
-The trick is that once the MTU has been set to this large a value,
-even when I set it back to 16kB the problem persists.
+Thanks,
 
-Now I'm retrying your other patch to see if it brings the 10GE back
-to full speed.
-
-Willy
-
+>  	platform_set_drvdata(pdev, NULL);
+>  	return 0;
+>  }
+> -- 
+> 1.7.4.1
