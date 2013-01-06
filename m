@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab3AFRLA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 12:11:00 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64462 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752204Ab3AFRK5 (ORCPT
+	id S1756093Ab3AFRZc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 12:25:32 -0500
+Received: from mail-ea0-f177.google.com ([209.85.215.177]:32790 "EHLO
+	mail-ea0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755774Ab3AFRZ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 12:10:57 -0500
-Subject: Re: Major network performance regression in 3.7
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20130106164416.GF16031@1wt.eu>
-References: <20130106013027.GV16031@1wt.eu>
-	 <1357436430.1678.5111.camel@edumazet-glaptop>
-	 <1357437086.1678.5135.camel@edumazet-glaptop>
-	 <1357438591.1678.5205.camel@edumazet-glaptop>
-	 <20130106025256.GY16031@1wt.eu>
-	 <1357457724.1678.5941.camel@edumazet-glaptop>
-	 <20130106092435.GZ16031@1wt.eu> <1357484342.6919.61.camel@edumazet-glaptop>
-	 <20130106155123.GB16031@1wt.eu>
-	 <1357490393.6919.267.camel@edumazet-glaptop>
-	 <20130106164416.GF16031@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Jan 2013 09:10:55 -0800
-Message-ID: <1357492255.6919.336.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Jan 2013 12:25:29 -0500
+From: Federico Vaga <federico.vaga@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Pawel Osciak <pawel@osciak.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Hans Verkuil <hans.verkuil@cisco.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jonathan Corbet <corbet@lwn.net>,
+        Federico Vaga <federico.vaga@gmail.com>
+Subject: [PATCH v4 1/3] videobuf2-dma-contig: user can specify GFP flags
+Date: Sun,  6 Jan 2013 18:29:01 +0100
+Message-Id: <1357493343-13090-1-git-send-email-federico.vaga@gmail.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-06 at 17:44 +0100, Willy Tarreau wrote:
-> On Sun, Jan 06, 2013 at 08:39:53AM -0800, Eric Dumazet wrote:
-> > Hmm, I'll have to check if this really can be reverted without hurting
-> > vmsplice() again.
-> 
-> Looking at the code I've been wondering whether we shouldn't transform
-> the condition to perform the push if we can't push more segments, but
-> I don't know what to rely on. It would be something like this :
-> 
->        if (copied &&
->           (!(flags & MSG_SENDPAGE_NOTLAST) || cant_push_more))
->                 tcp_push(sk, flags, mss_now, tp->nonagle);
+This is useful when you need to specify specific GFP flags during memory
+allocation (e.g. GFP_DMA).
 
-Good point !
+Signed-off-by: Federico Vaga <federico.vaga@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf2-dma-contig.c | 7 ++-----
+ include/media/videobuf2-dma-contig.h           | 5 +++++
+ 2 file modificati, 7 inserzioni(+), 5 rimozioni(-)
 
-Maybe the following fix then ?
-
-
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 1ca2536..7ba0717 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -941,8 +941,10 @@ out:
- 	return copied;
+diff --git a/drivers/media/v4l2-core/videobuf2-dma-contig.c b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+index 10beaee..bb411c0 100644
+--- a/drivers/media/v4l2-core/videobuf2-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf2-dma-contig.c
+@@ -21,10 +21,6 @@
+ #include <media/videobuf2-dma-contig.h>
+ #include <media/videobuf2-memops.h>
  
- do_error:
--	if (copied)
-+	if (copied) {
-+		flags &= ~MSG_SENDPAGE_NOTLAST;
- 		goto out;
-+	}
- out_err:
- 	return sk_stream_error(sk, flags, err);
- }
-
+-struct vb2_dc_conf {
+-	struct device		*dev;
+-};
+-
+ struct vb2_dc_buf {
+ 	struct device			*dev;
+ 	void				*vaddr;
+@@ -165,7 +161,8 @@ static void *vb2_dc_alloc(void *alloc_ctx, unsigned long size)
+ 	/* align image size to PAGE_SIZE */
+ 	size = PAGE_ALIGN(size);
+ 
+-	buf->vaddr = dma_alloc_coherent(dev, size, &buf->dma_addr, GFP_KERNEL);
++	buf->vaddr = dma_alloc_coherent(dev, size, &buf->dma_addr,
++									GFP_KERNEL | conf->mem_flags);
+ 	if (!buf->vaddr) {
+ 		dev_err(dev, "dma_alloc_coherent of size %ld failed\n", size);
+ 		kfree(buf);
+diff --git a/include/media/videobuf2-dma-contig.h b/include/media/videobuf2-dma-contig.h
+index 8197f87..22733f4 100644
+--- a/include/media/videobuf2-dma-contig.h
++++ b/include/media/videobuf2-dma-contig.h
+@@ -16,6 +16,11 @@
+ #include <media/videobuf2-core.h>
+ #include <linux/dma-mapping.h>
+ 
++struct vb2_dc_conf {
++	struct device		*dev;
++	gfp_t				mem_flags;
++};
++
+ static inline dma_addr_t
+ vb2_dma_contig_plane_dma_addr(struct vb2_buffer *vb, unsigned int plane_no)
+ {
+-- 
+1.7.11.7
 
