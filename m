@@ -1,34 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab3AFCph (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 21:45:37 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:42387 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755168Ab3AFCpf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 21:45:35 -0500
-Date: Sat, 5 Jan 2013 18:42:03 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, patches@linaro.org
-Subject: Re: [PATCH 0/3] power: bq2415x_charger: Some cleanup
-Message-ID: <20130106024203.GB6919@lizard.sbx05280.losalca.wayport.net>
-References: <1353995926-4621-1-git-send-email-sachin.kamat@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1755938Ab3AFCxF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 21:53:05 -0500
+Received: from 1wt.eu ([62.212.114.60]:37523 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755572Ab3AFCxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jan 2013 21:53:03 -0500
+Date: Sun, 6 Jan 2013 03:52:56 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Major network performance regression in 3.7
+Message-ID: <20130106025256.GY16031@1wt.eu>
+References: <20130105214958.GA19814@1wt.eu> <1357427926.1678.4771.camel@edumazet-glaptop> <20130105232913.GQ16031@1wt.eu> <1357430523.1678.4901.camel@edumazet-glaptop> <20130106005053.GS16031@1wt.eu> <1357435276.1678.5067.camel@edumazet-glaptop> <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353995926-4621-1-git-send-email-sachin.kamat@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357438591.1678.5205.camel@edumazet-glaptop>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Nov 27, 2012 at 11:28:43AM +0530, Sachin Kamat wrote:
-> This series is build tested againt the linux-next tree (20121126)
+On Sat, Jan 05, 2013 at 06:16:31PM -0800, Eric Dumazet wrote:
+> On Sat, 2013-01-05 at 17:51 -0800, Eric Dumazet wrote:
+> > On Sat, 2013-01-05 at 17:40 -0800, Eric Dumazet wrote:
+> > > On Sun, 2013-01-06 at 02:30 +0100, Willy Tarreau wrote:
+> > > 
+> > > > Ah interesting because these were some of the mm patches that I had
+> > > > tried to revert.
+> > > 
+> > > Hmm, or we should fix __skb_splice_bits()
+> > > 
+> > > I'll send a patch.
+> > > 
+> > 
+> > Could you try the following ?
 > 
-> Sachin Kamat (3):
->   power: bq2415x_charger: Remove unneeded version.h inclusion
->   power: bq2415x_charger: Use module_i2c_driver
->   power: bq2415x_charger: Use devm_kzalloc()
+> Or more exactly...
+> 
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 3ab989b..01f222c 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -1736,11 +1736,8 @@ static bool __splice_segment(struct page *page, unsigned int poff,
+>  		return false;
+>  	}
+>  
+> -	/* ignore any bits we already processed */
+> -	if (*off) {
+> -		__segment_seek(&page, &poff, &plen, *off);
+> -		*off = 0;
+> -	}
+> +	__segment_seek(&page, &poff, &plen, *off);
+> +	*off = 0;
+>  
+>  	do {
+>  		unsigned int flen = min(*len, plen);
+> @@ -1768,14 +1765,15 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+>  			      struct splice_pipe_desc *spd, struct sock *sk)
+>  {
+>  	int seg;
+> +	struct page *page = virt_to_page(skb->data);
+> +	unsigned int poff = skb->data - (unsigned char *)page_address(page);
+>  
+>  	/* map the linear part :
+>  	 * If skb->head_frag is set, this 'linear' part is backed by a
+>  	 * fragment, and if the head is not shared with any clones then
+>  	 * we can avoid a copy since we own the head portion of this page.
+>  	 */
+> -	if (__splice_segment(virt_to_page(skb->data),
+> -			     (unsigned long) skb->data & (PAGE_SIZE - 1),
+> +	if (__splice_segment(page, poff,
+>  			     skb_headlen(skb),
+>  			     offset, len, skb, spd,
+>  			     skb_head_is_locked(skb),
+> 
 
-Applied, thanks a lot!
+OK so I observed no change with this patch, either on the loopback
+data rate at >16kB MTU, or on the myri. I'm keeping it at hand for
+experimentation anyway.
+
+Concerning the loopback MTU, I find it strange that the MTU changes
+the splice() behaviour and not send/recv. I thought that there could
+be a relation between the MTU and the pipe size, but it does not
+appear to be the case either, as I tried various sizes between 16kB
+and 256kB without achieving original performance.
+
+I've started to bisect the 10GE issue again (since both issues are
+unrelated), but I'll finish tomorrow, it's time to get some sleep
+now.
+
+Best regards,
+Willy
+
