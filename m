@@ -1,157 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753202Ab3AFUhk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 15:37:40 -0500
-Received: from mail-ye0-f202.google.com ([209.85.213.202]:54275 "EHLO
-	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753120Ab3AFUhf (ORCPT
+	id S1753109Ab3AFUxV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 15:53:21 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:46424 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab3AFUxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 15:37:35 -0500
-From: Greg Thelen <gthelen@google.com>
-To: Sha Zhengju <handai.szj@gmail.com>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
-        mhocko@suse.cz, akpm@linux-foundation.org,
-        kamezawa.hiroyu@jp.fujitsu.com, fengguang.wu@intel.com,
-        glommer@parallels.com, Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 5/8] memcg: add per cgroup writeback pages accounting
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
-	<1356456409-14701-1-git-send-email-handai.szj@taobao.com>
-Date: Sun, 06 Jan 2013 12:07:04 -0800
-Message-ID: <xr93vcbakrdj.fsf@gthelen.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Sun, 6 Jan 2013 15:53:18 -0500
+Date: Sun, 6 Jan 2013 21:55:11 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+        Peter Ujfalusi <peter.ujfalusi@gmail.com>,
+        stable <stable@vger.kernel.org>
+Subject: Re: Linux 3.8-rc2
+Message-ID: <20130106205511.GR5737@phenom.ffwll.local>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Alexey Zaytsev <alexey.zaytsev@gmail.com>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Rodrigo Vivi <rodrigo.vivi@gmail.com>,
+	Peter Ujfalusi <peter.ujfalusi@gmail.com>,
+	stable <stable@vger.kernel.org>
+References: <CA+55aFxQ9vH70UrqC0ypm-diNbGcZbWbdhYa3FLH+0Vbrk4hUQ@mail.gmail.com>
+ <CAB9v_DHJYAEcZDuPd3XBEib_nGca=_sKbZngV3z1N6H8KcJJGQ@mail.gmail.com>
+ <CA+55aFzQtxET9JWdaLGi52OL=A9yRbj+vaa7RfniuBvfB5K04Q@mail.gmail.com>
+ <6c3329$7ukf5e@orsmga002.jf.intel.com>
+ <CAB9v_DE1gt6O=xvSpmkfhfoWxGSXjQ+SBFBK3gPQKm2OrhCk3w@mail.gmail.com>
+ <CA+55aFw5hnByqQHhsOYgc14DHTejHqmWV=fW2pm4LuzF6UxwCQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw5hnByqQHhsOYgc14DHTejHqmWV=fW2pm4LuzF6UxwCQ@mail.gmail.com>
+X-Operating-System: Linux phenom 3.7.0-rc4+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 25 2012, Sha Zhengju wrote:
+On Thu, Jan 03, 2013 at 03:18:54PM -0800, Linus Torvalds wrote:
+> On Thu, Jan 3, 2013 at 3:12 PM, Alexey Zaytsev <alexey.zaytsev@gmail.com> wrote:
+> >
+> > Chris: The patch does not seem to have any effect on the problem.
+> >
+> > Peter: I've attached the dmesgs, as well as the diff between the
+> > interesting parts. The patch does not seem to make any difference
+> > there.
+> 
+> Alexey, what happens if you just avoid the divide-by-zero? There might
+> be other complications downstream, but something like the attached
+> patch should at least avoid doing the "divide-by-clock" when clock is
+> zero..
 
-> From: Sha Zhengju <handai.szj@taobao.com>
->
-> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
-> rule still is:
->         mem_cgroup_begin_update_page_stat()
->         modify page WRITEBACK stat
->         mem_cgroup_update_page_stat()
->         mem_cgroup_end_update_page_stat()
->
-> There're two writeback interface to modify: test_clear/set_page_writeback.
->
-> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
-> ---
->  include/linux/memcontrol.h |    1 +
->  mm/memcontrol.c            |    5 +++++
->  mm/page-writeback.c        |   17 +++++++++++++++++
->  3 files changed, 23 insertions(+)
->
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 358019e..1d22b81 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -45,6 +45,7 @@ enum mem_cgroup_stat_index {
->  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
->  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
->  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
-> +	MEM_CGROUP_STAT_WRITEBACK,  /* # of pages under writeback */
->  	MEM_CGROUP_STAT_NSTATS,
->  };
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 21df36d..13cd14a 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -96,6 +96,7 @@ static const char * const mem_cgroup_stat_names[] = {
->  	"mapped_file",
->  	"swap",
->  	"dirty",
-> +	"writeback",
->  };
->  
->  enum mem_cgroup_events_index {
-> @@ -3676,6 +3677,10 @@ static int mem_cgroup_move_account(struct page *page,
->  		mem_cgroup_move_account_page_stat(from, to, nr_pages,
->  			MEM_CGROUP_STAT_FILE_DIRTY);
->  
-> +	if (PageWriteback(page))
-> +		mem_cgroup_move_account_page_stat(from, to, nr_pages,
-> +			MEM_CGROUP_STAT_WRITEBACK);
-> +
->  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
->  
->  	/* caller should have done css_get */
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 526ddd7..ae6498a 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -2002,11 +2002,17 @@ EXPORT_SYMBOL(account_page_dirtied);
->  
->  /*
->   * Helper function for set_page_writeback family.
-> + *
-> + * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
-> + * while modifying struct page state and accounting writeback pages.
-> + * See test_set_page_writeback for example.
-> + *
->   * NOTE: Unlike account_page_dirtied this does not rely on being atomic
->   * wrt interrupts.
->   */
->  void account_page_writeback(struct page *page)
->  {
-> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
->  	inc_zone_page_state(page, NR_WRITEBACK);
->  }
->  EXPORT_SYMBOL(account_page_writeback);
-> @@ -2242,7 +2248,10 @@ int test_clear_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long memcg_flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &memcg_flags);
+Yeah, that looks like the better duct-tape. For context, we're in the
+middle of the long road to fastboot, i.e. taking over the output setup
+done by the bios to avoid a costly modeset at boot-up (at least for
+somewhat sane firmware which doesn't use legacy vga mode any more but the
+native resolution of the panel). But since we don't yet read out the full
+hw state some assumptions are now broken in our code, so we need to catch
+them.
 
-Does this violate lock ordering?  Here we are grabbing
-mem_cgroup_begin_update_page_stat and below we grab tree_lock.  I
-thought the prescribed order was tree_lock first, then
-mem_cgroup_begin_update_page_stat.
+Chris has a more complete patch covering all the other
+generations/code-paths accessing crtc->mode.clock (but lost you from cc).
+I'll forward his patch asap (still digging through the mail flood from
+vacation).
 
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2263,9 +2272,12 @@ int test_clear_page_writeback(struct page *page)
->  		ret = TestClearPageWriteback(page);
->  	}
->  	if (ret) {
-> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
->  		dec_zone_page_state(page, NR_WRITEBACK);
->  		inc_zone_page_state(page, NR_WRITTEN);
->  	}
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
->  	return ret;
->  }
->  
-> @@ -2273,7 +2285,10 @@ int test_set_page_writeback(struct page *page)
->  {
->  	struct address_space *mapping = page_mapping(page);
->  	int ret;
-> +	bool locked;
-> +	unsigned long flags;
->  
-> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
-
-Same "Does this violate lock ordering?" question as above.
-
->  	if (mapping) {
->  		struct backing_dev_info *bdi = mapping->backing_dev_info;
->  		unsigned long flags;
-> @@ -2300,6 +2315,8 @@ int test_set_page_writeback(struct page *page)
->  	}
->  	if (!ret)
->  		account_page_writeback(page);
-> +
-> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
->  	return ret;
->  
->  }
+Cheers, Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
