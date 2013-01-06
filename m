@@ -1,41 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab3AFKZd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 05:25:33 -0500
-Received: from 1wt.eu ([62.212.114.60]:37527 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752712Ab3AFKZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 05:25:32 -0500
-Date: Sun, 6 Jan 2013 11:25:25 +0100
-From: Willy Tarreau <w@1wt.eu>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Major network performance regression in 3.7
-Message-ID: <20130106102525.GA22151@1wt.eu>
-References: <1357430523.1678.4901.camel@edumazet-glaptop> <20130106005053.GS16031@1wt.eu> <1357435276.1678.5067.camel@edumazet-glaptop> <20130106013027.GV16031@1wt.eu> <1357436430.1678.5111.camel@edumazet-glaptop> <1357437086.1678.5135.camel@edumazet-glaptop> <1357438591.1678.5205.camel@edumazet-glaptop> <20130106025256.GY16031@1wt.eu> <1357457724.1678.5941.camel@edumazet-glaptop> <20130106092435.GZ16031@1wt.eu>
-Mime-Version: 1.0
+	id S1755572Ab3AFKad (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 05:30:33 -0500
+Received: from msa101.auone-net.jp ([61.117.18.161]:51514 "EHLO
+	msa101.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752204Ab3AFKab (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 05:30:31 -0500
+Date: Sun, 6 Jan 2013 19:30:28 +0900
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: Replace goto with do-while
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130106092435.GZ16031@1wt.eu>
-User-Agent: Mutt/1.4.2.3i
+User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <20130106103029.28D5E3E403B@msa101.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 10:24:35AM +0100, Willy Tarreau wrote:
-> But before that I'll try to find the recent one causing the myri10ge to
-> slow down, it should take less time to bisect.
+Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+---
+ fs/namespace.c |   17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-OK good news here, the performance drop on the myri was caused by a
-problem between the keyboard and the chair. After the reboot series,
-I forgot to reload the firmware so the driver used the less efficient
-firmware from the NIC (it performs just as if LRO is disabled).
-
-That makes me think that I should try 3.8-rc2 since LRO was removed
-there :-/
-
-The only remaining issue really is the loopback then.
-
-Cheers,
-Willy
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 55605c5..467ca80 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -71,15 +71,14 @@ static int mnt_alloc_id(struct mount *mnt)
+ {
+ 	int res;
+ 
+-retry:
+-	ida_pre_get(&mnt_id_ida, GFP_KERNEL);
+-	spin_lock(&mnt_id_lock);
+-	res = ida_get_new_above(&mnt_id_ida, mnt_id_start, &mnt->mnt_id);
+-	if (!res)
+-		mnt_id_start = mnt->mnt_id + 1;
+-	spin_unlock(&mnt_id_lock);
+-	if (res == -EAGAIN)
+-		goto retry;
++	do {
++		ida_pre_get(&mnt_id_ida, GFP_KERNEL);
++		spin_lock(&mnt_id_lock);
++		res = ida_get_new_above(&mnt_id_ida, mnt_id_start, &mnt->mnt_id);
++		if (!res)
++			mnt_id_start = mnt->mnt_id + 1;
++		spin_unlock(&mnt_id_lock);
++	} while (res == -EAGAIN);
+ 
+ 	return res;
+ }
+-- 
+1.7.10.4
 
