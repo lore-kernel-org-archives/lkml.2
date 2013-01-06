@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753237Ab3AFWKy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 17:10:54 -0500
-Received: from Mycroft.westnet.com ([216.187.52.7]:51031 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753085Ab3AFWKw (ORCPT
+	id S1753241Ab3AFWMR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 17:12:17 -0500
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:41085 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166Ab3AFWMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 17:10:52 -0500
+	Sun, 6 Jan 2013 17:12:16 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <20713.61807.385486.594545@quad.stoffel.home>
-Date: Sun, 6 Jan 2013 16:49:35 -0500
-From: "John Stoffel" <john@stoffel.org>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+In-Reply-To: <20130104005345.GA4407@fieldses.org>
+References: <CADug+U6-=+_Xy41Lw3hnOqSR84Bo7MjKDL_PykiZVdUx=b8tAA@mail.gmail.com>
+	<20130104005345.GA4407@fieldses.org>
+Date: Mon, 7 Jan 2013 00:12:15 +0200
+Message-ID: <CADug+U698gbtJnxUEOn0b7MhejYugSSRsV9i_b7jMaRs08Wpog@mail.gmail.com>
+Subject: Re: [PATCH 1/1] sunrpc: Fix lockd sleeping until timeout
+From: Andriy Skulysh <andriy_skulysh@xyratex.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: Major network performance regression in 3.7
-In-Reply-To: <20130106193410.GL16031@1wt.eu>
-References: <1357484342.6919.61.camel@edumazet-glaptop>
-	<20130106155123.GB16031@1wt.eu>
-	<1357490393.6919.267.camel@edumazet-glaptop>
-	<20130106164416.GF16031@1wt.eu>
-	<1357492255.6919.336.camel@edumazet-glaptop>
-	<20130106173543.GB22432@1wt.eu>
-	<1357497541.6919.519.camel@edumazet-glaptop>
-	<1357497809.6919.529.camel@edumazet-glaptop>
-	<1357498276.6919.547.camel@edumazet-glaptop>
-	<1357498815.6919.570.camel@edumazet-glaptop>
-	<20130106193410.GL16031@1wt.eu>
-X-Mailer: VM 8.1.2 under 23.2.1 (x86_64-pc-linux-gnu)
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Willy" == Willy Tarreau <w@1wt.eu> writes:
+There is a race in enqueueing thread to a pool and
+waking up a thread.
+lockd doesn't wake up on reception of lock granted callback
+if svc_wake_up() is called before lockd's thread is added
+to a pool.
 
-Willy> On Sun, Jan 06, 2013 at 11:00:15AM -0800, Eric Dumazet wrote:
->> On Sun, 2013-01-06 at 10:51 -0800, Eric Dumazet wrote:
->> > > 
->> > > (sd->len is usually 4096, which is expected, but sd->total_len value is
->> > > huge in your case, so we always set the flag in fs/splice.c)
->> > 
->> > I am testing :
->> > 
->> >        if (sd->len < sd->total_len && pipe->nrbufs > 1)
->> >                 more |= MSG_SENDPAGE_NOTLAST;
->> > 
->> 
->> Yes, this should fix the problem :
->> 
->> If there is no following buffer in the pipe, we should not set NOTLAST.
->> 
->> diff --git a/fs/splice.c b/fs/splice.c
->> index 8890604..6909d89 100644
->> --- a/fs/splice.c
->> +++ b/fs/splice.c
->> @@ -696,8 +696,10 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
->> return -EINVAL;
->> 
->> more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
->> -	if (sd->len < sd->total_len)
->> +
->> +	if (sd->len < sd->total_len && pipe->nrbufs > 1)
->> more |= MSG_SENDPAGE_NOTLAST;
->> +
->> return file->f_op->sendpage(file, buf->page, buf->offset,
-sd-> len, &pos, more);
->> }
- 
-Willy> OK it works like a charm here now ! I can't break it anymore, so it
-Willy> looks like you finally got it !
+Signed-off-by: Andriy Skulysh <Andriy_Skulysh@xyratex.com>
+---
+ include/linux/sunrpc/svc.h |    1 +
+ net/sunrpc/svc_xprt.c      |    9 ++++++++-
+ 2 files changed, 9 insertions(+), 1 deletions(-)
 
-It's still broken, there's no comments in the code to explain all this
-magic to mere mortals!  *grin*
+diff --git a/include/linux/sunrpc/svc.h b/include/linux/sunrpc/svc.h
+index 676ddf5..1f0216b 100644
+--- a/include/linux/sunrpc/svc.h
++++ b/include/linux/sunrpc/svc.h
+@@ -50,6 +50,7 @@ struct svc_pool {
+ 	unsigned int		sp_nrthreads;	/* # of threads in pool */
+ 	struct list_head	sp_all_threads;	/* all server threads */
+ 	struct svc_pool_stats	sp_stats;	/* statistics on pool operation */
++	int			sp_task_pending;/* has pending task */
+ } ____cacheline_aligned_in_smp;
 
-John
+ /*
+diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+index b8e47fa..5a9d40c 100644
+--- a/net/sunrpc/svc_xprt.c
++++ b/net/sunrpc/svc_xprt.c
+@@ -499,7 +499,8 @@ void svc_wake_up(struct svc_serv *serv)
+ 			rqstp->rq_xprt = NULL;
+ 			 */
+ 			wake_up(&rqstp->rq_wait);
+-		}
++		} else
++			pool->sp_task_pending = 1;
+ 		spin_unlock_bh(&pool->sp_lock);
+ 	}
+ }
+@@ -634,7 +635,13 @@ struct svc_xprt *svc_get_next_xprt(struct
+svc_rqst *rqstp, long timeout)
+ 		 * long for cache updates.
+ 		 */
+ 		rqstp->rq_chandle.thread_wait = 1*HZ;
++		pool->sp_task_pending = 0;
+ 	} else {
++		if (pool->sp_task_pending) {
++			pool->sp_task_pending = 0;
++			spin_unlock_bh(&pool->sp_lock);
++			return ERR_PTR(-EAGAIN);
++		}
+ 		/* No data pending. Go to sleep */
+ 		svc_thread_enqueue(pool, rqstp);
+
+-- 
+1.7.1
+
+
+On 4 January 2013 02:53, J. Bruce Fields <bfields@fieldses.org> wrote:
+> That should be ERR_PTR(-EAGAIN).
+fixed.
+>
+> Other than this this looks right to me....
+>
+> Out of curiosity: how did you run across this problem, and how did you
+> test the fix?
+I can reproduce it with single ping_pong with nfs on top of Lustre filesystem.
+
+Andriy.
