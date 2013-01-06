@@ -1,114 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab3AFUh3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 15:37:29 -0500
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:45957 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753001Ab3AFUh0 (ORCPT
+	id S1753202Ab3AFUhk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 15:37:40 -0500
+Received: from mail-ye0-f202.google.com ([209.85.213.202]:54275 "EHLO
+	mail-ye0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753120Ab3AFUhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 15:37:26 -0500
+	Sun, 6 Jan 2013 15:37:35 -0500
+From: Greg Thelen <gthelen@google.com>
+To: Sha Zhengju <handai.szj@gmail.com>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org, linux-mm@kvack.org,
+        mhocko@suse.cz, akpm@linux-foundation.org,
+        kamezawa.hiroyu@jp.fujitsu.com, fengguang.wu@intel.com,
+        glommer@parallels.com, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 5/8] memcg: add per cgroup writeback pages accounting
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com>
+	<1356456409-14701-1-git-send-email-handai.szj@taobao.com>
+Date: Sun, 06 Jan 2013 12:07:04 -0800
+Message-ID: <xr93vcbakrdj.fsf@gthelen.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20130105184329.GB995@krava.brq.redhat.com>
-References: <1356018108-6081-1-git-send-email-eranian@google.com>
-	<1356018108-6081-9-git-send-email-eranian@google.com>
-	<20130105184329.GB995@krava.brq.redhat.com>
-Date: Sun, 6 Jan 2013 21:37:25 +0100
-Message-ID: <CABPqkBRkJtB+5C=gq=ngJE9hYxVkxE7s2-4UN+Ub+Y8_pf9x2A@mail.gmail.com>
-Subject: Re: [PATCH v4 08/18] perf/x86: add memory profiling via PEBS Load Latency
-From: Stephane Eranian <eranian@google.com>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Namhyung Kim <namhyung.kim@lge.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 5, 2013 at 7:43 PM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Thu, Dec 20, 2012 at 04:41:38PM +0100, Stephane Eranian wrote:
->> This patch adds support for memory profiling using the
->> PEBS Load Latency facility.
->>
->> Load accesses are sampled by HW and the instruction
->> address, data address, load latency, data source, tlb,
->> locked information can be saved in the sampling buffer
->> if using the PERF_SAMPLE_COST (for latency),
->
-> PERF_SAMPLE_WEIGHT ?
->
-No I switched to using Andi's PERF_SAMPLE_WEIGHT patch for this.
-So it's PERF_SAMPLE_COST now.
+On Tue, Dec 25 2012, Sha Zhengju wrote:
 
->> PERF_SAMPLE_ADDR, PERF_SAMPLE_DSRC types.
->>
->> To enable PEBS Load Latency, users have to use the
->> model specific event:
->> - on NHM/WSM: MEM_INST_RETIRED:LATENCY_ABOVE_THRESHOLD
->> - on SNB/IVB: MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
->>
->> To make things easier, this patch also exports a generic
->> alias via sysfs: mem-loads. It export the right event
->> encoding based on the host CPU and can be used directly
->> by the perf tool.
->>
->> Loosely based on Intel's Lin Ming patch posted on LKML
->> in July 2011.
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
+> From: Sha Zhengju <handai.szj@taobao.com>
 >
-> SNIP
+> Similar to dirty page, we add per cgroup writeback pages accounting. The lock
+> rule still is:
+>         mem_cgroup_begin_update_page_stat()
+>         modify page WRITEBACK stat
+>         mem_cgroup_update_page_stat()
+>         mem_cgroup_end_update_page_stat()
 >
->> +/*
->> + * Map PEBS Load Latency Data Source encodings to generic
->> + * memory data source information
->> + */
->> +#define P(a, b) PERF_MEM_S(a, b)
->> +#define OP_LH (P(OP, LOAD) | P(LVL, HIT))
->> +#define SNOOP_NONE_MISS (P(SNOOP, NONE) | P(SNOOP, MISS))
->> +
+> There're two writeback interface to modify: test_clear/set_page_writeback.
 >
-> I checked Intel SDM 'Table 18-13. Data Source Encoding for Load Latency Record'
-> and it seems to be different (below) at some points.. did you use another source?
+> Signed-off-by: Sha Zhengju <handai.szj@taobao.com>
+> ---
+>  include/linux/memcontrol.h |    1 +
+>  mm/memcontrol.c            |    5 +++++
+>  mm/page-writeback.c        |   17 +++++++++++++++++
+>  3 files changed, 23 insertions(+)
 >
-Yeah, and the table is wrong in the SDM. What I have is correct and approved by
-Intel.
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 358019e..1d22b81 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -45,6 +45,7 @@ enum mem_cgroup_stat_index {
+>  	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>  	MEM_CGROUP_STAT_SWAP, /* # of pages, swapped out */
+>  	MEM_CGROUP_STAT_FILE_DIRTY,  /* # of dirty pages in page cache */
+> +	MEM_CGROUP_STAT_WRITEBACK,  /* # of pages under writeback */
+>  	MEM_CGROUP_STAT_NSTATS,
+>  };
+>  
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 21df36d..13cd14a 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -96,6 +96,7 @@ static const char * const mem_cgroup_stat_names[] = {
+>  	"mapped_file",
+>  	"swap",
+>  	"dirty",
+> +	"writeback",
+>  };
+>  
+>  enum mem_cgroup_events_index {
+> @@ -3676,6 +3677,10 @@ static int mem_cgroup_move_account(struct page *page,
+>  		mem_cgroup_move_account_page_stat(from, to, nr_pages,
+>  			MEM_CGROUP_STAT_FILE_DIRTY);
+>  
+> +	if (PageWriteback(page))
+> +		mem_cgroup_move_account_page_stat(from, to, nr_pages,
+> +			MEM_CGROUP_STAT_WRITEBACK);
+> +
+>  	mem_cgroup_charge_statistics(from, anon, -nr_pages);
+>  
+>  	/* caller should have done css_get */
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index 526ddd7..ae6498a 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -2002,11 +2002,17 @@ EXPORT_SYMBOL(account_page_dirtied);
+>  
+>  /*
+>   * Helper function for set_page_writeback family.
+> + *
+> + * The caller must hold mem_cgroup_begin/end_update_page_stat() lock
+> + * while modifying struct page state and accounting writeback pages.
+> + * See test_set_page_writeback for example.
+> + *
+>   * NOTE: Unlike account_page_dirtied this does not rely on being atomic
+>   * wrt interrupts.
+>   */
+>  void account_page_writeback(struct page *page)
+>  {
+> +	mem_cgroup_inc_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+>  	inc_zone_page_state(page, NR_WRITEBACK);
+>  }
+>  EXPORT_SYMBOL(account_page_writeback);
+> @@ -2242,7 +2248,10 @@ int test_clear_page_writeback(struct page *page)
+>  {
+>  	struct address_space *mapping = page_mapping(page);
+>  	int ret;
+> +	bool locked;
+> +	unsigned long memcg_flags;
+>  
+> +	mem_cgroup_begin_update_page_stat(page, &locked, &memcg_flags);
 
->> +static const u64 pebs_data_source[] = {
->> +     P(OP, LOAD) | P(LVL, MISS) | P(LVL, L3) | P(SNOOP, NA),/* 0x00:ukn L3 */
->> +     OP_LH | P(LVL, L1) | P(SNOOP, NONE),    /* 0x01: L1 local */
->> +     OP_LH | P(LVL, LFB)| P(SNOOP, NONE),    /* 0x02: LFB hit */
->> +     OP_LH | P(LVL, L2) | P(SNOOP, NONE),    /* 0x03: L2 hit */
->> +     OP_LH | P(LVL, L3) | P(SNOOP, NONE),    /* 0x04: L3 hit */
->> +     OP_LH | P(LVL, L3) | P(SNOOP, MISS),    /* 0x05: L3 hit, snoop miss */
->> +     OP_LH | P(LVL, L3) | P(SNOOP, HIT),     /* 0x06: L3 hit, snoop hit */
->
-> 0x6:
-> L3 HIT. Local or Remote home requests that hit the L3 cache and was serviced by
-> another processor core with a cross core snoop where modified copies were found.
-> (HITM).
->
->
->> +     OP_LH | P(LVL, L3) | P(SNOOP, HITM),    /* 0x07: L3 hit, snoop hitm */
->
-> 0x7:
-> Reserved
->
->> +     OP_LH | P(LVL, REM_CCE1) | P(SNOOP, HIT),  /* 0x08: L3 miss snoop hit */
->> +     OP_LH | P(LVL, REM_CCE1) | P(SNOOP, HITM), /* 0x09: L3 miss snoop hitm*/
->
-> 0x9:
-> Reserved
->
->> +     OP_LH | P(LVL, LOC_RAM)  | P(SNOOP, HIT),  /* 0x0a: L3 miss, shared */
->> +     OP_LH | P(LVL, REM_RAM1) | P(SNOOP, HIT),  /* 0x0b: L3 miss, shared */
->> +     OP_LH | P(LVL, LOC_RAM)  | SNOOP_NONE_MISS,/* 0x0c: L3 miss, excl */
->> +     OP_LH | P(LVL, REM_RAM1) | SNOOP_NONE_MISS,/* 0x0d: L3 miss, excl */
->> +     OP_LH | P(LVL, IO) | P(SNOOP, NONE), /* 0x0e: I/O */
->> +     OP_LH | P(LVL,UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
->> +};
->
-> thanks,
-> jirka
+Does this violate lock ordering?  Here we are grabbing
+mem_cgroup_begin_update_page_stat and below we grab tree_lock.  I
+thought the prescribed order was tree_lock first, then
+mem_cgroup_begin_update_page_stat.
+
+>  	if (mapping) {
+>  		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  		unsigned long flags;
+> @@ -2263,9 +2272,12 @@ int test_clear_page_writeback(struct page *page)
+>  		ret = TestClearPageWriteback(page);
+>  	}
+>  	if (ret) {
+> +		mem_cgroup_dec_page_stat(page, MEM_CGROUP_STAT_WRITEBACK);
+>  		dec_zone_page_state(page, NR_WRITEBACK);
+>  		inc_zone_page_state(page, NR_WRITTEN);
+>  	}
+> +
+> +	mem_cgroup_end_update_page_stat(page, &locked, &memcg_flags);
+>  	return ret;
+>  }
+>  
+> @@ -2273,7 +2285,10 @@ int test_set_page_writeback(struct page *page)
+>  {
+>  	struct address_space *mapping = page_mapping(page);
+>  	int ret;
+> +	bool locked;
+> +	unsigned long flags;
+>  
+> +	mem_cgroup_begin_update_page_stat(page, &locked, &flags);
+
+Same "Does this violate lock ordering?" question as above.
+
+>  	if (mapping) {
+>  		struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  		unsigned long flags;
+> @@ -2300,6 +2315,8 @@ int test_set_page_writeback(struct page *page)
+>  	}
+>  	if (!ret)
+>  		account_page_writeback(page);
+> +
+> +	mem_cgroup_end_update_page_stat(page, &locked, &flags);
+>  	return ret;
+>  
+>  }
