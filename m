@@ -1,48 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab3AFCoV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 21:44:21 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:38334 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754959Ab3AFCoT (ORCPT
+	id S1755774Ab3AFCph (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 21:45:37 -0500
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:42387 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755168Ab3AFCpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 21:44:19 -0500
-Subject: Re: Major network performance regression in 3.7
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20130106023206.GX16031@1wt.eu>
-References: <20130105232913.GQ16031@1wt.eu>
-	 <1357430523.1678.4901.camel@edumazet-glaptop>
-	 <20130106005053.GS16031@1wt.eu>
-	 <1357435276.1678.5067.camel@edumazet-glaptop>
-	 <20130106013027.GV16031@1wt.eu>
-	 <1357436430.1678.5111.camel@edumazet-glaptop>
-	 <1357437086.1678.5135.camel@edumazet-glaptop>
-	 <1357438591.1678.5205.camel@edumazet-glaptop>
-	 <20130106021824.GW16031@1wt.eu>
-	 <1357438933.1678.5223.camel@edumazet-glaptop>
-	 <20130106023206.GX16031@1wt.eu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Jan 2013 18:44:15 -0800
-Message-ID: <1357440255.1678.5270.camel@edumazet-glaptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Jan 2013 21:45:35 -0500
+Date: Sat, 5 Jan 2013 18:42:03 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, patches@linaro.org
+Subject: Re: [PATCH 0/3] power: bq2415x_charger: Some cleanup
+Message-ID: <20130106024203.GB6919@lizard.sbx05280.losalca.wayport.net>
+References: <1353995926-4621-1-git-send-email-sachin.kamat@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1353995926-4621-1-git-send-email-sachin.kamat@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2013-01-06 at 03:32 +0100, Willy Tarreau wrote:
-
-> It's 0cf833ae (net: loopback: set default mtu to 64K). And I could
-> reproduce it with 3.6 by setting loopback's MTU to 65536 by hand.
-> The trick is that once the MTU has been set to this large a value,
-> even when I set it back to 16kB the problem persists.
+On Tue, Nov 27, 2012 at 11:28:43AM +0530, Sachin Kamat wrote:
+> This series is build tested againt the linux-next tree (20121126)
 > 
+> Sachin Kamat (3):
+>   power: bq2415x_charger: Remove unneeded version.h inclusion
+>   power: bq2415x_charger: Use module_i2c_driver
+>   power: bq2415x_charger: Use devm_kzalloc()
 
-Well, this MTU change can uncover a prior bug, or make it happen faster,
-for sure.
-
-
-
+Applied, thanks a lot!
