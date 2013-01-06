@@ -1,71 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755234Ab3AFB5M (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 20:57:12 -0500
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:50536 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754915Ab3AFB5L (ORCPT
+	id S1755371Ab3AFCQh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 21:16:37 -0500
+Received: from mail-da0-f51.google.com ([209.85.210.51]:39664 "EHLO
+	mail-da0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755120Ab3AFCQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 20:57:11 -0500
-X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Jan 2013 20:57:11 EST
-From: Sadasivan Shaiju <sshaiju@mvista.com>
-References: <aba006370d1e788a3ff0612afca6d3e7@mail.gmail.com> <20130105172116.GA65150@digium.com>
-In-Reply-To: <20130105172116.GA65150@digium.com>
-MIME-Version: 1.0
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQKp3EkhtONpmgJJol3fN1OCX6VI0AGtVi4QlnY89xA=
-Date: Sat, 5 Jan 2013 17:50:54 -0800
-Message-ID: <3accb98298ac0ccdbfa1930938febfa6@mail.gmail.com>
-Subject: RE: Incorrect accounting of irq into the running task
-To: Shaun Ruffell <sruffell@digium.com>
-Cc: linux-kernel@vger.kernel.org, venki@google.com, a.p.zijlstra@chello.nl
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 5 Jan 2013 21:16:34 -0500
+Subject: Re: Major network performance regression in 3.7
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1357437086.1678.5135.camel@edumazet-glaptop>
+References: <20130105214958.GA19814@1wt.eu>
+	 <1357427926.1678.4771.camel@edumazet-glaptop>
+	 <20130105232913.GQ16031@1wt.eu>
+	 <1357430523.1678.4901.camel@edumazet-glaptop>
+	 <20130106005053.GS16031@1wt.eu>
+	 <1357435276.1678.5067.camel@edumazet-glaptop>
+	 <20130106013027.GV16031@1wt.eu>
+	 <1357436430.1678.5111.camel@edumazet-glaptop>
+	 <1357437086.1678.5135.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Jan 2013 18:16:31 -0800
+Message-ID: <1357438591.1678.5205.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shaun,
+On Sat, 2013-01-05 at 17:51 -0800, Eric Dumazet wrote:
+> On Sat, 2013-01-05 at 17:40 -0800, Eric Dumazet wrote:
+> > On Sun, 2013-01-06 at 02:30 +0100, Willy Tarreau wrote:
+> > 
+> > > Ah interesting because these were some of the mm patches that I had
+> > > tried to revert.
+> > 
+> > Hmm, or we should fix __skb_splice_bits()
+> > 
+> > I'll send a patch.
+> > 
+> 
+> Could you try the following ?
 
------Original Message-----
-From: Shaun Ruffell [mailto:sruffell@digium.com]
-Sent: Saturday, January 05, 2013 9:21 AM
-To: Sadasivan Shaiju
-Cc: linux-kernel@vger.kernel.org; venki@google.com; a.p.zijlstra@chello.nl
-Subject: Re: Incorrect accounting of irq into the running task
+Or more exactly...
 
-On Fri, Jan 04, 2013 at 10:22:12AM -0800, Sadasivan Shaiju wrote:
-> Hi  Venkatesh,
->
-> I have applied the following patches for the incorrect accounting of
-> irq into the running task .
->
->
-> [PATCH] x86: Add IRQ_TIME_ACCOUNTING
-> [e82b8e4ea4f3dffe6e7939f90e78da675fcc450e]
-> [PATCH] sched: Add IRQ_TIME_ACCOUNTING, finer accounting of irq time
-> [b52bfee445d315549d41eacf2fa7c156e7d153d5]
->
-> [PATCH] sched: Do not account irq time to current task
-> [305e6835e05513406fa12820e40e4a8ecb63743c]
-> [PATCH] sched: Export ns irqtimes through /proc/stat
-> [abb74cefa9c682fb38ba86c17ca3c86fed6cc464]
->
->
->
-> But still the stime and utime of the process in /proc/pid/stat is
-> high. I think the above patches does not update The stime and utime
-> values in /proc/pid/stat.
->
->
-> Or am I missing anything?
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 3ab989b..01f222c 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -1736,11 +1736,8 @@ static bool __splice_segment(struct page *page, unsigned int poff,
+ 		return false;
+ 	}
+ 
+-	/* ignore any bits we already processed */
+-	if (*off) {
+-		__segment_seek(&page, &poff, &plen, *off);
+-		*off = 0;
+-	}
++	__segment_seek(&page, &poff, &plen, *off);
++	*off = 0;
+ 
+ 	do {
+ 		unsigned int flen = min(*len, plen);
+@@ -1768,14 +1765,15 @@ static bool __skb_splice_bits(struct sk_buff *skb, struct pipe_inode_info *pipe,
+ 			      struct splice_pipe_desc *spd, struct sock *sk)
+ {
+ 	int seg;
++	struct page *page = virt_to_page(skb->data);
++	unsigned int poff = skb->data - (unsigned char *)page_address(page);
+ 
+ 	/* map the linear part :
+ 	 * If skb->head_frag is set, this 'linear' part is backed by a
+ 	 * fragment, and if the head is not shared with any clones then
+ 	 * we can avoid a copy since we own the head portion of this page.
+ 	 */
+-	if (__splice_segment(virt_to_page(skb->data),
+-			     (unsigned long) skb->data & (PAGE_SIZE - 1),
++	if (__splice_segment(page, poff,
+ 			     skb_headlen(skb),
+ 			     offset, len, skb, spd,
+ 			     skb_head_is_locked(skb),
 
-Just checking that you do have CONFIG_IRQ_TIME_ACCOUNTING=y in your kernel
-config?
 
-  Yes  it  is  turned  on  .
-
-Regards,
-Shaiju.
-
-Cheers,
-Shaun
