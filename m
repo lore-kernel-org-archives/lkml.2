@@ -1,519 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753369Ab3AFXew (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 18:34:52 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:57872 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753307Ab3AFXes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753396Ab3AFXfG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 18:35:06 -0500
+Received: from mail-da0-f52.google.com ([209.85.210.52]:53637 "EHLO
+	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753311Ab3AFXes (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 6 Jan 2013 18:34:48 -0500
-Message-ID: <1357515289.4940.6.camel@joe-AO722>
-Subject: [PATCH] chelsio: Use netdev_<level> and pr_<level>
-From: Joe Perches <joe@perches.com>
-To: Divy Le Ray <divy@chelsio.com>, Dimitris Michailidis <dm@chelsio.com>,
-        Casey Leedom <leedom@chelsio.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Sun, 06 Jan 2013 15:34:49 -0800
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+In-Reply-To: <1357408144-15830-5-git-send-email-paulmck@linux.vnet.ibm.com>
+References: <20130105174844.GA14172@linux.vnet.ibm.com> <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1357408144-15830-5-git-send-email-paulmck@linux.vnet.ibm.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Sun, 6 Jan 2013 18:34:17 -0500
+X-Google-Sender-Auth: B4SsMP2caMAXgyJeLecc7rf6HUo
+Message-ID: <CAP=VYLrCZ6qHTzA0K=+6rEGU0Lk8aLPH6MgRuw5rxSazwJai6A@mail.gmail.com>
+Subject: Re: [PATCH tip/core/rcu 05/14] rcu: Distinguish "rcuo" kthreads by
+ RCU flavor
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use more current logging styles.
+On Sat, Jan 5, 2013 at 12:48 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+>
+> Currently, the per-no-CBs-CPU kthreads are named "rcuo" followed by
+> the CPU number, for example, "rcuo".  This is problematic given that
+> there are either two or three RCU flavors, each of which gets a per-CPU
+> kthread with exactly the same name.  This commit therefore introduces
+> a one-letter abbreviation for each RCU flavor, namely 'b' for RCU-bh,
+> 'p' for RCU-preempt, and 's' for RCU-sched.  This abbreviation use used
+> to distinguish the "rcuo" kthreads, for example, for CPU 0 we would have
+> "rcuo0b", "rcuo0p", and "rcuo0s".
 
-Convert printks to pr_<level> and
-printks with ("%s: ...", dev->name to netdev_<level>(dev, "...
+Since these names are exposed to Joe Average when he runs ps/top
+etc. -- I am inclined to favour the more full names as implemented
+in this older patch:
 
-Add pr_fmt #defines where appropriate.
-Coalesce formats.
-Use pr_<level>_once where appropriate.
+http://goo.gl/H1Aj8
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/ethernet/chelsio/cxgb/cxgb2.c          | 28 +++++------
- drivers/net/ethernet/chelsio/cxgb/sge.c            |  6 +--
- drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c    | 42 ++++++++---------
- drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c | 54 ++++++++++------------
- drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c    |  2 +-
- .../net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c    | 23 ++++-----
- 6 files changed, 66 insertions(+), 89 deletions(-)
+...since "rcuo0p" isn't apt to mean anything to people outside
+of the to/cc list of this mail. (Catch me off guard, and I probably
+might fail to be able to name the three flavours myself...)
 
-diff --git a/drivers/net/ethernet/chelsio/cxgb/cxgb2.c b/drivers/net/ethernet/chelsio/cxgb/cxgb2.c
-index c8fdeaa..20d2085 100644
---- a/drivers/net/ethernet/chelsio/cxgb/cxgb2.c
-+++ b/drivers/net/ethernet/chelsio/cxgb/cxgb2.c
-@@ -131,7 +131,7 @@ static void t1_set_rxmode(struct net_device *dev)
- static void link_report(struct port_info *p)
- {
- 	if (!netif_carrier_ok(p->dev))
--		printk(KERN_INFO "%s: link down\n", p->dev->name);
-+		netdev_info(p->dev, "link down\n");
- 	else {
- 		const char *s = "10Mbps";
- 
-@@ -141,9 +141,9 @@ static void link_report(struct port_info *p)
- 			case SPEED_100:   s = "100Mbps"; break;
- 		}
- 
--		printk(KERN_INFO "%s: link up, %s, %s-duplex\n",
--		       p->dev->name, s,
--		       p->link_config.duplex == DUPLEX_FULL ? "full" : "half");
-+		netdev_info(p->dev, "link up, %s, %s-duplex\n",
-+			    s, p->link_config.duplex == DUPLEX_FULL
-+			    ? "full" : "half");
- 	}
- }
- 
-@@ -976,19 +976,13 @@ static const struct net_device_ops cxgb_netdev_ops = {
- 
- static int init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
--	static int version_printed;
--
- 	int i, err, pci_using_dac = 0;
- 	unsigned long mmio_start, mmio_len;
- 	const struct board_info *bi;
- 	struct adapter *adapter = NULL;
- 	struct port_info *pi;
- 
--	if (!version_printed) {
--		printk(KERN_INFO "%s - version %s\n", DRV_DESCRIPTION,
--		       DRV_VERSION);
--		++version_printed;
--	}
-+	pr_info_once("%s - version %s\n", DRV_DESCRIPTION, DRV_VERSION);
- 
- 	err = pci_enable_device(pdev);
- 	if (err)
-@@ -1124,8 +1118,8 @@ static int init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	for (i = 0; i < bi->port_number; ++i) {
- 		err = register_netdev(adapter->port[i].dev);
- 		if (err)
--			pr_warning("%s: cannot register net device %s, skipping\n",
--				   pci_name(pdev), adapter->port[i].dev->name);
-+			pr_warn("%s: cannot register net device %s, skipping\n",
-+				pci_name(pdev), adapter->port[i].dev->name);
- 		else {
- 			/*
- 			 * Change the name we use for messages to the name of
-@@ -1143,10 +1137,10 @@ static int init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- 		goto out_release_adapter_res;
- 	}
- 
--	printk(KERN_INFO "%s: %s (rev %d), %s %dMHz/%d-bit\n", adapter->name,
--	       bi->desc, adapter->params.chip_revision,
--	       adapter->params.pci.is_pcix ? "PCIX" : "PCI",
--	       adapter->params.pci.speed, adapter->params.pci.width);
-+	pr_info("%s: %s (rev %d), %s %dMHz/%d-bit\n",
-+		adapter->name, bi->desc, adapter->params.chip_revision,
-+		adapter->params.pci.is_pcix ? "PCIX" : "PCI",
-+		adapter->params.pci.speed, adapter->params.pci.width);
- 
- 	/*
- 	 * Set the T1B ASIC and memory clocks.
-diff --git a/drivers/net/ethernet/chelsio/cxgb/sge.c b/drivers/net/ethernet/chelsio/cxgb/sge.c
-index d84872e..4829769 100644
---- a/drivers/net/ethernet/chelsio/cxgb/sge.c
-+++ b/drivers/net/ethernet/chelsio/cxgb/sge.c
-@@ -1822,8 +1822,8 @@ netdev_tx_t t1_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		 */
- 		if (unlikely(skb->len < ETH_HLEN ||
- 			     skb->len > dev->mtu + eth_hdr_len(skb->data))) {
--			pr_debug("%s: packet size %d hdr %d mtu%d\n", dev->name,
--				 skb->len, eth_hdr_len(skb->data), dev->mtu);
-+			netdev_dbg(dev, "packet size %d hdr %d mtu%d\n",
-+				   skb->len, eth_hdr_len(skb->data), dev->mtu);
- 			dev_kfree_skb_any(skb);
- 			return NETDEV_TX_OK;
- 		}
-@@ -1831,7 +1831,7 @@ netdev_tx_t t1_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 		if (skb->ip_summed == CHECKSUM_PARTIAL &&
- 		    ip_hdr(skb)->protocol == IPPROTO_UDP) {
- 			if (unlikely(skb_checksum_help(skb))) {
--				pr_debug("%s: unable to do udp checksum\n", dev->name);
-+				netdev_dbg(dev, "unable to do udp checksum\n");
- 				dev_kfree_skb_any(skb);
- 				return NETDEV_TX_OK;
- 			}
-diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
-index f15ee32..2b5e621 100644
---- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_main.c
-@@ -29,6 +29,9 @@
-  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-  * SOFTWARE.
-  */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/init.h>
-@@ -153,7 +156,7 @@ struct workqueue_struct *cxgb3_wq;
- static void link_report(struct net_device *dev)
- {
- 	if (!netif_carrier_ok(dev))
--		printk(KERN_INFO "%s: link down\n", dev->name);
-+		netdev_info(dev, "link down\n");
- 	else {
- 		const char *s = "10Mbps";
- 		const struct port_info *p = netdev_priv(dev);
-@@ -170,8 +173,9 @@ static void link_report(struct net_device *dev)
- 			break;
- 		}
- 
--		printk(KERN_INFO "%s: link up, %s, %s-duplex\n", dev->name, s,
--		       p->link_config.duplex == DUPLEX_FULL ? "full" : "half");
-+		netdev_info(dev, "link up, %s, %s-duplex\n",
-+			    s, p->link_config.duplex == DUPLEX_FULL
-+			    ? "full" : "half");
- 	}
- }
- 
-@@ -318,10 +322,10 @@ void t3_os_phymod_changed(struct adapter *adap, int port_id)
- 	const struct port_info *pi = netdev_priv(dev);
- 
- 	if (pi->phy.modtype == phy_modtype_none)
--		printk(KERN_INFO "%s: PHY module unplugged\n", dev->name);
-+		netdev_info(dev, "PHY module unplugged\n");
- 	else
--		printk(KERN_INFO "%s: %s PHY module inserted\n", dev->name,
--		       mod_str[pi->phy.modtype]);
-+		netdev_info(dev, "%s PHY module inserted\n",
-+			    mod_str[pi->phy.modtype]);
- }
- 
- static void cxgb_set_rxmode(struct net_device *dev)
-@@ -1422,8 +1426,7 @@ static int cxgb_open(struct net_device *dev)
- 	if (is_offload(adapter) && !ofld_disable) {
- 		err = offload_open(dev);
- 		if (err)
--			printk(KERN_WARNING
--			       "Could not initialize offload capabilities\n");
-+			pr_warn("Could not initialize offload capabilities\n");
- 	}
- 
- 	netif_set_real_num_tx_queues(dev, pi->nqsets);
-@@ -3132,14 +3135,13 @@ static void print_port_info(struct adapter *adap, const struct adapter_info *ai)
- 
- 		if (!test_bit(i, &adap->registered_device_map))
- 			continue;
--		printk(KERN_INFO "%s: %s %s %sNIC (rev %d) %s%s\n",
--		       dev->name, ai->desc, pi->phy.desc,
--		       is_offload(adap) ? "R" : "", adap->params.rev, buf,
--		       (adap->flags & USING_MSIX) ? " MSI-X" :
--		       (adap->flags & USING_MSI) ? " MSI" : "");
-+		netdev_info(dev, "%s %s %sNIC (rev %d) %s%s\n",
-+			    ai->desc, pi->phy.desc,
-+			    is_offload(adap) ? "R" : "", adap->params.rev, buf,
-+			    (adap->flags & USING_MSIX) ? " MSI-X" :
-+			    (adap->flags & USING_MSI) ? " MSI" : "");
- 		if (adap->name == dev->name && adap->params.vpd.mclk)
--			printk(KERN_INFO
--			       "%s: %uMB CM, %uMB PMTX, %uMB PMRX, S/N: %s\n",
-+			pr_info("%s: %uMB CM, %uMB PMTX, %uMB PMRX, S/N: %s\n",
- 			       adap->name, t3_mc7_size(&adap->cm) >> 20,
- 			       t3_mc7_size(&adap->pmtx) >> 20,
- 			       t3_mc7_size(&adap->pmrx) >> 20,
-@@ -3177,24 +3179,18 @@ static void cxgb3_init_iscsi_mac(struct net_device *dev)
- 			NETIF_F_IPV6_CSUM | NETIF_F_HIGHDMA)
- static int init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
--	static int version_printed;
--
- 	int i, err, pci_using_dac = 0;
- 	resource_size_t mmio_start, mmio_len;
- 	const struct adapter_info *ai;
- 	struct adapter *adapter = NULL;
- 	struct port_info *pi;
- 
--	if (!version_printed) {
--		printk(KERN_INFO "%s - version %s\n", DRV_DESC, DRV_VERSION);
--		++version_printed;
--	}
-+	pr_info_once("%s - version %s\n", DRV_DESC, DRV_VERSION);
- 
- 	if (!cxgb3_wq) {
- 		cxgb3_wq = create_singlethread_workqueue(DRV_NAME);
- 		if (!cxgb3_wq) {
--			printk(KERN_ERR DRV_NAME
--			       ": cannot initialize work queue\n");
-+			pr_err("cannot initialize work queue\n");
- 			return -ENOMEM;
- 		}
- 	}
-diff --git a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
-index 3f1f501..91d02eb 100644
---- a/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
-+++ b/drivers/net/ethernet/chelsio/cxgb3/cxgb3_offload.c
-@@ -30,6 +30,8 @@
-  * SOFTWARE.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/list.h>
- #include <linux/slab.h>
- #include <net/neighbour.h>
-@@ -235,8 +237,7 @@ static int cxgb_ulp_iscsi_ctl(struct adapter *adapter, unsigned int req,
- 		if ((val >> S_MAXRXDATA) != 0x3f60) {
- 			val &= (M_RXCOALESCESIZE << S_RXCOALESCESIZE);
- 			val |= V_MAXRXDATA(0x3f60);
--			printk(KERN_INFO
--				"%s, iscsi set MaxRxData to 16224 (0x%x).\n",
-+			pr_info("%s, iscsi set MaxRxData to 16224 (0x%x)\n",
- 				adapter->name, val);
- 			t3_write_reg(adapter, A_TP_PARA_REG2, val);
- 		}
-@@ -256,8 +257,7 @@ static int cxgb_ulp_iscsi_ctl(struct adapter *adapter, unsigned int req,
- 		for (i = 0; i < 4; i++)
- 			val |= (uiip->pgsz_factor[i] & 0xF) << (8 * i);
- 		if (val && (val != t3_read_reg(adapter, A_ULPRX_ISCSI_PSZ))) {
--			printk(KERN_INFO
--				"%s, setting iscsi pgsz 0x%x, %u,%u,%u,%u.\n",
-+			pr_info("%s, setting iscsi pgsz 0x%x, %u,%u,%u,%u\n",
- 				adapter->name, val, uiip->pgsz_factor[0],
- 				uiip->pgsz_factor[1], uiip->pgsz_factor[2],
- 				uiip->pgsz_factor[3]);
-@@ -709,8 +709,7 @@ static int do_smt_write_rpl(struct t3cdev *dev, struct sk_buff *skb)
- 	struct cpl_smt_write_rpl *rpl = cplhdr(skb);
- 
- 	if (rpl->status != CPL_ERR_NONE)
--		printk(KERN_ERR
--		       "Unexpected SMT_WRITE_RPL status %u for entry %u\n",
-+		pr_err("Unexpected SMT_WRITE_RPL status %u for entry %u\n",
- 		       rpl->status, GET_TID(rpl));
- 
- 	return CPL_RET_BUF_DONE;
-@@ -721,8 +720,7 @@ static int do_l2t_write_rpl(struct t3cdev *dev, struct sk_buff *skb)
- 	struct cpl_l2t_write_rpl *rpl = cplhdr(skb);
- 
- 	if (rpl->status != CPL_ERR_NONE)
--		printk(KERN_ERR
--		       "Unexpected L2T_WRITE_RPL status %u for entry %u\n",
-+		pr_err("Unexpected L2T_WRITE_RPL status %u for entry %u\n",
- 		       rpl->status, GET_TID(rpl));
- 
- 	return CPL_RET_BUF_DONE;
-@@ -733,8 +731,7 @@ static int do_rte_write_rpl(struct t3cdev *dev, struct sk_buff *skb)
- 	struct cpl_rte_write_rpl *rpl = cplhdr(skb);
- 
- 	if (rpl->status != CPL_ERR_NONE)
--		printk(KERN_ERR
--		       "Unexpected RTE_WRITE_RPL status %u for entry %u\n",
-+		pr_err("Unexpected RTE_WRITE_RPL status %u for entry %u\n",
- 		       rpl->status, GET_TID(rpl));
- 
- 	return CPL_RET_BUF_DONE;
-@@ -754,7 +751,7 @@ static int do_act_open_rpl(struct t3cdev *dev, struct sk_buff *skb)
- 								    t3c_tid->
- 								    ctx);
- 	} else {
--		printk(KERN_ERR "%s: received clientless CPL command 0x%x\n",
-+		pr_err("%s: received clientless CPL command 0x%x\n",
- 		       dev->name, CPL_ACT_OPEN_RPL);
- 		return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- 	}
-@@ -772,7 +769,7 @@ static int do_stid_rpl(struct t3cdev *dev, struct sk_buff *skb)
- 		return t3c_tid->client->handlers[p->opcode] (dev, skb,
- 							     t3c_tid->ctx);
- 	} else {
--		printk(KERN_ERR "%s: received clientless CPL command 0x%x\n",
-+		pr_err("%s: received clientless CPL command 0x%x\n",
- 		       dev->name, p->opcode);
- 		return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- 	}
-@@ -790,7 +787,7 @@ static int do_hwtid_rpl(struct t3cdev *dev, struct sk_buff *skb)
- 		return t3c_tid->client->handlers[p->opcode]
- 		    (dev, skb, t3c_tid->ctx);
- 	} else {
--		printk(KERN_ERR "%s: received clientless CPL command 0x%x\n",
-+		pr_err("%s: received clientless CPL command 0x%x\n",
- 		       dev->name, p->opcode);
- 		return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- 	}
-@@ -817,7 +814,7 @@ static int do_cr(struct t3cdev *dev, struct sk_buff *skb)
- 		return t3c_tid->client->handlers[CPL_PASS_ACCEPT_REQ]
- 		    (dev, skb, t3c_tid->ctx);
- 	} else {
--		printk(KERN_ERR "%s: received clientless CPL command 0x%x\n",
-+		pr_err("%s: received clientless CPL command 0x%x\n",
- 		       dev->name, CPL_PASS_ACCEPT_REQ);
- 		return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- 	}
-@@ -911,7 +908,7 @@ static int do_act_establish(struct t3cdev *dev, struct sk_buff *skb)
- 		return t3c_tid->client->handlers[CPL_ACT_ESTABLISH]
- 		    (dev, skb, t3c_tid->ctx);
- 	} else {
--		printk(KERN_ERR "%s: received clientless CPL command 0x%x\n",
-+		pr_err("%s: received clientless CPL command 0x%x\n",
- 		       dev->name, CPL_ACT_ESTABLISH);
- 		return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- 	}
-@@ -957,7 +954,7 @@ static int do_term(struct t3cdev *dev, struct sk_buff *skb)
- 		return t3c_tid->client->handlers[opcode] (dev, skb,
- 							  t3c_tid->ctx);
- 	} else {
--		printk(KERN_ERR "%s: received clientless CPL command 0x%x\n",
-+		pr_err("%s: received clientless CPL command 0x%x\n",
- 		       dev->name, opcode);
- 		return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- 	}
-@@ -994,8 +991,7 @@ static struct notifier_block nb = {
-  */
- static int do_bad_cpl(struct t3cdev *dev, struct sk_buff *skb)
- {
--	printk(KERN_ERR "%s: received bad CPL command 0x%x\n", dev->name,
--	       *skb->data);
-+	pr_err("%s: received bad CPL command 0x%x\n", dev->name, *skb->data);
- 	return CPL_RET_BUF_DONE | CPL_RET_BAD_MSG;
- }
- 
-@@ -1013,8 +1009,8 @@ void t3_register_cpl_handler(unsigned int opcode, cpl_handler_func h)
- 	if (opcode < NUM_CPL_CMDS)
- 		cpl_handlers[opcode] = h ? h : do_bad_cpl;
- 	else
--		printk(KERN_ERR "T3C: handler registration for "
--		       "opcode %x failed\n", opcode);
-+		pr_err("T3C: handler registration for opcode %x failed\n",
-+		       opcode);
- }
- 
- EXPORT_SYMBOL(t3_register_cpl_handler);
-@@ -1033,9 +1029,8 @@ static int process_rx(struct t3cdev *dev, struct sk_buff **skbs, int n)
- 		if (ret & CPL_RET_UNKNOWN_TID) {
- 			union opcode_tid *p = cplhdr(skb);
- 
--			printk(KERN_ERR "%s: CPL message (opcode %u) had "
--			       "unknown TID %u\n", dev->name, opcode,
--			       G_TID(ntohl(p->opcode_tid)));
-+			pr_err("%s: CPL message (opcode %u) had unknown TID %u\n",
-+			       dev->name, opcode, G_TID(ntohl(p->opcode_tid)));
- 		}
- #endif
- 		if (ret & CPL_RET_BUF_DONE)
-@@ -1099,7 +1094,7 @@ static void set_l2t_ix(struct t3cdev *tdev, u32 tid, struct l2t_entry *e)
- 
- 	skb = alloc_skb(sizeof(*req), GFP_ATOMIC);
- 	if (!skb) {
--		printk(KERN_ERR "%s: cannot allocate skb!\n", __func__);
-+		pr_err("%s: cannot allocate skb!\n", __func__);
- 		return;
- 	}
- 	skb->priority = CPL_PRIORITY_CONTROL;
-@@ -1132,23 +1127,22 @@ static void cxgb_redirect(struct dst_entry *old, struct neighbour *old_neigh,
- 	if (!is_offloading(olddev))
- 		return;
- 	if (!is_offloading(newdev)) {
--		printk(KERN_WARNING "%s: Redirect to non-offload "
--		       "device ignored.\n", __func__);
-+		pr_warn("%s: Redirect to non-offload device ignored\n",
-+			__func__);
- 		return;
- 	}
- 	tdev = dev2t3cdev(olddev);
- 	BUG_ON(!tdev);
- 	if (tdev != dev2t3cdev(newdev)) {
--		printk(KERN_WARNING "%s: Redirect to different "
--		       "offload device ignored.\n", __func__);
-+		pr_warn("%s: Redirect to different offload device ignored\n",
-+			__func__);
- 		return;
- 	}
- 
- 	/* Add new L2T entry */
- 	e = t3_l2t_get(tdev, new, newdev, daddr);
- 	if (!e) {
--		printk(KERN_ERR "%s: couldn't allocate new l2t entry!\n",
--		       __func__);
-+		pr_err("%s: couldn't allocate new l2t entry!\n", __func__);
- 		return;
- 	}
- 
-diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-index f0718e1..aa63b66 100644
---- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
-@@ -5131,7 +5131,7 @@ static int __init cxgb4_init_module(void)
- 	/* Debugfs support is optional, just warn if this fails */
- 	cxgb4_debugfs_root = debugfs_create_dir(KBUILD_MODNAME, NULL);
- 	if (!cxgb4_debugfs_root)
--		pr_warning("could not create debugfs entry, continuing\n");
-+		pr_warn("could not create debugfs entry, continuing\n");
- 
- 	ret = pci_register_driver(&cxgb4_driver);
- 	if (ret < 0)
-diff --git a/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c b/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-index 0188df7..56b46ab 100644
---- a/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-+++ b/drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c
-@@ -33,6 +33,8 @@
-  * SOFTWARE.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/init.h>
-@@ -196,11 +198,10 @@ void t4vf_os_link_changed(struct adapter *adapter, int pidx, int link_ok)
- 			break;
- 		}
- 
--		printk(KERN_INFO "%s: link up, %s, full-duplex, %s PAUSE\n",
--		       dev->name, s, fc);
-+		netdev_info(dev, "link up, %s, full-duplex, %s PAUSE\n", s, fc);
- 	} else {
- 		netif_carrier_off(dev);
--		printk(KERN_INFO "%s: link down\n", dev->name);
-+		netdev_info(dev, "link down\n");
- 	}
- }
- 
-@@ -2465,8 +2466,6 @@ static const struct net_device_ops cxgb4vf_netdev_ops	= {
- static int cxgb4vf_pci_probe(struct pci_dev *pdev,
- 			     const struct pci_device_id *ent)
- {
--	static int version_printed;
--
- 	int pci_using_dac;
- 	int err, pidx;
- 	unsigned int pmask;
-@@ -2478,10 +2477,7 @@ static int cxgb4vf_pci_probe(struct pci_dev *pdev,
- 	 * Print our driver banner the first time we're called to initialize a
- 	 * device.
- 	 */
--	if (version_printed == 0) {
--		printk(KERN_INFO "%s - version %s\n", DRV_DESC, DRV_VERSION);
--		version_printed = 1;
--	}
-+	pr_info_once("%s - version %s\n", DRV_DESC, DRV_VERSION);
- 
- 	/*
- 	 * Initialize generic PCI device state.
-@@ -2920,18 +2916,15 @@ static int __init cxgb4vf_module_init(void)
- 	 * Vet our module parameters.
- 	 */
- 	if (msi != MSI_MSIX && msi != MSI_MSI) {
--		printk(KERN_WARNING KBUILD_MODNAME
--		       ": bad module parameter msi=%d; must be %d"
--		       " (MSI-X or MSI) or %d (MSI)\n",
--		       msi, MSI_MSIX, MSI_MSI);
-+		pr_warn("bad module parameter msi=%d; must be %d (MSI-X or MSI) or %d (MSI)\n",
-+			msi, MSI_MSIX, MSI_MSI);
- 		return -EINVAL;
- 	}
- 
- 	/* Debugfs support is optional, just warn if this fails */
- 	cxgb4vf_debugfs_root = debugfs_create_dir(KBUILD_MODNAME, NULL);
- 	if (IS_ERR_OR_NULL(cxgb4vf_debugfs_root))
--		printk(KERN_WARNING KBUILD_MODNAME ": could not create"
--		       " debugfs entry, continuing\n");
-+		pr_warn("could not create debugfs entry, continuing\n");
- 
- 	ret = pci_register_driver(&cxgb4vf_driver);
- 	if (ret < 0 && !IS_ERR_OR_NULL(cxgb4vf_debugfs_root))
+But then again it is just a personal preference.  In any case, if we stick
+with the short names in your patch,  we probably still should make the
+similar two documentation type chunks from my patch in yours.
 
+Paul.
+--
 
+>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> ---
+>  kernel/rcutree.c        |    7 ++++---
+>  kernel/rcutree.h        |    1 +
+>  kernel/rcutree_plugin.h |    5 +++--
+>  3 files changed, 8 insertions(+), 5 deletions(-)
+>
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 8b110fa..4ec797e 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -64,7 +64,7 @@
+>  static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+>  static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+>
+> -#define RCU_STATE_INITIALIZER(sname, cr) { \
+> +#define RCU_STATE_INITIALIZER(sname, sabbr, cr) { \
+>         .level = { &sname##_state.node[0] }, \
+>         .call = cr, \
+>         .fqs_state = RCU_GP_IDLE, \
+> @@ -76,13 +76,14 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+>         .barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+>         .onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+>         .name = #sname, \
+> +       .abbr = sabbr, \
+>  }
+>
+>  struct rcu_state rcu_sched_state =
+> -       RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
+> +       RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
+>  DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
+>
+> -struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
+> +struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
+>  DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+>
+>  static struct rcu_state *rcu_state;
+> diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> index ef26eab..c865117 100644
+> --- a/kernel/rcutree.h
+> +++ b/kernel/rcutree.h
+> @@ -452,6 +452,7 @@ struct rcu_state {
+>         unsigned long gp_max;                   /* Maximum GP duration in */
+>                                                 /*  jiffies. */
+>         char *name;                             /* Name of structure. */
+> +       char abbr;                              /* Abbreviated name. */
+>         struct list_head flavors;               /* List of RCU flavors. */
+>  };
+>
+> diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> index eb9b473..ab1bdde 100644
+> --- a/kernel/rcutree_plugin.h
+> +++ b/kernel/rcutree_plugin.h
+> @@ -111,7 +111,7 @@ static void __init rcu_bootup_announce_oddness(void)
+>  #ifdef CONFIG_TREE_PREEMPT_RCU
+>
+>  struct rcu_state rcu_preempt_state =
+> -       RCU_STATE_INITIALIZER(rcu_preempt, call_rcu);
+> +       RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
+>  DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+>  static struct rcu_state *rcu_state = &rcu_preempt_state;
+>
+> @@ -2510,7 +2510,8 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+>                 return;
+>         for_each_cpu(cpu, rcu_nocb_mask) {
+>                 rdp = per_cpu_ptr(rsp->rda, cpu);
+> -               t = kthread_run(rcu_nocb_kthread, rdp, "rcuo%d", cpu);
+> +               t = kthread_run(rcu_nocb_kthread, rdp,
+> +                               "rcuo%d%c", cpu, rsp->abbr);
+>                 BUG_ON(IS_ERR(t));
+>                 ACCESS_ONCE(rdp->nocb_kthread) = t;
+>         }
+> --
+> 1.7.8
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
