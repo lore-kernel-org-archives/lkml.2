@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab3AFUBF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 15:01:05 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:29434
-	"EHLO mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752175Ab3AFUBD (ORCPT
+	id S1753013Ab3AFUBT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 15:01:19 -0500
+Received: from smtprelay-h22.telenor.se ([195.54.99.197]:57920 "EHLO
+	smtprelay-h22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752811Ab3AFUBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 15:01:03 -0500
+	Sun, 6 Jan 2013 15:01:16 -0500
+X-SENDER-IP: [85.230.168.206]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnJ2AD3X6VBV5qjOPGdsb2JhbABFhVAjhQCxXwKBABcDAQEBATg0gh4BAQQBOhwjBQsIAyElDwUlChoxh3MKtWsUjSGCf2EDlgqFe41E
 X-IronPort-AV: E=Sophos;i="4.84,420,1355094000"; 
-   d="scan'208";a="167555757"
-Date: Sun, 6 Jan 2013 21:00:59 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: nsekhar@ti.com, khilman@ti.com, w.sang@pengutronix.de, ben-linux@fluff.org,
-        grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        davinci-linux-open-source@linux.davincidsp.com,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: question about drivers/i2c/busses/i2c-davinci.c
-Message-ID: <alpine.DEB.2.02.1301062057260.2029@localhost6.localdomain6>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+   d="scan'208";a="256819741"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Sun, 6 Jan 2013 21:03:55 +0100
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Stephane Chatty <chatty@enac.fr>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/11] Support of dual pen/multitouch and new default for
+ win 7 certified devices
+Message-ID: <20130106200355.GA557@polaris.bitmath.org>
+References: <1353684694-5723-1-git-send-email-benjamin.tissoires@gmail.com>
+ <alpine.LNX.2.00.1301031050060.27348@pobox.suse.cz>
+ <CAN+gG=GxiM-K6mSmQk4GVRbkkc5VwCW1wUeo1BEuXoZ+T-ir_A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAN+gG=GxiM-K6mSmQk4GVRbkkc5VwCW1wUeo1BEuXoZ+T-ir_A@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function davinci_i2c_remove in drivers/i2c/busses/i2c-davinci.c 
-contains the following code:
+Hi Benjamin,
 
-         put_device(&pdev->dev);
+> Henrik, you told us that you have a patch set fixing these
+> dependencies on all the hid drivers, will you prepare it for 3.9? Do
+> you want me to continue your work?
 
-         clk_disable_unprepare(dev->clk);
-         clk_put(dev->clk);
-         dev->clk = NULL;
+Yes, no, yes. :-)
 
-         davinci_i2c_write_reg(dev, DAVINCI_I2C_MDR_REG, 0);
- 	free_irq(dev->irq, dev);
+That is, it would be great if you want to pick up those patches. I
+will send you a pm shortly.
 
-Is there any danger in putting free_irq(dev->irq, dev); after 
-put_device(&pdev->dev);, because the interrupt handler i2c_davinci_isr can 
-eg refer to dev->dev.
-
-thanks,
-julia
+Thanks,
+Henrik
