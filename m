@@ -1,80 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab3AFLmK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 06:42:10 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:53842 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753293Ab3AFLmH convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 06:42:07 -0500
-References: <1357326968-13124-1-git-send-email-panto@antoniou-consulting.com> <20130106035809.GG4674@truffula.fritz.box>
-In-Reply-To: <20130106035809.GG4674@truffula.fritz.box>
-Mime-Version: 1.0 (1.0)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=utf-8
-Message-Id: <5B13DF52-26BE-4BA1-8BD7-25863B04A3B6@antoniou-consulting.com>
-Cc: Jon Loeliger <jdl@jdl.com>, Matt Porter <mporter@ti.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>, Russ Dill <Russ.Dill@ti.com>
-X-Mailer: iPhone Mail (10A523)
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: Re: Fix test relying in wrong behavior of is_printable
-Date: Sun, 6 Jan 2013 13:41:56 +0200
-To: David Gibson <david@gibson.dropbear.id.au>
+	id S1755572Ab3AFLrB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 06:47:01 -0500
+Received: from stringer.orebokech.com ([88.190.240.207]:43649 "EHLO
+	stringer.orebokech.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab3AFLq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 06:46:59 -0500
+From: Romain Francoise <romain@orebokech.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Major network performance regression in 3.7
+Organization: orebokech dot com
+References: <1357430523.1678.4901.camel@edumazet-glaptop>
+	<20130106005053.GS16031@1wt.eu>
+	<1357435276.1678.5067.camel@edumazet-glaptop>
+	<20130106013027.GV16031@1wt.eu>
+	<1357436430.1678.5111.camel@edumazet-glaptop>
+	<1357437086.1678.5135.camel@edumazet-glaptop>
+	<1357438591.1678.5205.camel@edumazet-glaptop>
+	<20130106025256.GY16031@1wt.eu>
+	<1357457724.1678.5941.camel@edumazet-glaptop>
+	<20130106092435.GZ16031@1wt.eu> <20130106102525.GA22151@1wt.eu>
+Date: Sun, 06 Jan 2013 12:46:58 +0100
+In-Reply-To: <20130106102525.GA22151@1wt.eu> (Willy Tarreau's message of "Sun,
+	6 Jan 2013 11:25:25 +0100")
+Message-ID: <87wqvqlej1.fsf@silenus.orebokech.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David
+Willy Tarreau <w@1wt.eu> writes:
 
-Από το iPhone μου
+> That makes me think that I should try 3.8-rc2 since LRO was removed
+> there :-/
 
-6 Ιαν 2013, 5:58, ο/η David Gibson <david@gibson.dropbear.id.au> έγραψε:
-
-> On Fri, Jan 04, 2013 at 09:16:08PM +0200, Pantelis Antoniou wrote:
->> After fixing the is_printable bug the test suite fails.
->> Fix it with this patch
->> 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> 
-> Rather than just removing the test, it would be better to still run it
-> using an explicit -t bi to force the byte output.
-
-Perhaps it wasn't exactly clear in the patch. The old test case output is commented out but there is test case output for the new patch. 
-
-So the test is not removed. 
-
-
-Regards
-
--- Pantelis
-> 
->> ---
->> tests/run_tests.sh | 5 ++---
->> 1 file changed, 2 insertions(+), 3 deletions(-)
->> 
->> diff --git a/tests/run_tests.sh b/tests/run_tests.sh
->> index dd7f217..43279c9 100755
->> --- a/tests/run_tests.sh
->> +++ b/tests/run_tests.sh
->> @@ -498,9 +498,8 @@ fdtget_tests () {
->> 
->>     # run_fdtget_test <expected-result> [<flags>] <file> <node> <property>
->>     run_fdtget_test "MyBoardName" $dtb / model
->> -    run_fdtget_test "77 121 66 111 \
->> -97 114 100 78 97 109 101 0 77 121 66 111 97 114 100 70 97 109 105 \
->> -108 121 78 97 109 101 0" $dtb / compatible
->> +    # run_fdtget_test "77 121 66 111 97 114 100 78 97 109 101 0 77 121 66 111 97 114 100 70 97 109 105 108 121 78 97 109 101 0" $dtb / compatible
->> +    run_fdtget_test "MyBoardName MyBoardFamilyName" $dtb / compatible
->>     run_fdtget_test "MyBoardName MyBoardFamilyName" -t s $dtb / compatible
->>     run_fdtget_test 32768 $dtb /cpus/PowerPC,970@1 d-cache-size
->>     run_fdtget_test 8000 -tx $dtb /cpus/PowerPC,970@1 d-cache-size
-> 
-> -- 
-> David Gibson            | I'll have my music baroque, and my code
-> david AT gibson.dropbear.id.au    | minimalist, thank you.  NOT _the_ _other_
->                | _way_ _around_!
-> http://www.ozlabs.org/~dgibson
+Better yet, find a way to automate these tests so they can run continually
+against net-next and find problems early...
