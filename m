@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab3AFVb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 16:31:29 -0500
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51842 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753004Ab3AFVb0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 16:31:26 -0500
-Date: Sun, 6 Jan 2013 13:27:54 -0800
-From: Anton Vorontsov <anton@enomsg.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Pali =?utf-8?B?Um9ow6Fy?= <pali.rohar@gmail.com>, trivial@kernel.org
-Subject: Re: [PATCH] bq2415x_charger: Remove unneeded version.h include
-Message-ID: <20130106212753.GC26928@lizard.sbx05280.losalca.wayport.net>
-References: <alpine.LNX.2.00.1212182305220.14788@swampdragon.chaosbits.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1753169Ab3AFVwV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 16:52:21 -0500
+Received: from 1wt.eu ([62.212.114.60]:37753 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753018Ab3AFVwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 16:52:19 -0500
+Date: Sun, 6 Jan 2013 22:52:00 +0100
+From: Willy Tarreau <w@1wt.eu>
+To: John Stoffel <john@stoffel.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Major network performance regression in 3.7
+Message-ID: <20130106215200.GV16031@1wt.eu>
+References: <1357490393.6919.267.camel@edumazet-glaptop> <20130106164416.GF16031@1wt.eu> <1357492255.6919.336.camel@edumazet-glaptop> <20130106173543.GB22432@1wt.eu> <1357497541.6919.519.camel@edumazet-glaptop> <1357497809.6919.529.camel@edumazet-glaptop> <1357498276.6919.547.camel@edumazet-glaptop> <1357498815.6919.570.camel@edumazet-glaptop> <20130106193410.GL16031@1wt.eu> <20713.61807.385486.594545@quad.stoffel.home>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1212182305220.14788@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20713.61807.385486.594545@quad.stoffel.home>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 18, 2012 at 11:07:06PM +0100, Jesper Juhl wrote:
-> The file uses nothing from the header, so including it is pointless.
+On Sun, Jan 06, 2013 at 04:49:35PM -0500, John Stoffel wrote:
+> >>>>> "Willy" == Willy Tarreau <w@1wt.eu> writes:
 > 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-
-Sachin Kamat sent a similar cleanup in Nov, so he wins. :)
-
-> ---
->  drivers/power/bq2415x_charger.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/power/bq2415x_charger.c b/drivers/power/bq2415x_charger.c
-> index ee842b3..2d1b568 100644
-> --- a/drivers/power/bq2415x_charger.c
-> +++ b/drivers/power/bq2415x_charger.c
-> @@ -28,7 +28,6 @@
->   * http://www.ti.com/product/bq24155
->   */
+> Willy> On Sun, Jan 06, 2013 at 11:00:15AM -0800, Eric Dumazet wrote:
+> >> On Sun, 2013-01-06 at 10:51 -0800, Eric Dumazet wrote:
+> >> > > 
+> >> > > (sd->len is usually 4096, which is expected, but sd->total_len value is
+> >> > > huge in your case, so we always set the flag in fs/splice.c)
+> >> > 
+> >> > I am testing :
+> >> > 
+> >> >        if (sd->len < sd->total_len && pipe->nrbufs > 1)
+> >> >                 more |= MSG_SENDPAGE_NOTLAST;
+> >> > 
+> >> 
+> >> Yes, this should fix the problem :
+> >> 
+> >> If there is no following buffer in the pipe, we should not set NOTLAST.
+> >> 
+> >> diff --git a/fs/splice.c b/fs/splice.c
+> >> index 8890604..6909d89 100644
+> >> --- a/fs/splice.c
+> >> +++ b/fs/splice.c
+> >> @@ -696,8 +696,10 @@ static int pipe_to_sendpage(struct pipe_inode_info *pipe,
+> >> return -EINVAL;
+> >> 
+> >> more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
+> >> -	if (sd->len < sd->total_len)
+> >> +
+> >> +	if (sd->len < sd->total_len && pipe->nrbufs > 1)
+> >> more |= MSG_SENDPAGE_NOTLAST;
+> >> +
+> >> return file->f_op->sendpage(file, buf->page, buf->offset,
+> sd-> len, &pos, more);
+> >> }
 >  
-> -#include <linux/version.h>
->  #include <linux/kernel.h>
->  #include <linux/module.h>
->  #include <linux/param.h>
-> -- 
-> 1.7.1
+> Willy> OK it works like a charm here now ! I can't break it anymore, so it
+> Willy> looks like you finally got it !
 > 
-> 
-> -- 
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
+> It's still broken, there's no comments in the code to explain all this
+> magic to mere mortals!  *grin*
+
+I would generally agree, but when Eric fixes such a thing, he
+generally goes with lengthy details in the commit message.
+
+Willy
+
