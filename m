@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab3AFC4T (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jan 2013 21:56:19 -0500
-Received: from mail-da0-f43.google.com ([209.85.210.43]:43399 "EHLO
-	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755046Ab3AFC4S (ORCPT
+	id S1755704Ab3AFDCx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jan 2013 22:02:53 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:47096 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755284Ab3AFDCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jan 2013 21:56:18 -0500
-Date: Sat, 5 Jan 2013 18:52:47 -0800
+	Sat, 5 Jan 2013 22:02:49 -0500
+Date: Sat, 5 Jan 2013 18:59:16 -0800
 From: Anton Vorontsov <anton@enomsg.org>
-To: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power_supply: add watchdog and safety timer expiries
- under PROP_HEALTH_*
-Message-ID: <20130106025246.GD6919@lizard.sbx05280.losalca.wayport.net>
-References: <1354264066-3523-1-git-send-email-ramakrishna.pallala@intel.com>
+To: NeilBrown <neilb@suse.de>
+Cc: Lars-Peter Clausen <lars@metafoo.de>,
+        Saranya Gopal <saranya.gopal@intel.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] bq27x00_battery: fix bugs introduced with BQ27425 support
+Message-ID: <20130106025916.GE6919@lizard.sbx05280.losalca.wayport.net>
+References: <20121202203421.1ad1f6dc@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1354264066-3523-1-git-send-email-ramakrishna.pallala@intel.com>
+In-Reply-To: <20121202203421.1ad1f6dc@notabene.brown>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 30, 2012 at 01:57:46PM +0530, Ramakrishna Pallala wrote:
-> As most of the charger chips come with two kinds of safety features
-> related to timing.
-> 1. Watchdog Timer (interms of seconds/mins)
-> 2. Safety Timer (interms of hours)
+On Sun, Dec 02, 2012 at 08:34:21PM +1100, NeilBrown wrote:
+> commit a66f59ba2e994bf70274ef0513e24e0e7ae20c63
+>     bq27x00_battery: Add support for BQ27425 chip
 > 
-> This patch adds these to fault causes in POWER_SUPPLY_PROP_HEALTH_*
-> enums so that whenever there is either watchdog timeout or safety timer
-> timeout driver could notify the user space accurately about the fault
-> and will also be helpful for debug.
+> introduced 2 bug.
 > 
-> Signed-off-by: Ramakrishna Pallala <ramakrishna.pallala@intel.com>
+> 1/ 'chip' was set to BQ27425 unconditionally - breaking support for
+>    other devices.
+> 2/ BQ27425 does not support cycle count, how the code still tries to
+>    get the cycle count for BQ27425, and now does it twice for other chips.
+> 
+> Cc: Saranya Gopal <saranya.gopal@intel.com>
+> Signed-off-by: NeilBrown <neilb@suse.de>
 
-Applied, thanks a lot!
+Applied, thanks!
 
-> ---
->  drivers/power/power_supply_sysfs.c |    3 ++-
->  include/linux/power_supply.h       |    2 ++
->  2 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-> index 40fa3b7..29178f7 100644
-> --- a/drivers/power/power_supply_sysfs.c
-> +++ b/drivers/power/power_supply_sysfs.c
-> @@ -55,7 +55,8 @@ static ssize_t power_supply_show_property(struct device *dev,
->  	};
->  	static char *health_text[] = {
->  		"Unknown", "Good", "Overheat", "Dead", "Over voltage",
-> -		"Unspecified failure", "Cold",
-> +		"Unspecified failure", "Cold", "Watchdog timer expire",
-> +		"Safety timer expire"
->  	};
->  	static char *technology_text[] = {
->  		"Unknown", "NiMH", "Li-ion", "Li-poly", "LiFe", "NiCd",
-> diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
-> index 35cdf2c..4e672e1 100644
-> --- a/include/linux/power_supply.h
-> +++ b/include/linux/power_supply.h
-> @@ -54,6 +54,8 @@ enum {
->  	POWER_SUPPLY_HEALTH_OVERVOLTAGE,
->  	POWER_SUPPLY_HEALTH_UNSPEC_FAILURE,
->  	POWER_SUPPLY_HEALTH_COLD,
-> +	POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE,
-> +	POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE,
->  };
+> diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+> index e2659f1..51d4017 100644
+> --- a/drivers/power/bq27x00_battery.c
+> +++ b/drivers/power/bq27x00_battery.c
+> @@ -445,7 +445,6 @@ static void bq27x00_update(struct bq27x00_device_info *di)
+>  		cache.temperature = bq27x00_battery_read_temperature(di);
+>  		if (!is_bq27425)
+>  			cache.cycle_count = bq27x00_battery_read_cyct(di);
+> -		cache.cycle_count = bq27x00_battery_read_cyct(di);
+>  		cache.power_avg =
+>  			bq27x00_battery_read_pwr_avg(di, BQ27x00_POWER_AVG);
 >  
->  enum {
-> -- 
-> 1.7.0.4
+> @@ -697,7 +696,6 @@ static int bq27x00_powersupply_init(struct bq27x00_device_info *di)
+>  	int ret;
+>  
+>  	di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+> -	di->chip = BQ27425;
+>  	if (di->chip == BQ27425) {
+>  		di->bat.properties = bq27425_battery_props;
+>  		di->bat.num_properties = ARRAY_SIZE(bq27425_battery_props);
