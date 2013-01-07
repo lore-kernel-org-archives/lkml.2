@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab3AGIzc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 03:55:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32980 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647Ab3AGIza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 03:55:30 -0500
-Date: Mon, 7 Jan 2013 09:10:04 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
- subframe fails
-Message-ID: <20130107081003.GB2984@redhat.com>
-References: <20121228190352.097882544@decadent.org.uk>
- <50DEA41E.6010409@01019freenet.de>
- <1356871099.4821.16.camel@deadeye.wl.decadent.org.uk>
- <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
- <20130107080532.GA2984@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130107080532.GA2984@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753922Ab3AGJAd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 04:00:33 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:53122 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753297Ab3AGJAc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 04:00:32 -0500
+X-IronPort-AV: E=Sophos;i="4.84,423,1355094000"; 
+   d="scan'208";a="188679763"
+From: Julia Lawall <Julia.Lawall@lip6.fr>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-janitors@vger.kernel.org
+Subject: [PATCH 0/2] reposition free_irq to avoid access to invalid data
+Date: Mon,  7 Jan 2013 11:00:14 +0100
+Message-Id: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr>
+X-Mailer: git-send-email 1.7.8.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 09:05:32AM +0100, Stanislaw Gruszka wrote:
-> > To be clear, I have all of these in the queue:
-> > 
-> > be03d4a45c09 rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
-> > 5b632fe85ec8 mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
-> > ab9d6e4ffe19 Revert: "rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails"
-> > 
-> > and I'm intending to drop/defer them all.
-> 
-> Patch 3 is a revert of patch 1 (questioned patch). Please apply all 3 patches,
-> or only patch 2.
+The data referenced by an interrupt handler should not be freed before the
+interrupt is ended.
 
-No, actually all 3 patches have to be applied. Because last one, except
-revert, include flag IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL setting in rt2x00
-driver, which make patch 2 work.
+The semantic match that finds this problem is as follows
+(http://coccinelle.lip6.fr/).  The basic idea behind this semantic match is
+to find cases where the order of the call to free_irq is different than its
+order in some error-handling code.  This semantic match, however, has a
+high rate of false positives, because most of the time the order doesn't
+seem to matter.
 
-Stanislaw
+// <smpl>
+@fn exists@
+expression list es;
+expression a,b;
+identifier f;
+@@
+
+if (...) {
+  ... when any
+  free_irq(a,b);
+  ... when any
+  f(es);
+  ... when any
+  return ...;
+}
+
+@@
+expression list fn.es;
+expression fn.a,fn.b;
+identifier fn.f;
+@@
+
+*f(es);
+... when any
+*free_irq(a,b);
+// </smpl>
+
