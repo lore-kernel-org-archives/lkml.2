@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394Ab3AGK1Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 05:27:24 -0500
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40667 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab3AGK1W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 05:27:22 -0500
-Subject: [PATCH] uprobes/powerpc: Add dependency on single step emulation
-To: benh@kernel.crashing.org
-From: "Suzuki K. Poulose" <suzuki@in.ibm.com>
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Date: Mon, 07 Jan 2013 15:56:57 +0530
-Message-ID: <20130107102648.27826.85082.stgit@suzukikp>
-User-Agent: StGit/0.16
+	id S1753325Ab3AGKdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 05:33:13 -0500
+Received: from mga09.intel.com ([134.134.136.24]:37002 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab3AGKdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 05:33:12 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,423,1355126400"; 
+   d="scan'208";a="242917189"
+Date: Mon, 7 Jan 2013 12:36:42 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: channing <chao.bi@intel.com>, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, sylvain.centelles@intel.com,
+        ken.k.mills@intel.com, jun.d.chen@intel.com, alan@linux.intel.com
+Subject: Re: [PATCH] SPI: SSP SPI Controller driver v3
+Message-ID: <20130107103642.GQ13897@intel.com>
+References: <1355818296.11831.287.camel@bichao>
+ <20121219095616.GV2261@intel.com>
+ <CACRpkdaw7Yc0OetPWK7Cv=JsVPOs6b1Tr-=4jE5Vz4oTD6f07Q@mail.gmail.com>
+ <1357545943.28451.9.camel@bichao>
+ <CACRpkdZ9FctBE2zYA8xX3wgf1WOOvb-SMrXDTYDuguiLiUEwbw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010710-2674-0000-0000-0000075DFB74
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdZ9FctBE2zYA8xX3wgf1WOOvb-SMrXDTYDuguiLiUEwbw@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Suzuki K. Poulose <suzuki@in.ibm.com>
+On Mon, Jan 07, 2013 at 11:21:04AM +0100, Linus Walleij wrote:
+> On Mon, Jan 7, 2013 at 9:05 AM, channing <chao.bi@intel.com> wrote:
+> 
+> > Frankly I'm currently not sure whether they share same IP.. per your reminds, I tried to find but get
+> > limited info about PXA SSP's IP, from the code, looks like they have part of registers the same.
+> >
+> > As far as I know, spi-pxa2xx.c is specific for SSP controller of PXA2XX/PXA3XX core, right?
+> 
+> As pointed out by Mika it may very well be the same IP anyway. People copy/paste
+> share and fork VHDL/Verilog/SystemC code just as much as they do with
+> kernel code.
 
-Uprobes uses emulate_step in sstep.c, but we haven't explicitly specified
-the dependency. On pseries HAVE_HW_BREAKPOINT protects us, but 44x has no
-such luxury.
-
-Consolidate other users that depend on sstep and create a new config option.
-
-Signed-off-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
-Cc: linuxppc-dev@ozlabs.org
-Cc: stable@vger.kernel.org
----
- arch/powerpc/Kconfig      |    4 ++++
- arch/powerpc/lib/Makefile |    4 +---
- 2 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 17903f1..dabe429 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -275,6 +275,10 @@ config PPC_ADV_DEBUG_DAC_RANGE
- 	depends on PPC_ADV_DEBUG_REGS && 44x
- 	default y
- 
-+config PPC_EMULATE_SSTEP
-+	bool
-+	default y if KPROBES || UPROBES || XMON || HAVE_HW_BREAKPOINT
-+
- source "init/Kconfig"
- 
- source "kernel/Kconfig.freezer"
-diff --git a/arch/powerpc/lib/Makefile b/arch/powerpc/lib/Makefile
-index 746e0c8..35baad9 100644
---- a/arch/powerpc/lib/Makefile
-+++ b/arch/powerpc/lib/Makefile
-@@ -19,9 +19,7 @@ obj-$(CONFIG_PPC64)	+= copypage_64.o copyuser_64.o \
- 			   checksum_wrappers_64.o hweight_64.o \
- 			   copyuser_power7.o string_64.o copypage_power7.o \
- 			   memcpy_power7.o
--obj-$(CONFIG_XMON)	+= sstep.o ldstfp.o
--obj-$(CONFIG_KPROBES)	+= sstep.o ldstfp.o
--obj-$(CONFIG_HAVE_HW_BREAKPOINT)	+= sstep.o ldstfp.o
-+obj-$(CONFIG_PPC_EMULATE_SSTEP)	+= sstep.o ldstfp.o
- 
- ifeq ($(CONFIG_PPC64),y)
- obj-$(CONFIG_SMP)	+= locks.o
-
+Yes, at least on Intel Lynxpoint it is the same IP with few additional
+features. I'm about to send patches to spi-pxa2xx which enable the
+Lynxpoint support shortly.
