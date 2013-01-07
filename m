@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab3AGFKJ (ORCPT <rfc822;w@1wt.eu>);
+	id S1753625Ab3AGFKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 00:10:22 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39102 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751966Ab3AGFKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jan 2013 00:10:09 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60650 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781Ab3AGFKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 00:10:03 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
@@ -17,10 +16,9 @@ To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>
-CC: "Manjunathappa, Prakash" <prakash.pm@ti.com>
-Subject: [PATCH 01/10] video: da8xx-fb: fix 24bpp raster configuration
-Date: Mon, 7 Jan 2013 10:40:22 +0530
-Message-ID: <178f401929d0221ed32acfab55091793f19fe811.1357304090.git.afzal@ti.com>
+Subject: [PATCH 03/10] video: da8xx-fb: use devres
+Date: Mon, 7 Jan 2013 10:40:47 +0530
+Message-ID: <436df2268445e93b48ff9ffefe3cd7b16618c03f.1357304090.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1357304090.git.afzal@ti.com>
 References: <cover.1357304090.git.afzal@ti.com>
@@ -30,37 +28,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Manjunathappa, Prakash" <prakash.pm@ti.com>
+Replace existing resource handling in the driver with managed device
+resource.
 
-Set only LCD_V2_TFT_24BPP_MODE bit for 24bpp and LCD_V2_TFT_24BPP_UNPACK
-bit along with LCD_V2_TFT_24BPP_MODE for 32bpp configuration.
-
-Patch is tested on am335x-evm for 24bpp and da850-evm for 16bpp
-configurations.
-
-Signed-off-by: Manjunathappa, Prakash <prakash.pm@ti.com>
 Signed-off-by: Afzal Mohammed <afzal@ti.com>
 ---
- drivers/video/da8xx-fb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/da8xx-fb.c |   35 ++++++-----------------------------
+ 1 file changed, 6 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-index 240eac7..cd73b87 100644
+index 4f92028..e119ec8 100644
 --- a/drivers/video/da8xx-fb.c
 +++ b/drivers/video/da8xx-fb.c
-@@ -554,10 +554,10 @@ static int lcd_cfg_frame_buffer(struct da8xx_fb_par *par, u32 width, u32 height,
- 	case 4:
- 	case 16:
- 		break;
--	case 24:
--		reg |= LCD_V2_TFT_24BPP_MODE;
- 	case 32:
- 		reg |= LCD_V2_TFT_24BPP_UNPACK;
-+	case 24:
-+		reg |= LCD_V2_TFT_24BPP_MODE;
- 		break;
+@@ -1040,12 +1040,9 @@ static int __devexit fb_remove(struct platform_device *dev)
+ 				  par->p_palette_base);
+ 		dma_free_coherent(NULL, par->vram_size, par->vram_virt,
+ 				  par->vram_phys);
+-		free_irq(par->irq, par);
+ 		pm_runtime_put_sync(&dev->dev);
+ 		pm_runtime_disable(&dev->dev);
+ 		framebuffer_release(info);
+-		iounmap(da8xx_fb_reg_base);
+-		release_mem_region(lcdc_regs->start, resource_size(lcdc_regs));
  
- 	case 8:
+ 	}
+ 	return 0;
+@@ -1269,7 +1266,6 @@ static int __devinit fb_probe(struct platform_device *device)
+ 	struct fb_info *da8xx_fb_info;
+ 	struct clk *fb_clk = NULL;
+ 	struct da8xx_fb_par *par;
+-	resource_size_t len;
+ 	int ret, i;
+ 	unsigned long ulcm;
+ 
+@@ -1279,29 +1275,16 @@ static int __devinit fb_probe(struct platform_device *device)
+ 	}
+ 
+ 	lcdc_regs = platform_get_resource(device, IORESOURCE_MEM, 0);
+-	if (!lcdc_regs) {
+-		dev_err(&device->dev,
+-			"Can not get memory resource for LCD controller\n");
+-		return -ENOENT;
+-	}
+-
+-	len = resource_size(lcdc_regs);
+-
+-	lcdc_regs = request_mem_region(lcdc_regs->start, len, lcdc_regs->name);
+-	if (!lcdc_regs)
+-		return -EBUSY;
+-
+-	da8xx_fb_reg_base = ioremap(lcdc_regs->start, len);
++	da8xx_fb_reg_base = devm_request_and_ioremap(&device->dev, lcdc_regs);
+ 	if (!da8xx_fb_reg_base) {
+-		ret = -EBUSY;
+-		goto err_request_mem;
++		dev_err(&device->dev, "memory resource setup failed\n");
++		return -EADDRNOTAVAIL;
+ 	}
+ 
+-	fb_clk = clk_get(&device->dev, "fck");
++	fb_clk = devm_clk_get(&device->dev, "fck");
+ 	if (IS_ERR(fb_clk)) {
+ 		dev_err(&device->dev, "Can not get device clock\n");
+-		ret = -ENODEV;
+-		goto err_ioremap;
++		return -ENODEV;
+ 	}
+ 
+ 	pm_runtime_enable(&device->dev);
+@@ -1462,7 +1445,7 @@ static int __devinit fb_probe(struct platform_device *device)
+ 		lcdc_irq_handler = lcdc_irq_handler_rev02;
+ 	}
+ 
+-	ret = request_irq(par->irq, lcdc_irq_handler, 0,
++	ret = devm_request_irq(&device->dev, par->irq, lcdc_irq_handler, 0,
+ 			DRIVER_NAME, par);
+ 	if (ret)
+ 		goto irq_freq;
+@@ -1492,12 +1475,6 @@ err_pm_runtime_disable:
+ 	pm_runtime_put_sync(&device->dev);
+ 	pm_runtime_disable(&device->dev);
+ 
+-err_ioremap:
+-	iounmap(da8xx_fb_reg_base);
+-
+-err_request_mem:
+-	release_mem_region(lcdc_regs->start, len);
+-
+ 	return ret;
+ }
+ 
 -- 
 1.7.9.5
 
