@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab3AGMDa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:03:30 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:55673 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754151Ab3AGMD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:03:28 -0500
-From: "Mohammed, Afzal" <afzal@ti.com>
-To: "Hiremath, Vaibhav" <hvaibhav@ti.com>,
-        "Manjunathappa, Prakash" <prakash.pm@ti.com>
-CC: "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "Porter, Matt" <mporter@ti.com>,
-        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
-        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Dill, Russ" <russ.dill@ti.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: RE: [PATCH] da8xx: Allow use by am33xx based devices
-Thread-Topic: [PATCH] da8xx: Allow use by am33xx based devices
-Thread-Index: AQHNtsowjtEcnFNvskqiozVOiMWlCZfS2xNQgDjGJ3CABf8MAIADCEQAgAALTwCAKSN3kA==
-Date: Mon, 7 Jan 2013 12:03:16 +0000
-Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA7FDD8@DBDE01.ent.ti.com>
-References: <1351698968-3965-1-git-send-email-panto@antoniou-consulting.com>
- <A73F36158E33644199EB82C5EC81C7BC3EA1452B@DBDE01.ent.ti.com>
- <50C5A50E.4070602@ti.com>
- <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
- <79CD15C6BA57404B839C016229A409A83EBADC10@DBDE01.ent.ti.com>
-In-Reply-To: <79CD15C6BA57404B839C016229A409A83EBADC10@DBDE01.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="utf-8"
+	id S1754505Ab3AGMDw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:03:52 -0500
+Received: from www.linutronix.de ([62.245.132.108]:57616 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754004Ab3AGMDv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 07:03:51 -0500
+Message-ID: <50EAB99C.6000205@linutronix.de>
+Date: Mon, 07 Jan 2013 13:03:40 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.10) Gecko/20121027 Icedove/10.0.10
 MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "Suzuki K. Poulose" <suzuki@in.ibm.com>,
+        Kumar Gala <galak@kernel.crashing.org>, oleg@redhat.com,
+        ananth@in.ibm.com, srikar@linux.vnet.ibm.com, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        anton@redhat.com, mingo@elte.hu
+Subject: Re: [PATCH v2 1/4] kprobes/powerpc: Do not disable External interrupts
+ during single step
+References: <20121203150438.7727.74924.stgit@suzukikp>  <20121203150720.7727.91582.stgit@suzukikp> <50C6C930.90206@in.ibm.com> <1357274575.2500.23.camel@pasglop>
+In-Reply-To: <1357274575.2500.23.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r07C3XkS026694
 
-Hi,
+On 01/04/2013 05:42 AM, Benjamin Herrenschmidt wrote:
+> On Tue, 2012-12-11 at 11:18 +0530, Suzuki K. Poulose wrote:
+>> On 12/03/2012 08:37 PM, Suzuki K. Poulose wrote:
+>>> From: Suzuki K. Poulose<suzuki@in.ibm.com>
+>>>
+>>> External/Decrement exceptions have lower priority than the Debug Exception.
+>>> So, we don't have to disable the External interrupts before a single step.
+>>> However, on BookE, Critical Input Exception(CE) has higher priority than a
+>>> Debug Exception. Hence we mask them.
+>
+> I'm not sure about that one ...
+>
+>> From memory, 4xx has that interesting issue which is that if you have
+> single step enabled and an interrupt (of *any kind* occurs), the
+> processor *will* step into the first instruction of the interrupt
+> handler. (In fact, some silicons have a bug where it can even be the
+> *second* instruction of the handler, which can be problematic when the
+> first one is a branch).
+>
+> This is why you may notice that whole business we have in the handling
+> of debug/crit interrupts where we try to figure out if that happened,
+> and return with DE off if it did.
+>
+> Now, the above mentioned workaround means we might not need to disable
+> EE indeed.
+>
+> However, in any case, I don't see what your patch fixes or improves, nor
+> do I understand what you mean by "it is possible we'd get the single
+> step reported for CE". Please explain in more details and describe the
+> problematic scenario.
 
-On Wed, Dec 12, 2012 at 13:30:56, Hiremath, Vaibhav wrote:
-> On Wed, Dec 12, 2012 at 12:50:28, Manjunathappa, Prakash wrote:
+This change is probably my fault to some degree so let me explain. I've
+been looking over the patch in first place and noticed that Suzuki
+disables EE while enabling single stepping. After looking into the
+manual I did not find a reason why this is done.
 
-> > Agreed, should not result in build error. But is it ok to show this option
-> > on the platforms which do not have this IP?
-> > 
-> 
-> You can choose to put machine dependency here, as this patch is already 
-> doing it. The side-effect of this would be, list may grow and you may have 
-> to edit this file everytime.
+_If_ an external interrupt is pending and we enable EE and DE at the 
+same time (via rfi) then we should never land in the external interrupt 
+handler but always in the debug exception handler (and EE is disabled on 
+all interrupts by the CPU). So why disable EE here?
 
-It seems adding machine dependency is more in line with the
-approach adopted in similar cases. As this IP is used only
-in 2 arch's and would not in any immediate future go with
-other arch's, it would be better not to ask other arch's a
-question on whether this driver needs to be selected or not.
+_If_ the instruction in problem state triggers an DTLB exception then
+we land in the TLB exception handler with DE bit set in MSR. I would say 
+that this isn't uncommon (same goes probably for the syscall
+opcode). After executing the first in instruction in kernel the CPU
+should disable the DE (and CE) bit in the MSR and invoke the critical
+exception handler. The critical debug exception handler seems to handle
+this case. So disable DE, let the previous handler continue and exit to
+problem state with DE enabled. From the uprobe point of view, we won't
+stop over kernel code but only know once a problem state instruction is
+over.
 
-Regards
-Afzal
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Based on this I did not see a reason why we should disable EE (or CE)
+upfront. And for CE, it should be harmless if the code notices that we
+debug problem state and continue the non-critical exception with
+DE-disabled.
+
+Now, if you come along with some CPU erratas on the 4xx CPUs where we
+have to disable CE/EE because the CPU doesn't do what is expected then
+I think that this should be explained in the comment :)
+
+> Cheers,
+> Ben.
+
+Sebastian
