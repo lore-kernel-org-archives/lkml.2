@@ -1,265 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab3AGIwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 03:52:40 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33303 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab3AGIwj (ORCPT
+	id S1753874Ab3AGIxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 03:53:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:64411 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752860Ab3AGIxL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 03:52:39 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50EA8CA2.7020608@jp.fujitsu.com>
-Date: Mon, 07 Jan 2013 17:51:46 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 7 Jan 2013 03:53:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,423,1355126400"; 
+   d="scan'208";a="268528624"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: Wei Ni <wni@nvidia.com>
+CC: "Zhang, Rui" <rui.zhang@intel.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "eduardo.valentin@ti.com" <eduardo.valentin@ti.com>,
+        "hongbo.zhang@linaro.org" <hongbo.zhang@linaro.org>
+Subject: RE: [PATCH 6/9] Thermal: Add Documentation to new APIs
+Thread-Topic: [PATCH 6/9] Thermal: Add Documentation to new APIs
+Thread-Index: AQHN7Kc3JhEwqi1AgEGu7eU5KNSPrJg9L8UAgABe2CA=
+Date: Mon, 7 Jan 2013 08:53:07 +0000
+Message-ID: <4D68720C2E767A4AA6A8796D42C8EB5925668A@BGSMSX101.gar.corp.intel.com>
+References: <1357542806-20449-1-git-send-email-durgadoss.r@intel.com>
+ <1357542806-20449-7-git-send-email-durgadoss.r@intel.com>
+ <50EA89FA.6010703@nvidia.com>
+In-Reply-To: <50EA89FA.6010703@nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-CC: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-References: <20130104082751.GA22227@lizard.gateway.2wire.net> <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
-In-Reply-To: <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/04 17:29), Anton Vorontsov wrote:
-> This commit implements David Rientjes' idea of mempressure cgroup.
+> -----Original Message-----
+> From: Wei Ni [mailto:wni@nvidia.com]
+> Sent: Monday, January 07, 2013 2:10 PM
+> To: R, Durgadoss
+> Cc: Zhang, Rui; linux-pm@vger.kernel.org; linux-kernel@vger.kernel.org;
+> eduardo.valentin@ti.com; hongbo.zhang@linaro.org
+> Subject: Re: [PATCH 6/9] Thermal: Add Documentation to new APIs
 > 
-> The main characteristics are the same to what I've tried to add to vmevent
-> API; internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
-> pressure index calculation. But we don't expose the index to the userland.
-> Instead, there are three levels of the pressure:
+> On 01/07/2013 03:13 PM, Durgadoss R wrote:
+> > This patch adds Documentation for the new APIs
+> > introduced in this patch set. The documentation
+> > also has a model sysfs structure for reference.
+> >
+> > Signed-off-by: Durgadoss R <durgadoss.r@intel.com>
+> > ---
+> >  Documentation/thermal/sysfs-api2.txt |  248
+> ++++++++++++++++++++++++++++++++++
+> >  1 file changed, 248 insertions(+)
+> >  create mode 100644 Documentation/thermal/sysfs-api2.txt
+> >
+> > diff --git a/Documentation/thermal/sysfs-api2.txt
+> b/Documentation/thermal/sysfs-api2.txt
+> > new file mode 100644
+> > index 0000000..ffd0402
+> > --- /dev/null
+> > +++ b/Documentation/thermal/sysfs-api2.txt
+> > @@ -0,0 +1,248 @@
+> > +Thermal Framework
+> > +-----------------
+> > +
+> > +Written by Durgadoss R <durgadoss.r@intel.com>
+> > +Copyright (c) 2012 Intel Corporation
+> > +
+> > +Created on: 4 November 2012
+> > +Updated on: 18 December 2012
+> > +
+> > +0. Introduction
+> > +---------------
+> > +The Linux thermal framework provides a set of interfaces for thermal
+> > +sensors and thermal cooling devices (fan, processor...) to register
+> > +with the thermal management solution and to be a part of it.
+> > +
+> > +This document focuses on how to enable new thermal sensors and
+> cooling
+> > +devices to participate in thermal management. This solution is intended
+> > +to be 'light-weight' and platform/architecture independent. Any thermal
+> > +sensor/cooling device should be able to use the infrastructure easily.
+> > +
+> > +The goal of thermal framework is to expose the thermal sensor/zone and
+> > +cooling device attributes in a consistent way. This will help the
+> > +thermal governors to make use of the information to manage platform
+> > +thermals efficiently.
+> > +
+> > +The thermal sensor source file can be generic (can be any sensor driver,
+> > +in any subsystem). This driver will use the sensor APIs and register with
+> > +thermal framework to participate in platform Thermal management. This
+> > +does not (and should not) know about which zone it belongs to, or any
+> > +other information about platform thermals. A sensor driver is a
+> standalone
+> > +piece of code, which can optionally register with thermal framework.
+> > +
+> > +However, for any platform, there should be a platformX_thermal.c file,
+> > +which will know about the platform thermal characteristics (like how many
+> > +sensors, zones, cooling devices, etc.. And how they are related to each
+> other
+> > +i.e the mapping information). Only in this file, the zone level APIs should
+> > +be used, in which case the file will have all information required to attach
+> > +various sensors to a particular zone.
+> > +
+> > +This way, we can have one platform level thermal file, which can support
+> > +multiple platforms (may be)using the same set of sensors (but)binded in
+> > +a different way. This file can get the platform thermal information
+> > +through Firmware, ACPI tables, device tree etc.
+> > +
+> > +Unfortunately, today we don't have many drivers that can be clearly
+> > +differentiated as 'sensor_file.c' and 'platform_thermal_file.c'.
+> > +But very soon we will need/have. The reason I am saying this is because
+> > +we are seeing a lot of chip drivers, starting to use thermal framework,
+> > +and we should keep it really light-weight for them to do so.
+> > +
+> > +An Example: drivers/hwmon/emc1403.c - a generic thermal chip driver
+> > +In one platform this sensor can belong to 'ZoneA' and in another the
+> > +same can belong to 'ZoneB'. But, emc1403.c does not really care about
+> > +where does it belong. It just reports temperature.
+> > +
+> > +1. Terminology
+> > +--------------
+> > +This section describes the terminology used in the rest of this
+> > +document as well as the thermal framework code.
+> > +
+> > +thermal_sensor: Hardware that can report temperature of a particular
+> > +               spot in the platform, where it is placed. The temperature
+> > +               reported by the sensor is the 'real' temperature reported
+> > +               by the hardware.
+> > +thermal_zone:  A virtual area on the device, that gets heated up. It may
+> > +               have one or more thermal sensors attached to it.
+> > +cooling_device:        Any component that can help in reducing the
+> temperature of
+> > +               a 'hot spot' either by reducing its performance (passive
+> > +               cooling) or by other means(Active cooling E.g. Fan)
+> > +
+> > +trip_points:   Various temperature levels for each sensor. As of now, we
+> > +               have four levels namely active, passive, hot and critical.
+> > +               Hot and critical trip point support only one value whereas
+> > +               active and passive can have any number of values. These
+> > +               temperature values can come from platform data, and are
+> > +               exposed through sysfs in a consistent manner. Stand-alone
+> > +               thermal sensor drivers are not expected to know these values.
+> > +               These values are RO.
+> > +thresholds:    These are programmable temperature limits, on reaching
+> which
+> > +               the thermal sensor generates an interrupt. The framework is
+> > +               notified about this interrupt to take appropriate action.
+> > +               There can be as many number of thresholds as that of the
+> > +               hardware supports. These values are RW.
 > 
->   o low (just reclaiming, e.g. caches are draining);
->   o medium (allocation cost becomes high, e.g. swapping);
->   o oom (about to oom very soon).
-> 
-> The rationale behind exposing levels and not the raw pressure index
-> described here: http://lkml.org/lkml/2012/11/16/675
-> 
-> For a task it is possible to be in both cpusets, memcg and mempressure
-> cgroups, so by rearranging the tasks it is possible to watch a specific
-> pressure (i.e. caused by cpuset and/or memcg).
-> 
-> Note that while this adds the cgroups support, the code is well separated
-> and eventually we might add a lightweight, non-cgroups API, i.e. vmevent.
-> But this is another story.
-> 
-> Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
+> Hi,
+> When generate interrupt, we could call something like
+> notify_thermal_framework(), is it right? but it just notify the
+> framework, how to notify the platform driver? I think the platform
+> driver will wish to update the limited values when interrupt occur.
+> Will we have a thermal zone fops like ops.notify()?
+> I noticed there have "struct thermal_zone *ops" in the thermal_zone
+> structure, will it be used for callback?
 
-I'm just curious..
- 
-> ---
->   Documentation/cgroups/mempressure.txt |  50 ++++++
->   include/linux/cgroup_subsys.h         |   6 +
->   include/linux/vmstat.h                |  11 ++
->   init/Kconfig                          |  12 ++
->   mm/Makefile                           |   1 +
->   mm/mempressure.c                      | 330 ++++++++++++++++++++++++++++++++++
->   mm/vmscan.c                           |   4 +
->   7 files changed, 414 insertions(+)
->   create mode 100644 Documentation/cgroups/mempressure.txt
->   create mode 100644 mm/mempressure.c
-> 
-> diff --git a/Documentation/cgroups/mempressure.txt b/Documentation/cgroups/mempressure.txt
-> new file mode 100644
-> index 0000000..dbc0aca
-> --- /dev/null
-> +++ b/Documentation/cgroups/mempressure.txt
-> @@ -0,0 +1,50 @@
-> +  Memory pressure cgroup
-> +~~~~~~~~~~~~~~~~~~~~~~~~~~
-> +  Before using the mempressure cgroup, make sure you have it mounted:
-> +
-> +   # cd /sys/fs/cgroup/
-> +   # mkdir mempressure
-> +   # mount -t cgroup cgroup ./mempressure -o mempressure
-> +
-> +  It is possible to combine cgroups, for example you can mount memory
-> +  (memcg) and mempressure cgroups together:
-> +
-> +   # mount -t cgroup cgroup ./mempressure -o memory,mempressure
-> +
-> +  That way the reported pressure will honour memory cgroup limits. The
-> +  same goes for cpusets.
-> +
-> +  After the hierarchy is mounted, you can use the following API:
-> +
-> +  /sys/fs/cgroup/.../mempressure.level
-> +~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-> +  To maintain the interactivity/memory allocation cost, one can use the
-> +  pressure level notifications, and the levels are defined like this:
-> +
-> +  The "low" level means that the system is reclaiming memory for new
-> +  allocations. Monitoring reclaiming activity might be useful for
-> +  maintaining overall system's cache level. Upon notification, the program
-> +  (typically "Activity Manager") might analyze vmstat and act in advance
-> +  (i.e. prematurely shutdown unimportant services).
-> +
-> +  The "medium" level means that the system is experiencing medium memory
-> +  pressure, there is some mild swapping activity. Upon this event
-> +  applications may decide to free any resources that can be easily
-> +  reconstructed or re-read from a disk.
-> +
-> +  The "oom" level means that the system is actively thrashing, it is about
-> +  to out of memory (OOM) or even the in-kernel OOM killer is on its way to
-> +  trigger. Applications should do whatever they can to help the system.
-> +
-> +  Event control:
-> +    Is used to setup an eventfd with a level threshold. The argument to
-> +    the event control specifies the level threshold.
-> +  Read:
-> +    Reads mempory presure levels: low, medium or oom.
-> +  Write:
-> +    Not implemented.
-> +  Test:
-> +    To set up a notification:
-> +
-> +    # cgroup_event_listener ./mempressure.level low
-> +    ("low", "medium", "oom" are permitted.)
-> diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
-> index f204a7a..b9802e2 100644
-> --- a/include/linux/cgroup_subsys.h
-> +++ b/include/linux/cgroup_subsys.h
-> @@ -37,6 +37,12 @@ SUBSYS(mem_cgroup)
->   
->   /* */
->   
-> +#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_MEMPRESSURE)
-> +SUBSYS(mpc_cgroup)
-> +#endif
-> +
-> +/* */
-> +
->   #if IS_SUBSYS_ENABLED(CONFIG_CGROUP_DEVICE)
->   SUBSYS(devices)
->   #endif
-> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
-> index a13291f..c1a66c7 100644
-> --- a/include/linux/vmstat.h
-> +++ b/include/linux/vmstat.h
-> @@ -10,6 +10,17 @@
->   
->   extern int sysctl_stat_interval;
->   
-> +struct mem_cgroup;
-> +#ifdef CONFIG_CGROUP_MEMPRESSURE
-> +extern void vmpressure(struct mem_cgroup *memcg,
-> +		       ulong scanned, ulong reclaimed);
-> +extern void vmpressure_prio(struct mem_cgroup *memcg, int prio);
-> +#else
-> +static inline void vmpressure(struct mem_cgroup *memcg,
-> +			      ulong scanned, ulong reclaimed) {}
-> +static inline void vmpressure_prio(struct mem_cgroup *memcg, int prio) {}
-> +#endif
-> +
->   #ifdef CONFIG_VM_EVENT_COUNTERS
->   /*
->    * Light weight per cpu counter implementation.
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 7d30240..d526249 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -891,6 +891,18 @@ config MEMCG_KMEM
->   	  the kmem extension can use it to guarantee that no group of processes
->   	  will ever exhaust kernel resources alone.
->   
-> +config CGROUP_MEMPRESSURE
-> +	bool "Memory pressure monitor for Control Groups"
-> +	help
-> +	  The memory pressure monitor cgroup provides a facility for
-> +	  userland programs so that they could easily assist the kernel
-> +	  with the memory management. So far the API provides simple,
-> +	  levels-based memory pressure notifications.
-> +
-> +	  For more information see Documentation/cgroups/mempressure.txt
-> +
-> +	  If unsure, say N.
-> +
->   config CGROUP_HUGETLB
->   	bool "HugeTLB Resource Controller for Control Groups"
->   	depends on RESOURCE_COUNTERS && HUGETLB_PAGE && EXPERIMENTAL
-> diff --git a/mm/Makefile b/mm/Makefile
-> index 3a46287..e69bbda 100644
-> --- a/mm/Makefile
-> +++ b/mm/Makefile
-> @@ -51,6 +51,7 @@ obj-$(CONFIG_MIGRATION) += migrate.o
->   obj-$(CONFIG_QUICKLIST) += quicklist.o
->   obj-$(CONFIG_TRANSPARENT_HUGEPAGE) += huge_memory.o
->   obj-$(CONFIG_MEMCG) += memcontrol.o page_cgroup.o
-> +obj-$(CONFIG_CGROUP_MEMPRESSURE) += mempressure.o
->   obj-$(CONFIG_CGROUP_HUGETLB) += hugetlb_cgroup.o
->   obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
->   obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
-> diff --git a/mm/mempressure.c b/mm/mempressure.c
-> new file mode 100644
-> index 0000000..ea312bb
-> --- /dev/null
-> +++ b/mm/mempressure.c
-> @@ -0,0 +1,330 @@
-> +/*
-> + * Linux VM pressure
-> + *
-> + * Copyright 2012 Linaro Ltd.
-> + *		  Anton Vorontsov <anton.vorontsov@linaro.org>
-> + *
-> + * Based on ideas from Andrew Morton, David Rientjes, KOSAKI Motohiro,
-> + * Leonid Moiseichuk, Mel Gorman, Minchan Kim and Pekka Enberg.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published
-> + * by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/cgroup.h>
-> +#include <linux/fs.h>
-> +#include <linux/sched.h>
-> +#include <linux/mm.h>
-> +#include <linux/vmstat.h>
-> +#include <linux/eventfd.h>
-> +#include <linux/swap.h>
-> +#include <linux/printk.h>
-> +
-> +static void mpc_vmpressure(struct mem_cgroup *memcg, ulong s, ulong r);
-> +
-> +/*
-> + * Generic VM Pressure routines (no cgroups or any other API details)
-> + */
-> +
-> +/*
-> + * The window size is the number of scanned pages before we try to analyze
-> + * the scanned/reclaimed ratio (or difference).
-> + *
-> + * It is used as a rate-limit tunable for the "low" level notification,
-> + * and for averaging medium/oom levels. Using small window sizes can cause
-> + * lot of false positives, but too big window size will delay the
-> + * notifications.
-> + */
-> +static const uint vmpressure_win = SWAP_CLUSTER_MAX * 16;
-> +static const uint vmpressure_level_med = 60;
-> +static const uint vmpressure_level_oom = 99;
-> +static const uint vmpressure_level_oom_prio = 4;
-> +
-
-Hmm... isn't this window size too small ?
-If vmscan cannot find a reclaimable page while scanning 2M of pages in a zone,
-oom notify will be returned. Right ?
+Yes, you are right. I missed adding a .notify() call back to thermal_zone ops.
+I will wait to see if we get more comments on this version of the patches.
+If so, will fix this in v3. Otherwise, will submit a patch, once these
+patches make it to Rui's tree. Hope this works for you :-)
 
 Thanks,
--Kame
-
+Durga
