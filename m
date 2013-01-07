@@ -1,155 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab3AGVa0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:30:26 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:41027 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab3AGVaZ (ORCPT
+	id S1754489Ab3AGVdu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:33:50 -0500
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:58382 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753362Ab3AGVdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:30:25 -0500
+	Mon, 7 Jan 2013 16:33:49 -0500
+Date: Mon, 7 Jan 2013 22:33:39 +0100 (CET)
+From: Eldad Zack <eldad@fogrefinery.com>
+X-X-Sender: eldad@xoschi
+To: Alex Deucher <alexdeucher@gmail.com>
+cc: Alex Deucher <alexander.deucher@amd.com>,
+        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: Regression: drm/radeon: brightness control hard system lockup
+In-Reply-To: <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1301072206530.1617@xoschi>
+References: <alpine.LNX.2.00.1301061336180.1397@xoschi> <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQVmj3D0wS7pEWXBG54tebzPMy-BLnFP9=xs4scM4yQTKA@mail.gmail.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<20130107152622.GD3219@phenom.dumpdata.com>
-	<CAE9FiQVmj3D0wS7pEWXBG54tebzPMy-BLnFP9=xs4scM4yQTKA@mail.gmail.com>
-Date: Mon, 7 Jan 2013 13:30:22 -0800
-X-Google-Sender-Auth: kmfPUV-LuD4xocG0W4XINcK1-hw
-Message-ID: <CAE9FiQVH8p1-gotohCrneVtJQhn_cAMc--LWsFEhjqb1zFEKow@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: multipart/mixed; boundary=0015175d67826ac73f04d2b9894b
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015175d67826ac73f04d2b9894b
-Content-Type: text/plain; charset=ISO-8859-1
 
-On Mon, Jan 7, 2013 at 12:32 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>  2). The check for 1MB is suspect. Why only 1MB? You mentioned it is
->>      b/c of crashkernel_low=72M (which I am not seeing in v3.8 kernel-parameters.txt?
->>      Is that part of your mega-patchset?). Anyhow, there seems to be a disconnect -
->>      what if the user supplied crashkernel_low=27M? Perhaps the 'is_enough'
->>      should also parse the bootparams to double-check that there is enough
->>      low-mem space? But then if the kernel grows then 72M might not be enough -
->>      you might need 82M with 3.9.
->
-> again, could with memmap= include or exclude case, so parse boot command line
-> is not going to handle all the case.
+On Mon, 7 Jan 2013, Alex Deucher wrote:
+> On Sun, Jan 6, 2013 at 7:59 AM, Eldad Zack <eldad@fogrefinery.com> wrote:
+> >
+> > Hi Alex,
+> >
+> > Commit 0ecebb9e0d14e9948e0b1529883a776758117d6f "drm/radeon: switch to a
+> > finer grained reset for evergreen" introduced a hard system lockup to my
+> > setup. I found it after bisecting, and confirmed it by reverting it on
+> > the latest mainline ( 5f243b9 ).
+> >
+> > This:
+> >
+> >    echo 7 > /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/brightness
+> >
+> > Causes a hard lock-up hard, i.e. immediate freeze, without any logs.
+> >
+> > See lspci output and kernel .config below.
+> > If there's any more info I can provide, please let me know.
+> 
+> Do you normally see GPU resets when changing the backlight?  Please
+> attach your dmesg output when changing the backlight with the patch
+> reverted.
 
-replace the hardcoded 1M checking, please check attached -v3.
+I see nothing. Just to make sure, I cleared the buffer, cycled through 
+0-7 a couple of hunderd times (until the flicker annoyed), but I see no
+messages at all.
+Is there any debug config I should turn on?
 
-Thanks
+Turning ACPI debugging on gives me no messages neither when I use the 
+cycle script.
 
-Yinghai
+But I did find out something interesting enough, only because I 
+happen to have sound debugging on, if I have a PCM stream open to a
+USB device, and then change the backlight level, it seems to drop to
+microframes, but it's not otherwise noticeable. Looks like setting the
+backlight still does something weird with my hardware/config.
 
---0015175d67826ac73f04d2b9894b
-Content-Type: application/octet-stream; 
-	name="auto_switch_off_swiotlb_v3.patch"
-Content-Disposition: attachment; filename="auto_switch_off_swiotlb_v3.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_hbo4if8h0
+Below is a grep -i radeon from my boot dmesg.
 
-U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IGVuYWJsZSBzd2lvdGxiIGlmIHRoZXJlIGlzIG5v
-dCBlbm91Z2ggcmFtIGZvciBpdAoKTm9ybWFsIGJvb3QgcGF0aCBvbiBzeXN0ZW0gd2l0aCBpb21t
-dSBzdXBwb3J0Ogpzd2lvdGxiIGJ1ZmZlciB3aWxsIGJlIGFsbG9jYXRlZCBlYXJseSBhdCBmaXJz
-dCBhbmQgdGhlbiB0cnkgdG8gaW5pdGlhbGl6ZQppb21tdSwgaWYgaW9tbXUgZm9yIGludGVsIG9y
-IGFtZCBjb3VsZCBzZXR1cCBwcm9wZXJseSwgc3dpb3RsYiBidWZmZXIKd2lsbCBiZSBmcmVlZC4K
-ClRoZSBlYXJseSBhbGxvY2F0aW5nIGlzIHdpdGggYm9vdG1lbSwgYW5kIGdldCBwYW5pYyB3aGVu
-IHdlIHRyeSB0byB1c2UKa2R1bXAgd2l0aCBidWZmZXIgYWJvdmUgNEcgb25seSBpZiBzd2lvdGxi
-IGlzIGVuYWJsZWQuCgpiZWNhdXNlIGFjdHVhbGx5IHRoZSBrZXJuZWwgY2FuIGdvIG9uIHdpdGhv
-dXQgc3dpb3RsYiwgYW5kIHVzZSBpbnRlbCBpb21tdS4KClRyeSBkaXNhYmxlIHN3aW90bGIgaWYg
-dGhlcmUgaXMgbm90IGVub3VnaCByYW0gZm9yIGl0LgoKVGhhdCBpcyBmb3Iga2R1bXAgdG8gdXNl
-IGtlcm5lbCBhYm92ZSA0Ry4KCi12MjogU2h1YWggS2hhbiA8c2h1YWhraGFuQGdtYWlsLmNvbT4g
-cG9pbnRlZCBvdXQgdGhhdCBBTUQgaW9tbXUgdW5oYW5kbGVkCiAgICAgZGV2aWNlcyB0aGF0IG5l
-ZWQgc3dpb3RsYiB3aWxsIGhhdmUgcHJvYmxlbS4KICAgICBJbiB0aGF0IGNhc2UsIHdlIGhhdmUg
-dG8gcGFuaWMsIGJlY2F1c2Ugd2UgZG8gbm90IGVuYWJsZSBzd2lvdGxiCiAgICAgYmVmb3JlLgot
-djM6IHJlcGxhY2UgaGFyZC1jb2RlIDFNIGxvdyByYW0gY2hlY2tpbmcgd2l0aCBwcm9iZWQgbG93
-IHJhbQogICAgIHNpemUgdGhhdCBpcyBuZWVkZWQgYnkgc3dpb3RsYi4KClN1Z2dlc3RlZC1ieTog
-RXJpYyBXLiBCaWVkZXJtYW4gPGViaWVkZXJtQHhtaXNzaW9uLmNvbT4KU2lnbmVkLW9mZi1ieTog
-WWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpDYzogS29ucmFkIFJ6ZXN6dXRlayBXaWxr
-IDxrb25yYWQud2lsa0BvcmFjbGUuY29tPgpDYzogSm9lcmcgUm9lZGVsIDxqb3JvQDhieXRlcy5v
-cmc+CgotLS0KIGFyY2gveDg2L2tlcm5lbC9wY2ktc3dpb3RsYi5jIHwgICAxNSArKysrKysrKysr
-Ky0tLS0KIGRyaXZlcnMvaW9tbXUvYW1kX2lvbW11LmMgICAgIHwgICAgNCArKysrCiBpbmNsdWRl
-L2xpbnV4L3N3aW90bGIuaCAgICAgICB8ICAgIDEgKwogbGliL3N3aW90bGIuYyAgICAgICAgICAg
-ICAgICAgfCAgIDIxICsrKysrKysrKysrKysrKysrKysrLQogNCBmaWxlcyBjaGFuZ2VkLCAzNiBp
-bnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9r
-ZXJuZWwvcGNpLXN3aW90bGIuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4
-Ni9rZXJuZWwvcGNpLXN3aW90bGIuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9wY2kt
-c3dpb3RsYi5jCkBAIC02LDYgKzYsNyBAQAogI2luY2x1ZGUgPGxpbnV4L3N3aW90bGIuaD4KICNp
-bmNsdWRlIDxsaW51eC9ib290bWVtLmg+CiAjaW5jbHVkZSA8bGludXgvZG1hLW1hcHBpbmcuaD4K
-KyNpbmNsdWRlIDxsaW51eC9tZW1ibG9jay5oPgogCiAjaW5jbHVkZSA8YXNtL2lvbW11Lmg+CiAj
-aW5jbHVkZSA8YXNtL3N3aW90bGIuaD4KQEAgLTUwLDYgKzUxLDEyIEBAIHN0YXRpYyBzdHJ1Y3Qg
-ZG1hX21hcF9vcHMgc3dpb3RsYl9kbWFfb3AKIAkuZG1hX3N1cHBvcnRlZCA9IE5VTEwsCiB9Owog
-CitzdGF0aWMgYm9vbCBfX2luaXQgZW5vdWdoX21lbV9mb3Jfc3dpb3RsYih2b2lkKQoreworCS8q
-IGRvIHdlIGhhdmUgZW5vdWdoIGxvdyByYW0gPyAqLworCXJldHVybiBtZW1ibG9ja19tZW1fc2l6
-ZSgxVUxMPDwoMzItUEFHRV9TSElGVCkpID4KKwkJCSBsb3dfcmFtX3NpemVfZm9yX3N3aW90bGIo
-KTsKK30KIC8qCiAgKiBwY2lfc3dpb3RsYl9kZXRlY3Rfb3ZlcnJpZGUgLSBzZXQgc3dpb3RsYiB0
-byAxIGlmIG5lY2Vzc2FyeQogICoKQEAgLTU4LDEyICs2NSwxMiBAQCBzdGF0aWMgc3RydWN0IGRt
-YV9tYXBfb3BzIHN3aW90bGJfZG1hX29wCiAgKi8KIGludCBfX2luaXQgcGNpX3N3aW90bGJfZGV0
-ZWN0X292ZXJyaWRlKHZvaWQpCiB7Ci0JaW50IHVzZV9zd2lvdGxiID0gc3dpb3RsYiB8IHN3aW90
-bGJfZm9yY2U7Ci0KIAlpZiAoc3dpb3RsYl9mb3JjZSkKIAkJc3dpb3RsYiA9IDE7CisJZWxzZSBp
-ZiAoIWVub3VnaF9tZW1fZm9yX3N3aW90bGIoKSkKKwkJc3dpb3RsYiA9IDA7CiAKLQlyZXR1cm4g
-dXNlX3N3aW90bGI7CisJcmV0dXJuIHN3aW90bGI7CiB9CiBJT01NVV9JTklUX0ZJTklTSChwY2lf
-c3dpb3RsYl9kZXRlY3Rfb3ZlcnJpZGUsCiAJCSAgcGNpX3hlbl9zd2lvdGxiX2RldGVjdCwKQEAg
-LTc4LDcgKzg1LDcgQEAgaW50IF9faW5pdCBwY2lfc3dpb3RsYl9kZXRlY3RfNGdiKHZvaWQpCiB7
-CiAJLyogZG9uJ3QgaW5pdGlhbGl6ZSBzd2lvdGxiIGlmIGlvbW11PW9mZiAobm9faW9tbXU9MSkg
-Ki8KICNpZmRlZiBDT05GSUdfWDg2XzY0Ci0JaWYgKCFub19pb21tdSAmJiBtYXhfcGZuID4gTUFY
-X0RNQTMyX1BGTikKKwlpZiAoIW5vX2lvbW11ICYmIG1heF9wZm4gPiBNQVhfRE1BMzJfUEZOICYm
-IGVub3VnaF9tZW1fZm9yX3N3aW90bGIoKSkKIAkJc3dpb3RsYiA9IDE7CiAjZW5kaWYKIAlyZXR1
-cm4gc3dpb3RsYjsKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL2lvbW11L2FtZF9pb21tdS5jCj09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvaW9tbXUvYW1kX2lvbW11LmMKKysr
-IGxpbnV4LTIuNi9kcml2ZXJzL2lvbW11L2FtZF9pb21tdS5jCkBAIC0zMTQ0LDYgKzMxNDQsNyBA
-QCBpbnQgX19pbml0IGFtZF9pb21tdV9pbml0X2RtYV9vcHModm9pZCkKIHsKIAlzdHJ1Y3QgYW1k
-X2lvbW11ICppb21tdTsKIAlpbnQgcmV0LCB1bmhhbmRsZWQ7CisJaW50IHN3aW90bGJfb3JpZzsK
-IAogCS8qCiAJICogZmlyc3QgYWxsb2NhdGUgYSBkZWZhdWx0IHByb3RlY3Rpb24gZG9tYWluIGZv
-ciBldmVyeSBJT01NVSB3ZQpAQCAtMzE2NiwxMiArMzE2NywxNSBAQCBpbnQgX19pbml0IGFtZF9p
-b21tdV9pbml0X2RtYV9vcHModm9pZCkKIAlwcmVhbGxvY19wcm90ZWN0aW9uX2RvbWFpbnMoKTsK
-IAogCWlvbW11X2RldGVjdGVkID0gMTsKKwlzd2lvdGxiX29yaWcgPSBzd2lvdGxiOwogCXN3aW90
-bGIgPSAwOwogCiAJLyogTWFrZSB0aGUgZHJpdmVyIGZpbmFsbHkgdmlzaWJsZSB0byB0aGUgZHJp
-dmVycyAqLwogCXVuaGFuZGxlZCA9IGRldmljZV9kbWFfb3BzX2luaXQoKTsKIAlpZiAodW5oYW5k
-bGVkICYmIG1heF9wZm4gPiBNQVhfRE1BMzJfUEZOKSB7CiAJCS8qIFRoZXJlIGFyZSB1bmhhbmRs
-ZWQgZGV2aWNlcyAtIGluaXRpYWxpemUgc3dpb3RsYiBmb3IgdGhlbSAqLworCQlpZiAoIXN3aW90
-bGJfb3JpZykKKwkJCXBhbmljKCJjYW4gbm90IGVuYWJsZSBzd2lvdGxiIGZvciB1bmhhbmRsZWQg
-ZGV2aWNlcyBieSBBTUQgaW9tbXUhXG4iKTsKIAkJc3dpb3RsYiA9IDE7CiAJfQogCkluZGV4OiBs
-aW51eC0yLjYvaW5jbHVkZS9saW51eC9zd2lvdGxiLmgKPT09PT09PT09PT09PT09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
-Lm9yaWcvaW5jbHVkZS9saW51eC9zd2lvdGxiLmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4
-L3N3aW90bGIuaApAQCAtMjIsNiArMjIsNyBAQCBleHRlcm4gaW50IHN3aW90bGJfZm9yY2U7CiAg
-Ki8KICNkZWZpbmUgSU9fVExCX1NISUZUIDExCiAKK3Vuc2lnbmVkIGxvbmcgbG93X3JhbV9zaXpl
-X2Zvcl9zd2lvdGxiKHZvaWQpOwogZXh0ZXJuIHZvaWQgc3dpb3RsYl9pbml0KGludCB2ZXJib3Nl
-KTsKIGV4dGVybiB2b2lkIHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVk
-IGxvbmcgbnNsYWJzLCBpbnQgdmVyYm9zZSk7CiBleHRlcm4gdW5zaWduZWQgbG9uZyBzd2lvdGxi
-X25yX3RibCh2b2lkKTsKSW5kZXg6IGxpbnV4LTIuNi9saWIvc3dpb3RsYi5jCj09PT09PT09PT09
-PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
-LS0tIGxpbnV4LTIuNi5vcmlnL2xpYi9zd2lvdGxiLmMKKysrIGxpbnV4LTIuNi9saWIvc3dpb3Rs
-Yi5jCkBAIC0xOTgsMTAgKzE5OCwyOSBAQCBzd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0X3NpemUo
-c2l6ZV90IGRlCiAJc3dpb3RsYl9pbml0X3dpdGhfdGJsKHZzdGFydCwgaW9fdGxiX25zbGFicywg
-dmVyYm9zZSk7CiB9CiAKKy8qIGRlZmF1bHQgdG8gNjRNQiAqLworI2RlZmluZSBTV0lPVExCX0RF
-RkFVTFRfU0laRSAoNjRVTDw8MjApCiB2b2lkIF9faW5pdAogc3dpb3RsYl9pbml0KGludCB2ZXJi
-b3NlKQogewotCXN3aW90bGJfaW5pdF93aXRoX2RlZmF1bHRfc2l6ZSg2NCAqICgxPDwyMCksIHZl
-cmJvc2UpOwkvKiBkZWZhdWx0IHRvIDY0TUIgKi8KKwlzd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0
-X3NpemUoU1dJT1RMQl9ERUZBVUxUX1NJWkUsIHZlcmJvc2UpOworfQorCit1bnNpZ25lZCBsb25n
-IF9faW5pdCBsb3dfcmFtX3NpemVfZm9yX3N3aW90bGIodm9pZCkKK3sKKwl1bnNpZ25lZCBsb25n
-IGJ5dGVzOworCXVuc2lnbmVkIGxvbmcgbnNsYWJzID0gaW9fdGxiX25zbGFiczsKKworCWlmICgh
-bnNsYWJzKSB7CisJCW5zbGFicyA9IChTV0lPVExCX0RFRkFVTFRfU0laRSA+PiBJT19UTEJfU0hJ
-RlQpOworCQluc2xhYnMgPSBBTElHTihuc2xhYnMsIElPX1RMQl9TRUdTSVpFKTsKKwl9CisKKwli
-eXRlcyA9IFBBR0VfQUxJR04obnNsYWJzIDw8IElPX1RMQl9TSElGVCk7CisKKwlieXRlcyArPSBQ
-QUdFX0FMSUdOKGlvX3RsYl9vdmVyZmxvdyk7CisKKwlyZXR1cm4gYnl0ZXM7CiB9CiAKIC8qCg==
---0015175d67826ac73f04d2b9894b--
+Cheers,
+Eldad
+
+[    0.301558] [drm] radeon defaulting to kernel modesetting.
+[    0.301626] [drm] radeon kernel modesetting enabled.
+[    0.301694] bus: 'pci': add driver radeon
+[    0.301716] bus: 'pci': driver_probe_device: matched device 0000:01:00.0 with driver radeon
+[    0.301718] bus: 'pci': really_probe: probing driver radeon with device 0000:01:00.0
+[    0.302310] radeon 0000:01:00.0: VRAM: 1024M 0x0000000000000000 - 0x000000003FFFFFFF (1024M used)
+[    0.302390] radeon 0000:01:00.0: GTT: 512M 0x0000000040000000 - 0x000000005FFFFFFF
+[    0.303021] [drm] radeon: 1024M of VRAM memory ready
+[    0.303108] [drm] radeon: 512M of GTT memory ready.
+[    0.303378] radeon 0000:01:00.0: irq 41 for MSI/MSI-X
+[    0.303390] radeon 0000:01:00.0: radeon: using MSI.
+[    0.303485] [drm] radeon: irq initialized.
+[    0.304198] [drm] enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0
+[    0.304414] Registering platform device 'radeon_cp.0'. Parent at platform
+[    0.304416] device: 'radeon_cp.0': device_add
+[    0.304421] bus: 'platform': add device radeon_cp.0
+[    0.304428] PM: Adding info for platform:radeon_cp.0
+[    0.304497] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_pfp.bin
+[    0.304501] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_me.bin
+[    0.304503] platform radeon_cp.0: firmware: using built-in firmware radeon/BTC_rlc.bin
+[    0.304506] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_mc.bin
+[    0.304517] bus: 'platform': remove device radeon_cp.0
+[    0.304518] PM: Removing info for platform:radeon_cp.0
+[    0.338906] radeon 0000:01:00.0: WB enabled
+[    0.338970] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000040000c00 and cpu addr 0xffff880244a0fc00
+[    0.339064] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000040000c0c and cpu addr 0xffff880244a0fc0c
+[    0.356604] device: 'radeon_bl0': device_add
+[    0.356616] PM: Adding info for No Bus:radeon_bl0
+[    0.407974] [drm] radeon atom DIG backlight initialized
+[    0.408039] [drm] Radeon Display Connectors
+[    0.410135] [drm] radeon: power management initialized
+[    0.822297] fbcon: radeondrmfb (fb0) is primary device
+[    1.585493] radeon 0000:01:00.0: fb0: radeondrmfb frame buffer device
+[    1.585546] radeon 0000:01:00.0: registered panic notifier
+[    1.585601] [drm] Initialized radeon 2.28.0 20080528 for 0000:01:00.0 on minor 0
+[    1.585658] driver: '0000:01:00.0': driver_bound: bound to device 'radeon'
+[    1.585661] bus: 'pci': really_probe: bound device 0000:01:00.0 to driver radeon
+
+
