@@ -1,121 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab3AGUZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 15:25:53 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:54019 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab3AGUZt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 15:25:49 -0500
-From: Seth Jennings <sjenning@linux.vnet.ibm.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCHv2 5/9] debugfs: add get/set for atomic types
-Date: Mon,  7 Jan 2013 14:24:36 -0600
-Message-Id: <1357590280-31535-6-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
-References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010720-2876-0000-0000-000003D7E0D5
+	id S1755582Ab3AGU0n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 15:26:43 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:40239 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753625Ab3AGU0l convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 15:26:41 -0500
+Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
+Mime-Version: 1.0 (Apple Message framework v1085)
+Content-Type: text/plain; charset=us-ascii
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+In-Reply-To: <20130107202306.GH14149@atomide.com>
+Date: Mon, 7 Jan 2013 22:26:31 +0200
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <FA4D880E-833E-43D9-A399-0A5C260E83F2@antoniou-consulting.com>
+References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com> <1357584666-17374-2-git-send-email-panto@antoniou-consulting.com> <20130107200945.GF14149@atomide.com> <379B16EC-BFAA-4C27-8321-E7133C03368D@antoniou-consulting.com> <20130107202306.GH14149@atomide.com>
+To: Tony Lindgren <tony@atomide.com>
+X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs currently lack the ability to create attributes
-that set/get atomic_t values.
+Hi Tony,
 
-This patch adds support for this through a new
-debugfs_create_atomic_t() function.
+On Jan 7, 2013, at 10:23 PM, Tony Lindgren wrote:
 
-Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
----
- fs/debugfs/file.c       |   42 ++++++++++++++++++++++++++++++++++++++++++
- include/linux/debugfs.h |    2 ++
- 2 files changed, 44 insertions(+)
+> * Pantelis Antoniou <panto@antoniou-consulting.com> [130107 12:16]:
+>> Hi Tony,
+>> 
+>> On Jan 7, 2013, at 10:09 PM, Tony Lindgren wrote:
+>> 
+>>> * Pantelis Antoniou <panto@antoniou-consulting.com> [130107 10:54]:
+>>>> A cape loader based on DT overlays and DT objects.
+>>>> 
+>>>> Beaglebone cape manager implementation.
+>>>> 
+>>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+>>>> ---
+>>>> arch/arm/mach-omap2/Kconfig            |    2 +
+>>>> drivers/misc/Kconfig                   |    2 +
+>>>> drivers/misc/Makefile                  |    1 +
+>>>> drivers/misc/cape/Kconfig              |    5 +
+>>>> drivers/misc/cape/Makefile             |    5 +
+>>>> drivers/misc/cape/beaglebone/Kconfig   |   11 +
+>>>> drivers/misc/cape/beaglebone/Makefile  |    5 +
+>>>> drivers/misc/cape/beaglebone/capemgr.c | 1835 ++++++++++++++++++++++++++++++++
+>>> 
+>>> The driver should probably be in drivers/bus?
+>>> 
+>> 
+>> It was a bus on the previous iteration and there was a flame storm of epic proportions.
+> 
+> Heh :)
+> 
+>> It is not a bus at all now, it's just a device loader; there are no
+>> bus constructs at all. I am at a loss to classify it really, so drivers/misc
+>> where every misfit ends up sounded OK.
+> 
+> Right..
+> 
+>> I'm open to suggestions though.
+> 
+> Well how about split it to an eeprom driver, and Linux generic
+> device loader parts?
+> 
 
-diff --git a/fs/debugfs/file.c b/fs/debugfs/file.c
-index c5ca6ae..fa26d5b 100644
---- a/fs/debugfs/file.c
-+++ b/fs/debugfs/file.c
-@@ -21,6 +21,7 @@
- #include <linux/debugfs.h>
- #include <linux/io.h>
- #include <linux/slab.h>
-+#include <linux/atomic.h>
- 
- static ssize_t default_read_file(struct file *file, char __user *buf,
- 				 size_t count, loff_t *ppos)
-@@ -403,6 +404,47 @@ struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- }
- EXPORT_SYMBOL_GPL(debugfs_create_size_t);
- 
-+static int debugfs_atomic_t_set(void *data, u64 val)
-+{
-+	atomic_set((atomic_t *)data, val);
-+	return 0;
-+}
-+static int debugfs_atomic_t_get(void *data, u64 *val)
-+{
-+	*val = atomic_read((atomic_t *)data);
-+	return 0;
-+}
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t, debugfs_atomic_t_get,
-+			debugfs_atomic_t_set, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_ro, debugfs_atomic_t_get, NULL, "%llu\n");
-+DEFINE_SIMPLE_ATTRIBUTE(fops_atomic_t_wo, NULL, debugfs_atomic_t_set, "%llu\n");
-+
-+/**
-+ * debugfs_create_atomic_t - create a debugfs file that is used to read and
-+ * write an atomic_t value
-+ * @name: a pointer to a string containing the name of the file to create.
-+ * @mode: the permission that the file should have
-+ * @parent: a pointer to the parent dentry for this file.  This should be a
-+ *          directory dentry if set.  If this parameter is %NULL, then the
-+ *          file will be created in the root of the debugfs filesystem.
-+ * @value: a pointer to the variable that the file should read to and write
-+ *         from.
-+ */
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				 struct dentry *parent, atomic_t *value)
-+{
-+	/* if there are no write bits set, make read only */
-+	if (!(mode & S_IWUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_ro);
-+	/* if there are no read bits set, make write only */
-+	if (!(mode & S_IRUGO))
-+		return debugfs_create_file(name, mode, parent, value,
-+					&fops_atomic_t_wo);
-+
-+	return debugfs_create_file(name, mode, parent, value, &fops_atomic_t);
-+}
-+EXPORT_SYMBOL_GPL(debugfs_create_atomic_t);
- 
- static ssize_t read_file_bool(struct file *file, char __user *user_buf,
- 			      size_t count, loff_t *ppos)
-diff --git a/include/linux/debugfs.h b/include/linux/debugfs.h
-index 66c434f..51fea70 100644
---- a/include/linux/debugfs.h
-+++ b/include/linux/debugfs.h
-@@ -79,6 +79,8 @@ struct dentry *debugfs_create_x64(const char *name, umode_t mode,
- 				  struct dentry *parent, u64 *value);
- struct dentry *debugfs_create_size_t(const char *name, umode_t mode,
- 				     struct dentry *parent, size_t *value);
-+struct dentry *debugfs_create_atomic_t(const char *name, umode_t mode,
-+				     struct dentry *parent, atomic_t *value);
- struct dentry *debugfs_create_bool(const char *name, umode_t mode,
- 				  struct dentry *parent, u32 *value);
- 
--- 
-1.7.9.5
+All that's left is the eeprom driver (accessor) and calls to the 
+generic DT overlay constructs. 
+
+If you caught on the previous patchset about DT overlays it should be
+clear.
+
+So it is split along those lines already.
+
+
+> Regards,
+> 
+> Tony
+
+Regards
+
+-- Pantelis
 
