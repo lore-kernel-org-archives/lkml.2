@@ -1,80 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753456Ab3AGFRj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 00:17:39 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:40873 "EHLO comal.ext.ti.com"
+	id S1751197Ab3AGFXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 00:23:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:48785 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab3AGFRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 00:17:37 -0500
-From: Afzal Mohammed <afzal@ti.com>
-To: Benoit Cousson <b-cousson@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>,
-        Sekhar Nori <nsekhar@ti.com>, Vaibhav Hiremath <hvaibhav@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH 0/5] ARM: dts: AM33XX: lcdc support
-Date: Mon, 7 Jan 2013 10:47:54 +0530
-Message-ID: <cover.1357304150.git.afzal@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1750776Ab3AGFXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 00:23:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,421,1355126400"; 
+   d="scan'208";a="270697160"
+From: "Tc, Jenny" <jenny.tc@intel.com>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
+        Anton Vorontsov <anton@enomsg.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: RE: [PATCH 1/2] power_supply: Add charge control struct in power
+ supply class
+Thread-Topic: [PATCH 1/2] power_supply: Add charge control struct in power
+ supply class
+Thread-Index: AQHN67kZJS22ggXo6kCbpjqu49NvMZg89pEAgABfU7A=
+Date: Mon, 7 Jan 2013 05:23:36 +0000
+Message-ID: <20ADAB092842284E95860F279283C564E70A93@BGSMSX101.gar.corp.intel.com>
+References: <1354002423-24587-1-git-send-email-ramakrishna.pallala@intel.com>
+ <1354002423-24587-2-git-send-email-ramakrishna.pallala@intel.com>
+ <20130106025024.GC6919@lizard.sbx05280.losalca.wayport.net>
+ <D854C92F57B1B347B57E531E78D05EAD245CAF83@BGSMSX102.gar.corp.intel.com>
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD245CAF83@BGSMSX102.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.223.10.10]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r075Nh2l025485
 
-Hi,
+> 
+> > > +struct power_supply_charger_control {
+> > > +	const char *name;
+> > > +	/* get charging status */
+> > > +	int (*is_charging_enabled)(void);
+> > > +	int (*is_charger_enabled)(void);
+> > > +
+> > > +	/* set charging parameters */
+> > > +	int (*set_in_current_limit)(int uA);
+> > > +	int (*set_charge_current)(int uA);
+> > > +	int (*set_charge_voltage)(int uV);
+> > > +
+> > > +	/* control battery charging */
+> > > +	int (*enable_charging)(void);
+> > > +	int (*disable_charging)(void);
+> > > +
+> > > +	/* control VSYS or system supply */
+> > > +	int (*turnon_charger)(void);
+> > > +	int (*turnoff_charger)(void);
+> > > +};
+> > > +
+> >
+> > I'm all for this patch, but why do you need to place it into
+> > power_supply.h and power_supply_core.c? :) I see nothing generic here,
+> > it's pure charger-manager stuff. So, place everything into charger-
+> manager.{c,h}.
+> 
+> Hi Anton,
+> 
+> The main reason for keeping this stuff in power_supply.h and
+> power_supply_core.c is to make these interfaces uniform Across multiple
+> charger frameworks and to avoid each charger framework define it's own
+> interfaces. If there is need for new callback They can add to the existing struct
+> defined above and it will available to all the frameworks. Also the work
+> required to support a new Framework will be reduced if the driver already
+> support any one of the existing frameworks.
+> 
 
-This series add DT sources for AM335x SoC as well as AM335x based
-boards.
+Rama,
 
-As pinmux is an SoC specific detail rather than IP specific one,
-addition of pin control has been done in a separate patch from
-the one in which display timings are added. Also it may aid in
-debugging in case of any issues.
-
-This has been tested on AM335x based boards like AM335x EVM and
-AM335x EVM-SK.
-
-This series is based on v3.8-rc2.
-
-This series has a dependency on,
-1. Series v16 "of: add display helper" by,
-	Steffen Trumtrar <s.trumtrar@pengutronix.de>
-2. Series v2 "video: da8xx-fb: runtime timing configuration" by,
-	me (Afzal Mohammed <afzal@ti.com>)
-3. Series "video: da8xx-fb: DT support" by,
-	me (Afzal Mohammed <afzal@ti.com>)
-
-To test on AM335x, in addition to the above, following changes,
-1. Patch "da8xx: Allow use by am33xx based devices" by,
-	Pantelis Antoniou <panto@antoniou-consulting.com>
-3. Series "HWMOD fixes for AM33xx PWM submodules and device tree nodes" by,
-	Philip, Avinash <avinashphilip@ti.com>
-would be required
-
-A tree with all above for testing is available
- @git://gitorious.org/x0148406-public/linux-kernel.git da8xx-fb-dt
-
-
-Regards
-Afzal
-
-Afzal Mohammed (5):
-  ARM: dts: AM33XX: Add lcdc node
-  ARM: dts: AM33XX: Add am335x-evm lcdc panel timings
-  ARM: dts: AM33XX: Add am335x-evm lcdc pincontrol info
-  ARM: dts: AM33XX: Add am335x-evmsk lcdc panel timings
-  ARM: dts: AM33XX: Add am335x-evmsk lcdc pincontrol info
-
- arch/arm/boot/dts/am335x-evm.dts   |   55 +++++++++++++++++++++++++++++++++++-
- arch/arm/boot/dts/am335x-evmsk.dts |   55 +++++++++++++++++++++++++++++++++++-
- arch/arm/boot/dts/am33xx.dtsi      |    8 ++++++
- 3 files changed, 116 insertions(+), 2 deletions(-)
-
--- 
-1.7.9.5
-
+The similar functionalities are exposed by patch https://lkml.org/lkml/2012/10/18/219.
+As per Anton's review comments on this patch, I'll be moving the macros to power_supply.h.
+Wouldn't that be enough ?
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
