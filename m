@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753362Ab3AGBlw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 20:41:52 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:44054 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab3AGBls (ORCPT
+	id S1753372Ab3AGBoL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 20:44:11 -0500
+Received: from amsterdam.lcs.mit.edu ([18.26.4.9]:10448 "EHLO
+	amsterdam.lcs.mit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab3AGBoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 20:41:48 -0500
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <CAGXu5jJXoYO3CzpENAZYANLzySPPjzDVO_qLonqwxUUu1Ux=sg@mail.gmail.com>
-References: <1348179300-11653-1-git-send-email-keescook@chromium.org>
- <CAHO5Pa2fysDRS3sFSy785XBKApxydN0ONW5kAfVJNkrB+wOaBw@mail.gmail.com>
- <50749DE8.7010703@zytor.com> <CAKgNAkgLW+0aHwzoY6vxmeeK_K5w2RyhxW+jOaJDn274NVbajw@mail.gmail.com>
- <5074A0AB.8040207@zytor.com> <87d30o7iy6.fsf@rustcorp.com.au>
- <CAKgNAkh=99=x1=8Y=3odem-fXc9zEEbLvCc0WQku5Kyso4qHuQ@mail.gmail.com>
- <87ipa8o4mn.fsf@rustcorp.com.au> <CAKgNAkiVxUiqJ1pYNq3wW_yQxcyhqntUzcEWscFOhJ3GaVn1aQ@mail.gmail.com>
- <87sj97hs5e.fsf@rustcorp.com.au> <CAHO5Pa29_=3HNLG-qtULZ2fmkgPJ6JCZ0LTv9m=UowfvFufhMw@mail.gmail.com>
- <87fw2j5dlj.fsf@rustcorp.com.au> <CAKgNAkggu9+AuMRqTFeNy9sJVCMcZVRZx43t=svF=gm+P4DnuQ@mail.gmail.com>
- <CAGXu5jJXoYO3CzpENAZYANLzySPPjzDVO_qLonqwxUUu1Ux=sg@mail.gmail.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Mon, 7 Jan 2013 02:41:27 +0100
-Message-ID: <CAKgNAkgG_NpVV7DSKZV2NgG2HDv+Vf=BAGjedfdBbhGBSWMfug@mail.gmail.com>
-Subject: Re: [PATCH 1/4] module: add syscall to load module from fd
-To: Kees Cook <keescook@chromium.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, "H. Peter Anvin" <hpa@zytor.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        jonathon@jonmasters.org, linux-man@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 6 Jan 2013 20:44:10 -0500
+X-Greylist: delayed 972 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jan 2013 20:44:09 EST
+From: Nickolai Zeldovich <nickolai@csail.mit.edu>
+To: Lennert Buytenhek <buytenh@wantstofly.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net/wireless/mwl8k.c: avoid use-after-free
+Date: Sun,  6 Jan 2013 20:27:22 -0500
+Message-Id: <1357522042-39255-1-git-send-email-nickolai@csail.mit.edu>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 6, 2013 at 9:24 PM, Kees Cook <keescook@chromium.org> wrote:
-> On Sun, Jan 6, 2013 at 11:59 AM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> Hi Rusty, (and Lucas, and Kees)
->>
->> On Thu, Jan 3, 2013 at 1:12 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->>> Michael Kerrisk <mtk.manpages@gmail.com> writes:
->>>> Hi Rusty,
->>>
->>> Hi Michael,
->>>
->>>> The description here is rather thin. Could you supply a sentence or
->>>> two for each of MODULE_INIT_IGNORE_MODVERSIONS and
->>>> MODULE_INIT_IGNORE_VERMAGIC that would be suitable for the manual
->>>> page?
->>>>
->>>> Thanks,
->>>
->>> There are one or two safety checks built into a module, which are
->>> checked to match the kernel on module load.  The first is a "vermagic"
->>> string containing the kernel version number and prominent features (such
->>> as CPU type).  If the module was built with CONFIG_MODVERSIONS set, a
->>> version hash is recorded for each symbol the module uses based on the
->>> types it refers to: in this case, the kernel version number within the
->>> "vermagic" string is ignored, as the symbol version hashes are assumed
->>> to be sufficiently reliable.
->>>
->>> Using the MODULE_INIT_IGNORE_VERMAGIC flag indicates that the vermagic
->>> is to be ignored, and the MODULE_INIT_IGNORE_MODVERSIONS flag indicates
->>> that the version hashes are to be ignored.  If the kernel is built to
->>> permit such forced loading (ie. CONFIG_MODULE_FORCE_LOAD is set) then
->>> loading will continue, otherwise it will fail with ENOEXEC as expected
->>> for malformed modules.
->>>
->>> Hope that is more usable?
->>
->> Yes, that helps. I did some reworking of that text. Hopefully, I did
->> not introduce any errors.
->>
->> Below is the text that is proposed to document finit_module() in the
->> man pages. I'd appreciate any review (Kees, Lucas, Rusty?)
->
-> Looks good to me!
->
-> Reviewed-by: Kees Cook <keescook@chromium.org>
+Do not dereference p->station_id after kfree(cmd) because p
+points into the cmd data structure.
 
-Thanks Kees!
+Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+---
+ drivers/net/wireless/mwl8k.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-
-
+diff --git a/drivers/net/wireless/mwl8k.c b/drivers/net/wireless/mwl8k.c
+index f221b95..83564d3 100644
+--- a/drivers/net/wireless/mwl8k.c
++++ b/drivers/net/wireless/mwl8k.c
+@@ -4250,9 +4250,11 @@ static int mwl8k_cmd_update_stadb_add(struct ieee80211_hw *hw,
+ 	p->amsdu_enabled = 0;
+ 
+ 	rc = mwl8k_post_cmd(hw, &cmd->header);
++	if (!rc)
++		rc = p->station_id;
+ 	kfree(cmd);
+ 
+-	return rc ? rc : p->station_id;
++	return rc;
+ }
+ 
+ static int mwl8k_cmd_update_stadb_del(struct ieee80211_hw *hw,
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface"; http://man7.org/tlpi/
+1.7.10.4
+
