@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab3AGCGD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 21:06:03 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:34555 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753269Ab3AGCGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 21:06:01 -0500
-Message-ID: <1357524362.4940.16.camel@joe-AO722>
-Subject: Re: [v3 PATCH 05/12] spi/atmel_spi: update the dt support
-From: Joe Perches <joe@perches.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
-        richard.genoud@gmail.com, JM.Lin@atmel.com
-Date: Sun, 06 Jan 2013 18:06:02 -0800
-In-Reply-To: <1357523413-27209-6-git-send-email-wenyou.yang@atmel.com>
-References: <1357523413-27209-1-git-send-email-wenyou.yang@atmel.com>
-	 <1357523413-27209-6-git-send-email-wenyou.yang@atmel.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753483Ab3AGCJS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 21:09:18 -0500
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:51810 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753311Ab3AGCJP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 21:09:15 -0500
+References: <1357523523-39707-1-git-send-email-nickolai@csail.mit.edu>
+User-Agent: K-9 Mail for Android
+In-Reply-To: <1357523523-39707-1-git-send-email-nickolai@csail.mit.edu>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v2] media: cx18, ivtv: eliminate unnecessary array index checks
+From: Andy Walls <awalls@md.metrocast.net>
+Date: Sun, 06 Jan 2013 21:08:39 -0500
+To: Nickolai Zeldovich <nickolai@csail.mit.edu>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Message-ID: <041715b8-e711-4c63-a123-296c5b674edf@email.android.com>
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.9.8327,1.0.431,0.0.0000
+ definitions=2013-01-07_01:2013-01-04,2013-01-07,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=2
+ phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=6.0.2-1211240000 definitions=main-1301060338
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-07 at 09:50 +0800, Wenyou Yang wrote:
-> To meet the different spi IP version of atmel SoC,
-> add more compatible "atmel,at91rm9200-spi", "atmel,at91sam9260-spi"
-> "atmel,at91sam9g45-spi", "atmel,at91sam9x5-spi" with different
-> config and devtype.
+Nickolai Zeldovich <nickolai@csail.mit.edu> wrote:
 
-trivial comment:
+>The idx values passed to cx18_i2c_register() and ivtv_i2c_register()
+>by cx18_init_subdevs() and ivtv_load_and_init_modules() respectively
+>are always in-range, based on how the hw_all bitmask is populated.
+>Previously, the checks were already ineffective because arrays were
+>being dereferenced using the index before the check.
+>
+>Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+>---
+>Thanks to Andy Walls for suggesting that instead of moving the checks
+>before array dereference, a better fix is to remove the checks
+>altogether,
+>since they are superfluous.
+>
+> drivers/media/pci/cx18/cx18-i2c.c |    3 ---
+> drivers/media/pci/ivtv/ivtv-i2c.c |    2 --
+> 2 files changed, 5 deletions(-)
+>
+>diff --git a/drivers/media/pci/cx18/cx18-i2c.c
+>b/drivers/media/pci/cx18/cx18-i2c.c
+>index 4908eb7..ccb1d15 100644
+>--- a/drivers/media/pci/cx18/cx18-i2c.c
+>+++ b/drivers/media/pci/cx18/cx18-i2c.c
+>@@ -116,9 +116,6 @@ int cx18_i2c_register(struct cx18 *cx, unsigned
+>idx)
+> 	const char *type = hw_devicenames[idx];
+> 	u32 hw = 1 << idx;
+> 
+>-	if (idx >= ARRAY_SIZE(hw_addrs))
+>-		return -1;
+>-
+> 	if (hw == CX18_HW_TUNER) {
+> 		/* special tuner group handling */
+> 		sd = v4l2_i2c_new_subdev(&cx->v4l2_dev,
+>diff --git a/drivers/media/pci/ivtv/ivtv-i2c.c
+>b/drivers/media/pci/ivtv/ivtv-i2c.c
+>index 46e262b..bc984af 100644
+>--- a/drivers/media/pci/ivtv/ivtv-i2c.c
+>+++ b/drivers/media/pci/ivtv/ivtv-i2c.c
+>@@ -267,8 +267,6 @@ int ivtv_i2c_register(struct ivtv *itv, unsigned
+>idx)
+> 	const char *type = hw_devicenames[idx];
+> 	u32 hw = 1 << idx;
+> 
+>-	if (idx >= ARRAY_SIZE(hw_addrs))
+>-		return -1;
+> 	if (hw == IVTV_HW_TUNER) {
+> 		/* special tuner handling */
+> 		sd = v4l2_i2c_new_subdev(&itv->v4l2_dev, adap, type, 0,
+>-- 
+>1.7.10.4
 
-> diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-[]
-> @@ -230,11 +302,15 @@ struct atmel_spi_device {
->   * register, but I haven't checked that it exists on all chips, and
->   * this is cheaper anyway.
->   */
-> -static bool atmel_spi_is_v2(void)
-> +static bool atmel_spi_is_v2(struct atmel_spi *as)
-
-There's a comment that needs updating above this now
-
->  {
-> -	return !cpu_is_at91rm9200();
-> +	if (as->pdata->version == 2)
-> +		return true;
-> +	else
-> +		return false;
-
-	return as->pdata->version == 2;
-
-is rather more readable to me
-
-
+Acked-by: Andy Walls <awalls@md.metrocast.net>
