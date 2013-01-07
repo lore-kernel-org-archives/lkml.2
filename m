@@ -1,80 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab3AGLaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 06:30:15 -0500
-Received: from multi.imgtec.com ([194.200.65.239]:55623 "EHLO multi.imgtec.com"
+	id S1754160Ab3AGLcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 06:32:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:30378 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab3AGLaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 06:30:13 -0500
-Message-ID: <50EAB1C1.9050808@imgtec.com>
-Date: Mon, 7 Jan 2013 11:30:09 +0000
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	id S1753680Ab3AGLcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 06:32:02 -0500
+Date: Mon, 7 Jan 2013 12:31:45 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, akpm@linux-foundation.org
+Subject: [PATCH v2 repost] sched: cputime: avoid multiplication overflow (in
+ common cases)
+Message-ID: <20130107113144.GA7544@redhat.com>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v2 43/44] tty/metag_da: Add metag DA TTY driver
-References: <1354723742-6195-1-git-send-email-james.hogan@imgtec.com> <1354723742-6195-44-git-send-email-james.hogan@imgtec.com> <20121205172446.41aa464e@pyramind.ukuu.org.uk> <50E6E322.8070108@imgtec.com> <20130104170013.74b6dbe2@pyramind.ukuu.org.uk>
-In-Reply-To: <20130104170013.74b6dbe2@pyramind.ukuu.org.uk>
-X-Enigmail-Version: 1.4.4
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.154.65]
-X-SEF-Processed: 7_3_0_01181__2013_01_07_11_30_10
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+We scale stime, utime values based on rtime (sum_exec_runtime converted
+to jiffies). During scaling we multiple rtime * utime, what seems to be
+fine, since both values are converted to u64, but is not.
 
-On 04/01/13 17:00, Alan Cox wrote:
->> Agreed and done. I didn't realise the TTY layer was so prone to
->> providing lots of itty bitty fragments (even with a single 4k write from
->> userland). The thing that really hurt was not the allocations but that
->> each one was written out to the DA separately each incurring it's own
->> large latency. Using a write buffer makes it a lot faster :)
-> 
-> Think about typing a command and the echo - you get a lot of very small
-> writes !
+Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
+for 1 day, threads utilize 100% cpu on user space. Machine has 64 cpus.
 
-Yes. The case I tried was a large write (strace cat /etc/somefile >
-/dev/ttyDA2) and strace showed a single large write, but it got to the
-driver in chunks of a dozen or so characters. Is that expected to happen?
+Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
+0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
+which can not be covered in 64 bits.
 
->>>> +	channel_driver->init_termios = tty_std_termios;
->>>> +	channel_driver->init_termios.c_cflag =
->>>> +	    B38400 | CS8 | CREAD | HUPCL | CLOCAL;
->>>> +	channel_driver->flags = TTY_DRIVER_REAL_RAW;
->>>
->>> Need to set the speed flags
->>
->> Do you mean c_ispeed, and c_ospeed? These are set in tty_std_termios,
->> and they aren't meaningful in the context of this driver anyway, so are
->> they still necessary?
-> 
-> You update c_cflag to B38400 so you should set c_ispeed/c_ospeed
-> accordingly. For a virtual interface it really only exists so that
-> applications have an answer. You want a higher speed like 38400 so that
-> apps don't try and do clever stuff for low speed links, that is all
-> really.
+Result of overflow is stall of utime values visible in user space
+(prev_utime in kernel), even if application still consume lot of CPU
+time.
 
-Okay, assuming no objections I'll do the following to avoid specifying
-an arbitrary speed in the first place (since tty_std_termios sets
-c_cflag and c_{i,o}speed to 38400 anyway):
+Probably good fix for the problem, will be using 128 bit variable and
+proper mul128 and div_u128_u64 primitives. While mul128 is on it's
+way to kernel, there is no 128 bit division yet. I'm not sure, if we
+want to add it to kernel. Perhaps we could also change the way how
+stime and utime are calculated, but I don't know how, so I come with
+the below solution for the problem.
 
-@@ -613,8 +613,7 @@ static int __init dashtty_init(void)
- 	channel_driver->type = TTY_DRIVER_TYPE_SERIAL;
- 	channel_driver->subtype = SERIAL_TYPE_NORMAL;
- 	channel_driver->init_termios = tty_std_termios;
--	channel_driver->init_termios.c_cflag =
--	    B38400 | CS8 | CREAD | HUPCL | CLOCAL;
-+	channel_driver->init_termios.c_cflag |= CLOCAL;
- 	channel_driver->flags = TTY_DRIVER_REAL_RAW;
+To avoid overflow patch change value we scale to min(stime, utime). This
+is more like workaround, but will work for processes, which perform
+mostly on user space or mostly on kernel space. Unfortunately processes,
+which perform on kernel and user space equally, and additionally utilize
+lot of CPU time, still will hit this overflow pretty quickly. However
+such processes seems to be uncommon.
 
- 	tty_set_operations(channel_driver, &dashtty_ops);
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+---
+v1 -> v2: rebase to current Linus source
 
-Thanks
-James
+ kernel/sched/cputime.c |   61 +++++++++++++++++++++++++++++-------------------
+ 1 files changed, 37 insertions(+), 24 deletions(-)
+
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 293b202..5e2309a 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -509,20 +509,6 @@ EXPORT_SYMBOL_GPL(vtime_account);
+ # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
+ #endif
+ 
+-static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
+-{
+-	u64 temp = (__force u64) rtime;
+-
+-	temp *= (__force u64) utime;
+-
+-	if (sizeof(cputime_t) == 4)
+-		temp = div_u64(temp, (__force u32) total);
+-	else
+-		temp = div64_u64(temp, (__force u64) total);
+-
+-	return (__force cputime_t) temp;
+-}
+-
+ /*
+  * Adjust tick based cputime random precision against scheduler
+  * runtime accounting.
+@@ -531,10 +517,11 @@ static void cputime_adjust(struct task_cputime *curr,
+ 			   struct cputime *prev,
+ 			   cputime_t *ut, cputime_t *st)
+ {
+-	cputime_t rtime, utime, total;
+-
+-	utime = curr->utime;
+-	total = utime + curr->stime;
++	cputime_t utime = curr->utime;
++	cputime_t stime = curr->stime;
++	cputime_t rtime, total, scaled_time;
++	bool utime_scale = false;
++	u64 tmp;
+ 
+ 	/*
+ 	 * Tick based cputime accounting depend on random scheduling
+@@ -548,18 +535,44 @@ static void cputime_adjust(struct task_cputime *curr,
+ 	 */
+ 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
+ 
+-	if (total)
+-		utime = scale_utime(utime, rtime, total);
+-	else
+-		utime = rtime;
++	if (utime == stime) {
++		scaled_time = rtime / 2;
++	} else {
++		tmp = (__force u64) rtime;
++
++		/*
++		 * Choose smaller value to avoid possible overflow during
++		 * multiplication.
++		 */
++		if (utime < stime) {
++			tmp *= utime;
++			utime_scale = true;
++		} else {
++			tmp *= stime;
++		}
++
++		total = utime + stime;
++
++		if (sizeof(cputime_t) == 4)
++			tmp = div_u64(tmp, (__force u32) total);
++		else
++			tmp = div64_u64(tmp, (__force u64) total);
++
++		scaled_time = (__force cputime_t) tmp;
++	}
+ 
+ 	/*
+ 	 * If the tick based count grows faster than the scheduler one,
+ 	 * the result of the scaling may go backward.
+ 	 * Let's enforce monotonicity.
+ 	 */
+-	prev->utime = max(prev->utime, utime);
+-	prev->stime = max(prev->stime, rtime - prev->utime);
++	if (utime_scale) {
++		prev->utime = max(prev->utime, scaled_time);
++		prev->stime = max(prev->stime, rtime - prev->utime);
++	} else {
++		prev->stime = max(prev->stime, scaled_time);
++		prev->utime = max(prev->utime, rtime - prev->stime);
++	}
+ 
+ 	*ut = prev->utime;
+ 	*st = prev->stime;
+-- 
+1.7.1
+
 
