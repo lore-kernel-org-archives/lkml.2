@@ -1,69 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab3AGBRU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 20:17:20 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59571 "EHLO arroyo.ext.ti.com"
+	id S1753401Ab3AGBR1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 20:17:27 -0500
+Received: from ozlabs.org ([203.10.76.45]:46261 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753062Ab3AGBRR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 20:17:17 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Axel Lin <axel.lin@ingics.com>
-CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH RFT] regulator: lp8788-ldo: Use ldo->en_pin to check if
- regulator is enabled by external pin
-Thread-Topic: [PATCH RFT] regulator: lp8788-ldo: Use ldo->en_pin to check if
- regulator is enabled by external pin
-Thread-Index: AQHN6xcHWa3VEY62mE+Yi0u7YatEY5g9AjgA
-Date: Mon, 7 Jan 2013 01:17:08 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E117BB@DQHE02.ent.ti.com>
-References: <1357371223.22227.1.camel@phoenix>
-In-Reply-To: <1357371223.22227.1.camel@phoenix>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.87.185.78]
-Content-Type: text/plain; charset="utf-8"
+	id S1753311Ab3AGBRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 20:17:22 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Josh Boyer <jwboyer@redhat.com>
+Cc: "Frank Ch. Eigler" <fche@redhat.com>, dhowells@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MODSIGN: Don't taint unless signature enforcing is enabled
+In-Reply-To: <20130104191205.GD27554@hansolo.jdub.homelinux.org>
+References: <20130104191205.GD27554@hansolo.jdub.homelinux.org>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Mon, 07 Jan 2013 11:39:47 +1030
+Message-ID: <87bod14x44.fsf@rustcorp.com.au>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r071HLjD024607
 
-Hi Axel,
+Josh Boyer <jwboyer@redhat.com> writes:
+> With module signing enabled but not in enforcing mode, we don't consider
+> unsigned modules to be an error.  However, we only mark sig_ok as true if
+> a signature verified.  This causes the module to be tainted with the
+> TAINT_FORCED_MODULE flag.
 
-> -----Original Message-----
-> From: Axel Lin [mailto:axel.lin@ingics.com]
-> Sent: Saturday, January 05, 2013 4:34 PM
-> To: Mark Brown
-> Cc: Kim, Milo; Girdwood, Liam; linux-kernel@vger.kernel.org
-> Subject: [PATCH RFT] regulator: lp8788-ldo: Use ldo->en_pin to check if
-> regulator is enabled by external pin
-> 
-> ldo->en_pin is set iff the regulator is enabled by external pin.
-> 
-> This patch sets ldo->en_pin to NULL if lp8788_gpio_request_ldo_en()
-> fails, then
-> we can use it to determinate if the regulator is controlled by external
-> pin or
-> register.
-> 
-> lp8788_get_ldo_enable_mode(), lp8788_ldo_ctrl_by_extern_pin() and
-> lp8788_ldo_is_enabled_by_extern_pin() functions are not used now,
-> remove them.
+Wait, what?  So, what does CONFIG_MODULE_SIG=y with MODULE_SIG_FORCE=n
+mean?  Why not just call that CONFIG_USELESS_BLOAT? :)
 
-I love this patch and it works in a real board.
+>  That in turn taints the kernel, which also disables lockdep.
 
-Initial driver code controls LDOs by reading the regulator control mode.
-It guarantees working even if the control mode is changed by mistake.
-But this case can be fixed using LP8788 platform data.
-This patch makes the driver simpler, so I do ack your patch.
-Thanks!
+Yeah, lockdep is oversensitive.  This has been argued before, take it up
+with Ingo.  Perhaps we need a taint flag bit to indicate that lockdep
+should actually be disabled?
 
-Acked-by: Milo Kim <milo.kim@ti.com>
-Tested-by: Milo Kim <milo.kim@ti.com>
+> Tainting the module and kernel when we don't consider something to be an
+> error seems excessive.  This marks sig_ok as true if we aren't in enforcing
+> mode.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+If we were to do this, please follow Plauger's Law: "Don't patch bad
+code - rewrite it."
+
+In this case, rip out the now-useless sig_ok field.
+
+Thanks,
+Rusty.
+
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 250092c..a50172e 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2443,8 +2443,10 @@ static int module_sig_check(struct load_info *info)
+>  	if (err < 0 && fips_enabled)
+>  		panic("Module verification failed with error %d in FIPS mode\n",
+>  		      err);
+> -	if (err == -ENOKEY && !sig_enforce)
+> +	if (err == -ENOKEY && !sig_enforce) {
+> +		info->sig_ok = true;
+>  		err = 0;
+> +	}
+>  
+>  	return err;
+>  }
+> -- 
+> 1.8.0.1
