@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877Ab3AGQCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:02:35 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47460 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab3AGQCe (ORCPT
+	id S1753789Ab3AGQJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:09:07 -0500
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:59797 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753595Ab3AGQJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:02:34 -0500
-X-Originating-IP: 217.70.178.140
-X-Originating-IP: 50.43.39.152
-Date: Mon, 7 Jan 2013 08:02:25 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 0/3] Documentation and rcutorture changes
- for 3.9
-Message-ID: <20130107160225.GD11145@leaf>
-References: <20130105170356.GA13534@linux.vnet.ibm.com>
+	Mon, 7 Jan 2013 11:09:06 -0500
+Date: Mon, 7 Jan 2013 17:09:00 +0100
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Gerald Schaefer <geraldsc@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] asm-generic/io.h: convert readX defines to functions
+Message-ID: <20130107160900.GB6898@osiris>
+References: <20130107153459.GA6898@osiris>
+ <12944963.pK1utZClTO@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130105170356.GA13534@linux.vnet.ibm.com>
+In-Reply-To: <12944963.pK1utZClTO@wuerfel>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+x-cbid: 13010716-4966-0000-0000-0000048D5D05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 09:03:56AM -0800, Paul E. McKenney wrote:
-> Hello!
+On Mon, Jan 07, 2013 at 03:42:38PM +0000, Arnd Bergmann wrote:
+> On Monday 07 January 2013 16:34:59 Heiko Carstens wrote:
 > 
-> The following are changes to documentation and rcutorture:
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> 1.	Export trace_clock_local() in order to allow rcutorture event
-> 	tracing to emit the time of the beginning of the RCU read-side
-> 	critical section at the point where a failure is detected.
-> 2.	Reduce rcutorture's read-side tracing to include only failures,
-> 	thus cutting the number of events down to something reasonable
-> 	(normally zero, in fact!).
-> 3.	Add atomic_xchg() to the list of atomic operations and memory
-> 	barriers, courtesy of Richard Braun.
+> if you fix this:
+> 
+> > +#define readl readl
+> > +static inline u32 __raw_readl(const volatile void __iomem *addr)
+> > +{
+> > +       return __le32_to_cpu(__raw_readl(addr));
+> > +}
+> 
+> to be called readl rather than __raw_readl
 
-For the whole series:
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+duhh... thanks! :)
+
