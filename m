@@ -1,340 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab3AGUIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 15:08:25 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:56793 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750796Ab3AGUIY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 15:08:24 -0500
-Subject: Re: [PATCH] omap: Properly handle resources for omap_devices
-Mime-Version: 1.0 (Apple Message framework v1085)
+	id S1755461Ab3AGUJF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 15:09:05 -0500
+Received: from smtp1-g21.free.fr ([212.27.42.1]:43238 "EHLO smtp1-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796Ab3AGUJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 15:09:03 -0500
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c: reposition free_irq to avoid access to invalid data
+References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr>
+	<1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr>
+	<Pine.LNX.4.64.1301071111420.23972@axis700.grange>
+X-URL: http://belgarath.falguerolles.org/
+Date: Mon, 07 Jan 2013 21:08:46 +0100
+In-Reply-To: <Pine.LNX.4.64.1301071111420.23972@axis700.grange> (Guennadi
+	Liakhovetski's message of "Mon, 7 Jan 2013 12:09:36 +0100 (CET)")
+Message-ID: <874nisbvsh.fsf@free.fr>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20130107200512.GE14149@atomide.com>
-Date: Mon, 7 Jan 2013 22:08:18 +0200
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <564C69D2-763E-40FF-9A37-D6501504DDD1@antoniou-consulting.com>
-References: <1357252294-6024-1-git-send-email-panto@antoniou-consulting.com> <20130107200512.GE14149@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1085)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Guennadi Liakhovetski <g.liakhovetski@gmx.de> writes:
 
-On Jan 7, 2013, at 10:05 PM, Tony Lindgren wrote:
+> (adding Robert to CC)
+> I don't think any data is freed by pxa_free_dma(), it only disables DMA on 
+> a certain channel. Theoretically there could be a different problem: 
+> pxa_free_dma() deactivates DMA, whereas pxa_dma_start_channels() activates 
+> it. But I think we're also protected against that: by the time 
+> pxa_camera_remove() is called, and operation on the interface has been 
+> stopped, client devices have been detached, pxa_camera_remove_device() has 
+> been called, which has also stopped the interface clock. And with clock 
+> stopped no interrupts can be generated. And the case of interrupt having 
+> been generated before clk_disabled() and only delivered to the driver so 
+> much later, that we're already unloading the module, seems really 
+> impossible to me. Robert, you agree?
 
-> Hi,
-> 
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [130103 14:34]:
->> omap_device relies on the platform notifier callbacks managing resources
->> behind the scenes. The resources were not properly linked causing crashes
->> when removing the device.
->> 
->> Rework the resource modification code so that linking is performed properly,
->> and make sure that no resources that have no parent (which can happen for DMA
->> & IRQ resources) are ever left for cleanup by the core resource layer.
-> 
-> Sounds like a fix, but it's hard to figure out from the patch which parts
-> are the fix. Can you please split this patch into two, first move the
-> code around with no functional changes, and then a second patch to fix
-> the issue?
-> 
-> Thanks,
-> 
-> Tony
+Agreed that pxa_free_dma() doesn't free anything, that one is easy :)
 
-OK Tony, will do.
+And agreed too for the second part, with a slighly different explanation :
+ - pxa_camera_remove_device() has been called as you said
+ - inside this function, check comment
+   "/* disable capture, disable interrupts */"
+   => this ensures no interrupt can be generated anymore
 
-Regards
+So after pxa_camera_remove_device() has been called, no interrupts can be
+generated.
 
--- Pantelis
+Yet as you said, it leaves the "almost impossible" scenario :
+ - a user begins a capture
+ - the user closes the capture device and unloads pxa-camera.ko:
+     soc_camera_close()
+       pxa_camera_remove_device()
+         the IRQ line is asserted but doesn't trigger yet the interrupt handler
+         (yes I know, improbable)
+         meanwhile, IRQs are disabled, DMA channels are stopped
+     switch_to(rmmod)
+       => yes I know, impossible, the interrupt handler must be run before, but
+       let's continue for love of discussion ...
+     rmmod pxa-camera
+       pxa_camera_remove()
+         pxa_free_dma() * 3
+         ----> here the IRQ handler kicks in !!!
+               => pxa_camera_irq()
+                    pxa_dma_start_channels()
+         ----> it hurts !
 
-> 
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->> ---
->> arch/arm/mach-omap2/omap_device.c | 232 ++++++++++++++++++++++++--------------
->> 1 file changed, 148 insertions(+), 84 deletions(-)
->> 
->> diff --git a/arch/arm/mach-omap2/omap_device.c b/arch/arm/mach-omap2/omap_device.c
->> index e065daa..9f8dba1 100644
->> --- a/arch/arm/mach-omap2/omap_device.c
->> +++ b/arch/arm/mach-omap2/omap_device.c
->> @@ -494,30 +494,156 @@ static int omap_device_fill_resources(struct omap_device *od,
->> }
->> 
->> /**
->> - * _od_fill_dma_resources - fill in array of struct resource with dma resources
->> + * omap_device_fixup_resources - Fix platform device resources
->>  * @od: struct omap_device *
->> - * @res: pointer to an array of struct resource to be filled in
->> - *
->> - * Populate one or more empty struct resource pointed to by @res with
->> - * the dma resource data for this omap_device @od.  Used by
->> - * omap_device_alloc() after calling omap_device_count_resources().
->> - *
->> - * Ideally this function would not be needed at all.  If we have
->> - * mechanism to get dma resources from DT.
->>  *
->> - * Returns 0.
->> + * Fixup the platform device resources so that the resources
->> + * from the hwmods are included for.
->>  */
->> -static int _od_fill_dma_resources(struct omap_device *od,
->> -				      struct resource *res)
->> +static int omap_device_fixup_resources(struct omap_device *od)
->> {
->> -	int i, r;
->> +	struct platform_device *pdev = od->pdev;
->> +	int i, j, ret, res_count;
->> +	struct resource *res, *r, *rnew, *rn;
->> +	unsigned long type;
->> 
->> -	for (i = 0; i < od->hwmods_cnt; i++) {
->> -		r = omap_hwmod_fill_dma_resources(od->hwmods[i], res);
->> -		res += r;
->> +	/*
->> +	 * DT Boot:
->> +	 *   OF framework will construct the resource structure (currently
->> +	 *   does for MEM & IRQ resource) and we should respect/use these
->> +	 *   resources, killing hwmod dependency.
->> +	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
->> +	 *   have been allocated by OF layer already (through DTB).
->> +	 *
->> +	 * Non-DT Boot:
->> +	 *   Here, pdev->num_resources = 0, and we should get all the
->> +	 *   resources from hwmod.
->> +	 *
->> +	 * TODO: Once DMA resource is available from OF layer, we should
->> +	 *   kill filling any resources from hwmod.
->> +	 */
->> +
->> +	/* count number of resources hwmod provides */
->> +	res_count = omap_device_count_resources(od, IORESOURCE_IRQ |
->> +					IORESOURCE_DMA | IORESOURCE_MEM);
->> +
->> +	/* if no resources from hwmod, we're done already */
->> +	if (res_count == 0)
->> +		return 0;
->> +
->> +	/* Allocate resources memory to account for all hwmod resources */
->> +	res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
->> +	if (!res) {
->> +		ret = -ENOMEM;
->> +		goto fail_no_res;
->> 	}
->> 
->> +	/* fill all the resources */
->> +	ret = omap_device_fill_resources(od, res);
->> +	if (ret != 0)
->> +		goto fail_no_fill;
->> +
->> +	/*
->> +	 * If pdev->num_resources > 0, then assume that,
->> +	 * MEM and IRQ resources will only come from DT and only
->> +	 * fill DMA resource from hwmod layer.
->> +	 */
->> +	if (pdev->num_resources > 0) {
->> +
->> +		dev_dbg(&pdev->dev, "%s(): resources allocated %d hwmod #%d\n",
->> +			__func__, pdev->num_resources, res_count);
->> +
->> +		/* find number of resources needing to be inserted */
->> +		for (i = 0, j = 0, r = res; i < res_count; i++, r++) {
->> +			type = resource_type(r);
->> +			if (type == IORESOURCE_DMA)
->> +				j++;
->> +		}
->> +
->> +		/* no need to insert anything, just return */
->> +		if (j == 0) {
->> +			kfree(res);
->> +			return 0;
->> +		}
->> +
->> +		/* we need to insert j additional resources */
->> +		rnew = kzalloc(sizeof(*rnew) *
->> +				(pdev->num_resources + j), GFP_KERNEL);
->> +		if (rnew == NULL)
->> +			goto fail_no_rnew;
->> +
->> +		/*
->> +		 * Unlink any resources from any lists.
->> +		 * This is important since the copying destroys any
->> +		 * linkage
->> +		 */
->> +		for (i = 0, r = pdev->resource;
->> +				i < pdev->num_resources; i++, r++) {
->> +
->> +			if (!r->parent)
->> +				continue;
->> +
->> +			dev_dbg(&pdev->dev,
->> +					"Releasing resource %p\n", r);
->> +			release_resource(r);
->> +			r->parent = NULL;
->> +			r->sibling = NULL;
->> +			r->child = NULL;
->> +		}
->> +
->> +		memcpy(rnew, pdev->resource,
->> +				sizeof(*rnew) * pdev->num_resources);
->> +
->> +		/* now append the resources from the hwmods */
->> +		rn = rnew + pdev->num_resources;
->> +		for (i = 0, r = res; i < res_count; i++, r++) {
->> +
->> +			type = resource_type(r);
->> +			if (type != IORESOURCE_DMA)
->> +				continue;
->> +
->> +			/* append the hwmod resource */
->> +			memcpy(rn, r, sizeof(*r));
->> +
->> +			/* make sure these are zeroed out */
->> +			rn->parent = NULL;
->> +			rn->child = NULL;
->> +			rn->sibling = NULL;
->> +
->> +			rn++;
->> +		}
->> +		kfree(res);	/* we don't need res anymore */
->> +
->> +		/* this is our new resource table */
->> +		res = rnew;
->> +		res_count = j;
->> +
->> +	} else {
->> +		dev_dbg(&pdev->dev, "%s(): using resources from hwmod %d\n",
->> +			__func__, res_count);
->> +	}
->> +
->> +	ret = platform_device_add_resources(pdev, res, res_count);
->> +	kfree(res);
->> +
->> +	/* failed to add the resources? */
->> +	if (ret != 0)
->> +		return ret;
->> +
->> +	/* finally link all the resources again */
->> +	ret = platform_device_link_resources(pdev);
->> +	if (ret != 0)
->> +		return ret;
->> +
->> 	return 0;
->> +
->> +fail_no_rnew:
->> +	/* nothing */
->> +fail_no_fill:
->> +	kfree(res);
->> +
->> +fail_no_res:
->> +	return ret;
->> }
->> 
->> /**
->> @@ -541,9 +667,8 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
->> {
->> 	int ret = -ENOMEM;
->> 	struct omap_device *od;
->> -	struct resource *res = NULL;
->> -	int i, res_count;
->> 	struct omap_hwmod **hwmods;
->> +	int i;
->> 
->> 	od = kzalloc(sizeof(struct omap_device), GFP_KERNEL);
->> 	if (!od) {
->> @@ -553,79 +678,18 @@ struct omap_device *omap_device_alloc(struct platform_device *pdev,
->> 	od->hwmods_cnt = oh_cnt;
->> 
->> 	hwmods = kmemdup(ohs, sizeof(struct omap_hwmod *) * oh_cnt, GFP_KERNEL);
->> -	if (!hwmods)
->> +	if (!hwmods) {
->> +		ret = -ENOMEM;
->> 		goto oda_exit2;
->> +	}
->> 
->> 	od->hwmods = hwmods;
->> 	od->pdev = pdev;
->> 
->> -	/*
->> -	 * Non-DT Boot:
->> -	 *   Here, pdev->num_resources = 0, and we should get all the
->> -	 *   resources from hwmod.
->> -	 *
->> -	 * DT Boot:
->> -	 *   OF framework will construct the resource structure (currently
->> -	 *   does for MEM & IRQ resource) and we should respect/use these
->> -	 *   resources, killing hwmod dependency.
->> -	 *   If pdev->num_resources > 0, we assume that MEM & IRQ resources
->> -	 *   have been allocated by OF layer already (through DTB).
->> -	 *   As preparation for the future we examine the OF provided resources
->> -	 *   to see if we have DMA resources provided already. In this case
->> -	 *   there is no need to update the resources for the device, we use the
->> -	 *   OF provided ones.
->> -	 *
->> -	 * TODO: Once DMA resource is available from OF layer, we should
->> -	 *   kill filling any resources from hwmod.
->> -	 */
->> -	if (!pdev->num_resources) {
->> -		/* Count all resources for the device */
->> -		res_count = omap_device_count_resources(od, IORESOURCE_IRQ |
->> -							    IORESOURCE_DMA |
->> -							    IORESOURCE_MEM);
->> -	} else {
->> -		/* Take a look if we already have DMA resource via DT */
->> -		for (i = 0; i < pdev->num_resources; i++) {
->> -			struct resource *r = &pdev->resource[i];
->> -
->> -			/* We have it, no need to touch the resources */
->> -			if (r->flags == IORESOURCE_DMA)
->> -				goto have_everything;
->> -		}
->> -		/* Count only DMA resources for the device */
->> -		res_count = omap_device_count_resources(od, IORESOURCE_DMA);
->> -		/* The device has no DMA resource, no need for update */
->> -		if (!res_count)
->> -			goto have_everything;
->> -
->> -		res_count += pdev->num_resources;
->> -	}
->> -
->> -	/* Allocate resources memory to account for new resources */
->> -	res = kzalloc(sizeof(struct resource) * res_count, GFP_KERNEL);
->> -	if (!res)
->> -		goto oda_exit3;
->> -
->> -	if (!pdev->num_resources) {
->> -		dev_dbg(&pdev->dev, "%s: using %d resources from hwmod\n",
->> -			__func__, res_count);
->> -		omap_device_fill_resources(od, res);
->> -	} else {
->> -		dev_dbg(&pdev->dev,
->> -			"%s: appending %d DMA resources from hwmod\n",
->> -			__func__, res_count - pdev->num_resources);
->> -		memcpy(res, pdev->resource,
->> -		       sizeof(struct resource) * pdev->num_resources);
->> -		_od_fill_dma_resources(od, &res[pdev->num_resources]);
->> -	}
->> -
->> -	ret = platform_device_add_resources(pdev, res, res_count);
->> -	kfree(res);
->> -
->> -	if (ret)
->> +	ret = omap_device_fixup_resources(od);
->> +	if (ret != 0)
->> 		goto oda_exit3;
->> 
->> -have_everything:
->> 	if (!pm_lats) {
->> 		pm_lats = omap_default_latency;
->> 		pm_lats_cnt = ARRAY_SIZE(omap_default_latency);
->> -- 
->> 1.7.12
->> 
+My call is that this is impossible because the switch_to() should run the IRQ
+handler before pxa_camera_remove() is called.
 
+So all this to say that I think we're safe, unless a heavy ion or a cosmic ray
+strikes the PXA :)
+
+Cheers.
+
+--
+Robert
