@@ -1,39 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab3AGQrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:47:13 -0500
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:48927 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab3AGQrL (ORCPT
+	id S1753998Ab3AGQr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:47:59 -0500
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:60459 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab3AGQr5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:47:11 -0500
-Date: Mon, 7 Jan 2013 08:47:07 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] cpuset: drop cpuset->stack_list and ->parent, take#2
-Message-ID: <20130107164707.GI3926@htj.dyndns.org>
-References: <1357249446-25075-1-git-send-email-tj@kernel.org>
- <50E94392.2050509@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50E94392.2050509@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 Jan 2013 11:47:57 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Felipe Balbi <balbi@ti.com>, Linus Walleij <linus.walleij@linaro.org>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-usb@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH] usb: musb: ux500: use clk_prepare_enable and clk_disable_unprepare
+Date: Mon,  7 Jan 2013 17:47:41 +0100
+Message-Id: <1357577261-31536-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 05:27:46PM +0800, Li Zefan wrote:
-> Acked-by: Li Zefan <lizefan@huawei.com>
+This patch converts the module to use clk_prepare_enable and
+clk_disable_unprepare variants as required by common clock framework.
 
-I'll route this together with "decouple cpuset locking" patchset in a
-separate branch in cgroup tree.  If anyone objects, please let me
-know.
+Without this the system crash during probe function.
 
-Thanks.
+Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
+---
+ drivers/usb/musb/ux500.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/usb/musb/ux500.c b/drivers/usb/musb/ux500.c
+index a27ca1a..0804661 100644
+--- a/drivers/usb/musb/ux500.c
++++ b/drivers/usb/musb/ux500.c
+@@ -108,7 +108,7 @@ static int ux500_probe(struct platform_device *pdev)
+ 		goto err3;
+ 	}
+ 
+-	ret = clk_enable(clk);
++	ret = clk_prepare_enable(clk);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to enable clock\n");
+ 		goto err4;
+@@ -148,7 +148,7 @@ static int ux500_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ err5:
+-	clk_disable(clk);
++	clk_disable_unprepare(clk);
+ 
+ err4:
+ 	clk_put(clk);
+@@ -168,7 +168,7 @@ static int ux500_remove(struct platform_device *pdev)
+ 	struct ux500_glue	*glue = platform_get_drvdata(pdev);
+ 
+ 	platform_device_unregister(glue->musb);
+-	clk_disable(glue->clk);
++	clk_disable_unprepare(glue->clk);
+ 	clk_put(glue->clk);
+ 	kfree(glue);
+ 
+@@ -182,7 +182,7 @@ static int ux500_suspend(struct device *dev)
+ 	struct musb		*musb = glue_to_musb(glue);
+ 
+ 	usb_phy_set_suspend(musb->xceiv, 1);
+-	clk_disable(glue->clk);
++	clk_disable_unprepare(glue->clk);
+ 
+ 	return 0;
+ }
+@@ -193,7 +193,7 @@ static int ux500_resume(struct device *dev)
+ 	struct musb		*musb = glue_to_musb(glue);
+ 	int			ret;
+ 
+-	ret = clk_enable(glue->clk);
++	ret = clk_prepare_enable(glue->clk);
+ 	if (ret) {
+ 		dev_err(dev, "failed to enable clock\n");
+ 		return ret;
 -- 
-tejun
+1.7.12.1
+
