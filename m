@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab3AGXCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 18:02:35 -0500
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:36067 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753411Ab3AGXCd (ORCPT
+	id S1756087Ab3AGXLx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 18:11:53 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:39543 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab3AGXLv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 18:02:33 -0500
-Date: Mon, 7 Jan 2013 17:02:18 -0600
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org
-Subject: Re: kernel BUG at kernel/sched_rt.c:493!
-Message-ID: <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
-References: <20130105174632.GB19226@u1004.rgmadvisors.com>
- <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
+	Mon, 7 Jan 2013 18:11:51 -0500
+X-Greylist: delayed 86687 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 18:11:51 EST
+Message-ID: <50EB5636.4080705@linaro.org>
+Date: Tue, 08 Jan 2013 00:11:50 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: please cleanup the cpuidle tree
+References: <20130108092751.4bd60a67280e284369553c18@canb.auug.org.au>
+In-Reply-To: <20130108092751.4bd60a67280e284369553c18@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 11:58:18AM -0600, Shawn Bohrer wrote:
-> On Sat, Jan 05, 2013 at 11:46:32AM -0600, Shawn Bohrer wrote:
-> > I've tried reproducing the issue, but so far I've been unsuccessful
-> > but I believe that is because my RT tasks aren't using enough CPU
-> > cause borrowing from the other runqueues.  Normally our RT tasks use
-> > very little CPU so I'm not entirely sure what conditions caused them
-> > to run into throttling on the day that this happened.
+On 01/07/2013 11:27 PM, Stephen Rothwell wrote:
+> Hi Daniel,
 > 
-> I've managed to reproduce this a couple times now on 3.1.9 I'll give
-> this a try later with a more recent kernel.  Here is what I've done to
-> reproduce the issue.
-> 
-> 
-> # Setup in shell 1
-> root@berbox39:/cgroup/cpuset# mkdir package0
-> root@berbox39:/cgroup/cpuset# echo 0 > package0/cpuset.mems
-> root@berbox39:/cgroup/cpuset# echo 0,2,4,6 > package0/cpuset.cpus
-> root@berbox39:/cgroup/cpuset# cat cpuset.sched_load_balance
-> 1
-> root@berbox39:/cgroup/cpuset# cat package0/cpuset.sched_load_balance
-> 1
-> root@berbox39:/cgroup/cpuset# cat sysdefault/cpuset.sched_load_balance
-> 1
-> root@berbox39:/cgroup/cpuset# echo 1,3,5,7 > sysdefault/cpuset.cpus
-> root@berbox39:/cgroup/cpuset# echo 0 > sysdefault/cpuset.mems
-> root@berbox39:/cgroup/cpuset# echo $$ > package0/tasks
-> 
-> # Setup in shell 2
-> root@berbox39:~# cd /cgroup/cpuset/
-> root@berbox39:/cgroup/cpuset# chrt -f -p 60 $$
-> root@berbox39:/cgroup/cpuset# echo $$ > sysdefault/tasks
-> 
-> # In shell 1
-> root@berbox39:/cgroup/cpuset# chrt -f 1 /root/burn.sh &
-> root@berbox39:/cgroup/cpuset# chrt -f 1 /root/burn.sh &
-> 
-> # In shell 2
-> root@berbox39:/cgroup/cpuset# echo 0 > cpuset.sched_load_balance
-> root@berbox39:/cgroup/cpuset# echo 1 > cpuset.sched_load_balance
-> root@berbox39:/cgroup/cpuset# echo 0 > cpuset.sched_load_balance
-> root@berbox39:/cgroup/cpuset# echo 1 > cpuset.sched_load_balance
-> 
-> I haven't found the exact magic combination but I've been going back
-> and forth adding/killing burn.sh processes and toggling
-> cpuset.sched_load_balance and in a couple of minutes I can usually get
-> the machine to trigger the bug.
+> All the commits in the cpuidle tree have been included upstream before
+> v3.6-rc1.  They were rewritten before being merged upstream and so are
+> now causing merge conflicts in linux-next.  Could you please reset the
+> head of your tree
+> (git://git.linaro.org/people/dlezcano/cpuidle-next.git#cpuidle-next) to
+> be somewhere in the tree that yours is merged into (pm or Linus').
 
-I've also managed to reproduce this on 3.8.0-rc2 so it appears the bug
-is still present in the latest kernel.
+Sure. I believe it is done now.
 
-Also just re-reading my instructions above /root/burn.sh is just a
-simple:
+> Alternatively, if you are not using it any more, let me know and I will
+> remove it from linux-next.
 
-while true; do : ; done
+I am planning to do some more cleanup in a very near future. So I prefer
+to keep it untouched for now.
 
-I've also had to make the kworker threads SCHED_FIFO with a higher
-priority than burn.sh or as expected I can lock up the system due to
-some xfs threads getting starved.
-
-Let me know if anyone needs any more information, or needs me to try
-anything since it appears I can trigger this fairly easily now.
-
---
-Shawn
+Thanks
+  -- Daniel
 
 -- 
+ <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
