@@ -1,236 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541Ab3AGMZY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:25:24 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58360 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753352Ab3AGMZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:25:21 -0500
-Date: Mon, 7 Jan 2013 12:25:16 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130107122516.GC3885@suse.de>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130104160148.GB3885@suse.de>
- <20130106120700.GA24671@dcvr.yhbt.net>
+	id S1754546Ab3AGM1g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:27:36 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:32799 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754235Ab3AGM1e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 07:27:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130106120700.GA24671@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1356357068-31807-2-git-send-email-merez@codeaurora.org>
+References: <1356357068-31807-2-git-send-email-merez@codeaurora.org>
+Date: Mon, 7 Jan 2013 13:27:32 +0100
+Message-ID: <CAPDyKFpB0FLgQEBuDuHV3JR7tcc2AWeKe8kj5_hTudCbkTZEXQ@mail.gmail.com>
+Subject: Re: [PATCH v4 1/2] mmc: core: Add support for idle time BKOPS
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Maya Erez <merez@codeaurora.org>
+Cc: linux-mmc@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 12:07:00PM +0000, Eric Wong wrote:
-> Mel Gorman <mgorman@suse.de> wrote:
-> > Using a 3.7.1 or 3.8-rc2 kernel, can you reproduce the problem and then
-> > answer the following questions please?
-> 
-> This is on my main machine running 3.8-rc2
-> 
-> > 1. What are the contents of /proc/vmstat at the time it is stuck?
-> 
-> ===> /proc/vmstat <===
+Hi Maya,
 
-According to this, THP is barely being used -- only 24 THP pages at the time
-and the LRU lists are dominated by file pages. The isolated and throttled
-counters look fine. There is a lot of memory currently under writeback and
-a large number of dirty pages are reaching the end of the LRU list which
-is inefficient but does not account for the reported bug.
+On 24 December 2012 14:51, Maya Erez <merez@codeaurora.org> wrote:
+> Devices have various maintenance operations need to perform internally.
+> In order to reduce latencies during time critical operations like read
+> and write, it is better to execute maintenance operations in other
+> times - when the host is not being serviced. Such operations are called
+> Background operations (BKOPS).
+> The device notifies the status of the BKOPS need by updating BKOPS_STATUS
+> (EXT_CSD byte [246]).
+>
+> According to the standard a host that supports BKOPS shall check the
+> status periodically and start background operations as needed, so that
+> the device has enough time for its maintenance operations.
+>
+> This patch adds support for this periodic check of the BKOPS status.
+> Since foreground operations are of higher priority than background
+> operations the host will check the need for BKOPS when it is idle,
+> and in case of an incoming request the BKOPS operation will be
+> interrupted.
+>
+> When the mmcqd thread is idle, a delayed work is created to check the
+> need for BKOPS. The time to start the delayed work can be set by the host
+> controller. If this time is not set, a default time is used.
 
-> > 2. What are the contents of /proc/PID/stack for every toosleepy
-> >    process when they are stuck?
-> 
-> pid and tid stack info, 28018 is the thread I used to automate
-> reporting (pushed to git://bogomips.org/toosleepy.git)
-> 
-> ===> 28014[28014]/stack <===
-> [<ffffffff8105a97b>] futex_wait_queue_me+0xb7/0xd2
-> [<ffffffff8105b7fc>] futex_wait+0xf6/0x1f6
-> [<ffffffff811bb3af>] cpumask_next_and+0x2b/0x37
-> [<ffffffff8104ebfa>] select_task_rq_fair+0x518/0x59a
-> [<ffffffff8105c8f1>] do_futex+0xa9/0x88f
-> [<ffffffff810509a4>] check_preempt_wakeup+0x10d/0x1a7
-> [<ffffffff8104757d>] check_preempt_curr+0x25/0x62
-> [<ffffffff8104d4cc>] wake_up_new_task+0x96/0xc2
-> [<ffffffff8105d1e9>] sys_futex+0x112/0x14d
-> [<ffffffff81322a49>] stub_clone+0x69/0x90
-> [<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
+I believe I have asked this question before; Have you considered to
+use runtime PM autosuspend feature instead of adding a delayed work to
+handle idle BKOPS?
+Similar how sdio is doing mmc_power_save|restore, but for sd/mmc we
+handle the BKOPS instead. My feeling is that it could simplify this
+patch quite significantly.
 
-Looks ok.
+It would be interesting to hear about your view of this idea.
 
-> ===> 28014[28015]/stack <===
-> [<ffffffff812ae316>] dev_hard_start_xmit+0x281/0x3f1
-> [<ffffffff81041010>] add_wait_queue+0x14/0x40
-> [<ffffffff810de0bc>] poll_schedule_timeout+0x43/0x5d
-> [<ffffffff810deb46>] do_sys_poll+0x314/0x39b
-> [<ffffffff810de220>] pollwake+0x0/0x4e
-> [<ffffffff8129fc1d>] release_sock+0xe5/0x11b
-> [<ffffffff812d7f61>] tcp_recvmsg+0x713/0x846
-> [<ffffffff812f432c>] inet_recvmsg+0x64/0x75
-> [<ffffffff8129a26b>] sock_recvmsg+0x86/0x9e
-> [<ffffffff8100541c>] emulate_vsyscall+0x1e6/0x28e
-> [<ffffffff8129a3bc>] sockfd_lookup_light+0x1a/0x50
-> [<ffffffff8129c18b>] sys_recvfrom+0x110/0x128
-> [<ffffffff81000e34>] __switch_to+0x235/0x3c5
-> [<ffffffff810ca402>] kmem_cache_free+0x32/0xb9
-> [<ffffffff810b809d>] remove_vma+0x44/0x4c
-> [<ffffffff810df0a5>] sys_ppoll+0xaf/0x123
-> [<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
+> If the card raised an exception, the need for urgent BKOPS (level 2/3)
+> will be checked immediately and if needed, the BKOPS will be performed
+> without waiting for the next idle time.
+>
+> Signed-off-by: Maya Erez <merez@codeaurora.org>
+>
+> diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+> index 21056b9..64bbf75 100644
+> --- a/drivers/mmc/card/block.c
+> +++ b/drivers/mmc/card/block.c
+> @@ -1473,9 +1473,15 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
+>         struct mmc_blk_data *md = mq->data;
+>         struct mmc_card *card = md->queue.card;
+>
+> -       if (req && !mq->mqrq_prev->req)
+> +       if (req && !mq->mqrq_prev->req) {
+>                 /* claim host only for the first request */
+>                 mmc_claim_host(card->host);
+> +               if (card->ext_csd.bkops_en &&
+> +                   card->bkops_info.started_delayed_bkops) {
+> +                       card->bkops_info.started_delayed_bkops = false;
+> +                       mmc_stop_bkops(card);
+> +               }
+> +       }
+>
+>         ret = mmc_blk_part_switch(card, md);
+>         if (ret) {
+> diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
+> index fadf52e..9d0c96a 100644
+> --- a/drivers/mmc/card/queue.c
+> +++ b/drivers/mmc/card/queue.c
+> @@ -51,6 +51,7 @@ static int mmc_queue_thread(void *d)
+>  {
+>         struct mmc_queue *mq = d;
+>         struct request_queue *q = mq->queue;
+> +       struct mmc_card *card = mq->card;
+>
+>         current->flags |= PF_MEMALLOC;
+>
+> @@ -83,6 +84,7 @@ static int mmc_queue_thread(void *d)
+>                                 set_current_state(TASK_RUNNING);
+>                                 break;
+>                         }
+> +                       mmc_start_delayed_bkops(card);
+>                         up(&mq->thread_sem);
+>                         schedule();
+>                         down(&mq->thread_sem);
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index aaed768..36cef94 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -256,6 +256,33 @@ mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
+>  }
+>
+>  /**
+> + * mmc_start_delayed_bkops() - Start a delayed work to check for
+> + *      the need of non urgent BKOPS
+> + *
+> + * @card: MMC card to start BKOPS on
+> + */
+> +void mmc_start_delayed_bkops(struct mmc_card *card)
+> +{
+> +       if (!card || !card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+> +               return;
+> +
+> +       pr_debug("%s: %s: queueing delayed_bkops_work\n",
+> +                mmc_hostname(card->host), __func__);
+> +
+> +       /*
+> +        * cancel_delayed_bkops_work will prevent a race condition between
+> +        * fetching a request by the mmcqd and the delayed work, in case
+> +        * it was removed from the queue work but not started yet
+> +        */
+> +       card->bkops_info.cancel_delayed_work = false;
+> +       card->bkops_info.started_delayed_bkops = true;
+> +       queue_delayed_work(system_nrt_wq, &card->bkops_info.dw,
+> +                          msecs_to_jiffies(
+> +                                  card->bkops_info.delay_ms));
+> +}
+> +EXPORT_SYMBOL(mmc_start_delayed_bkops);
+> +
+> +/**
+>   *     mmc_start_bkops - start BKOPS for supported cards
+>   *     @card: MMC card to start BKOPS
+>   *     @form_exception: A flag to indicate if this function was
+> @@ -272,25 +299,47 @@ void mmc_start_bkops(struct mmc_card *card, bool from_exception)
+>         bool use_busy_signal;
+>
+>         BUG_ON(!card);
+> -
+> -       if (!card->ext_csd.bkops_en || mmc_card_doing_bkops(card))
+> +       if (!card->ext_csd.bkops_en)
+>                 return;
+>
+> +       mmc_claim_host(card->host);
+> +
+> +       if ((card->bkops_info.cancel_delayed_work) && !from_exception) {
+> +               pr_debug("%s: %s: cancel_delayed_work was set, exit\n",
+> +                        mmc_hostname(card->host), __func__);
+> +               card->bkops_info.cancel_delayed_work = false;
+> +               goto out;
+> +       }
+> +
+> +       if (mmc_card_doing_bkops(card)) {
+> +               pr_debug("%s: %s: already doing bkops, exit\n",
+> +                        mmc_hostname(card->host), __func__);
+> +               goto out;
+> +       }
+> +
+>         err = mmc_read_bkops_status(card);
+>         if (err) {
+>                 pr_err("%s: Failed to read bkops status: %d\n",
+>                        mmc_hostname(card->host), err);
+> -               return;
+> +               goto out;
+>         }
+>
+>         if (!card->ext_csd.raw_bkops_status)
+> -               return;
+> +               goto out;
+> +
+> +       pr_info("%s: %s: card->ext_csd.raw_bkops_status = 0x%x\n",
+> +               mmc_hostname(card->host), __func__,
+> +               card->ext_csd.raw_bkops_status);
+>
+> +       /*
+> +        * If the function was called due to exception but there is no need
+> +        * for urgent BKOPS, BKOPs will be performed by the delayed BKOPs
+> +        * work, before going to suspend
+> +        */
+>         if (card->ext_csd.raw_bkops_status < EXT_CSD_BKOPS_LEVEL_2 &&
+>             from_exception)
+> -               return;
+> +               goto out;
+>
+> -       mmc_claim_host(card->host);
+>         if (card->ext_csd.raw_bkops_status >= EXT_CSD_BKOPS_LEVEL_2) {
+>                 timeout = MMC_BKOPS_MAX_TIMEOUT;
+>                 use_busy_signal = true;
+> @@ -319,6 +368,27 @@ out:
+>  }
+>  EXPORT_SYMBOL(mmc_start_bkops);
+>
+> +/**
+> + * mmc_start_idle_time_bkops() - check if a non urgent BKOPS is
+> + * needed
+> + * @work:      The idle time BKOPS work
+> + */
+> +void mmc_start_idle_time_bkops(struct work_struct *work)
+> +{
+> +       struct mmc_card *card = container_of(work, struct mmc_card,
+> +                       bkops_info.dw.work);
+> +
+> +       /*
+> +        * Prevent a race condition between mmc_stop_bkops and the delayed
+> +        * BKOPS work in case the delayed work is executed on another CPU
+> +        */
+> +       if (card->bkops_info.cancel_delayed_work)
+> +               return;
+> +
+> +       mmc_start_bkops(card, false);
+> +}
+> +EXPORT_SYMBOL(mmc_start_idle_time_bkops);
+> +
+>  static void mmc_wait_done(struct mmc_request *mrq)
+>  {
+>         complete(&mrq->completion);
+> @@ -585,6 +655,17 @@ int mmc_stop_bkops(struct mmc_card *card)
+>         int err = 0;
+>
+>         BUG_ON(!card);
+> +
+> +       /*
+> +        * Notify the delayed work to be cancelled, in case it was already
+> +        * removed from the queue, but was not started yet
+> +        */
+> +       card->bkops_info.cancel_delayed_work = true;
+> +       if (delayed_work_pending(&card->bkops_info.dw))
+> +               cancel_delayed_work_sync(&card->bkops_info.dw);
+> +       if (!mmc_card_doing_bkops(card))
+> +               goto out;
+> +
+>         err = mmc_interrupt_hpi(card);
+>
+>         /*
+> @@ -596,6 +677,7 @@ int mmc_stop_bkops(struct mmc_card *card)
+>                 err = 0;
+>         }
+>
+> +out:
+>         return err;
+>  }
+>  EXPORT_SYMBOL(mmc_stop_bkops);
+> @@ -2536,15 +2618,15 @@ int mmc_pm_notify(struct notifier_block *notify_block,
+>         switch (mode) {
+>         case PM_HIBERNATION_PREPARE:
+>         case PM_SUSPEND_PREPARE:
+> -               if (host->card && mmc_card_mmc(host->card) &&
+> -                   mmc_card_doing_bkops(host->card)) {
+> +               if (host->card && mmc_card_mmc(host->card)) {
+> +                       mmc_claim_host(host);
+>                         err = mmc_stop_bkops(host->card);
+> +                       mmc_release_host(host);
+>                         if (err) {
+>                                 pr_err("%s: didn't stop bkops\n",
+>                                         mmc_hostname(host));
+>                                 return err;
+>                         }
+> -                       mmc_card_clr_doing_bkops(host->card);
+>                 }
+>
+>                 spin_lock_irqsave(&host->lock, flags);
+> diff --git a/drivers/mmc/core/mmc.c b/drivers/mmc/core/mmc.c
+> index e6e3911..f68624a 100644
+> --- a/drivers/mmc/core/mmc.c
+> +++ b/drivers/mmc/core/mmc.c
+> @@ -1275,6 +1275,26 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
+>                 }
+>         }
+>
+> +       if (!oldcard) {
+> +               if (card->ext_csd.bkops_en) {
+> +                       INIT_DELAYED_WORK(&card->bkops_info.dw,
+> +                                         mmc_start_idle_time_bkops);
+> +
+> +                       /*
+> +                        * Calculate the time to start the BKOPs checking.
+> +                        * The host controller can set this time in order to
+> +                        * prevent a race condition before starting BKOPs
+> +                        * and going into suspend.
+> +                        * If the host controller didn't set this time,
+> +                        * a default value is used.
+> +                        */
+> +                       card->bkops_info.delay_ms = MMC_IDLE_BKOPS_TIME_MS;
+> +                       if (card->bkops_info.host_delay_ms)
+> +                               card->bkops_info.delay_ms =
+> +                                       card->bkops_info.host_delay_ms;
+> +               }
+> +       }
+> +
+>         if (!oldcard)
+>                 host->card = card;
+>
+> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
+> index 5c69315..ca4cf19 100644
+> --- a/include/linux/mmc/card.h
+> +++ b/include/linux/mmc/card.h
+> @@ -210,6 +210,30 @@ struct mmc_part {
+>  #define MMC_BLK_DATA_AREA_RPMB (1<<3)
+>  };
+>
+> +/**
+> + * struct mmc_bkops_info - BKOPS data
+> + * @dw:        Idle time bkops delayed work
+> + * @host_delay_ms:     The host controller time to start bkops
+> + * @delay_ms:  The time to start the BKOPS
+> + *        delayed work once MMC thread is idle
+> + * @cancel_delayed_work: A flag to indicate if the delayed work
+> + *        should be cancelled
+> + * @started_delayed_bkops:  A flag to indicate if the delayed
+> + *        work was scheduled
+> + */
+> +struct mmc_bkops_info {
+> +       struct delayed_work     dw;
+> +       unsigned int            host_delay_ms;
+> +       unsigned int            delay_ms;
+> +/*
+> + * A default time for checking the need for non urgent BKOPS once mmcqd
+> + * is idle.
+> + */
+> +#define MMC_IDLE_BKOPS_TIME_MS 2000
+> +       bool                    cancel_delayed_work;
+> +       bool                    started_delayed_bkops;
+> +};
+> +
+>  /*
+>   * MMC device
+>   */
+> @@ -278,6 +302,8 @@ struct mmc_card {
+>         struct dentry           *debugfs_root;
+>         struct mmc_part part[MMC_NUM_PHY_PARTITION]; /* physical partitions */
+>         unsigned int    nr_parts;
+> +
+> +       struct mmc_bkops_info   bkops_info;
+>  };
+>
+>  /*
+> diff --git a/include/linux/mmc/core.h b/include/linux/mmc/core.h
+> index 5bf7c22..c6426c6 100644
+> --- a/include/linux/mmc/core.h
+> +++ b/include/linux/mmc/core.h
+> @@ -145,6 +145,8 @@ extern int mmc_app_cmd(struct mmc_host *, struct mmc_card *);
+>  extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
+>         struct mmc_command *, int);
+>  extern void mmc_start_bkops(struct mmc_card *card, bool from_exception);
+> +extern void mmc_start_delayed_bkops(struct mmc_card *card);
+> +extern void mmc_start_idle_time_bkops(struct work_struct *work);
+>  extern int __mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int, bool);
+>  extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+>
+> --
+> 1.7.3.3
+> --
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Polling waiting for data, looks ok to me.
-
-> ===> 28014[28016]/stack <===
-> [<ffffffff812ae7ad>] dev_queue_xmit+0x327/0x336
-> [<ffffffff8102cb9f>] _local_bh_enable_ip+0x7a/0x8b
-> [<ffffffff81041010>] add_wait_queue+0x14/0x40
-> [<ffffffff810de0bc>] poll_schedule_timeout+0x43/0x5d
-> [<ffffffff810deb46>] do_sys_poll+0x314/0x39b
-> [<ffffffff810de220>] pollwake+0x0/0x4e
-> [<ffffffff8129fc1d>] release_sock+0xe5/0x11b
-> [<ffffffff812d7f61>] tcp_recvmsg+0x713/0x846
-> [<ffffffff812f432c>] inet_recvmsg+0x64/0x75
-> [<ffffffff8129a26b>] sock_recvmsg+0x86/0x9e
-> [<ffffffff8100541c>] emulate_vsyscall+0x1e6/0x28e
-> [<ffffffff8129a3bc>] sockfd_lookup_light+0x1a/0x50
-> [<ffffffff8129c18b>] sys_recvfrom+0x110/0x128
-> [<ffffffff81000e34>] __switch_to+0x235/0x3c5
-> [<ffffffff810df0a5>] sys_ppoll+0xaf/0x123
-> [<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-
-Waiting on receive again.
-
-> ===> 28014[28017]/stack <===
-> [<ffffffff8129fc1d>] release_sock+0xe5/0x11b
-> [<ffffffff812a642c>] sk_stream_wait_memory+0x1f7/0x1fc
-> [<ffffffff81040d5e>] autoremove_wake_function+0x0/0x2a
-> [<ffffffff812d8fc3>] tcp_sendmsg+0x710/0x86d
-> [<ffffffff8129a33e>] sock_sendmsg+0x7b/0x93
-> [<ffffffff8129a642>] sys_sendto+0xee/0x145
-> [<ffffffff8129a3bc>] sockfd_lookup_light+0x1a/0x50
-> [<ffffffff8129a668>] sys_sendto+0x114/0x145
-> [<ffffffff81000e34>] __switch_to+0x235/0x3c5
-> [<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-
-This seems to be the guy that's stuck. It's waiting for more memory for
-the socket but who or what is allocating that memory? There are a few other
-bugs from over the weekend that I want to take a look at so I did not dig
-further or try to reproduce this bug yet. I'm adding Eric Dumazet back to
-the cc in case he has the quick answer.
-
-> ===> 28014[28018]/stack <===
-> [<ffffffff8102b23e>] do_wait+0x1a6/0x21a
-> [<ffffffff8104757d>] check_preempt_curr+0x25/0x62
-> [<ffffffff8102b34a>] sys_wait4+0x98/0xb5
-> [<ffffffff81026321>] do_fork+0x12c/0x1a7
-> [<ffffffff810297b0>] child_wait_callback+0x0/0x48
-> [<ffffffff8131c688>] page_fault+0x28/0x30
-> [<ffffffff81322769>] system_call_fastpath+0x16/0x1b
-> [<ffffffffffffffff>] 0xffffffffffffffff
-> 
-> > 3. Can you do a sysrq+m and post the resulting dmesg?
-> 
-> SysRq : Show Memory
-> Mem-Info:
-> DMA per-cpu:
-> CPU    0: hi:    0, btch:   1 usd:   0
-> CPU    1: hi:    0, btch:   1 usd:   0
-> CPU    2: hi:    0, btch:   1 usd:   0
-> CPU    3: hi:    0, btch:   1 usd:   0
-> DMA32 per-cpu:
-> CPU    0: hi:  186, btch:  31 usd:   4
-> CPU    1: hi:  186, btch:  31 usd: 181
-> CPU    2: hi:  186, btch:  31 usd:  46
-> CPU    3: hi:  186, btch:  31 usd:  13
-> Normal per-cpu:
-> CPU    0: hi:  186, btch:  31 usd: 106
-> CPU    1: hi:  186, btch:  31 usd: 183
-> CPU    2: hi:  186, btch:  31 usd:  20
-> CPU    3: hi:  186, btch:  31 usd:  76
-> active_anon:85782 inactive_anon:25023 isolated_anon:0
->  active_file:209440 inactive_file:2610279 isolated_file:0
->  unevictable:0 dirty:696664 writeback:629020 unstable:0
->  free:44152 slab_reclaimable:68414 slab_unreclaimable:14178
->  mapped:6017 shmem:24101 pagetables:3136 bounce:0
->  free_cma:0
-> DMA free:15872kB min:84kB low:104kB high:124kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15640kB managed:15896kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:24kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? yes
-> lowmem_reserve[]: 0 3132 12078 12078
-> DMA32 free:85264kB min:17504kB low:21880kB high:26256kB active_anon:46808kB inactive_anon:21212kB active_file:122040kB inactive_file:2833064kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:3208020kB managed:3185856kB mlocked:0kB dirty:92120kB writeback:225356kB mapped:356kB shmem:6776kB slab_reclaimable:67156kB slab_unreclaimable:7412kB kernel_stack:80kB pagetables:816kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-> lowmem_reserve[]: 0 0 8946 8946
-> Normal free:75472kB min:49988kB low:62484kB high:74980kB active_anon:296320kB inactive_anon:78880kB active_file:715720kB inactive_file:7608052kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:9160704kB managed:9084264kB mlocked:0kB dirty:2694536kB writeback:2290724kB mapped:23712kB shmem:89628kB slab_reclaimable:206500kB slab_unreclaimable:49276kB kernel_stack:2432kB pagetables:11728kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-> lowmem_reserve[]: 0 0 0 0
-> DMA: 0*4kB 0*8kB 0*16kB 0*32kB 2*64kB (U) 1*128kB (U) 1*256kB (U) 0*512kB 1*1024kB (U) 1*2048kB (R) 3*4096kB (M) = 15872kB
-> DMA32: 1681*4kB (UEM) 3196*8kB (UEM) 3063*16kB (UEM) 63*32kB (UEM) 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 1*2048kB (R) 0*4096kB = 85364kB
-> Normal: 8874*4kB (UEM) 1885*8kB (UEM) 581*16kB (UEM) 412*32kB (UM) 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 1*2048kB (R) 0*4096kB = 75104kB
-
-Nothing wrong there that I can see. The free list contents roughly match
-up with the NR_FREE_PAGES counter so it doesn't look like an accounting
-bug. However, an accounting bug could have broken the bisection and
-found a different bug.
-
-When taking pages straight off the buddy list like this patch does,
-there is a danger that the watermarks will be broken resulting in a
-livelock but the watermarks are checked properly and the free pages are
-over the min watermark above.
-
-There is this patch https://lkml.org/lkml/2013/1/6/219 but it is
-unlikely that it has anything to do with your workload as it does not
-use splice().
-
-Right now it's difficult to see how the capture could be the source of
-this bug but I'm not ruling it out either so try the following (untested
-but should be ok) patch.  It's not a proper revert, it just disables the
-capture page logic to see if it's at fault.
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 6b807e4..81a637d 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -1054,9 +1054,6 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
- 				goto out;
- 			}
- 		}
--
--		/* Capture a page now if it is a suitable size */
--		compact_capture_page(cc);
- 	}
- 
- out:
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4ba5e37..85d3f9d 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2179,11 +2179,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 						contended_compaction, &page);
- 	current->flags &= ~PF_MEMALLOC;
- 
--	/* If compaction captured a page, prep and use it */
--	if (page) {
--		prep_new_page(page, order, gfp_mask);
--		goto got_page;
--	}
-+	/* capture page is disabled, this should be impossible */
-+	BUG_ON(page);
- 
- 	if (*did_some_progress != COMPACT_SKIPPED) {
- 		/* Page migration frees to the PCP lists but we want merging */
-@@ -2195,7 +2192,6 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 				alloc_flags & ~ALLOC_NO_WATERMARKS,
- 				preferred_zone, migratetype);
- 		if (page) {
--got_page:
- 			preferred_zone->compact_blockskip_flush = false;
- 			preferred_zone->compact_considered = 0;
- 			preferred_zone->compact_defer_shift = 0;
+Kind regards
+Ulf Hansson
