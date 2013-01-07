@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab3AGWjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:39:47 -0500
-Received: from mail-da0-f52.google.com ([209.85.210.52]:49447 "EHLO
-	mail-da0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab3AGWjq (ORCPT
+	id S1755987Ab3AGWnO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:43:14 -0500
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:58496 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662Ab3AGWnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:39:46 -0500
-Date: Mon, 7 Jan 2013 14:39:41 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Lijo Antony <lijo.kernel@gmail.com>
-Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging: comedi: addi_common.h: checkpatch.pl fixes
-Message-ID: <20130107223941.GA3913@kroah.com>
-References: <1357395175-6077-1-git-send-email-lijo.kernel@gmail.com>
- <1357395175-6077-2-git-send-email-lijo.kernel@gmail.com>
+	Mon, 7 Jan 2013 17:43:12 -0500
+Date: Mon, 7 Jan 2013 14:43:08 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Vinod Koul <vinod.koul@intel.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: linux-next: comment in commit in the slave-dma tree (dmaengine:
+ dw_dmac: Enhance device tree support)
+Message-ID: <20130107224308.GB27477@kroah.com>
+References: <20130108093557.8a29d4a04b95702fc59790ff@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357395175-6077-2-git-send-email-lijo.kernel@gmail.com>
+In-Reply-To: <20130108093557.8a29d4a04b95702fc59790ff@canb.auug.org.au>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 06:12:55PM +0400, Lijo Antony wrote:
-> Reduced line lengths to 80 chars by removing extra spaces.
+On Tue, Jan 08, 2013 at 09:35:57AM +1100, Stephen Rothwell wrote:
+> Hi Vinod,
 > 
-> Signed-off-by: Lijo Antony <lijo.kernel@gmail.com>
-> ---
->  .../staging/comedi/drivers/addi-data/addi_common.h |   20 ++++++++++----------
->  1 file changed, 10 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/addi-data/addi_common.h b/drivers/staging/comedi/drivers/addi-data/addi_common.h
-> index 6d8b29f94..1996a68 100644
-> --- a/drivers/staging/comedi/drivers/addi-data/addi_common.h
-> +++ b/drivers/staging/comedi/drivers/addi-data/addi_common.h
-> @@ -298,7 +298,7 @@ struct addi_private {
->  	unsigned char b_AiInitialisation;
->  	unsigned int ui_AiActualScan;	/* how many scans we finished */
->  	unsigned int ui_AiBufferPtr;	/*  data buffer ptr in samples */
-> -	unsigned int ui_AiNbrofChannels;	/*  how many channels is measured */
-> +	unsigned int ui_AiNbrofChannels; /*  how many channels is measured */
->  	unsigned int ui_AiScanLength;	/*  Length of actual scanlist */
->  	unsigned int ui_AiActualScanPosition;	/*  position in actual scan */
->  	unsigned int *pui_AiChannelList;	/*  actual chanlist */
-> @@ -313,14 +313,14 @@ struct addi_private {
->  	short *AiData;	/*  Pointer to sample data */
->  	unsigned int ui_AiNbrofScans;	/*  number of scans to do */
->  	unsigned short us_UseDma;	/*  To use Dma or not */
-> -	unsigned char b_DmaDoubleBuffer;	/*  we can use double buffering */
-> +	unsigned char b_DmaDoubleBuffer; /*  we can use double buffering */
->  	unsigned int ui_DmaActualBuffer;	/*  which buffer is used now */
->  	/* UPDATE-0.7.57->0.7.68 */
->  	/* unsigned int               ul_DmaBufferVirtual[2]; pointers to begin of DMA buffer */
->  	short *ul_DmaBufferVirtual[2];	/*  pointers to begin of DMA buffer */
->  	unsigned int ul_DmaBufferHw[2];	/*  hw address of DMA buff */
-> -	unsigned int ui_DmaBufferSize[2];	/*  size of dma buffer in bytes */
-> -	unsigned int ui_DmaBufferUsesize[2];	/*  which size we may now used for transfer */
-> +	unsigned int ui_DmaBufferSize[2]; /*  size of dma buffer in bytes */
-> +	unsigned int ui_DmaBufferUsesize[2]; /* size we may use for transfer */
->  	unsigned int ui_DmaBufferSamples[2];	/*  size in samples */
->  	unsigned int ui_DmaBufferPages[2];	/*  number of pages in buffer */
->  	unsigned char b_DigitalOutputRegister;	/*  Digital Output Register */
-> @@ -331,13 +331,13 @@ struct addi_private {
->  	unsigned char b_ModeSelectRegister;	/*  Contain data written at iobase + 0E */
->  	unsigned short us_OutputRegister;	/*  Contain data written at iobase + 0 */
->  	unsigned char b_InterruptState;
-> -	unsigned char b_TimerInit;	/*  Specify if InitTimerWatchdog was load */
-> -	unsigned char b_TimerStarted;	/*  Specify if timer 2 is running or not */
-> +	unsigned char b_TimerInit; /*  Specify if InitTimerWatchdog was load */
+> In commit 548860697046 ("dmaengine: dw_dmac: Enhance device tree
+> support") (which was changed since yesterday :-(), an instance of
+> __devinit has been added.  We are in the process of making CONFIG_HOTPLUG
+> always true, and since commit 78d86c213f28 ("init.h: Remove __dev*
+> sections from the kernel") (included in v3.7), __devinit does nothing.
+> Please do not add any more.
 
-As you didn't do this for all fields in the structure, it's not really
-worth doing it for just these, right?
+That brings up something I wanted to ask you.
 
-The proper thing to do is use kerneldoc format and document it all at
-the top of the structure, care to do that instead?
+I'd like to send a patch to Linus to just delete __devinit and friends
+entirely from init.h, but that will break the linux-next tree from
+building in places (like this one, and in a few others.)
+
+Is that ok?  That should finally get everyone's attention and keep them
+from the cargo-cult programming mode of using these attributes :)
 
 thanks,
 
