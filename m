@@ -1,87 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625Ab3AGRVI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:21:08 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:13068 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab3AGRVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:21:06 -0500
-X-IronPort-AV: E=Sophos;i="4.84,424,1355097600"; 
-   d="scan'208";a="2903321"
-Date: Mon, 7 Jan 2013 17:21:01 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: Pawel Moll <pawel.moll@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <Marc.Zyngier@arm.com>
-Subject: Re: [PATCH v4 21/24] arm/v2m: initialize arch_timers even if v2m_timer
- is not present
-In-Reply-To: <alpine.DEB.2.02.1209141347250.29232@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1301071719180.4981@kaball.uk.xensource.com>
-References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>  <1347621207-11294-21-git-send-email-stefano.stabellini@eu.citrix.com> <1347625628.2497.65.camel@hornet> <alpine.DEB.2.02.1209141347250.29232@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754762Ab3AGRV3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:21:29 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43764 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754683Ab3AGRV1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:21:27 -0500
+Date: Mon, 7 Jan 2013 12:21:26 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 3/4] block: implement runtime pm strategy
+In-Reply-To: <1357461697-4219-4-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301071219540.1658-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 Sep 2012, Stefano Stabellini wrote:
-> On Fri, 14 Sep 2012, Pawel Moll wrote:
-> > On Fri, 2012-09-14 at 12:13 +0100, Stefano Stabellini wrote:
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > CC: Russell King <linux@arm.linux.org.uk>
-> > > CC: Pawel Moll <pawel.moll@arm.com>
-> > > CC: Marc Zyngier <marc.zyngier@arm.com>
-> > > ---
-> > >  arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
-> > >  1 files changed, 6 insertions(+), 5 deletions(-)
-> > > 
-> > > diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-> > > index 37608f2..4e567f7 100644
-> > > --- a/arch/arm/mach-vexpress/v2m.c
-> > > +++ b/arch/arm/mach-vexpress/v2m.c
-> > > @@ -621,16 +621,17 @@ static void __init v2m_dt_timer_init(void)
-> > >  
-> > >  	v2m_clk_init();
-> > >  
-> > > -	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
-> > > -	if (WARN_ON(err))
-> > > -		return;
-> > > -	node = of_find_node_by_path(path);
-> > > -	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
-> > >  	if (arch_timer_of_register() != 0)
-> > >  		twd_local_timer_of_register();
-> > >  
-> > >  	if (arch_timer_sched_clock_init() != 0)
-> > >  		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
-> > > +
-> > > +	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
-> > > +	if (WARN_ON(err))
-> > > +		return;
-> > > +	node = of_find_node_by_path(path);
-> > > +	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
-> > >  }
-> > >  
-> > >  static struct sys_timer v2m_dt_timer = {
-> > 
-> > Fair point. The alias is going to disappear anyway (I'm working on a VE
-> > platform rework right now), but in case I won't get it on time for 3.7,
-> > I'll make sure this one is merged instead.
-> 
-> Great, thanks!
-> Should I leave this patch out of the Xen on ARM series for 3.7 then?
-> 
+On Sun, 6 Jan 2013, Aaron Lu wrote:
 
-I have just noticed that this patch hasn't been merged yet, but still we
-need it to boot Linux on Xen.
-Do you want me to rebase and resent?
+> From: Lin Ming <ming.m.lin@intel.com>
+> 
+> When a request is added:
+>     If device is suspended or is suspending and the request is not a
+>     PM request, resume the device.
+> 
+> When the last request finishes:
+>     Call pm_runtime_mark_last_busy() and pm_runtime_autosuspend().
+> 
+> When pick a request:
+>     If device is resuming/suspending, then only PM request is allowed to go.
+>     Return NULL for other cases.
+> 
+> [aaron.lu@intel.com: PM request does not involve nr_pending counting]
+> [aaron.lu@intel.com: No need to check q->dev]
+> [aaron.lu@intel.com: Autosuspend when the last request finished]
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -974,6 +974,40 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
+>  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
+>  extern void blk_pre_runtime_resume(struct request_queue *q);
+>  extern void blk_post_runtime_resume(struct request_queue *q, int err);
+> +
+> +static inline void blk_pm_put_request(struct request *rq)
+> +{
+> +	if (!(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending) {
+> +		pm_runtime_mark_last_busy(rq->q->dev);
+> +		pm_runtime_autosuspend(rq->q->dev);
+> +	}
+> +}
+> +
+> +static inline struct request *blk_pm_peek_request(
+> +	struct request_queue *q, struct request *rq)
+> +{
+> +	if (q->rpm_status == RPM_SUSPENDED ||
+> +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
+> +		return NULL;
+> +	else
+> +		return rq;
+> +}
+> +
+> +static inline void blk_pm_requeue_request(struct request *rq)
+> +{
+> +	if (!(rq->cmd_flags & REQ_PM))
+> +		rq->q->nr_pending--;
+> +}
+> +
+> +static inline void blk_pm_add_request(struct request_queue *q,
+> +	struct request *rq)
+> +{
+> +	if (!(rq->cmd_flags & REQ_PM) &&
+> +	    q->nr_pending++ == 0 &&
+> +	    (q->rpm_status == RPM_SUSPENDED ||
+> +	     q->rpm_status == RPM_SUSPENDING))
+> +		pm_request_resume(q->dev);
+> +}
+
+These routines also don't belong in include/linux.  And they don't need 
+to be marked inline.
+
+Alan Stern
+
