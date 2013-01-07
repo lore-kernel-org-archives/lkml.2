@@ -1,153 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754545Ab3AGRKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:10:46 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:55280 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752225Ab3AGRKo (ORCPT
+	id S1754438Ab3AGRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:11:27 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43740 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751390Ab3AGRLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:10:44 -0500
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: David Daney <ddaney.cavm@gmail.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Subject: [PATCH] i2c-EEPROM: In kernel memory accessor interface
-Date: Mon,  7 Jan 2013 19:10:33 +0200
-Message-Id: <1357578633-15920-1-git-send-email-panto@antoniou-consulting.com>
-X-Mailer: git-send-email 1.7.12
+	Mon, 7 Jan 2013 12:11:25 -0500
+Date: Mon, 7 Jan 2013 12:11:24 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 0/4] block layer runtime pm
+In-Reply-To: <1357461697-4219-1-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301071200420.1658-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In kernel users need to access the EEPROM using the i2c_client
-interface. Extend at24 to use it via the command interface.
+On Sun, 6 Jan 2013, Aaron Lu wrote:
 
-Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
----
- drivers/misc/eeprom/at24.c | 23 ++++++++++++++++++
- include/linux/i2c/eeprom.h | 59 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 82 insertions(+)
- create mode 100644 include/linux/i2c/eeprom.h
+> In August 2010, Jens and Alan discussed about "Runtime PM and the block
+> layer". http://marc.info/?t=128259108400001&r=1&w=2
+> And then Alan has given a detailed implementation guide:
+> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
+> 
+> To test:
+> # ls -l /sys/block/sda
+> /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
+> 
+> # echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
+> # echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
+> Then you'll see sda is suspended after 10secs idle.
+> 
+> [ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
+> [ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
+> 
+> And if you do some IO, it will resume immediately.
+> [ 1791.052438] sd 2:0:0:0: [sda] Starting disk
+> 
+> For test, I often set the autosuspend time to 1 second. If you are using
+> a GUI, the 10 seconds delay may be too long that the disk can not enter
+> runtime suspended state.
+> 
+> Note that sd's runtime suspend callback will dump some kernel messages
+> and the syslog daemon will write kernel message to /var/log/messages,
+> making the disk instantly resume after suspended. So for test, the
+> syslog daemon should better be temporarily stopped.
+> 
+> v6:
+> Take over from Lin Ming.
+> 
+> - Instead of put the device into autosuspend state in
+>   blk_post_runtime_suspend, do it when the last request is finished.
+>   This can also solve the problem illustrated below:
+> 
+>       thread A				      thread B
+> |suspend timer expired			|
+> |  ... ...				|a new request comes in,
+> |  ... ...				|blk_pm_add_request
+> |  ... ...				|skip request_resume due to
+> |  ... ...				|q->status is still RPM_ACTIVE
+> |  rpm_suspend				|  ... ...
+> |    scsi_runtime_suspend		|  ... ...
+> |      blk_pre_runtime_suspend		|  ... ...
+> |      return -EBUSY due to nr_pending	|  ... ...
+> |  rpm_suspend done			|  ... ...
+> |					|    blk_pm_put_request, mark last busy
+> 
+> But no more trigger point, and the device will stay at RPM_ACTIVE state.
+> Run pm_runtime_autosuspend after the last request is finished solved
+> this problem.
 
-diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
-index 2baeec5..40b1a95 100644
---- a/drivers/misc/eeprom/at24.c
-+++ b/drivers/misc/eeprom/at24.c
-@@ -23,6 +23,7 @@
- #include <linux/of.h>
- #include <linux/i2c.h>
- #include <linux/i2c/at24.h>
-+#include <linux/i2c/eeprom.h>
- 
- /*
-  * I2C EEPROMs from most vendors are inexpensive and mostly interchangeable.
-@@ -672,6 +673,27 @@ static int at24_remove(struct i2c_client *client)
- 	return 0;
- }
- 
-+static int at24_command(struct i2c_client *client, unsigned int cmd, void *arg)
-+{
-+	struct at24_data *at24;
-+	const struct memory_accessor **maccp;
-+
-+	/* only supporting a single command */
-+	if (cmd != I2C_EEPROM_GET_MEMORY_ACCESSOR)
-+		return -ENOTSUPP;
-+
-+	/* rudimentary check */
-+	if (arg == NULL)
-+		return -EINVAL;
-+
-+	at24 = i2c_get_clientdata(client);
-+
-+	maccp = arg;
-+	*maccp = &at24->macc;
-+
-+	return 0;
-+}
-+
- /*-------------------------------------------------------------------------*/
- 
- static struct i2c_driver at24_driver = {
-@@ -682,6 +704,7 @@ static struct i2c_driver at24_driver = {
- 	.probe = at24_probe,
- 	.remove = at24_remove,
- 	.id_table = at24_ids,
-+	.command = at24_command,
- };
- 
- static int __init at24_init(void)
-diff --git a/include/linux/i2c/eeprom.h b/include/linux/i2c/eeprom.h
-new file mode 100644
-index 0000000..1393980
---- /dev/null
-+++ b/include/linux/i2c/eeprom.h
-@@ -0,0 +1,59 @@
-+/*
-+ * i2c/eeprom.h
-+ *
-+ * In-kernel interface for accessing eeprom memory.
-+ *
-+ * Copyright (C) 2012 Texas Instruments Inc.
-+ *                    Pantelis Antoniou <panto@antoniou-consulting.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+#ifndef I2C_EEPROM_H
-+#define I2C_EEPROM_H
-+
-+#include <linux/types.h>
-+#include <linux/memory.h>
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+
-+/*
-+ * The method called in the client is
-+ *
-+ * int command(struct i2c_client *client, unsigned int cmd, void *arg);
-+ *
-+ * A single command is supported, which returns a pointer to the memory
-+ * accessor already available, but which was only accessible via platform
-+ * callbacks. We can't use platform callbacks anymore for device tree
-+ * platforms, hence this interface.
-+ *
-+ */
-+
-+/* interface commands */
-+#define I2C_EEPROM_GET_MEMORY_ACCESSOR	1
-+
-+static inline struct memory_accessor *
-+i2c_eeprom_get_memory_accessor(struct i2c_client *client)
-+{
-+	int ret;
-+	struct memory_accessor *macc;
-+
-+	/* verify that the i2c client's driver has a command method */
-+	if (!client || !client->driver || !client->driver->command)
-+		return ERR_PTR(-ENOTSUPP);
-+
-+	macc = NULL;
-+	ret = client->driver->command(client, I2C_EEPROM_GET_MEMORY_ACCESSOR,
-+			&macc);
-+	if (ret != 0)
-+		return ERR_PTR(ret);
-+
-+	if (macc == NULL)
-+		return ERR_PTR(-ENOTSUPP);
-+
-+	return macc;
-+}
-+
-+#endif
--- 
-1.7.12
+This doesn't look like the best solution, because it involves adding a 
+nontrivial routine (pm_runtime_autosuspend) to a hot path.
+
+How about this instead?  When blk_pre_runtime_suspend returns -EBUSY,
+have it do a mark-last-busy.  Then rpm_suspend will automatically
+reschedule the autosuspend for later.
+
+> - Requests which have the REQ_PM flag should not involve nr_pending
+>   counting, or we may lose the condition to resume the device:
+>   Suppose queue is active and nr_pending is 0. Then a REQ_PM request
+>   comes and nr_pending will be increased to 1, but since the request has
+>   REQ_PM flag, it will not cause resume. Before it is finished, a normal
+>   request comes in, and since nr_pending is 1 now, it will not trigger
+>   the resume of the device either. Bug.
+> 
+> - Do not quiesce the device in scsi bus level runtime suspend callback.
+>   Since the only reason the device is to be runtime suspended is due to
+>   no more requests pending for it, quiesce it is pointless.
+> 
+> - Remove scsi_autopm_* from sd_check_events as we are request driven.
+> 
+> - Call blk_pm_runtime_init in scsi_sysfs_initialize_dev, so that we do
+>   not need to check queue's device in blk_pm_add/put_request.
+
+I think you still need to have that check.  After all, the block layer 
+has other users besides the SCSI stack, and those users don't call 
+blk_pm_runtime_init.
+
+> - Do not mark last busy and initiate an autosuspend for the device in
+>   blk_pm_runtime_init function.
+> 
+> - Do not mark last busy and initiate an autosuspend for the device in
+>   block_post_runtime_resume, as when the request that triggered the
+>   resume finished, the blk_pm_put_request will mark last busy and
+>   initiate an autosuspend.
+
+If you make the change that I recommended above then this is still 
+necessary.
+
+Alan Stern
 
