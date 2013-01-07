@@ -1,59 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab3AGR6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:58:46 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:45752 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752381Ab3AGR6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:58:45 -0500
-Date: Mon, 7 Jan 2013 09:58:33 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Gilad.Ben-Yossef.gilad@benyossef.com
-Subject: Re: [PATCH rcu] Remove unused code originally used for context
- tracking
-Message-ID: <20130107175833.GN2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
- <1354179992.2499.35.camel@ThinkPad-T5421.cn.ibm.com>
- <CAFTL4hysBreTXE-rXVQ5no+3B8hZ-3XMgap20PAP9u76-j-Tgg@mail.gmail.com>
- <20121129113627.GS2474@linux.vnet.ibm.com>
- <1354256362.2552.6.camel@ThinkPad-T5421.cn.ibm.com>
- <20130107173906.GL2525@linux.vnet.ibm.com>
- <CAFTL4hx7Z6WPWnhQVY=ea31kfi1yp8b_Jm-L-kNLUDani7fCbA@mail.gmail.com>
+	id S1754300Ab3AGR7y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:59:54 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:45709 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab3AGR7x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:59:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFTL4hx7Z6WPWnhQVY=ea31kfi1yp8b_Jm-L-kNLUDani7fCbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010717-5806-0000-0000-00001DE6E16B
+In-Reply-To: <1357565303.10284.73.camel@gandalf.local.home>
+References: <cover.1352196505.git.viresh.kumar@linaro.org>
+	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
+	<20121126171539.GZ15971@htj.dyndns.org>
+	<CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
+	<CAKohpokBMhto6xzp3MPGRJqstEkkC=kzgrKNhVXzi1Y8GejkXg@mail.gmail.com>
+	<20130104150928.GC15633@mtj.dyndns.org>
+	<CAKohpo=hhScCDUnDcqnZx4YzU_8nF1658jmSM_wzsOpSCxXwqA@mail.gmail.com>
+	<1357565303.10284.73.camel@gandalf.local.home>
+Date: Mon, 7 Jan 2013 23:29:53 +0530
+Message-ID: <CAKohpom9DxoojtcpMfmyGeUcEw8=tsS4n+TFMRV3+9_UBaod7g@mail.gmail.com>
+Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
+ instead of current one
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tejun Heo <tj@kernel.org>, Vincent Guittot <vincent.guittot@linaro.org>,
+        pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
+        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
+        peterz@infradead.org, Arvind.Chauhan@arm.com,
+        linaro-dev@lists.linaro.org, patches@linaro.org,
+        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 06:46:07PM +0100, Frederic Weisbecker wrote:
-> 2013/1/7 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > On Fri, Nov 30, 2012 at 02:19:22PM +0800, Li Zhong wrote:
-> >> As new context tracking subsystem added, it seems ignore_user_qs and
-> >> in_user defined in struct rcu_dynticks are no longer needed, so remove
-> >> them.
-> >>
-> >> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
-> >
-> > Hearing no objections from  Frederic, I have queued this patch for 3.9
-> 
-> Thanks Paul!
-> 
-> And feel free to add my ack.
+On 7 January 2013 18:58, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Mon, 2013-01-07 at 15:28 +0530, Viresh Kumar wrote:
+>> I have another idea that we can try:
+>>
+>> queue_work_on_any_cpu().
+>
+> I think this is a good idea.
 
-Done, thank you!
+:) :)
 
-							Thanx, Paul
+>> - the mask of cpus to schedule this work on
+>>   OR
+>> - Sched Level (SD_LEVEL) of cpus to run it.
+>
+> I wouldn't give a mask. If one is needed, we could have a
+> queue_work_on_mask_cpus(), or something. I think the "any" in the name
+> should be good enough to let developers know that this will not be on
+> the CPU that is called.
 
+Fair Enough.
+
+> By default, I would suggest for cache locality,
+> that we try to keep it on the same CPU. But if there's a better CPU to
+> run on, it runs there.
+
+That would break our intention behind this routine. We should run
+it on a cpu which we think is the best one for it power/performance wise.
+
+So, i would like to call the sched_select_cpu() routine from this routine to
+get the suggested cpu.
+
+This routine would however would see more changes later to optimize it
+more.
+
+> Also, we could still add a debug option that
+> makes it always run on other CPUs to slap developers that don't read.
+
+I don't think we need it :(
+It would be a new API, with zero existing users. And so, whomsoever uses
+it, should know what exactly he is doing :)
+
+Thanks for your quick feedback.
