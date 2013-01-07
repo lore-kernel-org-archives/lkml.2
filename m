@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751469Ab3AGOi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:38:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37157 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751009Ab3AGOi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:38:57 -0500
-Date: Mon, 7 Jan 2013 14:38:54 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Zhouping Liu <zliu@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
-        hughd@google.com, Michel Lespinasse <walken@google.com>,
-        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] mm: thp: Acquire the anon_vma rwsem for lock during split
-Message-ID: <20130107143854.GH3885@suse.de>
-References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
- <535932623.34838584.1356410331076.JavaMail.root@redhat.com>
- <20130103175737.GA3885@suse.de>
- <20130104140815.GA26005@suse.de>
- <50E7BF4D.4040204@redhat.com>
+	id S1751577Ab3AGOjR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:39:17 -0500
+Received: from mail.windriver.com ([147.11.1.11]:41803 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab3AGOjP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 09:39:15 -0500
+Message-ID: <50EADE11.1040704@windriver.com>
+Date: Mon, 7 Jan 2013 09:39:13 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <50E7BF4D.4040204@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: delete super ancient PC-XT driver for 1980's hardware
+References: <1357349252-32346-1-git-send-email-paul.gortmaker@windriver.com> <50EA4F49.5000801@gmail.com>
+In-Reply-To: <50EA4F49.5000801@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 01:51:09PM +0800, Zhouping Liu wrote:
-> On 01/04/2013 10:08 PM, Mel Gorman wrote:
-> >Zhouping, please test this patch.
+On 13-01-06 11:30 PM, Robert Hancock wrote:
+> On 01/04/2013 07:27 PM, Paul Gortmaker wrote:
+>> This driver was for the 8 bit ISA cards that were installed in
+>> the PC-XT machines of 1980 vintage.  They supported the dual
+>> ribbon cable MFM drives of 10-20MB capacity, and ran at a 3:1
+>> interleave, giving performance on the order of 128kB/s.
+>>
+>> By the introduction of the PC-AT (286) these controllers were
+>> already scrapped in favour of 16 bit controllers with some onboard
+>> RAM that could support a 1:1 interleave.
+>>
+>> The git history doesn't show any evidence of runtime fixes that
+>> would reflect active usage; instead just the usual tree-wide API
+>> type changes/cleanups.  Going back to in-source changelogs, the
+>> last "runtime" fix that is evident is something I did over a
+>> dozen years ago[1] -- and even back then, the hardware was long
+>> since unavailable, so that ancient fix was also not runtime tested.
+>>
+>> The time is long overdue for this to get flushed, so lets get
+>> rid of it before anyone wastes more time doing builds and sparse
+>> checks etc. on long since dead code.
 > 
-> Tested it, the issue is gone with following patch.
-> 
-> Tested-by: Zhouping Liu <zliu@redhat.com>
-> 
+> Although this hardware is obviously long obsolete, it's conceivable that 
+> someone could still drag out an old MFM/RLL controller and run it on a 
+> non-completely-ancient PC with ISA slots in order to recover data from 
+> an old drive or something. Given that the code doesn't have wide-ranging 
+> effects beyond a couple of files, I'd lean towards keeping it unless 
+> there's some reason to believe it's hopelessly broken.
 
-Super. Thanks very much for reporting and testing this quickly.
+No - there is a different driver for that,  see block/hd.c
 
--- 
-Mel Gorman
-SUSE Labs
+In any case, if someone was faced with such a data recovery mission,
+they would be best to boot up an old kernel as part of their quest,
+since expecting drivers that have been bitrotting for decades to
+still work reliably is not wise.
+
+P.
+--
+
+> 
