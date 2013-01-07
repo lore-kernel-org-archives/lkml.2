@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab3AGS3u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 13:29:50 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:46365 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129Ab3AGS26 (ORCPT
+	id S1755156Ab3AGS24 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 13:28:56 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:57399 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab3AGS2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 13:28:58 -0500
+	Mon, 7 Jan 2013 13:28:51 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v5 15/18] perf: add PERF_RECORD_MISC_MMAP_DATA to RECORD_MMAP
-Date: Mon,  7 Jan 2013 19:27:54 +0100
-Message-Id: <1357583277-4553-16-git-send-email-eranian@google.com>
+Subject: [PATCH v5 13/18] perf record: add support for mem access profiling
+Date: Mon,  7 Jan 2013 19:27:52 +0100
+Message-Id: <1357583277-4553-14-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357583277-4553-1-git-send-email-eranian@google.com>
 References: <1357583277-4553-1-git-send-email-eranian@google.com>
@@ -21,47 +21,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Type of mapping was lost and made it hard for a tool
-to distinguish code vs. data mmaps. Perf has the ability
-to distinguish the two.
+Add the -l option to perf record to enable sampling
+access cost sampling.
 
-Use a bit in the header->misc bitmask to keep track of
-the mmap type. If PERF_RECORD_MISC_MMAP_DATA is set then
-the mapping is not executable (!VM_EXEC). If not set, then
-the mapping is executable.
+Data address sampling is obtained via the -d option.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/uapi/linux/perf_event.h |    1 +
- kernel/events/core.c            |    3 +++
- 2 files changed, 4 insertions(+)
+ tools/perf/builtin-record.c |    2 ++
+ tools/perf/perf.h           |    1 +
+ tools/perf/util/evsel.c     |    6 ++++++
+ 3 files changed, 9 insertions(+)
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 8283218..5b80f14 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -445,6 +445,7 @@ struct perf_event_mmap_page {
- #define PERF_RECORD_MISC_GUEST_KERNEL		(4 << 0)
- #define PERF_RECORD_MISC_GUEST_USER		(5 << 0)
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index f3151d3..341f9c1 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -1059,6 +1059,8 @@ const struct option record_options[] = {
+ 	OPT_CALLBACK('j', "branch-filter", &record.opts.branch_stack,
+ 		     "branch filter mask", "branch stack filter modes",
+ 		     parse_branch_stack),
++	OPT_BOOLEAN('l', "cost", &record.opts.weight,
++		    "event cost"),
+ 	OPT_END()
+ };
  
-+#define PERF_RECORD_MISC_MMAP_DATA		(1 << 13)
- /*
-  * Indicates that the content of PERF_SAMPLE_IP points to
-  * the actual instruction that triggered the event. See also
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index fd4ceea..8292f15 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -4764,6 +4764,9 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 	mmap_event->file_name = name;
- 	mmap_event->file_size = size;
+diff --git a/tools/perf/perf.h b/tools/perf/perf.h
+index 2c340e7..c976553 100644
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -240,6 +240,7 @@ struct perf_record_opts {
+ 	bool	     sample_id_all_missing;
+ 	bool	     exclude_guest_missing;
+ 	bool	     period;
++	bool         weight;
+ 	unsigned int freq;
+ 	unsigned int mmap_pages;
+ 	unsigned int user_freq;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 9f334dd..ad0c649 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -501,6 +501,12 @@ void perf_evsel__config(struct perf_evsel *evsel,
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 	}
  
-+	if (!(vma->vm_flags & VM_EXEC))
-+		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
++	if (opts->weight)
++		attr->sample_type	|= PERF_SAMPLE_WEIGHT;
 +
- 	mmap_event->event_id.header.size = sizeof(mmap_event->event_id) + size;
- 
- 	rcu_read_lock();
++	if (opts->sample_address)
++		attr->sample_type	|= PERF_SAMPLE_DSRC;
++
+ 	if (opts->no_delay) {
+ 		attr->watermark = 0;
+ 		attr->wakeup_events = 1;
 -- 
 1.7.9.5
 
