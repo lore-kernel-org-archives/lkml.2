@@ -1,204 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab3AGH0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 02:26:03 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37587 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416Ab3AGHZ7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 02:25:59 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50EA7860.6030300@jp.fujitsu.com>
-Date: Mon, 07 Jan 2013 16:25:20 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753297Ab3AGH3M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 02:29:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:6017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751431Ab3AGH3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 02:29:10 -0500
+Message-ID: <50EA792F.1010408@redhat.com>
+Date: Mon, 07 Jan 2013 15:28:47 +0800
+From: Jason Wang <jasowang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Sha Zhengju <handai.szj@gmail.com>
-CC: Michal Hocko <mhocko@suse.cz>, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
-        dchinner@redhat.com, Sha Zhengju <handai.szj@taobao.com>
-Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
-References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456367-14660-1-git-send-email-handai.szj@taobao.com> <20130102104421.GC22160@dhcp22.suse.cz> <CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com>
-In-Reply-To: <CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Eric Dumazet <erdnetdev@gmail.com>,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
+Subject: Re: [PATCH V2 2/2] virtio-net: reset virtqueue affinity when doing
+ cpu hotplug
+References: <1357542900-15557-1-git-send-email-gaowanlong@cn.fujitsu.com> <1357542900-15557-2-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <1357542900-15557-2-git-send-email-gaowanlong@cn.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/05 13:48), Sha Zhengju wrote:
-> On Wed, Jan 2, 2013 at 6:44 PM, Michal Hocko <mhocko@suse.cz> wrote:
->> On Wed 26-12-12 01:26:07, Sha Zhengju wrote:
->>> From: Sha Zhengju <handai.szj@taobao.com>
->>>
->>> This patch adds memcg routines to count dirty pages, which allows memory controller
->>> to maintain an accurate view of the amount of its dirty memory and can provide some
->>> info for users while cgroup's direct reclaim is working.
->>
->> I guess you meant targeted resp. (hard/soft) limit reclaim here,
->> right? It is true that this is direct reclaim but it is not clear to me
+On 01/07/2013 03:15 PM, Wanlong Gao wrote:
+> Add a cpu notifier to virtio-net, so that we can reset the
+> virtqueue affinity if the cpu hotplug happens. It improve
+> the performance through enabling or disabling the virtqueue
+> affinity after doing cpu hotplug.
+> Adding the notifier block to virtnet_info is suggested by
+> Jason, thank you.
 >
-> Yes, I meant memcg hard/soft reclaim here which is triggered directly
-> by allocation and is distinct from background kswapd reclaim (global).
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> Cc: Jason Wang <jasowang@redhat.com>
+> Cc: Eric Dumazet <erdnetdev@gmail.com>
+> Cc: virtualization@lists.linux-foundation.org
+> Cc: netdev@vger.kernel.org
+> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
+> ---
+>  drivers/net/virtio_net.c | 30 ++++++++++++++++++++++++++++++
+>  1 file changed, 30 insertions(+)
 >
->> why the usefulnes should be limitted to the reclaim for users. I would
->> understand this if the users was in fact in-kernel users.
->>
->
-> One of the reasons I'm trying to accounting the dirty pages is to get a
-> more board overall view of memory usages because memcg hard/soft
-> reclaim may have effect on response time of user application.
-> Yeah, the beneficiary can be application administrator or kernel users.  :P
->
->> [...]
->>> To prevent AB/BA deadlock mentioned by Greg Thelen in previous version
->>> (https://lkml.org/lkml/2012/7/30/227), we adjust the lock order:
->>> ->private_lock --> mapping->tree_lock --> memcg->move_lock.
->>> So we need to make mapping->tree_lock ahead of TestSetPageDirty in __set_page_dirty()
->>> and __set_page_dirty_nobuffers(). But in order to avoiding useless spinlock contention,
->>> a prepare PageDirty() checking is added.
->>
->> But there is another AA deadlock here I believe.
->> page_remove_rmap
->>    mem_cgroup_begin_update_page_stat             <<< 1
->>    set_page_dirty
->>      __set_page_dirty_buffers
->>        __set_page_dirty
->>          mem_cgroup_begin_update_page_stat       <<< 2
->>            move_lock_mem_cgroup
->>              spin_lock_irqsave(&memcg->move_lock, *flags);
->>
->> mem_cgroup_begin_update_page_stat is not recursive wrt. locking AFAICS
->> because we might race with the moving charges:
->>          CPU0                                            CPU1
->> page_remove_rmap
->>                                                  mem_cgroup_can_attach
->>    mem_cgroup_begin_update_page_stat (1)
->>      rcu_read_lock
->>                                                    mem_cgroup_start_move
->>                                                      atomic_inc(&memcg_moving)
->>                                                      atomic_inc(&memcg->moving_account)
->>                                                      synchronize_rcu
->>      __mem_cgroup_begin_update_page_stat
->>        mem_cgroup_stolen <<< TRUE
->>        move_lock_mem_cgroup
->>    [...]
->>          mem_cgroup_begin_update_page_stat (2)
->>            __mem_cgroup_begin_update_page_stat
->>              mem_cgroup_stolen     <<< still TRUE
->>              move_lock_mem_cgroup  <<< DEADLOCK
->>    [...]
->>    mem_cgroup_end_update_page_stat
->>      rcu_unlock
->>                                                    # wake up from synchronize_rcu
->>                                                  [...]
->>                                                  mem_cgroup_move_task
->>                                                    mem_cgroup_move_charge
->>                                                      walk_page_range
->>                                                        mem_cgroup_move_account
->>                                                          move_lock_mem_cgroup
->>
->>
->> Maybe I have missed some other locking which would prevent this from
->> happening but the locking relations are really complicated in this area
->> so if mem_cgroup_{begin,end}_update_page_stat might be called
->> recursively then we need a fat comment which justifies that.
->>
->
-> Ohhh...good catching!  I didn't notice there is a recursive call of
-> mem_cgroup_{begin,end}_update_page_stat in page_remove_rmap().
-> The mem_cgroup_{begin,end}_update_page_stat() design has depressed
-> me a lot recently as the lock granularity is a little bigger than I thought.
-> Not only the resource but also some code logic is in the range of locking
-> which may be deadlock prone. The problem still exists if we are trying to
-> add stat account of other memcg page later, may I make bold to suggest
-> that we dig into the lock again...
->
-> But with regard to the current lock implementation, I doubt if we can we can
-> account MEM_CGROUP_STAT_FILE_{MAPPED, DIRTY} in one breath and just
-> try to get move_lock once in the beginning. IMHO we can make
-> mem_cgroup_{begin,end}_update_page_stat() to recursive aware and what I'm
-> thinking now is changing memcg->move_lock to rw-spinlock from the
-> original spinlock:
-> mem_cgroup_{begin,end}_update_page_stat() try to get the read lock which make it
-> reenterable and memcg moving task side try to get the write spinlock.
-> Then the race may be following:
->
->          CPU0                                            CPU1
-> page_remove_rmap
->                                                  mem_cgroup_can_attach
->    mem_cgroup_begin_update_page_stat (1)
->      rcu_read_lock
->                                                    mem_cgroup_start_move
->                                                      atomic_inc(&memcg_moving)
->
-> atomic_inc(&memcg->moving_account)
->                                                      synchronize_rcu
->      __mem_cgroup_begin_update_page_stat
->        mem_cgroup_stolen   <<< TRUE
->        move_lock_mem_cgroup   <<<< read-spinlock success
->    [...]
->       mem_cgroup_begin_update_page_stat (2)
->            __mem_cgroup_begin_update_page_stat
->              mem_cgroup_stolen     <<< still TRUE
->              move_lock_mem_cgroup  <<<< read-spinlock success
->
->    [...]
->    mem_cgroup_end_update_page_stat     <<< locked = true, unlock
->      rcu_unlock
->                                                    # wake up from synchronize_rcu
->                                                  [...]
->                                                  mem_cgroup_move_task
->                                                    mem_cgroup_move_charge
->                                                      walk_page_range
->                                                        mem_cgroup_move_account
->
-> move_lock_mem_cgroup    <<< write-spinlock
->
->
-> AFAICS, the deadlock seems to be avoided by both the rcu and rwlock.
-> Is there anything I lost?
->
+> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+> index b483fb5..9547b4c 100644
+> --- a/drivers/net/virtio_net.c
+> +++ b/drivers/net/virtio_net.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/scatterlist.h>
+>  #include <linux/if_vlan.h>
+>  #include <linux/slab.h>
+> +#include <linux/cpu.h>
+>  
+>  static int napi_weight = 128;
+>  module_param(napi_weight, int, 0444);
+> @@ -123,6 +124,9 @@ struct virtnet_info {
+>  
+>  	/* Does the affinity hint is set for virtqueues? */
+>  	bool affinity_hint_set;
+> +
+> +	/* CPU hot plug notifier */
+> +	struct notifier_block nb;
+>  };
+>  
+>  struct skb_vnet_hdr {
+> @@ -1051,6 +1055,23 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
+>  	}
+>  }
+>  
+> +static int virtnet_cpu_callback(struct notifier_block *nfb,
+> +			        unsigned long action, void *hcpu)
+> +{
+> +	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
+> +	switch(action) {
+> +	case CPU_ONLINE:
+> +	case CPU_ONLINE_FROZEN:
+> +	case CPU_DEAD:
+> +	case CPU_DEAD_FROZEN:
+> +		virtnet_set_affinity(vi, true);
+> +		break;
+> +	default:
+> +		break;
+> +	}
+> +	return NOTIFY_OK;
+> +}
+> +
 
-rwlock will work with the nest but it seems ugly do updates under read-lock.
+I think you'd better fix the .ndo_select_queue() as well (as Michael
+said in your V1) since it currently uses smp processor id which may not
+work very well in this case also.
 
-How about this straightforward ?
-==
-/*
-  * Once a thread takes memcg_move_lock() on a memcg, it can take the lock on
-  * the memcg again for nesting calls
-  */
-static void move_lock_mem_cgroup(memcg, flags);
-{
-	current->memcg_move_lock_nested += 1;
-	if (current->memcg_move_lock_nested > 1) {
-		VM_BUG_ON(current->move_locked_memcg != memcg);
-		return;
-	}
-	spin_lock_irqsave(&memcg_move_lock, &flags);
-	current->move_lockdev_memcg = memcg;
-}
-
-static void move_unlock_mem_cgroup(memcg, flags)
-{
-	current->memcg_move_lock_nested -= 1;
-	if (!current->memcg_move_lock_nested) {
-		current->move_locked_memcg = NULL;
-		spin_unlock_irqrestore(&memcg_move_lock,flags);
-	}
-}
-
-==
-But, hmm, this kind of (ugly) hack may cause trouble as Hugh said.
-
-Thanks,
--Kame
-
-
-
-
-
-
+Thanks
+>  static void virtnet_get_ringparam(struct net_device *dev,
+>  				struct ethtool_ringparam *ring)
+>  {
+> @@ -1509,6 +1530,13 @@ static int virtnet_probe(struct virtio_device *vdev)
+>  		}
+>  	}
+>  
+> +	vi->nb.notifier_call = &virtnet_cpu_callback;
+> +	err = register_hotcpu_notifier(&vi->nb);
+> +	if (err) {
+> +		pr_debug("virtio_net: registering cpu notifier failed\n");
+> +		goto free_recv_bufs;
+> +	}
+> +
+>  	/* Assume link up if device can't report link status,
+>  	   otherwise get link status from config. */
+>  	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
+> @@ -1553,6 +1581,8 @@ static void virtnet_remove(struct virtio_device *vdev)
+>  {
+>  	struct virtnet_info *vi = vdev->priv;
+>  
+> +	unregister_hotcpu_notifier(&vi->nb);
+> +
+>  	/* Prevent config work handler from accessing the device. */
+>  	mutex_lock(&vi->config_lock);
+>  	vi->config_enable = false;
 
