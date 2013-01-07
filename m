@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab3AGR63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:58:29 -0500
-Received: from na3sys009aog127.obsmtp.com ([74.125.149.107]:39187 "EHLO
-	na3sys009aog127.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752092Ab3AGR61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:58:27 -0500
-Date: Mon, 7 Jan 2013 11:58:18 -0600
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, peterz@infradead.org
-Subject: Re: kernel BUG at kernel/sched_rt.c:493!
-Message-ID: <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
-References: <20130105174632.GB19226@u1004.rgmadvisors.com>
+	id S1754494Ab3AGR6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:58:46 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:45752 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752381Ab3AGR6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:58:45 -0500
+Date: Mon, 7 Jan 2013 09:58:33 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Gilad.Ben-Yossef.gilad@benyossef.com
+Subject: Re: [PATCH rcu] Remove unused code originally used for context
+ tracking
+Message-ID: <20130107175833.GN2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1354041205-6989-1-git-send-email-fweisbec@gmail.com>
+ <1354179992.2499.35.camel@ThinkPad-T5421.cn.ibm.com>
+ <CAFTL4hysBreTXE-rXVQ5no+3B8hZ-3XMgap20PAP9u76-j-Tgg@mail.gmail.com>
+ <20121129113627.GS2474@linux.vnet.ibm.com>
+ <1354256362.2552.6.camel@ThinkPad-T5421.cn.ibm.com>
+ <20130107173906.GL2525@linux.vnet.ibm.com>
+ <CAFTL4hx7Z6WPWnhQVY=ea31kfi1yp8b_Jm-L-kNLUDani7fCbA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20130105174632.GB19226@u1004.rgmadvisors.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CAFTL4hx7Z6WPWnhQVY=ea31kfi1yp8b_Jm-L-kNLUDani7fCbA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010717-5806-0000-0000-00001DE6E16B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 11:46:32AM -0600, Shawn Bohrer wrote:
-> I've tried reproducing the issue, but so far I've been unsuccessful
-> but I believe that is because my RT tasks aren't using enough CPU
-> cause borrowing from the other runqueues.  Normally our RT tasks use
-> very little CPU so I'm not entirely sure what conditions caused them
-> to run into throttling on the day that this happened.
+On Mon, Jan 07, 2013 at 06:46:07PM +0100, Frederic Weisbecker wrote:
+> 2013/1/7 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
+> > On Fri, Nov 30, 2012 at 02:19:22PM +0800, Li Zhong wrote:
+> >> As new context tracking subsystem added, it seems ignore_user_qs and
+> >> in_user defined in struct rcu_dynticks are no longer needed, so remove
+> >> them.
+> >>
+> >> Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+> >
+> > Hearing no objections from  Frederic, I have queued this patch for 3.9
+> 
+> Thanks Paul!
+> 
+> And feel free to add my ack.
 
-I've managed to reproduce this a couple times now on 3.1.9 I'll give
-this a try later with a more recent kernel.  Here is what I've done to
-reproduce the issue.
+Done, thank you!
 
+							Thanx, Paul
 
-# Setup in shell 1
-root@berbox39:/cgroup/cpuset# mkdir package0
-root@berbox39:/cgroup/cpuset# echo 0 > package0/cpuset.mems
-root@berbox39:/cgroup/cpuset# echo 0,2,4,6 > package0/cpuset.cpus
-root@berbox39:/cgroup/cpuset# cat cpuset.sched_load_balance
-1
-root@berbox39:/cgroup/cpuset# cat package0/cpuset.sched_load_balance
-1
-root@berbox39:/cgroup/cpuset# cat sysdefault/cpuset.sched_load_balance
-1
-root@berbox39:/cgroup/cpuset# echo 1,3,5,7 > sysdefault/cpuset.cpus
-root@berbox39:/cgroup/cpuset# echo 0 > sysdefault/cpuset.mems
-root@berbox39:/cgroup/cpuset# echo $$ > package0/tasks
-
-# Setup in shell 2
-root@berbox39:~# cd /cgroup/cpuset/
-root@berbox39:/cgroup/cpuset# chrt -f -p 60 $$
-root@berbox39:/cgroup/cpuset# echo $$ > sysdefault/tasks
-
-# In shell 1
-root@berbox39:/cgroup/cpuset# chrt -f 1 /root/burn.sh &
-root@berbox39:/cgroup/cpuset# chrt -f 1 /root/burn.sh &
-
-# In shell 2
-root@berbox39:/cgroup/cpuset# echo 0 > cpuset.sched_load_balance
-root@berbox39:/cgroup/cpuset# echo 1 > cpuset.sched_load_balance
-root@berbox39:/cgroup/cpuset# echo 0 > cpuset.sched_load_balance
-root@berbox39:/cgroup/cpuset# echo 1 > cpuset.sched_load_balance
-
-I haven't found the exact magic combination but I've been going back
-and forth adding/killing burn.sh processes and toggling
-cpuset.sched_load_balance and in a couple of minutes I can usually get
-the machine to trigger the bug.
-
---
-Shawn
-
--- 
-
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
