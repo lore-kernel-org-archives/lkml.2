@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399Ab3AGPk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:40:27 -0500
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:62866 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753273Ab3AGPkZ (ORCPT
+	id S1753416Ab3AGPm4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:42:56 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:54319 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753273Ab3AGPmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:40:25 -0500
+	Mon, 7 Jan 2013 10:42:55 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Gerald Schaefer <geraldsc@de.ibm.com>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] asm-generic/io.h: convert readX defines to functions
+Date: Mon, 07 Jan 2013 15:42:38 +0000
+Message-ID: <12944963.pK1utZClTO@wuerfel>
+User-Agent: KMail/4.9.2 (Linux/3.5.0-7-generic; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20130107153459.GA6898@osiris>
+References: <20130107153459.GA6898@osiris>
 MIME-Version: 1.0
-In-Reply-To: <20130107150422.GB3926@htj.dyndns.org>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
-	<20121126171539.GZ15971@htj.dyndns.org>
-	<CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
-	<CAKohpokBMhto6xzp3MPGRJqstEkkC=kzgrKNhVXzi1Y8GejkXg@mail.gmail.com>
-	<20130104150928.GC15633@mtj.dyndns.org>
-	<CAKohpo=hhScCDUnDcqnZx4YzU_8nF1658jmSM_wzsOpSCxXwqA@mail.gmail.com>
-	<20130107150422.GB3926@htj.dyndns.org>
-Date: Mon, 7 Jan 2013 21:10:24 +0530
-Message-ID: <CAP245DWaevohxZE9zguA4wN9crCHeqseuvQ-649tghD8ci3B5Q@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-From: Amit Kucheria <amit.kucheria@linaro.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, venki@google.com,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Patch Tracking <patches@linaro.org>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Paul McKenney <paul.mckenney@linaro.org>, mingo@redhat.com,
-        PDSW-power-team <pdsw-power-team@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, pjt@google.com,
-        linux-rt-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:tWO7KSfnImWA1/uREcQxvwr8xXptL2MXBTUMKnlkRe/
+ B87vLzrvG5DLEWwxG+RJqAgJCM/hMbArprSjQcBe3ULmxSbc55
+ 2AQrptJ464gSnTEP7oDUMrnO0QYRXVsRxF+YSMOZbevHSh/Yaj
+ Ucxfz6aF0B5HTK5U5p0AZypqdFqdP+9B6wM7Swg9fjK0oTKPYc
+ ljXQsDq7Qd+nCRPH0G+0gQzM5NUVRFxv+nHl58SCVZFUaqwsFk
+ BEjo3l6Yge+7EMINgj8JNTaUZEz7moTm3re3eVWYtJCxwZ9cia
+ IFB0Er9qf29MrTVbFFuTlOaULGLN88dzCXfpr8BHb1g1bNOdwd
+ J59hqMN7oz6mHaxpuucc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 8:34 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello, Viresh.
->
-> On Mon, Jan 07, 2013 at 03:28:33PM +0530, Viresh Kumar wrote:
->> Firstly the root cause of this patchset.
->>
->> Myself and some others in Linaro are working on ARM future cores:
->> big.LITTLE systems.
->> Here we have few very powerful, high power consuming cores (big,
->> currently A15's) and
->> few very efficient ones (LITTLE, currently A7's).
->>
->> The ultimate goal is to save as much power as possible without compromising
->> much with performance. For, that we wanted most of the stuff to run on LITTLE
->> cores and some performance-demanding stuff on big Cores. There are
->> multiple things
->> going around in this direction. Now, we thought A15's or big cores
->> shouldn't be used
->> for running small tasks like timers/workqueues and hence this patch is
->> an attempt
->> towards reaching that goal.
->
-> I see.  My understanding of big.little is very superficial so there
-> are very good chances that I'm utterly wrong, but to me it seems like
-> more of a stop-gap solution than something which will have staying
-> power in the sense that the complexity doesn't seem to have any
-> inherent reason other than the failure to make the big ones power
-> efficient enough while idle or under minor load.
+On Monday 07 January 2013 16:34:59 Heiko Carstens wrote:
+> 
+> E.g. readl is defined like this
+> 
+>  #define readl(addr) __le32_to_cpu(__raw_readl(addr))
+> 
+> If there is a readl() call that doesn't check the return value
+> this will cause a compile warning on big endian machines due to
+> the __le32_to_cpu macro magic.
+> 
+> E.g. code like this:
+> 
+>         readl(addr);
+> 
+> will generate the following compile warning:
+> 
+> warning: value computed is not used [-Wunused-value]
+> 
+> Convert the defines to functions so we get rid of these warnings.
+> With this patch we get rid of dozens of compile warnings on s390.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-The two processors use different manufacturing processes - one
-optimised for performance, the other for really low power. So the
-reason is physics at this point. Other architectures are known to be
-playing with similar schemes. ARM's big.LITTLE is just the first one
-to the market.
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-> Maybe this isn't specific to big.little and heterogeneous cores will
-> be the way of future with big.little being just a forefront of the
-> trend.  And even if that's not the case, it definitely doesn't mean
-> that we can't accomodate big.little, but, at this point, it does make
-> me a bit more reluctant to make wholesale changes specifically for
-> big.little.
+if you fix this:
 
-The patches aren't targeted to benefit only b.L systems though it was
-definitely the trigger for our investigations. Our hope is that after
-presenting more analysis results from our side we'll be able to
-convince the community of the general usefulness of this feature.
+> +#define readl readl
+> +static inline u32 __raw_readl(const volatile void __iomem *addr)
+> +{
+> +       return __le32_to_cpu(__raw_readl(addr));
+> +}
+ 
+to be called readl rather than __raw_readl
 
-Here are a few short introductions to big.LITTLE in case you're
-interested.[1][2]
-
-[1] http://www.arm.com/files/downloads/big.LITTLE_Final.pdf
-[2] http://lwn.net/Articles/481055/
+	Arnd
