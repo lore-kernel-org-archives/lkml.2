@@ -1,311 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab3AGKp2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 05:45:28 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:34353 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750796Ab3AGKpZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 05:45:25 -0500
-Subject: Re: [PATCH 6/6] OF: Introduce DT overlay support.
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <1357439083.31232.37@driftwood>
-Date: Mon, 7 Jan 2013 12:45:16 +0200
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Jon Loeliger <jdl@jdl.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, linux-omap@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <D1D83087-3D98-42FC-81A3-BCF645EF1296@antoniou-consulting.com>
-References: <1357439083.31232.37@driftwood>
-To: Rob Landley <rob@landley.net>
-X-Mailer: Apple Mail (2.1085)
+	id S1753823Ab3AGKrA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 05:47:00 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:15697 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750796Ab3AGKq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 05:46:59 -0500
+X-IronPort-AV: E=Sophos;i="4.84,423,1355097600"; 
+   d="scan'208";a="2860339"
+Message-ID: <50EAA795.6030101@citrix.com>
+Date: Mon, 7 Jan 2013 10:46:45 +0000
+From: Andrew Cooper <andrew.cooper3@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.11) Gecko/20121127 Icedove/10.0.11
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Daniel Kiper <daniel.kiper@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>
+Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump implementation
+References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>  <50DBC856.6030208@zytor.com>  <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>  <50DC58C4.3000307@citrix.com> <874nj7qsor.fsf@xmission.com>  <50E41973.9050705@citrix.com>  <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>  <50E6F81D02000078000B3245@nat28.tlf.novell.com>  <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>  <20130104191146.GC6721@phenom.dumpdata.com> <1357554350.14291.134.camel@zakaz.uk.xensource.com>
+In-Reply-To: <1357554350.14291.134.camel@zakaz.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+On 07/01/13 10:25, Ian Campbell wrote:
+> On Fri, 2013-01-04 at 19:11 +0000, Konrad Rzeszutek Wilk wrote:
+>> On Fri, Jan 04, 2013 at 06:07:51PM +0100, Daniel Kiper wrote:
+>>> Because current KEXEC_CMD_kexec_load does not load kernel
+>>> image and other things into Xen memory. It means that it
+>>> should live somewhere in dom0 Linux kernel memory.
+>> We could have a very simple hypercall which would have:
+>>
+>> struct fancy_new_hypercall {
+>> 	xen_pfn_t payload; // IN
+> This would have to be XEN_GUEST_HANDLE(something) since userspace cannot
+> figure out what pfns back its memory. In any case since the hypervisor
+> is going to want to copy the data into the crashkernel space a virtual
+> address is convenient to have.
+>
+>> 	ssize_t len; // IN
+>> #define DATA (1<<1)
+>> #define DATA_EOF (1<<2)
+>> #define DATA_KERNEL (1<<3)
+>> #define DATA_RAMDISK (1<<4)
+>> 	unsigned int flags; // IN
+>> 	unsigned int status; // OUT
+>> };
+>>
+>> which would in a loop just iterate over the payloads and
+>> let the hypervisor stick it in the crashkernel space.
+>>
+>> This is all hand-waving of course. There probably would be a need
+>> to figure out how much space you have in the reserved Xen's
+>> 'crashkernel' memory region too.
+> This is probably a mad idea but it's Monday morning and I'm sleep
+> deprived so I'll throw it out there...
+>
+> What about adding DOMID_KEXEC (similar DOMID_IO etc)? This would allow
+> dom0 to map the kexec memory space with the usual privcmd mmap
+> hypercalls and build things in it directly.
+>
+> OK, I suspect this might not be practical for a variety of reasons (lack
+> of a p2m for such domains so no way to find out the list of mfns, dom0
+> userspace simply doesn't have sufficient context to write sensible
+> things here, etc) but maybe someone has a better head on today...
+>
+> Ian.
+>
 
-On Jan 6, 2013, at 4:24 AM, Rob Landley wrote:
+Given that /sbin/kexec creates a binary blob in memory, surely the most 
+simple thing is to get it to suitably mlock() the region and give a list 
+of VAs to the hypervisor.
 
-> On 01/04/2013 01:31:10 PM, Pantelis Antoniou wrote:
->> Introduce DT overlay support.
->> Using this functionality it is possible to dynamically overlay a part of
->> the kernel's tree with another tree that's been dynamically loaded.
->> It is also possible to remove node and properties.
->> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> 
-> Just commenting on the documentation a bit...
-> 
->> ---
->> Documentation/devicetree/overlay-notes.txt | 179 +++++++
->> drivers/of/Kconfig                         |  10 +
->> drivers/of/Makefile                        |   1 +
->> drivers/of/overlay.c                       | 831 +++++++++++++++++++++++++++++
->> include/linux/of.h                         | 107 ++++
->> 5 files changed, 1128 insertions(+)
->> create mode 100644 Documentation/devicetree/overlay-notes.txt
->> create mode 100644 drivers/of/overlay.c
->> diff --git a/Documentation/devicetree/overlay-notes.txt b/Documentation/devicetree/overlay-notes.txt
->> new file mode 100644
->> index 0000000..5289cbb
->> --- /dev/null
->> +++ b/Documentation/devicetree/overlay-notes.txt
->> @@ -0,0 +1,179 @@
->> +Device Tree Overlay Notes
->> +-------------------------
->> +
->> +This document describes the implementation of the in-kernel
->> +device tree overlay functionality residing in drivers/of/overlay.c and is a
->> +companion document to Documentation/devicetree/dt-object-internal.txt[1] &
->> +Documentation/devicetree/dynamic-resolution-notes.txt[2]
->> +
->> +How overlays work
->> +-----------------
->> +
->> +A Device Tree's overlay purpose is to modify the kernel's live tree, and
->> +have the modification affecting the state of the the kernel in a way that
->> +is reflecting the changes.
-> 
-> My wild guess here is this has something to do with hotplug support, but I don't know if modules are expected to do this or if userspace does it and modules respond... Could you give a couple sentences about the purpose and potential users of this mechanism in the summary?
-> 
+This way, Xen can properly take care of what it does with information 
+and where.  For example, at the moment, allowing dom0 to choose where 
+gets overwritten in the Xen crash area is a recipe for disaster if a 
+crash occurs midway through loading/reloading the crash kernel.
 
-In a nutshell, the idea is that you have an unspecified method of detecting some kind of hardware
-interface(s) and you want to insert to the live tree the fragment that will enable your hardware
-to function.
-
-Which method to use is up to what comes naturally for each case.
-
->> +Since the kernel mainly deals with devices, any new device node that result
-> 
-> results
-> 
-
-OK
-
->> +in an active device should have it created while if the device node is either
->> +disabled or removed all together, the affected device should be deregistered.
-> 
-> I'm not following this bit. It looks like some test is missing between "while if"?
-> 
-
-I'll reword it to make it clearer.
-
->> +Lets take an example where we have a foo board with the following base tree
->> +which is taken from [1].
->> +
->> +---- foo.dts -----------------------------------------------------------------
->> +	/* FOO platform */
->> +	/ {
->> +		compatible = "corp,foo";
->> +
->> +		/* shared resources */
->> +		res: res {
->> +		};
->> +
->> +		/* On chip peripherals */
->> +		ocp: ocp {
->> +			/* peripherals that are always instantiated */
->> +			peripheral1 { ... };
->> +		}
->> +	};
->> +---- foo.dts -----------------------------------------------------------------
->> +
->> +The overlay bar.dts, when loaded (and resolved as described in [2]) should
->> +
->> +---- bar.dts -----------------------------------------------------------------
->> +/plugin/;	/* allow undefined label references and record them */
->> +/ {
->> +	....	/* various properties for loader use; i.e. part id etc. */
->> +	fragment@0 {
->> +		target = <&ocp>;
->> +		__overlay__ {
->> +			/* bar peripheral */
->> +			bar {
->> +				compatible = "corp,bar";
->> +				... /* various properties and child nodes */
->> +			}
->> +		};
->> +	};
->> +};
->> +---- bar.dts -----------------------------------------------------------------
->> +
->> +result in foo+bar.dts
->> +
->> +---- foo+bar.dts -------------------------------------------------------------
->> +	/* FOO platform + bar peripheral */
->> +	/ {
->> +		compatible = "corp,foo";
->> +
->> +		/* shared resources */
->> +		res: res {
->> +		};
->> +
->> +		/* On chip peripherals */
->> +		ocp: ocp {
->> +			/* peripherals that are always instantiated */
->> +			peripheral1 { ... };
->> +
->> +			/* bar peripheral */
->> +			bar {
->> +				compatible = "corp,bar";
->> +				... /* various properties and child nodes */
->> +			}
->> +		}
->> +	};
->> +---- foo+bar.dts -------------------------------------------------------------
->> +
->> +As a result of the the overlay, a new device node (bar) has been created
->> +so a bar platform device will be registered and if a matching device driver
->> +is loaded the device will be created as expected.
-> 
-> Is this done by a module, or does doing this then trigger a hotplug event that requests a module? (Or is this a syntax allowing a bootloader to collate multiple device tree segments and then Linux links them when parsing the device tree...?)
-
-This is the general way to support all of the above. The existing implementation
-is by a board specific loader, which I will post shortly.
-
-> 
->> +Overlay in-kernel API
->> +---------------------
->> +
->> +The steps typically required to get an overlay to work are as follows:
->> +
->> +1. Use of_build_overlay_info() to create an array of initialized and
->> +ready to use of_overlay_info structures.
->> +2. Call of_overlay() to apply the overlays declared in the array.
->> +3. If the overlay needs to be removed, call of_overlay_revert().
->> +4. Finally release the memory taken by the overlay info array by
->> +of_free_overlay_info().
->> +
->> +/**
->> + * of_build_overlay_info	- Build an overlay info array
->> + * @tree:	Device node containing all the overlays
->> + * @cntp:	Pointer to where the overlay info count will be help
->> + * @ovinfop:	Pointer to the pointer of an overlay info structure.
->> + *
->> + * Helper function that given a tree containing overlay information,
->> + * allocates and builds an overlay info array containing it, ready
->> + * for use using of_overlay.
->> + *
->> + * Returns 0 on success with the @cntp @ovinfop pointers valid,
->> + * while on error a negative error value is returned.
->> + */
->> +int of_build_overlay_info(struct device_node *tree,
->> +		int *cntp, struct of_overlay_info **ovinfop);
-> 
-> Copying the htmldocs info blocks into a Documentation text file means you have to keep them in sync by hand. Possibly you want this documentation in a docbook template instead?
-
-At this point in time, there's no such thing, since the rest of the code in that
-area doesn't do it. I know it's a chore to keep them in sync by hand, but if you go 
-to the trouble of commenting, I thought I might as well make it in a form that can
-be used later.
-
-> 
->> +/**
->> + * of_free_overlay_info	- Free an overlay info array
->> + * @count:	Number of of_overlay_info's
->> + * @ovinfo_tab:	Array of overlay_info's to free
->> + *
->> + * Releases the memory of a previously allocate ovinfo array
->> + * by of_build_overlay_info.
->> + * Returns 0, or an error if the arguments are bogus.
->> + */
->> +int of_free_overlay_info(int count, struct of_overlay_info *ovinfo_tab);
->> +
->> +/**
->> + * of_overlay	- Apply @count overlays pointed at by @ovinfo_tab
->> + * @count:	Number of of_overlay_info's
->> + * @ovinfo_tab:	Array of overlay_info's to apply
->> + *
->> + * Applies the overlays given, while handling all error conditions
->> + * appropriately. Either the operation succeeds, or if it fails the
->> + * live tree is reverted to the state before the attempt.
->> + * Returns 0, or an error if the overlay attempt failed.
->> + */
->> +int of_overlay(int count, struct of_overlay_info *ovinfo_tab);
->> +
->> +/**
->> + * of_overlay_revert	- Revert a previously applied overlay
->> + * @count:	Number of of_overlay_info's
->> + * @ovinfo_tab:	Array of overlay_info's to apply
->> + *
->> + * Revert a previous overlay. The state of the live tree
->> + * is reverted to the one before the overlay.
->> + * Returns 0, or an error if the overlay table is not given.
->> + */
->> +int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab);
->> +
->> +Overlay DTS Format
->> +------------------
->> +
->> +The DTS of an overlay should have the following format:
->> +
->> +{
->> +	/* ignored properties by the overlay */
->> +
->> +	fragment@0 {	/* first child node */
->> +		target=<phandle>;	/* target of the overlay */
->> +		__overlay__ {
->> +			property-a;	/* add property-a to the target */
->> +			-property-b;	/* remove property-b from target */
->> +			node-a {	/* add to an existing, or create a node-a */
->> +				...
->> +			};
->> +			-node-b {	/* remove an existing node-b */
->> +				...
->> +			};
->> +		};
->> +	}
->> +	fragment@1 {	/* second child node */
->> +		...
->> +	};
->> +	/* more fragments follow */
->> +}
->> +
->> +It should be noted that the DT overlay format described is the one expected
->> +by the of_build_overlay_info() function, which is a helper function. There
->> +is nothing stopping someone coming up with his own DTS format and that will
->> +end up filling in the fields of the of_overlay_info array.
->> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
->> index f9a6193..964a1c2 100644
->> --- a/drivers/of/Kconfig
->> +++ b/drivers/of/Kconfig
->> @@ -92,4 +92,14 @@ config OF_RESOLVE
->> 	  Enable OF dynamic resolution support. This allows you to
->> 	  load Device Tree object fragments are run time.
->> +config OF_OVERLAY
->> +	bool "OF overlay support"
->> +	depends on OF
->> +	select OF_DYNAMIC
->> +	select OF_DEVICE
->> +	select OF_RESOLVE
->> +	help
->> +	  OpenFirmware overlay support. Allows you to modify on runtime the
->> +	  live tree using overlays.
-> 
-> "You" being... a module? The bootloader? A userspace program that just loaded some firmware? A udev hook responding to a hotplug event?
-> 
-
-A specific patchset which uses all of this will be forthcoming.
-
-As I said earlier, this is the infrastructure code than allows all of this.
-
-> Rob
-
-Regards
-
--- Pantelis
-
+~Andrew
 
