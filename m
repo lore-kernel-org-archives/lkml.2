@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab3AGLYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 06:24:01 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:65034 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753961Ab3AGLX7 (ORCPT
+	id S1754270Ab3AGLYN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 06:24:13 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42559 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753986Ab3AGLYK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 06:23:59 -0500
+	Mon, 7 Jan 2013 06:24:10 -0500
 From: Fabio Baltieri <fabio.baltieri@linaro.org>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: Dan Williams <djbw@fb.com>, Linus Walleij <linus.walleij@linaro.org>,
         Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Narayanan G <narayanan.gopalakrishnan@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
         Fabio Baltieri <fabio.baltieri@linaro.org>
-Subject: [PATCH 05/16] dmaengine: ste_dma40: don't check for pm_runtime_suspended()
-Date: Mon,  7 Jan 2013 12:21:47 +0100
-Message-Id: <1357557718-15676-6-git-send-email-fabio.baltieri@linaro.org>
+Subject: [PATCH 06/16] dmaengine: ste_dma40: don't allow high priority dest event lines
+Date: Mon,  7 Jan 2013 12:21:48 +0100
+Message-Id: <1357557718-15676-7-git-send-email-fabio.baltieri@linaro.org>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357557718-15676-1-git-send-email-fabio.baltieri@linaro.org>
 References: <1357557718-15676-1-git-send-email-fabio.baltieri@linaro.org>
@@ -24,33 +24,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-The check for runtime suspend is not needed during a regular suspend, as
-the framework takes care of this.  This fixes the issue of DMA driver
-not letting the system to go to deepsleep in the first attempt.
+Hardware bug: when a logical channel is triggerred by a high priority
+destination event line, an extra packet transaction is generated in case
+of important data write response latency on previous logical channel A
+and if the source transfer of current logical channel B is already
+completed and if no other channel with a higher priority than B is
+waiting for execution.
 
-Signed-off-by: Narayanan G <narayanan.gopalakrishnan@stericsson.com>
-Reviewed-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Software workaround: do not set the high priority level for the
+destination event lines that trigger logical channels.
+
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Reviewed-by: Shreshtha Kumar Sahu <shreshthakumar.sahu@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@linaro.org>
 Signed-off-by: Fabio Baltieri <fabio.baltieri@linaro.org>
 ---
- drivers/dma/ste_dma40.c | 2 --
- 1 file changed, 2 deletions(-)
+ drivers/dma/ste_dma40.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 2d0c63d..760576b 100644
+index 760576b..9f8964a 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -2782,8 +2782,6 @@ static int dma40_pm_suspend(struct device *dev)
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct d40_base *base = platform_get_drvdata(pdev);
- 	int ret = 0;
--	if (!pm_runtime_suspended(dev))
--		return -EBUSY;
+@@ -2180,11 +2180,24 @@ static void __d40_set_prio_rt(struct d40_chan *d40c, int dev_type, bool src)
+ {
+ 	bool realtime = d40c->dma_cfg.realtime;
+ 	bool highprio = d40c->dma_cfg.high_priority;
+-	u32 prioreg = highprio ? D40_DREG_PSEG1 : D40_DREG_PCEG1;
+ 	u32 rtreg = realtime ? D40_DREG_RSEG1 : D40_DREG_RCEG1;
+ 	u32 event = D40_TYPE_TO_EVENT(dev_type);
+ 	u32 group = D40_TYPE_TO_GROUP(dev_type);
+ 	u32 bit = 1 << event;
++	u32 prioreg;
++
++	/*
++	 * Due to a hardware bug, in some cases a logical channel triggered by
++	 * a high priority destination event line can generate extra packet
++	 * transactions.
++	 *
++	 * The workaround is to not set the high priority level for the
++	 * destination event lines that trigger logical channels.
++	 */
++	if (!src && chan_is_logical(d40c))
++		highprio = false;
++
++	prioreg = highprio ? D40_DREG_PSEG1 : D40_DREG_PCEG1;
  
- 	if (base->lcpa_regulator)
- 		ret = regulator_disable(base->lcpa_regulator);
+ 	/* Destination event lines are stored in the upper halfword */
+ 	if (!src)
 -- 
 1.7.12.1
 
