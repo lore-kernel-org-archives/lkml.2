@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab3AGPss (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:48:48 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:8436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753439Ab3AGPsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:48:47 -0500
-Date: Mon, 7 Jan 2013 13:48:01 -0200
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Fabio Estevam <festevam@gmail.com>, linux-media@vger.kernel.org,
-        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] [media] coda: Fix build due to iram.h rename
-Message-ID: <20130107134801.51fbd7d7@redhat.com>
-In-Reply-To: <20130107134605.2825d1b0@infradead.org>
-References: <1357553025-21094-1-git-send-email-s.hauer@pengutronix.de>
-	<CAOMZO5Cpa2OYd+v=wE4hbw=sjmQk+bP1HrY49PEWmwRyiVD1dg@mail.gmail.com>
-	<20130107134605.2825d1b0@infradead.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753551Ab3AGPuN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:50:13 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:47789 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab3AGPuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 10:50:12 -0500
+X-Originating-IP: 217.70.178.151
+X-Originating-IP: 50.43.39.152
+Date: Mon, 7 Jan 2013 07:50:02 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Silence compiler array
+ out-of-bounds false positive
+Message-ID: <20130107155002.GA11145@leaf>
+References: <20130105170920.GA13766@linux.vnet.ibm.com>
+ <1357405778-13903-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 7 Jan 2013 13:46:05 -0200
-Mauro Carvalho Chehab <mchehab@infradead.org> escreveu:
-
-> Em Mon, 7 Jan 2013 08:16:02 -0200
-> Fabio Estevam <festevam@gmail.com> escreveu:
+On Sat, Jan 05, 2013 at 09:09:36AM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 > 
-> > Hi Sascha,
-...
-> > It would be better to use git mv /git format-patch -M, so that git can
-> > detect the file rename.
+> It turns out that gcc 4.8 warns on array indexes being out of bounds
+> unless it can prove otherwise.  It gives this warning on some RCU
+> initialization code.  Because this is far from any fastpath, add
+> an explicit check for array bounds and panic if so.  This gives the
+> compiler enough information to figure out that the array index is never
+> out of bounds.
 > 
-> Agreed. Anyway, I applied here and did a git show -M:
+> However, if a similar false positive occurs on a fastpath, it will
+> probably be necessary to tell the compiler to keep its array-index
+> anxieties to itself.  ;-)
 > 
-> From: Sascha Hauer <s.hauer@pengutronix.de>
-> Date: Mon, 7 Jan 2013 11:03:45 +0100
-> Subject: [PATCH] coda: Fix build due to iram.h rename
+> Markus Trippelsdorf <markus@trippelsdorf.de>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-> commit c045e3f13 (ARM: imx: include iram.h rather than mach/iram.h) changed the
-> location of iram.h, which causes the following build error when building the coda
-> driver:
-> 
-> drivers/media/platform/coda.c:27:23: error: mach/iram.h: No such file or directory
-> drivers/media/platform/coda.c: In function 'coda_probe':
-> drivers/media/platform/coda.c:2000: error: implicit declaration of function 'iram_alloc'
-> drivers/media/platform/coda.c:2001: warning: assignment makes pointer from integer without a cast
-> drivers/media/platform/coda.c: In function 'coda_remove':
-> drivers/media/platform/coda.c:2024: error: implicit declaration of function 'iram_free'
-> 
-> Since the content of iram.h is not imx specific, move it to
-> include/linux/platform_data/imx-iram.h instead. This is an intermediate solution
-> until the i.MX iram allocator is converted to the generic SRAM allocator.
-> 
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-
-Patch looks OK on my eyes.
-
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-
-> 
-> diff --git a/arch/arm/mach-imx/iram_alloc.c b/arch/arm/mach-imx/iram_alloc.c
-> index 6c80424..e05cf40 100644
-> --- a/arch/arm/mach-imx/iram_alloc.c
-> +++ b/arch/arm/mach-imx/iram_alloc.c
-> @@ -22,8 +22,7 @@
->  #include <linux/module.h>
->  #include <linux/spinlock.h>
->  #include <linux/genalloc.h>
-> -
-> -#include "iram.h"
-> +#include "linux/platform_data/imx-iram.h"
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index d145796..e0d9815 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
 >  
->  static unsigned long iram_phys_base;
->  static void __iomem *iram_virt_base;
-> diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
-> index 2721f83..16a243d 100644
-> --- a/drivers/media/platform/coda.c
-> +++ b/drivers/media/platform/coda.c
-> @@ -23,8 +23,8 @@
->  #include <linux/slab.h>
->  #include <linux/videodev2.h>
->  #include <linux/of.h>
-> +#include <linux/platform_data/imx-iram.h>
+>  	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
 >  
-> -#include <mach/iram.h>
->  #include <media/v4l2-ctrls.h>
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-ioctl.h>
-> diff --git a/arch/arm/mach-imx/iram.h b/include/linux/platform_data/imx-iram.h
-> similarity index 100%
-> rename from arch/arm/mach-imx/iram.h
-> rename to include/linux/platform_data/imx-iram.h
+> +	/* Silence gcc 4.8 warning about array index out of range. */
+> +	if (rcu_num_lvls > RCU_NUM_LVLS)
+> +		panic("rcu_init_one: rcu_num_lvls overflow");
 
-Cheers,
-Mauro
+Why not write this as BUG_ON(rcu_num_lvls > RCU_NUM_LVLS)?  Given that
+the condition in question can never happen, you don't really need an
+explanatory message.
+
+I do find it surprising, though, that the compiler can't figure this one
+out, given that rcu_num_lvls gets initialized right before this in the
+same file (and likely inlined into the same function).  I wonder if it
+thought some other code might change it unexpectedly, since rcu_num_lvls
+doesn't get declared as static?  Unfortunately, the loop macros in
+rcutree.h make it difficult to make rcu_num_lvls static, but as far as I
+can tell only one use of those macros ever gets expanded outside of
+rcutree.c: the one in rcutree_trace.c.  If you compile out tracing, and
+declare rcu_num_lvls static, does the warning go away?
+
+- Josh Triplett
