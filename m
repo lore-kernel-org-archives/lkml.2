@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757Ab3AGVJb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:09:31 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:4608 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1749667Ab3AGVJa (ORCPT
+	id S1753709Ab3AGVXo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:23:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38005 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab3AGVXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:09:30 -0500
-X-IronPort-AV: E=Sophos;i="4.84,425,1355094000"; 
-   d="scan'208";a="188806441"
-Date: Mon, 7 Jan 2013 22:09:27 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
+	Mon, 7 Jan 2013 16:23:43 -0500
+Date: Mon, 7 Jan 2013 13:23:41 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: tj@kernel.org, mingo@kernel.org, yinghai@kernel.org,
+        liwanp@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        tangchen@cn.fujitsu.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c:
- reposition free_irq to avoid access to invalid data
-In-Reply-To: <874nisbvsh.fsf@free.fr>
-Message-ID: <alpine.DEB.2.02.1301072209090.1989@localhost6.localdomain6>
-References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr> <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr> <Pine.LNX.4.64.1301071111420.23972@axis700.grange> <874nisbvsh.fsf@free.fr>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [PATCH v2] mm: memblock: fix wrong memmove size in
+ memblock_merge_regions()
+Message-Id: <20130107132341.c8ca0060.akpm@linux-foundation.org>
+In-Reply-To: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
+References: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jan 2013, Robert Jarzmik wrote:
+On Mon, 7 Jan 2013 11:41:36 +0800
+Lin Feng <linfeng@cn.fujitsu.com> wrote:
 
-> Guennadi Liakhovetski <g.liakhovetski@gmx.de> writes:
-> 
-> > (adding Robert to CC)
-> > I don't think any data is freed by pxa_free_dma(), it only disables DMA on 
-> > a certain channel. Theoretically there could be a different problem: 
-> > pxa_free_dma() deactivates DMA, whereas pxa_dma_start_channels() activates 
-> > it. But I think we're also protected against that: by the time 
-> > pxa_camera_remove() is called, and operation on the interface has been 
-> > stopped, client devices have been detached, pxa_camera_remove_device() has 
-> > been called, which has also stopped the interface clock. And with clock 
-> > stopped no interrupts can be generated. And the case of interrupt having 
-> > been generated before clk_disabled() and only delivered to the driver so 
-> > much later, that we're already unloading the module, seems really 
-> > impossible to me. Robert, you agree?
-> 
-> Agreed that pxa_free_dma() doesn't free anything, that one is easy :)
-> 
-> And agreed too for the second part, with a slighly different explanation :
->  - pxa_camera_remove_device() has been called as you said
->  - inside this function, check comment
->    "/* disable capture, disable interrupts */"
->    => this ensures no interrupt can be generated anymore
-> 
-> So after pxa_camera_remove_device() has been called, no interrupts can be
-> generated.
-> 
-> Yet as you said, it leaves the "almost impossible" scenario :
->  - a user begins a capture
->  - the user closes the capture device and unloads pxa-camera.ko:
->      soc_camera_close()
->        pxa_camera_remove_device()
->          the IRQ line is asserted but doesn't trigger yet the interrupt handler
->          (yes I know, improbable)
->          meanwhile, IRQs are disabled, DMA channels are stopped
->      switch_to(rmmod)
->        => yes I know, impossible, the interrupt handler must be run before, but
->        let's continue for love of discussion ...
->      rmmod pxa-camera
->        pxa_camera_remove()
->          pxa_free_dma() * 3
->          ----> here the IRQ handler kicks in !!!
->                => pxa_camera_irq()
->                     pxa_dma_start_channels()
->          ----> it hurts !
-> 
-> My call is that this is impossible because the switch_to() should run the IRQ
-> handler before pxa_camera_remove() is called.
-> 
-> So all this to say that I think we're safe, unless a heavy ion or a cosmic ray
-> strikes the PXA :)
+> The memmove span covers from (next+1) to the end of the array, and the index
+> of next is (i+1), so the index of (next+1) is (i+2). So the size of remaining
+> array elements is (type->cnt - (i + 2)).
 
-Thanks for the explanation.
+What are the user-visible effects of this bug?
 
-julia
+> --- a/mm/memblock.c
+> +++ b/mm/memblock.c
+> @@ -314,7 +314,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
+>  		}
+>  
+>  		this->size += next->size;
+> -		memmove(next, next + 1, (type->cnt - (i + 1)) * sizeof(*next));
+> +		/* move forward from next + 1, index of which is i + 2 */
+> +		memmove(next, next + 1, (type->cnt - (i + 2)) * sizeof(*next));
+>  		type->cnt--;
+>  	}
+>  }
+> -- 
+> 1.7.11.7
