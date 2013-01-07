@@ -1,87 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754460Ab3AGL7Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 06:59:16 -0500
-Received: from fw-tnat.cambridge.arm.com ([217.140.96.21]:55310 "EHLO
-	cam-smtp0.cambridge.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754253Ab3AGL7O (ORCPT
+	id S1754323Ab3AGMDB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:03:01 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:42576 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753744Ab3AGMC7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 06:59:14 -0500
-Date: Mon, 7 Jan 2013 11:58:36 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Pratik Patel <pratikp@codeaurora.org>
-Cc: Jon Hunter <jon-hunter@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "magnus.p.persson@stericsson.com" <magnus.p.persson@stericsson.com>,
-        "david.rusling@linaro.org" <david.rusling@linaro.org>,
-        "arve@android.com" <arve@android.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "john.stultz@linaro.org" <john.stultz@linaro.org>,
-        "d-deao@ti.com" <d-deao@ti.com>,
-        "christian.bejram@stericsson.com" <christian.bejram@stericsson.com>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: CoreSight framework and drivers
-Message-ID: <20130107115836.GB13542@mudshark.cambridge.arm.com>
-References: <1355858365-11849-1-git-send-email-pratikp@codeaurora.org>
- <20121219112314.GA26329@mudshark.cambridge.arm.com>
- <50D1F37E.6000804@ti.com>
- <20121219212431.GC23594@pratikp-linux.qualcomm.com>
- <50D34EE5.8090407@ti.com>
- <20121220195127.GA14877@pratikp-linux.qualcomm.com>
- <50D3972E.4030607@ti.com>
- <20121221221828.GA2658@pratikp-linux.qualcomm.com>
- <20121223113239.GG16237@mudshark.cambridge.arm.com>
- <20130103180643.GA30277@pratikp-linux.qualcomm.com>
+	Mon, 7 Jan 2013 07:02:59 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130103180643.GA30277@pratikp-linux.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAH9JG2VZAZfpfCjtxgMDsJPNf10FOO_PNV4poVkTgX=2XCoEpQ@mail.gmail.com>
+References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
+ <1354165536-18529-2-git-send-email-ch.naveen@samsung.com> <CAH9JG2VZAZfpfCjtxgMDsJPNf10FOO_PNV4poVkTgX=2XCoEpQ@mail.gmail.com>
+From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
+Date: Mon, 7 Jan 2013 17:32:38 +0530
+Message-ID: <CAHfPSqCrF_o6b01WucLh4Ra9vZvh6OuPXc7VLioS_2zo=PJX-w@mail.gmail.com>
+Subject: Re: [PATCH 1/2] i2c-s3c2410: Leave the bus disabled unless it is in use
+To: linux-i2c@vger.kernel.org
+Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, grundler@chromium.org,
+        sjg@chromium.org, naveen@chromium.org, w.sang@pengutronix.de,
+        linux-kernel@vger.kernel.org, Kyungmin Park <kmpark@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 06:06:43PM +0000, Pratik Patel wrote:
-> On Sun, Dec 23, 2012 at 11:32:39AM +0000, Will Deacon wrote:
-> > On Fri, Dec 21, 2012 at 10:18:28PM +0000, Pratik Patel wrote:
-> > > What user interface do you plan to provide for the CTI? Maybe
-> > > something consistent with other CoreSight components in sysfs to
-> > > allow users to enable, disable, map and unmap ???
-> > > 
-> > > Please let me know your thoughts.
-> > 
-> > Rather than have your current approach of dev nodes + sysfs config files for
-> > each coresight device, I think it might be better to follow something closer
-> > to ftrace and stick per-device directories under debugfs/coresight/. Then you
-> > can have a pipe file and some config files in the same directory for each
-> > component. You also don't need to do any mapping operations with this (just
-> > post-process the stream directly).
-> > 
-> 
-> Thanks for the suggestion. I had initially debated between debugfs
-> and sysfs but chose sysfs + dev nodes since using device attributes
-> relieves the drivers from manually managing directories and files,
-> its taken care of by the device and sysfs layers. Moreover, since
-> these are physical devices, device attributes made sense at the
-> time.
-> 
-> The map and unmap I was referring to was for the CTI trigger
-> mappings. Dev nodes are currently intended to provide the raw
-> data collected in the sinks.
-> 
-> Whats the advantage in using debugfs here?
+On 29 November 2012 20:14, Kyungmin Park <kmpark@infradead.org> wrote:
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-The main things I like about debugfs are (a) it's a text-driven interface
-and easy to script with and (b) it matches what we do for ftrace.
+I don't see this patch landed any where in linux-i2c tree, Though it was acked.
+Was it missed or should i be doing something for this to be merged ??
 
-Furthermore, it means that subtle differences between devices can be hidden
-in the driver and not require different vendor tools for parsing the trace
-data.
+>
+> On Thu, Nov 29, 2012 at 2:05 PM, Naveen Krishna Chatradhi
+> <ch.naveen@samsung.com> wrote:
+>> From: Simon Glass <sjg@chromium.org>
+>>
+>> There is a rather odd feature of the exynos i2c controller that if it
+>> is left enabled, it can lock itself up with the clk line held low.
+>> This makes the bus unusable.
+>>
+>> Unfortunately, the s3c24xx_i2c_set_master() function does not notice
+>> this, and reports a timeout. From then on the bus cannot be used until
+>> the AP is rebooted.
+>>
+>> The problem happens when any sort of interrupt occurs (e.g. due to a
+>> bus transition) when we are not in the middle of a transaction. We
+>> have seen many instances of this when U-Boot leaves the bus apparently
+>> happy, but Linux cannot access it.
+>>
+>> The current code is therefore pretty fragile.
+>>
+>> This fixes things by leaving the bus disabled unless we are actually
+>> in a transaction. We enable the bus at the start of the transaction and
+>> disable it at the end. That way we won't get interrupts and will not
+>> lock up the bus.
+>>
+>> It might be possible to clear pending interrupts on start-up, but this
+>> seems to be a more robust solution. We can't service interrupts when
+>> we are not in a transaction, and anyway would rather not lock up the
+>> bus while we try.
+>>
+>> Signed-off-by: Simon Glass <sjg@chromium.org>
+>> Cc: Grant Grundler <grundler@chromium.org>
+>> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+>> ---
+>>  drivers/i2c/busses/i2c-s3c2410.c |   37 +++++++++++++++++++++++++++++++++----
+>>  1 file changed, 33 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
+>> index e93e7d6..2fd346d 100644
+>> --- a/drivers/i2c/busses/i2c-s3c2410.c
+>> +++ b/drivers/i2c/busses/i2c-s3c2410.c
+>> @@ -186,6 +186,31 @@ static inline void s3c24xx_i2c_enable_irq(struct s3c24xx_i2c *i2c)
+>>         writel(tmp | S3C2410_IICCON_IRQEN, i2c->regs + S3C2410_IICCON);
+>>  }
+>>
+>> +/*
+>> + * Disable the bus so that we won't get any interrupts from now on, or try
+>> + * to drive any lines. This is the default state when we don't have
+>> + * anything to send/receive.
+>> + *
+>> + * If there is an event on the bus, or we have a pre-existing event at
+>> + * kernel boot time, we may not notice the event and the I2C controller
+>> + * will lock the bus with the I2C clock line low indefinitely.
+>> + */
+>> +static inline void s3c24xx_i2c_disable_bus(struct s3c24xx_i2c *i2c)
+>> +{
+>> +       unsigned long tmp;
+>> +
+>> +       /* Stop driving the I2C pins */
+>> +       tmp = readl(i2c->regs + S3C2410_IICSTAT);
+>> +       tmp &= ~S3C2410_IICSTAT_TXRXEN;
+>> +       writel(tmp, i2c->regs + S3C2410_IICSTAT);
+>> +
+>> +       /* We don't expect any interrupts now, and don't want send acks */
+>> +       tmp = readl(i2c->regs + S3C2410_IICCON);
+>> +       tmp &= ~(S3C2410_IICCON_IRQEN | S3C2410_IICCON_IRQPEND |
+>> +               S3C2410_IICCON_ACKEN);
+>> +       writel(tmp, i2c->regs + S3C2410_IICCON);
+>> +}
+>> +
+>>
+>>  /* s3c24xx_i2c_message_start
+>>   *
+>> @@ -646,7 +671,11 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
+>>
+>>         s3c24xx_i2c_wait_idle(i2c);
+>>
+>> +       s3c24xx_i2c_disable_bus(i2c);
+>> +
+>>   out:
+>> +       i2c->state = STATE_IDLE;
+>> +
+>>         return ret;
+>>  }
+>>
+>> @@ -912,7 +941,6 @@ static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
+>>
+>>  static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
+>>  {
+>> -       unsigned long iicon = S3C2410_IICCON_IRQEN | S3C2410_IICCON_ACKEN;
+>>         struct s3c2410_platform_i2c *pdata;
+>>         unsigned int freq;
+>>
+>> @@ -926,12 +954,12 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
+>>
+>>         dev_info(i2c->dev, "slave address 0x%02x\n", pdata->slave_addr);
+>>
+>> -       writel(iicon, i2c->regs + S3C2410_IICCON);
+>> +       writel(0, i2c->regs + S3C2410_IICCON);
+>> +       writel(0, i2c->regs + S3C2410_IICSTAT);
+>>
+>>         /* we need to work out the divisors for the clock... */
+>>
+>>         if (s3c24xx_i2c_clockrate(i2c, &freq) != 0) {
+>> -               writel(0, i2c->regs + S3C2410_IICCON);
+>>                 dev_err(i2c->dev, "cannot meet bus frequency required\n");
+>>                 return -EINVAL;
+>>         }
+>> @@ -939,7 +967,8 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
+>>         /* todo - check that the i2c lines aren't being dragged anywhere */
+>>
+>>         dev_info(i2c->dev, "bus frequency set to %d KHz\n", freq);
+>> -       dev_dbg(i2c->dev, "S3C2410_IICCON=0x%02lx\n", iicon);
+>> +       dev_dbg(i2c->dev, "S3C2410_IICCON=0x%02x\n",
+>> +               readl(i2c->regs + S3C2410_IICCON));
+>>
+>>         return 0;
+>>  }
+>> --
+>> 1.7.9.5
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Will
+
+
+-- 
+Shine bright,
+(: Nav :)
