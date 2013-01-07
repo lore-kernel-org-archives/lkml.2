@@ -1,110 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab3AGP1H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:27:07 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:27664 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab3AGP1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:27:05 -0500
-Date: Mon, 7 Jan 2013 10:26:22 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
+	id S1753250Ab3AGP3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:29:39 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:39309 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab3AGP3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 10:29:38 -0500
+Date: Mon, 7 Jan 2013 15:29:31 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
+        David Rientjes <rientjes@google.com>,
+        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+        Alex Shi <lkml.alex@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-Message-ID: <20130107152622.GD3219@phenom.dumpdata.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-27-git-send-email-yinghai@kernel.org>
- <CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
- <CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
- <CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
- <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 29/49] mm: numa: Add pte updates, hinting and migration
+ stats
+Message-ID: <20130107152931.GM3885@suse.de>
+References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
+ <1354875832-9700-30-git-send-email-mgorman@suse.de>
+ <1357299744.5273.4.camel@kernel.cn.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+In-Reply-To: <1357299744.5273.4.camel@kernel.cn.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 02:10:25PM -0800, Yinghai Lu wrote:
-> On Fri, Jan 4, 2013 at 1:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> > Pani'cing the system doesn't sound like a good option to me in this
-> > case. This change to disable swiotlb is made for kdump. However, with
-> > this change several system fail to boot, unless crashkernel_low=72M is
-> > specified.
+On Fri, Jan 04, 2013 at 05:42:24AM -0600, Simon Jeons wrote:
+> On Fri, 2012-12-07 at 10:23 +0000, Mel Gorman wrote:
+> > It is tricky to quantify the basic cost of automatic NUMA placement in a
+> > meaningful manner. This patch adds some vmstats that can be used as part
+> > of a basic costing model.
 > 
-> this patchset is new feature to put second kdump kernel above 4G.
+> Hi Gorman, 
 > 
-> >
-> > I would the say the right approach to solve this would be to not
-> > change the current pci_swiotlb_detect_override() behavior and treat
-> > swiotlb =1 upon entry equivalent to swiotlb_force set.
+> > 
+> > u    = basic unit = sizeof(void *)
+> > Ca   = cost of struct page access = sizeof(struct page) / u
+> > Cpte = Cost PTE access = Ca
+> > Cupdate = Cost PTE update = (2 * Cpte) + (2 * Wlock)
+> > 	where Cpte is incurred twice for a read and a write and Wlock
+> > 	is a constant representing the cost of taking or releasing a
+> > 	lock
+> > Cnumahint = Cost of a minor page fault = some high constant e.g. 1000
+> > Cpagerw = Cost to read or write a full page = Ca + PAGE_SIZE/u
 > 
-> that will make intel system have to take crashkernel_low=72M too.
-> otherwise intel system will get panic during swiotlb allocation.
-
-Two things:
-
- 1). You need to wrap the 'is_enough_..' in CONFIG_KEXEC, which means
-    that the function needs to go in a header file.
- 2). The check for 1MB is suspect. Why only 1MB? You mentioned it is
-     b/c of crashkernel_low=72M (which I am not seeing in v3.8 kernel-parameters.txt?
-     Is that part of your mega-patchset?). Anyhow, there seems to be a disconnect -
-     what if the user supplied crashkernel_low=27M? Perhaps the 'is_enough'
-     should also parse the bootparams to double-check that there is enough
-     low-mem space? But then if the kernel grows then 72M might not be enough -
-     you might need 82M with 3.9.
-
-     Perhaps a better way for this is to do:
-	1). Change 'is_enough' to check only for 4MB.
-	2). When booting as kexec, the SWIOTLB would only use 4MB instead of 64MB?
-
-     Or, we could also use the post-late SWIOTLB initialization similiary to how it was
-     done on ia64. This would mean that the AMD VI code would just call the
-     .. something like this - NOT tested or even compile tested:
-
-diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
-index c1c74e0..e7fa8f7 100644
---- a/drivers/iommu/amd_iommu.c
-+++ b/drivers/iommu/amd_iommu.c
-@@ -3173,6 +3173,24 @@ int __init amd_iommu_init_dma_ops(void)
- 	if (unhandled && max_pfn > MAX_DMA32_PFN) {
- 		/* There are unhandled devices - initialize swiotlb for them */
- 		swiotlb = 1;
-+		/* Late (so no bootmem allocator) usage and only if the early SWIOTLB
-+ 		 * hadn't been allocated (which can happen on kexec kernels booted
-+ 		 * above 4GB). */
-+		if (!swiotlb_nr_tbl()) {
-+			int retry = 3;
-+			int mb_size = 64;
-+			int rc = 0;
-+retry_me:
-+			if (retry < 0)
-+				panic("We tried setting %dMB for SWIOTLB but got -ENOMEM", mb_size << 1);
-+			rc = swiotlb_late_init_with_default_size(mb_size * (1<<20));
-+			if (rc) {
-+				retry --;
-+				mb_size >> 1;
-+				goto retry_me;
-+			}
-+ 			dma_ops = &swiotlb_dma_ops;
-+		}
- 	}
- 
- 	amd_iommu_stats_init();
-
-And then the early SWIOTLB initialization for 64MB can fail and we are still OK.
+> Why cpagerw = Ca + PAGE_SIZE/u instead of Cpte + PAGE_SIZE/u ?
 > 
-> Thanks
+
+Because I was thinking of the cost of just access the struct page.  Arguably
+it would be both Ca and Cpte and if I wanted to be very comprehensive I
+would also take into account the potential cost of kmapping the page in
+the 32-bit case but it'd be overkill. The cost of the PTE and struct page
+is negligible in comparison to the actual copy.
+
+> > Ci = Cost of page isolation = Ca + Wi
+> > 	where Wi is a constant that should reflect the approximate cost
+> > 	of the locking operation
+> > Cpagecopy = Cpagerw + (Cpagerw * Wnuma) + Ci + (Ci * Wnuma)
+> > 	where Wnuma is the approximate NUMA factor. 1 is local. 1.2
+> > 	would imply that remote accesses are 20% more expensive
+> > 
+> > Balancing cost = Cpte * numa_pte_updates +
+> > 		Cnumahint * numa_hint_faults +
+> > 		Ci * numa_pages_migrated +
+> > 		Cpagecopy * numa_pages_migrated
+> > 
 > 
-> Yinghai
+> Since Cpagecopy has already accumulated ci why count ci twice ?
+> 
+
+Good point. Interestingly when I went to fix this in mmtests I found
+that I accounted for Ci properly there but got it wrong in the
+changelog.
+
+> > Note that numa_pages_migrated is used as a measure of how many pages
+> > were isolated even though it would miss pages that failed to migrate. A
+> > vmstat counter could have been added for it but the isolation cost is
+> > pretty marginal in comparison to the overall cost so it seemed overkill.
+> > 
+> > The ideal way to measure automatic placement benefit would be to count
+> > the number of remote accesses versus local accesses and do something like
+> > 
+> > 	benefit = (remote_accesses_before - remove_access_after) * Wnuma
+> > 
+> > but the information is not readily available. As a workload converges, the
+> > expection would be that the number of remote numa hints would reduce to 0.
+> > 
+> > 	convergence = numa_hint_faults_local / numa_hint_faults
+> > 		where this is measured for the last N number of
+> > 		numa hints recorded. When the workload is fully
+> > 		converged the value is 1.
+> > 
+> 
+> convergence tend to 0 is better or 1 is better
+
+1 is better.
+
+> If tend to 1, Cpte *
+> numa_pte_updates + Cnumahint * numa_hint_faults are just waste, where I
+> miss?
+> 
+
+I don't get the question, waste of what? None of these calculations are
+used by the kernel. The kernel only maintains counters and the point of
+the changelog was to illustrate how the counters can be used to do some
+meaningful evaluation.
+
+-- 
+Mel Gorman
+SUSE Labs
