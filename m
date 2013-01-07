@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516Ab3AGMzJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:55:09 -0500
-Received: from mga02.intel.com ([134.134.136.20]:3843 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984Ab3AGMzH convert rfc822-to-8bit (ORCPT
+	id S1754448Ab3AGNAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 08:00:14 -0500
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:42917 "HELO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753961Ab3AGNAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:55:07 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,424,1355126400"; 
-   d="scan'208";a="268627282"
-Message-ID: <1357563294.31620.145.camel@smile>
-Subject: dw_dmac patches
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Date: Mon, 07 Jan 2013 14:54:54 +0200
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Mon, 7 Jan 2013 08:00:12 -0500
+Message-ID: <50EAC6DA.1040601@mellanox.com>
+Date: Mon, 7 Jan 2013 15:00:10 +0200
+From: Amir Vadai <amirv@mellanox.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: David Decotigny <decot@googlers.com>
+CC: <linux-kernel@vger.kernel.org>, Ben Hutchings <bhutchings@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Or Gerlitz <ogerlitz@mellanox.com>,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Josh Triplett" <josh@joshtriplett.org>,
+        David Howells <dhowells@redhat.com>,
+        "Paul Gortmaker" <paul.gortmaker@windriver.com>
+Subject: Re: [PATCH v4] lib: cpu_rmap: avoid flushing all workqueues
+References: <cover.1357163124.git.decot@googlers.com> <bb2493cb7d0b36f35282d77c1f07727601f9c751.1357163124.git.decot@googlers.com>
+In-Reply-To: <bb2493cb7d0b36f35282d77c1f07727601f9c751.1357163124.git.decot@googlers.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.222.66.109]
+X-TM-AS-Product-Ver: SMEX-10.0.0.4211-7.000.1014-19514.002
+X-TM-AS-Result: No--0.464400-8.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Vinod.
+On 02/01/2013 23:52, David Decotigny wrote:
+> In some cases, free_irq_cpu_rmap() is called while holding a lock
+> (eg. rtnl). This can lead to deadlocks, because it invokes
+> flush_scheduled_work() which ends up waiting for whole system
+> workqueue to flush, but some pending works might try to acquire the
+> lock we are already holding.
+>
+> This commit uses reference-counting to replace
+> irq_run_affinity_notifiers(). It also removes
+> irq_run_affinity_notifiers() altogether.
+>
+> Signed-off-by: David Decotigny<decot@googlers.com>
+> ---
+>   include/linux/cpu_rmap.h  |   13 +++-------
+>   include/linux/interrupt.h |    5 ----
+>   lib/cpu_rmap.c            |   63 +++++++++++++++++++++++++++++++++++++++++----
+>   3 files changed, 62 insertions(+), 19 deletions(-)
+>
 
-I noticed you missed the 3.8 merge window and I can't see any of my
-recent patches [1] in your next branch. So, what is your plan regarding
-to them?
-
-[1]
-pick 9f2b870 dw_dmac: call .probe after we have a device in place
-pick 5bcd7fe dw_dmac: absence of pdata isn't critical when autocfg is
-set
-pick 2fbca14 dmaengine: introduce is_slave_xfer function
-pick 6e98b1f dma: at_hdmac: check direction properly for cyclic
-transfers
-pick d1573d9 dma: dw_dmac: check direction properly in
-dw_dma_cyclic_prep
-pick f1071a3 dma: ep93xx_dma: reuse is_slave_xfer helper
-pick 191347f dma: ipu_idmac: reuse is_slave_xfer helper
-pick 4ec19c2 dma: ste_dma40: reuse is_slave_xfer helper
-pick 757978e dw_dmac: store direction in the custom channel structure
-pick 8e5ea839 dw_dmac: make usage of dw_dma_slave optional
-pick d0da3f4 dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-pick ca7141d dw_dmac: check for mapping errors
-pick 281c298 dw_dmac: remove redundant check
-pick 217f956 dw_dmac: update tx_node_active in dwc_do_single_block
-pick fd144bd dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
-pick 59a6031 dma: dw_dmac: clear suspend bit during termination
-
-
--- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Acked-by: Amir Vadai <amirv@mellano.com>
