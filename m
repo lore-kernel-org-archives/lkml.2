@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab3AGAh1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 19:37:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4462 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752294Ab3AGAhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 19:37:25 -0500
-Date: Sun, 6 Jan 2013 19:37:18 -0500
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: oops in copy_page_rep()
-Message-ID: <20130107003718.GA1336@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Andrea Arcangeli <aarcange@redhat.com>,
-	Hugh Dickins <hughd@google.com>,
-	Andrew Morton <akpm@linux-foundation.org>
-References: <20130105152208.GA3386@redhat.com>
- <CA+55aFwkP=nA32pBO0gNm51nPxqWiq1e1zWzGEJoVQ1gP=CgDQ@mail.gmail.com>
+	id S1753140Ab3AGArb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 19:47:31 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:42622 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752294Ab3AGAr3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 19:47:29 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Cc: mturquette@ti.com
+Subject: Common clock framework: mutex recursion when calling clk_prepare from prepare handler
+Date: Mon, 07 Jan 2013 01:49:02 +0100
+Message-ID: <3826517.zOi8FASM36@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.6.11-gentoo; KDE/4.9.2; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwkP=nA32pBO0gNm51nPxqWiq1e1zWzGEJoVQ1gP=CgDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 07:57:39PM -0800, Linus Torvalds wrote:
- > Adding more people in case somebody else has any idea. Anybody?
- > 
- > On Sat, Jan 5, 2013 at 7:22 AM, Dave Jones <davej@redhat.com> wrote:
- > > I have no idea what happened here, but this is the first time I've seen this one.
- > > This was running a tree pulled yesterday afternoon.
- > >
- > > BUG: unable to handle kernel paging request at ffff880100201000
- > 
- > This is %rsi, which is the source for the page copy:
- > 
- >   copy_user_highpage()->
- >     copy_user_page()->
- >       copy_page()->
- >         copy_page_rep
- > 
- > I don't know exactly which copy_user_highpage() case this is from, the
- > call trace implies this *could* be a hugepage, and those functions do
- > copy pages individually in a loop too.
+Hello,
 
-investigating the huge page theory a little further I'm a bit confused.
-The kernel on that machine has THP enabled, and the cpu supports it (an old amd64), but..
+I ran into a mutex recursion issue while trying to port the OMAP3 ISP driver 
+(drivers/media/platform/omap3isp) over to the common clock framework.
 
-$ cat /sys/kernel/mm/hugepages/hugepages-2048kB/*
-0
-0
-0
-0
-0
-0
+The OMAP3 ISP generates two programmable clocks named xclka and xclkb that are 
+routed out of the SoC. My goal is to expose them as common clock instances 
+through the common clock framework.
 
-I was expecting at least one of those to be non-zero.
+The xclk[ab] clocks are children of the cam_mclk clock. They are controlled 
+through ISP registers that sit in the cam_fclk clock domain. The cam_mclk and 
+cam_fclk clocks sit in separate power domains.
 
-/sys/kernel/mm/transparent_hugepage/khugepaged/full_scans and pages_collapsed
-are both non-zero, so it's been busy doing _something_.
+To program the xclk clocks I need to enable the cam_fclk clock. As xclk[ab] 
+are not descendants of the cam_fclk clock, this operation needs to be 
+performed manually. I thus call clk_prepare_enable on the cam_fclk clock in 
+the xclk[ab] prepare handler. This is where things break, as the common clock 
+framework takes the prepare_lock mutex in clk_prepare, which results in a 
+mutex recursion deadlock as the prepare_lock mutex isn't recursive.
 
-Is this expected behaviour ?
+What's the best way to solve this ? __clk_prepare (the unlocked version of 
+clk_prepare) isn't exported to drivers, and I'm not convinced it should be. 
+Turning prepare_lock into a recursive mutex might also work, but I'm not sure 
+what drawbacks this would have. Advices would be appreciated.
 
-	Dave
+-- 
+Regards,
+
+Laurent Pinchart
 
