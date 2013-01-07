@@ -1,105 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab3AGRTf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:19:35 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:36895 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754555Ab3AGRTe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:19:34 -0500
-Date: Mon, 7 Jan 2013 09:19:10 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        markus@trippelsdorf.de
-Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Silence compiler array
- out-of-bounds false positive
-Message-ID: <20130107171910.GA19510@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130105170920.GA13766@linux.vnet.ibm.com>
- <1357405778-13903-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130107155002.GA11145@leaf>
- <20130107171602.GI2525@linux.vnet.ibm.com>
+	id S1754625Ab3AGRVI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:21:08 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:13068 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502Ab3AGRVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:21:06 -0500
+X-IronPort-AV: E=Sophos;i="4.84,424,1355097600"; 
+   d="scan'208";a="2903321"
+Date: Mon, 7 Jan 2013 17:21:01 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+CC: Pawel Moll <pawel.moll@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <Marc.Zyngier@arm.com>
+Subject: Re: [PATCH v4 21/24] arm/v2m: initialize arch_timers even if v2m_timer
+ is not present
+In-Reply-To: <alpine.DEB.2.02.1209141347250.29232@kaball.uk.xensource.com>
+Message-ID: <alpine.DEB.2.02.1301071719180.4981@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>  <1347621207-11294-21-git-send-email-stefano.stabellini@eu.citrix.com> <1347625628.2497.65.camel@hornet> <alpine.DEB.2.02.1209141347250.29232@kaball.uk.xensource.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130107171602.GI2525@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010717-5406-0000-0000-000003F62125
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 09:16:02AM -0800, Paul E. McKenney wrote:
-> On Mon, Jan 07, 2013 at 07:50:02AM -0800, Josh Triplett wrote:
-> > On Sat, Jan 05, 2013 at 09:09:36AM -0800, Paul E. McKenney wrote:
-> > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > 
-> > > It turns out that gcc 4.8 warns on array indexes being out of bounds
-> > > unless it can prove otherwise.  It gives this warning on some RCU
-> > > initialization code.  Because this is far from any fastpath, add
-> > > an explicit check for array bounds and panic if so.  This gives the
-> > > compiler enough information to figure out that the array index is never
-> > > out of bounds.
-> > > 
-> > > However, if a similar false positive occurs on a fastpath, it will
-> > > probably be necessary to tell the compiler to keep its array-index
-> > > anxieties to itself.  ;-)
-> > > 
-> > > Markus Trippelsdorf <markus@trippelsdorf.de>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On Fri, 14 Sep 2012, Stefano Stabellini wrote:
+> On Fri, 14 Sep 2012, Pawel Moll wrote:
+> > On Fri, 2012-09-14 at 12:13 +0100, Stefano Stabellini wrote:
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > > CC: Russell King <linux@arm.linux.org.uk>
+> > > CC: Pawel Moll <pawel.moll@arm.com>
+> > > CC: Marc Zyngier <marc.zyngier@arm.com>
 > > > ---
-> > >  kernel/rcutree.c |    4 ++++
-> > >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > >  arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
+> > >  1 files changed, 6 insertions(+), 5 deletions(-)
 > > > 
-> > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > index d145796..e0d9815 100644
-> > > --- a/kernel/rcutree.c
-> > > +++ b/kernel/rcutree.c
-> > > @@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+> > > diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+> > > index 37608f2..4e567f7 100644
+> > > --- a/arch/arm/mach-vexpress/v2m.c
+> > > +++ b/arch/arm/mach-vexpress/v2m.c
+> > > @@ -621,16 +621,17 @@ static void __init v2m_dt_timer_init(void)
 > > >  
-> > >  	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
+> > >  	v2m_clk_init();
 > > >  
-> > > +	/* Silence gcc 4.8 warning about array index out of range. */
-> > > +	if (rcu_num_lvls > RCU_NUM_LVLS)
-> > > +		panic("rcu_init_one: rcu_num_lvls overflow");
+> > > -	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> > > -	if (WARN_ON(err))
+> > > -		return;
+> > > -	node = of_find_node_by_path(path);
+> > > -	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+> > >  	if (arch_timer_of_register() != 0)
+> > >  		twd_local_timer_of_register();
+> > >  
+> > >  	if (arch_timer_sched_clock_init() != 0)
+> > >  		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
+> > > +
+> > > +	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> > > +	if (WARN_ON(err))
+> > > +		return;
+> > > +	node = of_find_node_by_path(path);
+> > > +	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+> > >  }
+> > >  
+> > >  static struct sys_timer v2m_dt_timer = {
 > > 
-> > Why not write this as BUG_ON(rcu_num_lvls > RCU_NUM_LVLS)?  Given that
-> > the condition in question can never happen, you don't really need an
-> > explanatory message.
+> > Fair point. The alias is going to disappear anyway (I'm working on a VE
+> > platform rework right now), but in case I won't get it on time for 3.7,
+> > I'll make sure this one is merged instead.
 > 
-> Good point, will do!
-
-Ah, wait, BUG_ON() sometimes compiles to nothingness:
-
-#ifndef HAVE_ARCH_BUG_ON
-#define BUG_ON(condition) do { if (condition) ; } while(0)
-#endif
-
-So I do need the explicit "if".  :-(
-
-							Thanx, Paul
-
-> > I do find it surprising, though, that the compiler can't figure this one
-> > out, given that rcu_num_lvls gets initialized right before this in the
-> > same file (and likely inlined into the same function).  I wonder if it
-> > thought some other code might change it unexpectedly, since rcu_num_lvls
-> > doesn't get declared as static?  Unfortunately, the loop macros in
-> > rcutree.h make it difficult to make rcu_num_lvls static, but as far as I
-> > can tell only one use of those macros ever gets expanded outside of
-> > rcutree.c: the one in rcutree_trace.c.  If you compile out tracing, and
-> > declare rcu_num_lvls static, does the warning go away?
+> Great, thanks!
+> Should I leave this patch out of the Xen on ARM series for 3.7 then?
 > 
-> I found it quite surprising also, hence the "array-index anxieties" above.
-> 
-> I added Marcus on CC for his thoughts on this.
-> 
-> 							Thanx, Paul
 
+I have just noticed that this patch hasn't been merged yet, but still we
+need it to boot Linux on Xen.
+Do you want me to rebase and resent?
