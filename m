@@ -1,63 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753922Ab3AGJSC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 04:18:02 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:28229 "EHLO mx1.redhat.com"
+	id S1753966Ab3AGJTi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 04:19:38 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47479 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753625Ab3AGJSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 04:18:00 -0500
-Date: Mon, 7 Jan 2013 10:16:09 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] uprobes: Move alloc_page() from xol_add_vma() to
- xol_alloc_area()
-Message-ID: <20130107091609.GA24171@bandura.brq.redhat.com>
-References: <20121231175150.GA32066@redhat.com>
- <20121231175212.GA32088@redhat.com>
+	id S1753723Ab3AGJTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 04:19:36 -0500
+From: Oliver Neukum <oneukum@suse.de>
+To: Aaron Lu <aaron.lu@intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <axboe@kernel.dk>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 4/4] sd: change to auto suspend mode
+Date: Mon, 07 Jan 2013 10:19:31 +0100
+Message-ID: <2040976.slu5Ii8g67@linux-5eaq.site>
+Organization: SUSE
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <1357461697-4219-5-git-send-email-aaron.lu@intel.com>
+References: <1357461697-4219-1-git-send-email-aaron.lu@intel.com> <1357461697-4219-5-git-send-email-aaron.lu@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121231175212.GA32088@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 31, 2012 at 06:52:12PM +0100, Oleg Nesterov wrote:
-> Move alloc_page() from xol_add_vma() to xol_alloc_area() to cleanup
-> the code. This separates the memory allocations and consolidates the
-> -EALREADY cleanups and the error handling.
+On Sunday 06 January 2013 16:41:37 Aaron Lu wrote:
+> From: Lin Ming <ming.m.lin@intel.com>
 > 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/events/uprobes.c |   32 +++++++++++++-------------------
->  1 files changed, 13 insertions(+), 19 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index f883813..1456f7d 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1104,21 +1093,26 @@ static struct xol_area *xol_alloc_area(void)
->  
->  	area = kzalloc(sizeof(*area), GFP_KERNEL);
->  	if (unlikely(!area))
-> -		return NULL;
-> +		goto out;
->  
->  	area->bitmap = kzalloc(BITS_TO_LONGS(UINSNS_PER_PAGE) * sizeof(long), GFP_KERNEL);
-> -
->  	if (!area->bitmap)
-> -		goto fail;
-> +		goto free_area;
-> +
-> +	area->page = area->page = alloc_page(GFP_HIGHUSER);
+> Uses block layer runtime pm helper functions in
+> scsi_runtime_suspend/resume.
+> Remove scsi_autopm_* from sd open/release path and check_events path.
+> And remove the quiesce call in runtime suspend path, as we know there is
+> no request to quiesce for the device.
 
-fyi: didn't review this patch set yet, just caught the string above. ;)
+How does this handle ioctl() ?
 
-Anton.
+	Regards
+		Oliver
+
