@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753805Ab3AGQLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:11:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34401 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753538Ab3AGQLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:11:50 -0500
-Date: Mon, 7 Jan 2013 17:11:14 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] uprobes: Move alloc_page() from xol_add_vma() to
-	xol_alloc_area()
-Message-ID: <20130107161114.GA31669@redhat.com>
-References: <20121231175150.GA32066@redhat.com> <20121231175212.GA32088@redhat.com> <20130107091609.GA24171@bandura.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1753970Ab3AGQUI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:20:08 -0500
+Received: from nat28.tlf.novell.com ([130.57.49.28]:36926 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753753Ab3AGQUH convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:6:1>);
+	Mon, 7 Jan 2013 11:20:07 -0500
+Message-Id: <50EB03C102000078000B37E7@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Mon, 07 Jan 2013 16:20:01 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Nickolai Zeldovich" <nickolai@csail.mit.edu>,
+        <xen-devel@lists.xensource.com>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        <virtualization@lists.linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drivers/xen: avoid out-of-range write in
+ xen_add_device
+References: <1357413526-42430-1-git-send-email-nickolai@csail.mit.edu>
+ <20130107150816.GC3219@phenom.dumpdata.com>
+In-Reply-To: <20130107150816.GC3219@phenom.dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20130107091609.GA24171@bandura.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07, Anton Arapov wrote:
->
-> On Mon, Dec 31, 2012 at 06:52:12PM +0100, Oleg Nesterov wrote:
-> > -		goto fail;
-> > +		goto free_area;
-> > +
-> > +	area->page = area->page = alloc_page(GFP_HIGHUSER);
->
-> fyi: didn't review this patch set yet, just caught the string above. ;)
+>>> On 07.01.13 at 16:08, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Sat, Jan 05, 2013 at 02:18:46PM -0500, Nickolai Zeldovich wrote:
+>> xen_add_device() in drivers/xen/pci.c allocates a struct
+>> physdev_pci_device_add on the stack and then writes to optarr[0].
+>> The previous declaration of struct physdev_pci_device_add contained
+>> a zero-length optarr[] array, presumably assuming it will be allocated
+>> with kmalloc with a suitable number of trailing elements, but the code in
+>> xen_add_device() as a result wrote past the end of the (stack-allocated)
+>> data structure.
+>> 
+>> Since xen_add_device() is the only use of struct physdev_pci_device_add
+>> in the kernel, turn optarr[] into a single-element array instead.
+>> 
+> 
+> Lets include Jan and Xen-devel on this email - as this is also changing
+> the official header that is used in Xen.
 
-OOPS, thanks, will fix.
+Correct - for that reason it is not the header that needs changing
+here, but the consumer of the header. I have to admit that I find
+it odd that the compiler allows automatic variables of variable size
+types without warning - otherwise this wouldn't have gone
+unnoticed.
 
-Oleg.
+Jan
+
+>> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+>> ---
+>>  include/xen/interface/physdev.h |    6 +-----
+>>  1 file changed, 1 insertion(+), 5 deletions(-)
+>> 
+>> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
+>> index 1844d31..24fd218 100644
+>> --- a/include/xen/interface/physdev.h
+>> +++ b/include/xen/interface/physdev.h
+>> @@ -242,11 +242,7 @@ struct physdev_pci_device_add {
+>>          uint8_t bus;
+>>          uint8_t devfn;
+>>      } physfn;
+>> -#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+>> -    uint32_t optarr[];
+>> -#elif defined(__GNUC__)
+>> -    uint32_t optarr[0];
+>> -#endif
+>> +    uint32_t optarr[1];
+>>  };
+>>  
+>>  #define PHYSDEVOP_pci_device_remove     26
+>> -- 
+>> 1.7.10.4
+>> 
+
+
 
