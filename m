@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011Ab3AGQUo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:20:44 -0500
-Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:50773 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753692Ab3AGQUn (ORCPT
+	id S1754100Ab3AGQVA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:21:00 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:35762 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab3AGQU7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:20:43 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 72.84.113.162
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/niS85t6qyyss1nYijb1ff3/rQN4lwY6w=
-Date: Mon, 7 Jan 2013 11:20:34 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Axel Lin <axel.lin@ingics.com>,
-        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/2] ARM: Dove: Add pinctrl clock to DT
-Message-ID: <20130107162034.GH5075@titan.lakedaemon.net>
-References: <1353921525-25163-1-git-send-email-sebastian.hesselbarth@gmail.com>
- <1353957399-28799-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Mon, 7 Jan 2013 11:20:59 -0500
+Date: Mon, 7 Jan 2013 11:20:18 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: Jan Beulich <JBeulich@suse.com>, Andrew Cooper <andrew.cooper3@citrix.com>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
+        "mingo@redhat.com" <mingo@redhat.com>,
+        "vgoyal@redhat.com" <vgoyal@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
+ implementation
+Message-ID: <20130107162018.GJ3219@phenom.dumpdata.com>
+References: <50DBC856.6030208@zytor.com>
+ <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
+ <50DC58C4.3000307@citrix.com>
+ <874nj7qsor.fsf@xmission.com>
+ <50E41973.9050705@citrix.com>
+ <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
+ <50E6F81D02000078000B3245@nat28.tlf.novell.com>
+ <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
+ <20130104191146.GC6721@phenom.dumpdata.com>
+ <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1353957399-28799-1-git-send-email-sebastian.hesselbarth@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Nov 26, 2012 at 08:16:38PM +0100, Sebastian Hesselbarth wrote:
-> During merge of the mvebu patches a clock gate for pinctrl was
-> lost. This patch just readds the clock gate.
+On Mon, Jan 07, 2013 at 01:34:04PM +0100, Daniel Kiper wrote:
+> On Fri, Jan 04, 2013 at 02:11:46PM -0500, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Jan 04, 2013 at 06:07:51PM +0100, Daniel Kiper wrote:
+> > > On Fri, Jan 04, 2013 at 02:41:17PM +0000, Jan Beulich wrote:
+> > > > >>> On 04.01.13 at 15:22, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> > > > > On Wed, Jan 02, 2013 at 11:26:43AM +0000, Andrew Cooper wrote:
+> > > > >> /sbin/kexec can load the "Xen" crash kernel itself by issuing
+> > > > >> hypercalls using /dev/xen/privcmd.  This would remove the need for
+> > > > >> the dom0 kernel to distinguish between loading a crash kernel for
+> > > > >> itself and loading a kernel for Xen.
+> > > > >>
+> > > > >> Or is this just a silly idea complicating the matter?
+> > > > >
+> > > > > This is impossible with current Xen kexec/kdump interface.
+> > > >
+> > > > Why?
+> > >
+> > > Because current KEXEC_CMD_kexec_load does not load kernel
+> > > image and other things into Xen memory. It means that it
+> > > should live somewhere in dom0 Linux kernel memory.
+> >
+> > We could have a very simple hypercall which would have:
+> >
+> > struct fancy_new_hypercall {
+> > 	xen_pfn_t payload; // IN
+> > 	ssize_t len; // IN
+> > #define DATA (1<<1)
+> > #define DATA_EOF (1<<2)
+> > #define DATA_KERNEL (1<<3)
+> > #define DATA_RAMDISK (1<<4)
+> > 	unsigned int flags; // IN
+> > 	unsigned int status; // OUT
+> > };
+> >
+> > which would in a loop just iterate over the payloads and
+> > let the hypervisor stick it in the crashkernel space.
+> >
+> > This is all hand-waving of course. There probably would be a need
+> > to figure out how much space you have in the reserved Xen's
+> > 'crashkernel' memory region too.
 > 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
-> Cc: Jason Cooper <jason@lakedaemon.net>
-> Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-> Cc: Andrew Lunn <andrew@lunn.ch>
-> Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> Cc: Axel Lin <axel.lin@ingics.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: linux-arm-kernel@lists.infradead.org
-> ---
->  arch/arm/boot/dts/dove.dtsi |    1 +
->  1 file changed, 1 insertion(+)
+> I think that new kexec hypercall function should mimics kexec syscall.
+> It means that all arguments passed to hypercall should have same types
+> if it is possible or if it is not possible then conversion should be done
+> in very easy way. Additionally, I think that one call of new hypercall
+> load function should load all needed thinks in right place and
+> return relevant status. Last but not least, new functionality should
 
-Both (v2) applied to mvebu/fixes
+We are not restricted to just _one_ hypercall. And this loading
+thing could be similar to the micrcode hypercall - which just points
+to a virtual address along with the length - and says 'load me'.
 
-thx,
+> be available through /dev/xen/privcmd or directly from kernel without
+> bigger effort.
 
-Jason.
+Perhaps we should have a email thread on xen-devel where we hash out
+some ideas. Eric, would you be OK included on this - it would make
+sense for this mechanism to be as future-proof as possible - and I am not
+sure what your plans for kexec are in the future?
+> 
+> Daniel
