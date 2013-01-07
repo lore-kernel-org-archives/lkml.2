@@ -1,104 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab3AGN7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 08:59:12 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45080 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab3AGN7K (ORCPT
+	id S1754790Ab3AGN72 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 08:59:28 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26443 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754505Ab3AGN70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 08:59:10 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: Ingo Molnar <mingo@kernel.org>, Jason Baron <jbaron@redhat.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org
-Cc: jamie.iles@oracle.com
-Subject: [PATCH] jump_label: constify jump_label_text_reserved and friends
-Date: Mon,  7 Jan 2013 08:58:09 -0500
-Message-Id: <1357567093-31136-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.0.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Mon, 7 Jan 2013 08:59:26 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DpZN2MZ322sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=0QnN7xjQLoUA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=n1X3vdIT7vWwZHCaPpoA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OYghQVagt972CARU:21 a=L-3r89mo3KU2ZB84:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357567165.10284.85.camel@gandalf.local.home>
+Subject: Re: [PATCH 3/3] tracing: Verify target file before registering a
+ uprobe event
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jovi Zhang <bookjovi@gmail.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date: Mon, 07 Jan 2013 08:59:25 -0500
+In-Reply-To: <87vcbdr2nq.fsf@sejong.aot.lge.com>
+References: <20130102225035.140076434@goodmis.org>
+	 <20130103004212.690763002@goodmis.org> <87vcbdr2nq.fsf@sejong.aot.lge.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-jump_label_text_reserved() doesn't modify the memory it works on, it just
-checks whether there are any jump labels there.
+On Fri, 2013-01-04 at 13:30 +0900, Namhyung Kim wrote:
+> Hi, Steve.
+> 
+> On Wed, 02 Jan 2013 17:50:38 -0500, Steven Rostedt wrote:
+> > From: Jovi Zhang <bookjovi@gmail.com>
+> >
+> > Without this patch, we can register a uprobe event for a directory.
+> > Enabling such a uprobe event would fail anyway .
+> >
+> > Example:
+> > $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> >
+> > However dirctories cannot be valid targets for uprobe.
+> > Hence verify if the target is a regular file during the probe
+> > registration.
+> >
+> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
+> > Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  kernel/trace/trace_uprobe.c |    6 +++++-
+> >  1 file changed, 5 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> > index 03003cd..0815f25 100644
+> > --- a/kernel/trace/trace_uprobe.c
+> > +++ b/kernel/trace/trace_uprobe.c
+> > @@ -257,6 +257,10 @@ static int create_trace_uprobe(int argc, char **argv)
+> >  		goto fail_address_parse;
+> >  
+> >  	inode = igrab(path.dentry->d_inode);
+> > +	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
+> 
+> Doesn't !S_ISREG() include S_ISDIR() case too?
 
-Constify the parameters of it to prevent warnings when working with it.
+You're correct. Although I'm sure gcc should be smart enough to optimize
+that out.
 
-Reviewed-by: Jamie Iles <jamie.iles@oracle.com>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- include/linux/jump_label.h |  4 ++--
- kernel/jump_label.c        | 10 ++++++----
- 2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> Anyway I can see an additional whitespace in front of the "if".
 
-diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-index 0976fc4..d917a2a 100644
---- a/include/linux/jump_label.h
-+++ b/include/linux/jump_label.h
-@@ -116,7 +116,7 @@ extern void arch_jump_label_transform(struct jump_entry *entry,
- 				      enum jump_label_type type);
- extern void arch_jump_label_transform_static(struct jump_entry *entry,
- 					     enum jump_label_type type);
--extern int jump_label_text_reserved(void *start, void *end);
-+extern int jump_label_text_reserved(const void *start, const void *end);
- extern void static_key_slow_inc(struct static_key *key);
- extern void static_key_slow_dec(struct static_key *key);
- extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
-@@ -174,7 +174,7 @@ static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
- 	static_key_slow_dec(&key->key);
- }
- 
--static inline int jump_label_text_reserved(void *start, void *end)
-+static inline int jump_label_text_reserved(const void *start, const void *end)
- {
- 	return 0;
- }
-diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-index 60f48fa..6dc71c6 100644
---- a/kernel/jump_label.c
-+++ b/kernel/jump_label.c
-@@ -120,7 +120,8 @@ void jump_label_rate_limit(struct static_key_deferred *key,
- }
- EXPORT_SYMBOL_GPL(jump_label_rate_limit);
- 
--static int addr_conflict(struct jump_entry *entry, void *start, void *end)
-+static int addr_conflict(struct jump_entry *entry,
-+				const void *start, const void *end)
- {
- 	if (entry->code <= (unsigned long)end &&
- 		entry->code + JUMP_LABEL_NOP_SIZE > (unsigned long)start)
-@@ -130,7 +131,8 @@ static int addr_conflict(struct jump_entry *entry, void *start, void *end)
- }
- 
- static int __jump_label_text_reserved(struct jump_entry *iter_start,
--		struct jump_entry *iter_stop, void *start, void *end)
-+		struct jump_entry *iter_stop,
-+		const void *start, const void *end)
- {
- 	struct jump_entry *iter;
- 
-@@ -222,7 +224,7 @@ struct static_key_mod {
- 	struct module *mod;
- };
- 
--static int __jump_label_mod_text_reserved(void *start, void *end)
-+static int __jump_label_mod_text_reserved(const void *start, const void *end)
- {
- 	struct module *mod;
- 
-@@ -419,7 +421,7 @@ early_initcall(jump_label_init_module);
-  *
-  * returns 1 if there is an overlap, 0 otherwise
-  */
--int jump_label_text_reserved(void *start, void *end)
-+int jump_label_text_reserved(const void *start, const void *end)
- {
- 	int ret = __jump_label_text_reserved(__start___jump_table,
- 			__stop___jump_table, start, end);
--- 
-1.8.0.2
+Yep, I forgot to run checkpatch on this. OK, this bug isn't that big of
+a deal, so I'll take this patch out and put it into the 3.9 queue.
+
+Thanks,
+
+-- Steve
+
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> > +		ret = -EINVAL;
+> > +		goto fail_address_parse;
+> > +	}
+> >  
+> >  	argc -= 2;
+> >  	argv += 2;
+> > @@ -356,7 +360,7 @@ fail_address_parse:
+> >  	if (inode)
+> >  		iput(inode);
+> >  
+> > -	pr_info("Failed to parse address.\n");
+> > +	pr_info("Failed to parse address or file.\n");
+> >  
+> >  	return ret;
+> >  }
+
 
