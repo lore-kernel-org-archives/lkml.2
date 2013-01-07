@@ -1,123 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab3AGVun (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:50:43 -0500
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:49247 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600Ab3AGVum (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:50:42 -0500
+	id S1751600Ab3AGVwW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:52:22 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:34368 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390Ab3AGVwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 16:52:21 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Krzysztof Mazur <krzysiek@podlesie.net>
+Cc: daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH] cpuidle: fix number of initialized/destroyed states
+Date: Mon, 07 Jan 2013 22:58:03 +0100
+Message-ID: <339419841.p0RXgOP6cW@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
+References: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1301072206530.1617@xoschi>
-References: <alpine.LNX.2.00.1301061336180.1397@xoschi>
-	<CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
-	<alpine.LNX.2.00.1301072206530.1617@xoschi>
-Date: Mon, 7 Jan 2013 16:50:41 -0500
-Message-ID: <CADnq5_NEQ2cCEPEGwBhX1KP0bDn7b+Q2M=Logw1fVC67ct-gEA@mail.gmail.com>
-Subject: Re: Regression: drm/radeon: brightness control hard system lockup
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 4:33 PM, Eldad Zack <eldad@fogrefinery.com> wrote:
->
-> On Mon, 7 Jan 2013, Alex Deucher wrote:
->> On Sun, Jan 6, 2013 at 7:59 AM, Eldad Zack <eldad@fogrefinery.com> wrote:
->> >
->> > Hi Alex,
->> >
->> > Commit 0ecebb9e0d14e9948e0b1529883a776758117d6f "drm/radeon: switch to a
->> > finer grained reset for evergreen" introduced a hard system lockup to my
->> > setup. I found it after bisecting, and confirmed it by reverting it on
->> > the latest mainline ( 5f243b9 ).
->> >
->> > This:
->> >
->> >    echo 7 > /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/brightness
->> >
->> > Causes a hard lock-up hard, i.e. immediate freeze, without any logs.
->> >
->> > See lspci output and kernel .config below.
->> > If there's any more info I can provide, please let me know.
->>
->> Do you normally see GPU resets when changing the backlight?  Please
->> attach your dmesg output when changing the backlight with the patch
->> reverted.
->
-> I see nothing. Just to make sure, I cleared the buffer, cycled through
-> 0-7 a couple of hunderd times (until the flicker annoyed), but I see no
-> messages at all.
-> Is there any debug config I should turn on?
+Hi,
 
-Can you try adding a printk() in evergreen_asic_reset() and see if it
-is somehow getting called when you change the brightness?  When you
-use the apci backlight control, the radeon driver is not involved at
-all.  They only way the driver would get involved is if the acpi
-backlight control somehow caused the GPU to hang and then the driver
-detected the hang and attempted to reset the GPU.  I don't see any
-evidence of a GPU reset in your kernel log however.  Note that the
-driver also registers native backlight contol.  Does that work any
-better than acpi?
+Thanks for the patch!
 
-Alex
+I'd like Daniel to have a look at it still.
 
->
-> Turning ACPI debugging on gives me no messages neither when I use the
-> cycle script.
->
-> But I did find out something interesting enough, only because I
-> happen to have sound debugging on, if I have a PCM stream open to a
-> USB device, and then change the backlight level, it seems to drop to
-> microframes, but it's not otherwise noticeable. Looks like setting the
-> backlight still does something weird with my hardware/config.
->
-> Below is a grep -i radeon from my boot dmesg.
->
-> Cheers,
-> Eldad
->
-> [    0.301558] [drm] radeon defaulting to kernel modesetting.
-> [    0.301626] [drm] radeon kernel modesetting enabled.
-> [    0.301694] bus: 'pci': add driver radeon
-> [    0.301716] bus: 'pci': driver_probe_device: matched device 0000:01:00.0 with driver radeon
-> [    0.301718] bus: 'pci': really_probe: probing driver radeon with device 0000:01:00.0
-> [    0.302310] radeon 0000:01:00.0: VRAM: 1024M 0x0000000000000000 - 0x000000003FFFFFFF (1024M used)
-> [    0.302390] radeon 0000:01:00.0: GTT: 512M 0x0000000040000000 - 0x000000005FFFFFFF
-> [    0.303021] [drm] radeon: 1024M of VRAM memory ready
-> [    0.303108] [drm] radeon: 512M of GTT memory ready.
-> [    0.303378] radeon 0000:01:00.0: irq 41 for MSI/MSI-X
-> [    0.303390] radeon 0000:01:00.0: radeon: using MSI.
-> [    0.303485] [drm] radeon: irq initialized.
-> [    0.304198] [drm] enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0
-> [    0.304414] Registering platform device 'radeon_cp.0'. Parent at platform
-> [    0.304416] device: 'radeon_cp.0': device_add
-> [    0.304421] bus: 'platform': add device radeon_cp.0
-> [    0.304428] PM: Adding info for platform:radeon_cp.0
-> [    0.304497] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_pfp.bin
-> [    0.304501] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_me.bin
-> [    0.304503] platform radeon_cp.0: firmware: using built-in firmware radeon/BTC_rlc.bin
-> [    0.304506] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_mc.bin
-> [    0.304517] bus: 'platform': remove device radeon_cp.0
-> [    0.304518] PM: Removing info for platform:radeon_cp.0
-> [    0.338906] radeon 0000:01:00.0: WB enabled
-> [    0.338970] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000040000c00 and cpu addr 0xffff880244a0fc00
-> [    0.339064] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000040000c0c and cpu addr 0xffff880244a0fc0c
-> [    0.356604] device: 'radeon_bl0': device_add
-> [    0.356616] PM: Adding info for No Bus:radeon_bl0
-> [    0.407974] [drm] radeon atom DIG backlight initialized
-> [    0.408039] [drm] Radeon Display Connectors
-> [    0.410135] [drm] radeon: power management initialized
-> [    0.822297] fbcon: radeondrmfb (fb0) is primary device
-> [    1.585493] radeon 0000:01:00.0: fb0: radeondrmfb frame buffer device
-> [    1.585546] radeon 0000:01:00.0: registered panic notifier
-> [    1.585601] [drm] Initialized radeon 2.28.0 20080528 for 0000:01:00.0 on minor 0
-> [    1.585658] driver: '0000:01:00.0': driver_bound: bound to device 'radeon'
-> [    1.585661] bus: 'pci': really_probe: bound device 0000:01:00.0 to driver radeon
->
->
+Thanks,
+Rafael
+
+
+On Monday, January 07, 2013 08:12:01 PM Krzysztof Mazur wrote:
+> Commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 (cpuidle: support
+> multiple drivers) changed the number of initialized state kobjects
+> in cpuidle_add_state_sysfs() from device->state_count to drv->state_count,
+> but leaved device->state_count in cpuidle_remove_state_sysfs().
+> Those two values might have different values, causing for instance
+> NULL pointer dereference in cpuidle_remove_state_sysfs().
+> 
+> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
+> ---
+> Hi,
+> 
+> commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
+> (cpuidle: support multiple drivers, merged in v3.8-rc1) causes NULL pointer
+> dereference in cpuidle_remove_state_sysfs() when I plug the AC line to my
+> laptop. I'm using the acpi_idle cpuidle driver and the C4 state is
+> available only on when the system runs from battery. The problem still
+> exists in v3.8-rc2 and f243b9b46a22e5790dbbc36f574c2417af49a41.
+> 
+> I noticed that the commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
+> (merged in v3.8-rc1) changed device->state_count to drv->state_count
+> in only one of two places, which seems to be incorrect. This patch restores
+> device->state_count in both places. It fixes the problem on my system.
+> 
+> Krzysiek
+> 
+>  drivers/cpuidle/sysfs.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+> index 3409429..428754a 100644
+> --- a/drivers/cpuidle/sysfs.c
+> +++ b/drivers/cpuidle/sysfs.c
+> @@ -374,7 +374,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
+>  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(device);
+>  
+>  	/* state statistics */
+> -	for (i = 0; i < drv->state_count; i++) {
+> +	for (i = 0; i < device->state_count; i++) {
+>  		kobj = kzalloc(sizeof(struct cpuidle_state_kobj), GFP_KERNEL);
+>  		if (!kobj)
+>  			goto error_state;
+> 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
