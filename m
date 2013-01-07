@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab3AGO1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:27:44 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53272 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754442Ab3AGO1m (ORCPT
+	id S1754857Ab3AGO2A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:28:00 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:35769 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754442Ab3AGO15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:27:42 -0500
-Date: Mon, 7 Jan 2013 14:27:40 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "rob@landley.net" <rob@landley.net>, "Girdwood, Liam" <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
- tree binding
-Message-ID: <20130107142740.GG4544@opensource.wolfsonmicro.com>
-References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
- <1357293277-25543-3-git-send-email-gururaja.hebbar@ti.com>
- <20130104122612.GM4627@opensource.wolfsonmicro.com>
- <1BAFE6F6C881BF42822005164F1491C33EB3690C@DBDE01.ent.ti.com>
+	Mon, 7 Jan 2013 09:27:57 -0500
+Message-ID: <50EADB62.1010704@redhat.com>
+Date: Mon, 07 Jan 2013 15:27:46 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z9ECzHErBrwFF8sy"
-Content-Disposition: inline
-In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EB3690C@DBDE01.ent.ti.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: kvm@vger.kernel.org, linux-scsi@vger.kernel.org, mst@redhat.com,
+        hutao@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, stefanha@redhat.com,
+        Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of
+ buffers
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-2-git-send-email-pbonzini@redhat.com> <87r4m45g88.fsf@rustcorp.com.au> <50E54DC0.4040609@redhat.com> <87pq1h508k.fsf@rustcorp.com.au>
+In-Reply-To: <87pq1h508k.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Il 07/01/2013 01:02, Rusty Russell ha scritto:
+> Paolo Bonzini <pbonzini@redhat.com> writes:
+>> Il 02/01/2013 06:03, Rusty Russell ha scritto:
+>>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>>>> The virtqueue_add_buf function has two limitations:
+>>>>
+>>>> 1) it requires the caller to provide all the buffers in a single call;
+>>>>
+>>>> 2) it does not support chained scatterlists: the buffers must be
+>>>> provided as an array of struct scatterlist;
+>>>
+>>> Chained scatterlists are a horrible interface, but that doesn't mean we
+>>> shouldn't support them if there's a need.
+>>>
+>>> I think I once even had a patch which passed two chained sgs, rather
+>>> than a combo sg and two length numbers.  It's very old, but I've pasted
+>>> it below.
+>>>
+>>> Duplicating the implementation by having another interface is pretty
+>>> nasty; I think I'd prefer the chained scatterlists, if that's optimal
+>>> for you.
+>>
+>> Unfortunately, that cannot work because not all architectures support
+>> chained scatterlists.
+> 
+> WHAT?  I can't figure out what an arch needs to do to support this?
 
---z9ECzHErBrwFF8sy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It needs to use the iterator functions in its DMA driver.
 
-On Mon, Jan 07, 2013 at 09:20:16AM +0000, Hebbar, Gururaja wrote:
+> All archs we care about support them, though, so I think we can ignore
+> this issue for now.
 
-> I will be looking into this now. To speed up the things, do you have any
-> reference link/implementation which  I can refer to?
+Kind of... In principle all QEMU-supported arches can use virtio, and
+the speedup can be quite useful.  And there is no Kconfig symbol for SG
+chains that I can use to disable virtio-scsi on unsupported arches. :/
 
-Any modern CODEC driver.
+Paolo
 
-> I looked at the OMAP implementation but they are following the same (meaning both
-> DT & non-DT use similar audio map for routing).
+>> (Also, as you mention chained scatterlists are horrible.  They'd happen
+>> to work for virtio-scsi, but not for virtio-blk where the response
+>> status is part of the footer, not the header).
+> 
+> We lost that debate 5 years ago, so we hack around it as needed.  We can
+> add helpers to append if we need.
 
-You should use the same setup for DT and non-DT.
-
---z9ECzHErBrwFF8sy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ6ttSAAoJELSic+t+oim94ScP/3LQhaeyRGpPovAP2xCS9AN+
-QzsrhxO5i/BA4eInaEsah+mEfEXOGEN0rnsMEOm1TiGR2DKQJYfyKcngIOz8RHLv
-mB2ZOOFmEpfuqIoh/bAq5EiAxuXOXKMxoXpHvuLHCNB3PA/G3q0OXBOiKXbuSg9a
-cnuQrcZ9wf3YBOeD6B/DGNiYq3bshBmZx+4fAtkOTW9ySGnaepO84pzjVCfE2a4Q
-xITRGWcLTr7ZhchUxFr3AeKKgW7iRXaigEUZDz8OkxHa2tw5GCEsTqDccC4Kk8sk
-XaSD6KpgumNhZP2zL1jssKuNA9m1nS7ADaSQSLOO3/V+AL4/eiIUH9M7/ugUmZrz
-EZd7l078VjedvDZPVYTGCFfFHmMO44yht7pglurEY2LmvTySCv7CErppAP4ir7Mk
-uoUpnlKH7bGrWBIpRI/dv5+ttd6EPj32x6VdK77mGulJQ3FAEYG8hMHPMRNL2Etm
-xbh9m5riUpz2kFvUbaBSobwDy+57bSB4PKzS9T5/E9+3EwzUYJAqB2s6haDG4dAi
-gQQURKwfNxMuT1T1y4/d0UYE9F0CHb7iXY6+0iVsv9LxprgN8t2IIPgNBy6SNt5q
-6oRQGeVOymgvIqdLUK4YYn2vmvNCRjYRfzMBnhGpldOLOKSDZevxaIxUmpwu03Sn
-HZRhza9ZvC05ElJHwZ+1
-=EDmV
------END PGP SIGNATURE-----
-
---z9ECzHErBrwFF8sy--
