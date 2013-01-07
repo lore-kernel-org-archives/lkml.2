@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab3AGMOk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:14:40 -0500
-Received: from [216.228.121.140] ([216.228.121.140]:13225 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754176Ab3AGMOj (ORCPT
+	id S1754448Ab3AGMYO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:24:14 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:37543 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab3AGMYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:14:39 -0500
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 07 Jan 2013 04:13:55 -0800
-Date: Mon, 7 Jan 2013 14:13:47 +0200
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: Prashant Gaikwad <pgaikwad@nvidia.com>
-CC: "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "mturquette@linaro.org" <mturquette@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [PATCH v2 01/11] clk: tegra: Add tegra specific clocks
-Message-ID: <20130107121347.GG26066@tbergstrom-lnx.Nvidia.com>
-References: <1356619644-18565-1-git-send-email-pgaikwad@nvidia.com>
- <1356619644-18565-2-git-send-email-pgaikwad@nvidia.com>
+	Mon, 7 Jan 2013 07:24:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1356619644-18565-2-git-send-email-pgaikwad@nvidia.com>
-X-NVConfidentiality: public
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
+References: <20130105152208.GA3386@redhat.com>
+	<CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
+	<alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
+Date: Mon, 7 Jan 2013 20:24:12 +0800
+Message-ID: <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
+Subject: Re: oops in copy_page_rep()
+From: Hillf Danton <dhillf@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Dec 27, 2012 at 03:47:14PM +0100, Prashant Gaikwad wrote:
-> Add tegra specific clocks, pll, pll_out, peripheral,
-> frac_divider, super.
-> 
+Hello Hugh
 
-...
+On Mon, Jan 7, 2013 at 3:06 AM, Hugh Dickins <hughd@google.com> wrote:
+> I don't entirely like your patch (or the original code): shouldn't
+> there be a wait_split_huge_page(), rather than hammering back with
+> repeated faults until the split has completed?
+>
+I take another try with waiting added, take a look please.
 
-> diff --git a/drivers/clk/tegra/clk-pll-out.c b/drivers/clk/tegra/clk-pll-out.c
-> new file mode 100644
-> index 0000000..60a117b
-> --- /dev/null
-> +++ b/drivers/clk/tegra/clk-pll-out.c
-> @@ -0,0 +1,124 @@
-> +/*
-> + * Copyright (c) 2012, NVIDIA CORPORATION.  All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/io.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/slab.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/clk.h>
-> +
-> +#include "clk.h"
-> +
-> +#define to_clk_pll_out(_hw) container_of(_hw, struct tegra_clk_pll_out, hw)
-> +
-> +#define pll_out_enb(p) (BIT(p->enb_bit_idx))
-> +#define pll_out_rst(p) (BIT(p->rst_bit_idx))
-> +
+Hillf
+---
+--- a/mm/memory.c	Sun Jan  6 19:49:50 2013
++++ b/mm/memory.c	Mon Jan  7 20:16:14 2013
+@@ -3710,6 +3710,11 @@ retry:
+ 				return do_huge_pmd_numa_page(mm, vma, address,
+ 							     orig_pmd, pmd);
 
-Given that these 2 are always consecutive bits, wouldn't it make more sense to
-specify the bit offset once and then add 1 for the enable bit?
-
-Cheers,
-
-Peter.
++			/* Check if pmd is stable */
++			if (pmd_trans_splitting(orig_pmd)) {
++				wait_split_huge_page(vma->anon_vma, pmd);
++				goto retry;
++			}
+ 			if (dirty && !pmd_write(orig_pmd)) {
+ 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
+ 							  orig_pmd);
+--
