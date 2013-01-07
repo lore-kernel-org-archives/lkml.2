@@ -1,73 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab3AGRXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:23:12 -0500
-Received: from mail-ia0-f169.google.com ([209.85.210.169]:40472 "EHLO
-	mail-ia0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab3AGRXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:23:08 -0500
+	id S1752733Ab3AGRYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:24:30 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:59617 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751180Ab3AGRY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:24:28 -0500
+Date: Mon, 7 Jan 2013 18:24:25 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Aaron Lu <aaron.lu@intel.com>, Shane Huang <Shane.Huang@amd.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, jgarzik@pobox.com, linux-ide@vger.kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: ata1: COMRESET failed
+Message-ID: <20130107172425.GD5954@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Aaron Lu <aaron.lu@intel.com>, Shane Huang <Shane.Huang@amd.com>,
+	Jiri Slaby <jslaby@suse.cz>, jgarzik@pobox.com,
+	linux-ide@vger.kernel.org,
+	Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+	Tejun Heo <tj@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <508A7A8A.7030908@suse.cz>
+ <50BC8A1C.8070805@suse.cz>
+ <20121203115734.GA32243@liondog.tnic>
 MIME-Version: 1.0
-In-Reply-To: <CAHdPZaOqy4wnviVJEzAKWa6JN_X0z-zWPo-N1f4gs9O-2EpJ9Q@mail.gmail.com>
-References: <CA+MoWDp7xr9LMguKYmAVcMm_nnco8Lh5KLhWD9eeZ2tc43iNSQ@mail.gmail.com>
-	<CAHdPZaOqy4wnviVJEzAKWa6JN_X0z-zWPo-N1f4gs9O-2EpJ9Q@mail.gmail.com>
-Date: Mon, 7 Jan 2013 15:23:05 -0200
-Message-ID: <CA+MoWDqUL4-+mRYcdP4Hk4Le=+w8NB7T723HWiLhwD2Wd-yszQ@mail.gmail.com>
-Subject: Re: i7-2620M: Clock always high when on battery
-From: Peter Senna Tschudin <peter.senna@gmail.com>
-To: "devendra.aaru" <devendra.aaru@gmail.com>
-Cc: Rob Landley <rob@landley.net>, andre.przywara@amd.com, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20121203115734.GA32243@liondog.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 1, 2013 at 6:30 PM, devendra.aaru <devendra.aaru@gmail.com> wrote:
-> On Tue, Jan 1, 2013 at 3:17 PM, Peter Senna Tschudin
-> <peter.senna@gmail.com> wrote:
->> I'm not sure if I'm emailing the right people. My problem is with
->> dynamic clock and or power management.
->>
->> I'm using 3.6.10-2.fc17.x86_64 but the exact same problem happen with
->> non Fedora Kernels like 3.7.1 and 3.6.11.
->>
->> I'm using Toshiba R830-10P notebook with i7-2620M cpu.
->>
->> The problem is that when I power on the notebook without the AC
->> adapter the clock of all cores is always very close to 2,7GHz. It was
->> expected that without load the clock would be around 800 Mhz. This
->> issue is causing the notebook to get hot and reduces battery life. The
->> same problem also happens when on AC power but it is uncommon.
->>
->> What can I do to diagnose the problem and collect more precise details?
->>
->
-> would you mind trying this
->
-> echo ondemand > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
->
-> as root?
->
-> but before cat that file to see whats the current cpu governor.
-When I:
-$ sudo cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-ondemand
+Adding some more people.
 
-I'm trying to get a Bios update from Toshiba but no success yet.
+Aaron, Shane, do you guys have any ideas? I've been seeing something
+similar on an AMD desktop box recently and Jiri sees it on a laptop with
+an SSD.
 
->
->> Peter
->>
->> --
->> Peter
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+Here's Jiri's original mail with more info: http://lkml.org/lkml/2012/10/26/208
 
+Thanks.
 
+On Mon, Dec 03, 2012 at 12:57:34PM +0100, Borislav Petkov wrote:
+> On Mon, Dec 03, 2012 at 12:16:44PM +0100, Jiri Slaby wrote:
+> > On 10/26/2012 01:56 PM, Jiri Slaby wrote:
+> > > Hello,
+> > > 
+> > > at every boot I'm seeing:
+> > > 
+> > > At 5th second:
+> > > ata1: link is slow to respond, please be patient (ready=0)
+> > > 
+> > > At 10th second:
+> > > ata1: COMRESET failed (errno=-16)
+> > > ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> > > ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+> > > ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+> > > ata1.00: ATA-7: INTEL SSDSA2M080G2GC, 2CV102HD, max UDMA/133
+> > > ata1.00: 156301488 sectors, multi 16: LBA48 NCQ (depth 31/32)
+> > > ata1.00: ACPI cmd ef/02:00:00:00:00:a0 (SET FEATURES) succeeded
+> > > ata1.00: ACPI cmd f5/00:00:00:00:00:a0 (SECURITY FREEZE LOCK) filtered out
+> > > ata1.00: configured for UDMA/133
+> > > scsi 0:0:0:0: Direct-Access     ATA      INTEL SSDSA2M080 2CV1 PQ: 0 ANSI: 5
+> > > 
+> > > 
+> > > So that I have to wait 5 s for the disk to come up. I tried 3.4.15 and
+> > > 3.6.3, both with the same result.
+> > > 
+> > > 00:1f.2 SATA controller [0106]: Intel Corporation 7 Series Chipset
+> > > Family 6-port SATA Controller [AHCI mode] [8086:1e03] (rev 04)
+> > > 
+> > > Any ideas what is going on?
+> > 
+> > Anybody? I also tried 3.0, it's there too. And libahci.skip_host_reset=1
+> > works around the issue.
+> 
+> FWIW, I had the same issue on an AMD chipset at the old job. It needs to
+> reset SATA link for some reason, probably BIOS programs it wrongly...
+> 
+> + Alan.
 
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
 --
-Peter
