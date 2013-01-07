@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755944Ab3AGW37 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:29:59 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:11960 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3AGW35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:29:57 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=f2n6SYgbXc8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wIjj_We_h9UA:10 a=0dTx1kH39yvZSBp3USsA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357597795.5190.10.camel@gandalf.local.home>
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Tejun Heo <tj@kernel.org>, Vincent Guittot <vincent.guittot@linaro.org>,
-        pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Date: Mon, 07 Jan 2013 17:29:55 -0500
-In-Reply-To: <CAKohpom9DxoojtcpMfmyGeUcEw8=tsS4n+TFMRV3+9_UBaod7g@mail.gmail.com>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	 <ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
-	 <20121126171539.GZ15971@htj.dyndns.org>
-	 <CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
-	 <CAKohpokBMhto6xzp3MPGRJqstEkkC=kzgrKNhVXzi1Y8GejkXg@mail.gmail.com>
-	 <20130104150928.GC15633@mtj.dyndns.org>
-	 <CAKohpo=hhScCDUnDcqnZx4YzU_8nF1658jmSM_wzsOpSCxXwqA@mail.gmail.com>
-	 <1357565303.10284.73.camel@gandalf.local.home>
-	 <CAKohpom9DxoojtcpMfmyGeUcEw8=tsS4n+TFMRV3+9_UBaod7g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	id S1755941Ab3AGWbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:31:37 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:54618 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753223Ab3AGWbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 17:31:36 -0500
+Message-ID: <50EB4CB9.9010104@zytor.com>
+Date: Mon, 07 Jan 2013 14:31:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Rik van Riel <riel@redhat.com>
+CC: Shaohua Li <shli@kernel.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        mingo@redhat.com
+Subject: Re: [RFC]x86: clearing access bit don't flush tlb
+References: <20130107081213.GA21779@kernel.org> <50EAE66B.1020804@redhat.com>
+In-Reply-To: <50EAE66B.1020804@redhat.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-07 at 23:29 +0530, Viresh Kumar wrote:
-
-> > By default, I would suggest for cache locality,
-> > that we try to keep it on the same CPU. But if there's a better CPU to
-> > run on, it runs there.
+On 01/07/2013 07:14 AM, Rik van Riel wrote:
+> On 01/07/2013 03:12 AM, Shaohua Li wrote:
+>>
+>> We use access bit to age a page at page reclaim. When clearing pte
+>> access bit,
+>> we could skip tlb flush for the virtual address. The side effect is if
+>> the pte
+>> is in tlb and pte access bit is unset, when cpu access the page again,
+>> cpu will
+>> not set pte's access bit. So next time page reclaim can reclaim hot pages
+>> wrongly, but this doesn't corrupt anything. And according to intel
+>> manual, tlb
+>> has less than 1k entries, which coverers < 4M memory. In today's system,
+>> several giga byte memory is normal. After page reclaim clears pte
+>> access bit
+>> and before cpu access the page again, it's quite unlikely this page's
+>> pte is
+>> still in TLB. Skiping the tlb flush for this case sounds ok to me.
 > 
-> That would break our intention behind this routine. We should run
-> it on a cpu which we think is the best one for it power/performance wise.
-
-If you are running on a big.Little box sure. But for normal (read x86 ;)
-systems, it should probably stay on the current CPU.
-
+> Agreed. In current systems, it can take a minute to write
+> all of memory to disk, while context switch (natural TLB
+> flush) times are in the dozens-of-millisecond timeframes.
 > 
-> So, i would like to call the sched_select_cpu() routine from this routine to
-> get the suggested cpu.
 
-Does the caller need to know? Or if you have a big.LITTLE setup, it
-should just work automagically?
+I'm confused.  We used to do this since time immemorial, so if we aren't
+doing that now, that meant something changed somewhere along the line.
+It would be good to figure out if that was an intentional change or
+accidental.
 
-> 
-> This routine would however would see more changes later to optimize it
-> more.
-> 
-> > Also, we could still add a debug option that
-> > makes it always run on other CPUs to slap developers that don't read.
-> 
-> I don't think we need it :(
-> It would be a new API, with zero existing users. And so, whomsoever uses
-> it, should know what exactly he is doing :)
-
-Heh, you don't know kernel developers well do you? ;-)
-
-Once a new API is added to the kernel tree, it quickly becomes
-(mis)used.
-
--- Steve
+	-hpa
 
 
