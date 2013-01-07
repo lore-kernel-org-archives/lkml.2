@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746Ab3AGP5t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:57:49 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14112 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab3AGP5s (ORCPT
+	id S1753849Ab3AGP6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:58:20 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:51987 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739Ab3AGP6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:57:48 -0500
-X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DpZN2MZ322sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=0QnN7xjQLoUA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=Fef7hBMMvpD2EiAO-ZAA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=fNJR0txfQMmowiFA:21 a=HCQJ6qO1gMVVijd9:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357574265.5190.1.camel@gandalf.local.home>
-Subject: Re: [PATCH 3/3] tracing: Verify target file before registering a
- uprobe event
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jovi Zhang <bookjovi@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Mon, 07 Jan 2013 10:57:45 -0500
-In-Reply-To: <20130103004212.690763002@goodmis.org>
-References: <20130102225035.140076434@goodmis.org>
-	 <20130103004212.690763002@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 10:58:19 -0500
+X-Originating-IP: 217.70.178.136
+X-Originating-IP: 50.43.39.152
+Date: Mon, 7 Jan 2013 07:58:10 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
+Message-ID: <20130107155810.GC11145@leaf>
+References: <20130105175059.GA15961@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130105175059.GA15961@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jovi,
-
-As Namhyung pointed out. Can you fix the below and resend.
-
-
-On Wed, 2013-01-02 at 17:50 -0500, Steven Rostedt wrote:
-> From: Jovi Zhang <bookjovi@gmail.com>
+On Sat, Jan 05, 2013 at 09:50:59AM -0800, Paul E. McKenney wrote:
+> rcu: Provide RCU CPU stall warnings for tiny RCU
 > 
-> Without this patch, we can register a uprobe event for a directory.
-> Enabling such a uprobe event would fail anyway .
+> Tiny RCU has historically omitted RCU CPU stall warnings in order to
+> reduce memory requirements, however, lack of these warnings caused Thomas
+> Gleixner some debugging pain recently.  Therefore, this commit adds RCU
+> CPU stall warnings to tiny RCU if RCU_TRACE=y.  This keeps the memory
+> footprint small, while still enabling CPU stall warnings in kernels
+> built to enable them.
 > 
-> Example:
-> $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
+> This is still a bit on the high-risk side, so running this will likely
+> be a debugging exercise.
 > 
-> However dirctories cannot be valid targets for uprobe.
-> Hence verify if the target is a regular file during the probe
-> registration.
-> 
-> Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/trace_uprobe.c |    6 +++++-
->  1 file changed, 5 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 03003cd..0815f25 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -257,6 +257,10 @@ static int create_trace_uprobe(int argc, char **argv)
->  		goto fail_address_parse;
->  
->  	inode = igrab(path.dentry->d_inode);
-> +	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
+> Reported-by: Thomas Gleixner <tglx@linutronix.de>
+> Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-Bad whitespace before 'if'.
+Did you generate this patch with something other than git?  The
+formatting seems a bit off: it doesn't have a diffstat or the usual
+"---" line between the commit message and the patch.
 
-Also, S_ISDIR() implies S_ISREG(), you can remove the "S_ISDIR()" check.
+This patch seems reasonable to me, but the repeated use of #if
+defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
+annoying, and fragile if you ever decide to change the conditions.  How
+about defining an appropriate symbol in Kconfig for stall warnings, and
+using that?
 
-Thanks,
-
--- Steve
-
-> +		ret = -EINVAL;
-> +		goto fail_address_parse;
-> +	}
->  
->  	argc -= 2;
->  	argv += 2;
-> @@ -356,7 +360,7 @@ fail_address_parse:
->  	if (inode)
->  		iput(inode);
->  
-> -	pr_info("Failed to parse address.\n");
-> +	pr_info("Failed to parse address or file.\n");
->  
->  	return ret;
->  }
-
-
+- Josh Triplett
