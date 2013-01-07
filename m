@@ -1,101 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755737Ab3AGVGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:06:12 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:54979 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755659Ab3AGVGJ (ORCPT
+	id S1753757Ab3AGVJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:09:31 -0500
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:4608 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1749667Ab3AGVJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:06:09 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19MiNVaIyIsFQMoDgtF1q5q
-Date: Mon, 7 Jan 2013 13:05:52 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Message-ID: <20130107210551.GL14149@atomide.com>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
- <1357584666-17374-2-git-send-email-panto@antoniou-consulting.com>
- <20130107200945.GF14149@atomide.com>
- <379B16EC-BFAA-4C27-8321-E7133C03368D@antoniou-consulting.com>
- <20130107202306.GH14149@atomide.com>
- <FA4D880E-833E-43D9-A399-0A5C260E83F2@antoniou-consulting.com>
- <20130107203529.GI14149@atomide.com>
- <93BF5C62-ADE8-4EFC-9175-C2D7E43300E3@antoniou-consulting.com>
+	Mon, 7 Jan 2013 16:09:30 -0500
+X-IronPort-AV: E=Sophos;i="4.84,425,1355094000"; 
+   d="scan'208";a="188806441"
+Date: Mon, 7 Jan 2013 22:09:27 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c:
+ reposition free_irq to avoid access to invalid data
+In-Reply-To: <874nisbvsh.fsf@free.fr>
+Message-ID: <alpine.DEB.2.02.1301072209090.1989@localhost6.localdomain6>
+References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr> <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr> <Pine.LNX.4.64.1301071111420.23972@axis700.grange> <874nisbvsh.fsf@free.fr>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <93BF5C62-ADE8-4EFC-9175-C2D7E43300E3@antoniou-consulting.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pantelis Antoniou <panto@antoniou-consulting.com> [130107 12:43]:
-> Hi Tony,
-> 
-> On Jan 7, 2013, at 10:35 PM, Tony Lindgren wrote:
-> 
-> > * Pantelis Antoniou <panto@antoniou-consulting.com> [130107 12:29]:
-> >> On Jan 7, 2013, at 10:23 PM, Tony Lindgren wrote:
-> >>> 
-> >>> Well how about split it to an eeprom driver, and Linux generic
-> >>> device loader parts?
-> >>> 
-> >> 
-> >> All that's left is the eeprom driver (accessor) and calls to the 
-> >> generic DT overlay constructs. 
-> >> 
-> >> If you caught on the previous patchset about DT overlays it should be
-> >> clear.
-> >> 
-> >> So it is split along those lines already.
-> > 
-> > Hmm I was thinking something like this:
-> > 
-> > drivers/base/device-loader.c
-> > drivers/misc/eeprom/beaglebone-cape.c
-> > 
-> > Then you may be able to just load the configuration for it
-> > from a .dts file and maybe no hardware specific glue is even
-> > needed.
-> > 
-> 
-> At the end of the line, some kind of hardware glue is going to be needed.
-> 
-> I just feel that drawing from a sample size of 1 (maybe 2 if I get to throw
-> in the beagleboard), it is a bit premature to think about making it overly
-> general, besides the part that are obviously part of the infrastructure 
-> (like the DT overlay stuff).
-> 
-> What I'm getting at, is that we need some user experience about this, before
-> going away and creating structure out of possible misconception about the uses. 
+On Mon, 7 Jan 2013, Robert Jarzmik wrote:
 
-IMHO stuff like this will be needed by many SoCs. Some examples of similar
-things for omaps that have eventually become generic frameworks have been
-the clock framework, USB OTG support, runtime PM, pinmux framework and
-so on.
+> Guennadi Liakhovetski <g.liakhovetski@gmx.de> writes:
+> 
+> > (adding Robert to CC)
+> > I don't think any data is freed by pxa_free_dma(), it only disables DMA on 
+> > a certain channel. Theoretically there could be a different problem: 
+> > pxa_free_dma() deactivates DMA, whereas pxa_dma_start_channels() activates 
+> > it. But I think we're also protected against that: by the time 
+> > pxa_camera_remove() is called, and operation on the interface has been 
+> > stopped, client devices have been detached, pxa_camera_remove_device() has 
+> > been called, which has also stopped the interface clock. And with clock 
+> > stopped no interrupts can be generated. And the case of interrupt having 
+> > been generated before clk_disabled() and only delivered to the driver so 
+> > much later, that we're already unloading the module, seems really 
+> > impossible to me. Robert, you agree?
+> 
+> Agreed that pxa_free_dma() doesn't free anything, that one is easy :)
+> 
+> And agreed too for the second part, with a slighly different explanation :
+>  - pxa_camera_remove_device() has been called as you said
+>  - inside this function, check comment
+>    "/* disable capture, disable interrupts */"
+>    => this ensures no interrupt can be generated anymore
+> 
+> So after pxa_camera_remove_device() has been called, no interrupts can be
+> generated.
+> 
+> Yet as you said, it leaves the "almost impossible" scenario :
+>  - a user begins a capture
+>  - the user closes the capture device and unloads pxa-camera.ko:
+>      soc_camera_close()
+>        pxa_camera_remove_device()
+>          the IRQ line is asserted but doesn't trigger yet the interrupt handler
+>          (yes I know, improbable)
+>          meanwhile, IRQs are disabled, DMA channels are stopped
+>      switch_to(rmmod)
+>        => yes I know, impossible, the interrupt handler must be run before, but
+>        let's continue for love of discussion ...
+>      rmmod pxa-camera
+>        pxa_camera_remove()
+>          pxa_free_dma() * 3
+>          ----> here the IRQ handler kicks in !!!
+>                => pxa_camera_irq()
+>                     pxa_dma_start_channels()
+>          ----> it hurts !
+> 
+> My call is that this is impossible because the switch_to() should run the IRQ
+> handler before pxa_camera_remove() is called.
+> 
+> So all this to say that I think we're safe, unless a heavy ion or a cosmic ray
+> strikes the PXA :)
 
-So I suggest a minimal generic API from the start as that will make things
-a lot easier in the long run.
+Thanks for the explanation.
 
-Regards,
-
-Tony
+julia
