@@ -1,141 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab3AGXes (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 18:34:48 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:62265 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753013Ab3AGXeq (ORCPT
+	id S1756071Ab3AGXfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 18:35:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39307 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab3AGXfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 18:34:46 -0500
-Date: Mon, 7 Jan 2013 15:34:43 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Jens Axboe <axboe@kernel.dk>
+	Mon, 7 Jan 2013 18:35:36 -0500
+Date: Mon, 7 Jan 2013 15:35:24 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kent Overstreet <koverstreet@google.com>
 Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
         linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, viro@zeniv.linux.org.uk, tytso@mit.edu
-Subject: Re: [PATCH 29/32] block, aio: Batch completion for bios/kiocbs
-Message-ID: <20130107233443.GG26407@google.com>
+        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
+        tytso@mit.edu
+Subject: Re: [PATCH 25/32] aio: use xchg() instead of completion_lock
+Message-Id: <20130107153524.eb2f1223.akpm@linux-foundation.org>
+In-Reply-To: <20130107232115.GF26407@google.com>
 References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-32-git-send-email-koverstreet@google.com>
- <50E69F5B.8060902@kernel.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50E69F5B.8060902@kernel.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	<1356573611-18590-28-git-send-email-koverstreet@google.com>
+	<20130103153414.23b0b913.akpm@linux-foundation.org>
+	<20130107232115.GF26407@google.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 10:22:35AM +0100, Jens Axboe wrote:
-> On 2012-12-27 03:00, Kent Overstreet wrote:
-> > When completing a kiocb, there's some fixed overhead from touching the
-> > kioctx's ring buffer the kiocb belongs to. Some newer high end block
-> > devices can complete multiple IOs per interrupt, much like many network
-> > interfaces have been for some time.
+On Mon, 7 Jan 2013 15:21:15 -0800
+Kent Overstreet <koverstreet@google.com> wrote:
+
+> On Thu, Jan 03, 2013 at 03:34:14PM -0800, Andrew Morton wrote:
+> > On Wed, 26 Dec 2012 18:00:04 -0800
+> > Kent Overstreet <koverstreet@google.com> wrote:
 > > 
-> > This plumbs through infrastructure so we can take advantage of multiple
-> > completions at the interrupt level, and complete multiple kiocbs at the
-> > same time.
+> > > So, for sticking kiocb completions on the kioctx ringbuffer, we need a
+> > > lock - it unfortunately can't be lockless.
+> > > 
+> > > When the kioctx is shared between threads on different cpus and the rate
+> > > of completions is high, this lock sees quite a bit of contention - in
+> > > terms of cacheline contention it's the hottest thing in the aio
+> > > subsystem.
+> > > 
+> > > That means, with a regular spinlock, we're going to take a cache miss
+> > > to grab the lock, then another cache miss when we touch the data the
+> > > lock protects - if it's on the same cacheline as the lock, other cpus
+> > > spinning on the lock are going to be pulling it out from under us as
+> > > we're using it.
+> > > 
+> > > So, we use an old trick to get rid of this second forced cache miss -
+> > > make the data the lock protects be the lock itself, so we grab them both
+> > > at once.
 > > 
-> > Drivers have to be converted to take advantage of this, but it's a
-> > simple change and the next patches will convert a few drivers.
+> > Boy I hope you got that right.
 > > 
-> > To use it, an interrupt handler (or any code that completes bios or
-> > requests) declares and initializes a struct batch_complete:
-> > 
-> > struct batch_complete batch;
-> > batch_complete_init(&batch);
-> > 
-> > Then, instead of calling bio_endio(), it calls
-> > bio_endio_batch(bio, err, &batch). This just adds the bio to a list in
-> > the batch_complete.
-> > 
-> > At the end, it calls
-> > 
-> > batch_complete(&batch);
-> > 
-> > This completes all the bios all at once, building up a list of kiocbs;
-> > then the list of kiocbs are completed all at once.
-> > 
-> > Also, in order to batch up the kiocbs we have to add a different
-> > bio_endio function to struct bio, that takes a pointer to the
-> > batch_complete - this patch converts the dio code's bio_endio function.
-> > In order to avoid changing every bio_endio function in the kernel (there
-> > are many), we currently use a union and a flag to indicate what kind of
-> > bio endio function to call. This is admittedly a hack, but should
-> > suffice for now.
+> > Did you consider using bit_spin_lock() on the upper bit of `tail'? 
+> > We've done that in other places and we at least know that it works. 
+> > And it has the optimisations for CONFIG_SMP=n, understands
+> > CONFIG_DEBUG_SPINLOCK, has arch-specific optimisations, etc.
 > 
-> It is indeed a hack... Famous last words as well, I'm sure that'll stick
-> around forever if it goes in! Any ideas on how we can clean this up
-> before that?
+> I hadn't thought of that - I think it'd suffer from the same problem as
+> a regular spinlock, where you grab the lock, then go to grab your data
+> but a different CPU grabbed the cacheline you need...
 
-Well, I wouldn't _really_ mind changing all 200 bi_end_io uses. On the
-other hand, the majority of them are either leaf nodes (filesystem code
-and whatnot that's not completing anything else that could be batched),
-or stuff like the dm and md code where it could be plumbed through (so
-we could batch completions through md/dm) but it may take some thought
-to do it right.
+Either you didn't understand my suggestion or I didn't understand your
+patch :(
 
-So I think I'd prefer to do it incrementally, for the moment. I'm always
-a bit terrified of doing a cleanup that touches 50+ files, and then
-changing my mind about something and going back and redoing it.
+I'm suggesting that we use the msot significant bit *of the data* as
+that data's lock.  Obviously, all uses of that data would then mask that
+bit out.
 
-That said, I haven't forgotten about all the other block layer patches
-I've got for you, as soon as I'm less swamped I'm going to finish off
-that stuff so I should be around to revisit it...
+That way, the data will be brought into CPU cache when the lock is
+acquired.  And when other CPUs attempt to acquire the lock, they won't
+steal the cacheline.
 
-> Apart from that, I think the batching makes functional sense. For the
-> devices where we do get batches of completions (most of them), it's the
-> right thing to do. Would be nice it were better integrated though, not a
-> side hack.
+This is assuming that an unsuccessful test_and_set_bit_lock() won't
+grab the cacheline, which is hopefully true but I don't know.  If this
+turns out to be false then we could add a test_bit() loop to
+bit_spin_lock(), or perhaps rework bit_spin_lock() to not do the
+test_and_set_bit_lock() unless test_bit() has just returned 0.
+
+> But the lock debugging would be nice. It'd probably work to make
+> something generic like bit_spinlock() that also returns some value - or,
+> the recent patches for making spinlocks back off will also help with
+> this problem. So maybe between that and batch completion this patch
+> could be dropped at some point.
 > 
-> Is the rbtree really faster than a basic (l)list and a sort before
-> completing them? Would be simpler.
+> So, yeah. The code's plenty tested and I went over the barriers, it
+> already had all the needed barriers due to the ringbuffer... and I've
+> done this sort of thing elsewhere too. But it certaintly is a hack and I
+> wouldn't be sad to see it go.
 
-Well, depends. With one or two kioctxs? The list would definitely be
-faster, but I'm loathe to use an O(n^2) algorithm anywhere where the
-input size isn't strictly controlled, and I know of applications out
-there that use tons of kioctxs.
+Yes, there are a lot of issues with adding a new locking primitive and
+in some ways they get worse when they're open-coded like this.  If
+there's any way at all of using a standard lock instead of KentLocks
+then we should do this.
 
-> A few small comments below.
-> 
-> > +void bio_endio_batch(struct bio *bio, int error, struct batch_complete *batch)
-> > +{
-> > +	if (error)
-> > +		bio->bi_error = error;
-> > +
-> > +	if (batch)
-> > +		bio_list_add(&batch->bio, bio);
-> > +	else
-> > +		__bio_endio(bio, batch);
-> > +
-> > +}
-> 
-> Ugh, get rid of this 'batch' checking.
-
-The reason I did it that way is - well, look at the dio code's bi_end_io
-function. It's got to be passed a pointer to a struct batch_complete *
-to batch kiocbs, but the driver that calls it may or may not have batch
-completions plumbed through.
-
-So unless every single driver gets converted (and I think that'd be
-silly for all the ones that can't do any actual batching) something's
-going to have to have that check, and better for it to be in generic
-code than every mid layer code we plumb it through.
-
-> 
-> > +static inline void bio_endio(struct bio *bio, int error)
-> > +{
-> > +	bio_endio_batch(bio, error, NULL);
-> > +}
-> > +
-> 
-> Just make that __bio_endio().
-
-That one could be changed... I dislike having the if (error)
-bio->bi_error = error duplicated...
-
-Actually, it'd probably make more sense to inline bio_endio_batch(),
-because often the compiler is going to either know whether batch is null
-or not or be able to lift it out of a loop.
