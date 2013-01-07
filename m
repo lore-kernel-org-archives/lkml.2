@@ -1,424 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab3AGWHV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:07:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27100 "EHLO mx1.redhat.com"
+	id S1755895Ab3AGWHh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:07:37 -0500
+Received: from mout2.freenet.de ([195.4.92.92]:58672 "EHLO mout2.freenet.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755848Ab3AGWHP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:07:15 -0500
-Subject: [PATCH] vfio-pci: [NOT FOR COMMIT] Add support for legacy MMIO &
- I/O port towards VGA support
-To: alex.williamson@redhat.com, kvm@vger.kernel.org
-From: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Date: Mon, 07 Jan 2013 15:07:14 -0700
-Message-ID: <20130107220713.8669.32049.stgit@bling.home>
-In-Reply-To: <20130107214605.8669.26237.stgit@bling.home>
-References: <20130107214605.8669.26237.stgit@bling.home>
-User-Agent: StGit/0.16
+	id S1754535Ab3AGWHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 17:07:33 -0500
+Message-ID: <50EB467C.8000104@01019freenet.de>
+Date: Mon, 07 Jan 2013 23:04:44 +0100
+From: Andreas Hartmann <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Firefox/17.0 SeaMonkey/2.14
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+CC: Ben Hutchings <ben@decadent.org.uk>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
+ subframe fails
+References: <20121228190352.097882544@decadent.org.uk> <50DEA41E.6010409@01019freenet.de> <1356871099.4821.16.camel@deadeye.wl.decadent.org.uk> <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk> <20130107080532.GA2984@redhat.com> <20130107081003.GB2984@redhat.com> <1357568256.26822.18.camel@deadeye.wl.decadent.org.uk> <50EAE3E1.4010809@01019freenet.de> <20130107165458.GA16705@redhat.com> <50EB162B.7020903@01019freenet.de> <20130107192057.GA17401@redhat.com>
+In-Reply-To: <20130107192057.GA17401@redhat.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create two new legacy regions, one for MMIO space below 1MB and
-another for 64k of I/O port space.  For devices of PCI class VGA
-these ranges will be exposed and allow direct access to the device
-at the PCI defined VGA addresses, 0xa0000, 0x3b0, 0x3c0.  VFIO
-makes use of the host VGA arbiter to manage host chipset config
-to route each access to the correct device.
+Hello Stanislaw!
 
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
----
- drivers/vfio/pci/vfio_pci.c         |   74 ++++++++++++---
- drivers/vfio/pci/vfio_pci_private.h |    6 +
- drivers/vfio/pci/vfio_pci_rdwr.c    |  170 +++++++++++++++++++++++++++--------
- include/uapi/linux/vfio.h           |    3 +
- 4 files changed, 197 insertions(+), 56 deletions(-)
+Stanislaw Gruszka wrote:
+> On Mon, Jan 07, 2013 at 07:38:35PM +0100, Andreas Hartmann wrote:
+>> Stanislaw Gruszka wrote:
+>>> On Mon, Jan 07, 2013 at 04:04:01PM +0100, Andreas Hartmann wrote:
+>>>> Ben Hutchings wrote:
+>>>>> On Mon, 2013-01-07 at 09:10 +0100, Stanislaw Gruszka wrote:
+>>>>>> On Mon, Jan 07, 2013 at 09:05:32AM +0100, Stanislaw Gruszka wrote:
+>>>>>>>> To be clear, I have all of these in the queue:
+>>>>>>>>
+>>>>>>>> be03d4a45c09 rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
+>>>>>>>> 5b632fe85ec8 mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
+>>>>>>>> ab9d6e4ffe19 Revert: "rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails"
+>>>>>>>>
+>>>>>>>> and I'm intending to drop/defer them all.
+>>>>>>>
+>>>>>>> Patch 3 is a revert of patch 1 (questioned patch). Please apply all 3 patches,
+>>>>>>> or only patch 2.
+>>>>>>
+>>>>>> No, actually all 3 patches have to be applied. Because last one, except
+>>>>>> revert, include flag IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL setting in rt2x00
+>>>>>> driver, which make patch 2 work.
+>>>>>
+>>>>> Andreas said that that after ab9d6e4ffe19 there was still a regression.
+>>>
+>>> That's not true. There will be no regression after ab9d6e4ffe20. The
+>>> only thing is that solution is not perfect. But perfect solution require
+>>> lot of changes i.e. is not -stable appropriate (and does not exist currently).
+>>>
+>>>>> But maybe he was confused.  I know I'm confused.
+>>>> :-))
+>>>>
+>>>> No, the thing is:
+>>>> rt2800pci misses an appropriate handling of aggregation (which meets the
+>>>> requirements of mac80211).
+>>>>
+>>>> Both workarounds, mine and the new workaround from Stanislaw (which is
+>>>> nothing more than a restricted version of my initial workaround), work
+>>>
+>>> Your workaround broke STA mode on some environment.
+>>
+>> Why are you sure, that this workaround doesn't break some other devices
+>> running in AP mode? We believed at that time too, it wouldn't harm even
+>> STA. But this was wrong for some (which?) devices.
+> 
+> Because it make behaviour the same as it was before 3.2, which introduce
+> those issues.
 
-diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
-index b28e66c..8a09c33 100644
---- a/drivers/vfio/pci/vfio_pci.c
-+++ b/drivers/vfio/pci/vfio_pci.c
-@@ -223,9 +223,14 @@ static long vfio_pci_ioctl(void *device_data,
- 		if (vdev->reset_works)
- 			info.flags |= VFIO_DEVICE_FLAGS_RESET;
- 
--		info.num_regions = VFIO_PCI_NUM_REGIONS;
-+		info.num_regions = VFIO_PCI_CONFIG_REGION_INDEX + 1;
- 		info.num_irqs = VFIO_PCI_NUM_IRQS;
- 
-+		if ((vdev->pdev->class >> 8) == PCI_CLASS_DISPLAY_VGA) {
-+			info.flags |= VFIO_DEVICE_FLAGS_VGA;
-+			info.num_regions += 2;
-+		}
-+
- 		return copy_to_user((void __user *)arg, &info, minsz);
- 
- 	} else if (cmd == VFIO_DEVICE_GET_REGION_INFO) {
-@@ -285,6 +290,26 @@ static long vfio_pci_ioctl(void *device_data,
- 			info.flags = VFIO_REGION_INFO_FLAG_READ;
- 			break;
- 		}
-+		case VFIO_PCI_LEGACY_MMIO_REGION_INDEX:
-+			if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
-+				return -EINVAL;
-+
-+			info.offset = VFIO_PCI_INDEX_TO_OFFSET(info.index);
-+			info.size = 1024 * 1024;
-+			info.flags = VFIO_REGION_INFO_FLAG_READ |
-+				     VFIO_REGION_INFO_FLAG_WRITE;
-+
-+			break;
-+		case VFIO_PCI_LEGACY_IOPORT_REGION_INDEX:
-+			if ((pdev->class >> 8) != PCI_CLASS_DISPLAY_VGA)
-+				return -EINVAL;
-+
-+			info.offset = VFIO_PCI_INDEX_TO_OFFSET(info.index);
-+			info.size = 64 * 1024;
-+			info.flags = VFIO_REGION_INFO_FLAG_READ |
-+				     VFIO_REGION_INFO_FLAG_WRITE;
-+
-+			break;
- 		default:
- 			return -EINVAL;
- 		}
-@@ -376,14 +401,25 @@ static ssize_t vfio_pci_read(void *device_data, char __user *buf,
- 	if (index >= VFIO_PCI_NUM_REGIONS)
- 		return -EINVAL;
- 
--	if (index == VFIO_PCI_CONFIG_REGION_INDEX)
-+	switch (index) {
-+	case VFIO_PCI_CONFIG_REGION_INDEX:
- 		return vfio_pci_config_readwrite(vdev, buf, count, ppos, false);
--	else if (index == VFIO_PCI_ROM_REGION_INDEX)
--		return vfio_pci_mem_readwrite(vdev, buf, count, ppos, false);
--	else if (pci_resource_flags(pdev, index) & IORESOURCE_IO)
--		return vfio_pci_io_readwrite(vdev, buf, count, ppos, false);
--	else if (pci_resource_flags(pdev, index) & IORESOURCE_MEM)
-+	case VFIO_PCI_ROM_REGION_INDEX:
- 		return vfio_pci_mem_readwrite(vdev, buf, count, ppos, false);
-+	case VFIO_PCI_LEGACY_MMIO_REGION_INDEX:
-+		return vfio_pci_legacy_mem_readwrite(vdev, buf, count,
-+						     ppos, false);
-+	case VFIO_PCI_LEGACY_IOPORT_REGION_INDEX:
-+		return vfio_pci_legacy_io_readwrite(vdev, buf, count,
-+						    ppos, false);
-+	default:
-+		if (pci_resource_flags(pdev, index) & IORESOURCE_IO)
-+			return vfio_pci_io_readwrite(vdev, buf, count,
-+						     ppos, false);
-+		if (pci_resource_flags(pdev, index) & IORESOURCE_MEM)
-+			return vfio_pci_mem_readwrite(vdev, buf, count,
-+						      ppos, false);
-+	}
- 
- 	return -EINVAL;
- }
-@@ -398,17 +434,25 @@ static ssize_t vfio_pci_write(void *device_data, const char __user *buf,
- 	if (index >= VFIO_PCI_NUM_REGIONS)
- 		return -EINVAL;
- 
--	if (index == VFIO_PCI_CONFIG_REGION_INDEX)
-+	switch (index) {
-+	case VFIO_PCI_CONFIG_REGION_INDEX:
- 		return vfio_pci_config_readwrite(vdev, (char __user *)buf,
- 						 count, ppos, true);
--	else if (index == VFIO_PCI_ROM_REGION_INDEX)
-+	case VFIO_PCI_ROM_REGION_INDEX:
- 		return -EINVAL;
--	else if (pci_resource_flags(pdev, index) & IORESOURCE_IO)
--		return vfio_pci_io_readwrite(vdev, (char __user *)buf,
--					     count, ppos, true);
--	else if (pci_resource_flags(pdev, index) & IORESOURCE_MEM) {
--		return vfio_pci_mem_readwrite(vdev, (char __user *)buf,
--					      count, ppos, true);
-+	case VFIO_PCI_LEGACY_MMIO_REGION_INDEX:
-+		return vfio_pci_legacy_mem_readwrite(vdev, buf, count,
-+						     ppos, false);
-+	case VFIO_PCI_LEGACY_IOPORT_REGION_INDEX:
-+		return vfio_pci_legacy_io_readwrite(vdev, buf, count,
-+						    ppos, false);
-+	default:
-+		if (pci_resource_flags(pdev, index) & IORESOURCE_IO)
-+			return vfio_pci_io_readwrite(vdev, (char __user *)buf,
-+						     count, ppos, true);
-+		if (pci_resource_flags(pdev, index) & IORESOURCE_MEM)
-+			return vfio_pci_mem_readwrite(vdev, (char __user *)buf,
-+						      count, ppos, true);
- 	}
- 
- 	return -EINVAL;
-diff --git a/drivers/vfio/pci/vfio_pci_private.h b/drivers/vfio/pci/vfio_pci_private.h
-index 611827c..203cf03 100644
---- a/drivers/vfio/pci/vfio_pci_private.h
-+++ b/drivers/vfio/pci/vfio_pci_private.h
-@@ -79,6 +79,12 @@ extern ssize_t vfio_pci_mem_readwrite(struct vfio_pci_device *vdev,
- extern ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev,
- 				     char __user *buf, size_t count,
- 				     loff_t *ppos, bool iswrite);
-+extern ssize_t vfio_pci_legacy_mem_readwrite(struct vfio_pci_device *vdev,
-+					     char __user *buf, size_t count,
-+					     loff_t *ppos, bool iswrite);
-+extern ssize_t vfio_pci_legacy_io_readwrite(struct vfio_pci_device *vdev,
-+					    char __user *buf, size_t count,
-+					    loff_t *ppos, bool iswrite);
- 
- extern int vfio_pci_init_perm_bits(void);
- extern void vfio_pci_uninit_perm_bits(void);
-diff --git a/drivers/vfio/pci/vfio_pci_rdwr.c b/drivers/vfio/pci/vfio_pci_rdwr.c
-index 4362d9e..e0c905e 100644
---- a/drivers/vfio/pci/vfio_pci_rdwr.c
-+++ b/drivers/vfio/pci/vfio_pci_rdwr.c
-@@ -17,72 +17,44 @@
- #include <linux/pci.h>
- #include <linux/uaccess.h>
- #include <linux/io.h>
-+#include <linux/vgaarb.h>
- 
- #include "vfio_pci_private.h"
- 
--/* I/O Port BAR access */
--ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev, char __user *buf,
--			      size_t count, loff_t *ppos, bool iswrite)
-+static size_t do_io_rw(void __iomem *io, char __user *buf, size_t off,
-+		       size_t count, bool iswrite)
- {
--	struct pci_dev *pdev = vdev->pdev;
--	loff_t pos = *ppos & VFIO_PCI_OFFSET_MASK;
--	int bar = VFIO_PCI_OFFSET_TO_INDEX(*ppos);
--	void __iomem *io;
- 	size_t done = 0;
- 
--	if (!pci_resource_start(pdev, bar))
--		return -EINVAL;
--
--	if (pos + count > pci_resource_len(pdev, bar))
--		return -EINVAL;
--
--	if (!vdev->barmap[bar]) {
--		int ret;
--
--		ret = pci_request_selected_regions(pdev, 1 << bar, "vfio");
--		if (ret)
--			return ret;
--
--		vdev->barmap[bar] = pci_iomap(pdev, bar, 0);
--
--		if (!vdev->barmap[bar]) {
--			pci_release_selected_regions(pdev, 1 << bar);
--			return -EINVAL;
--		}
--	}
--
--	io = vdev->barmap[bar];
--
- 	while (count) {
- 		int filled;
- 
--		if (count >= 3 && !(pos % 4)) {
-+		if (count >= 4 && !(off % 4)) {
- 			__le32 val;
- 
- 			if (iswrite) {
- 				if (copy_from_user(&val, buf, 4))
- 					return -EFAULT;
- 
--				iowrite32(le32_to_cpu(val), io + pos);
-+				iowrite32(le32_to_cpu(val), io + off);
- 			} else {
--				val = cpu_to_le32(ioread32(io + pos));
-+				val = cpu_to_le32(ioread32(io + off));
- 
- 				if (copy_to_user(buf, &val, 4))
- 					return -EFAULT;
- 			}
- 
- 			filled = 4;
--
--		} else if ((pos % 2) == 0 && count >= 2) {
-+		} else if (count >= 2 && !(off % 2)) {
- 			__le16 val;
- 
- 			if (iswrite) {
- 				if (copy_from_user(&val, buf, 2))
- 					return -EFAULT;
- 
--				iowrite16(le16_to_cpu(val), io + pos);
-+				iowrite16(le16_to_cpu(val), io + off);
- 			} else {
--				val = cpu_to_le16(ioread16(io + pos));
-+				val = cpu_to_le16(ioread16(io + off));
- 
- 				if (copy_to_user(buf, &val, 2))
- 					return -EFAULT;
-@@ -96,9 +68,9 @@ ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev, char __user *buf,
- 				if (copy_from_user(&val, buf, 1))
- 					return -EFAULT;
- 
--				iowrite8(val, io + pos);
-+				iowrite8(val, io + off);
- 			} else {
--				val = ioread8(io + pos);
-+				val = ioread8(io + off);
- 
- 				if (copy_to_user(buf, &val, 1))
- 					return -EFAULT;
-@@ -109,11 +81,47 @@ ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev, char __user *buf,
- 
- 		count -= filled;
- 		done += filled;
-+		off += filled;
- 		buf += filled;
--		pos += filled;
- 	}
- 
--	*ppos += done;
-+	return done;
-+}
-+
-+/* I/O Port BAR access */
-+ssize_t vfio_pci_io_readwrite(struct vfio_pci_device *vdev, char __user *buf,
-+			      size_t count, loff_t *ppos, bool iswrite)
-+{
-+	struct pci_dev *pdev = vdev->pdev;
-+	loff_t pos = *ppos & VFIO_PCI_OFFSET_MASK;
-+	int bar = VFIO_PCI_OFFSET_TO_INDEX(*ppos);
-+	size_t done;
-+
-+	if (!pci_resource_start(pdev, bar))
-+		return -EINVAL;
-+
-+	if (pos + count > pci_resource_len(pdev, bar))
-+		return -EINVAL;
-+
-+	if (!vdev->barmap[bar]) {
-+		int ret;
-+
-+		ret = pci_request_selected_regions(pdev, 1 << bar, "vfio");
-+		if (ret)
-+			return ret;
-+
-+		vdev->barmap[bar] = pci_iomap(pdev, bar, 0);
-+
-+		if (!vdev->barmap[bar]) {
-+			pci_release_selected_regions(pdev, 1 << bar);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	done = do_io_rw(vdev->barmap[bar], buf, pos, count, iswrite);
-+
-+	if (done >= 0)
-+		*ppos += done;
- 
- 	return done;
- }
-@@ -267,3 +275,83 @@ out:
- 
- 	return count ? -EFAULT : done;
- }
-+
-+ssize_t vfio_pci_legacy_mem_readwrite(struct vfio_pci_device *vdev,
-+				      char __user *buf, size_t count,
-+				      loff_t *ppos, bool iswrite)
-+{
-+	int ret;
-+	loff_t pos = *ppos & VFIO_PCI_OFFSET_MASK;
-+
-+	if ((vdev->pdev->class >> 8) == PCI_CLASS_DISPLAY_VGA &&
-+            pos >= 0xa0000 && pos < 0xc0000) {
-+		void __iomem *mem;
-+		size_t done;
-+
-+		if (pos + count > 0xc0000)
-+			count = 0xc0000 - pos;
-+
-+		mem = ioremap_nocache(pos, count);
-+		if (!mem)
-+			return -ENOMEM;
-+
-+		ret = vga_get_interruptible(vdev->pdev, VGA_RSRC_LEGACY_MEM);
-+		if (ret) {
-+			iounmap(mem);
-+			return ret;
-+		}
-+
-+		done = do_io_rw(mem, buf, 0, count, iswrite);
-+
-+		vga_put(vdev->pdev, VGA_RSRC_LEGACY_MEM);
-+		iounmap(mem);
-+
-+		if (done >= 0)
-+			*ppos += done;
-+
-+		return done;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+ssize_t vfio_pci_legacy_io_readwrite(struct vfio_pci_device *vdev,
-+				     char __user *buf, size_t count,
-+				     loff_t *ppos, bool iswrite)
-+{
-+	int ret;
-+	loff_t pos = *ppos & VFIO_PCI_OFFSET_MASK;
-+
-+	if ((vdev->pdev->class >> 8) == PCI_CLASS_DISPLAY_VGA &&
-+            ((pos >= 0x3b0 && pos < 0x3bc) || (pos >= 0x3c0 && pos < 0x3e0))) {
-+		void __iomem *io;
-+		size_t done;
-+
-+		if (pos < 0x3bc && pos + count > 0x3bc)
-+			count = 0x3bc - pos;
-+		if (pos < 0x3e0 && pos + count > 0x3e0)
-+			count = 0x3e0 - pos;
-+
-+		io = ioport_map(pos, count);
-+		if (!io)
-+			return -ENOMEM;
-+
-+		ret = vga_get_interruptible(vdev->pdev, VGA_RSRC_LEGACY_IO);
-+		if (ret) {
-+			ioport_unmap(io);
-+			return ret;
-+		}
-+
-+		done = do_io_rw(io, buf, 0, count, iswrite);
-+
-+		vga_put(vdev->pdev, VGA_RSRC_LEGACY_IO);
-+		ioport_unmap(io);
-+
-+		if (done >= 0)
-+			*ppos += done;
-+
-+		return done;
-+	}
-+
-+	return -EINVAL;
-+}
-diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
-index 4758d1b..aa15851 100644
---- a/include/uapi/linux/vfio.h
-+++ b/include/uapi/linux/vfio.h
-@@ -147,6 +147,7 @@ struct vfio_device_info {
- 	__u32	flags;
- #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
- #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
-+#define VFIO_DEVICE_FLAGS_VGA	(1 << 2)	/* Device supports VGA ranges */
- 	__u32	num_regions;	/* Max region index + 1 */
- 	__u32	num_irqs;	/* Max IRQ index + 1 */
- };
-@@ -303,6 +304,8 @@ enum {
- 	VFIO_PCI_BAR5_REGION_INDEX,
- 	VFIO_PCI_ROM_REGION_INDEX,
- 	VFIO_PCI_CONFIG_REGION_INDEX,
-+	VFIO_PCI_LEGACY_MMIO_REGION_INDEX,
-+	VFIO_PCI_LEGACY_IOPORT_REGION_INDEX,
- 	VFIO_PCI_NUM_REGIONS
- };
- 
+You're so right, Stanislaw! I should have better looked again at your
+patch before writing those stupid lines about differentiation between
+STA and AP.
 
+Please apologize!
+
+
+Kind regards,
+Andreas
