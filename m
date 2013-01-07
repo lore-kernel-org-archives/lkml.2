@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755708Ab3AGVAL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:00:11 -0500
-Received: from mail-ia0-f178.google.com ([209.85.210.178]:45300 "EHLO
-	mail-ia0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753774Ab3AGVAJ (ORCPT
+	id S1755712Ab3AGVD5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:03:57 -0500
+Received: from toccata.ens-lyon.fr ([140.77.166.68]:55930 "EHLO
+	toccata.ens-lyon.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753877Ab3AGVD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:00:09 -0500
-From: Sean Paul <seanpaul@chromium.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: thomas.abraham@linaro.org, kgene.kim@samsung.com,
-        Sean Paul <seanpaul@chromium.org>
-Subject: [PATCH] ARM: dts: exynos5250: Set HDMI version to v1.4
-Date: Mon,  7 Jan 2013 16:00:00 -0500
-Message-Id: <1357592400-18117-1-git-send-email-seanpaul@chromium.org>
-X-Mailer: git-send-email 1.7.7.3
+	Mon, 7 Jan 2013 16:03:56 -0500
+Date: Mon, 7 Jan 2013 22:03:51 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>,
+        William Hubbs <w.d.hubbs@gmail.com>,
+        Chris Brannon <chris@the-brannons.com>,
+        Kirk Reiser <kirk@braille.uwo.ca>, linux-kernel@vger.kernel.org,
+        speakup@braille.uwo.ca
+Subject: Re: [PATCH] drivers/staging/speakup: avoid out-of-range access
+Message-ID: <20130107210351.GJ5998@type.youpi.perso.aquilenet.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Greg KH <gregkh@linuxfoundation.org>,
+	Nickolai Zeldovich <nickolai@csail.mit.edu>,
+	William Hubbs <w.d.hubbs@gmail.com>,
+	Chris Brannon <chris@the-brannons.com>,
+	Kirk Reiser <kirk@braille.uwo.ca>, linux-kernel@vger.kernel.org,
+	speakup@braille.uwo.ca
+References: <1357413465-42357-1-git-send-email-nickolai@csail.mit.edu>
+ <20130105192944.GL5965@type.youpi.perso.aquilenet.fr>
+ <20130107174453.GA15120@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130107174453.GA15120@kroah.com>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the HDMI version to v1.4 for all exynos5250 targets. This property
-was previously being inferred by the existence of the hdmi node.
+Greg KH, le Mon 07 Jan 2013 09:44:53 -0800, a écrit :
+> Wait, Nickolai wrote the first patch, so how could he sign off on your
+> patch?  How about sending me an add-on patch on top of the first one
+> which adds the additional check?
 
-Signed-off-by: Sean Paul <seanpaul@chromium.org>
+Right, here it is:
+
+
+Check that array index is in-bounds before accessing the synths[] array.
+
+Signed-off-by: Samuel Thibault <samuel.thibault@ens-lyon.org>
+
 ---
- arch/arm/boot/dts/exynos5250.dtsi |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/staging/speakup/synth.c |    2 +-
+ 1 file changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-index 2e3b6ef..9fb6845 100644
---- a/arch/arm/boot/dts/exynos5250.dtsi
-+++ b/arch/arm/boot/dts/exynos5250.dtsi
-@@ -576,6 +576,7 @@
- 		compatible = "samsung,exynos5-hdmi";
- 		reg = <0x14530000 0x100000>;
- 		interrupts = <0 95 0>;
-+		samsung,supports-hdmi-1.4;
- 	};
- 
- 	mixer {
--- 
-1.7.7.3
-
+diff --git a/drivers/staging/speakup/synth.c b/drivers/staging/speakup/synth.c
+index df95337..b91d22b 100644
+--- a/drivers/staging/speakup/synth.c
++++ b/drivers/staging/speakup/synth.c
+@@ -423,7 +423,7 @@ int synth_add(struct spk_synth *in_synth
+ 	int i;
+ 	int status = 0;
+ 	mutex_lock(&spk_mutex);
+-	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
++	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+ 		/* synth_remove() is responsible for rotating the array down */
+ 		if (in_synth == synths[i]) {
+ 			mutex_unlock(&spk_mutex);
