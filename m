@@ -1,67 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754756Ab3AGNts (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 08:49:48 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:4665 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688Ab3AGNtr (ORCPT
+	id S1754714Ab3AGNw5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 08:52:57 -0500
+Received: from [216.228.121.140] ([216.228.121.140]:18415 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754576Ab3AGNwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 08:49:47 -0500
-X-IronPort-AV: E=Sophos;i="4.84,424,1355097600"; 
-   d="scan'208";a="488403"
-Message-ID: <1357566584.7989.73.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Cooper <Andrew.Cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Jan Beulich" <JBeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Date: Mon, 7 Jan 2013 13:49:44 +0000
-In-Reply-To: <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
-	 <50DBC856.6030208@zytor.com>
-	 <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
-	 <50DC58C4.3000307@citrix.com> <874nj7qsor.fsf@xmission.com>
-	 <50E41973.9050705@citrix.com>
-	 <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
-	 <50E6F81D02000078000B3245@nat28.tlf.novell.com>
-	 <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
-	 <20130104191146.GC6721@phenom.dumpdata.com>
-	 <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Mon, 7 Jan 2013 08:52:55 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Mon, 07 Jan 2013 05:52:22 -0800
+Message-ID: <50EAD307.9040604@nvidia.com>
+Date: Mon, 7 Jan 2013 19:22:07 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
+To: Stephen Warren <swarren@wwwdotorg.org>
+CC: "vinod.koul@intel.com" <vinod.koul@intel.com>, "djbw@fb.com" <djbw@fb.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH] dma: tegra: implement flags parameters for cyclic transfer
+References: <1355924434-7930-1-git-send-email-ldewangan@nvidia.com> <50D1F33D.1050709@wwwdotorg.org> <50D2ABF7.8090308@nvidia.com> <50D340E1.7040600@wwwdotorg.org> <50D3E44F.4060007@nvidia.com> <50D4CC62.6080304@wwwdotorg.org>
+In-Reply-To: <50D4CC62.6080304@wwwdotorg.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-07 at 12:34 +0000, Daniel Kiper wrote:
-> I think that new kexec hypercall function should mimics kexec syscall.
+On Saturday 22 December 2012 02:23 AM, Stephen Warren wrote:
+> On 12/20/2012 09:23 PM, Laxman Dewangan wrote:
+>> On Thursday 20 December 2012 10:16 PM, Stephen Warren wrote:
+>>> On 12/19/2012 11:11 PM, Laxman Dewangan wrote:
+>>>> On Wednesday 19 December 2012 10:32 PM, Stephen Warren wrote:
+>>>>> On 12/19/2012 06:40 AM, Laxman Dewangan wrote:
+>>>>>> The flag parameter is added in the cyclic transfer request.
+>>>>>> Use the flag option of:
+>>>>>> - DMA_PREP_INTERRUPT for enabling interrupt.
+>>>>>> - DMA_CTRL_ACK for deciding whether ack is requred or not for
+>>>>>>      descriptor.
+>>>>> Do the relevant drivers that use Tegra's DMA engine already set flags
+>>>>> correctly, so that this change won't cause any regressions?
+>>>> Currently, the sound soc driver uses the cyclic mode of dma transfer and
+>>>> it has already enable the proper flags. This was done recently after
+>>>> adding flags in cyclic api.
+>>>> Also, there was bug in our dma driver for not setting DMA_CTRL_ACK by
+>>>> default for cyclic case.
+>>>> This will fix the issue.
+>>> OK. I assume "This was done recently after adding flags in cyclic api."
+>>> was a patch that went into 3.8?  So, this patch is a bug-fix that should
+>>> be included in 3.8 then?
+>> I can see this in Linux 3.7 tag.
+> So I assume that means that when Vinod applies *this* patch, it should
+> be Cc: stable for 3.7 and up?
+>
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=history;f=drivers/dma/tegra20-apb-dma.c;h=528c62dd4b00e1b52928ff66f3a54e7ae206680f;hb=29594404d7fe73cd80eaa4ee8c43dcc53970c60e
+> I don't think that points where you want; it just shows a log of 3.7 for me.
 
-We want to have an interface can be used by non-Linux domains (both dom0
-and domU) as well though, so please bear this in mind.
-
-Historically we've not always been good at this when the hypercall
-interface is strongly tied to a particular guest implementation (in some
-sense this is the problem with the current kexec hypercall).
-
-Also what makes for a good syscall interface does not necessarily make
-for a good hypercall interface.
-
-Ian.
+Oops, I just wanted to say that 3.7 branch and history of 
+drivers/dma/tegra20-apb-dma.c shows the above change of inclusion of flags.
+Seems link is messed up.
 
