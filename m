@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab3AGRe1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:34:27 -0500
-Received: from mail-vb0-f52.google.com ([209.85.212.52]:62332 "EHLO
-	mail-vb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab3AGRe0 (ORCPT
+	id S1752893Ab3AGRgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:36:48 -0500
+Received: from srv8.ns-domain-hosting.de ([46.4.100.167]:39115 "EHLO
+	srv8.ns-domain-hosting.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3AGRgr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:34:26 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
-References: <20130105152208.GA3386@redhat.com> <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
- <alpine.LNX.2.00.1301061037140.28950@eggly.anvils> <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 7 Jan 2013 09:34:03 -0800
-X-Google-Sender-Auth: qAFHWIQPFkJpn0vaoZawaufwb9k
-Message-ID: <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
-Subject: Re: oops in copy_page_rep()
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Jan 2013 12:36:47 -0500
+X-Greylist: delayed 518 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 12:36:47 EST
+X-No-Relay: not in my network
+Date: Mon, 7 Jan 2013 18:28:06 +0100
+From: Cris <christoph@netpole.com.br>
+To: linux-kernel@vger.kernel.org
+Subject: VME Tsi148
+Message-ID: <20130107182806.32d2600c@vesta>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 4:24 AM, Hillf Danton <dhillf@gmail.com> wrote:
->
-> I take another try with waiting added, take a look please.
+Hi,
 
-Hmm. Is there some reason we never need to worry about it for the
-"pmd_numa()" case just above?
+I'm trying to use the Tsi148 VME-PCI-bridge on a PowerPC-SPE using the
+Debian port, but compiling the kernel 3.7.1 myself. Everything seems
+to work as expected, except for the messages:
 
-A comment about this all might be a really good idea.
+    vme_tsi148 0000:02:0e.0: Can't get assigned pci irq vector 00
+    vme_tsi148 0000:02:0e.0: Chip Initialization failed.
+    vme_tsi148: probe of 0000:02:0e.0 failed with error -22
 
-                   Linus
+As I understand these messages, the IRQ tsi148 is trying to request is
+invalid 0. Am I expected to initialize this, say by a kernel parameter
+(I wouldn't know which irq is appropriate), or is this a bug in
+drivers/vme/bridges/vme_tsi_148.c? Is there something, I can do about it?
+
+Please CC me, as I'm not on this list.
+
+TIA,
+
+-- 
+Christoph Simon
+christoph@netpole.com.br
