@@ -1,1509 +1,1229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab3AGS6W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 13:58:22 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:38126 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab3AGS6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 13:58:20 -0500
-From: Mathias Leblanc <mathias.leblanc@st.com>
-To: Kent Yoder <key@linux.vnet.ibm.com>, Rajiv Andrade <mail@srajiv.net>,
-        Marcel Selhorst <tpmdd@selhorst.net>, Sirrix AG <tpmdd@sirrix.com>,
-        tpmdd-devel@lists.sourceforge.net,
-        Debora Velarde <debora@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Jean-Luc Blanc <jean-luc.blanc@st.com>,
-        Mathias Leblanc <mathias.leblanc@st.com>
-Subject: [PATCH 1/1] TPM: STMicroelectronics st33 driver SPI
-Date: Mon,  7 Jan 2013 19:50:01 +0100
-Message-Id: <1357584601-3777-1-git-send-email-mathias.leblanc@st.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755231Ab3AGTJr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 14:09:47 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:49230 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753619Ab3AGTJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 14:09:44 -0500
+From: Thomas Renninger <trenn@suse.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
+        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
+Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump with iommu
+Date: Mon, 07 Jan 2013 20:09:27 +0100
+Message-ID: <1593084.QhbTkmoq3N@hammer82.arch.suse.de>
+User-Agent: KMail/4.8.5 (Linux/3.4.11-2.16-desktop; KDE/4.8.5; x86_64; ; )
+In-Reply-To: <CAE9FiQVaqXMfju5j7qBsk+g=RpES-adBBdrDcnkW=YQTQOfugQ@mail.gmail.com>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <50B8D571.3000000@jp.fujitsu.com> <CAE9FiQVaqXMfju5j7qBsk+g=RpES-adBBdrDcnkW=YQTQOfugQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="nextPart15991581.1eyK26DXFJ"
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: admin01 <admin01@admin01-desktop.(none)>
 
- * STMicroelectronics version 1.2.0, Copyright (C) 2010
- * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
- * This is free software, and you are welcome to redistribute it
- * under certain conditions.
+--nextPart15991581.1eyK26DXFJ
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 
-This is the driver for TPM chip from ST Microelectronics.
+On Friday, December 21, 2012 08:19:05 AM Yinghai Lu wrote:
+> On Fri, Nov 30, 2012 at 7:49 AM, MUNEDA Takahiro
+> 
+> <muneda.takahiro@jp.fujitsu.com> wrote:
+> > On Tue, 27 Nov 2012 09:42:20 +0900 (JST),
+> > 
+> > Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+> >> These patches reset PCIe devices at boot time to address DMA problem on
+> >> kdump with iommu. When "reset_devices" is specified, a hot reset is
+> >> triggered on each PCIe root port and downstream port to reset its
+> >> downstream endpoint.
+> 
+> ThomasR, Can you check if this one help your test case about interrupt ?
 
-If you have a TPM security chip from STMicroelectronics working with
-an I2C/SPI, in menuconfig or .config choose the tpm driver on
-device --> tpm and activate the protocol of your choice before compiling
-the kernel.
-The driver will be accessible from within Linux.
+Sorry for the long delay...
 
-Tested on linux x86/x64 and beagleboard REV B & XM REV C
+First: I cannot reproduce this myself. I get one error like:
+DRHD: handling fault status reg 2
+INTR-REMAP: Request device [[01:00.0] fault index 33
+INTR-REMAP:[fault reason 34] Present field in the IRTE entry is clear
+when a dump is written and the dump completes successfully.
 
-Signed-off-by: admin01 <admin01@admin01-desktop.(none)>
----
- drivers/char/tpm/Kconfig             |   10 +
- drivers/char/tpm/Makefile            |    1 +
- drivers/char/tpm/tpm_stm_st33_spi.c  | 1282 ++++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm_stm_st33_spi.h  |   79 +++
- include/linux/spi/tpm_stm_st33_spi.h |   46 ++
- 5 files changed, 1418 insertions(+), 0 deletions(-)
- create mode 100644 drivers/char/tpm/tpm_stm_st33_spi.c
- create mode 100644 drivers/char/tpm/tpm_stm_st33_spi.h
- create mode 100644 include/linux/spi/tpm_stm_st33_spi.h
+The other report with a specific 10G network card is that they seem
+to get an irq storm and see about 80 per second of above messages
+in the kdump kernel until things are dead.
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index 915875e..63649f4 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -81,4 +81,14 @@ config TCG_IBMVTPM
- 	  will be accessible from within Linux.  To compile this driver
- 	  as a module, choose M here; the module will be called tpm_ibmvtpm.
- 
-+config TCG_ST33_SPI
-+       tristate "STMicroelectronics ST33 SPI"
-+       depends on SPI
-+       depends on GPIOLIB
-+       ---help---
-+       If you have a TPM security chip from STMicroelectronics working with
-+       an SPI bus say Yes and it will be accessible from within Linux.
-+       To compile this driver as a module, choose M here; the module will be
-+       called tpm_stm_st33_spi.
-+
- endif # TCG_TPM
-diff --git a/drivers/char/tpm/Makefile b/drivers/char/tpm/Makefile
-index 5b3fc8b..44bf6e5 100644
---- a/drivers/char/tpm/Makefile
-+++ b/drivers/char/tpm/Makefile
-@@ -17,3 +17,4 @@ obj-$(CONFIG_TCG_NSC) += tpm_nsc.o
- obj-$(CONFIG_TCG_ATMEL) += tpm_atmel.o
- obj-$(CONFIG_TCG_INFINEON) += tpm_infineon.o
- obj-$(CONFIG_TCG_IBMVTPM) += tpm_ibmvtpm.o
-++obj-$(CONFIG_TCG_ST33_SPI) += tpm_stm_st33_spi.o
-diff --git a/drivers/char/tpm/tpm_stm_st33_spi.c b/drivers/char/tpm/tpm_stm_st33_spi.c
-new file mode 100644
-index 0000000..baa88b6
---- /dev/null
-+++ b/drivers/char/tpm/tpm_stm_st33_spi.c
-@@ -0,0 +1,1282 @@
-+/*
-+ * STMicroelectronics TPM SPI Linux driver for TPM ST33ZP24
-+ * Copyright (C) 2009, 2010  STMicroelectronics
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ * STMicroelectronics version 1.2.0, Copyright (C) 2010
-+ * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
-+ * This is free software, and you are welcome to redistribute it
-+ * under certain conditions.
-+ *
-+ * @Author: Christophe RICARD tpmsupport@st.com
-+ *
-+ * @File: tpm_stm_st33_spi.c
-+ *
-+ * @Synopsis:
-+ *	09/15/2010:	First shot driver tpm_tis driver for lpc is
-+ *			used as model.
-+ */
-+
-+#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/spi/spi.h>
-+#include <linux/wait.h>
-+#include <linux/string.h>
-+#include <linux/interrupt.h>
-+#include <linux/spinlock.h>
-+#include <linux/sysfs.h>
-+#include <linux/gpio.h>
-+#include <linux/sched.h>
-+#include <linux/uaccess.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
-+#include <linux/sched.h>
-+
-+#include <linux/spi/tpm_stm_st33_spi.h>
-+
-+#include "tpm.h"
-+
-+#include "tpm_stm_st33_spi.h"
-+
-+#ifdef DEBUG
-+#define FUNC_ENTER()	pr_info("%s\n", __func__)
-+#else
-+#define	FUNC_ENTER()	do {}	while (0)
-+#endif
-+
-+enum stm33zp24_access {
-+	TPM_ACCESS_VALID = 0x80,
-+	TPM_ACCESS_ACTIVE_LOCALITY = 0x20,
-+	TPM_ACCESS_REQUEST_PENDING = 0x04,
-+	TPM_ACCESS_REQUEST_USE = 0x02,
-+};
-+
-+enum stm33zp24_status {
-+	TPM_STS_VALID = 0x80,
-+	TPM_STS_COMMAND_READY = 0x40,
-+	TPM_STS_GO = 0x20,
-+	TPM_STS_DATA_AVAIL = 0x10,
-+	TPM_STS_DATA_EXPECT = 0x08,
-+};
-+
-+enum stm33zp24_int_flags {
-+	TPM_GLOBAL_INT_ENABLE = 0x80,
-+	TPM_INTF_CMD_READY_INT = 0x080,
-+	TPM_INTF_FIFO_AVALAIBLE_INT = 0x040,
-+	TPM_INTF_WAKE_UP_READY_INT = 0x020,
-+	TPM_INTF_LOC4SOFTRELEASE_INT = 0x008,
-+	TPM_INTF_LOCALITY_CHANGE_INT = 0x004,
-+	TPM_INTF_STS_VALID_INT = 0x002,
-+	TPM_INTF_DATA_AVAIL_INT = 0x001,
-+};
-+
-+enum tis_defaults {
-+	TIS_SHORT_TIMEOUT = 750,	/* ms */
-+	TIS_LONG_TIMEOUT = 2000,	/* 2 sec */
-+};
-+
-+/*
-+ * write8_reg
-+ * Send byte to the TIS register according to the ST33ZP24 SPI protocol.
-+ * @param: tpm, the chip description
-+ * @param: tpm_register, the tpm tis register where the data should be written
-+ * @param: tpm_data, the tpm_data to write inside the tpm_register
-+ * @param: tpm_size, The length of the data
-+ * @return: number of byte written successfully: should be one if success.
-+ */
-+static int write8_reg(struct tpm_chip *tpm, u8 tpm_register,
-+		      u8 *tpm_data, u16 tpm_size)
-+{
-+	/* u8 LOC+DIR u8 ADD u16 LENGHT u8* data */
-+	/* u8 LATENCY u8 LATENCY */
-+
-+	u8 data;
-+	int i = 0, j;
-+	int value = 0;
-+	struct spi_device *dev = (struct spi_device *) tpm->vendor.iobase;
-+	struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
-+	u8 *data_buffer = platform_data->tpm_spi_buffer[0];
-+	struct spi_transfer xfer = {
-+		.tx_buf	 = data_buffer,
-+		.rx_buf	 = platform_data->tpm_spi_buffer[1],
-+	};
-+	struct spi_message msg;
-+	u8 latency = platform_data->latency + tpm_size + 1;
-+
-+
-+	FUNC_ENTER();
-+	/* Pre-Header */
-+
-+	data = TPM_WRITE_DIRECTION | tpm->vendor.locality;
-+	memcpy(data_buffer + i, &data, sizeof(data));
-+	i++;
-+	data = tpm_register;
-+	memcpy(data_buffer + i, &data, sizeof(data));
-+	i++;
-+
-+	if (tpm_size > 0 &&
-+	     (tpm_register == TPM_DATA_FIFO ||
-+	      tpm_register == TPM_HASH_DATA)) {
-+		data = tpm_size >> 8 & 0x00ff;
-+		memcpy(data_buffer + i, &data, sizeof(data));
-+		i++;
-+		data = tpm_size & 0x00ff;
-+		memcpy(data_buffer + i, &data, sizeof(data));
-+		i++;
-+		latency -= 2;
-+	}
-+
-+	memcpy(data_buffer + i, tpm_data, tpm_size);
-+	i += tpm_size;
-+
-+	for (j = 0 ; j < platform_data->latency + 1; j++) {
-+		data = TPM_DUMMY_BYTE;
-+		memcpy(data_buffer + i, &data, sizeof(data));
-+		i++;
-+	}
-+	xfer.len = i;
-+	spi_message_init(&msg);
-+	spi_message_add_tail(&xfer, &msg);
-+	value = spi_sync(dev, &msg);
-+
-+	if (value == 0) {
-+		j = i - 1 - j;
-+		for (; j < i && ((u8 *) xfer.rx_buf)[j] == 0; j++)
-+			;
-+
-+		if (((u8 *) xfer.rx_buf)[j] != 0)
-+			value = ((u8 *) xfer.rx_buf)[j];
-+	}
-+
-+	return value;
-+} /* write8_reg() */
-+
-+/*
-+ * read8_reg
-+ * Recv byte from the TIS register according to the ST33ZP24 SPI protocol.
-+ * @param: tpm, the chip description
-+ * @param: tpm_register, the tpm tis register where the data should be read
-+ * @param: tpm_data, the TPM response
-+ * @param: tpm_size, tpm TPM response size to read.
-+ * @return: number of byte read successfully: should be one if success.
-+ */
-+static u8 read8_reg(struct tpm_chip *tpm, u8 tpm_register,
-+		    u8 *tpm_data, u16 tpm_size)
-+{
-+	u8 data;
-+	int i = 0, j;
-+	int value = 0;
-+	struct spi_device *dev = (struct spi_device *) tpm->vendor.iobase;
-+	struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
-+	u8 *data_buffer = platform_data->tpm_spi_buffer[0];
-+	struct spi_transfer xfer = {
-+		.tx_buf	 = data_buffer,
-+		.rx_buf	 = platform_data->tpm_spi_buffer[1],
-+	};
-+	struct spi_message msg;
-+
-+	u8 latency = platform_data->latency + tpm_size + 1;
-+
-+	FUNC_ENTER();
-+	/* Pre-Header */
-+
-+	data = tpm->vendor.locality;
-+	memcpy(data_buffer + i, &data, sizeof(data));
-+	i++;
-+	data = tpm_register;
-+	memcpy(data_buffer + i, &data, sizeof(data));
-+	i++;
-+
-+	for (j = 0 ; j < latency; j++) {
-+		data = TPM_DUMMY_BYTE;
-+		memcpy(data_buffer + i, &data, sizeof(data));
-+		i++;
-+	}
-+	xfer.len = i;
-+
-+	/* header + status byte + size of the data + status byte */
-+	spi_message_init(&msg);
-+	spi_message_add_tail(&xfer, &msg);
-+	value = spi_sync(dev, &msg);
-+	if (tpm_size > 0 && value == 0) {
-+		j = 2;
-+		for (; j < i && ((u8 *) xfer.rx_buf)[j] == 0; j++)
-+			;
-+
-+		if (j + 1 < i) {
-+			value = ((u8 *) xfer.rx_buf)[j];
-+
-+			if (tpm_size > 0)
-+				memcpy(tpm_data, xfer.rx_buf + j + 1,
-+								 tpm_size);
-+		}
-+	}
-+	return value;
-+} /* read8_reg() */
-+
-+/*
-+ * SPI_WRITE_DATA
-+ * Send byte to the TIS register according to the ST33ZP24 SPI protocol.
-+ * @param: tpm, the chip description
-+ * @param: tpm_register, the tpm tis register where the data should be written
-+ * @param: tpm_data, the tpm_data to write inside the tpm_register
-+ * @param: tpm_size, The length of the data
-+ * @return: number of byte written successfully: should be one if success.
-+ */
-+static u32 SPI_WRITE_DATA(struct tpm_chip *tpm, u8 tpm_register,
-+			  u8 *tpm_data, u16 tpm_size)
-+{
-+	u8 value = 0;
-+
-+	FUNC_ENTER();
-+
-+	value = write8_reg(tpm, tpm_register, tpm_data, tpm_size);
-+
-+	switch (value) {
-+	case TPM_ST_SPI_OK:
-+		return TPM_ST_SPI_OK;
-+	case 0:
-+		return 0;
-+	default:
-+		return -EBUSY;
-+	}
-+} /* SPI_WRITE_DATA() */
-+
-+/*
-+ * SPI_READ_DATA
-+ * Recv byte from the TIS register according to the ST33ZP24 SPI protocol.
-+ * @param: tpm, the chip description
-+ * @param: tpm_register, the tpm tis register where the data should be read
-+ * @param: tpm_data, the TPM response
-+ * @param: tpm_size, tpm TPM response size to read.
-+ * @return: number of byte read successfully: should be one if success.
-+ */
-+static u32 SPI_READ_DATA(struct tpm_chip *tpm, u8 tpm_register,
-+			u8 *tpm_data, u16 tpm_size)
-+{
-+	u8 value = 0;
-+
-+	FUNC_ENTER();
-+
-+	value = read8_reg(tpm, tpm_register, tpm_data, tpm_size);
-+
-+	switch (value) {
-+	case TPM_ST_SPI_OK:
-+		return TPM_ST_SPI_OK;
-+	case 0:
-+		return 0;
-+	default:
-+		return -EBUSY;
-+	}
-+} /* SPI_READ_DATA () */
-+
-+/*
-+ * clear_interruption
-+ * clear the TPM interrupt register.
-+ * @param: tpm, the chip description
-+ */
-+static void clear_interruption(struct tpm_chip *tpm)
-+{
-+	u8 interrupt;
-+	SPI_READ_DATA(tpm, TPM_INT_STATUS, &interrupt, 1);
-+	/* Clear interrupts handled with TPM_EOI */
-+	SPI_WRITE_DATA(tpm, TPM_INT_STATUS, &interrupt, 1);
-+	SPI_READ_DATA(tpm, TPM_INT_STATUS, &interrupt, 1);
-+} /* clear_interruption() */
-+
-+/*
-+ * _wait_for_interrupt_serirq_timeout
-+ * @param: tpm, the chip description
-+ * @param: timeout, the timeout of the interrupt
-+ * @return: the status of the interruption.
-+ */
-+static int _wait_for_interrupt_serirq_timeout(struct tpm_chip *chip,
-+					unsigned long timeout)
-+{
-+	unsigned long status;
-+	struct spi_device *client;
-+	struct st33zp24_platform_data *pin_infos;
-+
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+	pin_infos = client->dev.platform_data;
-+
-+	status = wait_for_completion_interruptible_timeout(
-+				&pin_infos->irq_detection, timeout);
-+	if (status > 0)
-+		enable_irq(gpio_to_irq(pin_infos->io_serirq));
-+	gpio_direction_input(pin_infos->io_serirq);
-+
-+	return status;
-+} /* wait_for_interrupt_serirq_timeout() */
-+
-+unsigned long wait_for_serirq_timeout(struct tpm_chip *chip, bool condition,
-+				 unsigned long timeout)
-+{
-+	unsigned long status = 0;
-+	struct spi_device *client;
-+	struct st33zp24_platform_data *pin_infos;
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+	pin_infos = client->dev.platform_data;
-+
-+	status = _wait_for_interrupt_serirq_timeout(chip, timeout);
-+	if (!status) {
-+		status = -EBUSY;
-+		goto wait_end;
-+	}
-+	clear_interruption(chip);
-+	if (condition)
-+		status = 1;
-+
-+wait_end:
-+	status;
-+}
-+
-+
-+/*
-+ * tpm_stm_spi_cancel, cancel is not implemented.
-+ * @param: chip, the tpm chip description as specified in
-+ * driver/char/tpm/tpm.h.
-+ */
-+static void tpm_stm_spi_cancel(struct tpm_chip *chip)
-+{
-+	struct spi_device *client;
-+	u8 data = TPM_STS_COMMAND_READY;
-+	client = (struct spi_device *) chip->vendor.iobase;
-+
-+	FUNC_ENTER();
-+
-+	/* this causes the current command to be aborted */
-+	SPI_WRITE_DATA(chip, TPM_STS, &data, 1);
-+} /* tpm_stm_spi_cancel() */
-+
-+/*
-+ * tpm_stm_spi_status return the TPM_STS register
-+ * @param: chip, the tpm chip description
-+ * @return: the TPM_STS register value.
-+ */
-+static u8 tpm_stm_spi_status(struct tpm_chip *chip)
-+{
-+	struct spi_device *client;
-+	u8 data;
-+	client = (struct spi_device *) chip->vendor.iobase;
-+
-+	FUNC_ENTER();
-+
-+	SPI_READ_DATA(chip, TPM_STS, &data, 1);
-+	return data;
-+} /* tpm_stm_spi_status() */
-+
-+/*
-+ * responseSize return the command size
-+ * @param: buffer, command buffer.
-+ * @param: size, the buffer size.
-+ * @return: the command size.
-+ */
-+static int responseSize(const char *buffer, size_t size)
-+{
-+	size_t val = 0;
-+
-+	FUNC_ENTER();
-+
-+	if (size >= TPM_HEADER_SIZE) {
-+		val = (size_t) (((unsigned)buffer[2]) << 24
-+				| ((unsigned)buffer[3]) << 16
-+				| ((unsigned)buffer[4]) << 8 | (unsigned)
-+				buffer[5]);
-+	}
-+
-+	if (val < TPM_BUFSIZE)
-+		return val;
-+	else
-+		return TPM_BUFSIZE;
-+}
-+
-+/*
-+ * check_locality if the locality is active
-+ * @param: chip, the tpm chip description
-+ * @return: the active locality or -EACCESS.
-+ */
-+static int check_locality(struct tpm_chip *chip)
-+{
-+	struct spi_device *client;
-+	u8 data;
-+	u8 status;
-+
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+
-+	status = SPI_READ_DATA(chip, TPM_ACCESS, &data, 1);
-+	if (status && (data &
-+		(TPM_ACCESS_ACTIVE_LOCALITY | TPM_ACCESS_VALID)) ==
-+		(TPM_ACCESS_ACTIVE_LOCALITY | TPM_ACCESS_VALID))
-+		return chip->vendor.locality;
-+
-+	return -EACCES;
-+} /* check_locality() */
-+
-+/*
-+ * request_locality request the TPM locality
-+ * @param: chip, the chip description
-+ * @return: the active locality or EACCESS.
-+ */
-+static int request_locality(struct tpm_chip *chip)
-+{
-+	unsigned long stop;
-+	long rc;
-+	u8 data;
-+	struct spi_device *client;
-+
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+	/* Check locality */
-+	if (check_locality(chip) == chip->vendor.locality)
-+		return chip->vendor.locality;
-+
-+	/* Request locality */
-+	data = TPM_ACCESS_REQUEST_USE;
-+	rc = SPI_WRITE_DATA(chip, TPM_ACCESS, &data, 1);
-+	if (rc < 0)
-+		goto end;
-+
-+	/* wait for burstcount */
-+	if (chip->vendor.irq) {
-+		rc = wait_for_serirq_timeout(chip, (check_locality
-+						(chip) >= 0),
-+						chip->vendor.timeout_a);
-+		if (rc > 0)
-+			return chip->vendor.locality;
-+	} else {
-+		stop = jiffies + chip->vendor.timeout_a;
-+		do {
-+			if (check_locality(chip) >= 0)
-+				return chip->vendor.locality;
-+			msleep(TPM_TIMEOUT);
-+		} while (time_before(jiffies, stop));
-+	}
-+end:
-+	return -EACCES;
-+} /* request_locality() */
-+
-+/*
-+ * release_locality release the active locality
-+ * @param: chip, the tpm chip description.
-+ */
-+static void release_locality(struct tpm_chip *chip)
-+{
-+	struct spi_device *client;
-+	u8 data;
-+
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+	data = TPM_ACCESS_ACTIVE_LOCALITY;
-+	SPI_WRITE_DATA(chip, TPM_ACCESS, &data, 1);
-+} /* release_locality()*/
-+
-+/*
-+ * get_burstcount return the burstcount address 0x19 0x1A
-+ * @param: chip, the chip description
-+ * return: the burstcount.
-+ */
-+static int get_burstcount(struct tpm_chip *chip)
-+{
-+	unsigned long stop;
-+	u32 burstcnt, status;
-+	u8 tpm_reg, temp;
-+
-+	FUNC_ENTER();
-+
-+	/* wait for burstcount */
-+	/* which timeout value, spec has 2 answers (c & d) */
-+	stop = jiffies + chip->vendor.timeout_d;
-+	do {
-+		tpm_reg = TPM_STS + 1;
-+		status = SPI_READ_DATA(chip, tpm_reg, &temp, 1);
-+		if (status < 0)
-+			goto end;
-+
-+		tpm_reg = tpm_reg + 1;
-+		burstcnt = temp;
-+		status = SPI_READ_DATA(chip, tpm_reg, &temp, 1);
-+		if (status < 0)
-+			goto end;
-+
-+		burstcnt |= temp << 8;
-+		if (burstcnt)
-+			return burstcnt;
-+		msleep(TPM_TIMEOUT);
-+	} while (time_before(jiffies, stop));
-+
-+end:
-+	return -EBUSY;
-+} /* get_burstcount() */
-+
-+/*
-+ * wait_for_stat wait for a TPM_STS value
-+ * @param: chip, the tpm chip description
-+ * @param: mask, the value mask to wait
-+ * @param: timeout, the timeout
-+ * @param: queue, the wait queue.
-+ * @return: the tpm status, 0 if success, -ETIME if timeout is reached.
-+ */
-+static int wait_for_stat(struct tpm_chip *chip, u8 mask, unsigned long timeout,
-+			 wait_queue_head_t *queue)
-+{
-+	unsigned long stop;
-+	long rc;
-+	u8 status;
-+
-+	FUNC_ENTER();
-+
-+	/* check current status */
-+	status = tpm_stm_spi_status(chip);
-+	if (!chip->vendor.irq && (status & mask) == mask)
-+		return 0;
-+
-+	if (chip->vendor.irq) {
-+		rc = wait_for_serirq_timeout(chip, ((tpm_stm_spi_status
-+						    (chip) & mask) ==
-+						     mask), timeout);
-+		if (rc > 0)
-+			return 0;
-+	} else {
-+		stop = jiffies + timeout;
-+		do {
-+			msleep(TPM_TIMEOUT);
-+			status = tpm_stm_spi_status(chip);
-+			if ((status & mask) == mask)
-+				return 0;
-+		} while (time_before(jiffies, stop));
-+	}
-+	return -ETIME;
-+} /* wait_for_stat() */
-+
-+/*
-+ * recv_data receive data
-+ * @param: chip, the tpm chip description
-+ * @param: buf, the buffer where the data are received
-+ * @param: count, the number of data to receive
-+ * @return: the tpm status, 0 if success, -ETIME if timeout is reached.
-+ */
-+static int recv_data(struct tpm_chip *chip, u8 *buf, size_t count)
-+{
-+	u32 size = 0, burstcnt, status, len;
-+	struct spi_device *client;
-+
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+
-+	while (size < count &&
-+	       wait_for_stat(chip,
-+			     TPM_STS_DATA_AVAIL | TPM_STS_VALID,
-+			     chip->vendor.timeout_c,
-+			     &chip->vendor.read_queue)
-+						== 0) {
-+		burstcnt = get_burstcount(chip);
-+		len = min_t(int, burstcnt, count - size);
-+		status = SPI_READ_DATA(chip, TPM_DATA_FIFO, buf + size, len);
-+		if (status < 0)
-+			return status;
-+
-+
-+		size += len;
-+	}
-+	return size;
-+}
-+
-+/*
-+ * tpm_ioserirq_handler the serirq irq handler
-+ * @param: irq, the tpm chip description
-+ * @param: dev_id, the description of the chip
-+ * @return: the status of the handler.
-+ */
-+static irqreturn_t tpm_ioserirq_handler(int irq, void *dev_id)
-+{
-+	struct tpm_chip *chip = dev_id;
-+	struct spi_device *client;
-+	struct st33zp24_platform_data *pin_infos;
-+
-+	disable_irq_nosync(irq);
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *) chip->vendor.iobase;
-+	pin_infos = client->dev.platform_data;
-+
-+	complete(&pin_infos->irq_detection);
-+	return IRQ_HANDLED;
-+} /* tpm_ioserirq_handler() */
-+
-+/*
-+ * tpm_stm_spi_send send TPM commands through the SPI bus.
-+ * @param: chip, the tpm chip description
-+ * @param: buf, the tpm command buffer
-+ * @param: len, the tpm command size
-+ * @return: In case of success the number of bytes sent.
-+ *			In other case, a < 0 value describing the issue.
-+ */
-+static int tpm_stm_spi_send(struct tpm_chip *chip, unsigned char *buf,
-+			    size_t len)
-+{
-+	u32 ret = 0, ordinal,
-+	    status, burstcnt = 0, i, size = 0;
-+	u8 data;
-+
-+	struct spi_device *client;
-+	struct st33zp24_platform_data *pin_infos;
-+
-+	FUNC_ENTER();
-+
-+	if (chip == NULL)
-+		return -EBUSY;
-+	if (len < TPM_HEADER_SIZE)
-+		return -EBUSY;
-+
-+	client = (struct spi_device *)chip->vendor.iobase;
-+	pin_infos = client->dev.platform_data;
-+
-+	ordinal = be32_to_cpu(*((__be32 *) (buf + 6)));
-+
-+	ret = request_locality(chip);
-+	if (ret < 0)
-+		return ret;
-+
-+	status = tpm_stm_spi_status(chip);
-+	if ((status & TPM_STS_COMMAND_READY) == 0) {
-+		tpm_stm_spi_cancel(chip);
-+		if (wait_for_stat
-+		    (chip, TPM_STS_COMMAND_READY, chip->vendor.timeout_b,
-+		     &chip->vendor.int_queue) < 0) {
-+			ret = -ETIME;
-+			goto out_err;
-+		}
-+	}
-+
-+	for (i = 0 ; i < len - 1 ;) {
-+		burstcnt = get_burstcount(chip);
-+		size = min_t(int, len - i - 1, burstcnt);
-+		ret = SPI_WRITE_DATA(chip, TPM_DATA_FIFO, buf, size);
-+		if (ret < 0)
-+			goto out_err;
-+		i += size;
-+	}
-+
-+	status = tpm_stm_spi_status(chip);
-+	if ((status & TPM_STS_DATA_EXPECT) == 0) {
-+		ret = -EIO;
-+		goto out_err;
-+	}
-+
-+	/* write last byte */
-+	SPI_WRITE_DATA(chip, TPM_DATA_FIFO, buf + len - 1, 1);
-+
-+	status = tpm_stm_spi_status(chip);
-+	if ((status & TPM_STS_DATA_EXPECT) != 0) {
-+		ret = -EIO;
-+		goto out_err;
-+	}
-+
-+	/* go and do it */
-+	data = TPM_STS_GO;
-+	ret = SPI_WRITE_DATA(chip, TPM_STS, &data, 1);
-+	if (ret < 0)
-+		goto out_err;
-+
-+	return len;
-+out_err:
-+	tpm_stm_spi_cancel(chip);
-+	release_locality(chip);
-+	return ret;
-+}
-+
-+/*
-+ * tpm_stm_spi_recv received TPM response through the SPI bus.
-+ * @param: chip, the tpm chip description
-+ * @param: buf, the tpm command buffer
-+ * @param: len, the tpm command size
-+* @return: In case of success the number of bytes received.
-+ *			In other case, a < 0 value describing the issue.
-+ */
-+static int tpm_stm_spi_recv(struct tpm_chip *chip, unsigned char *buf,
-+			    size_t count)
-+{
-+	int size = 0;
-+	int expected;
-+
-+	struct spi_device *client;
-+	struct st33zp24_platform_data *pin_infos;
-+
-+
-+	FUNC_ENTER();
-+
-+	client = (struct spi_device *)chip->vendor.iobase;
-+	pin_infos = client->dev.platform_data;
-+
-+
-+	if (chip == NULL)
-+		return -EBUSY;
-+	if (count < TPM_HEADER_SIZE) {
-+		size = -EIO;
-+		goto out;
-+	}
-+
-+	size = recv_data(chip, buf, TPM_HEADER_SIZE);
-+
-+	/* read first 10 bytes, including tag, paramsize, and result */
-+	if (size < TPM_HEADER_SIZE) {
-+		dev_err(chip->dev, "Unable to read header\n");
-+		goto out;
-+	}
-+
-+	expected = be32_to_cpu(*(__be32 *) (buf + 2));
-+	if (expected > count) {
-+		size = -EIO;
-+		goto out;
-+	}
-+
-+	size += recv_data(chip, &buf[TPM_HEADER_SIZE],
-+					expected - TPM_HEADER_SIZE);
-+	if (size < expected) {
-+		dev_err(chip->dev, "Unable to read remainder of result\n");
-+		size = -ETIME;
-+		goto out;
-+	}
-+
-+out:
-+	chip->vendor.cancel(chip);
-+	release_locality(chip);
-+	return size;
-+}
-+
-+/*
-+ * tpm_stm_spi_send send TPM locality 4 hash through the SPI bus.
-+ * @param: chip, the tpm chip description
-+ * @param: buf, the tpm data buffer
-+ * @param: len, the tpm data size
-+ * @return: In case of success the number of bytes sent.
-+ *			In other case, a < 0 value describing the issue.
-+ */
-+static int tpm_stm_spi_send_hash(struct tpm_chip *chip, unsigned char *buf,
-+			    size_t len)
-+{
-+	u32 ret = 0, burstcnt, i, size;
-+	u8 data;
-+
-+	struct spi_device *client;
-+	struct st33zp24_platform_data *pin_infos;
-+
-+	FUNC_ENTER();
-+
-+	if (chip == NULL)
-+		return -EBUSY;
-+
-+	client = (struct spi_device *)chip->vendor.iobase;
-+	pin_infos = client->dev.platform_data;
-+
-+	ret = request_locality(chip);
-+	if (ret < 0)
-+		goto end;
-+
-+	data = TPM_DUMMY_BYTE;
-+	/* HASH_START */
-+	ret = SPI_WRITE_DATA(chip, TPM_HASH_START, &data, 1);
-+	if (ret < 0)
-+		goto end;
-+
-+	/* Send data  */
-+	for (i = 0 ; i < len ;) {
-+		burstcnt = get_burstcount(chip);
-+		if (burstcnt < 0)
-+			goto end;
-+		size = min_t(int, len - i, burstcnt);
-+		ret = SPI_WRITE_DATA(chip, TPM_DATA_FIFO, buf + i, size);
-+		if (ret < 0)
-+			goto end;
-+		i += size;
-+	}
-+
-+end:
-+	/* HASH_END   */
-+	ret = SPI_WRITE_DATA(chip, TPM_HASH_END, &data, 1);
-+	return ret;
-+}
-+
-+
-+/*
-+ * tpm_st33_spi_ioctl provides 2 handles:
-+ * - TPMIOC_CANCEL: allow to CANCEL a TPM commands execution.
-+ *   See tpm_stm_spi_cancel description above
-+ * - TPMIOC_TRANSMIT: allow to transmit a TPM commands.
-+ * - TPMIOC_HASH: allow to compute a locality 4 hash
-+ * - TPMIOC_CHANGELOCALITY: allow to change the current locality
-+ *
-+ * @return: In case of success, return TPM response size.
-+ * In other case return < 0 value describing the issue.
-+ */
-+static ssize_t tpm_st33_spi_ioctl(struct inode *inode, struct file *file,
-+				  unsigned int cmd, unsigned long arg)
-+{
-+	int in_size = 0, out_size = 0, rc;
-+	int status;
-+	unsigned long stop = 0;
-+	struct tpm_chip *chip = file->private_data;
-+	st_tpm_hash_t hash_data;
-+
-+	FUNC_ENTER();
-+
-+	switch (cmd) {
-+	case TPMIOC_CANCEL:
-+		tpm_stm_spi_cancel(chip);
-+		return 0;
-+	case TPMIOC_TRANSMIT:
-+		if (copy_from_user(chip->data_buffer,
-+		    (const char *)arg, TPM_HEADER_SIZE))
-+			return -EFAULT;
-+		in_size = responseSize(chip->data_buffer,
-+				      TPM_HEADER_SIZE);
-+		if (copy_from_user(chip->data_buffer,
-+				   (const char *)arg, in_size))
-+			return -EFAULT;
-+		tpm_stm_spi_send(chip, chip->data_buffer, in_size);
-+
-+		out_size = tpm_stm_spi_recv(chip, chip->data_buffer,
-+					    TPM_BUFSIZE);
-+
-+		if (copy_to_user((char *)arg, chip->data_buffer,
-+				 out_size))
-+			return -EFAULT;
-+
-+		return out_size;
-+	case TPMIOC_HASH:
-+		if (chip->vendor.locality == LOCALITY4) {
-+			if (copy_from_user(&hash_data,
-+					 (st_tpm_hash_t __user *)arg,
-+						sizeof(st_tpm_hash_t)))
-+				return -EFAULT;
-+			tpm_stm_spi_send_hash(chip, hash_data.data,
-+							 hash_data.size);
-+
-+			if (chip->vendor.irq) {
-+				rc = wait_event_interruptible_timeout(
-+						chip->vendor.read_queue,
-+			(check_locality(chip) != chip->vendor.locality),
-+						 chip->vendor.timeout_a);
-+				if (rc < 0)
-+					return -ETIME;
-+				return hash_data.size;
-+			}
-+
-+			stop = jiffies + chip->vendor.timeout_a;
-+			do {
-+				msleep(TPM_TIMEOUT);
-+				status = check_locality(chip);
-+				if (status != chip->vendor.locality)
-+					return hash_data.size;
-+			} while (time_before(jiffies, stop));
-+
-+			return -ETIME;
-+		}
-+		return -ENOSYS;
-+		break;
-+	case TPMIOC_CHANGELOCALITY:
-+		if (arg >= LOCALITY0 && arg <= LOCALITY4) {
-+			chip->vendor.locality = arg;
-+			return 0;
-+		}
-+		return -ENOSYS;
-+		break;
-+	default:
-+		return -ENOTTY;
-+	}
-+	return -ENOTTY;
-+}
-+
-+static const struct file_operations tpm_st33_spi_fops = {
-+	.owner = THIS_MODULE,
-+	.llseek = no_llseek,
-+	.read = tpm_read,
-+	.unlocked_ioctl = tpm_st33_spi_ioctl,
-+	.write = tpm_write,
-+	.open = tpm_open,
-+	.release = tpm_release,
-+};
-+
-+static DEVICE_ATTR(pubek, S_IRUGO, tpm_show_pubek, NULL);
-+static DEVICE_ATTR(pcrs, S_IRUGO, tpm_show_pcrs, NULL);
-+static DEVICE_ATTR(enabled, S_IRUGO, tpm_show_enabled, NULL);
-+static DEVICE_ATTR(active, S_IRUGO, tpm_show_active, NULL);
-+static DEVICE_ATTR(owned, S_IRUGO, tpm_show_owned, NULL);
-+static DEVICE_ATTR(temp_deactivated, S_IRUGO, tpm_show_temp_deactivated, NULL);
-+static DEVICE_ATTR(caps, S_IRUGO, tpm_show_caps_1_2, NULL);
-+static DEVICE_ATTR(cancel, S_IWUSR | S_IWGRP, NULL, tpm_store_cancel);
-+
-+static struct attribute *stm_tpm_attrs[] = {
-+	&dev_attr_pubek.attr,
-+	&dev_attr_pcrs.attr,
-+	&dev_attr_enabled.attr,
-+	&dev_attr_active.attr,
-+	&dev_attr_owned.attr,
-+	&dev_attr_temp_deactivated.attr,
-+	&dev_attr_caps.attr,
-+	&dev_attr_cancel.attr, NULL,
-+};
-+
-+static struct attribute_group stm_tpm_attr_grp = {
-+	.attrs = stm_tpm_attrs
-+};
-+
-+static struct tpm_vendor_specific st_spi_tpm = {
-+	.send = tpm_stm_spi_send,
-+	.recv = tpm_stm_spi_recv,
-+	.cancel = tpm_stm_spi_cancel,
-+	.status = tpm_stm_spi_status,
-+	.attr_group = &stm_tpm_attr_grp,
-+	.miscdev = {.fops = &tpm_st33_spi_fops,},
-+};
-+
-+static int evaluate_latency(struct tpm_chip *chip)
-+{
-+	int latency = 0;
-+	struct spi_device *dev = (struct spi_device *) chip->vendor.iobase;
-+	struct st33zp24_platform_data *platform_data = dev->dev.platform_data;
-+	int status = 0;
-+	u8 data;
-+
-+	for (; status == 0x00 && latency < MAX_SPI_LATENCY ; latency++) {
-+		platform_data->latency = latency;
-+		status = SPI_READ_DATA(chip, TPM_INTF_CAPABILITY, &data, 1);
-+	}
-+	return latency - 1;
-+} /* evaluate_latency() */
-+
-+static int interrupts;
-+module_param(interrupts, bool, 0444);
-+MODULE_PARM_DESC(interrupts, "Enable interrupts");
-+
-+static int power_mgt = 1;
-+module_param(power_mgt, bool, 0444);
-+MODULE_PARM_DESC(power_mgt, "Power Management");
-+
-+/*
-+ * tpm_st33_spi_probe initialize the TPM device
-+ * @param: client, the spi_device drescription (TPM SPI description).
-+ * @param: id, the spi_device_id struct.
-+ * @return: 0 in case of success.
-+ *	 -1 in other case.
-+ */
-+static int
-+tpm_st33_spi_probe(struct spi_device *dev)
-+{
-+	u32 err;
-+	u8 intmask;
-+	struct tpm_chip *chip;
-+	struct st33zp24_platform_data *platform_data;
-+
-+	FUNC_ENTER();
-+
-+	err = 0;
-+
-+	/* Check SPI platform functionnalities */
-+	if (dev == NULL) {
-+		pr_info("dev is NULL. exiting.\n");
-+		err = -ENODEV;
-+		goto end;
-+	}
-+
-+	chip = tpm_register_hardware(&dev->dev, &st_spi_tpm);
-+	if (!chip) {
-+		err = -ENODEV;
-+		goto end;
-+	}
-+
-+	/* Allocation of SPI buffers MISO and MOSI		*/
-+	/* Size is as follow:					*/
-+	/* Request burstcount value  = 0x800 = 2048		*/
-+	/* +							*/
-+	/* Response burstcount value = 0x400 = 1024		*/
-+	/* +							*/
-+	/* At least:						*/
-+	/* 1 byte for direction/locality			*/
-+	/* 1 byte tpm tis register				*/
-+	/* 2 bytes spi data length (for request only)		*/
-+	/* 2 latency bytes					*/
-+	/* 1 status byte					*/
-+	/* = 2048 + 1024 + 7					*/
-+	/* We reserved 2048 + 1024 + 20 in case latency byte	*/
-+	/* change						*/
-+	platform_data = dev->dev.platform_data;
-+	platform_data->tpm_spi_buffer[0] =
-+	    kmalloc((TPM_BUFSIZE + (TPM_BUFSIZE / 2) +
-+				 TPM_DIGEST_SIZE) * sizeof(u8), GFP_KERNEL);
-+	if (platform_data->tpm_spi_buffer[0] == NULL) {
-+		err = -ENOMEM;
-+		goto _tpm_clean_answer;
-+	}
-+	platform_data->tpm_spi_buffer[1] =
-+	    kmalloc((TPM_BUFSIZE + (TPM_BUFSIZE / 2) +
-+				 TPM_DIGEST_SIZE) * sizeof(u8) , GFP_KERNEL);
-+	if (platform_data->tpm_spi_buffer[1] == NULL) {
-+		err = -ENOMEM;
-+		goto _tpm_clean_response;
-+	}
-+
-+	chip->vendor.iobase = dev;
-+
-+	/* Default timeouts */
-+	chip->vendor.timeout_a = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	chip->vendor.timeout_b = msecs_to_jiffies(TIS_LONG_TIMEOUT);
-+	chip->vendor.timeout_c = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	chip->vendor.timeout_d = msecs_to_jiffies(TIS_SHORT_TIMEOUT);
-+	chip->vendor.locality = LOCALITY0;
-+
-+	if (power_mgt) {
-+		err = gpio_request(platform_data->io_lpcpd, "TPM IO_LPCPD");
-+		if (err)
-+			goto _gpio_init1;
-+		gpio_set_value(platform_data->io_lpcpd, 1);
-+	}
-+
-+	platform_data->latency = evaluate_latency(chip);
-+	if (platform_data->latency <= 0x00) {
-+		err = -ENODEV;
-+		goto _gpio_init1;
-+	}
-+
-+	/* Enable interrupt */
-+	/* Register GPIO pin through generic Linux GPIO API */
-+	if (interrupts) {
-+		init_completion(&platform_data->irq_detection);
-+		if (request_locality(chip) != LOCALITY0) {
-+			err = -ENODEV;
-+			goto _tpm_clean_response;
-+		}
-+		err = gpio_request(platform_data->io_serirq, "TPM IO_SERIRQ");
-+		if (err)
-+			goto _gpio_init2;
-+
-+		/* Clear all existing */
-+		clear_interruption(chip);
-+		err = request_irq(gpio_to_irq(platform_data->io_serirq),
-+							&tpm_ioserirq_handler,
-+				IRQF_TRIGGER_HIGH | IRQF_SHARED,
-+				"TPM SERIRQ management", chip);
-+		if (err < 0) {
-+
-+			pr_info("TPM SERIRQ signals %d not available\n",
-+			gpio_to_irq(platform_data->io_serirq));
-+			goto _irq_set;
-+		}
-+		err = SPI_READ_DATA(chip, TPM_INT_ENABLE, &intmask, 1);
-+		if (err < 0)
-+			goto _irq_set;
-+
-+		intmask |= TPM_INTF_CMD_READY_INT
-+			|  TPM_INTF_FIFO_AVALAIBLE_INT
-+			|  TPM_INTF_WAKE_UP_READY_INT
-+			|  TPM_INTF_LOC4SOFTRELEASE_INT
-+			|  TPM_INTF_LOCALITY_CHANGE_INT
-+			|  TPM_INTF_STS_VALID_INT
-+			|  TPM_INTF_DATA_AVAIL_INT;
-+
-+		err = SPI_WRITE_DATA(chip, TPM_INT_ENABLE, &intmask, 1);
-+		if (err < 0)
-+			goto _irq_set;
-+
-+		intmask = TPM_GLOBAL_INT_ENABLE;
-+		err = SPI_WRITE_DATA(chip, TPM_INT_ENABLE + 3, &intmask, 1);
-+		if (err < 0)
-+			goto _irq_set;
-+
-+		err = SPI_READ_DATA(chip, TPM_INT_STATUS, &intmask, 1);
-+		if (err < 0)
-+			goto _irq_set;
-+
-+		chip->vendor.irq = interrupts;
-+
-+		tpm_gen_interrupt(chip);
-+	}
-+
-+	tpm_get_timeouts(chip);
-+
-+	/* attach chip datas to client */
-+	spi_set_drvdata(dev, chip);
-+	platform_data->bChipF = false;
-+
-+	pr_info("TPM SPI Initialized\n");
-+	return 0;
-+_irq_set:
-+	free_irq(gpio_to_irq(platform_data->io_serirq), chip);
-+_gpio_init2:
-+	if (platform_data && interrupts)
-+		gpio_free(platform_data->io_serirq);
-+_gpio_init1:
-+	if (platform_data && power_mgt)
-+		gpio_free(platform_data->io_lpcpd);
-+_tpm_clean_response:
-+	tpm_remove_hardware(chip->dev);
-+	if (platform_data->tpm_spi_buffer[1] != NULL) {
-+		kfree(platform_data->tpm_spi_buffer[1]);
-+		platform_data->tpm_spi_buffer[1] = NULL;
-+	}
-+_tpm_clean_answer:
-+	if (platform_data->tpm_spi_buffer[0] != NULL) {
-+		kfree(platform_data->tpm_spi_buffer[0]);
-+		platform_data->tpm_spi_buffer[0] = NULL;
-+	}
-+
-+	platform_data->bChipF = true;
-+end:
-+	pr_info("TPM SPI initialisation fail\n");
-+	return err;
-+}
-+
-+/*
-+ * tpm_st33_spi_remove remove the TPM device
-+ * @param: client, the spi_device drescription (TPM SPI description).
-+		clear_bit(0, &chip->is_open);
-+ * @return: 0 in case of success.
-+ */
-+static __devexit int tpm_st33_spi_remove(struct spi_device *client)
-+{
-+	struct tpm_chip *chip = (struct tpm_chip *)spi_get_drvdata(client);
-+	struct st33zp24_platform_data *pin_infos =
-+		((struct spi_device *) chip->vendor.iobase)->dev.platform_data;
-+
-+	FUNC_ENTER();
-+
-+	if (pin_infos != NULL) {
-+		gpio_free(pin_infos->io_lpcpd);
-+
-+		/* Check if chip has been previously clean */
-+		if (pin_infos->bChipF != true)
-+			tpm_remove_hardware(chip->dev);
-+		if (pin_infos->tpm_spi_buffer[1] != NULL) {
-+			kfree(pin_infos->tpm_spi_buffer[1]);
-+			pin_infos->tpm_spi_buffer[1] = NULL;
-+		}
-+		if (pin_infos->tpm_spi_buffer[0] != NULL) {
-+			kfree(pin_infos->tpm_spi_buffer[0]);
-+			pin_infos->tpm_spi_buffer[0] = NULL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * tpm_st33_spi_pm_suspend suspend the TPM device
-+ * Added: Work around when suspend and no tpm application is running, suspend
-+ * may fail because chip->data_buffer is not set (only set in tpm_open in Linux
-+ * TPM core)
-+ * @param: client, the spi_device drescription (TPM SPI description).
-+ * @param: mesg, the power management message.
-+ * @return: 0 in case of success.
-+ */
-+static int tpm_st33_spi_pm_suspend(struct spi_device *client,
-+							 pm_message_t mesg)
-+{
-+	struct tpm_chip *chip =
-+	    (struct tpm_chip *)spi_get_drvdata(client);
-+	struct st33zp24_platform_data *pin_infos =
-+		((struct spi_device *)chip->vendor.iobase)->dev.platform_data;
-+	int ret = 0;
-+
-+	if (power_mgt)
-+		gpio_set_value(pin_infos->io_lpcpd, 0);
-+	else {
-+		if (chip->data_buffer == NULL)
-+			chip->data_buffer = pin_infos->tpm_spi_buffer[0];
-+		ret = tpm_pm_suspend(&client->dev, mesg);
-+	}
-+	return ret;
-+}				/* tpm_st33_spi_suspend() */
-+
-+/*
-+ * tpm_st33_spi_pm_resume resume the TPM device
-+ * @param: spi, the spi_device drescription (TPM SPI description).
-+ * @return: 0 in case of success.
-+ */
-+static int tpm_st33_spi_pm_resume(struct spi_device *spi)
-+{
-+	struct tpm_chip *chip =
-+	    (struct tpm_chip *)spi_get_drvdata(spi);
-+	struct st33zp24_platform_data *pin_infos =
-+		((struct spi_device *)chip->vendor.iobase)->dev.platform_data;
-+
-+	int ret = 0;
-+	if (power_mgt) {
-+		gpio_set_value(pin_infos->io_lpcpd, 1);
-+		ret = wait_for_serirq_timeout(chip,
-+					 (chip->vendor.status(chip) &&
-+					  TPM_STS_VALID) == TPM_STS_VALID,
-+					  chip->vendor.timeout_b);
-+	} else {
-+		if (chip->data_buffer == NULL)
-+			chip->data_buffer = pin_infos->tpm_spi_buffer[0];
-+		ret = tpm_pm_resume(&spi->dev);
-+		if (!ret)
-+			tpm_continue_selftest(chip);
-+	}
-+	return ret;
-+}				/* tpm_st33_spi_pm_resume() */
-+
-+static struct spi_driver tpm_st33_spi_driver = {
-+	.driver = {
-+		   .owner = THIS_MODULE,
-+		   .name = TPM_ST33_SPI,
-+		   },
-+	.probe = tpm_st33_spi_probe,
-+	.remove = tpm_st33_spi_remove,
-+	.resume = tpm_st33_spi_pm_resume,
-+	.suspend = tpm_st33_spi_pm_suspend,
-+};
-+
-+/*
-+ * tpm_st33_spi_init initialize driver
-+ * @return: 0 if successful, else non zero value.
-+ */
-+static int __init tpm_st33_spi_init(void)
-+{
-+	FUNC_ENTER();
-+	return spi_register_driver(&tpm_st33_spi_driver);
-+}
-+
-+/*
-+ * tpm_st33_spi_exit The kernel calls this function during unloading the
-+ * module or during shut down process
-+ */
-+static void __exit tpm_st33_spi_exit(void)
-+{
-+	FUNC_ENTER();
-+	spi_unregister_driver(&tpm_st33_spi_driver);
-+}
-+
-+module_init(tpm_st33_spi_init);
-+module_exit(tpm_st33_spi_exit);
-+
-+MODULE_AUTHOR("Christophe Ricard (tpmsupport@st.com)");
-+MODULE_DESCRIPTION("STM TPM SPI ST33 Driver");
-+MODULE_VERSION("1.2.0");
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/char/tpm/tpm_stm_st33_spi.h b/drivers/char/tpm/tpm_stm_st33_spi.h
-new file mode 100644
-index 0000000..96e91ba
---- /dev/null
-+++ b/drivers/char/tpm/tpm_stm_st33_spi.h
-@@ -0,0 +1,79 @@
-+/*
-+ * STMicroelectronics TPM I2C Linux driver for TPM ST33NP18
-+ * Copyright (C) 2009, 2010  STMicroelectronics
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ * STMicroelectronics version 1.2.0, Copyright (C) 2010
-+ * STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
-+ * This is free software, and you are welcome to redistribute it
-+ * under certain conditions.
-+ *
-+ * @Author: Christophe RICARD tpmsupport@st.com
-+ *
-+ * @File: stm_st33_tpm_i2c.h
-+ *
-+ * @Date: 09/15/2010
-+ */
-+#ifndef __STM_ST33_TPM_I2C_MAIN_H__
-+#define __STM_ST33_TPM_I2C_MAIN_H__
-+
-+#include <linux/pci.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/i2c.h>
-+#include <linux/i2c-id.h>
-+#include <linux/fs.h>
-+#include <linux/miscdevice.h>
-+
-+#define MINOR_NUM_I2C		224
-+
-+/*#define TPM_DRIVER_NAME		"st33np18_i2c"*/
-+
-+#define TPM_ACCESS			(0x0)
-+#define TPM_STS				(0x18)
-+#define TPM_HASH_END			(0x20)
-+#define TPM_DATA_FIFO			(0x24)
-+#define TPM_HASH_DATA			(0x24)
-+#define TPM_HASH_START			(0x28)
-+#define TPM_INTF_CAPABILITY		(0x14)
-+#define TPM_INT_STATUS			(0x10)
-+#define TPM_INT_ENABLE			(0x08)
-+
-+#define TPM_DUMMY_BYTE			0x00
-+#define TPM_WRITE_DIRECTION		0x80
-+#define TPM_HEADER_SIZE			10
-+#define TPM_BUFSIZE			2048
-+
-+/* ioctl commands */
-+#define TPMIOC_CANCEL		_IO('T', 0x00)
-+#define TPMIOC_TRANSMIT		_IO('T', 0x01)
-+#define TPMIOC_HASH		_IO('T', 0x02)
-+#define TPMIOC_CHANGELOCALITY	_IO('T', 0x03)
-+
-+#define LOCALITY0		0
-+#define LOCALITY4		4
-+
-+#define TPM_ST_SPI_OK		0x5A
-+
-+
-+#define MAX_SPI_LATENCY		15
-+
-+struct st_tpm_hash {
-+	int size;
-+	u8 *data;
-+} st_tpm_hash_t;
-+
-+#endif /* __STM_ST33_TPM_I2C_MAIN_H__ */
-diff --git a/include/linux/spi/tpm_stm_st33_spi.h b/include/linux/spi/tpm_stm_st33_spi.h
-new file mode 100644
-index 0000000..4bf31c4
---- /dev/null
-+++ b/include/linux/spi/tpm_stm_st33_spi.h
-@@ -0,0 +1,46 @@
-+/*
-+* STMicroelectronics TPM SPI Linux driver for TPM ST33NP18
-+* Copyright (C) 2009, 2010 STMicroelectronics
-+* Christophe RICARD tpmsupport@st.com
-+* This program is free software; you can redistribute it and/or modify
-+* it under the terms of the GNU General Public License as published by
-+* the Free Software Foundation; either version 2 of the License, or
-+* (at your option) any later version.
-+*
-+* This program is distributed in the hope that it will be useful,
-+* but WITHOUT ANY WARRANTY; without even the implied warranty of
-+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+* GNU General Public License for more details.
-+*
-+* You should have received a copy of the GNU General Public License along
-+* with this program; if not, write to the Free Software Foundation, Inc.,
-+* 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-+*
-+* STMicroelectronics version 1.2.0, Copyright (C) 2010
-+* STMicroelectronics comes with ABSOLUTELY NO WARRANTY.
-+* This is free software, and you are welcome to redistribute it
-+* under certain conditions.
-+*
-+* @File: stm_st33_tpm_spi.h
-+*
-+* @Date: 06/15/2008
-+*/
-+#ifndef __STM_ST33_TPM_SPI_H__
-+#define __STM_ST33_TPM_SPI_H__
-+
-+#include <linux/spi/spi.h>
-+
-+#define TPM_ST33_SPI		"st33zp24_spi"
-+
-+#ifndef __STM_ST33_TPM_I2C_H__
-+struct st33zp24_platform_data {
-+	int io_serirq;
-+	int io_lpcpd;
-+	int latency;
-+	bool bChipF;
-+	u8 *tpm_spi_buffer[2]; /* 0 Request 1 Response */
-+	struct completion irq_detection;
-+};
-+#endif
-+
-+#endif /* __STM_ST33_TPM_SPI_H__ */
--- 
-1.7.1
+I tried the provided patches first on 2.6.32, then I verfied with 3.8-rc2
+and in both cases the disk is not detected anymore in
+reset_devices (kexec'ed/kdump) case (but things work fine without these
+patches).
+
+Find the relevant serial output here:
+(starting when the sysrq c(rash) got triggered until
+the disk is not found anymore.)
+lspci -nn attached:
+
+RIP  [<ffffffff813b05b1>] sysrq_handle_crash+0x11/0x20
+ RSP <ffff885f64ee1e38>
+CR2: 0000000000000000
+Initializing cgroup subsys cpuset
+Initializing cgroup subsys cpu
+Linux version 3.8.0-rc2-default+ (trenn@ett) (gcc version 4.5.1 20101208 [gcc-4_5-branch revision 13
+Command line: root=/dev/disk/by-label/ROOT-BE2 resume=/dev/disk/by-id/scsi-36d4ae52076eef40017f5c96K
+e820: BIOS-provided physical RAM map:
+BIOS-e820: [mem 0x0000000000000100-0x000000000009bfff] usable
+BIOS-e820: [mem 0x0000000000100000-0x00000000bd2effff] usable
+BIOS-e820: [mem 0x00000000bd2f0000-0x00000000bd31bfff] reserved
+BIOS-e820: [mem 0x00000000bd31c000-0x00000000bd35afff] ACPI data
+BIOS-e820: [mem 0x00000000bd35b000-0x00000000bfffffff] reserved
+BIOS-e820: [mem 0x00000000e0000000-0x00000000efffffff] reserved
+BIOS-e820: [mem 0x00000000fe000000-0x00000000ffffffff] reserved
+BIOS-e820: [mem 0x0000000100000000-0x000000603fffffff] usable
+debug: ignoring loglevel setting.
+e820: last_pfn = 0x6040000 max_arch_pfn = 0x400000000
+NX (Execute Disable) protection: active
+e820: user-defined physical RAM map:
+user: [mem 0x0000000000000000-0x000000000009ffff] usable
+user: [mem 0x00000000070a0000-0x000000001effafff] usable
+user: [mem 0x00000000bd31c000-0x00000000bd35afff] ACPI data
+SMBIOS 2.7 present.
+DMI: Dell Inc. PowerEdge R720/0M1GCR, BIOS 0.3.35 12/15/2011
+e820: update [mem 0x00000000-0x0000ffff] usable ==> reserved
+e820: remove [mem 0x000a0000-0x000fffff] usable
+No AGP bridge found
+e820: last_pfn = 0x1effb max_arch_pfn = 0x400000000
+MTRR default type: uncachable
+MTRR fixed ranges enabled:
+  00000-9FFFF write-back
+  A0000-BFFFF uncachable
+  C0000-CBFFF write-protect
+  CC000-D7FFF write-back
+  D8000-EBFFF uncachable
+  EC000-FFFFF write-protect
+MTRR variable ranges enabled:
+  0 base 000000000000 mask 3FC000000000 write-back
+  1 base 004000000000 mask 3FE000000000 write-back
+  2 base 006000000000 mask 3FFFC0000000 write-back
+  3 base 0000C0000000 mask 3FFFC0000000 uncachable
+  4 disabled
+  5 disabled
+  6 disabled
+  7 disabled
+  8 disabled
+  9 disabled
+x86 PAT enabled: cpu 0, old 0x7010600070106, new 0x7010600070106
+e820: update [mem 0xc0000000-0xffffffff] usable ==> reserved
+found SMP MP-table at [mem 0x000fe710-0x000fe71f] mapped at [ffff8800000fe710]
+initial memory mapped: [mem 0x00000000-0x1fffffff]
+Base memory trampoline at [ffff880000096000] 96000 size 24576
+Using GB pages for direct mapping
+init_memory_mapping: [mem 0x00000000-0x1effafff]
+ [mem 0x00000000-0x1edfffff] page 2M
+ [mem 0x1ee00000-0x1effafff] page 4k
+kernel direct mapping tables up to 0x1effafff @ [mem 0x1eff8000-0x1effafff]
+log_buf_len: 4194304
+early log buf free: 258384(98%)
+RAMDISK: [mem 0x1ea3f000-0x1efeefff]
+ACPI: RSDP 00000000000f10d0 00024 (v02 DELL  )
+ACPI: XSDT 00000000000f11d4 0009C (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: FACP 00000000bd34111c 000F4 (v03 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: DSDT 00000000bd31c000 05FCD (v01 DELL   PE_SC3   00000001 INTL 20110211)
+ACPI: FACS 00000000bd343000 00040
+ACPI: APIC 00000000bd340478 0016A (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: SPCR 00000000bd3405e4 00050 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: HPET 00000000bd340638 00038 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: DMAR 00000000bd340674 00158 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: MCFG 00000000bd340950 0003C (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: WD__ 00000000bd340990 00134 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: SLIC 00000000bd340ac8 00176 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: ERST 00000000bd322170 00270 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: HEST 00000000bd3223e0 0055C (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: BERT 00000000bd321fd0 00030 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: EINJ 00000000bd322000 00170 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: SRAT 00000000bd340cf0 003C0 (v01 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: TCPA 00000000bd3410b4 00064 (v02 DELL   PE_SC3   00000001 DELL 00000001)
+ACPI: SSDT 00000000bd344000 0AA14 (v01 INTEL  PPM RCM  80000001 INTL 20061109)
+ACPI: Local APIC address 0xfee00000
+SRAT: PXM 1 -> APIC 0x00 -> Node 0
+SRAT: PXM 2 -> APIC 0x20 -> Node 1
+SRAT: PXM 1 -> APIC 0x02 -> Node 0
+SRAT: PXM 2 -> APIC 0x22 -> Node 1
+SRAT: PXM 1 -> APIC 0x04 -> Node 0
+SRAT: PXM 2 -> APIC 0x24 -> Node 1
+SRAT: PXM 1 -> APIC 0x06 -> Node 0
+SRAT: PXM 2 -> APIC 0x26 -> Node 1
+SRAT: PXM 1 -> APIC 0x08 -> Node 0
+SRAT: PXM 2 -> APIC 0x28 -> Node 1
+SRAT: PXM 1 -> APIC 0x0a -> Node 0
+SRAT: PXM 2 -> APIC 0x2a -> Node 1
+SRAT: PXM 1 -> APIC 0x0c -> Node 0
+SRAT: PXM 2 -> APIC 0x2c -> Node 1
+SRAT: PXM 1 -> APIC 0x0e -> Node 0
+SRAT: PXM 2 -> APIC 0x2e -> Node 1
+SRAT: PXM 1 -> APIC 0x01 -> Node 0
+SRAT: PXM 2 -> APIC 0x21 -> Node 1
+SRAT: PXM 1 -> APIC 0x03 -> Node 0
+SRAT: PXM 2 -> APIC 0x23 -> Node 1
+SRAT: PXM 1 -> APIC 0x05 -> Node 0
+SRAT: PXM 2 -> APIC 0x25 -> Node 1
+SRAT: PXM 1 -> APIC 0x07 -> Node 0
+SRAT: PXM 2 -> APIC 0x27 -> Node 1
+SRAT: PXM 1 -> APIC 0x09 -> Node 0
+SRAT: PXM 2 -> APIC 0x29 -> Node 1
+SRAT: PXM 1 -> APIC 0x0b -> Node 0
+SRAT: PXM 2 -> APIC 0x2b -> Node 1
+SRAT: PXM 1 -> APIC 0x0d -> Node 0
+SRAT: PXM 2 -> APIC 0x2d -> Node 1
+SRAT: PXM 1 -> APIC 0x0f -> Node 0
+SRAT: PXM 2 -> APIC 0x2f -> Node 1
+SRAT: Node 0 PXM 1 [mem 0x00000000-0x303fffffff]
+SRAT: Node 1 PXM 2 [mem 0x3040000000-0x603fffffff]
+Initmem setup node 0 [mem 0x00000000-0x1effafff]
+  NODE_DATA [mem 0x1e62b000-0x1e63efff]
+ [ffffea0000000000-ffffea00007fffff] PMD -> [ffff88001d600000-ffff88001ddfffff] on node 0
+Zone ranges:
+  DMA      [mem 0x00010000-0x00ffffff]
+  DMA32    [mem 0x01000000-0xffffffff]
+  Normal   empty
+Movable zone start for each node
+Early memory node ranges
+  node   0: [mem 0x00010000-0x0009ffff]
+  node   0: [mem 0x070a0000-0x1effafff]
+On node 0 totalpages: 98283
+  DMA zone: 3 pages used for memmap
+  DMA zone: 10 pages reserved
+  DMA zone: 131 pages, LIFO batch:0
+  DMA32 zone: 1534 pages used for memmap
+  DMA32 zone: 96605 pages, LIFO batch:31
+pci 0000:01:00.0 save state
+pci 0000:01:00.1 save state
+pci 0000:01:00.2 save state
+pci 0000:01:00.3 save state
+pci 0000:02:00.0 save state
+pci 0000:05:00.0 save state
+pci 0000:48:00.0 save state
+pci 0000:48:00.1 save state
+pci 0000:44:00.0 save state
+pci 0000:45:00.0 save state
+pci 0000:46:00.0 save state
+pci 0000:47:00.0 save state
+pci 0000:00:01.0 reset
+pci 0000:00:02.2 reset
+pci 0000:00:03.2 reset
+pci 0000:40:02.0 reset
+pci 0000:42:05.0 reset
+pci 0000:42:06.0 reset
+pci 0000:42:08.0 reset
+pci 0000:42:09.0 reset
+pci 0000:01:00.0 restore state
+pci 0000:01:00.1 restore state
+pci 0000:01:00.2 restore state
+pci 0000:01:00.3 restore state
+pci 0000:02:00.0 restore state
+pci 0000:05:00.0 restore state
+pci 0000:48:00.0 restore state
+pci 0000:48:00.1 restore state
+pci 0000:44:00.0 restore state
+pci 0000:45:00.0 restore state
+pci 0000:46:00.0 restore state
+pci 0000:47:00.0 restore state
+ACPI: PM-Timer IO Port: 0x808
+ACPI: Local APIC address 0xfee00000
+ACPI: LAPIC (acpi_id[0x01] lapic_id[0x00] enabled)
+ACPI: LAPIC (acpi_id[0x02] lapic_id[0x20] enabled)
+ACPI: LAPIC (acpi_id[0x03] lapic_id[0x02] enabled)
+ACPI: LAPIC (acpi_id[0x04] lapic_id[0x22] enabled)
+ACPI: LAPIC (acpi_id[0x05] lapic_id[0x04] enabled)
+ACPI: LAPIC (acpi_id[0x06] lapic_id[0x24] enabled)
+ACPI: LAPIC (acpi_id[0x07] lapic_id[0x06] enabled)
+ACPI: LAPIC (acpi_id[0x08] lapic_id[0x26] enabled)
+ACPI: LAPIC (acpi_id[0x09] lapic_id[0x08] enabled)
+ACPI: LAPIC (acpi_id[0x0a] lapic_id[0x28] enabled)
+ACPI: LAPIC (acpi_id[0x0b] lapic_id[0x0a] enabled)
+ACPI: LAPIC (acpi_id[0x0c] lapic_id[0x2a] enabled)
+ACPI: LAPIC (acpi_id[0x0d] lapic_id[0x0c] enabled)
+ACPI: LAPIC (acpi_id[0x0e] lapic_id[0x2c] enabled)
+ACPI: LAPIC (acpi_id[0x0f] lapic_id[0x0e] enabled)
+ACPI: LAPIC (acpi_id[0x10] lapic_id[0x2e] enabled)
+ACPI: LAPIC (acpi_id[0x11] lapic_id[0x01] enabled)
+ACPI: LAPIC (acpi_id[0x12] lapic_id[0x21] enabled)
+ACPI: LAPIC (acpi_id[0x13] lapic_id[0x03] enabled)
+ACPI: LAPIC (acpi_id[0x14] lapic_id[0x23] enabled)
+ACPI: LAPIC (acpi_id[0x15] lapic_id[0x05] enabled)
+ACPI: LAPIC (acpi_id[0x16] lapic_id[0x25] enabled)
+ACPI: LAPIC (acpi_id[0x17] lapic_id[0x07] enabled)
+ACPI: LAPIC (acpi_id[0x18] lapic_id[0x27] enabled)
+ACPI: LAPIC (acpi_id[0x19] lapic_id[0x09] enabled)
+ACPI: LAPIC (acpi_id[0x1a] lapic_id[0x29] enabled)
+ACPI: LAPIC (acpi_id[0x1b] lapic_id[0x0b] enabled)
+ACPI: LAPIC (acpi_id[0x1c] lapic_id[0x2b] enabled)
+ACPI: LAPIC (acpi_id[0x1d] lapic_id[0x0d] enabled)
+ACPI: LAPIC (acpi_id[0x1e] lapic_id[0x2d] enabled)
+ACPI: LAPIC (acpi_id[0x1f] lapic_id[0x0f] enabled)
+ACPI: LAPIC (acpi_id[0x20] lapic_id[0x2f] enabled)
+ACPI: LAPIC_NMI (acpi_id[0xff] high edge lint[0x1])
+ACPI: IOAPIC (id[0x00] address[0xfec00000] gsi_base[0])
+IOAPIC[0]: apic_id 0, version 32, address 0xfec00000, GSI 0-23
+ACPI: IOAPIC (id[0x01] address[0xfec3f000] gsi_base[32])
+IOAPIC[1]: apic_id 1, version 32, address 0xfec3f000, GSI 32-55
+ACPI: IOAPIC (id[0x02] address[0xfec7f000] gsi_base[64])
+IOAPIC[2]: apic_id 2, version 32, address 0xfec7f000, GSI 64-87
+ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
+ACPI: IRQ0 used by override.
+ACPI: IRQ2 used by override.
+ACPI: IRQ9 used by override.
+Using ACPI (MADT) for SMP configuration information
+ACPI: HPET id: 0x8086a701 base: 0xfed00000
+smpboot: Allowing 32 CPUs, 0 hotplug CPUs
+nr_irqs_gsi: 104
+PM: Registered nosave memory: 00000000000a0000 - 00000000070a0000
+e820: [mem 0x1effb000-0xbd31bfff] available for PCI devices
+Booting paravirtualized kernel on bare hardware
+setup_percpu: NR_CPUS:512 nr_cpumask_bits:512 nr_cpu_ids:32 nr_node_ids:2
+PERCPU: Embedded 27 pages/cpu @ffff88001e000000 s81728 r8192 d20672 u131072
+pcpu-alloc: s81728 r8192 d20672 u131072 alloc=1*2097152
+pcpu-alloc: [0] 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15
+pcpu-alloc: [0] 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Built 1 zonelists in Node order, mobility grouping on.  Total pages: 96736
+Policy zone: DMA32
+Kernel command line: root=/dev/disk/by-label/ROOT-BE2 resume=/dev/disk/by-id/scsi-36d4ae52076eef400K
+Disabling memory control group subsystem
+Misrouted IRQ fixup and polling support enabled
+This may significantly impact system performance
+PID hash table entries: 2048 (order: 2, 16384 bytes)
+__ex_table already sorted, skipping sort
+xsave: enabled xstate_bv 0x7, cntxt size 0x340
+Checking aperture...
+No AGP bridge found
+Memory: 357688k/507884k available (5832k kernel code, 114752k absent, 35444k reserved, 5095k data, )
+Hierarchical RCU implementation.
+        RCU dyntick-idle grace-period acceleration is enabled.
+        RCU restricting CPUs from NR_CPUS=512 to nr_cpu_ids=32.
+NR_IRQS:33024 nr_irqs:2024 16
+Extended CMOS year: 2000
+Spurious LAPIC timer interrupt on cpu 0
+do_IRQ: 0.47 No irq handler for vector (irq -1)
+Console: colour VGA+ 80x25
+console [tty0] enabled
+console [ttyS0] enabled
+Enabling automatic NUMA balancing. Configure with numa_balancing= or sysctl
+hpet clockevent registered
+tsc: Fast TSC calibration using PIT
+tsc: Detected 2699.982 MHz processor
+Calibrating delay loop (skipped), value calculated using timer frequency.. 5399.96 BogoMIPS (lpj=10)
+pid_max: default: 32768 minimum: 301
+Security Framework initialized
+AppArmor: AppArmor initialized
+Dentry cache hash table entries: 65536 (order: 7, 524288 bytes)
+Inode-cache hash table entries: 32768 (order: 6, 262144 bytes)
+Mount-cache hash table entries: 256
+Initializing cgroup subsys cpuacct
+Initializing cgroup subsys memory
+Initializing cgroup subsys devices
+Initializing cgroup subsys freezer
+Initializing cgroup subsys net_cls
+Initializing cgroup subsys blkio
+Initializing cgroup subsys perf_event
+Initializing cgroup subsys hugetlb
+CPU: Physical Processor ID: 0
+CPU: Processor Core ID: 0
+mce: CPU supports 20 MCE banks
+CPU0: Thermal LVT vector (0xfa) already installed
+process: using mwait in idle threads
+Last level iTLB entries: 4KB 512, 2MB 0, 4MB 0
+Last level dTLB entries: 4KB 512, 2MB 32, 4MB 32
+tlb_flushall_shift: 5
+ACPI: Core revision 20121018
+dmar: Host address width 46
+dmar: DRHD base: 0x000000d0d00000 flags: 0x0
+dmar: IOMMU 0: reg_base_addr d0d00000 ver 1:0 cap d2078c106f0462 ecap f020fe
+dmar: DRHD base: 0x000000dc900000 flags: 0x1
+dmar: IOMMU 1: reg_base_addr dc900000 ver 1:0 cap d2078c106f0462 ecap f020fe
+dmar: RMRR base: 0x000000bf458000 end: 0x000000bf46ffff
+dmar: RMRR base: 0x000000bf450000 end: 0x000000bf450fff
+dmar: RMRR base: 0x000000bf452000 end: 0x000000bf452fff
+dmar: ATSR flags: 0x0
+IOAPIC id 2 under DRHD base  0xd0d00000 IOMMU 0
+IOAPIC id 0 under DRHD base  0xdc900000 IOMMU 1
+IOAPIC id 1 under DRHD base  0xdc900000 IOMMU 1
+HPET id 0 under DRHD base 0xdc900000
+------------[ cut here ]------------
+WARNING: at drivers/iommu/intel_irq_remapping.c:542 intel_enable_irq_remapping+0x7d/0x26f()
+Hardware name: PowerEdge R720
+Your BIOS is broken and requested that x2apic be disabled
+This will leave your machine vulnerable to irq-injection attacks
+Use 'intremap=no_x2apic_optout' to override BIOS request
+Modules linked in:
+Pid: 1, comm: swapper/0 Not tainted 3.8.0-rc2-default+ #4
+Call Trace:
+ [<ffffffff81047e2a>] warn_slowpath_common+0x7a/0xb0
+ [<ffffffff81047f01>] warn_slowpath_fmt+0x41/0x50
+ [<ffffffff81afe7ac>] intel_enable_irq_remapping+0x7d/0x26f
+ [<ffffffff81afeaf0>] irq_remapping_enable+0x20/0x22
+ [<ffffffff81acf048>] enable_IR+0x5d/0x65
+ [<ffffffff81acf334>] enable_IR_x2apic+0x95/0x247
+ [<ffffffff81026099>] ? cpumask_next+0x19/0x20
+ [<ffffffff8159b9b8>] ? set_cpu_sibling_map+0x405/0x422
+ [<ffffffff81026831>] ? apic_write+0x11/0x20
+ [<ffffffff81ad1e83>] default_setup_apic_routing+0x15/0x6e
+ [<ffffffff81accf43>] native_smp_prepare_cpus+0x137/0x234
+ [<ffffffff81ac1c8e>] kernel_init_freeable+0xa2/0x1e1
+ [<ffffffff815928b0>] ? rest_init+0x80/0x80
+ [<ffffffff815928b9>] kernel_init+0x9/0xf0
+ [<ffffffff815ae5bc>] ret_from_fork+0x7c/0xb0
+ [<ffffffff815928b0>] ? rest_init+0x80/0x80
+---[ end trace 5046c9e3737e7b93 ]---
+Enabled IRQ remapping in xapic mode
+x2apic not enabled, IRQ remapping is in xapic mode
+Switched APIC routing to physical flat.
+..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+smpboot: CPU0: Genuine Intel(R) CPU  @ 2.70GHz (fam: 06, model: 2d, stepping: 05)
+TSC deadline timer enabled
+Performance Events: PEBS fmt1+, 16-deep LBR, SandyBridge events, Intel PMU driver.
+perf_event_intel: PEBS disabled due to CPU errata, please upgrade microcode
+... version:                3
+... bit width:              48
+... generic registers:      4
+... value mask:             0000ffffffffffff
+... max period:             000000007fffffff
+... fixed-purpose events:   3
+... event mask:             000000070000000f
+Brought up 1 CPUs
+smpboot: Total of 1 processors activated (5399.96 BogoMIPS)
+devtmpfs: initialized
+RTC time: 17:51:12, date: 01/07/13
+NET: Registered protocol family 16
+ACPI FADT declares the system doesn't support PCIe ASPM, so disable it
+ACPI: bus type pci registered
+PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
+PCI: not using MMCONFIG
+PCI: Using configuration type 1 for base access
+PCI: Dell System detected, enabling pci=bfsort.
+bio: create slab <bio-0> at 0
+ACPI: Added _OSI(Module Device)
+ACPI: Added _OSI(Processor Device)
+ACPI: Added _OSI(3.0 _SCP Extensions)
+ACPI: Added _OSI(Processor Aggregator Device)
+ACPI: EC: Look up EC in DSDT
+[Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+ACPI: Interpreter enabled
+ACPI: (supports S0 S4 S5)
+ACPI: Using IOAPIC for interrupt routing
+PCI: MMCONFIG for domain 0000 [bus 00-ff] at [mem 0xe0000000-0xefffffff] (base 0xe0000000)
+PCI: MMCONFIG at [mem 0xe0000000-0xefffffff] reserved in ACPI motherboard resources
+PCI: MMCONFIG for 0000 [bus00-1f] at [mem 0xe0000000-0xe1ffffff] (base 0xe0000000) (size reduced!)
+ACPI: No dock devices found.
+HEST: Table parsing has been initialized.
+PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-3d])
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0._PRT]
+pci_root PNP0A08:00: Requesting ACPI _OSC control (0x15)
+pci_root PNP0A08:00: ACPI _OSC control (0x15) granted
+pci_root PNP0A08:00: [Firmware Info]: MMCONFIG for domain 0000 [bus 00-1f] only partially covers the
+PCI host bridge to bus 0000:00
+pci_bus 0000:00: root bus resource [bus 00-3d]
+pci_bus 0000:00: root bus resource [io  0x0000-0x03af]
+pci_bus 0000:00: root bus resource [io  0x03e0-0x0cf7]
+pci_bus 0000:00: root bus resource [io  0x03b0-0x03df]
+pci_bus 0000:00: root bus resource [io  0x0d00-0x1fff]
+pci_bus 0000:00: root bus resource [io  0x8000-0x9fff]
+pci_bus 0000:00: root bus resource [io  0xa000-0xbfff]
+pci_bus 0000:00: root bus resource [io  0xc000-0xdfff]
+pci_bus 0000:00: root bus resource [io  0xe000-0xffff]
+pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000bffff]
+pci_bus 0000:00: root bus resource [mem 0xd4000000-0xdfffffff]
+pci_bus 0000:00: root bus resource [mem 0xfed10000-0xfed103ff]
+pci_bus 0000:00: root bus resource [mem 0xfed11000-0xfed113ff]
+pci_bus 0000:00: root bus resource [mem 0xfed40000-0xfed44fff]
+pci 0000:00:00.0: [8086:3c00] type 00 class 0x060000
+pci 0000:00:00.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:01.0: [8086:3c02] type 01 class 0x060400
+pci 0000:00:01.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:02.0: [8086:3c04] type 01 class 0x060400
+pci 0000:00:02.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:02.2: [8086:3c06] type 01 class 0x060400
+pci 0000:00:02.2: PME# supported from D0 D3hot D3cold
+pci 0000:00:03.0: [8086:3c08] type 01 class 0x060400
+pci 0000:00:03.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:03.2: [8086:3c0a] type 01 class 0x060400
+pci 0000:00:03.2: PME# supported from D0 D3hot D3cold
+pci 0000:00:05.0: [8086:3c28] type 00 class 0x088000
+pci 0000:00:05.2: [8086:3c2a] type 00 class 0x088000
+pci 0000:00:11.0: [8086:1d3e] type 01 class 0x060400
+pci 0000:00:11.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:16.0: [8086:1d3a] type 00 class 0x078000
+pci 0000:00:16.0: reg 10: [mem 0xfed10000-0xfed1000f 64bit]
+pci 0000:00:16.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:16.1: [8086:1d3b] type 00 class 0x078000
+pci 0000:00:16.1: reg 10: [mem 0xfed11000-0xfed1100f 64bit]
+pci 0000:00:16.1: PME# supported from D0 D3hot D3cold
+pci 0000:00:1a.0: [8086:1d2d] type 00 class 0x0c0320
+pci 0000:00:1a.0: reg 10: [mem 0xdc8fd000-0xdc8fd3ff]
+pci 0000:00:1a.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:1c.0: [8086:1d10] type 01 class 0x060400
+pci 0000:00:1c.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:1c.7: [8086:1d1e] type 01 class 0x060400
+pci 0000:00:1c.7: PME# supported from D0 D3hot D3cold
+pci 0000:00:1d.0: [8086:1d26] type 00 class 0x0c0320
+pci 0000:00:1d.0: reg 10: [mem 0xdc8fe000-0xdc8fe3ff]
+pci 0000:00:1d.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:1e.0: [8086:244e] type 01 class 0x060401
+pci 0000:00:1f.0: [8086:1d41] type 00 class 0x060100
+pci 0000:00:1f.2: [8086:1d02] type 00 class 0x010601
+pci 0000:00:1f.2: reg 10: [io  0xcce8-0xccef]
+pci 0000:00:1f.2: reg 14: [io  0xccf8-0xccfb]
+pci 0000:00:1f.2: reg 18: [io  0xccf0-0xccf7]
+pci 0000:00:1f.2: reg 1c: [io  0xccfc-0xccff]
+pci 0000:00:1f.2: reg 20: [io  0xccc0-0xccdf]
+pci 0000:00:1f.2: reg 24: [mem 0xdc8ff000-0xdc8ff7ff]
+pci 0000:00:1f.2: PME# supported from D3hot
+pci 0000:01:00.0: [8086:1521] type 00 class 0x020000
+pci 0000:01:00.0: reg 10: [mem 0xd8b00000-0xd8bfffff]
+pci 0000:01:00.0: reg 18: [io  0xfc80-0xfc9f]
+pci 0000:01:00.0: reg 1c: [mem 0xd8ff0000-0xd8ff3fff]
+pci 0000:01:00.0: reg 30: [mem 0xd8000000-0xd807ffff pref]
+pci 0000:01:00.0: PME# supported from D0 D3hot D3cold
+pci 0000:01:00.1: [8086:1521] type 00 class 0x020000
+pci 0000:01:00.1: reg 10: [mem 0xd8c00000-0xd8cfffff]
+pci 0000:01:00.1: reg 18: [io  0xfca0-0xfcbf]
+pci 0000:01:00.1: reg 1c: [mem 0xd8ff4000-0xd8ff7fff]
+pci 0000:01:00.1: reg 30: [mem 0xd8000000-0xd807ffff pref]
+pci 0000:01:00.1: PME# supported from D0 D3hot D3cold
+pci 0000:01:00.2: [8086:1521] type 00 class 0x020000
+pci 0000:01:00.2: reg 10: [mem 0xd8d00000-0xd8dfffff]
+pci 0000:01:00.2: reg 18: [io  0xfcc0-0xfcdf]
+pci 0000:01:00.2: reg 1c: [mem 0xd8ff8000-0xd8ffbfff]
+pci 0000:01:00.2: reg 30: [mem 0xd8000000-0xd807ffff pref]
+pci 0000:01:00.2: PME# supported from D0 D3hot D3cold
+pci 0000:01:00.3: [8086:1521] type 00 class 0x020000
+pci 0000:01:00.3: reg 10: [mem 0xd8e00000-0xd8efffff]
+pci 0000:01:00.3: reg 18: [io  0xfce0-0xfcff]
+pci 0000:01:00.3: reg 1c: [mem 0xd8ffc000-0xd8ffffff]
+pci 0000:01:00.3: reg 30: [mem 0xd8000000-0xd807ffff pref]
+pci 0000:01:00.3: PME# supported from D0 D3hot D3cold
+pci 0000:00:01.0: PCI bridge to [bus 01]
+pci 0000:00:01.0:   bridge window [io  0xf000-0xffff]
+pci 0000:00:01.0:   bridge window [mem 0xd8000000-0xd8ffffff]
+pci 0000:00:01.0:   bridge window [mem 0xd5000000-0xd51fffff 64bit pref]
+pci 0000:00:02.0: PCI bridge to [bus 03]
+pci 0000:00:02.2: PCI bridge to [bus 02]
+pci 0000:00:02.2:   bridge window [io  0xe000-0xefff]
+pci 0000:00:02.2:   bridge window [mem 0xd9000000-0xd9ffffff]
+pci 0000:00:03.0: PCI bridge to [bus 04]
+pci 0000:05:00.0: [1000:0064] type 00 class 0x010700
+pci 0000:05:00.0: reg 10: [io  0xdc00-0xdcff]
+pci 0000:05:00.0: reg 14: [mem 0xdaffc000-0xdaffffff 64bit]
+pci 0000:05:00.0: reg 1c: [mem 0xdaf80000-0xdafbffff 64bit]
+pci 0000:05:00.0: reg 30: [mem 0xda000000-0xda07ffff pref]
+pci 0000:05:00.0: supports D1 D2
+pci 0000:00:03.2: PCI bridge to [bus 05]
+pci 0000:00:03.2:   bridge window [io  0xd000-0xdfff]
+pci 0000:00:03.2:   bridge window [mem 0xda000000-0xdaffffff]
+pci 0000:00:11.0: PCI bridge to [bus 06]
+pci 0000:00:1c.0: PCI bridge to [bus 07]
+pci 0000:08:00.0: [1912:0013] type 01 class 0x060400
+pci 0000:08:00.0: PME# supported from D0 D3hot D3cold
+pci 0000:00:1c.7: PCI bridge to [bus 08-0c]
+pci 0000:00:1c.7:   bridge window [mem 0xdb000000-0xdc7fffff]
+pci 0000:00:1c.7:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:09:00.0: [1912:0013] type 01 class 0x060400
+pci 0000:09:00.0: PME# supported from D0 D3hot D3cold
+pci 0000:09:01.0: [1912:0013] type 01 class 0x060400
+pci 0000:09:01.0: PME# supported from D0 D3hot D3cold
+pci 0000:08:00.0: PCI bridge to [bus 09-0c]
+pci 0000:08:00.0:   bridge window [mem 0xdb000000-0xdc7fffff]
+pci 0000:08:00.0:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:0a:00.0: [1912:0012] type 01 class 0x060400
+pci 0000:09:00.0: PCI bridge to [bus 0a-0b]
+pci 0000:09:00.0:   bridge window [mem 0xdb000000-0xdbffffff]
+pci 0000:09:00.0:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:0b:00.0: [102b:0534] type 00 class 0x030000
+pci 0000:0b:00.0: reg 10: [mem 0xd4000000-0xd4ffffff pref]
+pci 0000:0b:00.0: reg 14: [mem 0xdbffc000-0xdbffffff]
+pci 0000:0b:00.0: reg 18: [mem 0xdb000000-0xdb7fffff]
+pci 0000:0a:00.0: PCI bridge to [bus 0b]
+pci 0000:0a:00.0:   bridge window [mem 0xdb000000-0xdbffffff]
+pci 0000:0a:00.0:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:09:01.0: PCI bridge to [bus 0c]
+pci 0000:09:01.0:   bridge window [mem 0xdc700000-0xdc7fffff]
+pci 0000:00:1e.0: PCI bridge to [bus 0d] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0x0000-0x03af] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0x03e0-0x0cf7] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0x03b0-0x03df] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0x0d00-0x1fff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0x8000-0x9fff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0xa000-0xbfff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0xc000-0xdfff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [io  0xe000-0xffff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [mem 0x000a0000-0x000bffff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [mem 0xd4000000-0xdfffffff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [mem 0xfed10000-0xfed103ff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [mem 0xfed11000-0xfed113ff] (subtractive decode)
+pci 0000:00:1e.0:   bridge window [mem 0xfed40000-0xfed44fff] (subtractive decode)
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX1._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX2._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX3._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX4._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX5._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI0.PEX6._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Root Bridge [PCI1] (domain 0000 [bus 40-7e])
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI1._PRT]
+pci_root PNP0A08:01: Requesting ACPI _OSC control (0x15)
+pci_root PNP0A08:01: ACPI _OSC control (0x15) granted
+pci_root PNP0A08:01: fail to add MMCONFIG information, can't access extended PCI configuration spac.
+PCI host bridge to bus 0000:40
+pci_bus 0000:40: root bus resource [bus 40-7e]
+pci_bus 0000:40: root bus resource [io  0x2000-0x3fff]
+pci_bus 0000:40: root bus resource [io  0x4000-0x5fff]
+pci_bus 0000:40: root bus resource [io  0x6000-0x7fff]
+pci_bus 0000:40: root bus resource [mem 0xcc000000-0xd3ffffff]
+pci 0000:40:01.0: [8086:3c02] type 01 class 0x060400
+pci 0000:40:01.0: PME# supported from D0 D3hot D3cold
+pci 0000:40:02.0: [8086:3c04] type 01 class 0x060400
+pci 0000:40:02.0: PME# supported from D0 D3hot D3cold
+pci 0000:40:03.0: [8086:3c08] type 01 class 0x060400
+pci 0000:40:03.0: PME# supported from D0 D3hot D3cold
+pci 0000:40:03.2: [8086:3c0a] type 01 class 0x060400
+pci 0000:40:03.2: PME# supported from D0 D3hot D3cold
+pci 0000:40:05.0: [8086:3c28] type 00 class 0x088000
+pci 0000:40:05.2: [8086:3c2a] type 00 class 0x088000
+pci 0000:41:00.0: [10b5:8624] type 01 class 0x060400
+pci 0000:41:00.0: reg 10: [mem 0xd0ce0000-0xd0cfffff]
+pci 0000:41:00.0: PME# supported from D0 D3hot D3cold
+pci 0000:40:01.0: PCI bridge to [bus 41-47]
+pci 0000:40:01.0:   bridge window [io  0x2000-0x3fff]
+pci 0000:40:01.0:   bridge window [mem 0xd0800000-0xd0cfffff]
+pci 0000:40:01.0:   bridge window [mem 0xcc200000-0xcc5fffff 64bit pref]
+pci 0000:42:04.0: [10b5:8624] type 01 class 0x060400
+pci 0000:42:04.0: PME# supported from D0 D3hot D3cold
+pci 0000:42:05.0: [10b5:8624] type 01 class 0x060400
+pci 0000:42:05.0: PME# supported from D0 D3hot D3cold
+pci 0000:42:06.0: [10b5:8624] type 01 class 0x060400
+pci 0000:42:06.0: PME# supported from D0 D3hot D3cold
+pci 0000:42:08.0: [10b5:8624] type 01 class 0x060400
+pci 0000:42:08.0: PME# supported from D0 D3hot D3cold
+pci 0000:42:09.0: [10b5:8624] type 01 class 0x060400
+pci 0000:42:09.0: PME# supported from D0 D3hot D3cold
+pci 0000:41:00.0: PCI bridge to [bus 42-47]
+pci 0000:41:00.0:   bridge window [io  0x2000-0x3fff]
+pci 0000:41:00.0:   bridge window [mem 0xd0800000-0xd0bfffff]
+pci 0000:41:00.0:   bridge window [mem 0xcc200000-0xcc5fffff 64bit pref]
+pci 0000:42:04.0: PCI bridge to [bus 43]
+pci 0000:44:00.0: [13a3:0037] type 00 class 0x108000
+pci 0000:44:00.0: reg 10: [mem 0xd08ff000-0xd08fffff 64bit]
+pci 0000:44:00.0: supports D1
+pci 0000:44:00.0: PME# supported from D0 D1 D3hot
+pci 0000:42:05.0: PCI bridge to [bus 44]
+pci 0000:42:05.0:   bridge window [io  0x2000-0x2fff]
+pci 0000:42:05.0:   bridge window [mem 0xd0800000-0xd08fffff]
+pci 0000:42:05.0:   bridge window [mem 0xcc200000-0xcc3fffff 64bit pref]
+pci 0000:45:00.0: [13a3:0037] type 00 class 0x108000
+pci 0000:45:00.0: reg 10: [mem 0xd09ff000-0xd09fffff 64bit]
+pci 0000:45:00.0: supports D1
+pci 0000:45:00.0: PME# supported from D0 D1 D3hot
+pci 0000:42:06.0: PCI bridge to [bus 45]
+pci 0000:42:06.0:   bridge window [mem 0xd0900000-0xd09fffff]
+pci 0000:46:00.0: [13a3:0037] type 00 class 0x108000
+pci 0000:46:00.0: reg 10: [mem 0xd0aff000-0xd0afffff 64bit]
+pci 0000:46:00.0: supports D1
+pci 0000:46:00.0: PME# supported from D0 D1 D3hot
+pci 0000:42:08.0: PCI bridge to [bus 46]
+pci 0000:42:08.0:   bridge window [mem 0xd0a00000-0xd0afffff]
+pci 0000:47:00.0: [13a3:0037] type 00 class 0x108000
+pci 0000:47:00.0: reg 10: [mem 0xd0bff000-0xd0bfffff 64bit]
+pci 0000:47:00.0: supports D1
+pci 0000:47:00.0: PME# supported from D0 D1 D3hot
+pci 0000:42:09.0: PCI bridge to [bus 47]
+pci 0000:42:09.0:   bridge window [io  0x3000-0x3fff]
+pci 0000:42:09.0:   bridge window [mem 0xd0b00000-0xd0bfffff]
+pci 0000:42:09.0:   bridge window [mem 0xcc400000-0xcc5fffff 64bit pref]
+pci 0000:48:00.0: [8086:10fb] type 00 class 0x020000
+pci 0000:48:00.0: reg 10: [mem 0xcc080000-0xcc0fffff 64bit pref]
+pci 0000:48:00.0: reg 18: [io  0x7cc0-0x7cdf]
+pci 0000:48:00.0: reg 20: [mem 0xcc1f8000-0xcc1fbfff 64bit pref]
+pci 0000:48:00.0: reg 30: [mem 0xd0000000-0xd007ffff pref]
+pci 0000:48:00.0: PME# supported from D0 D3hot
+pci 0000:48:00.1: [8086:10fb] type 00 class 0x020000
+pci 0000:48:00.1: reg 10: [mem 0xcc100000-0xcc17ffff 64bit pref]
+pci 0000:48:00.1: reg 18: [io  0x7ce0-0x7cff]
+pci 0000:48:00.1: reg 20: [mem 0xcc1fc000-0xcc1fffff 64bit pref]
+pci 0000:48:00.1: reg 30: [mem 0xd0000000-0xd007ffff pref]
+pci 0000:48:00.1: PME# supported from D0 D3hot
+pci 0000:40:02.0: PCI bridge to [bus 48]
+pci 0000:40:02.0:   bridge window [io  0x7000-0x7fff]
+pci 0000:40:02.0:   bridge window [mem 0xd0000000-0xd07fffff]
+pci 0000:40:02.0:   bridge window [mem 0xcc000000-0xcc1fffff 64bit pref]
+pci 0000:40:03.0: PCI bridge to [bus 49]
+pci 0000:40:03.2: PCI bridge to [bus 4a]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI1.PEXB._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI1.PEXC._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI1.PEXD._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Interrupt Routing Table [\_SB_.PCI1.PEXE._PRT]
+ACPI: Invalid Power Resource to register!
+ACPI: PCI Root Bridge [P0B1] (domain 0000 [bus 3f])
+pci_root PNP0A08:02: ACPI _OSC support notification failed, disabling PCIe ASPM
+pci_root PNP0A08:02: Unable to request _OSC control (_OSC support mask: 0x08)
+pci_root PNP0A08:02: fail to add MMCONFIG information, can't access extended PCI configuration spac.
+PCI host bridge to bus 0000:3f
+pci_bus 0000:3f: root bus resource [bus 3f]
+pci 0000:3f:08.0: [8086:3c80] type 00 class 0x088000
+pci 0000:3f:09.0: [8086:3c90] type 00 class 0x088000
+pci 0000:3f:0a.0: [8086:3cc0] type 00 class 0x088000
+pci 0000:3f:0a.1: [8086:3cc1] type 00 class 0x088000
+pci 0000:3f:0a.2: [8086:3cc2] type 00 class 0x088000
+pci 0000:3f:0a.3: [8086:3cd0] type 00 class 0x088000
+pci 0000:3f:0b.0: [8086:3ce0] type 00 class 0x088000
+pci 0000:3f:0b.3: [8086:3ce3] type 00 class 0x088000
+pci 0000:3f:0c.0: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0c.1: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0c.2: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0c.3: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0c.6: [8086:3cf4] type 00 class 0x088000
+pci 0000:3f:0c.7: [8086:3cf6] type 00 class 0x088000
+pci 0000:3f:0d.0: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0d.1: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0d.2: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0d.3: [8086:3ce8] type 00 class 0x088000
+pci 0000:3f:0d.6: [8086:3cf5] type 00 class 0x088000
+pci 0000:3f:0e.0: [8086:3ca0] type 00 class 0x088000
+pci 0000:3f:0e.1: [8086:3c46] type 00 class 0x110100
+pci 0000:3f:0f.0: [8086:3ca8] type 00 class 0x088000
+pci 0000:3f:0f.1: [8086:3c71] type 00 class 0x088000
+pci 0000:3f:0f.2: [8086:3caa] type 00 class 0x088000
+pci 0000:3f:0f.3: [8086:3cab] type 00 class 0x088000
+pci 0000:3f:0f.4: [8086:3cac] type 00 class 0x088000
+pci 0000:3f:0f.5: [8086:3cad] type 00 class 0x088000
+pci 0000:3f:0f.6: [8086:3cae] type 00 class 0x088000
+pci 0000:3f:10.0: [8086:3cb0] type 00 class 0x088000
+pci 0000:3f:10.1: [8086:3cb1] type 00 class 0x088000
+pci 0000:3f:10.2: [8086:3cb2] type 00 class 0x088000
+pci 0000:3f:10.3: [8086:3cb3] type 00 class 0x088000
+pci 0000:3f:10.4: [8086:3cb4] type 00 class 0x088000
+pci 0000:3f:10.5: [8086:3cb5] type 00 class 0x088000
+pci 0000:3f:10.6: [8086:3cb6] type 00 class 0x088000
+pci 0000:3f:10.7: [8086:3cb7] type 00 class 0x088000
+pci 0000:3f:11.0: [8086:3cb8] type 00 class 0x088000
+pci 0000:3f:13.0: [8086:3ce4] type 00 class 0x088000
+pci 0000:3f:13.1: [8086:3c43] type 00 class 0x110100
+pci 0000:3f:13.4: [8086:3ce6] type 00 class 0x110100
+pci 0000:3f:13.5: [8086:3c44] type 00 class 0x110100
+pci 0000:3f:13.6: [8086:3c45] type 00 class 0x088000
+ACPI: Invalid Power Resource to register!
+ACPI _OSC control for PCIe not granted, disabling ASPM
+ACPI: PCI Interrupt Link [LK00] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK01] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK02] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK03] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK04] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK05] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK06] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+ACPI: PCI Interrupt Link [LK07] (IRQs 3 4 5 6 7 11 14 15) *0, disabled.
+vgaarb: device added: PCI:0000:0b:00.0,decodes=io+mem,owns=io+mem,locks=none
+vgaarb: loaded
+vgaarb: bridge control possible 0000:0b:00.0
+SCSI subsystem initialized
+ACPI: bus type scsi registered
+libata version 3.00 loaded.
+PCI: Using ACPI for IRQ routing
+PCI: pci_cache_line_size set to 64 bytes
+e820: reserve RAM buffer [mem 0x1effb000-0x1fffffff]
+NetLabel: Initializing
+NetLabel:  domain hash size = 128
+NetLabel:  protocols = UNLABELED CIPSOv4
+NetLabel:  unlabeled traffic allowed by default
+hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0, 0, 0, 0, 0, 0
+hpet0: 8 comparators, 64-bit 14.318180 MHz counter
+Switching to clocksource hpet
+AppArmor: AppArmor Filesystem Enabled
+pnp: PnP ACPI init
+ACPI: bus type pnp registered
+pnp 00:00: [dma 4]
+pnp 00:00: Plug and Play ACPI device, IDs PNP0200 (active)
+pnp 00:01: Plug and Play ACPI device, IDs PNP0c04 (active)
+system 00:02: Plug and Play ACPI device, IDs PNP0c01 (active)
+pnp 00:03: Plug and Play ACPI device, IDs PNP0b00 (active)
+pnp 00:04: Plug and Play ACPI device, IDs PNP0501 (active)
+pnp 00:05: Plug and Play ACPI device, IDs PNP0501 (active)
+system 00:06: [io  0x0800-0x087f] has been reserved
+system 00:06: [io  0x0880-0x08ff] has been reserved
+system 00:06: [io  0x0900-0x091f] has been reserved
+system 00:06: [io  0x0920-0x0923] has been reserved
+system 00:06: [io  0x0924] has been reserved
+system 00:06: [io  0x0370-0x0377] has been reserved
+system 00:06: [io  0x0ca0-0x0ca7] has been reserved
+system 00:06: [io  0x0ca9-0x0cab] has been reserved
+system 00:06: [io  0x0cad-0x0caf] has been reserved
+system 00:06: [io  0x0cb0-0x0cbf] has been reserved
+system 00:06: Plug and Play ACPI device, IDs PNP0c01 (active)
+system 00:07: [io  0x0ca8] has been reserved
+system 00:07: [io  0x0cac] has been reserved
+system 00:07: Plug and Play ACPI device, IDs IPI0001 PNP0c01 (active)
+system 00:08: [mem 0xe0000000-0xe3efffff] has been reserved
+system 00:08: Plug and Play ACPI device, IDs PNP0c02 (active)
+system 00:09: [mem 0xe4000000-0xe7ffffff] has been reserved
+system 00:09: Plug and Play ACPI device, IDs PNP0c02 (active)
+system 00:0a: [mem 0xe3f00000-0xe3ffffff] has been reserved
+system 00:0a: Plug and Play ACPI device, IDs PNP0c02 (active)
+system 00:0b: [mem 0xdc900000-0xdc901fff] could not be reserved
+system 00:0b: Plug and Play ACPI device, IDs PNP0c02 (active)
+system 00:0c: [mem 0xd0d00000-0xd0d01fff] could not be reserved
+system 00:0c: Plug and Play ACPI device, IDs PNP0c02 (active)
+pnp: PnP ACPI: found 13 devices
+ACPI: ACPI bus type pnp unregistered
+pci 0000:01:00.1: address space collision: [mem 0xd8000000-0xd807ffff pref] conflicts with 0000:01:]
+pci 0000:01:00.2: address space collision: [mem 0xd8000000-0xd807ffff pref] conflicts with 0000:01:]
+pci 0000:01:00.3: address space collision: [mem 0xd8000000-0xd807ffff pref] conflicts with 0000:01:]
+pci 0000:48:00.1: address space collision: [mem 0xd0000000-0xd007ffff pref] conflicts with 0000:48:]
+pci 0000:01:00.1: BAR 6: assigned [mem 0xd5000000-0xd507ffff pref]
+pci 0000:01:00.2: BAR 6: assigned [mem 0xd5080000-0xd50fffff pref]
+pci 0000:01:00.3: BAR 6: assigned [mem 0xd5100000-0xd517ffff pref]
+pci 0000:00:01.0: PCI bridge to [bus 01]
+pci 0000:00:01.0:   bridge window [io  0xf000-0xffff]
+pci 0000:00:01.0:   bridge window [mem 0xd8000000-0xd8ffffff]
+pci 0000:00:01.0:   bridge window [mem 0xd5000000-0xd51fffff 64bit pref]
+pci 0000:00:02.0: PCI bridge to [bus 03]
+pci 0000:00:02.2: PCI bridge to [bus 02]
+pci 0000:00:02.2:   bridge window [io  0xe000-0xefff]
+pci 0000:00:02.2:   bridge window [mem 0xd9000000-0xd9ffffff]
+pci 0000:00:03.0: PCI bridge to [bus 04]
+pci 0000:00:03.2: PCI bridge to [bus 05]
+pci 0000:00:03.2:   bridge window [io  0xd000-0xdfff]
+pci 0000:00:03.2:   bridge window [mem 0xda000000-0xdaffffff]
+pci 0000:00:11.0: PCI bridge to [bus 06]
+pci 0000:00:1c.0: PCI bridge to [bus 07]
+pci 0000:0a:00.0: PCI bridge to [bus 0b]
+pci 0000:0a:00.0:   bridge window [mem 0xdb000000-0xdbffffff]
+pci 0000:0a:00.0:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:09:00.0: PCI bridge to [bus 0a-0b]
+pci 0000:09:00.0:   bridge window [mem 0xdb000000-0xdbffffff]
+pci 0000:09:00.0:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:09:01.0: PCI bridge to [bus 0c]
+pci 0000:09:01.0:   bridge window [mem 0xdc700000-0xdc7fffff]
+pci 0000:08:00.0: PCI bridge to [bus 09-0c]
+pci 0000:08:00.0:   bridge window [mem 0xdb000000-0xdc7fffff]
+pci 0000:08:00.0:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:00:1c.7: PCI bridge to [bus 08-0c]
+pci 0000:00:1c.7:   bridge window [mem 0xdb000000-0xdc7fffff]
+pci 0000:00:1c.7:   bridge window [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci 0000:00:1e.0: PCI bridge to [bus 0d]
+pci 0000:42:04.0: PCI bridge to [bus 43]
+pci 0000:42:05.0: PCI bridge to [bus 44]
+pci 0000:42:05.0:   bridge window [io  0x2000-0x2fff]
+pci 0000:42:05.0:   bridge window [mem 0xd0800000-0xd08fffff]
+pci 0000:42:05.0:   bridge window [mem 0xcc200000-0xcc3fffff 64bit pref]
+pci 0000:42:06.0: PCI bridge to [bus 45]
+pci 0000:42:06.0:   bridge window [mem 0xd0900000-0xd09fffff]
+pci 0000:42:08.0: PCI bridge to [bus 46]
+pci 0000:42:08.0:   bridge window [mem 0xd0a00000-0xd0afffff]
+pci 0000:42:09.0: PCI bridge to [bus 47]
+pci 0000:42:09.0:   bridge window [io  0x3000-0x3fff]
+pci 0000:42:09.0:   bridge window [mem 0xd0b00000-0xd0bfffff]
+pci 0000:42:09.0:   bridge window [mem 0xcc400000-0xcc5fffff 64bit pref]
+pci 0000:41:00.0: PCI bridge to [bus 42-47]
+pci 0000:41:00.0:   bridge window [io  0x2000-0x3fff]
+pci 0000:41:00.0:   bridge window [mem 0xd0800000-0xd0bfffff]
+pci 0000:41:00.0:   bridge window [mem 0xcc200000-0xcc5fffff 64bit pref]
+pci 0000:40:01.0: PCI bridge to [bus 41-47]
+pci 0000:40:01.0:   bridge window [io  0x2000-0x3fff]
+pci 0000:40:01.0:   bridge window [mem 0xd0800000-0xd0cfffff]
+pci 0000:40:01.0:   bridge window [mem 0xcc200000-0xcc5fffff 64bit pref]
+pci 0000:48:00.1: BAR 6: assigned [mem 0xcc000000-0xcc07ffff pref]
+pci 0000:40:02.0: PCI bridge to [bus 48]
+pci 0000:40:02.0:   bridge window [io  0x7000-0x7fff]
+pci 0000:40:02.0:   bridge window [mem 0xd0000000-0xd07fffff]
+pci 0000:40:02.0:   bridge window [mem 0xcc000000-0xcc1fffff 64bit pref]
+pci 0000:40:03.0: PCI bridge to [bus 49]
+pci 0000:40:03.2: PCI bridge to [bus 4a]
+pci 0000:00:1e.0: setting latency timer to 64
+pci_bus 0000:00: resource 4 [io  0x0000-0x03af]
+pci_bus 0000:00: resource 5 [io  0x03e0-0x0cf7]
+pci_bus 0000:00: resource 6 [io  0x03b0-0x03df]
+pci_bus 0000:00: resource 7 [io  0x0d00-0x1fff]
+pci_bus 0000:00: resource 8 [io  0x8000-0x9fff]
+pci_bus 0000:00: resource 9 [io  0xa000-0xbfff]
+pci_bus 0000:00: resource 10 [io  0xc000-0xdfff]
+pci_bus 0000:00: resource 11 [io  0xe000-0xffff]
+pci_bus 0000:00: resource 12 [mem 0x000a0000-0x000bffff]
+pci_bus 0000:00: resource 13 [mem 0xd4000000-0xdfffffff]
+pci_bus 0000:00: resource 14 [mem 0xfed10000-0xfed103ff]
+pci_bus 0000:00: resource 15 [mem 0xfed11000-0xfed113ff]
+pci_bus 0000:00: resource 16 [mem 0xfed40000-0xfed44fff]
+pci_bus 0000:01: resource 0 [io  0xf000-0xffff]
+pci_bus 0000:01: resource 1 [mem 0xd8000000-0xd8ffffff]
+pci_bus 0000:01: resource 2 [mem 0xd5000000-0xd51fffff 64bit pref]
+pci_bus 0000:02: resource 0 [io  0xe000-0xefff]
+pci_bus 0000:02: resource 1 [mem 0xd9000000-0xd9ffffff]
+pci_bus 0000:05: resource 0 [io  0xd000-0xdfff]
+pci_bus 0000:05: resource 1 [mem 0xda000000-0xdaffffff]
+pci_bus 0000:08: resource 1 [mem 0xdb000000-0xdc7fffff]
+pci_bus 0000:08: resource 2 [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci_bus 0000:09: resource 1 [mem 0xdb000000-0xdc7fffff]
+pci_bus 0000:09: resource 2 [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci_bus 0000:0a: resource 1 [mem 0xdb000000-0xdbffffff]
+pci_bus 0000:0a: resource 2 [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci_bus 0000:0b: resource 1 [mem 0xdb000000-0xdbffffff]
+pci_bus 0000:0b: resource 2 [mem 0xd4000000-0xd4ffffff 64bit pref]
+pci_bus 0000:0c: resource 1 [mem 0xdc700000-0xdc7fffff]
+pci_bus 0000:0d: resource 4 [io  0x0000-0x03af]
+pci_bus 0000:0d: resource 5 [io  0x03e0-0x0cf7]
+pci_bus 0000:0d: resource 6 [io  0x03b0-0x03df]
+pci_bus 0000:0d: resource 7 [io  0x0d00-0x1fff]
+pci_bus 0000:0d: resource 8 [io  0x8000-0x9fff]
+pci_bus 0000:0d: resource 9 [io  0xa000-0xbfff]
+pci_bus 0000:0d: resource 10 [io  0xc000-0xdfff]
+pci_bus 0000:0d: resource 11 [io  0xe000-0xffff]
+pci_bus 0000:0d: resource 12 [mem 0x000a0000-0x000bffff]
+pci_bus 0000:0d: resource 13 [mem 0xd4000000-0xdfffffff]
+pci_bus 0000:0d: resource 14 [mem 0xfed10000-0xfed103ff]
+pci_bus 0000:0d: resource 15 [mem 0xfed11000-0xfed113ff]
+pci_bus 0000:0d: resource 16 [mem 0xfed40000-0xfed44fff]
+pci_bus 0000:40: resource 4 [io  0x2000-0x3fff]
+pci_bus 0000:40: resource 5 [io  0x4000-0x5fff]
+pci_bus 0000:40: resource 6 [io  0x6000-0x7fff]
+pci_bus 0000:40: resource 7 [mem 0xcc000000-0xd3ffffff]
+pci_bus 0000:41: resource 0 [io  0x2000-0x3fff]
+pci_bus 0000:41: resource 1 [mem 0xd0800000-0xd0cfffff]
+pci_bus 0000:41: resource 2 [mem 0xcc200000-0xcc5fffff 64bit pref]
+pci_bus 0000:42: resource 0 [io  0x2000-0x3fff]
+pci_bus 0000:42: resource 1 [mem 0xd0800000-0xd0bfffff]
+pci_bus 0000:42: resource 2 [mem 0xcc200000-0xcc5fffff 64bit pref]
+pci_bus 0000:44: resource 0 [io  0x2000-0x2fff]
+pci_bus 0000:44: resource 1 [mem 0xd0800000-0xd08fffff]
+pci_bus 0000:44: resource 2 [mem 0xcc200000-0xcc3fffff 64bit pref]
+pci_bus 0000:45: resource 1 [mem 0xd0900000-0xd09fffff]
+pci_bus 0000:46: resource 1 [mem 0xd0a00000-0xd0afffff]
+pci_bus 0000:47: resource 0 [io  0x3000-0x3fff]
+pci_bus 0000:47: resource 1 [mem 0xd0b00000-0xd0bfffff]
+pci_bus 0000:47: resource 2 [mem 0xcc400000-0xcc5fffff 64bit pref]
+pci_bus 0000:48: resource 0 [io  0x7000-0x7fff]
+pci_bus 0000:48: resource 1 [mem 0xd0000000-0xd07fffff]
+pci_bus 0000:48: resource 2 [mem 0xcc000000-0xcc1fffff 64bit pref]
+NET: Registered protocol family 2
+TCP established hash table entries: 4096 (order: 4, 65536 bytes)
+TCP bind hash table entries: 4096 (order: 4, 65536 bytes)
+TCP: Hash tables configured (established 4096 bind 4096)
+TCP: reno registered
+UDP hash table entries: 256 (order: 1, 8192 bytes)
+UDP-Lite hash table entries: 256 (order: 1, 8192 bytes)
+NET: Registered protocol family 1
+pci 0000:0b:00.0: Boot video device
+PCI: CLS 64 bytes, default 64
+Unpacking initramfs...
+Freeing initrd memory: 5824k freed
+audit: initializing netlink socket (disabled)
+type=2000 audit(1357581073.824:1): initialized
+HugeTLB registered 2 MB page size, pre-allocated 0 pages
+VFS: Disk quotas dquot_6.5.2
+Dquot-cache hash table entries: 512 (order 0, 4096 bytes)
+msgmni has been set to 709
+Block layer SCSI generic (bsg) driver version 0.4 loaded (major 252)
+io scheduler noop registered
+io scheduler deadline registered (default)
+io scheduler cfq registered
+pcieport 0000:00:01.0: irq 106 for MSI/MSI-X
+pcieport 0000:00:02.0: irq 107 for MSI/MSI-X
+pcieport 0000:00:02.2: irq 108 for MSI/MSI-X
+pcieport 0000:00:03.0: irq 109 for MSI/MSI-X
+pcieport 0000:00:03.2: irq 110 for MSI/MSI-X
+pcieport 0000:00:11.0: irq 111 for MSI/MSI-X
+pcieport 0000:00:1c.0: irq 112 for MSI/MSI-X
+pcieport 0000:00:1c.7: irq 113 for MSI/MSI-X
+pcieport 0000:40:01.0: irq 114 for MSI/MSI-X
+pcieport 0000:40:02.0: irq 115 for MSI/MSI-X
+pcieport 0000:40:03.0: irq 116 for MSI/MSI-X
+pcieport 0000:40:03.2: irq 117 for MSI/MSI-X
+pcieport 0000:42:05.0: irq 118 for MSI/MSI-X
+pcieport 0000:42:09.0: irq 119 for MSI/MSI-X
+pcieport 0000:00:01.0: Signaling PME through PCIe PME interrupt
+pci 0000:01:00.0: Signaling PME through PCIe PME interrupt
+pci 0000:01:00.1: Signaling PME through PCIe PME interrupt
+pci 0000:01:00.2: Signaling PME through PCIe PME interrupt
+pci 0000:01:00.3: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:01.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:02.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:02.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:02.2: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:02.2:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:03.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:03.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:03.2: Signaling PME through PCIe PME interrupt
+pci 0000:05:00.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:03.2:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:11.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:11.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:1c.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:1c.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:00:1c.7: Signaling PME through PCIe PME interrupt
+pcieport 0000:08:00.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:09:00.0: Signaling PME through PCIe PME interrupt
+pci 0000:0a:00.0: Signaling PME through PCIe PME interrupt
+pci 0000:0b:00.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:09:01.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:00:1c.7:pcie01: service driver pcie_pme loaded
+pcieport 0000:40:01.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:41:00.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:42:04.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:42:05.0: Signaling PME through PCIe PME interrupt
+pci 0000:44:00.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:42:06.0: Signaling PME through PCIe PME interrupt
+pci 0000:45:00.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:42:08.0: Signaling PME through PCIe PME interrupt
+pci 0000:46:00.0: Signaling PME through PCIe PME interrupt
+pcieport 0000:42:09.0: Signaling PME through PCIe PME interrupt
+pci 0000:47:00.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:40:01.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:40:02.0: Signaling PME through PCIe PME interrupt
+pci 0000:48:00.0: Signaling PME through PCIe PME interrupt
+pci 0000:48:00.1: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:40:02.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:40:03.0: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:40:03.0:pcie01: service driver pcie_pme loaded
+pcieport 0000:40:03.2: Signaling PME through PCIe PME interrupt
+pcie_pme 0000:40:03.2:pcie01: service driver pcie_pme loaded
+intel_idle: MWAIT substates: 0x21120
+intel_idle: v0.4 model 0x2D
+intel_idle: lapic_timer_reliable_states 0xffffffff
+ERST: Error Record Serialization Table (ERST) support is initialized.
+GHES: APEI firmware first mode is enabled by APEI bit and WHEA _OSC.
+Serial: 8250/16550 driver, 32 ports, IRQ sharing disabled
+00:04: ttyS1 at I/O 0x2f8 (irq = 3) is a 16550A
+00:05: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+Non-volatile memory driver v1.3
+Linux agpgart interface v0.103
+ahci 0000:00:1f.2: version 3.0
+ahci 0000:00:1f.2: irq 120 for MSI/MSI-X
+ahci 0000:00:1f.2: AHCI 0001.0300 32 slots 6 ports 3 Gbps 0x3f impl SATA mode
+ahci 0000:00:1f.2: flags: 64bit ncq sntf pm led clo pio slum part ems apst
+ahci 0000:00:1f.2: setting latency timer to 64
+scsi0 : ahci
+scsi1 : ahci
+scsi2 : ahci
+scsi3 : ahci
+scsi4 : ahci
+scsi5 : ahci
+ata1: SATA max UDMA/133 abar m2048@0xdc8ff000 port 0xdc8ff100 irq 120
+ata2: SATA max UDMA/133 abar m2048@0xdc8ff000 port 0xdc8ff180 irq 120
+ata3: SATA max UDMA/133 abar m2048@0xdc8ff000 port 0xdc8ff200 irq 120
+ata4: SATA max UDMA/133 abar m2048@0xdc8ff000 port 0xdc8ff280 irq 120
+ata5: SATA max UDMA/133 abar m2048@0xdc8ff000 port 0xdc8ff300 irq 120
+ata6: SATA max UDMA/133 abar m2048@0xdc8ff000 port 0xdc8ff380 irq 120
+libphy: Fixed MDIO Bus: probed
+i8042: PNP: No PS/2 controller found. Probing ports directly.
+i8042: No controller found
+tsc: Refined TSC clocksource calibration: 2699.999 MHz
+Switching to clocksource tsc
+mousedev: PS/2 mouse device common for all mice
+rtc_cmos 00:03: RTC can wake from S4
+rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
+rtc0: alarms up to one day, y3k, 242 bytes nvram, hpet irqs
+cpuidle: using governor ladder
+cpuidle: using governor menu
+ledtrig-cpu: registered to indicate activity on CPUs
+EFI Variables Facility v0.08 2004-May-17
+TCP: cubic registered
+NET: Registered protocol family 10
+Key type dns_resolver registered
+PM: Checking hibernation image partition /dev/disk/by-id/scsi-36d4ae52076eef40017f5c9690b9c848e-par8
+ata6: SATA link down (SStatus 0 SControl 300)
+ata5: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+ata4: SATA link down (SStatus 0 SControl 300)
+ata1: SATA link down (SStatus 0 SControl 300)
+ata2: SATA link down (SStatus 0 SControl 300)
+ata3: SATA link down (SStatus 0 SControl 300)
+ata5.00: ATAPI: TEAC DVD-ROM DV-28SW, R.2A, max UDMA/100
+ata5.00: configured for UDMA/100
+scsi 4:0:0:0: CD-ROM            TEAC     DVD-ROM DV-28SW  R.2A PQ: 0 ANSI: 5
+PM: Hibernation image not present or could not be loaded.
+registered taskstats version 1
+  Magic number: 13:635:895
+rtc_cmos 00:03: setting system clock to 2013-01-07 17:51:18 UTC (1357581078)
+Freeing unused kernel memory: 1000k freed
+Write protecting the kernel read-only data: 10240k
+Freeing unused kernel memory: 300k freed
+Freeing unused kernel memory: 1500k freed
+doing fast boot
+SysRq : Changing Loglevel
+Loglevel set to 7
+megasas: 06.504.01.00-rc1 Mon. Oct. 1 17:00:00 PDT 2012
+FATAL: Module ahci not found.
+teradata-kdump: Skipping mpt2sas
+BIOS EDD facility v0.16 2004-Jun-25, 2 devices found
+FATAL: Module jbd not found.
+FATAL: Module ext3 not found.
+Creating device nodes with udev
+udevd (180): /proc/180/oom_adj is deprecated, please use /proc/180/oom_score_adj instead.
+udevd version 128 started
+mount: devpts already mounted or /dev/pts busy
+mount: according to mtab, devpts is already mounted on /dev/pts
+Boot logging started on /dev/ttyS0(/dev/console) at Mon Jan  7 12:51:19 2013
+Waiting for device /dev/disk/by-label/ROOT-BE2 to appear: ...............
+
+....................................................................................................
+Want me to fall back to /dev/disk/by-id/scsi-36d4ae52076eef40017f5c9690b9c848e-part3? (Y/n)
+Waiting for device /dev/disk/by-id/scsi-36d4ae52076eef40017f5c9690b9c848e-part3 to appear: ........h
+$
+$
+--nextPart15991581.1eyK26DXFJ
+Content-Disposition: attachment; filename="lspci"
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="UTF-8"; name="lspci"
+
+00:00.0 Host bridge [0600]: Intel Corporation Device [8086:3c00] (rev 05)
+00:01.0 PCI bridge [0604]: Intel Corporation Device [8086:3c02] (rev 05)
+00:02.0 PCI bridge [0604]: Intel Corporation Device [8086:3c04] (rev 05)
+00:02.2 PCI bridge [0604]: Intel Corporation Device [8086:3c06] (rev 05)
+00:03.0 PCI bridge [0604]: Intel Corporation Device [8086:3c08] (rev 05)
+00:03.2 PCI bridge [0604]: Intel Corporation Device [8086:3c0a] (rev 05)
+00:05.0 System peripheral [0880]: Intel Corporation Device [8086:3c28] (rev 05)
+00:05.2 System peripheral [0880]: Intel Corporation Device [8086:3c2a] (rev 05)
+00:11.0 PCI bridge [0604]: Intel Corporation Device [8086:1d3e] (rev 05)
+00:16.0 Communication controller [0780]: Intel Corporation Device [8086:1d3a] (rev 05)
+00:16.1 Communication controller [0780]: Intel Corporation Device [8086:1d3b] (rev 05)
+00:1a.0 USB Controller [0c03]: Intel Corporation Device [8086:1d2d] (rev 05)
+00:1c.0 PCI bridge [0604]: Intel Corporation Device [8086:1d10] (rev b5)
+00:1c.7 PCI bridge [0604]: Intel Corporation Device [8086:1d1e] (rev b5)
+00:1d.0 USB Controller [0c03]: Intel Corporation Device [8086:1d26] (rev 05)
+00:1e.0 PCI bridge [0604]: Intel Corporation 82801 PCI Bridge [8086:244e] (rev a5)
+00:1f.0 ISA bridge [0601]: Intel Corporation Device [8086:1d41] (rev 05)
+00:1f.2 SATA controller [0106]: Intel Corporation Device [8086:1d02] (rev 05)
+01:00.0 Ethernet controller [0200]: Intel Corporation I350 Gigabit Network Connection [8086:1521] (rev 01)
+01:00.1 Ethernet controller [0200]: Intel Corporation I350 Gigabit Network Connection [8086:1521] (rev 01)
+01:00.2 Ethernet controller [0200]: Intel Corporation I350 Gigabit Network Connection [8086:1521] (rev 01)
+01:00.3 Ethernet controller [0200]: Intel Corporation I350 Gigabit Network Connection [8086:1521] (rev 01)
+02:00.0 RAID bus controller [0104]: LSI Logic / Symbios Logic Device [1000:005b] (rev 01)
+05:00.0 Serial Attached SCSI controller [0107]: LSI Logic / Symbios Logic SAS2116 PCI-Express Fusion-MPT SAS-2 [Meteor] [1000:0064] (rev 02)
+08:00.0 PCI bridge [0604]: Renesas Technology Corp. Device [1912:0013]
+09:00.0 PCI bridge [0604]: Renesas Technology Corp. Device [1912:0013]
+09:01.0 PCI bridge [0604]: Renesas Technology Corp. Device [1912:0013]
+0a:00.0 PCI bridge [0604]: Renesas Technology Corp. Device [1912:0012]
+0b:00.0 VGA compatible controller [0300]: Matrox Graphics, Inc. Device [102b:0534]
+3f:08.0 System peripheral [0880]: Intel Corporation Device [8086:3c80] (rev 05)
+3f:09.0 System peripheral [0880]: Intel Corporation Device [8086:3c90] (rev 05)
+3f:0a.0 System peripheral [0880]: Intel Corporation Device [8086:3cc0] (rev 05)
+3f:0a.1 System peripheral [0880]: Intel Corporation Device [8086:3cc1] (rev 05)
+3f:0a.2 System peripheral [0880]: Intel Corporation Device [8086:3cc2] (rev 05)
+3f:0a.3 System peripheral [0880]: Intel Corporation Device [8086:3cd0] (rev 05)
+3f:0b.0 System peripheral [0880]: Intel Corporation Device [8086:3ce0] (rev 05)
+3f:0b.3 System peripheral [0880]: Intel Corporation Device [8086:3ce3] (rev 05)
+3f:0c.0 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0c.1 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0c.2 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0c.3 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0c.6 System peripheral [0880]: Intel Corporation Device [8086:3cf4] (rev 05)
+3f:0c.7 System peripheral [0880]: Intel Corporation Device [8086:3cf6] (rev 05)
+3f:0d.0 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0d.1 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0d.2 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0d.3 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+3f:0d.6 System peripheral [0880]: Intel Corporation Device [8086:3cf5] (rev 05)
+3f:0e.0 System peripheral [0880]: Intel Corporation Device [8086:3ca0] (rev 05)
+3f:0e.1 Performance counters [1101]: Intel Corporation Device [8086:3c46] (rev 05)
+3f:0f.0 System peripheral [0880]: Intel Corporation Device [8086:3ca8] (rev 05)
+3f:0f.1 System peripheral [0880]: Intel Corporation Device [8086:3c71] (rev 05)
+3f:0f.2 System peripheral [0880]: Intel Corporation Device [8086:3caa] (rev 05)
+3f:0f.3 System peripheral [0880]: Intel Corporation Device [8086:3cab] (rev 05)
+3f:0f.4 System peripheral [0880]: Intel Corporation Device [8086:3cac] (rev 05)
+3f:0f.5 System peripheral [0880]: Intel Corporation Device [8086:3cad] (rev 05)
+3f:0f.6 System peripheral [0880]: Intel Corporation Device [8086:3cae] (rev 05)
+3f:10.0 System peripheral [0880]: Intel Corporation Device [8086:3cb0] (rev 05)
+3f:10.1 System peripheral [0880]: Intel Corporation Device [8086:3cb1] (rev 05)
+3f:10.2 System peripheral [0880]: Intel Corporation Device [8086:3cb2] (rev 05)
+3f:10.3 System peripheral [0880]: Intel Corporation Device [8086:3cb3] (rev 05)
+3f:10.4 System peripheral [0880]: Intel Corporation Device [8086:3cb4] (rev 05)
+3f:10.5 System peripheral [0880]: Intel Corporation Device [8086:3cb5] (rev 05)
+3f:10.6 System peripheral [0880]: Intel Corporation Device [8086:3cb6] (rev 05)
+3f:10.7 System peripheral [0880]: Intel Corporation Device [8086:3cb7] (rev 05)
+3f:11.0 System peripheral [0880]: Intel Corporation Device [8086:3cb8] (rev 05)
+3f:13.0 System peripheral [0880]: Intel Corporation Device [8086:3ce4] (rev 05)
+3f:13.1 Performance counters [1101]: Intel Corporation Device [8086:3c43] (rev 05)
+3f:13.4 Performance counters [1101]: Intel Corporation Device [8086:3ce6] (rev 05)
+3f:13.5 Performance counters [1101]: Intel Corporation Device [8086:3c44] (rev 05)
+3f:13.6 System peripheral [0880]: Intel Corporation Device [8086:3c45] (rev 05)
+40:01.0 PCI bridge [0604]: Intel Corporation Device [8086:3c02] (rev 05)
+40:02.0 PCI bridge [0604]: Intel Corporation Device [8086:3c04] (rev 05)
+40:03.0 PCI bridge [0604]: Intel Corporation Device [8086:3c08] (rev 05)
+40:03.2 PCI bridge [0604]: Intel Corporation Device [8086:3c0a] (rev 05)
+40:05.0 System peripheral [0880]: Intel Corporation Device [8086:3c28] (rev 05)
+40:05.2 System peripheral [0880]: Intel Corporation Device [8086:3c2a] (rev 05)
+41:00.0 PCI bridge [0604]: PLX Technology, Inc. PEX 8624 24-lane, 6-Port PCI Express Gen 2 (5.0 GT/s) Switch [ExpressLane] [10b5:8624] (rev bb)
+42:04.0 PCI bridge [0604]: PLX Technology, Inc. PEX 8624 24-lane, 6-Port PCI Express Gen 2 (5.0 GT/s) Switch [ExpressLane] [10b5:8624] (rev bb)
+42:05.0 PCI bridge [0604]: PLX Technology, Inc. PEX 8624 24-lane, 6-Port PCI Express Gen 2 (5.0 GT/s) Switch [ExpressLane] [10b5:8624] (rev bb)
+42:06.0 PCI bridge [0604]: PLX Technology, Inc. PEX 8624 24-lane, 6-Port PCI Express Gen 2 (5.0 GT/s) Switch [ExpressLane] [10b5:8624] (rev bb)
+42:08.0 PCI bridge [0604]: PLX Technology, Inc. PEX 8624 24-lane, 6-Port PCI Express Gen 2 (5.0 GT/s) Switch [ExpressLane] [10b5:8624] (rev bb)
+42:09.0 PCI bridge [0604]: PLX Technology, Inc. PEX 8624 24-lane, 6-Port PCI Express Gen 2 (5.0 GT/s) Switch [ExpressLane] [10b5:8624] (rev bb)
+44:00.0 Encryption controller [1080]: Hifn Inc. DS4100 Secure Multi-Gigabit Server Adapter with Compression [13a3:0037]
+45:00.0 Encryption controller [1080]: Hifn Inc. DS4100 Secure Multi-Gigabit Server Adapter with Compression [13a3:0037]
+46:00.0 Encryption controller [1080]: Hifn Inc. DS4100 Secure Multi-Gigabit Server Adapter with Compression [13a3:0037]
+47:00.0 Encryption controller [1080]: Hifn Inc. DS4100 Secure Multi-Gigabit Server Adapter with Compression [13a3:0037]
+48:00.0 Ethernet controller [0200]: Intel Corporation 82599EB 10-Gigabit Network Connection [8086:10fb] (rev 01)
+48:00.1 Ethernet controller [0200]: Intel Corporation 82599EB 10-Gigabit Network Connection [8086:10fb] (rev 01)
+7f:08.0 System peripheral [0880]: Intel Corporation Device [8086:3c80] (rev 05)
+7f:09.0 System peripheral [0880]: Intel Corporation Device [8086:3c90] (rev 05)
+7f:0a.0 System peripheral [0880]: Intel Corporation Device [8086:3cc0] (rev 05)
+7f:0a.1 System peripheral [0880]: Intel Corporation Device [8086:3cc1] (rev 05)
+7f:0a.2 System peripheral [0880]: Intel Corporation Device [8086:3cc2] (rev 05)
+7f:0a.3 System peripheral [0880]: Intel Corporation Device [8086:3cd0] (rev 05)
+7f:0b.0 System peripheral [0880]: Intel Corporation Device [8086:3ce0] (rev 05)
+7f:0b.3 System peripheral [0880]: Intel Corporation Device [8086:3ce3] (rev 05)
+7f:0c.0 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0c.1 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0c.2 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0c.3 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0c.6 System peripheral [0880]: Intel Corporation Device [8086:3cf4] (rev 05)
+7f:0c.7 System peripheral [0880]: Intel Corporation Device [8086:3cf6] (rev 05)
+7f:0d.0 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0d.1 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0d.2 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0d.3 System peripheral [0880]: Intel Corporation Device [8086:3ce8] (rev 05)
+7f:0d.6 System peripheral [0880]: Intel Corporation Device [8086:3cf5] (rev 05)
+7f:0e.0 System peripheral [0880]: Intel Corporation Device [8086:3ca0] (rev 05)
+7f:0e.1 Performance counters [1101]: Intel Corporation Device [8086:3c46] (rev 05)
+7f:0f.0 System peripheral [0880]: Intel Corporation Device [8086:3ca8] (rev 05)
+7f:0f.1 System peripheral [0880]: Intel Corporation Device [8086:3c71] (rev 05)
+7f:0f.2 System peripheral [0880]: Intel Corporation Device [8086:3caa] (rev 05)
+7f:0f.3 System peripheral [0880]: Intel Corporation Device [8086:3cab] (rev 05)
+7f:0f.4 System peripheral [0880]: Intel Corporation Device [8086:3cac] (rev 05)
+7f:0f.5 System peripheral [0880]: Intel Corporation Device [8086:3cad] (rev 05)
+7f:0f.6 System peripheral [0880]: Intel Corporation Device [8086:3cae] (rev 05)
+7f:10.0 System peripheral [0880]: Intel Corporation Device [8086:3cb0] (rev 05)
+7f:10.1 System peripheral [0880]: Intel Corporation Device [8086:3cb1] (rev 05)
+7f:10.2 System peripheral [0880]: Intel Corporation Device [8086:3cb2] (rev 05)
+7f:10.3 System peripheral [0880]: Intel Corporation Device [8086:3cb3] (rev 05)
+7f:10.4 System peripheral [0880]: Intel Corporation Device [8086:3cb4] (rev 05)
+7f:10.5 System peripheral [0880]: Intel Corporation Device [8086:3cb5] (rev 05)
+7f:10.6 System peripheral [0880]: Intel Corporation Device [8086:3cb6] (rev 05)
+7f:10.7 System peripheral [0880]: Intel Corporation Device [8086:3cb7] (rev 05)
+7f:11.0 System peripheral [0880]: Intel Corporation Device [8086:3cb8] (rev 05)
+7f:13.0 System peripheral [0880]: Intel Corporation Device [8086:3ce4] (rev 05)
+7f:13.1 Performance counters [1101]: Intel Corporation Device [8086:3c43] (rev 05)
+7f:13.4 Performance counters [1101]: Intel Corporation Device [8086:3ce6] (rev 05)
+7f:13.5 Performance counters [1101]: Intel Corporation Device [8086:3c44] (rev 05)
+7f:13.6 System peripheral [0880]: Intel Corporation Device [8086:3c45] (rev 05)
+
+--nextPart15991581.1eyK26DXFJ--
 
