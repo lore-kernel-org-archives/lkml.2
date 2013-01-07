@@ -1,157 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab3AGLcF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 06:32:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30378 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753680Ab3AGLcC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 06:32:02 -0500
-Date: Mon, 7 Jan 2013 12:31:45 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, akpm@linux-foundation.org
-Subject: [PATCH v2 repost] sched: cputime: avoid multiplication overflow (in
- common cases)
-Message-ID: <20130107113144.GA7544@redhat.com>
+	id S1754235Ab3AGLeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 06:34:07 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53481 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab3AGLeG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 06:34:06 -0500
+Date: Mon, 7 Jan 2013 12:33:55 +0100 (CET)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Julia Lawall <julia.lawall@lip6.fr>
+cc: kernel-janitors@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: Re: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c:
+ reposition free_irq to avoid access to invalid data
+In-Reply-To: <alpine.DEB.2.02.1301071214150.1908@hadrien>
+Message-ID: <Pine.LNX.4.64.1301071229070.23972@axis700.grange>
+References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr>
+ <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr>
+ <Pine.LNX.4.64.1301071111420.23972@axis700.grange> <alpine.DEB.2.02.1301071214150.1908@hadrien>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:yu+p0jaUXXp5Mx8F3Diz0MTNzQ4lvyWVmyeUsGVGqbg
+ 834jk8sgtjF+KlhwuMUHdOGUgMaOS5ipzwby1zqTa556OiHnYR
+ D1rrSe02FJ2fddlfblac+fUTR98DDgNI3IPZCRhH8XEDIgN+xC
+ YX6gyMcj1Du6J7I8O8BL76HUxrsjaaS2G0CxzQlU92HLlai4zA
+ bsIdwMPl68bvsrYVi8CObNmwJv2M1d1wbWHV8HwvhfB/z3bp1H
+ vYmFzPCaqRSbLE9I863yOHbUwrhyitse3qWl3n2pTFEzJG6F66
+ C+7JIsuzc8elBQklCB1l/np2C02Vzx+TZfyBoBU1dq+WOsQp6S
+ UwU4Yy5q3C1MG1V4xNs4WLagO/3kbruPuBMEJ+ias+3cf9C2Ln
+ bnIA3G4yULpgA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We scale stime, utime values based on rtime (sum_exec_runtime converted
-to jiffies). During scaling we multiple rtime * utime, what seems to be
-fine, since both values are converted to u64, but is not.
+On Mon, 7 Jan 2013, Julia Lawall wrote:
 
-Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
-for 1 day, threads utilize 100% cpu on user space. Machine has 64 cpus.
+> On Mon, 7 Jan 2013, Guennadi Liakhovetski wrote:
+> 
+> > (adding Robert to CC)
+> >
+> > Hi Julia
+> >
+> > Thanks for the patch.
+> >
+> > On Mon, 7 Jan 2013, Julia Lawall wrote:
+> >
+> > > From: Julia Lawall <Julia.Lawall@lip6.fr>
+> > >
+> > > The data referenced by an interrupt handler should not be freed before the
+> > > interrupt is ended.  The handler is pxa_camera_irq.  This handler may call
+> > > pxa_dma_start_channels, which references the channels that are freed on the
+> > > lines before the call to free_irq.
+> >
+> > I don't think any data is freed by pxa_free_dma(), it only disables DMA on
+> > a certain channel.
+> 
+> OK, I seem to have been thrown off by the clearing fo the name field, but
+> that doesn't seem to be very important.
 
-Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
-0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
-which can not be covered in 64 bits.
+Exactly.
 
-Result of overflow is stall of utime values visible in user space
-(prev_utime in kernel), even if application still consume lot of CPU
-time.
+> > Theoretically there could be a different problem:
+> > pxa_free_dma() deactivates DMA, whereas pxa_dma_start_channels() activates
+> > it. But I think we're also protected against that: by the time
+> > pxa_camera_remove() is called, and operation on the interface has been
+> > stopped, client devices have been detached, pxa_camera_remove_device() has
+> > been called, which has also stopped the interface clock. And with clock
+> > stopped no interrupts can be generated. And the case of interrupt having
+> > been generated before clk_disabled() and only delivered to the driver so
+> > much later, that we're already unloading the module, seems really
+> > impossible to me. Robert, you agree?
+> 
+> OK, thanks for the explanation.
+> 
+> > OTOH, it would be nice to convert also this driver to managed allocations,
+> > which also would include devm_request(_threaded)_irq(), but that would
+> > mean, that free_irq() would be called even later than now, also after
+> > pxa_free_dma().
+> 
+> OK, if it is safe to call free_irq much later, then I can propose a patch
+> for that.
 
-Probably good fix for the problem, will be using 128 bit variable and
-proper mul128 and div_u128_u64 primitives. While mul128 is on it's
-way to kernel, there is no 128 bit division yet. I'm not sure, if we
-want to add it to kernel. Perhaps we could also change the way how
-stime and utime are calculated, but I don't know how, so I come with
-the below solution for the problem.
+I think it should be safe. In any case we cannot rely on the fact, that 
+free_irq() in the current code happens "soon" after pxa_free_dma(), so, 
+putting it even later will either emphasise our certainty, that we're safe 
+there, or help up catch the bug, since statistically the window will 
+become larger;-) Of course, all of clk_get(), request_mem_region() + 
+ioremap(), kzalloc(), request_irq() would have to be replaced.
 
-To avoid overflow patch change value we scale to min(stime, utime). This
-is more like workaround, but will work for processes, which perform
-mostly on user space or mostly on kernel space. Unfortunately processes,
-which perform on kernel and user space equally, and additionally utilize
-lot of CPU time, still will hit this overflow pretty quickly. However
-such processes seems to be uncommon.
+Thanks
+Guennadi
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> > Speaking about managed allocations, those can be dangerous too: if you
+> > request an IRQ before, say, remapping memory, or if you only use managed
+> > IRQ requesting and ioremap() memory in your driver manually, that would be
+> > wrong. But from a quick grep looks like most (all?) drivers get ir right -
+> > first ioremap(), then request IRQ, but to be certain maybe coccinelle
+> > could run a test for that too;-)
+> 
+> Sure.  Thanks for the suggestion!
+> 
+> julia
+> 
+> > Thanks
+> > Guennadi
+> >
+> > > The semantic match that finds this problem is as follows:
+> > > (http://coccinelle.lip6.fr/)
+> > >
+> > > // <smpl>
+> > > @fn exists@
+> > > expression list es;
+> > > expression a,b;
+> > > identifier f;
+> > > @@
+> > >
+> > > if (...) {
+> > >   ... when any
+> > >   free_irq(a,b);
+> > >   ... when any
+> > >   f(es);
+> > >   ... when any
+> > >   return ...;
+> > > }
+> > >
+> > > @@
+> > > expression list fn.es;
+> > > expression fn.a,fn.b;
+> > > identifier fn.f;
+> > > @@
+> > >
+> > > *f(es);
+> > > ... when any
+> > > *free_irq(a,b);
+> > > // </smpl>
+> > >
+> > > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
+> > >
+> > > ---
+> > > Not compiled.  I have not observed the problem in practice; the code just
+> > > looks suspicious.
+> > >
+> > >  drivers/media/platform/soc_camera/pxa_camera.c |    2 +-
+> > >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > >
+> > > diff --git a/drivers/media/platform/soc_camera/pxa_camera.c b/drivers/media/platform/soc_camera/pxa_camera.c
+> > > index f91f7bf..2a19aba 100644
+> > > --- a/drivers/media/platform/soc_camera/pxa_camera.c
+> > > +++ b/drivers/media/platform/soc_camera/pxa_camera.c
+> > > @@ -1810,10 +1810,10 @@ static int pxa_camera_remove(struct platform_device *pdev)
+> > >
+> > >  	clk_put(pcdev->clk);
+> > >
+> > > +	free_irq(pcdev->irq, pcdev);
+> > >  	pxa_free_dma(pcdev->dma_chans[0]);
+> > >  	pxa_free_dma(pcdev->dma_chans[1]);
+> > >  	pxa_free_dma(pcdev->dma_chans[2]);
+> > > -	free_irq(pcdev->irq, pcdev);
+> > >
+> > >  	soc_camera_host_unregister(soc_host);
+> > >
+> > >
+> >
+> > ---
+> > Guennadi Liakhovetski, Ph.D.
+> > Freelance Open-Source Software Developer
+> > http://www.open-technology.de/
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> 
+
 ---
-v1 -> v2: rebase to current Linus source
-
- kernel/sched/cputime.c |   61 +++++++++++++++++++++++++++++-------------------
- 1 files changed, 37 insertions(+), 24 deletions(-)
-
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 293b202..5e2309a 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -509,20 +509,6 @@ EXPORT_SYMBOL_GPL(vtime_account);
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
- 
--static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
--{
--	u64 temp = (__force u64) rtime;
--
--	temp *= (__force u64) utime;
--
--	if (sizeof(cputime_t) == 4)
--		temp = div_u64(temp, (__force u32) total);
--	else
--		temp = div64_u64(temp, (__force u64) total);
--
--	return (__force cputime_t) temp;
--}
--
- /*
-  * Adjust tick based cputime random precision against scheduler
-  * runtime accounting.
-@@ -531,10 +517,11 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, utime, total;
--
--	utime = curr->utime;
--	total = utime + curr->stime;
-+	cputime_t utime = curr->utime;
-+	cputime_t stime = curr->stime;
-+	cputime_t rtime, total, scaled_time;
-+	bool utime_scale = false;
-+	u64 tmp;
- 
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -548,18 +535,44 @@ static void cputime_adjust(struct task_cputime *curr,
- 	 */
- 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
- 
--	if (total)
--		utime = scale_utime(utime, rtime, total);
--	else
--		utime = rtime;
-+	if (utime == stime) {
-+		scaled_time = rtime / 2;
-+	} else {
-+		tmp = (__force u64) rtime;
-+
-+		/*
-+		 * Choose smaller value to avoid possible overflow during
-+		 * multiplication.
-+		 */
-+		if (utime < stime) {
-+			tmp *= utime;
-+			utime_scale = true;
-+		} else {
-+			tmp *= stime;
-+		}
-+
-+		total = utime + stime;
-+
-+		if (sizeof(cputime_t) == 4)
-+			tmp = div_u64(tmp, (__force u32) total);
-+		else
-+			tmp = div64_u64(tmp, (__force u64) total);
-+
-+		scaled_time = (__force cputime_t) tmp;
-+	}
- 
- 	/*
- 	 * If the tick based count grows faster than the scheduler one,
- 	 * the result of the scaling may go backward.
- 	 * Let's enforce monotonicity.
- 	 */
--	prev->utime = max(prev->utime, utime);
--	prev->stime = max(prev->stime, rtime - prev->utime);
-+	if (utime_scale) {
-+		prev->utime = max(prev->utime, scaled_time);
-+		prev->stime = max(prev->stime, rtime - prev->utime);
-+	} else {
-+		prev->stime = max(prev->stime, scaled_time);
-+		prev->utime = max(prev->utime, rtime - prev->stime);
-+	}
- 
- 	*ut = prev->utime;
- 	*st = prev->stime;
--- 
-1.7.1
-
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
