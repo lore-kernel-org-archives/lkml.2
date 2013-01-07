@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751354Ab3AGGSk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 01:18:40 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49061 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab3AGGSh (ORCPT
+	id S1751228Ab3AGGWZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 01:22:25 -0500
+Received: from mail-gh0-f178.google.com ([209.85.160.178]:62610 "EHLO
+	mail-gh0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab3AGGWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 01:18:37 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50EA689B.7060308@jp.fujitsu.com>
-Date: Mon, 07 Jan 2013 15:18:03 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 7 Jan 2013 01:22:23 -0500
+X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 01:22:23 EST
+Date: Sun, 6 Jan 2013 22:11:13 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "Tc, Jenny" <jenny.tc@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH 1/2] power_supply: Add charge control struct in power
+ supply class
+Message-ID: <20130107061113.GA26891@lizard.gateway.2wire.net>
+References: <1354002423-24587-1-git-send-email-ramakrishna.pallala@intel.com>
+ <1354002423-24587-2-git-send-email-ramakrishna.pallala@intel.com>
+ <20130106025024.GC6919@lizard.sbx05280.losalca.wayport.net>
+ <D854C92F57B1B347B57E531E78D05EAD245CAF83@BGSMSX102.gar.corp.intel.com>
+ <20ADAB092842284E95860F279283C564E70A93@BGSMSX101.gar.corp.intel.com>
+ <D854C92F57B1B347B57E531E78D05EAD245CB0F3@BGSMSX102.gar.corp.intel.com>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
-        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
-        Li Zefan <lizefan@huawei.com>
-Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
-References: <1357235661-29564-1-git-send-email-mhocko@suse.cz> <1357235661-29564-5-git-send-email-mhocko@suse.cz>
-In-Reply-To: <1357235661-29564-5-git-send-email-mhocko@suse.cz>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD245CB0F3@BGSMSX102.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/04 2:54), Michal Hocko wrote:
-> Now that per-node-zone-priority iterator caches memory cgroups rather
-> than their css ids we have to be careful and remove them from the
-> iterator when they are on the way out otherwise they might hang for
-> unbounded amount of time (until the global/targeted reclaim triggers the
-> zone under priority to find out the group is dead and let it to find the
-> final rest).
+On Mon, Jan 07, 2013 at 05:43:58AM +0000, Pallala, Ramakrishna wrote:
+> > > > > +struct power_supply_charger_control {
+> > > > > +	const char *name;
+> > > > > +	/* get charging status */
+> > > > > +	int (*is_charging_enabled)(void);
+> > > > > +	int (*is_charger_enabled)(void);
+[...]
+> > The similar functionalities are exposed by patch
+> > https://lkml.org/lkml/2012/10/18/219.
+> > As per Anton's review comments on this patch, I'll be moving the macros to
+> > power_supply.h.
+> > Wouldn't that be enough ?
 > 
-> This is solved by hooking into mem_cgroup_css_offline and checking all
-> per-node-zone-priority iterators up the way to the root cgroup. If the
-> current memcg is found in the respective iter->last_visited then it is
-> replaced by the previous one in the same sub-hierarchy.
-> 
-> This guarantees that no group gets more reclaiming than necessary and
-> the next iteration will continue without noticing that the removed group
-> has disappeared.
-> 
-> Spotted-by: Ying Han <yinghan@google.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Though the macros seem to be fine but I would still think that call back way of interfaces would be
+> More flexible and straightforward.
 
+We have properties mechanism deployed already, so I'd rather keep it
+consistent.
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-
+p.s. We had 'properties vs. callbacks' debates before, there are pros and
+cons of each approach. Unless there are some unresolvable issues, let's
+stick with the original approach. :)
