@@ -1,64 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab3AGB4k (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 20:56:40 -0500
-Received: from newsmtp5.atmel.com ([204.2.163.5]:57292 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab3AGB43 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 20:56:29 -0500
+	id S1753527Ab3AGB6V (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 20:58:21 -0500
+Received: from newsmtp5.atmel.com ([204.2.163.5]:9379 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753391Ab3AGB4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 20:56:52 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org, nicolas.ferre@atmel.com,
         plagnioj@jcrosoft.com, richard.genoud@gmail.com, JM.Lin@atmel.com,
         wenyou.yang@atmel.com, grant.likely@secretlab.ca,
         spi-devel-general@lists.sourceforge.net
-Subject: [v3 PATCH 02/12] spi/atmel_spi: call unmapping on transfers buffers
-Date: Mon,  7 Jan 2013 09:50:03 +0800
-Message-Id: <1357523413-27209-3-git-send-email-wenyou.yang@atmel.com>
+Subject: [v3 PATCH 09/12] spi/atmel_spi: correct 16 bits transfer with DMA
+Date: Mon,  7 Jan 2013 09:50:10 +0800
+Message-Id: <1357523413-27209-10-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357523413-27209-1-git-send-email-wenyou.yang@atmel.com>
 References: <1357523413-27209-1-git-send-email-wenyou.yang@atmel.com>
-X-OriginalArrivalTime: 07 Jan 2013 01:56:09.0256 (UTC) FILETIME=[29A69280:01CDEC7A]
+X-OriginalArrivalTime: 07 Jan 2013 01:56:38.0756 (UTC) FILETIME=[3B3BEA40:01CDEC7A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Richard Genoud <richard.genoud@gmail.com>
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Richard Genoud <richard.genoud@gmail.com>
 Cc: grant.likely@secretlab.ca
 Cc: spi-devel-general@lists.sourceforge.net
 ---
- drivers/spi/spi-atmel.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/spi/spi-atmel.c |   17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/spi/spi-atmel.c b/drivers/spi/spi-atmel.c
-index 4516839..9782206 100644
+index 5abb276..dd070cd 100644
 --- a/drivers/spi/spi-atmel.c
 +++ b/drivers/spi/spi-atmel.c
-@@ -1016,6 +1016,7 @@ static int atmel_spi_remove(struct platform_device *pdev)
- 	struct spi_master	*master = platform_get_drvdata(pdev);
- 	struct atmel_spi	*as = spi_master_get_devdata(master);
- 	struct spi_message	*msg;
-+	struct spi_transfer	*xfer;
+@@ -466,12 +466,18 @@ static inline int atmel_spi_xfer_can_be_chained(struct spi_transfer *xfer)
+ }
  
- 	/* reset the hardware and block queue progress */
- 	spin_lock_irq(&as->lock);
-@@ -1027,9 +1028,10 @@ static int atmel_spi_remove(struct platform_device *pdev)
+ static int atmel_spi_dma_slave_config(struct atmel_spi *as,
+-				struct dma_slave_config *slave_config)
++				struct dma_slave_config *slave_config,
++				u8 bits_per_word)
+ {
+ 	int err = 0;
  
- 	/* Terminate remaining queued transfers */
- 	list_for_each_entry(msg, &as->queue, queue) {
--		/* REVISIT unmapping the dma is a NOP on ARM and AVR32
--		 * but we shouldn't depend on that...
--		 */
-+		list_for_each_entry(xfer, &msg->transfers, transfer_list) {
-+			if (!msg->is_dma_mapped)
-+				atmel_spi_dma_unmap_xfer(master, xfer);
-+		}
- 		msg->status = -ESHUTDOWN;
- 		msg->complete(msg->context);
+-	slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
+-	slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	if (bits_per_word > 8) {
++		slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++		slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_2_BYTES;
++	} else {
++		slave_config->dst_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++		slave_config->src_addr_width = DMA_SLAVE_BUSWIDTH_1_BYTE;
++	}
+ 
+ 	slave_config->dst_addr = (dma_addr_t)as->phybase + SPI_TDR;
+ 	slave_config->src_addr = (dma_addr_t)as->phybase + SPI_RDR;
+@@ -533,7 +539,7 @@ static int __devinit atmel_spi_configure_dma(struct atmel_spi *as)
+ 		goto error;
  	}
+ 
+-	err = atmel_spi_dma_slave_config(as, &slave_config);
++	err = atmel_spi_dma_slave_config(as, &slave_config, 8);
+ 	if (err)
+ 		goto error;
+ 
+@@ -667,10 +673,9 @@ static int atmel_spi_next_xfer_dma_submit(struct spi_master *master,
+ 
+ 	*plen = len;
+ 
+-	if (atmel_spi_dma_slave_config(as, &slave_config))
++	if (atmel_spi_dma_slave_config(as, &slave_config, 8))
+ 		goto err_exit;
+ 
+-
+ 	/* Send both scatterlists */
+ 	rxdesc = rxchan->device->device_prep_slave_sg(rxchan,
+ 					&as->dma.sgrx,
 -- 
 1.7.9.5
 
