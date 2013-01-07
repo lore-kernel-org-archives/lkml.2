@@ -1,94 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3AGRV3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:21:29 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:43764 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754683Ab3AGRV1 (ORCPT
+	id S1753320Ab3AGRXD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:23:03 -0500
+Received: from mail-vb0-f47.google.com ([209.85.212.47]:52294 "EHLO
+	mail-vb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3AGRXB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:21:27 -0500
-Date: Mon, 7 Jan 2013 12:21:26 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v6 3/4] block: implement runtime pm strategy
-In-Reply-To: <1357461697-4219-4-git-send-email-aaron.lu@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1301071219540.1658-100000@iolanthe.rowland.org>
+	Mon, 7 Jan 2013 12:23:01 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20130107171722.GA31427@srcf.ucam.org>
+References: <20130107171722.GA31427@srcf.ucam.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 7 Jan 2013 09:22:38 -0800
+X-Google-Sender-Auth: ncN6EWtnI4gLoOc7UdEOI_K-emU
+Message-ID: <CA+55aFzL00K+oURqcnSgbAAkD18DJ8-p1G8vd7KE6RD77dLmCQ@mail.gmail.com>
+Subject: Re: [GIT] x86 platform driver updates for 3.8
+To: Matthew Garrett <matthew.garrett@nebula.com>
+Cc: platform-driver-x86@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jan 2013, Aaron Lu wrote:
+On Mon, Jan 7, 2013 at 9:17 AM, Matthew Garrett
+<matthew.garrett@nebula.com> wrote:
+>
+> A bit delayed (new job fun), but there's nothing terribly exciting in
+> here.
 
-> From: Lin Ming <ming.m.lin@intel.com>
-> 
-> When a request is added:
->     If device is suspended or is suspending and the request is not a
->     PM request, resume the device.
-> 
-> When the last request finishes:
->     Call pm_runtime_mark_last_busy() and pm_runtime_autosuspend().
-> 
-> When pick a request:
->     If device is resuming/suspending, then only PM request is allowed to go.
->     Return NULL for other cases.
-> 
-> [aaron.lu@intel.com: PM request does not involve nr_pending counting]
-> [aaron.lu@intel.com: No need to check q->dev]
-> [aaron.lu@intel.com: Autosuspend when the last request finished]
-> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Nonetheless, this does not seem to be appropriate for outside the merge window.
 
-> --- a/include/linux/blkdev.h
-> +++ b/include/linux/blkdev.h
-> @@ -974,6 +974,40 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
->  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
->  extern void blk_pre_runtime_resume(struct request_queue *q);
->  extern void blk_post_runtime_resume(struct request_queue *q, int err);
-> +
-> +static inline void blk_pm_put_request(struct request *rq)
-> +{
-> +	if (!(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending) {
-> +		pm_runtime_mark_last_busy(rq->q->dev);
-> +		pm_runtime_autosuspend(rq->q->dev);
-> +	}
-> +}
-> +
-> +static inline struct request *blk_pm_peek_request(
-> +	struct request_queue *q, struct request *rq)
-> +{
-> +	if (q->rpm_status == RPM_SUSPENDED ||
-> +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
-> +		return NULL;
-> +	else
-> +		return rq;
-> +}
-> +
-> +static inline void blk_pm_requeue_request(struct request *rq)
-> +{
-> +	if (!(rq->cmd_flags & REQ_PM))
-> +		rq->q->nr_pending--;
-> +}
-> +
-> +static inline void blk_pm_add_request(struct request_queue *q,
-> +	struct request *rq)
-> +{
-> +	if (!(rq->cmd_flags & REQ_PM) &&
-> +	    q->nr_pending++ == 0 &&
-> +	    (q->rpm_status == RPM_SUSPENDED ||
-> +	     q->rpm_status == RPM_SUSPENDING))
-> +		pm_request_resume(q->dev);
-> +}
-
-These routines also don't belong in include/linux.  And they don't need 
-to be marked inline.
-
-Alan Stern
-
+            Linus
