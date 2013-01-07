@@ -1,123 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753250Ab3AGP3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:29:39 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:39309 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752175Ab3AGP3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:29:38 -0500
-Date: Mon, 7 Jan 2013 15:29:31 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Simon Jeons <simon.jeons@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrea Arcangeli <aarcange@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Paul Turner <pjt@google.com>, Hillf Danton <dhillf@gmail.com>,
-        David Rientjes <rientjes@google.com>,
-        Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
-        Alex Shi <lkml.alex@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 29/49] mm: numa: Add pte updates, hinting and migration
- stats
-Message-ID: <20130107152931.GM3885@suse.de>
-References: <1354875832-9700-1-git-send-email-mgorman@suse.de>
- <1354875832-9700-30-git-send-email-mgorman@suse.de>
- <1357299744.5273.4.camel@kernel.cn.ibm.com>
+	id S1753317Ab3AGPaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:30:35 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:45453 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab3AGPae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 10:30:34 -0500
+Subject: [PATCH] cciss: use lun reset not target reset
+To: jens.axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: stephenmcameron@gmail.com, akpm@linux-foundation.org,
+        mikem@beardog.cce.hp.com, linux-kernel@vger.kernel.org,
+        thenzl@redhat.com
+Date: Mon, 07 Jan 2013 10:30:30 -0600
+Message-ID: <20130107163030.5072.17662.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1357299744.5273.4.camel@kernel.cn.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 05:42:24AM -0600, Simon Jeons wrote:
-> On Fri, 2012-12-07 at 10:23 +0000, Mel Gorman wrote:
-> > It is tricky to quantify the basic cost of automatic NUMA placement in a
-> > meaningful manner. This patch adds some vmstats that can be used as part
-> > of a basic costing model.
-> 
-> Hi Gorman, 
-> 
-> > 
-> > u    = basic unit = sizeof(void *)
-> > Ca   = cost of struct page access = sizeof(struct page) / u
-> > Cpte = Cost PTE access = Ca
-> > Cupdate = Cost PTE update = (2 * Cpte) + (2 * Wlock)
-> > 	where Cpte is incurred twice for a read and a write and Wlock
-> > 	is a constant representing the cost of taking or releasing a
-> > 	lock
-> > Cnumahint = Cost of a minor page fault = some high constant e.g. 1000
-> > Cpagerw = Cost to read or write a full page = Ca + PAGE_SIZE/u
-> 
-> Why cpagerw = Ca + PAGE_SIZE/u instead of Cpte + PAGE_SIZE/u ?
-> 
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Because I was thinking of the cost of just access the struct page.  Arguably
-it would be both Ca and Cpte and if I wanted to be very comprehensive I
-would also take into account the potential cost of kmapping the page in
-the 32-bit case but it'd be overkill. The cost of the PTE and struct page
-is negligible in comparison to the actual copy.
+In the scsi part of the driver (for tape drives and medium changers)
+the device reset error handler attempts to use a target reset rather
+than a lun reset.  If there is some shared tape drive library, this
+could be potentially disruptive to other hosts trying to use the
+tape library.  Use lun reset instead to only reset the lun not the
+whole target.
 
-> > Ci = Cost of page isolation = Ca + Wi
-> > 	where Wi is a constant that should reflect the approximate cost
-> > 	of the locking operation
-> > Cpagecopy = Cpagerw + (Cpagerw * Wnuma) + Ci + (Ci * Wnuma)
-> > 	where Wnuma is the approximate NUMA factor. 1 is local. 1.2
-> > 	would imply that remote accesses are 20% more expensive
-> > 
-> > Balancing cost = Cpte * numa_pte_updates +
-> > 		Cnumahint * numa_hint_faults +
-> > 		Ci * numa_pages_migrated +
-> > 		Cpagecopy * numa_pages_migrated
-> > 
-> 
-> Since Cpagecopy has already accumulated ci why count ci twice ?
-> 
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/block/cciss.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Good point. Interestingly when I went to fix this in mmtests I found
-that I accounted for Ci properly there but got it wrong in the
-changelog.
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 6526157..64d1d82 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -2632,7 +2632,7 @@ static int fill_cmd(ctlr_info_t *h, CommandList_struct *c, __u8 cmd, void *buff,
+ 			c->Request.Timeout = 0;
+ 			memset(&c->Request.CDB[0], 0, sizeof(c->Request.CDB));
+ 			c->Request.CDB[0] = cmd;	/* reset */
+-			c->Request.CDB[1] = CCISS_RESET_TYPE_TARGET;
++			c->Request.CDB[1] = CCISS_RESET_TYPE_LUN;
+ 			break;
+ 		case CCISS_NOOP_MSG:
+ 			c->Request.CDBLen = 1;
+@@ -2674,7 +2674,7 @@ static int __devinit cciss_send_reset(ctlr_info_t *h, unsigned char *scsi3addr,
+ 		return -ENOMEM;
+ 	return_status = fill_cmd(h, c, CCISS_RESET_MSG, NULL, 0, 0,
+ 		CTLR_LUNID, TYPE_MSG);
+-	c->Request.CDB[1] = reset_type; /* fill_cmd defaults to target reset */
++	c->Request.CDB[1] = reset_type; /* fill_cmd defaults to lun reset */
+ 	if (return_status != IO_OK) {
+ 		cmd_special_free(h, c);
+ 		return return_status;
 
-> > Note that numa_pages_migrated is used as a measure of how many pages
-> > were isolated even though it would miss pages that failed to migrate. A
-> > vmstat counter could have been added for it but the isolation cost is
-> > pretty marginal in comparison to the overall cost so it seemed overkill.
-> > 
-> > The ideal way to measure automatic placement benefit would be to count
-> > the number of remote accesses versus local accesses and do something like
-> > 
-> > 	benefit = (remote_accesses_before - remove_access_after) * Wnuma
-> > 
-> > but the information is not readily available. As a workload converges, the
-> > expection would be that the number of remote numa hints would reduce to 0.
-> > 
-> > 	convergence = numa_hint_faults_local / numa_hint_faults
-> > 		where this is measured for the last N number of
-> > 		numa hints recorded. When the workload is fully
-> > 		converged the value is 1.
-> > 
-> 
-> convergence tend to 0 is better or 1 is better
-
-1 is better.
-
-> If tend to 1, Cpte *
-> numa_pte_updates + Cnumahint * numa_hint_faults are just waste, where I
-> miss?
-> 
-
-I don't get the question, waste of what? None of these calculations are
-used by the kernel. The kernel only maintains counters and the point of
-the changelog was to illustrate how the counters can be used to do some
-meaningful evaluation.
-
--- 
-Mel Gorman
-SUSE Labs
