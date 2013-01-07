@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928Ab3AGQwh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:52:37 -0500
-Received: from mail-da0-f42.google.com ([209.85.210.42]:33770 "EHLO
-	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754019Ab3AGQwe (ORCPT
+	id S1754066Ab3AGQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:54:59 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54399 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751746Ab3AGQy5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:52:34 -0500
-Date: Mon, 7 Jan 2013 08:52:29 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Li Zefan <lizefan@huawei.com>
-Cc: paul@paulmenage.org, glommer@parallels.com,
-        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        peterz@infradead.org, mhocko@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET] cpuset: drop cpuset->stack_list and ->parent, take#2
-Message-ID: <20130107165229.GJ3926@htj.dyndns.org>
-References: <1357249446-25075-1-git-send-email-tj@kernel.org>
- <50E94392.2050509@huawei.com>
- <20130107164707.GI3926@htj.dyndns.org>
+	Mon, 7 Jan 2013 11:54:57 -0500
+X-Originating-IP: 217.70.178.140
+X-Originating-IP: 50.43.39.152
+Date: Mon, 7 Jan 2013 08:54:49 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 05/14] rcu: Distinguish "rcuo" kthreads by
+ RCU flavor
+Message-ID: <20130107165449.GB12229@leaf>
+References: <20130105174844.GA14172@linux.vnet.ibm.com>
+ <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1357408144-15830-5-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130107164707.GI3926@htj.dyndns.org>
+In-Reply-To: <1357408144-15830-5-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 08:47:07AM -0800, Tejun Heo wrote:
-> On Sun, Jan 06, 2013 at 05:27:46PM +0800, Li Zefan wrote:
-> > Acked-by: Li Zefan <lizefan@huawei.com>
+On Sat, Jan 05, 2013 at 09:48:55AM -0800, Paul E. McKenney wrote:
+> From: "Paul E. McKenney" <paul.mckenney@linaro.org>
 > 
-> I'll route this together with "decouple cpuset locking" patchset in a
-> separate branch in cgroup tree.  If anyone objects, please let me
-> know.
+> Currently, the per-no-CBs-CPU kthreads are named "rcuo" followed by
+> the CPU number, for example, "rcuo".  This is problematic given that
 
-I put the cgroup_rightmost_descendant() patch in cgroup/for-3.9 and
-the rest in cgroup/for-3.9-cpuset.
+I think the quoted string on this second line wanted to have a CPU
+number in it.
 
-Thanks.
+> there are either two or three RCU flavors, each of which gets a per-CPU
+> kthread with exactly the same name.  This commit therefore introduces
+> a one-letter abbreviation for each RCU flavor, namely 'b' for RCU-bh,
+> 'p' for RCU-preempt, and 's' for RCU-sched.  This abbreviation use used
+> to distinguish the "rcuo" kthreads, for example, for CPU 0 we would have
+> "rcuo0b", "rcuo0p", and "rcuo0s".
 
--- 
-tejun
+Don't per-CPU kthreads normally have a name ending in /$cpunum ?, rather
+than just $cpunum?  For instance, kworker/0, kworker/1, and so on?
+Seems like these threads should follow that convention.
+
+- Josh Triplett
