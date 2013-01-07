@@ -1,170 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755912Ab3AGWHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:07:49 -0500
-Received: from mout.gmx.net ([212.227.15.19]:49689 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844Ab3AGWHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:07:36 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18r1/wTvV0rY05hjAX1b8gxbbmmH1q7LCpbMHl6pV
-	iDVyidoqyEPhyS
-From: Peter Huewe <peterhuewe@gmx.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Devendra Naga <devendra.aaru@gmail.com>,
-        Marcos Paulo de Souza <marcos.souza.org@gmail.com>,
-        Priit Laes <plaes@plaes.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Peter Huewe <peterhuewe@gmx.de>
-Subject: [PATCH] staging/csr: Fix dereference before check
-Date: Mon,  7 Jan 2013 23:09:53 +0100
-Message-Id: <1357596593-18225-1-git-send-email-peterhuewe@gmx.de>
-X-Mailer: git-send-email 1.7.8.6
-X-Y-GMX-Trusted: 0
+	id S1755836Ab3AGWJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:09:58 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:51554 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563Ab3AGWJ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 17:09:57 -0500
+Date: Mon, 7 Jan 2013 14:09:43 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 04/14] rcu: Provide compile-time control for
+ no-CBs CPUs
+Message-ID: <20130107220943.GY2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130105174844.GA14172@linux.vnet.ibm.com>
+ <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1357408144-15830-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130107165023.GA12229@leaf>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130107165023.GA12229@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010722-7606-0000-0000-000007396F3C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Smatch complains about some pointers that are dereferenced before being
-checked:
+On Mon, Jan 07, 2013 at 08:50:23AM -0800, Josh Triplett wrote:
+> On Sat, Jan 05, 2013 at 09:48:54AM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> > 
+> > Currently, the only way to specify no-CBs CPUs is via the rcu_nocbs
+> > kernel command-line parameter.  This is inconvenient in some cases,
+> > particularly for randconfig testing, so this commit adds a new
+> > RCU_NOCB_CPU_DEFAULT kernel configuration parameter.  Setting this
+> > new parameter to zero (the default) retains the old behavior, setting
+> > it to one offloads callback processing from CPU 0 (along with any
+> > other CPUs specified by the rcu_nocbs boot-time parameter), and setting
+> > it to two offloads callback processing from all CPUs.
+> > 
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Comments below.
+> 
+> >  init/Kconfig            |   13 +++++++++++++
+> >  kernel/rcutree_plugin.h |   13 +++++++++++++
+> >  2 files changed, 26 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/init/Kconfig b/init/Kconfig
+> > index fc6a3ca..35dcedb 100644
+> > --- a/init/Kconfig
+> > +++ b/init/Kconfig
+> > @@ -676,6 +676,19 @@ config RCU_NOCB_CPU
+> >  	  Say Y here if you want to help to debug reduced OS jitter.
+> >  	  Say N here if you are unsure.
+> >  
+> > +config RCU_NOCB_CPU_DEFAULT
+> > +	int "Offload RCU callback processing from compile-selected CPUs"
+> > +	depends on RCU_NOCB_CPU
+> > +	range 0 2
+> > +	default 0
+> > +	help
+> > +	  Set this option to zero to only offload RCU callback processing
+> > +	  from those CPUs specified by the boot-time rcu_nocbs kernel
+> > +	  parameter.  Set it to one to offload processing from CPU 0
+> > +	  in addition to any CPUs specified at boot time.  Set it to
+> > +	  two to offload processing from all CPUs, regardless of the
+> > +	  setting of the boot-time rcu_nocbs kernel parameter.
+> > +
+> 
+> Rather than making users translate the meanings of 0, 1, and 2, this
+> seems like something better done with a choice/endchoice; that would
+> then offer a menu of options that can each have their own description.
+> Take a look at the "Memory split" option in arch/x86/Kconfig for an
+> example.
 
-drivers/staging/csr/sme_sys.c:285
-CsrWifiRouterCtrlHipReqHandler() warn: variable dereferenced before
-check 'priv' (see line 283)
-drivers/staging/csr/sme_sys.c:1503
-CsrWifiRouterMaPacketReqHandler() warn: variable dereferenced before
-check 'priv' (see line 1501)
-drivers/staging/csr/sme_sys.c:2062
-CsrWifiRouterCtrlPeerDelReqHandler() warn: variable dereferenced before
-check 'priv' (see line 2059)
-drivers/staging/csr/sme_sys.c:2477
-CsrWifiRouterCtrlPeerAddReqHandler() warn: variable dereferenced before
-check 'priv' (see line 2474)
-drivers/staging/csr/sme_sys.c:3045
-CsrWifiRouterCtrlWapiRxPktReqHandler() warn: variable dereferenced
-before check 'priv' (see line 3039)
+My first reaction was that this couldn't possibly handle the dependency
+on CONFIG_RCU_NOCB_CPU, but it actually does work, suppressing all the
+choices when CONFIG_RCU_NOCB_CPU=n.  Cute!
 
-We put the check before the dereferencing and prevent an oops and fix
-the warning.
+> > --- a/kernel/rcutree_plugin.h
+> > +++ b/kernel/rcutree_plugin.h
+> > @@ -86,6 +86,19 @@ static void __init rcu_bootup_announce_oddness(void)
+> >  	if (nr_cpu_ids != NR_CPUS)
+> >  		printk(KERN_INFO "\tRCU restricting CPUs from NR_CPUS=%d to nr_cpu_ids=%d.\n", NR_CPUS, nr_cpu_ids);
+> >  #ifdef CONFIG_RCU_NOCB_CPU
+> > +#if CONFIG_RCU_NOCB_CPU_DEFAULT != 0
+> 
+> That would then make each of these conditionals self-documenting as
+> well.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/staging/csr/sme_sys.c |   41 ++++++++++++++++++++++++++---------------
- 1 files changed, 26 insertions(+), 15 deletions(-)
+Indeed, much better!  Thank you!
 
-diff --git a/drivers/staging/csr/sme_sys.c b/drivers/staging/csr/sme_sys.c
-index 2b06819..b1151a2 100644
---- a/drivers/staging/csr/sme_sys.c
-+++ b/drivers/staging/csr/sme_sys.c
-@@ -280,7 +280,7 @@ void CsrWifiRouterCtrlHipReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-     CSR_SIGNAL *signal;
-     u16 interfaceTag = 0;
-     CSR_MA_PACKET_REQUEST *req;
--    netInterface_priv_t *interfacePriv = priv->interfacePriv[interfaceTag];
-+    netInterface_priv_t *interfacePriv;
- 
-     if (priv == NULL) {
-         return;
-@@ -294,6 +294,8 @@ void CsrWifiRouterCtrlHipReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-         return;
-     }
- 
-+    interfacePriv = priv->interfacePriv[interfaceTag];
-+
-     /* Initialize bulkdata to avoid os_net_buf is garbage */
-     memset(&bulkdata, 0, sizeof(bulk_data_param_t));
- 
-@@ -1498,7 +1500,7 @@ void CsrWifiRouterMaPacketReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-     u8 *daddr, *saddr;
-     u16 interfaceTag = mareq->interfaceTag & 0x00ff;
-     int queue;
--    netInterface_priv_t *interfacePriv = priv->interfacePriv[interfaceTag];
-+    netInterface_priv_t *interfacePriv;
- 
-     if (!mareq->frame || !priv || !priv->smepriv)
-     {
-@@ -1510,6 +1512,8 @@ void CsrWifiRouterMaPacketReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-         unifi_error(priv, "CsrWifiRouterMaPacketReqHandler: interfaceID >= CSR_WIFI_NUM_INTERFACES.\n");
-         return;
-     }
-+
-+    interfacePriv = priv->interfacePriv[interfaceTag];
-     /* get a pointer to dest & source Mac address */
-     daddr = mareq->frame;
-     saddr = (mareq->frame + ETH_ALEN);
-@@ -2056,9 +2060,9 @@ void CsrWifiRouterCtrlPeerDelReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-     CsrWifiRouterCtrlPeerDelReq* req = (CsrWifiRouterCtrlPeerDelReq*)msg;
-     CsrResult status = CSR_RESULT_SUCCESS;
-     unifi_priv_t *priv = (unifi_priv_t*)drvpriv;
--    netInterface_priv_t *interfacePriv = priv->interfacePriv[req->interfaceTag];
-+    netInterface_priv_t *interfacePriv;
- 
--    unifi_trace(priv, UDBG2, "entering CsrWifiRouterCtrlPeerDelReqHandler \n");
-+    unifi_trace(priv, UDBG2, "entering CsrWifiRouterCtrlPeerDelReqHandler\n");
-     if (priv == NULL)
-     {
-         unifi_error(priv, "CsrWifiRouterCtrlPeerDelReqHandler: invalid smepriv\n");
-@@ -2071,6 +2075,8 @@ void CsrWifiRouterCtrlPeerDelReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-         return;
-     }
- 
-+    interfacePriv = priv->interfacePriv[req->interfaceTag];
-+
-     switch(interfacePriv->interfaceMode)
-     {
-         case CSR_WIFI_ROUTER_CTRL_MODE_AP:
-@@ -2471,7 +2477,7 @@ void CsrWifiRouterCtrlPeerAddReqHandler(void* drvpriv,CsrWifiFsmEvent* msg)
-     CsrResult status = CSR_RESULT_SUCCESS;
-     unifi_priv_t *priv = (unifi_priv_t*)drvpriv;
-     u32 handle = 0;
--    netInterface_priv_t *interfacePriv = priv->interfacePriv[req->interfaceTag];
-+    netInterface_priv_t *interfacePriv;
- 
-     unifi_trace(priv, UDBG2, "entering CsrWifiRouterCtrlPeerAddReqHandler \n");
-     if (priv == NULL)
-@@ -2486,6 +2492,8 @@ void CsrWifiRouterCtrlPeerAddReqHandler(void* drvpriv,CsrWifiFsmEvent* msg)
-         return;
-     }
- 
-+    interfacePriv = priv->interfacePriv[req->interfaceTag];
-+
-     switch(interfacePriv->interfaceMode)
-     {
-         case CSR_WIFI_ROUTER_CTRL_MODE_AP:
-@@ -3036,21 +3044,24 @@ void CsrWifiRouterCtrlWapiRxPktReqHandler(void* drvpriv, CsrWifiFsmEvent* msg)
-     ul_client_t *client;
-     CSR_SIGNAL signal;
-     CSR_MA_PACKET_INDICATION *pkt_ind;
--    netInterface_priv_t *interfacePriv = priv->interfacePriv[req->interfaceTag];
-+    netInterface_priv_t *interfacePriv;
-+
-+    if (priv == NULL) {
-+	    unifi_error(priv, "CsrWifiRouterCtrlWapiRxPktReq : invalid priv\n", __func__);
-+	    return;
-+    }
-+
-+    if (priv->smepriv == NULL) {
-+	    unifi_error(priv, "CsrWifiRouterCtrlWapiRxPktReq : invalid sme priv\n", __func__);
-+	    return;
-+    }
-+
-+    interfacePriv = priv->interfacePriv[req->interfaceTag];
- 
-     if (CSR_WIFI_ROUTER_CTRL_MODE_STA == interfacePriv->interfaceMode) {
- 
-     	unifi_trace(priv, UDBG6, ">>%s\n", __FUNCTION__);
- 
--        if (priv == NULL) {
--            unifi_error(priv, "CsrWifiRouterCtrlWapiRxPktReq : invalid priv\n",__FUNCTION__);
--            return;
--        }
--
--        if (priv->smepriv == NULL) {
--             unifi_error(priv, "CsrWifiRouterCtrlWapiRxPktReq : invalid sme priv\n",__FUNCTION__);
--             return;
--        }
- 
-         if (req->dataLength == 0 || req->data == NULL) {
-              unifi_error(priv, "CsrWifiRouterCtrlWapiRxPktReq: invalid request\n",__FUNCTION__);
--- 
-1.7.8.6
+							Thanx, Paul
 
