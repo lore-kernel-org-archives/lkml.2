@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755308Ab3AGTVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 14:21:46 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24904 "EHLO mx1.redhat.com"
+	id S1755335Ab3AGTVw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 14:21:52 -0500
+Received: from smtp.citrix.com ([66.165.176.89]:43189 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab3AGTVp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 14:21:45 -0500
-Date: Mon, 7 Jan 2013 20:20:58 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
- subframe fails
-Message-ID: <20130107192057.GA17401@redhat.com>
-References: <20121228190352.097882544@decadent.org.uk>
- <50DEA41E.6010409@01019freenet.de>
- <1356871099.4821.16.camel@deadeye.wl.decadent.org.uk>
- <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
- <20130107080532.GA2984@redhat.com>
- <20130107081003.GB2984@redhat.com>
- <1357568256.26822.18.camel@deadeye.wl.decadent.org.uk>
- <50EAE3E1.4010809@01019freenet.de>
- <20130107165458.GA16705@redhat.com>
- <50EB162B.7020903@01019freenet.de>
+	id S1755165Ab3AGTVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 14:21:50 -0500
+X-IronPort-AV: E=Sophos;i="4.84,425,1355097600"; 
+   d="scan'208";a="2918943"
+Date: Mon, 7 Jan 2013 19:21:46 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: Marc Zyngier <marc.zyngier@arm.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Pawel Moll <Pawel.Moll@arm.com>, "arnd@arndb.de" <arnd@arndb.de>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Tim (Xen.org)" <tim@xen.org>, Ian Campbell <Ian.Campbell@citrix.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 21/24] arm/v2m: initialize arch_timers even if v2m_timer
+ is not present
+In-Reply-To: <50EB06A4.7030908@arm.com>
+Message-ID: <alpine.DEB.2.02.1301071921140.4981@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1209141145150.29232@kaball.uk.xensource.com>  <1347621207-11294-21-git-send-email-stefano.stabellini@eu.citrix.com> <1347625628.2497.65.camel@hornet> <alpine.DEB.2.02.1209141347250.29232@kaball.uk.xensource.com>
+ <alpine.DEB.2.02.1301071719180.4981@kaball.uk.xensource.com> <50EB06A4.7030908@arm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EB162B.7020903@01019freenet.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 07:38:35PM +0100, Andreas Hartmann wrote:
-> Stanislaw Gruszka wrote:
-> > On Mon, Jan 07, 2013 at 04:04:01PM +0100, Andreas Hartmann wrote:
-> >> Ben Hutchings wrote:
-> >>> On Mon, 2013-01-07 at 09:10 +0100, Stanislaw Gruszka wrote:
-> >>>> On Mon, Jan 07, 2013 at 09:05:32AM +0100, Stanislaw Gruszka wrote:
-> >>>>>> To be clear, I have all of these in the queue:
-> >>>>>>
-> >>>>>> be03d4a45c09 rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
-> >>>>>> 5b632fe85ec8 mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
-> >>>>>> ab9d6e4ffe19 Revert: "rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails"
-> >>>>>>
-> >>>>>> and I'm intending to drop/defer them all.
-> >>>>>
-> >>>>> Patch 3 is a revert of patch 1 (questioned patch). Please apply all 3 patches,
-> >>>>> or only patch 2.
+On Mon, 7 Jan 2013, Marc Zyngier wrote:
+> On 07/01/13 17:21, Stefano Stabellini wrote:
+> > On Fri, 14 Sep 2012, Stefano Stabellini wrote:
+> >> On Fri, 14 Sep 2012, Pawel Moll wrote:
+> >>> On Fri, 2012-09-14 at 12:13 +0100, Stefano Stabellini wrote:
+> >>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> >>>> CC: Russell King <linux@arm.linux.org.uk>
+> >>>> CC: Pawel Moll <pawel.moll@arm.com>
+> >>>> CC: Marc Zyngier <marc.zyngier@arm.com>
+> >>>> ---
+> >>>>  arch/arm/mach-vexpress/v2m.c |   11 ++++++-----
+> >>>>  1 files changed, 6 insertions(+), 5 deletions(-)
 > >>>>
-> >>>> No, actually all 3 patches have to be applied. Because last one, except
-> >>>> revert, include flag IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL setting in rt2x00
-> >>>> driver, which make patch 2 work.
+> >>>> diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+> >>>> index 37608f2..4e567f7 100644
+> >>>> --- a/arch/arm/mach-vexpress/v2m.c
+> >>>> +++ b/arch/arm/mach-vexpress/v2m.c
+> >>>> @@ -621,16 +621,17 @@ static void __init v2m_dt_timer_init(void)
+> >>>>  
+> >>>>  	v2m_clk_init();
+> >>>>  
+> >>>> -	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> >>>> -	if (WARN_ON(err))
+> >>>> -		return;
+> >>>> -	node = of_find_node_by_path(path);
+> >>>> -	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+> >>>>  	if (arch_timer_of_register() != 0)
+> >>>>  		twd_local_timer_of_register();
+> >>>>  
+> >>>>  	if (arch_timer_sched_clock_init() != 0)
+> >>>>  		versatile_sched_clock_init(v2m_sysreg_base + V2M_SYS_24MHZ, 24000000);
+> >>>> +
+> >>>> +	err = of_property_read_string(of_aliases, "arm,v2m_timer", &path);
+> >>>> +	if (WARN_ON(err))
+> >>>> +		return;
+> >>>> +	node = of_find_node_by_path(path);
+> >>>> +	v2m_sp804_init(of_iomap(node, 0), irq_of_parse_and_map(node, 0));
+> >>>>  }
+> >>>>  
+> >>>>  static struct sys_timer v2m_dt_timer = {
 > >>>
-> >>> Andreas said that that after ab9d6e4ffe19 there was still a regression.
-> > 
-> > That's not true. There will be no regression after ab9d6e4ffe20. The
-> > only thing is that solution is not perfect. But perfect solution require
-> > lot of changes i.e. is not -stable appropriate (and does not exist currently).
-> > 
-> >>> But maybe he was confused.  I know I'm confused.
-> >> :-))
+> >>> Fair point. The alias is going to disappear anyway (I'm working on a VE
+> >>> platform rework right now), but in case I won't get it on time for 3.7,
+> >>> I'll make sure this one is merged instead.
 > >>
-> >> No, the thing is:
-> >> rt2800pci misses an appropriate handling of aggregation (which meets the
-> >> requirements of mac80211).
+> >> Great, thanks!
+> >> Should I leave this patch out of the Xen on ARM series for 3.7 then?
 > >>
-> >> Both workarounds, mine and the new workaround from Stanislaw (which is
-> >> nothing more than a restricted version of my initial workaround), work
 > > 
-> > Your workaround broke STA mode on some environment.
+> > I have just noticed that this patch hasn't been merged yet, but still we
+> > need it to boot Linux on Xen.
+> > Do you want me to rebase and resent?
 > 
-> Why are you sure, that this workaround doesn't break some other devices
-> running in AP mode? We believed at that time too, it wouldn't harm even
-> STA. But this was wrong for some (which?) devices.
+> I'm looking at v3.8-rc2, and the code have changed significantly (see
+> 433683a66401adb0150792e725cc4f631c94de46).
+> 
+> If you don't have an "arm,sp804" device in your DT, it shouldn't get
+> registered and carry on registering the per-cpu timers. Can you check
+> that it fixes your issue?
 
-Because it make behaviour the same as it was before 3.2, which introduce
-those issues.
-
-Stanislaw   
-
+Yes, sorry, my Linux tree wasn't up to date enough, thanks!
