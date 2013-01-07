@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab3AGMkK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:40:10 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:53856 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753912Ab3AGMkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:40:08 -0500
-Date: Mon, 7 Jan 2013 13:40:05 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v7u1 03/31] x86, realmode: set real_mode permissions early
-Message-ID: <20130107124005.GA5954@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Yinghai Lu <yinghai@kernel.org>,
-	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jan Kiszka <jan.kiszka@web.de>,
-	Jason Wessel <jason.wessel@windriver.com>,
-	linux-kernel@vger.kernel.org
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
- <1357260531-11115-4-git-send-email-yinghai@kernel.org>
- <20130104201516.GA24228@x1.alien8.de>
- <CAE9FiQWvp7UPY7f33B9cG05S4ALCN-ezMi2N=-z++9w-Dp_+ZQ@mail.gmail.com>
- <20130104210407.GB24228@x1.alien8.de>
- <CAE9FiQXBCtCGAZ33RqwG8+hD+NxB0a7KJxU0gKbe0A=TTi-B4Q@mail.gmail.com>
- <20130105132546.GE4297@x1.alien8.de>
+	id S1754496Ab3AGMwt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:52:49 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:29550 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984Ab3AGMws (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 07:52:48 -0500
+Date: Mon, 7 Jan 2013 13:52:11 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: andrew.cooper3@citrix.com, x86@kernel.org, tglx@linutronix.de,
+        kexec@lists.infradead.org, virtualization@lists.linux-foundation.org,
+        xen-devel <xen-devel@lists.xen.org>, konrad.wilk@oracle.com,
+        maxim.uvarov@oracle.com, mingo@redhat.com, vgoyal@redhat.com,
+        linux-kernel@vger.kernel.org, ebiederm@xmission.com, hpa@zytor.com
+Subject: Re: [PATCH v3 02/11] x86/kexec: Add extra pointers to transition
+ page table PGD, PUD, PMD and PTE
+Message-ID: <20130107125211.GB2927@host-192-168-1-59.local.net-space.pl>
+References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-2-git-send-email-daniel.kiper@oracle.com>
+ <1356574740-6806-3-git-send-email-daniel.kiper@oracle.com>
+ <50E55ECF02000078000B2A13@nat28.tlf.novell.com>
+ <20130104151542.GD3346@host-192-168-1-59.local.net-space.pl>
+ <50E70D8002000078000B336D@nat28.tlf.novell.com>
+ <20130104172538.GC3472@host-192-168-1-59.local.net-space.pl>
+ <50EAA7F402000078000B34C3@nat28.tlf.novell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130105132546.GE4297@x1.alien8.de>
+In-Reply-To: <50EAA7F402000078000B34C3@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 02:25:46PM +0100, Borislav Petkov wrote:
-> Or do you mean that the function naming is wrong? WTF?
+On Mon, Jan 07, 2013 at 09:48:20AM +0000, Jan Beulich wrote:
+> >>> On 04.01.13 at 18:25, Daniel Kiper <daniel.kiper@oracle.com> wrote:
+> > Right, so where is virtual mapping of control page established?
+> > I could not find relevant code in SLES kernel which does that.
+>
+> In the hypervisor (xen/arch/x86/machine_kexec.c:machine_kexec_load()).
+> xen/arch/x86/machine_kexec.c:machine_kexec() then simply uses
+> image->page_list[1].
 
-Ok, I think I can guess what you mean: that's setup_real_mode which
-allocates the real_mode_blob memory. Right?
+This (xen/arch/x86/machine_kexec.c:machine_kexec_load()) maps relevant
+page (allocated earlier by dom0) in hypervisor fixmap area. However,
+it does not make relevant mapping in transition page table which
+leads to crash when %cr3 is switched from Xen page table to
+transition page table.
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Daniel
