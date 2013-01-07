@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753771Ab3AGKyi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 05:54:38 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:64896 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752192Ab3AGKyh (ORCPT
+	id S1753639Ab3AGLIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 06:08:23 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54450 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751195Ab3AGLIW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 05:54:37 -0500
-X-IronPort-AV: E=Sophos;i="4.84,423,1355097600"; 
-   d="scan'208";a="484024"
-Message-ID: <1357556073.7989.12.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Andrew Cooper <andrew.cooper3@citrix.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Daniel Kiper <daniel.kiper@oracle.com>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Jan Beulich" <JBeulich@suse.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>
-Date: Mon, 7 Jan 2013 10:54:33 +0000
-In-Reply-To: <50EAA795.6030101@citrix.com>
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
-	 <50DBC856.6030208@zytor.com>
-	 <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
-	 <50DC58C4.3000307@citrix.com> <874nj7qsor.fsf@xmission.com>
-	 <50E41973.9050705@citrix.com>
-	 <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
-	 <50E6F81D02000078000B3245@nat28.tlf.novell.com>
-	 <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
-	 <20130104191146.GC6721@phenom.dumpdata.com>
-	 <1357554350.14291.134.camel@zakaz.uk.xensource.com>
-	 <50EAA795.6030101@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Mon, 7 Jan 2013 06:08:22 -0500
+Date: Mon, 7 Jan 2013 11:08:18 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: "Milo(Woogyom) Kim" <milo.kim@ti.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFT] regulator: lp8788-ldo: Use ldo->en_pin to check if
+ regulator is enabled by external pin
+Message-ID: <20130107110818.GB4544@opensource.wolfsonmicro.com>
+References: <1357371223.22227.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pvezYHf7grwyp3Bc"
+Content-Disposition: inline
+In-Reply-To: <1357371223.22227.1.camel@phoenix>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-07 at 10:46 +0000, Andrew Cooper wrote:
 
-> Given that /sbin/kexec creates a binary blob in memory, surely the most 
-> simple thing is to get it to suitably mlock() the region and give a list 
-> of VAs to the hypervisor.
+--pvezYHf7grwyp3Bc
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-More than likely. The DOMID_KEXEC thing was just a radon musing ;-)
+On Sat, Jan 05, 2013 at 03:33:43PM +0800, Axel Lin wrote:
+> ldo->en_pin is set iff the regulator is enabled by external pin.
+>=20
+> This patch sets ldo->en_pin to NULL if lp8788_gpio_request_ldo_en() fails=
+, then
+> we can use it to determinate if the regulator is controlled by external p=
+in or
+> register.
 
-> This way, Xen can properly take care of what it does with information 
-> and where.  For example, at the moment, allowing dom0 to choose where 
-> gets overwritten in the Xen crash area is a recipe for disaster if a 
-> crash occurs midway through loading/reloading the crash kernel.
+Applied, thanks.  However we should be converting the driver to use the
+core support for this - the GPIO can just be given to the core in the
+regulator config which should handle everything transparently.
 
-That's true. I think there is a double buffering scheme in the current
-thing and we should preserve that in any new implementation.
+--pvezYHf7grwyp3Bc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Ian.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
+iQIcBAEBAgAGBQJQ6qybAAoJELSic+t+oim9xZIP/iZdGU52Xq1Dv4d7JGq+1h7F
+7n/vSy8TOZpveGol5dCRrQg8eE9AhPPAO69jHVAxQWf49qt8n5vp6MsefW3wfn5F
+vTA0yNmDaCAJdfYQbjJ8BzmrLvSfmR0Xl6WwlXA7su5ky6BjbKYpGfqZUGa1+1lj
+eEYVbJ4SZ+kTok6xSjIgQNt8yLHb4ZpseaWKx8HNHx0YCh5BdMgDlhxgTS9bbutN
+C1kJGfpV4nyXorvALpgzHrrknD9rxHlIvXXZEVUxSQY+gQnS+PgdveVWfHWDoOQh
+DmHqyibDKUk0OVtRwGIdkziUY4I8c4XCVlgBW8IBfna22/zaBG6jzqRT+JkdYmnS
+MHf+FTcTsq6PcIESJS9cNovEVXqZO0/cWud2GLog/9eNzZkoROL2WBdx9rPqAJRP
+MW0DztS3kAzx4fuxCyg0fGU7xvs2FiYxIitoOse2+4l2OBguI56dEwPF6lPyu8Qb
+lZo4NXDTEECG9lAI+R3rzjrFOwWWRLpvNkNHAK9qfp1lAz9Flx3hXq8e+K6mkWXh
+gwaiAoU2q9XQyBur0bIpnq4GGQItirNHieaf3kKNKd7prLx02kgT9ZUhVQvJDdOl
+sfPuaqHeRUMe5+FhEPkydyLXV6Fc9QHgpHn7u02zLoCSEMaUDcyoadBRIYcG4NUY
+VBldLUzqBVU2bFSMRYq/
+=H00i
+-----END PGP SIGNATURE-----
+
+--pvezYHf7grwyp3Bc--
