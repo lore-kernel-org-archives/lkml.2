@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568Ab3AGMex (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:34:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:35557 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949Ab3AGMev (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:34:51 -0500
-Date: Mon, 7 Jan 2013 13:34:04 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Jan Beulich <JBeulich@suse.com>, Andrew Cooper <andrew.cooper3@citrix.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "maxim.uvarov@oracle.com" <maxim.uvarov@oracle.com>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	id S1754498Ab3AGMkK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:40:10 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53856 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753912Ab3AGMkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 07:40:08 -0500
+Date: Mon, 7 Jan 2013 13:40:05 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [Xen-devel] [PATCH v3 00/11] xen: Initial kexec/kdump
- implementation
-Message-ID: <20130107123404.GA2927@host-192-168-1-59.local.net-space.pl>
-References: <1356574740-6806-1-git-send-email-daniel.kiper@oracle.com>
- <50DBC856.6030208@zytor.com>
- <791b4922-078f-4adc-b3f3-0651f2266147@email.android.com>
- <50DC58C4.3000307@citrix.com>
- <874nj7qsor.fsf@xmission.com>
- <50E41973.9050705@citrix.com>
- <20130104142257.GC3346@host-192-168-1-59.local.net-space.pl>
- <50E6F81D02000078000B3245@nat28.tlf.novell.com>
- <20130104170751.GB3472@host-192-168-1-59.local.net-space.pl>
- <20130104191146.GC6721@phenom.dumpdata.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 03/31] x86, realmode: set real_mode permissions early
+Message-ID: <20130107124005.GA5954@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-4-git-send-email-yinghai@kernel.org>
+ <20130104201516.GA24228@x1.alien8.de>
+ <CAE9FiQWvp7UPY7f33B9cG05S4ALCN-ezMi2N=-z++9w-Dp_+ZQ@mail.gmail.com>
+ <20130104210407.GB24228@x1.alien8.de>
+ <CAE9FiQXBCtCGAZ33RqwG8+hD+NxB0a7KJxU0gKbe0A=TTi-B4Q@mail.gmail.com>
+ <20130105132546.GE4297@x1.alien8.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20130104191146.GC6721@phenom.dumpdata.com>
+In-Reply-To: <20130105132546.GE4297@x1.alien8.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 04, 2013 at 02:11:46PM -0500, Konrad Rzeszutek Wilk wrote:
-> On Fri, Jan 04, 2013 at 06:07:51PM +0100, Daniel Kiper wrote:
-> > On Fri, Jan 04, 2013 at 02:41:17PM +0000, Jan Beulich wrote:
-> > > >>> On 04.01.13 at 15:22, Daniel Kiper <daniel.kiper@oracle.com> wrote:
-> > > > On Wed, Jan 02, 2013 at 11:26:43AM +0000, Andrew Cooper wrote:
-> > > >> /sbin/kexec can load the "Xen" crash kernel itself by issuing
-> > > >> hypercalls using /dev/xen/privcmd.  This would remove the need for
-> > > >> the dom0 kernel to distinguish between loading a crash kernel for
-> > > >> itself and loading a kernel for Xen.
-> > > >>
-> > > >> Or is this just a silly idea complicating the matter?
-> > > >
-> > > > This is impossible with current Xen kexec/kdump interface.
-> > >
-> > > Why?
-> >
-> > Because current KEXEC_CMD_kexec_load does not load kernel
-> > image and other things into Xen memory. It means that it
-> > should live somewhere in dom0 Linux kernel memory.
->
-> We could have a very simple hypercall which would have:
->
-> struct fancy_new_hypercall {
-> 	xen_pfn_t payload; // IN
-> 	ssize_t len; // IN
-> #define DATA (1<<1)
-> #define DATA_EOF (1<<2)
-> #define DATA_KERNEL (1<<3)
-> #define DATA_RAMDISK (1<<4)
-> 	unsigned int flags; // IN
-> 	unsigned int status; // OUT
-> };
->
-> which would in a loop just iterate over the payloads and
-> let the hypervisor stick it in the crashkernel space.
->
-> This is all hand-waving of course. There probably would be a need
-> to figure out how much space you have in the reserved Xen's
-> 'crashkernel' memory region too.
+On Sat, Jan 05, 2013 at 02:25:46PM +0100, Borislav Petkov wrote:
+> Or do you mean that the function naming is wrong? WTF?
 
-I think that new kexec hypercall function should mimics kexec syscall.
-It means that all arguments passed to hypercall should have same types
-if it is possible or if it is not possible then conversion should be done
-in very easy way. Additionally, I think that one call of new hypercall
-load function should load all needed thinks in right place and
-return relevant status. Last but not least, new functionality should
-be available through /dev/xen/privcmd or directly from kernel without
-bigger effort.
+Ok, I think I can guess what you mean: that's setup_real_mode which
+allocates the real_mode_blob memory. Right?
 
-Daniel
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
