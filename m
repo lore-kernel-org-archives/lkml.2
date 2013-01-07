@@ -1,118 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab3AGRQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:16:28 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:4454 "EHLO mx1.redhat.com"
+	id S1754610Ab3AGRRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:17:30 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:45924 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751791Ab3AGRQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:16:27 -0500
-Date: Mon, 7 Jan 2013 11:40:39 -0500
-From: Jason Baron <jbaron@redhat.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        jamie.iles@oracle.com
-Subject: Re: [PATCH] jump_label: constify jump_label_text_reserved and friends
-Message-ID: <20130107163955.GB2948@redhat.com>
-References: <1357567093-31136-1-git-send-email-sasha.levin@oracle.com>
+	id S1751791Ab3AGRR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:17:27 -0500
+Date: Mon, 7 Jan 2013 09:16:02 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        markus@trippelsdorf.de
+Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Silence compiler array
+ out-of-bounds false positive
+Message-ID: <20130107171602.GI2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130105170920.GA13766@linux.vnet.ibm.com>
+ <1357405778-13903-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20130107155002.GA11145@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357567093-31136-1-git-send-email-sasha.levin@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130107155002.GA11145@leaf>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010717-7182-0000-0000-0000043CEECD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 08:58:09AM -0500, Sasha Levin wrote:
-> jump_label_text_reserved() doesn't modify the memory it works on, it just
-> checks whether there are any jump labels there.
+On Mon, Jan 07, 2013 at 07:50:02AM -0800, Josh Triplett wrote:
+> On Sat, Jan 05, 2013 at 09:09:36AM -0800, Paul E. McKenney wrote:
+> > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > 
+> > It turns out that gcc 4.8 warns on array indexes being out of bounds
+> > unless it can prove otherwise.  It gives this warning on some RCU
+> > initialization code.  Because this is far from any fastpath, add
+> > an explicit check for array bounds and panic if so.  This gives the
+> > compiler enough information to figure out that the array index is never
+> > out of bounds.
+> > 
+> > However, if a similar false positive occurs on a fastpath, it will
+> > probably be necessary to tell the compiler to keep its array-index
+> > anxieties to itself.  ;-)
+> > 
+> > Markus Trippelsdorf <markus@trippelsdorf.de>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree.c |    4 ++++
+> >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index d145796..e0d9815 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+> >  
+> >  	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
+> >  
+> > +	/* Silence gcc 4.8 warning about array index out of range. */
+> > +	if (rcu_num_lvls > RCU_NUM_LVLS)
+> > +		panic("rcu_init_one: rcu_num_lvls overflow");
 > 
-> Constify the parameters of it to prevent warnings when working with it.
-> 
+> Why not write this as BUG_ON(rcu_num_lvls > RCU_NUM_LVLS)?  Given that
+> the condition in question can never happen, you don't really need an
+> explanatory message.
 
-I don't see any 'const' data passed to jump_label_text_reserved()? Where is the
-warning coming from? New users?
+Good point, will do!
 
-Also, does this mean 'ftrace_text_reserved()' and 'alternatives_text_reserved()'
-need to be updated as well?
+> I do find it surprising, though, that the compiler can't figure this one
+> out, given that rcu_num_lvls gets initialized right before this in the
+> same file (and likely inlined into the same function).  I wonder if it
+> thought some other code might change it unexpectedly, since rcu_num_lvls
+> doesn't get declared as static?  Unfortunately, the loop macros in
+> rcutree.h make it difficult to make rcu_num_lvls static, but as far as I
+> can tell only one use of those macros ever gets expanded outside of
+> rcutree.c: the one in rcutree_trace.c.  If you compile out tracing, and
+> declare rcu_num_lvls static, does the warning go away?
 
-Thanks,
+I found it quite surprising also, hence the "array-index anxieties" above.
 
--Jason
+I added Marcus on CC for his thoughts on this.
 
+							Thanx, Paul
 
-> Reviewed-by: Jamie Iles <jamie.iles@oracle.com>
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  include/linux/jump_label.h |  4 ++--
->  kernel/jump_label.c        | 10 ++++++----
->  2 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/include/linux/jump_label.h b/include/linux/jump_label.h
-> index 0976fc4..d917a2a 100644
-> --- a/include/linux/jump_label.h
-> +++ b/include/linux/jump_label.h
-> @@ -116,7 +116,7 @@ extern void arch_jump_label_transform(struct jump_entry *entry,
->  				      enum jump_label_type type);
->  extern void arch_jump_label_transform_static(struct jump_entry *entry,
->  					     enum jump_label_type type);
-> -extern int jump_label_text_reserved(void *start, void *end);
-> +extern int jump_label_text_reserved(const void *start, const void *end);
->  extern void static_key_slow_inc(struct static_key *key);
->  extern void static_key_slow_dec(struct static_key *key);
->  extern void static_key_slow_dec_deferred(struct static_key_deferred *key);
-> @@ -174,7 +174,7 @@ static inline void static_key_slow_dec_deferred(struct static_key_deferred *key)
->  	static_key_slow_dec(&key->key);
->  }
->  
-> -static inline int jump_label_text_reserved(void *start, void *end)
-> +static inline int jump_label_text_reserved(const void *start, const void *end)
->  {
->  	return 0;
->  }
-> diff --git a/kernel/jump_label.c b/kernel/jump_label.c
-> index 60f48fa..6dc71c6 100644
-> --- a/kernel/jump_label.c
-> +++ b/kernel/jump_label.c
-> @@ -120,7 +120,8 @@ void jump_label_rate_limit(struct static_key_deferred *key,
->  }
->  EXPORT_SYMBOL_GPL(jump_label_rate_limit);
->  
-> -static int addr_conflict(struct jump_entry *entry, void *start, void *end)
-> +static int addr_conflict(struct jump_entry *entry,
-> +				const void *start, const void *end)
->  {
->  	if (entry->code <= (unsigned long)end &&
->  		entry->code + JUMP_LABEL_NOP_SIZE > (unsigned long)start)
-> @@ -130,7 +131,8 @@ static int addr_conflict(struct jump_entry *entry, void *start, void *end)
->  }
->  
->  static int __jump_label_text_reserved(struct jump_entry *iter_start,
-> -		struct jump_entry *iter_stop, void *start, void *end)
-> +		struct jump_entry *iter_stop,
-> +		const void *start, const void *end)
->  {
->  	struct jump_entry *iter;
->  
-> @@ -222,7 +224,7 @@ struct static_key_mod {
->  	struct module *mod;
->  };
->  
-> -static int __jump_label_mod_text_reserved(void *start, void *end)
-> +static int __jump_label_mod_text_reserved(const void *start, const void *end)
->  {
->  	struct module *mod;
->  
-> @@ -419,7 +421,7 @@ early_initcall(jump_label_init_module);
->   *
->   * returns 1 if there is an overlap, 0 otherwise
->   */
-> -int jump_label_text_reserved(void *start, void *end)
-> +int jump_label_text_reserved(const void *start, const void *end)
->  {
->  	int ret = __jump_label_text_reserved(__start___jump_table,
->  			__stop___jump_table, start, end);
-> -- 
-> 1.8.0.2
-> 
