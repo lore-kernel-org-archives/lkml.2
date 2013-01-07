@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727Ab3AGPzS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:55:18 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37785 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753671Ab3AGPzM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:55:12 -0500
-Date: Mon, 7 Jan 2013 10:55:03 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Xu, Dongxiao" <dongxiao.xu@intel.com>
-Cc: Jan Beulich <JBeulich@suse.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
- for map_sg hook
-Message-ID: <20130107155503.GH3219@phenom.dumpdata.com>
-References: <1354799322-6000-1-git-send-email-dongxiao.xu@intel.com>
- <20121207140852.GC3140@phenom.dumpdata.com>
- <40776A41FC278F40B59438AD47D147A90FEBE741@SHSMSX102.ccr.corp.intel.com>
- <20121211170653.GG9347@localhost.localdomain>
- <40776A41FC278F40B59438AD47D147A90FEBFB64@SHSMSX102.ccr.corp.intel.com>
- <50C85E9F02000078000AFD65@nat28.tlf.novell.com>
- <20121219200904.GG15037@phenom.dumpdata.com>
- <40776A41FC278F40B59438AD47D147A90FECC3EC@SHSMSX102.ccr.corp.intel.com>
- <50D2E0C102000078000B1B1C@nat28.tlf.novell.com>
- <40776A41FC278F40B59438AD47D147A90FED9A52@SHSMSX102.ccr.corp.intel.com>
+	id S1753767Ab3AGPzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:55:48 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33319 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508Ab3AGPzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 10:55:47 -0500
+Date: Mon, 7 Jan 2013 16:55:44 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 08/31] x86, 64bit: early #PF handler set page table
+Message-ID: <20130107155544.GD29449@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-9-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <40776A41FC278F40B59438AD47D147A90FED9A52@SHSMSX102.ccr.corp.intel.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357260531-11115-9-git-send-email-yinghai@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 07:17:33AM +0000, Xu, Dongxiao wrote:
-> > -----Original Message-----
-> > From: Jan Beulich [mailto:JBeulich@suse.com]
-> > Sent: Thursday, December 20, 2012 4:56 PM
-> > To: Xu, Dongxiao
-> > Cc: xen-devel@lists.xen.org; Konrad Rzeszutek Wilk;
-> > linux-kernel@vger.kernel.org
-> > Subject: RE: [Xen-devel] [PATCH] xen/swiotlb: Exchange to contiguous memory
-> > for map_sg hook
-> > 
-> > >>> On 20.12.12 at 02:23, "Xu, Dongxiao" <dongxiao.xu@intel.com> wrote:
-> > > Sorry, maybe I am still not describing this issue clearly.
-> > 
-> > No, at least I understood you the way you re-describe below.
-> > 
-> > > Take the libata case as an example, the static DMA buffer locates
-> > > (dev->link->ap->sector_buf , here we use Data Structure B in the graph) in
-> > > the following structure:
-> > >
-> > > -------------------------------------Page boundary
-> > > <Data Structure A>
-> > > <Data Structure B>
-> > > -------------------------------------Page boundary
-> > > <Data Structure B (cross page)>
-> > > <Data Structure C>
-> > > -------------------------------------Page boundary
-> > >
-> > > Where Structure B is our DMA target.
-> > >
-> > > For Data Structure B, we didn't care about the simultaneous access, either
-> > > lock or sync function will take care of it.
-> > > What we are not sure is "read/write of A and C from other processor". As we
-> > > will have memory copy for the pages, and at the same time, other CPU may
-> > > access A/C.
-> > 
-> > The question is whether what libata does here is valid in the first
-> > place - fill an SG list entry with something that crosses a page
-> > boundary and is not a compound page.
+On Thu, Jan 03, 2013 at 04:48:28PM -0800, Yinghai Lu wrote:
+> From: "H. Peter Anvin" <hpa@zytor.com>
 > 
-> Sorry for the late response about this thread.
+> two use cases:
+> 1. We will support load and run kernel above 4G, and zero_page, ramdisk
+>    will be above 4G, too
+> 2. need to access ramdisk early to get microcode to update that as
+>    early possible.
 > 
-> To make sure I understand you correctly, so do you mean the correct fix should be applied to libata driver, and make sure it DMA from/to correct place (for example, some memory allocated by DMA API), but not such certain field in a static structure?
-
-Or with baremetal swiotlb if the user booted with 'swiotlb=force'.
+> We could use early_iomap to access them, but it will make code to
+								 too
+> messy and hard to unified with 32bit.
+		    s/unified/unify/
 
 > 
-> If we fix it in device driver side, then we may not need to modify the xen-swiotlb part.
+> So here comes #PF handler to set page page.
 > 
-Correct. This is a bug in the device driver where it checks the contents of its buffer
-_before_ doing an DMA unmap or DMA sync.
+> When #PF happen, handler will use pages in __initdata to set page page
+
+"When a page fault happens, the handler will use pages from __initdata
+to cover the accessed page."
+
+> to cover accessed page.
+> 
+> those code and page in __INIT sections, so will not increase ram usages.
+
+Huh, what? Something is in __INIT and will not increase RAM usage?
+
+> The good point is: with help of #PF handler, we can set kernel mapping
+> from blank, and switch to init_level4_pgt later.
+
+I think you want to say "we can create temporary, ad-hoc kernel mappings
+and forget them later by switching to init_level4_pgt." ?
+
+> switchover in head_64.S is only using three page to handle kernel
+> crossing 1G, 512G with shareing page, most insteresting part.
+
+Again, what?
+
+> early_make_pgtable is using kernel high mapping address to access pages
+> to set page table.
+> 
+> -v4: Add phys_base offset to make kexec happy, and add
+> 	init_mapping_kernel()   - Yinghai
+> -v5: fix compiling with xen, and add back ident level3 and level2 for xen
+>      also move back init_level4_pgt from BSS to DATA again.
+>      because we have to clear it anyway.  - Yinghai
+> -v6: switch to init_level4_pgt in init_mem_mapping. - Yinghai
+> -v7: remove not needed clear_page for init_level4_page
+>      it is with fill 512,8,0 already in head_64.S  - Yinghai
+> -v8: we need to keep that handler alive until init_mem_mapping and don't
+>      let early_trap_init to trash that early #PF handler.
+>      So split early_trap_pf_init out and move it down. - Yinghai
+> -v9: switchover only cover kernel space instead of 1G so could avoid
+>      touch possible mem holes. - Yinghai
+> -v11: change far jmp back to far return to initial_code, that is needed
+>      to fix failure that is reported by Konrad on AMD system.  - Yinghai
+
+Those -vXX version lines need to go under the "---" line. Alternatively,
+you might want to add some of them to the commit message with a proper
+explanation since they are not that trivial at a first glance, for
+example the -v5, -v6, -v8, -v9 with a better explanation.
+
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+This needs hpa's S-O-B.
+
+[ … ]
+
+-- 
+Regards/Gruss,
+Boris.
