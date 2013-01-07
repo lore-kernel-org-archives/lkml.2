@@ -1,76 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab3AGRHE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:07:04 -0500
-Received: from e37.co.us.ibm.com ([32.97.110.158]:40072 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3AGRHB (ORCPT
+	id S1754494Ab3AGRHb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:07:31 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:44720 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab3AGRH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:07:01 -0500
-Date: Mon, 7 Jan 2013 08:57:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
-Message-ID: <20130107165748.GF2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130105175059.GA15961@linux.vnet.ibm.com>
- <20130107155810.GC11145@leaf>
+	Mon, 7 Jan 2013 12:07:29 -0500
+Message-ID: <50EB00CD.2040204@wwwdotorg.org>
+Date: Mon, 07 Jan 2013 10:07:25 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130107155810.GC11145@leaf>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010717-7408-0000-0000-00000B9FE751
+To: =?UTF-8?B?VGVyamUgQmVyZ3N0csO2bQ==?= <tbergstrom@nvidia.com>
+CC: Arto Merilainen <amerilainen@nvidia.com>,
+        Thierry Reding <thierry.reding@avionic-design.de>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC v2 6/8] gpu: drm: tegra: Remove redundant host1x
+References: <50BF345A.8050201@nvidia.com> <20121205120429.GA29943@avionic-0098.adnet.avionic-design.de> <50C5CAB5.3040000@nvidia.com> <20121212160829.GA30278@avionic-0098.adnet.avionic-design.de> <50C99677.6090306@nvidia.com> <20121213085750.GA14740@avionic-0098.adnet.avionic-design.de> <50CA175F.60002@wwwdotorg.org> <50CAC2AC.1010704@nvidia.com> <50CB5205.1030303@wwwdotorg.org> <50CB850F.9090704@nvidia.com> <20121216121603.GA31780@avionic-0098.adnet.avionic-design.de> <50D2D792.1050401@nvidia.com> <50D34775.5010606@wwwdotorg.org> <50D42486.7080901@nvidia.com> <50D4D25B.7030506@wwwdotorg.org> <50E6AA69.4030001@nvidia.com> <50E73AA2.7090500@wwwdotorg.org> <50EA8533.3020109@nvidia.com>
+In-Reply-To: <50EA8533.3020109@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 07:58:10AM -0800, Josh Triplett wrote:
-> On Sat, Jan 05, 2013 at 09:50:59AM -0800, Paul E. McKenney wrote:
-> > rcu: Provide RCU CPU stall warnings for tiny RCU
-> > 
-> > Tiny RCU has historically omitted RCU CPU stall warnings in order to
-> > reduce memory requirements, however, lack of these warnings caused Thomas
-> > Gleixner some debugging pain recently.  Therefore, this commit adds RCU
-> > CPU stall warnings to tiny RCU if RCU_TRACE=y.  This keeps the memory
-> > footprint small, while still enabling CPU stall warnings in kernels
-> > built to enable them.
-> > 
-> > This is still a bit on the high-risk side, so running this will likely
-> > be a debugging exercise.
-> > 
-> > Reported-by: Thomas Gleixner <tglx@linutronix.de>
-> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+On 01/07/2013 01:20 AM, Terje Bergström wrote:
+> On 04.01.2013 22:25, Stephen Warren wrote:
+>> On 01/04/2013 03:09 AM, Terje Bergström wrote:
+>> ...
+>>> I think we have now two ways to go forward with cons and pros:
+>>>  1) Keep host1x and tegra-drm as separate driver
+>>>    + Code almost done
+>>>    - we need dummy device and dummy driver
+>>>    - extra code and API when host1x creates dummy device and its passed
+>>> to tegra-drm
+...
+>>>  2) Merge host1x and tegra-drm into one module. drm is a subcomponent,
+>>> and whatever other personalities we wish would also be subcomponents of
+>>> host1x. host1x calls tegra-drm directly to handle preparation for drm
+>>> initialization. As they're in the same module, circular dependency is ok.
+>>>    + Simpler conceptually (no dummy device/driver)
+>>>    + Less code
+>>>    - Proposal doesn't yet exist
+>>
+>> But that said, I agree this approach would be very reasonable; it seems
+>> to me that host1x really is the main HW behind a DRM driver or a V4L2
+>> driver or ... As such, it seems quite reasonable for a single struct
+>> device to exist that represents host1x, and for the driver for that
+>> device to register both a DRM and a V4L2 driver etc. The code could
+>> physically be organized into separate modules, and under different
+>> Kconfig options for configurability etc.
+>>
+>> But either way, I'll let you (Thierry and Terje) work out which way to go.
 > 
-> Did you generate this patch with something other than git?  The
-> formatting seems a bit off: it doesn't have a diffstat or the usual
-> "---" line between the commit message and the patch.
+> If we want separate modules, we'd need the dummy device & dummy driver
+> binding between them.
 
-Indeed I did -- couldn't see the point of sending a 0/1 and 1/1
-series of patches.  ;-)
-
-> This patch seems reasonable to me, but the repeated use of #if
-> defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
-> annoying, and fragile if you ever decide to change the conditions.  How
-> about defining an appropriate symbol in Kconfig for stall warnings, and
-> using that?
-
-But I only just removed the config option for SMP RCU stall warnings.  ;-)
-
-But I must agree that "defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)"
-is a bit obscure.  The rationale is that RCU stall warnings are
-unconditionally enabled in SMP kernels, but don't want to be in
-TINY_RCU kernels due to size constraints.  I therefore put it under
-CONFIG_RCU_TRACE, which also contains other TINY_RCU debugging-style
-options.  Would adding a comment to this effect help?
-
-							Thanx, Paul
-
+I haven't really thought it through, but I don't think so; I was
+thinking separate modules more just to allow linking smaller chunks of
+code at once rather than allowing optional functionality via loading (or
+not) various modules. Hence, simple function calls between the
+files/modules. Still, there may well be no need at all to split it into
+separate modules.
