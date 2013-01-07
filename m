@@ -1,61 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3AGQ7p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:59:45 -0500
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:45234 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751639Ab3AGQ7n (ORCPT
+	id S1754428Ab3AGRBa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:01:30 -0500
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:38228 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab3AGRB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:59:43 -0500
-Date: Mon, 7 Jan 2013 17:59:34 +0100
-From: Fabio Baltieri <fabio.baltieri@linaro.org>
-To: Vinod Koul <vinod.koul@intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Dan Williams <djbw@fb.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/16] various fixes and updates for ste_dma40
-Message-ID: <20130107165934.GA16374@balto.lan>
-Mail-Followup-To: Fabio Baltieri <fabio.baltieri@linaro.org>,
-	Vinod Koul <vinod.koul@intel.com>,
-	Linus Walleij <linus.walleij@linaro.org>,
-	Dan Williams <djbw@fb.com>,
-	Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-	linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1357557718-15676-1-git-send-email-fabio.baltieri@linaro.org>
- <20130107143356.GB15804@intel.com>
+	Mon, 7 Jan 2013 12:01:28 -0500
+Date: Mon, 7 Jan 2013 09:01:24 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Lin Feng <linfeng@cn.fujitsu.com>
+Cc: akpm@linux-foundation.org, mingo@kernel.org, yinghai@kernel.org,
+        liwanp@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        tangchen@cn.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] mm: memblock: fix wrong memmove size in
+ memblock_merge_regions()
+Message-ID: <20130107170124.GK3926@htj.dyndns.org>
+References: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130107143356.GB15804@intel.com>
-X-Operating-System: Linux balto 3.8.0-rc2-00036-g5f73896 x86_64 GNU/Linux
+In-Reply-To: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 06:33:56AM -0800, Vinod Koul wrote:
-> On Mon, Jan 07, 2013 at 12:21:42PM +0100, Fabio Baltieri wrote:
-> > Hi all,
-> > 
-> > this series contains many fixes and updates for the ste_dma40 driver.
-> > 
-> > The first patches of the series were originally sent weeks ago but did not
-> > receive any feedback, so I'm also resending those, but I've rebased everything
-> > on top of v3.8-rc2 to avoid a (trivial) file rename conflict.
-> > 
-> > Vinod, these should probably end up in the arm-soc tree so they can receive
-> > some testing from drivers using it.  Can I have your Acked-by for this?
-> Sure the patchset looks fine by me
+On Mon, Jan 07, 2013 at 11:41:36AM +0800, Lin Feng wrote:
+> The memmove span covers from (next+1) to the end of the array, and the index
+> of next is (i+1), so the index of (next+1) is (i+2). So the size of remaining
+> array elements is (type->cnt - (i + 2)).
 > 
-> Acked-by: Vinod Koul <vinod.koul@intel.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
 
-Thanks Vinod!
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Linus, will you pick this up in ste-next for arm-soc?
-
-Thanks,
-Fabio
+Thanks!
 
 -- 
-Fabio Baltieri
+tejun
