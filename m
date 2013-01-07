@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab3AGWUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:20:53 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:55751 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755823Ab3AGWUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:20:52 -0500
-Message-ID: <50EB4A3B.1020307@suse.com>
-Date: Mon, 07 Jan 2013 17:20:43 -0500
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] staging/sb105x: remove asm/segment.h dependency
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755930Ab3AGWXg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:23:36 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:14510 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab3AGWXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 17:23:35 -0500
+X-Authority-Analysis: v=2.0 cv=Jaw+XD2V c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=LA3gWDSkY1gA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=kQGk9uj_t6UA:10 a=m3NtziW9UwOOy6OZuoMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357597414.5190.6.camel@gandalf.local.home>
+Subject: Re: [PATCH] jump_label: constify jump_label_text_reserved and
+ friends
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
+        jamie.iles@oracle.com
+Date: Mon, 07 Jan 2013 17:23:34 -0500
+In-Reply-To: <20130107163955.GB2948@redhat.com>
+References: <1357567093-31136-1-git-send-email-sasha.levin@oracle.com>
+	 <20130107163955.GB2948@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sb105x doesn't seem to actually need <asm/segment.h> (builds on x86
-without it) and ppc/ppc64 doesn't provide it so it fails to build there.
+On Mon, 2013-01-07 at 11:40 -0500, Jason Baron wrote:
+> On Mon, Jan 07, 2013 at 08:58:09AM -0500, Sasha Levin wrote:
+> > jump_label_text_reserved() doesn't modify the memory it works on, it just
+> > checks whether there are any jump labels there.
+> > 
+> > Constify the parameters of it to prevent warnings when working with it.
+> > 
+> 
+> I don't see any 'const' data passed to jump_label_text_reserved()? Where is the
+> warning coming from? New users?
 
-This patch removes the dependency. Unfortunately, it now fails to build
-because STD_COM_FLAGS isn't defined on most architectures. I'm not familiar
-enough with the tty/serial system to patch that aspect of it.
-
-CC: Steven Rostedt <rostedt@goodmis.org>
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
----
-
- drivers/staging/sb105x/sb_pci_mp.h |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/drivers/staging/sb105x/sb_pci_mp.h
-+++ b/drivers/staging/sb105x/sb_pci_mp.h
-@@ -19,7 +19,6 @@
- #include <asm/uaccess.h>
- #include <asm/io.h>
- #include <asm/irq.h>
--#include <asm/segment.h>
- #include <asm/serial.h>
- #include <linux/interrupt.h>
- 
+If the data is never going to be modified, then it's a good idea to add
+const regardless of users. It's good documentation.
 
 
--- 
-Jeff Mahoney
-SUSE Labs
+> 
+> Also, does this mean 'ftrace_text_reserved()' and 'alternatives_text_reserved()'
+> need to be updated as well?
+
+Yes, change these too.
+
+Thanks!
+
+-- Steve
+
+
