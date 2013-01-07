@@ -1,75 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754387Ab3AGUf5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 15:35:57 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:29442 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753321Ab3AGUfy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 15:35:54 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19EpOwXeMXfyHbLkOaYeEFc
-Date: Mon, 7 Jan 2013 12:35:30 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Message-ID: <20130107203529.GI14149@atomide.com>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
- <1357584666-17374-2-git-send-email-panto@antoniou-consulting.com>
- <20130107200945.GF14149@atomide.com>
- <379B16EC-BFAA-4C27-8321-E7133C03368D@antoniou-consulting.com>
- <20130107202306.GH14149@atomide.com>
- <FA4D880E-833E-43D9-A399-0A5C260E83F2@antoniou-consulting.com>
+	id S1754678Ab3AGUh2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 15:37:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:27661 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751560Ab3AGUh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 15:37:26 -0500
+Date: Mon, 7 Jan 2013 18:11:46 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+Cc: gleb@redhat.com, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] KVM: Write protect the updated slot only when we
+ start dirty logging
+Message-ID: <20130107201146.GA19224@amt.cnet>
+References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
+ <20121218162647.009f468e.yoshikawa_takuya_b1@lab.ntt.co.jp>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <FA4D880E-833E-43D9-A399-0A5C260E83F2@antoniou-consulting.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20121218162647.009f468e.yoshikawa_takuya_b1@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pantelis Antoniou <panto@antoniou-consulting.com> [130107 12:29]:
-> On Jan 7, 2013, at 10:23 PM, Tony Lindgren wrote:
-> > 
-> > Well how about split it to an eeprom driver, and Linux generic
-> > device loader parts?
-> > 
+On Tue, Dec 18, 2012 at 04:26:47PM +0900, Takuya Yoshikawa wrote:
+> This is needed to make kvm_mmu_slot_remove_write_access() rmap based:
+> otherwise we may end up using invalid rmap's.
 > 
-> All that's left is the eeprom driver (accessor) and calls to the 
-> generic DT overlay constructs. 
->
-> If you caught on the previous patchset about DT overlays it should be
-> clear.
+> Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+
+Why? memslot->arch.rmap[] has been properly allocated at this point.
+
+> ---
+>  arch/x86/kvm/x86.c  |    9 ++++++++-
+>  virt/kvm/kvm_main.c |    1 -
+>  2 files changed, 8 insertions(+), 2 deletions(-)
 > 
-> So it is split along those lines already.
-
-Hmm I was thinking something like this:
-
-drivers/base/device-loader.c
-drivers/misc/eeprom/beaglebone-cape.c
-
-Then you may be able to just load the configuration for it
-from a .dts file and maybe no hardware specific glue is even
-needed.
-
-Regards,
-
-Tony
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 1c9c834..9451efa 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -6897,7 +6897,14 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+>  	spin_lock(&kvm->mmu_lock);
+>  	if (nr_mmu_pages)
+>  		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
+> -	kvm_mmu_slot_remove_write_access(kvm, mem->slot);
+> +	/*
+> +	 * Write protect all pages for dirty logging.
+> +	 * Existing largepage mappings are destroyed here and new ones will
+> +	 * not be created until the end of the logging.
+> +	 */
+> +	if ((mem->flags & KVM_MEM_LOG_DIRTY_PAGES) &&
+> +	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES))
+> +		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
+>  	spin_unlock(&kvm->mmu_lock);
+>  	/*
+>  	 * If memory slot is created, or moved, we need to clear all
+> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> index bd31096..0ef5daa 100644
+> --- a/virt/kvm/kvm_main.c
+> +++ b/virt/kvm/kvm_main.c
+> @@ -805,7 +805,6 @@ int __kvm_set_memory_region(struct kvm *kvm,
+>  	if ((new.flags & KVM_MEM_LOG_DIRTY_PAGES) && !new.dirty_bitmap) {
+>  		if (kvm_create_dirty_bitmap(&new) < 0)
+>  			goto out_free;
+> -		/* destroy any largepage mappings for dirty tracking */
+>  	}
+>  
+>  	if (!npages || base_gfn != old.base_gfn) {
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
