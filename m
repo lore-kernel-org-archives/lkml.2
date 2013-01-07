@@ -1,131 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754453Ab3AGRKg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:10:36 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49859 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753238Ab3AGRKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:10:34 -0500
-From: Corey Bryant <coreyb@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, jmorris@namei.org, wad@chromium.org,
-        pmoore@redhat.com, otubo@linux.vnet.ibm.com
-Subject: [PATCH v2 3/3] samples: Add sample using SECCOMP_RET_INFO
-Date: Mon,  7 Jan 2013 12:09:05 -0500
-Message-Id: <1357578545-2396-3-git-send-email-coreyb@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1357578545-2396-1-git-send-email-coreyb@linux.vnet.ibm.com>
-References: <1357578545-2396-1-git-send-email-coreyb@linux.vnet.ibm.com>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010717-7182-0000-0000-0000043CDA90
+	id S1754545Ab3AGRKq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:10:46 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:55280 "EHLO
+	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752225Ab3AGRKo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:10:44 -0500
+From: Pantelis Antoniou <panto@antoniou-consulting.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: David Daney <ddaney.cavm@gmail.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] i2c-EEPROM: In kernel memory accessor interface
+Date: Mon,  7 Jan 2013 19:10:33 +0200
+Message-Id: <1357578633-15920-1-git-send-email-panto@antoniou-consulting.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a sample that demonstrates use of the SECCOMP_RET_INFO return value.
+In kernel users need to access the EEPROM using the i2c_client
+interface. Extend at24 to use it via the command interface.
 
-Signed-off-by: Corey Bryant <coreyb@linux.vnet.ibm.com>
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
 ---
-v2:
- - Modify test to use fprintf and add arch hints
+ drivers/misc/eeprom/at24.c | 23 ++++++++++++++++++
+ include/linux/i2c/eeprom.h | 59 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 82 insertions(+)
+ create mode 100644 include/linux/i2c/eeprom.h
 
- samples/seccomp/Makefile     |  8 ++++++-
- samples/seccomp/bpf-logger.c | 50 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 57 insertions(+), 1 deletion(-)
- create mode 100644 samples/seccomp/bpf-logger.c
-
-diff --git a/samples/seccomp/Makefile b/samples/seccomp/Makefile
-index bbbd276..ee769bb 100644
---- a/samples/seccomp/Makefile
-+++ b/samples/seccomp/Makefile
-@@ -1,7 +1,7 @@
- # kbuild trick to avoid linker error. Can be omitted if a module is built.
- obj- := dummy.o
+diff --git a/drivers/misc/eeprom/at24.c b/drivers/misc/eeprom/at24.c
+index 2baeec5..40b1a95 100644
+--- a/drivers/misc/eeprom/at24.c
++++ b/drivers/misc/eeprom/at24.c
+@@ -23,6 +23,7 @@
+ #include <linux/of.h>
+ #include <linux/i2c.h>
+ #include <linux/i2c/at24.h>
++#include <linux/i2c/eeprom.h>
  
--hostprogs-$(CONFIG_SECCOMP_FILTER) := bpf-fancy dropper bpf-direct
-+hostprogs-$(CONFIG_SECCOMP_FILTER) := bpf-fancy dropper bpf-direct bpf-logger
+ /*
+  * I2C EEPROMs from most vendors are inexpensive and mostly interchangeable.
+@@ -672,6 +673,27 @@ static int at24_remove(struct i2c_client *client)
+ 	return 0;
+ }
  
- HOSTCFLAGS_bpf-fancy.o += -I$(objtree)/usr/include
- HOSTCFLAGS_bpf-fancy.o += -idirafter $(objtree)/include
-@@ -17,6 +17,10 @@ HOSTCFLAGS_bpf-direct.o += -I$(objtree)/usr/include
- HOSTCFLAGS_bpf-direct.o += -idirafter $(objtree)/include
- bpf-direct-objs := bpf-direct.o
- 
-+HOSTCFLAGS_bpf-logger.o += -I$(objtree)/usr/include
-+HOSTCFLAGS_bpf-logger.o += -idirafter $(objtree)/include
-+bpf-logger-objs := bpf-logger.o
++static int at24_command(struct i2c_client *client, unsigned int cmd, void *arg)
++{
++	struct at24_data *at24;
++	const struct memory_accessor **maccp;
 +
- # Try to match the kernel target.
- ifndef CONFIG_64BIT
++	/* only supporting a single command */
++	if (cmd != I2C_EEPROM_GET_MEMORY_ACCESSOR)
++		return -ENOTSUPP;
++
++	/* rudimentary check */
++	if (arg == NULL)
++		return -EINVAL;
++
++	at24 = i2c_get_clientdata(client);
++
++	maccp = arg;
++	*maccp = &at24->macc;
++
++	return 0;
++}
++
+ /*-------------------------------------------------------------------------*/
  
-@@ -31,9 +35,11 @@ HOSTCFLAGS_bpf-direct.o += $(MFLAG)
- HOSTCFLAGS_dropper.o += $(MFLAG)
- HOSTCFLAGS_bpf-helper.o += $(MFLAG)
- HOSTCFLAGS_bpf-fancy.o += $(MFLAG)
-+HOSTCFLAGS_bpf-logger.o += $(MFLAG)
- HOSTLOADLIBES_bpf-direct += $(MFLAG)
- HOSTLOADLIBES_bpf-fancy += $(MFLAG)
- HOSTLOADLIBES_dropper += $(MFLAG)
-+HOSTLOADLIBES_bpf-logger += $(MFLAG)
- endif
+ static struct i2c_driver at24_driver = {
+@@ -682,6 +704,7 @@ static struct i2c_driver at24_driver = {
+ 	.probe = at24_probe,
+ 	.remove = at24_remove,
+ 	.id_table = at24_ids,
++	.command = at24_command,
+ };
  
- # Tell kbuild to always build the programs
-diff --git a/samples/seccomp/bpf-logger.c b/samples/seccomp/bpf-logger.c
+ static int __init at24_init(void)
+diff --git a/include/linux/i2c/eeprom.h b/include/linux/i2c/eeprom.h
 new file mode 100644
-index 0000000..4580417
+index 0000000..1393980
 --- /dev/null
-+++ b/samples/seccomp/bpf-logger.c
-@@ -0,0 +1,50 @@
++++ b/include/linux/i2c/eeprom.h
+@@ -0,0 +1,59 @@
 +/*
-+ * System call logger built on seccomp_filter.
++ * i2c/eeprom.h
 + *
-+ * Copyright (c) 2012 The Chromium OS Authors <chromium-os-dev@chromium.org>
-+ * Copyright (C) IBM Corporation, 2012
-+ * Authors: Will Drewry <wad@chromium.org>
-+ *          Corey Bryant <coreyb@linux.vnet.ibm.com>
++ * In-kernel interface for accessing eeprom memory.
 + *
-+ * The code may be used by anyone for any purpose,
-+ * and can serve as a starting point for developing
-+ * applications using prctl(PR_SET_SECCOMP, 2, ...).
++ * Copyright (C) 2012 Texas Instruments Inc.
++ *                    Pantelis Antoniou <panto@antoniou-consulting.com>
 + *
-+ * Prints rate-limited informational kernel messages for
-+ * each system call that the process executes.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++#ifndef I2C_EEPROM_H
++#define I2C_EEPROM_H
++
++#include <linux/types.h>
++#include <linux/memory.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++
++/*
++ * The method called in the client is
 + *
-+ * Run this one as root as PR_SET_NO_NEW_PRIVS is not called.
++ * int command(struct i2c_client *client, unsigned int cmd, void *arg);
++ *
++ * A single command is supported, which returns a pointer to the memory
++ * accessor already available, but which was only accessible via platform
++ * callbacks. We can't use platform callbacks anymore for device tree
++ * platforms, hence this interface.
++ *
 + */
 +
-+#include <linux/audit.h>
-+#include <linux/filter.h>
-+#include <linux/seccomp.h>
-+#include <sys/prctl.h>
-+#include <stdio.h>
++/* interface commands */
++#define I2C_EEPROM_GET_MEMORY_ACCESSOR	1
 +
-+static int install_filter()
++static inline struct memory_accessor *
++i2c_eeprom_get_memory_accessor(struct i2c_client *client)
 +{
-+	struct sock_filter filter[] = {
-+		BPF_STMT(BPF_RET+BPF_K, SECCOMP_RET_INFO),
-+	};
-+	struct sock_fprog prog = {
-+		.len = (unsigned short)(sizeof(filter)/sizeof(filter[0])),
-+		.filter = filter,
-+	};
-+	if (prctl(PR_SET_SECCOMP, 2, &prog)) {
-+		perror("prctl");
-+		return 1;
-+	}
-+	return 0;
++	int ret;
++	struct memory_accessor *macc;
++
++	/* verify that the i2c client's driver has a command method */
++	if (!client || !client->driver || !client->driver->command)
++		return ERR_PTR(-ENOTSUPP);
++
++	macc = NULL;
++	ret = client->driver->command(client, I2C_EEPROM_GET_MEMORY_ACCESSOR,
++			&macc);
++	if (ret != 0)
++		return ERR_PTR(ret);
++
++	if (macc == NULL)
++		return ERR_PTR(-ENOTSUPP);
++
++	return macc;
 +}
 +
-+int main(int argc, char **argv)
-+{
-+	if (install_filter())
-+		return 1;
-+	fprintf(stdout, "To examine syscalls type: dmesg | grep seccomp\n"
-+			"Hint:  AUDIT_ARCH_I386: 0x%X\n"
-+			"       AUDIT_ARCH_X86_64: 0x%X\n",
-+			AUDIT_ARCH_I386, AUDIT_ARCH_X86_64);
-+	return 0;
-+}
++#endif
 -- 
-1.7.11.7
+1.7.12
 
