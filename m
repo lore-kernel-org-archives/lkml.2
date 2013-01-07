@@ -1,97 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762Ab3AGORw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:17:52 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33452 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751844Ab3AGORu (ORCPT
+	id S1754790Ab3AGOYE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:24:04 -0500
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:50411 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751884Ab3AGOYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:17:50 -0500
-Message-ID: <1357568256.26822.18.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
- subframe fails
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Date: Mon, 07 Jan 2013 14:17:36 +0000
-In-Reply-To: <20130107081003.GB2984@redhat.com>
-References: <20121228190352.097882544@decadent.org.uk>
-	 <50DEA41E.6010409@01019freenet.de>
-	 <1356871099.4821.16.camel@deadeye.wl.decadent.org.uk>
-	 <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
-	 <20130107080532.GA2984@redhat.com> <20130107081003.GB2984@redhat.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-x7yHYfqrH8l2lGT4IWnB"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Mon, 7 Jan 2013 09:24:01 -0500
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 1/2] pinctrl/nomadik: simplify GPIO probe
+Date: Mon, 7 Jan 2013 15:23:45 +0100
+Message-ID: <1357568625-5979-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.11.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Linus Walleij <linus.walleij@linaro.org>
 
---=-x7yHYfqrH8l2lGT4IWnB
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Instead of jumping to a label later in the probe just return
+with an error code whenever probe() fails. Make sure to remove
+the gpiochip on irqdomain error now that we're at it.
 
-On Mon, 2013-01-07 at 09:10 +0100, Stanislaw Gruszka wrote:
-> On Mon, Jan 07, 2013 at 09:05:32AM +0100, Stanislaw Gruszka wrote:
-> > > To be clear, I have all of these in the queue:
-> > >=20
-> > > be03d4a45c09 rt2x00: Don't let mac80211 send a BAR when an AMPDU subf=
-rame fails
-> > > 5b632fe85ec8 mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FA=
-IL
-> > > ab9d6e4ffe19 Revert: "rt2x00: Don't let mac80211 send a BAR when an A=
-MPDU subframe fails"
-> > >=20
-> > > and I'm intending to drop/defer them all.
-> >=20
-> > Patch 3 is a revert of patch 1 (questioned patch). Please apply all 3 p=
-atches,
-> > or only patch 2.
->=20
-> No, actually all 3 patches have to be applied. Because last one, except
-> revert, include flag IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL setting in rt=
-2x00
-> driver, which make patch 2 work.
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinctrl-nomadik.c | 52 +++++++++++++--------------------------
+ 1 file changed, 17 insertions(+), 35 deletions(-)
 
-Andreas said that that after ab9d6e4ffe19 there was still a regression.
-But maybe he was confused.  I know I'm confused.
+diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
+index 0355786..66cce5f 100644
+--- a/drivers/pinctrl/pinctrl-nomadik.c
++++ b/drivers/pinctrl/pinctrl-nomadik.c
+@@ -1343,8 +1343,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 
+ 		if (of_property_read_u32(np, "gpio-bank", &dev->id)) {
+ 			dev_err(&dev->dev, "gpio-bank property not found\n");
+-			ret = -EINVAL;
+-			goto out;
++			return -EINVAL;
+ 		}
+ 
+ 		pdata->first_gpio = dev->id * NMK_GPIO_PER_CHIP;
+@@ -1352,41 +1351,29 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 	}
+ 
+ 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
+-	if (!res) {
+-		ret = -ENOENT;
+-		goto out;
+-	}
++	if (!res)
++		return -ENOENT;
+ 
+ 	irq = platform_get_irq(dev, 0);
+-	if (irq < 0) {
+-		ret = irq;
+-		goto out;
+-	}
++	if (irq < 0)
++		return irq;
+ 
+ 	secondary_irq = platform_get_irq(dev, 1);
+-	if (secondary_irq >= 0 && !pdata->get_secondary_status) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
++	if (secondary_irq >= 0 && !pdata->get_secondary_status)
++		return -EINVAL;
+ 
+ 	base = devm_request_and_ioremap(&dev->dev, res);
+-	if (!base) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	if (!base)
++		return -ENOMEM;
+ 
+ 	clk = devm_clk_get(&dev->dev, NULL);
+-	if (IS_ERR(clk)) {
+-		ret = PTR_ERR(clk);
+-		goto out;
+-	}
++	if (IS_ERR(clk))
++		return PTR_ERR(clk);
+ 	clk_prepare(clk);
+ 
+ 	nmk_chip = devm_kzalloc(&dev->dev, sizeof(*nmk_chip), GFP_KERNEL);
+-	if (!nmk_chip) {
+-		ret = -ENOMEM;
+-		goto out;
+-	}
++	if (!nmk_chip)
++		return -ENOMEM;
+ 
+ 	/*
+ 	 * The virt address in nmk_chip->addr is in the nomadik register space,
+@@ -1420,7 +1407,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 
+ 	ret = gpiochip_add(&nmk_chip->chip);
+ 	if (ret)
+-		goto out;
++		return ret;
+ 
+ 	BUG_ON(nmk_chip->bank >= ARRAY_SIZE(nmk_gpio_chips));
+ 
+@@ -1435,8 +1422,9 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 				&nmk_gpio_irq_simple_ops, nmk_chip);
+ 	if (!nmk_chip->domain) {
+ 		dev_err(&dev->dev, "failed to create irqdomain\n");
+-		ret = -ENOSYS;
+-		goto out;
++		/* Just do this, no matter if it fails */
++		ret = gpiochip_remove(&nmk_chip->chip);
++		return -ENOSYS;
+ 	}
+ 
+ 	nmk_gpio_init_irq(nmk_chip);
+@@ -1444,12 +1432,6 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 	dev_info(&dev->dev, "at address %p\n", nmk_chip->addr);
+ 
+ 	return 0;
+-
+-out:
+-	dev_err(&dev->dev, "Failure %i for GPIO %i-%i\n", ret,
+-		  pdata->first_gpio, pdata->first_gpio+31);
+-
+-	return ret;
+ }
+ 
+ static int nmk_get_groups_cnt(struct pinctrl_dev *pctldev)
+-- 
+1.7.11.3
 
-Ben.
-
---=20
-Ben Hutchings
-If you seem to know what you are doing, you'll be given more to do.
-
---=-x7yHYfqrH8l2lGT4IWnB
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIVAwUAUOrZAOe/yOyVhhEJAQo5Qw//daY4rkGCjHMUjT/jwbSnN8MgdC2R2zBV
-FVLqM4BYkEx6c/8YOHJNTvpdrzhyhGswNeGbim1laJLvFbybPmUB4VAsfW2BqBLX
-0KRLGNHGGCGRODg16kLvU7D+wkZB07YC8dBYweZR/oev8fQ/uRVNGJ93nXzHS2e3
-jIt7l6vaPnrLJvh2G4WHFAyOXls/mWj6vn4IlPOqkUK9OfAY8kthu3tsNiw3YXvH
-wYbZQH1bGmHKj4xA5X6guh+bJUR0N/X7seqfu4S3CvOOWGccoxY66IRuqgxu04hS
-qjf7gxCVWPsJ3ire3CkF6CK8HkK1PqPCxPFH9XnmHzUjzzzw8mBLlbRms2d+6Efg
-PjX3CgD+W6+Qdv0xRH6V4QURLfwPKDjYfanoARf8XrU/GN0Tw6UHZ/cvTAvaPd2Y
-mnpDKNHLf/ORWj5vvD7YTorLlS6bXQ9Yn18uZ8NmCrNA8pO4+jmvCUOgZDCNZ0Lm
-zyr41E5KF1wZN5n1MLeaaxWN6d8ir3g9bjhlfL4itfl8em3H57hqTrg8oj8pLp0c
-90wyghwXvLAJnrKo2140SHDXrqtU0REdnKea6TCwRXcFqMq8ozqVDh2HlTjWaLQe
-tZm/vygrXwVOe3OrbUCgd4iYpZkixMxhcYG+ONoz4zlp27iDfzolSJM6fozowxUz
-ozys+v0Sivk=
-=pgGm
------END PGP SIGNATURE-----
-
---=-x7yHYfqrH8l2lGT4IWnB--
