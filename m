@@ -1,73 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971Ab3AGJUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 04:20:40 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:51491 "EHLO comal.ext.ti.com"
+	id S1754014Ab3AGJVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 04:21:38 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:51570 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753723Ab3AGJUj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 04:20:39 -0500
-From: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "tony@atomide.com" <tony@atomide.com>,
+	id S1753625Ab3AGJVf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 04:21:35 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: Steffen Trumtrar <s.trumtrar@pengutronix.de>
+CC: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        "Nori, Sekhar" <nsekhar@ti.com>, "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree-discuss@lists.ozlabs.org" 
 	<devicetree-discuss@lists.ozlabs.org>,
-        "Nori, Sekhar" <nsekhar@ti.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        "rob@landley.net" <rob@landley.net>, "Girdwood, Liam" <lrg@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
-	tree binding
-Thread-Topic: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
-	tree binding
-Thread-Index: AQHN6nbFhDtsROOE2kyj5Apy+7pkh5g9mvcw
-Date: Mon, 7 Jan 2013 09:20:16 +0000
-Message-ID: <1BAFE6F6C881BF42822005164F1491C33EB3690C@DBDE01.ent.ti.com>
-References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
- <1357293277-25543-3-git-send-email-gururaja.hebbar@ti.com>
- <20130104122612.GM4627@opensource.wolfsonmicro.com>
-In-Reply-To: <20130104122612.GM4627@opensource.wolfsonmicro.com>
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+Subject: RE: [PATCH 08/10] video: da8xx-fb: obtain fb_videomode info from dt
+Thread-Topic: [PATCH 08/10] video: da8xx-fb: obtain fb_videomode info from dt
+Thread-Index: AQHN6olgYao2ec3g5EedwyKq/6QVMZg9PLCAgABdw5A=
+Date: Mon, 7 Jan 2013 09:21:15 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA7FC7A@DBDE01.ent.ti.com>
+References: <cover.1357304090.git.afzal@ti.com>
+ <78e026555731e0bbe8475610279d3e5265d124b9.1357304090.git.afzal@ti.com>
+ <20130107091131.GC23478@pengutronix.de>
+In-Reply-To: <20130107091131.GC23478@pengutronix.de>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.162.25]
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r079LeJ8026085
 
-On Fri, Jan 04, 2013 at 17:56:12, Mark Brown wrote:
-> On Fri, Jan 04, 2013 at 03:24:37PM +0530, Hebbar Gururaja wrote:
+Hi Steffen,
+
+On Mon, Jan 07, 2013 at 14:41:31, Steffen Trumtrar wrote:
+> On Mon, Jan 07, 2013 at 10:41:30AM +0530, Afzal Mohammed wrote:
+
+> > Obtain fb_videomode details for the connected lcd panel using the
+> > display timing details present in DT.
+
+> > +- display-timings: list of different videomodes supported by the lcd
+> > +  panel, represented as childs, can have multiple modes supported, if
+> > +  only one, then it is considered native mode, if multiple modes are
+> > +  provided, native mode can be set explicitly, more details available
+> > +  @Documentation/devicetree/bindings/video/display-timing.txt
+
+> Keep in mind that the text combined with...
+
+> > +		if (of_get_fb_videomode(np, lcdc_info, 0)) {
+> > +			dev_err(&dev->dev, "timings not available in DT\n");
+> > +			return NULL;
+> > +		}
+> > +		return lcdc_info;
+> > +	}
 > 
-> > +		"MIC3L",                "Mic Bias 2V",
-> > +		"MIC3R",                "Mic Bias 2V",
-> > +		"Mic Bias 2V",          "Mic Jack",
-> 
-> The CODEC driver biases should be changed over to be supplies, this
-> makes the above much more natural - the routing there is a hack for
-> older versions of ASoc.  
-
-I will be looking into this now. To speed up the things, do you have any
-reference link/implementation which  I can refer to?
-
-I looked at the OMAP implementation but they are following the same (meaning both
-DT & non-DT use similar audio map for routing).
+> ... this is not correct. You are just supporting the first display-timings
+> subnode (of_get_fb_videomode(..., 0)).
 
 
-> Otherwise this looks fine.
+Yes right, I will modify the text to reflect what the driver does.
 
-Thanks for the review.
-
-> 
-
-
-Regards, 
-Gururaja
+Regards
+Afzal
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
