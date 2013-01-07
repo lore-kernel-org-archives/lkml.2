@@ -1,79 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868Ab3AGWP0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:15:26 -0500
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:39985 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab3AGWPY (ORCPT
+	id S1755882Ab3AGWSm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:18:42 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26519 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755820Ab3AGWSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:15:24 -0500
-Date: Mon, 7 Jan 2013 14:15:21 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, Zach Brown <zab@redhat.com>,
-        bcrl@kvack.org, jmoyer@redhat.com, axboe@kernel.dk,
-        viro@zeniv.linux.org.uk, tytso@mit.edu
-Subject: Re: [PATCH 04/32] aio: remove retry-based AIO
-Message-ID: <20130107221521.GD26407@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-5-git-send-email-koverstreet@google.com>
- <CAJd=RBCHJSkA0UChN+41HknLgi=NOM32jq3L9+Rse_a66FrP4g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAJd=RBCHJSkA0UChN+41HknLgi=NOM32jq3L9+Rse_a66FrP4g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 7 Jan 2013 17:18:40 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fBOmOx-NyikA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wMYYvAuhfbIA:10 a=VnNF1IyMAAAA:8 a=ayltMwLYWeDkCjR7tcgA:9 a=PUjeQqilurYA:10 a=1G1kcBpAWYgA:10 a=TUNKTOQ0hfvV3gLG:21 a=zHsAfj7gVYJ10tk_:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357597117.5190.4.camel@gandalf.local.home>
+Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Silence compiler array
+ out-of-bounds false positive
+From: Steven Rostedt <rostedt@goodmis.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        markus@trippelsdorf.de
+Date: Mon, 07 Jan 2013 17:18:37 -0500
+In-Reply-To: <20130107171910.GA19510@linux.vnet.ibm.com>
+References: <20130105170920.GA13766@linux.vnet.ibm.com>
+	 <1357405778-13903-1-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
+	 <20130107155002.GA11145@leaf> <20130107171602.GI2525@linux.vnet.ibm.com>
+	 <20130107171910.GA19510@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Dec 29, 2012 at 03:47:37PM +0800, Hillf Danton wrote:
-> On Thu, Dec 27, 2012 at 9:59 AM, Kent Overstreet <koverstreet@google.com> wrote:
-> > @@ -1585,18 +1278,27 @@ static int io_submit_one(struct kioctx *ctx, struct iocb __user *user_iocb,
-> >          * don't see ctx->dead set here, io_destroy() waits for our IO to
-> >          * finish.
-> >          */
-> > -       if (ctx->dead) {
-> > -               spin_unlock_irq(&ctx->ctx_lock);
-> > +       if (ctx->dead)
-> >                 ret = -EINVAL;
-> > +       spin_unlock_irq(&ctx->ctx_lock);
-> > +       if (ret)
-> >                 goto out_put_req;
-> > +
-> > +       if (unlikely(kiocbIsCancelled(req))) {
-> > +               ret = -EINTR;
-> > +       } else {
-> > +               ret = req->ki_retry(req);
-> >         }
-> > -       aio_run_iocb(req);
-> > -       if (!list_empty(&ctx->run_list)) {
-> > -               /* drain the run list */
-> > -               while (__aio_run_iocbs(ctx))
-> > -                       ;
-> > +       if (ret != -EIOCBQUEUED) {
-> > +               /*
-> > +                * There's no easy way to restart the syscall since other AIO's
-> > +                * may be already running. Just fail this IO with EINTR.
-> > +                */
-> > +               if (unlikely(ret == -ERESTARTSYS || ret == -ERESTARTNOINTR ||
-> > +                            ret == -ERESTARTNOHAND || ret == -ERESTART_RESTARTBLOCK))
-> > +                       ret = -EINTR;
-> > +               aio_complete(req, ret, 0);
-> >         }
-> > -       spin_unlock_irq(&ctx->ctx_lock);
-> >
-> >         aio_put_req(req);       /* drop extra ref to req */
-> >         return 0;
+On Mon, 2013-01-07 at 09:19 -0800, Paul E. McKenney wrote:
+> On Mon, Jan 07, 2013 at 09:16:02AM -0800, Paul E. McKenney wrote:
+> > On Mon, Jan 07, 2013 at 07:50:02AM -0800, Josh Triplett wrote:
+> > > On Sat, Jan 05, 2013 at 09:09:36AM -0800, Paul E. McKenney wrote:
+> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> > > > 
+> > > > It turns out that gcc 4.8 warns on array indexes being out of bounds
+> > > > unless it can prove otherwise.  It gives this warning on some RCU
+> > > > initialization code.  Because this is far from any fastpath, add
+> > > > an explicit check for array bounds and panic if so.  This gives the
+> > > > compiler enough information to figure out that the array index is never
+> > > > out of bounds.
+> > > > 
+> > > > However, if a similar false positive occurs on a fastpath, it will
+> > > > probably be necessary to tell the compiler to keep its array-index
+> > > > anxieties to itself.  ;-)
+> > > > 
+> > > > Markus Trippelsdorf <markus@trippelsdorf.de>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > ---
+> > > >  kernel/rcutree.c |    4 ++++
+> > > >  1 files changed, 4 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > > > index d145796..e0d9815 100644
+> > > > --- a/kernel/rcutree.c
+> > > > +++ b/kernel/rcutree.c
+> > > > @@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
+> > > >  
+> > > >  	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
+> > > >  
+> > > > +	/* Silence gcc 4.8 warning about array index out of range. */
+> > > > +	if (rcu_num_lvls > RCU_NUM_LVLS)
+> > > > +		panic("rcu_init_one: rcu_num_lvls overflow");
+> > > 
+> > > Why not write this as BUG_ON(rcu_num_lvls > RCU_NUM_LVLS)?  Given that
+> > > the condition in question can never happen, you don't really need an
+> > > explanatory message.
+> > 
+> > Good point, will do!
 > 
->           return ret;          yes?
+> Ah, wait, BUG_ON() sometimes compiles to nothingness:
+> 
+> #ifndef HAVE_ARCH_BUG_ON
+> #define BUG_ON(condition) do { if (condition) ; } while(0)
+> #endif
+> 
+> So I do need the explicit "if".  :-(
 
-No - and this code is _really_ confusing. If we get an error we can
-return it in two different ways:
 
-1) By making the io_submit() call fail
-2) Through the io_event that aio_complete() delivers
+Bah, those archs shouldn't be bothered with. If they don't want to bug,
+then that's there problem :-)
 
-Note the return 0 coming after the aio_complete() call - we don't want
-to return ret because then we'd be delivering an error twice.
+Lots of places in the kernel have BUG_ON() where they require it to
+panic.
+
+-- Steve
+
+
