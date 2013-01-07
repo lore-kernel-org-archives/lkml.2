@@ -1,98 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753263Ab3AGBLv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 20:11:51 -0500
-Received: from outbound-mail03.westnet.com.au ([203.10.1.244]:40766 "EHLO
-	outbound-mail03.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752984Ab3AGBLt (ORCPT
+	id S1753229Ab3AGBQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 20:16:29 -0500
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53138 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753009Ab3AGBQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 20:11:49 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApMBAMoe6lBlqTCu/2dsb2JhbAANOL1sgxEBAQEEOEABEAsNCwkWDwkDAgECAUUGDQEHAQGIAAEepX6Pd5EVA5cnhHGNQg
-X-IronPort-AV: E=Sophos;i="4.84,421,1355068800"; 
-   d="scan'208";a="299426320"
-Message-ID: <50EA20CF.7050601@westnet.com.au>
-Date: Mon, 07 Jan 2013 11:11:43 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121011 Thunderbird/16.0.1
+	Sun, 6 Jan 2013 20:16:27 -0500
+From: Neil Zhang <zhangwm@marvell.com>
+To: Neil Zhang <zhangwm@marvell.com>, "mingo@kernel.org" <mingo@kernel.org>,
+        "peterz@infradead.org" <peterz@infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "bitbucket@online.de" <bitbucket@online.de>
+Date: Sun, 6 Jan 2013 17:16:15 -0800
+Subject: RE: [PATCH] sched: remove redundant update_runtime notifier
+Thread-Topic: [PATCH] sched: remove redundant update_runtime notifier
+Thread-Index: Ac3k4jKW9PB1pJYuTAiY0kApohOEJgHkk0QA
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE1C739002E6@SC-VEXCH4.marvell.com>
+References: <1356688826-23158-1-git-send-email-zhangwm@marvell.com>
+In-Reply-To: <1356688826-23158-1-git-send-email-zhangwm@marvell.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Richard Cochran <richardcochran@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        uClinux development list <uclinux-dev@uclinux.org>,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: Re: m68k nommu: build failure in v3.8-rc2
-References: <20130106122626.GA15524@netboy.at.omicron.at>
-In-Reply-To: <20130106122626.GA15524@netboy.at.omicron.at>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r071GYDh024603
 
-Hi Richard,
+All,
 
-On 01/06/2013 10:26 PM, Richard Cochran wrote:
-> I see the following error, using the .config inline, below.
->
-> arch/m68k/mm/init.c: In function 'print_memmap':
-> arch/m68k/mm/init.c:139:2: error: 'KMAP_START' undeclared (first use in this function)
-> arch/m68k/mm/init.c:139:2: note: each undeclared identifier is reported only once for each function it appears in
-> arch/m68k/mm/init.c:139:2: error: 'KMAP_END' undeclared (first use in this function)
->
-> Looks to me like KMAP_START is only meant for the MMU case. This error
-> was possibly caused by one of these two patches.
->
-> $ pr v3.7.. -- arch/m68k/mm/init.c
-> f50bf88 m68k: move to a single instance of free_initmem()
-> dd1cb3a m68k: merge MMU and non-MMU versions of mm/init.c
->
-> What is the right fix for this?
-
-This is the planned fix:
-
-http://marc.info/?l=linux-m68k&m=135088484810474&w=2
-
-Well actually it was meant to go in before the above changes. I
-have it queued to go to Linus soon. Just awaiting another fix
-for non-mmu 68000 build issues so I can send them all together.
-
-Regards
-Greg
-
-
+> -----Original Message-----
+> From: Neil Zhang [mailto:zhangwm@marvell.com]
+> Sent: 2012Äê12ÔÂ28ÈÕ 18:00
+> To: mingo@kernel.org; peterz@infradead.org
+> Cc: linux-kernel@vger.kernel.org; Neil Zhang; bitbucket@online.de
+> Subject: [PATCH] sched: remove redundant update_runtime notifier
+> 
+> migration_call() will do all the things that update_runtime() does.
+> So it seems update_runtime() is a redundant notifier, remove it.
+> 
+> Furthermore, there is potential risk that the current code will catch BUG_ON
+> at line 687 of rt.c when do cpu hotplug while there are realtime threads
+> running because of enable runtime twice.
+> 
+> Cc: bitbucket@online.de
+> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 > ---
-> #
-> # Automatically generated file; DO NOT EDIT.
-> # Linux/m68k 3.8.0-rc2 Kernel Configuration
-> #
-> CONFIG_M68K=y
-> CONFIG_RWSEM_GENERIC_SPINLOCK=y
-> CONFIG_GENERIC_GPIO=y
-> CONFIG_GENERIC_HWEIGHT=y
-> CONFIG_GENERIC_CALIBRATE_DELAY=y
-> CONFIG_GENERIC_CSUM=y
-> CONFIG_TIME_LOW_RES=y
-> CONFIG_NO_IOPORT=y
-> # CONFIG_NO_DMA is not set
-> CONFIG_ZONE_DMA=y
-> CONFIG_HZ=100
-> CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
->
-> #
-> # General setup
-> #
-> CONFIG_EXPERIMENTAL=y
-> CONFIG_BROKEN_ON_SMP=y
-> CONFIG_INIT_ENV_ARG_LIMIT=32
-> CONFIG_CROSS_COMPILE=""
-> CONFIG_LOCALVERSION=""
-> CONFIG_LOCALVERSION_AUTO=y
-> CONFIG_DEFAULT_HOSTNAME="(none)"
-> # CONFIG_SYSVIPC is not set
-> # CONFIG_POSIX_MQUEUE is not set
-> # CONFIG_FHANDLE is not set
-> # CONFIG_AUDIT is not set
-> CONFIG_HAVE_GENERIC_HARDIRQS=y
->
+>  kernel/sched/core.c  |    3 ---
+>  kernel/sched/rt.c    |   40 ----------------------------------------
+>  kernel/sched/sched.h |    1 -
+>  3 files changed, 0 insertions(+), 44 deletions(-)
+> 
+> diff --git a/kernel/sched/core.c b/kernel/sched/core.c index
+> 257002c..7b6a4d8 100644
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -6779,9 +6779,6 @@ void __init sched_init_smp(void)
+>  	hotcpu_notifier(cpuset_cpu_active, CPU_PRI_CPUSET_ACTIVE);
+>  	hotcpu_notifier(cpuset_cpu_inactive, CPU_PRI_CPUSET_INACTIVE);
+> 
+> -	/* RT runtime code needs to handle some hotplug events */
+> -	hotcpu_notifier(update_runtime, 0);
+> -
+>  	init_hrtick();
+> 
+>  	/* Move init over to a non-isolated CPU */ diff --git a/kernel/sched/rt.c
+> b/kernel/sched/rt.c index 418feb0..1a499d2 100644
+> --- a/kernel/sched/rt.c
+> +++ b/kernel/sched/rt.c
+> @@ -697,15 +697,6 @@ balanced:
+>  	}
+>  }
+> 
+> -static void disable_runtime(struct rq *rq) -{
+> -	unsigned long flags;
+> -
+> -	raw_spin_lock_irqsave(&rq->lock, flags);
+> -	__disable_runtime(rq);
+> -	raw_spin_unlock_irqrestore(&rq->lock, flags);
+> -}
+> -
+>  static void __enable_runtime(struct rq *rq)  {
+>  	rt_rq_iter_t iter;
+> @@ -730,37 +721,6 @@ static void __enable_runtime(struct rq *rq)
+>  	}
+>  }
+> 
+> -static void enable_runtime(struct rq *rq) -{
+> -	unsigned long flags;
+> -
+> -	raw_spin_lock_irqsave(&rq->lock, flags);
+> -	__enable_runtime(rq);
+> -	raw_spin_unlock_irqrestore(&rq->lock, flags);
+> -}
+> -
+> -int update_runtime(struct notifier_block *nfb, unsigned long action, void
+> *hcpu) -{
+> -	int cpu = (int)(long)hcpu;
+> -
+> -	switch (action) {
+> -	case CPU_DOWN_PREPARE:
+> -	case CPU_DOWN_PREPARE_FROZEN:
+> -		disable_runtime(cpu_rq(cpu));
+> -		return NOTIFY_OK;
+> -
+> -	case CPU_DOWN_FAILED:
+> -	case CPU_DOWN_FAILED_FROZEN:
+> -	case CPU_ONLINE:
+> -	case CPU_ONLINE_FROZEN:
+> -		enable_runtime(cpu_rq(cpu));
+> -		return NOTIFY_OK;
+> -
+> -	default:
+> -		return NOTIFY_DONE;
+> -	}
+> -}
+> -
+>  static int balance_runtime(struct rt_rq *rt_rq)  {
+>  	int more = 0;
+> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h index
+> fc88644..16d18a1 100644
+> --- a/kernel/sched/sched.h
+> +++ b/kernel/sched/sched.h
+> @@ -890,7 +890,6 @@ extern void sysrq_sched_debug_show(void);
+> extern void sched_init_granularity(void);  extern void
+> update_max_interval(void);  extern void update_group_power(struct
+> sched_domain *sd, int cpu); -extern int update_runtime(struct notifier_block
+> *nfb, unsigned long action, void *hcpu);  extern void
+> init_sched_rt_class(void);  extern void init_sched_fair_class(void);
+> 
+> --
+> 1.7.4.1
 
+Any comments about this patch?
 
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
