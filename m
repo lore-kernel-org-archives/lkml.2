@@ -1,36 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754297Ab3AGV2c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:28:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38555 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab3AGV2b (ORCPT
+	id S1754485Ab3AGVa0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:30:26 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:41027 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752974Ab3AGVaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:28:31 -0500
-Date: Mon, 7 Jan 2013 13:28:29 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, rientjes@google.com,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>,
-        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm/huge_memory: use new hashtable implementation
-Message-Id: <20130107132829.c43d831d.akpm@linux-foundation.org>
-In-Reply-To: <CA+1xoqeBPyRwrXRAV5F5ttdTrB7Vr2-NYLP73DS-S9SzMJ3xxQ@mail.gmail.com>
-References: <1356116342-2121-1-git-send-email-sasha.levin@oracle.com>
-	<CA+1xoqeBPyRwrXRAV5F5ttdTrB7Vr2-NYLP73DS-S9SzMJ3xxQ@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 16:30:25 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAE9FiQVmj3D0wS7pEWXBG54tebzPMy-BLnFP9=xs4scM4yQTKA@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+	<20130107152622.GD3219@phenom.dumpdata.com>
+	<CAE9FiQVmj3D0wS7pEWXBG54tebzPMy-BLnFP9=xs4scM4yQTKA@mail.gmail.com>
+Date: Mon, 7 Jan 2013 13:30:22 -0800
+X-Google-Sender-Auth: kmfPUV-LuD4xocG0W4XINcK1-hw
+Message-ID: <CAE9FiQVH8p1-gotohCrneVtJQhn_cAMc--LWsFEhjqb1zFEKow@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Content-Type: multipart/mixed; boundary=0015175d67826ac73f04d2b9894b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jan 2013 12:32:04 -0500
-Sasha Levin <levinsasha928@gmail.com> wrote:
+--0015175d67826ac73f04d2b9894b
+Content-Type: text/plain; charset=ISO-8859-1
 
-> Ping?
+On Mon, Jan 7, 2013 at 12:32 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>  2). The check for 1MB is suspect. Why only 1MB? You mentioned it is
+>>      b/c of crashkernel_low=72M (which I am not seeing in v3.8 kernel-parameters.txt?
+>>      Is that part of your mega-patchset?). Anyhow, there seems to be a disconnect -
+>>      what if the user supplied crashkernel_low=27M? Perhaps the 'is_enough'
+>>      should also parse the bootparams to double-check that there is enough
+>>      low-mem space? But then if the kernel grows then 72M might not be enough -
+>>      you might need 82M with 3.9.
+>
+> again, could with memmap= include or exclude case, so parse boot command line
+> is not going to handle all the case.
 
-Pong? http://ozlabs.org/~akpm/mmotm/broken-out/mm-huge_memory-use-new-hashtable-implementation.patch
+replace the hardcoded 1M checking, please check attached -v3.
+
+Thanks
+
+Yinghai
+
+--0015175d67826ac73f04d2b9894b
+Content-Type: application/octet-stream; 
+	name="auto_switch_off_swiotlb_v3.patch"
+Content-Disposition: attachment; filename="auto_switch_off_swiotlb_v3.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbo4if8h0
+
+U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IGVuYWJsZSBzd2lvdGxiIGlmIHRoZXJlIGlzIG5v
+dCBlbm91Z2ggcmFtIGZvciBpdAoKTm9ybWFsIGJvb3QgcGF0aCBvbiBzeXN0ZW0gd2l0aCBpb21t
+dSBzdXBwb3J0Ogpzd2lvdGxiIGJ1ZmZlciB3aWxsIGJlIGFsbG9jYXRlZCBlYXJseSBhdCBmaXJz
+dCBhbmQgdGhlbiB0cnkgdG8gaW5pdGlhbGl6ZQppb21tdSwgaWYgaW9tbXUgZm9yIGludGVsIG9y
+IGFtZCBjb3VsZCBzZXR1cCBwcm9wZXJseSwgc3dpb3RsYiBidWZmZXIKd2lsbCBiZSBmcmVlZC4K
+ClRoZSBlYXJseSBhbGxvY2F0aW5nIGlzIHdpdGggYm9vdG1lbSwgYW5kIGdldCBwYW5pYyB3aGVu
+IHdlIHRyeSB0byB1c2UKa2R1bXAgd2l0aCBidWZmZXIgYWJvdmUgNEcgb25seSBpZiBzd2lvdGxi
+IGlzIGVuYWJsZWQuCgpiZWNhdXNlIGFjdHVhbGx5IHRoZSBrZXJuZWwgY2FuIGdvIG9uIHdpdGhv
+dXQgc3dpb3RsYiwgYW5kIHVzZSBpbnRlbCBpb21tdS4KClRyeSBkaXNhYmxlIHN3aW90bGIgaWYg
+dGhlcmUgaXMgbm90IGVub3VnaCByYW0gZm9yIGl0LgoKVGhhdCBpcyBmb3Iga2R1bXAgdG8gdXNl
+IGtlcm5lbCBhYm92ZSA0Ry4KCi12MjogU2h1YWggS2hhbiA8c2h1YWhraGFuQGdtYWlsLmNvbT4g
+cG9pbnRlZCBvdXQgdGhhdCBBTUQgaW9tbXUgdW5oYW5kbGVkCiAgICAgZGV2aWNlcyB0aGF0IG5l
+ZWQgc3dpb3RsYiB3aWxsIGhhdmUgcHJvYmxlbS4KICAgICBJbiB0aGF0IGNhc2UsIHdlIGhhdmUg
+dG8gcGFuaWMsIGJlY2F1c2Ugd2UgZG8gbm90IGVuYWJsZSBzd2lvdGxiCiAgICAgYmVmb3JlLgot
+djM6IHJlcGxhY2UgaGFyZC1jb2RlIDFNIGxvdyByYW0gY2hlY2tpbmcgd2l0aCBwcm9iZWQgbG93
+IHJhbQogICAgIHNpemUgdGhhdCBpcyBuZWVkZWQgYnkgc3dpb3RsYi4KClN1Z2dlc3RlZC1ieTog
+RXJpYyBXLiBCaWVkZXJtYW4gPGViaWVkZXJtQHhtaXNzaW9uLmNvbT4KU2lnbmVkLW9mZi1ieTog
+WWluZ2hhaSBMdSA8eWluZ2hhaUBrZXJuZWwub3JnPgpDYzogS29ucmFkIFJ6ZXN6dXRlayBXaWxr
+IDxrb25yYWQud2lsa0BvcmFjbGUuY29tPgpDYzogSm9lcmcgUm9lZGVsIDxqb3JvQDhieXRlcy5v
+cmc+CgotLS0KIGFyY2gveDg2L2tlcm5lbC9wY2ktc3dpb3RsYi5jIHwgICAxNSArKysrKysrKysr
+Ky0tLS0KIGRyaXZlcnMvaW9tbXUvYW1kX2lvbW11LmMgICAgIHwgICAgNCArKysrCiBpbmNsdWRl
+L2xpbnV4L3N3aW90bGIuaCAgICAgICB8ICAgIDEgKwogbGliL3N3aW90bGIuYyAgICAgICAgICAg
+ICAgICAgfCAgIDIxICsrKysrKysrKysrKysrKysrKysrLQogNCBmaWxlcyBjaGFuZ2VkLCAzNiBp
+bnNlcnRpb25zKCspLCA1IGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9hcmNoL3g4Ni9r
+ZXJuZWwvcGNpLXN3aW90bGIuYwo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9hcmNoL3g4
+Ni9rZXJuZWwvcGNpLXN3aW90bGIuYworKysgbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9wY2kt
+c3dpb3RsYi5jCkBAIC02LDYgKzYsNyBAQAogI2luY2x1ZGUgPGxpbnV4L3N3aW90bGIuaD4KICNp
+bmNsdWRlIDxsaW51eC9ib290bWVtLmg+CiAjaW5jbHVkZSA8bGludXgvZG1hLW1hcHBpbmcuaD4K
+KyNpbmNsdWRlIDxsaW51eC9tZW1ibG9jay5oPgogCiAjaW5jbHVkZSA8YXNtL2lvbW11Lmg+CiAj
+aW5jbHVkZSA8YXNtL3N3aW90bGIuaD4KQEAgLTUwLDYgKzUxLDEyIEBAIHN0YXRpYyBzdHJ1Y3Qg
+ZG1hX21hcF9vcHMgc3dpb3RsYl9kbWFfb3AKIAkuZG1hX3N1cHBvcnRlZCA9IE5VTEwsCiB9Owog
+CitzdGF0aWMgYm9vbCBfX2luaXQgZW5vdWdoX21lbV9mb3Jfc3dpb3RsYih2b2lkKQoreworCS8q
+IGRvIHdlIGhhdmUgZW5vdWdoIGxvdyByYW0gPyAqLworCXJldHVybiBtZW1ibG9ja19tZW1fc2l6
+ZSgxVUxMPDwoMzItUEFHRV9TSElGVCkpID4KKwkJCSBsb3dfcmFtX3NpemVfZm9yX3N3aW90bGIo
+KTsKK30KIC8qCiAgKiBwY2lfc3dpb3RsYl9kZXRlY3Rfb3ZlcnJpZGUgLSBzZXQgc3dpb3RsYiB0
+byAxIGlmIG5lY2Vzc2FyeQogICoKQEAgLTU4LDEyICs2NSwxMiBAQCBzdGF0aWMgc3RydWN0IGRt
+YV9tYXBfb3BzIHN3aW90bGJfZG1hX29wCiAgKi8KIGludCBfX2luaXQgcGNpX3N3aW90bGJfZGV0
+ZWN0X292ZXJyaWRlKHZvaWQpCiB7Ci0JaW50IHVzZV9zd2lvdGxiID0gc3dpb3RsYiB8IHN3aW90
+bGJfZm9yY2U7Ci0KIAlpZiAoc3dpb3RsYl9mb3JjZSkKIAkJc3dpb3RsYiA9IDE7CisJZWxzZSBp
+ZiAoIWVub3VnaF9tZW1fZm9yX3N3aW90bGIoKSkKKwkJc3dpb3RsYiA9IDA7CiAKLQlyZXR1cm4g
+dXNlX3N3aW90bGI7CisJcmV0dXJuIHN3aW90bGI7CiB9CiBJT01NVV9JTklUX0ZJTklTSChwY2lf
+c3dpb3RsYl9kZXRlY3Rfb3ZlcnJpZGUsCiAJCSAgcGNpX3hlbl9zd2lvdGxiX2RldGVjdCwKQEAg
+LTc4LDcgKzg1LDcgQEAgaW50IF9faW5pdCBwY2lfc3dpb3RsYl9kZXRlY3RfNGdiKHZvaWQpCiB7
+CiAJLyogZG9uJ3QgaW5pdGlhbGl6ZSBzd2lvdGxiIGlmIGlvbW11PW9mZiAobm9faW9tbXU9MSkg
+Ki8KICNpZmRlZiBDT05GSUdfWDg2XzY0Ci0JaWYgKCFub19pb21tdSAmJiBtYXhfcGZuID4gTUFY
+X0RNQTMyX1BGTikKKwlpZiAoIW5vX2lvbW11ICYmIG1heF9wZm4gPiBNQVhfRE1BMzJfUEZOICYm
+IGVub3VnaF9tZW1fZm9yX3N3aW90bGIoKSkKIAkJc3dpb3RsYiA9IDE7CiAjZW5kaWYKIAlyZXR1
+cm4gc3dpb3RsYjsKSW5kZXg6IGxpbnV4LTIuNi9kcml2ZXJzL2lvbW11L2FtZF9pb21tdS5jCj09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvaW9tbXUvYW1kX2lvbW11LmMKKysr
+IGxpbnV4LTIuNi9kcml2ZXJzL2lvbW11L2FtZF9pb21tdS5jCkBAIC0zMTQ0LDYgKzMxNDQsNyBA
+QCBpbnQgX19pbml0IGFtZF9pb21tdV9pbml0X2RtYV9vcHModm9pZCkKIHsKIAlzdHJ1Y3QgYW1k
+X2lvbW11ICppb21tdTsKIAlpbnQgcmV0LCB1bmhhbmRsZWQ7CisJaW50IHN3aW90bGJfb3JpZzsK
+IAogCS8qCiAJICogZmlyc3QgYWxsb2NhdGUgYSBkZWZhdWx0IHByb3RlY3Rpb24gZG9tYWluIGZv
+ciBldmVyeSBJT01NVSB3ZQpAQCAtMzE2NiwxMiArMzE2NywxNSBAQCBpbnQgX19pbml0IGFtZF9p
+b21tdV9pbml0X2RtYV9vcHModm9pZCkKIAlwcmVhbGxvY19wcm90ZWN0aW9uX2RvbWFpbnMoKTsK
+IAogCWlvbW11X2RldGVjdGVkID0gMTsKKwlzd2lvdGxiX29yaWcgPSBzd2lvdGxiOwogCXN3aW90
+bGIgPSAwOwogCiAJLyogTWFrZSB0aGUgZHJpdmVyIGZpbmFsbHkgdmlzaWJsZSB0byB0aGUgZHJp
+dmVycyAqLwogCXVuaGFuZGxlZCA9IGRldmljZV9kbWFfb3BzX2luaXQoKTsKIAlpZiAodW5oYW5k
+bGVkICYmIG1heF9wZm4gPiBNQVhfRE1BMzJfUEZOKSB7CiAJCS8qIFRoZXJlIGFyZSB1bmhhbmRs
+ZWQgZGV2aWNlcyAtIGluaXRpYWxpemUgc3dpb3RsYiBmb3IgdGhlbSAqLworCQlpZiAoIXN3aW90
+bGJfb3JpZykKKwkJCXBhbmljKCJjYW4gbm90IGVuYWJsZSBzd2lvdGxiIGZvciB1bmhhbmRsZWQg
+ZGV2aWNlcyBieSBBTUQgaW9tbXUhXG4iKTsKIAkJc3dpb3RsYiA9IDE7CiAJfQogCkluZGV4OiBs
+aW51eC0yLjYvaW5jbHVkZS9saW51eC9zd2lvdGxiLmgKPT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42
+Lm9yaWcvaW5jbHVkZS9saW51eC9zd2lvdGxiLmgKKysrIGxpbnV4LTIuNi9pbmNsdWRlL2xpbnV4
+L3N3aW90bGIuaApAQCAtMjIsNiArMjIsNyBAQCBleHRlcm4gaW50IHN3aW90bGJfZm9yY2U7CiAg
+Ki8KICNkZWZpbmUgSU9fVExCX1NISUZUIDExCiAKK3Vuc2lnbmVkIGxvbmcgbG93X3JhbV9zaXpl
+X2Zvcl9zd2lvdGxiKHZvaWQpOwogZXh0ZXJuIHZvaWQgc3dpb3RsYl9pbml0KGludCB2ZXJib3Nl
+KTsKIGV4dGVybiB2b2lkIHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVk
+IGxvbmcgbnNsYWJzLCBpbnQgdmVyYm9zZSk7CiBleHRlcm4gdW5zaWduZWQgbG9uZyBzd2lvdGxi
+X25yX3RibCh2b2lkKTsKSW5kZXg6IGxpbnV4LTIuNi9saWIvc3dpb3RsYi5jCj09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0K
+LS0tIGxpbnV4LTIuNi5vcmlnL2xpYi9zd2lvdGxiLmMKKysrIGxpbnV4LTIuNi9saWIvc3dpb3Rs
+Yi5jCkBAIC0xOTgsMTAgKzE5OCwyOSBAQCBzd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0X3NpemUo
+c2l6ZV90IGRlCiAJc3dpb3RsYl9pbml0X3dpdGhfdGJsKHZzdGFydCwgaW9fdGxiX25zbGFicywg
+dmVyYm9zZSk7CiB9CiAKKy8qIGRlZmF1bHQgdG8gNjRNQiAqLworI2RlZmluZSBTV0lPVExCX0RF
+RkFVTFRfU0laRSAoNjRVTDw8MjApCiB2b2lkIF9faW5pdAogc3dpb3RsYl9pbml0KGludCB2ZXJi
+b3NlKQogewotCXN3aW90bGJfaW5pdF93aXRoX2RlZmF1bHRfc2l6ZSg2NCAqICgxPDwyMCksIHZl
+cmJvc2UpOwkvKiBkZWZhdWx0IHRvIDY0TUIgKi8KKwlzd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0
+X3NpemUoU1dJT1RMQl9ERUZBVUxUX1NJWkUsIHZlcmJvc2UpOworfQorCit1bnNpZ25lZCBsb25n
+IF9faW5pdCBsb3dfcmFtX3NpemVfZm9yX3N3aW90bGIodm9pZCkKK3sKKwl1bnNpZ25lZCBsb25n
+IGJ5dGVzOworCXVuc2lnbmVkIGxvbmcgbnNsYWJzID0gaW9fdGxiX25zbGFiczsKKworCWlmICgh
+bnNsYWJzKSB7CisJCW5zbGFicyA9IChTV0lPVExCX0RFRkFVTFRfU0laRSA+PiBJT19UTEJfU0hJ
+RlQpOworCQluc2xhYnMgPSBBTElHTihuc2xhYnMsIElPX1RMQl9TRUdTSVpFKTsKKwl9CisKKwli
+eXRlcyA9IFBBR0VfQUxJR04obnNsYWJzIDw8IElPX1RMQl9TSElGVCk7CisKKwlieXRlcyArPSBQ
+QUdFX0FMSUdOKGlvX3RsYl9vdmVyZmxvdyk7CisKKwlyZXR1cm4gYnl0ZXM7CiB9CiAKIC8qCg==
+--0015175d67826ac73f04d2b9894b--
