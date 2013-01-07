@@ -1,100 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab3AGU0n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 15:26:43 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:40239 "EHLO
-	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753625Ab3AGU0l convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 15:26:41 -0500
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
-From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <20130107202306.GH14149@atomide.com>
-Date: Mon, 7 Jan 2013 22:26:31 +0200
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <FA4D880E-833E-43D9-A399-0A5C260E83F2@antoniou-consulting.com>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com> <1357584666-17374-2-git-send-email-panto@antoniou-consulting.com> <20130107200945.GF14149@atomide.com> <379B16EC-BFAA-4C27-8321-E7133C03368D@antoniou-consulting.com> <20130107202306.GH14149@atomide.com>
-To: Tony Lindgren <tony@atomide.com>
-X-Mailer: Apple Mail (2.1085)
+	id S1755599Ab3AGU07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 15:26:59 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54924 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753744Ab3AGUZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 15:25:05 -0500
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Seth Jennings <sjenning@linux.vnet.ibm.com>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: [PATCHv2 3/9] staging: zsmalloc: add page alloc/free callbacks
+Date: Mon,  7 Jan 2013 14:24:34 -0600
+Message-Id: <1357590280-31535-4-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
+References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com>
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010720-7182-0000-0000-0000043DE7A3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+This patch allows users of zsmalloc to register the
+allocation and free routines used by zsmalloc to obtain
+more pages for the memory pool.  This allows the user
+more control over zsmalloc pool policy and behavior.
 
-On Jan 7, 2013, at 10:23 PM, Tony Lindgren wrote:
+If the user does not wish to control this, alloc_page() and
+__free_page() are used by default.
 
-> * Pantelis Antoniou <panto@antoniou-consulting.com> [130107 12:16]:
->> Hi Tony,
->> 
->> On Jan 7, 2013, at 10:09 PM, Tony Lindgren wrote:
->> 
->>> * Pantelis Antoniou <panto@antoniou-consulting.com> [130107 10:54]:
->>>> A cape loader based on DT overlays and DT objects.
->>>> 
->>>> Beaglebone cape manager implementation.
->>>> 
->>>> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
->>>> ---
->>>> arch/arm/mach-omap2/Kconfig            |    2 +
->>>> drivers/misc/Kconfig                   |    2 +
->>>> drivers/misc/Makefile                  |    1 +
->>>> drivers/misc/cape/Kconfig              |    5 +
->>>> drivers/misc/cape/Makefile             |    5 +
->>>> drivers/misc/cape/beaglebone/Kconfig   |   11 +
->>>> drivers/misc/cape/beaglebone/Makefile  |    5 +
->>>> drivers/misc/cape/beaglebone/capemgr.c | 1835 ++++++++++++++++++++++++++++++++
->>> 
->>> The driver should probably be in drivers/bus?
->>> 
->> 
->> It was a bus on the previous iteration and there was a flame storm of epic proportions.
-> 
-> Heh :)
-> 
->> It is not a bus at all now, it's just a device loader; there are no
->> bus constructs at all. I am at a loss to classify it really, so drivers/misc
->> where every misfit ends up sounded OK.
-> 
-> Right..
-> 
->> I'm open to suggestions though.
-> 
-> Well how about split it to an eeprom driver, and Linux generic
-> device loader parts?
-> 
+Signed-off-by: Seth Jennings <sjenning@linux.vnet.ibm.com>
+---
+ drivers/staging/zcache/zcache-main.c     |    2 +-
+ drivers/staging/zram/zram_drv.c          |    2 +-
+ drivers/staging/zsmalloc/zsmalloc-main.c |   43 ++++++++++++++++++++++--------
+ drivers/staging/zsmalloc/zsmalloc.h      |    8 +++++-
+ 4 files changed, 41 insertions(+), 14 deletions(-)
 
-All that's left is the eeprom driver (accessor) and calls to the 
-generic DT overlay constructs. 
-
-If you caught on the previous patchset about DT overlays it should be
-clear.
-
-So it is split along those lines already.
-
-
-> Regards,
-> 
-> Tony
-
-Regards
-
--- Pantelis
+diff --git a/drivers/staging/zcache/zcache-main.c b/drivers/staging/zcache/zcache-main.c
+index 6fa9f9a..e3e533b 100644
+--- a/drivers/staging/zcache/zcache-main.c
++++ b/drivers/staging/zcache/zcache-main.c
+@@ -982,7 +982,7 @@ int zcache_new_client(uint16_t cli_id)
+ 		goto out;
+ 	cli->allocated = 1;
+ #ifdef CONFIG_FRONTSWAP
+-	cli->zspool = zs_create_pool(GFP_KERNEL);
++	cli->zspool = zs_create_pool(GFP_KERNEL, NULL);
+ 	if (cli->zspool == NULL)
+ 		goto out;
+ 	idr_init(&cli->tmem_pools);
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index 13d9f6d..0357903 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -576,7 +576,7 @@ int zram_init_device(struct zram *zram)
+ 	/* zram devices sort of resembles non-rotational disks */
+ 	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, zram->disk->queue);
+ 
+-	zram->mem_pool = zs_create_pool(GFP_KERNEL);
++	zram->mem_pool = zs_create_pool(GFP_KERNEL, NULL);
+ 	if (!zram->mem_pool) {
+ 		pr_err("Error creating memory pool\n");
+ 		ret = -ENOMEM;
+diff --git a/drivers/staging/zsmalloc/zsmalloc-main.c b/drivers/staging/zsmalloc/zsmalloc-main.c
+index 5e212c0..825e124 100644
+--- a/drivers/staging/zsmalloc/zsmalloc-main.c
++++ b/drivers/staging/zsmalloc/zsmalloc-main.c
+@@ -205,7 +205,7 @@ struct link_free {
+ 
+ struct zs_pool {
+ 	struct size_class size_class[ZS_SIZE_CLASSES];
+-	const char *name;
++	struct zs_ops *ops;
+ };
+ 
+ /*
+@@ -240,6 +240,21 @@ struct mapping_area {
+ 	enum zs_mapmode vm_mm; /* mapping mode */
+ };
+ 
++/* default page alloc/free ops */
++struct page *zs_alloc_page(gfp_t flags)
++{
++	return alloc_page(flags);
++}
++
++void zs_free_page(struct page *page)
++{
++	__free_page(page);
++}
++
++struct zs_ops zs_default_ops = {
++	.alloc = zs_alloc_page,
++	.free = zs_free_page
++};
+ 
+ /* per-cpu VM mapping areas for zspage accesses that cross page boundaries */
+ static DEFINE_PER_CPU(struct mapping_area, zs_map_area);
+@@ -476,7 +491,7 @@ static void reset_page(struct page *page)
+ 	reset_page_mapcount(page);
+ }
+ 
+-static void free_zspage(struct page *first_page)
++static void free_zspage(struct zs_ops *ops, struct page *first_page)
+ {
+ 	struct page *nextp, *tmp, *head_extra;
+ 
+@@ -486,7 +501,7 @@ static void free_zspage(struct page *first_page)
+ 	head_extra = (struct page *)page_private(first_page);
+ 
+ 	reset_page(first_page);
+-	__free_page(first_page);
++	ops->free(first_page);
+ 
+ 	/* zspage with only 1 system page */
+ 	if (!head_extra)
+@@ -495,10 +510,10 @@ static void free_zspage(struct page *first_page)
+ 	list_for_each_entry_safe(nextp, tmp, &head_extra->lru, lru) {
+ 		list_del(&nextp->lru);
+ 		reset_page(nextp);
+-		__free_page(nextp);
++		ops->free(nextp);
+ 	}
+ 	reset_page(head_extra);
+-	__free_page(head_extra);
++	ops->free(head_extra);
+ }
+ 
+ /* Initialize a newly allocated zspage */
+@@ -550,7 +565,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
+ /*
+  * Allocate a zspage for the given size class
+  */
+-static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
++static struct page *alloc_zspage(struct zs_ops *ops, struct size_class *class,
++				gfp_t flags)
+ {
+ 	int i, error;
+ 	struct page *first_page = NULL, *uninitialized_var(prev_page);
+@@ -570,7 +586,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 	for (i = 0; i < class->pages_per_zspage; i++) {
+ 		struct page *page;
+ 
+-		page = alloc_page(flags);
++		page = ops->alloc(flags);
+ 		if (!page)
+ 			goto cleanup;
+ 
+@@ -602,7 +618,7 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+ 
+ cleanup:
+ 	if (unlikely(error) && first_page) {
+-		free_zspage(first_page);
++		free_zspage(ops, first_page);
+ 		first_page = NULL;
+ 	}
+ 
+@@ -796,7 +812,7 @@ fail:
+ 	return notifier_to_errno(ret);
+ }
+ 
+-struct zs_pool *zs_create_pool(gfp_t flags)
++struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops)
+ {
+ 	int i, ovhd_size;
+ 	struct zs_pool *pool;
+@@ -822,6 +838,11 @@ struct zs_pool *zs_create_pool(gfp_t flags)
+ 
+ 	}
+ 
++	if (ops)
++		pool->ops = ops;
++	else
++		pool->ops = &zs_default_ops;
++
+ 	return pool;
+ }
+ EXPORT_SYMBOL_GPL(zs_create_pool);
+@@ -877,7 +898,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags)
+ 
+ 	if (!first_page) {
+ 		spin_unlock(&class->lock);
+-		first_page = alloc_zspage(class, flags);
++		first_page = alloc_zspage(pool->ops, class, flags);
+ 		if (unlikely(!first_page))
+ 			return 0;
+ 
+@@ -943,7 +964,7 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
+ 	spin_unlock(&class->lock);
+ 
+ 	if (fullness == ZS_EMPTY)
+-		free_zspage(first_page);
++		free_zspage(pool->ops, first_page);
+ }
+ EXPORT_SYMBOL_GPL(zs_free);
+ 
+diff --git a/drivers/staging/zsmalloc/zsmalloc.h b/drivers/staging/zsmalloc/zsmalloc.h
+index 25a4b4d..eb6efb6 100644
+--- a/drivers/staging/zsmalloc/zsmalloc.h
++++ b/drivers/staging/zsmalloc/zsmalloc.h
+@@ -14,6 +14,7 @@
+ #define _ZS_MALLOC_H_
+ 
+ #include <linux/types.h>
++#include <linux/mm_types.h>
+ 
+ /*
+  * zsmalloc mapping modes
+@@ -26,9 +27,14 @@ enum zs_mapmode {
+ 	ZS_MM_WO /* write-only (no copy-in at map time) */
+ };
+ 
++struct zs_ops {
++	struct page * (*alloc)(gfp_t);
++	void (*free)(struct page *);
++};
++
+ struct zs_pool;
+ 
+-struct zs_pool *zs_create_pool(gfp_t flags);
++struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops);
+ void zs_destroy_pool(struct zs_pool *pool);
+ 
+ unsigned long zs_malloc(struct zs_pool *pool, size_t size, gfp_t flags);
+-- 
+1.7.9.5
 
