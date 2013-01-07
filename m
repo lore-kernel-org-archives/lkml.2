@@ -1,45 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751934Ab3AGOkF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:40:05 -0500
-Received: from cassarossa.samfundet.no ([129.241.93.19]:35298 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751387Ab3AGOkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:40:04 -0500
-Date: Mon, 7 Jan 2013 15:40:00 +0100
-From: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PEBS (in perf) stopped working from 3.6 -> 3.7
-Message-ID: <20130107144000.GA8145@uio.no>
-References: <20130104234743.GA12331@uio.no>
- <50E770DB.2050803@gmail.com>
- <20130105010501.GA5371@uio.no>
- <50EA4594.9020309@gmail.com>
+	id S1751505Ab3AGOr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:47:57 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:54404 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab3AGOr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 09:47:56 -0500
+Message-ID: <50EAE015.1000702@linux.vnet.ibm.com>
+Date: Mon, 07 Jan 2013 08:47:49 -0600
+From: Seth Jennings <sjenning@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50EA4594.9020309@gmail.com>
-X-Operating-System: Linux 3.7.1 on a x86_64
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-Score: 1.3 (+)
-X-Spam-Report: Status=No hits=1.3 required=5.0 tests=FREEMAIL_FROM,RDNS_NONE version=3.3.1 hostname=cassarossa.samfundet.no
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
+        Konrad Wilk <konrad.wilk@oracle.com>,
+        Robert Jennings <rcj@linux.vnet.ibm.com>,
+        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
+        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 7/8] zswap: add to mm/
+References: <<1355262966-15281-1-git-send-email-sjenning@linux.vnet.ibm.com>> <<1355262966-15281-8-git-send-email-sjenning@linux.vnet.ibm.com>> <0e91c1e5-7a62-4b89-9473-09fff384a334@default> <50E32255.60901@linux.vnet.ibm.com> <26bb76b3-308e-404f-b2bf-3d19b28b393a@default> <50E4C1FA.4070701@linux.vnet.ibm.com> <640d712e-0217-456a-a2d1-d03dd7914a55@default> <50E6F862.2030703@linux.vnet.ibm.com> <f66f40b3-6568-4183-b592-2990d4cd2083@default>
+In-Reply-To: <f66f40b3-6568-4183-b592-2990d4cd2083@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010714-7182-0000-0000-0000043B4C05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 08:48:36PM -0700, David Ahern wrote:
->> Why would the two be different?
-> I will make a guess that is processor dependent. On an E5540 with
-> 3.4.11-1.fc16.x86_64, 3.6.10-2.fc16.x86_64, and 3.8 I get the same
-> failure message.
+On 01/04/2013 04:45 PM, Dan Magenheimer wrote:
+>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>> Subject: Re: [PATCH 7/8] zswap: add to mm/
+>>
+>> On 01/03/2013 04:33 PM, Dan Magenheimer wrote:
+>>>> From: Seth Jennings [mailto:sjenning@linux.vnet.ibm.com]
+>>>>
+>>>> However, once the flushing code was introduced and could free an entry
+>>>> from the zswap_fs_store() path, it became necessary to add a per-entry
+>>>> refcount to make sure that the entry isn't freed while another code
+>>>> path was operating on it.
+>>>
+>>> Hmmm... doesn't the refcount at least need to be an atomic_t?
+>>
+>> An entry's refcount is only ever changed under the tree lock, so
+>> making them atomic_t would be redundantly atomic.
 > 
-> But on a E5620, it works fine with 3.4 and 3.7 (no intermediate
-> kernels on that box).
+> Maybe I'm missing something still but then I think you also
+> need to evaluate and act on the refcount (not just read it) while
+> your treelock is held.  I.e., in:
+> 
+>> +		/* page is already in the swap cache, ignore for now */
+>> +		spin_lock(&tree->lock);
+>> +		refcount = zswap_entry_put(entry);
+>> +		spin_unlock(&tree->lock);
+>> +
+>> +		if (likely(refcount))
+>> +			return 0;
+>> +
+>> +		/* if the refcount is zero, invalidate must have come in */
+>> +		/* free */
+>> +		zs_free(tree->pool, entry->handle);
+>> +		zswap_entry_cache_free(entry);
+>> +		atomic_dec(&zswap_stored_pages);
+> 
+> the entry's refcount may be changed by another processor
+> immediately after the unlock, and then the "if (refcount)"
+> is testing a stale value and you will get (I think) a memory leak.
 
-That sounds a bit odd; the CPU can certainly do it with 3.6.
+It is true that the refcount could be stale by the time we do the
+check. However, all functions that do a zswap_entry_put(), which
+potentially drops the refcount to 0, check the refcount and free the
+entry if they need to.  All the functions that do a zswap_entry_put()
+that result in the refcount being 0 also ensure that there is no way
+for another thread to gain a reference to entry by either the tree or
+lru list before releasing the lock.  That way the cleanup can happen
+outside the lock with the risk of someone gaining access to the entry
+being freed in the meantime.
 
-/* Steinar */
--- 
-Homepage: http://www.sesse.net/
+<snip>
+> A nit: Even I, steeped in tmem terminology, was confused by
+> your use of "fs"... to nearly all readers it will
+> be translated as "filesystem" which is mystifying.
+> Just spell it out "frontswap", even if it causes a few
+> lines to be wrapped.
+
+Sound good. I'll queue it up.
+
+Thanks,
+Seth
+
