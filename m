@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab3AGWbh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:31:37 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:54618 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753223Ab3AGWbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:31:36 -0500
-Message-ID: <50EB4CB9.9010104@zytor.com>
-Date: Mon, 07 Jan 2013 14:31:21 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Shaohua Li <shli@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@redhat.com
-Subject: Re: [RFC]x86: clearing access bit don't flush tlb
-References: <20130107081213.GA21779@kernel.org> <50EAE66B.1020804@redhat.com>
-In-Reply-To: <50EAE66B.1020804@redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+	id S1755966Ab3AGWbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:31:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38857 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755920Ab3AGWbk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 17:31:40 -0500
+Date: Mon, 7 Jan 2013 14:31:28 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Mel Gorman <mgorman@suse.de>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [RESEND][PATCH v3] mm: Use aligned zone start for pfn_to_bitidx
+ calculation
+Message-Id: <20130107143128.face9220.akpm@linux-foundation.org>
+In-Reply-To: <1357414111-20736-1-git-send-email-lauraa@codeaurora.org>
+References: <1357414111-20736-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2013 07:14 AM, Rik van Riel wrote:
-> On 01/07/2013 03:12 AM, Shaohua Li wrote:
->>
->> We use access bit to age a page at page reclaim. When clearing pte
->> access bit,
->> we could skip tlb flush for the virtual address. The side effect is if
->> the pte
->> is in tlb and pte access bit is unset, when cpu access the page again,
->> cpu will
->> not set pte's access bit. So next time page reclaim can reclaim hot pages
->> wrongly, but this doesn't corrupt anything. And according to intel
->> manual, tlb
->> has less than 1k entries, which coverers < 4M memory. In today's system,
->> several giga byte memory is normal. After page reclaim clears pte
->> access bit
->> and before cpu access the page again, it's quite unlikely this page's
->> pte is
->> still in TLB. Skiping the tlb flush for this case sounds ok to me.
+On Sat,  5 Jan 2013 11:28:31 -0800
+Laura Abbott <lauraa@codeaurora.org> wrote:
+
+> The current calculation in pfn_to_bitidx assumes that
+> (pfn - zone->zone_start_pfn) >> pageblock_order will return the
+> same bit for all pfn in a pageblock. If zone_start_pfn is not
+> aligned to pageblock_nr_pages, this may not always be correct.
 > 
-> Agreed. In current systems, it can take a minute to write
-> all of memory to disk, while context switch (natural TLB
-> flush) times are in the dozens-of-millisecond timeframes.
+> Consider the following with pageblock order = 10, zone start 2MB:
 > 
+> pfn     | pfn - zone start | (pfn - zone start) >> page block order
+> ----------------------------------------------------------------
+> 0x26000 | 0x25e00	   |  0x97
+> 0x26100 | 0x25f00	   |  0x97
+> 0x26200 | 0x26000	   |  0x98
+> 0x26300 | 0x26100	   |  0x98
+> 
+> This means that calling {get,set}_pageblock_migratetype on a single
+> page will not set the migratetype for the full block. Fix this by
+> rounding down zone_start_pfn when doing the bitidx calculation.
 
-I'm confused.  We used to do this since time immemorial, so if we aren't
-doing that now, that meant something changed somewhere along the line.
-It would be good to figure out if that was an intentional change or
-accidental.
-
-	-hpa
-
-
+What are the user-visible effects of this bug?
