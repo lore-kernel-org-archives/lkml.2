@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754097Ab3AGUQq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 15:16:46 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:52770 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab3AGUQo (ORCPT
+	id S1753555Ab3AGUX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 15:23:26 -0500
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:20314 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752924Ab3AGUXY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 15:16:44 -0500
+	Mon, 7 Jan 2013 15:23:24 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 50.131.214.131
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18VVhwX8Fc3oF12Smwe4S2v
+Date: Mon, 7 Jan 2013 12:23:06 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Pantelis Antoniou <panto@antoniou-consulting.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>
+Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
+Message-ID: <20130107202306.GH14149@atomide.com>
+References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
+ <1357584666-17374-2-git-send-email-panto@antoniou-consulting.com>
+ <20130107200945.GF14149@atomide.com>
+ <379B16EC-BFAA-4C27-8321-E7133C03368D@antoniou-consulting.com>
 MIME-Version: 1.0
-In-Reply-To: <1593084.QhbTkmoq3N@hammer82.arch.suse.de>
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
-	<50B8D571.3000000@jp.fujitsu.com>
-	<CAE9FiQVaqXMfju5j7qBsk+g=RpES-adBBdrDcnkW=YQTQOfugQ@mail.gmail.com>
-	<1593084.QhbTkmoq3N@hammer82.arch.suse.de>
-Date: Mon, 7 Jan 2013 12:16:42 -0800
-X-Google-Sender-Auth: 8HZB_pZqVWKIXiqT9PFXqmO7-JY
-Message-ID: <CAE9FiQWTiFu0+ymVroK84L-LCc7FBU1trdZAcaXqMGM2My6LzQ@mail.gmail.com>
-Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
- with iommu
-From: Yinghai Lu <yinghai@kernel.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <379B16EC-BFAA-4C27-8321-E7133C03368D@antoniou-consulting.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 11:09 AM, Thomas Renninger <trenn@suse.de> wrote:
-> e820: BIOS-provided physical RAM map:
-> BIOS-e820: [mem 0x0000000000000100-0x000000000009bfff] usable
-> BIOS-e820: [mem 0x0000000000100000-0x00000000bd2effff] usable
-> BIOS-e820: [mem 0x00000000bd2f0000-0x00000000bd31bfff] reserved
-> BIOS-e820: [mem 0x00000000bd31c000-0x00000000bd35afff] ACPI data
-> BIOS-e820: [mem 0x00000000bd35b000-0x00000000bfffffff] reserved
-> BIOS-e820: [mem 0x00000000e0000000-0x00000000efffffff] reserved
-> BIOS-e820: [mem 0x00000000fe000000-0x00000000ffffffff] reserved
-> BIOS-e820: [mem 0x0000000100000000-0x000000603fffffff] usable
-> debug: ignoring loglevel setting.
-> e820: last_pfn = 0x6040000 max_arch_pfn = 0x400000000
-> NX (Execute Disable) protection: active
-> e820: user-defined physical RAM map:
-> user: [mem 0x0000000000000000-0x000000000009ffff] usable
-> user: [mem 0x00000000070a0000-0x000000001effafff] usable
-> user: [mem 0x00000000bd31c000-0x00000000bd35afff] ACPI data
+* Pantelis Antoniou <panto@antoniou-consulting.com> [130107 12:16]:
+> Hi Tony,
+> 
+> On Jan 7, 2013, at 10:09 PM, Tony Lindgren wrote:
+> 
+> > * Pantelis Antoniou <panto@antoniou-consulting.com> [130107 10:54]:
+> >> A cape loader based on DT overlays and DT objects.
+> >> 
+> >> Beaglebone cape manager implementation.
+> >> 
+> >> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+> >> ---
+> >> arch/arm/mach-omap2/Kconfig            |    2 +
+> >> drivers/misc/Kconfig                   |    2 +
+> >> drivers/misc/Makefile                  |    1 +
+> >> drivers/misc/cape/Kconfig              |    5 +
+> >> drivers/misc/cape/Makefile             |    5 +
+> >> drivers/misc/cape/beaglebone/Kconfig   |   11 +
+> >> drivers/misc/cape/beaglebone/Makefile  |    5 +
+> >> drivers/misc/cape/beaglebone/capemgr.c | 1835 ++++++++++++++++++++++++++++++++
+> > 
+> > The driver should probably be in drivers/bus?
+> > 
+> 
+> It was a bus on the previous iteration and there was a flame storm of epic proportions.
 
-can you make sure kdump kernel command line take
-"memmap=256M$3584M" ?
+Heh :)
+ 
+> It is not a bus at all now, it's just a device loader; there are no
+> bus constructs at all. I am at a loss to classify it really, so drivers/misc
+> where every misfit ends up sounded OK.
 
-it will make mmconf working.
+Right..
 
-> megasas: 06.504.01.00-rc1 Mon. Oct. 1 17:00:00 PDT 2012
+> I'm open to suggestions though.
 
-also need to append "debug ignore_loglevel" to see why the disks are not
-probed.
+Well how about split it to an eeprom driver, and Linux generic
+device loader parts?
 
-Thanks
+Regards,
 
-Yinghai
+Tony
