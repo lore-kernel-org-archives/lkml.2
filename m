@@ -1,98 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab3AGPph (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:45:37 -0500
-Received: from mx12.netapp.com ([216.240.18.77]:62732 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753338Ab3AGPpf convert rfc822-to-8bit (ORCPT
+	id S1753522Ab3AGPqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:46:44 -0500
+Received: from casper.infradead.org ([85.118.1.10]:32939 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753338Ab3AGPqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:45:35 -0500
-X-IronPort-AV: E=Sophos;i="4.84,424,1355126400"; 
-   d="scan'208";a="5381090"
-From: "Myklebust, Trond" <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Linux NFS mailing list <linux-nfs@vger.kernel.org>
-Subject: [GIT PULL] Please pull NFS client bugfixes
-Thread-Topic: [GIT PULL] Please pull NFS client bugfixes
-Thread-Index: AQHN7O4GIHJucWUYCkarlqn4mg1mgw==
-Date: Mon, 7 Jan 2013 15:45:32 +0000
-Message-ID: <4FA345DA4F4AE44899BD2B03EEEC2FA911990F94@SACEXCMBX04-PRD.hq.netapp.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.104.60.116]
-Content-Type: text/plain; charset="utf-7"
-Content-ID: <9D944AF122A3CB43A7861E4AA7F4463E@tahoe.netapp.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 7 Jan 2013 10:46:42 -0500
+Date: Mon, 7 Jan 2013 13:46:05 -0200
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-media@vger.kernel.org,
+        kernel@pengutronix.de, linux-kernel@vger.kernel.org,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] [media] coda: Fix build due to iram.h rename
+Message-ID: <20130107134605.2825d1b0@infradead.org>
+In-Reply-To: <CAOMZO5Cpa2OYd+v=wE4hbw=sjmQk+bP1HrY49PEWmwRyiVD1dg@mail.gmail.com>
+References: <1357553025-21094-1-git-send-email-s.hauer@pengutronix.de>
+	<CAOMZO5Cpa2OYd+v=wE4hbw=sjmQk+bP1HrY49PEWmwRyiVD1dg@mail.gmail.com>
+X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.13; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Em Mon, 7 Jan 2013 08:16:02 -0200
+Fabio Estevam <festevam@gmail.com> escreveu:
 
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+> Hi Sascha,
+> 
+> On Mon, Jan 7, 2013 at 8:03 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > commit c045e3f13 (ARM: imx: include iram.h rather than mach/iram.h) changed the
+> > location of iram.h, which causes the following build error when building the coda
+> > driver:
+> >
+> > drivers/media/platform/coda.c:27:23: error: mach/iram.h: No such file or directory
+> > drivers/media/platform/coda.c: In function 'coda_probe':
+> > drivers/media/platform/coda.c:2000: error: implicit declaration of function 'iram_alloc'
+> > drivers/media/platform/coda.c:2001: warning: assignment makes pointer from integer without a cast
+> > drivers/media/platform/coda.c: In function 'coda_remove':
+> > drivers/media/platform/coda.c:2024: error: implicit declaration of function 'iram_free'
+> >
+> > Since the content of iram.h is not imx specific, move it to
+> > include/linux/platform_data/imx-iram.h instead. This is an intermediate solution
+> > until the i.MX iram allocator is converted to the generic SRAM allocator.
+> >
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > ---
+> >
+> > Based on an earlier version from Fabio Estevam, but this one moves iram.h
+> > to include/linux/platform_data/imx-iram.h instead of include/linux/iram.h
+> > which is a less generic name.
+> >
+> >  arch/arm/mach-imx/iram.h               |   41 --------------------------------
+> >  arch/arm/mach-imx/iram_alloc.c         |    3 +--
+> >  drivers/media/platform/coda.c          |    2 +-
+> >  include/linux/platform_data/imx-iram.h |   41 ++++++++++++++++++++++++++++++++
+> >  4 files changed, 43 insertions(+), 44 deletions(-)
+> >  delete mode 100644 arch/arm/mach-imx/iram.h
+> >  create mode 100644 include/linux/platform_data/imx-iram.h
+> 
+> It would be better to use git mv /git format-patch -M, so that git can
+> detect the file rename.
 
-  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+Agreed. Anyway, I applied here and did a git show -M:
 
-are available in the git repository at:
+From: Sascha Hauer <s.hauer@pengutronix.de>
+Date: Mon, 7 Jan 2013 11:03:45 +0100
+Subject: [PATCH] coda: Fix build due to iram.h rename
 
-  git://git.linux-nfs.org/projects/trondmy/linux-nfs.git tags/nfs-for-3.8-2
+commit c045e3f13 (ARM: imx: include iram.h rather than mach/iram.h) changed the
+location of iram.h, which causes the following build error when building the coda
+driver:
 
-for you to fetch changes up to ecf0eb9edbb607d74f74b73c14af8b43f3729528:
+drivers/media/platform/coda.c:27:23: error: mach/iram.h: No such file or directory
+drivers/media/platform/coda.c: In function 'coda_probe':
+drivers/media/platform/coda.c:2000: error: implicit declaration of function 'iram_alloc'
+drivers/media/platform/coda.c:2001: warning: assignment makes pointer from integer without a cast
+drivers/media/platform/coda.c: In function 'coda_remove':
+drivers/media/platform/coda.c:2024: error: implicit declaration of function 'iram_free'
 
-  nfs: avoid dereferencing null pointer in initiate+AF8-bulk+AF8-draining (2013-01-05 14:26:51 -0500)
+Since the content of iram.h is not imx specific, move it to
+include/linux/platform_data/imx-iram.h instead. This is an intermediate solution
+until the i.MX iram allocator is converted to the generic SRAM allocator.
 
-----------------------------------------------------------------
-NFS client bugfixes for Linux 3.8
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 
-- Fix a permissions problem when opening NFSv4 files that only have the
-  exec bit set.
-- Fix a couple of typos in pNFS (inverted logic), and the mount parsing
-  (missing pointer dereference).
-- Work around a series of deadlock issues due to workqueues using
-  struct work+AF8-struct pointer address comparisons in the re-entrancy
-  tests. Ensure that we don't free struct work+AF8-struct prematurely if
-  our work function involves waiting for completion of other work
-  items (e.g. by calling rpc+AF8-shutdown+AF8-client).
-- Revert the part of commit 168e4b3 that is causing unnecessary warnings
-  to be issued in the nfsd callback code.
+diff --git a/arch/arm/mach-imx/iram_alloc.c b/arch/arm/mach-imx/iram_alloc.c
+index 6c80424..e05cf40 100644
+--- a/arch/arm/mach-imx/iram_alloc.c
++++ b/arch/arm/mach-imx/iram_alloc.c
+@@ -22,8 +22,7 @@
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+ #include <linux/genalloc.h>
+-
+-#include "iram.h"
++#include "linux/platform_data/imx-iram.h"
+ 
+ static unsigned long iram_phys_base;
+ static void __iomem *iram_virt_base;
+diff --git a/drivers/media/platform/coda.c b/drivers/media/platform/coda.c
+index 2721f83..16a243d 100644
+--- a/drivers/media/platform/coda.c
++++ b/drivers/media/platform/coda.c
+@@ -23,8 +23,8 @@
+ #include <linux/slab.h>
+ #include <linux/videodev2.h>
+ #include <linux/of.h>
++#include <linux/platform_data/imx-iram.h>
+ 
+-#include <mach/iram.h>
+ #include <media/v4l2-ctrls.h>
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-ioctl.h>
+diff --git a/arch/arm/mach-imx/iram.h b/include/linux/platform_data/imx-iram.h
+similarity index 100%
+rename from arch/arm/mach-imx/iram.h
+rename to include/linux/platform_data/imx-iram.h
 
-----------------------------------------------------------------
-Nickolai Zeldovich (1):
-      nfs: avoid dereferencing null pointer in initiate+AF8-bulk+AF8-draining
-
-Trond Myklebust (3):
-      SUNRPC: Ensure that we free the rpc+AF8-task after cleanups are done
-      NFS: Ensure that we free the rpc+AF8-task after read and write cleanups are done
-      SUNRPC: Partial revert of commit 168e4b39d1afb79a7e3ea6c3bb246b4c82c6bdb9
-
-Weston Andros Adamson (1):
-      NFS: Fix access to suid/sgid executables
-
-Xi Wang (1):
-      nfs: fix null checking in nfs+AF8-get+AF8-option+AF8-str()
-
-Yanchuan Nian (1):
-      pnfs: Increase the refcount when LAYOUTGET fails the first time
-
- fs/nfs/callback+AF8-proc.c +AHw-  2 +--
- fs/nfs/dir.c           +AHw- 16 +-+-+-+-+-+-+-+-+-+-------
- fs/nfs/nfs4proc.c      +AHw- 18 +-+-+-+-+-+-+-+-+-+-+--------
- fs/nfs/pnfs.c          +AHw-  2 +--
- fs/nfs/read.c          +AHw- 10 +-+-+-+-+-+-+----
- fs/nfs/super.c         +AHw-  2 +--
- fs/nfs/write.c         +AHw- 10 +-+-+-+-+-+-+----
- net/sunrpc/clnt.c      +AHw-  5 -----
- net/sunrpc/sched.c     +AHw- 27 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-----
- 9 files changed, 61 insertions(+-), 31 deletions(-)
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust+AEA-netapp.com
-www.netapp.com
+Cheers,
+Mauro
