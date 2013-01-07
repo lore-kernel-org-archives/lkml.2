@@ -1,44 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab3AGRBa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:01:30 -0500
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:38228 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126Ab3AGRB2 (ORCPT
+	id S1754489Ab3AGRBl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:01:41 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:57093 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754445Ab3AGRBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:01:28 -0500
-Date: Mon, 7 Jan 2013 09:01:24 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Lin Feng <linfeng@cn.fujitsu.com>
-Cc: akpm@linux-foundation.org, mingo@kernel.org, yinghai@kernel.org,
-        liwanp@linux.vnet.ibm.com, benh@kernel.crashing.org,
-        tangchen@cn.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mm: memblock: fix wrong memmove size in
- memblock_merge_regions()
-Message-ID: <20130107170124.GK3926@htj.dyndns.org>
-References: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
+	Mon, 7 Jan 2013 12:01:39 -0500
+Message-ID: <50EAFF70.70709@wwwdotorg.org>
+Date: Mon, 07 Jan 2013 10:01:36 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Laxman Dewangan <ldewangan@nvidia.com>
+CC: w.sang@pengutronix.de, swarren@nvidia.com, khali@linux-fr.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org
+Subject: Re: [PATCH] i2c: tegra: add support for Tegra114 SoC
+References: <1357387486-25966-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1357387486-25966-1-git-send-email-ldewangan@nvidia.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 11:41:36AM +0800, Lin Feng wrote:
-> The memmove span covers from (next+1) to the end of the array, and the index
-> of next is (i+1), so the index of (next+1) is (i+2). So the size of remaining
-> array elements is (type->cnt - (i + 2)).
+On 01/05/2013 05:04 AM, Laxman Dewangan wrote:
+> NVIDIA's Tegra114 has following enhanced feature in i2c controller:
+> - Enable/disable control for per packet transfer complete interrupt.
+>   Earlier SoCs could not disable this.
+> - Single clock source for standard/fast and HS mode clock speed.
+>   The clock divisor for fast/standard mode is added into the i2c
+>   controller to meet the HS and standard/fast mode of clock speed
+>   from single source.
 > 
-> Cc: Tejun Heo <tj@kernel.org>
-> Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+> Add support for the above feature to make it functional on T114 SOCs.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
 
-Thanks!
-
--- 
-tejun
