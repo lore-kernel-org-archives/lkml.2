@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751359Ab3AGOiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:38:23 -0500
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:51975 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab3AGOiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:38:22 -0500
+	id S1751469Ab3AGOi6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:38:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37157 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751009Ab3AGOi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 09:38:57 -0500
+Date: Mon, 7 Jan 2013 14:38:54 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Zhouping Liu <zliu@redhat.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        hughd@google.com, Michel Lespinasse <walken@google.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: thp: Acquire the anon_vma rwsem for lock during split
+Message-ID: <20130107143854.GH3885@suse.de>
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
+ <535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+ <20130103175737.GA3885@suse.de>
+ <20130104140815.GA26005@suse.de>
+ <50E7BF4D.4040204@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZmM4oNhXcaFWEFLkABCLcxEXDRxKmoev=_vx4g+o0qtA@mail.gmail.com>
-References: <CACRpkdZD6XWxgVFfO3-h_8+2y36o4mnT+ZW0d+GAVTOpC2yWRA@mail.gmail.com>
-	<CACRpkdZmM4oNhXcaFWEFLkABCLcxEXDRxKmoev=_vx4g+o0qtA@mail.gmail.com>
-Date: Mon, 7 Jan 2013 15:38:21 +0100
-Message-ID: <CACRpkdZxOW_Zk3dv45RraUM6dyOTEifcfASuBDehxB4SsYKgsw@mail.gmail.com>
-Subject: Re: HSI subsystem status
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, cch.devel@gmail.com, cchinea@gmail.com
-Cc: ext Tony Lindgren <tony@atomide.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <50E7BF4D.4040204@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 8:38 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Jan 7, 2013 at 12:11 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
->
->> Hi Carlos,
->>
->> what is the status on the HSI subsystem? We have based some patches for
->> HSI master on top of the OMAP HSI master patches, but these never seem
->> to reach the tree?
->
-> Ping on the cch.devel address instead...
+On Sat, Jan 05, 2013 at 01:51:09PM +0800, Zhouping Liu wrote:
+> On 01/04/2013 10:08 PM, Mel Gorman wrote:
+> >Zhouping, please test this patch.
+> 
+> Tested it, the issue is gone with following patch.
+> 
+> Tested-by: Zhouping Liu <zliu@redhat.com>
+> 
 
-And ping on Carlos' private mail address, hehe :-)
+Super. Thanks very much for reporting and testing this quickly.
 
-Yours,
-Linus Walleij
+-- 
+Mel Gorman
+SUSE Labs
