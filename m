@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753332Ab3AGBwd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 20:52:33 -0500
-Received: from amsterdam.lcs.mit.edu ([18.26.4.9]:26056 "EHLO
-	amsterdam.lcs.mit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752664Ab3AGBwa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 20:52:30 -0500
-From: Nickolai Zeldovich <nickolai@csail.mit.edu>
-To: Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: [PATCH v2] media: cx18, ivtv: eliminate unnecessary array index checks
-Date: Sun,  6 Jan 2013 20:52:03 -0500
-Message-Id: <1357523523-39707-1-git-send-email-nickolai@csail.mit.edu>
-X-Mailer: git-send-email 1.7.10.4
+	id S1753311Ab3AGByP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 20:54:15 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:2780 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753062Ab3AGByN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 20:54:13 -0500
+X-IronPort-AV: E=Sophos;i="4.84,421,1355068800"; 
+   d="scan'208";a="6532634"
+Message-ID: <50EA2A8F.1000601@cn.fujitsu.com>
+Date: Mon, 07 Jan 2013 09:53:19 +0800
+From: Lin Feng <linfeng@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: akpm@linux-foundation.org, mingo@kernel.org, yinghai@kernel.org,
+        liwanp@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        tangchen@cn.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] mm: memblock: optimize memblock_find_in_range_node()
+ to minimize the search work
+References: <1357291493-25773-1-git-send-email-linfeng@cn.fujitsu.com> <20130104150139.GB15633@mtj.dyndns.org>
+In-Reply-To: <20130104150139.GB15633@mtj.dyndns.org>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/07 09:53:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2013/01/07 09:53:42,
+	Serialize complete at 2013/01/07 09:53:42
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The idx values passed to cx18_i2c_register() and ivtv_i2c_register()
-by cx18_init_subdevs() and ivtv_load_and_init_modules() respectively
-are always in-range, based on how the hw_all bitmask is populated.
-Previously, the checks were already ineffective because arrays were
-being dereferenced using the index before the check.
 
-Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
----
-Thanks to Andy Walls for suggesting that instead of moving the checks
-before array dereference, a better fix is to remove the checks altogether,
-since they are superfluous.
 
- drivers/media/pci/cx18/cx18-i2c.c |    3 ---
- drivers/media/pci/ivtv/ivtv-i2c.c |    2 --
- 2 files changed, 5 deletions(-)
+On 01/04/2013 11:01 PM, Tejun Heo wrote:
+> On Fri, Jan 04, 2013 at 05:24:53PM +0800, Lin Feng wrote:
+>> The memblock array is in ascending order and we traverse the memblock array in
+>> reverse order so we can add some simple check to reduce the search work.
+>>
+>> Tejun fix a underflow bug in 5d53cb27d8, but I think we could break there for
+>> the same reason.
+>>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
+>> ---
+>>  mm/memblock.c | 9 ++++++++-
+>>  1 file changed, 8 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/mm/memblock.c b/mm/memblock.c
+>> index 6259055..a710557 100644
+>> --- a/mm/memblock.c
+>> +++ b/mm/memblock.c
+>> @@ -111,11 +111,18 @@ phys_addr_t __init_memblock memblock_find_in_range_node(phys_addr_t start,
+>>  	end = max(start, end);
+>>  
+>>  	for_each_free_mem_range_reverse(i, nid, &this_start, &this_end, NULL) {
+>> +		/*
+>> +		 * exclude the regions out of the candidate range, since it's
+>> +		 * likely to find a suitable range, we ignore the worst case.
+>> +		 */
+>> +		if (this_start >= end)
+>> +			continue;
+>> +
+>>  		this_start = clamp(this_start, start, end);
+>>  		this_end = clamp(this_end, start, end);
+>>  
+>>  		if (this_end < size)
+>> -			continue;
+>> +			break;
+> 
+> I don't know.  This only saves looping when memblocks are below the
+> requested size, right?  I don't think it would matter in any way and
+> would prefer to keep the logic as simple as possible.
+Hi Tejun,
 
-diff --git a/drivers/media/pci/cx18/cx18-i2c.c b/drivers/media/pci/cx18/cx18-i2c.c
-index 4908eb7..ccb1d15 100644
---- a/drivers/media/pci/cx18/cx18-i2c.c
-+++ b/drivers/media/pci/cx18/cx18-i2c.c
-@@ -116,9 +116,6 @@ int cx18_i2c_register(struct cx18 *cx, unsigned idx)
- 	const char *type = hw_devicenames[idx];
- 	u32 hw = 1 << idx;
- 
--	if (idx >= ARRAY_SIZE(hw_addrs))
--		return -1;
--
- 	if (hw == CX18_HW_TUNER) {
- 		/* special tuner group handling */
- 		sd = v4l2_i2c_new_subdev(&cx->v4l2_dev,
-diff --git a/drivers/media/pci/ivtv/ivtv-i2c.c b/drivers/media/pci/ivtv/ivtv-i2c.c
-index 46e262b..bc984af 100644
---- a/drivers/media/pci/ivtv/ivtv-i2c.c
-+++ b/drivers/media/pci/ivtv/ivtv-i2c.c
-@@ -267,8 +267,6 @@ int ivtv_i2c_register(struct ivtv *itv, unsigned idx)
- 	const char *type = hw_devicenames[idx];
- 	u32 hw = 1 << idx;
- 
--	if (idx >= ARRAY_SIZE(hw_addrs))
--		return -1;
- 	if (hw == IVTV_HW_TUNER) {
- 		/* special tuner handling */
- 		sd = v4l2_i2c_new_subdev(&itv->v4l2_dev, adap, type, 0,
--- 
-1.7.10.4
+You're right, when we hit the 'if (this_end < size)' branch, it's nearly 
+the end of the whole search loops. I just got an impression that is 
+there any candidate range after we hit the if clause when I first read
+this code, so... ;-)
 
+thanks,
+linfeng
+> 
+> Thanks.
+> 
