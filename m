@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796Ab3AGO0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:26:16 -0500
-Received: from mail.free-electrons.com ([94.23.32.191]:40314 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753413Ab3AGO0P (ORCPT
+	id S1754813Ab3AGO1o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:27:44 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53272 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754442Ab3AGO1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:26:15 -0500
-Message-ID: <50EADAF9.2030805@free-electrons.com>
-Date: Mon, 07 Jan 2013 15:26:01 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 7 Jan 2013 09:27:42 -0500
+Date: Mon, 7 Jan 2013 14:27:40 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Hebbar, Gururaja" <gururaja.hebbar@ti.com>
+Cc: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "Nori, Sekhar" <nsekhar@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "rob@landley.net" <rob@landley.net>, "Girdwood, Liam" <lrg@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [alsa-devel] [PATCH V2 2/2] ASoC: Davinci: machine: Add device
+ tree binding
+Message-ID: <20130107142740.GG4544@opensource.wolfsonmicro.com>
+References: <1357293277-25543-1-git-send-email-gururaja.hebbar@ti.com>
+ <1357293277-25543-3-git-send-email-gururaja.hebbar@ti.com>
+ <20130104122612.GM4627@opensource.wolfsonmicro.com>
+ <1BAFE6F6C881BF42822005164F1491C33EB3690C@DBDE01.ent.ti.com>
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] gpio: pca953x: make the register access by GPIO bank
-References: <1357493688-25061-1-git-send-email-gregory.clement@free-electrons.com> <1357493688-25061-2-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1357493688-25061-2-git-send-email-gregory.clement@free-electrons.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="z9ECzHErBrwFF8sy"
+Content-Disposition: inline
+In-Reply-To: <1BAFE6F6C881BF42822005164F1491C33EB3690C@DBDE01.ent.ti.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory,
 
-Le 06/01/2013 18:34, Gregory CLEMENT a écrit :
-> +static int pca953x_write_regs(struct pca953x_chip *chip, int reg, u8 *val)
->  {
->  	int ret = 0;
->  
->  	if (chip->gpio_chip.ngpio <= 8)
-> -		ret = i2c_smbus_write_byte_data(chip->client, reg, val);
-> -	else if (chip->gpio_chip.ngpio == 24) {
-> -		cpu_to_le32s(&val);
-> +		ret = i2c_smbus_write_byte_data(chip->client, reg, *val);
-> +	else if (chip->gpio_chip.ngpio >= 24) {
-> +		int bank_shift = fls(chip->gpio_chip.ngpio) - 3;
->  		ret = i2c_smbus_write_i2c_block_data(chip->client,
-> -						(reg << 2) | REG_ADDR_AI,
-> -						3,
-> -						(u8 *) &val);
-> +					(reg << bank_shift) | REG_ADDR_AI,
-> +					NBANK(chip),
-> +					val);
->  	}
->  	else {
->  		switch (chip->chip_type) {
->  		case PCA953X_TYPE:
->  			ret = i2c_smbus_write_word_data(chip->client,
-> -							reg << 1, val);
-> +							reg << 1, (u16) *val);
->  			break;
->  		case PCA957X_TYPE:
->  			ret = i2c_smbus_write_byte_data(chip->client, reg << 1,
-> -							val & 0xff);
-> +							val[0]);
->  			if (ret < 0)
->  				break;
->  			ret = i2c_smbus_write_byte_data(chip->client,
->  							(reg << 1) + 1,
-> -							(val & 0xff00) >> 8);
-> +							val[1]);
->  			break;
->  		}
->  	}
+--z9ECzHErBrwFF8sy
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I just tested your patch on a PCA9555 on the Crystalfontz CFA-10049, and
-it doesn't work anywore. It returns ENXIO now when you use this
-function. As discussed on IRC, it seems that the fix would be to replace
-all the calls to fls(chip->gpio_chip.ngpio) by fls(chip->gpio_chip.ngpio
-- 1).
+On Mon, Jan 07, 2013 at 09:20:16AM +0000, Hebbar, Gururaja wrote:
 
-Also, all the irq handling is not compiling anymore for trivial errors
-(variables not defined, incompatible types, etc.). So obviously, I
-couldn't test the changes you made on the IRQ related functions.
+> I will be looking into this now. To speed up the things, do you have any
+> reference link/implementation which  I can refer to?
 
-Maxime
+Any modern CODEC driver.
 
--- 
-Maxime Ripard, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+> I looked at the OMAP implementation but they are following the same (meaning both
+> DT & non-DT use similar audio map for routing).
+
+You should use the same setup for DT and non-DT.
+
+--z9ECzHErBrwFF8sy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ6ttSAAoJELSic+t+oim94ScP/3LQhaeyRGpPovAP2xCS9AN+
+QzsrhxO5i/BA4eInaEsah+mEfEXOGEN0rnsMEOm1TiGR2DKQJYfyKcngIOz8RHLv
+mB2ZOOFmEpfuqIoh/bAq5EiAxuXOXKMxoXpHvuLHCNB3PA/G3q0OXBOiKXbuSg9a
+cnuQrcZ9wf3YBOeD6B/DGNiYq3bshBmZx+4fAtkOTW9ySGnaepO84pzjVCfE2a4Q
+xITRGWcLTr7ZhchUxFr3AeKKgW7iRXaigEUZDz8OkxHa2tw5GCEsTqDccC4Kk8sk
+XaSD6KpgumNhZP2zL1jssKuNA9m1nS7ADaSQSLOO3/V+AL4/eiIUH9M7/ugUmZrz
+EZd7l078VjedvDZPVYTGCFfFHmMO44yht7pglurEY2LmvTySCv7CErppAP4ir7Mk
+uoUpnlKH7bGrWBIpRI/dv5+ttd6EPj32x6VdK77mGulJQ3FAEYG8hMHPMRNL2Etm
+xbh9m5riUpz2kFvUbaBSobwDy+57bSB4PKzS9T5/E9+3EwzUYJAqB2s6haDG4dAi
+gQQURKwfNxMuT1T1y4/d0UYE9F0CHb7iXY6+0iVsv9LxprgN8t2IIPgNBy6SNt5q
+6oRQGeVOymgvIqdLUK4YYn2vmvNCRjYRfzMBnhGpldOLOKSDZevxaIxUmpwu03Sn
+HZRhza9ZvC05ElJHwZ+1
+=EDmV
+-----END PGP SIGNATURE-----
+
+--z9ECzHErBrwFF8sy--
