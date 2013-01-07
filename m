@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752745Ab3AGO6p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:58:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40864 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751739Ab3AGO6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:58:44 -0500
-Date: Mon, 7 Jan 2013 09:58:32 -0500
-From: Josh Boyer <jwboyer@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Frank Ch. Eigler" <fche@redhat.com>, dhowells@redhat.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@redhat.com
-Subject: Re: [PATCH] MODSIGN: Don't taint unless signature enforcing is
- enabled
-Message-ID: <20130107145832.GA12363@hansolo.jdub.homelinux.org>
-References: <20130104191205.GD27554@hansolo.jdub.homelinux.org>
- <87bod14x44.fsf@rustcorp.com.au>
+	id S1752523Ab3AGO7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:59:24 -0500
+Received: from mail-ea0-f174.google.com ([209.85.215.174]:62381 "EHLO
+	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab3AGO7X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 09:59:23 -0500
+Message-ID: <50EAE126.4020407@monstr.eu>
+Date: Mon, 07 Jan 2013 15:52:22 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87bod14x44.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 3.8-rc3
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 11:39:47AM +1030, Rusty Russell wrote:
-> Josh Boyer <jwboyer@redhat.com> writes:
-> > With module signing enabled but not in enforcing mode, we don't consider
-> > unsigned modules to be an error.  However, we only mark sig_ok as true if
-> > a signature verified.  This causes the module to be tainted with the
-> > TAINT_FORCED_MODULE flag.
-> 
-> Wait, what?  So, what does CONFIG_MODULE_SIG=y with MODULE_SIG_FORCE=n
-> mean?  Why not just call that CONFIG_USELESS_BLOAT? :)
+Hi Linus,
 
-You can still enable enforcing mode with that configuration by passing
-sig_enforce=1 as a kernel parameter.  Some distros default to this
-configuration.
+this is fixed pull request (origin one was sent some days ago).
+I have fixed defconfigs as you suggested. In that meantime I have
+also found 3 other things which needs to be fixed which are also
+included (Highmem fixup and pci warnings reported by 0-day testing system).
 
-> >  That in turn taints the kernel, which also disables lockdep.
-> 
-> Yeah, lockdep is oversensitive.  This has been argued before, take it up
-> with Ingo.  Perhaps we need a taint flag bit to indicate that lockdep
-> should actually be disabled?
+Thanks,
+Michal
 
-Well, sure maybe.  Frank already pointed out that the OOT taint doesn't
-disable lockdep.  Having something more general would be good.  If there
-isn't an easy way to do that, adding a TAINT_UNSIGNED to be used instead
-of TAINT_FORCED_MODULE might work.  I've CC'd Ingo and Peter.
 
-> > Tainting the module and kernel when we don't consider something to be an
-> > error seems excessive.  This marks sig_ok as true if we aren't in enforcing
-> > mode.
-> 
-> If we were to do this, please follow Plauger's Law: "Don't patch bad
-> code - rewrite it."
-> 
-> In this case, rip out the now-useless sig_ok field.
 
-OK.  I'll respin with that change if nothing else seems workable.
+The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+   Linus Torvalds (1):
+         Linux 3.8-rc2
 
-josh
+are available in the git repository at:
+
+   git://git.monstr.eu/linux-2.6-microblaze.git next
+
+Michal Simek (6):
+       microblaze: Microblaze wants sys_fork for noMMU too
+       microblaze: Change section flags for noMMU
+       microblaze: Kill __kmap_atomic()
+       microblaze: Add finit_module syscall
+       microblaze: Fix pci compilation and sparse warnings
+       microblaze: Update microblaze defconfigs
+
+  arch/microblaze/configs/mmu_defconfig     |   52 ++++++++++++++------
+  arch/microblaze/configs/nommu_defconfig   |   73 +++++++++++++++++-----------
+  arch/microblaze/include/asm/highmem.h     |    2 +-
+  arch/microblaze/include/asm/uaccess.h     |    2 +-
+  arch/microblaze/include/asm/unistd.h      |    2 -
+  arch/microblaze/include/uapi/asm/unistd.h |    3 +-
+  arch/microblaze/kernel/syscall_table.S    |    1 +
+  arch/microblaze/pci/pci-common.c          |   11 ++--
+  8 files changed, 90 insertions(+), 56 deletions(-)
+
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
