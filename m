@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755961Ab3AGWgD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:36:03 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:50760 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754593Ab3AGWgA (ORCPT
+	id S1755979Ab3AGWgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:36:09 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5944 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab3AGWgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:36:00 -0500
-Date: Tue, 8 Jan 2013 09:35:57 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: linux-next: comment in commit in the slave-dma tree (dmaengine:
- dw_dmac: Enhance device tree support)
-Message-Id: <20130108093557.8a29d4a04b95702fc59790ff@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+	Mon, 7 Jan 2013 17:36:05 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=3csswWSbI5MA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=60oAcdMYphAA:10 a=D19gQVrFAAAA:8 a=iox4zFpeAAAA:8 a=xXf59UwAZ8NuLoa7OVIA:9 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=n9GBPR9yFnkA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357598164.5190.12.camel@gandalf.local.home>
+Subject: Re: [PATCH] staging/sb105x: remove asm/segment.h dependency
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jeff Mahoney <jeffm@suse.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
+Date: Mon, 07 Jan 2013 17:36:04 -0500
+In-Reply-To: <50EB4A3B.1020307@suse.com>
+References: <50EB4A3B.1020307@suse.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch is obsoleted by:
 
-Hi Vinod,
+https://lkml.org/lkml/2012/12/13/710
 
-In commit 548860697046 ("dmaengine: dw_dmac: Enhance device tree
-support") (which was changed since yesterday :-(), an instance of
-__devinit has been added.  We are in the process of making CONFIG_HOTPLUG
-always true, and since commit 78d86c213f28 ("init.h: Remove __dev*
-sections from the kernel") (included in v3.7), __devinit does nothing.
-Please do not add any more.
+Which I just got the automated reply, and it's in Greg's staging tree
+now.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+When I get time, I do want to try to get this driver (and device)
+working on my ppc64 box.
 
---Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ
-Content-Type: application/pgp-signature
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+-- Steve
 
-iQIcBAEBCAAGBQJQ603NAAoJEECxmPOUX5FElGcQAJsbzOIduiL/A1JX7AmfyEGH
-V5//cWJwMtbRL19YbpemFBAa7KMGOGrYngNxUqwu1RnOHsTVmP7G1MQT+pKYt/+o
-LTfb8AEVGymAZ7j/Q6EQO63h0H9Siz0NDfxA7WYBGzA4bsCAMtvqu0Dv42ZkMqmE
-j0C2OwWVGoxkee9PnfS1LYAR8FqSzoOygqM9W9G3qamVyqxVV5ys1/xdrC+uwGL5
-1HEHp/wpraMx4YSYxl15AECko1fNCGYHfDb5Dqb/5MQ1Q9f4hY72r37LtfjRt3JQ
-hOV7EPRbWmnhVAxdoeUZWdChTBSjgvDUep7l5CwfNOf9EMUZWcEx0KmjQ+5WDKO/
-Ovn0SF9RaxM0vA268vXc274QXcP1G6hwKaR3lkBQZMMJumJzM8ezE1cQi66HmmM6
-PyWXxUJxbJxCXC9vdFigD550lEE7HYAHC50EDus0NaHzozdOS9WmnZdZ0Nxhn5lQ
-saTln8Yq7X80Cmd+y9eq2YKHRUjXX8zPlE6SDXgM5T7/QpPvgGIVdpBdzSKoGQPD
-J2MFADAdS9f2JtHR159fgefLxHSOYJivOC2MbWQWjGvbbHAmSOrFY4QY8DgPWzGU
-gWRUkRMVxpa3TsRAzBfxFtH2d4nl75PEDfnKlFPB3/p0t1350J7uh57CYA5vP9un
-M4xEK18aW3L+52A/S8g7
-=xp1d
------END PGP SIGNATURE-----
 
---Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ--
+On Mon, 2013-01-07 at 17:20 -0500, Jeff Mahoney wrote:
+> sb105x doesn't seem to actually need <asm/segment.h> (builds on x86
+> without it) and ppc/ppc64 doesn't provide it so it fails to build there.
+> 
+> This patch removes the dependency. Unfortunately, it now fails to build
+> because STD_COM_FLAGS isn't defined on most architectures. I'm not familiar
+> enough with the tty/serial system to patch that aspect of it.
+> 
+> CC: Steven Rostedt <rostedt@goodmis.org>
+> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
+> ---
+> 
+>  drivers/staging/sb105x/sb_pci_mp.h |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> --- a/drivers/staging/sb105x/sb_pci_mp.h
+> +++ b/drivers/staging/sb105x/sb_pci_mp.h
+> @@ -19,7 +19,6 @@
+>  #include <asm/uaccess.h>
+>  #include <asm/io.h>
+>  #include <asm/irq.h>
+> -#include <asm/segment.h>
+>  #include <asm/serial.h>
+>  #include <linux/interrupt.h>
+>  
+> 
+> 
+
+
