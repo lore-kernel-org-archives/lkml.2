@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756087Ab3AGXLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 18:11:53 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:39543 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753075Ab3AGXLv (ORCPT
+	id S1756101Ab3AGXMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 18:12:16 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:12908 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab3AGXMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 18:11:51 -0500
-X-Greylist: delayed 86687 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 18:11:51 EST
-Message-ID: <50EB5636.4080705@linaro.org>
-Date: Tue, 08 Jan 2013 00:11:50 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
+	Mon, 7 Jan 2013 18:12:14 -0500
+X-Authority-Analysis: v=2.0 cv=YruNtvkX c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=nKwdevkgNS0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=L4JvR7MU6hkA:10 a=VnNF1IyMAAAA:8 a=-vcA4gqU35gu1anK12YA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357600327.5190.13.camel@gandalf.local.home>
+Subject: Re: linux-next: Tree for Jan 7 (rcutorture)
+From: Steven Rostedt <rostedt@goodmis.org>
 To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: please cleanup the cpuidle tree
-References: <20130108092751.4bd60a67280e284369553c18@canb.auug.org.au>
-In-Reply-To: <20130108092751.4bd60a67280e284369553c18@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Cc: paulmck@linux.vnet.ibm.com, Randy Dunlap <rdunlap@infradead.org>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Mon, 07 Jan 2013 18:12:07 -0500
+In-Reply-To: <20130108095959.98d83d91dbd0e9e1ac023373@canb.auug.org.au>
+References: <20130107142649.c843e0b711532dc3a631e4cf@canb.auug.org.au>
+	 <50EB252C.4010005@infradead.org> <20130107221627.GZ2525@linux.vnet.ibm.com>
+	 <20130108095959.98d83d91dbd0e9e1ac023373@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2013 11:27 PM, Stephen Rothwell wrote:
-> Hi Daniel,
+On Tue, 2013-01-08 at 09:59 +1100, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> All the commits in the cpuidle tree have been included upstream before
-> v3.6-rc1.  They were rewritten before being merged upstream and so are
-> now causing merge conflicts in linux-next.  Could you please reset the
-> head of your tree
-> (git://git.linaro.org/people/dlezcano/cpuidle-next.git#cpuidle-next) to
-> be somewhere in the tree that yours is merged into (pm or Linus').
+> On Mon, 7 Jan 2013 14:16:27 -0800 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > On Mon, Jan 07, 2013 at 11:42:36AM -0800, Randy Dunlap wrote:
+> > > 
+> > > on i386 or x86_64:
+> > > 
+> > > ERROR: "trace_clock_local" [kernel/rcutorture.ko] undefined!
+> > 
+> > Hello, Randy,
+> > 
+> > Did your build include the following, also pushed to -next in that same
+> > batch from -rcu?  Including Steven Rostedt on CC for his take.
+> 
+> That commit was certainly in next-20130107.
+> 
 
-Sure. I believe it is done now.
+Could be bad config dependencies.
 
-> Alternatively, if you are not using it any more, let me know and I will
-> remove it from linux-next.
+Stephen, can you send me the config that gave you that error.
 
-I am planning to do some more cleanup in a very near future. So I prefer
-to keep it untouched for now.
+Thanks,
 
-Thanks
-  -- Daniel
+-- Steve
 
--- 
- <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
 
