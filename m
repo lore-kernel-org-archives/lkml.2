@@ -1,141 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832Ab3AGLJv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 06:09:51 -0500
-Received: from moutng.kundenserver.de ([212.227.126.186]:59210 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab3AGLJt (ORCPT
+	id S1753920Ab3AGLPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 06:15:33 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35801 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751626Ab3AGLPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 06:09:49 -0500
-Date: Mon, 7 Jan 2013 12:09:36 +0100 (CET)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-X-X-Sender: lyakh@axis700.grange
-To: Julia Lawall <Julia.Lawall@lip6.fr>
-cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: Re: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c:
- reposition free_irq to avoid access to invalid data
-In-Reply-To: <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr>
-Message-ID: <Pine.LNX.4.64.1301071111420.23972@axis700.grange>
-References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr>
- <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 7 Jan 2013 06:15:32 -0500
+Date: Mon, 7 Jan 2013 11:15:20 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: David Dajun Chen <dchen@diasemi.com>,
+        Ashish Jangam <ashish.jangam@kpitcummins.com>,
+        Liam Girdwood <lrg@ti.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: da9055: Remove unused v_shift field from
+ struct da9055_volt_reg
+Message-ID: <20130107111519.GC4544@opensource.wolfsonmicro.com>
+References: <1357447320.17918.0.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Provags-ID: V02:K0:+WCXvjeokSHM+UFIXbO9rOG6nhK/yUQ0PMIdox+KWHx
- Tw5TJ3bbIi4dBO5+9Z1BF+PL6eRTMgvLN6Ex2s2kvhEkq0+NoQ
- pza4EkV9ObBj1jFA183mlnWIG+1PaaVCw7Jl8OqkFAJSeOyvSI
- PM4I2aeXrDCtDloVTbHDIFZwdVT+e6NsWbGG3y4vQhzV/1sRDY
- a+TW/QfpsCn4ybL9xfvtApGpXaRySWumnskA8EZBGulnC6Ds/8
- YdFGlOYnSFeXgX/5p5g0iVm3pKzkJHC6aEglrcw03AxycODrOs
- d/BMfB1qUlmQlisipIS0TCI7epD7GJQltGETwgTYFYOb58JrEC
- Iv4iV4dw9URGJqEFylbbBnBJM4ImhXQCsLFhOvR5DWPphwSFga
- j/ZUpWXGmO8qA==
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
+Content-Disposition: inline
+In-Reply-To: <1357447320.17918.0.camel@phoenix>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding Robert to CC)
 
-Hi Julia
+--hOcCNbCCxyk/YU74
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks for the patch.
+On Sun, Jan 06, 2013 at 12:42:00PM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-On Mon, 7 Jan 2013, Julia Lawall wrote:
+Applied, thanks.
 
-> From: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> The data referenced by an interrupt handler should not be freed before the
-> interrupt is ended.  The handler is pxa_camera_irq.  This handler may call
-> pxa_dma_start_channels, which references the channels that are freed on the
-> lines before the call to free_irq.
+--hOcCNbCCxyk/YU74
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-I don't think any data is freed by pxa_free_dma(), it only disables DMA on 
-a certain channel. Theoretically there could be a different problem: 
-pxa_free_dma() deactivates DMA, whereas pxa_dma_start_channels() activates 
-it. But I think we're also protected against that: by the time 
-pxa_camera_remove() is called, and operation on the interface has been 
-stopped, client devices have been detached, pxa_camera_remove_device() has 
-been called, which has also stopped the interface clock. And with clock 
-stopped no interrupts can be generated. And the case of interrupt having 
-been generated before clk_disabled() and only delivered to the driver so 
-much later, that we're already unloading the module, seems really 
-impossible to me. Robert, you agree?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-OTOH, it would be nice to convert also this driver to managed allocations, 
-which also would include devm_request(_threaded)_irq(), but that would 
-mean, that free_irq() would be called even later than now, also after 
-pxa_free_dma().
+iQIcBAEBAgAGBQJQ6q47AAoJELSic+t+oim9e1cP/1KMHFcbqa69hTXiX9S5Ffe1
++TvPSMO1qoJnKpm/gZM0V85meCGxuCO2KuG6kChSJcpxXsVRyaDKi20RWhjB1hth
+YWa9hCRwEEwzZ6al4qRENkVQp1ziaUDmS0TETjJ83jLNdtXdTMogfDxwMENGiHSZ
+RQF8d60hivJBJ91Fi/25En4FgOVB6PP5cdRrQWFhb0mKJVFjsbeqeAwllElGz44v
+cNDrP+FgMZYZ8Mg31Ya4DUYF8afYgx50xKzaTws4YFbATubZfTH2ba3LB9tQKgXG
+ZaBVICODICXMMEL5uFIil/2s37FWZVxN41DQ60Q4YJBHCB1o2cOvr9zv9hiaFeJJ
+nKXXMLr0RrqcYEhE8WTCy+R0g8EEnC3V6GfKOPFLW37F1sisNOINltnmrbNIAwYc
+zgmTW1Mdc9LrynbafwZ/xbdHrhTEpgRj90yK7qs9SKIVtZtqBGpqQIttFkxNF8FW
+ggCNXPmZAUb1u/SygdKCnYS+hf5GoPFvckzwKX6hj+0NpwL5VBGX5f9YM0SDKsvL
+3ehx/F3Cdff0BzMsdPkLvyVgF5MS6lcSLjfla705KuenfEyK3h59Knmy17d7wqZo
++2cEiYztn83xQ8cXulD8O3QXigJpS+TtwNT2bjA47agi5C18meFPwpZn47e8o2mA
+fNYCCaPQrmpQLVn1rlnN
+=Ggtw
+-----END PGP SIGNATURE-----
 
-Speaking about managed allocations, those can be dangerous too: if you 
-request an IRQ before, say, remapping memory, or if you only use managed 
-IRQ requesting and ioremap() memory in your driver manually, that would be 
-wrong. But from a quick grep looks like most (all?) drivers get ir right - 
-first ioremap(), then request IRQ, but to be certain maybe coccinelle 
-could run a test for that too;-)
-
-Thanks
-Guennadi
-
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @fn exists@
-> expression list es;
-> expression a,b;
-> identifier f;
-> @@
-> 
-> if (...) {
->   ... when any
->   free_irq(a,b);
->   ... when any
->   f(es);
->   ... when any
->   return ...;
-> }
-> 
-> @@
-> expression list fn.es;
-> expression fn.a,fn.b;
-> identifier fn.f;
-> @@
-> 
-> *f(es);
-> ... when any
-> *free_irq(a,b);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> 
-> ---
-> Not compiled.  I have not observed the problem in practice; the code just
-> looks suspicious.
-> 
->  drivers/media/platform/soc_camera/pxa_camera.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/platform/soc_camera/pxa_camera.c b/drivers/media/platform/soc_camera/pxa_camera.c
-> index f91f7bf..2a19aba 100644
-> --- a/drivers/media/platform/soc_camera/pxa_camera.c
-> +++ b/drivers/media/platform/soc_camera/pxa_camera.c
-> @@ -1810,10 +1810,10 @@ static int pxa_camera_remove(struct platform_device *pdev)
->  
->  	clk_put(pcdev->clk);
->  
-> +	free_irq(pcdev->irq, pcdev);
->  	pxa_free_dma(pcdev->dma_chans[0]);
->  	pxa_free_dma(pcdev->dma_chans[1]);
->  	pxa_free_dma(pcdev->dma_chans[2]);
-> -	free_irq(pcdev->irq, pcdev);
->  
->  	soc_camera_host_unregister(soc_host);
->  
-> 
-
----
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+--hOcCNbCCxyk/YU74--
