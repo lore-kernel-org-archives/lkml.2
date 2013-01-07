@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab3AGN72 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 08:59:28 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26443 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754505Ab3AGN70 (ORCPT
+	id S1753088Ab3AGOBy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 09:01:54 -0500
+Received: from perceval.ideasonboard.com ([95.142.166.194]:55635 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab3AGOBx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 08:59:26 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=DpZN2MZ322sA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=0QnN7xjQLoUA:10 a=pGLkceISAAAA:8 a=VnNF1IyMAAAA:8 a=n1X3vdIT7vWwZHCaPpoA:9 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=OYghQVagt972CARU:21 a=L-3r89mo3KU2ZB84:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357567165.10284.85.camel@gandalf.local.home>
-Subject: Re: [PATCH 3/3] tracing: Verify target file before registering a
- uprobe event
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jovi Zhang <bookjovi@gmail.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Date: Mon, 07 Jan 2013 08:59:25 -0500
-In-Reply-To: <87vcbdr2nq.fsf@sejong.aot.lge.com>
-References: <20130102225035.140076434@goodmis.org>
-	 <20130103004212.690763002@goodmis.org> <87vcbdr2nq.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 09:01:53 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org,
+        Laurent Pinchart <laurent.pinchart@skynet.be>,
+        Archit Taneja <archit@ti.com>, Prabhakar Lad <prabhakar.lad@ti.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>
+Subject: Re: [PATCH] omap_vout: find_vma() needs ->mmap_sem held
+Date: Mon, 07 Jan 2013 15:03:29 +0100
+Message-ID: <12809797.BqtcBHZvm4@avalon>
+User-Agent: KMail/4.9.2 (Linux/3.6.11-gentoo; KDE/4.9.2; x86_64; ; )
+In-Reply-To: <20130106110225.49b03d4e@infradead.org>
+References: <20121215201237.GW4939@ZenIV.linux.org.uk> <20121215203828.GX4939@ZenIV.linux.org.uk> <20130106110225.49b03d4e@infradead.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2013-01-04 at 13:30 +0900, Namhyung Kim wrote:
-> Hi, Steve.
+Hi Mauro,
+
+On Sunday 06 January 2013 11:02:25 Mauro Carvalho Chehab wrote:
+> Em Sat, 15 Dec 2012 20:38:29 +0000 Al Viro escreveu:
+> > On Sat, Dec 15, 2012 at 08:12:37PM +0000, Al Viro wrote:
+> > > 	Walking rbtree while it's modified is a Bad Idea(tm); besides,
+> > > 
+> > > the result of find_vma() can be freed just as it's getting returned
+> > > to caller.  Fortunately, it's easy to fix - just take ->mmap_sem a bit
+> > > earlier (and don't bother with find_vma() at all if virtp >= PAGE_OFFSET
+> > > -
+> > > in that case we don't even look at its result).
+> > 	
+> > 	While we are at it, what prevents VIDIOC_PREPARE_BUF calling
+> > 
+> > v4l_prepare_buf() -> (e.g) vb2_ioctl_prepare_buf() -> vb2_prepare_buf() ->
+> > __buf_prepare() -> __qbuf_userptr() -> vb2_vmalloc_get_userptr() ->
+> > find_vma(), AFAICS without having taken ->mmap_sem anywhere in process? 
+> > The code flow is bloody convoluted and depends on a bunch of things done
+> > by initialization, so I certainly might've missed something...
 > 
-> On Wed, 02 Jan 2013 17:50:38 -0500, Steven Rostedt wrote:
-> > From: Jovi Zhang <bookjovi@gmail.com>
-> >
-> > Without this patch, we can register a uprobe event for a directory.
-> > Enabling such a uprobe event would fail anyway .
-> >
-> > Example:
-> > $ echo 'p /bin:0x4245c0' > /sys/kernel/debug/tracing/uprobe_events
-> >
-> > However dirctories cannot be valid targets for uprobe.
-> > Hence verify if the target is a regular file during the probe
-> > registration.
-> >
-> > Signed-off-by: Jovi Zhang <bookjovi@gmail.com>
-> > Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > ---
-> >  kernel/trace/trace_uprobe.c |    6 +++++-
-> >  1 file changed, 5 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> > index 03003cd..0815f25 100644
-> > --- a/kernel/trace/trace_uprobe.c
-> > +++ b/kernel/trace/trace_uprobe.c
-> > @@ -257,6 +257,10 @@ static int create_trace_uprobe(int argc, char **argv)
-> >  		goto fail_address_parse;
-> >  
-> >  	inode = igrab(path.dentry->d_inode);
-> > +	 if (!S_ISREG(inode->i_mode) || S_ISDIR(inode->i_mode)) {
+> This driver is currently missing an active maintainer, as it is for an old
+> hardware (AFAIK, omap is now at version 4, and this is for the first one),
+
+The omap_vout driver is for OMAP2+ if I'm not mistaken. I use it with the 
+OMAP3.
+
+> but I'm c/c a few developers that might help to test and analyze it.
 > 
-> Doesn't !S_ISREG() include S_ISDIR() case too?
+> In any case, /me is assuming that your patch is right (as nobody
+> complained), and I'm applying it right now on my tree. This will hopefully
+> allow some people to test.
 
-You're correct. Although I'm sure gcc should be smart enough to optimize
-that out.
+-- 
+Regards,
 
-> 
-> Anyway I can see an additional whitespace in front of the "if".
-
-Yep, I forgot to run checkpatch on this. OK, this bug isn't that big of
-a deal, so I'll take this patch out and put it into the 3.9 queue.
-
-Thanks,
-
--- Steve
-
-> 
-> Thanks,
-> Namhyung
-> 
-> 
-> > +		ret = -EINVAL;
-> > +		goto fail_address_parse;
-> > +	}
-> >  
-> >  	argc -= 2;
-> >  	argv += 2;
-> > @@ -356,7 +360,7 @@ fail_address_parse:
-> >  	if (inode)
-> >  		iput(inode);
-> >  
-> > -	pr_info("Failed to parse address.\n");
-> > +	pr_info("Failed to parse address or file.\n");
-> >  
-> >  	return ret;
-> >  }
-
+Laurent Pinchart
 
