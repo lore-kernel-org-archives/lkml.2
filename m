@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab3AGKl0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 05:41:26 -0500
-Received: from mga02.intel.com ([134.134.136.20]:24661 "EHLO mga02.intel.com"
+	id S1754011Ab3AGKlY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 05:41:24 -0500
+Received: from mga11.intel.com ([192.55.52.93]:26455 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab3AGKlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 05:41:15 -0500
+	id S1753580Ab3AGKlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 05:41:14 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,423,1355126400"; 
-   d="scan'208";a="242919362"
+   d="scan'208";a="273733515"
 From: Mika Westerberg <mika.westerberg@linux.intel.com>
 To: linux-kernel@vger.kernel.org
 Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, eric.y.miao@gmail.com,
@@ -16,9 +16,9 @@ Cc: grant.likely@secretlab.ca, linus.walleij@linaro.org, eric.y.miao@gmail.com,
         broonie@opensource.wolfsonmicro.com, chao.bi@intel.com,
         "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from platform data
-Date: Mon,  7 Jan 2013 12:44:34 +0200
-Message-Id: <1357555480-24022-6-git-send-email-mika.westerberg@linux.intel.com>
+Subject: [PATCH 04/11] spi/pxa2xx: embed the ssp_device to platform data
+Date: Mon,  7 Jan 2013 12:44:33 +0200
+Message-Id: <1357555480-24022-5-git-send-email-mika.westerberg@linux.intel.com>
 X-Mailer: git-send-email 1.7.9.1
 In-Reply-To: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
 References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
@@ -26,155 +26,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the architecture doesn't support clk framework (like x86) we need a way to
-pass the SSP clock rate to the driver. This patch adds a field in the platform
-data 'fixed_clk_rate' that allows passing the rate.
+The spi-pxa2xx-pci glue driver had to implement pxa_ssp_request()/free() in
+order to support the spi-pxa2xx platform driver. Since the ACPI enabled
+platforms can use the same platform driver we would need to implement
+pxa_ssp_request()/free() in some central place that can be shared by the
+ACPI and PCI glue code.
 
-Also include clk.h to make sure that the clk_* functions are properly stubbed
-out on architectures where clk framework is not available.
+Instead of doing that we can make pxa_ssp_request()/free() to be available
+only when CONFIG_ARCH_PXA is set. On other arches these are being stubbed
+out in preference to passing the ssp_device from the platform data
+directly.
+
+We also change the SPI bus number to be taken from ssp->port_id instead of
+platform device id. This way the supporting code that passes the ssp can
+decide the number (or it can set it to the same as pdev->id).
 
 Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 ---
- drivers/spi/spi-pxa2xx-pci.c   |    1 +
- drivers/spi/spi-pxa2xx.c       |   28 +++++++++++++++++++---------
- include/linux/spi/pxa2xx_spi.h |   19 +------------------
- 3 files changed, 21 insertions(+), 27 deletions(-)
+ drivers/spi/spi-pxa2xx-pci.c   |   73 +++-------------------------------------
+ drivers/spi/spi-pxa2xx.c       |   15 ++++++---
+ include/linux/pxa2xx_ssp.h     |    9 +++++
+ include/linux/spi/pxa2xx_spi.h |    3 ++
+ 4 files changed, 28 insertions(+), 72 deletions(-)
 
 diff --git a/drivers/spi/spi-pxa2xx-pci.c b/drivers/spi/spi-pxa2xx-pci.c
-index 364964d..4de98f4 100644
+index ece979e..364964d 100644
 --- a/drivers/spi/spi-pxa2xx-pci.c
 +++ b/drivers/spi/spi-pxa2xx-pci.c
-@@ -27,6 +27,7 @@ static int ce4100_spi_probe(struct pci_dev *dev,
+@@ -8,55 +8,11 @@
+ #include <linux/module.h>
+ #include <linux/spi/pxa2xx_spi.h>
  
+-struct ce4100_info {
+-	struct ssp_device ssp;
+-	struct platform_device *spi_pdev;
+-};
+-
+-static DEFINE_MUTEX(ssp_lock);
+-static LIST_HEAD(ssp_list);
+-
+-struct ssp_device *pxa_ssp_request(int port, const char *label)
+-{
+-	struct ssp_device *ssp = NULL;
+-
+-	mutex_lock(&ssp_lock);
+-
+-	list_for_each_entry(ssp, &ssp_list, node) {
+-		if (ssp->port_id == port && ssp->use_count == 0) {
+-			ssp->use_count++;
+-			ssp->label = label;
+-			break;
+-		}
+-	}
+-
+-	mutex_unlock(&ssp_lock);
+-
+-	if (&ssp->node == &ssp_list)
+-		return NULL;
+-
+-	return ssp;
+-}
+-EXPORT_SYMBOL_GPL(pxa_ssp_request);
+-
+-void pxa_ssp_free(struct ssp_device *ssp)
+-{
+-	mutex_lock(&ssp_lock);
+-	if (ssp->use_count) {
+-		ssp->use_count--;
+-		ssp->label = NULL;
+-	} else
+-		dev_err(&ssp->pdev->dev, "device already free\n");
+-	mutex_unlock(&ssp_lock);
+-}
+-EXPORT_SYMBOL_GPL(pxa_ssp_free);
+-
+ static int ce4100_spi_probe(struct pci_dev *dev,
+ 		const struct pci_device_id *ent)
+ {
+ 	struct platform_device_info pi;
+ 	int ret;
+-	struct ce4100_info *spi_info;
+ 	struct platform_device *pdev;
+ 	struct pxa2xx_spi_master spi_pdata;
+ 	struct ssp_device *ssp;
+@@ -69,14 +25,10 @@ static int ce4100_spi_probe(struct pci_dev *dev,
+ 	if (!ret)
+ 		return ret;
+ 
+-	spi_info = devm_kzalloc(&dev->dev, sizeof(*spi_info), GFP_KERNEL);
+-	if (!spi_info)
+-		return -ENOMEM;
+-
  	memset(&spi_pdata, 0, sizeof(spi_pdata));
  	spi_pdata.num_chipselect = dev->devfn;
-+	spi_pdata.fixed_clk_rate = 3686400;
  
- 	ssp = &spi_pdata.ssp;
+-	ssp = &spi_info->ssp;
++	ssp = &spi_pdata.ssp;
  	ssp->phys_base = pci_resource_start(dev, 0);
-diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-index 17bd136..3dedebd 100644
---- a/drivers/spi/spi-pxa2xx.c
-+++ b/drivers/spi/spi-pxa2xx.c
-@@ -30,6 +30,7 @@
- #include <linux/delay.h>
- #include <linux/gpio.h>
- #include <linux/slab.h>
-+#include <linux/clk.h>
+ 	ssp->mmio_base = pcim_iomap_table(dev)[0];
+ 	if (!ssp->mmio_base) {
+@@ -87,10 +39,6 @@ static int ce4100_spi_probe(struct pci_dev *dev,
+ 	ssp->port_id = dev->devfn;
+ 	ssp->type = PXA25x_SSP;
  
- #include <asm/io.h>
- #include <asm/irq.h>
-@@ -891,11 +892,22 @@ static int set_dma_burst_and_threshold(struct chip_data *chip,
- 	return retval;
+-	mutex_lock(&ssp_lock);
+-	list_add(&ssp->node, &ssp_list);
+-	mutex_unlock(&ssp_lock);
+-
+ 	memset(&pi, 0, sizeof(pi));
+ 	pi.parent = &dev->dev;
+ 	pi.name = "pxa2xx-spi";
+@@ -99,30 +47,19 @@ static int ce4100_spi_probe(struct pci_dev *dev,
+ 	pi.size_data = sizeof(spi_pdata);
+ 
+ 	pdev = platform_device_register_full(&pi);
+-	if (!pdev) {
+-		mutex_lock(&ssp_lock);
+-		list_del(&ssp->node);
+-		mutex_unlock(&ssp_lock);
+-
++	if (!pdev)
+ 		return -ENOMEM;
+-	}
+ 
+-	spi_info->spi_pdev = pdev;
+-	pci_set_drvdata(dev, spi_info);
++	pci_set_drvdata(dev, pdev);
+ 
+ 	return 0;
  }
  
--static unsigned int ssp_get_clk_div(struct ssp_device *ssp, int rate)
-+static unsigned long pxa2xx_spi_clk_rate(struct driver_data *drv_data)
+ static void ce4100_spi_remove(struct pci_dev *dev)
  {
--	unsigned long ssp_clk = clk_get_rate(ssp->clk);
-+	const struct pxa2xx_spi_master *pdata = drv_data->master_info;
+-	struct ce4100_info *spi_info = pci_get_drvdata(dev);
+-	struct ssp_device *ssp = &spi_info->ssp;
+-
+-	platform_device_unregister(spi_info->spi_pdev);
++	struct platform_device *pdev = pci_get_drvdata(dev);
  
--	if (ssp->type == PXA25x_SSP || ssp->type == CE4100_SSP)
-+	return pdata->fixed_clk_rate ? pdata->fixed_clk_rate
-+				     : clk_get_rate(drv_data->ssp->clk);
-+}
-+
-+static unsigned int ssp_get_clk_div(struct driver_data *drv_data, unsigned rate)
-+{
-+	unsigned long ssp_clk = pxa2xx_spi_clk_rate(drv_data);
-+
-+	rate = min_t(unsigned, ssp_clk, rate);
-+
-+	if (drv_data->ssp->type == PXA25x_SSP ||
-+	    drv_data->ssp->type == CE4100_SSP)
- 		return ((ssp_clk / (2 * rate) - 1) & 0xff) << 8;
- 	else
- 		return ((ssp_clk / rate - 1) & 0xfff) << 8;
-@@ -908,7 +920,6 @@ static void pump_transfers(unsigned long data)
- 	struct spi_transfer *transfer = NULL;
- 	struct spi_transfer *previous = NULL;
- 	struct chip_data *chip = NULL;
--	struct ssp_device *ssp = drv_data->ssp;
- 	void __iomem *reg = drv_data->ioaddr;
- 	u32 clk_div = 0;
- 	u8 bits = 0;
-@@ -1005,7 +1016,7 @@ static void pump_transfers(unsigned long data)
- 		if (transfer->bits_per_word)
- 			bits = transfer->bits_per_word;
+-	mutex_lock(&ssp_lock);
+-	list_del(&ssp->node);
+-	mutex_unlock(&ssp_lock);
++	platform_device_unregister(pdev);
+ }
  
--		clk_div = ssp_get_clk_div(ssp, speed);
-+		clk_div = ssp_get_clk_div(drv_data, speed);
+ static DEFINE_PCI_DEVICE_TABLE(ce4100_spi_devices) = {
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index ad842eb..17bd136 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -1374,11 +1374,18 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 	struct ssp_device *ssp;
+ 	int status;
  
- 		if (bits <= 8) {
- 			drv_data->n_bytes = 1;
-@@ -1214,7 +1225,6 @@ static int setup(struct spi_device *spi)
- 	struct pxa2xx_spi_chip *chip_info = NULL;
- 	struct chip_data *chip;
- 	struct driver_data *drv_data = spi_master_get_devdata(spi->master);
--	struct ssp_device *ssp = drv_data->ssp;
- 	unsigned int clk_div;
- 	uint tx_thres = TX_THRESH_DFLT;
- 	uint rx_thres = RX_THRESH_DFLT;
-@@ -1296,7 +1306,7 @@ static int setup(struct spi_device *spi)
- 		}
+-	platform_info = dev->platform_data;
++	platform_info = dev_get_platdata(dev);
++	if (!platform_info) {
++		dev_err(&pdev->dev, "missing platform data\n");
++		return -ENODEV;
++	}
+ 
+ 	ssp = pxa_ssp_request(pdev->id, pdev->name);
+-	if (ssp == NULL) {
+-		dev_err(&pdev->dev, "failed to request SSP%d\n", pdev->id);
++	if (!ssp)
++		ssp = &platform_info->ssp;
++
++	if (!ssp->mmio_base) {
++		dev_err(&pdev->dev, "failed to get ssp\n");
+ 		return -ENODEV;
  	}
  
--	clk_div = ssp_get_clk_div(ssp, spi->max_speed_hz);
-+	clk_div = ssp_get_clk_div(drv_data, spi->max_speed_hz);
- 	chip->speed_hz = spi->max_speed_hz;
+@@ -1400,7 +1407,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 	/* the spi->mode bits understood by this driver: */
+ 	master->mode_bits = SPI_CPOL | SPI_CPHA | SPI_CS_HIGH;
  
- 	chip->cr0 = clk_div
-@@ -1312,12 +1322,12 @@ static int setup(struct spi_device *spi)
- 	/* NOTE:  PXA25x_SSP _could_ use external clocking ... */
- 	if (!pxa25x_ssp_comp(drv_data))
- 		dev_dbg(&spi->dev, "%ld Hz actual, %s\n",
--			clk_get_rate(ssp->clk)
-+			pxa2xx_spi_clk_rate(drv_data)
- 				/ (1 + ((chip->cr0 & SSCR0_SCR(0xfff)) >> 8)),
- 			chip->enable_dma ? "DMA" : "PIO");
- 	else
- 		dev_dbg(&spi->dev, "%ld Hz actual, %s\n",
--			clk_get_rate(ssp->clk) / 2
-+			pxa2xx_spi_clk_rate(drv_data) / 2
- 				/ (1 + ((chip->cr0 & SSCR0_SCR(0x0ff)) >> 8)),
- 			chip->enable_dma ? "DMA" : "PIO");
+-	master->bus_num = pdev->id;
++	master->bus_num = ssp->port_id;
+ 	master->num_chipselect = platform_info->num_chipselect;
+ 	master->dma_alignment = DMA_ALIGNMENT;
+ 	master->cleanup = cleanup;
+diff --git a/include/linux/pxa2xx_ssp.h b/include/linux/pxa2xx_ssp.h
+index f366320..065e7f6 100644
+--- a/include/linux/pxa2xx_ssp.h
++++ b/include/linux/pxa2xx_ssp.h
+@@ -206,6 +206,15 @@ static inline u32 pxa_ssp_read_reg(struct ssp_device *dev, u32 reg)
+ 	return __raw_readl(dev->mmio_base + reg);
+ }
  
++#ifdef CONFIG_ARCH_PXA
+ struct ssp_device *pxa_ssp_request(int port, const char *label);
+ void pxa_ssp_free(struct ssp_device *);
++#else
++static inline struct ssp_device *pxa_ssp_request(int port, const char *label)
++{
++	return NULL;
++}
++static inline void pxa_ssp_free(struct ssp_device *ssp) {}
++#endif
++
+ #endif
 diff --git a/include/linux/spi/pxa2xx_spi.h b/include/linux/spi/pxa2xx_spi.h
-index 6b99f09..83b73f5 100644
+index c73d144..6b99f09 100644
 --- a/include/linux/spi/pxa2xx_spi.h
 +++ b/include/linux/spi/pxa2xx_spi.h
-@@ -31,6 +31,7 @@ struct pxa2xx_spi_master {
- 
- 	/* For non-PXA arches */
- 	struct ssp_device ssp;
-+	unsigned long fixed_clk_rate;
+@@ -28,6 +28,9 @@ struct pxa2xx_spi_master {
+ 	u32 clock_enable;
+ 	u16 num_chipselect;
+ 	u8 enable_dma;
++
++	/* For non-PXA arches */
++	struct ssp_device ssp;
  };
  
  /* spi_board_info.controller_data for SPI slave devices,
-@@ -133,23 +134,5 @@ static inline void pxa_free_dma(int dma_ch)
- {
- }
- 
--/*
-- * The CE4100 does not have the clk framework implemented and SPI clock can
-- * not be switched on/off or the divider changed.
-- */
--static inline void clk_disable(struct clk *clk)
--{
--}
--
--static inline int clk_enable(struct clk *clk)
--{
--	return 0;
--}
--
--static inline unsigned long clk_get_rate(struct clk *clk)
--{
--	return 3686400;
--}
--
- #endif
- #endif
 -- 
 1.7.10.4
 
