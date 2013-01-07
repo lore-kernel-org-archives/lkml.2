@@ -1,125 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab3AGQgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 11:36:47 -0500
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:53861 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab3AGQgq (ORCPT
+	id S1753229Ab3AGQhc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:37:32 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:44814 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab3AGQha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 11:36:46 -0500
-Subject: Re: How kernel handle interrupts[AX88796B network controller]
-From: anish kumar <anish198519851985@gmail.com>
-To: Woody Wu <narkewoody@gmail.com>
-Cc: kernelnewbies@kernelnewbies.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20121222151117.GA16992@zuhnb712>
-References: <20121220142745.GB3578@zuhnb712>
-	 <CAK7N6vq07CHhhOJTgC=5H5f3Nsi_od=qGJjzu01iL1_3AvTWHg@mail.gmail.com>
-	 <20121221153451.GB5530@zuhnb712>
-	 <1356125583.1598.111.camel@anish-Inspiron-N5050>
-	 <20121222151117.GA16992@zuhnb712>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Jan 2013 22:06:30 +0530
-Message-ID: <1357576590.1637.13.camel@anish-Inspiron-N5050>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 11:37:30 -0500
+MIME-Version: 1.0
+In-Reply-To: <50EAE3E1.4010809@01019freenet.de>
+References: <20121228190352.097882544@decadent.org.uk>
+	<50DEA41E.6010409@01019freenet.de>
+	<1356871099.4821.16.camel@deadeye.wl.decadent.org.uk>
+	<1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
+	<20130107080532.GA2984@redhat.com>
+	<20130107081003.GB2984@redhat.com>
+	<1357568256.26822.18.camel@deadeye.wl.decadent.org.uk>
+	<50EAE3E1.4010809@01019freenet.de>
+Date: Mon, 7 Jan 2013 17:37:28 +0100
+Message-ID: <CAGXE3d841+9yYMKUOGs3y9hib87m73QDMzDFDsSJrqe+xnqMHw@mail.gmail.com>
+Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
+ subframe fails
+From: Helmut Schaa <helmut.schaa@googlemail.com>
+To: Andreas Hartmann <andihartmann@01019freenet.de>
+Cc: Ben Hutchings <ben@decadent.org.uk>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        "John W. Linville" <linville@tuxdriver.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2012-12-22 at 23:11 +0800, Woody Wu wrote:
-> On Fri, Dec 21, 2012 at 01:33:03PM -0800, anish kumar wrote:
-> > On Fri, 2012-12-21 at 23:34 +0800, Woody Wu wrote:
-> > > On Thu, Dec 20, 2012 at 10:05:05AM -0800, anish singh wrote:
-> > > > On Dec 20, 2012 6:30 AM, "Woody Wu" <narkewoody@gmail.com> wrote:
-> > > > >
-> > > > > Hi, List
-> > > > >
-> > > > > Where is the Kernel code that handles external interrupts? I want to
-> > > > > have a look at it but haven't found out where it is.
-> > > > >
-> > > > > Actually, I have some basic questions about interrupt handling in Linux.
-> > > > > 1. After Kernel's ISR received an interrupt, I believe it will invoke a
-> > > > >    handler defined in a device driver if any. But it should be the
-> > > > >    device driver's responsibility or kernel ISR's responsibility to
-> > > > >    clear (or acknowledge) the interrupt?
-> > > > If the interrupt in question is currently being handled then in
-> > > > the case of edge triggered interrupt we just mask the interrupt,set it
-> > > > pending and bail out.Once the interrupt handler completes then we check for
-> > > > pending interrupt and handle it.In level triggered we don't do that.
-> > > > Kerenel ISR -this is mixture of core kernel interrupt handling code + your
-> > > > device driver interrupt handler(if this is chip driver which is supposed to
-> > > > get one interrupt and is reponsible for calling other interrupt handlers
-> > > > based on the chip register status then you do explicit masking unmasking
-> > > > yourself).
-> > > > If you device driver is a interrupt controller driver then you register
-> > > > your driver with kernel interrupt handling code and need to write some
-> > > > callbacks such as .mask,.unmask and so on.This callbacks are called at
-> > > > appropiate places whenever the interrupt is raised.This interrupt is then
-> > > > passed to drivers who has requested for this interrupt by calling
-> > > > request_irq.
-> > > > >
-> > > > > 2. My device, an AX88796B network controller, asserting the interrupt
-> > > > >    line in a level-triggered manner. Now I met problem with the device
-> > > > that
-> > > > >    might caused by the CPU interrupt mode is not set as level-triggered by
-> > > > >    edge trigger.  My CPU is Samsung S3C2410, an ARM920T powered one.  Does
-> > > > >    anyone know usually where and how should I do this kind of setting?
-> > > > Just pass the parameter "level triggered" in request_irq in your device
-> > > > driver.
-> > > 
-> > > Hi Sign,
-> > > 
-> > > I searched the interrupt.h for the all the defined flags that I can pass
-> > > to the request_irq, but there is no a flag looks like "level triggered".
-> > > Would you tell me what you mean the parameter "level triggered"?
-> > irq_set_irq_type(info->irq, IRQ_TYPE_LEVEL_LOW)
-> > 
-> > include/linux/irq.h
-> > IRQ_TYPE_LEVEL_HIGH          - high level triggered
-> > IRQ_TYPE_LEVEL_LOW           - low level triggered
-> 
-> Thanks. Now I find the function.
-> 
-> I searched some code about irq in ARM architecure.  Some other
-> people talked about do_IRQ() probabaly is wrong for ARM. There is simply
-> no that function in ARM. Maybe the do_IRQ in x86 is replaced by
-> handle_IRQ.
-arch/arm/kernel/entry-armv.S
-__irq_svc is called by the arm processor which in turn calls irq_handler
-macro.I think this is the lowest level handler after which linux
-interrupt handling takes over.
-> 
-> For the irq_set_irq_type(), do you think what's the correct place to
-> call it? Inside my device driver or outside the device driver (probably
-> in the board definition file)? If that should be called inside a device
-> driver, should it be the driver probe function or in the open function?
-> After or before the invocation of request_irq()?
-irq_set_irq_type() should be called by device driver code not by the
-board file.It should be called in the probe function AFAIK.
-> 
-> Sorry for asking too many question.  I found the kernel + device driver
-> irq handling part still not clear to me.
-You are welcome to ask as many question as you want.
-> 
-> 
-> > > 
-> > > Thanks.
-> > > 
-> > > > >
-> > > > >
-> > > > > Thanks in advance.
-> > > > >
-> > > > > --
-> > > > > woody
-> > > > > I can't go back to yesterday - because I was a different person then.
-> > > > >
-> > > > > _______________________________________________
-> > > > > Kernelnewbies mailing list
-> > > > > Kernelnewbies@kernelnewbies.org
-> > > > > http://lists.kernelnewbies.org/mailman/listinfo/kernelnewbies
-> > > 
-> > 
-> 
+On Mon, Jan 7, 2013 at 4:04 PM, Andreas Hartmann
+<andihartmann@01019freenet.de> wrote:
+> The solution would be IMHO, to implement an own aggregation handling,
+> maybe the same way as it was done for carl9170, which had the same problem:
+>
+> http://thread.gmane.org/gmane.linux.kernel.wireless.general/100793/focus=1405
+>
+> I prefer to have solutions (if one is known) instead of another workaround.
 
+JFI, I'm just working on exactly that (handling BAR TX status in
+driver to implement
+proper RX reorder window flushing at the peer). I'll post it for
+further testing to the
+rt2x00 list once I'm done.
 
+Helmut
