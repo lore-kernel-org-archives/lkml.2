@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab3AGDmp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jan 2013 22:42:45 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:59480 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753567Ab3AGDmn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jan 2013 22:42:43 -0500
-X-IronPort-AV: E=Sophos;i="4.84,421,1355068800"; 
-   d="scan'208";a="6533621"
-From: Lin Feng <linfeng@cn.fujitsu.com>
-To: akpm@linux-foundation.org, tj@kernel.org
-Cc: mingo@kernel.org, yinghai@kernel.org, liwanp@linux.vnet.ibm.com,
-        benh@kernel.crashing.org, tangchen@cn.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Lin Feng <linfeng@cn.fujitsu.com>
-Subject: [PATCH v2] mm: memblock: fix wrong memmove size in memblock_merge_regions()
-Date: Mon, 7 Jan 2013 11:41:36 +0800
-Message-Id: <1357530096-28548-1-git-send-email-linfeng@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.11.7
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/07 11:42:12,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/07 11:42:13,
-	Serialize complete at 2013/01/07 11:42:13
+	id S1753590Ab3AGDsn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jan 2013 22:48:43 -0500
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:55587 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753395Ab3AGDsl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jan 2013 22:48:41 -0500
+Message-ID: <50EA4594.9020309@gmail.com>
+Date: Sun, 06 Jan 2013 20:48:36 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: "Steinar H. Gunderson" <sgunderson@bigfoot.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: PEBS (in perf) stopped working from 3.6 -> 3.7
+References: <20130104234743.GA12331@uio.no> <50E770DB.2050803@gmail.com> <20130105010501.GA5371@uio.no>
+In-Reply-To: <20130105010501.GA5371@uio.no>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The memmove span covers from (next+1) to the end of the array, and the index
-of next is (i+1), so the index of (next+1) is (i+2). So the size of remaining
-array elements is (type->cnt - (i + 2)).
+On 1/4/13 6:05 PM, Steinar H. Gunderson wrote:
+> On Fri, Jan 04, 2013 at 05:16:27PM -0700, David Ahern wrote:
+>> Known problem. Pick one of: update perf to 3.7, add H to the command
+>> (-e cycles:ppH) or apply this patch:
+>> https://lkml.org/lkml/2012/12/28/384
+>
+> I spoke too soon. This works for cycles, but not for branch-misses:
+>
+>    pannekake:~> sudo perf record -e branch-misses:ppH -a
+>
+>      Error: sys_perf_event_open() syscall returned with 95 (Operation not supported) for event branch-misses:ppH. /bin/dmesg may provide additional information.
+>
+>    No hardware sampling interrupt available. No APIC? If so then you can boot the kernel with the "lapic" boot parameter to force-enable it.
+>
+> Why would the two be different?
 
-Cc: Tejun Heo <tj@kernel.org>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Signed-off-by: Lin Feng <linfeng@cn.fujitsu.com>
----
-ChangeLog v1->v2:
-- Add a comment pointed out by Tejun.
----
- mm/memblock.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+I will make a guess that is processor dependent. On an E5540 with 
+3.4.11-1.fc16.x86_64, 3.6.10-2.fc16.x86_64, and 3.8 I get the same 
+failure message.
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 6259055..88adc8a 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -314,7 +314,8 @@ static void __init_memblock memblock_merge_regions(struct memblock_type *type)
- 		}
- 
- 		this->size += next->size;
--		memmove(next, next + 1, (type->cnt - (i + 1)) * sizeof(*next));
-+		/* move forward from next + 1, index of which is i + 2 */
-+		memmove(next, next + 1, (type->cnt - (i + 2)) * sizeof(*next));
- 		type->cnt--;
- 	}
- }
--- 
-1.7.11.7
+But on a E5620, it works fine with 3.4 and 3.7 (no intermediate kernels 
+on that box).
 
+David
