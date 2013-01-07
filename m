@@ -1,113 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab3AGSrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 13:47:17 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:46143 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754894Ab3AGSrP (ORCPT
+	id S1755038Ab3AGSsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 13:48:35 -0500
+Received: from mail-la0-f54.google.com ([209.85.215.54]:33449 "EHLO
+	mail-la0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3AGSse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 13:47:15 -0500
+	Mon, 7 Jan 2013 13:48:34 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAKocOOO2-akrBT9TZU5QdSNk-SyWEMGdNWfk5CXUgEy0rJtHpQ@mail.gmail.com>
-References: <1354552622-687-1-git-send-email-betty.dall@hp.com>
- <CAKocOOOudEzMx0Zs9CB2zmtCkPHVkx1TCbWeK2+uoV5cb=eiGg@mail.gmail.com>
- <1354564084.1809.390.camel@bling.home> <1354564850.1809.391.camel@bling.home> <CAKocOOO2-akrBT9TZU5QdSNk-SyWEMGdNWfk5CXUgEy0rJtHpQ@mail.gmail.com>
+In-Reply-To: <1356030701-16284-15-git-send-email-sasha.levin@oracle.com>
+References: <1356030701-16284-1-git-send-email-sasha.levin@oracle.com> <1356030701-16284-15-git-send-email-sasha.levin@oracle.com>
 From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 7 Jan 2013 11:46:53 -0700
-Message-ID: <CAErSpo4UcCRYshrsko+Z-NziXFFWfV+YV-gHb+vAgnK4rjRzQw@mail.gmail.com>
-Subject: Re: [PATCH] PCI AER: pci_get_domain_bus_and_slot() call missing
- required pci_dev_put()
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>,
-        Betty Dall <betty.dall@hp.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, wangyijing@huawei.com, jiang.liu@huawei.com
+Date: Mon, 7 Jan 2013 11:48:12 -0700
+Message-ID: <CAErSpo7aj8WfH_aQQMQaQwYV2Y2R_e787rXQo4EVsKbOFq-DuA@mail.gmail.com>
+Subject: Re: [PATCH] PCI: cpqphp: minor cleanup and removal of unreachable paths
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Alan Cox <alan@linux.intel.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 3, 2012 at 1:59 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> On Mon, Dec 3, 2012 at 1:00 PM, Alex Williamson
-> <alex.williamson@redhat.com> wrote:
->> On Mon, 2012-12-03 at 12:48 -0700, Alex Williamson wrote:
->>> On Mon, 2012-12-03 at 10:40 -0700, Shuah Khan wrote:
->>> > On Mon, Dec 3, 2012 at 9:37 AM, Betty Dall <betty.dall@hp.com> wrote:
->>> > > The function aer_recover_queue() makes a call to pci_get_domain_bus_and_slot().
->>> > > That function is documented to require that the caller decrement the
->>> > > reference count by calling pci_dev_put(). This patch adds the missing
->>> > > call to pci_dev_put().
->>> > >
->>> > > Signed-off-by: Betty Dall <betty.dall@hp.com>
->>> > > ---
->>> > >  drivers/pci/pcie/aer/aerdrv_core.c |    1 +
->>> > >  1 files changed, 1 insertions(+), 0 deletions(-)
->>> > >
->>> > > diff --git a/drivers/pci/pcie/aer/aerdrv_core.c b/drivers/pci/pcie/aer/aerdrv_core.c
->>> > > index af4e31c..43caf53 100644
->>> > > --- a/drivers/pci/pcie/aer/aerdrv_core.c
->>> > > +++ b/drivers/pci/pcie/aer/aerdrv_core.c
->>> > > @@ -616,6 +616,7 @@ static void aer_recover_work_func(struct work_struct *work)
->>> > >                         continue;
->>> > >                 }
->>> > >                 do_recovery(pdev, entry.severity);
->>> > > +               pci_dev_put(pdev);
->>> >
->>> > Are you sure pci_get_domain_bus_and_slot() does indeed increment the
->>> > reference count? I see that in the comments right above the
->>> > definition.
->>> >
->>> > pci_dev_get() does that for sure. I see a call trace of
->>> >
->>> > pci_dev_get() -> get_device() -> kobj_to_dev(kobject_get(&dev->kobj)  etc.
->>> >
->>> > and kref_get() finally incrementing the
->>> >
->>> > static inline void kref_get(struct kref *kref)
->>> > {
->>> >         WARN_ON(!atomic_read(&kref->refcount));
->>> >         atomic_inc(&kref->refcount);
->>> > }
->>> >
->>> > However, I could not find any evidence that
->>> > pci_get_domain_bus_and_slot() does that. I see
->>> > pci_get_domain_bus_and_slot() calling pci_domain_nr() and there are
->>> > several architecture specific defines for pci_domain_nr(). It is not
->>> > clear to me where does refcount get incremented from
->>> > pci_get_domain_bus_and_slot() is called.
->>> >
->>> > What am I missing?
->>>
->>> Trace back the for_each_pci_dev()
->>>
->>> for_each_pci_dev
->>>  -> pci_get_device
->>>   -> pci_get_subsys
->>>    -> pci_get_dev_by_id
->>>     -> bus_find_device
->>>      -> get_device()
->>>
->>> The real question is how many places do we call for_each_pci_dev()
->>> without a put.  It seems like pci_get_domain_bus_and_slot() doesn't even
->>> get it right since it should include a put of the non-matched devices.
->>
->> My bad, pci_get_dev_by_id() does a put on the previous devices, keeping
->> the counts in order.  Thanks,
->>
->> Alex
->>
-> Thanks Alex.
+On Thu, Dec 20, 2012 at 12:11 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> Remove cases of redundant checks and remote unreachable paths.
 >
-> Betty,
->
-> You have my
->
-> Reviewed-by: Shuah Khan <shuah.khan@hp.com>
->
-> Also if you think this is applicable to stable as well, could you
-> please CC it for stable.
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Thanks, Betty!  I'll merge this as a fix for v3.8.
+Thanks, Sasha.  I applied this for v3.9.
 
-Did you find this by inspection, or can you trigger some bad behavior?
-
-Bjorn
+> ---
+>  drivers/pci/hotplug/cpqphp_ctrl.c | 57 ++++++++++++++-------------------------
+>  1 file changed, 20 insertions(+), 37 deletions(-)
+>
+> diff --git a/drivers/pci/hotplug/cpqphp_ctrl.c b/drivers/pci/hotplug/cpqphp_ctrl.c
+> index 36112fe..d282019 100644
+> --- a/drivers/pci/hotplug/cpqphp_ctrl.c
+> +++ b/drivers/pci/hotplug/cpqphp_ctrl.c
+> @@ -1900,8 +1900,7 @@ static void interrupt_event_handler(struct controller *ctrl)
+>                                         dbg("power fault\n");
+>                                 } else {
+>                                         /* refresh notification */
+> -                                       if (p_slot)
+> -                                               update_slot_info(ctrl, p_slot);
+> +                                       update_slot_info(ctrl, p_slot);
+>                                 }
+>
+>                                 ctrl->event_queue[loop].event_type = 0;
+> @@ -2520,44 +2519,28 @@ static int configure_new_function(struct controller *ctrl, struct pci_func *func
+>
+>                 /* If we have IO resources copy them and fill in the bridge's
+>                  * IO range registers */
+> -               if (io_node) {
+> -                       memcpy(hold_IO_node, io_node, sizeof(struct pci_resource));
+> -                       io_node->next = NULL;
+> +               memcpy(hold_IO_node, io_node, sizeof(struct pci_resource));
+> +               io_node->next = NULL;
+>
+> -                       /* set IO base and Limit registers */
+> -                       temp_byte = io_node->base >> 8;
+> -                       rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_BASE, temp_byte);
+> +               /* set IO base and Limit registers */
+> +               temp_byte = io_node->base >> 8;
+> +               rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_BASE, temp_byte);
+>
+> -                       temp_byte = (io_node->base + io_node->length - 1) >> 8;
+> -                       rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_LIMIT, temp_byte);
+> -               } else {
+> -                       kfree(hold_IO_node);
+> -                       hold_IO_node = NULL;
+> -               }
+> -
+> -               /* If we have memory resources copy them and fill in the
+> -                * bridge's memory range registers.  Otherwise, fill in the
+> -                * range registers with values that disable them. */
+> -               if (mem_node) {
+> -                       memcpy(hold_mem_node, mem_node, sizeof(struct pci_resource));
+> -                       mem_node->next = NULL;
+> -
+> -                       /* set Mem base and Limit registers */
+> -                       temp_word = mem_node->base >> 16;
+> -                       rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_BASE, temp_word);
+> +               temp_byte = (io_node->base + io_node->length - 1) >> 8;
+> +               rc = pci_bus_write_config_byte(pci_bus, devfn, PCI_IO_LIMIT, temp_byte);
+>
+> -                       temp_word = (mem_node->base + mem_node->length - 1) >> 16;
+> -                       rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_LIMIT, temp_word);
+> -               } else {
+> -                       temp_word = 0xFFFF;
+> -                       rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_BASE, temp_word);
+> +               /* Copy the memory resources and fill in the bridge's memory
+> +                * range registers.
+> +                */
+> +               memcpy(hold_mem_node, mem_node, sizeof(struct pci_resource));
+> +               mem_node->next = NULL;
+>
+> -                       temp_word = 0x0000;
+> -                       rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_LIMIT, temp_word);
+> +               /* set Mem base and Limit registers */
+> +               temp_word = mem_node->base >> 16;
+> +               rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_BASE, temp_word);
+>
+> -                       kfree(hold_mem_node);
+> -                       hold_mem_node = NULL;
+> -               }
+> +               temp_word = (mem_node->base + mem_node->length - 1) >> 16;
+> +               rc = pci_bus_write_config_word(pci_bus, devfn, PCI_MEMORY_LIMIT, temp_word);
+>
+>                 memcpy(hold_p_mem_node, p_mem_node, sizeof(struct pci_resource));
+>                 p_mem_node->next = NULL;
+> @@ -2627,7 +2610,7 @@ static int configure_new_function(struct controller *ctrl, struct pci_func *func
+>                 /* Return unused bus resources
+>                  * First use the temporary node to store information for
+>                  * the board */
+> -               if (hold_bus_node && bus_node && temp_resources.bus_head) {
+> +               if (bus_node && temp_resources.bus_head) {
+>                         hold_bus_node->length = bus_node->base - hold_bus_node->base;
+>
+>                         hold_bus_node->next = func->bus_head;
+> @@ -2751,7 +2734,7 @@ static int configure_new_function(struct controller *ctrl, struct pci_func *func
+>                 }
+>                 /* If we have prefetchable memory space available and there
+>                  * is some left at the end, return the unused portion */
+> -               if (hold_p_mem_node && temp_resources.p_mem_head) {
+> +               if (temp_resources.p_mem_head) {
+>                         p_mem_node = do_pre_bridge_resource_split(&(temp_resources.p_mem_head),
+>                                                                   &hold_p_mem_node, 0x100000);
+>
+> --
+> 1.8.0
+>
