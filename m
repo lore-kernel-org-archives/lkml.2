@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753222Ab3AGPUx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:20:53 -0500
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:52040 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380Ab3AGPUw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:20:52 -0500
+	id S1753169Ab3AGPXl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:23:41 -0500
+Received: from mga03.intel.com ([143.182.124.21]:26025 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801Ab3AGPXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 10:23:40 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,424,1355126400"; 
+   d="scan'208";a="240879151"
+Date: Mon, 7 Jan 2013 06:59:25 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Linus Walleij <linus.walleij@stericsson.com>
+Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
+        Anmar Oueja <anmar.oueja@linaro.org>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH 0/8] DMA: COH901318 in-factoring of platform
+Message-ID: <20130107145925.GC15804@intel.com>
+References: <1357512185-5562-1-git-send-email-linus.walleij@stericsson.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1301061336180.1397@xoschi>
-References: <alpine.LNX.2.00.1301061336180.1397@xoschi>
-Date: Mon, 7 Jan 2013 10:20:51 -0500
-Message-ID: <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
-Subject: Re: Regression: drm/radeon: brightness control hard system lockup
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Eldad Zack <eldad@fogrefinery.com>
-Cc: Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357512185-5562-1-git-send-email-linus.walleij@stericsson.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 6, 2013 at 7:59 AM, Eldad Zack <eldad@fogrefinery.com> wrote:
->
-> Hi Alex,
->
-> Commit 0ecebb9e0d14e9948e0b1529883a776758117d6f "drm/radeon: switch to a
-> finer grained reset for evergreen" introduced a hard system lockup to my
-> setup. I found it after bisecting, and confirmed it by reverting it on
-> the latest mainline ( 5f243b9 ).
->
-> This:
->
->    echo 7 > /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/brightness
->
-> Causes a hard lock-up hard, i.e. immediate freeze, without any logs.
->
-> See lspci output and kernel .config below.
-> If there's any more info I can provide, please let me know.
+On Sun, Jan 06, 2013 at 11:43:05PM +0100, Linus Walleij wrote:
+> From: Linus Walleij <linus.walleij@linaro.org>
+> 
+> This patch series moves the big, complex platform data for the U300
+> DMA controller COH901318 down into the driver, rids the
+> <mach/coh901318.h> header from the global scope, creates a proper
+> platform data header for the few things we acually want to
+> parametrize from the platform, and all in preparation for device
+> tree support.
+> 
+> Vinod, it'd be great if you could ACK this so I can merge it
+> through the ARM SoC tree. The driver is propably more maintainable
+> in this shape as well without lots of pieces spread out all over
+> the place.
+Sure the change look fine and mostly seems to be code reorg and cleanup.
+Perhpas the below diffstat could have helped in review if it showed file move
 
-
-Do you normally see GPU resets when changing the backlight?  Please
-attach your dmesg output when changing the backlight with the patch
-reverted.
-
-Alex
+Acked-by: Vinod Koul <vinod.koul@intel.com>
+> 
+> Linus Walleij (8):
+>   dma: coh901318: create a proper platform data file
+>   dma: coh901318: push platform data into driver
+>   dma: coh901318: remove hardcoded target addresses
+>   dma: coh901318: skip hard-coded addresses
+>   dma: coh901318: push header down into the DMA subsystem
+>   dma: coh901318: push definitions into driver
+>   dma: coh901318: merge header files
+>   dma: coh901318: cut down on platform data abstraction
+> 
+>  arch/arm/mach-u300/core.c                   | 1087 +---------------------
+>  arch/arm/mach-u300/dma_channels.h           |   60 --
+>  arch/arm/mach-u300/include/mach/coh901318.h |  267 ------
+>  arch/arm/mach-u300/spi.c                    |    3 +-
+>  drivers/dma/coh901318.c                     | 1302 ++++++++++++++++++++++++++-
+>  drivers/dma/coh901318.h                     |  141 +++
+>  drivers/dma/coh901318_lli.c                 |    4 +-
+>  drivers/dma/coh901318_lli.h                 |  124 ---
+>  include/linux/platform_data/dma-coh901318.h |   72 ++
+>  9 files changed, 1469 insertions(+), 1591 deletions(-)
+>  delete mode 100644 arch/arm/mach-u300/dma_channels.h
+>  delete mode 100644 arch/arm/mach-u300/include/mach/coh901318.h
+>  create mode 100644 drivers/dma/coh901318.h
+>  delete mode 100644 drivers/dma/coh901318_lli.h
+>  create mode 100644 include/linux/platform_data/dma-coh901318.h
+> 
+> -- 
+> 1.7.11.3
+> 
