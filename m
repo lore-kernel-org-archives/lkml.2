@@ -1,75 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754253Ab3AGRwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:52:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30882 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751214Ab3AGRwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:52:53 -0500
-Date: Mon, 7 Jan 2013 17:54:59 +0100
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Andreas Hartmann <andihartmann@01019freenet.de>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
- subframe fails
-Message-ID: <20130107165458.GA16705@redhat.com>
-References: <20121228190352.097882544@decadent.org.uk>
- <50DEA41E.6010409@01019freenet.de>
- <1356871099.4821.16.camel@deadeye.wl.decadent.org.uk>
- <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
- <20130107080532.GA2984@redhat.com>
- <20130107081003.GB2984@redhat.com>
- <1357568256.26822.18.camel@deadeye.wl.decadent.org.uk>
- <50EAE3E1.4010809@01019freenet.de>
+	id S1754214Ab3AGR4R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:56:17 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:54767 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751337Ab3AGR4Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:56:16 -0500
+X-Originating-IP: 217.70.178.140
+X-Originating-IP: 173.246.103.110
+Date: Mon, 7 Jan 2013 09:56:06 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
+Message-ID: <20130107175606.GA9962@jtriplet-mobl1>
+References: <20130105175059.GA15961@linux.vnet.ibm.com>
+ <20130107155810.GC11145@leaf>
+ <20130107165748.GF2525@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50EAE3E1.4010809@01019freenet.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20130107165748.GF2525@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 04:04:01PM +0100, Andreas Hartmann wrote:
-> Ben Hutchings wrote:
-> > On Mon, 2013-01-07 at 09:10 +0100, Stanislaw Gruszka wrote:
-> >> On Mon, Jan 07, 2013 at 09:05:32AM +0100, Stanislaw Gruszka wrote:
-> >>>> To be clear, I have all of these in the queue:
-> >>>>
-> >>>> be03d4a45c09 rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
-> >>>> 5b632fe85ec8 mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
-> >>>> ab9d6e4ffe19 Revert: "rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails"
-> >>>>
-> >>>> and I'm intending to drop/defer them all.
-> >>>
-> >>> Patch 3 is a revert of patch 1 (questioned patch). Please apply all 3 patches,
-> >>> or only patch 2.
-> >>
-> >> No, actually all 3 patches have to be applied. Because last one, except
-> >> revert, include flag IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL setting in rt2x00
-> >> driver, which make patch 2 work.
+On Mon, Jan 07, 2013 at 08:57:48AM -0800, Paul E. McKenney wrote:
+> On Mon, Jan 07, 2013 at 07:58:10AM -0800, Josh Triplett wrote:
+> > On Sat, Jan 05, 2013 at 09:50:59AM -0800, Paul E. McKenney wrote:
+> > > rcu: Provide RCU CPU stall warnings for tiny RCU
+> > > 
+> > > Tiny RCU has historically omitted RCU CPU stall warnings in order to
+> > > reduce memory requirements, however, lack of these warnings caused Thomas
+> > > Gleixner some debugging pain recently.  Therefore, this commit adds RCU
+> > > CPU stall warnings to tiny RCU if RCU_TRACE=y.  This keeps the memory
+> > > footprint small, while still enabling CPU stall warnings in kernels
+> > > built to enable them.
+> > > 
+> > > This is still a bit on the high-risk side, so running this will likely
+> > > be a debugging exercise.
+> > > 
+> > > Reported-by: Thomas Gleixner <tglx@linutronix.de>
+> > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 > > 
-> > Andreas said that that after ab9d6e4ffe19 there was still a regression.
-
-That's not true. There will be no regression after ab9d6e4ffe20. The
-only thing is that solution is not perfect. But perfect solution require
-lot of changes i.e. is not -stable appropriate (and does not exist currently).
-
-> > But maybe he was confused.  I know I'm confused.
-> :-))
+> > Did you generate this patch with something other than git?  The
+> > formatting seems a bit off: it doesn't have a diffstat or the usual
+> > "---" line between the commit message and the patch.
 > 
-> No, the thing is:
-> rt2800pci misses an appropriate handling of aggregation (which meets the
-> requirements of mac80211).
+> Indeed I did -- couldn't see the point of sending a 0/1 and 1/1
+> series of patches.  ;-)
+
+Just don't pass --cover-letter to git format-patch and you won't get the
+0/1.
+
+> > This patch seems reasonable to me, but the repeated use of #if
+> > defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
+> > annoying, and fragile if you ever decide to change the conditions.  How
+> > about defining an appropriate symbol in Kconfig for stall warnings, and
+> > using that?
 > 
-> Both workarounds, mine and the new workaround from Stanislaw (which is
-> nothing more than a restricted version of my initial workaround), work
+> But I only just removed the config option for SMP RCU stall warnings.  ;-)
+> 
+> But I must agree that "defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)"
+> is a bit obscure.  The rationale is that RCU stall warnings are
+> unconditionally enabled in SMP kernels, but don't want to be in
+> TINY_RCU kernels due to size constraints.  I therefore put it under
+> CONFIG_RCU_TRACE, which also contains other TINY_RCU debugging-style
+> options.  Would adding a comment to this effect help?
 
-Your workaround broke STA mode on some environment.
+I understand the rationale; I just think it would become clearer if you
+added an internal-only Kconfig symbol selected in both cases and change
+the conditionals to use that.
 
-Stanislaw
+- Josh Triplett
