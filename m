@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab3AGVwW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:52:22 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:34368 "EHLO hydra.sisk.pl"
+	id S1755841Ab3AGWHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:07:10 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:20958 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab3AGVwV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:52:21 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Krzysztof Mazur <krzysiek@podlesie.net>
-Cc: daniel.lezcano@linaro.org, linux-kernel@vger.kernel.org,
-        Linux PM list <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH] cpuidle: fix number of initialized/destroyed states
-Date: Mon, 07 Jan 2013 22:58:03 +0100
-Message-ID: <339419841.p0RXgOP6cW@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
-References: <1357585921-3391-1-git-send-email-krzysiek@podlesie.net>
+	id S1753998Ab3AGWHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 17:07:09 -0500
+Subject: [PATCH 0/1] vfio-pci: Towards VGA support
+To: alex.williamson@redhat.com, kvm@vger.kernel.org
+From: Alex Williamson <alex.williamson@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Date: Mon, 07 Jan 2013 15:07:08 -0700
+Message-ID: <20130107214605.8669.26237.stgit@bling.home>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+vfio makes a nice interface to start looking at supporting VGA devices
+assigned to virtual machines (ie. userspace drivers) because we can so
+easily add additional ranges for a device.  In this patch we add
+legacy MMIO (below 1MB) and I/O port (64k) to devices with PCI class
+code VGA.  We can then use the kernel VGA arbiter service to change
+chipset routing for each access to the VGA ranges defined in the PCI
+spec.  The rest of the region space not used by VGA is left
+inaccessible until we add future feature that needs some other
+legacy range.
 
-Thanks for the patch!
+There's also a qemu userspace companion series to this which learns
+how to look for this new feature flag and setup ranges.  Together
+they get a step closer to supporting vfio-based VGA assignment, but
+it doesn't yet work.  I'm posting in this broken state both for
+archival purposes as well as the hope that someone has ideas of what
+might be missing or be able to pick up and run with this code.
 
-I'd like Daniel to have a look at it still.
+Some cards are able to get through execution of their VGA BIOS with
+these patches, but none that I've seen sync the monitor to VGA text
+mode from seabios.  With a hack in qemu for a card specific backdoor
+on a Radeon HD5450 I've been able to get syslinux graphics mode to
+work and Windows will use it during normal bootup.  I have no idea
+what might be missing for VGA text mode.  Thanks,
 
-Thanks,
-Rafael
+Alex
+
+---
+
+Alex Williamson (1):
+      vfio-pci: [NOT FOR COMMIT] Add support for legacy MMIO & I/O port towards VGA support
 
 
-On Monday, January 07, 2013 08:12:01 PM Krzysztof Mazur wrote:
-> Commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92 (cpuidle: support
-> multiple drivers) changed the number of initialized state kobjects
-> in cpuidle_add_state_sysfs() from device->state_count to drv->state_count,
-> but leaved device->state_count in cpuidle_remove_state_sysfs().
-> Those two values might have different values, causing for instance
-> NULL pointer dereference in cpuidle_remove_state_sysfs().
-> 
-> Signed-off-by: Krzysztof Mazur <krzysiek@podlesie.net>
-> ---
-> Hi,
-> 
-> commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
-> (cpuidle: support multiple drivers, merged in v3.8-rc1) causes NULL pointer
-> dereference in cpuidle_remove_state_sysfs() when I plug the AC line to my
-> laptop. I'm using the acpi_idle cpuidle driver and the C4 state is
-> available only on when the system runs from battery. The problem still
-> exists in v3.8-rc2 and f243b9b46a22e5790dbbc36f574c2417af49a41.
-> 
-> I noticed that the commit bf4d1b5ddb78f86078ac6ae0415802d5f0c68f92
-> (merged in v3.8-rc1) changed device->state_count to drv->state_count
-> in only one of two places, which seems to be incorrect. This patch restores
-> device->state_count in both places. It fixes the problem on my system.
-> 
-> Krzysiek
-> 
->  drivers/cpuidle/sysfs.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
-> index 3409429..428754a 100644
-> --- a/drivers/cpuidle/sysfs.c
-> +++ b/drivers/cpuidle/sysfs.c
-> @@ -374,7 +374,7 @@ static int cpuidle_add_state_sysfs(struct cpuidle_device *device)
->  	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(device);
->  
->  	/* state statistics */
-> -	for (i = 0; i < drv->state_count; i++) {
-> +	for (i = 0; i < device->state_count; i++) {
->  		kobj = kzalloc(sizeof(struct cpuidle_state_kobj), GFP_KERNEL);
->  		if (!kobj)
->  			goto error_state;
-> 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+ drivers/vfio/pci/vfio_pci.c         |   74 ++++++++++++---
+ drivers/vfio/pci/vfio_pci_private.h |    6 +
+ drivers/vfio/pci/vfio_pci_rdwr.c    |  170 +++++++++++++++++++++++++++--------
+ include/uapi/linux/vfio.h           |    3 +
+ 4 files changed, 197 insertions(+), 56 deletions(-)
