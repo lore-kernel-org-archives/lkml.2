@@ -1,109 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab3AGVdu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 16:33:50 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:58382 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753362Ab3AGVdt (ORCPT
+	id S1755703Ab3AGVd5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 16:33:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38587 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755571Ab3AGVdz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 16:33:49 -0500
-Date: Mon, 7 Jan 2013 22:33:39 +0100 (CET)
-From: Eldad Zack <eldad@fogrefinery.com>
-X-X-Sender: eldad@xoschi
-To: Alex Deucher <alexdeucher@gmail.com>
-cc: Alex Deucher <alexander.deucher@amd.com>,
-        Jerome Glisse <jglisse@redhat.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: Regression: drm/radeon: brightness control hard system lockup
-In-Reply-To: <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1301072206530.1617@xoschi>
-References: <alpine.LNX.2.00.1301061336180.1397@xoschi> <CADnq5_O1GDuigxwR8eXu7f1Fsb8iqrggVwYBaiOJKOR-ighYag@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 7 Jan 2013 16:33:55 -0500
+Date: Mon, 7 Jan 2013 13:33:54 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Jason Liu <r64343@freescale.com>, linux-kernel@vger.kernel.org,
+        riel@redhat.com, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return
+ error issue
+Message-Id: <20130107133354.03f2ba80.akpm@linux-foundation.org>
+In-Reply-To: <20130107135721.GD3885@suse.de>
+References: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+	<20130107135721.GD3885@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 7 Jan 2013 13:57:21 +0000
+Mel Gorman <mgorman@suse.de> wrote:
 
-On Mon, 7 Jan 2013, Alex Deucher wrote:
-> On Sun, Jan 6, 2013 at 7:59 AM, Eldad Zack <eldad@fogrefinery.com> wrote:
-> >
-> > Hi Alex,
-> >
-> > Commit 0ecebb9e0d14e9948e0b1529883a776758117d6f "drm/radeon: switch to a
-> > finer grained reset for evergreen" introduced a hard system lockup to my
-> > setup. I found it after bisecting, and confirmed it by reverting it on
-> > the latest mainline ( 5f243b9 ).
-> >
-> > This:
-> >
-> >    echo 7 > /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/backlight/acpi_video0/brightness
-> >
-> > Causes a hard lock-up hard, i.e. immediate freeze, without any logs.
-> >
-> > See lspci output and kernel .config below.
-> > If there's any more info I can provide, please let me know.
+> On Sun, Jan 06, 2013 at 03:44:33PM +0800, Jason Liu wrote:
+> > when run the folloing command under shell, it will return error
+> > sh/$ echo 1 > /proc/sys/vm/compact_memory
+> > sh/$ sh: write error: Bad address
+> > 
+> > After strace, I found the following log:
+> > ...
+> > write(1, "1\n", 2)               = 3
+> > write(1, "", 4294967295)         = -1 EFAULT (Bad address)
+> > write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
+> > ) = 31
+> > 
+> > This tells system return 3(COMPACT_COMPLETE) after write data to compact_memory.
+> > 
+> > The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE) from
+> > sysctl_compaction_handler after compaction_nodes finished.
+> > 
+> > Suggested-by:David Rientjes <rientjes@google.com>
+> > Cc:Mel Gorman <mgorman@suse.de>
+> > Cc:Andrew Morton <akpm@linux-foundation.org>
+> > Cc:Rik van Riel <riel@redhat.com>
+> > Cc:Minchan Kim <minchan@kernel.org>
+> > Cc:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Signed-off-by: Jason Liu <r64343@freescale.com>
 > 
-> Do you normally see GPU resets when changing the backlight?  Please
-> attach your dmesg output when changing the backlight with the patch
-> reverted.
+> Acked-by: Mel Gorman <mgorman@suse.de>
 
-I see nothing. Just to make sure, I cleared the buffer, cycled through 
-0-7 a couple of hunderd times (until the flicker annoyed), but I see no
-messages at all.
-Is there any debug config I should turn on?
+We have a whole pile of things around there which return
+information-free integers.  Should we do this?
 
-Turning ACPI debugging on gives me no messages neither when I use the 
-cycle script.
-
-But I did find out something interesting enough, only because I 
-happen to have sound debugging on, if I have a PCM stream open to a
-USB device, and then change the backlight level, it seems to drop to
-microframes, but it's not otherwise noticeable. Looks like setting the
-backlight still does something weird with my hardware/config.
-
-Below is a grep -i radeon from my boot dmesg.
-
-Cheers,
-Eldad
-
-[    0.301558] [drm] radeon defaulting to kernel modesetting.
-[    0.301626] [drm] radeon kernel modesetting enabled.
-[    0.301694] bus: 'pci': add driver radeon
-[    0.301716] bus: 'pci': driver_probe_device: matched device 0000:01:00.0 with driver radeon
-[    0.301718] bus: 'pci': really_probe: probing driver radeon with device 0000:01:00.0
-[    0.302310] radeon 0000:01:00.0: VRAM: 1024M 0x0000000000000000 - 0x000000003FFFFFFF (1024M used)
-[    0.302390] radeon 0000:01:00.0: GTT: 512M 0x0000000040000000 - 0x000000005FFFFFFF
-[    0.303021] [drm] radeon: 1024M of VRAM memory ready
-[    0.303108] [drm] radeon: 512M of GTT memory ready.
-[    0.303378] radeon 0000:01:00.0: irq 41 for MSI/MSI-X
-[    0.303390] radeon 0000:01:00.0: radeon: using MSI.
-[    0.303485] [drm] radeon: irq initialized.
-[    0.304198] [drm] enabling PCIE gen 2 link speeds, disable with radeon.pcie_gen2=0
-[    0.304414] Registering platform device 'radeon_cp.0'. Parent at platform
-[    0.304416] device: 'radeon_cp.0': device_add
-[    0.304421] bus: 'platform': add device radeon_cp.0
-[    0.304428] PM: Adding info for platform:radeon_cp.0
-[    0.304497] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_pfp.bin
-[    0.304501] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_me.bin
-[    0.304503] platform radeon_cp.0: firmware: using built-in firmware radeon/BTC_rlc.bin
-[    0.304506] platform radeon_cp.0: firmware: using built-in firmware radeon/TURKS_mc.bin
-[    0.304517] bus: 'platform': remove device radeon_cp.0
-[    0.304518] PM: Removing info for platform:radeon_cp.0
-[    0.338906] radeon 0000:01:00.0: WB enabled
-[    0.338970] radeon 0000:01:00.0: fence driver on ring 0 use gpu addr 0x0000000040000c00 and cpu addr 0xffff880244a0fc00
-[    0.339064] radeon 0000:01:00.0: fence driver on ring 3 use gpu addr 0x0000000040000c0c and cpu addr 0xffff880244a0fc0c
-[    0.356604] device: 'radeon_bl0': device_add
-[    0.356616] PM: Adding info for No Bus:radeon_bl0
-[    0.407974] [drm] radeon atom DIG backlight initialized
-[    0.408039] [drm] Radeon Display Connectors
-[    0.410135] [drm] radeon: power management initialized
-[    0.822297] fbcon: radeondrmfb (fb0) is primary device
-[    1.585493] radeon 0000:01:00.0: fb0: radeondrmfb frame buffer device
-[    1.585546] radeon 0000:01:00.0: registered panic notifier
-[    1.585601] [drm] Initialized radeon 2.28.0 20080528 for 0000:01:00.0 on minor 0
-[    1.585658] driver: '0000:01:00.0': driver_bound: bound to device 'radeon'
-[    1.585661] bus: 'pci': really_probe: bound device 0000:01:00.0 to driver radeon
+--- a/mm/compaction.c~mm-compaction-fix-echo-1-compact_memory-return-error-issue-fix
++++ a/mm/compaction.c
+@@ -1150,7 +1150,7 @@ unsigned long try_to_compact_pages(struc
+ 
+ 
+ /* Compact all zones within a node */
+-static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
++static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+ {
+ 	int zoneid;
+ 	struct zone *zone;
+@@ -1183,11 +1183,9 @@ static int __compact_pgdat(pg_data_t *pg
+ 		VM_BUG_ON(!list_empty(&cc->freepages));
+ 		VM_BUG_ON(!list_empty(&cc->migratepages));
+ 	}
+-
+-	return 0;
+ }
+ 
+-int compact_pgdat(pg_data_t *pgdat, int order)
++void compact_pgdat(pg_data_t *pgdat, int order)
+ {
+ 	struct compact_control cc = {
+ 		.order = order,
+@@ -1195,10 +1193,10 @@ int compact_pgdat(pg_data_t *pgdat, int 
+ 		.page = NULL,
+ 	};
+ 
+-	return __compact_pgdat(pgdat, &cc);
++	__compact_pgdat(pgdat, &cc);
+ }
+ 
+-static int compact_node(int nid)
++static void compact_node(int nid)
+ {
+ 	struct compact_control cc = {
+ 		.order = -1,
+@@ -1206,7 +1204,7 @@ static int compact_node(int nid)
+ 		.page = NULL,
+ 	};
+ 
+-	return __compact_pgdat(NODE_DATA(nid), &cc);
++	__compact_pgdat(NODE_DATA(nid), &cc);
+ }
+ 
+ /* Compact all nodes in the system */
+diff -puN include/linux/compaction.h~mm-compaction-fix-echo-1-compact_memory-return-error-issue-fix include/linux/compaction.h
+--- a/include/linux/compaction.h~mm-compaction-fix-echo-1-compact_memory-return-error-issue-fix
++++ a/include/linux/compaction.h
+@@ -23,7 +23,7 @@ extern int fragmentation_index(struct zo
+ extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+ 			int order, gfp_t gfp_mask, nodemask_t *mask,
+ 			bool sync, bool *contended, struct page **page);
+-extern int compact_pgdat(pg_data_t *pgdat, int order);
++extern void compact_pgdat(pg_data_t *pgdat, int order);
+ extern void reset_isolation_suitable(pg_data_t *pgdat);
+ extern unsigned long compaction_suitable(struct zone *zone, int order);
+ 
+@@ -80,9 +80,8 @@ static inline unsigned long try_to_compa
+ 	return COMPACT_CONTINUE;
+ }
+ 
+-static inline int compact_pgdat(pg_data_t *pgdat, int order)
++static inline void compact_pgdat(pg_data_t *pgdat, int order)
+ {
+-	return COMPACT_CONTINUE;
+ }
+ 
+ static inline void reset_isolation_suitable(pg_data_t *pgdat)
+_
 
 
