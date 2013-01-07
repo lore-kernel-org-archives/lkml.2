@@ -1,104 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab3AGWen (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:34:43 -0500
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40045 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753223Ab3AGWem (ORCPT
+	id S1755961Ab3AGWgD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:36:03 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:50760 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab3AGWgA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:34:42 -0500
-Date: Mon, 7 Jan 2013 14:33:16 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        markus@trippelsdorf.de
-Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Silence compiler array
- out-of-bounds false positive
-Message-ID: <20130107223316.GB2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20130105170920.GA13766@linux.vnet.ibm.com>
- <1357405778-13903-1-git-send-email-paulmck@linux.vnet.ibm.com>
- <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
- <20130107155002.GA11145@leaf>
- <20130107171602.GI2525@linux.vnet.ibm.com>
- <20130107171910.GA19510@linux.vnet.ibm.com>
- <1357597117.5190.4.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357597117.5190.4.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010722-2876-0000-0000-000003D85132
+	Mon, 7 Jan 2013 17:36:00 -0500
+Date: Tue, 8 Jan 2013 09:35:57 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: linux-next: comment in commit in the slave-dma tree (dmaengine:
+ dw_dmac: Enhance device tree support)
+Message-Id: <20130108093557.8a29d4a04b95702fc59790ff@canb.auug.org.au>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 05:18:37PM -0500, Steven Rostedt wrote:
-> On Mon, 2013-01-07 at 09:19 -0800, Paul E. McKenney wrote:
-> > On Mon, Jan 07, 2013 at 09:16:02AM -0800, Paul E. McKenney wrote:
-> > > On Mon, Jan 07, 2013 at 07:50:02AM -0800, Josh Triplett wrote:
-> > > > On Sat, Jan 05, 2013 at 09:09:36AM -0800, Paul E. McKenney wrote:
-> > > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > > > > 
-> > > > > It turns out that gcc 4.8 warns on array indexes being out of bounds
-> > > > > unless it can prove otherwise.  It gives this warning on some RCU
-> > > > > initialization code.  Because this is far from any fastpath, add
-> > > > > an explicit check for array bounds and panic if so.  This gives the
-> > > > > compiler enough information to figure out that the array index is never
-> > > > > out of bounds.
-> > > > > 
-> > > > > However, if a similar false positive occurs on a fastpath, it will
-> > > > > probably be necessary to tell the compiler to keep its array-index
-> > > > > anxieties to itself.  ;-)
-> > > > > 
-> > > > > Markus Trippelsdorf <markus@trippelsdorf.de>
-> > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > > ---
-> > > > >  kernel/rcutree.c |    4 ++++
-> > > > >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > > > > 
-> > > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > > index d145796..e0d9815 100644
-> > > > > --- a/kernel/rcutree.c
-> > > > > +++ b/kernel/rcutree.c
-> > > > > @@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
-> > > > >  
-> > > > >  	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
-> > > > >  
-> > > > > +	/* Silence gcc 4.8 warning about array index out of range. */
-> > > > > +	if (rcu_num_lvls > RCU_NUM_LVLS)
-> > > > > +		panic("rcu_init_one: rcu_num_lvls overflow");
-> > > > 
-> > > > Why not write this as BUG_ON(rcu_num_lvls > RCU_NUM_LVLS)?  Given that
-> > > > the condition in question can never happen, you don't really need an
-> > > > explanatory message.
-> > > 
-> > > Good point, will do!
-> > 
-> > Ah, wait, BUG_ON() sometimes compiles to nothingness:
-> > 
-> > #ifndef HAVE_ARCH_BUG_ON
-> > #define BUG_ON(condition) do { if (condition) ; } while(0)
-> > #endif
-> > 
-> > So I do need the explicit "if".  :-(
-> 
-> Bah, those archs shouldn't be bothered with. If they don't want to bug,
-> then that's there problem :-)
+--Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-;-) ;-) ;-)
+Hi Vinod,
 
-> Lots of places in the kernel have BUG_ON() where they require it to
-> panic.
+In commit 548860697046 ("dmaengine: dw_dmac: Enhance device tree
+support") (which was changed since yesterday :-(), an instance of
+__devinit has been added.  We are in the process of making CONFIG_HOTPLUG
+always true, and since commit 78d86c213f28 ("init.h: Remove __dev*
+sections from the kernel") (included in v3.7), __devinit does nothing.
+Please do not add any more.
 
-Fair point, but that doesn't mean that I want them complaining to
-me when as a result of the compiler's array-index anxieties.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-							Thanx, Paul
+--Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ603NAAoJEECxmPOUX5FElGcQAJsbzOIduiL/A1JX7AmfyEGH
+V5//cWJwMtbRL19YbpemFBAa7KMGOGrYngNxUqwu1RnOHsTVmP7G1MQT+pKYt/+o
+LTfb8AEVGymAZ7j/Q6EQO63h0H9Siz0NDfxA7WYBGzA4bsCAMtvqu0Dv42ZkMqmE
+j0C2OwWVGoxkee9PnfS1LYAR8FqSzoOygqM9W9G3qamVyqxVV5ys1/xdrC+uwGL5
+1HEHp/wpraMx4YSYxl15AECko1fNCGYHfDb5Dqb/5MQ1Q9f4hY72r37LtfjRt3JQ
+hOV7EPRbWmnhVAxdoeUZWdChTBSjgvDUep7l5CwfNOf9EMUZWcEx0KmjQ+5WDKO/
+Ovn0SF9RaxM0vA268vXc274QXcP1G6hwKaR3lkBQZMMJumJzM8ezE1cQi66HmmM6
+PyWXxUJxbJxCXC9vdFigD550lEE7HYAHC50EDus0NaHzozdOS9WmnZdZ0Nxhn5lQ
+saTln8Yq7X80Cmd+y9eq2YKHRUjXX8zPlE6SDXgM5T7/QpPvgGIVdpBdzSKoGQPD
+J2MFADAdS9f2JtHR159fgefLxHSOYJivOC2MbWQWjGvbbHAmSOrFY4QY8DgPWzGU
+gWRUkRMVxpa3TsRAzBfxFtH2d4nl75PEDfnKlFPB3/p0t1350J7uh57CYA5vP9un
+M4xEK18aW3L+52A/S8g7
+=xp1d
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Jan_2013_09_35_57_+1100_3xlkmChovD0GUxxQ--
