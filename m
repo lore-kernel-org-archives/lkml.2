@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502Ab3AGFJi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 00:09:38 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:39070 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750865Ab3AGFJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 00:09:35 -0500
+	id S1751808Ab3AGFJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 00:09:59 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:60643 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3AGFJ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 00:09:57 -0500
 From: Afzal Mohammed <afzal@ti.com>
 To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Tomi Valkeinen <tomi.valkeinen@ti.com>,
@@ -16,79 +17,39 @@ To: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         <linux-omap@vger.kernel.org>, <linux-fbdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <devicetree-discuss@lists.ozlabs.org>,
         <linux-doc@vger.kernel.org>
-Subject: [PATCH 00/10] video: da8xx-fb: DT support
-Date: Mon, 7 Jan 2013 10:40:02 +0530
-Message-ID: <cover.1357304090.git.afzal@ti.com>
+Subject: [PATCH 02/10] video: da8xx-fb: enable sync lost intr for v2 ip
+Date: Mon, 7 Jan 2013 10:40:41 +0530
+Message-ID: <f7099dbc7a1262690d26b062e72bcbd08954c07e.1357304090.git.afzal@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1357304090.git.afzal@ti.com>
+References: <cover.1357304090.git.afzal@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+interrupt handler is checking for sync lost interrupt, but it was not
+enabled, enable it.
 
-This series adds DT support to da8xx-fb driver (device found on
-DaVinci and AM335x SoC's). It does certain cleanup's in the process.
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+---
+ drivers/video/da8xx-fb.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-This makes use of Steffen Trumtrar's v16 of display timing DT support.
-
-Testing has been done on AM335x SoC based boards like AM335x EVM and
-AM335x EVM-SK. It has also been verified that display on DA850 EVM
-(non-DT boot) works as earlier.
-
-Another series that adds DT nodes for AM335x SoC/board would follow
-this.
-
-This series is based on v3.8-rc2,
- and is dependent on,
-1. Series v16 "of: add display helper" by,
-	Steffen Trumtrar <s.trumtrar@pengutronix.de>
-2. Patch "da8xx: Allow use by am33xx based devices" by,
-	Pantelis Antoniou <panto@antoniou-consulting.com>
-3. Series v2 "video: da8xx-fb: runtime timing configuration" by,
-	me (Afzal Mohammed <afzal@ti.com>)
-
-To test this series on AM335x based boards,
-1. Series "ARM: dts: AM33XX: lcdc support" by,
-	me (Afzal Mohammed <afzal@ti.com>),
-as well as,
-2. Series "HWMOD fixes for AM33xx PWM submodules and device tree nodes" by,
-	Philip, Avinash <avinashphilip@ti.com>
-would be needed.
-
-A tree with all above dependencies (and below mentioned hack) is available
- @git://gitorious.org/x0148406-public/linux-kernel.git da8xx-fb-dt
-
-In the case of AM335x, in addition to this series, display PLL has to
-be locked to required frequency. Unless bootloader configures it
-properly, a hack would required in the Kernel. This is also present in
-the above mentioned branch of the tree. A solution in the Kernel
-is being worked upon and would be posted at the earliest.
-
-
-Regards
-Afzal
-
-Afzal Mohammed (9):
-  video: da8xx-fb: enable sync lost intr for v2 ip
-  video: da8xx-fb: use devres
-  video: da8xx-fb: ensure non-null cfg in pdata
-  video: da8xx-fb: reorganize panel detection
-  video: da8xx-fb: minimal dt support
-  video: da8xx-fb: invoke platform callback safely
-  video: da8xx-fb: obtain fb_videomode info from dt
-  video: da8xx-fb: ensure pdata only for non-dt
-  video: da8xx-fb: setup struct lcd_ctrl_config for dt
-
-Manjunathappa, Prakash (1):
-  video: da8xx-fb: fix 24bpp raster configuration
-
- .../devicetree/bindings/video/fb-da8xx.txt         |   36 +++++
- drivers/video/da8xx-fb.c                           |  145 +++++++++++++-------
- 2 files changed, 132 insertions(+), 49 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/video/fb-da8xx.txt
-
+diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
+index cd73b87..4f92028 100644
+--- a/drivers/video/da8xx-fb.c
++++ b/drivers/video/da8xx-fb.c
+@@ -322,7 +322,7 @@ static void lcd_blit(int load_mode, struct da8xx_fb_par *par)
+ 			reg_int = lcdc_read(LCD_INT_ENABLE_SET_REG) |
+ 				LCD_V2_END_OF_FRAME0_INT_ENA |
+ 				LCD_V2_END_OF_FRAME1_INT_ENA |
+-				LCD_FRAME_DONE;
++				LCD_FRAME_DONE | LCD_SYNC_LOST;
+ 			lcdc_write(reg_int, LCD_INT_ENABLE_SET_REG);
+ 		}
+ 		reg_dma |= LCD_DUAL_FRAME_BUFFER_ENABLE;
 -- 
 1.7.9.5
 
