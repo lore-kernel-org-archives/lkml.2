@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750835Ab3AGFbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 00:31:39 -0500
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56859 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab3AGFbd (ORCPT
+	id S1751274Ab3AGFiw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 00:38:52 -0500
+Received: from mail-gg0-f179.google.com ([209.85.161.179]:54716 "EHLO
+	mail-gg0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865Ab3AGFiu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 00:31:33 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
-Message-ID: <50EA5D7D.7000703@jp.fujitsu.com>
-Date: Mon, 07 Jan 2013 14:30:37 +0900
-From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 7 Jan 2013 00:38:50 -0500
+Date: Sun, 6 Jan 2013 21:35:19 -0800
+From: Anton Vorontsov <anton@enomsg.org>
+To: "Tc, Jenny" <jenny.tc@intel.com>
+Cc: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH 1/2] power_supply: Add charge control struct in power
+ supply class
+Message-ID: <20130107053519.GA24341@lizard.gateway.2wire.net>
+References: <1354002423-24587-1-git-send-email-ramakrishna.pallala@intel.com>
+ <1354002423-24587-2-git-send-email-ramakrishna.pallala@intel.com>
+ <20130106025024.GC6919@lizard.sbx05280.losalca.wayport.net>
+ <D854C92F57B1B347B57E531E78D05EAD245CAF83@BGSMSX102.gar.corp.intel.com>
+ <20ADAB092842284E95860F279283C564E70A93@BGSMSX101.gar.corp.intel.com>
 MIME-Version: 1.0
-To: Wen Congyang <wency@cn.fujitsu.com>
-CC: Tang Chen <tangchen@cn.fujitsu.com>, akpm@linux-foundation.org,
-        rientjes@google.com, liuj97@gmail.com, len.brown@intel.com,
-        benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
-        minchan.kim@gmail.com, kosaki.motohiro@jp.fujitsu.com,
-        isimatu.yasuaki@jp.fujitsu.com, wujianguo@huawei.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, x86@kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-acpi@vger.kernel.org, linux-s390@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-ia64@vger.kernel.org,
-        cmetcalf@tilera.com, sparclinux@vger.kernel.org
-Subject: Re: [PATCH v5 14/14] memory-hotplug: free node_data when a node is
- offlined
-References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-15-git-send-email-tangchen@cn.fujitsu.com> <50DA7533.6060407@jp.fujitsu.com> <50DC3C26.6060308@cn.fujitsu.com> <50DCE7C0.8070407@jp.fujitsu.com> <50DFD8F4.7040301@cn.fujitsu.com>
-In-Reply-To: <50DFD8F4.7040301@cn.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20ADAB092842284E95860F279283C564E70A93@BGSMSX101.gar.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2012/12/30 15:02), Wen Congyang wrote:
-> At 12/28/2012 08:28 AM, Kamezawa Hiroyuki Wrote:
->> (2012/12/27 21:16), Wen Congyang wrote:
->>> At 12/26/2012 11:55 AM, Kamezawa Hiroyuki Wrote:
->>>> (2012/12/24 21:09), Tang Chen wrote:
->>>>> From: Wen Congyang <wency@cn.fujitsu.com>
->>>>>
->>>>> We call hotadd_new_pgdat() to allocate memory to store node_data. So we
->>>>> should free it when removing a node.
->>>>>
->>>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
->>>>
->>>> I'm sorry but is it safe to remove pgdat ? All zone cache and zonelists are
->>>> properly cleared/rebuilded in synchronous way ? and No threads are visinting
->>>> zone in vmscan.c ?
->>>
->>> We have rebuilt zonelists when a zone has no memory after offlining some pages.
->>>
->>
->> How do you guarantee that the address of pgdat/zone is not on stack of any kernel
->> threads or other kernel objects without reference counting or other syncing method ?
+On Mon, Jan 07, 2013 at 05:23:36AM +0000, Tc, Jenny wrote:
+> > 
+> > > > +struct power_supply_charger_control {
+> > > > +	const char *name;
+> > > > +	/* get charging status */
+> > > > +	int (*is_charging_enabled)(void);
+> > > > +	int (*is_charger_enabled)(void);
+> > > > +
+> > > > +	/* set charging parameters */
+> > > > +	int (*set_in_current_limit)(int uA);
+> > > > +	int (*set_charge_current)(int uA);
+> > > > +	int (*set_charge_voltage)(int uV);
+> > > > +
+> > > > +	/* control battery charging */
+> > > > +	int (*enable_charging)(void);
+> > > > +	int (*disable_charging)(void);
+> > > > +
+> > > > +	/* control VSYS or system supply */
+> > > > +	int (*turnon_charger)(void);
+> > > > +	int (*turnoff_charger)(void);
+> > > > +};
+> > > > +
+> > >
+> > > I'm all for this patch, but why do you need to place it into
+> > > power_supply.h and power_supply_core.c? :) I see nothing generic here,
+> > > it's pure charger-manager stuff. So, place everything into charger-
+> > manager.{c,h}.
+> > 
+> > Hi Anton,
+> > 
+> > The main reason for keeping this stuff in power_supply.h and
+> > power_supply_core.c is to make these interfaces uniform Across multiple
+> > charger frameworks and to avoid each charger framework define it's own
+> > interfaces. If there is need for new callback They can add to the existing struct
+> > defined above and it will available to all the frameworks. Also the work
+> > required to support a new Framework will be reduced if the driver already
+> > support any one of the existing frameworks.
+> > 
 > 
-> No way to guarentee this. But, the kernel should not use the address of pgdat/zone when
-> it is offlined.
+> Rama,
 > 
-> Hmm, what about this: reuse the memory when the node is onlined again?
-> 
+> The similar functionalities are exposed by patch https://lkml.org/lkml/2012/10/18/219.
+> As per Anton's review comments on this patch, I'll be moving the macros to power_supply.h.
+> Wouldn't that be enough ?
 
-That's the only way which we can go now. Please don't free it.
+Btw, how do these two sets relate to each other? Both seem to control
+chargers in some way... But yours approach uses properties, which I like
+more.
+
+I guess you should coordinate on this?
 
 Thanks,
--Kame
-
-
+Anton
