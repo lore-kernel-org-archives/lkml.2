@@ -1,38 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754574Ab3AGMcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:32:17 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:45686 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432Ab3AGMcQ (ORCPT
+	id S1754440Ab3AGMev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:34:51 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:51000 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949Ab3AGMeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:32:16 -0500
+	Mon, 7 Jan 2013 07:34:50 -0500
 MIME-Version: 1.0
-In-Reply-To: <50EA01BC.2080001@fold.natur.cuni.cz>
-References: <50EA01BC.2080001@fold.natur.cuni.cz>
-Date: Mon, 7 Jan 2013 20:32:15 +0800
-Message-ID: <CAJd=RBCqZj01PPzZnxfYtxJtst6nbpuFG8x2wDhmYk=4XrqCXw@mail.gmail.com>
-Subject: Re: linux-3.7.1: OOPS in page_lock_anon_vma
-From: Hillf Danton <dhillf@gmail.com>
-To: Martin Mokrejs <mmokrejs@fold.natur.cuni.cz>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Greg KH <gregkh@linuxfoundation.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <20130107101113.GB963@krava.brq.redhat.com>
+References: <1356018108-6081-1-git-send-email-eranian@google.com>
+	<1356018108-6081-9-git-send-email-eranian@google.com>
+	<20130105184329.GB995@krava.brq.redhat.com>
+	<CABPqkBRkJtB+5C=gq=ngJE9hYxVkxE7s2-4UN+Ub+Y8_pf9x2A@mail.gmail.com>
+	<20130107101113.GB963@krava.brq.redhat.com>
+Date: Mon, 7 Jan 2013 13:34:49 +0100
+Message-ID: <CABPqkBQur-LcVTiY07bnOrp2Svt+9UVtiG3iZrt1bz5+PJRh9g@mail.gmail.com>
+Subject: Re: [PATCH v4 08/18] perf/x86: add memory profiling via PEBS Load Latency
+From: Stephane Eranian <eranian@google.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Martin
-
-On Mon, Jan 7, 2013 at 6:59 AM, Martin Mokrejs
-<mmokrejs@fold.natur.cuni.cz> wrote:
-> time to time. With ondemand governor I had cores in C7 for 50-70% of the time, that was
-> a bit better with performance governor but having the two hyperthreaded cores disabled
-> reduced the context switches by half, rescheduling interrupts went down by several orders
-> of magnitute. So it is crunching at max turbo speed on both cores, temp about 80 oC.
+On Mon, Jan 7, 2013 at 11:11 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Sun, Jan 06, 2013 at 09:37:25PM +0100, Stephane Eranian wrote:
+>> On Sat, Jan 5, 2013 at 7:43 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+>> > On Thu, Dec 20, 2012 at 04:41:38PM +0100, Stephane Eranian wrote:
+>> >> This patch adds support for memory profiling using the
+>> >> PEBS Load Latency facility.
+>> >>
+>> >> Load accesses are sampled by HW and the instruction
+>> >> address, data address, load latency, data source, tlb,
+>> >> locked information can be saved in the sampling buffer
+>> >> if using the PERF_SAMPLE_COST (for latency),
+>> >
+>> > PERF_SAMPLE_WEIGHT ?
+>> >
+>> No I switched to using Andi's PERF_SAMPLE_WEIGHT patch for this.
+>> So it's PERF_SAMPLE_COST now.
 >
-Your boxen could be used to cook pizza, and check the
-recommended working temperature in the manual please.
+Sorry, got it backwards. I was using PERF_SAMPLE_COST originally, but
+then Andi added PERF_SAMPLE_WEIGHT. So I am using that one instead
+now.
 
-Hillf
+
+> Is it? I dont see PERF_SAMPLE_COST being used in the code..
+>
+>>
+>> >> PERF_SAMPLE_ADDR, PERF_SAMPLE_DSRC types.
+>> >>
+>> >> To enable PEBS Load Latency, users have to use the
+>> >> model specific event:
+>> >> - on NHM/WSM: MEM_INST_RETIRED:LATENCY_ABOVE_THRESHOLD
+>> >> - on SNB/IVB: MEM_TRANS_RETIRED:LATENCY_ABOVE_THRESHOLD
+>> >>
+>> >> To make things easier, this patch also exports a generic
+>> >> alias via sysfs: mem-loads. It export the right event
+>> >> encoding based on the host CPU and can be used directly
+>> >> by the perf tool.
+>> >>
+>> >> Loosely based on Intel's Lin Ming patch posted on LKML
+>> >> in July 2011.
+>> >>
+>> >> Signed-off-by: Stephane Eranian <eranian@google.com>
+>> >
+>> > SNIP
+>> >
+>> >> +/*
+>> >> + * Map PEBS Load Latency Data Source encodings to generic
+>> >> + * memory data source information
+>> >> + */
+>> >> +#define P(a, b) PERF_MEM_S(a, b)
+>> >> +#define OP_LH (P(OP, LOAD) | P(LVL, HIT))
+>> >> +#define SNOOP_NONE_MISS (P(SNOOP, NONE) | P(SNOOP, MISS))
+>> >> +
+>> >
+>> > I checked Intel SDM 'Table 18-13. Data Source Encoding for Load Latency Record'
+>> > and it seems to be different (below) at some points.. did you use another source?
+>> >
+>> Yeah, and the table is wrong in the SDM. What I have is correct and approved by
+>> Intel.
+>
+> Is there any public link?
+>
+> thanks,
+> jirka
