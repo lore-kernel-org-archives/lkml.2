@@ -1,96 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751386Ab3AGFri (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 00:47:38 -0500
-Received: from mga03.intel.com ([143.182.124.21]:35193 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875Ab3AGFrg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 00:47:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,421,1355126400"; 
-   d="scan'208";a="188375444"
-From: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
-To: Anton Vorontsov <anton@enomsg.org>, "Tc, Jenny" <jenny.tc@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>
-Subject: RE: [PATCH 1/2] power_supply: Add charge control struct in power
- supply class
-Thread-Topic: [PATCH 1/2] power_supply: Add charge control struct in power
- supply class
-Thread-Index: AQHN67kbn/4y50H2dkedkoB0BD97xJg9UDEwgAALBKiAAAGtUA==
-Date: Mon, 7 Jan 2013 05:47:31 +0000
-Message-ID: <D854C92F57B1B347B57E531E78D05EAD245CB111@BGSMSX102.gar.corp.intel.com>
-References: <1354002423-24587-1-git-send-email-ramakrishna.pallala@intel.com>
- <1354002423-24587-2-git-send-email-ramakrishna.pallala@intel.com>
- <20130106025024.GC6919@lizard.sbx05280.losalca.wayport.net>
- <D854C92F57B1B347B57E531E78D05EAD245CAF83@BGSMSX102.gar.corp.intel.com>
- <20ADAB092842284E95860F279283C564E70A93@BGSMSX101.gar.corp.intel.com>
- <20130107053519.GA24341@lizard.gateway.2wire.net>
-In-Reply-To: <20130107053519.GA24341@lizard.gateway.2wire.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.223.10.10]
-Content-Type: text/plain; charset="utf-8"
+	id S1751354Ab3AGGSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 01:18:40 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49061 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750922Ab3AGGSh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 01:18:37 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50EA689B.7060308@jp.fujitsu.com>
+Date: Mon, 07 Jan 2013 15:18:03 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Johannes Weiner <hannes@cmpxchg.org>, Ying Han <yinghan@google.com>,
+        Tejun Heo <htejun@gmail.com>, Glauber Costa <glommer@parallels.com>,
+        Li Zefan <lizefan@huawei.com>
+Subject: Re: [PATCH v3 4/7] memcg: remove memcg from the reclaim iterators
+References: <1357235661-29564-1-git-send-email-mhocko@suse.cz> <1357235661-29564-5-git-send-email-mhocko@suse.cz>
+In-Reply-To: <1357235661-29564-5-git-send-email-mhocko@suse.cz>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r075lbel025521
 
-> > > > > +struct power_supply_charger_control {
-> > > > > +	const char *name;
-> > > > > +	/* get charging status */
-> > > > > +	int (*is_charging_enabled)(void);
-> > > > > +	int (*is_charger_enabled)(void);
-> > > > > +
-> > > > > +	/* set charging parameters */
-> > > > > +	int (*set_in_current_limit)(int uA);
-> > > > > +	int (*set_charge_current)(int uA);
-> > > > > +	int (*set_charge_voltage)(int uV);
-> > > > > +
-> > > > > +	/* control battery charging */
-> > > > > +	int (*enable_charging)(void);
-> > > > > +	int (*disable_charging)(void);
-> > > > > +
-> > > > > +	/* control VSYS or system supply */
-> > > > > +	int (*turnon_charger)(void);
-> > > > > +	int (*turnoff_charger)(void);
-> > > > > +};
-> > > > > +
-> > > >
-> > > > I'm all for this patch, but why do you need to place it into
-> > > > power_supply.h and power_supply_core.c? :) I see nothing generic
-> > > > here, it's pure charger-manager stuff. So, place everything into
-> > > > charger-
-> > > manager.{c,h}.
-> > >
-> > > Hi Anton,
-> > >
-> > > The main reason for keeping this stuff in power_supply.h and
-> > > power_supply_core.c is to make these interfaces uniform Across
-> > > multiple charger frameworks and to avoid each charger framework
-> > > define it's own interfaces. If there is need for new callback They
-> > > can add to the existing struct defined above and it will available
-> > > to all the frameworks. Also the work required to support a new
-> > > Framework will be reduced if the driver already support any one of the
-> existing frameworks.
-> > >
-> >
-> > Rama,
-> >
-> > The similar functionalities are exposed by patch
-> https://lkml.org/lkml/2012/10/18/219.
-> > As per Anton's review comments on this patch, I'll be moving the macros to
-> power_supply.h.
-> > Wouldn't that be enough ?
+(2013/01/04 2:54), Michal Hocko wrote:
+> Now that per-node-zone-priority iterator caches memory cgroups rather
+> than their css ids we have to be careful and remove them from the
+> iterator when they are on the way out otherwise they might hang for
+> unbounded amount of time (until the global/targeted reclaim triggers the
+> zone under priority to find out the group is dead and let it to find the
+> final rest).
 > 
-> Btw, how do these two sets relate to each other? Both seem to control chargers
-> in some way... But yours approach uses properties, which I like more.
+> This is solved by hooking into mem_cgroup_css_offline and checking all
+> per-node-zone-priority iterators up the way to the root cgroup. If the
+> current memcg is found in the respective iter->last_visited then it is
+> replaced by the previous one in the same sub-hierarchy.
 > 
-> I guess you should coordinate on this?
+> This guarantees that no group gets more reclaiming than necessary and
+> the next iteration will continue without noticing that the removed group
+> has disappeared.
+> 
+> Spotted-by: Ying Han <yinghan@google.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
 
-Sure Anton we will sync up on this and get back to you. 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+
