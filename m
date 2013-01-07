@@ -1,69 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753245Ab3AGPIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:08:32 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42262 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751681Ab3AGPIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:08:31 -0500
-Date: Mon, 7 Jan 2013 10:08:16 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Nickolai Zeldovich <nickolai@csail.mit.edu>, JBeulich@suse.com,
-        xen-devel@lists.xensource.com
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] drivers/xen: avoid out-of-range write in xen_add_device
-Message-ID: <20130107150816.GC3219@phenom.dumpdata.com>
-References: <1357413526-42430-1-git-send-email-nickolai@csail.mit.edu>
+	id S1753108Ab3AGPJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:09:40 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38346 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751681Ab3AGPJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 10:09:39 -0500
+Date: Mon, 7 Jan 2013 15:09:35 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Simon Jeons <simon.jeons@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>, Zhouping Liu <zliu@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, Johannes Weiner <jweiner@redhat.com>,
+        hughd@google.com, Rik van Riel <riel@redhat.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] mm: thp: Acquire the anon_vma rwsem for lock during split
+Message-ID: <20130107150935.GK3885@suse.de>
+References: <1621091901.34838094.1356409676820.JavaMail.root@redhat.com>
+ <535932623.34838584.1356410331076.JavaMail.root@redhat.com>
+ <20130103175737.GA3885@suse.de>
+ <20130104140815.GA26005@suse.de>
+ <CANN689E8S5mmszQoeaYgL_SYe1piBDTWCk-Gy1kxcg6hPfUPwA@mail.gmail.com>
+ <1357388687.9001.3.camel@kernel.cn.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1357413526-42430-1-git-send-email-nickolai@csail.mit.edu>
+In-Reply-To: <1357388687.9001.3.camel@kernel.cn.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 02:18:46PM -0500, Nickolai Zeldovich wrote:
-> xen_add_device() in drivers/xen/pci.c allocates a struct
-> physdev_pci_device_add on the stack and then writes to optarr[0].
-> The previous declaration of struct physdev_pci_device_add contained
-> a zero-length optarr[] array, presumably assuming it will be allocated
-> with kmalloc with a suitable number of trailing elements, but the code in
-> xen_add_device() as a result wrote past the end of the (stack-allocated)
-> data structure.
+On Sat, Jan 05, 2013 at 06:24:47AM -0600, Simon Jeons wrote:
+> On Fri, 2013-01-04 at 17:32 -0800, Michel Lespinasse wrote:
+> > On Fri, Jan 4, 2013 at 6:08 AM, Mel Gorman <mgorman@suse.de> wrote:
+> > > Despite the reason for these commits, NUMA balancing is not the direct
+> > > source of the problem. split_huge_page() expected the anon_vma lock to be
+> > > exclusive to serialise the whole split operation. Ordinarily it is expected
+> > > that the anon_vma lock would only be required when updating the avcs but
+> > > THP also uses it. The locking requirements for THP are complex and there
+> > > is some overlap but broadly speaking they include the following
+> > >
+> > > 1. mmap_sem for read or write prevents THPs being created underneath
+> > > 2. anon_vma is taken for write if collapsing a huge page
+> > > 3. mm->page_table_lock should be taken when checking if pmd_trans_huge as
+> > >    split_huge_page can run in parallel
+> > > 4. wait_split_huge_page uses anon_vma taken for write mode to serialise
+> > >    against other THP operations
+> > > 5. compound_lock is used to serialise between
+> > >    __split_huge_page_refcount() and gup
+> > >
+> > > split_huge_page takes anon_vma for read but that does not serialise against
+> > > parallel split_huge_page operations on the same page (rule 2). One process
+> > > could be modifying the ref counts while the other modifies the page tables
+> > > leading to counters not being reliable. This patch takes the anon_vma
+> > > lock for write to serialise against parallel split_huge_page and parallel
+> > > collapse operations as it is the most fine-grained lock available that
+> > > protects against both.
+> > 
+> > Your comment about this being the most fine-grained lock made me
+> > think, couldn't we use lock_page() on the THP page here ?
+> > 
+> > Now I don't necessarily want to push you that direction, because I
+> > haven't fully thought it trough and because what you propose brings us
+> > closer to what happened before anon_vma became an rwlock, which is
+> > more obviously safe. But I felt I should still mention it, since we're
+> > really only trying to protect from concurrent operations on the same
+> > THP page, so locking at just that granularity would seem desirable.
 > 
-> Since xen_add_device() is the only use of struct physdev_pci_device_add
-> in the kernel, turn optarr[] into a single-element array instead.
+> Why you said that anon_vma lock who will protect page associated to a
+> list of vmas is fine-grained then page lock who just protect one page?
 > 
 
-Lets include Jan and Xen-devel on this email - as this is also changing
-the official header that is used in Xen.
+We did not say it was fine-grained, we said it was the most fine-grained
+lock available. It's a coarse lock but using the page lock would be
+problematic.
 
-> Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
-> ---
->  include/xen/interface/physdev.h |    6 +-----
->  1 file changed, 1 insertion(+), 5 deletions(-)
-> 
-> diff --git a/include/xen/interface/physdev.h b/include/xen/interface/physdev.h
-> index 1844d31..24fd218 100644
-> --- a/include/xen/interface/physdev.h
-> +++ b/include/xen/interface/physdev.h
-> @@ -242,11 +242,7 @@ struct physdev_pci_device_add {
->          uint8_t bus;
->          uint8_t devfn;
->      } physfn;
-> -#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
-> -    uint32_t optarr[];
-> -#elif defined(__GNUC__)
-> -    uint32_t optarr[0];
-> -#endif
-> +    uint32_t optarr[1];
->  };
->  
->  #define PHYSDEVOP_pci_device_remove     26
-> -- 
-> 1.7.10.4
-> 
+-- 
+Mel Gorman
+SUSE Labs
