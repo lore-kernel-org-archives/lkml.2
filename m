@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab3AGNAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 08:00:14 -0500
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:42917 "HELO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753961Ab3AGNAM (ORCPT
+	id S1754532Ab3AGNBS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 08:01:18 -0500
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:44057 "HELO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750785Ab3AGNBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 08:00:12 -0500
-Message-ID: <50EAC6DA.1040601@mellanox.com>
-Date: Mon, 7 Jan 2013 15:00:10 +0200
+	Mon, 7 Jan 2013 08:01:17 -0500
+Message-ID: <50EAC722.9050203@mellanox.com>
+Date: Mon, 7 Jan 2013 15:01:22 +0200
 From: Amir Vadai <amirv@mellanox.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
@@ -55,4 +55,4 @@ On 02/01/2013 23:52, David Decotigny wrote:
 >   3 files changed, 62 insertions(+), 19 deletions(-)
 >
 
-Acked-by: Amir Vadai <amirv@mellano.com>
+Acked-by: Amir Vadai <amirv@mellanox.com>
