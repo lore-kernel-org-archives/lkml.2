@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021Ab3AGS2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 13:28:37 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:59003 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754951Ab3AGS2d (ORCPT
+	id S1755079Ab3AGS2p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 13:28:45 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:56895 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab3AGS2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 13:28:33 -0500
+	Mon, 7 Jan 2013 13:28:43 -0500
 From: Stephane Eranian <eranian@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: peterz@infradead.org, mingo@elte.hu, ak@linux.intel.com, acme@redhat.com,
         jolsa@redhat.com, namhyung.kim@lge.com
-Subject: [PATCH v5 07/18] perf: add generic memory sampling interface
-Date: Mon,  7 Jan 2013 19:27:46 +0100
-Message-Id: <1357583277-4553-8-git-send-email-eranian@google.com>
+Subject: [PATCH v5 10/18] perf/x86: add support for PEBS Precise Store
+Date: Mon,  7 Jan 2013 19:27:49 +0100
+Message-Id: <1357583277-4553-11-git-send-email-eranian@google.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357583277-4553-1-git-send-email-eranian@google.com>
 References: <1357583277-4553-1-git-send-email-eranian@google.com>
@@ -21,157 +21,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds PERF_SAMPLE_DSRC.
+This patch adds support for PEBS Precise Store
+which is available on Intel Sandy Bridge and
+Ivy Bridge processors.
 
-PERF_SAMPLE_DSRC collects the data source, i.e., where
-did the data associated with the sampled instruction
-come from. Information is stored in a perf_mem_dsrc
-structure. It contains opcode, mem level, tlb, snoop,
-lock information, subject to availability in hardware.
+To use Precise store, the proper PEBS event
+must be used: mem_trans_retired:precise_stores.
+For the perf tool, the generic mem-stores event
+exported via sysfs can be used directly.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 ---
- include/linux/perf_event.h      |    2 ++
- include/uapi/linux/perf_event.h |   68 +++++++++++++++++++++++++++++++++++++--
- kernel/events/core.c            |    6 ++++
- 3 files changed, 74 insertions(+), 2 deletions(-)
+ arch/x86/kernel/cpu/perf_event.h          |    5 +++
+ arch/x86/kernel/cpu/perf_event_intel.c    |    2 ++
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |   49 +++++++++++++++++++++++++++--
+ 3 files changed, 54 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index bb2429d..8fe4610 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -579,6 +579,7 @@ struct perf_sample_data {
- 		u32	reserved;
- 	}				cpu_entry;
- 	u64				period;
-+	union  perf_mem_dsrc		dsrc;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
- 	struct perf_branch_stack	*br_stack;
-@@ -599,6 +600,7 @@ static inline void perf_sample_data_init(struct perf_sample_data *data,
- 	data->regs_user.regs = NULL;
- 	data->stack_user_size = 0;
- 	data->weight = 0;
-+	data->dsrc.val = 0;
- }
+diff --git a/arch/x86/kernel/cpu/perf_event.h b/arch/x86/kernel/cpu/perf_event.h
+index 3f91411..645b864 100644
+--- a/arch/x86/kernel/cpu/perf_event.h
++++ b/arch/x86/kernel/cpu/perf_event.h
+@@ -66,6 +66,7 @@ struct event_constraint {
+  * struct event_constraint flags
+  */
+ #define PERF_X86_EVENT_PEBS_LDLAT	0x1 /* ld+ldlat data address sampling */
++#define PERF_X86_EVENT_PEBS_ST		0x2 /* st data address sampling */
  
- extern void perf_output_sample(struct perf_output_handle *handle,
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 7e24641..8283218 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -133,9 +133,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_REGS_USER			= 1U << 12,
- 	PERF_SAMPLE_STACK_USER			= 1U << 13,
- 	PERF_SAMPLE_WEIGHT			= 1U << 14,
-+	PERF_SAMPLE_DSRC			= 1U << 15,
+ struct amd_nb {
+ 	int nb_id;  /* NorthBridge id */
+@@ -242,6 +243,10 @@ struct cpu_hw_events {
+ 	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
+ 			   HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_LDLAT)
  
--	PERF_SAMPLE_MAX = 1U << 15,		/* non-ABI */
--
-+	PERF_SAMPLE_MAX = 1U << 16,		/* non-ABI */
++#define INTEL_PST_CONSTRAINT(c, n)	\
++	__EVENT_CONSTRAINT(c, n, INTEL_ARCH_EVENT_MASK, \
++			  HWEIGHT(n), 0, PERF_X86_EVENT_PEBS_ST)
++
+ #define EVENT_CONSTRAINT_END		\
+ 	EVENT_CONSTRAINT(0, 0, 0)
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index 8eced4c..665e26c 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -138,6 +138,7 @@ static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
+ 
+ EVENT_ATTR_STR(mem-loads, mem_ld_nhm, "event=0x0b,umask=0x10,ldlat=3");
+ EVENT_ATTR_STR(mem-loads, mem_ld_snb, "event=0xcd,umask=0x1,ldlat=3");
++EVENT_ATTR_STR(mem-stores, mem_st_snb, "event=0xcd,umask=0x2");
+ 
+ struct attribute *nhm_events_attrs[] = {
+ 	EVENT_PTR(mem_ld_nhm),
+@@ -146,6 +147,7 @@ struct attribute *nhm_events_attrs[] = {
+ 
+ struct attribute *snb_events_attrs[] = {
+ 	EVENT_PTR(mem_ld_snb),
++	EVENT_PTR(mem_st_snb),
+ 	NULL,
  };
  
- /*
-@@ -590,6 +590,7 @@ enum perf_event_type {
- 	 * 	  char			data[size];
- 	 * 	  u64			dyn_size; } && PERF_SAMPLE_STACK_USER
- 	 *	{ u64			weight;   } && PERF_SAMPLE_WEIGHT
-+	 *	{ u64			dsrc;     } && PERF_SAMPLE_DSRC
- 	 * };
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index bdd73bc..cfbd469 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -69,6 +69,44 @@ static const u64 pebs_data_source[] = {
+ 	OP_LH | P(LVL, UNC) | P(SNOOP, NONE), /* 0x0f: uncached */
+ };
+ 
++static u64 precise_store_data(u64 status)
++{
++	union intel_x86_pebs_dse dse;
++	u64 val = P(OP, STORE) | P(SNOOP, NA) | P(LVL, L1) | P(TLB, L2);
++
++	dse.val = status;
++
++	/*
++	 * bit 4: TLB access
++	 * 1 = stored missed 2nd level TLB
++	 *
++	 * so it either hit the walker or the OS
++	 * otherwise hit 2nd level TLB
++	 */
++	if (dse.st_stlb_miss)
++		val |= P(TLB, MISS);
++	else
++		val |= P(TLB, HIT);
++
++	/*
++	 * bit 0: hit L1 data cache
++	 * if not set, then all we know is that
++	 * it missed L1D
++	 */
++	if (dse.st_l1d_hit)
++		val |= P(LVL, HIT);
++	else
++		val |= P(LVL, MISS);
++
++	/*
++	 * bit 5: Locked prefix
++	 */
++	if (dse.st_locked)
++		val |= P(LOCK, LOCKED);
++
++	return val;
++}
++
+ static u64 load_latency_data(u64 status)
+ {
+ 	union intel_x86_pebs_dse dse;
+@@ -486,6 +524,7 @@ struct event_constraint intel_snb_pebs_event_constraints[] = {
+ 	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+ 	INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
++	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+ 	INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+ 	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+@@ -500,6 +539,7 @@ struct event_constraint intel_ivb_pebs_event_constraints[] = {
+         INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xc5, 0xf),    /* BR_MISP_RETIRED.* */
+         INTEL_PLD_CONSTRAINT(0x01cd, 0x8),    /* MEM_TRANS_RETIRED.LAT_ABOVE_THR */
++	INTEL_PST_CONSTRAINT(0x02cd, 0x8),    /* MEM_TRANS_RETIRED.PRECISE_STORES */
+         INTEL_EVENT_CONSTRAINT(0xd0, 0xf),    /* MEM_UOP_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd1, 0xf),    /* MEM_LOAD_UOPS_RETIRED.* */
+         INTEL_EVENT_CONSTRAINT(0xd2, 0xf),    /* MEM_LOAD_UOPS_LLC_HIT_RETIRED.* */
+@@ -537,6 +577,8 @@ void intel_pmu_pebs_enable(struct perf_event *event)
+ 
+ 	if (event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT)
+ 		cpuc->pebs_enabled |= 1ULL << (hwc->idx + 32);
++	else if (event->hw.flags & PERF_X86_EVENT_PEBS_ST)
++		cpuc->pebs_enabled |= 1ULL << 63;
+ }
+ 
+ void intel_pmu_pebs_disable(struct perf_event *event)
+@@ -657,12 +699,13 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	struct perf_sample_data data;
+ 	struct pt_regs regs;
+ 	u64 sample_type;
+-	int fll;
++	int fll, fst;
+ 
+ 	if (!intel_pmu_save_and_restart(event))
+ 		return;
+ 
+ 	fll = event->hw.flags & PERF_X86_EVENT_PEBS_LDLAT;
++	fst = event->hw.flags & PERF_X86_EVENT_PEBS_ST;
+ 
+ 	perf_sample_data_init(&data, 0, event->hw.last_period);
+ 
+@@ -672,7 +715,7 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 	/*
+ 	 * if PEBS-LL or PreciseStore
  	 */
- 	PERF_RECORD_SAMPLE			= 9,
-@@ -615,4 +616,67 @@ enum perf_callchain_context {
- #define PERF_FLAG_FD_OUTPUT		(1U << 1)
- #define PERF_FLAG_PID_CGROUP		(1U << 2) /* pid=cgroup id, per-cpu mode only */
+-	if (fll) {
++	if (fll || fst) {
+ 		if (sample_type & PERF_SAMPLE_ADDR)
+ 			data.addr = pebs->dla;
  
-+union perf_mem_dsrc {
-+	__u64 val;
-+	struct {
-+		__u64   mem_op:5,	/* type of opcode */
-+			mem_lvl:14,	/* memory hierarchy level */
-+			mem_snoop:5,	/* snoop mode */
-+			mem_lock:2,	/* lock instr */
-+			mem_dtlb:7,	/* tlb access */
-+			mem_rsvd:31;
-+	};
-+};
-+
-+/* type of opcode (load/store/prefetch,code) */
-+#define PERF_MEM_OP_NA		0x01 /* not available */
-+#define PERF_MEM_OP_LOAD	0x02 /* load instruction */
-+#define PERF_MEM_OP_STORE	0x04 /* store instruction */
-+#define PERF_MEM_OP_PFETCH	0x08 /* prefetch */
-+#define PERF_MEM_OP_EXEC	0x10 /* code (execution) */
-+#define PERF_MEM_OP_SHIFT	0
-+
-+/* memory hierarchy (memory level, hit or miss) */
-+#define PERF_MEM_LVL_NA		0x01  /* not available */
-+#define PERF_MEM_LVL_HIT	0x02  /* hit level */
-+#define PERF_MEM_LVL_MISS	0x04  /* miss level  */
-+#define PERF_MEM_LVL_L1		0x08  /* L1 */
-+#define PERF_MEM_LVL_LFB	0x10  /* Line Fill Buffer */
-+#define PERF_MEM_LVL_L2		0x20  /* L2 hit */
-+#define PERF_MEM_LVL_L3		0x40  /* L3 hit */
-+#define PERF_MEM_LVL_LOC_RAM	0x80  /* Local DRAM */
-+#define PERF_MEM_LVL_REM_RAM1	0x100 /* Remote DRAM (1 hop) */
-+#define PERF_MEM_LVL_REM_RAM2	0x200 /* Remote DRAM (2 hops) */
-+#define PERF_MEM_LVL_REM_CCE1	0x400 /* Remote Cache (1 hop) */
-+#define PERF_MEM_LVL_REM_CCE2	0x800 /* Remote Cache (2 hops) */
-+#define PERF_MEM_LVL_IO		0x1000 /* I/O memory */
-+#define PERF_MEM_LVL_UNC	0x2000 /* Uncached memory */
-+#define PERF_MEM_LVL_SHIFT	5
-+
-+/* snoop mode */
-+#define PERF_MEM_SNOOP_NA	0x01 /* not available */
-+#define PERF_MEM_SNOOP_NONE	0x02 /* no snoop */
-+#define PERF_MEM_SNOOP_HIT	0x04 /* snoop hit */
-+#define PERF_MEM_SNOOP_MISS	0x08 /* snoop miss */
-+#define PERF_MEM_SNOOP_HITM	0x10 /* snoop hit modified */
-+#define PERF_MEM_SNOOP_SHIFT	19
-+
-+/* locked instruction */
-+#define PERF_MEM_LOCK_NA	0x01 /* not available */
-+#define PERF_MEM_LOCK_LOCKED	0x02 /* locked transaction */
-+#define PERF_MEM_LOCK_SHIFT	24
-+
-+/* TLB access */
-+#define PERF_MEM_TLB_NA		0x01 /* not available */
-+#define PERF_MEM_TLB_HIT	0x02 /* hit level */
-+#define PERF_MEM_TLB_MISS	0x04 /* miss level */
-+#define PERF_MEM_TLB_L1		0x08 /* L1 */
-+#define PERF_MEM_TLB_L2		0x10 /* L2 */
-+#define PERF_MEM_TLB_WK		0x20 /* Hardware Walker*/
-+#define PERF_MEM_TLB_OS		0x40 /* OS fault handler */
-+#define PERF_MEM_TLB_SHIFT	26
-+
-+#define PERF_MEM_S(a, s) \
-+	(((u64)PERF_MEM_##a##_##s) << PERF_MEM_##a##_SHIFT)
-+
- #endif /* _UAPI_LINUX_PERF_EVENT_H */
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index bc2ce07..fd4ceea 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -958,6 +958,9 @@ static void perf_event__header_size(struct perf_event *event)
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		size += sizeof(data->weight);
+@@ -688,6 +731,8 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
+ 		if (sample_type & PERF_SAMPLE_DSRC) {
+ 			if (fll)
+ 				data.dsrc.val = load_latency_data(pebs->dse);
++			else
++				data.dsrc.val = precise_store_data(pebs->dse);
+ 		}
+ 	}
  
-+	if (sample_type & PERF_SAMPLE_DSRC)
-+		size += sizeof(data->dsrc.val);
-+
- 	event->header_size = size;
- }
- 
-@@ -4175,6 +4178,9 @@ void perf_output_sample(struct perf_output_handle *handle,
- 
- 	if (sample_type & PERF_SAMPLE_WEIGHT)
- 		perf_output_put(handle, data->weight);
-+
-+	if (sample_type & PERF_SAMPLE_DSRC)
-+		perf_output_put(handle, data->dsrc.val);
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
 -- 
 1.7.9.5
 
