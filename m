@@ -1,99 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755882Ab3AGWSm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 17:18:42 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26519 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab3AGWSk (ORCPT
+	id S1755889Ab3AGWT1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 17:19:27 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46269 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754636Ab3AGWT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 17:18:40 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=fBOmOx-NyikA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=wMYYvAuhfbIA:10 a=VnNF1IyMAAAA:8 a=ayltMwLYWeDkCjR7tcgA:9 a=PUjeQqilurYA:10 a=1G1kcBpAWYgA:10 a=TUNKTOQ0hfvV3gLG:21 a=zHsAfj7gVYJ10tk_:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357597117.5190.4.camel@gandalf.local.home>
-Subject: Re: [PATCH tip/core/rcu 4/6] rcu: Silence compiler array
- out-of-bounds false positive
-From: Steven Rostedt <rostedt@goodmis.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: Josh Triplett <josh@joshtriplett.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
-        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
-        markus@trippelsdorf.de
-Date: Mon, 07 Jan 2013 17:18:37 -0500
-In-Reply-To: <20130107171910.GA19510@linux.vnet.ibm.com>
-References: <20130105170920.GA13766@linux.vnet.ibm.com>
-	 <1357405778-13903-1-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <1357405778-13903-4-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20130107155002.GA11145@leaf> <20130107171602.GI2525@linux.vnet.ibm.com>
-	 <20130107171910.GA19510@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 17:19:26 -0500
+Date: Mon, 7 Jan 2013 14:19:15 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
+Message-ID: <20130107221915.GA2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130105175059.GA15961@linux.vnet.ibm.com>
+ <20130107155810.GC11145@leaf>
+ <20130107165748.GF2525@linux.vnet.ibm.com>
+ <20130107175606.GA9962@jtriplet-mobl1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130107175606.GA9962@jtriplet-mobl1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010722-5406-0000-0000-000003F9108E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-07 at 09:19 -0800, Paul E. McKenney wrote:
-> On Mon, Jan 07, 2013 at 09:16:02AM -0800, Paul E. McKenney wrote:
-> > On Mon, Jan 07, 2013 at 07:50:02AM -0800, Josh Triplett wrote:
-> > > On Sat, Jan 05, 2013 at 09:09:36AM -0800, Paul E. McKenney wrote:
-> > > > From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+On Mon, Jan 07, 2013 at 09:56:06AM -0800, Josh Triplett wrote:
+> On Mon, Jan 07, 2013 at 08:57:48AM -0800, Paul E. McKenney wrote:
+> > On Mon, Jan 07, 2013 at 07:58:10AM -0800, Josh Triplett wrote:
+> > > On Sat, Jan 05, 2013 at 09:50:59AM -0800, Paul E. McKenney wrote:
+> > > > rcu: Provide RCU CPU stall warnings for tiny RCU
 > > > > 
-> > > > It turns out that gcc 4.8 warns on array indexes being out of bounds
-> > > > unless it can prove otherwise.  It gives this warning on some RCU
-> > > > initialization code.  Because this is far from any fastpath, add
-> > > > an explicit check for array bounds and panic if so.  This gives the
-> > > > compiler enough information to figure out that the array index is never
-> > > > out of bounds.
+> > > > Tiny RCU has historically omitted RCU CPU stall warnings in order to
+> > > > reduce memory requirements, however, lack of these warnings caused Thomas
+> > > > Gleixner some debugging pain recently.  Therefore, this commit adds RCU
+> > > > CPU stall warnings to tiny RCU if RCU_TRACE=y.  This keeps the memory
+> > > > footprint small, while still enabling CPU stall warnings in kernels
+> > > > built to enable them.
 > > > > 
-> > > > However, if a similar false positive occurs on a fastpath, it will
-> > > > probably be necessary to tell the compiler to keep its array-index
-> > > > anxieties to itself.  ;-)
+> > > > This is still a bit on the high-risk side, so running this will likely
+> > > > be a debugging exercise.
 > > > > 
-> > > > Markus Trippelsdorf <markus@trippelsdorf.de>
+> > > > Reported-by: Thomas Gleixner <tglx@linutronix.de>
+> > > > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
 > > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > > ---
-> > > >  kernel/rcutree.c |    4 ++++
-> > > >  1 files changed, 4 insertions(+), 0 deletions(-)
-> > > > 
-> > > > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > > > index d145796..e0d9815 100644
-> > > > --- a/kernel/rcutree.c
-> > > > +++ b/kernel/rcutree.c
-> > > > @@ -2938,6 +2938,10 @@ static void __init rcu_init_one(struct rcu_state *rsp,
-> > > >  
-> > > >  	BUILD_BUG_ON(MAX_RCU_LVLS > ARRAY_SIZE(buf));  /* Fix buf[] init! */
-> > > >  
-> > > > +	/* Silence gcc 4.8 warning about array index out of range. */
-> > > > +	if (rcu_num_lvls > RCU_NUM_LVLS)
-> > > > +		panic("rcu_init_one: rcu_num_lvls overflow");
 > > > 
-> > > Why not write this as BUG_ON(rcu_num_lvls > RCU_NUM_LVLS)?  Given that
-> > > the condition in question can never happen, you don't really need an
-> > > explanatory message.
+> > > Did you generate this patch with something other than git?  The
+> > > formatting seems a bit off: it doesn't have a diffstat or the usual
+> > > "---" line between the commit message and the patch.
 > > 
-> > Good point, will do!
+> > Indeed I did -- couldn't see the point of sending a 0/1 and 1/1
+> > series of patches.  ;-)
 > 
-> Ah, wait, BUG_ON() sometimes compiles to nothingness:
+> Just don't pass --cover-letter to git format-patch and you won't get the
+> 0/1.
+
+Ah, good point!  Thank you!
+
+> > > This patch seems reasonable to me, but the repeated use of #if
+> > > defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
+> > > annoying, and fragile if you ever decide to change the conditions.  How
+> > > about defining an appropriate symbol in Kconfig for stall warnings, and
+> > > using that?
+> > 
+> > But I only just removed the config option for SMP RCU stall warnings.  ;-)
+> > 
+> > But I must agree that "defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)"
+> > is a bit obscure.  The rationale is that RCU stall warnings are
+> > unconditionally enabled in SMP kernels, but don't want to be in
+> > TINY_RCU kernels due to size constraints.  I therefore put it under
+> > CONFIG_RCU_TRACE, which also contains other TINY_RCU debugging-style
+> > options.  Would adding a comment to this effect help?
 > 
-> #ifndef HAVE_ARCH_BUG_ON
-> #define BUG_ON(condition) do { if (condition) ; } while(0)
-> #endif
-> 
-> So I do need the explicit "if".  :-(
+> I understand the rationale; I just think it would become clearer if you
+> added an internal-only Kconfig symbol selected in both cases and change
+> the conditionals to use that.
 
+My concern was that this would confuse people into thinking that the
+code under those #ifdefs was all the stall-warning code that there was.
 
-Bah, those archs shouldn't be bothered with. If they don't want to bug,
-then that's there problem :-)
+I suppose this could be forestalled with a suitably clever name...
+CONFIG_RCU_CPU_STALL_TINY_TOO?  Better names?
 
-Lots of places in the kernel have BUG_ON() where they require it to
-panic.
-
--- Steve
-
+							Thanx, Paul
 
