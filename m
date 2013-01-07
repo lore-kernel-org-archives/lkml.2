@@ -1,69 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab3AGO7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 09:59:24 -0500
-Received: from mail-ea0-f174.google.com ([209.85.215.174]:62381 "EHLO
-	mail-ea0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751214Ab3AGO7X (ORCPT
+	id S1751900Ab3AGPCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 10:02:53 -0500
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:53662 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab3AGPCw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 09:59:23 -0500
-Message-ID: <50EAE126.4020407@monstr.eu>
-Date: Mon, 07 Jan 2013 15:52:22 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 7 Jan 2013 10:02:52 -0500
+Message-ID: <50EAE1D5.7050408@suse.cz>
+Date: Mon, 07 Jan 2013 15:55:17 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze fixes for 3.8-rc3
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: LKML <linux-kernel@vger.kernel.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: next 20130107 hard lockup
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-this is fixed pull request (origin one was sent some days ago).
-I have fixed defconfigs as you suggested. In that meantime I have
-also found 3 other things which needs to be fixed which are also
-included (Highmem fixup and pci warnings reported by 0-day testing system).
+after a couple of minutes, my box locks up hard. It is a regression
+against 20130102.
 
-Thanks,
-Michal
+I have no clue what is going on yet. Once, it died while I was doing
+nothing, once after I opened a file in vim. I will try to collect more
+info... lspci for the time being at least:
+00:00.0 Host bridge: Intel Corporation 82G33/G31/P35/P31 Express DRAM
+Controller (rev 02)
+00:02.0 VGA compatible controller: Intel Corporation 82G33/G31 Express
+Integrated Graphics Controller (rev 02)
+00:03.0 Communication controller: Intel Corporation 82G33/G31/P35/P31
+Express MEI Controller (rev 02)
+00:03.1 Communication controller: Intel Corporation 82G33/G31/P35/P31
+Express MEI Controller (rev 02)
+00:03.2 IDE interface: Intel Corporation 82G33/G31/P35/P31 Express PT
+IDER Controller (rev 02)
+00:03.3 Serial controller: Intel Corporation 82G33/G31/P35/P31 Express
+Serial KT Controller (rev 02)
+00:19.0 Ethernet controller: Intel Corporation 82566DM-2 Gigabit Network
+Connection (rev 02)
+00:1a.0 USB controller: Intel Corporation 82801I (ICH9 Family) USB UHCI
+Controller #4 (rev 02)
+00:1a.1 USB controller: Intel Corporation 82801I (ICH9 Family) USB UHCI
+Controller #5 (rev 02)
+00:1a.2 USB controller: Intel Corporation 82801I (ICH9 Family) USB UHCI
+Controller #6 (rev 02)
+00:1a.7 USB controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI
+Controller #2 (rev 02)
+00:1b.0 Audio device: Intel Corporation 82801I (ICH9 Family) HD Audio
+Controller (rev 02)
+00:1c.0 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express
+Port 1 (rev 02)
+00:1c.2 PCI bridge: Intel Corporation 82801I (ICH9 Family) PCI Express
+Port 3 (rev 02)
+00:1d.0 USB controller: Intel Corporation 82801I (ICH9 Family) USB UHCI
+Controller #1 (rev 02)
+00:1d.1 USB controller: Intel Corporation 82801I (ICH9 Family) USB UHCI
+Controller #2 (rev 02)
+00:1d.2 USB controller: Intel Corporation 82801I (ICH9 Family) USB UHCI
+Controller #3 (rev 02)
+00:1d.7 USB controller: Intel Corporation 82801I (ICH9 Family) USB2 EHCI
+Controller #1 (rev 02)
+00:1e.0 PCI bridge: Intel Corporation 82801 PCI Bridge (rev 92)
+00:1f.0 ISA bridge: Intel Corporation Device 2910 (rev 02)
+00:1f.2 SATA controller: Intel Corporation 82801IR/IO/IH (ICH9R/DO/DH) 6
+port SATA Controller [AHCI mode] (rev 02)
+00:1f.3 SMBus: Intel Corporation 82801I (ICH9 Family) SMBus Controller
+(rev 02)
+00:1f.6 Signal processing controller: Intel Corporation 82801I (ICH9
+Family) Thermal Subsystem (rev 02)
+03:00.0 PCI bridge: Texas Instruments XIO2000(A)/XIO2200A PCI
+Express-to-PCI Bridge (rev 03)
+04:00.0 FireWire (IEEE 1394): Texas Instruments XIO2200A IEEE-1394a-2000
+Controller (PHY/Link) (rev 01)
+05:00.0 Ethernet controller: Intel Corporation 82540EM Gigabit Ethernet
+Controller (rev 02)
 
-
-
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
-   Linus Torvalds (1):
-         Linux 3.8-rc2
-
-are available in the git repository at:
-
-   git://git.monstr.eu/linux-2.6-microblaze.git next
-
-Michal Simek (6):
-       microblaze: Microblaze wants sys_fork for noMMU too
-       microblaze: Change section flags for noMMU
-       microblaze: Kill __kmap_atomic()
-       microblaze: Add finit_module syscall
-       microblaze: Fix pci compilation and sparse warnings
-       microblaze: Update microblaze defconfigs
-
-  arch/microblaze/configs/mmu_defconfig     |   52 ++++++++++++++------
-  arch/microblaze/configs/nommu_defconfig   |   73 +++++++++++++++++-----------
-  arch/microblaze/include/asm/highmem.h     |    2 +-
-  arch/microblaze/include/asm/uaccess.h     |    2 +-
-  arch/microblaze/include/asm/unistd.h      |    2 -
-  arch/microblaze/include/uapi/asm/unistd.h |    3 +-
-  arch/microblaze/kernel/syscall_table.S    |    1 +
-  arch/microblaze/pci/pci-common.c          |   11 ++--
-  8 files changed, 90 insertions(+), 56 deletions(-)
-
-
-
+regards,
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+js
+suse labs
