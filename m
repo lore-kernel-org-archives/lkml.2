@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab3AGJAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 04:00:54 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:53122 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753688Ab3AGJAd (ORCPT
+	id S1753944Ab3AGJCZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 04:02:25 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27496 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab3AGJCW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 04:00:33 -0500
-X-IronPort-AV: E=Sophos;i="4.84,423,1355094000"; 
-   d="scan'208";a="188679764"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c: reposition free_irq to avoid access to invalid data
-Date: Mon,  7 Jan 2013 11:00:15 +0100
-Message-Id: <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.7.8.6
-In-Reply-To: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr>
+	Mon, 7 Jan 2013 04:02:22 -0500
+Date: Mon, 7 Jan 2013 12:02:10 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: masa-korg@dsn.okisemi.com
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, Tomoya MORINAGA <tomoya.rohm@gmail.com>
+Subject: re: add Packet hub driver for Topcliff Platform controller hub
+Message-ID: <20130107090210.GA20716@elgon.mountain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi Masayuki Ohtak,
 
-The data referenced by an interrupt handler should not be freed before the
-interrupt is ended.  The handler is pxa_camera_irq.  This handler may call
-pxa_dma_start_channels, which references the channels that are freed on the
-lines before the call to free_irq.
+The patch cf4ece53460c: "add Packet hub driver for Topcliff Platform 
+controller hub" from Sep 1, 2010, leads to the following warning:
+drivers/misc/pch_phub.c:596 pch_phub_bin_write()
+	 error: buffer overflow 'buf' 4096 <= 15359
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Sorry my question is about an old patch.  Smatch complains because we
+only pass a PAGE_SIZE buffer to sysfs files so the test for
+"if (count > PCH_PHUB_OROM_SIZE) {" makes it think we are overflowing.
+In fact, count is never more than 4096 so there is no overflow, but I
+also think that it means only the first 4096 bytes of the firmware gets
+updated.
 
-// <smpl>
-@fn exists@
-expression list es;
-expression a,b;
-identifier f;
-@@
+drivers/misc/pch_phub.c
+   560  static ssize_t pch_phub_bin_write(struct file *filp, struct kobject *kobj,
+   561                                    struct bin_attribute *attr,
+   562                                    char *buf, loff_t off, size_t count)
+   563  {
+   564          int err;
+   565          unsigned int addr_offset;
+   566          int ret;
+   567          ssize_t rom_size;
+   568          struct pch_phub_reg *chip =
+   569                  dev_get_drvdata(container_of(kobj, struct device, kobj));
+   570  
+   571          ret = mutex_lock_interruptible(&pch_phub_mutex);
+   572          if (ret)
+   573                  return -ERESTARTSYS;
+   574  
+   575          if (off > PCH_PHUB_OROM_SIZE) {
+   576                  addr_offset = 0;
+   577                  goto return_ok;
+   578          }
+   579          if (count > PCH_PHUB_OROM_SIZE) {
+                            ^^^^^^^^^^^^^^^^^^
+This is 15359.
 
-if (...) {
-  ... when any
-  free_irq(a,b);
-  ... when any
-  f(es);
-  ... when any
-  return ...;
-}
+   580                  addr_offset = 0;
+   581                  goto return_ok;
+   582          }
+   583  
+   584          chip->pch_phub_extrom_base_address = pci_map_rom(chip->pdev, &rom_size);
+   585          if (!chip->pch_phub_extrom_base_address) {
+   586                  err = -ENOMEM;
+   587                  goto exrom_map_err;
+   588          }
+   589  
+   590          for (addr_offset = 0; addr_offset < count; addr_offset++) {
+   591                  if (PCH_PHUB_OROM_SIZE < off + addr_offset)
+   592                          goto return_ok;
+   593  
+   594                  ret = pch_phub_write_serial_rom(chip,
+   595                              chip->pch_opt_rom_start_address + addr_offset + off,
+   596                              buf[addr_offset]);
+                                    ^^^^^^^^^^^^^^^^
+Smatch complains because "buf" is only 4096 bytes.
 
-@@
-expression list fn.es;
-expression fn.a,fn.b;
-identifier fn.f;
-@@
-
-*f(es);
-... when any
-*free_irq(a,b);
-// </smpl>
-
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-Not compiled.  I have not observed the problem in practice; the code just
-looks suspicious.
-
- drivers/media/platform/soc_camera/pxa_camera.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/media/platform/soc_camera/pxa_camera.c b/drivers/media/platform/soc_camera/pxa_camera.c
-index f91f7bf..2a19aba 100644
---- a/drivers/media/platform/soc_camera/pxa_camera.c
-+++ b/drivers/media/platform/soc_camera/pxa_camera.c
-@@ -1810,10 +1810,10 @@ static int pxa_camera_remove(struct platform_device *pdev)
- 
- 	clk_put(pcdev->clk);
- 
-+	free_irq(pcdev->irq, pcdev);
- 	pxa_free_dma(pcdev->dma_chans[0]);
- 	pxa_free_dma(pcdev->dma_chans[1]);
- 	pxa_free_dma(pcdev->dma_chans[2]);
--	free_irq(pcdev->irq, pcdev);
- 
- 	soc_camera_host_unregister(soc_host);
- 
+regards,
+dan carpenter
 
