@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab3AGNyI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 08:54:08 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:31655 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab3AGNyF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 08:54:05 -0500
-X-Authority-Analysis: v=2.0 cv=IsacgcDg c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ozllkaMMHWsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=X0RNizWAH94A:10 a=57SyGIRnAAAA:8 a=hcjH-_9W1a0dVBmzCYkA:9 a=PUjeQqilurYA:10 a=TIV7c6GJmisA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357566844.10284.84.camel@gandalf.local.home>
-Subject: Re: [PATCH 2/2] tracing: Use sched_clock_cpu for trace_clock_global
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Fredereic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>
-Date: Mon, 07 Jan 2013 08:54:04 -0500
-In-Reply-To: <87wqw3rfed.fsf@sejong.aot.lge.com>
-References: <1356576585-28782-1-git-send-email-namhyung@kernel.org>
-	 <1356576585-28782-2-git-send-email-namhyung@kernel.org>
-	 <87wqw3rfed.fsf@sejong.aot.lge.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754695Ab3AGN52 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 08:57:28 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:34296 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754090Ab3AGN51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 08:57:27 -0500
+Date: Mon, 7 Jan 2013 13:57:21 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Jason Liu <r64343@freescale.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org, riel@redhat.com,
+        minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return error
+ issue
+Message-ID: <20130107135721.GD3885@suse.de>
+References: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2012-12-27 at 18:52 +0900, Namhyung Kim wrote:
-> On Thu, 27 Dec 2012 11:49:45 +0900, Namhyung Kim wrote:
-> > From: Namhyung Kim <namhyung.kim@lge.com>
-> >
-> > For systems have unstable sched_clock, all cpu_clock() does is enable/
-> > disable local irq during call to sched_clock().  And for stable systems
+On Sun, Jan 06, 2013 at 03:44:33PM +0800, Jason Liu wrote:
+> when run the folloing command under shell, it will return error
+> sh/$ echo 1 > /proc/sys/vm/compact_memory
+> sh/$ sh: write error: Bad address
 > 
-> Oops, I meant s/sched_clock/scheck_clock_cpu/.
+> After strace, I found the following log:
+> ...
+> write(1, "1\n", 2)               = 3
+> write(1, "", 4294967295)         = -1 EFAULT (Bad address)
+> write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
+> ) = 31
 > 
+> This tells system return 3(COMPACT_COMPLETE) after write data to compact_memory.
+> 
+> The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE) from
+> sysctl_compaction_handler after compaction_nodes finished.
+> 
+> Suggested-by:David Rientjes <rientjes@google.com>
+> Cc:Mel Gorman <mgorman@suse.de>
+> Cc:Andrew Morton <akpm@linux-foundation.org>
+> Cc:Rik van Riel <riel@redhat.com>
+> Cc:Minchan Kim <minchan@kernel.org>
+> Cc:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Jason Liu <r64343@freescale.com>
 
-I'll queue this up for 3.9.
+Acked-by: Mel Gorman <mgorman@suse.de>
 
-Thanks,
-
--- Steve
-
-
+-- 
+Mel Gorman
+SUSE Labs
