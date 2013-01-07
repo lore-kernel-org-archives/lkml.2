@@ -1,170 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323Ab3AGMDB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 07:03:01 -0500
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:42576 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753744Ab3AGMC7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 07:02:59 -0500
+	id S1754479Ab3AGMDa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 07:03:30 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:55673 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754151Ab3AGMD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 07:03:28 -0500
+From: "Mohammed, Afzal" <afzal@ti.com>
+To: "Hiremath, Vaibhav" <hvaibhav@ti.com>,
+        "Manjunathappa, Prakash" <prakash.pm@ti.com>
+CC: "Valkeinen, Tomi" <tomi.valkeinen@ti.com>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        "Porter, Matt" <mporter@ti.com>,
+        "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        "FlorianSchandinat@gmx.de" <FlorianSchandinat@gmx.de>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Dill, Russ" <russ.dill@ti.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: RE: [PATCH] da8xx: Allow use by am33xx based devices
+Thread-Topic: [PATCH] da8xx: Allow use by am33xx based devices
+Thread-Index: AQHNtsowjtEcnFNvskqiozVOiMWlCZfS2xNQgDjGJ3CABf8MAIADCEQAgAALTwCAKSN3kA==
+Date: Mon, 7 Jan 2013 12:03:16 +0000
+Message-ID: <C8443D0743D26F4388EA172BF4E2A7A93EA7FDD8@DBDE01.ent.ti.com>
+References: <1351698968-3965-1-git-send-email-panto@antoniou-consulting.com>
+ <A73F36158E33644199EB82C5EC81C7BC3EA1452B@DBDE01.ent.ti.com>
+ <50C5A50E.4070602@ti.com>
+ <A73F36158E33644199EB82C5EC81C7BC3EA17E45@DBDE01.ent.ti.com>
+ <79CD15C6BA57404B839C016229A409A83EBADC10@DBDE01.ent.ti.com>
+In-Reply-To: <79CD15C6BA57404B839C016229A409A83EBADC10@DBDE01.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.24.170.142]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <CAH9JG2VZAZfpfCjtxgMDsJPNf10FOO_PNV4poVkTgX=2XCoEpQ@mail.gmail.com>
-References: <1354165536-18529-1-git-send-email-ch.naveen@samsung.com>
- <1354165536-18529-2-git-send-email-ch.naveen@samsung.com> <CAH9JG2VZAZfpfCjtxgMDsJPNf10FOO_PNV4poVkTgX=2XCoEpQ@mail.gmail.com>
-From: Naveen Krishna Ch <naveenkrishna.ch@gmail.com>
-Date: Mon, 7 Jan 2013 17:32:38 +0530
-Message-ID: <CAHfPSqCrF_o6b01WucLh4Ra9vZvh6OuPXc7VLioS_2zo=PJX-w@mail.gmail.com>
-Subject: Re: [PATCH 1/2] i2c-s3c2410: Leave the bus disabled unless it is in use
-To: linux-i2c@vger.kernel.org
-Cc: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, grundler@chromium.org,
-        sjg@chromium.org, naveen@chromium.org, w.sang@pengutronix.de,
-        linux-kernel@vger.kernel.org, Kyungmin Park <kmpark@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r07C3XkS026694
 
-On 29 November 2012 20:14, Kyungmin Park <kmpark@infradead.org> wrote:
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+Hi,
 
-I don't see this patch landed any where in linux-i2c tree, Though it was acked.
-Was it missed or should i be doing something for this to be merged ??
+On Wed, Dec 12, 2012 at 13:30:56, Hiremath, Vaibhav wrote:
+> On Wed, Dec 12, 2012 at 12:50:28, Manjunathappa, Prakash wrote:
 
->
-> On Thu, Nov 29, 2012 at 2:05 PM, Naveen Krishna Chatradhi
-> <ch.naveen@samsung.com> wrote:
->> From: Simon Glass <sjg@chromium.org>
->>
->> There is a rather odd feature of the exynos i2c controller that if it
->> is left enabled, it can lock itself up with the clk line held low.
->> This makes the bus unusable.
->>
->> Unfortunately, the s3c24xx_i2c_set_master() function does not notice
->> this, and reports a timeout. From then on the bus cannot be used until
->> the AP is rebooted.
->>
->> The problem happens when any sort of interrupt occurs (e.g. due to a
->> bus transition) when we are not in the middle of a transaction. We
->> have seen many instances of this when U-Boot leaves the bus apparently
->> happy, but Linux cannot access it.
->>
->> The current code is therefore pretty fragile.
->>
->> This fixes things by leaving the bus disabled unless we are actually
->> in a transaction. We enable the bus at the start of the transaction and
->> disable it at the end. That way we won't get interrupts and will not
->> lock up the bus.
->>
->> It might be possible to clear pending interrupts on start-up, but this
->> seems to be a more robust solution. We can't service interrupts when
->> we are not in a transaction, and anyway would rather not lock up the
->> bus while we try.
->>
->> Signed-off-by: Simon Glass <sjg@chromium.org>
->> Cc: Grant Grundler <grundler@chromium.org>
->> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
->> ---
->>  drivers/i2c/busses/i2c-s3c2410.c |   37 +++++++++++++++++++++++++++++++++----
->>  1 file changed, 33 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
->> index e93e7d6..2fd346d 100644
->> --- a/drivers/i2c/busses/i2c-s3c2410.c
->> +++ b/drivers/i2c/busses/i2c-s3c2410.c
->> @@ -186,6 +186,31 @@ static inline void s3c24xx_i2c_enable_irq(struct s3c24xx_i2c *i2c)
->>         writel(tmp | S3C2410_IICCON_IRQEN, i2c->regs + S3C2410_IICCON);
->>  }
->>
->> +/*
->> + * Disable the bus so that we won't get any interrupts from now on, or try
->> + * to drive any lines. This is the default state when we don't have
->> + * anything to send/receive.
->> + *
->> + * If there is an event on the bus, or we have a pre-existing event at
->> + * kernel boot time, we may not notice the event and the I2C controller
->> + * will lock the bus with the I2C clock line low indefinitely.
->> + */
->> +static inline void s3c24xx_i2c_disable_bus(struct s3c24xx_i2c *i2c)
->> +{
->> +       unsigned long tmp;
->> +
->> +       /* Stop driving the I2C pins */
->> +       tmp = readl(i2c->regs + S3C2410_IICSTAT);
->> +       tmp &= ~S3C2410_IICSTAT_TXRXEN;
->> +       writel(tmp, i2c->regs + S3C2410_IICSTAT);
->> +
->> +       /* We don't expect any interrupts now, and don't want send acks */
->> +       tmp = readl(i2c->regs + S3C2410_IICCON);
->> +       tmp &= ~(S3C2410_IICCON_IRQEN | S3C2410_IICCON_IRQPEND |
->> +               S3C2410_IICCON_ACKEN);
->> +       writel(tmp, i2c->regs + S3C2410_IICCON);
->> +}
->> +
->>
->>  /* s3c24xx_i2c_message_start
->>   *
->> @@ -646,7 +671,11 @@ static int s3c24xx_i2c_doxfer(struct s3c24xx_i2c *i2c,
->>
->>         s3c24xx_i2c_wait_idle(i2c);
->>
->> +       s3c24xx_i2c_disable_bus(i2c);
->> +
->>   out:
->> +       i2c->state = STATE_IDLE;
->> +
->>         return ret;
->>  }
->>
->> @@ -912,7 +941,6 @@ static void s3c24xx_i2c_dt_gpio_free(struct s3c24xx_i2c *i2c)
->>
->>  static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
->>  {
->> -       unsigned long iicon = S3C2410_IICCON_IRQEN | S3C2410_IICCON_ACKEN;
->>         struct s3c2410_platform_i2c *pdata;
->>         unsigned int freq;
->>
->> @@ -926,12 +954,12 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
->>
->>         dev_info(i2c->dev, "slave address 0x%02x\n", pdata->slave_addr);
->>
->> -       writel(iicon, i2c->regs + S3C2410_IICCON);
->> +       writel(0, i2c->regs + S3C2410_IICCON);
->> +       writel(0, i2c->regs + S3C2410_IICSTAT);
->>
->>         /* we need to work out the divisors for the clock... */
->>
->>         if (s3c24xx_i2c_clockrate(i2c, &freq) != 0) {
->> -               writel(0, i2c->regs + S3C2410_IICCON);
->>                 dev_err(i2c->dev, "cannot meet bus frequency required\n");
->>                 return -EINVAL;
->>         }
->> @@ -939,7 +967,8 @@ static int s3c24xx_i2c_init(struct s3c24xx_i2c *i2c)
->>         /* todo - check that the i2c lines aren't being dragged anywhere */
->>
->>         dev_info(i2c->dev, "bus frequency set to %d KHz\n", freq);
->> -       dev_dbg(i2c->dev, "S3C2410_IICCON=0x%02lx\n", iicon);
->> +       dev_dbg(i2c->dev, "S3C2410_IICCON=0x%02x\n",
->> +               readl(i2c->regs + S3C2410_IICCON));
->>
->>         return 0;
->>  }
->> --
->> 1.7.9.5
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Agreed, should not result in build error. But is it ok to show this option
+> > on the platforms which do not have this IP?
+> > 
+> 
+> You can choose to put machine dependency here, as this patch is already 
+> doing it. The side-effect of this would be, list may grow and you may have 
+> to edit this file everytime.
 
+It seems adding machine dependency is more in line with the
+approach adopted in similar cases. As this IP is used only
+in 2 arch's and would not in any immediate future go with
+other arch's, it would be better not to ask other arch's a
+question on whether this driver needs to be selected or not.
 
-
--- 
-Shine bright,
-(: Nav :)
+Regards
+Afzal
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
