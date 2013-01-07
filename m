@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753723Ab3AGIAj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 03:00:39 -0500
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:8239 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751798Ab3AGIAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 03:00:37 -0500
-X-IronPort-AV: E=Sophos;i="4.84,422,1355094000"; 
-   d="scan'208";a="167580613"
-Date: Mon, 7 Jan 2013 09:00:30 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Anton Vorontsov <anton@enomsg.org>
-cc: Dan Carpenter <dan.carpenter@oracle.com>, kernel-janitors@vger.kernel.org,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/power/88pm860x_battery.c: eliminate possible
- references to released resources
-In-Reply-To: <20130107065321.GA31407@lizard.gateway.2wire.net>
-Message-ID: <alpine.DEB.2.02.1301070859380.1908@hadrien>
-References: <1354986995-2324-1-git-send-email-Julia.Lawall@lip6.fr> <20130106050953.GH6919@lizard.sbx05280.losalca.wayport.net> <alpine.DEB.2.02.1301060941400.2070@localhost6.localdomain6> <20130106211649.GA26928@lizard.sbx05280.losalca.wayport.net>
- <20130107064223.GR7247@mwanda> <20130107065321.GA31407@lizard.gateway.2wire.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753740Ab3AGIGO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 03:06:14 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753066Ab3AGIGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 03:06:12 -0500
+Date: Mon, 7 Jan 2013 09:05:33 +0100
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: Andreas Hartmann <andihartmann@01019freenet.de>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [ 104/173] rt2x00: Dont let mac80211 send a BAR when an AMPDU
+ subframe fails
+Message-ID: <20130107080532.GA2984@redhat.com>
+References: <20121228190352.097882544@decadent.org.uk>
+ <50DEA41E.6010409@01019freenet.de>
+ <1356871099.4821.16.camel@deadeye.wl.decadent.org.uk>
+ <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356871357.4821.19.camel@deadeye.wl.decadent.org.uk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jan 2013, Anton Vorontsov wrote:
+On Sun, Dec 30, 2012 at 01:42:37PM +0100, Ben Hutchings wrote:
+> On Sun, 2012-12-30 at 13:38 +0100, Ben Hutchings wrote:
+> > On Sat, 2012-12-29 at 09:04 +0100, Andreas Hartmann wrote:
+> > > Ben Hutchings wrote:
+> > > > 3.2-stable review patch.  If anyone has any objections, please let me know.
+> > > > 
+> > > > ------------------
+> > > > 
+> > > > From: Andreas Hartmann <andihartmann@01019freenet.de>
+> > > > 
+> > > > commit be03d4a45c09ee5100d3aaaedd087f19bc20d01f upstream.
+> > > 
+> > > [...]
+> > > 
+> > > This patch is a workaround for
+> > > 
+> > > mac80211: retry sending failed BAR frames later instead of tearing down
+> > > aggr (http://www.spinics.net/lists/linux-wireless/msg76379.html -
+> > > f0425beda4d404a6e751439b562100b902ba9c98)
+> > > See:
+> > > http://thread.gmane.org/gmane.linux.kernel.wireless.general/83297/focus=83304
+> > > 
+> > > 
+> > > Meanwhile there was a bug report complaining about problems with
+> > > be03d4a45 when used as STA:
+> > > http://thread.gmane.org/gmane.linux.drivers.rt2x00.user/1257
+> > > You can find there a few other workaround proposals.
+> > [...]
+> > 
+> > OK, I'll drop this for now.  Once this is sorted out, please send to
+> > stable a complete list of fixes that are needed.
+> 
+> To be clear, I have all of these in the queue:
+> 
+> be03d4a45c09 rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails
+> 5b632fe85ec8 mac80211: introduce IEEE80211_HW_TEARDOWN_AGGR_ON_BAR_FAIL
+> ab9d6e4ffe19 Revert: "rt2x00: Don't let mac80211 send a BAR when an AMPDU subframe fails"
+> 
+> and I'm intending to drop/defer them all.
 
-> On Mon, Jan 07, 2013 at 09:42:23AM +0300, Dan Carpenter wrote:
-> > On Sun, Jan 06, 2013 at 01:16:50PM -0800, Anton Vorontsov wrote:
-> > > The patch is whitespace-damaged (for some reason there are two spaces in
-> > > the beginning of each non-change line). I repeated changes manually, but
-> > > you might want to fix your mail/patch setup anyway. :)
-> > >
-> >
-> > It may be something on your end, the patch applies fine for me.
->
-> I just looked into Julia's email headers, and it says:
->
->   Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
->
-> flowed? for the patch? :) That's not right.
->
-> Documentation/email-clients.txt says:
->
->   Don't send patches with "format=flowed".  This can cause unexpected
->   and unwanted line breaks.
+Patch 3 is a revert of patch 1 (questioned patch). Please apply all 3 patches,
+or only patch 2.
 
-That is what I fixed.  I had used that mailer before for sending patches,
-and even fixed the problem before, so I have no idea why it changed...
-But it is fixed now.
-
-thanks,
-julia
+Stanislaw
