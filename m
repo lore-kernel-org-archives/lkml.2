@@ -1,289 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755670Ab3AGUqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 15:46:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13010 "EHLO mx1.redhat.com"
+	id S1755682Ab3AGUxO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 15:53:14 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:56371 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754270Ab3AGUqs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 15:46:48 -0500
-Date: Mon, 7 Jan 2013 18:46:20 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4 5/5] KVM: x86: improve reexecute_instruction
-Message-ID: <20130107204620.GA26134@amt.cnet>
-References: <50E6DEDC.7040800@linux.vnet.ibm.com>
- <50E6DFAB.6050008@linux.vnet.ibm.com>
- <20130104224432.GB13481@amt.cnet>
- <50E7E165.6000107@linux.vnet.ibm.com>
+	id S1755651Ab3AGUxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 15:53:13 -0500
+Date: Mon, 7 Jan 2013 12:53:04 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, edumazet@google.com,
+        darren@dvhart.com, fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org,
+        "Paul E. McKenney" <paul.mckenney@linaro.org>
+Subject: Re: [PATCH tip/core/rcu 05/14] rcu: Distinguish "rcuo" kthreads by
+ RCU flavor
+Message-ID: <20130107205304.GV2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130105174844.GA14172@linux.vnet.ibm.com>
+ <1357408144-15830-1-git-send-email-paulmck@linux.vnet.ibm.com>
+ <1357408144-15830-5-git-send-email-paulmck@linux.vnet.ibm.com>
+ <CAP=VYLrCZ6qHTzA0K=+6rEGU0Lk8aLPH6MgRuw5rxSazwJai6A@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <50E7E165.6000107@linux.vnet.ibm.com>
+In-Reply-To: <CAP=VYLrCZ6qHTzA0K=+6rEGU0Lk8aLPH6MgRuw5rxSazwJai6A@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010720-7182-0000-0000-0000043E08A1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 04:16:37PM +0800, Xiao Guangrong wrote:
-> On 01/05/2013 06:44 AM, Marcelo Tosatti wrote:
+On Sun, Jan 06, 2013 at 06:34:17PM -0500, Paul Gortmaker wrote:
+> On Sat, Jan 5, 2013 at 12:48 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > From: "Paul E. McKenney" <paul.mckenney@linaro.org>
+> >
+> > Currently, the per-no-CBs-CPU kthreads are named "rcuo" followed by
+> > the CPU number, for example, "rcuo".  This is problematic given that
+> > there are either two or three RCU flavors, each of which gets a per-CPU
+> > kthread with exactly the same name.  This commit therefore introduces
+> > a one-letter abbreviation for each RCU flavor, namely 'b' for RCU-bh,
+> > 'p' for RCU-preempt, and 's' for RCU-sched.  This abbreviation use used
+> > to distinguish the "rcuo" kthreads, for example, for CPU 0 we would have
+> > "rcuo0b", "rcuo0p", and "rcuo0s".
 > 
-> >> index b0a3678..44c6992 100644
-> >> --- a/arch/x86/kvm/x86.c
-> >> +++ b/arch/x86/kvm/x86.c
-> >> @@ -4756,15 +4756,8 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
-> >>  static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
-> >>  {
-> >>  	gpa_t gpa = cr2;
-> >> +	gfn_t gfn;
-> >>  	pfn_t pfn;
-> >> -	unsigned int indirect_shadow_pages;
-> >> -
-> >> -	spin_lock(&vcpu->kvm->mmu_lock);
-> >> -	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
-> >> -	spin_unlock(&vcpu->kvm->mmu_lock);
-> >> -
-> >> -	if (!indirect_shadow_pages)
-> >> -		return false;
-> > 
-> > This renders the previous patch obsolete, pretty much (please fold).
+> Since these names are exposed to Joe Average when he runs ps/top
+> etc. -- I am inclined to favour the more full names as implemented
+> in this older patch:
 > 
-> Will try.
+> http://goo.gl/H1Aj8
 > 
-> > 
-> >>  	if (!vcpu->arch.mmu.direct_map) {
-> >>  		/*
-> >> @@ -4781,13 +4774,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
-> >>  			return true;
-> >>  	}
-> >>
-> >> -	/*
-> >> -	 * if emulation was due to access to shadowed page table
-> >> -	 * and it failed try to unshadow page and re-enter the
-> >> -	 * guest to let CPU execute the instruction.
-> >> -	 */
-> >> -	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
-> >> -		return true;
-> >> +	gfn = gpa_to_gfn(gpa);
-> >>
-> >>  	/*
-> >>  	 * Do not retry the unhandleable instruction if it faults on the
-> >> @@ -4795,13 +4782,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
-> >>  	 * retry instruction -> write #PF -> emulation fail -> retry
-> >>  	 * instruction -> ...
-> >>  	 */
-> >> -	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
-> >> -	if (!is_error_noslot_pfn(pfn)) {
-> >> -		kvm_release_pfn_clean(pfn);
-> >> +	pfn = gfn_to_pfn(vcpu->kvm, gfn);
-> >> +
-> >> +	/*
-> >> +	 * If the instruction failed on the error pfn, it can not be fixed,
-> >> +	 * report the error to userspace.
-> >> +	 */
-> >> +	if (is_error_noslot_pfn(pfn))
-> >> +		return false;
-> >> +
-> >> +	kvm_release_pfn_clean(pfn);
-> >> +
-> >> +	/* The instructions are well-emulated on direct mmu. */
-> >> +	if (vcpu->arch.mmu.direct_map) {
-> > 
-> > !direct_map?
+> ...since "rcuo0p" isn't apt to mean anything to people outside
+> of the to/cc list of this mail. (Catch me off guard, and I probably
+> might fail to be able to name the three flavours myself...)
 > 
-> No. This logic is, if it is direct mmu, we just unprotect the page shadowed by
-> nested mmu, then let guest retry the instruction, no need to detect unhandlable
-> instruction.
-> 
-> > 
-> >> +		unsigned int indirect_shadow_pages;
-> >> +
-> >> +		spin_lock(&vcpu->kvm->mmu_lock);
-> >> +		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
-> >> +		spin_unlock(&vcpu->kvm->mmu_lock);
-> >> +
-> >> +		if (indirect_shadow_pages)
-> >> +			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-> >> +
-> >>  		return true;
-> >>  	}
-> >>
-> >> -	return false;
-> >> +	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-> >> +
-> >> +	/* If the target gfn is used as page table, the fault can
-> >> +	 * not be avoided by unprotecting shadow page and it will
-> >> +	 * be reported to userspace.
-> >> +	 */
-> >> +	return !vcpu->arch.target_gfn_is_pt;
-> >>  }
-> > 
-> > The idea was
-> > 
-> > How about recording the gfn number for shadow pages that have been
-> > shadowed in the current pagefault run? (which is cheap, compared to
-> > shadowing these pages).
-> > 
-> > If failed instruction emulation is write to one of these gfns, then
-> > fail.
-> 
-> If i understood correctly, i do not think it is simpler than the way in this
-> patch.
-> 
-> There is the change to apply the idea:
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index c431b33..2163de8 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -502,6 +502,8 @@ struct kvm_vcpu_arch {
->  		u64 msr_val;
->  		struct gfn_to_hva_cache data;
->  	} pv_eoi;
-> +
-> +	gfn_t pt_gfns[4];
->  };
-> 
->  struct kvm_lpage_info {
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 0453fa0..ac4210f 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -523,6 +523,18 @@ FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
->  	return false;
->  }
-> 
-> +static void FNAME(cache_pt_gfns)(struct kvm_vcpu *vcpu, struct guest_walker *walker)
-> +{
-> +	int level;
-> +
-> +	/* Reset all gfns to -1, then we can detect the levels which is not used in guest. */
-> +	for (level = 0; level < 4; level++)
-> +		vcpu->arch.pt_gfns[level] = (gfn_t)(-1);
-> +
-> +	for (level = walker->level; level <= walker->max_level; level++)
-> +		vcpu->arch.pt_gfns[level - 1] = walker->table_gfn[level - 1];
-> +}
-> +
->  /*
->   * Page fault handler.  There are several causes for a page fault:
->   *   - there is no shadow pte for the guest pte
-> @@ -576,6 +588,8 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->  		return 0;
->  	}
-> 
-> +	 FNAME(cache_pt_gfns)(vcpu, &walker);
-> +
->  	if (walker.level >= PT_DIRECTORY_LEVEL)
->  		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
->  		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index b0a3678..b86ee24 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -4753,18 +4753,25 @@ static int handle_emulation_failure(struct kvm_vcpu *vcpu)
->  	return r;
->  }
-> 
-> +static bool is_gfn_used_as_pt(struct kvm_vcpu *vcpu, gfn_t gfn)
-> +{
-> +	int level;
-> +
-> +	for (level = 0; level < 4; level++) {
-> +		if (vcpu->arch.pt_gfns[level] == (gfn_t)-1)
-> +			continue;
-> +		if (gfn == vcpu->arch.pt_gfns[level])
-> +			return true;
-> +	}
-> +
-> +	return false;
-> +}
-> +
->  static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->  {
->  	gpa_t gpa = cr2;
-> +	gfn_t gfn;
->  	pfn_t pfn;
-> -	unsigned int indirect_shadow_pages;
-> -
-> -	spin_lock(&vcpu->kvm->mmu_lock);
-> -	indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
-> -	spin_unlock(&vcpu->kvm->mmu_lock);
-> -
-> -	if (!indirect_shadow_pages)
-> -		return false;
-> 
->  	if (!vcpu->arch.mmu.direct_map) {
->  		/*
-> @@ -4781,13 +4788,7 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->  			return true;
->  	}
-> 
-> -	/*
-> -	 * if emulation was due to access to shadowed page table
-> -	 * and it failed try to unshadow page and re-enter the
-> -	 * guest to let CPU execute the instruction.
-> -	 */
-> -	if (kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa)))
-> -		return true;
-> +	gfn = gpa_to_gfn(gpa);
-> 
->  	/*
->  	 * Do not retry the unhandleable instruction if it faults on the
-> @@ -4795,13 +4796,38 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, unsigned long cr2)
->  	 * retry instruction -> write #PF -> emulation fail -> retry
->  	 * instruction -> ...
->  	 */
-> -	pfn = gfn_to_pfn(vcpu->kvm, gpa_to_gfn(gpa));
-> -	if (!is_error_noslot_pfn(pfn)) {
-> -		kvm_release_pfn_clean(pfn);
-> +	pfn = gfn_to_pfn(vcpu->kvm, gfn);
-> +
-> +	/*
-> +	 * If the instruction failed on the error pfn, it can not be fixed,
-> +	 * report the error to userspace.
-> +	 */
-> +	if (is_error_noslot_pfn(pfn))
-> +		return false;
-> +
-> +	kvm_release_pfn_clean(pfn);
-> +
-> +	/* The instructions are well-emulated on direct mmu. */
-> +	if (vcpu->arch.mmu.direct_map) {
-> +		unsigned int indirect_shadow_pages;
-> +
-> +		spin_lock(&vcpu->kvm->mmu_lock);
-> +		indirect_shadow_pages = vcpu->kvm->arch.indirect_shadow_pages;
-> +		spin_unlock(&vcpu->kvm->mmu_lock);
-> +
-> +		if (indirect_shadow_pages)
-> +			kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-> +
->  		return true;
->  	}
-> 
-> -	return false;
-> +	kvm_mmu_unprotect_page(vcpu->kvm, gfn);
-> +
-> +	/* If the target gfn is used as page table, the fault can
-> +	 * not be avoided by unprotecting shadow page and it will
-> +	 * be reported to userspace.
-> +	 */
-> +	return !is_gfn_used_as_pt(vcpu, gfn);
->  }
-> 
->  static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
-> 
-> 
-> You can see we need to record more things in the vcpu struct (bool vs. gfn_t [4])
-> and my patch can fold is_gfn_used_as_pt into a existed function FNAME(is_self_change_mapping).
-> 
-> Hmm?
+> But then again it is just a personal preference.  In any case, if we stick
+> with the short names in your patch,  we probably still should make the
+> similar two documentation type chunks from my patch in yours.
 
-Yes, its not needed. But its not clear where target_gfn_is_pt is reset.
-Also please use a more descriptive name, such as
-"bool write_fault_to_shadow_pgtable".
+I took yours and Josh's advice here, so the names are now rcuoX/N,
+with the definitions of X and N in both the Kconfig entry and in
+Documentation/kernel-parameters.txt.
 
-Please use coding style which is easier for humans to parse, overall.
+							Thanx, Paul
+
+> Paul.
+> --
+> 
+> >
+> > Signed-off-by: Paul E. McKenney <paul.mckenney@linaro.org>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > Tested-by: Dietmar Eggemann <dietmar.eggemann@arm.com>
+> > ---
+> >  kernel/rcutree.c        |    7 ++++---
+> >  kernel/rcutree.h        |    1 +
+> >  kernel/rcutree_plugin.h |    5 +++--
+> >  3 files changed, 8 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index 8b110fa..4ec797e 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -64,7 +64,7 @@
+> >  static struct lock_class_key rcu_node_class[RCU_NUM_LVLS];
+> >  static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+> >
+> > -#define RCU_STATE_INITIALIZER(sname, cr) { \
+> > +#define RCU_STATE_INITIALIZER(sname, sabbr, cr) { \
+> >         .level = { &sname##_state.node[0] }, \
+> >         .call = cr, \
+> >         .fqs_state = RCU_GP_IDLE, \
+> > @@ -76,13 +76,14 @@ static struct lock_class_key rcu_fqs_class[RCU_NUM_LVLS];
+> >         .barrier_mutex = __MUTEX_INITIALIZER(sname##_state.barrier_mutex), \
+> >         .onoff_mutex = __MUTEX_INITIALIZER(sname##_state.onoff_mutex), \
+> >         .name = #sname, \
+> > +       .abbr = sabbr, \
+> >  }
+> >
+> >  struct rcu_state rcu_sched_state =
+> > -       RCU_STATE_INITIALIZER(rcu_sched, call_rcu_sched);
+> > +       RCU_STATE_INITIALIZER(rcu_sched, 's', call_rcu_sched);
+> >  DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
+> >
+> > -struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, call_rcu_bh);
+> > +struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh, 'b', call_rcu_bh);
+> >  DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
+> >
+> >  static struct rcu_state *rcu_state;
+> > diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+> > index ef26eab..c865117 100644
+> > --- a/kernel/rcutree.h
+> > +++ b/kernel/rcutree.h
+> > @@ -452,6 +452,7 @@ struct rcu_state {
+> >         unsigned long gp_max;                   /* Maximum GP duration in */
+> >                                                 /*  jiffies. */
+> >         char *name;                             /* Name of structure. */
+> > +       char abbr;                              /* Abbreviated name. */
+> >         struct list_head flavors;               /* List of RCU flavors. */
+> >  };
+> >
+> > diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+> > index eb9b473..ab1bdde 100644
+> > --- a/kernel/rcutree_plugin.h
+> > +++ b/kernel/rcutree_plugin.h
+> > @@ -111,7 +111,7 @@ static void __init rcu_bootup_announce_oddness(void)
+> >  #ifdef CONFIG_TREE_PREEMPT_RCU
+> >
+> >  struct rcu_state rcu_preempt_state =
+> > -       RCU_STATE_INITIALIZER(rcu_preempt, call_rcu);
+> > +       RCU_STATE_INITIALIZER(rcu_preempt, 'p', call_rcu);
+> >  DEFINE_PER_CPU(struct rcu_data, rcu_preempt_data);
+> >  static struct rcu_state *rcu_state = &rcu_preempt_state;
+> >
+> > @@ -2510,7 +2510,8 @@ static void __init rcu_spawn_nocb_kthreads(struct rcu_state *rsp)
+> >                 return;
+> >         for_each_cpu(cpu, rcu_nocb_mask) {
+> >                 rdp = per_cpu_ptr(rsp->rda, cpu);
+> > -               t = kthread_run(rcu_nocb_kthread, rdp, "rcuo%d", cpu);
+> > +               t = kthread_run(rcu_nocb_kthread, rdp,
+> > +                               "rcuo%d%c", cpu, rsp->abbr);
+> >                 BUG_ON(IS_ERR(t));
+> >                 ACCESS_ONCE(rdp->nocb_kthread) = t;
+> >         }
+> > --
+> > 1.7.8
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
