@@ -1,70 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab3AGRN5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 12:13:57 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:59724 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753141Ab3AGRN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 12:13:56 -0500
-From: Corey Bryant <coreyb@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, jmorris@namei.org, wad@chromium.org,
-        pmoore@redhat.com, otubo@linux.vnet.ibm.com
-Subject: [PATCH v2 1/3] seccomp: Add SECCOMP_RET_INFO return value
-Date: Mon,  7 Jan 2013 12:09:03 -0500
-Message-Id: <1357578545-2396-1-git-send-email-coreyb@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.11.7
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010717-5806-0000-0000-00001DE5F519
+	id S1754538Ab3AGRPk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 12:15:40 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:43753 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753040Ab3AGRPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 12:15:39 -0500
+Date: Mon, 7 Jan 2013 12:15:38 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Aaron Lu <aaron.lu@intel.com>
+cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
+        Shane Huang <shane.huang@amd.com>
+Subject: Re: [PATCH v6 2/4] block: add runtime pm helpers
+In-Reply-To: <1357461697-4219-3-git-send-email-aaron.lu@intel.com>
+Message-ID: <Pine.LNX.4.44L0.1301071214290.1658-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds a new return value to seccomp filters that causes an
-informational kernel message to be printed.  The message
-includes the system call number and architecture.
+On Sun, 6 Jan 2013, Aaron Lu wrote:
 
-This can be used to learn the system calls that a process
-is using.
+> From: Lin Ming <ming.m.lin@intel.com>
+> 
+> Add runtime pm helper functions:
+> 
+> void blk_pm_runtime_init(struct request_queue *q, struct device *dev)
+>   - Initialization function for drivers to call.
+> 
+> int blk_pre_runtime_suspend(struct request_queue *q)
+>   - If any requests are in the queue, return -EBUSY.
+>     Otherwise set q->rpm_status to RPM_SUSPENDING and return 0.
+> 
+> void blk_post_runtime_suspend(struct request_queue *q, int err)
+>   - If the suspend succeeded then set q->rpm_status to RPM_SUSPENDED.
+>     Otherwise set it to RPM_ACTIVE.
+> 
+> void blk_pre_runtime_resume(struct request_queue *q)
+>   - Set q->rpm_status to RPM_RESUMING.
+> 
+> void blk_post_runtime_resume(struct request_queue *q, int err)
+>   - If the resume succeeded then set q->rpm_status to RPM_ACTIVE
+>     and call __blk_run_queue.
+>     Otherwise set q->rpm_status to RPM_SUSPENDED.
+> 
+> [aaron.lu@intel.com: do not touch last busy in these helper functions]
+> Signed-off-by: Lin Ming <ming.m.lin@intel.com>
+> Signed-off-by: Aaron Lu <aaron.lu@intel.com>
 
-Signed-off-by: Corey Bryant <coreyb@linux.vnet.ibm.com>
----
-v2:
-  - Add arch to message (wad@chromium.org)
+> --- a/include/linux/blkdev.h
+> +++ b/include/linux/blkdev.h
+> @@ -19,6 +19,7 @@
+>  #include <linux/gfp.h>
+>  #include <linux/bsg.h>
+>  #include <linux/smp.h>
+> +#include <linux/pm_runtime.h>
 
- include/uapi/linux/seccomp.h | 1 +
- kernel/seccomp.c             | 6 ++++++
- 2 files changed, 7 insertions(+)
+This doesn't belong here.  Clients of the block layer don't need to 
+know about pm_runtime.h.  Move this #include to block/blk-core.c.
 
-diff --git a/include/uapi/linux/seccomp.h b/include/uapi/linux/seccomp.h
-index ac2dc9f..0086626 100644
---- a/include/uapi/linux/seccomp.h
-+++ b/include/uapi/linux/seccomp.h
-@@ -22,6 +22,7 @@
- #define SECCOMP_RET_TRAP	0x00030000U /* disallow and force a SIGSYS */
- #define SECCOMP_RET_ERRNO	0x00050000U /* returns an errno */
- #define SECCOMP_RET_TRACE	0x7ff00000U /* pass to a tracer or disallow */
-+#define SECCOMP_RET_INFO	0x7ff70000U /* print info message and allow */
- #define SECCOMP_RET_ALLOW	0x7fff0000U /* allow */
- 
- /* Masks for the return value sections. */
-diff --git a/kernel/seccomp.c b/kernel/seccomp.c
-index 5af44b5..954bb40 100644
---- a/kernel/seccomp.c
-+++ b/kernel/seccomp.c
-@@ -433,6 +433,12 @@ int __secure_computing(int this_syscall)
- 				goto skip;  /* Explicit request to skip. */
- 
- 			return 0;
-+		case SECCOMP_RET_INFO:
-+			if (printk_ratelimit())
-+				pr_info("seccomp: syscall=%d, arch=0x%X\n",
-+					this_syscall,
-+					syscall_get_arch(current, regs));
-+			return 0;
- 		case SECCOMP_RET_ALLOW:
- 			return 0;
- 		case SECCOMP_RET_KILL:
--- 
-1.7.11.7
+Alan Stern
+
 
