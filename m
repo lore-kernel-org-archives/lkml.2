@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab3AGNHB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 08:07:01 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:58047 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753912Ab3AGNHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 08:07:00 -0500
-Date: Mon, 7 Jan 2013 05:06:32 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Li Zhong <zhong@linux.vnet.ibm.com>
-Subject: Re: [ANNOUNCE] 3.7-nohz1
-Message-ID: <20130107130632.GI19783@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1356028391-14427-1-git-send-email-fweisbec@gmail.com>
- <1356057332.5896.81.camel@gandalf.local.home>
- <CAFTL4hy_k8rWg5EAFnh-owey7NJCQbK+ULrkNrSjgdynzEseTw@mail.gmail.com>
- <20121230035638.GM2542@linux.vnet.ibm.com>
- <CAFTL4hyhP0n89NqZe5vNb19E8HJsa779yQG7FGdddfq_eVrpMw@mail.gmail.com>
+	id S1754574Ab3AGNJA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 08:09:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64469 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753912Ab3AGNI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 08:08:59 -0500
+Date: Mon, 7 Jan 2013 14:08:40 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: Re: [PATCH v4 14/18] perf tools: add new mem command for memory
+ access profiling
+Message-ID: <20130107130840.GD963@krava.brq.redhat.com>
+References: <1356018108-6081-1-git-send-email-eranian@google.com>
+ <1356018108-6081-15-git-send-email-eranian@google.com>
+ <20130102141601.GD931@krava.brq.redhat.com>
+ <CABPqkBSwvhKyyYWb+EAWmoVDLscNMydfxpAtLTFcZ8622Ydt7w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAFTL4hyhP0n89NqZe5vNb19E8HJsa779yQG7FGdddfq_eVrpMw@mail.gmail.com>
+In-Reply-To: <CABPqkBSwvhKyyYWb+EAWmoVDLscNMydfxpAtLTFcZ8622Ydt7w@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010713-7606-0000-0000-00000735D380
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 05, 2013 at 12:42:53AM +0100, Frederic Weisbecker wrote:
-> 2012/12/30 Paul E. McKenney <paulmck@linux.vnet.ibm.com>:
-> > On Mon, Dec 24, 2012 at 12:43:25AM +0100, Frederic Weisbecker wrote:
-> >> 2012/12/21 Steven Rostedt <rostedt@goodmis.org>:
-> >> > On Thu, 2012-12-20 at 19:32 +0100, Frederic Weisbecker wrote:
-> >> >> Let's imagine you have 4 CPUs. We keep the CPU 0 to offline RCU callbacks there and to
-> >> >> handle the timekeeping. We set the rest as full dynticks. So you need the following kernel
-> >> >> parameters:
-> >> >>
-> >> >>       rcu_nocbs=1-3 full_nohz=1-3
-> >> >>
-> >> >> (Note rcu_nocbs value must always be the same as full_nohz).
-> >> >
-> >> > Why? You can't have: rcu_nocbs=1-4 full_nohz=1-3
+On Mon, Jan 07, 2013 at 02:04:58PM +0100, Stephane Eranian wrote:
+> On Wed, Jan 2, 2013 at 3:16 PM, Jiri Olsa <jolsa@redhat.com> wrote:
+> > On Thu, Dec 20, 2012 at 04:41:44PM +0100, Stephane Eranian wrote:
+> >> This new command is a wrapper on top of perf record and
+> >> perf report to make it easier to configure for memory
+> >> access profiling.
 > >>
-> >> That should be allowed.
+> >> To record loads:
+> >> $ perf mem -t load rec .....
 > >>
-> >> >   or: rcu_nocbs=1-3 full_nohz=1-4 ?
+> >> To record stores:
+> >> $ perf mem -t store rec .....
 > >>
-> >> But that not.
-> >>
-> >> You need to have: rcu_nocbs & full_nohz == full_nohz. This is because
-> >> the tick is not there to maintain the local RCU callbacks anymore. So
-> >> this must be offloaded to the rcu_nocb threads.
-> >>
-> >> I just have a doubt with rcu_nocb. Do we still need the tick to
-> >> complete the grace period for local rcu callbacks? I need to discuss
-> >> that with Paul.
+> >> To get the report:
+> >> $ perf mem -t load rep
 > >
-> > The tick is only needed if rcu_needs_cpu() returns false.  Of course,
-> > this means that if you don't invoke rcu_needs_cpu() before returning to
-> > adaptive-idle usermode execution, you are correct that a full_nohz CPU
-> > would also have to be a rcu_nocbs CPU.
+> > I get following segfault occasionally:
 > >
-> > That said, I am getting close to having an rcu_needs_cpu() that only
-> > returns false if there are callbacks immediately ready to invoke, at
-> > least if RCU_FAST_NO_HZ=y.
-> 
-> Ok. Also when a CPU enqueues a callback and starts a grace period, the
-> tick polls on the grace period completion.
+> >   $ perf mem -t load rec ls
+> >   $ perf mem -t load rep --stdio
+> >     Failed to open /etc/ld.so.cache, continuing without symbols
+> >     Segmentation fault
+> >   $ gdb ./perf
+> >   GNU gdb (GDB) Fedora (7.4.50.20120120-52.fc17)
+> >   Copyright (C) 2012 Free Software Foundation, Inc.
+> >   License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> >   This is free software: you are free to change and redistribute it.
+> >   There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> >   and "show warranty" for details.
+> >   This GDB was configured as "x86_64-redhat-linux-gnu".
+> >   For bug reporting instructions, please see:
+> >   <http://www.gnu.org/software/gdb/bugs/>...
+> >   Reading symbols from /home/jolsa/kernel/tip-local/tools/perf/perf...done.
+> >   (gdb) r  mem -t load rep --stdio
+> >   Starting program: /home/jolsa/kernel/tip-local/tools/perf/perf mem -t load rep --stdio
+> >   [Thread debugging using libthread_db enabled]
+> >   Using host libthread_db library "/lib64/libthread_db.so.1".
+> >   Detaching after fork from child process 3130.
+> >   Failed to open /etc/ld.so.cache, continuing without symbols
+> >
+> Can't reproduce this problem on my 3.8.0-rc1 patch series kernel, but
+> then I am not
+> using the same distro as you. Is your bin/ls statically linked and stripped?
 
-If RCU_FAST_NO_HZ=n, then yes, this is the case, but only for !rcu_nocbs
-CPUs.
+[jolsa@dhcp-26-214 ~]$ file /bin/ls
+/bin/ls: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.32, stripped
+[jolsa@dhcp-26-214 ~]$ ldd /bin/ls
+/usr/bin/ldd: line 163: /lib/ld-linux.so.2: cannot execute binary file
+        linux-vdso.so.1 =>  (0x00007fff499ff000)
+        libselinux.so.1 => /lib64/libselinux.so.1 (0x00007f0eebdc1000)
+        librt.so.1 => /lib64/librt.so.1 (0x00007f0eebbb9000)
+        libcap.so.2 => /lib64/libcap.so.2 (0x00007f0eeb9b4000)
+        libacl.so.1 => /lib64/libacl.so.1 (0x00007f0eeb7ac000)
+        libc.so.6 => /lib64/libc.so.6 (0x00007f0eeb3f4000)
+        libdl.so.2 => /lib64/libdl.so.2 (0x00007f0eeb1ef000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f0eebff5000)
+        libpthread.so.0 => /lib64/libpthread.so.0 (0x00007f0eeafd3000)
+        libattr.so.1 => /lib64/libattr.so.1 (0x00007f0eeadcf000)
+[jolsa@dhcp-26-214 ~]$ cat /etc/fedora-release 
+Fedora release 16 (Verne)
 
->                                            How is it handled with
-> rcu_nocbs CPUs? Does rcu_needs_cpu() return false until the grace
-> period is completed? If so I still need to restart the local tick
-> whenever a new callback is enqueued.
+I planed to look on it if I dont hear from you ;-) I'll check and let you know
 
-Each rcu_nocbs CPU has a kthread, and that kthread is responsible for
-making sure that any needed grace periods move forward.  In mainline, this
-is done via CPU 0, which is required to be a !rcu_nocbs CPU.  In -rcu,
-the no-CBs kthreads communicate with the grace-period kthread via the
-rcu_node tree, so that if all CPUs are rcu_nocbs CPUs, rcu_needs_cpu()
-will always return false, even if RCU_FAST_NO_HZ=n.
-
-							Thanx, Paul
-
+jirka
