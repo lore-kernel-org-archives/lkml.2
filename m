@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab3AGP7c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 10:59:32 -0500
-Received: from mx1.fusionio.com ([66.114.96.30]:33139 "EHLO mx1.fusionio.com"
+	id S1753794Ab3AGQAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 11:00:46 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:35702 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab3AGP7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 10:59:30 -0500
-X-ASG-Debug-ID: 1357574369-03d6a567bb4f440001-xx1T2L
-X-Barracuda-Envelope-From: clmason@fusionio.com
-Date: Mon, 7 Jan 2013 10:59:25 -0500
-From: Chris Mason <chris.mason@fusionio.com>
-To: Ric Wheeler <rwheeler@redhat.com>
-CC: Keith Chew <keith.chew@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Chris Mason <clmason@fusionio.com>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-Subject: Re: data=guarded mode in ext3
-Message-ID: <20130107155925.GC30947@shiny>
-X-ASG-Orig-Subj: Re: data=guarded mode in ext3
-Mail-Followup-To: Chris Mason <chris.mason@fusionio.com>,
-	Ric Wheeler <rwheeler@redhat.com>, Keith Chew <keith.chew@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Chris Mason <clmason@fusionio.com>,
-	"linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>
-References: <CAKaWdxYi_RpjSAp9sL9oeM2i1sCR5foKpvV2bCHDrbM0Dj3DtA@mail.gmail.com>
- <50EAEDF0.4010609@redhat.com>
+	id S1753064Ab3AGQAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 11:00:44 -0500
+Date: Mon, 7 Jan 2013 17:00:42 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v7u1 14/31] x86, boot: move checking of cmd_line_ptr out
+ of common path
+Message-ID: <20130107160042.GG29449@x1.alien8.de>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-15-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <50EAEDF0.4010609@redhat.com>
-User-Agent: Mutt/1.5.21 (2011-07-01)
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1357574369
-X-Barracuda-Encrypted: AES128-SHA
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
-X-Barracuda-Spam-Score: -2.02
-X-Barracuda-Spam-Status: No, SCORE=-2.02 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.119191
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1357260531-11115-15-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 08:46:56AM -0700, Ric Wheeler wrote:
-> On 12/03/2012 09:34 PM, Keith Chew wrote:
-> > Hi
-> >
-> > Just wanted to check if the "'Data=guarded' mode in Ext3" work started
-> > by Chris Mason, is still being considered for merging to the mainline
-> > kernel? Or has that effort stopped?
-> >
-> > Regards
-> > Keith
-> >
+On Thu, Jan 03, 2013 at 04:48:34PM -0800, Yinghai Lu wrote:
+> cmdline.c::__cmdline_find_option... are shared between 16-bit setup code
+> and 32/64 bit decompressor code.
 > 
-> Hi Keith,
+> for 32/64 only path via kexec, we should not check if ptr is less 1M.
+> as those cmdline could be put above 1M, or even 4G.
 > 
-> I think that Chris is spending pretty much all of his time on btrfs these days. 
-> I believe this work is pretty much abandoned at this point...
+> Move out accessible checking out of __cmdline_find_option()
+> So decompressor in misc.c can parse cmdline correctly.
 > 
-> What are you looking for specifically from this?
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  arch/x86/boot/boot.h    |   14 ++++++++++++--
+>  arch/x86/boot/cmdline.c |    8 ++++----
+>  2 files changed, 16 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+> index 18997e5..7fadf80 100644
+> --- a/arch/x86/boot/boot.h
+> +++ b/arch/x86/boot/boot.h
+> @@ -289,12 +289,22 @@ int __cmdline_find_option(u32 cmdline_ptr, const char *option, char *buffer, int
+>  int __cmdline_find_option_bool(u32 cmdline_ptr, const char *option);
+>  static inline int cmdline_find_option(const char *option, char *buffer, int bufsize)
+>  {
+> -	return __cmdline_find_option(boot_params.hdr.cmd_line_ptr, option, buffer, bufsize);
+> +	u32 cmd_line_ptr = boot_params.hdr.cmd_line_ptr;
 
-Ric has it right, the change was big enough that I didn't think it was
-worth the risk of changing how ext3 works.  Most people are going to
-want ext4 anyway for a lot of reasons, so it made sense to focus bigger
-changes in the ext4 code base.
+This check could very well use a comment for why we're checking it to be
+under 1Mb, no matter that the original code didn't have it.
 
--chris
+> +	if (cmd_line_ptr >= 0x100000)
+> +		return -1;      /* inaccessible */
+> +
+> +	return __cmdline_find_option(cmd_line_ptr, option, buffer, bufsize);
+>  }
+
+[ … ]
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
