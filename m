@@ -1,155 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009Ab3AGLSL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 06:18:11 -0500
-Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:8553 "EHLO
-	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751626Ab3AGLSI (ORCPT
+	id S1753971Ab3AGLW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 06:22:26 -0500
+Received: from mail-we0-f177.google.com ([74.125.82.177]:34368 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751626Ab3AGLWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 06:18:08 -0500
-X-IronPort-AV: E=Sophos;i="4.84,423,1355094000"; 
-   d="scan'208";a="188710964"
-Date: Mon, 7 Jan 2013 12:18:05 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@hadrien
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, kernel-janitors@vger.kernel.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: Re: [PATCH 1/2] drivers/media/platform/soc_camera/pxa_camera.c:
- reposition free_irq to avoid access to invalid data
-In-Reply-To: <Pine.LNX.4.64.1301071111420.23972@axis700.grange>
-Message-ID: <alpine.DEB.2.02.1301071214150.1908@hadrien>
-References: <1357552816-6046-1-git-send-email-Julia.Lawall@lip6.fr> <1357552816-6046-2-git-send-email-Julia.Lawall@lip6.fr> <Pine.LNX.4.64.1301071111420.23972@axis700.grange>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 7 Jan 2013 06:22:24 -0500
+From: Fabio Baltieri <fabio.baltieri@linaro.org>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Dan Williams <djbw@fb.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Fabio Baltieri <fabio.baltieri@linaro.org>
+Subject: [PATCH v2 00/16] various fixes and updates for ste_dma40
+Date: Mon,  7 Jan 2013 12:21:42 +0100
+Message-Id: <1357557718-15676-1-git-send-email-fabio.baltieri@linaro.org>
+X-Mailer: git-send-email 1.7.12.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jan 2013, Guennadi Liakhovetski wrote:
+Hi all,
 
-> (adding Robert to CC)
->
-> Hi Julia
->
-> Thanks for the patch.
->
-> On Mon, 7 Jan 2013, Julia Lawall wrote:
->
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > The data referenced by an interrupt handler should not be freed before the
-> > interrupt is ended.  The handler is pxa_camera_irq.  This handler may call
-> > pxa_dma_start_channels, which references the channels that are freed on the
-> > lines before the call to free_irq.
->
-> I don't think any data is freed by pxa_free_dma(), it only disables DMA on
-> a certain channel.
+this series contains many fixes and updates for the ste_dma40 driver.
 
-OK, I seem to have been thrown off by the clearing fo the name field, but
-that doesn't seem to be very important.
+The first patches of the series were originally sent weeks ago but did not
+receive any feedback, so I'm also resending those, but I've rebased everything
+on top of v3.8-rc2 to avoid a (trivial) file rename conflict.
 
-> Theoretically there could be a different problem:
-> pxa_free_dma() deactivates DMA, whereas pxa_dma_start_channels() activates
-> it. But I think we're also protected against that: by the time
-> pxa_camera_remove() is called, and operation on the interface has been
-> stopped, client devices have been detached, pxa_camera_remove_device() has
-> been called, which has also stopped the interface clock. And with clock
-> stopped no interrupts can be generated. And the case of interrupt having
-> been generated before clk_disabled() and only delivered to the driver so
-> much later, that we're already unloading the module, seems really
-> impossible to me. Robert, you agree?
+Vinod, these should probably end up in the arm-soc tree so they can receive
+some testing from drivers using it.  Can I have your Acked-by for this?
 
-OK, thanks for the explanation.
+Thanks,
+Fabio
 
-> OTOH, it would be nice to convert also this driver to managed allocations,
-> which also would include devm_request(_threaded)_irq(), but that would
-> mean, that free_irq() would be called even later than now, also after
-> pxa_free_dma().
 
-OK, if it is safe to call free_irq much later, then I can propose a patch
-for that.
+Fabio Baltieri (7):
+  dmaengine: ste_dma40: add a done queue for completed descriptors
+  dmaengine: ste_dma40: add missing kernel-doc entry
+  dmaengine: ste_dma40: minor cosmetic fixes
+  dmaengine: ste_dma40: minor code readability fixes
+  dmaengine: ste_dma40: add software lli support
+  dmaengine: set_dma40: ignore spurious interrupts
+  dmaengine: set_dma40: balance clock in probe fail code
 
-> Speaking about managed allocations, those can be dangerous too: if you
-> request an IRQ before, say, remapping memory, or if you only use managed
-> IRQ requesting and ioremap() memory in your driver manually, that would be
-> wrong. But from a quick grep looks like most (all?) drivers get ir right -
-> first ioremap(), then request IRQ, but to be certain maybe coccinelle
-> could run a test for that too;-)
+Gerald Baeza (2):
+  dmaengine: ste_dma40: support fixed physical channel allocation
+  dmaengine: ste_dma40: physical channels number correction
 
-Sure.  Thanks for the suggestion!
+Narayanan (1):
+  dmaengine: ste_dma40: reset priority bit for logical channels
 
-julia
+Narayanan G (1):
+  dmaengine: ste_dma40: don't check for pm_runtime_suspended()
 
-> Thanks
-> Guennadi
->
-> > The semantic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> >
-> > // <smpl>
-> > @fn exists@
-> > expression list es;
-> > expression a,b;
-> > identifier f;
-> > @@
-> >
-> > if (...) {
-> >   ... when any
-> >   free_irq(a,b);
-> >   ... when any
-> >   f(es);
-> >   ... when any
-> >   return ...;
-> > }
-> >
-> > @@
-> > expression list fn.es;
-> > expression fn.a,fn.b;
-> > identifier fn.f;
-> > @@
-> >
-> > *f(es);
-> > ... when any
-> > *free_irq(a,b);
-> > // </smpl>
-> >
-> > Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-> >
-> > ---
-> > Not compiled.  I have not observed the problem in practice; the code just
-> > looks suspicious.
-> >
-> >  drivers/media/platform/soc_camera/pxa_camera.c |    2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/media/platform/soc_camera/pxa_camera.c b/drivers/media/platform/soc_camera/pxa_camera.c
-> > index f91f7bf..2a19aba 100644
-> > --- a/drivers/media/platform/soc_camera/pxa_camera.c
-> > +++ b/drivers/media/platform/soc_camera/pxa_camera.c
-> > @@ -1810,10 +1810,10 @@ static int pxa_camera_remove(struct platform_device *pdev)
-> >
-> >  	clk_put(pcdev->clk);
-> >
-> > +	free_irq(pcdev->irq, pcdev);
-> >  	pxa_free_dma(pcdev->dma_chans[0]);
-> >  	pxa_free_dma(pcdev->dma_chans[1]);
-> >  	pxa_free_dma(pcdev->dma_chans[2]);
-> > -	free_irq(pcdev->irq, pcdev);
-> >
-> >  	soc_camera_host_unregister(soc_host);
-> >
-> >
->
-> ---
-> Guennadi Liakhovetski, Ph.D.
-> Freelance Open-Source Software Developer
-> http://www.open-technology.de/
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Per Forlin (3):
+  dmaengine: ste_dma40: use writel_relaxed for lcxa
+  dmaengine: ste_dma40: set dma max seg size
+  dmaengine: ste_dma40: limit burst size to 16
+
+Rabin Vincent (1):
+  dmaengine: ste_dma40: don't allow high priority dest event lines
+
+Tong Liu (1):
+  dmaengine: ste_dma40: support more than 128 event lines
+
+ drivers/dma/ste_dma40.c                     | 489 +++++++++++++++++++++-------
+ drivers/dma/ste_dma40_ll.c                  |  29 +-
+ drivers/dma/ste_dma40_ll.h                  | 130 +++++++-
+ include/linux/platform_data/dma-ste-dma40.h |  13 +
+ 4 files changed, 518 insertions(+), 143 deletions(-)
+
+-- 
+1.7.12.1
+
