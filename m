@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab3AHN0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 08:26:49 -0500
-Received: from li42-95.members.linode.com ([209.123.162.95]:52766 "EHLO
+	id S1756357Ab3AHNbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 08:31:49 -0500
+Received: from li42-95.members.linode.com ([209.123.162.95]:51740 "EHLO
 	li42-95.members.linode.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756254Ab3AHN0r convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 08:26:47 -0500
-Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
-Mime-Version: 1.0 (Apple Message framework v1085)
-Content-Type: text/plain; charset=us-ascii
+	by vger.kernel.org with ESMTP id S1755827Ab3AHNbs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 08:31:48 -0500
 From: Pantelis Antoniou <panto@antoniou-consulting.com>
-In-Reply-To: <201301081212.29089.arnd@arndb.de>
-Date: Tue, 8 Jan 2013 15:26:36 +0200
-Cc: Lee Jones <lee.jones@linaro.org>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
-        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
-        David Gibson <david@gibson.dropbear.id.au>,
-        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
-        Alan Tull <atull@altera.com>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
-        Koen Kooi <koen@dominion.thruhere.net>,
+Cc: Tony Lindgren <tony@atomide.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Benoit Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Porter <mporter@ti.com>,
+        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
         Joel A Fernandes <agnel.joel@gmail.com>,
         Rob Clark <robdclark@gmail.com>,
         Jason Kridner <jkridner@beagleboard.org>,
         Matt Ranostay <mranostay@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <51A6DFCC-BBC8-475D-88C4-1B22186339C1@antoniou-consulting.com>
-References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com> <21E7B891-269B-422D-9038-381FAA15B59B@antoniou-consulting.com> <20130108104832.GE21994@gmail.com> <201301081212.29089.arnd@arndb.de>
-To: Arnd Bergmann <arnd@arndb.de>
-X-Mailer: Apple Mail (2.1085)
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] omap: DT node Timer iteration fix
+Date: Tue,  8 Jan 2013 15:31:42 +0200
+Message-Id: <1357651902-21966-1-git-send-email-panto@antoniou-consulting.com>
+X-Mailer: git-send-email 1.7.12
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+The iterator correctly handles of_node_put() calls.
+Remove it before continue'ing the loop.
+Without this patch you get:
 
-On Jan 8, 2013, at 2:12 PM, Arnd Bergmann wrote:
+ERROR: Bad of_node_put() on /ocp/timer@44e31000!
+[<c001329c>] (unwind_backtrace+0x0/0xe0) from [<c03dd8f0>] (of_node_release+0x2c/0xa0)!
+[<c03dd8f0>] (of_node_release+0x2c/0xa0) from [<c03ddea0>] (of_find_matching_node_and_match+0x78/0x90)!
+[<c03ddea0>] (of_find_matching_node_and_match+0x78/0x90) from [<c06d349c>] (omap_get_timer_dt+0x78/0x90)!
+[<c06d349c>] (omap_get_timer_dt+0x78/0x90) from [<c06d3664>] (omap_dm_timer_init_one.clone.2+0x34/0x2bc)!
+[<c06d3664>] (omap_dm_timer_init_one.clone.2+0x34/0x2bc) from [<c06d3a2c>] (omap2_gptimer_clocksource_init.clone.4+0x24/0xa8)!
+[<c06d3a2c>] (omap2_gptimer_clocksource_init.clone.4+0x24/0xa8) from [<c06cca58>] (time_init+0x20/0x30)!
+[<c06cca58>] (time_init+0x20/0x30) from [<c06c9690>] (start_kernel+0x1a8/0x2fc)!
 
-> On Tuesday 08 January 2013, Lee Jones wrote:
->>> If there is not, there is no way to automatically load the overlays; you can always
->>> use the kernel command line, or have the a user space application to request the loading
->>> of a specific board's overlay.
->> 
->> Unfortunately, there is no way to probe the UIBs. :(
-> 
-> I thought that some of the newer UIBs had it, just not the old ones.
-> As Pantelis says, we could at least detect the ones that have an EEPROM
-> on them, and use a command line option or device tree attribute for the others.
-> 
-> 	Arnd
+Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
+---
+ arch/arm/mach-omap2/timer.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-So I gather the new ones have an eeprom?
-
-Regards
-
--- Pantelis
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index 691aa67..b8ad6e6 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -165,15 +165,11 @@ static struct device_node * __init omap_get_timer_dt(struct of_device_id *match,
+ 	struct device_node *np;
+ 
+ 	for_each_matching_node(np, match) {
+-		if (!of_device_is_available(np)) {
+-			of_node_put(np);
++		if (!of_device_is_available(np))
+ 			continue;
+-		}
+ 
+-		if (property && !of_get_property(np, property, NULL)) {
+-			of_node_put(np);
++		if (property && !of_get_property(np, property, NULL))
+ 			continue;
+-		}
+ 
+ 		of_add_property(np, &device_disabled);
+ 		return np;
+-- 
+1.7.12
 
