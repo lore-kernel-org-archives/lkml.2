@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3AHXhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:37:46 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63541 "EHLO
+	id S1756819Ab3AHXhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:55 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63574 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755984Ab3AHXhk (ORCPT
+	with ESMTP id S1756322Ab3AHXhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:40 -0500
+	Tue, 8 Jan 2013 18:37:50 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Bart Westgeest <bart@elbrys.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+CC: =?UTF-8?q?Marcin=20Ko=C5=9Bcielnicki?= <koriakin@0x04.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 30/77] staging: usbip: bugfix for deadlock
-Date: Tue, 8 Jan 2013 18:35:09 -0500
-Message-ID: <1357688156-25387-31-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 34/77] usb: ftdi_sio: add PID for Propox ISPcable III
+Date: Tue, 8 Jan 2013 18:35:13 -0500
+Message-ID: <1357688156-25387-35-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bart Westgeest <bart@elbrys.com>
+From: Marcin Kościelnicki <koriakin@0x04.net>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,64 +33,40 @@ From: Bart Westgeest <bart@elbrys.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 438957f8d4a84daa7fa5be6978ad5897a2e9e5e5 upstream.
+commit 307369b0ca06b27b511b61714e335ddfccf19c4f upstream.
 
-Interrupts must be disabled prior to calling usb_hcd_unlink_urb_from_ep.
-If interrupts are not disabled, it can potentially lead to a deadlock.
-The deadlock is readily reproduceable on a slower (ARM based) device
-such as the TI Pandaboard.
-
-Signed-off-by: Bart Westgeest <bart@elbrys.com>
+Signed-off-by: Marcin Kościelnicki <koriakin@0x04.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/usbip/vhci_rx.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 1 +
+ drivers/usb/serial/ftdi_sio_ids.h | 1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/drivers/staging/usbip/vhci_rx.c b/drivers/staging/usbip/vhci_rx.c
-index a1ac1b8..b09c67a 100644
---- a/drivers/staging/usbip/vhci_rx.c
-+++ b/drivers/staging/usbip/vhci_rx.c
-@@ -69,6 +69,7 @@ static void vhci_recv_ret_submit(struct vhci_device *vdev,
- {
- 	struct usbip_device *ud = &vdev->ud;
- 	struct urb *urb;
-+	unsigned long flags;
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index e4c3da1..646cc53 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -739,6 +739,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ELSTER_UNICOM_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_JTAGCABLEII_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_ISPCABLEIII_PID) },
+ 	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FIC_VID, FIC_NEO1973_DEBUG_PID),
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index c4670e5..ce57c40 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -111,6 +111,7 @@
  
- 	spin_lock(&vdev->priv_lock);
+ /* Propox devices */
+ #define FTDI_PROPOX_JTAGCABLEII_PID	0xD738
++#define FTDI_PROPOX_ISPCABLEIII_PID	0xD739
  
-@@ -109,9 +110,9 @@ static void vhci_recv_ret_submit(struct vhci_device *vdev,
- 
- 	usbip_dbg_vhci_rx("now giveback urb %p\n", urb);
- 
--	spin_lock(&the_controller->lock);
-+	spin_lock_irqsave(&the_controller->lock, flags);
- 	usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
--	spin_unlock(&the_controller->lock);
-+	spin_unlock_irqrestore(&the_controller->lock, flags);
- 
- 	usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb, urb->status);
- 
-@@ -152,6 +153,7 @@ static void vhci_recv_ret_unlink(struct vhci_device *vdev,
- {
- 	struct vhci_unlink *unlink;
- 	struct urb *urb;
-+	unsigned long flags;
- 
- 	usbip_dump_header(pdu);
- 
-@@ -183,9 +185,9 @@ static void vhci_recv_ret_unlink(struct vhci_device *vdev,
- 		urb->status = pdu->u.ret_unlink.status;
- 		usbip_uinfo("%d\n", urb->status);
- 
--		spin_lock(&the_controller->lock);
-+		spin_lock_irqsave(&the_controller->lock, flags);
- 		usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
--		spin_unlock(&the_controller->lock);
-+		spin_unlock_irqrestore(&the_controller->lock, flags);
- 
- 		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb,
- 								urb->status);
+ /* Lenz LI-USB Computer Interface. */
+ #define FTDI_LENZ_LIUSB_PID	0xD780
 -- 
 1.7.12.1
 
