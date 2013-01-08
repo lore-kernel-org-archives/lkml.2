@@ -1,48 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756917Ab3AHTGp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 14:06:45 -0500
-Received: from moutng.kundenserver.de ([212.227.126.171]:53338 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab3AHTGo (ORCPT
+	id S1756975Ab3AHTHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 14:07:11 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:21540 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756641Ab3AHTHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 14:06:44 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Simon Horman <horms@verge.net.au>
-Subject: Re: [PATCH 01/17] ARM: shmobile: fix memory size for kota2_defconfig
-Date: Tue, 8 Jan 2013 19:06:32 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@infradead.org,
-        arm@kernel.org, linux-kernel@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-sh@vger.kernel.org
-References: <1349195816-2225-1-git-send-email-arnd@arndb.de> <201301071333.56733.arnd@arndb.de> <20130108001947.GE16982@verge.net.au>
-In-Reply-To: <20130108001947.GE16982@verge.net.au>
+	Tue, 8 Jan 2013 14:07:09 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 72.84.113.162
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX195Dxo+mHNP87GqwrbVxKHbJzYg1795ipQ=
+Date: Tue, 8 Jan 2013 14:06:58 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Joshua Coombs <josh.coombs@gmail.com>
+Cc: cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jgarzik@pobox.com,
+        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Allow Marvell SATA driver to work with
+ LEDS_TRIGGER_IDE_DISK
+Message-ID: <20130108190657.GW5075@titan.lakedaemon.net>
+References: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301081906.32685.arnd@arndb.de>
-X-Provags-ID: V02:K0:KBOm4/fQ3NKqw3X2SApGg78MDAqUvVcFORUXjtv5y+9
- BJwLxI6taBMfr3R1HKoTpLm1i9P7CZN5bOsb8ve5sOhDEUzE4z
- KFqJm4YInbBtx+wId6ixQYZ6GftubLgo/caZeutL6Z/N3XUz+n
- ioX7ApT4TWrNhoNkQbJ2qYrFSYjoFJ1cipM1twP9NaMkTs33kp
- 3We6oP9F44kCyY5R4J+eJoylMDyaJJVIvlkrzaNKnfqmp09Mrh
- EebyOdUZHSg+YeoOY40u1ghc/12pF5yWO8H4kmda4IYDltZMIf
- zhcpsrYoyVWZTIFbFsJVLIqvewQRsdHGJFCNtwCryRIBwbhw/c
- nPk0w9vn/60UthWGXJRA=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 January 2013, Simon Horman wrote:
-> > 
-> > Should we mark that patch for stable backports?
+On Tue, Jan 08, 2013 at 01:16:27PM -0500, Joshua Coombs wrote:
+> Add a call to the IDE LED Trigger within the Marvell SATA driver to allow
+> Marvell SoC devices to show SATA activity via GPIO connected LEDs.
 > 
-> I don't believe it warrants a stable backport as
-> the board appears to function well without the change.
+> Signed-off-by: Joshua Coombs <josh.coombs@gmail.com>
+> ---
+>  drivers/ata/sata_mv.c | 3 +++
+>  drivers/leds/Kconfig  | 3 +--
+>  2 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
+> index 68f4fb5..4aaf6f0 100644
+> --- a/drivers/ata/sata_mv.c
+> +++ b/drivers/ata/sata_mv.c
+> @@ -71,6 +71,7 @@
+>  #include <scsi/scsi_cmnd.h>
+>  #include <scsi/scsi_device.h>
+>  #include <linux/libata.h>
+> +#include <linux/leds.h>
+>  
+>  #define DRV_NAME	"sata_mv"
+>  #define DRV_VERSION	"1.28"
+> @@ -1156,6 +1157,8 @@ static void mv_start_edma(struct ata_port *ap, void __iomem *port_mmio,
+>  {
+>  	int want_ncq = (protocol == ATA_PROT_NCQ);
+>  
+> +	ledtrig_ide_activity();
+> +
+>  	if (pp->pp_flags & MV_PP_FLAG_EDMA_EN) {
+>  		int using_ncq = ((pp->pp_flags & MV_PP_FLAG_NCQ_EN) != 0);
+>  		if (want_ncq != using_ncq)
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index b58bc8a..d2071d0 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -496,10 +496,9 @@ config LEDS_TRIGGER_ONESHOT
+>  
+>  config LEDS_TRIGGER_IDE_DISK
+>  	bool "LED IDE Disk Trigger"
+> -	depends on IDE_GD_ATA
+>  	depends on LEDS_TRIGGERS
+>  	help
+> -	  This allows LEDs to be controlled by IDE disk activity.
+> +	  This allows LEDs to be controlled by IDE or SATA disk activity.
+>  	  If unsure, say Y.
+>  
+>  config LEDS_TRIGGER_HEARTBEAT
 
-Ok, fair enough. I was thinking of getting rid of the build warning in the older
-kernel, but it's probably not worth it if there is no functional impact.
 
-	Arnd
+Hmmm, I'm not sure about this.  Ideally, wouldn't all sata users want to
+have this option?  In which case, it should be changed to
+LEDS_TRIGGER_DISK_IO or similar.  However, this seems to be the first
+attempt at it:
+
+$ git grep ledtrig_ide_activity -- drivers/ata/*.c
+...nada...
+$ 
+
+At any rate, I'd like to see this patch extended to facilitate other
+sata drivers using it.  eg adjusting the naming more appropriately, and
+'depends on IDE_GD_ATA || ATA' or similar.  In it's current state, it
+should depend on IDE_GD_ATA || SATA_MV.
+
+thx,
+
+Jason.
