@@ -1,141 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab3AHX4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:56:25 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:53038 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755565Ab3AHX4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:56:19 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
-        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>, linux-kernel@vger.kernel.org,
-        lkundrak@v3.sk
-Subject: [PATCH] Bluetooth: btmrvl_sdio: look for sd8688 firmware in alternate place
-Date: Wed,  9 Jan 2013 00:56:01 +0100
-Message-Id: <1357689361-7969-2-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
+	id S1757265Ab3AHXzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:55:22 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:47853 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756706Ab3AHXzT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:55:19 -0500
+Subject: [PATCH 09/12] VMCI: routing implementation.
+To: linux-kernel@vger.kernel.org, georgezhang@vmware.com,
+        virtualization@lists.linux-foundation.org
+From: George Zhang <georgezhang@vmware.com>
+Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org
+Date: Tue, 08 Jan 2013 15:55:20 -0800
+Message-ID: <20130108235512.2698.4698.stgit@promb-2n-dhcp175.eng.vmware.com>
+In-Reply-To: <20130108234751.2698.66606.stgit@promb-2n-dhcp175.eng.vmware.com>
+References: <20130108234751.2698.66606.stgit@promb-2n-dhcp175.eng.vmware.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-linux-firmware ships the sd8688* firmware images that are shared with
-libertas_sdio WiFi driver under libertas/. libertas_sdio looks in both places
-and so should we.
+VMCI routing code is responsible for routing between various hosts/guests as well as
+routing in nested scenarios.
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+Signed-off-by: George Zhang <georgezhang@vmware.com>
+Acked-by: Andy king <acking@vmware.com>
+Acked-by: Dmitry Torokhov <dtor@vmware.com>
 ---
- drivers/bluetooth/btmrvl_sdio.c |   24 ++++++++++++++++++++++--
- drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
- 2 files changed, 26 insertions(+), 4 deletions(-)
+ drivers/misc/vmw_vmci/vmci_route.c |  226 ++++++++++++++++++++++++++++++++++++
+ drivers/misc/vmw_vmci/vmci_route.h |   30 +++++
+ 2 files changed, 256 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.c
+ create mode 100644 drivers/misc/vmw_vmci/vmci_route.h
 
-diff --git a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
-index 9959d4c..494f921 100644
---- a/drivers/bluetooth/btmrvl_sdio.c
-+++ b/drivers/bluetooth/btmrvl_sdio.c
-@@ -83,22 +83,28 @@ static const struct btmrvl_sdio_card_reg btmrvl_reg_87xx = {
- };
- 
- static const struct btmrvl_sdio_device btmrvl_sdio_sd8688 = {
--	.helper		= "sd8688_helper.bin",
--	.firmware	= "sd8688.bin",
-+	.helper		= "libertas/sd8688_helper.bin",
-+	.helper2	= "sd8688_helper.bin",
-+	.firmware	= "libertas/sd8688.bin",
-+	.firmware2	= "sd8688.bin",
- 	.reg		= &btmrvl_reg_8688,
- 	.sd_blksz_fw_dl	= 64,
- };
- 
- static const struct btmrvl_sdio_device btmrvl_sdio_sd8787 = {
- 	.helper		= NULL,
-+	.helper2	= NULL,
- 	.firmware	= "mrvl/sd8787_uapsta.bin",
-+	.firmware2	= NULL,
- 	.reg		= &btmrvl_reg_87xx,
- 	.sd_blksz_fw_dl	= 256,
- };
- 
- static const struct btmrvl_sdio_device btmrvl_sdio_sd8797 = {
- 	.helper		= NULL,
-+	.helper2	= NULL,
- 	.firmware	= "mrvl/sd8797_uapsta.bin",
-+	.firmware2	= NULL,
- 	.reg		= &btmrvl_reg_87xx,
- 	.sd_blksz_fw_dl	= 256,
- };
-@@ -260,6 +266,11 @@ static int btmrvl_sdio_download_helper(struct btmrvl_sdio_card *card)
- 
- 	ret = request_firmware(&fw_helper, card->helper,
- 						&card->func->dev);
-+	if (ret < 0 && card->helper2) {
-+		release_firmware(fw_helper);
-+		ret = request_firmware(&fw_helper, card->helper2,
-+							&card->func->dev);
+diff --git a/drivers/misc/vmw_vmci/vmci_route.c b/drivers/misc/vmw_vmci/vmci_route.c
+new file mode 100644
+index 0000000..9109065
+--- /dev/null
++++ b/drivers/misc/vmw_vmci/vmci_route.c
+@@ -0,0 +1,226 @@
++/*
++ * VMware VMCI Driver
++ *
++ * Copyright (C) 2012 VMware, Inc. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation version 2 and no later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
++ */
++
++#include <linux/vmw_vmci_defs.h>
++#include <linux/vmw_vmci_api.h>
++
++#include "vmci_context.h"
++#include "vmci_driver.h"
++#include "vmci_route.h"
++
++/*
++ * Make a routing decision for the given source and destination handles.
++ * This will try to determine the route using the handles and the available
++ * devices.  Will set the source context if it is invalid.
++ */
++int vmci_route(struct vmci_handle *src,
++	       const struct vmci_handle *dst,
++	       bool from_guest,
++	       enum vmci_route *route)
++{
++	bool has_host_device = vmci_host_code_active();
++	bool has_guest_device = vmci_guest_code_active();
++
++	*route = VMCI_ROUTE_NONE;
++
++	/*
++	 * "from_guest" is only ever set to true by
++	 * IOCTL_VMCI_DATAGRAM_SEND (or by the vmkernel equivalent),
++	 * which comes from the VMX, so we know it is coming from a
++	 * guest.
++	 *
++	 * To avoid inconsistencies, test these once.  We will test
++	 * them again when we do the actual send to ensure that we do
++	 * not touch a non-existent device.
++	 */
++
++	/* Must have a valid destination context. */
++	if (VMCI_INVALID_ID == dst->context)
++		return VMCI_ERROR_INVALID_ARGS;
++
++	/* Anywhere to hypervisor. */
++	if (VMCI_HYPERVISOR_CONTEXT_ID == dst->context) {
++
++		/*
++		 * If this message already came from a guest then we
++		 * cannot send it to the hypervisor.  It must come
++		 * from a local client.
++		 */
++		if (from_guest)
++			return VMCI_ERROR_DST_UNREACHABLE;
++
++		/*
++		 * We must be acting as a guest in order to send to
++		 * the hypervisor.
++		 */
++		if (!has_guest_device)
++			return VMCI_ERROR_DEVICE_NOT_FOUND;
++
++		/* And we cannot send if the source is the host context. */
++		if (VMCI_HOST_CONTEXT_ID == src->context)
++			return VMCI_ERROR_INVALID_ARGS;
++
++		/*
++		 * If the client passed the ANON source handle then
++		 * respect it (both context and resource are invalid).
++		 * However, if they passed only an invalid context,
++		 * then they probably mean ANY, in which case we
++		 * should set the real context here before passing it
++		 * down.
++		 */
++		if (VMCI_INVALID_ID == src->context &&
++		    VMCI_INVALID_ID != src->resource)
++			src->context = vmci_get_context_id();
++
++		/* Send from local client down to the hypervisor. */
++		*route = VMCI_ROUTE_AS_GUEST;
++		return VMCI_SUCCESS;
 +	}
- 	if ((ret < 0) || !fw_helper) {
- 		BT_ERR("request_firmware(helper) failed, error code = %d",
- 									ret);
-@@ -360,6 +371,11 @@ static int btmrvl_sdio_download_fw_w_helper(struct btmrvl_sdio_card *card)
- 
- 	ret = request_firmware(&fw_firmware, card->firmware,
- 							&card->func->dev);
-+	if (ret < 0 && card->firmware2) {
-+		release_firmware(fw_firmware);
-+		ret = request_firmware(&fw_firmware, card->firmware2,
-+							&card->func->dev);
++
++	/* Anywhere to local client on host. */
++	if (VMCI_HOST_CONTEXT_ID == dst->context) {
++		/*
++		 * If it is not from a guest but we are acting as a
++		 * guest, then we need to send it down to the host.
++		 * Note that if we are also acting as a host then this
++		 * will prevent us from sending from local client to
++		 * local client, but we accept that restriction as a
++		 * way to remove any ambiguity from the host context.
++		 */
++		if (src->context == VMCI_HYPERVISOR_CONTEXT_ID) {
++			/*
++			 * If the hypervisor is the source, this is
++			 * host local communication. The hypervisor
++			 * may send vmci event datagrams to the host
++			 * itself, but it will never send datagrams to
++			 * an "outer host" through the guest device.
++			 */
++
++			if (has_host_device) {
++				*route = VMCI_ROUTE_AS_HOST;
++				return VMCI_SUCCESS;
++			} else {
++				return VMCI_ERROR_DEVICE_NOT_FOUND;
++			}
++		}
++
++		if (!from_guest && has_guest_device) {
++			/* If no source context then use the current. */
++			if (VMCI_INVALID_ID == src->context)
++				src->context = vmci_get_context_id();
++
++			/* Send it from local client down to the host. */
++			*route = VMCI_ROUTE_AS_GUEST;
++			return VMCI_SUCCESS;
++		}
++
++		/*
++		 * Otherwise we already received it from a guest and
++		 * it is destined for a local client on this host, or
++		 * it is from another local client on this host.  We
++		 * must be acting as a host to service it.
++		 */
++		if (!has_host_device)
++			return VMCI_ERROR_DEVICE_NOT_FOUND;
++
++		if (VMCI_INVALID_ID == src->context) {
++			/*
++			 * If it came from a guest then it must have a
++			 * valid context.  Otherwise we can use the
++			 * host context.
++			 */
++			if (from_guest)
++				return VMCI_ERROR_INVALID_ARGS;
++
++			src->context = VMCI_HOST_CONTEXT_ID;
++		}
++
++		/* Route to local client. */
++		*route = VMCI_ROUTE_AS_HOST;
++		return VMCI_SUCCESS;
 +	}
- 	if ((ret < 0) || !fw_firmware) {
- 		BT_ERR("request_firmware(firmware) failed, error code = %d",
- 									ret);
-@@ -970,7 +986,9 @@ static int btmrvl_sdio_probe(struct sdio_func *func,
- 	if (id->driver_data) {
- 		struct btmrvl_sdio_device *data = (void *) id->driver_data;
- 		card->helper = data->helper;
-+		card->helper2 = data->helper2;
- 		card->firmware = data->firmware;
-+		card->firmware2 = data->firmware2;
- 		card->reg = data->reg;
- 		card->sd_blksz_fw_dl = data->sd_blksz_fw_dl;
- 	}
-@@ -1186,6 +1204,8 @@ MODULE_DESCRIPTION("Marvell BT-over-SDIO driver ver " VERSION);
- MODULE_VERSION(VERSION);
- MODULE_LICENSE("GPL v2");
- MODULE_FIRMWARE("sd8688_helper.bin");
-+MODULE_FIRMWARE("libertas/sd8688_helper.bin");
- MODULE_FIRMWARE("sd8688.bin");
-+MODULE_FIRMWARE("libertas/sd8688.bin");
- MODULE_FIRMWARE("mrvl/sd8787_uapsta.bin");
- MODULE_FIRMWARE("mrvl/sd8797_uapsta.bin");
-diff --git a/drivers/bluetooth/btmrvl_sdio.h b/drivers/bluetooth/btmrvl_sdio.h
-index 43d35a6..4a5a019 100644
---- a/drivers/bluetooth/btmrvl_sdio.h
-+++ b/drivers/bluetooth/btmrvl_sdio.h
-@@ -84,7 +84,9 @@ struct btmrvl_sdio_card {
- 	struct sdio_func *func;
- 	u32 ioport;
- 	const char *helper;
-+	const char *helper2;
- 	const char *firmware;
-+	const char *firmware2;
- 	const struct btmrvl_sdio_card_reg *reg;
- 	u16 sd_blksz_fw_dl;
- 	u8 rx_unit;
-@@ -92,8 +94,8 @@ struct btmrvl_sdio_card {
- };
- 
- struct btmrvl_sdio_device {
--	const char *helper;
--	const char *firmware;
-+	const char *helper, *helper2;
-+	const char *firmware, *firmware2;
- 	const struct btmrvl_sdio_card_reg *reg;
- 	u16 sd_blksz_fw_dl;
- };
--- 
-1.7.1
++
++	/*
++	 * If we are acting as a host then this might be destined for
++	 * a guest.
++	 */
++	if (has_host_device) {
++		/* It will have a context if it is meant for a guest. */
++		if (vmci_ctx_exists(dst->context)) {
++			if (VMCI_INVALID_ID == src->context) {
++				/*
++				 * If it came from a guest then it
++				 * must have a valid context.
++				 * Otherwise we can use the host
++				 * context.
++				 */
++
++				if (from_guest)
++					return VMCI_ERROR_INVALID_ARGS;
++
++				src->context = VMCI_HOST_CONTEXT_ID;
++			} else if (VMCI_CONTEXT_IS_VM(src->context) &&
++				   src->context != dst->context) {
++				/*
++				 * VM to VM communication is not
++				 * allowed. Since we catch all
++				 * communication destined for the host
++				 * above, this must be destined for a
++				 * VM since there is a valid context.
++				 */
++
++				return VMCI_ERROR_DST_UNREACHABLE;
++			}
++
++			/* Pass it up to the guest. */
++			*route = VMCI_ROUTE_AS_HOST;
++			return VMCI_SUCCESS;
++		} else if (!has_guest_device) {
++			/*
++			 * The host is attempting to reach a CID
++			 * without an active context, and we can't
++			 * send it down, since we have no guest
++			 * device.
++			 */
++
++			return VMCI_ERROR_DST_UNREACHABLE;
++		}
++	}
++
++	/*
++	 * We must be a guest trying to send to another guest, which means
++	 * we need to send it down to the host. We do not filter out VM to
++	 * VM communication here, since we want to be able to use the guest
++	 * driver on older versions that do support VM to VM communication.
++	 */
++	if (!has_guest_device) {
++		/*
++		 * Ending up here means we have neither guest nor host
++		 * device.
++		 */
++		return VMCI_ERROR_DEVICE_NOT_FOUND;
++	}
++
++	/* If no source context then use the current context. */
++	if (VMCI_INVALID_ID == src->context)
++		src->context = vmci_get_context_id();
++
++	/*
++	 * Send it from local client down to the host, which will
++	 * route it to the other guest for us.
++	 */
++	*route = VMCI_ROUTE_AS_GUEST;
++	return VMCI_SUCCESS;
++}
+diff --git a/drivers/misc/vmw_vmci/vmci_route.h b/drivers/misc/vmw_vmci/vmci_route.h
+new file mode 100644
+index 0000000..3b30e82
+--- /dev/null
++++ b/drivers/misc/vmw_vmci/vmci_route.h
+@@ -0,0 +1,30 @@
++/*
++ * VMware VMCI Driver
++ *
++ * Copyright (C) 2012 VMware, Inc. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation version 2 and no later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
++ */
++
++#ifndef _VMCI_ROUTE_H_
++#define _VMCI_ROUTE_H_
++
++#include <linux/vmw_vmci_defs.h>
++
++enum vmci_route {
++	VMCI_ROUTE_NONE,
++	VMCI_ROUTE_AS_HOST,
++	VMCI_ROUTE_AS_GUEST,
++};
++
++int vmci_route(struct vmci_handle *src, const struct vmci_handle *dst,
++	       bool from_guest, enum vmci_route *route);
++
++#endif /* _VMCI_ROUTE_H_ */
 
