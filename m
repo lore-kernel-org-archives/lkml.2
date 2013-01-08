@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756837Ab3AHRpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 12:45:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:17809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756485Ab3AHRpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 12:45:43 -0500
-Date: Tue, 8 Jan 2013 18:44:47 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/7] uprobes: Fix utask->xol_vaddr leak in pre_ssout()
-Message-ID: <20130108174447.GA887@redhat.com>
-References: <20121231175150.GA32066@redhat.com> <20121231175226.GA32108@redhat.com> <20130108121328.GH1325@linux.vnet.ibm.com>
+	id S1756845Ab3AHRu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 12:50:29 -0500
+Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:54045 "EHLO nsa.gov"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756485Ab3AHRu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 12:50:27 -0500
+X-TM-IMSS-Message-ID: <9e841371000fc41c@nsa.gov>
+Message-ID: <50EC5BCD.9000908@tycho.nsa.gov>
+Date: Tue, 08 Jan 2013 12:47:57 -0500
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Organization: National Security Agency
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130108121328.GH1325@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Casey Schaufler <casey@schaufler-ca.com>
+CC: James Morris <jmorris@namei.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+References: <50EB7C50.3070605@schaufler-ca.com>
+In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08, Srikar Dronamraju wrote:
+On 01/07/2013 08:54 PM, Casey Schaufler wrote:
+> Subject: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
 >
-> * Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:26]:
+> Change the infrastructure for Linux Security Modules (LSM)s
+> from a single vector of hook handlers to a list based method
+> for handling multiple concurrent modules.
 >
-> > pre_ssout() should do xol_free_insn_slot() if arch_uprobe_pre_xol()
-> > fails, otherwise nobody will free the allocated slot.
-> >
-> > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> A level of indirection has been introduced in the handling of
+> security blobs. LSMs no longer access ->security fields directly,
+> instead they use an abstraction provided by lsm_[gs]et field
+> functions.
 >
-> Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+> The XFRM hooks are only used by SELinux and it is not clear
+> that they can be shared. The First LSM that registers using
+> those hooks gets to use them. Any subsequent LSM that uses
+> those hooks is denied registration.
+>
+> Secids have not been made shareable. Only one LSM that uses
+> secids (SELinux and Smack) can be used at a time. The first
+> to register wins.
+>
+> The "security=" boot option takes a comma separated list of
+> LSMs, registering them in the order presented. The LSM hooks
+> will be executed in the order registered. Hooks that return
+> errors are not short circuited. All hooks are called even
+> if one of the LSM hooks fails. The result returned will be
+> that of the last LSM hook that failed.
+>
+> Some hooks don't fit that model. setprocattr, getprocattr,
+> and a few others are special cased. All behavior from
+> security/capability.c has been moved into the hook handling.
+> The security/commoncap functions used to get called from
+> the LSM specific code. The handling of the capability
+> functions has been moved out of the LSMs and into the
+> hook handling.
+>
+> The /proc/*/attr interfaces are given to one LSM. This
+> can be done by setting CONFIG_SECURITY_PRESENT. Additional
+> interfaces have been created in /proc/*/attr so that
+> each LSM has its own named interfaces.
+>
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
 
-Thanks!
+Have you run any benchmarks, particularly to compare performance 
+overhead in the simple case of a single LSM?
 
-> (one nit below)
-> ...
-> > @@ -1316,7 +1317,13 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
-> >  	utask->xol_vaddr = xol_vaddr;
-> >  	utask->vaddr = bp_vaddr;
-> >
-> > -	return arch_uprobe_pre_xol(&uprobe->arch, regs);
-> > +	err = arch_uprobe_pre_xol(&uprobe->arch, regs);
-> > +	if (unlikely(err)) {
-> > +		xol_free_insn_slot(current);
-> > +		return err;
-> > +	}
-> > +
-> > +	return 0;
-> >  }
->
-> Nit: we could reduce a line or two with
->
-> 	err = arch_uprobe_pre_xol(&uprobe->arch, regs);
-> 	if (unlikely(err))
-> 		xol_free_insn_slot(current);
->
-> 	return err;
+IIRC, the AppArmor devs indicated that they plan to start using secids, 
+which would mean that it would not be possible to stack AppArmor with 
+Smack or SELinux using this mechanism.  So eventually that would have to 
+be addressed in order for this to even support the AppArmor+Smack or 
+AppArmor+SELinux use cases.
 
-Yes, but this is also preparation for the next patch which adds more
-code after arch_uprobe_pre_xol() == 0.
-
-Oleg.
 
