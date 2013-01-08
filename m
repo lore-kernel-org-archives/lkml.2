@@ -1,152 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab3AHGiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 01:38:46 -0500
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:41178 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab3AHGio (ORCPT
+	id S1752551Ab3AHGkf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 01:40:35 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:39428 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab3AHGkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 01:38:44 -0500
-Message-ID: <50EBBEEC.2060100@linux.vnet.ibm.com>
-Date: Tue, 08 Jan 2013 14:38:36 +0800
-From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 8 Jan 2013 01:40:32 -0500
+X-Greylist: delayed 341 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jan 2013 01:40:31 EST
+Date: Tue, 8 Jan 2013 10:34:45 +0400
+From: Vasily Kulikov <segoon@openwall.com>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, James Morris <jmorris@namei.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+Message-ID: <20130108063445.GA4537@cachalot>
+References: <50EB7C50.3070605@schaufler-ca.com>
+ <20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au>
+ <20130108145922.58ab8ad4796076c9d14b6197@canb.auug.org.au>
+ <50EB9C7E.7090304@schaufler-ca.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
-Subject: [PATCH v5 5/5] KVM: x86: improve reexecute_instruction
-References: <50EBBE54.1040007@linux.vnet.ibm.com>
-In-Reply-To: <50EBBE54.1040007@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010806-9264-0000-0000-000002F4EF00
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EB9C7E.7090304@schaufler-ca.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current reexecute_instruction can not well detect the failed instruction
-emulation. It allows guest to retry all the instructions except it accesses
-on error pfn
+On Mon, Jan 07, 2013 at 20:11 -0800, Casey Schaufler wrote:
+> On 1/7/2013 7:59 PM, Stephen Rothwell wrote:
+> > You probably also want to think a bit harder about the order of the
+> > patches - you should introduce new APIs before you use them and remove
+> > calls to functions before you remove the functions.
+> >
+> The unfortunate reality is that I couldn't find a good way to stage the
+> changes. It's a wonking big set of infrastructure change. I could introduce
+> the security blob abstraction separately but that is a fraction of the
+> change. If it would have gone through mail filters as a single patch I'd
+> have sent it that way.
+> 
+> I can spend time on patch presentation, and will if necessary.
 
-For example, some cases are nested-write-protect - if the page we want to
-write is used as PDE but it chains to itself. Under this case, we should
-stop the emulation and report the case to userspace
+I guess it can be divided this way:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
----
- arch/x86/include/asm/kvm_host.h |    7 +++++++
- arch/x86/kvm/paging_tmpl.h      |   27 ++++++++++++++++++++-------
- arch/x86/kvm/x86.c              |    8 +++++++-
- 3 files changed, 34 insertions(+), 8 deletions(-)
+1) Introduce lsm_get_cred(), etc. which unconditionally return
+->security, ->i_security, etc.
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c431b33..d6ab8d2 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -502,6 +502,13 @@ struct kvm_vcpu_arch {
- 		u64 msr_val;
- 		struct gfn_to_hva_cache data;
- 	} pv_eoi;
-+
-+	/*
-+	 * Indicate whether the access faults on its page table in guest
-+	 * which is set when fix page fault and used to detect unhandeable
-+	 * instruction.
-+	 */
-+	bool write_fault_to_shadow_pgtable;
- };
+2) Move all LSMs, procfs, etc. to the new API, a patch per LSM/subsystem.
 
- struct kvm_lpage_info {
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 67b390d..df50560 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -497,26 +497,34 @@ out_gpte_changed:
-  * created when kvm establishes shadow page table that stop kvm using large
-  * page size. Do it early can avoid unnecessary #PF and emulation.
-  *
-+ * @write_fault_to_shadow_pgtable will return true if the fault gfn is
-+ * currently used as its page table.
-+ *
-  * Note: the PDPT page table is not checked for PAE-32 bit guest. It is ok
-  * since the PDPT is always shadowed, that means, we can not use large page
-  * size to map the gfn which is used as PDPT.
-  */
- static bool
- FNAME(is_self_change_mapping)(struct kvm_vcpu *vcpu,
--			      struct guest_walker *walker, int user_fault)
-+			      struct guest_walker *walker, int user_fault,
-+			      bool *write_fault_to_shadow_pgtable)
- {
- 	int level;
- 	gfn_t mask = ~(KVM_PAGES_PER_HPAGE(walker->level) - 1);
-+	bool self_changed = false;
+3) Change structures along with new API.
 
- 	if (!(walker->pte_access & ACC_WRITE_MASK ||
- 	      (!is_write_protection(vcpu) && !user_fault)))
- 		return false;
 
--	for (level = walker->level; level <= walker->max_level; level++)
--		if (!((walker->gfn ^ walker->table_gfn[level - 1]) & mask))
--			return true;
-+	for (level = walker->level; level <= walker->max_level; level++) {
-+		gfn_t gfn = walker->gfn ^ walker->table_gfn[level - 1];
-+
-+		self_changed |= !(gfn & mask);
-+		*write_fault_to_shadow_pgtable |= !gfn;
-+	}
+The pro of the division is that if you have a bug in the series (and you
+surely have! ;)) it is MUCH more simple to locate this bug (bisect, etc.).
+Also it is more descriptive as you divide LSM changes and the core security
+subsystem itself targeted on multiple LSMs which divides LSM
+implementations (which might be not very important for someone) and the core
+architecture (which is important for everybody).
 
--	return false;
-+	return self_changed;
- }
+Thanks,
 
- /*
-@@ -544,7 +552,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 	int level = PT_PAGE_TABLE_LEVEL;
- 	int force_pt_level;
- 	unsigned long mmu_seq;
--	bool map_writable;
-+	bool map_writable, is_self_change_mapping;
-
- 	pgprintk("%s: addr %lx err %x\n", __func__, addr, error_code);
-
-@@ -572,9 +580,14 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
- 		return 0;
- 	}
-
-+	vcpu->arch.write_fault_to_shadow_pgtable = false;
-+
-+	is_self_change_mapping = FNAME(is_self_change_mapping)(vcpu,
-+	      &walker, user_fault, &vcpu->arch.write_fault_to_shadow_pgtable);
-+
- 	if (walker.level >= PT_DIRECTORY_LEVEL)
- 		force_pt_level = mapping_level_dirty_bitmap(vcpu, walker.gfn)
--		   || FNAME(is_self_change_mapping)(vcpu, &walker, user_fault);
-+		   || is_self_change_mapping;
- 	else
- 		force_pt_level = 1;
- 	if (!force_pt_level) {
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 6f13e03..2957012 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -4810,7 +4810,13 @@ static bool reexecute_instruction(struct kvm_vcpu *vcpu, gva_t cr2)
- 	 * guest to let CPU execute the instruction.
- 	 */
- 	kvm_mmu_unprotect_page(vcpu->kvm, gpa_to_gfn(gpa));
--	return true;
-+
-+	/*
-+	 * If the access faults on its page table, it can not
-+	 * be fixed by unprotecting shadow page and it should
-+	 * be reported to userspace.
-+	 */
-+	return !vcpu->arch.write_fault_to_shadow_pgtable;
- }
-
- static bool retry_instruction(struct x86_emulate_ctxt *ctxt,
 -- 
-1.7.7.6
-
+Vasily Kulikov
+http://www.openwall.com - bringing security into open computing environments
