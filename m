@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756840Ab3AHXjs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:39:48 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53734 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756996Ab3AHXjm (ORCPT
+	id S1757145Ab3AHXpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:45:20 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63988 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757017Ab3AHXjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:39:42 -0500
+	Tue, 8 Jan 2013 18:39:47 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Wei Yongjun <yjwei@cn.fujitsu.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Thomas Graf <tgraf@infradead.org>, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 61/77] sctp: malloc enough room for asconf-ack chunk
-Date: Tue, 8 Jan 2013 18:35:40 -0500
-Message-ID: <1357688156-25387-62-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 64/77] sctp: Enforce retransmission limit during shutdown
+Date: Tue, 8 Jan 2013 18:35:43 -0500
+Message-ID: <1357688156-25387-65-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wei Yongjun <yjwei@cn.fujitsu.com>
+From: Thomas Graf <tgraf@infradead.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,96 +31,218 @@ From: Wei Yongjun <yjwei@cn.fujitsu.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 2cab86bee8e7f353e6ac8c15b3eb906643497644 upstream.
+commit f8d9605243280f1870dd2c6c37a735b925c15f3c upstream.
 
-Sometime the ASCONF_ACK parameters can equal to the fourfold of
-ASCONF parameters, this only happend in some special case:
+When initiating a graceful shutdown while having data chunks
+on the retransmission queue with a peer which is in zero
+window mode the shutdown is never completed because the
+retransmission error count is reset periodically by the
+following two rules:
 
-  ASCONF parameter is :
-    Unrecognized Parameter (4 bytes)
-  ASCONF_ACK parameter should be:
-    Error Cause Indication parameter (8 bytes header)
-     + Error Cause (4 bytes header)
-       + Unrecognized Parameter (4bytes)
+ - Do not timeout association while doing zero window probe.
+ - Reset overall error count when a heartbeat request has
+   been acknowledged.
 
-Four 4bytes Unrecognized Parameters in ASCONF chunk will cause panic.
+The graceful shutdown will wait for all outstanding TSN to
+be acknowledged before sending the SHUTDOWN request. This
+never happens due to the peer's zero window not acknowledging
+the continuously retransmitted data chunks. Although the
+error counter is incremented for each failed retransmission,
+the receiving of the SACK announcing the zero window clears
+the error count again immediately. Also heartbeat requests
+continue to be sent periodically. The peer acknowledges these
+requests causing the error counter to be reset as well.
 
-Pid: 0, comm: swapper Not tainted 2.6.38-next+ #22 Bochs Bochs
-EIP: 0060:[<c0717eae>] EFLAGS: 00010246 CPU: 0
-EIP is at skb_put+0x60/0x70
-EAX: 00000077 EBX: c09060e2 ECX: dec1dc30 EDX: c09469c0
-ESI: 00000000 EDI: de3c8d40 EBP: dec1dc58 ESP: dec1dc2c
- DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-Process swapper (pid: 0, ti=dec1c000 task=c09aef20 task.ti=c0980000)
-Stack:
- c09469c0 e1894fa4 00000044 00000004 de3c8d00 de3c8d00 de3c8d44 de3c8d40
- c09060e2 de25dd80 de3c8d40 dec1dc7c e1894fa4 dec1dcb0 00000040 00000004
- 00000000 00000800 00000004 00000004 dec1dce0 e1895a2b dec1dcb4 de25d960
-Call Trace:
- [<e1894fa4>] ? sctp_addto_chunk+0x4e/0x89 [sctp]
- [<e1894fa4>] sctp_addto_chunk+0x4e/0x89 [sctp]
- [<e1895a2b>] sctp_process_asconf+0x32f/0x3d1 [sctp]
- [<e188d554>] sctp_sf_do_asconf+0xf8/0x173 [sctp]
- [<e1890b02>] sctp_do_sm+0xb8/0x159 [sctp]
- [<e18a2248>] ? sctp_cname+0x0/0x52 [sctp]
- [<e189392d>] sctp_assoc_bh_rcv+0xac/0xe3 [sctp]
- [<e1897d76>] sctp_inq_push+0x2d/0x30 [sctp]
- [<e18a21b2>] sctp_rcv+0x7a7/0x83d [sctp]
- [<c077a95c>] ? ipv4_confirm+0x118/0x125
- [<c073a970>] ? nf_iterate+0x34/0x62
- [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
- [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
- [<c0747992>] ip_local_deliver_finish+0xf5/0x194
- [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
- [<c0747a6e>] NF_HOOK.clone.1+0x3d/0x44
- [<c0747ab3>] ip_local_deliver+0x3e/0x44
- [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
- [<c074775c>] ip_rcv_finish+0x29f/0x2c7
- [<c07474bd>] ? ip_rcv_finish+0x0/0x2c7
- [<c0747a6e>] NF_HOOK.clone.1+0x3d/0x44
- [<c0747cae>] ip_rcv+0x1f5/0x233
- [<c07474bd>] ? ip_rcv_finish+0x0/0x2c7
- [<c071dce3>] __netif_receive_skb+0x310/0x336
- [<c07221f3>] netif_receive_skb+0x4b/0x51
- [<e0a4ed3d>] cp_rx_poll+0x1e7/0x29c [8139cp]
- [<c072275e>] net_rx_action+0x65/0x13a
- [<c0445a54>] __do_softirq+0xa1/0x149
- [<c04459b3>] ? __do_softirq+0x0/0x149
- <IRQ>
- [<c0445891>] ? irq_exit+0x37/0x72
- [<c040a7e9>] ? do_IRQ+0x81/0x95
- [<c07b3670>] ? common_interrupt+0x30/0x38
- [<c0428058>] ? native_safe_halt+0xa/0xc
- [<c040f5d7>] ? default_idle+0x58/0x92
- [<c0408fb0>] ? cpu_idle+0x96/0xb2
- [<c0797989>] ? rest_init+0x5d/0x5f
- [<c09fd90c>] ? start_kernel+0x34b/0x350
- [<c09fd0cb>] ? i386_start_kernel+0xba/0xc1
+This patch changes behaviour to only reset the overall error
+counter for the above rules while not in shutdown. After
+reaching the maximum number of retransmission attempts, the
+T5 shutdown guard timer is scheduled to give the receiver
+some additional time to recover. The timer is stopped as soon
+as the receiver acknowledges any data.
 
-Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+The issue can be easily reproduced by establishing a sctp
+association over the loopback device, constantly queueing
+data at the sender while not reading any at the receiver.
+Wait for the window to reach zero, then initiate a shutdown
+by killing both processes simultaneously. The association
+will never be freed and the chunks on the retransmission
+queue will be retransmitted indefinitely.
+
+Signed-off-by: Thomas Graf <tgraf@infradead.org>
+Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sctp/sm_make_chunk.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/net/sctp/command.h |  1 +
+ net/sctp/outqueue.c        | 20 +++++++++++++++++++-
+ net/sctp/sm_sideeffect.c   | 20 ++++++++++++++++++--
+ net/sctp/sm_statefuns.c    | 32 +++++++++++++++++++++++---------
+ net/sctp/sm_statetable.c   |  2 +-
+ 5 files changed, 62 insertions(+), 13 deletions(-)
 
-diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
-index 70d6c10..ad633d9 100644
---- a/net/sctp/sm_make_chunk.c
-+++ b/net/sctp/sm_make_chunk.c
-@@ -3110,10 +3110,10 @@ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
+diff --git a/include/net/sctp/command.h b/include/net/sctp/command.h
+index 2c55a7e..d4699d8 100644
+--- a/include/net/sctp/command.h
++++ b/include/net/sctp/command.h
+@@ -63,6 +63,7 @@ typedef enum {
+ 	SCTP_CMD_ECN_ECNE,	/* Do delayed ECNE processing. */
+ 	SCTP_CMD_ECN_CWR,	/* Do delayed CWR processing.  */
+ 	SCTP_CMD_TIMER_START,	/* Start a timer.  */
++	SCTP_CMD_TIMER_START_ONCE, /* Start a timer once */
+ 	SCTP_CMD_TIMER_RESTART,	/* Restart a timer. */
+ 	SCTP_CMD_TIMER_STOP,	/* Stop a timer. */
+ 	SCTP_CMD_INIT_CHOOSE_TRANSPORT, /* Choose transport for an INIT. */
+diff --git a/net/sctp/outqueue.c b/net/sctp/outqueue.c
+index abfc0b8..54e20e3 100644
+--- a/net/sctp/outqueue.c
++++ b/net/sctp/outqueue.c
+@@ -1587,6 +1587,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ #endif /* SCTP_DEBUG */
+ 	if (transport) {
+ 		if (bytes_acked) {
++			struct sctp_association *asoc = transport->asoc;
++
+ 			/* We may have counted DATA that was migrated
+ 			 * to this transport due to DEL-IP operation.
+ 			 * Subtract those bytes, since the were never
+@@ -1605,6 +1607,17 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 			transport->error_count = 0;
+ 			transport->asoc->overall_error_count = 0;
  
- 	/* create an ASCONF_ACK chunk.
- 	 * Based on the definitions of parameters, we know that the size of
--	 * ASCONF_ACK parameters are less than or equal to the twice of ASCONF
-+	 * ASCONF_ACK parameters are less than or equal to the fourfold of ASCONF
- 	 * parameters.
++			/*
++			 * While in SHUTDOWN PENDING, we may have started
++			 * the T5 shutdown guard timer after reaching the
++			 * retransmission limit. Stop that timer as soon
++			 * as the receiver acknowledged any data.
++			 */
++			if (asoc->state == SCTP_STATE_SHUTDOWN_PENDING &&
++			    del_timer(&asoc->timers
++				[SCTP_EVENT_TIMEOUT_T5_SHUTDOWN_GUARD]))
++					sctp_association_put(asoc);
++
+ 			/* Mark the destination transport address as
+ 			 * active if it is not so marked.
+ 			 */
+@@ -1634,10 +1647,15 @@ static void sctp_check_transmitted(struct sctp_outq *q,
+ 			 * A sender is doing zero window probing when the
+ 			 * receiver's advertised window is zero, and there is
+ 			 * only one data chunk in flight to the receiver.
++			 *
++			 * Allow the association to timeout while in SHUTDOWN
++			 * PENDING or SHUTDOWN RECEIVED in case the receiver
++			 * stays in zero window mode forever.
+ 			 */
+ 			if (!q->asoc->peer.rwnd &&
+ 			    !list_empty(&tlist) &&
+-			    (sack_ctsn+2 == q->asoc->next_tsn)) {
++			    (sack_ctsn+2 == q->asoc->next_tsn) &&
++			    q->asoc->state < SCTP_STATE_SHUTDOWN_PENDING) {
+ 				SCTP_DEBUG_PRINTK("%s: SACK received for zero "
+ 						  "window probe: %u\n",
+ 						  __func__, sack_ctsn);
+diff --git a/net/sctp/sm_sideeffect.c b/net/sctp/sm_sideeffect.c
+index eb1f42f..c4cb6b8 100644
+--- a/net/sctp/sm_sideeffect.c
++++ b/net/sctp/sm_sideeffect.c
+@@ -669,10 +669,19 @@ static void sctp_cmd_transport_on(sctp_cmd_seq_t *cmds,
+ 	/* 8.3 Upon the receipt of the HEARTBEAT ACK, the sender of the
+ 	 * HEARTBEAT should clear the error counter of the destination
+ 	 * transport address to which the HEARTBEAT was sent.
+-	 * The association's overall error count is also cleared.
  	 */
--	asconf_ack = sctp_make_asconf_ack(asoc, serial, chunk_len * 2);
-+	asconf_ack = sctp_make_asconf_ack(asoc, serial, chunk_len * 4);
- 	if (!asconf_ack)
- 		goto done;
+ 	t->error_count = 0;
+-	t->asoc->overall_error_count = 0;
++
++	/*
++	 * Although RFC4960 specifies that the overall error count must
++	 * be cleared when a HEARTBEAT ACK is received, we make an
++	 * exception while in SHUTDOWN PENDING. If the peer keeps its
++	 * window shut forever, we may never be able to transmit our
++	 * outstanding data and rely on the retransmission limit be reached
++	 * to shutdown the association.
++	 */
++	if (t->asoc->state != SCTP_STATE_SHUTDOWN_PENDING)
++		t->asoc->overall_error_count = 0;
  
+ 	/* Clear the hb_sent flag to signal that we had a good
+ 	 * acknowledgement.
+@@ -1445,6 +1454,13 @@ static int sctp_cmd_interpreter(sctp_event_t event_type,
+ 			sctp_cmd_setup_t2(commands, asoc, cmd->obj.ptr);
+ 			break;
+ 
++		case SCTP_CMD_TIMER_START_ONCE:
++			timer = &asoc->timers[cmd->obj.to];
++
++			if (timer_pending(timer))
++				break;
++			/* fall through */
++
+ 		case SCTP_CMD_TIMER_START:
+ 			timer = &asoc->timers[cmd->obj.to];
+ 			timeout = asoc->timeouts[cmd->obj.to];
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index 24b2cd5..bbfb644 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -5099,7 +5099,7 @@ sctp_disposition_t sctp_sf_do_9_2_start_shutdown(
+ 	 * The sender of the SHUTDOWN MAY also start an overall guard timer
+ 	 * 'T5-shutdown-guard' to bound the overall time for shutdown sequence.
+ 	 */
+-	sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_START,
++	sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_RESTART,
+ 			SCTP_TO(SCTP_EVENT_TIMEOUT_T5_SHUTDOWN_GUARD));
+ 
+ 	if (asoc->autoclose)
+@@ -5244,14 +5244,28 @@ sctp_disposition_t sctp_sf_do_6_3_3_rtx(const struct sctp_endpoint *ep,
+ 	SCTP_INC_STATS(SCTP_MIB_T3_RTX_EXPIREDS);
+ 
+ 	if (asoc->overall_error_count >= asoc->max_retrans) {
+-		sctp_add_cmd_sf(commands, SCTP_CMD_SET_SK_ERR,
+-				SCTP_ERROR(ETIMEDOUT));
+-		/* CMD_ASSOC_FAILED calls CMD_DELETE_TCB. */
+-		sctp_add_cmd_sf(commands, SCTP_CMD_ASSOC_FAILED,
+-				SCTP_PERR(SCTP_ERROR_NO_ERROR));
+-		SCTP_INC_STATS(SCTP_MIB_ABORTEDS);
+-		SCTP_DEC_STATS(SCTP_MIB_CURRESTAB);
+-		return SCTP_DISPOSITION_DELETE_TCB;
++		if (asoc->state == SCTP_STATE_SHUTDOWN_PENDING) {
++			/*
++			 * We are here likely because the receiver had its rwnd
++			 * closed for a while and we have not been able to
++			 * transmit the locally queued data within the maximum
++			 * retransmission attempts limit.  Start the T5
++			 * shutdown guard timer to give the receiver one last
++			 * chance and some additional time to recover before
++			 * aborting.
++			 */
++			sctp_add_cmd_sf(commands, SCTP_CMD_TIMER_START_ONCE,
++				SCTP_TO(SCTP_EVENT_TIMEOUT_T5_SHUTDOWN_GUARD));
++		} else {
++			sctp_add_cmd_sf(commands, SCTP_CMD_SET_SK_ERR,
++					SCTP_ERROR(ETIMEDOUT));
++			/* CMD_ASSOC_FAILED calls CMD_DELETE_TCB. */
++			sctp_add_cmd_sf(commands, SCTP_CMD_ASSOC_FAILED,
++					SCTP_PERR(SCTP_ERROR_NO_ERROR));
++			SCTP_INC_STATS(SCTP_MIB_ABORTEDS);
++			SCTP_DEC_STATS(SCTP_MIB_CURRESTAB);
++			return SCTP_DISPOSITION_DELETE_TCB;
++		}
+ 	}
+ 
+ 	/* E1) For the destination address for which the timer
+diff --git a/net/sctp/sm_statetable.c b/net/sctp/sm_statetable.c
+index 6d9b3aa..d41d527 100644
+--- a/net/sctp/sm_statetable.c
++++ b/net/sctp/sm_statetable.c
+@@ -897,7 +897,7 @@ static const sctp_sm_table_entry_t other_event_table[SCTP_NUM_OTHER_TYPES][SCTP_
+ 	/* SCTP_STATE_ESTABLISHED */ \
+ 	TYPE_SCTP_FUNC(sctp_sf_timer_ignore), \
+ 	/* SCTP_STATE_SHUTDOWN_PENDING */ \
+-	TYPE_SCTP_FUNC(sctp_sf_timer_ignore), \
++	TYPE_SCTP_FUNC(sctp_sf_t5_timer_expire), \
+ 	/* SCTP_STATE_SHUTDOWN_SENT */ \
+ 	TYPE_SCTP_FUNC(sctp_sf_t5_timer_expire), \
+ 	/* SCTP_STATE_SHUTDOWN_RECEIVED */ \
 -- 
 1.7.12.1
 
