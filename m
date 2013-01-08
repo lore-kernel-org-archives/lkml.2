@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756021Ab3AHCJi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:09:38 -0500
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:55026 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab3AHCJZ (ORCPT
+	id S1753114Ab3AHCMv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:12:51 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:47604 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755693Ab3AHCJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:25 -0500
+	Mon, 7 Jan 2013 21:09:37 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 18/33] sched: Update rq clock before idle balancing
-Date: Tue,  8 Jan 2013 03:08:18 +0100
-Message-Id: <1357610913-1080-19-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 23/33] nohz: Don't turn off the tick if rcu needs it
+Date: Tue,  8 Jan 2013 03:08:23 +0100
+Message-Id: <1357610913-1080-24-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,10 +33,19 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idle_balance() is called from schedule() right before we schedule the
-idle task. It needs to record the idle timestamp at that time and for
-this the rq clock must be accurate. If the CPU is running tickless
-we need to update the rq clock manually.
+If RCU is waiting for the current CPU to complete a grace
+period, don't turn off the tick. Unlike dynctik-idle, we
+are not necessarily going to enter into rcu extended quiescent
+state, so we may need to keep the tick to note current CPU's
+quiescent states.
+
+[added build fix from Zen Lin]
+
+CHECKME: OTOH we don't want to handle a locally started
+grace period, this should be offloaded for rcu_nocb CPUs.
+What we want is to be kicked if we stay dynticks in the kernel
+for too long (ie: to report a quiescent state).
+rcu_pending() is perhaps an overkill just for that.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -54,22 +63,60 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/fair.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/linux/rcupdate.h |    1 +
+ kernel/rcutree.c         |    3 +--
+ kernel/time/tick-sched.c |    3 +++
+ 3 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index e78d81104..698137d 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5241,6 +5241,7 @@ void idle_balance(int this_cpu, struct rq *this_rq)
- 	int pulled_task = 0;
- 	unsigned long next_balance = jiffies + HZ;
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 829312e..2ebadac 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -211,6 +211,7 @@ static inline int rcu_preempt_depth(void)
+ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
+ extern void rcu_check_callbacks(int cpu, int user);
++extern int rcu_pending(int cpu);
+ struct notifier_block;
+ extern void rcu_idle_enter(void);
+ extern void rcu_idle_exit(void);
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index e9e0ffa..6ba3e02 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -232,7 +232,6 @@ module_param(jiffies_till_next_fqs, ulong, 0644);
  
-+	update_nohz_rq_clock(this_rq);
- 	this_rq->idle_stamp = this_rq->clock;
+ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
+ static void force_quiescent_state(struct rcu_state *rsp);
+-static int rcu_pending(int cpu);
  
- 	if (this_rq->avg_idle < sysctl_sched_migration_cost)
+ /*
+  * Return the number of RCU-sched batches processed thus far for debug & stats.
+@@ -2521,7 +2520,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
+  * by the current CPU, returning 1 if so.  This function is part of the
+  * RCU implementation; it is -not- an exported member of the RCU API.
+  */
+-static int rcu_pending(int cpu)
++int rcu_pending(int cpu)
+ {
+ 	struct rcu_state *rsp;
+ 
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 805eded..743b021 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -596,6 +596,9 @@ static bool can_stop_full_tick(int cpu)
+ 	if (!rcu_is_nocb_cpu(cpu))
+ 		return false;
+ 
++	if (rcu_pending(cpu))
++		return false;
++
+ 	return true;
+ }
+ #endif
 -- 
 1.7.5.4
 
