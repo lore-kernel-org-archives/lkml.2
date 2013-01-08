@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756805Ab3AHQwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 11:52:50 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:33602 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756787Ab3AHQwr (ORCPT
+	id S1756835Ab3AHQxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 11:53:10 -0500
+Received: from mail-da0-f50.google.com ([209.85.210.50]:36697 "EHLO
+	mail-da0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756808Ab3AHQwy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 11:52:47 -0500
+	Tue, 8 Jan 2013 11:52:54 -0500
 From: Jiang Liu <liuj97@gmail.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Jiang Liu <jiang.liu@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: [PATCH v3 3/6] ACPI/pci_slot: update PCI slot information when PCI hotplug event happens
-Date: Wed,  9 Jan 2013 00:52:22 +0800
-Message-Id: <1357663945-16054-4-git-send-email-jiang.liu@huawei.com>
+Cc: Yijing Wang <wangyijing@huawei.com>, "Rafael J . Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jiang Liu <jiang.liu@huawei.com>
+Subject: [PATCH v3 6/6] PCI/AER: update AER configuration when PCI hotplug event happens
+Date: Wed,  9 Jan 2013 00:52:25 +0800
+Message-Id: <1357663945-16054-7-git-send-email-jiang.liu@huawei.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com>
 References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com>
@@ -24,135 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the pci_slot driver doesn't update PCI slot information
-when PCI device hotplug event happens, which may cause memory leak
-and returning stale information to user.
+From: Yijing Wang <wangyijing@huawei.com>
 
-So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-update PCI slot information when PCI hotplug event happens.
+The AER driver only configures downstream PCIe devices at driver
+binding time and all hot-added PCIe devices won't be managed by
+the AER driver.  So hook PCIe device hotplug events to setup AER
+configuration for hot-added PCIe devices.
 
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
 ---
- drivers/acpi/pci_slot.c |   86 ++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 78 insertions(+), 8 deletions(-)
+ drivers/pci/pcie/aer/aerdrv.c |   63 ++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 62 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/pci_slot.c b/drivers/acpi/pci_slot.c
-index d22585f..e04ea8e 100644
---- a/drivers/acpi/pci_slot.c
-+++ b/drivers/acpi/pci_slot.c
-@@ -32,6 +32,7 @@
- #include <linux/acpi.h>
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
-+#include <linux/pci-acpi.h>
- #include <linux/dmi.h>
+diff --git a/drivers/pci/pcie/aer/aerdrv.c b/drivers/pci/pcie/aer/aerdrv.c
+index 76ef634..d825c46 100644
+--- a/drivers/pci/pcie/aer/aerdrv.c
++++ b/drivers/pci/pcie/aer/aerdrv.c
+@@ -408,6 +408,55 @@ static void aer_error_resume(struct pci_dev *dev)
+ 	pci_write_config_dword(dev, pos + PCI_ERR_UNCOR_STATUS, status);
+ }
  
- static bool debug;
-@@ -123,12 +124,7 @@ struct callback_args {
- /*
-  * register_slot
-  *
-- * Called once for each SxFy object in the namespace. Don't worry about
-- * calling pci_create_slot multiple times for the same pci_bus:device,
-- * since each subsequent call simply bumps the refcount on the pci_slot.
-- *
-- * The number of calls to pci_destroy_slot from unregister_slot is
-- * symmetrical.
-+ * Called once for each SxFy object in the namespace.
-  */
- static acpi_status
- register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
-@@ -145,6 +141,15 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	if (device < 0)
- 		return AE_OK;
- 
-+	/* Avoid duplicated records for the same slot */
-+	list_for_each_entry(slot, &slot_list, list) {
-+		pci_slot = slot->pci_slot;
-+		if (pci_slot && pci_slot->bus == pci_bus &&
-+		    pci_slot->number == device) {
-+			return AE_OK;
-+		}
++static void acpi_pcie_aer_notify_dev(struct pcie_device *dev, bool enable)
++{
++	int rc, pos;
++	u32 val = 0;
++	struct pci_dev *pdev = dev->port;
++
++	if (dev->service != PCIE_PORT_SERVICE_AER)
++		return;
++	if (pci_pcie_type(pdev) == PCI_EXP_TYPE_ROOT_PORT)
++		return;
++	while (pci_pcie_type(pdev) != PCI_EXP_TYPE_ROOT_PORT) {
++		pdev = pdev->bus->self;
++		if (!pdev)
++			return;
 +	}
 +
- 	slot = kmalloc(sizeof(*slot), GFP_KERNEL);
- 	if (!slot) {
- 		err("%s: cannot allocate memory\n", __func__);
-@@ -162,9 +167,7 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
- 	slot->root_handle = parent_context->root_handle;
- 	slot->pci_slot = pci_slot;
- 	INIT_LIST_HEAD(&slot->list);
--	mutex_lock(&slot_list_lock);
- 	list_add(&slot->list, &slot_list);
--	mutex_unlock(&slot_list_lock);
- 
- 	get_device(&pci_bus->dev);
- 
-@@ -274,7 +277,9 @@ acpi_pci_slot_add(struct acpi_pci_root *root)
- {
- 	acpi_status status;
- 
-+	mutex_lock(&slot_list_lock);
- 	status = walk_root_bridge(root, register_slot);
-+	mutex_unlock(&slot_list_lock);
- 	if (ACPI_FAILURE(status))
- 		err("%s: register_slot failure - %d\n", __func__, status);
- 
-@@ -330,17 +335,82 @@ static struct dmi_system_id acpi_pci_slot_dmi_table[] __initdata = {
- 	{}
- };
- 
-+static void acpi_pci_slot_notify_add(struct pci_dev *dev)
-+{
-+	acpi_handle handle;
-+	struct callback_args context;
-+
-+	if (!dev->subordinate)
++	pos = pci_find_ext_capability(pdev, PCI_EXT_CAP_ID_ERR);
++	if (!pos)
++		return;
++	rc = pci_read_config_dword(pdev, pos + PCI_ERR_ROOT_COMMAND, &val);
++	if (rc || val == 0xFFFFFFFF || !(val & ROOT_PORT_INTR_ON_MESG_MASK))
 +		return;
 +
-+	mutex_lock(&slot_list_lock);
-+	handle = DEVICE_ACPI_HANDLE(&dev->dev);
-+	context.root_handle = acpi_find_root_bridge_handle(dev);
-+	if (handle && context.root_handle) {
-+		context.pci_bus = dev->subordinate;
-+		context.user_function = register_slot;
-+		acpi_walk_namespace(ACPI_TYPE_DEVICE, handle, (u32)1,
-+				    register_slot, NULL, &context, NULL);
-+	}
-+	mutex_unlock(&slot_list_lock);
++	set_device_error_reporting(dev->port, &enable);
 +}
 +
-+static void acpi_pci_slot_notify_del(struct pci_dev *dev)
-+{
-+	struct acpi_pci_slot *slot, *tmp;
-+	struct pci_bus *bus = dev->subordinate;
-+
-+	if (!bus)
-+		return;
-+
-+	mutex_lock(&slot_list_lock);
-+	list_for_each_entry_safe(slot, tmp, &slot_list, list)
-+		if (slot->pci_slot && slot->pci_slot->bus == bus) {
-+			list_del(&slot->list);
-+			pci_destroy_slot(slot->pci_slot);
-+			put_device(&bus->dev);
-+			kfree(slot);
-+		}
-+	mutex_unlock(&slot_list_lock);
-+}
-+
-+static int acpi_pci_slot_notify_fn(struct notifier_block *nb,
-+				   unsigned long event, void *data)
++static int acpi_pcie_aer_notify(struct notifier_block *nb,
++		unsigned long event, void *data)
 +{
 +	struct device *dev = data;
 +
 +	switch (event) {
 +	case BUS_NOTIFY_ADD_DEVICE:
-+		acpi_pci_slot_notify_add(to_pci_dev(dev));
++		acpi_pcie_aer_notify_dev(to_pcie_device(dev), true);
 +		break;
 +	case BUS_NOTIFY_DEL_DEVICE:
-+		acpi_pci_slot_notify_del(to_pci_dev(dev));
++		acpi_pcie_aer_notify_dev(to_pcie_device(dev), false);
 +		break;
 +	default:
 +		return NOTIFY_DONE;
@@ -161,25 +90,41 @@ index d22585f..e04ea8e 100644
 +	return NOTIFY_OK;
 +}
 +
-+static struct notifier_block acpi_pci_slot_notifier = {
-+	.notifier_call = &acpi_pci_slot_notify_fn,
++static struct notifier_block acpi_pcie_aer_notifier = {
++	.notifier_call = &acpi_pcie_aer_notify,
 +};
 +
- static int __init
- acpi_pci_slot_init(void)
+ /**
+  * aer_service_init - register AER root service driver
+  *
+@@ -415,9 +464,20 @@ static void aer_error_resume(struct pci_dev *dev)
+  */
+ static int __init aer_service_init(void)
  {
- 	dmi_check_system(acpi_pci_slot_dmi_table);
- 	acpi_pci_register_driver(&acpi_pci_slot_driver);
-+	bus_register_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
++	int ret;
 +
- 	return 0;
+ 	if (!pci_aer_available() || aer_acpi_firmware_first())
+ 		return -ENXIO;
+-	return pcie_port_service_register(&aerdriver);
++
++	ret = pcie_port_service_register(&aerdriver);
++	if (!ret) {
++		ret = bus_register_notifier(&pcie_port_bus_type,
++					    &acpi_pcie_aer_notifier);
++		if (ret)
++			pcie_port_service_unregister(&aerdriver);
++	}
++
++	return ret;
  }
  
- static void __exit
- acpi_pci_slot_exit(void)
+ /**
+@@ -427,6 +487,7 @@ static int __init aer_service_init(void)
+  */
+ static void __exit aer_service_exit(void)
  {
-+	bus_unregister_notifier(&pci_bus_type, &acpi_pci_slot_notifier);
- 	acpi_pci_unregister_driver(&acpi_pci_slot_driver);
++	bus_unregister_notifier(&pcie_port_bus_type, &acpi_pcie_aer_notifier);
+ 	pcie_port_service_unregister(&aerdriver);
  }
  
 -- 
