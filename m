@@ -1,82 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753716Ab3AHVIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:08:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29241 "EHLO mga09.intel.com"
+	id S1754593Ab3AHVIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:08:15 -0500
+Received: from mga09.intel.com ([134.134.136.24]:63355 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112Ab3AHVH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:07:59 -0500
+	id S1753920Ab3AHVIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 16:08:05 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,433,1355126400"; 
-   d="scan'208";a="243604820"
+   d="scan'208";a="243604996"
 From: Tomas Winkler <tomas.winkler@intel.com>
 To: gregkh@linuxfoundation.org
 Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
         Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 00/21] MEI restructuring
-Date: Tue,  8 Jan 2013 23:07:11 +0200
-Message-Id: <1357679252-12958-1-git-send-email-tomas.winkler@intel.com>
+Subject: [char-misc-next 08/21] mei: move me client storage allocation to hbm.c
+Date: Tue,  8 Jan 2013 23:07:19 +0200
+Message-Id: <1357679252-12958-9-git-send-email-tomas.winkler@intel.com>
 X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1357679252-12958-1-git-send-email-tomas.winkler@intel.com>
+References: <1357679252-12958-1-git-send-email-tomas.winkler@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series contains some initial restructuring
-of the MEI driver. It tries to make cleaner
-lines between ME hardware, Host Bust Messaging,
-and Client Management layers. For sake of that
-we have moved functions around and renamed some
-files. 
+rename function to mei_me_cl_allocate to match the current
+names convention: mei_hbm_me_cl_allocate
 
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+---
+ drivers/misc/mei/hbm.c     |   39 ++++++++++++++++++++++++++++++++++++++-
+ drivers/misc/mei/init.c    |   39 ---------------------------------------
+ drivers/misc/mei/mei_dev.h |    1 -
+ 3 files changed, 38 insertions(+), 41 deletions(-)
 
-Tomas Winkler (21):
-  mei: add new hbm.h header to export hbm protocol
-  mei: move client functions to client.c
-  mei: fix client functions names
-  mei: implement mei_cl_connect function
-  mei: move watchdog prototypes to mei_dev.h from interface.h
-  mei: rename interface to hw-me
-  mei: drop read_pending member form struct mei_cl
-  mei: move me client storage allocation to hbm.c
-  mei: mei_dev.h - remove prototypes of dropped functions
-  mei: rename remaining amthi strings to amthif
-  mei: normalize me host client linking routines
-  mei: move MEI_IAMTHIF_IDLE to amthif host init function
-  mei: hw-me.c fix kernel doc
-  mei: remove write only need_reset member of struct mei_device
-  mei: remove mei_csr_clear_his prototype
-  mei: don't use cached value for hcsr in mei_hw_reset
-  mei: use non cached hcsr for interrupt enablement
-  mei: abstract host and device readieness
-  mei: reenable mei_hcsr_set abstraction
-  mei: make host csr and me csr internal to hw-me
-  mei: move work initialization to mei_device_init
-
- drivers/misc/mei/Makefile                 |    4 +-
- drivers/misc/mei/amthif.c                 |  112 +++--
- drivers/misc/mei/client.c                 |  678 +++++++++++++++++++++++++++++
- drivers/misc/mei/client.h                 |   97 ++++
- drivers/misc/mei/hbm.c                    |   42 ++-
- drivers/misc/mei/hbm.h                    |   39 ++
- drivers/misc/mei/hw-me-regs.h             |  167 +++++++
- drivers/misc/mei/{interface.c => hw-me.c} |  241 +++++------
- drivers/misc/mei/hw-me.h                  |  181 ++-------
- drivers/misc/mei/init.c                   |  405 ++----------------
- drivers/misc/mei/interface.h              |   83 ----
- drivers/misc/mei/interrupt.c              |   37 +-
- drivers/misc/mei/iorw.c                   |  366 ----------------
- drivers/misc/mei/main.c                   |  184 ++++++---
- drivers/misc/mei/mei_dev.h                |  115 ++----
- drivers/misc/mei/wd.c                     |   49 ++-
- 16 files changed, 1468 insertions(+), 1332 deletions(-)
- create mode 100644 drivers/misc/mei/client.c
- create mode 100644 drivers/misc/mei/client.h
- create mode 100644 drivers/misc/mei/hbm.h
- create mode 100644 drivers/misc/mei/hw-me-regs.h
- rename drivers/misc/mei/{interface.c => hw-me.c} (68%)
- delete mode 100644 drivers/misc/mei/interface.h
- delete mode 100644 drivers/misc/mei/iorw.c
-
+diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
+index f0c3fc4..fb9e63b 100644
+--- a/drivers/misc/mei/hbm.c
++++ b/drivers/misc/mei/hbm.c
+@@ -24,6 +24,43 @@
+ #include "hw-me.h"
+ 
+ /**
++ * mei_hbm_me_cl_allocate - allocates storage for me clients
++ *
++ * @dev: the device structure
++ *
++ * returns none.
++ */
++static void mei_hbm_me_cl_allocate(struct mei_device *dev)
++{
++	struct mei_me_client *clients;
++	int b;
++
++	/* count how many ME clients we have */
++	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
++		dev->me_clients_num++;
++
++	if (dev->me_clients_num <= 0)
++		return;
++
++	kfree(dev->me_clients);
++	dev->me_clients = NULL;
++
++	dev_dbg(&dev->pdev->dev, "memory allocation for ME clients size=%zd.\n",
++		dev->me_clients_num * sizeof(struct mei_me_client));
++	/* allocate storage for ME clients representation */
++	clients = kcalloc(dev->me_clients_num,
++			sizeof(struct mei_me_client), GFP_KERNEL);
++	if (!clients) {
++		dev_err(&dev->pdev->dev, "memory allocation for ME clients failed.\n");
++		dev->dev_state = MEI_DEV_RESETING;
++		mei_reset(dev, 1);
++		return;
++	}
++	dev->me_clients = clients;
++	return;
++}
++
++/**
+  * mei_hbm_cl_hdr - construct client hbm header
+  * @cl: - client
+  * @hbm_cmd: host bus message command
+@@ -593,7 +630,7 @@ void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr)
+ 				dev->init_clients_timer = 0;
+ 				dev->me_client_presentation_num = 0;
+ 				dev->me_client_index = 0;
+-				mei_allocate_me_clients_storage(dev);
++				mei_hbm_me_cl_allocate(dev);
+ 				dev->init_clients_state =
+ 					MEI_CLIENT_PROPERTIES_MESSAGE;
+ 
+diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
+index 88407df..636639f 100644
+--- a/drivers/misc/mei/init.c
++++ b/drivers/misc/mei/init.c
+@@ -278,44 +278,5 @@ void mei_reset(struct mei_device *dev, int interrupts_enabled)
+ }
+ 
+ 
+-/**
+- * allocate_me_clients_storage - allocates storage for me clients
+- *
+- * @dev: the device structure
+- *
+- * returns none.
+- */
+-void mei_allocate_me_clients_storage(struct mei_device *dev)
+-{
+-	struct mei_me_client *clients;
+-	int b;
+-
+-	/* count how many ME clients we have */
+-	for_each_set_bit(b, dev->me_clients_map, MEI_CLIENTS_MAX)
+-		dev->me_clients_num++;
+-
+-	if (dev->me_clients_num <= 0)
+-		return ;
+-
+-
+-	if (dev->me_clients != NULL) {
+-		kfree(dev->me_clients);
+-		dev->me_clients = NULL;
+-	}
+-	dev_dbg(&dev->pdev->dev, "memory allocation for ME clients size=%zd.\n",
+-		dev->me_clients_num * sizeof(struct mei_me_client));
+-	/* allocate storage for ME clients representation */
+-	clients = kcalloc(dev->me_clients_num,
+-			sizeof(struct mei_me_client), GFP_KERNEL);
+-	if (!clients) {
+-		dev_dbg(&dev->pdev->dev, "memory allocation for ME clients failed.\n");
+-		dev->dev_state = MEI_DEV_RESETING;
+-		mei_reset(dev, 1);
+-		return ;
+-	}
+-	dev->me_clients = clients;
+-	return ;
+-}
+-
+ 
+ 
+diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
+index 11ff875..d07d81f 100644
+--- a/drivers/misc/mei/mei_dev.h
++++ b/drivers/misc/mei/mei_dev.h
+@@ -328,7 +328,6 @@ void mei_reset(struct mei_device *dev, int interrupts);
+ int mei_hw_init(struct mei_device *dev);
+ int mei_task_initialize_clients(void *data);
+ int mei_initialize_clients(struct mei_device *dev);
+-void mei_allocate_me_clients_storage(struct mei_device *dev);
+ 
+ 
+ 
 -- 
 1.7.4.4
 
