@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab3AHAVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 19:21:47 -0500
-Received: from plane.gmane.org ([80.91.229.3]:44353 "EHLO plane.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754640Ab3AHAVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 19:21:44 -0500
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: "lkml@tigusoft.pl" <lkml@tigusoft.pl>
-Subject: Re: 3.2.35 problem with M5A97 PRO ram: bad_page free_pages_prepare
- mem_init
-Date: Tue, 08 Jan 2013 01:21:26 +0100
-Organization: tigusoft.pl
-Message-ID: <kcfoq8$dac$1@ger.gmane.org>
-References: <kcfoae$91e$1@ger.gmane.org>
-Reply-To: lkml@tigusoft.pl
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@ger.gmane.org
-X-Gmane-NNTP-Posting-Host: herngaard.torservers.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
-In-Reply-To: <kcfoae$91e$1@ger.gmane.org>
+	id S1756204Ab3AHA1H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 19:27:07 -0500
+Received: from sabertooth01.qualcomm.com ([65.197.215.72]:54412 "EHLO
+	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754640Ab3AHA1F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 19:27:05 -0500
+X-IronPort-AV: E=Sophos;i="4.84,427,1355126400"; 
+   d="scan'208";a="15000424"
+X-IronPort-AV: E=Sophos;i="4.84,427,1355126400"; 
+   d="scan'208";a="372494177"
+Message-ID: <50EB67D5.8070001@qti.qualcomm.com>
+Date: Mon, 7 Jan 2013 16:27:01 -0800
+From: Max Krasnyansky <maxk@qti.qualcomm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+Subject: Re: why does kernel 3.8-rc1 put all TAP devices into state RUNNING
+ during boot
+References: <50E7FD79.1080605@gmx.de>
+In-Reply-To: <50E7FD79.1080605@gmx.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [172.30.48.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/01/13 01:13, lkml@tigusoft.pl wrote:
+On 01/05/2013 02:16 AM, Toralf Förster wrote:
+> At my stable Gentoo Linux I'm observed a change behaviour for the
+> configured TAP devices after the boot process.
+> 
+> $ diff 3.7.1 3.8.0-rc1+ | grep UP
+>- br0: flags=4355<UP,BROADCAST,PROMISC,MULTICAST>  mtu 1500
+>+ br0: flags=4419<UP,BROADCAST,RUNNING,PROMISC,MULTICAST>  mtu 1500
+>- tap0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+>+ tap0: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1500
+> 
+> May I ask you if this changed behaviour is intended ?
 
-> linux kernel
-> 3.2.0-0.bpo.4-rt-amd64 #1 SMP PREEMPT RT Debian 3.2.35-2~bpo60+1 x86_64
-> GNU/Linux
+I'm not aware of any changes in this behavior.
+btw Looks like it changed for your bridge interfaces as well. So it's not really
+specific to the TAP devices.
 
-will post later how it behaves on vanilla 3.2.36 and 3.7.1
+Someone from netdev would know :)
+
+Max
+
 
 
