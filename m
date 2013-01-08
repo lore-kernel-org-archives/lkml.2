@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab3AHGuw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 01:50:52 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:39976 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab3AHGuv (ORCPT
+	id S1753327Ab3AHGwL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 01:52:11 -0500
+Received: from casper.infradead.org ([85.118.1.10]:36009 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751084Ab3AHGwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 01:50:51 -0500
-X-AuditID: cbfec7f5-b7fd76d000007247-d5-50ebc1c9b2a9
-Message-id: <50EBC1C1.3060208@samsung.com>
-Date: Tue, 08 Jan 2013 07:50:41 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Jonathan Corbet <corbet@lwn.net>, Alessandro Rubini <rubini@gnudd.com>,
-        federico.vaga@gmail.com, mchehab@infradead.org, pawel@osciak.com,
-        hans.verkuil@cisco.com, giancarlo.asnaghi@st.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        s.nawrocki@samsung.com
-Subject: Re: [PATCH v3 2/4] videobuf2-dma-streaming: new videobuf2 memory
- allocator
-References: <3892735.vLSnhhCRFi@harkonnen>
- <1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
- <1399400.izKZgEHXnP@harkonnen> <12929800.xFTBAueAE0@harkonnen>
- <20130106230947.GA17979@mail.gnudd.com> <20130107124050.3fc5031b@lwn.net>
- <20130107181500.24c56803@redhat.com>
-In-reply-to: <20130107181500.24c56803@redhat.com>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xK7onD74OMLg9lcXi8q45bBY9G7ay
-	OjB5fN4kF8AYxWWTkpqTWZZapG+XwJWxtPskW8FBjoqv/WeYGhivs3UxcnJICJhIXPx6mQnC
-	FpO4cG89UJyLQ0hgKaPE3slNLCAJIYFmJolvLQkgNq+AlsS85xPB4iwCqhLHFzwBG8QmYCjR
-	9bYLzBYV8JWY9usaE0S9oMSPyfeA6jk4RAT0JLqaBEDmMwtMZ5I4s+MWO0iNsECoxJv/r5gg
-	Fs9mkvjZ9pgVJMEJNPRQ/wJGEJtZwEziUcs6ZghbXmLzmrfMExgFZiHZMQtJ2SwkZQsYmVcx
-	iqaWJhcUJ6XnGukVJ+YWl+al6yXn525ihATj1x2MS49ZHWIU4GBU4uG9GPM6QIg1say4MvcQ
-	owQHs5IIr/0+oBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZG1hml91l2NBW93l37dW2vV0t91kev
-	v4sf6y25onTQ9az4vt8eK7fYP5A58ic8/1rQD6/0CsYkjsy3L/P0C/pYRX3+7738wzWli/eR
-	yPX7tgpFvd+kL0+zz93COHFvTeGaL78YTeY2K4dwmyfznombmD9bXTJF70n64TVnlnGJfnRt
-	y3BYFfxOiaU4I9FQi7moOBEA5VonSyQCAAA=
+	Tue, 8 Jan 2013 01:52:10 -0500
+Message-ID: <50EBC259.6080702@infradead.org>
+Date: Mon, 07 Jan 2013 22:53:13 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: paulmck@linux.vnet.ibm.com
+CC: Steven Rostedt <rostedt@goodmis.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 7 (rcutorture)
+References: <20130107142649.c843e0b711532dc3a631e4cf@canb.auug.org.au> <50EB252C.4010005@infradead.org> <20130107221627.GZ2525@linux.vnet.ibm.com> <20130108095959.98d83d91dbd0e9e1ac023373@canb.auug.org.au> <1357600327.5190.13.camel@gandalf.local.home> <1357605379.5190.15.camel@gandalf.local.home> <20130108035348.GF2525@linux.vnet.ibm.com>
+In-Reply-To: <20130108035348.GF2525@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/07/13 19:53, Paul E. McKenney wrote:
+> On Mon, Jan 07, 2013 at 07:36:19PM -0500, Steven Rostedt wrote:
+>> On Mon, 2013-01-07 at 18:12 -0500, Steven Rostedt wrote:
+>>> On Tue, 2013-01-08 at 09:59 +1100, Stephen Rothwell wrote:
+>>>> Hi Paul,
+>>>>
+>>>> On Mon, 7 Jan 2013 14:16:27 -0800 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+>>>>>
+>>>>> On Mon, Jan 07, 2013 at 11:42:36AM -0800, Randy Dunlap wrote:
+>>>>>>
+>>>>>> on i386 or x86_64:
+>>>>>>
+>>>>>> ERROR: "trace_clock_local" [kernel/rcutorture.ko] undefined!
+>>>>>
+>>>>> Hello, Randy,
+>>>>>
+>>>>> Did your build include the following, also pushed to -next in that same
+>>>>> batch from -rcu?  Including Steven Rostedt on CC for his take.
+>>>>
+>>>> That commit was certainly in next-20130107.
+>>>
+>>> Could be bad config dependencies.
+>>
+>> Paul,
+>>
+>> You need to also select TRACE_CLOCK if you are going to use it.
+> 
+> Thank you, Steve!
+> 
+> Randy, does the following patch help?
 
-On 1/7/2013 9:15 PM, Mauro Carvalho Chehab wrote:
-> Em Mon, 7 Jan 2013 12:40:50 -0700
-> Jonathan Corbet <corbet@lwn.net> escreveu:
->
-> > On Mon, 7 Jan 2013 00:09:47 +0100
-> > Alessandro Rubini <rubini@gnudd.com> wrote:
-> >
-> > > I don't expect you'll see serious performance differences on the PC. I
-> > > think ARM users will have better benefits, due to the different cache
-> > > architecture.  You told me Jon measured meaningful figures on a Marvel
-> > > CPU.
-> >
-> > It made the difference between 10 frames per second with the CPU running
-> > flat out and 30fps mostly idle.  I think that probably counts as
-> > meaningful, yeah...:)
->
-> Couldn't this performance difference be due to the usage of GFP_DMA inside
-> the VB2 code, like Federico's new patch series is proposing?
->
-> If not, why are there a so large performance penalty?
+Yes, that's good.
 
-Nope, this was caused rather by a very poor CPU access to non-cached (aka
-'coherent') memory and the way the video data has been accessed/read 
-with CPU.
+Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
-Best regards
+Thanks.
+
+
+> 							Thanx, Paul
+> 
+> ------------------------------------------------------------------------
+> 
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index ce75d3b..b0fe7bd 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -1010,6 +1010,7 @@ config RCU_CPU_STALL_INFO
+>  config RCU_TRACE
+>  	bool "Enable tracing for RCU"
+>  	depends on DEBUG_KERNEL
+> +	select TRACE_CLOCK
+>  	help
+>  	  This option provides tracing in RCU which presents stats
+>  	  in debugfs for debugging RCU implementation.
+> 
+> --
+
+
+
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
-
+~Randy
