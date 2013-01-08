@@ -1,200 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756408Ab3AHOEP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:04:15 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:50344 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756359Ab3AHOEO (ORCPT
+	id S1756410Ab3AHOJH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:09:07 -0500
+Received: from www.linutronix.de ([62.245.132.108]:35336 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756263Ab3AHOJG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:04:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <50EBB76A.3070501@linux.vnet.ibm.com>
-References: <50E3B61A.3040808@linux.vnet.ibm.com>
-	<CAKfTPtDF==vxfLy8JA5UtszdRPFSoTs8t7LkdeUjUOM6SsF1PA@mail.gmail.com>
-	<50EBB76A.3070501@linux.vnet.ibm.com>
-Date: Tue, 8 Jan 2013 15:04:12 +0100
-Message-ID: <CAKfTPtB4ABqkB=x6sUzCmvJCj6p+RaFKpGYneNt+zASyL-oU0w@mail.gmail.com>
-Subject: Re: sched: Consequences of integrating the Per Entity Load Tracking
- Metric into the Load Balancer
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Mike Galbraith <bitbucket@online.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Amit Kucheria <amit.kucheria@linaro.org>,
-        Morten Rasmussen <Morten.Rasmussen@arm.com>,
-        Paul McKenney <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Turner <pjt@google.com>,
-        Venki Pallipadi <venki@google.com>,
-        Robin Randhawa <robin.randhawa@arm.com>,
-        Lists linaro-dev <linaro-dev@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Jan 2013 09:09:06 -0500
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] tools/perf: let it build from perf-*-src-pkg
+Date: Tue,  8 Jan 2013 15:08:54 +0100
+Message-Id: <1357654134-28538-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.10.4
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 January 2013 07:06, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
-> On 01/07/2013 09:18 PM, Vincent Guittot wrote:
->> On 2 January 2013 05:22, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
->>> Hi everyone,
->>> I have been looking at how different workloads react when the per entity
->>> load tracking metric is integrated into the load balancer and what are
->>> the possible reasons for it.
->>>
->>> I had posted the integration patch earlier:
->>> https://lkml.org/lkml/2012/11/15/391
->>>
->>> Essentially what I am doing is:
->>> 1.I have disabled CONFIG_FAIR_GROUP_SCHED to make the analysis simple
->>> 2.I have replaced cfs_rq->load.weight in weighted_cpuload() with
->>> cfs.runnable_load_avg,the active load tracking metric.
->>> 3.I have replaced se.load.weight in task_h_load() with
->>> se.load.avg.contrib,the per entity load tracking metric.
->>> 4.The load balancer will end up using these metrics.
->>>
->>> After conducting experiments on several workloads I found out that the
->>> performance of the workloads with the above integration would neither
->>> improve nor deteriorate.And this observation was consistent.
->>>
->>> Ideally the performance should have improved considering,that the metric
->>> does better tracking of load.
->>>
->>> Let me explain with a simple example as to why we should see a
->>> performance improvement ideally:Consider 2 80% tasks and 1 40% task.
->>>
->>> With integration:
->>> ----------------
->>>
->>>        40%
->>> 80%    40%
->>> cpu1  cpu2
->>>
->>> The above will be the scenario when the tasks fork initially.And this is
->>> a perfectly balanced system,hence no more load balancing.And proper
->>> distribution of loads on the cpu.
->>>
->>> Without integration
->>> -------------------
->>>
->>> 40%                               40%
->>> 80%    40%                 80%    40%
->>> cpu1   cpu2        OR     cpu1   cpu2
->>>
->>> Because the  view is that all the tasks as having the same load.The load
->>> balancer could ping pong tasks between these two situations.
->>>
->>> When I performed this experiment,I did not see an improvement in the
->>> performance though in the former case.On further observation I found
->>> that the following was actually happening.
->>>
->>> With integration
->>> ----------------
->>>
->>> Initially         40% task sleeps      40% task wakes up
->>>                                        and select_idle_sibling()
->>>                                        decides to wake it up on cpu1
->>>
->>>        40%   ->                   ->   40%
->>> 80%    40%        80%    40%           80%      40%
->>> cpu1  cpu2        cpu1   cpu2          cpu1     cpu2
->>>
->>>
->>> This makes load balance trigger movement of 40% from cpu1 back to
->>> cpu2.Hence the stability that the load balancer was trying to achieve is
->>> gone.Hence the culprit boils down to select_idle_sibling.How is it the
->>> culprit and how is it hindering performance of the workloads?
->>>
->>> *What is the way ahead with the per entity load tracking metric in the
->>> load balancer then?*
->>>
->>> In replies to a post by Paul in https://lkml.org/lkml/2012/12/6/105,
->>> he mentions the following:
->>>
->>> "It is my intuition that the greatest carnage here is actually caused
->>> by wake-up load-balancing getting in the way of periodic in
->>> establishing a steady state. I suspect more mileage would result from
->>> reducing the interference wake-up load-balancing has with steady
->>> state."
->>>
->>> "The whole point of using blocked load is so that you can converge on a
->>> steady state where you don't NEED to move tasks.  What disrupts this is
->>> we naturally prefer idle cpus on wake-up balance to reduce wake-up
->>> latency. I think the better answer is making these two processes load
->>> balancing() and select_idle_sibling() more co-operative."
->>>
->>> I had not realised how this would happen until I saw it happening in the
->>> above experiment.
->>>
->>> Based on what Paul explained above let us use the runnable load + the
->>> blocked load for calculating the load on a cfs runqueue rather than just
->>> the runnable load(which is what i am doing now) and see its consequence.
->>>
->>> Initially:       40% task sleeps
->>>
->>>        40%
->>> 80%    40%   ->  80%  40%
->>> cpu1   cpu2     cpu1  cpu2
->>>
->>> So initially the load on cpu1 is say 80 and on cpu2 also it is
->>> 80.Balanced.Now when 40% task sleeps,the total load on cpu2=runnable
->>> load+blocked load.which is still 80.
->>>
->>> As a consequence,firstly,during periodic load balancing the load is not
->>> moved from cpu1 to cpu2 when the 40% task sleeps.(It sees the load on
->>> cpu2 as 80 and not as 40).
->>> Hence the above scenario remains the same.On wake up,what happens?
->>>
->>> Here comes the point of making both load balancing and wake up
->>> balance(select_idle_sibling) co operative. How about we always schedule
->>> the woken up task on the prev_cpu? This seems more sensible considering
->>> load balancing considers blocked load as being a part of the load of cpu2.
->>
->> Hi Preeti,
->>
->> I'm not sure that we want such steady state at cores level because we
->> take advantage of migrating wake up tasks between cores that share
->> their cache as Matthew demonstrated. But I agree that reaching such
->> steady state at cluster and CPU level is interesting.
->>
->> IMHO, you're right that taking the blocked load into consideration
->> should minimize tasks migration between cluster but it should no
->> prevent fast task migration between cores that share their cache
->
-> True Vincent.But I think the one disadvantage even at cpu or cluster
-> level is that when we consider blocked load, we might prevent any more
-> tasks from being scheduled on that cpu during periodic load balance if
-> the blocked load is too much.This is very poor cpu utilization
+Thanks (mostly) to uapi the package created from perf-*-src-pkg FTBFS:
 
-The blocked load of a cluster will be high if the blocked tasks have
-run recently. The contribution of a blocked task will be divided by 2
-each 32ms, so it means that a high blocked load will be made of recent
-running tasks and the long sleeping tasks will not influence the load
-balancing.
-The load balance period is between 1 tick (10ms for idle load balance
-on ARM) and up to 256 ms (for busy load balance) so a high blocked
-load should imply some tasks that have run recently otherwise your
-blocked load will be small and will not have a large influence on your
-load balance
+|    CC perf.o
+|In file included from util/../perf.h:8:0,
+|                 from util/cache.h:7,
+|                 from perf.c:12:
+|arch/x86/include/asm/unistd.h:4:29: fatal error: uapi/asm/unistd.h: No such file or directory
+|
+|    CC perf.o
+|In file included from util/../perf.h:106:0,
+|                 from util/cache.h:7,
+|                 from perf.c:12:
+|include/linux/perf_event.h:17:35: fatal error: uapi/linux/perf_event.h: No such file or directory
+|
+|    CC perf.o
+|In file included from include/uapi/linux/perf_event.h:19:0,
+|                 from util/../perf.h:106,
+|                 from util/cache.h:7,
+|                 from perf.c:12:
+|util/include/asm/byteorder.h:2:49: fatal error: ../../../../include/uapi/linux/swab.h: No such file or directory
+|
+|    CC perf.o
+|In file included from util/include/../../../../include/linux/list.h:7:0,
+|                 from util/include/linux/list.h:4,
+|                 from util/parse-events.h:7,
+|                 from perf.c:15:
+|util/include/linux/const.h:1:50: fatal error: ../../../../include/uapi/linux/const.h: No such file or directory
+|
+|In file included from builtin-kvm.c:26:0:
+|arch/x86/include/asm/svm.h:4:26: fatal error: uapi/asm/svm.h: No such file or directory
+|
+|In file included from util/evsel.c:21:0:
+|include/linux/hw_breakpoint.h:5:38: fatal error: uapi/linux/hw_breakpoint.h: No such file or directory
+|
+|    CC util/evsel.o
+|In file included from util/perf_regs.h:5:0,
+|                 from util/evsel.c:23:
+|arch/x86/include/perf_regs.h:6:27: fatal error: asm/perf_regs.h: No such file or directory
+|
+|   CC util/rbtree.o
+|In file included from ../../lib/rbtree.c:24:0:
+|util/include/linux/rbtree_augmented.h:2:56: fatal error: ../../../../include/linux/rbtree_augmented.h: No such file or directory
 
->
-> Also we can consider steady states if the waking tasks have a specific
-> waking pattern.I am not sure if we can risk hoping that the blocked task
-> would wake up soon or would wake up at time 'x' and utilize that cpu.
+This patch adds the missing files.
 
-Ok, so you don't consider to use blocked load in load balancing any more ?
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
 
-regards,
-Vincent
->
->>
->> Vincent
->
-> Regards
-> Preeti U Murthy
->
+  sort tools/perf/MANIFEST > MANIFEST && mv MANIFEST tools/perf/MANIFEST
+
+?
+
+ tools/perf/MANIFEST |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
+index 80db3f4..39d4106 100644
+--- a/tools/perf/MANIFEST
++++ b/tools/perf/MANIFEST
+@@ -11,11 +11,21 @@ lib/rbtree.c
+ include/linux/swab.h
+ arch/*/include/asm/unistd*.h
+ arch/*/include/asm/perf_regs.h
++arch/*/include/uapi/asm/unistd*.h
++arch/*/include/uapi/asm/perf_regs.h
+ arch/*/lib/memcpy*.S
+ arch/*/lib/memset*.S
+ include/linux/poison.h
+ include/linux/magic.h
+ include/linux/hw_breakpoint.h
++include/linux/rbtree_augmented.h
++include/uapi/linux/perf_event.h
++include/uapi/linux/const.h
++include/uapi/linux/swab.h
++include/uapi/linux/hw_breakpoint.h
+ arch/x86/include/asm/svm.h
+ arch/x86/include/asm/vmx.h
+ arch/x86/include/asm/kvm_host.h
++arch/x86/include/uapi/asm/svm.h
++arch/x86/include/uapi/asm/vmx.h
++arch/x86/include/uapi/asm/kvm.h
+-- 
+1.7.10.4
+
