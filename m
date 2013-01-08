@@ -1,146 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab3AHHcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 02:32:47 -0500
-Received: from mga14.intel.com ([143.182.124.37]:52614 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751586Ab3AHHcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 02:32:45 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,428,1355126400"; 
-   d="scan'208";a="188754018"
-Message-ID: <50EBCBC3.4070606@intel.com>
-Date: Tue, 08 Jan 2013 15:33:23 +0800
-From: Aaron Lu <aaron.lu@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1754350Ab3AHHdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 02:33:08 -0500
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:12916 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751093Ab3AHHdF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 02:33:05 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 07 Jan 2013 23:32:58 -0800
+From: Laxman Dewangan <ldewangan@nvidia.com>
+To: <linus.walleij@linaro.org>
+CC: <praithatha@nvidia.com>, <grant.likely@secretlab.ca>,
+        <rob.herring@calxeda.com>, <devicetree-discuss@lists.ozlabs.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-tegra@vger.kernel.org>, Laxman Dewangan <ldewangan@nvidia.com>
+Subject: [PATCH V2 1/2] pinctrl: tegra: add support for rcv-sel and drive type
+Date: Tue, 8 Jan 2013 13:02:36 +0530
+Message-ID: <1357630357-7309-1-git-send-email-ldewangan@nvidia.com>
+X-Mailer: git-send-email 1.7.1.1
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        linux-pm@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v6 0/4] block layer runtime pm
-References: <Pine.LNX.4.44L0.1301071200420.1658-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1301071200420.1658-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 01:11 AM, Alan Stern wrote:
-> On Sun, 6 Jan 2013, Aaron Lu wrote:
-> 
->> In August 2010, Jens and Alan discussed about "Runtime PM and the block
->> layer". http://marc.info/?t=128259108400001&r=1&w=2
->> And then Alan has given a detailed implementation guide:
->> http://marc.info/?l=linux-scsi&m=133727953625963&w=2
->>
->> To test:
->> # ls -l /sys/block/sda
->> /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/block/sda
->>
->> # echo 10000 > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/autosuspend_delay_ms
->> # echo auto > /sys/devices/pci0000:00/0000:00:1f.2/ata1/host0/target0:0:0/0:0:0:0/power/control
->> Then you'll see sda is suspended after 10secs idle.
->>
->> [ 1767.680192] sd 2:0:0:0: [sda] Synchronizing SCSI cache
->> [ 1767.680317] sd 2:0:0:0: [sda] Stopping disk
->>
->> And if you do some IO, it will resume immediately.
->> [ 1791.052438] sd 2:0:0:0: [sda] Starting disk
->>
->> For test, I often set the autosuspend time to 1 second. If you are using
->> a GUI, the 10 seconds delay may be too long that the disk can not enter
->> runtime suspended state.
->>
->> Note that sd's runtime suspend callback will dump some kernel messages
->> and the syslog daemon will write kernel message to /var/log/messages,
->> making the disk instantly resume after suspended. So for test, the
->> syslog daemon should better be temporarily stopped.
->>
->> v6:
->> Take over from Lin Ming.
->>
->> - Instead of put the device into autosuspend state in
->>   blk_post_runtime_suspend, do it when the last request is finished.
->>   This can also solve the problem illustrated below:
->>
->>       thread A				      thread B
->> |suspend timer expired			|
->> |  ... ...				|a new request comes in,
->> |  ... ...				|blk_pm_add_request
->> |  ... ...				|skip request_resume due to
->> |  ... ...				|q->status is still RPM_ACTIVE
->> |  rpm_suspend				|  ... ...
->> |    scsi_runtime_suspend		|  ... ...
->> |      blk_pre_runtime_suspend		|  ... ...
->> |      return -EBUSY due to nr_pending	|  ... ...
->> |  rpm_suspend done			|  ... ...
->> |					|    blk_pm_put_request, mark last busy
->>
->> But no more trigger point, and the device will stay at RPM_ACTIVE state.
->> Run pm_runtime_autosuspend after the last request is finished solved
->> this problem.
-> 
-> This doesn't look like the best solution, because it involves adding a 
-> nontrivial routine (pm_runtime_autosuspend) to a hot path.
+From: Pritesh Raithatha <praithatha@nvidia.com>
 
-Oh right, I didn't realize this. Thanks for pointing this out.
+NVIDIA's Tegra114 added two more configuration parameter in pinmux i.e.
+rcv-sel and drive type.
 
-> 
-> How about this instead?  When blk_pre_runtime_suspend returns -EBUSY,
-> have it do a mark-last-busy.  Then rpm_suspend will automatically
-> reschedule the autosuspend for later.
+rcv-sel: Select between High and Normal VIL/VIH receivers.
+	RCVR_SEL=1: High VIL/VIH
+	RCVR_SEL=0: Normal VIL/VIH
 
-Yes, this is better.
+drv_type: Ouptput drive type:
+	33-50 ohm driver: 0x1
+	66-100ohm driver: 0x0
 
-> 
->> - Requests which have the REQ_PM flag should not involve nr_pending
->>   counting, or we may lose the condition to resume the device:
->>   Suppose queue is active and nr_pending is 0. Then a REQ_PM request
->>   comes and nr_pending will be increased to 1, but since the request has
->>   REQ_PM flag, it will not cause resume. Before it is finished, a normal
->>   request comes in, and since nr_pending is 1 now, it will not trigger
->>   the resume of the device either. Bug.
->>
->> - Do not quiesce the device in scsi bus level runtime suspend callback.
->>   Since the only reason the device is to be runtime suspended is due to
->>   no more requests pending for it, quiesce it is pointless.
->>
->> - Remove scsi_autopm_* from sd_check_events as we are request driven.
->>
->> - Call blk_pm_runtime_init in scsi_sysfs_initialize_dev, so that we do
->>   not need to check queue's device in blk_pm_add/put_request.
-> 
-> I think you still need to have that check.  After all, the block layer 
-> has other users besides the SCSI stack, and those users don't call 
-> blk_pm_runtime_init.
+Add support of these parameters to be configure from DTS file.
 
-Right...
+Tegra20 and Tegra30 does not support this configuration and hence initialize their
+pinmux structure with reg = -1.
 
-So this also reminds me that as long as CONFIG_PM_RUNTIME is selected,
-the blk_pm_add/put/peek_request functions will be in the block IO path.
-Shall we introduce a new config option to selectively build block
-runtime PM functionality? something like CONFIG_BLK_PM_RUNTIME perhaps?
+Originally written by Pritesh Raithatha.
+Changes by ldewangan:
+	- remove drvtype_width as it is always 2.
+	- Better describe the change.
 
-Just some condition checks in those functions, not sure if it is worth a
-new config though. Please suggest, thanks.
+Signed-off-by: Pritesh Raithatha <praithatha@nvidia.com>
+Signed-off-by: Laxman Dewangan <ldewangan@nvidia.com>
+Reviewed-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes from V1:
+- none in code, added Stephen in review-by.
 
-> 
->> - Do not mark last busy and initiate an autosuspend for the device in
->>   blk_pm_runtime_init function.
->>
->> - Do not mark last busy and initiate an autosuspend for the device in
->>   block_post_runtime_resume, as when the request that triggered the
->>   resume finished, the blk_pm_put_request will mark last busy and
->>   initiate an autosuspend.
-> 
-> If you make the change that I recommended above then this is still 
-> necessary.
+ drivers/pinctrl/pinctrl-tegra.c   |   14 ++++++++++++++
+ drivers/pinctrl/pinctrl-tegra.h   |   16 ++++++++++++++++
+ drivers/pinctrl/pinctrl-tegra20.c |    6 ++++++
+ drivers/pinctrl/pinctrl-tegra30.c |    4 ++++
+ 4 files changed, 40 insertions(+), 0 deletions(-)
 
-Yes, they are needed. Thanks!
-
--Aaron
+diff --git a/drivers/pinctrl/pinctrl-tegra.c b/drivers/pinctrl/pinctrl-tegra.c
+index ae1e4bb..f195d77 100644
+--- a/drivers/pinctrl/pinctrl-tegra.c
++++ b/drivers/pinctrl/pinctrl-tegra.c
+@@ -201,6 +201,7 @@ static const struct cfg_param {
+ 	{"nvidia,open-drain",		TEGRA_PINCONF_PARAM_OPEN_DRAIN},
+ 	{"nvidia,lock",			TEGRA_PINCONF_PARAM_LOCK},
+ 	{"nvidia,io-reset",		TEGRA_PINCONF_PARAM_IORESET},
++	{"nvidia,rcv-sel",		TEGRA_PINCONF_PARAM_RCV_SEL},
+ 	{"nvidia,high-speed-mode",	TEGRA_PINCONF_PARAM_HIGH_SPEED_MODE},
+ 	{"nvidia,schmitt",		TEGRA_PINCONF_PARAM_SCHMITT},
+ 	{"nvidia,low-power-mode",	TEGRA_PINCONF_PARAM_LOW_POWER_MODE},
+@@ -208,6 +209,7 @@ static const struct cfg_param {
+ 	{"nvidia,pull-up-strength",	TEGRA_PINCONF_PARAM_DRIVE_UP_STRENGTH},
+ 	{"nvidia,slew-rate-falling",	TEGRA_PINCONF_PARAM_SLEW_RATE_FALLING},
+ 	{"nvidia,slew-rate-rising",	TEGRA_PINCONF_PARAM_SLEW_RATE_RISING},
++	{"nvidia,drive-type",		TEGRA_PINCONF_PARAM_DRIVE_TYPE},
+ };
+ 
+ static int tegra_pinctrl_dt_subnode_to_map(struct device *dev,
+@@ -450,6 +452,12 @@ static int tegra_pinconf_reg(struct tegra_pmx *pmx,
+ 		*bit = g->ioreset_bit;
+ 		*width = 1;
+ 		break;
++	case TEGRA_PINCONF_PARAM_RCV_SEL:
++		*bank = g->rcv_sel_bank;
++		*reg = g->rcv_sel_reg;
++		*bit = g->rcv_sel_bit;
++		*width = 1;
++		break;
+ 	case TEGRA_PINCONF_PARAM_HIGH_SPEED_MODE:
+ 		*bank = g->drv_bank;
+ 		*reg = g->drv_reg;
+@@ -492,6 +500,12 @@ static int tegra_pinconf_reg(struct tegra_pmx *pmx,
+ 		*bit = g->slwr_bit;
+ 		*width = g->slwr_width;
+ 		break;
++	case TEGRA_PINCONF_PARAM_DRIVE_TYPE:
++		*bank = g->drvtype_bank;
++		*reg = g->drvtype_reg;
++		*bit = g->drvtype_bit;
++		*width = 2;
++		break;
+ 	default:
+ 		dev_err(pmx->dev, "Invalid config param %04x\n", param);
+ 		return -ENOTSUPP;
+diff --git a/drivers/pinctrl/pinctrl-tegra.h b/drivers/pinctrl/pinctrl-tegra.h
+index 62e3809..817f706 100644
+--- a/drivers/pinctrl/pinctrl-tegra.h
++++ b/drivers/pinctrl/pinctrl-tegra.h
+@@ -30,6 +30,8 @@ enum tegra_pinconf_param {
+ 	/* argument: Boolean */
+ 	TEGRA_PINCONF_PARAM_IORESET,
+ 	/* argument: Boolean */
++	TEGRA_PINCONF_PARAM_RCV_SEL,
++	/* argument: Boolean */
+ 	TEGRA_PINCONF_PARAM_HIGH_SPEED_MODE,
+ 	/* argument: Boolean */
+ 	TEGRA_PINCONF_PARAM_SCHMITT,
+@@ -43,6 +45,8 @@ enum tegra_pinconf_param {
+ 	TEGRA_PINCONF_PARAM_SLEW_RATE_FALLING,
+ 	/* argument: Integer, range is HW-dependant */
+ 	TEGRA_PINCONF_PARAM_SLEW_RATE_RISING,
++	/* argument: Integer, range is HW-dependant */
++	TEGRA_PINCONF_PARAM_DRIVE_TYPE,
+ };
+ 
+ enum tegra_pinconf_pull {
+@@ -95,6 +99,9 @@ struct tegra_function {
+  * @ioreset_reg:	IO reset register offset. -1 if unsupported.
+  * @ioreset_bank:	IO reset register bank. 0 if unsupported.
+  * @ioreset_bit:	IO reset register bit. 0 if unsupported.
++ * @rcv_sel_reg:	Receiver select offset. -1 if unsupported.
++ * @rcv_sel_bank:	Receiver select bank. 0 if unsupported.
++ * @rcv_sel_bit:	Receiver select bit. 0 if unsupported.
+  * @drv_reg:		Drive fields register offset. -1 if unsupported.
+  *			This register contains the hsm, schmitt, lpmd, drvdn,
+  *			drvup, slwr, and slwf parameters.
+@@ -110,6 +117,9 @@ struct tegra_function {
+  * @slwr_width:		Slew Rising field width. 0 if unsupported.
+  * @slwf_bit:		Slew Falling register bit. 0 if unsupported.
+  * @slwf_width:		Slew Falling field width. 0 if unsupported.
++ * @drvtype_reg:	Drive type fields register offset. -1 if unsupported.
++ * @drvtype_bank:	Drive type fields register bank. 0 if unsupported.
++ * @drvtype_bit:	Drive type register bit. 0 if unsupported.
+  *
+  * A representation of a group of pins (possibly just one pin) in the Tegra
+  * pin controller. Each group allows some parameter or parameters to be
+@@ -131,15 +141,19 @@ struct tegra_pingroup {
+ 	s16 odrain_reg;
+ 	s16 lock_reg;
+ 	s16 ioreset_reg;
++	s16 rcv_sel_reg;
+ 	s16 drv_reg;
++	s16 drvtype_reg;
+ 	u32 mux_bank:2;
+ 	u32 pupd_bank:2;
+ 	u32 tri_bank:2;
+ 	u32 einput_bank:2;
+ 	u32 odrain_bank:2;
+ 	u32 ioreset_bank:2;
++	u32 rcv_sel_bank:2;
+ 	u32 lock_bank:2;
+ 	u32 drv_bank:2;
++	u32 drvtype_bank:2;
+ 	u32 mux_bit:5;
+ 	u32 pupd_bit:5;
+ 	u32 tri_bit:5;
+@@ -147,6 +161,7 @@ struct tegra_pingroup {
+ 	u32 odrain_bit:5;
+ 	u32 lock_bit:5;
+ 	u32 ioreset_bit:5;
++	u32 rcv_sel_bit:5;
+ 	u32 hsm_bit:5;
+ 	u32 schmitt_bit:5;
+ 	u32 lpmd_bit:5;
+@@ -154,6 +169,7 @@ struct tegra_pingroup {
+ 	u32 drvup_bit:5;
+ 	u32 slwr_bit:5;
+ 	u32 slwf_bit:5;
++	u32 drvtype_bit:5;
+ 	u32 drvdn_width:6;
+ 	u32 drvup_width:6;
+ 	u32 slwr_width:6;
+diff --git a/drivers/pinctrl/pinctrl-tegra20.c b/drivers/pinctrl/pinctrl-tegra20.c
+index e848189..fcfb7d0 100644
+--- a/drivers/pinctrl/pinctrl-tegra20.c
++++ b/drivers/pinctrl/pinctrl-tegra20.c
+@@ -2624,7 +2624,9 @@ static const struct tegra_function tegra20_functions[] = {
+ 		.odrain_reg = -1,				\
+ 		.lock_reg = -1,					\
+ 		.ioreset_reg = -1,				\
++		.rcv_sel_reg = -1,				\
+ 		.drv_reg = -1,					\
++		.drvtype_reg = -1,				\
+ 	}
+ 
+ /* Pin groups with only pull up and pull down control */
+@@ -2642,7 +2644,9 @@ static const struct tegra_function tegra20_functions[] = {
+ 		.odrain_reg = -1,				\
+ 		.lock_reg = -1,					\
+ 		.ioreset_reg = -1,				\
++		.rcv_sel_reg = -1,				\
+ 		.drv_reg = -1,					\
++		.drvtype_reg = -1,				\
+ 	}
+ 
+ /* Pin groups for drive strength registers (configurable version) */
+@@ -2660,6 +2664,7 @@ static const struct tegra_function tegra20_functions[] = {
+ 		.odrain_reg = -1,				\
+ 		.lock_reg = -1,					\
+ 		.ioreset_reg = -1,				\
++		.rcv_sel_reg = -1,				\
+ 		.drv_reg = ((r) - PINGROUP_REG_A),		\
+ 		.drv_bank = 3,					\
+ 		.hsm_bit = hsm_b,				\
+@@ -2673,6 +2678,7 @@ static const struct tegra_function tegra20_functions[] = {
+ 		.slwr_width = slwr_w,				\
+ 		.slwf_bit = slwf_b,				\
+ 		.slwf_width = slwf_w,				\
++		.drvtype_reg = -1,				\
+ 	}
+ 
+ /* Pin groups for drive strength registers (simple version) */
+diff --git a/drivers/pinctrl/pinctrl-tegra30.c b/drivers/pinctrl/pinctrl-tegra30.c
+index 9ad87ea..2300deb 100644
+--- a/drivers/pinctrl/pinctrl-tegra30.c
++++ b/drivers/pinctrl/pinctrl-tegra30.c
+@@ -3384,7 +3384,9 @@ static const struct tegra_function tegra30_functions[] = {
+ 		.ioreset_reg = PINGROUP_REG_##ior(r),		\
+ 		.ioreset_bank = 1,				\
+ 		.ioreset_bit = 8,				\
++		.rcv_sel_reg = -1,				\
+ 		.drv_reg = -1,					\
++		.drvtype_reg = -1,				\
+ 	}
+ 
+ #define DRV_PINGROUP(pg_name, r, hsm_b, schmitt_b, lpmd_b,	\
+@@ -3401,6 +3403,7 @@ static const struct tegra_function tegra30_functions[] = {
+ 		.odrain_reg = -1,				\
+ 		.lock_reg = -1,					\
+ 		.ioreset_reg = -1,				\
++		.rcv_sel_reg = -1,				\
+ 		.drv_reg = ((r) - DRV_PINGROUP_REG_A),		\
+ 		.drv_bank = 0,					\
+ 		.hsm_bit = hsm_b,				\
+@@ -3414,6 +3417,7 @@ static const struct tegra_function tegra30_functions[] = {
+ 		.slwr_width = slwr_w,				\
+ 		.slwf_bit = slwf_b,				\
+ 		.slwf_width = slwf_w,				\
++		.drvtype_reg = -1,				\
+ 	}
+ 
+ static const struct tegra_pingroup tegra30_groups[] = {
+-- 
+1.7.1.1
 
