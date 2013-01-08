@@ -1,89 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab3AHEDd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 23:03:33 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:44962 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab3AHEDb (ORCPT
+	id S1753323Ab3AHEGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 23:06:36 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:43111 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068Ab3AHEGf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 23:03:31 -0500
+	Mon, 7 Jan 2013 23:06:35 -0500
+Date: Mon, 7 Jan 2013 20:06:26 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 26/33] rcu: Don't keep the tick for RCU while in userspace
+Message-ID: <20130108040625.GH2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+ <1357610913-1080-27-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1357597795.5190.10.camel@gandalf.local.home>
-References: <cover.1352196505.git.viresh.kumar@linaro.org>
-	<ad25c731a6ca1bd1269555245952f05c856a9759.1352196505.git.viresh.kumar@linaro.org>
-	<20121126171539.GZ15971@htj.dyndns.org>
-	<CAKohpom9=K976NmyFWtXx2UQyRcLAqsoGw-5AaqXRpSL6uxP_g@mail.gmail.com>
-	<CAKohpokBMhto6xzp3MPGRJqstEkkC=kzgrKNhVXzi1Y8GejkXg@mail.gmail.com>
-	<20130104150928.GC15633@mtj.dyndns.org>
-	<CAKohpo=hhScCDUnDcqnZx4YzU_8nF1658jmSM_wzsOpSCxXwqA@mail.gmail.com>
-	<1357565303.10284.73.camel@gandalf.local.home>
-	<CAKohpom9DxoojtcpMfmyGeUcEw8=tsS4n+TFMRV3+9_UBaod7g@mail.gmail.com>
-	<1357597795.5190.10.camel@gandalf.local.home>
-Date: Tue, 8 Jan 2013 09:33:31 +0530
-Message-ID: <CAKohpokNeZjvvEcfb+vAjkpAdZqPAusckVET8QgRk_BwwfpsJw@mail.gmail.com>
-Subject: Re: [PATCH V2 Resend 3/4] workqueue: Schedule work on non-idle cpu
- instead of current one
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tejun Heo <tj@kernel.org>, Vincent Guittot <vincent.guittot@linaro.org>,
-        pjt@google.com, paul.mckenney@linaro.org, tglx@linutronix.de,
-        suresh.b.siddha@intel.com, venki@google.com, mingo@redhat.com,
-        peterz@infradead.org, Arvind.Chauhan@arm.com,
-        linaro-dev@lists.linaro.org, patches@linaro.org,
-        pdsw-power-team@arm.com, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357610913-1080-27-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010804-5518-0000-0000-00000A8C7AE9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
+On Tue, Jan 08, 2013 at 03:08:26AM +0100, Frederic Weisbecker wrote:
+> If we are interrupting userspace, we don't need to keep
+> the tick for RCU: quiescent states don't need to be reported
+> because we soon run in userspace and local callbacks are handled
+> by the nocb threads.
+> 
+> CHECKME: Do the nocb threads actually handle the global
+> grace period completion for local callbacks?
 
-On 8 January 2013 03:59, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Mon, 2013-01-07 at 23:29 +0530, Viresh Kumar wrote:
->
->> > By default, I would suggest for cache locality,
->> > that we try to keep it on the same CPU. But if there's a better CPU to
->> > run on, it runs there.
->>
->> That would break our intention behind this routine. We should run
->> it on a cpu which we think is the best one for it power/performance wise.
->
-> If you are running on a big.Little box sure. But for normal (read x86 ;)
-> systems, it should probably stay on the current CPU.
+First answering this for the nocb stuff in mainline:  In this case,
+the grace-period startup is handled by the CPU that is not a nocb
+CPU, and there has to be at least one.  The grace-period completion
+is handled by the grace-period kthreads.  The nocbs CPU need do
+nothing, at least assuming that it gets back into dyntick-idle
+(or adaptive tickless) state reasonably quickly.
 
-But that's not the purpose of this new call. If the caller want it to be on
-local cpu, he must not use this call. It is upto the core routine
-(sched_select_cpu()
-in our case) to decide where to launch it. If we need something special for x86,
-we can hack this routine.
+Second for the version in -rcu: In this case, the nocb kthreads
+register the need for a grace period using a new mechanism that
+pushes the need up the rcu_node tree.  The grace-period completion
+is again handled by the grace-period kthreads.  This allows all
+CPUs to be nocbs CPUs.
 
-Even for non bigLITTLE systems, we may want to run a work on non-idle cpu and
-so we can't guarantee local cpu here.
+So, in either case, yes, the below code should be safe as long as
+the CPU gets into an RCU-idle state quickly (as in within a few
+milliseconds or so).
 
->> So, i would like to call the sched_select_cpu() routine from this routine to
->> get the suggested cpu.
->
-> Does the caller need to know? Or if you have a big.LITTLE setup, it
-> should just work automagically?
+						Thanx, Paul
 
-Caller wouldn't know, he just needs to trust on sched_select_cpu() to give the
-most optimum cpu.
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Alessio Igor Bogani <abogani@kernel.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Geoff Levand <geoff@infradead.org>
+> Cc: Gilad Ben Yossef <gilad@benyossef.com>
+> Cc: Hakan Akkan <hakanakkan@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+> Cc: Namhyung Kim <namhyung.kim@lge.com>
+> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  kernel/time/tick-sched.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 1cd93a9..ecba8b7 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/module.h>
+>  #include <linux/irq_work.h>
+>  #include <linux/posix-timers.h>
+> +#include <linux/context_tracking.h>
+> 
+>  #include <asm/irq_regs.h>
+> 
+> @@ -604,10 +605,9 @@ static bool can_stop_full_tick(int cpu)
+> 
+>  	/*
+>  	 * Keep the tick if we are asked to report a quiescent state.
+> -	 * This must be further optimized (avoid checks for local callbacks,
+> -	 * ignore RCU in userspace, etc...
+> +	 * This must be further optimized (avoid checks for local callbacks)
+>  	 */
+> -	if (rcu_pending(cpu)) {
+> +	if (!context_tracking_in_user() && rcu_pending(cpu)) {
+>  		trace_printk("Can't stop: RCU pending\n");
+>  		return false;
+>  	}
+> -- 
+> 1.7.5.4
+> 
 
-Again, it is not only for big LITTLE, but for any SMP system, where we
-don't want
-an idle cpu to do this work.
-
->> I don't think we need it :(
->> It would be a new API, with zero existing users. And so, whomsoever uses
->> it, should know what exactly he is doing :)
->
-> Heh, you don't know kernel developers well do you? ;-)
-
-I agree with you, but we don't need to care for foolish new code here.
-
-> Once a new API is added to the kernel tree, it quickly becomes
-> (mis)used.
-
-Its true with all pieces of code in kernel and we really don't need to take
-care of such users here :)
