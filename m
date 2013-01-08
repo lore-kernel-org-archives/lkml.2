@@ -1,125 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab3AHSmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:42:17 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:39169 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757001Ab3AHSmP (ORCPT
+	id S1757087Ab3AHSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:45:27 -0500
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:42061 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756752Ab3AHSpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:42:15 -0500
-Message-ID: <50EC7440.20203@mvista.com>
-Date: Tue, 08 Jan 2013 22:32:16 +0300
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 8 Jan 2013 13:45:25 -0500
+Date: Tue, 8 Jan 2013 10:45:20 -0800
+From: Tejun Heo <tj@kernel.org>
+To: ajithb.kumar@gmail.com
+Cc: fa.linux.kernel@googlegroups.com, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [block] allow blk_flush_policy to return REQ_FSEQ_DATA
+ independent of *FLUSH
+Message-ID: <20130108184520.GF3926@htj.dyndns.org>
+References: <fa.WShHQz59YhGkw1sSCIqXCXLEJ3Q@ifi.uio.no>
+ <52efc2cd-6d8c-4195-882a-8bc4105bc715@googlegroups.com>
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: balbi@ti.com, grant.likely@secretlab.ca, rob.herring@calxeda.com,
-        rob@landley.net, linux@arm.linux.org.uk, gregkh@linuxfoundation.org,
-        b-cousson@ti.com, rnayak@ti.com, tony@atomide.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [PATCH v2 3/3] usb: musb: omap: Add device tree support for omap
- musb glue
-References: <1347354580-5895-1-git-send-email-kishon@ti.com> <1347354580-5895-4-git-send-email-kishon@ti.com>
-In-Reply-To: <1347354580-5895-4-git-send-email-kishon@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <52efc2cd-6d8c-4195-882a-8bc4105bc715@googlegroups.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hello,
 
-On 09/11/2012 01:09 PM, Kishon Vijay Abraham I wrote:
+On Tue, Jan 08, 2013 at 10:04:23AM -0800, ajithb.kumar@gmail.com wrote:
+> Hi,
+> Could you please provide clarity on the following.
+> ">   Hmmm... yes, this can become a correctness issue if (and only if)
+> >   blk_queue_flush() is called to change q->flush_flags while requests
+> >   are in-flight;"
+>
+> Could you please clarify as to why is it a correctness issue only if
+> blk_queue_flush() is used to change flush_flags when requests are in
+> flight ?  As I understand, XFS does set WRITE_FLUSH_FUA flag in
+> _xfs_buf_ioapply() function irrespective of whether the underlying
+> device supports flush capabilities or not which will flow into
+> blk_insert_flush().  Is my reading of the code correct and is there
+> a general correctness issue here which potentially results in XFS
+> file system corruption in case of an abrupt shutdown independent of
+> q->flush_flags getting changed while request is in flight.
 
-> Added device tree support for omap musb driver and updated the
-> Documentation with device tree binding information.
+My memory is kinda fuzzy at this point but if a queue doesn't support
+flush, its flush_flags should be zero and
+generic_make_request_checks() will clear REQ_FLUSH|REQ_FUA from
+bio->bi_rw so we never hit blk_insert_flush() and the request will be
+processed as a normal IO one; however, if REQ_FLUSH goes off after a
+request passed generic_make_request_checks() but before
+blk_flush_policy(), it'll become null op and its data payload won't
+get written out to the underlying device, which is data corruption.
 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Thanks.
 
-   Belated comments to the patch which didn't pass my message size filter in
-time. :-)
-
-> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-> index f4d9503..d96873b 100644
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-[...]
-> @@ -470,8 +471,11 @@ static u64 omap2430_dmamask = DMA_BIT_MASK(32);
->  static int __devinit omap2430_probe(struct platform_device *pdev)
->  {
->  	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
-> +	struct omap_musb_board_data	*data;
->  	struct platform_device		*musb;
->  	struct omap2430_glue		*glue;
-> +	struct device_node		*np = pdev->dev.of_node;
-> +	struct musb_hdrc_config		*config;
->  	struct resource			*res;
->  	int				ret = -ENOMEM;
->  
-> @@ -501,6 +505,42 @@ static int __devinit omap2430_probe(struct platform_device *pdev)
->  	if (glue->control_otghs == NULL)
->  		dev_dbg(&pdev->dev, "Failed to obtain control memory\n");
->  
-> +	if (np) {
-> +		pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-> +		if (!pdata) {
-> +			dev_err(&pdev->dev,
-> +				"failed to allocate musb platfrom data\n");
-> +			ret = -ENOMEM;
-
-   'ret' is pre-initialized to -ENOMEM.
-
-> +			goto err1;
-> +		}
-> +
-> +		data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
-> +		if (!data) {
-> +			dev_err(&pdev->dev,
-> +					"failed to allocate musb board data\n");
-
-   Overindented this line.
-
-> +			ret = -ENOMEM;
-
-   Same comment about already pre-initialized variable.
-
-> +			goto err1;
-> +		}
-> +
-> +		config = devm_kzalloc(&pdev->dev, sizeof(*config), GFP_KERNEL);
-> +		if (!data) {
-
-   You allocate 'config' but check 'data' again, so instead of exiting
-gracefully we get an oops later on...
-
-> +			dev_err(&pdev->dev,
-> +				"failed to allocate musb hdrc config\n");
-
-   No 'ret = -ENOMEM;' here -- kinda inconsistent. :-)
-
-> +			goto err1;
-> +		}
-> +
-> +		of_property_read_u32(np, "mode", (u32 *)&pdata->mode);
-> +		of_property_read_u32(np, "interface_type",
-> +						(u32 *)&data->interface_type);
-> +		of_property_read_u32(np, "num_eps", (u32 *)&config->num_eps);
-> +		of_property_read_u32(np, "ram_bits", (u32 *)&config->ram_bits);
-> +		of_property_read_u32(np, "power", (u32 *)&pdata->power);
-> +		config->multipoint = of_property_read_bool(np, "multipoint");
-> +
-> +		pdata->board_data	= data;
-> +		pdata->config		= config;
-> +	}
-> +
->  	pdata->platform_ops		= &omap2430_ops;
->  
->  	platform_set_drvdata(pdev, glue);
-
-   Don't worry now, I've just sent two patches to address these shortcomings.
-
-WBR, Sergei
-
-
+-- 
+tejun
