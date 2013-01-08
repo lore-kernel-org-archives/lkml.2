@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757237Ab3AHXpt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:45:49 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53740 "EHLO
+	id S1757203Ab3AHXps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:45:48 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53745 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756893Ab3AHXjo (ORCPT
+	with ESMTP id S1757016Ab3AHXjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:39:44 -0500
+	Tue, 8 Jan 2013 18:39:46 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jacek Luczak <difrost.kernel@gmail.com>,
-        Jacek Luczak <luczak.jacek@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Thomas Graf <tgraf@infradead.org>, "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 65/77] SCTP: fix race between sctp_bind_addr_free() and sctp_bind_addr_conflict()
-Date: Tue, 8 Jan 2013 18:35:44 -0500
-Message-ID: <1357688156-25387-66-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 63/77] sctp: ABORT if receive, reassmbly, or reodering queue is not empty while closing socket
+Date: Tue, 8 Jan 2013 18:35:42 -0500
+Message-ID: <1357688156-25387-64-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacek Luczak <difrost.kernel@gmail.com>
+From: Thomas Graf <tgraf@infradead.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,74 +31,115 @@ From: Jacek Luczak <difrost.kernel@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c182f90bc1f22ce5039b8722e45621d5f96862c2 upstream.
+commit cd4fcc704f30f2064ab30b5300d44d431e46db50 upstream.
 
-During the sctp_close() call, we do not use rcu primitives to
-destroy the address list attached to the endpoint.  At the same
-time, we do the removal of addresses from this list before
-attempting to remove the socket from the port hash
+Trigger user ABORT if application closes a socket which has data
+queued on the socket receive queue or chunks waiting on the
+reassembly or ordering queue as this would imply data being lost
+which defeats the point of a graceful shutdown.
 
-As a result, it is possible for another process to find the socket
-in the port hash that is in the process of being closed.  It then
-proceeds to traverse the address list to find the conflict, only
-to have that address list suddenly disappear without rcu() critical
-section.
+This behavior is already practiced in TCP.
 
-Fix issue by closing address list removal inside RCU critical
-section.
+We do not check the input queue because that would mean to parse
+all chunks on it to look for unacknowledged data which seems too
+much of an effort. Control chunks or duplicated chunks may also
+be in the input queue and should not be stopping a graceful
+shutdown.
 
-Race can result in a kernel crash with general protection fault or
-kernel NULL pointer dereference:
-
-kernel: general protection fault: 0000 [#1] SMP
-kernel: RIP: 0010:[<ffffffffa02f3dde>]  [<ffffffffa02f3dde>] sctp_bind_addr_conflict+0x64/0x82 [sctp]
-kernel: Call Trace:
-kernel:  [<ffffffffa02f415f>] ? sctp_get_port_local+0x17b/0x2a3 [sctp]
-kernel:  [<ffffffffa02f3d45>] ? sctp_bind_addr_match+0x33/0x68 [sctp]
-kernel:  [<ffffffffa02f4416>] ? sctp_do_bind+0xd3/0x141 [sctp]
-kernel:  [<ffffffffa02f5030>] ? sctp_bindx_add+0x4d/0x8e [sctp]
-kernel:  [<ffffffffa02f5183>] ? sctp_setsockopt_bindx+0x112/0x4a4 [sctp]
-kernel:  [<ffffffff81089e82>] ? generic_file_aio_write+0x7f/0x9b
-kernel:  [<ffffffffa02f763e>] ? sctp_setsockopt+0x14f/0xfee [sctp]
-kernel:  [<ffffffff810c11fb>] ? do_sync_write+0xab/0xeb
-kernel:  [<ffffffff810e82ab>] ? fsnotify+0x239/0x282
-kernel:  [<ffffffff810c2462>] ? alloc_file+0x18/0xb1
-kernel:  [<ffffffff8134a0b1>] ? compat_sys_setsockopt+0x1a5/0x1d9
-kernel:  [<ffffffff8134aaf1>] ? compat_sys_socketcall+0x143/0x1a4
-kernel:  [<ffffffff810467dc>] ? sysenter_dispatch+0x7/0x32
-
-Signed-off-by: Jacek Luczak <luczak.jacek@gmail.com>
+Signed-off-by: Thomas Graf <tgraf@infradead.org>
 Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>
-Reviewed-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sctp/bind_addr.c | 10 ++++------
- 1 file changed, 4 insertions(+), 6 deletions(-)
+ include/net/sctp/ulpevent.h |  2 +-
+ net/sctp/socket.c           | 13 ++++++++-----
+ net/sctp/ulpevent.c         | 16 +++++++++++++---
+ 3 files changed, 22 insertions(+), 9 deletions(-)
 
-diff --git a/net/sctp/bind_addr.c b/net/sctp/bind_addr.c
-index faf71d1..6150ac5 100644
---- a/net/sctp/bind_addr.c
-+++ b/net/sctp/bind_addr.c
-@@ -140,14 +140,12 @@ void sctp_bind_addr_init(struct sctp_bind_addr *bp, __u16 port)
- /* Dispose of the address list. */
- static void sctp_bind_addr_clean(struct sctp_bind_addr *bp)
- {
--	struct sctp_sockaddr_entry *addr;
--	struct list_head *pos, *temp;
-+	struct sctp_sockaddr_entry *addr, *temp;
+diff --git a/include/net/sctp/ulpevent.h b/include/net/sctp/ulpevent.h
+index 7ea12e8..b93b719 100644
+--- a/include/net/sctp/ulpevent.h
++++ b/include/net/sctp/ulpevent.h
+@@ -80,7 +80,7 @@ static inline struct sctp_ulpevent *sctp_skb2event(struct sk_buff *skb)
  
- 	/* Empty the bind address list. */
--	list_for_each_safe(pos, temp, &bp->address_list) {
--		addr = list_entry(pos, struct sctp_sockaddr_entry, list);
--		list_del(pos);
--		kfree(addr);
-+	list_for_each_entry_safe(addr, temp, &bp->address_list, list) {
-+		list_del_rcu(&addr->list);
-+		call_rcu(&addr->rcu, sctp_local_addr_free);
- 		SCTP_DBG_OBJCNT_DEC(addr);
+ void sctp_ulpevent_free(struct sctp_ulpevent *);
+ int sctp_ulpevent_is_notification(const struct sctp_ulpevent *);
+-void sctp_queue_purge_ulpevents(struct sk_buff_head *list);
++unsigned int sctp_queue_purge_ulpevents(struct sk_buff_head *list);
+ 
+ struct sctp_ulpevent *sctp_ulpevent_make_assoc_change(
+ 	const struct sctp_association *asoc,
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index 22631c1..03daceb 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -1373,6 +1373,7 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
+ 	struct sctp_endpoint *ep;
+ 	struct sctp_association *asoc;
+ 	struct list_head *pos, *temp;
++	unsigned int data_was_unread;
+ 
+ 	SCTP_DEBUG_PRINTK("sctp_close(sk: 0x%p, timeout:%ld)\n", sk, timeout);
+ 
+@@ -1382,6 +1383,10 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
+ 
+ 	ep = sctp_sk(sk)->ep;
+ 
++	/* Clean up any skbs sitting on the receive queue.  */
++	data_was_unread = sctp_queue_purge_ulpevents(&sk->sk_receive_queue);
++	data_was_unread += sctp_queue_purge_ulpevents(&sctp_sk(sk)->pd_lobby);
++
+ 	/* Walk all associations on an endpoint.  */
+ 	list_for_each_safe(pos, temp, &ep->asocs) {
+ 		asoc = list_entry(pos, struct sctp_association, asocs);
+@@ -1399,7 +1404,9 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
+ 			}
+ 		}
+ 
+-		if (sock_flag(sk, SOCK_LINGER) && !sk->sk_lingertime) {
++		if (data_was_unread || !skb_queue_empty(&asoc->ulpq.lobby) ||
++		    !skb_queue_empty(&asoc->ulpq.reasm) ||
++		    (sock_flag(sk, SOCK_LINGER) && !sk->sk_lingertime)) {
+ 			struct sctp_chunk *chunk;
+ 
+ 			chunk = sctp_make_abort_user(asoc, NULL, 0);
+@@ -1409,10 +1416,6 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
+ 			sctp_primitive_SHUTDOWN(asoc, NULL);
  	}
+ 
+-	/* Clean up any skbs sitting on the receive queue.  */
+-	sctp_queue_purge_ulpevents(&sk->sk_receive_queue);
+-	sctp_queue_purge_ulpevents(&sctp_sk(sk)->pd_lobby);
+-
+ 	/* On a TCP-style socket, block for at most linger_time if set. */
+ 	if (sctp_style(sk, TCP) && timeout)
+ 		sctp_wait_for_close(sk, timeout);
+diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
+index aa72e89..3b81c62 100644
+--- a/net/sctp/ulpevent.c
++++ b/net/sctp/ulpevent.c
+@@ -1053,9 +1053,19 @@ void sctp_ulpevent_free(struct sctp_ulpevent *event)
+ }
+ 
+ /* Purge the skb lists holding ulpevents. */
+-void sctp_queue_purge_ulpevents(struct sk_buff_head *list)
++unsigned int sctp_queue_purge_ulpevents(struct sk_buff_head *list)
+ {
+ 	struct sk_buff *skb;
+-	while ((skb = skb_dequeue(list)) != NULL)
+-		sctp_ulpevent_free(sctp_skb2event(skb));
++	unsigned int data_unread = 0;
++
++	while ((skb = skb_dequeue(list)) != NULL) {
++		struct sctp_ulpevent *event = sctp_skb2event(skb);
++
++		if (!sctp_ulpevent_is_notification(event))
++			data_unread += skb->len;
++
++		sctp_ulpevent_free(event);
++	}
++
++	return data_unread;
  }
 -- 
 1.7.12.1
