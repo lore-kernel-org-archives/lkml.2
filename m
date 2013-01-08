@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200Ab3AHMYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 07:24:15 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37388 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755500Ab3AHMYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 07:24:14 -0500
-Date: Tue, 8 Jan 2013 17:53:47 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 7/7] uprobes: Kill the bogus IS_ERR_VALUE(xol_vaddr)
- check
-Message-ID: <20130108122347.GJ1325@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121231175150.GA32066@redhat.com>
- <20121231175232.GA32118@redhat.com>
+	id S1756225Ab3AHM0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 07:26:09 -0500
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:14930 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755981Ab3AHM0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 07:26:08 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Tue, 08 Jan 2013 04:26:00 -0800
+Message-ID: <50EC1046.3000701@nvidia.com>
+Date: Tue, 8 Jan 2013 17:55:42 +0530
+From: Laxman Dewangan <ldewangan@nvidia.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121028 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121231175232.GA32118@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010812-7182-0000-0000-00000441754B
+To: "broonie@opensource.wolfsonmicro.com" 
+	<broonie@opensource.wolfsonmicro.com>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+CC: Laxman Dewangan <ldewangan@nvidia.com>,
+        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "rob@landley.net" <rob@landley.net>, "lrg@ti.com" <lrg@ti.com>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] mfd/regulator: tps65090: add DT support and suspend/resume
+ cleanups
+References: <1356686981-4152-1-git-send-email-ldewangan@nvidia.com>
+In-Reply-To: <1356686981-4152-1-git-send-email-ldewangan@nvidia.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:32]:
+Hi Mark,
 
-> utask->xol_vaddr is either zero or valid, remove the bogus
-> IS_ERR_VALUE() check in xol_free_insn_slot().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Friday 28 December 2012 02:59 PM, Laxman Dewangan wrote:
+> The patch series add DT support on TPS65090 device.
+>
+> Also remove the suspend/resume implementation as it duplicates with
+> irq_suspend/irq_resume().
+>
+> Laxman Dewangan (4):
+>    mfd: tps65090: add DT support for tps65090
+>    regulator: tps65090: add DT support
+>    mfd: tps65090: Pass irq domain when adding mfd sub devices
+>    mfd: tps65090: remove suspend/resume callbacks
+>
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-> ---
->  kernel/events/uprobes.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index ad1245d..ed4fcbe 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1223,8 +1223,7 @@ static void xol_free_insn_slot(struct task_struct *tsk)
->  		return;
-> 
->  	slot_addr = tsk->utask->xol_vaddr;
-> -
-> -	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
-> +	if (unlikely(!slot_addr))
->  		return;
-> 
->  	area = tsk->mm->uprobes_state.xol_area;
-> -- 
-> 1.5.5.1
-> 
+I am not sure that the patches are created on correct sequence for 
+adapting this in regulator subsystem and mfd subsystem.
+Can you please review whether the changes split is fine or not?
+Idea was to make independent patch for mfd and regulator so that they 
+can apply independently.
 
+Thanks,
+Laxman
