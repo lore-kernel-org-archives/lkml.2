@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab3AHCOo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:14:44 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:48383 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681Ab3AHCJX (ORCPT
+	id S1755678Ab3AHCJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:09:22 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:34184 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab3AHCJS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:23 -0500
+	Mon, 7 Jan 2013 21:09:18 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 17/33] sched: Update clock of nohz busiest rq before balancing
-Date: Tue,  8 Jan 2013 03:08:17 +0100
-Message-Id: <1357610913-1080-18-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 15/33] sched: Update rq clock on tickless CPUs before calling check_preempt_curr()
+Date: Tue,  8 Jan 2013 03:08:15 +0100
+Message-Id: <1357610913-1080-16-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,14 +33,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move_tasks() and active_load_balance_cpu_stop() both need
-to have the busiest rq clock uptodate because they may end
-up calling can_migrate_task() that uses rq->clock_task
-to determine if the task running in the busiest runqueue
-is cache hot.
+check_preempt_wakeup() of fair class needs an uptodate sched clock
+value to update runtime stats of the current task.
 
-Hence if the busiest runqueue is tickless, update its clock
-before reading it.
+When a task is woken up, activate_task() is usually called right before
+ttwu_do_wakeup() unless the task is already in the runqueue. In this
+case we need to update the rq clock manually in case the CPU runs
+tickless because ttwu_do_wakeup() calls check_preempt_wakeup().
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -58,61 +57,46 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-[ Forward port conflicts ]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/sched/fair.c |   17 +++++++++++++++++
- 1 files changed, 17 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 3d65ac7..e78d81104 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5002,6 +5002,7 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- {
- 	int ld_moved, cur_ld_moved, active_balance = 0;
- 	int lb_iterations, max_lb_iterations;
-+	int clock_updated;
- 	struct sched_group *group;
- 	struct rq *busiest;
- 	unsigned long flags;
-@@ -5045,6 +5046,7 @@ redo:
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 2fcbb03..3c1a806 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1346,6 +1346,12 @@ static int ttwu_remote(struct task_struct *p, int wake_flags)
  
- 	ld_moved = 0;
- 	lb_iterations = 1;
-+	clock_updated = 0;
- 	if (busiest->nr_running > 1) {
- 		/*
- 		 * Attempt to move tasks. If find_busiest_group has found
-@@ -5068,6 +5070,14 @@ more_balance:
- 		 */
- 		cur_ld_moved = move_tasks(&env);
- 		ld_moved += cur_ld_moved;
-+
+ 	rq = __task_rq_lock(p);
+ 	if (p->on_rq) {
 +		/*
-+		 * Move tasks may end up calling can_migrate_task() which
-+		 * requires an uptodate value of the rq clock.
++		 * Ensure check_preempt_curr() won't deal with a stale value
++		 * of rq clock if the CPU is tickless. BTW do we actually need
++		 * check_preempt_curr() to be called here?
 +		 */
-+		update_nohz_rq_clock(busiest);
-+		clock_updated = 1;
-+
- 		double_rq_unlock(env.dst_rq, busiest);
- 		local_irq_restore(flags);
++		update_nohz_rq_clock(rq);
+ 		ttwu_do_wakeup(rq, p, wake_flags);
+ 		ret = 1;
+ 	}
+@@ -1523,8 +1529,17 @@ static void try_to_wake_up_local(struct task_struct *p)
+ 	if (!(p->state & TASK_NORMAL))
+ 		goto out;
  
-@@ -5163,6 +5173,13 @@ more_balance:
- 				busiest->active_balance = 1;
- 				busiest->push_cpu = this_cpu;
- 				active_balance = 1;
-+				/*
-+				 * active_load_balance_cpu_stop may end up calling
-+				 * can_migrate_task() which requires an uptodate
-+				 * value of the rq clock.
-+				 */
-+				if (!clock_updated)
-+					update_nohz_rq_clock(busiest);
- 			}
- 			raw_spin_unlock_irqrestore(&busiest->lock, flags);
+-	if (!p->on_rq)
++	if (!p->on_rq) {
+ 		ttwu_activate(rq, p, ENQUEUE_WAKEUP);
++	} else {
++		/*
++		 * Even if the task is on the runqueue we still
++		 * need to ensure check_preempt_curr() won't
++		 * deal with a stale rq clock value on a tickless
++		 * CPU
++		 */
++		update_nohz_rq_clock(rq);
++	}
  
+ 	ttwu_do_wakeup(rq, p, 0);
+ 	ttwu_stat(p, smp_processor_id(), 0);
 -- 
 1.7.5.4
 
