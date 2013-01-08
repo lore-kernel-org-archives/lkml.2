@@ -1,67 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756249Ab3AHMir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 07:38:47 -0500
-Received: from mga01.intel.com ([192.55.52.88]:23645 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756122Ab3AHMiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 07:38:46 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,430,1355126400"; 
-   d="scan'208";a="274230603"
-Date: Tue, 8 Jan 2013 14:41:53 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
- platform data
-Message-ID: <20130108124153.GJ13897@intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
- <1357555480-24022-6-git-send-email-mika.westerberg@linux.intel.com>
- <20130108110228.GM4544@opensource.wolfsonmicro.com>
+	id S1756258Ab3AHMqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 07:46:07 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:37132 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab3AHMqF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 07:46:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130108110228.GM4544@opensource.wolfsonmicro.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130106163100.GI4939@ZenIV.linux.org.uk>
+References: <1347411352-12392-1-git-send-email-meredydd@senatehouse.org>
+ <20120912011654.GQ13973@ZenIV.linux.org.uk> <20130106163100.GI4939@ZenIV.linux.org.uk>
+From: Meredydd Luff <meredydd@senatehouse.org>
+Date: Tue, 8 Jan 2013 12:39:48 +0000
+Message-ID: <CAD=T17Fs4bMJedpuO9JEDbrzEBOQcd+5v3BxUDkNH_NRRkh64A@mail.gmail.com>
+Subject: Re: [PATCH signal#execve2] syscalls,x86: Add execveat() system call (v3)
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Kees Cook <keescook@chromium.org>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 11:02:28AM +0000, Mark Brown wrote:
-> On Mon, Jan 07, 2013 at 12:44:34PM +0200, Mika Westerberg wrote:
-> > If the architecture doesn't support clk framework (like x86) we need a way to
-> > pass the SSP clock rate to the driver. This patch adds a field in the platform
-> > data 'fixed_clk_rate' that allows passing the rate.
-> 
-> No, the way to do this is to fix x86 to enable the clock API there.  The
-> x86 maintainers couldn't be bothered when I submitted a patch and
-> getting anyone to take a patch to make it available by default appears
-> to be unreasonably hard but perhaps if someone from Intel tries the x86
-> maintainers might take a patch...
+On Sun, Jan 6, 2013 at 4:31 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>
+> OK, now that sys_execve() unification has settled down, let's get back
+> to this one.  The real problem is what you are doing with bprm->filename
+> and bprm->interp; blind use of ->d_name is completely wrong.
+ACK. I've blocked out tomorrow to dive in and figure out what I should
+be doing instead. My current plan is "look at how we get a string
+value out when readlink()ing /proc/self/fd/N, then copy that
+approach". Feel free to save me from wasting time if this is a bad
+idea.
 
-Do you mean enabling CONFIG_COMMON_CLK on x86?
+> For what it's worth, how should it work for e.g. shell scripts?  That's
+> the main user of bprm->{filename,interp}, after all - other places are
+> either seriously exotic or are just using it for printks.
+>
+> For shell scripts, however, these guys are really used - we have the original
+> argv[0] removed and <shell name> <optional argument> <filename> pushed in
+> its place.
 
-> We shouldn't be adding special case code to every driver that might need
-> a clock that gets used on an Intel system.
+As I see it, this is a question of how much can be supported.
+Fundamentally, a hash-bang interpreter is handed a filename. This will
+inevitably break in a world in which not everything you want to
+execute can be reliably named by a path in the interpreter's
+namespace. The demand for a "real" fexecve() argues that this world is
+desirable, and under those circumstances the best you can hope for is
+probably to fail gracefully, or at least predictably.
 
-I agree and it is cleaner to have the same API for all arches. However, I'm
-not sure how do we create the fixed clocks then? There is nothing in ACPI
-namespace (or in the ACPI 5.0 spec) that allows you to describe clocks and
-their relationships.
+> How will it work with execveat()?  If we have procfs in place, we can
+> cook an equivalent pathname (/proc/self/fd/<n>/<relative part of pathname>),
+> but then why not do just that in userland and be done with that?
+A pure-userland execveat() suffers all the problems of a pure-userland
+fexecve(). I think it's important to be able to use this in
+environments where /proc is absent or not trustworthy (weird embedded
+systems, sandboxes, etc).
 
-So then we end up either:
+If I'm understanding this right, the behaviour I was originally
+planning would leave the hash-bang interpreter with a pathname that
+"should" resolve to the script, barring jiggery-pokery with passing
+FDs between namespaces - but without the atomicity of the *at() call.
+This places execveat() into the category of "desirable things whose
+atomicity guarantees interact poorly with shell scripts" (a group with
+a long and [ig]noble history).
 
-	1. Creating a custom board file for Lynxpoint which creates the
-	   clocks. This is something I think x86 maintainers don't want to
-	   see.
+I suppose the munging could be conditional: "If /proc is owned by root
+and mounted as procfs, we'll give you a /proc/self/fd/... path.
+Otherwise you're on your own and getting whatever
+readlink(/proc/self/fd/<n>) would have given you." But that would
+still require the kernel knowing something about the filesystem
+layout.
 
-	2. Creating the clock in the driver itself in its ACPI enumeration
-	   implementation. This might work but it litters the drivers with
-	   clock details.
+Either way, it seems, we leave a rake in the grass for somebody...
 
-Or is there something I'm missing?
+Meredydd
