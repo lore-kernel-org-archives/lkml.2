@@ -1,39 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914Ab3AHSJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:09:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:26621 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756882Ab3AHSJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:09:39 -0500
-Date: Tue, 8 Jan 2013 13:09:28 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 22/24] cfq-iosched: separate out cfqg_stats_reset() from
- cfq_pd_reset_stats()
-Message-ID: <20130108180928.GD29933@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-23-git-send-email-tj@kernel.org>
+	id S1756907Ab3AHSLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:11:48 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:55288 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756712Ab3AHSLp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:11:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356726946-26037-23-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50E96A59.1080602@huawei.com>
+References: <CAMVG2ssiRgcTD1bej2tkUUfsWmpL5eNtPcNif9va2-Gzb2u8nQ@mail.gmail.com>
+ <50E5A6A1.5040508@gmail.com> <CAErSpo6KJvEkiqkU--sF_vySk2YUgL_9t1OEYAAGBp9Ebom26w@mail.gmail.com>
+ <CAErSpo6vTS6MnWoHJgXgmVtq=jqrudOHW47+8hVpc8GfiY100A@mail.gmail.com> <50E96A59.1080602@huawei.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 8 Jan 2013 11:11:24 -0700
+Message-ID: <CAErSpo7Qo_=d1dLqEFwFcpYjkncST-c1Lx8=3fThtLOaG_P8tQ@mail.gmail.com>
+Subject: Re: 3.8-rc2: pciehp waitqueue hang...
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Jiang Liu <liuj97@gmail.com>, Daniel J Blueman <daniel@quora.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:44PM -0800, Tejun Heo wrote:
-> Separate out cfqg_stats_reset() which takes struct cfqg_stats * from
-> cfq_pd_reset_stats() and move the latter to where other pd methods are
-> defined.  cfqg_stats_reset() will be used to implement hierarchical
-> stats.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+On Sun, Jan 6, 2013 at 5:13 AM, Yijing Wang <wangyijing@huawei.com> wrote:
+> On 2013/1/5 5:50, Bjorn Helgaas wrote:
+>> [+to Yijing, +cc Kenji]
+>>
+>> On Fri, Jan 4, 2013 at 1:01 PM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>>> On Thu, Jan 3, 2013 at 8:41 AM, Jiang Liu <liuj97@gmail.com> wrote:
+>>>> Hi Daniel,
+>>>>         It seems like an issue caused by recursive PCIe HPC.
+>>>> Could you please help to try the patch from:
+>>>> http://www.spinics.net/lists/linux-pci/msg18625.html
+>>>
+>>> Hi Gerry,
+>>>
+>>> I'm working on merging this patch.  Seems like something that might be
+>>> appropriate for stable as well.
+>>>
+>>> Did you look for similar problems in other hotplug drivers?
+>>
+>> Oops, sorry, I forgot that Yijing is the author of the patch in question.
+>>
+>> Yijing, please check for the same problem in other hotplug drivers.
+>> Questions I have after a quick look:
+>>
+>
+> Hi Bjorn,
+>    Sorry for delay reply. There are some busy work these days.
+>
+>>   - shpchp_wq looks like it might have the same deadlock issue.
+>
+> shpchp driver uses two workqueues shpchp_wq and shpchp_ordered_wq, they are created by alloc_ordered_workqueue
+> which set the "max_active" parameter to 1. So only one pci hotplug slot can do hotplug at the same time.
+> shpchp introduced these workqueue to remove the use of flush_scheduled_work() which is deprecated and scheduled for removal.
+>
+> hot remove path is:
+>  button press
+>        shpc_isr(interrupt handler)
+>             shpchp_handle_attention_button
+>                 queue_interrupt_event
+>                    queue_work "interrupt_event_handler" into "shpchp_wq"
+>                        interrupt_event_handler
+>                              handle_button_press_event
+>                                    queue_delayed_work "shpchp_queue_pushbutton_work" into "shpchp_wq"
+>                                          queue_work "shpchp_pushbutton_thread" into "shpchp_ordered_wq"
+>                                                shpchp_pushbutton_thread
+>                                                       shpchp_disable_slot
+>                                                             pci_stop_and_remove_bus_device
+>                                                                 ......
+>                                                                shpc_remove()   if the hotplug slot connected a iobox which contains some hotplug pcieport, shpc_remove will be called when remove pcie port device.
+>                                                                    hpc_release_ctlr
+>                                                                        flush_workqueue(shpchp_wq);
+>                                                                        flush_workqueue(shpchp_ordered_wq);
+>                                                                        So hotplug task hang.
+> shpchp driver has the same deadlock issue like pciehp driver, I think we should fix the issue, I will send out the patch if you agree this, but I have no machine support shpchp hotplug,
+> so I can't test this patch in real machine.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+That's OK.  You've tested pciehp, and I don't want to leave shpchp
+broken the same way just because we can't test a similar fix there, so
+please do send the shpchp patch, too.
 
-Vivek
+>>   - pciehp_wq (and your per-slot replacement) are allocated with
+>> alloc_workqueue().  shpchp_wq is allocated with
+>> alloc_ordered_workqueue().  Why the difference?
+>
+> alloc_workqueue(name, 0, 0) set max_active to 0(0 is default value used and support 256 work items of the wq can be executing at the same time per CPU).
+> So pciehp driver can handle push button event asynchronously.
+>
+> alloc_ordered_workqueue can only one handle push button event at the same time.
+
+pciehp and shpchp should work the same in this respect unless there's
+a reason they can't, so it sounds like we should make shpchp work like
+pciehp.
+
+>>   - The alloc/alloc_ordered difference might be related to 486b10b9f4,
+>> where Kenji removed alloc_ordered from pciehp.  Should a similar
+>> change be made to shpchp?
+>
+> Yes, I agree, we can use per-slot workqueue to fix this issue.
+>
+>>
+>>   - acpiphp uses the global kacpi_hotplug_wq.  We never flush or drain
+>> kacpi_hotplug_wq, so I doubt there's a deadlock issue, but I wonder if
+>> there are any ordering issues there because we *don't* ever wait for
+>> things in that queue to be completed.
+>
+> acpiphp driver is not attach to a pci device, so when hot remove pci device, driver will not to flush or drain kacpi_hotplug_wq.
+> But if we do acpiphp hot remove in sequence like this, there maybe cause some unexpected errors, I think.
+> slot(A)------pcie port----slot(B)
+> slot A and slot B both support acpiphp hotplug.
+> 1、press attention button on slot A;
+> 2、press attention button on slot B quickly after step 1;
+> Because kacpi_hotplug_wq is a ordered workqueue, slot B hot remove won't run unless slot A hot remove action completed.
+> After Slot B hot remove completed, some resources of slot A also has been destroyed. So slot B hot remove will cause some unexpected errors.
+> Because my hotplug machine's bios don't support iobox hotplug(slot-connected-slot), I can't verify this situation.
+
+Hmm.  That definitely sounds like a potential problem.  But I think
+it's beyond the scope of the issue you're trying to fix, and any fix
+would look much different from your current pciehp patch, so I think
+we can treat it separately.
+
+Bjorn
