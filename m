@@ -1,138 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755681Ab3AHLj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:39:29 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:32826 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab3AHLj2 (ORCPT
+	id S1755648Ab3AHLqY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:46:24 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:64858 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3AHLqW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:39:28 -0500
-Date: Tue, 8 Jan 2013 17:09:01 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] uprobes: Change handle_swbp() to expose bp_vaddr
- to handler_chain()
-Message-ID: <20130108113901.GC1325@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121230154657.GA28488@redhat.com>
- <20121230154722.GA28513@redhat.com>
+	Tue, 8 Jan 2013 06:46:22 -0500
+Message-ID: <50EC070C.2090101@suse.cz>
+Date: Tue, 08 Jan 2013 12:46:20 +0100
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:18.0) Gecko/20121129 Thunderbird/18.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121230154722.GA28513@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010811-3620-0000-0000-000000D6B059
+To: Aaron Lu <aaron.lu@intel.com>
+CC: Borislav Petkov <bp@alien8.de>, Shane Huang <Shane.Huang@amd.com>,
+        Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: ata1: COMRESET failed
+References: <508A7A8A.7030908@suse.cz> <50BC8A1C.8070805@suse.cz> <20121203115734.GA32243@liondog.tnic> <20130107172425.GD5954@liondog.tnic> <50EB770A.4090302@intel.com>
+In-Reply-To: <50EB770A.4090302@intel.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-12-30 16:47:22]:
+On 01/08/2013 02:31 AM, Aaron Lu wrote:
+> On 01/08/2013 01:24 AM, Borislav Petkov wrote:
+>> Adding some more people.
+>>
+>> Aaron, Shane, do you guys have any ideas? I've been seeing something
+>> similar on an AMD desktop box recently and Jiri sees it on a laptop with
+>> an SSD.
+> 
+> I've seen a similar problem on a bug report recently for a Crucial SSD,
+> and upgrading the disk's firmware fixed the problem:
+> https://bugzilla.kernel.org/show_bug.cgi?id=49701
+> 
+> If the controller has problem, it should have problems for all kinds of
+> disks attached to it. So possible to test with other disks, Jiri?
 
-> Change handle_swbp() to set regs->ip = bp_vaddr in advance, this is
-> what consumer->handler() needs but uprobe_get_swbp_addr() is not
-> exported.
-> 
-> This also simplifies the code and makes it more consistent across
-> the supported architectures. handle_swbp() becomes the only caller
-> of uprobe_get_swbp_addr().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Yes, I tested a normal spinning disk and it does not happen with that.
+This happens only with this Intel SSD: SSDSA2M080G2GC
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+So I will try to investigate how to upgrade the firmware and will report.
 
-> ---
->  arch/x86/kernel/uprobes.c   |    1 -
->  kernel/events/uprobes.c     |   15 +++++++--------
->  kernel/trace/trace_uprobe.c |    4 ++--
->  3 files changed, 9 insertions(+), 11 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index 4e33a35..0ba4cfb 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -681,7 +681,6 @@ static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  			continue;
-> 
->  		if (auprobe->insn[i] == 0x90) {
-> -			regs->ip = uprobe_get_swbp_addr(regs);
->  			regs->ip += i + 1;
->  			return true;
->  		}
-> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index 59b6e97..f883813 100644
-> --- a/kernel/events/uprobes.c
-> +++ b/kernel/events/uprobes.c
-> @@ -1504,6 +1504,10 @@ static void handle_swbp(struct pt_regs *regs)
->  		}
->  		return;
->  	}
-> +
-> +	/* change it in advance for ->handler() and restart */
-> +	instruction_pointer_set(regs, bp_vaddr);
-> +
->  	/*
->  	 * TODO: move copy_insn/etc into _register and remove this hack.
->  	 * After we hit the bp, _unregister + _register can install the
-> @@ -1511,14 +1515,14 @@ static void handle_swbp(struct pt_regs *regs)
->  	 */
->  	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
->  	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
-> -		goto restart;
-> +		goto out;
-> 
->  	utask = current->utask;
->  	if (!utask) {
->  		utask = add_utask();
->  		/* Cannot allocate; re-execute the instruction. */
->  		if (!utask)
-> -			goto restart;
-> +			goto out;
->  	}
-> 
->  	handler_chain(uprobe, regs);
-> @@ -1531,12 +1535,7 @@ static void handle_swbp(struct pt_regs *regs)
->  		return;
->  	}
-> 
-> -restart:
-> -	/*
-> -	 * cannot singlestep; cannot skip instruction;
-> -	 * re-execute the instruction.
-> -	 */
-> -	instruction_pointer_set(regs, bp_vaddr);
-> +	/* can_skip_sstep() succeeded, or restart if can't singlestep */
->  out:
->  	put_uprobe(uprobe);
->  }
-> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
-> index 38eee92..52caead 100644
-> --- a/kernel/trace/trace_uprobe.c
-> +++ b/kernel/trace/trace_uprobe.c
-> @@ -488,7 +488,7 @@ static void uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  		return;
-> 
->  	entry = ring_buffer_event_data(event);
-> -	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
-> +	entry->ip = instruction_pointer(task_pt_regs(current));
->  	data = (u8 *)&entry[1];
->  	for (i = 0; i < tu->nr_args; i++)
->  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-> @@ -663,7 +663,7 @@ static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
->  	if (!entry)
->  		goto out;
-> 
-> -	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
-> +	entry->ip = instruction_pointer(task_pt_regs(current));
->  	data = (u8 *)&entry[1];
->  	for (i = 0; i < tu->nr_args; i++)
->  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
-> -- 
-> 1.5.5.1
-> 
-
+thakns,
+-- 
+js
+suse labs
