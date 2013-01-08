@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab3AHJ6b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 04:58:31 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:45673 "EHLO
+	id S1755492Ab3AHJ62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 04:58:28 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:45666 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755495Ab3AHJ63 (ORCPT
+	with ESMTP id S1755348Ab3AHJ60 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 04:58:29 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r089vU26032613
+	Tue, 8 Jan 2013 04:58:26 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r089vU21032613, This message is released by code: ctaloc0852
 From: <wei_wang@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v4 5/8] MMC:rtsx: Using callback function to switch output voltage
-Date: Tue, 8 Jan 2013 17:57:26 +0800
-Message-ID: <b70e8ec1eeab87ca5dbc3d6bc12fd86efd9c4032.1357638064.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v4 0/8] rtsx patchset for MFD and MMC tree
+Date: Tue, 8 Jan 2013 17:57:21 +0800
+Message-ID: <cover.1357638064.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1357638064.git.wei_wang@realsil.com.cn>
-References: <cover.1357638064.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -28,75 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-Different card reader has different method to switch output voltage, so
-we have to use the callback function provided by MFD driver to switch
-output pad voltage.
+v2:
+1. Add commit message for patch 2
+2. Move pci_set_dma_mask before the pci_enable_device(pcidev) call
 
-Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
----
- drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++-------------------------
- 1 file changed, 5 insertions(+), 25 deletions(-)
+v3:
+1. Add commit message for patch 3
+2. Add patch 8: Use macro defines to replace some variables
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 571915d..f74b5ad 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -1060,26 +1060,6 @@ static int sd_wait_voltage_stable_2(struct realtek_pci_sdmmc *host)
- 	return 0;
- }
- 
--static int sd_change_bank_voltage(struct realtek_pci_sdmmc *host, u8 voltage)
--{
--	struct rtsx_pcr *pcr = host->pcr;
--	int err;
--
--	if (voltage == SD_IO_3V3) {
--		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FC0 | 0x24);
--		if (err < 0)
--			return err;
--	} else if (voltage == SD_IO_1V8) {
--		err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4C40 | 0x24);
--		if (err < 0)
--			return err;
--	} else {
--		return -EINVAL;
--	}
--
--	return 0;
--}
--
- static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- {
- 	struct realtek_pci_sdmmc *host = mmc_priv(mmc);
-@@ -1098,11 +1078,11 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- 	rtsx_pci_start_run(pcr);
- 
- 	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
--		voltage = SD_IO_3V3;
-+		voltage = OUTPUT_3V3;
- 	else
--		voltage = SD_IO_1V8;
-+		voltage = OUTPUT_1V8;
- 
--	if (voltage == SD_IO_1V8) {
-+	if (voltage == OUTPUT_1V8) {
- 		err = rtsx_pci_write_register(pcr,
- 				SD30_DRIVE_SEL, 0x07, DRIVER_TYPE_B);
- 		if (err < 0)
-@@ -1113,11 +1093,11 @@ static int sdmmc_switch_voltage(struct mmc_host *mmc, struct mmc_ios *ios)
- 			goto out;
- 	}
- 
--	err = sd_change_bank_voltage(host, voltage);
-+	err = rtsx_pci_switch_output_voltage(pcr, voltage);
- 	if (err < 0)
- 		goto out;
- 
--	if (voltage == SD_IO_1V8) {
-+	if (voltage == OUTPUT_1V8) {
- 		err = sd_wait_voltage_stable_2(host);
- 		if (err < 0)
- 			goto out;
+v4:
+1. Describe why patch 3 is needed
+2. Modify a comment character in patch 7
+
+Wei WANG (8):
+  MFD:rtsx: Fix typo in comment
+  MFD:rtsx: Remove redundant code
+  MFD:rtsx: Declare that the DMA address limitation is 32bit explicitly
+  MFD:rtsx: Add callback function switch_output_voltage
+  MMC:rtsx: Using callback function to switch output voltage
+  MFD:rtsx: Add callback function conv_clk_and_div_n
+  MFD:rtsx: Fix checkpatch warning
+  MFD:rtsx: Use macro defines to replace some variables
+
+ drivers/mfd/rtl8411.c             |   29 ++++++++++++++++++++++++
+ drivers/mfd/rts5209.c             |   21 +++++++++++++++++
+ drivers/mfd/rts5229.c             |   21 +++++++++++++++++
+ drivers/mfd/rtsx_pcr.c            |   45 +++++++++++++++++++++++++------------
+ drivers/mfd/rtsx_pcr.h            |    3 +++
+ drivers/mmc/host/rtsx_pci_sdmmc.c |   30 +++++--------------------
+ include/linux/mfd/rtsx_common.h   |    3 +++
+ include/linux/mfd/rtsx_pci.h      |   27 +++++++++++++++++-----
+ 8 files changed, 135 insertions(+), 44 deletions(-)
+
 -- 
 1.7.9.5
 
