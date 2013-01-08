@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753597Ab3AHDuO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:50:14 -0500
-Received: from mail-bk0-f45.google.com ([209.85.214.45]:55592 "EHLO
-	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab3AHDuM (ORCPT
+	id S1753412Ab3AHDx4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:53:56 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:40359 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab3AHDxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:50:12 -0500
+	Mon, 7 Jan 2013 22:53:54 -0500
+Date: Mon, 7 Jan 2013 19:53:48 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for Jan 7 (rcutorture)
+Message-ID: <20130108035348.GF2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20130107142649.c843e0b711532dc3a631e4cf@canb.auug.org.au>
+ <50EB252C.4010005@infradead.org>
+ <20130107221627.GZ2525@linux.vnet.ibm.com>
+ <20130108095959.98d83d91dbd0e9e1ac023373@canb.auug.org.au>
+ <1357600327.5190.13.camel@gandalf.local.home>
+ <1357605379.5190.15.camel@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <87y5g4z7rp.fsf@xmission.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<20130107152622.GD3219@phenom.dumpdata.com>
-	<CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-Date: Mon, 7 Jan 2013 19:50:10 -0800
-X-Google-Sender-Auth: 95RNcYHrHtwNQbqDVYJ_OPYtVuU
-Message-ID: <CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357605379.5190.15.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010803-7606-0000-0000-0000073C87CD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 7:13 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> I meant we should detect failure to allocate bounce buffers in in
-> swiotlb_init() instead of panicing.
->
-> I meant swiotlb_map_single() should either panic or simply fail.
->
-> If I have read lib/swiotlb.c correctly the only place we allocate a
-> bounce buffer is in swiotlb_map_single.  If there are more places we can
-> allocate bounce buffers those need to be handled as well.
+On Mon, Jan 07, 2013 at 07:36:19PM -0500, Steven Rostedt wrote:
+> On Mon, 2013-01-07 at 18:12 -0500, Steven Rostedt wrote:
+> > On Tue, 2013-01-08 at 09:59 +1100, Stephen Rothwell wrote:
+> > > Hi Paul,
+> > > 
+> > > On Mon, 7 Jan 2013 14:16:27 -0800 "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+> > > >
+> > > > On Mon, Jan 07, 2013 at 11:42:36AM -0800, Randy Dunlap wrote:
+> > > > > 
+> > > > > on i386 or x86_64:
+> > > > > 
+> > > > > ERROR: "trace_clock_local" [kernel/rcutorture.ko] undefined!
+> > > > 
+> > > > Hello, Randy,
+> > > > 
+> > > > Did your build include the following, also pushed to -next in that same
+> > > > batch from -rcu?  Including Steven Rostedt on CC for his take.
+> > > 
+> > > That commit was certainly in next-20130107.
+> > 
+> > Could be bad config dependencies.
+> 
+> Paul,
+> 
+> You need to also select TRACE_CLOCK if you are going to use it.
 
-ok, will give it a try.
+Thank you, Steve!
 
-Thanks
+Randy, does the following patch help?
 
-Yinghai
+							Thanx, Paul
+
+------------------------------------------------------------------------
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index ce75d3b..b0fe7bd 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1010,6 +1010,7 @@ config RCU_CPU_STALL_INFO
+ config RCU_TRACE
+ 	bool "Enable tracing for RCU"
+ 	depends on DEBUG_KERNEL
++	select TRACE_CLOCK
+ 	help
+ 	  This option provides tracing in RCU which presents stats
+ 	  in debugfs for debugging RCU implementation.
+
