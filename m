@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141Ab3AHLOe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:14:34 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55928 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755777Ab3AHLOd (ORCPT
+	id S1756163Ab3AHLPX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:15:23 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53009 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab3AHLPU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:14:33 -0500
-Date: Tue, 8 Jan 2013 11:14:31 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] regulator: max8997: Use uV in voltage_map_desc
-Message-ID: <20130108111431.GP4544@opensource.wolfsonmicro.com>
-References: <1356685743.27172.2.camel@phoenix>
+	Tue, 8 Jan 2013 06:15:20 -0500
+Date: Tue, 8 Jan 2013 12:14:49 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Tony Lindgren <tony@atomide.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>, Rob Landley <rob@landley.net>,
+        Jon Loeliger <jdl@jdl.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        David Gibson <david@gibson.dropbear.id.au>,
+        Benoit Cousson <b-cousson@ti.com>, Mitch Bradley <wmb@firmworks.com>,
+        Alan Tull <atull@altera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-omap@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Porter <mporter@ti.com>, Russ Dill <Russ.Dill@ti.com>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Joel A Fernandes <agnel.joel@gmail.com>,
+        Rob Clark <robdclark@gmail.com>,
+        Jason Kridner <jkridner@beagleboard.org>,
+        Matt Ranostay <mranostay@gmail.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 1/5] capemgr: Beaglebone DT overlay based cape manager
+Message-ID: <20130108111449.GN1906@pengutronix.de>
+References: <1357584666-17374-1-git-send-email-panto@antoniou-consulting.com>
+ <93BF5C62-ADE8-4EFC-9175-C2D7E43300E3@antoniou-consulting.com>
+ <20130107210551.GL14149@atomide.com>
+ <201301072135.05166.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kOdvwer/5gjFgNo6"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356685743.27172.2.camel@phoenix>
-X-Cookie: Big book, big bore.
+In-Reply-To: <201301072135.05166.arnd@arndb.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:26:18 up 199 days, 37 min, 47 users,  load average: 1.13, 1.01,
+ 2.27
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:21e:67ff:fe11:9c5c
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 07, 2013 at 09:35:04PM +0000, Arnd Bergmann wrote:
+> (Adding Sascha Hauer, Linus Walleij, Lee Jones to Cc)
+> 
+> On Monday 07 January 2013, Tony Lindgren wrote:
+> > > 
+> > > At the end of the line, some kind of hardware glue is going to be needed.
+> > > 
+> > > I just feel that drawing from a sample size of 1 (maybe 2 if I get to throw
+> > > in the beagleboard), it is a bit premature to think about making it overly
+> > > general, besides the part that are obviously part of the infrastructure 
+> > > (like the DT overlay stuff).
+> > > 
+> > > What I'm getting at, is that we need some user experience about this, before
+> > > going away and creating structure out of possible misconception about the uses. 
+> > 
+> > IMHO stuff like this will be needed by many SoCs. Some examples of similar
+> > things for omaps that have eventually become generic frameworks have been
+> > the clock framework, USB OTG support, runtime PM, pinmux framework and
+> > so on.
+> > 
+> > So I suggest a minimal generic API from the start as that will make things
+> > a lot easier in the long run.
+> 
+> I agree. The ux500 platform already has the concept of "user interface boards",
+> which currently is not well integrated into devicetree. I believe Sascha
+> mentioned that Pengutronix had been shipping some other systems with add-on
+> boards and generating device tree binaries from source for each combination.
 
---kOdvwer/5gjFgNo6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+What we have is usually CPU modules which can have different base
+boards. Usually they are not detectable by software. Right now we
+normally use a baseboard dts which includes a board dtd which then
+includes the SoC dtsi. This works quite well on dtc level.
 
-On Fri, Dec 28, 2012 at 05:09:03PM +0800, Axel Lin wrote:
-> Current code does integer division (min_vol = min_uV / 1000) before pass
-> min_vol to max8997_get_voltage_proper_val().
-> So it is possible min_vol is truncated to a smaller value.
+For us overlay dts become interesting when it comes to all the little
+variants of the boards, like for example different displays, different
+touchscreens,...
 
-Applied, thanks.
+Sascha
 
---kOdvwer/5gjFgNo6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ6/+IAAoJELSic+t+oim9wf0P+QGUY3pHUsZlR/eekjmTZrQs
-00KugE16iIMMOUmSLVOooCQa0xTfD0tK0Wq2xSemVXK/VrPPQ1weVtK3w2nHi+H5
-kxr6nqDdyX1UKaeQzsIjYa2s1/QiCwtSAULORhD1skSuBosZVMSRkTx0AdaIKVDz
-dAe1x3S7oGa+sS+l6OV/2baS66ZDaIzrqTeSEe3wZG1/VyTfQPw2Dqmk3rt0KcCB
-lzllnkgS0G+41KTlD/eHre91EcWe2uTLyADYAJ0p/5ffN/w17h07uLBYVUXMGCev
-xb60n+YHw9Y8PmW+A5yekY0IYzTogEOk1lQFkyjgL2BXiX+go20zzWrLS/bQ+sFc
-kHDghI8VlFcon62NVEXPxTRDGfTtNujm+cPiS5Od/M+WQfRB6ldLvF7UJSoPZkq+
-eEBAj+cn0CjN1cucttOj9qzHKZEejtuPFvQxp6av6gaUdi5Ga3ePHNinUfyQiV63
-QrqZvTpL1IAv55xB0RYkaqhhSf33AZFiGKFbpcxVglRPAYkVOrgXSfxMGs5gKwRn
-f07skcmaTuSXsMFqQfVNq9aG3V8ktpOhCPlqpz/b5IuGqvER3V1z5rlDDw2rPuMS
-AAMASk57hdN6cAJCoEBqIPO9uqHo2C0FrrD9e+11da/0NLjhiH4jt+pOUh205EgW
-Zxvlp2Ljqpy9Hr7OxATv
-=1YoT
------END PGP SIGNATURE-----
-
---kOdvwer/5gjFgNo6--
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
