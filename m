@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab3AHHlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 02:41:04 -0500
-Received: from mail-ye0-f181.google.com ([209.85.213.181]:54472 "EHLO
-	mail-ye0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab3AHHlC (ORCPT
+	id S1754406Ab3AHHlm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 02:41:42 -0500
+Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:57253 "EHLO
+	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab3AHHlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 02:41:02 -0500
-Date: Mon, 7 Jan 2013 23:29:35 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130108072935.GA15431@lizard.gateway.2wire.net>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <50EA8CA2.7020608@jp.fujitsu.com>
+	Tue, 8 Jan 2013 02:41:40 -0500
+Message-ID: <50EBCB52.6020003@ce.jp.nec.com>
+Date: Tue, 08 Jan 2013 16:31:30 +0900
+From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50EA8CA2.7020608@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jens Axboe <axboe@kernel.dk>
+CC: Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: [PATCH repost] blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
+References: <50890937.7010809@ce.jp.nec.com> <20121026202105.GF24687@redhat.com> <508E572C.6000707@ce.jp.nec.com> <20121029163845.GB7709@redhat.com> <1351529115.24721.40.camel@twins> <20121029171346.GC3308@redhat.com>
+In-Reply-To: <20121029171346.GC3308@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 05:51:46PM +0900, Kamezawa Hiroyuki wrote:
-[...]
-> I'm just curious..
+With 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
+on blk_register_queue() instead of blk_init_allocated_queue()"),
+the following warning appears when multipath is used with CONFIG_PREEMPT=y.
 
-Thanks for taking a look! :)
+This patch moves blk_queue_bypass_start() before radix_tree_preload()
+to avoid the sleeping call while preemption is disabled.
 
-[...]
-> > +/*
-> > + * The window size is the number of scanned pages before we try to analyze
-> > + * the scanned/reclaimed ratio (or difference).
-> > + *
-> > + * It is used as a rate-limit tunable for the "low" level notification,
-> > + * and for averaging medium/oom levels. Using small window sizes can cause
-> > + * lot of false positives, but too big window size will delay the
-> > + * notifications.
-> > + */
-> > +static const uint vmpressure_win = SWAP_CLUSTER_MAX * 16;
-> > +static const uint vmpressure_level_med = 60;
-> > +static const uint vmpressure_level_oom = 99;
-> > +static const uint vmpressure_level_oom_prio = 4;
-> > +
-> 
-> Hmm... isn't this window size too small ?
-> If vmscan cannot find a reclaimable page while scanning 2M of pages in a zone,
-> oom notify will be returned. Right ?
+  BUG: scheduling while atomic: multipath/2460/0x00000002
+  1 lock held by multipath/2460:
+   #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+  Modules linked in: ...
+  Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+  Call Trace:
+   [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+   [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+   [<ffffffff814291e6>] schedule+0x64/0x66
+   [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+   [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+   [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+   [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+   [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+   [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+   [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+   [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+   [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+   [<ffffffff8106fb18>] ? complete+0x21/0x53
+   [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+   [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+   [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+   [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+   [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+   [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+   [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+   [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+   [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+   [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+   [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+   [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+   [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+   [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+   [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+   [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+   [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+   [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+   [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
 
-Yup, you are right, if we were not able to find anything within the window
-size (which is 2M, but see below), then it is effectively the "OOM level".
-The thing is, the vmpressure reports... the pressure. :) Or, the
-allocation cost, and if the cost becomes high, it is no good.
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Alasdair G Kergon <agk@redhat.com>
+---
+ block/blk-cgroup.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-The 2M is, of course, not ideal. And the "ideal" depends on many factors,
-alike to vmstat. And, actually I dream about deriving the window size from
-zone->stat_threshold, which would make the window automatically adjustable
-for different "machine sizes" (as we do in calculate_normal_threshold(),
-in vmstat.c).
-
-But again, this is all "implementation details"; tunable stuff that we can
-either adjust ourselves as needed, or try to be smart, i.e. apply some
-heuristics, again, as in vmstat.
-
-Thanks,
-Anton
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index b8858fb..53628e4 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -790,10 +790,10 @@ int blkcg_activate_policy(struct request_queue *q,
+ 	if (!blkg)
+ 		return -ENOMEM;
+ 
+-	preloaded = !radix_tree_preload(GFP_KERNEL);
+-
+ 	blk_queue_bypass_start(q);
+ 
++	preloaded = !radix_tree_preload(GFP_KERNEL);
++
+ 	/* make sure the root blkg exists and count the existing blkgs */
+ 	spin_lock_irq(q->queue_lock);
+ 
