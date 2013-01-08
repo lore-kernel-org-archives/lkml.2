@@ -1,98 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab3AHCbV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:31:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:33257 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab3AHCbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:31:20 -0500
-Message-ID: <50EB84F2.4070708@suse.com>
-Date: Mon, 07 Jan 2013 21:31:14 -0500
-From: Jeff Mahoney <jeffm@suse.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linux Kernel Maling List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] staging/sb105x: remove asm/segment.h dependency
-References: <50EB4A3B.1020307@suse.com> <1357598164.5190.12.camel@gandalf.local.home>
-In-Reply-To: <1357598164.5190.12.camel@gandalf.local.home>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1753082Ab3AHChB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:37:01 -0500
+Received: from amsterdam.lcs.mit.edu ([18.26.4.9]:54326 "EHLO
+	amsterdam.lcs.mit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913Ab3AHChA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 21:37:00 -0500
+From: Nickolai Zeldovich <nickolai@csail.mit.edu>
+To: Thomas Winischhofer <thomas@winischhofer.net>
+Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] sisusbvga: use proper device for dev_err() during probe
+Date: Mon,  7 Jan 2013 21:36:52 -0500
+Message-Id: <1357612612-37962-1-git-send-email-nickolai@csail.mit.edu>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/7/13 5:36 PM, Steven Rostedt wrote:
-> This patch is obsoleted by:
-> 
-> https://lkml.org/lkml/2012/12/13/710
-> 
-> Which I just got the automated reply, and it's in Greg's staging tree
-> now.
-> 
-> When I get time, I do want to try to get this driver (and device)
-> working on my ppc64 box.
+If kzalloc returns NULL, do not dereference the said NULL pointer as the
+first argument to dev_err(); use &dev->dev instead.  Similarly, before
+sisusb->sisusb_dev has been initialized to dev, use dev_err(&dev->dev)
+instead.
 
-Ok, this blob (predictably) works to build on my ppc64 box.
+Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
+---
+ drivers/usb/misc/sisusbvga/sisusb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/staging/sb105x/sb_pci_mp.c
-+++ b/drivers/staging/sb105x/sb_pci_mp.c
-@@ -2836,7 +2836,8 @@ static void __init multi_init_ports(void
-                                osc = 0;
-                        for(j=0;j<osc;j++)
-                                mtpt->port.uartclk *= 2;
--                       mtpt->port.flags    |= STD_COM_FLAGS | UPF_SHARE_IRQ ;
-+                       mtpt->port.flags    |= UPF_BOOT_AUTOCONF|UPF_SKIP_TEST;
-+                       mtpt->port.flags    |= UPF_SHARE_IRQ;
-                        mtpt->port.iotype   = UPIO_PORT;
-                        mtpt->port.ops      = &multi_pops;
-
--Jeff
-
-> Thanks,
-> 
-> -- Steve
-> 
-> 
-> On Mon, 2013-01-07 at 17:20 -0500, Jeff Mahoney wrote:
->> sb105x doesn't seem to actually need <asm/segment.h> (builds on x86
->> without it) and ppc/ppc64 doesn't provide it so it fails to build there.
->>
->> This patch removes the dependency. Unfortunately, it now fails to build
->> because STD_COM_FLAGS isn't defined on most architectures. I'm not familiar
->> enough with the tty/serial system to patch that aspect of it.
->>
->> CC: Steven Rostedt <rostedt@goodmis.org>
->> Signed-off-by: Jeff Mahoney <jeffm@suse.com>
->> ---
->>
->>  drivers/staging/sb105x/sb_pci_mp.h |    1 -
->>  1 file changed, 1 deletion(-)
->>
->> --- a/drivers/staging/sb105x/sb_pci_mp.h
->> +++ b/drivers/staging/sb105x/sb_pci_mp.h
->> @@ -19,7 +19,6 @@
->>  #include <asm/uaccess.h>
->>  #include <asm/io.h>
->>  #include <asm/irq.h>
->> -#include <asm/segment.h>
->>  #include <asm/serial.h>
->>  #include <linux/interrupt.h>
->>  
->>
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
+diff --git a/drivers/usb/misc/sisusbvga/sisusb.c b/drivers/usb/misc/sisusbvga/sisusb.c
+index dd573ab..bf5f12c 100644
+--- a/drivers/usb/misc/sisusbvga/sisusb.c
++++ b/drivers/usb/misc/sisusbvga/sisusb.c
+@@ -3084,7 +3084,7 @@ static int sisusb_probe(struct usb_interface *intf,
+ 
+ 	/* Allocate memory for our private */
+ 	if (!(sisusb = kzalloc(sizeof(*sisusb), GFP_KERNEL))) {
+-		dev_err(&sisusb->sisusb_dev->dev, "Failed to allocate memory for private data\n");
++		dev_err(&dev->dev, "Failed to allocate memory for private data\n");
+ 		return -ENOMEM;
+ 	}
+ 	kref_init(&sisusb->kref);
+@@ -3093,7 +3093,7 @@ static int sisusb_probe(struct usb_interface *intf,
+ 
+ 	/* Register device */
+ 	if ((retval = usb_register_dev(intf, &usb_sisusb_class))) {
+-		dev_err(&sisusb->sisusb_dev->dev, "Failed to get a minor for device %d\n",
++		dev_err(&dev->dev, "Failed to get a minor for device %d\n",
+ 			dev->devnum);
+ 		retval = -ENODEV;
+ 		goto error_1;
 -- 
-Jeff Mahoney
-SUSE Labs
+1.7.10.4
+
