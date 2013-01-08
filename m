@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab3AHOv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:51:27 -0500
-Received: from mms3.broadcom.com ([216.31.210.19]:3774 "EHLO mms3.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756522Ab3AHOvZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:51:25 -0500
-X-Server-Uuid: B86B6450-0931-4310-942E-F00ED04CA7AF
-From: "Ariel Elior" <ariele@broadcom.com>
-To: "Dan Carpenter" <dan.carpenter@oracle.com>,
-        "Eilon Greenstein" <eilong@broadcom.com>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: RE: [patch] bnx2x: NULL dereference on error in debug code
-Thread-Topic: [patch] bnx2x: NULL dereference on error in debug code
-Thread-Index: AQHN7aYB4QBgD6K21UChW7lSXPY8vpg/gxhA
-Date: Tue, 8 Jan 2013 14:50:50 +0000
-Message-ID: <6AE768456CEC4B4A9B2248CB6B87EB3E1BCC7E9F@SJEXCHMB05.corp.ad.broadcom.com>
-References: <20130108134213.GA23742@elgon.mountain>
-In-Reply-To: <20130108134213.GA23742@elgon.mountain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.16.203.100]
+	id S1756557Ab3AHOxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:53:48 -0500
+Received: from li9-11.members.linode.com ([67.18.176.11]:42314 "EHLO
+	imap.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756455Ab3AHOxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 09:53:47 -0500
+Date: Tue, 8 Jan 2013 09:53:46 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
+Cc: "lin >> \"linux-kernel@vger.kernel.org\"" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [Consult] our latest kernel and latest Android  under arm
+ Samsung S5PV210 with yaffs2 file system
+Message-ID: <20130108145346.GC27837@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Chen Gang F T <chen.gang.flying.transformer@gmail.com>,
+	"lin >> \"linux-kernel@vger.kernel.org\"" <linux-kernel@vger.kernel.org>
+References: <50EBF402.5070007@gmail.com>
 MIME-Version: 1.0
-X-WSS-ID: 7CF2EEBB39W24275437-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EBF402.5070007@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: netdev-owner@vger.kernel.org [mailto:netdev-
-> owner@vger.kernel.org] On Behalf Of Dan Carpenter
-> Sent: Tuesday, January 08, 2013 3:42 PM
-> To: Eilon Greenstein
-> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-
-> janitors@vger.kernel.org
-> Subject: [patch] bnx2x: NULL dereference on error in debug code
-> 
-> "vfop" is NULL here.  I've changed the debugging to not use it.
-> 
-> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-> ---
-> Only needed in linux-next.
-> 
-> diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-> b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-> index 71fcef0..3eef972 100644
-> --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-> +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
-> @@ -463,8 +463,7 @@ static int bnx2x_vfop_qdtor_cmd(struct bnx2x *bp,
->  		return bnx2x_vfop_transition(bp, vf, bnx2x_vfop_qdtor,
->  					     cmd->block);
->  	}
-> -	DP(BNX2X_MSG_IOV, "VF[%d] failed to add a vfop. rc %d\n",
-> -	   vf->abs_vfid, vfop->rc);
-> +	DP(BNX2X_MSG_IOV, "VF[%d] failed to add a vfop.\n", vf->abs_vfid);
->  	return -ENOMEM;
->  }
-> 
-Right you are. Ack.
-Thanks Dan,
-Ariel
+On Tue, Jan 08, 2013 at 06:25:06PM +0800, Chen Gang F T wrote:
+>     use yaffs2 file system for android
+>       it seems yaffs2 is a standard file system for android.
+>         for my android HTC phone is also yaffs2 file system.
 
+yaffs2 is not a _standard_ file system for Android.  There may be some
+phones which use it, but the much more common is either FAT (for the
+older phones) or ext4.  The Google AOSP releases for pretty much all
+modern Nexus phones (Galaxy Nexus and newer if I recall correctly,
+certainly for GN, N4, N7, etc.) all use ext4.
+
+>   current:
+>     I am trying to use our latest kernel (such as next-20130104)
+>       can compile from the source code successfully.
+>       it has no source code for yaffs2 file system.
+
+So if your existing Android device is using yaffs2, you'll need to
+integrate yaffs2, since yaff2 is not in the upstream kernel.  As far
+as hardware support, it will depend on the specifics of your
+development board, and I'm not enough of an ARM expert to answer that
+question.  Others hopefully on this list will be able to answer it.
+
+Regards,
+
+					- Ted
