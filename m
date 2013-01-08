@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab3AHPh3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:37:29 -0500
-Received: from mail-vb0-f50.google.com ([209.85.212.50]:56234 "EHLO
-	mail-vb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756659Ab3AHPh2 (ORCPT
+	id S1756710Ab3AHPjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:39:19 -0500
+Received: from guide.wilmington.edu ([198.30.126.4]:58476 "EHLO
+	guide.wilmington.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756678Ab3AHPjO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:37:28 -0500
+	Tue, 8 Jan 2013 10:39:14 -0500
+From: "Max L. Gabbard" <mgabbard@athenian.wilmington.edu>
+To: "Max L. Gabbard" <mgabbard@athenian.wilmington.edu>
+Date: Tue, 8 Jan 2013 07:58:55 -0500
+Subject: RE: Good day, 
+Thread-Topic: Good day, 
+Thread-Index: AQHN7YeHz+Bn4iuqzE+4/99q6dtTyJg/Ycoq
+Message-ID: <DD0263699A239D42959DCC8F592D45C8D086FD0EA6@mbx01.wilmington.edu>
+References: <DD0263699A239D42959DCC8F592D45C8D086FD0DF4@mbx01.wilmington.edu>
+In-Reply-To: <DD0263699A239D42959DCC8F592D45C8D086FD0DF4@mbx01.wilmington.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
-References: <20130105152208.GA3386@redhat.com> <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
- <alpine.LNX.2.00.1301061037140.28950@eggly.anvils> <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
- <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com> <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 Jan 2013 07:37:06 -0800
-X-Google-Sender-Auth: TjzWr-g4w-6yw9qwy-_ncTs47J8
-Message-ID: <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
-Subject: Re: oops in copy_page_rep()
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 8, 2013 at 5:04 AM, Hillf Danton <dhillf@gmail.com> wrote:
-> On Tue, Jan 8, 2013 at 1:34 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->>
->> Hmm. Is there some reason we never need to worry about it for the
->> "pmd_numa()" case just above?
->>
->> A comment about this all might be a really good idea.
->>
-> Yes Sir, added.
 
-Heh. I was more thinking about why do_huge_pmd_wp_page() needs it, but
-do_huge_pmd_numa_page() does not.
 
-Also, do we actually need it for huge_pmd_set_accessed()? The
-*placement* of that thing confuses me. And because it confuses me, I'd
-like to understand it.
+________________________________________
+From: Max L. Gabbard
+Sent: Tuesday, January 08, 2013 5:04 AM
+To: mrsmarycheng47@hotmail.com
+Subject: Good day,
 
-                  Linus
+Good day,
+I am Mrs.Mary Cheng,I have a Business Proposal of mutual benefits,Please contact me for a better brief of my offer on my Private email: mrsmarycheng47@hotmail.com for more details.
+Regards
+Mrs Mary Cheng
