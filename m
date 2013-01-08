@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab3AHULF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 15:11:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61017 "EHLO mx1.redhat.com"
+	id S1751615Ab3AHUOU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 15:14:20 -0500
+Received: from dcvr.yhbt.net ([64.71.152.64]:37010 "EHLO dcvr.yhbt.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112Ab3AHULD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 15:11:03 -0500
-Message-ID: <50EC7DAF.8030606@redhat.com>
-Date: Tue, 08 Jan 2013 15:12:31 -0500
-From: Tony Camuso <tcamuso@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
+	id S1750748Ab3AHUOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 15:14:19 -0500
+Date: Tue, 8 Jan 2013 20:14:19 +0000
+From: Eric Wong <normalperson@yhbt.net>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+Message-ID: <20130108201419.GA30568@dcvr.yhbt.net>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+ <20130102200848.GA4500@dcvr.yhbt.net>
+ <20130104160148.GB3885@suse.de>
+ <20130106120700.GA24671@dcvr.yhbt.net>
+ <20130107122516.GC3885@suse.de>
+ <20130107223850.GA21311@dcvr.yhbt.net>
 MIME-Version: 1.0
-To: minyard@acm.org
-CC: Corey Minyard <tcminyard@gmail.com>, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
-        openipmi-developer@lists.sourceforge.net, grant.likely@secretlab.ca,
-        k-tanaka@ce.jp.nec.com, myamazak@redhat.com
-Subject: [PATCH] ipmi: replace call to try_smi_init() with call to add_smi()
-References: <1355424008-20491-1-git-send-email-tcamuso@redhat.com> <50CA31BB.2030507@acm.org> <50CB3662.5080100@redhat.com>
-In-Reply-To: <50CB3662.5080100@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130107223850.GA21311@dcvr.yhbt.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upstream commit 9e368fa0 added function ipmi_pnp_probe(), which
-calls try_smi_init() directly.
+Eric Wong <normalperson@yhbt.net> wrote:
+> Mel Gorman <mgorman@suse.de> wrote:
+> > Right now it's difficult to see how the capture could be the source of
+> > this bug but I'm not ruling it out either so try the following (untested
+> > but should be ok) patch.  It's not a proper revert, it just disables the
+> > capture page logic to see if it's at fault.
+> 
+> Things look good so far with your change.
+> It's been running 2 hours on a VM and 1 hour on my regular machine.
+> Will update again in a few hours (or sooner if it's stuck again).
 
-try_smi_init() allocates resources for IPMI driver. However
-try_smi_init() can be called again, and the allocated resources
-can be unexpectedly released when the same IPMI resource
-information is found on both ACPI namespace and SMBIOS table.
-ipmi_pnp_probe() should call add_smi() instead of try_smi_init()
-
-For reference, see upstream commit ...
-2407d77a1a013b88ee3b817f2b934e420e5376f5
-
-Signed-off-by: Tony Camuso <tcamuso@redhat.com>
-
----
-  drivers/char/ipmi/ipmi_si_intf.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-index afb89be..20d13c6 100644
---- a/drivers/char/ipmi/ipmi_si_intf.c
-+++ b/drivers/char/ipmi/ipmi_si_intf.c
-@@ -2223,7 +2223,7 @@ static int __devinit ipmi_pnp_probe(struct pnp_dev *dev,
-  	info->dev = &dev->dev;
-  	pnp_set_drvdata(dev, info);
-  
--	return try_smi_init(info);
-+	return add_smi(info);
-  
-  err_free:
-  	kfree(info);
--- 
-1.7.1
+Things still seem good on my regular machine.
