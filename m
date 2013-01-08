@@ -1,160 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3AHCNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:13:13 -0500
-Received: from nm14-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.162]:21856
-	"EHLO nm14-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755892Ab3AHCJd (ORCPT
+	id S1753706Ab3AHCNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:13:38 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:40830 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3AHCJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:33 -0500
-X-Yahoo-Newman-Id: 587635.99058.bm@smtp105.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: JfoQOrUVM1nNC.PaaEqF_.MMvQaVCuwKP3zyOAZob8DLPK_
- ZRh7jJI5M5hcWkZVSA2mG01KS7hpFI.KuhezcR1UheulWLRWeTToXsg6Yz6j
- ar1c1bSlCqXPQVXF5F5Z_eORViqTED1Yf5Z.JrYGhL6RUq2M1mv4RHx0EcLH
- SP_pcxIfgO2vXo7qG7G_PZdTF.NNVYWQo4th4KkoGSNkUVUKdjPAnBTW9qyj
- VCxhu1zyjg5SIjodA21zYHqehiWwxmDZ4fWBHRlLnmG5d0DJnOAcBBS2l0pj
- eJFVLZMu7l8ti7MsCKuRlO4knyq.y4i7qlpi2vIGMo3jB.CzP8iQkjLZAecz
- lfT_wAE7ldNuepNLgxIL7E5eFYSHMYAXqgY_LU6AGayRYyA7Qge6z1LeTQek
- kEu9pMCozOvdthob7srvdnw.MEmMQoUX7Msa5MUXbuBDzuMdjj6i30YBhqre
- l_4d5
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50EB7FEB.2070506@schaufler-ca.com>
-Date: Mon, 07 Jan 2013 18:09:47 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: Casey Schaufler <casey@schaufler-ca.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH v12 9/9] LSM: Multiple concurrent LSMs
-References: <50EB7C50.3070605@schaufler-ca.com>
-In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 21:09:32 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 21/33] nohz: Full dynticks mode
+Date: Tue,  8 Jan 2013 03:08:21 +0100
+Message-Id: <1357610913-1080-22-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH v12 9/9] LSM: Multiple concurrent LSMs
+When a CPU is in full dynticks mode, try to switch
+it to nohz mode from the interrupt exit path if it is
+running a single non-idle task.
 
-Change the infrastructure for Linux Security Modules (LSM)s
-from a single vector of hook handlers to a list based method
-for handling multiple concurrent modules. 
+Then restart the tick if necessary if we are enqueuing a
+second task while the timer is stopped, so that the scheduler
+tick is rearmed.
 
-Remove special case Yama stacking. Remove commoncap calls.
+[TODO: Check remaining things to be done from scheduler_tick()]
 
-Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+[ Included build fix from Geoff Levand ]
 
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- security/yama/Kconfig    |    7 -------
- security/yama/yama_lsm.c |   33 +++------------------------------
- 2 files changed, 3 insertions(+), 37 deletions(-)
+ include/linux/sched.h    |    6 +++++
+ include/linux/tick.h     |    2 +
+ kernel/sched/core.c      |   22 ++++++++++++++++++++-
+ kernel/sched/sched.h     |   10 +++++++++
+ kernel/softirq.c         |    5 ++-
+ kernel/time/tick-sched.c |   47 ++++++++++++++++++++++++++++++++++++++++-----
+ 6 files changed, 83 insertions(+), 9 deletions(-)
 
-diff --git a/security/yama/Kconfig b/security/yama/Kconfig
-index 20ef514..a99aa1d 100644
---- a/security/yama/Kconfig
-+++ b/security/yama/Kconfig
-@@ -12,10 +12,3 @@ config SECURITY_YAMA
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 32860ae..132897d 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2846,6 +2846,12 @@ static inline void inc_syscw(struct task_struct *tsk)
+ #define TASK_SIZE_OF(tsk)	TASK_SIZE
+ #endif
  
- 	  If you are unsure how to answer this question, answer N.
++#ifdef CONFIG_NO_HZ_FULL
++extern bool sched_can_stop_tick(void);
++#else
++static inline bool sched_can_stop_tick(void) { return false; }
++#endif
++
+ #ifdef CONFIG_MM_OWNER
+ extern void mm_update_next_owner(struct mm_struct *mm);
+ extern void mm_init_owner(struct mm_struct *mm, struct task_struct *p);
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 2d4f6f0..dfb90ea 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -159,8 +159,10 @@ static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
  
--config SECURITY_YAMA_STACKED
--	bool "Yama stacked with other LSMs"
--	depends on SECURITY_YAMA
--	default n
--	help
--	  When Yama is built into the kernel, force it to stack with the
--	  selected primary LSM.
-diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-index 23414b9..acfe1f0 100644
---- a/security/yama/yama_lsm.c
-+++ b/security/yama/yama_lsm.c
-@@ -154,13 +154,9 @@ void yama_task_free(struct task_struct *task)
- int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
- 			   unsigned long arg4, unsigned long arg5)
+ #ifdef CONFIG_NO_HZ_FULL
+ int tick_nohz_full_cpu(int cpu);
++extern void tick_nohz_full_check(void);
+ #else
+ static inline int tick_nohz_full_cpu(int cpu) { return 0; }
++static inline void tick_nohz_full_check(void) { }
+ #endif
+ 
+ 
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 3c1a806..7b6156a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -1238,6 +1238,24 @@ static void update_avg(u64 *avg, u64 sample)
+ }
+ #endif
+ 
++#ifdef CONFIG_NO_HZ_FULL
++bool sched_can_stop_tick(void)
++{
++	struct rq *rq;
++
++	rq = this_rq();
++
++	/* Make sure rq->nr_running update is visible after the IPI */
++	smp_rmb();
++
++	/* More than one running task need preemption */
++	if (rq->nr_running > 1)
++		return false;
++
++	return true;
++}
++#endif
++
+ static void
+ ttwu_stat(struct task_struct *p, int cpu, int wake_flags)
  {
--	int rc;
-+	int rc = -ENOSYS;
- 	struct task_struct *myself = current;
+@@ -1380,7 +1398,8 @@ static void sched_ttwu_pending(void)
  
--	rc = cap_task_prctl(option, arg2, arg3, arg4, arg5);
--	if (rc != -ENOSYS)
--		return rc;
--
- 	switch (option) {
- 	case PR_SET_PTRACER:
- 		/* Since a thread can call prctl(), find the group leader
-@@ -282,14 +278,7 @@ static int ptracer_exception_found(struct task_struct *tracer,
- int yama_ptrace_access_check(struct task_struct *child,
- 				    unsigned int mode)
+ void scheduler_ipi(void)
  {
--	int rc;
--
--	/* If standard caps disallows it, so does Yama.  We should
--	 * only tighten restrictions further.
--	 */
--	rc = cap_ptrace_access_check(child, mode);
--	if (rc)
--		return rc;
-+	int rc = 0;
+-	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
++	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()
++	    && !tick_nohz_full_cpu(smp_processor_id()))
+ 		return;
  
- 	/* require ptrace target be a child of ptracer on attach */
- 	if (mode == PTRACE_MODE_ATTACH) {
-@@ -335,14 +324,7 @@ int yama_ptrace_access_check(struct task_struct *child,
-  */
- int yama_ptrace_traceme(struct task_struct *parent)
+ 	/*
+@@ -1397,6 +1416,7 @@ void scheduler_ipi(void)
+ 	 * somewhat pessimize the simple resched case.
+ 	 */
+ 	irq_enter();
++	tick_nohz_full_check();
+ 	sched_ttwu_pending();
+ 
+ 	/*
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index f24d91e..63915fe 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -955,6 +955,16 @@ static inline u64 steal_ticks(u64 steal)
+ static inline void inc_nr_running(struct rq *rq)
  {
--	int rc;
--
--	/* If standard caps disallows it, so does Yama.  We should
--	 * only tighten restrictions further.
--	 */
--	rc = cap_ptrace_traceme(parent);
--	if (rc)
--		return rc;
-+	int rc = 0;
- 
- 	/* Only disallow PTRACE_TRACEME on more aggressive settings. */
- 	switch (ptrace_scope) {
-@@ -366,7 +348,6 @@ int yama_ptrace_traceme(struct task_struct *parent)
- 	return rc;
+ 	rq->nr_running++;
++
++#ifdef CONFIG_NO_HZ_FULL
++	if (rq->nr_running == 2) {
++		if (tick_nohz_full_cpu(rq->cpu)) {
++			/* Order rq->nr_running write against the IPI */
++			smp_wmb();
++			smp_send_reschedule(rq->cpu);
++		}
++	}
++#endif
  }
  
--#ifndef CONFIG_SECURITY_YAMA_STACKED
- static struct security_operations yama_ops = {
- 	.name =			"yama",
+ static inline void dec_nr_running(struct rq *rq)
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index f5cc25f..6342078 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -307,7 +307,8 @@ void irq_enter(void)
+ 	int cpu = smp_processor_id();
  
-@@ -375,7 +356,6 @@ static struct security_operations yama_ops = {
- 	.task_prctl =		yama_task_prctl,
- 	.task_free =		yama_task_free,
- };
--#endif
+ 	rcu_irq_enter();
+-	if (is_idle_task(current) && !in_interrupt()) {
++
++	if ((is_idle_task(current) || tick_nohz_full_cpu(cpu)) && !in_interrupt()) {
+ 		/*
+ 		 * Prevent raise_softirq from needlessly waking up ksoftirqd
+ 		 * here, as softirq will be serviced on return from interrupt.
+@@ -349,7 +350,7 @@ void irq_exit(void)
  
- #ifdef CONFIG_SYSCTL
- static int yama_dointvec_minmax(struct ctl_table *table, int write,
-@@ -422,18 +402,11 @@ static struct ctl_table yama_sysctl_table[] = {
+ #ifdef CONFIG_NO_HZ
+ 	/* Make sure that timer wheel updates are propagated */
+-	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
++	if (!in_interrupt())
+ 		tick_nohz_irq_exit();
+ #endif
+ 	rcu_irq_exit();
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 5cefed8..c1a1917 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -587,6 +587,24 @@ void tick_nohz_idle_enter(void)
+ 	local_irq_enable();
+ }
  
- static __init int yama_init(void)
++static void tick_nohz_full_stop_tick(struct tick_sched *ts)
++{
++#ifdef CONFIG_NO_HZ_FULL
++	int cpu = smp_processor_id();
++
++	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
++		return;
++
++	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
++		return;
++
++	if (!sched_can_stop_tick())
++		return;
++
++	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
++#endif
++}
++
+ /**
+  * tick_nohz_irq_exit - update next tick event from interrupt exit
+  *
+@@ -599,12 +617,15 @@ void tick_nohz_irq_exit(void)
  {
--#ifndef CONFIG_SECURITY_YAMA_STACKED
- 	if (!security_module_enable(&yama_ops))
- 		return 0;
--#endif
+ 	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
  
- 	printk(KERN_INFO "Yama: becoming mindful.\n");
- 
--#ifndef CONFIG_SECURITY_YAMA_STACKED
--	if (register_security(&yama_ops))
--		panic("Yama: kernel registration failed.\n");
--#endif
+-	if (!ts->inidle)
+-		return;
 -
- #ifdef CONFIG_SYSCTL
- 	if (!register_sysctl_paths(yama_sysctl_path, yama_sysctl_table))
- 		panic("Yama: sysctl registration failed.\n");
+-	/* Cancel the timer because CPU already waken up from the C-states*/
+-	menu_hrtimer_cancel();
+-	__tick_nohz_idle_enter(ts);
++	if (ts->inidle) {
++		if (!need_resched()) {
++			/* Cancel the timer because CPU already waken up from the C-states*/
++			menu_hrtimer_cancel();
++			__tick_nohz_idle_enter(ts);
++		}
++	} else {
++		tick_nohz_full_stop_tick(ts);
++	}
+ }
+ 
+ /**
+@@ -835,6 +856,20 @@ static inline void tick_check_nohz(int cpu) { }
+ 
+ #endif /* NO_HZ */
+ 
++#ifdef CONFIG_NO_HZ_FULL
++void tick_nohz_full_check(void)
++{
++	struct tick_sched *ts = &__get_cpu_var(tick_cpu_sched);
++
++	if (tick_nohz_full_cpu(smp_processor_id())) {
++		if (ts->tick_stopped && !is_idle_task(current)) {
++			if (!sched_can_stop_tick())
++				tick_nohz_restart_sched_tick(ts, ktime_get());
++		}
++	}
++}
++#endif /* CONFIG_NO_HZ_FULL */
++
+ /*
+  * Called from irq_enter to notify about the possible interruption of idle()
+  */
+-- 
+1.7.5.4
 
