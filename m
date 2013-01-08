@@ -1,230 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751586Ab3AHIK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 03:10:27 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:52332 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754300Ab3AHIKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 03:10:25 -0500
-Date: Tue, 08 Jan 2013 00:10:22 -0800 (PST)
-Message-Id: <20130108.001022.21353544093948597.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=euc-kr
-Content-Transfer-Encoding: 8bit
+	id S1754921Ab3AHIT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 03:19:59 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60082 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754853Ab3AHIT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 03:19:56 -0500
+From: "Kumar, Anil" <anilkumar.v@ti.com>
+To: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+CC: <linux@arm.linux.org.uk>, <nsekhar@ti.com>, <khilman@ti.com>, <hs@denx.de>
+Subject: [PATCH V2 3/3] ARM: davinci: da850: add NAND driver entries
+Date: Tue, 8 Jan 2013 13:50:20 +0530
+Message-ID: <1357633220-29827-4-git-send-email-anilkumar.v@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1357633220-29827-1-git-send-email-anilkumar.v@ti.com>
+References: <1357633220-29827-1-git-send-email-anilkumar.v@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add NAND driver entries to export NAND functionality on da850 EVM and
+NAND pinctrl node to do pin mux according to pinctrl-single driver.
 
-1) New sysctl ndisc_notify needs some documentation, from Hanns Frederic
-   Sowa.
+Signed-off-by: Kumar, Anil <anilkumar.v@ti.com>
+---
+:100644 100644 c7609d0... 382a7da... M	arch/arm/boot/dts/da850-evm.dts
+:100644 100644 e9c6e82... 16e2ac2... M	arch/arm/boot/dts/da850.dtsi
+ arch/arm/boot/dts/da850-evm.dts |   19 +++++++++++++++++++
+ arch/arm/boot/dts/da850.dtsi    |   13 +++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
-2) Netfilter REJECT target doesn't set transport header of SKB
-   correctly, from Mukund Jampala.
+diff --git a/arch/arm/boot/dts/da850-evm.dts b/arch/arm/boot/dts/da850-evm.dts
+index c7609d0..382a7da 100644
+--- a/arch/arm/boot/dts/da850-evm.dts
++++ b/arch/arm/boot/dts/da850-evm.dts
+@@ -28,4 +28,23 @@
+ 			status = "okay";
+ 		};
+ 	};
++	nand_cs3@62000000 {
++		status = "okay";
++	};
++};
++&pmx_core{
++	pinctrl-names = "default";
++	pinctrl-0 = <
++		&nand_cs3_pins
++	>;
++
++	nand_cs3_pins: pinmux_nand_pins {
++		pinctrl-single,bits = <
++			0x1c 0x00110000  0x00ff0000     /* EMA_OE, EMA_WE */
++			0x1c 0x00000110  0x00000ff0     /* EMA_CS[4],EMA_CS[3]*/
++			0x24 0x11111111  0xffffffff     /* EMA_D[0], EMA_D[1], EMA_D[2], EMA_D[3],
++							   EMA_D[4], EMA_D[5], EMA_D[6], EMA_D[7] */
++			0x30 0x01100000  0x0ff00000     /* EMA_A[1], EMA_A[2] */
++		>;
++	};
+ };
+diff --git a/arch/arm/boot/dts/da850.dtsi b/arch/arm/boot/dts/da850.dtsi
+index e9c6e82..16e2ac2 100644
+--- a/arch/arm/boot/dts/da850.dtsi
++++ b/arch/arm/boot/dts/da850.dtsi
+@@ -67,4 +67,17 @@
+ 			status = "disabled";
+ 		};
+ 	};
++	nand_cs3@62000000 {
++		compatible = "ti,davinci-nand";
++		reg = <0x62000000 0x807ff
++			0x68000000 0x8000>;
++		ti,davinci-chipselect = <1>;
++		ti,davinci-mask-ale = <0>;
++		ti,davinci-mask-cle = <0>;
++		ti,davinci-mask-chipsel = <0>;
++		ti,davinci-ecc-mode = "hw";
++		ti,davinci-ecc-bits = <4>;
++		ti,davinci-nand-use-bbt;
++		status = "disabled";
++	};
+ };
+-- 
+1.7.4.1
 
-3) Forcedeth driver needs to check for DMA mapping failures, from
-   Larry Finger.
-
-4) brcmsmac driver can't use usleep_range while holding locks,
-   use udelay instead.  From Niels Ole Salscheider.
-
-5) Fix unregister of netlink bridge multicast database handlers,
-   from Vlad Yasevich and Rami Rosen.
-
-6) Fix checksum calculations in netfilter's ipv6 network prefix
-   translation module.
-
-7) Fix high order page allocation failures in netfilter xt_recent,
-   from Eric Dumazet.
-
-8) mac802154 needs to use netif_rx_ni() instead of netif_rx() because
-   mac802154_process_data() can execute in process rather than
-   interrupt context.  From Alexander Aring.
-
-9) Fix splice handling of MSG_SENDPAGE_NOTLAST, otherwise we elide
-   one tcp_push() too many.  From Eric Dumazet and Willy Tarreau.
-
-10) Fix skb->truesize tracking in XEN netfront driver, from Ian
-    Campbell.
-
-Please pull, thanks a lot!
-
-The following changes since commit 101e5c7470eb7f77ae87f966b9155f0dbb5b4698:
-
-  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2012-12-27 10:46:47 -0800)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
-
-for you to fetch changes up to d9a58a782e396a0f04e8445b7ba3763c8a48c7fe:
-
-  xen/netfront: improve truesize tracking (2013-01-07 19:51:19 -0800)
-
-----------------------------------------------------------------
-Alexander Aring (1):
-      mac802154: fix NOHZ local_softirq_pending 08 warning
-
-Andrew Collins (1):
-      netfilter: nf_nat: Also handle non-ESTABLISHED routing changes in MASQUERADE
-
-Arend van Spriel (1):
-      brcmsmac: add copyright information for Canonical
-
-Bj©ªrn Mork (1):
-      net: qmi_wwan: add Telekom Speedstick LTE II
-
-Bob Hockney (1):
-      netfilter: nfnetlink_log: fix mac address for 6in4 tunnels
-
-Christian Lamparter (2):
-      carl9170: fix -EINVAL bailout during init with !CONFIG_MAC80211_MESH
-      p54usb: add USBIDs for two more p54usb devices
-
-David S. Miller (2):
-      Merge branch 'master' of git://1984.lsi.us.es/nf
-      Merge branch 'master' of git://1984.lsi.us.es/nf
-
-Eric Dumazet (2):
-      netfilter: xt_recent: avoid high order page allocations
-      tcp: fix MSG_SENDPAGE_NOTLAST logic
-
-Florent Fourcot (1):
-      netfilter: nf_conntrack_ipv6: fix comment for packets without data
-
-Geert Uytterhoeven (2):
-      bcma: BCMA_DRIVER_GPIO should depend on GPIOLIB instead of selecting it
-      ssb: SSB_DRIVER_GPIO should depend on GPIOLIB instead of selecting it
-
-Haibo Xi (1):
-      netfilter: nf_ct_reasm: fix conntrack reassembly expire code
-
-Hannes Frederic Sowa (1):
-      ipv6: document ndisc_notify in networking/ip-sysctl.txt
-
-Hante Meuleman (1):
-      brcmfmac: fix parsing rsn ie for ap mode.
-
-Ian Campbell (1):
-      xen/netfront: improve truesize tracking
-
-Jesper Juhl (2):
-      netfilter: ctnetlink: fix leak in error path of ctnetlink_create_expect
-      rtlwifi: Don't leak on error in _rtl_usb_receive()
-
-John W. Linville (1):
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Jussi Kivilinna (1):
-      rtlwifi: fix incorrect use of usb_alloc_coherent with usb_control_msg
-
-Larry Finger (6):
-      forcedeth: Fix WARNINGS that result when DMA mapping is not checked
-      rtlwifi: Fix warning for unchecked pci_map_single() call
-      rtlwifi: rtl8192ce: Fix warning for unchecked pci_map_single() call
-      rtlwifi: rtl8192de: Fix warning for unchecked pci_map_single() call
-      rtlwifi: rtl8192se: Fix warning for unchecked pci_map_single() call
-      rtlwifi: rtl8723ae: Fix warning for unchecked pci_map_single() call
-
-Mukund Jampala (1):
-      netfilter: ip[6]t_REJECT: fix wrong transport header pointer in TCP reset
-
-Niels Ole Salscheider (1):
-      brcmsmac: Use udelay instead of usleep_range
-
-Pablo Neira Ayuso (5):
-      netfilter: xt_CT: fix crash while destroy ct templates
-      netfilter: nfnetlink_log: fix possible compilation issue due to missing include
-      netfilter: xt_CT: recover NOTRACK target support
-      netfilter: xt_hashlimit: fix race that results in duplicated entries
-      netfilter: fix missing dependencies for the NOTRACK target
-
-Philippe De Muyter (1):
-      net/ipv4/ipconfig: really display the BOOTP/DHCP server's address.
-
-Rafa©© Mi©©ecki (1):
-      bcma: correct M25P32 serial flash ID
-
-Rami Rosen (1):
-      bridge: add empty br_mdb_init() and br_mdb_uninit() definitions.
-
-Sujith Manoharan (2):
-      ath9k: Fix compilation breakage
-      ath9k_hw: Fix RX gain initvals for AR9485
-
-Tomasz Guszkowski (1):
-      p54usb: add USB ID for T-Com Sinus 154 data II
-
-Ulrich Weber (1):
-      netfilter: ip6t_NPT: fix IPv6 NTP checksum calculation
-
-Vitaly E. Lavrov (2):
-      netfilter: xt_recent: fix namespace destroy path
-      netfilter: xt_hashlimit: fix namespace destroy path
-
-Vlad Yasevich (1):
-      bridge: Correctly unregister MDB rtnetlink handlers
-
-Vladimir Kondratiev (1):
-      ath9k: Fix Kconfig for ATH9K_HTC
-
-Xi Wang (1):
-      ipv4: fix NULL checking in devinet_ioctl()
-
-stephen hemminger (2):
-      vxlan: allow live mac address change
-      ip-sysctl: fix spelling errors
-
- Documentation/networking/ip-sysctl.txt                | 16 ++++++++++-----
- drivers/bcma/Kconfig                                  |  3 +--
- drivers/bcma/driver_chipcommon_sflash.c               |  2 +-
- drivers/net/ethernet/nvidia/forcedeth.c               | 35 ++++++++++++++++++++++++++++++++
- drivers/net/usb/qmi_wwan.c                            |  1 +
- drivers/net/vxlan.c                                   |  1 +
- drivers/net/wireless/ath/ath9k/Kconfig                |  5 +++--
- drivers/net/wireless/ath/ath9k/ar9003_hw.c            |  2 +-
- drivers/net/wireless/ath/carl9170/fw.c                |  6 +++++-
- drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |  5 +++--
- drivers/net/wireless/brcm80211/brcmsmac/debug.h       |  1 +
- drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c |  4 ++--
- drivers/net/wireless/p54/p54usb.c                     |  4 ++++
- drivers/net/wireless/rtlwifi/pci.c                    |  6 ++++++
- drivers/net/wireless/rtlwifi/rtl8192ce/trx.c          | 11 ++++++++++
- drivers/net/wireless/rtlwifi/rtl8192de/trx.c          | 10 +++++++++
- drivers/net/wireless/rtlwifi/rtl8192se/trx.c          | 13 +++++++++++-
- drivers/net/wireless/rtlwifi/rtl8723ae/trx.c          | 10 +++++++++
- drivers/net/wireless/rtlwifi/usb.c                    |  8 ++++----
- drivers/net/xen-netfront.c                            | 27 ++++---------------------
- drivers/ssb/Kconfig                                   |  3 +--
- fs/splice.c                                           |  4 +++-
- include/net/netns/conntrack.h                         |  1 +
- include/net/netns/x_tables.h                          |  1 +
- net/bridge/br_multicast.c                             |  2 --
- net/bridge/br_netlink.c                               | 13 +++++++++++-
- net/bridge/br_private.h                               |  6 ++++++
- net/ipv4/devinet.c                                    |  2 +-
- net/ipv4/ipconfig.c                                   |  8 ++++++--
- net/ipv4/netfilter/ipt_REJECT.c                       |  1 +
- net/ipv4/netfilter/iptable_nat.c                      | 15 +++++++++-----
- net/ipv6/netfilter/ip6t_NPT.c                         | 33 +++++++-----------------------
- net/ipv6/netfilter/ip6t_REJECT.c                      |  1 +
- net/ipv6/netfilter/ip6table_nat.c                     | 15 +++++++++-----
- net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c        |  4 ++--
- net/ipv6/netfilter/nf_conntrack_reasm.c               |  5 ++++-
- net/mac802154/wpan.c                                  |  2 +-
- net/netfilter/Kconfig                                 |  7 +++++++
- net/netfilter/nf_conntrack_core.c                     |  2 ++
- net/netfilter/nf_conntrack_netlink.c                  |  2 +-
- net/netfilter/nfnetlink_log.c                         | 16 ++++++++++++---
- net/netfilter/xt_CT.c                                 | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
- net/netfilter/xt_hashlimit.c                          | 54 +++++++++++++++++++++++++++++++++++++++++--------
- net/netfilter/xt_recent.c                             | 43 ++++++++++++++++++++++++++++++---------
- 44 files changed, 353 insertions(+), 115 deletions(-)
