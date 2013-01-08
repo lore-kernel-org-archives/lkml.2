@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3AHXgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:36:55 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53557 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756173Ab3AHXgv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756185Ab3AHXgv (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Jan 2013 18:36:51 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63339 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755035Ab3AHXgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:36:49 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Trond Myklebust <Trond.Myklebust@netapp.com>,
+CC: Bjorn Helgaas <bhelgaas@google.com>, Joerg Roedel <joerg.roedel@amd.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 25/77] SUNRPC: Ensure we return EAGAIN in xs_nospace if congestion is cleared
-Date: Tue, 8 Jan 2013 18:35:04 -0500
-Message-ID: <1357688156-25387-26-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 22/77] PCI hotplug: shpchp: don't blindly claim non-AMD 0x7450 device IDs
+Date: Tue, 8 Jan 2013 18:35:01 -0500
+Message-ID: <1357688156-25387-23-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,46 +32,56 @@ From: Trond Myklebust <Trond.Myklebust@netapp.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 24ca9a847791fd53d9b217330b15f3c285827a18 upstream.
+commit 4cac2eb158c6da0c761689345c6cc5df788a6292 upstream.
 
-By returning '0' instead of 'EAGAIN' when the tests in xs_nospace() fail
-to find evidence of socket congestion, we are making the RPC engine believe
-that the message was incorrectly sent and so it disconnects the socket
-instead of just retrying.
+Previously we claimed device ID 0x7450, regardless of the vendor, which is
+clearly wrong.  Now we'll claim that device ID only for AMD.
 
-The bug appears to have been introduced by commit
-5e3771ce2d6a69e10fcc870cdf226d121d868491 (SUNRPC: Ensure that xs_nospace
-return values are propagated).
+I suspect this was just a typo in the original code, but it's possible this
+change will break shpchp on non-7450 AMD bridges.  If so, we'll have to fix
+them as we find them.
 
-Reported-by: Andrew Cooper <andrew.cooper3@citrix.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Tested-by: Andrew Cooper <andrew.cooper3@citrix.com>
+Reference: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=638863
+Reported-by: Ralf Jung <ralfjung-e@gmx.de>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/xprtsock.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/pci/hotplug/shpchp_core.c | 4 ++--
+ drivers/pci/hotplug/shpchp_hpc.c  | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index b502700..fc5b9f3 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -478,7 +478,7 @@ static int xs_nospace(struct rpc_task *task)
- 	struct rpc_rqst *req = task->tk_rqstp;
- 	struct rpc_xprt *xprt = req->rq_xprt;
- 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
--	int ret = 0;
-+	int ret = -EAGAIN;
+diff --git a/drivers/pci/hotplug/shpchp_core.c b/drivers/pci/hotplug/shpchp_core.c
+index a7bd504..2ee01b6 100644
+--- a/drivers/pci/hotplug/shpchp_core.c
++++ b/drivers/pci/hotplug/shpchp_core.c
+@@ -278,8 +278,8 @@ static int get_adapter_status (struct hotplug_slot *hotplug_slot, u8 *value)
  
- 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
- 			task->tk_pid, req->rq_slen - req->rq_bytes_sent,
-@@ -490,7 +490,6 @@ static int xs_nospace(struct rpc_task *task)
- 	/* Don't race with disconnect */
- 	if (xprt_connected(xprt)) {
- 		if (test_bit(SOCK_ASYNC_NOSPACE, &transport->sock->flags)) {
--			ret = -EAGAIN;
- 			/*
- 			 * Notify TCP that we're limited by the application
- 			 * window size
+ static int is_shpc_capable(struct pci_dev *dev)
+ {
+-	if ((dev->vendor == PCI_VENDOR_ID_AMD) || (dev->device ==
+-						PCI_DEVICE_ID_AMD_GOLAM_7450))
++	if (dev->vendor == PCI_VENDOR_ID_AMD &&
++	    dev->device == PCI_DEVICE_ID_AMD_GOLAM_7450)
+ 		return 1;
+ 	if (!pci_find_capability(dev, PCI_CAP_ID_SHPC))
+ 		return 0;
+diff --git a/drivers/pci/hotplug/shpchp_hpc.c b/drivers/pci/hotplug/shpchp_hpc.c
+index 5f5e8d2..f13e724 100644
+--- a/drivers/pci/hotplug/shpchp_hpc.c
++++ b/drivers/pci/hotplug/shpchp_hpc.c
+@@ -953,8 +953,8 @@ int shpc_init(struct controller *ctrl, struct pci_dev *pdev)
+ 	ctrl->pci_dev = pdev;  /* pci_dev of the P2P bridge */
+ 	ctrl_dbg(ctrl, "Hotplug Controller:\n");
+ 
+-	if ((pdev->vendor == PCI_VENDOR_ID_AMD) || (pdev->device ==
+-				PCI_DEVICE_ID_AMD_GOLAM_7450)) {
++	if (pdev->vendor == PCI_VENDOR_ID_AMD &&
++	    pdev->device == PCI_DEVICE_ID_AMD_GOLAM_7450) {
+ 		/* amd shpc driver doesn't use Base Offset; assume 0 */
+ 		ctrl->mmio_base = pci_resource_start(pdev, 0);
+ 		ctrl->mmio_size = pci_resource_len(pdev, 0);
 -- 
 1.7.12.1
 
