@@ -1,118 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab3AHEGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 23:06:36 -0500
-Received: from e38.co.us.ibm.com ([32.97.110.159]:43111 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab3AHEGf (ORCPT
+	id S1753373Ab3AHEL3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 23:11:29 -0500
+Received: from nm25.access.bullet.mail.mud.yahoo.com ([66.94.237.90]:47354
+	"EHLO nm25.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751214Ab3AHEL2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 23:06:35 -0500
-Date: Mon, 7 Jan 2013 20:06:26 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 26/33] rcu: Don't keep the tick for RCU while in userspace
-Message-ID: <20130108040625.GH2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
- <1357610913-1080-27-git-send-email-fweisbec@gmail.com>
+	Mon, 7 Jan 2013 23:11:28 -0500
+X-Yahoo-Newman-Id: 447219.16477.bm@smtp108.biz.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: jv6rESsVM1k8LByBK7Rpu0gH75cQZqVtsbMdArjtOv8Csvr
+ 8Z8vr.OgD24uvqSVKmtwqoFIZCnQzZF07tMnHSNiAkQ0to3TZqAWtI81D7BQ
+ Y7ivb97u3TGrmOPvwuhoM3tMIDPOlIh_eJyIUqW9UUhcIg_koy0gjWElEgcs
+ NQW7yRsA1lTudYg8c2kv3zjD1D.h7S4SHAGewDuuuAv0GAzkbVw.owVcxQvw
+ x4Kvu1wEgY483GTOCmjsgmDrkI9e3zDo05JgNZFySWz1UV537VtdygZHPQIj
+ eopPsoZLP4ssO325wnvxFONYiB9hpnQS62aLTd1RyDKK8vZpyV_IqHzpGW0H
+ 9xQYgRjrbJIM7GOKQmNJsBrd3EEieapnzh1EdJJ2m19SJkkEzriCKAOntOFw
+ lmhk1LRVRJhDzRua4BUoPRCiUgzm1Ly30mypGOcsst7FBS23XcxeK5TzvnSB
+ wMhjU
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EB9C7E.7090304@schaufler-ca.com>
+Date: Mon, 07 Jan 2013 20:11:42 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357610913-1080-27-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010804-5518-0000-0000-00000A8C7AE9
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: James Morris <jmorris@namei.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+References: <50EB7C50.3070605@schaufler-ca.com> <20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au> <20130108145922.58ab8ad4796076c9d14b6197@canb.auug.org.au>
+In-Reply-To: <20130108145922.58ab8ad4796076c9d14b6197@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 03:08:26AM +0100, Frederic Weisbecker wrote:
-> If we are interrupting userspace, we don't need to keep
-> the tick for RCU: quiescent states don't need to be reported
-> because we soon run in userspace and local callbacks are handled
-> by the nocb threads.
-> 
-> CHECKME: Do the nocb threads actually handle the global
-> grace period completion for local callbacks?
+On 1/7/2013 7:59 PM, Stephen Rothwell wrote:
+> Hi Casey,
+>
+> On Tue, 8 Jan 2013 14:01:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Let me ask Andrew's question:  Why do you want to do this (what is the
+>> use case)?  What does this gain us?
+>>
+>> Also, you should use unique subjects for each of the patches in the
+>> series.
+> You probably also want to think a bit harder about the order of the
+> patches - you should introduce new APIs before you use them and remove
+> calls to functions before you remove the functions.
+>
+The unfortunate reality is that I couldn't find a good way to stage the
+changes. It's a wonking big set of infrastructure change. I could introduce
+the security blob abstraction separately but that is a fraction of the
+change. If it would have gone through mail filters as a single patch I'd
+have sent it that way.
 
-First answering this for the nocb stuff in mainline:  In this case,
-the grace-period startup is handled by the CPU that is not a nocb
-CPU, and there has to be at least one.  The grace-period completion
-is handled by the grace-period kthreads.  The nocbs CPU need do
-nothing, at least assuming that it gets back into dyntick-idle
-(or adaptive tickless) state reasonably quickly.
-
-Second for the version in -rcu: In this case, the nocb kthreads
-register the need for a grace period using a new mechanism that
-pushes the need up the rcu_node tree.  The grace-period completion
-is again handled by the grace-period kthreads.  This allows all
-CPUs to be nocbs CPUs.
-
-So, in either case, yes, the below code should be safe as long as
-the CPU gets into an RCU-idle state quickly (as in within a few
-milliseconds or so).
-
-						Thanx, Paul
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Alessio Igor Bogani <abogani@kernel.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: Geoff Levand <geoff@infradead.org>
-> Cc: Gilad Ben Yossef <gilad@benyossef.com>
-> Cc: Hakan Akkan <hakanakkan@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-> Cc: Namhyung Kim <namhyung.kim@lge.com>
-> Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/time/tick-sched.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 1cd93a9..ecba8b7 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -22,6 +22,7 @@
->  #include <linux/module.h>
->  #include <linux/irq_work.h>
->  #include <linux/posix-timers.h>
-> +#include <linux/context_tracking.h>
-> 
->  #include <asm/irq_regs.h>
-> 
-> @@ -604,10 +605,9 @@ static bool can_stop_full_tick(int cpu)
-> 
->  	/*
->  	 * Keep the tick if we are asked to report a quiescent state.
-> -	 * This must be further optimized (avoid checks for local callbacks,
-> -	 * ignore RCU in userspace, etc...
-> +	 * This must be further optimized (avoid checks for local callbacks)
->  	 */
-> -	if (rcu_pending(cpu)) {
-> +	if (!context_tracking_in_user() && rcu_pending(cpu)) {
->  		trace_printk("Can't stop: RCU pending\n");
->  		return false;
->  	}
-> -- 
-> 1.7.5.4
-> 
+I can spend time on patch presentation, and will if necessary. As it is,
+I can start getting substantive commentary from beyond the LSM crowd, who
+have already been extremely cooperative and often critical.
 
