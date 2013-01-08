@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab3AHQQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 11:16:10 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:35856 "EHLO mx1.redhat.com"
+	id S1756635Ab3AHQSr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 11:18:47 -0500
+Received: from mga11.intel.com ([192.55.52.93]:2088 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756527Ab3AHQQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 11:16:08 -0500
-Date: Tue, 8 Jan 2013 11:16:00 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 13/24] cfq-iosched: implement hierarchy-ready cfq_group
- charge scaling
-Message-ID: <20130108161600.GD29635@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-14-git-send-email-tj@kernel.org>
+	id S1756343Ab3AHQSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 11:18:45 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,432,1355126400"; 
+   d="scan'208";a="271343791"
+Date: Tue, 8 Jan 2013 07:54:23 -0800
+From: Vinod Koul <vinod.koul@intel.com>
+To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
+Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: dw_dmac patches
+Message-ID: <20130108155423.GJ19691@intel.com>
+References: <1357563294.31620.145.camel@smile>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356726946-26037-14-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357563294.31620.145.camel@smile>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:35PM -0800, Tejun Heo wrote:
-> Currently, cfqg charges are scaled directly according to cfqg->weight.
-> Regardless of the number of active cfqgs or the amount of active
-> weights, a given weight value always scales charge the same way.  This
-> works fine as long as all cfqgs are treated equally regardless of
-> their positions in the hierarchy, which is what cfq currently
-> implements.  It can't work in hierarchical settings because the
-> interpretation of a given weight value depends on where the weight is
-> located in the hierarchy.
+On Mon, Jan 07, 2013 at 02:54:54PM +0200, Andy Shevchenko wrote:
+> Hi, Vinod.
 > 
-> This patch reimplements cfqg charge scaling so that it can be used to
-> support hierarchy properly.  The scheme is fairly simple and
-> light-weight.
-> 
-> * When a cfqg is added to the service tree, v(disktime)weight is
->   calculated.  It walks up the tree to root calculating the fraction
->   it has in the hierarchy.  At each level, the fraction can be
->   calculated as
-> 
->     cfqg->weight / parent->level_weight
-> 
->   By compounding these, the global fraction of vdisktime the cfqg has
->   claim to - vfraction - can be determined.
-> 
-> * When the cfqg needs to be charged, the charge is scaled inversely
->   proportionally to the vfraction.
-> 
-> The new scaling scheme uses the same CFQ_SERVICE_SHIFT for fixed point
-> representation as before; however, the smallest scaling factor is now
-> 1 (ie. 1 << CFQ_SERVICE_SHIFT).  This is different from before where 1
-> was for CFQ_WEIGHT_DEFAULT and higher weight would result in smaller
-> scaling factor.
-> 
-> While this shifts the global scale of vdisktime a bit, it doesn't
-> change the relative relationships among cfqgs and the scheduling
-> result isn't different.
-> 
-> cfq_group_notify_queue_add uses fixed CFQ_IDLE_DELAY when appending
-> new cfqg to the service tree.  The specific value of CFQ_IDLE_DELAY
-> didn't have any relevance to vdisktime before and is unlikely to cause
-> any visible behavior difference now especially as the scale shift
-> isn't that large.
-> 
-> As the new scheme now makes proper distinction between cfqg->weight
-> and ->leaf_weight, reverse the weight aliasing for root cfqgs.  For
-> root, both weights are now mapped to ->leaf_weight instead of the
-> other way around.
-> 
-> Because we're still using cfqg_flat_parent(), this patch shouldn't
-> change the scheduling behavior in any noticeable way.
-> 
-> v2: Beefed up comments on vfraction as requested by Vivek.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
+> I noticed you missed the 3.8 merge window and I can't see any of my
+> recent patches [1] in your next branch. So, what is your plan regarding
+> to them?
+Yes i missed quite a few due to my travel, but now am back :)
 
-Looks good to me.
+Can you please rebase below on my next and resend the below sequence. I can go
+thru them quickly tomorrow and do the needful
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Vivek
+--
+~Vinod
+> 
+> [1]
+> pick 9f2b870 dw_dmac: call .probe after we have a device in place
+> pick 5bcd7fe dw_dmac: absence of pdata isn't critical when autocfg is
+> set
+> pick 2fbca14 dmaengine: introduce is_slave_xfer function
+> pick 6e98b1f dma: at_hdmac: check direction properly for cyclic
+> transfers
+> pick d1573d9 dma: dw_dmac: check direction properly in
+> dw_dma_cyclic_prep
+> pick f1071a3 dma: ep93xx_dma: reuse is_slave_xfer helper
+> pick 191347f dma: ipu_idmac: reuse is_slave_xfer helper
+> pick 4ec19c2 dma: ste_dma40: reuse is_slave_xfer helper
+> pick 757978e dw_dmac: store direction in the custom channel structure
+> pick 8e5ea839 dw_dmac: make usage of dw_dma_slave optional
+> pick d0da3f4 dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
+> pick ca7141d dw_dmac: check for mapping errors
+> pick 281c298 dw_dmac: remove redundant check
+> pick 217f956 dw_dmac: update tx_node_active in dwc_do_single_block
+> pick fd144bd dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
+> pick 59a6031 dma: dw_dmac: clear suspend bit during termination
+> 
+> 
+> -- 
+> Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Intel Finland Oy
