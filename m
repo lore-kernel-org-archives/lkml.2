@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3AHRPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 12:15:32 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34012 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231Ab3AHRPb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 12:15:31 -0500
-Message-ID: <50EC541B.5000905@linux.vnet.ibm.com>
-Date: Tue, 08 Jan 2013 09:15:07 -0800
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756741Ab3AHRRU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 12:17:20 -0500
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:56553 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756231Ab3AHRRT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 12:17:19 -0500
 MIME-Version: 1.0
-To: Seth Jennings <sjenning@linux.vnet.ibm.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nitin Gupta <ngupta@vflare.org>, Minchan Kim <minchan@kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Robert Jennings <rcj@linux.vnet.ibm.com>,
-        Jenifer Hopper <jhopper@us.ibm.com>, Mel Gorman <mgorman@suse.de>,
-        Johannes Weiner <jweiner@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Larry Woodman <lwoodman@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCHv2 8/9] zswap: add to mm/
-References: <1357590280-31535-1-git-send-email-sjenning@linux.vnet.ibm.com> <1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com>
-In-Reply-To: <1357590280-31535-9-git-send-email-sjenning@linux.vnet.ibm.com>
+In-Reply-To: <CA+55aFxXAMz5Sg44e-TJ0P=LY+3VkfdNtZMS3EJEHdztY2kC0Q@mail.gmail.com>
+References: <CAAJw_Zv8O1LPX-jmpg3fvNrWMLWbQC=1tbZ6T7nsm6cyC008fg@mail.gmail.com>
+	<CA+55aFxXAMz5Sg44e-TJ0P=LY+3VkfdNtZMS3EJEHdztY2kC0Q@mail.gmail.com>
+Date: Wed, 9 Jan 2013 01:17:16 +0800
+Message-ID: <CAAJw_ZtpubRhSF3K=B91oHXMPaTX6jGNLZn+e6ks83JS92k=bw@mail.gmail.com>
+Subject: Re: 2nd attempt: help with dma_alloc_coherent() + dma_free_coherent()
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jonathan Corbet <corbet@lwn.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010817-7182-0000-0000-00000443DC09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2013 12:24 PM, Seth Jennings wrote:
-> +struct zswap_tree {
-> +	struct rb_root rbroot;
-> +	struct list_head lru;
-> +	spinlock_t lock;
-> +	struct zs_pool *pool;
-> +};
+On Wed, Jan 9, 2013 at 12:39 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jan 8, 2013 at 7:51 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>> No response so far ... I'm sure someone know this stuff ...  Thanks, Jeff.
+>>
+>> I'm trying to understand how this oops in the diva driver and it's just a
+>> simple dma_alloc_coherent() followed by dma_free_coherent(), but it oops.
+>> Why?
+>
+> Umm. You're using a NULL 'dev' pointer?
+>
+> iommu_no_mapping() will look if the device is a PCI device, and that's
+> where it oopses.
+>
+> Now, it looks like some users "know" that the device doesn't matter
+> (which is true on some platforms), but that's bogus. The device is how
+> you even find out what the rules for DMA access are (see for example
+> dma_set_mask() etc), so giving a NULL device is insane.
+>
+>               Linus
 
-BTW, I spent some time trying to get this lock contended.  You thought
-the anon_vma locks would dominate and this spinlock would not end up
-very contended.
 
-I figured that if I hit zswap from a bunch of CPUs that _didn't_ use
-anonymous memory (and thus the anon_vma locks) that some more contention
-would pop up.  I did that with a bunch of CPUs writing to tmpfs, and
-this lock was still well down below anon_vma.  The anon_vma contention
-was obviously coming from _other_ anonymous memory around.
+Interesting, but there are 54 lines under the kernel directories that
+use "dma_alloc_coherent(NULL," followed by "dma_free_coherent(NULL,"
 
-IOW, I feel a bit better about this lock.  I only tested on 16 cores on
-a system with relatively light NUMA characteristics, and it might be the
-bottleneck if all the anonymous memory on the system is mlock()'d and
-you're pounding on tmpfs, but that's pretty contrived.
+So, shouldn't they be fixed as well? ... unless they are so old that
+nobody cares anymore ...
 
+
+# find . -exec grep -H "dma_alloc_coherent(NULL" {} \; | wc -l
+54
+
+#find . -exec grep -H "dma_free_coherent(NULL" {} \; | wc -l
+72
+
+
+
+Thanks,
+Jeff
