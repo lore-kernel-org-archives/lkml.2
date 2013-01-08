@@ -1,138 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab3AHPCr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:02:47 -0500
-Received: from relay3.sgi.com ([192.48.152.1]:36654 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756466Ab3AHPCp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:02:45 -0500
-From: Nathan Zimmer <nzimmer@sgi.com>
-Cc: x86@kernel.org, linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nathan Zimmer <nzimmer@sgi.com>, stable@vger.kernel.org,
-        Matt Fleming <matt.fleming@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Robin Holt <holt@sgi.com>
-Subject: [PATCH v2] efi, x86: Pass a proper identity mapping in efi_call_phys_prelog
-Date: Tue,  8 Jan 2013 09:02:43 -0600
-Message-Id: <1357657363-29930-1-git-send-email-nzimmer@sgi.com>
-X-Mailer: git-send-email 1.6.0.2
-In-Reply-To: <0130103220716.GA13995@gulag1.americas.sgi.com>
-References: <0130103220716.GA13995@gulag1.americas.sgi.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1756590Ab3AHPDZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:03:25 -0500
+Received: from rrzmta1.uni-regensburg.de ([194.94.155.51]:36008 "EHLO
+	rrzmta1.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab3AHPDY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 10:03:24 -0500
+Message-Id: <50EC4345020000A10000E5D1@gwsmtp1.uni-regensburg.de>
+X-Mailer: Novell GroupWise Internet Agent 12.0.1 
+Date: Tue, 08 Jan 2013 16:03:17 +0100
+From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
+To: "Yuanhan Liu" <yuanhan.liu@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>
+Cc: "Mike Christie" <michaelc@cs.wisc.edu>,
+        "iscsi list" <open-iscsi@googlegroups.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        "Stefani Seibold" <stefani@seibold.net>
+Subject: Antw: [PATCH 0/5] kfifo cleanup and log based kfifo API
+References: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
+In-Reply-To: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update efi_call_phys_prelog to install an identity mapping of all available
-memory.  This corrects a bug on very large systems with more then 512 GB in
-which bios would not be able to access addresses above not in the mapping.
+>>> Yuanhan Liu <yuanhan.liu@linux.intel.com> schrieb am 08.01.2013 um 15:57 in
+Nachricht <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>:
 
-The result is a crash that looks much like this.
+[...]
+> My proposal is to replace kfifo_init with kfifo_alloc, where it
+> allocate buffer and maintain fifo size inside kfifo. Then we can
+> remove buggy kfifo_init.
+[...]
 
-BUG: unable to handle kernel paging request at 000000effd870020
-IP: [<0000000078bce331>] 0x78bce330
-PGD 0
-Oops: 0000 [#1] SMP
-Modules linked in:
-CPU 0
-Pid: 0, comm: swapper/0 Tainted: G        W    3.8.0-rc1-next-20121224-medusa_ntz+ #2 Intel Corp. Stoutland Platform
-RIP: 0010:[<0000000078bce331>]  [<0000000078bce331>] 0x78bce330
-RSP: 0000:ffffffff81601d28  EFLAGS: 00010006
-RAX: 0000000078b80e18 RBX: 0000000000000004 RCX: 0000000000000004
-RDX: 0000000078bcf958 RSI: 0000000000002400 RDI: 8000000000000000
-RBP: 0000000078bcf760 R08: 000000effd870000 R09: 0000000000000000
-R10: 0000000000000000 R11: 00000000000000c3 R12: 0000000000000030
-R13: 000000effd870000 R14: 0000000000000000 R15: ffff88effd870000
-FS:  0000000000000000(0000) GS:ffff88effe400000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 000000effd870020 CR3: 000000000160c000 CR4: 00000000000006b0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper/0 (pid: 0, threadinfo ffffffff81600000, task ffffffff81614400)
-Stack:
- 0000000078b80d18 0000000000000004 0000000078bced7b ffff880078b81fff
- 0000000000000000 0000000000000082 0000000078bce3a8 0000000000002400
- 0000000060000202 0000000078b80da0 0000000078bce45d ffffffff8107cb5a
-Call Trace:
- [<ffffffff8107cb5a>] ? on_each_cpu+0x77/0x83
- [<ffffffff8102f4eb>] ? change_page_attr_set_clr+0x32f/0x3ed
- [<ffffffff81035946>] ? efi_call4+0x46/0x80
- [<ffffffff816c5abb>] ? efi_enter_virtual_mode+0x1f5/0x305
- [<ffffffff816aeb24>] ? start_kernel+0x34a/0x3d2
- [<ffffffff816ae5ed>] ? repair_env_string+0x60/0x60
- [<ffffffff816ae2be>] ? x86_64_start_reservations+0xba/0xc1
- [<ffffffff816ae120>] ? early_idt_handlers+0x120/0x120
- [<ffffffff816ae419>] ? x86_64_start_kernel+0x154/0x163
-Code:  Bad RIP value.
-RIP  [<0000000078bce331>] 0x78bce330
- RSP <ffffffff81601d28>
-CR2: 000000effd870020
----[ end trace ead828934fef5eab ]---
+Spontaneously I feel that emitting a critical message if the requested size is not a power of two would be a good idea, as well as (in that case) rounding up to the next power of two instead of rounding down seems not too stupid ;-)
 
-v2: I noticed a typo on the one sent friday, also ccing the stable tree.
+Sorry, I'm not deeply into recent kernel development.
 
+Regards,
+Ulrich
 
-Cc: stable@vger.kernel.org
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Signed-off-by: Nathan Zimmer <nzimmer@sgi.com>
-Signed-off-by: Robin Holt <holt@sgi.com>
----
- arch/x86/platform/efi/efi_64.c |   22 +++++++++++++++++-----
- 1 files changed, 17 insertions(+), 5 deletions(-)
-
-diff --git a/arch/x86/platform/efi/efi_64.c b/arch/x86/platform/efi/efi_64.c
-index 95fd505..2b20038 100644
---- a/arch/x86/platform/efi/efi_64.c
-+++ b/arch/x86/platform/efi/efi_64.c
-@@ -38,7 +38,7 @@
- #include <asm/cacheflush.h>
- #include <asm/fixmap.h>
- 
--static pgd_t save_pgd __initdata;
-+static pgd_t *save_pgd __initdata;
- static unsigned long efi_flags __initdata;
- 
- static void __init early_code_mapping_set_exec(int executable)
-@@ -61,12 +61,20 @@ static void __init early_code_mapping_set_exec(int executable)
- void __init efi_call_phys_prelog(void)
- {
- 	unsigned long vaddress;
-+	int pgd;
-+	int n_pgds;
- 
- 	early_code_mapping_set_exec(1);
- 	local_irq_save(efi_flags);
--	vaddress = (unsigned long)__va(0x0UL);
--	save_pgd = *pgd_offset_k(0x0UL);
--	set_pgd(pgd_offset_k(0x0UL), *pgd_offset_k(vaddress));
-+
-+	n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT), PGDIR_SIZE);
-+	save_pgd = kmalloc(n_pgds * sizeof(pgd_t), GFP_KERNEL);
-+
-+	for (pgd = 0; pgd < n_pgds; pgd++) {
-+		save_pgd[pgd] = *pgd_offset_k(pgd * PGDIR_SIZE);
-+		vaddress = (unsigned long)__va(pgd * PGDIR_SIZE);
-+		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), *pgd_offset_k(vaddress));
-+	}
- 	__flush_tlb_all();
- }
- 
-@@ -75,7 +83,11 @@ void __init efi_call_phys_epilog(void)
- 	/*
- 	 * After the lock is released, the original page table is restored.
- 	 */
--	set_pgd(pgd_offset_k(0x0UL), save_pgd);
-+	int pgd;
-+	int n_pgds = DIV_ROUND_UP((max_pfn << PAGE_SHIFT) , PGDIR_SIZE);
-+	for (pgd = 0; pgd < n_pgds; pgd++)
-+		set_pgd(pgd_offset_k(pgd * PGDIR_SIZE), save_pgd[pgd]);
-+	kfree(save_pgd);
- 	__flush_tlb_all();
- 	local_irq_restore(efi_flags);
- 	early_code_mapping_set_exec(0);
--- 
-1.6.0.2
 
