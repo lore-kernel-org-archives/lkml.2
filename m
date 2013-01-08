@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756523Ab3AHPvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:51:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38724 "EHLO mx1.redhat.com"
+	id S1756535Ab3AHP71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:59:27 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:33125 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756278Ab3AHPvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:51:21 -0500
-Date: Tue, 8 Jan 2013 10:51:14 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 12/24] cfq-iosched: implement cfq_group->nr_active and
- ->children_weight
-Message-ID: <20130108155114.GC29635@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-13-git-send-email-tj@kernel.org>
+	id S1756330Ab3AHP70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 10:59:26 -0500
+Date: Tue, 8 Jan 2013 16:59:23 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "lkml@tigusoft.pl" <lkml@tigusoft.pl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 3.2.35 problem with M5A97 PRO ram: bad_page free_pages_prepare
+ mem_init
+Message-ID: <20130108155923.GA8350@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"lkml@tigusoft.pl" <lkml@tigusoft.pl>, linux-kernel@vger.kernel.org
+References: <kcfoae$91e$1@ger.gmane.org>
+ <kcfoq8$dac$1@ger.gmane.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1356726946-26037-13-git-send-email-tj@kernel.org>
+In-Reply-To: <kcfoq8$dac$1@ger.gmane.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:34PM -0800, Tejun Heo wrote:
-> To prepare for blkcg hierarchy support, add cfqg->nr_active and
-> ->children_weight.  cfqg->nr_active counts the number of active cfqgs
-> at the cfqg's level and ->children_weight is sum of weights of those
-> cfqgs.  The level covers itself (cfqg->leaf_weight) and immediate
-> children.
+On Tue, Jan 08, 2013 at 01:21:26AM +0100, lkml@tigusoft.pl wrote:
+> On 08/01/13 01:13, lkml@tigusoft.pl wrote:
 > 
-> The two values are updated when a cfqg enters and leaves the group
-> service tree.  Unless the hierarchy is very deep, the added overhead
-> should be negligible.
+> > linux kernel
+> > 3.2.0-0.bpo.4-rt-amd64 #1 SMP PREEMPT RT Debian 3.2.35-2~bpo60+1 x86_64
+> > GNU/Linux
 > 
-> Currently, the parent is determined using cfqg_flat_parent() which
-> makes the root cfqg the parent of all other cfqgs.  This is to make
-> the transition to hierarchy-aware scheduling gradual.  Scheduling
-> logic will be converted to use cfqg->children_weight without actually
-> changing the behavior.  When everything is ready,
-> blkcg_weight_parent() will be replaced with proper parent function.
-> 
-> This patch doesn't introduce any behavior chagne.
-> 
-> v2: s/cfqg->level_weight/cfqg->children_weight/ as per Vivek.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
+> will post later how it behaves on vanilla 3.2.36 and 3.7.1
 
-Looks good to me.
+Yes, also, if your DRAM supports ECC, try enabling it in the BIOS.
+This board should support ECC. Then, enable CONFIG_EDAC_AMD64 and
+CONFIG_EDAC_DECODE_MCE to check whether it catches any DRAM errors.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+If your DRAM is non-ECC, try consecutively swapping out a DIMM each time
+and booting to see whether removing one of the DIMMs makes the errors go
+away.
 
-Vivek
+HTH.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
