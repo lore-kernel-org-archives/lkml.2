@@ -1,88 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab3AHKYU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:24:20 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:57365 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751084Ab3AHKYS (ORCPT
+	id S1755530Ab3AHKYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:24:24 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:61479 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab3AHKYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:24:18 -0500
-Message-ID: <50EBF402.5070007@gmail.com>
-Date: Tue, 08 Jan 2013 18:25:06 +0800
-From: Chen Gang F T <chen.gang.flying.transformer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: "lin >> \"linux-kernel@vger.kernel.org\"" 
-	<linux-kernel@vger.kernel.org>
-Subject: [Consult] our latest kernel and latest Android  under arm Samsung
- S5PV210 with yaffs2 file system
-Content-Type: multipart/mixed;
- boundary="------------010006000403060605000203"
+	Tue, 8 Jan 2013 05:24:21 -0500
+From: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+To: hjk@hansjkoch.de, gregkh@linuxfoundation.org, horms@verge.net.au
+Cc: linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+        Damian Hobson-Garcia <dhobsong@igel.co.jp>
+Subject: [PATCH] drivers: uio_dmem_genirq: Add mmap support for dynamic regions
+Date: Tue,  8 Jan 2013 19:24:03 +0900
+Message-Id: <1357640643-17713-1-git-send-email-dhobsong@igel.co.jp>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010006000403060605000203
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Dynamic regions allocated with dma_alloc_coherent() should use
+dma_mmap_coherent() to perform memory mapping. Other regions
+are simply ioremapped, the same way as in the uio subsystem base
+implementation.
 
-Hello all:
+Signed-off-by: Damian Hobson-Garcia <dhobsong@igel.co.jp>
+---
+ drivers/uio/uio_dmem_genirq.c |   33 +++++++++++++++++++++++++++++++++
+ 1 files changed, 33 insertions(+), 0 deletions(-)
 
-Consult:
-  whether the latest kernel can update the latest android OS ?
-    it is android 4.0 (kernel-3.0.8)
-    under arm Samsung S5PV210 with yaffs2 file system
-
-Background:
-  development board:
-    the core hardware is Samsung S5PV210
-    the extended vendor is FriendlyARM (a Chinese vendor)
-    use yaffs2 file system for android
-      it seems yaffs2 is a standard file system for android.
-        for my android HTC phone is also yaffs2 file system.
-  finished:
-    for the android kernel its own
-      can compile from the source code successfully.
-      can update to the development board successfully.
-      only need zImages, not need additional modules.
-        can start android without any files under /system/lib/modules/*
-  current:
-    I am trying to use our latest kernel (such as next-20130104)
-      can compile from the source code successfully.
-      it has no source code for yaffs2 file system.
-      not know whether can update the latest kernel.
-        whether match the firmwares
-          it already has files for firmwares in /system/etc/firmware/*
-          do not know the public latest kernel whether can match them.
-        whether need special image packing
-          the vendor use additional tools for image packing:
-            CONFIG_INITRAMFS_SOURCE="scripts/FriendlyARM.cpio"
-          do not know the public latest kernel whether also need it.
-
-Choice:
-  A) need choose another suitable branch of public kernel for it ?
-  B) need additional configuration and download additional patches ?
-  C) can not use latest public kernel to update latest android kernel ?
-  D) none of choices above.
-
-
-  welcome any members to providing suggestions or completions.
-
-  thanks
-
+diff --git a/drivers/uio/uio_dmem_genirq.c b/drivers/uio/uio_dmem_genirq.c
+index 252434c..7a047ad 100644
+--- a/drivers/uio/uio_dmem_genirq.c
++++ b/drivers/uio/uio_dmem_genirq.c
+@@ -144,6 +144,38 @@ static int uio_dmem_genirq_irqcontrol(struct uio_info *dev_info, s32 irq_on)
+ 	return 0;
+ }
+ 
++static int uio_dmem_genirq_mmap(struct uio_info *info,
++				struct vm_area_struct *vma) {
++	struct uio_dmem_genirq_platdata *priv = info->priv;
++	struct uio_mem *uiomem;
++	int dmem_region = priv->dmem_region_start;
++	int mi = vma->vm_pgoff;
++
++	if (priv->uioinfo->mem[mi].memtype != UIO_MEM_PHYS)
++		return -EINVAL;
++
++	if (mi < MAX_UIO_MAPS) {
++		uiomem = &priv->uioinfo->mem[mi];
++		if (!uiomem->size)
++			return -EINVAL;
++
++		if (mi < dmem_region) {	/* phyiscal address */
++			vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++			return remap_pfn_range(vma,
++				       vma->vm_start,
++				       uiomem->addr >> PAGE_SHIFT,
++				       vma->vm_end - vma->vm_start,
++				       vma->vm_page_prot);
++		} else {		/* DMA address */
++			vma->vm_pgoff = 0;
++			return dma_mmap_coherent(&priv->pdev->dev, vma,
++				priv->dmem_region_vaddr[mi],
++				uiomem->addr, uiomem->size);
++		}
++	}
++	return -EINVAL;
++}
++
+ static int uio_dmem_genirq_probe(struct platform_device *pdev)
+ {
+ 	struct uio_dmem_genirq_pdata *pdata = pdev->dev.platform_data;
+@@ -263,6 +295,7 @@ static int uio_dmem_genirq_probe(struct platform_device *pdev)
+ 	uioinfo->irqcontrol = uio_dmem_genirq_irqcontrol;
+ 	uioinfo->open = uio_dmem_genirq_open;
+ 	uioinfo->release = uio_dmem_genirq_release;
++	uioinfo->mmap = uio_dmem_genirq_mmap;
+ 	uioinfo->priv = priv;
+ 
+ 	/* Enable Runtime PM for this device:
 -- 
-Chen Gang
+1.7.5.4
 
-Flying Transformer
-
---------------010006000403060605000203
-Content-Type: text/x-vcard; charset=utf-8;
- name="chen_gang_flying_transformer.vcf"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="chen_gang_flying_transformer.vcf"
-
-YmVnaW46dmNhcmQNCmZuOkNoZW4gR2FuZw0Kbjo7Q2hlbiBHYW5nDQp2ZXJzaW9uOjIuMQ0K
-ZW5kOnZjYXJkDQoNCg==
---------------010006000403060605000203--
