@@ -1,104 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab3AHAKG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 19:10:06 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:48563 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756144Ab3AHAKC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 19:10:02 -0500
-Date: Mon, 7 Jan 2013 16:09:58 -0800
-From: Kent Overstreet <koverstreet@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-aio@kvack.org,
-        linux-fsdevel@vger.kernel.org, zab@redhat.com, bcrl@kvack.org,
-        jmoyer@redhat.com, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-        tytso@mit.edu
-Subject: Re: [PATCH 13/32] wait: Add wait_event_hrtimeout()
-Message-ID: <20130108000958.GL26407@google.com>
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
- <1356573611-18590-15-git-send-email-koverstreet@google.com>
- <20130103150816.f0dda169.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130103150816.f0dda169.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756172Ab3AHAOz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 19:14:55 -0500
+Received: from plane.gmane.org ([80.91.229.3]:58485 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755955Ab3AHAOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 19:14:54 -0500
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: "lkml@tigusoft.pl" <lkml@tigusoft.pl>
+Subject: 3.2.35 problem with M5A97 PRO ram: bad_page free_pages_prepare mem_init
+Date: Tue, 08 Jan 2013 01:13:03 +0100
+Organization: tigusoft.pl
+Message-ID: <kcfoae$91e$1@ger.gmane.org>
+Reply-To: lkml@tigusoft.pl
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: herngaard.torservers.net
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Icedove/3.0.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 03, 2013 at 03:08:16PM -0800, Andrew Morton wrote:
-> On Wed, 26 Dec 2012 17:59:51 -0800
-> Kent Overstreet <koverstreet@google.com> wrote:
-> 
-> > Analagous to wait_event_timeout() and friends, this adds
-> > wait_event_hrtimeout() and wait_event_interruptible_hrtimeout().
-> > 
-> > Note that unlike the versions that use regular timers, these don't
-> > return the amount of time remaining when they return - instead, they
-> > return 0 or -ETIME if they timed out.
-> 
-> Why is this?
+linux kernel
+3.2.0-0.bpo.4-rt-amd64 #1 SMP PREEMPT RT Debian 3.2.35-2~bpo60+1 x86_64
+GNU/Linux
+running on mainboard M5A97 PRO (Version: "0813" Date: "10/24/2011")
+with 16 GB RAM (ECC not used)
+with AMD Bulldozer CPU,
+reports problems same on each boot:
 
-I was uncomfortable with the semantics of doing it the other way (that I
-could get it right, anyways).
+[    0.000000] Pid: 0, comm: swapper Not tainted 3.2.0-0.bpo.4-rt-amd64
+#1 Debian 3.2.35-2~bpo60+1
+[    0.000000] Call Trace:
+[    0.000000]  [<ffffffff810cb43e>] ? bad_page+0xe8/0xfa
+[    0.000000]  [<ffffffff810cb83f>] ? free_pages_prepare+0x9a/0xd3
+[    0.000000]  [<ffffffff810cc200>] ? __free_pages_ok+0x1b/0x102
+[    0.000000]  [<ffffffff8172185e>] ? free_all_memory_core_early+0xe1/0x144
+[    0.000000]  [<ffffffff81716664>] ? numa_free_all_bootmem+0x71/0x7a
+[    0.000000]  [<ffffffff81385ae2>] ? bad_to_user+0x65c/0x65c
+[    0.000000]  [<ffffffff81714d2d>] ? mem_init+0x19/0xe4
+[    0.000000]  [<ffffffff81701a8e>] ? start_kernel+0x1c2/0x3c2
+[    0.000000]  [<ffffffff817013c8>] ? x86_64_start_kernel+0x102/0x10f
 
-If the timer expires, there's no real guarantee that expire_time -
-current_time would be <= 0 - due to timer slack certainly, and I'm not
-sure I want to know the implications of the different clock bases in
-hrtimers.
+despite this errors machine runs ok and rather stable.
 
-If the timer does expire and the code calculates that the time remaining
-is nonnegative, that could be even worse if the calling code then reuses
-that timeout. Probably safer to just return 0 then, but I could imagine
-weird bugs or at least unintended behaviour arising from that too.
+Is this problem already known?
+What can be done to debug it so we can fix it?
 
-I came to the conclusion that if other users end up actually needing the
-amount of time remaining, the sanest thing to do would be to create a
-version that uses absolute timeouts instead of relative.
 
-> 
-> > +/**
-> > + * wait_event_hrtimeout - sleep until a condition gets true or a timeout elapses
-> > + * @wq: the waitqueue to wait on
-> > + * @condition: a C expression for the event to wait for
-> > + * @timeout: timeout, in jiffies
-> > + *
-> > + * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
-> > + * @condition evaluates to true or a signal is received.
-> > + * The @condition is checked each time the waitqueue @wq is woken up.
-> > + *
-> > + * wake_up() has to be called after changing any variable that could
-> > + * change the result of the wait condition.
-> > + *
-> > + * The function returns 0 if @condition became true, or -ETIME if the timeout
-> > + * elapsed.
-> > + */
-> 
-> this, methinks:
 
-Whoops, yes.
+cat /proc/cpuinfo
+processor	: 0
+vendor_id	: AuthenticAMD
+cpu family	: 21
+model		: 1
+model name	: AMD FX(tm)-8120 Eight-Core Processor
+stepping	: 2
+microcode	: 0x6000613
+cpu MHz		: 1400.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 8
+core id		: 0
+cpu cores	: 4
+apicid		: 16
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 13
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt
+pdpe1gb rdtscp lm constant_tsc rep_good nopl nonstop_tsc extd_apicid
+aperfmperf pni pclmulqdq monitor ssse3 cx16 sse4_1 sse4_2 popcnt aes
+xsave avx lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a
+misalignsse 3dnowprefetch osvw ibs xop skinit wdt lwp fma4 nodeid_msr
+topoext perfctr_core arat cpb hw_pstate npt lbrv svm_lock nrip_save
+tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold
+bogomips	: 6221.04
+TLB size	: 1536 4K pages
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 48 bits physical, 48 bits virtual
+power management: ts ttp tm 100mhzsteps hwpstate [9]
 
-> --- a/include/linux/wait.h~wait-add-wait_event_hrtimeout-fix
-> +++ a/include/linux/wait.h
-> @@ -370,7 +370,7 @@ do {									\
->   * wait_event_hrtimeout - sleep until a condition gets true or a timeout elapses
->   * @wq: the waitqueue to wait on
->   * @condition: a C expression for the event to wait for
-> - * @timeout: timeout, in jiffies
-> + * @timeout: timeout, as a ktime_t
->   *
->   * The process is put to sleep (TASK_UNINTERRUPTIBLE) until the
->   * @condition evaluates to true or a signal is received.
-> @@ -395,7 +395,7 @@ do {									\
->   * wait_event_interruptible_hrtimeout - sleep until a condition gets true or a timeout elapses
->   * @wq: the waitqueue to wait on
->   * @condition: a C expression for the event to wait for
-> - * @timeout: timeout, in jiffies
-> + * @timeout: timeout, as a ktime_t
->   *
->   * The process is put to sleep (TASK_INTERRUPTIBLE) until the
->   * @condition evaluates to true or a signal is received.
-> _
-> 
+
+
+
+
+wider log:
+
+
+
+[    0.000000] Kernel command line:
+BOOT_IMAGE=/vmlinuz-3.2.0-0.bpo.4-rt-amd64 root=/dev/mapper/md0_crypt ro
+quiet
+[    0.000000] PID hash table entries: 4096 (order: 3, 32768 bytes)
+[    0.000000] xsave/xrstor: enabled xstate_bv 0x7, cntxt size 0x340
+[    0.000000] Checking aperture...
+[    0.000000] No AGP bridge found
+[    0.000000] Node 0: aperture @ f8000000 size 64 MB
+[    0.000000] Modules linked in:
+[    0.000000] Pid: 0, comm: swapper Not tainted 3.2.0-0.bpo.4-rt-amd64
+#1 Debian 3.2.35-2~bpo60+1
+[    0.000000] Call Trace:
+[    0.000000]  [<ffffffff810cb43e>] ? bad_page+0xe8/0xfa
+[    0.000000]  [<ffffffff810cb83f>] ? free_pages_prepare+0x9a/0xd3
+[    0.000000]  [<ffffffff810cc200>] ? __free_pages_ok+0x1b/0x102
+[    0.000000]  [<ffffffff8172185e>] ? free_all_memory_core_early+0xe1/0x144
+[    0.000000]  [<ffffffff81716664>] ? numa_free_all_bootmem+0x71/0x7a
+[    0.000000]  [<ffffffff81385ae2>] ? bad_to_user+0x65c/0x65c
+[    0.000000]  [<ffffffff81714d2d>] ? mem_init+0x19/0xe4
+[    0.000000]  [<ffffffff81701a8e>] ? start_kernel+0x1c2/0x3c2
+[    0.000000]  [<ffffffff817013c8>] ? x86_64_start_kernel+0x102/0x10f
+[    0.000000] Disabling lock debugging due to kernel taint
+[    0.000000] Modules linked in:
+[    0.000000] Pid: 0, comm: swapper Tainted: G    B
+3.2.0-0.bpo.4-rt-amd64 #1 Debian 3.2.35-2~bpo60+1
+[    0.000000] Call Trace:
+[    0.000000]  [<ffffffff810cb43e>] ? bad_page+0xe8/0xfa
+[    0.000000]  [<ffffffff810cb83f>] ? free_pages_prepare+0x9a/0xd3
+[    0.000000]  [<ffffffff810cc200>] ? __free_pages_ok+0x1b/0x102
+[    0.000000]  [<ffffffff8172185e>] ? free_all_memory_core_early+0xe1/0x144
+[    0.000000]  [<ffffffff81716664>] ? numa_free_all_bootmem+0x71/0x7a
+[    0.000000]  [<ffffffff81385ae2>] ? bad_to_user+0x65c/0x65c
+[    0.000000]  [<ffffffff81714d2d>] ? mem_init+0x19/0xe4
+[    0.000000]  [<ffffffff81701a8e>] ? start_kernel+0x1c2/0x3c2
+[    0.000000]  [<ffffffff817013c8>] ? x86_64_start_kernel+0x102/0x10f
+[    0.000000] Modules linked in:
+[    0.000000] Pid: 0, comm: swapper Tainted: G    B
+3.2.0-0.bpo.4-rt-amd64 #1 Debian 3.2.35-2~bpo60+1
+[    0.000000] Call Trace:
+[    0.000000]  [<ffffffff810cb43e>] ? bad_page+0xe8/0xfa
+[    0.000000]  [<ffffffff810cb83f>] ? free_pages_prepare+0x9a/0xd3
+[    0.000000]  [<ffffffff810cc200>] ? __free_pages_ok+0x1b/0x102
+[    0.000000]  [<ffffffff8172185e>] ? free_all_memory_core_early+0xe1/0x144
+[    0.000000]  [<ffffffff81716664>] ? numa_free_all_bootmem+0x71/0x7a
+[    0.000000]  [<ffffffff81385ae2>] ? bad_to_user+0x65c/0x65c
+[    0.000000]  [<ffffffff81714d2d>] ? mem_init+0x19/0xe4
+[    0.000000]  [<ffffffff81701a8e>] ? start_kernel+0x1c2/0x3c2
+[    0.000000]  [<ffffffff817013c8>] ? x86_64_start_kernel+0x102/0x10f
+
+(repeats around 20 times)
+
+[    0.000000] Memory: 16402260k/17809408k available (3606k kernel code,
+1085996k absent, 319616k reserved, 3163k data, 928k init)
+[    0.000000] Preemptible hierarchical RCU implementation.
+[    0.000000] NR_IRQS:33024 nr_irqs:1288 16
+[    0.000000] Extended CMOS year: 2000
+[    0.000000] Console: colour VGA+ 80x25
+[    0.000000] console [tty0] enabled
+
+
+
+
+
+form hwinfo
+
+  system.board.product = 'M5A97 PRO'
+       str1: "ASUSTeK COMPUTER INC."
+       str2: "M5A97 PRO"
+       str3: "Rev 1.xx"
+
+
+
+01: None 00.0: 10105 BIOS
+  [Created at bios.190]
+  Unique ID: ........................ removed
+  Hardware Class: bios
+  BIOS Keyboard LED Status:
+    Scroll Lock: off
+    Num Lock: on
+    Caps Lock: off
+  Base Memory: 635 kB
+  PnP BIOS: @@@0000
+  SMBIOS Version: 2.7
+  BIOS Info: #0
+    Vendor: "American Megatrends Inc."
+    Version: "0813"
+    Date: "10/24/2011"
+    Start Address: 0xf0000
+    ROM Size: 4096 kB
+    Features: 0x0d03000000053f8b9880
+
+
+
