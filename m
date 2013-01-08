@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756643Ab3AHQmg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 11:42:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:25895 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756380Ab3AHQmf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 11:42:35 -0500
-Date: Tue, 8 Jan 2013 11:42:26 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 14/24] cfq-iosched: convert cfq_group_slice() to use
- cfqg->vfraction
-Message-ID: <20130108164226.GE29635@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-15-git-send-email-tj@kernel.org>
+	id S1756695Ab3AHQqp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 11:46:45 -0500
+Received: from mail127.messagelabs.com ([216.82.250.115]:52900 "EHLO
+	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756480Ab3AHQqn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 11:46:43 -0500
+X-Env-Sender: hartleys@visionengravers.com
+X-Msg-Ref: server-16.tower-127.messagelabs.com!1357663598!8103216!6
+X-Originating-IP: [216.166.12.98]
+X-StarScan-Received: 
+X-StarScan-Version: 6.6.1.8; banners=-,-,-
+X-VirusChecked: Checked
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ian Abbott <abbotti@mev.co.uk>
+Date: Tue, 8 Jan 2013 10:46:38 -0600
+Subject: RE: linux-next: build failure after merge of the staging tree
+Thread-Topic: linux-next: build failure after merge of the staging tree
+Thread-Index: Ac3tWNMja1IzWgACSC+41jDwWCJkUQAZqBww
+Message-ID: <ADE657CA350FB648AAC2C43247A983F00206D6C990A5@AUSP01VMBX24.collaborationhost.net>
+References: <20130108132352.dbabdc281512cdaffbae5ae9@canb.auug.org.au>
+	<20130108042730.GA3936@kroah.com>
+ <20130108152951.9fa6165c918e52ab5cfac435@canb.auug.org.au>
+In-Reply-To: <20130108152951.9fa6165c918e52ab5cfac435@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356726946-26037-15-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:36PM -0800, Tejun Heo wrote:
-> cfq_group_slice() calculates slice by taking a fraction of
-> cfq_target_latency according to the ratio of cfqg->weight against
-> service_tree->total_weight.  This currently works only because all
-> cfqgs are treated to be at the same level.
-> 
-> To prepare for proper hierarchy support, convert cfq_group_slice() to
-> base the calculation on cfqg->vfraction.  As cfqg->vfraction is always
-> a fraction of 1 and represents the fraction allocated to the cfqg with
-> hierarchy considered, the slice can be simply calculated by
-> multiplying cfqg->vfraction to cfq_target_latency (with fixed point
-> shift factored in).
-> 
-> As vfraction calculation currently treats all non-root cfqgs as
-> children of the root cfqg, this patch doesn't introduce noticeable
-> behavior difference.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+On Monday, January 07, 2013 9:30 PM, Stephen Rothwell wrote:
+> On Mon, 7 Jan 2013 20:27:30 -0800 Greg KH <greg@kroah.com> wrote:
+>> On Tue, Jan 08, 2013 at 01:23:52PM +1100, Stephen Rothwell wrote:
+>>> After merging the staging tree, today's linux-next build (x86_64
+>>> allmodconfig) failed like this:
+>>> 
+>>> drivers/staging/comedi/comedi_fops.c: In function 'comedi_unlocked_ioctl':
+>>> drivers/staging/comedi/comedi_fops.c:1665:4: error: 'dev_file_info' undeclared (first use in this function)
+>>> 
+>>> Caused by commit 4da5fa9a439f ("staging: comedi: use comedi_dev_from_minor
+>>> ()") interacting with commit 7d3135af399e ("staging: comedi: prevent
+>>> auto-unconfig of manually configured devices") from the staging.current
+>>> tree.
+>>> 
+>>> I just reverted the latter commit in the hope that the bug is fixed in
+>>> some other way in the staging tree.
+>> 
+>> Yes, I had to do some manual fixup when merging the branches together to
+>> get it to work properly, which is what I did in my staging-next tree.
+>> As the fixup was done in the merge commit, maybe you didn't get it when
+>> you did the pull?
+>
+> Presumably not (my top of staging-next is d7f9729f6e06) - it was changing
+> pretty rapidly this morning as I was fetching trees ...
+>
+> At least it will be OK tomorrow.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Greg's staging tree on git.kernel.org looks correct.
 
-Vivek
+If there is anything I need to do to help resolve this please let me know.
+
+Thanks,
+Hartley
+
