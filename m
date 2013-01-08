@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab3AHJ6P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 04:58:15 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:45641 "EHLO
+	id S1755450Ab3AHJ6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 04:58:22 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:45653 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab3AHJ6M (ORCPT
+	with ESMTP id S1755392Ab3AHJ6R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 04:58:12 -0500
-X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r089vU23032613
+	Tue, 8 Jan 2013 04:58:17 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r089vU27032613
 From: <wei_wang@realsil.com.cn>
 To: <cjb@laptop.org>, <sameo@linux.intel.com>
 CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
         <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
         <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
         Wei WANG <wei_wang@realsil.com.cn>
-Subject: [PATCH v4 2/8] MFD:rtsx: Remove redundant code
-Date: Tue, 8 Jan 2013 17:57:23 +0800
-Message-ID: <08bda2184701413431444c0e58219ace09c5d97b.1357638064.git.wei_wang@realsil.com.cn>
+Subject: [PATCH v4 6/8] MFD:rtsx: Add callback function conv_clk_and_div_n
+Date: Tue, 8 Jan 2013 17:57:27 +0800
+Message-ID: <c9f2f50fb50ea5c0a3a61fa6db6df240007671ab.1357638064.git.wei_wang@realsil.com.cn>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <cover.1357638064.git.wei_wang@realsil.com.cn>
 References: <cover.1357638064.git.wei_wang@realsil.com.cn>
@@ -28,26 +28,134 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Wei WANG <wei_wang@realsil.com.cn>
 
-In function rtsx_pci_add_sg_tbl, the statement "ptr++" is useless.
+Add callback function conv_clk_and_div_n to convert between SSC clock
+and its divider N.
+For rtl8411, the formula to calculate SSC clock divider N is different
+with the other card reader models.
 
 Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
-Acked-by: Borislav Petkov <bp@alien8.de>
 ---
- drivers/mfd/rtsx_pcr.c |    1 -
- 1 file changed, 1 deletion(-)
+ drivers/mfd/rtl8411.c           |   13 +++++++++++++
+ drivers/mfd/rts5209.c           |    1 +
+ drivers/mfd/rts5229.c           |    1 +
+ drivers/mfd/rtsx_pcr.c          |   14 ++++++++++++--
+ include/linux/mfd/rtsx_common.h |    3 +++
+ include/linux/mfd/rtsx_pci.h    |    1 +
+ 6 files changed, 31 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-index 3a44efa..fa2c2bc 100644
---- a/drivers/mfd/rtsx_pcr.c
-+++ b/drivers/mfd/rtsx_pcr.c
-@@ -325,7 +325,6 @@ static void rtsx_pci_add_sg_tbl(struct rtsx_pcr *pcr,
- 	val = ((u64)addr << 32) | ((u64)len << 12) | option;
- 
- 	put_unaligned_le64(val, ptr);
--	ptr++;
- 	pcr->sgi++;
+diff --git a/drivers/mfd/rtl8411.c b/drivers/mfd/rtl8411.c
+index 5058ba8..3d3b4ad 100644
+--- a/drivers/mfd/rtl8411.c
++++ b/drivers/mfd/rtl8411.c
+@@ -178,6 +178,18 @@ static unsigned int rtl8411_cd_deglitch(struct rtsx_pcr *pcr)
+ 	return card_exist;
  }
  
++static int rtl8411_conv_clk_and_div_n(int input, int dir)
++{
++	int output;
++
++	if (dir == CLK_TO_DIV_N)
++		output = input * 4 / 5 - 2;
++	else
++		output = (input + 2) * 5 / 4;
++
++	return output;
++}
++
+ static const struct pcr_ops rtl8411_pcr_ops = {
+ 	.extra_init_hw = rtl8411_extra_init_hw,
+ 	.optimize_phy = NULL,
+@@ -189,6 +201,7 @@ static const struct pcr_ops rtl8411_pcr_ops = {
+ 	.card_power_off = rtl8411_card_power_off,
+ 	.switch_output_voltage = rtl8411_switch_output_voltage,
+ 	.cd_deglitch = rtl8411_cd_deglitch,
++	.conv_clk_and_div_n = rtl8411_conv_clk_and_div_n,
+ };
+ 
+ /* SD Pull Control Enable:
+diff --git a/drivers/mfd/rts5209.c b/drivers/mfd/rts5209.c
+index ba74de8..98fe0f3 100644
+--- a/drivers/mfd/rts5209.c
++++ b/drivers/mfd/rts5209.c
+@@ -174,6 +174,7 @@ static const struct pcr_ops rts5209_pcr_ops = {
+ 	.card_power_off = rts5209_card_power_off,
+ 	.switch_output_voltage = rts5209_switch_output_voltage,
+ 	.cd_deglitch = NULL,
++	.conv_clk_and_div_n = NULL,
+ };
+ 
+ /* SD Pull Control Enable:
+diff --git a/drivers/mfd/rts5229.c b/drivers/mfd/rts5229.c
+index ec1747a..29d889c 100644
+--- a/drivers/mfd/rts5229.c
++++ b/drivers/mfd/rts5229.c
+@@ -144,6 +144,7 @@ static const struct pcr_ops rts5229_pcr_ops = {
+ 	.card_power_off = rts5229_card_power_off,
+ 	.switch_output_voltage = rts5229_switch_output_voltage,
+ 	.cd_deglitch = NULL,
++	.conv_clk_and_div_n = NULL,
+ };
+ 
+ /* SD Pull Control Enable:
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 99e12b8..958b738 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -629,7 +629,10 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 	if (clk == pcr->cur_clock)
+ 		return 0;
+ 
+-	N = (u8)(clk - 2);
++	if (pcr->ops->conv_clk_and_div_n)
++		N = (u8)pcr->ops->conv_clk_and_div_n(clk, CLK_TO_DIV_N);
++	else
++		N = (u8)(clk - 2);
+ 	if ((clk <= 2) || (N > max_N))
+ 		return -EINVAL;
+ 
+@@ -640,7 +643,14 @@ int rtsx_pci_switch_clock(struct rtsx_pcr *pcr, unsigned int card_clock,
+ 	/* Make sure that the SSC clock div_n is equal or greater than min_N */
+ 	div = CLK_DIV_1;
+ 	while ((N < min_N) && (div < max_div)) {
+-		N = (N + 2) * 2 - 2;
++		if (pcr->ops->conv_clk_and_div_n) {
++			int dbl_clk = pcr->ops->conv_clk_and_div_n(N,
++					DIV_N_TO_CLK) * 2;
++			N = (u8)pcr->ops->conv_clk_and_div_n(dbl_clk,
++					CLK_TO_DIV_N);
++		} else {
++			N = (N + 2) * 2 - 2;
++		}
+ 		div++;
+ 	}
+ 	dev_dbg(&(pcr->pci->dev), "N = %d, div = %d\n", N, div);
+diff --git a/include/linux/mfd/rtsx_common.h b/include/linux/mfd/rtsx_common.h
+index a8d393e..2b13970 100644
+--- a/include/linux/mfd/rtsx_common.h
++++ b/include/linux/mfd/rtsx_common.h
+@@ -38,6 +38,9 @@
+ #define RTSX_SD_CARD			0
+ #define RTSX_MS_CARD			1
+ 
++#define CLK_TO_DIV_N			0
++#define DIV_N_TO_CLK			1
++
+ struct platform_device;
+ 
+ struct rtsx_slot {
+diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+index 2e3e2e0..3f2bf26 100644
+--- a/include/linux/mfd/rtsx_pci.h
++++ b/include/linux/mfd/rtsx_pci.h
+@@ -704,6 +704,7 @@ struct pcr_ops {
+ 	int		(*switch_output_voltage)(struct rtsx_pcr *pcr,
+ 						u8 voltage);
+ 	unsigned int	(*cd_deglitch)(struct rtsx_pcr *pcr);
++	int		(*conv_clk_and_div_n)(int clk, int dir);
+ };
+ 
+ enum PDEV_STAT  {PDEV_STAT_IDLE, PDEV_STAT_RUN};
 -- 
 1.7.9.5
 
