@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756926Ab3AHSMN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:12:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60816 "EHLO mx1.redhat.com"
+	id S1756918Ab3AHSNn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:13:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:24388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756712Ab3AHSML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:12:11 -0500
-Date: Tue, 8 Jan 2013 13:12:05 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 23/24] cfq-iosched: collect stats from dead cfqgs
-Message-ID: <20130108181205.GE29933@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-24-git-send-email-tj@kernel.org>
+	id S1756712Ab3AHSNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:13:42 -0500
+Date: Tue, 8 Jan 2013 19:13:03 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/7] uprobes: Do not allocate current->utask unnecessary
+Message-ID: <20130108181303.GB1048@redhat.com>
+References: <20121231175150.GA32066@redhat.com> <20121231175229.GA32115@redhat.com> <20130108122013.GI1325@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356726946-26037-24-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130108122013.GI1325@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:45PM -0800, Tejun Heo wrote:
-> To support hierarchical stats, it's necessary to remember stats from
-> dead children.  Add cfqg->dead_stats and make a dying cfqg transfer
-> its stats to the parent's dead-stats.
-> 
-> The transfer happens form ->pd_offline_fn() and it is possible that
-> there are some residual IOs completing afterwards.  Currently, we lose
-> these stats.  Given that cgroup removal isn't a very high frequency
-> operation and the amount of residual IOs on offline are likely to be
-> nil or small, this shouldn't be a big deal and the complexity needed
-> to handle residual IOs - another callback and rather elaborate
-> synchronization to reach and lock the matching q - doesn't seem
-> justified.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+On 01/08, Srikar Dronamraju wrote:
+>
+> * Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:29]:
+>
+> >  static void handle_swbp(struct pt_regs *regs)
+> >  {
+> > -	struct uprobe_task *utask;
+> >  	struct uprobe *uprobe;
+> >  	unsigned long bp_vaddr;
+> >  	int uninitialized_var(is_swbp);
+> > @@ -1512,19 +1515,12 @@ static void handle_swbp(struct pt_regs *regs)
+> >  	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
+> >  		goto out;
+> >
+> > -	utask = get_utask();
+> > -	if (!utask)
+> > -		goto out;	/* re-execute the instruction. */
+> > -
+>
+> If get_utask fails with the above change, Dont we end up calling
+> handler_chain twice(or more)?.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+After restart, yes.
 
-Vivek
+> I think this is probably true with
+> previous patch too.
+
+And this can happen with the current code too, if xol_alloc_area()
+fails. So I think this is probably fine. Besides, if GFP_KERNEL
+fails the task should be oom-killed in practice.
+
+Oleg.
+
