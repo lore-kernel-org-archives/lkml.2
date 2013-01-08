@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756878Ab3AHX6Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:58:25 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63443 "EHLO
+	id S1756662Ab3AHX6X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:58:23 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63447 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756290Ab3AHXhP (ORCPT
+	with ESMTP id S1755961Ab3AHXhQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:15 -0500
+	Tue, 8 Jan 2013 18:37:16 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Benjamin Poirier <bpoirier@suse.de>, Jesse Gross <jesse@nicira.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 12/77] gro: reset vlan_tci on reuse
-Date: Tue, 8 Jan 2013 18:34:51 -0500
-Message-ID: <1357688156-25387-13-git-send-email-paul.gortmaker@windriver.com>
+CC: NeilBrown <neilb@suse.de>, Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 14/77] md: Don't truncate size at 4TB for RAID0 and Linear
+Date: Tue, 8 Jan 2013 18:34:53 -0500
+Message-ID: <1357688156-25387-15-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +22,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Poirier <bpoirier@suse.de>
+From: NeilBrown <neilb@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,49 +30,58 @@ From: Benjamin Poirier <bpoirier@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-This one liner is part of upstream
-commit 3701e51382a026cba10c60b03efabe534fba4ca4
-Author: Jesse Gross <jesse@nicira.com>
+commit 667a5313ecd7308d79629c0738b0db588b0b0a4e upstream.
 
-    vlan: Centralize handling of hardware acceleration.
+commit 27a7b260f71439c40546b43588448faac01adb93
+   md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
 
-The bulk of that commit is a rework of the hardware assisted vlan tagging
-driver interface, and as such doesn't classify for -stable inclusion. The fix
-that is needed is a part of that commit but can work independently of the
-rest.
+changed 0.90 metadata handling to truncated size to 4TB as that is
+all that 0.90 can record.
+However for RAID0 and Linear, 0.90 doesn't need to record the size, so
+this truncation is not needed and causes working arrays to become too small.
 
-This patch can avoid panics on the 2.6.32.y -stable kernels and is in the same
-spirit as mainline commits
-66c46d7 gro: Reset dev pointer on reuse
-6d152e2 gro: reset skb_iif on reuse
-which are already in -stable.
+So avoid the truncation for RAID0 and Linear
 
-For drivers using the vlan_gro_frags() interface, a packet with an invalid tci
-leads to GRO_DROP and napi_reuse_skb(). The skb has to be sanitized before
-being reused or we may send an skb with an invalid vlan_tci field up the stack
-where it is not expected.
+This bug was introduced in 3.1 and is suitable for any stable kernels
+from then onwards.
+As the offending commit was tagged for 'stable', any stable kernel
+that it was applied to should also get this patch.  That includes
+at least 2.6.32, 2.6.33 and 3.0. (Thanks to Ben Hutchings for
+providing that list).
 
-Signed-off-by: Benjamin Poirier <bpoirier@suse.de>
-Cc: Jesse Gross <jesse@nicira.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-[PG: taken from v2.6.32.y stable, commit 5aff28abc7e]
+Signed-off-by: Neil Brown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/core/dev.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/md.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 7daff00..2aaf2e6 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2823,6 +2823,7 @@ void napi_reuse_skb(struct napi_struct *napi, struct sk_buff *skb)
- {
- 	__skb_pull(skb, skb_headlen(skb));
- 	skb_reserve(skb, NET_IP_ALIGN - skb_headroom(skb));
-+	skb->vlan_tci = 0;
- 	skb->dev = napi->dev;
- 	skb->skb_iif = 0;
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index 4788c82..d8e5adc 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -985,8 +985,11 @@ static int super_90_load(mdk_rdev_t *rdev, mdk_rdev_t *refdev, int minor_version
+ 			ret = 0;
+ 	}
+ 	rdev->sectors = rdev->sb_start;
+-	/* Limit to 4TB as metadata cannot record more than that */
+-	if (rdev->sectors >= (2ULL << 32))
++	/* Limit to 4TB as metadata cannot record more than that.
++	 * (not needed for Linear and RAID0 as metadata doesn't
++	 * record this size)
++	 */
++	if (rdev->sectors >= (2ULL << 32) && sb->level >= 1)
+ 		rdev->sectors = (2ULL << 32) - 2;
  
+ 	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
+@@ -1266,7 +1269,7 @@ super_90_rdev_size_change(mdk_rdev_t *rdev, sector_t num_sectors)
+ 	/* Limit to 4TB as metadata cannot record more than that.
+ 	 * 4TB == 2^32 KB, or 2*2^32 sectors.
+ 	 */
+-	if (num_sectors >= (2ULL << 32))
++	if (num_sectors >= (2ULL << 32) && rdev->mddev->level >= 1)
+ 		num_sectors = (2ULL << 32) - 2;
+ 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
+ 		       rdev->sb_page);
 -- 
 1.7.12.1
 
