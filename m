@@ -1,111 +1,230 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373Ab3AHH5o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 02:57:44 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:43918 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab3AHH5n (ORCPT
+	id S1751586Ab3AHIK1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 03:10:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:52332 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754300Ab3AHIKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 02:57:43 -0500
-X-AuditID: 85900ec0-d5e7ab900000152f-84-50ebd17462f3
-Message-ID: <50EBD162.8020608@hitachi.com>
-Date: Tue, 08 Jan 2013 16:57:22 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 5.2; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: [PATCH 1/2 v2] ftrace: Be first to run code modification on
- modules
-References: <20130107140232.460273619@goodmis.org> <20130107140333.593683061@goodmis.org>
-In-Reply-To: <20130107140333.593683061@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 8 Jan 2013 03:10:25 -0500
+Date: Tue, 08 Jan 2013 00:10:22 -0800 (PST)
+Message-Id: <20130108.001022.21353544093948597.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2013/01/07 23:02), Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> If some other kernel subsystem has a module notifier, and adds a kprobe
-> to a ftrace mcount point (now that kprobes work on ftrace points),
-> when the ftrace notifier runs it will fail and disable ftrace, as well
-> as kprobes that are attached to ftrace points.
-> 
-> Here's the error:
-> 
->  WARNING: at kernel/trace/ftrace.c:1618 ftrace_bug+0x239/0x280()
->  Hardware name: Bochs
->  Modules linked in: fat(+) stap_56d28a51b3fe546293ca0700b10bcb29__8059(F) nfsv4 auth_rpcgss nfs dns_resolver fscache xt_nat iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_nat_ipv4 nf_nat nf_conntrack lockd sunrpc ppdev parport_pc parport microcode virtio_net i2c_piix4 drm_kms_helper ttm drm i2c_core [last unloaded: bid_shared]
->  Pid: 8068, comm: modprobe Tainted: GF            3.7.0-0.rc8.git0.1.fc19.x86_64 #1
->  Call Trace:
->   [<ffffffff8105e70f>] warn_slowpath_common+0x7f/0xc0
->   [<ffffffff81134106>] ? __probe_kernel_read+0x46/0x70
->   [<ffffffffa0180000>] ? 0xffffffffa017ffff
->   [<ffffffffa0180000>] ? 0xffffffffa017ffff
->   [<ffffffff8105e76a>] warn_slowpath_null+0x1a/0x20
->   [<ffffffff810fd189>] ftrace_bug+0x239/0x280
->   [<ffffffff810fd626>] ftrace_process_locs+0x376/0x520
->   [<ffffffff810fefb7>] ftrace_module_notify+0x47/0x50
->   [<ffffffff8163912d>] notifier_call_chain+0x4d/0x70
->   [<ffffffff810882f8>] __blocking_notifier_call_chain+0x58/0x80
->   [<ffffffff81088336>] blocking_notifier_call_chain+0x16/0x20
->   [<ffffffff810c2a23>] sys_init_module+0x73/0x220
->   [<ffffffff8163d719>] system_call_fastpath+0x16/0x1b
->  ---[ end trace 9ef46351e53bbf80 ]---
->  ftrace failed to modify [<ffffffffa0180000>] init_once+0x0/0x20 [fat]
->   actual: cc:bb:d2:4b:e1
-> 
-> A kprobe was added to the init_once() function in the fat module on load.
-> But this happened before ftrace could have touched the code. As ftrace
-> didn't run yet, the kprobe system had no idea it was a ftrace point and
-> simply added a breakpoint to the code (0xcc in the cc:bb:d2:4b:e1).
-> 
-> Then when ftrace went to modify the location from a call to mcount/fentry
-> into a nop, it didn't see a call op, but instead it saw the breakpoint op
-> and not knowing what to do with it, ftrace shut itself down.
-> 
-> The solution is to simply give the ftrace module notifier the max priority.
-> This should have been done regardless, as the core code ftrace modification
-> also happens very early on in boot up. This makes the module modification
-> closer to core modification.
 
-Correct! Thank you for fix that.
+1) New sysctl ndisc_notify needs some documentation, from Hanns Frederic
+   Sowa.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+2) Netfilter REJECT target doesn't set transport header of SKB
+   correctly, from Mukund Jampala.
 
-> Reported-by: Frank Ch. Eigler <fche@redhat.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  kernel/trace/ftrace.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 51b7159..356bc2f 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -3998,7 +3998,7 @@ static int ftrace_module_notify(struct notifier_block *self,
->  
->  struct notifier_block ftrace_module_nb = {
->  	.notifier_call = ftrace_module_notify,
-> -	.priority = 0,
-> +	.priority = INT_MAX,	/* Run before anything that can use kprobes */
->  };
->  
->  extern unsigned long __start_mcount_loc[];
-> 
+3) Forcedeth driver needs to check for DMA mapping failures, from
+   Larry Finger.
+
+4) brcmsmac driver can't use usleep_range while holding locks,
+   use udelay instead.  From Niels Ole Salscheider.
+
+5) Fix unregister of netlink bridge multicast database handlers,
+   from Vlad Yasevich and Rami Rosen.
+
+6) Fix checksum calculations in netfilter's ipv6 network prefix
+   translation module.
+
+7) Fix high order page allocation failures in netfilter xt_recent,
+   from Eric Dumazet.
+
+8) mac802154 needs to use netif_rx_ni() instead of netif_rx() because
+   mac802154_process_data() can execute in process rather than
+   interrupt context.  From Alexander Aring.
+
+9) Fix splice handling of MSG_SENDPAGE_NOTLAST, otherwise we elide
+   one tcp_push() too many.  From Eric Dumazet and Willy Tarreau.
+
+10) Fix skb->truesize tracking in XEN netfront driver, from Ian
+    Campbell.
+
+Please pull, thanks a lot!
+
+The following changes since commit 101e5c7470eb7f77ae87f966b9155f0dbb5b4698:
+
+  Merge tag 'hwmon-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/groeck/linux-staging (2012-12-27 10:46:47 -0800)
+
+are available in the git repository at:
 
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net master
 
+for you to fetch changes up to d9a58a782e396a0f04e8445b7ba3763c8a48c7fe:
 
+  xen/netfront: improve truesize tracking (2013-01-07 19:51:19 -0800)
+
+----------------------------------------------------------------
+Alexander Aring (1):
+      mac802154: fix NOHZ local_softirq_pending 08 warning
+
+Andrew Collins (1):
+      netfilter: nf_nat: Also handle non-ESTABLISHED routing changes in MASQUERADE
+
+Arend van Spriel (1):
+      brcmsmac: add copyright information for Canonical
+
+Bj©ªrn Mork (1):
+      net: qmi_wwan: add Telekom Speedstick LTE II
+
+Bob Hockney (1):
+      netfilter: nfnetlink_log: fix mac address for 6in4 tunnels
+
+Christian Lamparter (2):
+      carl9170: fix -EINVAL bailout during init with !CONFIG_MAC80211_MESH
+      p54usb: add USBIDs for two more p54usb devices
+
+David S. Miller (2):
+      Merge branch 'master' of git://1984.lsi.us.es/nf
+      Merge branch 'master' of git://1984.lsi.us.es/nf
+
+Eric Dumazet (2):
+      netfilter: xt_recent: avoid high order page allocations
+      tcp: fix MSG_SENDPAGE_NOTLAST logic
+
+Florent Fourcot (1):
+      netfilter: nf_conntrack_ipv6: fix comment for packets without data
+
+Geert Uytterhoeven (2):
+      bcma: BCMA_DRIVER_GPIO should depend on GPIOLIB instead of selecting it
+      ssb: SSB_DRIVER_GPIO should depend on GPIOLIB instead of selecting it
+
+Haibo Xi (1):
+      netfilter: nf_ct_reasm: fix conntrack reassembly expire code
+
+Hannes Frederic Sowa (1):
+      ipv6: document ndisc_notify in networking/ip-sysctl.txt
+
+Hante Meuleman (1):
+      brcmfmac: fix parsing rsn ie for ap mode.
+
+Ian Campbell (1):
+      xen/netfront: improve truesize tracking
+
+Jesper Juhl (2):
+      netfilter: ctnetlink: fix leak in error path of ctnetlink_create_expect
+      rtlwifi: Don't leak on error in _rtl_usb_receive()
+
+John W. Linville (1):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Jussi Kivilinna (1):
+      rtlwifi: fix incorrect use of usb_alloc_coherent with usb_control_msg
+
+Larry Finger (6):
+      forcedeth: Fix WARNINGS that result when DMA mapping is not checked
+      rtlwifi: Fix warning for unchecked pci_map_single() call
+      rtlwifi: rtl8192ce: Fix warning for unchecked pci_map_single() call
+      rtlwifi: rtl8192de: Fix warning for unchecked pci_map_single() call
+      rtlwifi: rtl8192se: Fix warning for unchecked pci_map_single() call
+      rtlwifi: rtl8723ae: Fix warning for unchecked pci_map_single() call
+
+Mukund Jampala (1):
+      netfilter: ip[6]t_REJECT: fix wrong transport header pointer in TCP reset
+
+Niels Ole Salscheider (1):
+      brcmsmac: Use udelay instead of usleep_range
+
+Pablo Neira Ayuso (5):
+      netfilter: xt_CT: fix crash while destroy ct templates
+      netfilter: nfnetlink_log: fix possible compilation issue due to missing include
+      netfilter: xt_CT: recover NOTRACK target support
+      netfilter: xt_hashlimit: fix race that results in duplicated entries
+      netfilter: fix missing dependencies for the NOTRACK target
+
+Philippe De Muyter (1):
+      net/ipv4/ipconfig: really display the BOOTP/DHCP server's address.
+
+Rafa©© Mi©©ecki (1):
+      bcma: correct M25P32 serial flash ID
+
+Rami Rosen (1):
+      bridge: add empty br_mdb_init() and br_mdb_uninit() definitions.
+
+Sujith Manoharan (2):
+      ath9k: Fix compilation breakage
+      ath9k_hw: Fix RX gain initvals for AR9485
+
+Tomasz Guszkowski (1):
+      p54usb: add USB ID for T-Com Sinus 154 data II
+
+Ulrich Weber (1):
+      netfilter: ip6t_NPT: fix IPv6 NTP checksum calculation
+
+Vitaly E. Lavrov (2):
+      netfilter: xt_recent: fix namespace destroy path
+      netfilter: xt_hashlimit: fix namespace destroy path
+
+Vlad Yasevich (1):
+      bridge: Correctly unregister MDB rtnetlink handlers
+
+Vladimir Kondratiev (1):
+      ath9k: Fix Kconfig for ATH9K_HTC
+
+Xi Wang (1):
+      ipv4: fix NULL checking in devinet_ioctl()
+
+stephen hemminger (2):
+      vxlan: allow live mac address change
+      ip-sysctl: fix spelling errors
+
+ Documentation/networking/ip-sysctl.txt                | 16 ++++++++++-----
+ drivers/bcma/Kconfig                                  |  3 +--
+ drivers/bcma/driver_chipcommon_sflash.c               |  2 +-
+ drivers/net/ethernet/nvidia/forcedeth.c               | 35 ++++++++++++++++++++++++++++++++
+ drivers/net/usb/qmi_wwan.c                            |  1 +
+ drivers/net/vxlan.c                                   |  1 +
+ drivers/net/wireless/ath/ath9k/Kconfig                |  5 +++--
+ drivers/net/wireless/ath/ath9k/ar9003_hw.c            |  2 +-
+ drivers/net/wireless/ath/carl9170/fw.c                |  6 +++++-
+ drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c |  5 +++--
+ drivers/net/wireless/brcm80211/brcmsmac/debug.h       |  1 +
+ drivers/net/wireless/brcm80211/brcmsmac/phy/phy_lcn.c |  4 ++--
+ drivers/net/wireless/p54/p54usb.c                     |  4 ++++
+ drivers/net/wireless/rtlwifi/pci.c                    |  6 ++++++
+ drivers/net/wireless/rtlwifi/rtl8192ce/trx.c          | 11 ++++++++++
+ drivers/net/wireless/rtlwifi/rtl8192de/trx.c          | 10 +++++++++
+ drivers/net/wireless/rtlwifi/rtl8192se/trx.c          | 13 +++++++++++-
+ drivers/net/wireless/rtlwifi/rtl8723ae/trx.c          | 10 +++++++++
+ drivers/net/wireless/rtlwifi/usb.c                    |  8 ++++----
+ drivers/net/xen-netfront.c                            | 27 ++++---------------------
+ drivers/ssb/Kconfig                                   |  3 +--
+ fs/splice.c                                           |  4 +++-
+ include/net/netns/conntrack.h                         |  1 +
+ include/net/netns/x_tables.h                          |  1 +
+ net/bridge/br_multicast.c                             |  2 --
+ net/bridge/br_netlink.c                               | 13 +++++++++++-
+ net/bridge/br_private.h                               |  6 ++++++
+ net/ipv4/devinet.c                                    |  2 +-
+ net/ipv4/ipconfig.c                                   |  8 ++++++--
+ net/ipv4/netfilter/ipt_REJECT.c                       |  1 +
+ net/ipv4/netfilter/iptable_nat.c                      | 15 +++++++++-----
+ net/ipv6/netfilter/ip6t_NPT.c                         | 33 +++++++-----------------------
+ net/ipv6/netfilter/ip6t_REJECT.c                      |  1 +
+ net/ipv6/netfilter/ip6table_nat.c                     | 15 +++++++++-----
+ net/ipv6/netfilter/nf_conntrack_l3proto_ipv6.c        |  4 ++--
+ net/ipv6/netfilter/nf_conntrack_reasm.c               |  5 ++++-
+ net/mac802154/wpan.c                                  |  2 +-
+ net/netfilter/Kconfig                                 |  7 +++++++
+ net/netfilter/nf_conntrack_core.c                     |  2 ++
+ net/netfilter/nf_conntrack_netlink.c                  |  2 +-
+ net/netfilter/nfnetlink_log.c                         | 16 ++++++++++++---
+ net/netfilter/xt_CT.c                                 | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ net/netfilter/xt_hashlimit.c                          | 54 +++++++++++++++++++++++++++++++++++++++++--------
+ net/netfilter/xt_recent.c                             | 43 ++++++++++++++++++++++++++++++---------
+ 44 files changed, 353 insertions(+), 115 deletions(-)
