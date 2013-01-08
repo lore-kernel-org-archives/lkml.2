@@ -1,46 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab3AHSJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:09:36 -0500
-Received: from perches-mx.perches.com ([206.117.179.246]:59167 "EHLO
-	labridge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756765Ab3AHSJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:09:35 -0500
-Message-ID: <1357668576.12749.55.camel@joe-AO722>
-Subject: Re: [PATCH] sunrpc: verbs: Avoid 1kb stack
-From: Joe Perches <joe@perches.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tom Tucker <tom@ogc.us>, steved@redhat.com,
-        Tom Talpey <ttalpey@microsoft.com>
-Date: Tue, 08 Jan 2013 10:09:36 -0800
-In-Reply-To: <20130108144604.GB16343@fieldses.org>
-References: <1357587696.21481.48.camel@joe-AO722>
-	 <20130108144604.GB16343@fieldses.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756914Ab3AHSJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:09:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:26621 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756882Ab3AHSJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:09:39 -0500
+Date: Tue, 8 Jan 2013 13:09:28 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 22/24] cfq-iosched: separate out cfqg_stats_reset() from
+ cfq_pd_reset_stats()
+Message-ID: <20130108180928.GD29933@redhat.com>
+References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+ <1356726946-26037-23-git-send-email-tj@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356726946-26037-23-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 09:46 -0500, J. Bruce Fields wrote:
-> On Mon, Jan 07, 2013 at 11:41:36AM -0800, Joe Perches wrote:
-> > 16 * 64 is a bit much.
-> > Use kmalloc_array instead.
+On Fri, Dec 28, 2012 at 12:35:44PM -0800, Tejun Heo wrote:
+> Separate out cfqg_stats_reset() which takes struct cfqg_stats * from
+> cfq_pd_reset_stats() and move the latter to where other pd methods are
+> defined.  cfqg_stats_reset() will be used to implement hierarchical
+> stats.
 > 
-> I thought there was some reason we didn't do this.
-> 
-> Grepping up through the callers....  It looks like the result is
-> xprt_rdma_send_request returns -EIO, and as far as I can tell that gets
-> passed up to the application on the client.   That doesn't sound right.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-No worries, it was just a warning I noticed when I
-did an allmodconfig compilation.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Perhaps a comment there might be appropriate instead.
-
-
+Vivek
