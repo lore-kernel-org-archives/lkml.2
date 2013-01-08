@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756568Ab3AHXh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:37:28 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63491 "EHLO
+	id S1756606Ab3AHXhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:31 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63492 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756171Ab3AHXhY (ORCPT
+	with ESMTP id S1756531Ab3AHXhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jan 2013 18:37:24 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Salman Qazi <sqazi@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
+CC: Robert Richter <robert.richter@amd.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 38/77] sched, x86: Avoid unnecessary overflow in sched_clock
-Date: Tue, 8 Jan 2013 18:35:17 -0500
-Message-ID: <1357688156-25387-39-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 46/77] oprofile: Free potentially owned tasks in case of errors
+Date: Tue, 8 Jan 2013 18:35:25 -0500
+Message-ID: <1357688156-25387-47-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Salman Qazi <sqazi@google.com>
+From: Robert Richter <robert.richter@amd.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,70 +31,54 @@ From: Salman Qazi <sqazi@google.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4cecf6d401a01d054afc1e5f605bcbfe553cb9b9 upstream.
+commit 6ac6519b93065625119a347be1cbcc1b89edb773 upstream.
 
-(Added the missing signed-off-by line)
+After registering the task free notifier we possibly have tasks in our
+dying_tasks list. Free them after unregistering the notifier in case
+of an error.
 
-In hundreds of days, the __cycles_2_ns calculation in sched_clock
-has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
-the final value to become zero.  We can solve this without losing
-any precision.
-
-We can decompose TSC into quotient and remainder of division by the
-scale factor, and then use this to convert TSC into nanoseconds.
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
-Acked-by: John Stultz <johnstul@us.ibm.com>
-Reviewed-by: Paul Turner <pjt@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/timer.h | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ drivers/oprofile/buffer_sync.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
-index 5469630..b93a9aa 100644
---- a/arch/x86/include/asm/timer.h
-+++ b/arch/x86/include/asm/timer.h
-@@ -38,6 +38,22 @@ extern int no_timer_check;
-  *  (mathieu.desnoyers@polymtl.ca)
-  *
-  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
-+ *
-+ * In:
-+ *
-+ * ns = cycles * cyc2ns_scale / SC
-+ *
-+ * Although we may still have enough bits to store the value of ns,
-+ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
-+ * leading to an incorrect result.
-+ *
-+ * To avoid this, we can decompose 'cycles' into quotient and remainder
-+ * of division by SC.  Then,
-+ *
-+ * ns = (quot * SC + rem) * cyc2ns_scale / SC
-+ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
-+ *
-+ *			- sqazi@google.com
-  */
+diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
+index b7e755f..e353ebf 100644
+--- a/drivers/oprofile/buffer_sync.c
++++ b/drivers/oprofile/buffer_sync.c
+@@ -141,6 +141,13 @@ static struct notifier_block module_load_nb = {
+ 	.notifier_call = module_load_notify,
+ };
  
- DECLARE_PER_CPU(unsigned long, cyc2ns);
-@@ -47,9 +63,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
- 
- static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
++static void free_all_tasks(void)
++{
++	/* make sure we don't leak task structs */
++	process_task_mortuary();
++	process_task_mortuary();
++}
++
+ int sync_start(void)
  {
-+	unsigned long long quot;
-+	unsigned long long rem;
- 	int cpu = smp_processor_id();
- 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
--	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
-+	quot = (cyc >> CYC2NS_SCALE_FACTOR);
-+	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
-+	ns += quot * per_cpu(cyc2ns, cpu) +
-+		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
- 	return ns;
+ 	int err;
+@@ -174,6 +181,7 @@ out3:
+ 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
+ out2:
+ 	task_handoff_unregister(&task_free_nb);
++	free_all_tasks();
+ out1:
+ 	free_cpumask_var(marked_cpus);
+ 	goto out;
+@@ -192,10 +200,7 @@ void sync_stop(void)
+ 	mutex_unlock(&buffer_mutex);
+ 	flush_scheduled_work();
+ 
+-	/* make sure we don't leak task structs */
+-	process_task_mortuary();
+-	process_task_mortuary();
+-
++	free_all_tasks();
+ 	free_cpumask_var(marked_cpus);
  }
  
 -- 
