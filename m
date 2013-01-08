@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab3AHXsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:48:50 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53664 "EHLO
+	id S1756828Ab3AHXti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:49:38 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53663 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab3AHXho (ORCPT
+	with ESMTP id S1756694Ab3AHXho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jan 2013 18:37:44 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Bernd Porr <berndporr@f2s.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+CC: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 31/77] staging: comedi: fix oops for USB DAQ devices.
-Date: Tue, 8 Jan 2013 18:35:10 -0500
-Message-ID: <1357688156-25387-32-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 33/77] USB: whci-hcd: fix endian conversion in qset_clear()
+Date: Tue, 8 Jan 2013 18:35:12 -0500
+Message-ID: <1357688156-25387-34-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bernd Porr <berndporr@f2s.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,147 +32,31 @@ From: Bernd Porr <berndporr@f2s.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 3ffab428f40849ed5f21bcfd7285bdef7902f9ca upstream.
+commit 8746c83d538cab273d335acb2be226d096f4a5af upstream.
 
-This fixes kernel oops when an USB DAQ device is plugged out while it's
-communicating with the userspace software.
+qset->qh.link is an __le64 field and we should be using cpu_to_le64()
+to fill it.
 
-Signed-off-by: Bernd Porr <berndporr@f2s.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/comedi/comedi_fops.c | 71 +++++++++++++++++++++++++++---------
- 1 file changed, 53 insertions(+), 18 deletions(-)
+ drivers/usb/host/whci/qset.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
-index ac6527c..48ac52b 100644
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1391,9 +1391,6 @@ static struct vm_operations_struct comedi_vm_ops = {
- static int comedi_mmap(struct file *file, struct vm_area_struct *vma)
+diff --git a/drivers/usb/host/whci/qset.c b/drivers/usb/host/whci/qset.c
+index b388dd1..c0f48e4 100644
+--- a/drivers/usb/host/whci/qset.c
++++ b/drivers/usb/host/whci/qset.c
+@@ -124,7 +124,7 @@ void qset_clear(struct whc *whc, struct whc_qset *qset)
  {
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
- 	struct comedi_async *async = NULL;
- 	unsigned long start = vma->vm_start;
- 	unsigned long size;
-@@ -1401,6 +1398,15 @@ static int comedi_mmap(struct file *file, struct vm_area_struct *vma)
- 	int i;
- 	int retval;
- 	struct comedi_subdevice *s;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+
-+	dev_file_info = comedi_get_device_file_info(minor);
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
+ 	qset->td_start = qset->td_end = qset->ntds = 0;
  
- 	mutex_lock(&dev->mutex);
- 	if (!dev->attached) {
-@@ -1467,11 +1473,17 @@ static unsigned int comedi_poll(struct file *file, poll_table * wait)
- {
- 	unsigned int mask = 0;
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
- 	struct comedi_subdevice *read_subdev;
- 	struct comedi_subdevice *write_subdev;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	mutex_lock(&dev->mutex);
- 	if (!dev->attached) {
-@@ -1517,9 +1529,15 @@ static ssize_t comedi_write(struct file *file, const char *buf, size_t nbytes,
- 	int n, m, count = 0, retval = 0;
- 	DECLARE_WAITQUEUE(wait, current);
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	if (!dev->attached) {
- 		DPRINTK("no driver configured on comedi%i\n", dev->minor);
-@@ -1619,9 +1637,15 @@ static ssize_t comedi_read(struct file *file, char *buf, size_t nbytes,
- 	int n, m, count = 0, retval = 0;
- 	DECLARE_WAITQUEUE(wait, current);
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	if (!dev->attached) {
- 		DPRINTK("no driver configured on comedi%i\n", dev->minor);
-@@ -1814,11 +1838,17 @@ ok:
- static int comedi_close(struct inode *inode, struct file *file)
- {
- 	const unsigned minor = iminor(inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
--	struct comedi_device *dev = dev_file_info->device;
- 	struct comedi_subdevice *s = NULL;
- 	int i;
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
-+
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	mutex_lock(&dev->mutex);
- 
-@@ -1852,10 +1882,15 @@ static int comedi_close(struct inode *inode, struct file *file)
- static int comedi_fasync(int fd, struct file *file, int on)
- {
- 	const unsigned minor = iminor(file->f_dentry->d_inode);
--	struct comedi_device_file_info *dev_file_info =
--	    comedi_get_device_file_info(minor);
-+	struct comedi_device_file_info *dev_file_info;
-+	struct comedi_device *dev;
-+	dev_file_info = comedi_get_device_file_info(minor);
- 
--	struct comedi_device *dev = dev_file_info->device;
-+	if (dev_file_info == NULL)
-+	        return -ENODEV;
-+	dev = dev_file_info->device;
-+	if (dev == NULL)
-+	        return -ENODEV;
- 
- 	return fasync_helper(fd, file, on, &dev->async_queue);
- }
+-	qset->qh.link = cpu_to_le32(QH_LINK_NTDS(8) | QH_LINK_T);
++	qset->qh.link = cpu_to_le64(QH_LINK_NTDS(8) | QH_LINK_T);
+ 	qset->qh.status = qset->qh.status & QH_STATUS_SEQ_MASK;
+ 	qset->qh.err_count = 0;
+ 	qset->qh.scratch[0] = 0;
 -- 
 1.7.12.1
 
