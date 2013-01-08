@@ -1,245 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3AHSDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:03:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:27217 "EHLO mx1.redhat.com"
+	id S1756844Ab3AHSEf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:04:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44061 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756574Ab3AHSDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:03:09 -0500
-Date: Tue, 8 Jan 2013 13:03:01 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 19/24] blkcg: implement blkg_[rw]stat_recursive_sum() and
- blkg_[rw]stat_merge()
-Message-ID: <20130108180301.GA29933@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-20-git-send-email-tj@kernel.org>
+	id S1756574Ab3AHSEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:04:34 -0500
+Date: Tue, 8 Jan 2013 19:03:46 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: oops in copy_page_rep()
+Message-ID: <20130108180346.GH9163@redhat.com>
+References: <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
+ <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
+ <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
+ <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
+ <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
+ <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
+ <20130108163141.GA27555@shutemov.name>
+ <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
+ <20130108173747.GF9163@redhat.com>
+ <CA+55aFyG26N3_KiA8_cxLW59xFMJBK8SKfG4qL80NMQ3tdh3Nw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356726946-26037-20-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyG26N3_KiA8_cxLW59xFMJBK8SKfG4qL80NMQ3tdh3Nw@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:41PM -0800, Tejun Heo wrote:
-> Implement blkg_[rw]stat_recursive_sum() and blkg_[rw]stat_merge().
-> The former two collect the [rw]stats designated by the target policy
-> data and offset from the pd's subtree.  The latter two add one
-> [rw]stat to another.
+On Tue, Jan 08, 2013 at 09:51:47AM -0800, Linus Torvalds wrote:
+> On Tue, Jan 8, 2013 at 9:37 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
+> >
+> > The reason it returned to userland and retried the fault is that this
+> > should be infrequent enough not to worry about it and this was
+> > marginally simpler but it could be changed.
 > 
-> Note that the recursive sum functions require the queue lock to be
-> held on entry to make blkg online test reliable.  This is necessary to
-> properly handle stats of a dying blkg.
+> Yeah, that was my suspicion. And as mentioned, returning to user land
+> might actually help with scheduling and/or signal handling latencies
+> etc, so it might be the right thing to do.  Especially if the
+> alternative is to just busy-loop.
 > 
-> These will be used to implement hierarchical stats.
+> > If we don't want to return to userland we should wait on the splitting
+> > bit and then take the pte walking routines like if the pmd wasn't
+> > huge. This is not related to the below though.
 > 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> How does this patch sound to people? It does the splitting check
+> before the access bit set (even though I don't think it matters), and
+> at least talks about the alternatives and the issues a bit.
+> 
+> Hmm?
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+It looks very fine to me, but I suggest to move it above the
+pmd_numa() check because of the newly introduced
+migrate_misplaced_transhuge_page method relying on pmd_same too.
 
-Vivek
-
-> ---
->  block/blk-cgroup.c | 107 +++++++++++++++++++++++++++++++++++++++++++++++++++++
->  block/blk-cgroup.h |  35 ++++++++++++++++++
->  2 files changed, 142 insertions(+)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 4d625d2..a1a4b97 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -32,6 +32,26 @@ EXPORT_SYMBOL_GPL(blkcg_root);
->  
->  static struct blkcg_policy *blkcg_policy[BLKCG_MAX_POLS];
->  
-> +static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
-> +				      struct request_queue *q, bool update_hint);
-> +
-> +/**
-> + * blkg_for_each_descendant_pre - pre-order walk of a blkg's descendants
-> + * @d_blkg: loop cursor pointing to the current descendant
-> + * @pos_cgrp: used for iteration
-> + * @p_blkg: target blkg to walk descendants of
-> + *
-> + * Walk @c_blkg through the descendants of @p_blkg.  Must be used with RCU
-> + * read locked.  If called under either blkcg or queue lock, the iteration
-> + * is guaranteed to include all and only online blkgs.  The caller may
-> + * update @pos_cgrp by calling cgroup_rightmost_descendant() to skip
-> + * subtree.
-> + */
-> +#define blkg_for_each_descendant_pre(d_blkg, pos_cgrp, p_blkg)		\
-> +	cgroup_for_each_descendant_pre((pos_cgrp), (p_blkg)->blkcg->css.cgroup) \
-> +		if (((d_blkg) = __blkg_lookup(cgroup_to_blkcg(pos_cgrp), \
-> +					      (p_blkg)->q, false)))
-> +
->  static bool blkcg_policy_enabled(struct request_queue *q,
->  				 const struct blkcg_policy *pol)
->  {
-> @@ -127,6 +147,17 @@ err_free:
->  	return NULL;
->  }
->  
-> +/**
-> + * __blkg_lookup - internal version of blkg_lookup()
-> + * @blkcg: blkcg of interest
-> + * @q: request_queue of interest
-> + * @update_hint: whether to update lookup hint with the result or not
-> + *
-> + * This is internal version and shouldn't be used by policy
-> + * implementations.  Looks up blkgs for the @blkcg - @q pair regardless of
-> + * @q's bypass state.  If @update_hint is %true, the caller should be
-> + * holding @q->queue_lock and lookup hint is updated on success.
-> + */
->  static struct blkcg_gq *__blkg_lookup(struct blkcg *blkcg,
->  				      struct request_queue *q, bool update_hint)
->  {
-> @@ -585,6 +616,82 @@ u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
->  EXPORT_SYMBOL_GPL(blkg_prfill_rwstat);
->  
->  /**
-> + * blkg_stat_recursive_sum - collect hierarchical blkg_stat
-> + * @pd: policy private data of interest
-> + * @off: offset to the blkg_stat in @pd
-> + *
-> + * Collect the blkg_stat specified by @off from @pd and all its online
-> + * descendants and return the sum.  The caller must be holding the queue
-> + * lock for online tests.
-> + */
-> +u64 blkg_stat_recursive_sum(struct blkg_policy_data *pd, int off)
-> +{
-> +	struct blkcg_policy *pol = blkcg_policy[pd->plid];
-> +	struct blkcg_gq *pos_blkg;
-> +	struct cgroup *pos_cgrp;
-> +	u64 sum;
-> +
-> +	lockdep_assert_held(pd->blkg->q->queue_lock);
-> +
-> +	sum = blkg_stat_read((void *)pd + off);
-> +
-> +	rcu_read_lock();
-> +	blkg_for_each_descendant_pre(pos_blkg, pos_cgrp, pd_to_blkg(pd)) {
-> +		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
-> +		struct blkg_stat *stat = (void *)pos_pd + off;
-> +
-> +		if (pos_blkg->online)
-> +			sum += blkg_stat_read(stat);
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	return sum;
-> +}
-> +EXPORT_SYMBOL_GPL(blkg_stat_recursive_sum);
-> +
-> +/**
-> + * blkg_rwstat_recursive_sum - collect hierarchical blkg_rwstat
-> + * @pd: policy private data of interest
-> + * @off: offset to the blkg_stat in @pd
-> + *
-> + * Collect the blkg_rwstat specified by @off from @pd and all its online
-> + * descendants and return the sum.  The caller must be holding the queue
-> + * lock for online tests.
-> + */
-> +struct blkg_rwstat blkg_rwstat_recursive_sum(struct blkg_policy_data *pd,
-> +					     int off)
-> +{
-> +	struct blkcg_policy *pol = blkcg_policy[pd->plid];
-> +	struct blkcg_gq *pos_blkg;
-> +	struct cgroup *pos_cgrp;
-> +	struct blkg_rwstat sum;
-> +	int i;
-> +
-> +	lockdep_assert_held(pd->blkg->q->queue_lock);
-> +
-> +	sum = blkg_rwstat_read((void *)pd + off);
-> +
-> +	rcu_read_lock();
-> +	blkg_for_each_descendant_pre(pos_blkg, pos_cgrp, pd_to_blkg(pd)) {
-> +		struct blkg_policy_data *pos_pd = blkg_to_pd(pos_blkg, pol);
-> +		struct blkg_rwstat *rwstat = (void *)pos_pd + off;
-> +		struct blkg_rwstat tmp;
-> +
-> +		if (!pos_blkg->online)
-> +			continue;
-> +
-> +		tmp = blkg_rwstat_read(rwstat);
-> +
-> +		for (i = 0; i < BLKG_RWSTAT_NR; i++)
-> +			sum.cnt[i] += tmp.cnt[i];
-> +	}
-> +	rcu_read_unlock();
-> +
-> +	return sum;
-> +}
-> +EXPORT_SYMBOL_GPL(blkg_rwstat_recursive_sum);
-> +
-> +/**
->   * blkg_conf_prep - parse and prepare for per-blkg config update
->   * @blkcg: target block cgroup
->   * @pol: target policy
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 586c0ac..f2b2929 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -164,6 +164,10 @@ u64 blkg_prfill_stat(struct seq_file *sf, struct blkg_policy_data *pd, int off);
->  u64 blkg_prfill_rwstat(struct seq_file *sf, struct blkg_policy_data *pd,
->  		       int off);
->  
-> +u64 blkg_stat_recursive_sum(struct blkg_policy_data *pd, int off);
-> +struct blkg_rwstat blkg_rwstat_recursive_sum(struct blkg_policy_data *pd,
-> +					     int off);
-> +
->  struct blkg_conf_ctx {
->  	struct gendisk			*disk;
->  	struct blkcg_gq			*blkg;
-> @@ -414,6 +418,18 @@ static inline void blkg_stat_reset(struct blkg_stat *stat)
->  }
->  
->  /**
-> + * blkg_stat_merge - merge a blkg_stat into another
-> + * @to: the destination blkg_stat
-> + * @from: the source
-> + *
-> + * Add @from's count to @to.
-> + */
-> +static inline void blkg_stat_merge(struct blkg_stat *to, struct blkg_stat *from)
-> +{
-> +	blkg_stat_add(to, blkg_stat_read(from));
-> +}
-> +
-> +/**
->   * blkg_rwstat_add - add a value to a blkg_rwstat
->   * @rwstat: target blkg_rwstat
->   * @rw: mask of REQ_{WRITE|SYNC}
-> @@ -484,6 +500,25 @@ static inline void blkg_rwstat_reset(struct blkg_rwstat *rwstat)
->  	memset(rwstat->cnt, 0, sizeof(rwstat->cnt));
->  }
->  
-> +/**
-> + * blkg_rwstat_merge - merge a blkg_rwstat into another
-> + * @to: the destination blkg_rwstat
-> + * @from: the source
-> + *
-> + * Add @from's counts to @to.
-> + */
-> +static inline void blkg_rwstat_merge(struct blkg_rwstat *to,
-> +				     struct blkg_rwstat *from)
-> +{
-> +	struct blkg_rwstat v = blkg_rwstat_read(from);
-> +	int i;
-> +
-> +	u64_stats_update_begin(&to->syncp);
-> +	for (i = 0; i < BLKG_RWSTAT_NR; i++)
-> +		to->cnt[i] += v.cnt[i];
-> +	u64_stats_update_end(&to->syncp);
-> +}
-> +
->  #else	/* CONFIG_BLK_CGROUP */
->  
->  struct cgroup;
-> -- 
-> 1.8.0.2
+Thanks!
