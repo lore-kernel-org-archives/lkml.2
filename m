@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab3AHPda (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:33:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:32818 "EHLO mx1.redhat.com"
+	id S1756687Ab3AHPe6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:34:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:4429 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756646Ab3AHPd2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:33:28 -0500
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Kent Overstreet <koverstreet@google.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        linux-aio@kvack.org, linux-fsdevel@vger.kernel.org, zab@redhat.com,
-        bcrl@kvack.org, viro@zeniv.linux.org.uk, tytso@mit.edu
-Subject: Re: [PATCH 29/32] block, aio: Batch completion for bios/kiocbs
-References: <1356573611-18590-1-git-send-email-koverstreet@google.com>
-	<1356573611-18590-32-git-send-email-koverstreet@google.com>
-	<50E69F5B.8060902@kernel.dk> <20130107233443.GG26407@google.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 08 Jan 2013 10:33:18 -0500
-In-Reply-To: <20130107233443.GG26407@google.com> (Kent Overstreet's message of
-	"Mon, 7 Jan 2013 15:34:43 -0800")
-Message-ID: <x49r4lvadvl.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756659Ab3AHPe4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 10:34:56 -0500
+Date: Tue, 8 Jan 2013 10:34:48 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 11/24] cfq-iosched: add leaf_weight
+Message-ID: <20130108153448.GB29635@redhat.com>
+References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+ <1356726946-26037-12-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356726946-26037-12-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kent Overstreet <koverstreet@google.com> writes:
+On Fri, Dec 28, 2012 at 12:35:33PM -0800, Tejun Heo wrote:
 
->> Is the rbtree really faster than a basic (l)list and a sort before
->> completing them? Would be simpler.
->
-> Well, depends. With one or two kioctxs? The list would definitely be
-> faster, but I'm loathe to use an O(n^2) algorithm anywhere where the
-> input size isn't strictly controlled, and I know of applications out
-> there that use tons of kioctxs.
+[..]
+> +
+> +	/* on root, leaf_weight is mapped to weight */
+> +	{
+> +		.name = "leaf_weight_device",
+> +		.flags = CFTYPE_ONLY_ON_ROOT,
+> +		.read_seq_string = cfqg_print_weight_device,
+> +		.write_string = cfqg_set_weight_device,
+> +		.max_write_len = 256,
+> +	},
+> +	{
+> +		.name = "leaf_weight",
+> +		.flags = CFTYPE_ONLY_ON_ROOT,
+> +		.read_seq_string = cfq_print_weight,
+> +		.write_u64 = cfq_set_weight,
+> +	},
 
-Out of curiosity, what applications do you know of that use tons of
-kioctx's?
+Hi Tejun,
 
--Jeff
+How does it help to map leaf weight to weight in root group. Old programs
+anyway don't know about leaf_weight. So nobody is going to update it. And
+if they update it, they better know what does it do.
+
+I think we just need to map "weight" to "leaf_weight" once you switch to
+making use of leaf_weight and at that point of time a user will expect
+that updating weight retains the old behavior. I think you have done
+that in later patch.
+
+But mapping leaf_weight to weight seems unnecessary atleast from backward
+compatibility point of view.
+
+Thanks
+Vivek
