@@ -1,65 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756912Ab3AHSVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:21:22 -0500
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:37128 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756589Ab3AHSVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:21:21 -0500
+	id S1757030Ab3AHS2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:28:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48204 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756834Ab3AHS16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:27:58 -0500
+Date: Tue, 8 Jan 2013 13:27:50 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com
+Subject: Re: [PATCH 24/24] cfq-iosched: add hierarchical cfq_group statistics
+Message-ID: <20130108182750.GF29933@redhat.com>
+References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+ <1356726946-26037-25-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20130108180346.GH9163@redhat.com>
-References: <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
- <alpine.LNX.2.00.1301061037140.28950@eggly.anvils> <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
- <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
- <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
- <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
- <20130108163141.GA27555@shutemov.name> <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
- <20130108173747.GF9163@redhat.com> <CA+55aFyG26N3_KiA8_cxLW59xFMJBK8SKfG4qL80NMQ3tdh3Nw@mail.gmail.com>
- <20130108180346.GH9163@redhat.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 Jan 2013 10:21:00 -0800
-X-Google-Sender-Auth: 6KoQNVa60IerFkY_9zuaH2l-4Bc
-Message-ID: <CA+55aFwcDs_R0Cv=RS2LD8ggP3EdvODjENAsXNe126xNwYatOQ@mail.gmail.com>
-Subject: Re: oops in copy_page_rep()
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1356726946-26037-25-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 8, 2013 at 10:03 AM, Andrea Arcangeli <aarcange@redhat.com> wrote:
->
-> It looks very fine to me, but I suggest to move it above the
-> pmd_numa() check because of the newly introduced
-> migrate_misplaced_transhuge_page method relying on pmd_same too.
+On Fri, Dec 28, 2012 at 12:35:46PM -0800, Tejun Heo wrote:
+> Unfortunately, at this point, there's no way to make the existing
+> statistics hierarchical without creating nasty surprises for the
+> existing users.  Just create recursive counterpart of the existing
+> stats.
+> 
 
-Hmm. If we need it there, then we need to fix the *later* case of
-pmd_numa() too:
+No recursive counterparts for stats under DEBUG? Well, I would not 
+complain. There are too many stats already and if somebody needs
+recursive stats for debug stats, let them do it.
 
-        if (pmd_numa(*pmd))
-                return do_pmd_numa_page(mm, vma, address, pmd);
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-Also, and more fundamentally, since do_pmd_numa_page() doesn't take
-the orig_pmd thing as an argument (and re-check it under the
-page-table lock), testing pmd_trans_splitting() on it is pointless,
-since it can change later.
+Vivek
 
-So no, moving the check up does *not* make sense, at least not without
-other changes. Because if I read things right, pmd_trans_splitting()
-really has to be done with the page-table lock protection (where "with
-page-table lock protection" does *not* mean that it has to be done
-under the page table lock, but if it is done outside, then the pmd
-entry has to be re-verified after getting the lock - which both
-do_huge_pmd_wp_page() and huge_pmd_set_accessed() correctly do).
-
-Comments?
-
-                Linus
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> ---
+>  block/cfq-iosched.c | 105 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 105 insertions(+)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 4d75b79..b66365b 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -1528,6 +1528,32 @@ static void cfq_pd_offline(struct blkcg_gq *blkg)
+>  	cfqg_stats_xfer_dead(blkg_to_cfqg(blkg));
+>  }
+>  
+> +/* offset delta from cfqg->stats to cfqg->dead_stats */
+> +static const int dead_stats_off_delta = offsetof(struct cfq_group, dead_stats) -
+> +					offsetof(struct cfq_group, stats);
+> +
+> +/* to be used by recursive prfill, sums live and dead stats recursively */
+> +static u64 cfqg_stat_pd_recursive_sum(struct blkg_policy_data *pd, int off)
+> +{
+> +	u64 sum = 0;
+> +
+> +	sum += blkg_stat_recursive_sum(pd, off);
+> +	sum += blkg_stat_recursive_sum(pd, off + dead_stats_off_delta);
+> +	return sum;
+> +}
+> +
+> +/* to be used by recursive prfill, sums live and dead rwstats recursively */
+> +static struct blkg_rwstat cfqg_rwstat_pd_recursive_sum(struct blkg_policy_data *pd,
+> +						       int off)
+> +{
+> +	struct blkg_rwstat a, b;
+> +
+> +	a = blkg_rwstat_recursive_sum(pd, off);
+> +	b = blkg_rwstat_recursive_sum(pd, off + dead_stats_off_delta);
+> +	blkg_rwstat_merge(&a, &b);
+> +	return a;
+> +}
+> +
+>  static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
+>  {
+>  	struct cfq_group *cfqg = blkg_to_cfqg(blkg);
+> @@ -1732,6 +1758,42 @@ static int cfqg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
+>  	return 0;
+>  }
+>  
+> +static u64 cfqg_prfill_stat_recursive(struct seq_file *sf,
+> +				      struct blkg_policy_data *pd, int off)
+> +{
+> +	u64 sum = cfqg_stat_pd_recursive_sum(pd, off);
+> +
+> +	return __blkg_prfill_u64(sf, pd, sum);
+> +}
+> +
+> +static u64 cfqg_prfill_rwstat_recursive(struct seq_file *sf,
+> +					struct blkg_policy_data *pd, int off)
+> +{
+> +	struct blkg_rwstat sum = cfqg_rwstat_pd_recursive_sum(pd, off);
+> +
+> +	return __blkg_prfill_rwstat(sf, pd, &sum);
+> +}
+> +
+> +static int cfqg_print_stat_recursive(struct cgroup *cgrp, struct cftype *cft,
+> +				     struct seq_file *sf)
+> +{
+> +	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
+> +
+> +	blkcg_print_blkgs(sf, blkcg, cfqg_prfill_stat_recursive,
+> +			  &blkcg_policy_cfq, cft->private, false);
+> +	return 0;
+> +}
+> +
+> +static int cfqg_print_rwstat_recursive(struct cgroup *cgrp, struct cftype *cft,
+> +				       struct seq_file *sf)
+> +{
+> +	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
+> +
+> +	blkcg_print_blkgs(sf, blkcg, cfqg_prfill_rwstat_recursive,
+> +			  &blkcg_policy_cfq, cft->private, true);
+> +	return 0;
+> +}
+> +
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>  static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
+>  				      struct blkg_policy_data *pd, int off)
+> @@ -1803,6 +1865,7 @@ static struct cftype cfq_blkcg_files[] = {
+>  		.write_u64 = cfq_set_leaf_weight,
+>  	},
+>  
+> +	/* statistics, covers only the tasks in the cfqg */
+>  	{
+>  		.name = "time",
+>  		.private = offsetof(struct cfq_group, stats.time),
+> @@ -1843,6 +1906,48 @@ static struct cftype cfq_blkcg_files[] = {
+>  		.private = offsetof(struct cfq_group, stats.queued),
+>  		.read_seq_string = cfqg_print_rwstat,
+>  	},
+> +
+> +	/* the same statictics which cover the cfqg and its descendants */
+> +	{
+> +		.name = "time_recursive",
+> +		.private = offsetof(struct cfq_group, stats.time),
+> +		.read_seq_string = cfqg_print_stat_recursive,
+> +	},
+> +	{
+> +		.name = "sectors_recursive",
+> +		.private = offsetof(struct cfq_group, stats.sectors),
+> +		.read_seq_string = cfqg_print_stat_recursive,
+> +	},
+> +	{
+> +		.name = "io_service_bytes_recursive",
+> +		.private = offsetof(struct cfq_group, stats.service_bytes),
+> +		.read_seq_string = cfqg_print_rwstat_recursive,
+> +	},
+> +	{
+> +		.name = "io_serviced_recursive",
+> +		.private = offsetof(struct cfq_group, stats.serviced),
+> +		.read_seq_string = cfqg_print_rwstat_recursive,
+> +	},
+> +	{
+> +		.name = "io_service_time_recursive",
+> +		.private = offsetof(struct cfq_group, stats.service_time),
+> +		.read_seq_string = cfqg_print_rwstat_recursive,
+> +	},
+> +	{
+> +		.name = "io_wait_time_recursive",
+> +		.private = offsetof(struct cfq_group, stats.wait_time),
+> +		.read_seq_string = cfqg_print_rwstat_recursive,
+> +	},
+> +	{
+> +		.name = "io_merged_recursive",
+> +		.private = offsetof(struct cfq_group, stats.merged),
+> +		.read_seq_string = cfqg_print_rwstat_recursive,
+> +	},
+> +	{
+> +		.name = "io_queued_recursive",
+> +		.private = offsetof(struct cfq_group, stats.queued),
+> +		.read_seq_string = cfqg_print_rwstat_recursive,
+> +	},
+>  #ifdef CONFIG_DEBUG_BLK_CGROUP
+>  	{
+>  		.name = "avg_queue_size",
+> -- 
+> 1.8.0.2
