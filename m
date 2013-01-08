@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab3AHCLp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:11:45 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:36129 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab3AHCJp (ORCPT
+	id S1753217Ab3AHCMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:12:16 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:61003 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755935Ab3AHCJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:45 -0500
+	Mon, 7 Jan 2013 21:09:41 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 27/33] profiling: Remove unused timer hook
-Date: Tue,  8 Jan 2013 03:08:27 +0100
-Message-Id: <1357610913-1080-28-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 25/33] nohz: Add some tracing
+Date: Tue,  8 Jan 2013 03:08:25 +0100
+Message-Id: <1357610913-1080-26-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,15 +33,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The last remaining user was oprofile and its use has been removed
-a while ago on commit bc078e4eab65f11bbaeed380593ab8151b30d703
-"oprofile: convert oprofile from timer_hook to hrtimer".
-
-There doesn't seem to be any upstream user of this hook
-for about two years now. And I'm not even aware of any out of tree
-user.
-
-Let's remove it.
+Not for merge, just for debugging.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -60,90 +52,73 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/profile.h |   13 -------------
- kernel/profile.c        |   24 ------------------------
- 2 files changed, 0 insertions(+), 37 deletions(-)
+ kernel/time/tick-sched.c |   27 ++++++++++++++++++++++-----
+ 1 files changed, 22 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/profile.h b/include/linux/profile.h
-index a0fc322..2112390 100644
---- a/include/linux/profile.h
-+++ b/include/linux/profile.h
-@@ -82,9 +82,6 @@ int task_handoff_unregister(struct notifier_block * n);
- int profile_event_register(enum profile_type, struct notifier_block * n);
- int profile_event_unregister(enum profile_type, struct notifier_block * n);
- 
--int register_timer_hook(int (*hook)(struct pt_regs *));
--void unregister_timer_hook(int (*hook)(struct pt_regs *));
--
- struct pt_regs;
- 
- #else
-@@ -135,16 +132,6 @@ static inline int profile_event_unregister(enum profile_type t, struct notifier_
- #define profile_handoff_task(a) (0)
- #define profile_munmap(a) do { } while (0)
- 
--static inline int register_timer_hook(int (*hook)(struct pt_regs *))
--{
--	return -ENOSYS;
--}
--
--static inline void unregister_timer_hook(int (*hook)(struct pt_regs *))
--{
--	return;
--}
--
- #endif /* CONFIG_PROFILING */
- 
- #endif /* _LINUX_PROFILE_H */
-diff --git a/kernel/profile.c b/kernel/profile.c
-index 1f39181..dc3384e 100644
---- a/kernel/profile.c
-+++ b/kernel/profile.c
-@@ -37,9 +37,6 @@ struct profile_hit {
- #define NR_PROFILE_HIT		(PAGE_SIZE/sizeof(struct profile_hit))
- #define NR_PROFILE_GRP		(NR_PROFILE_HIT/PROFILE_GRPSZ)
- 
--/* Oprofile timer tick hook */
--static int (*timer_hook)(struct pt_regs *) __read_mostly;
--
- static atomic_t *prof_buffer;
- static unsigned long prof_len, prof_shift;
- 
-@@ -208,25 +205,6 @@ int profile_event_unregister(enum profile_type type, struct notifier_block *n)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 5543a4d..1cd93a9 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -142,6 +142,7 @@ static void tick_sched_handle(struct tick_sched *ts, struct pt_regs *regs)
+ 			ts->idle_jiffies++;
+ 	}
+ #endif
++	trace_printk("tick\n");
+ 	update_process_times(user_mode(regs));
+ 	profile_tick(CPU_PROFILING);
  }
- EXPORT_SYMBOL_GPL(profile_event_unregister);
- 
--int register_timer_hook(int (*hook)(struct pt_regs *))
--{
--	if (timer_hook)
--		return -EBUSY;
--	timer_hook = hook;
--	return 0;
--}
--EXPORT_SYMBOL_GPL(register_timer_hook);
--
--void unregister_timer_hook(int (*hook)(struct pt_regs *))
--{
--	WARN_ON(hook != timer_hook);
--	timer_hook = NULL;
--	/* make sure all CPUs see the NULL hook */
--	synchronize_sched();  /* Allow ongoing interrupts to complete. */
--}
--EXPORT_SYMBOL_GPL(unregister_timer_hook);
--
--
- #ifdef CONFIG_SMP
- /*
-  * Each cpu has a pair of open-addressed hashtables for pending
-@@ -436,8 +414,6 @@ void profile_tick(int type)
+@@ -591,17 +592,30 @@ void tick_nohz_idle_enter(void)
+ #ifdef CONFIG_NO_HZ_FULL
+ static bool can_stop_full_tick(int cpu)
  {
- 	struct pt_regs *regs = get_irq_regs();
+-	if (!sched_can_stop_tick())
++	if (!sched_can_stop_tick()) {
++		trace_printk("Can't stop: sched\n");
+ 		return false;
++	}
  
--	if (type == CPU_PROFILING && timer_hook)
--		timer_hook(regs);
- 	if (!user_mode(regs) && prof_cpu_mask != NULL &&
- 	    cpumask_test_cpu(smp_processor_id(), prof_cpu_mask))
- 		profile_hit(type, (void *)profile_pc(regs));
+-	if (!rcu_is_nocb_cpu(cpu))
++	if (!rcu_is_nocb_cpu(cpu)) {
++		trace_printk("Can't stop: not RCU nocb\n");
+ 		return false;
++	}
+ 
+-	if (rcu_pending(cpu))
++	/*
++	 * Keep the tick if we are asked to report a quiescent state.
++	 * This must be further optimized (avoid checks for local callbacks,
++	 * ignore RCU in userspace, etc...
++	 */
++	if (rcu_pending(cpu)) {
++		trace_printk("Can't stop: RCU pending\n");
+ 		return false;
++	}
+ 
+-	if (posix_cpu_timers_running(current))
++	if (posix_cpu_timers_running(current)) {
++		trace_printk("Can't stop: posix CPU timers running\n");
+ 		return false;
++	}
+ 
+ 	return true;
+ }
+@@ -615,12 +629,15 @@ static void tick_nohz_full_stop_tick(struct tick_sched *ts)
+ 	if (!tick_nohz_full_cpu(cpu) || is_idle_task(current))
+ 		return;
+ 
+-	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE)
++	if (!ts->tick_stopped && ts->nohz_mode == NOHZ_MODE_INACTIVE) {
++		trace_printk("Can't stop: NOHZ_MODE_INACTIVE\n");
+ 		return;
++	}
+ 
+ 	if (!can_stop_full_tick(cpu))
+ 		return;
+ 
++	trace_printk("Stop tick\n");
+ 	tick_nohz_stop_sched_tick(ts, ktime_get(), cpu);
+ #endif
+ }
 -- 
 1.7.5.4
 
