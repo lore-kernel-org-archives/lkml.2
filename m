@@ -1,213 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006Ab3AHLGP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:06:15 -0500
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:57787 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754918Ab3AHLGO (ORCPT
+	id S1756129Ab3AHLGd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:06:33 -0500
+Received: from mail-we0-f174.google.com ([74.125.82.174]:49261 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918Ab3AHLGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:06:14 -0500
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Stephen Warren <swarren@nvidia.com>, Anmar Oueja <anmar.oueja@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH v2] pinctrl: nomadik: Add "ste,config" property etc
-Date: Tue, 8 Jan 2013 12:05:50 +0100
-Message-ID: <1357643150-20250-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.11.3
+	Tue, 8 Jan 2013 06:06:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1357642258-32421-1-git-send-email-inderpal.singh@linaro.org>
+References: <1357642258-32421-1-git-send-email-inderpal.singh@linaro.org>
+Date: Tue, 8 Jan 2013 16:30:45 +0530
+Message-ID: <CAG17yqSKUDtAWvUnMFgavvmZABekrD_MkXK4Myk57X82Xu6RfA@mail.gmail.com>
+Subject: Re: [PATCH] cpufreq: exynos: Show list of available frequencies
+From: Inderpal Singh <inderpal.singh@linaro.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: rjw@sisk.pl, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, cpufreq@vger.kernel.org,
+        kgene.kim@samsung.com, patches@linaro.org, dg77.kim@samsung.com,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, kyungmin.park@samsung.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
++CC:
+dg77.kim@samsung.com, myungjoo.ham@samsung.com, kyungmin.park@samsung.com
 
-The "ste,config" property will contain the pin config node.
-It will be easier to define a pin configuration and use it by
-reference without duplicating lines tedious.
-
-Other cleanups to the initial DT patch. This will all be
-squashed into the original DT submission.
-
-Signed-off-by: Gabriel Fernandez <gabriel.fernandez@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
-ChangeLog v1->v2:
-- Moved bias definition into the pin controller in the
-  documentation.
----
- .../devicetree/bindings/pinctrl/ste,nomadik.txt    | 47 ++++++++++++++--------
- drivers/pinctrl/pinctrl-nomadik.c                  | 40 ++++++++++++------
- 2 files changed, 58 insertions(+), 29 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-index 8639234..9a2f3f4 100644
---- a/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/ste,nomadik.txt
-@@ -26,11 +26,12 @@ Optional subnode-properties:
- - ste,function: A string containing the name of the function to mux to the
-   pin or group.
- 
--- ste,input : <0/1/2/3>
-+- ste,config: Handle of pin configuration node (e.g. ste,config = <&slpm_in_wkup_pdis>)
-+
-+- ste,input : <0/1/2>
- 	0: input with no pull
- 	1: input with pull up,
- 	2: input with pull down,
--	3: input and keep last input configuration (no pull, pull up or pull down).
- 
- - ste,output: <0/1/2>
- 	0: output low,
-@@ -41,10 +42,11 @@ Optional subnode-properties:
- 	0: sleep mode disable,
- 	1: sleep mode enable.
- 
--- ste,sleep-input: <0/1/2>
-+- ste,sleep-input: <0/1/2/3>
- 	0: sleep input with no pull,
- 	1: sleep input with pull up,
- 	2: sleep input with pull down.
-+	3: sleep input and keep last input configuration (no pull, pull up or pull down).
- 
- - ste,sleep-output: <0/1/2>
- 	0: sleep output low,
-@@ -70,14 +72,34 @@ Example board file extract:
- 		reg = <0x80157000 0x2000>;
- 
- 		pinctrl-names = "default";
--		pinctrl-0 = <&uart0_default_mode>;
-+
-+		slpm_in_wkup_pdis: slpm_in_wkup_pdis {
-+			ste,sleep = <1>;
-+			ste,sleep-input = <3>;
-+			ste,sleep-wakeup = <1>;
-+			ste,sleep-pull-disable = <0>;
-+		};
-+
-+		slpm_out_hi_wkup_pdis: slpm_out_hi_wkup_pdis {
-+			ste,sleep = <1>;
-+			ste,sleep-output = <1>;
-+			ste,sleep-wakeup = <1>;
-+			ste,sleep-pull-disable = <0>;
-+		};
-+
-+		slpm_out_wkup_pdis: slpm_out_wkup_pdis {
-+			ste,sleep = <1>;
-+			ste,sleep-output = <2>;
-+			ste,sleep-wakeup = <1>;
-+			ste,sleep-pull-disable = <0>;
-+		};
- 
- 		uart0 {
- 			uart0_default_mux: uart0_mux {
- 				u0_default_mux {
- 					ste,function = "u0";
- 					ste,pins = "u0_a_1";
--					};
-+				};
- 			};
- 			uart0_default_mode: uart0_default {
- 				uart0_default_cfg1 {
-@@ -93,24 +115,15 @@ Example board file extract:
- 			uart0_sleep_mode: uart0_sleep {
- 				uart0_sleep_cfg1 {
- 					ste,pins = "GPIO0", "GPIO2";
--					ste,sleep = <0>;
--					ste,sleep-input = <0>;
--					ste,sleep-wakeup = <1>;
--					ste,sleep-pull-disable = <0>;
-+					ste,config = <&slpm_in_wkup_pdis>;
- 				};
- 				uart0_sleep_cfg2 {
- 					ste,pins = "GPIO1";
--					ste,sleep = <0>;
--					ste,sleep-output = <1>;
--					ste,sleep-wakeup = <1>;
--					ste,sleep-pull-disable = <0>;
-+					ste,config = <&slpm_out_hi_wkup_pdis>;
- 				};
- 				uart0_sleep_cfg3 {
- 					ste,pins = "GPIO3";
--					ste,sleep = <0>;
--					ste,sleep-output = <2>;
--					ste,sleep-wakeup = <1>;
--					ste,sleep-pull-disable = <0>;
-+					ste,config = <&slpm_out_wkup_pdis>;
- 				};
- 			};
- 		};
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index 451c1ab..314bcbe 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -1659,36 +1659,52 @@ static const char *nmk_find_pin_name(struct pinctrl_dev *pctldev, const char *pi
- 	return NULL;
- }
- 
-+static bool nmk_pinctrl_dt_get_config(struct device_node *np,
-+		unsigned long *configs)
-+{
-+	bool has_config = 0;
-+	unsigned long cfg = 0;
-+	int i, val, ret;
-+
-+	for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
-+		ret = of_property_read_u32(np,
-+				nmk_cfg_params[i].property, &val);
-+		if (ret != -EINVAL) {
-+			if (nmk_dt_pin_config(i, val, &cfg) == 0) {
-+				*configs |= cfg;
-+				has_config = 1;
-+			}
-+		}
-+	}
-+
-+	return has_config;
-+}
-+
- int nmk_pinctrl_dt_subnode_to_map(struct pinctrl_dev *pctldev,
- 		struct device_node *np,
- 		struct pinctrl_map **map,
- 		unsigned *reserved_maps,
- 		unsigned *num_maps)
- {
--	int ret, i;
-+	int ret;
- 	const char *function = NULL;
- 	unsigned long configs = 0;
- 	bool has_config = 0;
- 	unsigned reserve = 0;
- 	struct property *prop;
- 	const char *group, *gpio_name;
-+	struct device_node *np_config;
- 
- 	ret = of_property_read_string(np, "ste,function", &function);
- 	if (ret >= 0)
- 		reserve = 1;
- 
--	for (i = 0; i < ARRAY_SIZE(nmk_cfg_params); i++) {
--		unsigned long cfg = 0;
--		int val;
-+	has_config = nmk_pinctrl_dt_get_config(np, &configs);
-+
-+	np_config = of_parse_phandle(np, "ste,config", 0);
-+	if (np_config)
-+		has_config |= nmk_pinctrl_dt_get_config(np_config, &configs);
- 
--		ret = of_property_read_u32(np, nmk_cfg_params[i].property, &val);
--		if (ret != -EINVAL) {
--			if (nmk_dt_pin_config(i, val, &cfg) == 0) {
--				configs |= cfg;
--				has_config = 1;
--			}
--		}
--	}
- 	ret = of_property_count_strings(np, "ste,pins");
- 	if (ret < 0)
- 		goto exit;
--- 
-1.7.11.3
-
+On 8 January 2013 16:20, Inderpal Singh <inderpal.singh@linaro.org> wrote:
+> Add freq_attr attribute to show list of available frequencies.
+>
+> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Inderpal Singh <inderpal.singh@linaro.org>
+> ---
+>  drivers/cpufreq/exynos-cpufreq.c |   13 +++++++++++++
+>  1 file changed, 13 insertions(+)
+>
+> diff --git a/drivers/cpufreq/exynos-cpufreq.c b/drivers/cpufreq/exynos-cpufreq.c
+> index 7012ea8..bc1e833 100644
+> --- a/drivers/cpufreq/exynos-cpufreq.c
+> +++ b/drivers/cpufreq/exynos-cpufreq.c
+> @@ -244,13 +244,26 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
+>         return cpufreq_frequency_table_cpuinfo(policy, exynos_info->freq_table);
+>  }
+>
+> +static int exynos_cpufreq_cpu_exit(struct cpufreq_policy *policy)
+> +{
+> +       cpufreq_frequency_table_put_attr(policy->cpu);
+> +       return 0;
+> +}
+> +
+> +static struct freq_attr *exynos_cpufreq_attr[] = {
+> +       &cpufreq_freq_attr_scaling_available_freqs,
+> +       NULL,
+> +};
+> +
+>  static struct cpufreq_driver exynos_driver = {
+>         .flags          = CPUFREQ_STICKY,
+>         .verify         = exynos_verify_speed,
+>         .target         = exynos_target,
+>         .get            = exynos_getspeed,
+>         .init           = exynos_cpufreq_cpu_init,
+> +       .exit           = exynos_cpufreq_cpu_exit,
+>         .name           = "exynos_cpufreq",
+> +       .attr           = exynos_cpufreq_attr,
+>  #ifdef CONFIG_PM
+>         .suspend        = exynos_cpufreq_suspend,
+>         .resume         = exynos_cpufreq_resume,
+> --
+> 1.7.9.5
+>
