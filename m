@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756988Ab3AHTQH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 14:16:07 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:13193 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab3AHTQF (ORCPT
+	id S1757009Ab3AHTSH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 14:18:07 -0500
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:48704 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756871Ab3AHTSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 14:16:05 -0500
-Date: Tue, 8 Jan 2013 20:16:01 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jonathan Kliegman <kliegs@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] modpost: Add flag -f for making section mismatches
-	fatal
-Message-ID: <20130108191600.GA12563@merkur.ravnborg.org>
-References: <1356029364-11346-1-git-send-email-kliegs@chromium.org> <20130106093649.GA17429@merkur.ravnborg.org> <CAPQV+nP1UJP4R8AmoUf4bt873Yz_D0ZR2msaCRx5eAc49QFodA@mail.gmail.com>
+	Tue, 8 Jan 2013 14:18:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPQV+nP1UJP4R8AmoUf4bt873Yz_D0ZR2msaCRx5eAc49QFodA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20130108190657.GW5075@titan.lakedaemon.net>
+References: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
+	<20130108190657.GW5075@titan.lakedaemon.net>
+Date: Tue, 8 Jan 2013 14:18:04 -0500
+Message-ID: <CAMW5UfY2vKEJ7K8tLJ1+JeKsr_hxtUTva9HGJxLan6k+KGdmvg@mail.gmail.com>
+Subject: Re: [PATCH] Allow Marvell SATA driver to work with LEDS_TRIGGER_IDE_DISK
+From: Josh Coombs <josh.coombs@gmail.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: cooloney@gmail.com, rpurdie@rpsys.net, linux-leds@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jgarzik@pobox.com,
+        linux-ide@vger.kernel.org,
+        linux ARM <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 06, 2013 at 03:22:39PM -0500, Jonathan Kliegman wrote:
-> On Sun, Jan 6, 2013 at 4:36 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> > Hi Jonathan.
-> >
-> >> The section mismatch warning can be easy to miss during the kernel build
-> >> process.  Allow it to be marked as fatal to be easily caught and prevent
-> >> bugs from slipping in.
-> >>
-> >> Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
-> >
-> > Another way to make them much more visible would be to make
-> > the warnings always be verbose.
-> 
-> I'd like to keep the option for a hard fail if a mismatch is detected.
->  This way automated build systems will detect the failed build and can
-> reject a chan
-> 
-> > In other words drop support for the "-S" options used below:
-> >>   $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)
-> >
-> > Previously the dev* stuff caused a lot of warnings, but
-> > since we have HOTPLUG always enabled this is a non-issue.
-> > So I think that this is a good time to enable the verboce
-> > warnings.
-> I can submit a second patch for this if you'd like, but I'm not
-> familiar with all the previous decisions in this area.  If I
-> understand correctly we'll still need the config option as it also
-> changes compiler flags for inlining.
+I only have access to Marvell's SATA controller for testing, so that
+is why I only targeted it.  The Kconfig depends change makes perfect
+sense.
 
-Correct.
-We need one config option that allows us to debug section mismatchs.
-This options adds another gcc option as you also points out.
-And this is the one that already exist.
+Changing the name of the trigger might cause hardship for those
+already using it, as they will have to update scripts/etc to account
+for the name change.  Would it make more sense to add a second trigger
+for SATA instead?
 
-And then you suggest to add another options which makes section
-mismatch warnings fatal.
-This sounds like a good idea but reverse the logic.
-Something like:
+Josh C
 
-   CONFIG_SECTION_MISMATCH_WARN
-	bool "Section mismatch warnings produced by modpost are non-fatal"
-	default y
-	help
-	  bla bla
-
-Because then you do not cause section mismatch to be fatal for allyesconfig and
-allmodconfig builds. We really do not want to go there yet (I think).
-I must admit I do not know how many section mismatch warnigns that are lingering
-for the different architectures.
-If the number is sufficiently low then we could consider go for fatal as default.
-
-
-And it would be good to have first patch that makes section mismatch warnings verbose,
-independent on any config options.
-
-This patch would have to do something like:
-- Makes it possible to set CONFIG_DEBUG_SECTION_MISMATCH using menuconfig (I recall there are
-  a dependency that avoids this today)
-- Drop support for the -S options and drop the bits that set it
-- Drop the reference to CONFIG_DEBUG_SECTION_MISMATCH in modpost error message
-
-I would be happy if you could do this and test it.
-
-	Sam
+On Tue, Jan 8, 2013 at 2:06 PM, Jason Cooper <jason@lakedaemon.net> wrote:
+> On Tue, Jan 08, 2013 at 01:16:27PM -0500, Joshua Coombs wrote:
+>> Add a call to the IDE LED Trigger within the Marvell SATA driver to allow
+>> Marvell SoC devices to show SATA activity via GPIO connected LEDs.
+>>
+>> Signed-off-by: Joshua Coombs <josh.coombs@gmail.com>
+>> ---
+>>  drivers/ata/sata_mv.c | 3 +++
+>>  drivers/leds/Kconfig  | 3 +--
+>>  2 files changed, 4 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/ata/sata_mv.c b/drivers/ata/sata_mv.c
+>> index 68f4fb5..4aaf6f0 100644
+>> --- a/drivers/ata/sata_mv.c
+>> +++ b/drivers/ata/sata_mv.c
+>> @@ -71,6 +71,7 @@
+>>  #include <scsi/scsi_cmnd.h>
+>>  #include <scsi/scsi_device.h>
+>>  #include <linux/libata.h>
+>> +#include <linux/leds.h>
+>>
+>>  #define DRV_NAME     "sata_mv"
+>>  #define DRV_VERSION  "1.28"
+>> @@ -1156,6 +1157,8 @@ static void mv_start_edma(struct ata_port *ap, void __iomem *port_mmio,
+>>  {
+>>       int want_ncq = (protocol == ATA_PROT_NCQ);
+>>
+>> +     ledtrig_ide_activity();
+>> +
+>>       if (pp->pp_flags & MV_PP_FLAG_EDMA_EN) {
+>>               int using_ncq = ((pp->pp_flags & MV_PP_FLAG_NCQ_EN) != 0);
+>>               if (want_ncq != using_ncq)
+>> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+>> index b58bc8a..d2071d0 100644
+>> --- a/drivers/leds/Kconfig
+>> +++ b/drivers/leds/Kconfig
+>> @@ -496,10 +496,9 @@ config LEDS_TRIGGER_ONESHOT
+>>
+>>  config LEDS_TRIGGER_IDE_DISK
+>>       bool "LED IDE Disk Trigger"
+>> -     depends on IDE_GD_ATA
+>>       depends on LEDS_TRIGGERS
+>>       help
+>> -       This allows LEDs to be controlled by IDE disk activity.
+>> +       This allows LEDs to be controlled by IDE or SATA disk activity.
+>>         If unsure, say Y.
+>>
+>>  config LEDS_TRIGGER_HEARTBEAT
+>
+>
+> Hmmm, I'm not sure about this.  Ideally, wouldn't all sata users want to
+> have this option?  In which case, it should be changed to
+> LEDS_TRIGGER_DISK_IO or similar.  However, this seems to be the first
+> attempt at it:
+>
+> $ git grep ledtrig_ide_activity -- drivers/ata/*.c
+> ...nada...
+> $
+>
+> At any rate, I'd like to see this patch extended to facilitate other
+> sata drivers using it.  eg adjusting the naming more appropriately, and
+> 'depends on IDE_GD_ATA || ATA' or similar.  In it's current state, it
+> should depend on IDE_GD_ATA || SATA_MV.
+>
+> thx,
+>
+> Jason.
