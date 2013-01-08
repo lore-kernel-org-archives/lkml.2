@@ -1,46 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab3AHIyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 03:54:24 -0500
-Received: from mga11.intel.com ([192.55.52.93]:32226 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017Ab3AHIyX convert rfc822-to-8bit (ORCPT
+	id S1755273Ab3AHI6a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 03:58:30 -0500
+Received: from mail.free-electrons.com ([94.23.32.191]:42859 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755017Ab3AHI63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 03:54:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,430,1355126400"; 
-   d="scan'208";a="274159409"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Sedat Dilek <sedat.dilek@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: RE: [PATCH -next] mei: Fix typo "@hader" in mei_write_message()
-Thread-Topic: [PATCH -next] mei: Fix typo "@hader" in mei_write_message()
-Thread-Index: AQHN7Xz0QS0brCW3DkOFWqYelVi5w5g/IDNQ
-Date: Tue, 8 Jan 2013 08:54:18 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B01EADBDA@HASMSX106.ger.corp.intel.com>
-References: <1357634896-9944-1-git-send-email-sedat.dilek@gmail.com>
-In-Reply-To: <1357634896-9944-1-git-send-email-sedat.dilek@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.10]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Jan 2013 03:58:29 -0500
+Message-ID: <50EBDFAD.2090903@free-electrons.com>
+Date: Tue, 08 Jan 2013 09:58:21 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
+        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2 1/3] gpio: pca953x: make the register access by GPIO
+ bank
+References: <1357599097-19053-1-git-send-email-gregory.clement@free-electrons.com> <1357599097-19053-2-git-send-email-gregory.clement@free-electrons.com> <50EBD9B6.3090601@free-electrons.com>
+In-Reply-To: <50EBD9B6.3090601@free-electrons.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This was introduced by:
-> 
-> commit 438763f37eb9664b6372bdfee990f8c33acdc63c
-> "mei: drop redundant length parameter from mei_write_message function"
-> 
-> First seen in linux-next (next-20120108).
-> 
-> Signed-off-by: Sedat Dilek <sedat.dilek@gmail.com>
-Thanks. Acked.
-Tomas
+On 01/08/2013 09:32 AM, Maxime Ripard wrote:
+> Hi Gregory,
 
+Hi Maxime,
+
+thanks for testing
+> 
+> On 07/01/2013 23:51, Gregory CLEMENT wrote:
+>> -static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
+>> +static int pca953x_read_single(struct pca953x_chip *chip, int reg, u32 *val,
+>> +				int off)
+>> +{
+>> +	int ret;
+>> +	int bank_shift = fls((chip->gpio_chip.ngpio - 1) / BANK_SZ);
+>> +	int offset = off / BANK_SZ;
+>> +
+>> +	ret = i2c_smbus_read_byte_data(chip->client,
+>> +				(reg << bank_shift) + offset);
+>> +	*val = ret;
+>> +
+>> +	if (ret < 0) {
+>> +		dev_err(&chip->client->dev, "failed reading register\n", reg);
+> 
+> This triggers a warning, since you have an argument but nothing corresponding to it in your format string.
+
+OK this one is easy, I didn't finished to clean up the message.
+
+> 
+>>  static irqreturn_t pca953x_irq_handler(int irq, void *devid)
+>>  {
+>>  	struct pca953x_chip *chip = devid;
+>> -	u32 pending;
+>> -	u32 level;
+>> +	u8 pending[MAX_BANK];
+>> +	u8 level;
+>> +	int i;
+>>  
+>> -	pending = pca953x_irq_pending(chip);
+>> -
+>> -	if (!pending)
+>> +	if (!pca953x_irq_pending(chip, pending))
+>>  		return IRQ_HANDLED;
+>>  
+>> -	do {
+>> -		level = __ffs(pending);
+>> -		handle_nested_irq(irq_find_mapping(chip->domain, level));
+>> -
+>> -		pending &= ~(1 << level);
+>> -	} while (pending);
+>> +	for (i = 0; i < NBANK(chip); i++) {
+>> +		do {
+>> +			level = __ffs(pending[i]);
+>> +			handle_nested_irq(irq_find_mapping(chip->domain,
+>> +							level + (BANK_SZ * i)));
+>> +			pending[i] &= ~(1 << level);
+>> +		} while (pending[i]);
+>> +	}
+>>  
+>>  	return IRQ_HANDLED;
+>>  }
+> 
+> This triggers the following warning when an interrupt is raised:
+> 
+> [   30.773500] ------------[ cut here ]------------
+> [   30.778843] WARNING: at /home/tmp/linux/kernel/irq/irqdomain.c:137 irq_domain_legacy_revmap+0x2c/0x48()
+> [   30.788375] Modules linked in:
+> [   30.791531] [<c0014100>] (unwind_backtrace+0x0/0xf0) from [<c001c878>] (warn_slowpath_common+0x4c/0x64)
+> [   30.801125] [<c001c878>] (warn_slowpath_common+0x4c/0x64) from [<c001c8ac>] (warn_slowpath_null+0x1c/0x24)
+> [   30.810968] [<c001c8ac>] (warn_slowpath_null+0x1c/0x24) from [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48)
+> [   30.821187] [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48) from [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac)
+> [   30.831656] [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac) from [<c0068688>] (irq_thread+0xd0/0x124)
+> [   30.841000] [<c0068688>] (irq_thread+0xd0/0x124) from [<c003c238>] (kthread+0xa4/0xb0)
+> [   30.849125] [<c003c238>] (kthread+0xa4/0xb0) from [<c000ed48>] (ret_from_fork+0x14/0x2c)
+> [   30.857375] ---[ end trace 09584b7a73100a49 ]---
+> 
+
+Humm it seems that this warning is caused by attempting to use an out of range hwirq.
+I need to investigate it more in details.
+
+Expect the IRQ part, is this version is working for your gpio expander?
+
+> Maxime
+> 
+
+
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
