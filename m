@@ -1,240 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755068Ab3AHXX1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:23:27 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:38978 "EHLO dcvr.yhbt.net"
+	id S1755729Ab3AHXYK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:24:10 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:35198 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab3AHXX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:23:26 -0500
-Date: Tue, 8 Jan 2013 23:23:25 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130108232325.GA5948@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130104160148.GB3885@suse.de>
- <20130106120700.GA24671@dcvr.yhbt.net>
- <20130107122516.GC3885@suse.de>
- <20130107223850.GA21311@dcvr.yhbt.net>
- <20130108224313.GA13304@suse.de>
+	id S1753568Ab3AHXYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:24:08 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Jiang Liu <liuj97@gmail.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v3 2/6] PCI: split registration of PCI bus devices into two stages
+Date: Wed, 09 Jan 2013 00:29:50 +0100
+Message-ID: <31602902.kR8ehd6tSR@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1357663945-16054-3-git-send-email-jiang.liu@huawei.com>
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <1357663945-16054-3-git-send-email-jiang.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130108224313.GA13304@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mel Gorman <mgorman@suse.de> wrote:
-> Please try the following patch. However, even if it works the benefit of
-> capture may be so marginal that partially reverting it and simplifying
-> compaction.c is the better decision.
+On Wednesday, January 09, 2013 12:52:21 AM Jiang Liu wrote:
+> When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
+> the notification handler can't hold reference count to the new PCI bus
+> because the device object for the new bus (pci_dev->subordinate->dev)
+> hasn't been initialized yet.
+> 
+> Split the registration of PCI bus device into two stages as below,
+> so that the event handler could hold reference count to the new PCI bus
+> when handling BUS_NOTIFY_ADD_DEVICE event.
+> 
+> 1) device_initialize(&pci_dev->dev)
+> 2) device_initialize(&pci_dev->subordinate->dev)
+> 3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
+> 4) device_add(&pci_dev->dev)
+> 5) device_add(&pci_dev->subordinate->dev)
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  drivers/pci/bus.c    |    2 +-
+>  drivers/pci/probe.c  |    4 +++-
+>  drivers/pci/remove.c |   10 +++++-----
+>  3 files changed, 9 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+> index ad6a8b6..2fea481 100644
+> --- a/drivers/pci/bus.c
+> +++ b/drivers/pci/bus.c
+> @@ -198,7 +198,7 @@ int pci_bus_add_child(struct pci_bus *bus)
+>  	if (bus->bridge)
+>  		bus->dev.parent = bus->bridge;
+>  
+> -	retval = device_register(&bus->dev);
+> +	retval = device_add(&bus->dev);
+>  	if (retval)
+>  		return retval;
+>  
+> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
+> index e557d6f..a8315c2 100644
+> --- a/drivers/pci/probe.c
+> +++ b/drivers/pci/probe.c
+> @@ -642,6 +642,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
+>  	 */
+>  	child->dev.class = &pcibus_class;
+>  	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
+> +	device_initialize(&child->dev);
+>  
+>  	/*
+>  	 * Set up the primary, secondary and subordinate
+> @@ -1678,7 +1679,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
+>  	b->dev.class = &pcibus_class;
+>  	b->dev.parent = b->bridge;
+>  	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
+> -	error = device_register(&b->dev);
+> +	device_initialize(&b->dev);
+> +	error = device_add(&b->dev);
 
-I already got my VM stuck on this one.  I had two twosleepy instances,
-2774 was the one that got stuck (also confirmed by watching top).
+Well, the change here isn't really necessary, as far as I can say.
 
-Btw, have you been able to reproduce this on your end?
+>  	if (error)
+>  		goto class_dev_reg_err;
+>  
+> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
+> index fc38c48..a1fdd0f 100644
+> --- a/drivers/pci/remove.c
+> +++ b/drivers/pci/remove.c
+> @@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
+>  	list_del(&bus->node);
+>  	pci_bus_release_busn_res(bus);
+>  	up_write(&pci_bus_sem);
+> -	if (!bus->is_added)
+> -		return;
+> -
+> -	pci_remove_legacy_files(bus);
+> -	device_unregister(&bus->dev);
+> +	if (bus->is_added) {
+> +		pci_remove_legacy_files(bus);
+> +		device_del(&bus->dev);
+> +	}
+> +	put_device(&bus->dev);
+>  }
+>  EXPORT_SYMBOL(pci_remove_bus);
+>  
+> 
 
-I think the easiest reproduction on my 2-core VM is by running 2
-twosleepy processes and doing the following to dirty a lot of pages:
+Apart from the above
 
-  while time find $LARGISH_NFS_MOUNT -type f -print0 | \
-    xargs -0 -n1 -P4 sh -c 'cat "$1" >> /tmp/z; > /tmp/z' --; do date; done
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-I've updated git://bogomips.org/toosleepy.git to automate the reporting
-for me.
 
-===> /proc/vmstat <===
-nr_free_pages 2035
-nr_inactive_anon 4044
-nr_active_anon 3913
-nr_inactive_file 98877
-nr_active_file 4373
-nr_unevictable 0
-nr_mlock 0
-nr_anon_pages 7839
-nr_mapped 2350
-nr_file_pages 103382
-nr_dirty 512
-nr_writeback 0
-nr_slab_reclaimable 1578
-nr_slab_unreclaimable 5642
-nr_page_table_pages 800
-nr_kernel_stack 170
-nr_unstable 0
-nr_bounce 0
-nr_vmscan_write 0
-nr_vmscan_immediate_reclaim 0
-nr_writeback_temp 0
-nr_isolated_anon 0
-nr_isolated_file 0
-nr_shmem 115
-nr_dirtied 889731
-nr_written 25225
-nr_anon_transparent_hugepages 0
-nr_free_cma 0
-nr_dirty_threshold 22336
-nr_dirty_background_threshold 11168
-pgpgin 45284
-pgpgout 101948
-pswpin 0
-pswpout 0
-pgalloc_dma 299007
-pgalloc_dma32 24235925
-pgalloc_normal 0
-pgalloc_movable 0
-pgfree 24539843
-pgactivate 5440
-pgdeactivate 4476
-pgfault 1072378
-pgmajfault 338
-pgrefill_dma 508
-pgrefill_dma32 3968
-pgrefill_normal 0
-pgrefill_movable 0
-pgsteal_kswapd_dma 22463
-pgsteal_kswapd_dma32 553340
-pgsteal_kswapd_normal 0
-pgsteal_kswapd_movable 0
-pgsteal_direct_dma 3956
-pgsteal_direct_dma32 220354
-pgsteal_direct_normal 0
-pgsteal_direct_movable 0
-pgscan_kswapd_dma 22463
-pgscan_kswapd_dma32 554313
-pgscan_kswapd_normal 0
-pgscan_kswapd_movable 0
-pgscan_direct_dma 3956
-pgscan_direct_dma32 220397
-pgscan_direct_normal 0
-pgscan_direct_movable 0
-pgscan_direct_throttle 0
-pginodesteal 0
-slabs_scanned 4096
-kswapd_inodesteal 0
-kswapd_low_wmark_hit_quickly 1726
-kswapd_high_wmark_hit_quickly 21
-kswapd_skip_congestion_wait 0
-pageoutrun 9065
-allocstall 4004
-pgrotated 0
-pgmigrate_success 1242
-pgmigrate_fail 0
-compact_migrate_scanned 141232
-compact_free_scanned 181666
-compact_isolated 52638
-compact_stall 2024
-compact_fail 1450
-compact_success 574
-unevictable_pgs_culled 1063
-unevictable_pgs_scanned 0
-unevictable_pgs_rescued 1653
-unevictable_pgs_mlocked 1653
-unevictable_pgs_munlocked 1652
-unevictable_pgs_cleared 1
-unevictable_pgs_stranded 0
-thp_fault_alloc 0
-thp_fault_fallback 0
-thp_collapse_alloc 0
-thp_collapse_alloc_failed 0
-thp_split 0
-thp_zero_page_alloc 0
-thp_zero_page_alloc_failed 0
-===> 2724[2724]/stack <===
-[<ffffffff81077300>] futex_wait_queue_me+0xc0/0xf0
-[<ffffffff81077a9d>] futex_wait+0x17d/0x280
-[<ffffffff8107988c>] do_futex+0x11c/0xae0
-[<ffffffff8107a2d8>] sys_futex+0x88/0x180
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2724[2725]/stack <===
-[<ffffffff810f5944>] poll_schedule_timeout+0x44/0x60
-[<ffffffff810f6d94>] do_sys_poll+0x374/0x4b0
-[<ffffffff810f71ce>] sys_ppoll+0x19e/0x1b0
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2724[2726]/stack <===
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2724[2727]/stack <===
-[<ffffffff81310098>] sk_stream_wait_memory+0x1b8/0x250
-[<ffffffff8134bea7>] tcp_sendmsg+0x697/0xd80
-[<ffffffff81370d0e>] inet_sendmsg+0x5e/0xa0
-[<ffffffff81300ab7>] sock_sendmsg+0x87/0xa0
-[<ffffffff81303a99>] sys_sendto+0x119/0x160
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2724[2728]/stack <===
-[<ffffffff8105d02c>] hrtimer_nanosleep+0x9c/0x150
-[<ffffffff8105d13e>] sys_nanosleep+0x5e/0x80
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2774[2774]/stack <===
-[<ffffffff81077300>] futex_wait_queue_me+0xc0/0xf0
-[<ffffffff81077a9d>] futex_wait+0x17d/0x280
-[<ffffffff8107988c>] do_futex+0x11c/0xae0
-[<ffffffff8107a2d8>] sys_futex+0x88/0x180
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2774[2775]/stack <===
-[<ffffffff810f5944>] poll_schedule_timeout+0x44/0x60
-[<ffffffff810f6d94>] do_sys_poll+0x374/0x4b0
-[<ffffffff810f71ce>] sys_ppoll+0x19e/0x1b0
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2774[2776]/stack <===
-[<ffffffff81310098>] sk_stream_wait_memory+0x1b8/0x250
-[<ffffffff8134bea7>] tcp_sendmsg+0x697/0xd80
-[<ffffffff81370d0e>] inet_sendmsg+0x5e/0xa0
-[<ffffffff81300ab7>] sock_sendmsg+0x87/0xa0
-[<ffffffff81303a99>] sys_sendto+0x119/0x160
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2774[2777]/stack <===
-[<ffffffff81310098>] sk_stream_wait_memory+0x1b8/0x250
-[<ffffffff8134bea7>] tcp_sendmsg+0x697/0xd80
-[<ffffffff81370d0e>] inet_sendmsg+0x5e/0xa0
-[<ffffffff81300ab7>] sock_sendmsg+0x87/0xa0
-[<ffffffff81303a99>] sys_sendto+0x119/0x160
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-===> 2774[2778]/stack <===
-[<ffffffff810400b8>] do_wait+0x1f8/0x220
-[<ffffffff81040ea0>] sys_wait4+0x70/0xf0
-[<ffffffff813b0729>] system_call_fastpath+0x16/0x1b
-[<ffffffffffffffff>] 0xffffffffffffffff
-SysRq : Show Memory
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 108
-CPU    1: hi:  186, btch:  31 usd: 162
-active_anon:3990 inactive_anon:4042 isolated_anon:0
- active_file:4362 inactive_file:98536 isolated_file:0
- unevictable:0 dirty:513 writeback:0 unstable:0
- free:1896 slab_reclaimable:1530 slab_unreclaimable:5661
- mapped:2342 shmem:115 pagetables:784 bounce:0
- free_cma:0
-DMA free:2080kB min:84kB low:104kB high:124kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:12168kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15644kB managed:15900kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:16kB slab_unreclaimable:192kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 488 488 488
-DMA32 free:5568kB min:2784kB low:3480kB high:4176kB active_anon:15960kB inactive_anon:16168kB active_file:17448kB inactive_file:381976kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:499960kB managed:491256kB mlocked:0kB dirty:2052kB writeback:0kB mapped:9368kB shmem:460kB slab_reclaimable:6104kB slab_unreclaimable:22452kB kernel_stack:1416kB pagetables:3136kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 6*4kB (UR) 5*8kB (UR) 2*16kB (U) 0*32kB 11*64kB (R) 2*128kB (R) 0*256kB 0*512kB 1*1024kB (R) 0*2048kB 0*4096kB = 2080kB
-DMA32: 280*4kB (UEM) 66*8kB (UEM) 99*16kB (U) 40*32kB (UM) 16*64kB (M) 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 5536kB
-103002 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 392188kB
-Total swap = 392188kB
-131054 pages RAM
-3820 pages reserved
-411919 pages shared
-116133 pages non-shared
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
