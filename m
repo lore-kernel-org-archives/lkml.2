@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab3AHXif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:38:35 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63698 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756897Ab3AHXib (ORCPT
+	id S1757024Ab3AHXiz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:38:55 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53703 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756983Ab3AHXix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:38:31 -0500
+	Tue, 8 Jan 2013 18:38:53 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Eryu Guan <guaneryu@gmail.com>, Jan Kara <jack@suse.cz>,
-        "Theodore Ts'o" <tytso@mit.edu>,
+CC: Hannes Reinecke <hare@suse.de>, James Bottomley <JBottomley@Parallels.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 52/77] jbd/jbd2: validate sb->s_first in journal_get_superblock()
-Date: Tue, 8 Jan 2013 18:35:31 -0500
-Message-ID: <1357688156-25387-53-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 37/77] Silencing 'killing requests for dead queue'
+Date: Tue, 8 Jan 2013 18:35:16 -0500
+Message-ID: <1357688156-25387-38-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eryu Guan <guaneryu@gmail.com>
+From: Hannes Reinecke <hare@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,96 +31,44 @@ From: Eryu Guan <guaneryu@gmail.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8762202dd0d6e46854f786bdb6fb3780a1625efe upstream.
+commit 745718132c3c7cac98a622b610e239dcd5217f71 upstream.
 
-I hit a J_ASSERT(blocknr != 0) failure in cleanup_journal_tail() when
-mounting a fsfuzzed ext3 image. It turns out that the corrupted ext3
-image has s_first = 0 in journal superblock, and the 0 is passed to
-journal->j_head in journal_reset(), then to blocknr in
-cleanup_journal_tail(), in the end the J_ASSERT failed.
+When we tear down a device we try to flush all outstanding
+commands in scsi_free_queue(). However the check in
+scsi_request_fn() is imperfect as it only signals that
+we _might start_ aborting commands, not that we've actually
+aborted some.
+So move the printk inside the scsi_kill_request function,
+this will also give us a hint about which commands are aborted.
 
-So validate s_first after reading journal superblock from disk in
-journal_get_superblock() to ensure s_first is valid.
-
-The following script could reproduce it:
-
-fstype=ext3
-blocksize=1024
-img=$fstype.img
-offset=0
-found=0
-magic="c0 3b 39 98"
-
-dd if=/dev/zero of=$img bs=1M count=8
-mkfs -t $fstype -b $blocksize -F $img
-filesize=`stat -c %s $img`
-while [ $offset -lt $filesize ]
-do
-        if od -j $offset -N 4 -t x1 $img | grep -i "$magic";then
-                echo "Found journal: $offset"
-                found=1
-                break
-        fi
-        offset=`echo "$offset+$blocksize" | bc`
-done
-
-if [ $found -ne 1 ];then
-        echo "Magic \"$magic\" not found"
-        exit 1
-fi
-
-dd if=/dev/zero of=$img seek=$(($offset+23)) conv=notrunc bs=1 count=1
-
-mkdir -p ./mnt
-mount -o loop $img ./mnt
-
-Cc: Jan Kara <jack@suse.cz>
-Signed-off-by: Eryu Guan <guaneryu@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/jbd/journal.c  | 8 ++++++++
- fs/jbd2/journal.c | 8 ++++++++
- 2 files changed, 16 insertions(+)
+ drivers/scsi/scsi_lib.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 45905ff..70713d5 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -1070,6 +1070,14 @@ static int journal_get_superblock(journal_t *journal)
- 		goto out;
+diff --git a/drivers/scsi/scsi_lib.c b/drivers/scsi/scsi_lib.c
+index 9f240f4..ca8666b 100644
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1383,6 +1383,8 @@ static void scsi_kill_request(struct request *req, struct request_queue *q)
+ 		BUG();
  	}
  
-+	if (be32_to_cpu(sb->s_first) == 0 ||
-+	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-+		printk(KERN_WARNING
-+			"JBD: Invalid start block of journal: %u\n",
-+			be32_to_cpu(sb->s_first));
-+		goto out;
-+	}
++	scmd_printk(KERN_INFO, cmd, "killing request\n");
 +
- 	return 0;
+ 	sdev = cmd->device;
+ 	starget = scsi_target(sdev);
+ 	shost = sdev->host;
+@@ -1469,7 +1471,6 @@ static void scsi_request_fn(struct request_queue *q)
+ 	struct request *req;
  
- out:
-diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-index c03d4dc..7f16fea 100644
---- a/fs/jbd2/journal.c
-+++ b/fs/jbd2/journal.c
-@@ -1186,6 +1186,14 @@ static int journal_get_superblock(journal_t *journal)
- 		goto out;
- 	}
- 
-+	if (be32_to_cpu(sb->s_first) == 0 ||
-+	    be32_to_cpu(sb->s_first) >= journal->j_maxlen) {
-+		printk(KERN_WARNING
-+			"JBD2: Invalid start block of journal: %u\n",
-+			be32_to_cpu(sb->s_first));
-+		goto out;
-+	}
-+
- 	return 0;
- 
- out:
+ 	if (!sdev) {
+-		printk("scsi: killing requests for dead queue\n");
+ 		while ((req = blk_peek_request(q)) != NULL)
+ 			scsi_kill_request(req, q);
+ 		return;
 -- 
 1.7.12.1
 
