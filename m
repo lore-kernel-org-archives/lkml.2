@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584Ab3AHCJQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:09:16 -0500
-Received: from nm23.access.bullet.mail.sp2.yahoo.com ([98.139.44.150]:35936
-	"EHLO nm23.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755094Ab3AHCJM (ORCPT
+	id S1755754Ab3AHCJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:09:24 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:46557 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755494Ab3AHCJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:12 -0500
-X-Yahoo-Newman-Id: 6774.70330.bm@smtp102.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 78yRTuUVM1nCnfkdFt7l1M3bZC9z7oUPM6irPfMKGz5mrM2
- 2JaPKQ6tbt3bc8Yl7QxntVoHCM3t6qJU4pXhrIVwWqpZW2BqLFrSm2axI8_Z
- RFiPfCiQyxzCOfy2AdCnjo9o6k78ONx45eYLskvCMv82wNPNSdRCv8QOs6OO
- eTVd5dIifMT9F52DpvkkSf.NmScKRuHSB7cF1UDJwKV1pfjHoSqzX6.fMtRL
- hi9GdFHJ0YZW4Abn2ikxshodCK8N.jBLzmQt_9VxXsY9P3N6pL2RxAkLif8n
- DGHMCF.uN8zanLSmEhbUPyIYilhmC7G9Prgu.qDNb8LY3_PFf6Tr8TCTKsD5
- 61VVC95MkzpX8q5JkubtnPCJoz4.zXaw5Q8sy0ZfHPMQ.8QF0wrXWerl0VlH
- RPQ5jxk6SDOSS2Av2uj3w8TEXS7bot7lqSHHsXVyDEfbmjWL0iduwqXGpU6u
- thKN7
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50EB7FD6.7070207@schaufler-ca.com>
-Date: Mon, 07 Jan 2013 18:09:26 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>
-CC: Casey Schaufler <casey@schaufler-ca.com>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Subject: [PATCH v12 5/9] LSM: Multiple concurrent LSMs
-References: <50EB7C50.3070605@schaufler-ca.com>
-In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 21:09:15 -0500
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 14/33] sched: Update rq clock on nohz CPU before setting fair group shares
+Date: Tue,  8 Jan 2013 03:08:14 +0100
+Message-Id: <1357610913-1080-15-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: [PATCH v12 5/9] LSM: Multiple concurrent LSMs
+Because we may update the execution time (sched_group_set_shares()->
+	update_cfs_shares()->reweight_entity()->update_curr()) before
+reweighting the entity after updating the group shares and this requires
+an uptodate version of the runqueue clock. Let's update it on the target
+CPU if it runs tickless because scheduler_tick() is not there to maintain
+it.
 
-Change the infrastructure for Linux Security Modules (LSM)s
-from a single vector of hook handlers to a list based method
-for handling multiple concurrent modules. 
-
-Add per-LSM interfaces in /proc/*/attr as it is infeasible
-to share them when more than one LSM is active.
-
-Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
-
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alessio Igor Bogani <abogani@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Geoff Levand <geoff@infradead.org>
+Cc: Gilad Ben Yossef <gilad@benyossef.com>
+Cc: Hakan Akkan <hakanakkan@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Namhyung Kim <namhyung.kim@lge.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- fs/proc/base.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ kernel/sched/fair.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 9b43ff77..458422b 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2216,12 +2216,28 @@ static const struct file_operations proc_pid_attr_operations = {
- };
- 
- static const struct pid_entry attr_dir_stuff[] = {
--	REG("current",    S_IRUGO|S_IWUGO, proc_pid_attr_operations),
--	REG("prev",       S_IRUGO,	   proc_pid_attr_operations),
--	REG("exec",       S_IRUGO|S_IWUGO, proc_pid_attr_operations),
--	REG("fscreate",   S_IRUGO|S_IWUGO, proc_pid_attr_operations),
--	REG("keycreate",  S_IRUGO|S_IWUGO, proc_pid_attr_operations),
--	REG("sockcreate", S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("current",            S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("prev",               S_IRUGO,	   proc_pid_attr_operations),
-+	REG("exec",               S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("fscreate",           S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("keycreate",          S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("sockcreate",         S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+#ifdef CONFIG_SECURITY_SELINUX
-+	REG("selinux.current",    S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("selinux.prev",       S_IRUGO,	   proc_pid_attr_operations),
-+	REG("selinux.exec",       S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("selinux.fscreate",   S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("selinux.keycreate",  S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("selinux.sockcreate", S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+#endif
-+#ifdef CONFIG_SECURITY_SMACK
-+	REG("smack.current",      S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+#endif
-+#ifdef CONFIG_SECURITY_APPARMOR
-+	REG("apparmor.current",   S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+	REG("apparmor.prev",      S_IRUGO,	   proc_pid_attr_operations),
-+	REG("apparmor.exec",      S_IRUGO|S_IWUGO, proc_pid_attr_operations),
-+#endif
- };
- 
- static int proc_attr_dir_readdir(struct file * filp,
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5eea870..a96f0f2 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -6068,6 +6068,11 @@ int sched_group_set_shares(struct task_group *tg, unsigned long shares)
+ 		se = tg->se[i];
+ 		/* Propagate contribution to hierarchy */
+ 		raw_spin_lock_irqsave(&rq->lock, flags);
++		/*
++		 * We may call update_curr() which needs an up-to-date
++		 * version of rq clock if the CPU runs tickless.
++		 */
++		update_nohz_rq_clock(rq);
+ 		for_each_sched_entity(se)
+ 			update_cfs_shares(group_cfs_rq(se));
+ 		raw_spin_unlock_irqrestore(&rq->lock, flags);
+-- 
+1.7.5.4
 
