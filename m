@@ -1,145 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab3AHXkL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:40:11 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53775 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab3AHXj7 (ORCPT
+	id S1757152Ab3AHXkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:40:17 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:62411 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab3AHXkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:39:59 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Stanislaw Gruszka <sgruszka@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 69/77] sched: fix divide by zero at {thread_group,task}_times
-Date: Tue, 8 Jan 2013 18:35:48 -0500
-Message-ID: <1357688156-25387-70-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+	Tue, 8 Jan 2013 18:40:13 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+	<20130107152622.GD3219@phenom.dumpdata.com>
+	<CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
+	<8762382z2c.fsf@xmission.com>
+	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
+	<87y5g4z7rp.fsf@xmission.com>
+	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
+Date: Tue, 8 Jan 2013 15:40:11 -0800
+X-Google-Sender-Auth: TQs796Q9QSoSiPWfAoi7NtBwI18
+Message-ID: <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+From: Yinghai Lu <yinghai@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Content-Type: multipart/mixed; boundary=001517590686836ab004d2cf77b5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+--001517590686836ab004d2cf77b5
+Content-Type: text/plain; charset=ISO-8859-1
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+On Mon, Jan 7, 2013 at 7:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> On Mon, Jan 7, 2013 at 7:13 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> I meant we should detect failure to allocate bounce buffers in in
+>> swiotlb_init() instead of panicing.
+>>
+>> I meant swiotlb_map_single() should either panic or simply fail.
+>>
+>> If I have read lib/swiotlb.c correctly the only place we allocate a
+>> bounce buffer is in swiotlb_map_single.  If there are more places we can
+>> allocate bounce buffers those need to be handled as well.
+>
+> ok, will give it a try.
 
-commit bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e upstream.
+please check if you are ok with attached.
 
-On architectures where cputime_t is 64 bit type, is possible to trigger
-divide by zero on do_div(temp, (__force u32) total) line, if total is a
-non zero number but has lower 32 bit's zeroed. Removing casting is not
-a good solution since some do_div() implementations do cast to u32
-internally.
+looks like it need more change of lines.
 
-This problem can be triggered in practice on very long lived processes:
+Thanks
 
-  PID: 2331   TASK: ffff880472814b00  CPU: 2   COMMAND: "oraagent.bin"
-   #0 [ffff880472a51b70] machine_kexec at ffffffff8103214b
-   #1 [ffff880472a51bd0] crash_kexec at ffffffff810b91c2
-   #2 [ffff880472a51ca0] oops_end at ffffffff814f0b00
-   #3 [ffff880472a51cd0] die at ffffffff8100f26b
-   #4 [ffff880472a51d00] do_trap at ffffffff814f03f4
-   #5 [ffff880472a51d60] do_divide_error at ffffffff8100cfff
-   #6 [ffff880472a51e00] divide_error at ffffffff8100be7b
-      [exception RIP: thread_group_times+0x56]
-      RIP: ffffffff81056a16  RSP: ffff880472a51eb8  RFLAGS: 00010046
-      RAX: bc3572c9fe12d194  RBX: ffff880874150800  RCX: 0000000110266fad
-      RDX: 0000000000000000  RSI: ffff880472a51eb8  RDI: 001038ae7d9633dc
-      RBP: ffff880472a51ef8   R8: 00000000b10a3a64   R9: ffff880874150800
-      R10: 00007fcba27ab680  R11: 0000000000000202  R12: ffff880472a51f08
-      R13: ffff880472a51f10  R14: 0000000000000000  R15: 0000000000000007
-      ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
-   #7 [ffff880472a51f00] do_sys_times at ffffffff8108845d
-   #8 [ffff880472a51f40] sys_times at ffffffff81088524
-   #9 [ffff880472a51f80] system_call_fastpath at ffffffff8100b0f2
-      RIP: 0000003808caac3a  RSP: 00007fcba27ab6d8  RFLAGS: 00000202
-      RAX: 0000000000000064  RBX: ffffffff8100b0f2  RCX: 0000000000000000
-      RDX: 00007fcba27ab6e0  RSI: 000000000076d58e  RDI: 00007fcba27ab6e0
-      RBP: 00007fcba27ab700   R8: 0000000000000020   R9: 000000000000091b
-      R10: 00007fcba27ab680  R11: 0000000000000202  R12: 00007fff9ca41940
-      R13: 0000000000000000  R14: 00007fcba27ac9c0  R15: 00007fff9ca41940
-      ORIG_RAX: 0000000000000064  CS: 0033  SS: 002b
+Yinghai
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20120808092714.GA3580@redhat.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-[PG: sched/core.c is just sched.c in 2.6.34; also the do_div() on
- __force u32 isn't explicitly seen since that is in v3.3-rc1~191^2~11]
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- kernel/sched.c | 34 ++++++++++++++++++++--------------
- 1 file changed, 20 insertions(+), 14 deletions(-)
+--001517590686836ab004d2cf77b5
+Content-Type: application/octet-stream; name="alloc_low_page_nopanic.patch"
+Content-Disposition: attachment; filename="alloc_low_page_nopanic.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbpnyw4i0
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 245458e..e24d139 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3410,6 +3410,20 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
- 
-+static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-+{
-+	u64 temp = (__force u64) rtime;
-+
-+	temp *= (__force u64) utime;
-+
-+	if (sizeof(cputime_t) == 4)
-+		temp = div_u64(temp, (__force u32) total);
-+	else
-+		temp = div64_u64(temp, (__force u64) total);
-+
-+	return (__force cputime_t) temp;
-+}
-+
- void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- {
- 	cputime_t rtime, utime = p->utime, total = cputime_add(utime, p->stime);
-@@ -3419,13 +3433,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	 */
- 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
- 
--	if (total) {
--		u64 temp = rtime;
--
--		temp *= utime;
--		do_div(temp, total);
--		utime = (cputime_t)temp;
--	} else
-+	if (total)
-+		utime = scale_utime(utime, rtime, total);
-+	else
- 		utime = rtime;
- 
- 	/*
-@@ -3452,13 +3462,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
- 	total = cputime_add(cputime.utime, cputime.stime);
- 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
- 
--	if (total) {
--		u64 temp = rtime;
--
--		temp *= cputime.utime;
--		do_div(temp, total);
--		utime = (cputime_t)temp;
--	} else
-+	if (total)
-+		utime = scale_utime(cputime.utime, rtime, total);
-+	else
- 		utime = rtime;
- 
- 	sig->prev_utime = max(sig->prev_utime, utime);
--- 
-1.7.12.1
+U3ViamVjdDogW1BBVENIXSBtbTogQWRkIGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzX25vcGFuaWMo
+KQoKV2UgZG9uJ3QgbmVlZCB0byBwYW5pYyBpbiBzb21lIGNhc2UsIGxpa2UgZm9yIHN3aW90bGIg
+cHJlYWxsb2NhdGluZy4KClNpZ25lZC1vZmYtYnk6IFlpbmdoYWkgTHUgPHlpbmdoYWlAa2VybmVs
+Lm9yZz4KCi0tLQogaW5jbHVkZS9saW51eC9ib290bWVtLmggfCAgICA1ICsrKysrCiBtbS9ib290
+bWVtLmMgICAgICAgICAgICB8ICAgIDggKysrKysrKysKIG1tL25vYm9vdG1lbS5jICAgICAgICAg
+IHwgICAgOCArKysrKysrKwogMyBmaWxlcyBjaGFuZ2VkLCAyMSBpbnNlcnRpb25zKCspCgpJbmRl
+eDogbGludXgtMi42L2luY2x1ZGUvbGludXgvYm9vdG1lbS5oCj09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGxpbnV4
+LTIuNi5vcmlnL2luY2x1ZGUvbGludXgvYm9vdG1lbS5oCisrKyBsaW51eC0yLjYvaW5jbHVkZS9s
+aW51eC9ib290bWVtLmgKQEAgLTk5LDYgKzk5LDkgQEAgdm9pZCAqX19fYWxsb2NfYm9vdG1lbV9u
+b2RlX25vcGFuaWMocGdfZAogZXh0ZXJuIHZvaWQgKl9fYWxsb2NfYm9vdG1lbV9sb3codW5zaWdu
+ZWQgbG9uZyBzaXplLAogCQkJCSB1bnNpZ25lZCBsb25nIGFsaWduLAogCQkJCSB1bnNpZ25lZCBs
+b25nIGdvYWwpOwordm9pZCAqX19hbGxvY19ib290bWVtX2xvd19ub3BhbmljKHVuc2lnbmVkIGxv
+bmcgc2l6ZSwKKwkJCQkgdW5zaWduZWQgbG9uZyBhbGlnbiwKKwkJCQkgdW5zaWduZWQgbG9uZyBn
+b2FsKTsKIGV4dGVybiB2b2lkICpfX2FsbG9jX2Jvb3RtZW1fbG93X25vZGUocGdfZGF0YV90ICpw
+Z2RhdCwKIAkJCQkgICAgICB1bnNpZ25lZCBsb25nIHNpemUsCiAJCQkJICAgICAgdW5zaWduZWQg
+bG9uZyBhbGlnbiwKQEAgLTEzMiw2ICsxMzUsOCBAQCBleHRlcm4gdm9pZCAqX19hbGxvY19ib290
+bWVtX2xvd19ub2RlKHBnCiAKICNkZWZpbmUgYWxsb2NfYm9vdG1lbV9sb3coeCkgXAogCV9fYWxs
+b2NfYm9vdG1lbV9sb3coeCwgU01QX0NBQ0hFX0JZVEVTLCAwKQorI2RlZmluZSBhbGxvY19ib290
+bWVtX2xvd19wYWdlc19ub3BhbmljKHgpIFwKKwlfX2FsbG9jX2Jvb3RtZW1fbG93X25vcGFuaWMo
+eCwgUEFHRV9TSVpFLCAwKQogI2RlZmluZSBhbGxvY19ib290bWVtX2xvd19wYWdlcyh4KSBcCiAJ
+X19hbGxvY19ib290bWVtX2xvdyh4LCBQQUdFX1NJWkUsIDApCiAjZGVmaW5lIGFsbG9jX2Jvb3Rt
+ZW1fbG93X3BhZ2VzX25vZGUocGdkYXQsIHgpIFwKSW5kZXg6IGxpbnV4LTIuNi9tbS9ib290bWVt
+LmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbW0vYm9vdG1lbS5jCisrKyBsaW51eC0y
+LjYvbW0vYm9vdG1lbS5jCkBAIC04MjEsNiArODIxLDE0IEBAIHZvaWQgKiBfX2luaXQgX19hbGxv
+Y19ib290bWVtX2xvdyh1bnNpZ24KIAlyZXR1cm4gX19fYWxsb2NfYm9vdG1lbShzaXplLCBhbGln
+biwgZ29hbCwgQVJDSF9MT1dfQUREUkVTU19MSU1JVCk7CiB9CiAKK3ZvaWQgKiBfX2luaXQgX19h
+bGxvY19ib290bWVtX2xvd19ub3BhbmljKHVuc2lnbmVkIGxvbmcgc2l6ZSwKKwkJCQkJICB1bnNp
+Z25lZCBsb25nIGFsaWduLAorCQkJCQkgIHVuc2lnbmVkIGxvbmcgZ29hbCkKK3sKKwlyZXR1cm4g
+X19fYWxsb2NfYm9vdG1lbV9ub3BhbmljKHNpemUsIGFsaWduLCBnb2FsLAorCQkJCQlBUkNIX0xP
+V19BRERSRVNTX0xJTUlUKTsKK30KKwogLyoqCiAgKiBfX2FsbG9jX2Jvb3RtZW1fbG93X25vZGUg
+LSBhbGxvY2F0ZSBsb3cgYm9vdCBtZW1vcnkgZnJvbSBhIHNwZWNpZmljIG5vZGUKICAqIEBwZ2Rh
+dDogbm9kZSB0byBhbGxvY2F0ZSBmcm9tCkluZGV4OiBsaW51eC0yLjYvbW0vbm9ib290bWVtLmMK
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbW0vbm9ib290bWVtLmMKKysrIGxpbnV4LTIu
+Ni9tbS9ub2Jvb3RtZW0uYwpAQCAtMzkxLDYgKzM5MSwxNCBAQCB2b2lkICogX19pbml0IF9fYWxs
+b2NfYm9vdG1lbV9sb3codW5zaWduCiAJcmV0dXJuIF9fX2FsbG9jX2Jvb3RtZW0oc2l6ZSwgYWxp
+Z24sIGdvYWwsIEFSQ0hfTE9XX0FERFJFU1NfTElNSVQpOwogfQogCit2b2lkICogX19pbml0IF9f
+YWxsb2NfYm9vdG1lbV9sb3dfbm9wYW5pYyh1bnNpZ25lZCBsb25nIHNpemUsCisJCQkJCSAgdW5z
+aWduZWQgbG9uZyBhbGlnbiwKKwkJCQkJICB1bnNpZ25lZCBsb25nIGdvYWwpCit7CisJcmV0dXJu
+IF9fX2FsbG9jX2Jvb3RtZW1fbm9wYW5pYyhzaXplLCBhbGlnbiwgZ29hbCwKKwkJCQkJQVJDSF9M
+T1dfQUREUkVTU19MSU1JVCk7Cit9CisKIC8qKgogICogX19hbGxvY19ib290bWVtX2xvd19ub2Rl
+IC0gYWxsb2NhdGUgbG93IGJvb3QgbWVtb3J5IGZyb20gYSBzcGVjaWZpYyBub2RlCiAgKiBAcGdk
+YXQ6IG5vZGUgdG8gYWxsb2NhdGUgZnJvbQo=
+--001517590686836ab004d2cf77b5
+Content-Type: application/octet-stream; name="swiotlb.patch"
+Content-Disposition: attachment; filename="swiotlb.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hbpnz4x81
 
+U3ViamVjdDogW1BBVENIXSB4ODY6IERvbid0IHBhbmljIGlmIGNhbiBub3QgYWxsb2MgYnVmZmVy
+IGZvciBzd2lvdGxiCgpOb3JtYWwgYm9vdCBwYXRoIG9uIHN5c3RlbSB3aXRoIGlvbW11IHN1cHBv
+cnQ6CnN3aW90bGIgYnVmZmVyIHdpbGwgYmUgYWxsb2NhdGVkIGVhcmx5IGF0IGZpcnN0IGFuZCB0
+aGVuIHRyeSB0byBpbml0aWFsaXplCmlvbW11LCBpZiBpb21tdSBmb3IgaW50ZWwgb3IgYW1kIGNv
+dWxkIHNldHVwIHByb3Blcmx5LCBzd2lvdGxiIGJ1ZmZlcgp3aWxsIGJlIGZyZWVkLgoKVGhlIGVh
+cmx5IGFsbG9jYXRpbmcgaXMgd2l0aCBib290bWVtLCBhbmQgY291bGQgcGFuaWMgd2hlbiB3ZSB0
+cnkgdG8gdXNlCmtkdW1wIHdpdGggYnVmZmVyIGFib3ZlIDRHIG9ubHksIG9yIHdpdGggbWVtbWFw
+IHRvIGxpbWl0IG1lbSB1bmRlciA0Ry4KCkFjY29yZGluZyB0byBFcmljLCBhZGQgX25vcGFuaWMg
+dmVyc2lvbiBhbmQgbm9faW90bGJfbWVtb3J5IHRvIGZhaWwKbWFwIHNpbmdsZSBsYXRlciBpZiBz
+d2lvdGxiIGlzIHN0aWxsIG5lZWRlZC4KClN1Z2dlc3RlZC1ieTogRXJpYyBXLiBCaWVkZXJtYW4g
+PGViaWVkZXJtQHhtaXNzaW9uLmNvbT4KU2lnbmVkLW9mZi1ieTogWWluZ2hhaSBMdSA8eWluZ2hh
+aUBrZXJuZWwub3JnPgpDYzogS29ucmFkIFJ6ZXN6dXRlayBXaWxrIDxrb25yYWQud2lsa0BvcmFj
+bGUuY29tPgpDYzogSm9lcmcgUm9lZGVsIDxqb3JvQDhieXRlcy5vcmc+CgotLS0KIGFyY2gveDg2
+L2tlcm5lbC9wY2ktc3dpb3RsYi5jIHwgICAgMiAtCiBpbmNsdWRlL2xpbnV4L3N3aW90bGIuaCAg
+ICAgICB8ICAgIDEgCiBsaWIvc3dpb3RsYi5jICAgICAgICAgICAgICAgICB8ICAgNTkgKysrKysr
+KysrKysrKysrKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tCiAzIGZpbGVzIGNoYW5nZWQsIDUw
+IGluc2VydGlvbnMoKyksIDEyIGRlbGV0aW9ucygtKQoKSW5kZXg6IGxpbnV4LTIuNi9pbmNsdWRl
+L2xpbnV4L3N3aW90bGIuaAo9PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09Ci0tLSBsaW51eC0yLjYub3JpZy9pbmNsdWRlL2xp
+bnV4L3N3aW90bGIuaAorKysgbGludXgtMi42L2luY2x1ZGUvbGludXgvc3dpb3RsYi5oCkBAIC0y
+Miw2ICsyMiw3IEBAIGV4dGVybiBpbnQgc3dpb3RsYl9mb3JjZTsKICAqLwogI2RlZmluZSBJT19U
+TEJfU0hJRlQgMTEKIAordm9pZCBzd2lvdGxiX2luaXRfbm9wYW5pYyhpbnQgdmVyYm9zZSk7CiBl
+eHRlcm4gdm9pZCBzd2lvdGxiX2luaXQoaW50IHZlcmJvc2UpOwogZXh0ZXJuIHZvaWQgc3dpb3Rs
+Yl9pbml0X3dpdGhfdGJsKGNoYXIgKnRsYiwgdW5zaWduZWQgbG9uZyBuc2xhYnMsIGludCB2ZXJi
+b3NlKTsKIGV4dGVybiB1bnNpZ25lZCBsb25nIHN3aW90bGJfbnJfdGJsKHZvaWQpOwpJbmRleDog
+bGludXgtMi42L2xpYi9zd2lvdGxiLmMKPT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQotLS0gbGludXgtMi42Lm9yaWcvbGli
+L3N3aW90bGIuYworKysgbGludXgtMi42L2xpYi9zd2lvdGxiLmMKQEAgLTEyMiwxMSArMTIyLDE4
+IEBAIHN0YXRpYyBkbWFfYWRkcl90IHN3aW90bGJfdmlydF90b19idXMoc3QKIAlyZXR1cm4gcGh5
+c190b19kbWEoaHdkZXYsIHZpcnRfdG9fcGh5cyhhZGRyZXNzKSk7CiB9CiAKK3N0YXRpYyBib29s
+IG5vX2lvdGxiX21lbW9yeTsKKwogdm9pZCBzd2lvdGxiX3ByaW50X2luZm8odm9pZCkKIHsKIAl1
+bnNpZ25lZCBsb25nIGJ5dGVzID0gaW9fdGxiX25zbGFicyA8PCBJT19UTEJfU0hJRlQ7CiAJdW5z
+aWduZWQgY2hhciAqdnN0YXJ0LCAqdmVuZDsKIAorCWlmIChub19pb3RsYl9tZW1vcnkpIHsKKwkJ
+cHJpbnRrKEtFUk5fSU5GTyAic29mdHdhcmUgSU8gVExCOiBObyBsb3cgbWVtXG4iKTsKKwkJcmV0
+dXJuOworCX0KKwogCXZzdGFydCA9IHBoeXNfdG9fdmlydChpb190bGJfc3RhcnQpOwogCXZlbmQg
+PSBwaHlzX3RvX3ZpcnQoaW9fdGxiX2VuZCk7CiAKQEAgLTEzNiw3ICsxNDMsOCBAQCB2b2lkIHN3
+aW90bGJfcHJpbnRfaW5mbyh2b2lkKQogCSAgICAgICBieXRlcyA+PiAyMCwgdnN0YXJ0LCB2ZW5k
+IC0gMSk7CiB9CiAKLXZvaWQgX19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIs
+IHVuc2lnbmVkIGxvbmcgbnNsYWJzLCBpbnQgdmVyYm9zZSkKK3N0YXRpYyB2b2lkIF9faW5pdCBf
+X3N3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICp0bGIsIHVuc2lnbmVkIGxvbmcgbnNsYWJzLAor
+CQkJCSBpbnQgdmVyYm9zZSwgYm9vbCBub3BhbmljKQogewogCXZvaWQgKnZfb3ZlcmZsb3dfYnVm
+ZmVyOwogCXVuc2lnbmVkIGxvbmcgaSwgYnl0ZXM7CkBAIC0xNTAsOSArMTU4LDE3IEBAIHZvaWQg
+X19pbml0IHN3aW90bGJfaW5pdF93aXRoX3RibChjaGFyICoKIAkvKgogCSAqIEdldCB0aGUgb3Zl
+cmZsb3cgZW1lcmdlbmN5IGJ1ZmZlcgogCSAqLwotCXZfb3ZlcmZsb3dfYnVmZmVyID0gYWxsb2Nf
+Ym9vdG1lbV9sb3dfcGFnZXMoUEFHRV9BTElHTihpb190bGJfb3ZlcmZsb3cpKTsKLQlpZiAoIXZf
+b3ZlcmZsb3dfYnVmZmVyKQotCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRlIFNXSU9UTEIgb3ZlcmZs
+b3cgYnVmZmVyIVxuIik7CisJdl9vdmVyZmxvd19idWZmZXIgPSBhbGxvY19ib290bWVtX2xvd19w
+YWdlc19ub3BhbmljKAorCQkJCQkJUEFHRV9BTElHTihpb190bGJfb3ZlcmZsb3cpKTsKKwlpZiAo
+IXZfb3ZlcmZsb3dfYnVmZmVyKSB7CisJCWlmIChub3BhbmljKSB7CisJCQlub19pb3RsYl9tZW1v
+cnkgPSB0cnVlOworCQkJZnJlZV9ib290bWVtKGlvX3RsYl9zdGFydCwKKwkJCQkgICAgIFBBR0Vf
+QUxJR04oaW9fdGxiX25zbGFicyA8PCBJT19UTEJfU0hJRlQpKTsKKwkJCXJldHVybjsKKwkJfSBl
+bHNlCisJCQlwYW5pYygiQ2Fubm90IGFsbG9jYXRlIFNXSU9UTEIgb3ZlcmZsb3cgYnVmZmVyIVxu
+Iik7CisJfQogCiAJaW9fdGxiX292ZXJmbG93X2J1ZmZlciA9IF9fcGEodl9vdmVyZmxvd19idWZm
+ZXIpOwogCkBAIC0xNzEsMTIgKzE4NywxNyBAQCB2b2lkIF9faW5pdCBzd2lvdGxiX2luaXRfd2l0
+aF90YmwoY2hhciAqCiAJCXN3aW90bGJfcHJpbnRfaW5mbygpOwogfQogCit2b2lkIF9faW5pdCBz
+d2lvdGxiX2luaXRfd2l0aF90YmwoY2hhciAqdGxiLCB1bnNpZ25lZCBsb25nIG5zbGFicywgaW50
+IHZlcmJvc2UpCit7CisJX19zd2lvdGxiX2luaXRfd2l0aF90YmwodGxiLCBuc2xhYnMsIHZlcmJv
+c2UsIGZhbHNlKTsKK30KKwogLyoKICAqIFN0YXRpY2FsbHkgcmVzZXJ2ZSBib3VuY2UgYnVmZmVy
+IHNwYWNlIGFuZCBpbml0aWFsaXplIGJvdW5jZSBidWZmZXIgZGF0YQogICogc3RydWN0dXJlcyBm
+b3IgdGhlIHNvZnR3YXJlIElPIFRMQiB1c2VkIHRvIGltcGxlbWVudCB0aGUgRE1BIEFQSS4KICAq
+Lwogc3RhdGljIHZvaWQgX19pbml0Ci1zd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0X3NpemUoc2l6
+ZV90IGRlZmF1bHRfc2l6ZSwgaW50IHZlcmJvc2UpCitzd2lvdGxiX2luaXRfd2l0aF9kZWZhdWx0
+X3NpemUoc2l6ZV90IGRlZmF1bHRfc2l6ZSwgaW50IHZlcmJvc2UsIGJvb2wgbm9wYW5pYykKIHsK
+IAl1bnNpZ25lZCBjaGFyICp2c3RhcnQ7CiAJdW5zaWduZWQgbG9uZyBieXRlczsKQEAgLTE5MSwx
+NyArMjEyLDMwIEBAIHN3aW90bGJfaW5pdF93aXRoX2RlZmF1bHRfc2l6ZShzaXplX3QgZGUKIAkv
+KgogCSAqIEdldCBJTyBUTEIgbWVtb3J5IGZyb20gdGhlIGxvdyBwYWdlcwogCSAqLwotCXZzdGFy
+dCA9IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzKFBBR0VfQUxJR04oYnl0ZXMpKTsKLQlpZiAoIXZz
+dGFydCkKLQkJcGFuaWMoIkNhbm5vdCBhbGxvY2F0ZSBTV0lPVExCIGJ1ZmZlciIpOworCXZzdGFy
+dCA9IGFsbG9jX2Jvb3RtZW1fbG93X3BhZ2VzX25vcGFuaWMoUEFHRV9BTElHTihieXRlcykpOwor
+CWlmICghdnN0YXJ0KSB7CisJCWlmIChub3BhbmljKSB7CisJCQlub19pb3RsYl9tZW1vcnkgPSB0
+cnVlOworCQkJcmV0dXJuOworCQl9IGVsc2UKKwkJCXBhbmljKCJDYW5ub3QgYWxsb2NhdGUgU1dJ
+T1RMQiBidWZmZXIiKTsKKwl9CiAKLQlzd2lvdGxiX2luaXRfd2l0aF90YmwodnN0YXJ0LCBpb190
+bGJfbnNsYWJzLCB2ZXJib3NlKTsKKwlfX3N3aW90bGJfaW5pdF93aXRoX3RibCh2c3RhcnQsIGlv
+X3RsYl9uc2xhYnMsIHZlcmJvc2UsIG5vcGFuaWMpOworfQorCit2b2lkIF9faW5pdAorc3dpb3Rs
+Yl9pbml0X25vcGFuaWMoaW50IHZlcmJvc2UpCit7CisJLyogZGVmYXVsdCB0byA2NE1CICovCisJ
+c3dpb3RsYl9pbml0X3dpdGhfZGVmYXVsdF9zaXplKDY0ICogKDE8PDIwKSwgdmVyYm9zZSwgdHJ1
+ZSk7CiB9CiAKIHZvaWQgX19pbml0CiBzd2lvdGxiX2luaXQoaW50IHZlcmJvc2UpCiB7Ci0Jc3dp
+b3RsYl9pbml0X3dpdGhfZGVmYXVsdF9zaXplKDY0ICogKDE8PDIwKSwgdmVyYm9zZSk7CS8qIGRl
+ZmF1bHQgdG8gNjRNQiAqLworCS8qIGRlZmF1bHQgdG8gNjRNQiAqLworCXN3aW90bGJfaW5pdF93
+aXRoX2RlZmF1bHRfc2l6ZSg2NCAqICgxPDwyMCksIHZlcmJvc2UsIGZhbHNlKTsKIH0KIAogLyoK
+QEAgLTQwNSw2ICs0MzksOSBAQCBwaHlzX2FkZHJfdCBzd2lvdGxiX3RibF9tYXBfc2luZ2xlKHN0
+cnVjCiAJdW5zaWduZWQgbG9uZyBvZmZzZXRfc2xvdHM7CiAJdW5zaWduZWQgbG9uZyBtYXhfc2xv
+dHM7CiAKKwlpZiAobm9faW90bGJfbWVtb3J5KQorCQlyZXR1cm4gU1dJT1RMQl9NQVBfRVJST1I7
+CisKIAltYXNrID0gZG1hX2dldF9zZWdfYm91bmRhcnkoaHdkZXYpOwogCiAJdGJsX2RtYV9hZGRy
+ICY9IG1hc2s7CkBAIC02NjksNyArNzA2LDcgQEAgc3dpb3RsYl9mdWxsKHN0cnVjdCBkZXZpY2Ug
+KmRldiwgc2l6ZV90CiAJcHJpbnRrKEtFUk5fRVJSICJETUE6IE91dCBvZiBTVy1JT01NVSBzcGFj
+ZSBmb3IgJXp1IGJ5dGVzIGF0ICIKIAkgICAgICAgImRldmljZSAlc1xuIiwgc2l6ZSwgZGV2ID8g
+ZGV2X25hbWUoZGV2KSA6ICI/Iik7CiAKLQlpZiAoc2l6ZSA8PSBpb190bGJfb3ZlcmZsb3cgfHwg
+IWRvX3BhbmljKQorCWlmICghbm9faW90bGJfbWVtb3J5ICYmIChzaXplIDw9IGlvX3RsYl9vdmVy
+ZmxvdyB8fCAhZG9fcGFuaWMpKQogCQlyZXR1cm47CiAKIAlpZiAoZGlyID09IERNQV9CSURJUkVD
+VElPTkFMKQpJbmRleDogbGludXgtMi42L2FyY2gveDg2L2tlcm5lbC9wY2ktc3dpb3RsYi5jCj09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT0KLS0tIGxpbnV4LTIuNi5vcmlnL2FyY2gveDg2L2tlcm5lbC9wY2ktc3dpb3RsYi5j
+CisrKyBsaW51eC0yLjYvYXJjaC94ODYva2VybmVsL3BjaS1zd2lvdGxiLmMKQEAgLTkxLDcgKzkx
+LDcgQEAgSU9NTVVfSU5JVChwY2lfc3dpb3RsYl9kZXRlY3RfNGdiLAogdm9pZCBfX2luaXQgcGNp
+X3N3aW90bGJfaW5pdCh2b2lkKQogewogCWlmIChzd2lvdGxiKSB7Ci0JCXN3aW90bGJfaW5pdCgw
+KTsKKwkJc3dpb3RsYl9pbml0X25vcGFuaWMoMCk7CiAJCWRtYV9vcHMgPSAmc3dpb3RsYl9kbWFf
+b3BzOwogCX0KIH0K
+--001517590686836ab004d2cf77b5--
