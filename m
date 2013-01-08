@@ -1,105 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab3AHCqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:46:36 -0500
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:55134 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752092Ab3AHCqf (ORCPT
+	id S1753210Ab3AHCtL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:49:11 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:27708 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752152Ab3AHCtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:46:35 -0500
-Date: Mon, 7 Jan 2013 18:46:31 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Simon Jeons <simon.jeons@gmail.com>
-cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+	Mon, 7 Jan 2013 21:49:10 -0500
+Date: Mon, 7 Jan 2013 21:48:30 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Shuah Khan <shuahkhan@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Izik Eidus <izik.eidus@ravellosystems.com>,
-        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
-Subject: Re: [PATCH v7 1/2] KSM: numa awareness sysfs knob
-In-Reply-To: <1357609227.4105.3.camel@kernel.cn.ibm.com>
-Message-ID: <alpine.LNX.2.00.1301071812001.18327@eggly.anvils>
-References: <20121224050817.GA25749@kroah.com> <1356658337-12540-1-git-send-email-pholasek@redhat.com> <1357015310.1379.2.camel@kernel.cn.ibm.com> <20130103122416.GB2277@thinkpad-work.redhat.com> <1357609227.4105.3.camel@kernel.cn.ibm.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+Message-ID: <20130108024830.GE9865@phenom.dumpdata.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-27-git-send-email-yinghai@kernel.org>
+ <CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+ <CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+ <CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+ <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+ <20130107152622.GD3219@phenom.dumpdata.com>
+ <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
+ <8762382z2c.fsf@xmission.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8762382z2c.fsf@xmission.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jan 2013, Simon Jeons wrote:
-> On Thu, 2013-01-03 at 13:24 +0100, Petr Holasek wrote:
-> > Hi Simon,
-> > 
-> > On Mon, 31 Dec 2012, Simon Jeons wrote:
-> > > On Fri, 2012-12-28 at 02:32 +0100, Petr Holasek wrote:
-> > > > 
-> > > > v7:	- added sysfs ABI documentation for KSM
-> > > 
-> > > Hi Petr,
-> > > 
-> > > How you handle "memory corruption because the ksm page still points to
-> > > the stable_node that has been freed" mentioned by Andrea this time?
-> > > 
-> > 
+On Mon, Jan 07, 2013 at 06:22:51PM -0800, Eric W. Biederman wrote:
+> Shuah Khan <shuahkhan@gmail.com> writes:
 > 
-> Hi Petr,
+> > On Mon, Jan 7, 2013 at 8:26 AM, Konrad Rzeszutek Wilk
+> > <konrad.wilk@oracle.com> wrote:
+> >> On Fri, Jan 04, 2013 at 02:10:25PM -0800, Yinghai Lu wrote:
+> >>> On Fri, Jan 4, 2013 at 1:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
+> >>> > Pani'cing the system doesn't sound like a good option to me in this
+> >>> > case. This change to disable swiotlb is made for kdump. However, with
+> >>> > this change several system fail to boot, unless crashkernel_low=72M is
+> >>> > specified.
+> >>>
+> >>> this patchset is new feature to put second kdump kernel above 4G.
+> >>>
+> >>> >
+> >>> > I would the say the right approach to solve this would be to not
+> >>> > change the current pci_swiotlb_detect_override() behavior and treat
+> >>> > swiotlb =1 upon entry equivalent to swiotlb_force set.
+> >>>
+> >>> that will make intel system have to take crashkernel_low=72M too.
+> >>> otherwise intel system will get panic during swiotlb allocation.
+> >>
+> >> Two things:
+> >>
+> >>  1). You need to wrap the 'is_enough_..' in CONFIG_KEXEC, which means
+> >>     that the function needs to go in a header file.
+> >>  2). The check for 1MB is suspect. Why only 1MB? You mentioned it is
+> >>      b/c of crashkernel_low=72M (which I am not seeing in v3.8 kernel-parameters.txt?
+> >>      Is that part of your mega-patchset?). Anyhow, there seems to be a disconnect -
+> >>      what if the user supplied crashkernel_low=27M? Perhaps the 'is_enough'
+> >>      should also parse the bootparams to double-check that there is enough
+> >>      low-mem space? But then if the kernel grows then 72M might not be enough -
+> >>      you might need 82M with 3.9.
+> >>
+> >>      Perhaps a better way for this is to do:
+> >>         1). Change 'is_enough' to check only for 4MB.
+> >>         2). When booting as kexec, the SWIOTLB would only use 4MB instead of 64MB?
+> >>
+> >>      Or, we could also use the post-late SWIOTLB initialization similiary to how it was
+> >>      done on ia64. This would mean that the AMD VI code would just call the
+> >>      .. something like this - NOT tested or even compile tested:
+> >>
+> >> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
+> >> index c1c74e0..e7fa8f7 100644
+> >> --- a/drivers/iommu/amd_iommu.c
+> >> +++ b/drivers/iommu/amd_iommu.c
+> >> @@ -3173,6 +3173,24 @@ int __init amd_iommu_init_dma_ops(void)
+> >>         if (unhandled && max_pfn > MAX_DMA32_PFN) {
+> >>                 /* There are unhandled devices - initialize swiotlb for them */
+> >>                 swiotlb = 1;
+> >> +               /* Late (so no bootmem allocator) usage and only if the early SWIOTLB
+> >> +                * hadn't been allocated (which can happen on kexec kernels booted
+> >> +                * above 4GB). */
+> >> +               if (!swiotlb_nr_tbl()) {
+> >> +                       int retry = 3;
+> >> +                       int mb_size = 64;
+> >> +                       int rc = 0;
+> >> +retry_me:
+> >> +                       if (retry < 0)
+> >> +                               panic("We tried setting %dMB for SWIOTLB but got -ENOMEM", mb_size << 1);
+> >> +                       rc = swiotlb_late_init_with_default_size(mb_size * (1<<20));
+> >> +                       if (rc) {
+> >> +                               retry --;
+> >> +                               mb_size >> 1;
+> >> +                               goto retry_me;
+> >> +                       }
+> >> +                       dma_ops = &swiotlb_dma_ops;
+> >> +               }
+> >>         }
+> >>
+> >>         amd_iommu_stats_init();
+> >>
+> >> And then the early SWIOTLB initialization for 64MB can fail and we are still OK.
+> >>>
+> >
+> > Yinghai/Konrad,
+> >
+> > Did more testing. btw this patch depends on your [v7u1,25/31]
+> > memblock: add memblock_mem_size(). Here are the test results:
+> >
+> > 1. When there is not enough memory: (enough_mem_for_swiotlb() returns false)
+> > system will panic in amd_iommu_init_dma_ops().
+> >
+> > 2. When there is enough memory: (enough_mem_for_swiotlb() returns true):
+> > swiotlb is reserved
+> > pci_swiotlb_late_init() leaves the buffer allocated since swiotlb=1
+> > with that getting changed in amd_iommu_init_dma_ops().
+> >
+> > I agree with Konrad that the logic should be wrapped in CONFIG_KEXEC.
 > 
-> You still didn't answer my question mentioned above. :)
+> If enough_mem_for_swiotlb needs to be conditional on CONFIG_KEXEC the
+> code is architected wrong.  None of this logic has anything to do with
+> kexec except that the kexec path is one way to get this condition to
+> happen.  Especially since the kexec'd kernel where this condition occurs
+> does not need kexec support built in.
 
-Yes, I noticed that too :)  I think Petr probably hopes that I'll
-answer; and yes, I do hold myself responsible for solving this.
+Fair enough - with the 'memmap' command line options one can trigger
+this.
+> 
+> Yinghai I sat down and read your patch and the approach you are taking
+> is totally wrong.
+> 
+> The problem is that swiotlb_init() in lib/swiotlb.c does not know how to
+> fail without panic'ing the system.
+> 
+> Which leaves two valid approaches.
+> - Create a variant of swiotlb_init that can fail for use on x86 and
+>   handle the failure.
 
-The honest answer is that I forgot all about it for a while.  I
-had to go back to read the various threads to remind myself of what
-Andrea said back then, and the ideas I had in replying.  Thank you
-for reminding us.
+As an safe-fail step we could retry with an smaller size until a fit is found.
 
-I do intend to fix it along the lines I suggested then, if that works
-out; but that is a danger in memory hotremove only, so at present I'm
-still wrestling with the more immediate problem of stale stable_nodes
-when switching merge_across_nodes between 1 and 0 and 1.
+> - Delay initializing the swiotlb until someone actually needs a mapping
+>   from it.  
 
-Many of the problems there come from reclaim under memory pressure:
-stable pages being written out to swap, and faulted back in at "the
-wrong time".  Essentially, existing bugs in KSM_RUN_UNMERGE, that
-were not visible until merge_across_nodes brought us to rely upon it.
+So late init the SWIOTLB and perhaps have multiple "segments" of 4MB
+of SWIOTLB that can grow as we exhaust its memory. Could work.
+> 
+> Delaying the initialization of the swiotlb is out because the code
+> needs an early memory allocation to get a large chunk of contiguous
+> memory for the bounce buffers.
 
-I have "advanced" from kernel oopses to userspace corruption: that's
-no advance at all, no doubt I'm doing something stupid, but I haven't
-spotted it yet; and once I've fixed that up, shall probably want to
-look back at the little heap of fixups (a remove_all_stable_nodes()
-function) and go about it quite differently - but for now I'm still
-learning from the bugs I give myself.
+Or it can use the late init, but with a smaller chunk of memory.
 
 > 
-> > <snip>
-> > 
-> > > >  
-> > > > +		/*
-> > > > +		 * If tree_page has been migrated to another NUMA node, it
-> > > > +		 * will be flushed out and put into the right unstable tree
-> > > > +		 * next time: only merge with it if merge_across_nodes.
-> > > 
-> > > Why? Do you mean swap based migration? Or where I miss ....?
-> > > 
-> > 
-> > It can be physical page migration triggered by page compaction, memory hotplug
-> > or some NUMA sched/memory balancing algorithm developed recently.
-> > 
-> > > > +		 * Just notice, we don't have similar problem for PageKsm
-> > > > +		 * because their migration is disabled now. (62b61f611e)
-> > > > +		 */
-> > 
-> > Migration of KSM pages is disabled now, you can look into ^^^ commit and
-> > changes introduced to migrate.c.
+> Which means the panics that occurr in swiotlb_init() need to be delayed
+> until someone something actually needs bounce buffers from the swiotlb.
+> 
+> Although arguably what should actually happen instead of panic() is that
+> swiotlb_map_single should simply fail early when it was not possible to
+> preallocate bounce buffers.
 
-Migration of KSM pages is still enabled in the memory hotremove case.
+This sounds like a Catch-22. Fail early implies that it would have to do
+this when using the bootmem allocator. But the swiotlb_map_single is not
+called at that time - it is called _after_ the bootmem allocator has been
+de-activated. Actually it is called pretty late - when built-in PCI devices
+start off or when 'udev' starts scanning the PCI bus and loading modules.
 
-I don't remember how I tested that back then, so I want to enable KSM
-page migration generally, just to be able to test it more thoroughly.
-That would then benefit compaction, no longer frustrated by a KSM
-page in the way.
+I think I am misunderstanding you - could you clarify please?
 
-Hugh
