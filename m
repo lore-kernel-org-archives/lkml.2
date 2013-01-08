@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756634Ab3AHPWs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:22:48 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:34888 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756569Ab3AHPWq (ORCPT
+	id S1756640Ab3AHP00 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:26:26 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42107 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756569Ab3AHP0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:22:46 -0500
-Date: Tue, 8 Jan 2013 10:22:45 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Aaron Lu <aaron.lu@intel.com>
-cc: Jens Axboe <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        <linux-pm@vger.kernel.org>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Aaron Lu <aaron.lwe@gmail.com>,
-        Shane Huang <shane.huang@amd.com>
-Subject: Re: [PATCH v6 3/4] block: implement runtime pm strategy
-In-Reply-To: <50EBCC93.5000203@intel.com>
-Message-ID: <Pine.LNX.4.44L0.1301081016310.1535-100000@iolanthe.rowland.org>
+	Tue, 8 Jan 2013 10:26:25 -0500
+Date: Tue, 8 Jan 2013 15:25:55 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Boris BREZILLON <linux-arm@overkiz.com>
+Cc: Thierry Reding <thierry.reding@avionic-design.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>, linux-kernel@vger.kernel.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: Re: [PATCH v4 RESEND] pwm: atmel: add Timer Counter Block PWM
+	driver
+Message-ID: <20130108152555.GC3931@n2100.arm.linux.org.uk>
+References: <1355994776-4764-1-git-send-email-linux-arm@overkiz.com> <20130108071023.GA2171@avionic-0098.adnet.avionic-design.de> <50EC3997.5050702@overkiz.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EC3997.5050702@overkiz.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jan 2013, Aaron Lu wrote:
+On Tue, Jan 08, 2013 at 04:21:59PM +0100, Boris BREZILLON wrote:
+> Do I have to break the error string so that the line does not exceed 80
+> characters ?
 
-> >> --- a/include/linux/blkdev.h
-> >> +++ b/include/linux/blkdev.h
-> >> @@ -974,6 +974,40 @@ extern int blk_pre_runtime_suspend(struct request_queue *q);
-> >>  extern void blk_post_runtime_suspend(struct request_queue *q, int err);
-> >>  extern void blk_pre_runtime_resume(struct request_queue *q);
-> >>  extern void blk_post_runtime_resume(struct request_queue *q, int err);
-> >> +
-> >> +static inline void blk_pm_put_request(struct request *rq)
-> >> +{
-> >> +	if (!(rq->cmd_flags & REQ_PM) && !--rq->q->nr_pending) {
-> >> +		pm_runtime_mark_last_busy(rq->q->dev);
-> >> +		pm_runtime_autosuspend(rq->q->dev);
-> >> +	}
-> >> +}
-> >> +
-> >> +static inline struct request *blk_pm_peek_request(
-> >> +	struct request_queue *q, struct request *rq)
-> >> +{
-> >> +	if (q->rpm_status == RPM_SUSPENDED ||
-> >> +		  (q->rpm_status != RPM_ACTIVE && !(rq->cmd_flags & REQ_PM)))
-> >> +		return NULL;
-> >> +	else
-> >> +		return rq;
-> >> +}
-> >> +
-> >> +static inline void blk_pm_requeue_request(struct request *rq)
-> >> +{
-> >> +	if (!(rq->cmd_flags & REQ_PM))
-> >> +		rq->q->nr_pending--;
-> >> +}
-> >> +
-> >> +static inline void blk_pm_add_request(struct request_queue *q,
-> >> +	struct request *rq)
-> >> +{
-> >> +	if (!(rq->cmd_flags & REQ_PM) &&
-> >> +	    q->nr_pending++ == 0 &&
-> >> +	    (q->rpm_status == RPM_SUSPENDED ||
-> >> +	     q->rpm_status == RPM_SUSPENDING))
-> >> +		pm_request_resume(q->dev);
-> >> +}
-> > 
-> > These routines also don't belong in include/linux.  And they don't need 
-> > to be marked inline.
+No.
+
+> Checkpath script does not complain about it, and the CodingStyle file
+> specify that visible strings should not be broken...
+
+Correct.
+
+> Same question applies to this error, which I converted to a multi-line
+> error in a previous patch version:
 > 
-> OK, will move them.
-> 
-> What about create a new file blk-pm.c for all these block pm related
-> code?
+> 		dev_err(chip->dev,
+> 			"failed to configure period_ns:\n"
+> 			"the other PWM device in this group is already\n"
+> 			"configured with a different period_ns value\n");
 
-Sure, go ahead if Jens doesn't mind.  Alternatively, you could put each
-of these functions in the file where it gets used.
-
-Just as importantly, all of the public routines added in patch 2/4 to
-blk-core.c should have kerneldoc explaining how and where to use them.  
-In particular, the kerneldoc for blk_pm_runtime_init() has to mention
-that the block runtime PM implementation works only for drivers that
-use request structures for their I/O; it doesn't work for drivers that
-use bio's directly.
-
-Alan Stern
-
+Which is a bad idea.  It appears in log files as multiple lines, which
+makes parsing the error for analysis difficult (eg, you may have a
+log analyser which tells you how many times an error occurs - the
+above would be treated as three separate errors.
