@@ -1,109 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756410Ab3AHOJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:09:07 -0500
-Received: from www.linutronix.de ([62.245.132.108]:35336 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab3AHOJG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:09:06 -0500
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [PATCH] tools/perf: let it build from perf-*-src-pkg
-Date: Tue,  8 Jan 2013 15:08:54 +0100
-Message-Id: <1357654134-28538-1-git-send-email-bigeasy@linutronix.de>
-X-Mailer: git-send-email 1.7.10.4
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1756384Ab3AHOOS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:14:18 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:59664 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756187Ab3AHOOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 09:14:17 -0500
+Message-ID: <1357654434.3979.8.camel@lamella>
+Subject: Re: [3.6.9 -> 3.7.1 regression] sound: snd_hda_intel codec probing
+ issue?
+From: Vincent Blut <vincent.debian@free.fr>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Maurizio Avogadro <mavoga@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Jan 2013 15:13:54 +0100
+In-Reply-To: <s5hehhvq1dm.wl%tiwai@suse.de>
+References: <1356704740.3953.26.camel@lamella>
+	 <s5hvcber5cz.wl%tiwai@suse.de> <1357421043.3912.13.camel@lamella>
+	 <s5h38ydpf45.wl%tiwai@suse.de> <1357648135.3849.7.camel@lamella>
+	 <s5hehhvq1dm.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks (mostly) to uapi the package created from perf-*-src-pkg FTBFS:
+Le mardi 08 janvier 2013 à 13:56 +0100, Takashi Iwai a écrit :
+> At Tue, 08 Jan 2013 13:28:55 +0100,
+> Vincent Blut wrote:
+> > 
+> > Le lundi 07 janvier 2013 à 09:32 +0100, Takashi Iwai a écrit :
+> > > At Sat, 05 Jan 2013 22:24:03 +0100,
+> > > 
+> > > One more thing to test is whether azx_runtime_resume() is properly
+> > > called before this error happens.  Could you put a debug print and
+> > > check it?  If it's not called, it implies that the refcount or
+> > > something else got broken.  If it's called but the device doesn't
+> > > respond, it's a hardware-specific issue, and the likely solution is to
+> > > add a device-specific quirk.
+> > > 
+> > 
+> > Ok, I added a debug printk() which is called:
+> > 
+> > $ dmesg | grep -i debug
+> > [ 5330.371523] [debug] Probably needs a device-specific quirk!
+> > 
+> > As usual, when it is called the sound become very choppy.
+> 
+> OK.  So it's not the driver code but really a problem in the deeper
+> level.
 
-|    CC perf.o
-|In file included from util/../perf.h:8:0,
-|                 from util/cache.h:7,
-|                 from perf.c:12:
-|arch/x86/include/asm/unistd.h:4:29: fatal error: uapi/asm/unistd.h: No such file or directory
-|
-|    CC perf.o
-|In file included from util/../perf.h:106:0,
-|                 from util/cache.h:7,
-|                 from perf.c:12:
-|include/linux/perf_event.h:17:35: fatal error: uapi/linux/perf_event.h: No such file or directory
-|
-|    CC perf.o
-|In file included from include/uapi/linux/perf_event.h:19:0,
-|                 from util/../perf.h:106,
-|                 from util/cache.h:7,
-|                 from perf.c:12:
-|util/include/asm/byteorder.h:2:49: fatal error: ../../../../include/uapi/linux/swab.h: No such file or directory
-|
-|    CC perf.o
-|In file included from util/include/../../../../include/linux/list.h:7:0,
-|                 from util/include/linux/list.h:4,
-|                 from util/parse-events.h:7,
-|                 from perf.c:15:
-|util/include/linux/const.h:1:50: fatal error: ../../../../include/uapi/linux/const.h: No such file or directory
-|
-|In file included from builtin-kvm.c:26:0:
-|arch/x86/include/asm/svm.h:4:26: fatal error: uapi/asm/svm.h: No such file or directory
-|
-|In file included from util/evsel.c:21:0:
-|include/linux/hw_breakpoint.h:5:38: fatal error: uapi/linux/hw_breakpoint.h: No such file or directory
-|
-|    CC util/evsel.o
-|In file included from util/perf_regs.h:5:0,
-|                 from util/evsel.c:23:
-|arch/x86/include/perf_regs.h:6:27: fatal error: asm/perf_regs.h: No such file or directory
-|
-|   CC util/rbtree.o
-|In file included from ../../lib/rbtree.c:24:0:
-|util/include/linux/rbtree_augmented.h:2:56: fatal error: ../../../../include/linux/rbtree_augmented.h: No such file or directory
+Sad, by the way I'm puzzled due to the fact that nobody hit this issue,
+those audio controllers are quite common, no?
 
-This patch adds the missing files.
+> 
+> > I'll test with enable_msi=0 later.
+> 
+> Thanks.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
----
+There isn't any positive effect with this parameter.
 
-  sort tools/perf/MANIFEST > MANIFEST && mv MANIFEST tools/perf/MANIFEST
+> 
+> FWIW, below is a patch I'm considering to merge (after testing, of
+> course).  Could you buys check it?
 
-?
+I'll give it a try.
 
- tools/perf/MANIFEST |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+> 
+> 
+> Takashi
+> 
+> ---
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: hda - Disable runtime D3 for Intel CPT & co
+> 
+> We've got a few bug reports that the runtime D3 results in the dead
+> HD-audio controller.  It seems that the problem is in a deeper level
+> than the sound driver itself, so as a temporal solution, disable the
+> feature for these controllers again.
+> 
+> Reported-by: Vincent Blut <vincent.debian@free.fr>
+> Reported-by: Maurizio Avogadro <mavoga@gmail.com>
+> Cc: <stable@vger.kernel.org> [v3.7]
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  sound/pci/hda/hda_intel.c | 13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+> index cca8727..0b6aeba 100644
+> --- a/sound/pci/hda/hda_intel.c
+> +++ b/sound/pci/hda/hda_intel.c
+> @@ -573,9 +573,12 @@ enum {
+>  #define AZX_DCAPS_PM_RUNTIME	(1 << 26)	/* runtime PM support */
+>  
+>  /* quirks for Intel PCH */
+> -#define AZX_DCAPS_INTEL_PCH \
+> +#define AZX_DCAPS_INTEL_PCH_NOPM \
+>  	(AZX_DCAPS_SCH_SNOOP | AZX_DCAPS_BUFSIZE | \
+> -	 AZX_DCAPS_COUNT_LPIB_DELAY | AZX_DCAPS_PM_RUNTIME)
+> +	 AZX_DCAPS_COUNT_LPIB_DELAY)
+> +
+> +#define AZX_DCAPS_INTEL_PCH \
+> +	(AZX_DCAPS_INTEL_PCH_NOPM | AZX_DCAPS_PM_RUNTIME)
+>  
+>  /* quirks for ATI SB / AMD Hudson */
+>  #define AZX_DCAPS_PRESET_ATI_SB \
+> @@ -3586,13 +3589,13 @@ static void azx_remove(struct pci_dev *pci)
+>  static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+>  	/* CPT */
+>  	{ PCI_DEVICE(0x8086, 0x1c20),
+> -	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
+>  	/* PBG */
+>  	{ PCI_DEVICE(0x8086, 0x1d20),
+> -	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
+>  	/* Panther Point */
+>  	{ PCI_DEVICE(0x8086, 0x1e20),
+> -	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
+>  	/* Lynx Point */
+>  	{ PCI_DEVICE(0x8086, 0x8c20),
+>  	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
 
-diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-index 80db3f4..39d4106 100644
---- a/tools/perf/MANIFEST
-+++ b/tools/perf/MANIFEST
-@@ -11,11 +11,21 @@ lib/rbtree.c
- include/linux/swab.h
- arch/*/include/asm/unistd*.h
- arch/*/include/asm/perf_regs.h
-+arch/*/include/uapi/asm/unistd*.h
-+arch/*/include/uapi/asm/perf_regs.h
- arch/*/lib/memcpy*.S
- arch/*/lib/memset*.S
- include/linux/poison.h
- include/linux/magic.h
- include/linux/hw_breakpoint.h
-+include/linux/rbtree_augmented.h
-+include/uapi/linux/perf_event.h
-+include/uapi/linux/const.h
-+include/uapi/linux/swab.h
-+include/uapi/linux/hw_breakpoint.h
- arch/x86/include/asm/svm.h
- arch/x86/include/asm/vmx.h
- arch/x86/include/asm/kvm_host.h
-+arch/x86/include/uapi/asm/svm.h
-+arch/x86/include/uapi/asm/vmx.h
-+arch/x86/include/uapi/asm/kvm.h
--- 
-1.7.10.4
+
 
