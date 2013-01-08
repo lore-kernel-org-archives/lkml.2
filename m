@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756126Ab3AHCJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:09:42 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:34206 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755752Ab3AHCJj (ORCPT
+	id S1756170Ab3AHCJq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:09:46 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:46105 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755752Ab3AHCJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:39 -0500
+	Mon, 7 Jan 2013 21:09:43 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 24/33] nohz: Don't stop the tick if posix cpu timers are running
-Date: Tue,  8 Jan 2013 03:08:24 +0100
-Message-Id: <1357610913-1080-25-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 26/33] rcu: Don't keep the tick for RCU while in userspace
+Date: Tue,  8 Jan 2013 03:08:26 +0100
+Message-Id: <1357610913-1080-27-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,13 +33,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If either a per thread or a per process posix cpu timer is running,
-don't stop the tick.
+If we are interrupting userspace, we don't need to keep
+the tick for RCU: quiescent states don't need to be reported
+because we soon run in userspace and local callbacks are handled
+by the nocb threads.
 
-TODO: restart the tick if it is stopped and a posix cpu timer is
-enqueued. Check we probably need a memory barrier for the per
-process posix timer that can be enqueued from another task
-of the group.
+CHECKME: Do the nocb threads actually handle the global
+grace period completion for local callbacks?
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -58,67 +58,34 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/posix-timers.h |    1 +
- kernel/posix-cpu-timers.c    |   11 +++++++++++
- kernel/time/tick-sched.c     |    4 ++++
- 3 files changed, 16 insertions(+), 0 deletions(-)
+ kernel/time/tick-sched.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 042058f..97480c2 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -119,6 +119,7 @@ int posix_timer_event(struct k_itimer *timr, int si_private);
- void posix_cpu_timer_schedule(struct k_itimer *timer);
- 
- void run_posix_cpu_timers(struct task_struct *task);
-+bool posix_cpu_timers_running(struct task_struct *tsk);
- void posix_cpu_timers_exit(struct task_struct *task);
- void posix_cpu_timers_exit_group(struct task_struct *task);
- 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 165d476..15f8f4f 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -1269,6 +1269,17 @@ static inline int fastpath_timer_check(struct task_struct *tsk)
- 	return 0;
- }
- 
-+bool posix_cpu_timers_running(struct task_struct *tsk)
-+{
-+	if (!task_cputime_zero(&tsk->cputime_expires))
-+		return true;
-+
-+	if (tsk->signal->cputimer.running)
-+		return true;
-+
-+	return false;
-+}
-+
- /*
-  * This is called from the timer interrupt handler.  The irq handler has
-  * already updated our counts.  We need to check if any timers fire now.
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 743b021..5543a4d 100644
+index 1cd93a9..ecba8b7 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -21,6 +21,7 @@
- #include <linux/sched.h>
+@@ -22,6 +22,7 @@
  #include <linux/module.h>
  #include <linux/irq_work.h>
-+#include <linux/posix-timers.h>
+ #include <linux/posix-timers.h>
++#include <linux/context_tracking.h>
  
  #include <asm/irq_regs.h>
  
-@@ -599,6 +600,9 @@ static bool can_stop_full_tick(int cpu)
- 	if (rcu_pending(cpu))
- 		return false;
+@@ -604,10 +605,9 @@ static bool can_stop_full_tick(int cpu)
  
-+	if (posix_cpu_timers_running(current))
-+		return false;
-+
- 	return true;
- }
- #endif
+ 	/*
+ 	 * Keep the tick if we are asked to report a quiescent state.
+-	 * This must be further optimized (avoid checks for local callbacks,
+-	 * ignore RCU in userspace, etc...
++	 * This must be further optimized (avoid checks for local callbacks)
+ 	 */
+-	if (rcu_pending(cpu)) {
++	if (!context_tracking_in_user() && rcu_pending(cpu)) {
+ 		trace_printk("Can't stop: RCU pending\n");
+ 		return false;
+ 	}
 -- 
 1.7.5.4
 
