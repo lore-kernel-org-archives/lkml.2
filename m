@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab3AHOnV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:43:21 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:63623 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756428Ab3AHOnT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:43:19 -0500
+	id S1756536Ab3AHOqL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:46:11 -0500
+Received: from fieldses.org ([174.143.236.118]:60634 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756442Ab3AHOqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 09:46:09 -0500
+Date: Tue, 8 Jan 2013 09:46:04 -0500
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Joe Perches <joe@perches.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-nfs@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tom Tucker <tom@ogc.us>, steved@redhat.com,
+        Tom Talpey <ttalpey@microsoft.com>
+Subject: Re: [PATCH] sunrpc: verbs: Avoid 1kb stack
+Message-ID: <20130108144604.GB16343@fieldses.org>
+References: <1357587696.21481.48.camel@joe-AO722>
 MIME-Version: 1.0
-In-Reply-To: <1357652409-22907-1-git-send-email-laurent.navet@gmail.com>
-References: <1357652409-22907-1-git-send-email-laurent.navet@gmail.com>
-Date: Tue, 8 Jan 2013 15:43:19 +0100
-Message-ID: <CAH7P7Nh2S9pHyKs=eQ-9YRXeGnH6OV+oZDJAAfbC8y+eaQNLnA@mail.gmail.com>
-Subject: Re: [PATCH] drivers: i2c: muxes: fix sizeof(ptr)
-From: Laurent Navet <laurent.navet@gmail.com>
-To: w.sang@pengutronix.de
-Cc: ben-linux@fluff.org, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357587696.21481.48.camel@joe-AO722>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not really a bug as mux->busses is a multilevel pointer, so
-the result of sizeof(ptr) is the same as sizeof(*ptr).
-But I think this is more logical and according to CodingStyle rules like this.
-This is also what is done for mux->states a few lines above.
+On Mon, Jan 07, 2013 at 11:41:36AM -0800, Joe Perches wrote:
+> 16 * 64 is a bit much.
+> Use kmalloc_array instead.
 
-Regards,
+I thought there was some reason we didn't do this.
 
+Grepping up through the callers....  It looks like the result is
+xprt_rdma_send_request returns -EIO, and as far as I can tell that gets
+passed up to the application on the client.   That doesn't sound right.
 
-2013/1/8, Laurent Navet <laurent.navet@gmail.com>:
-> sizeof when applied to a pointer typed expression gives the size of
-> the pointer
->
-> The semantic patch that makes this output is available
-> in scripts/coccinelle/misc/noderef.cocci.
->
-> More information about semantic patching is available at
-> http://coccinelle.lip6.fr/
->
-> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+--b.
+
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/i2c/muxes/i2c-mux-pinctrl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> index 7fa5b24..f958d0f 100644
-> --- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> +++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
-> @@ -167,7 +167,7 @@ static int __devinit i2c_mux_pinctrl_probe(struct
-> platform_device *pdev)
+>  net/sunrpc/xprtrdma/verbs.c | 10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+> 
+> diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+> index 745973b..9cfebb4 100644
+> --- a/net/sunrpc/xprtrdma/verbs.c
+> +++ b/net/sunrpc/xprtrdma/verbs.c
+> @@ -1736,8 +1736,13 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+>  	int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
+>  				  IB_ACCESS_REMOTE_READ);
+>  	struct rpcrdma_mr_seg *seg1 = seg;
+> -	struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
+>  	int len, i, rc = 0;
+> +	struct ib_phys_buf *ipb = kmalloc_array(RPCRDMA_MAX_DATA_SEGS,
+> +						sizeof(*ipb),
+> +						GFP_KERNEL);
+> +
+> +	if (!ipb)
+> +		return -ENOMEM;
+>  
+>  	if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
+>  		*nsegs = RPCRDMA_MAX_DATA_SEGS;
+> @@ -1770,6 +1775,9 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
+>  		seg1->mr_len = len;
 >  	}
->
->  	mux->busses = devm_kzalloc(&pdev->dev,
-> -				   sizeof(mux->busses) * mux->pdata->bus_count,
-> +				   sizeof(*mux->busses) * mux->pdata->bus_count,
->  				   GFP_KERNEL);
->  	if (!mux->busses) {
->  		dev_err(&pdev->dev, "Cannot allocate busses\n");
-> --
-> 1.7.10.4
->
->
-
-
--- 
-« On ne résout pas un problème avec les modes de pensée qui l’ont engendré. »
-« You cannot solve current problems with current thinking. Current
-problems are the result of current thinking »
+>  	*nsegs = i;
+> +
+> +	kfree(ipb);
+> +
+>  	return rc;
+>  }
+>  
+> 
+> 
