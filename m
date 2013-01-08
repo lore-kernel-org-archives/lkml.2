@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757207Ab3AHXoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:44:46 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53759 "EHLO
+	id S1756840Ab3AHXjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:39:48 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53734 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab3AHXjv (ORCPT
+	with ESMTP id S1756996Ab3AHXjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:39:51 -0500
+	Tue, 8 Jan 2013 18:39:42 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+CC: Wei Yongjun <yjwei@cn.fujitsu.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 67/77] perf_events: Fix races in group composition
-Date: Tue, 8 Jan 2013 18:35:46 -0500
-Message-ID: <1357688156-25387-68-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 61/77] sctp: malloc enough room for asconf-ack chunk
+Date: Tue, 8 Jan 2013 18:35:40 -0500
+Message-ID: <1357688156-25387-62-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Wei Yongjun <yjwei@cn.fujitsu.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,229 +32,96 @@ From: Peter Zijlstra <a.p.zijlstra@chello.nl>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8a49542c0554af7d0073aac0ee73ee65b807ef34 upstream.
+commit 2cab86bee8e7f353e6ac8c15b3eb906643497644 upstream.
 
-Group siblings don't pin each-other or the parent, so when we destroy
-events we must make sure to clean up all cross referencing pointers.
+Sometime the ASCONF_ACK parameters can equal to the fourfold of
+ASCONF parameters, this only happend in some special case:
 
-In particular, for destruction of a group leader we must be able to
-find all its siblings and remove their reference to it.
+  ASCONF parameter is :
+    Unrecognized Parameter (4 bytes)
+  ASCONF_ACK parameter should be:
+    Error Cause Indication parameter (8 bytes header)
+     + Error Cause (4 bytes header)
+       + Unrecognized Parameter (4bytes)
 
-This means that detaching an event from its context must not detach it
-from the group, otherwise we can end up failing to clear all pointers.
+Four 4bytes Unrecognized Parameters in ASCONF chunk will cause panic.
 
-Solve this by clearly separating the attachment to a context and
-attachment to a group, and keep the group composed until we destroy
-the events.
+Pid: 0, comm: swapper Not tainted 2.6.38-next+ #22 Bochs Bochs
+EIP: 0060:[<c0717eae>] EFLAGS: 00010246 CPU: 0
+EIP is at skb_put+0x60/0x70
+EAX: 00000077 EBX: c09060e2 ECX: dec1dc30 EDX: c09469c0
+ESI: 00000000 EDI: de3c8d40 EBP: dec1dc58 ESP: dec1dc2c
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+Process swapper (pid: 0, ti=dec1c000 task=c09aef20 task.ti=c0980000)
+Stack:
+ c09469c0 e1894fa4 00000044 00000004 de3c8d00 de3c8d00 de3c8d44 de3c8d40
+ c09060e2 de25dd80 de3c8d40 dec1dc7c e1894fa4 dec1dcb0 00000040 00000004
+ 00000000 00000800 00000004 00000004 dec1dce0 e1895a2b dec1dcb4 de25d960
+Call Trace:
+ [<e1894fa4>] ? sctp_addto_chunk+0x4e/0x89 [sctp]
+ [<e1894fa4>] sctp_addto_chunk+0x4e/0x89 [sctp]
+ [<e1895a2b>] sctp_process_asconf+0x32f/0x3d1 [sctp]
+ [<e188d554>] sctp_sf_do_asconf+0xf8/0x173 [sctp]
+ [<e1890b02>] sctp_do_sm+0xb8/0x159 [sctp]
+ [<e18a2248>] ? sctp_cname+0x0/0x52 [sctp]
+ [<e189392d>] sctp_assoc_bh_rcv+0xac/0xe3 [sctp]
+ [<e1897d76>] sctp_inq_push+0x2d/0x30 [sctp]
+ [<e18a21b2>] sctp_rcv+0x7a7/0x83d [sctp]
+ [<c077a95c>] ? ipv4_confirm+0x118/0x125
+ [<c073a970>] ? nf_iterate+0x34/0x62
+ [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
+ [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
+ [<c0747992>] ip_local_deliver_finish+0xf5/0x194
+ [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
+ [<c0747a6e>] NF_HOOK.clone.1+0x3d/0x44
+ [<c0747ab3>] ip_local_deliver+0x3e/0x44
+ [<c074789d>] ? ip_local_deliver_finish+0x0/0x194
+ [<c074775c>] ip_rcv_finish+0x29f/0x2c7
+ [<c07474bd>] ? ip_rcv_finish+0x0/0x2c7
+ [<c0747a6e>] NF_HOOK.clone.1+0x3d/0x44
+ [<c0747cae>] ip_rcv+0x1f5/0x233
+ [<c07474bd>] ? ip_rcv_finish+0x0/0x2c7
+ [<c071dce3>] __netif_receive_skb+0x310/0x336
+ [<c07221f3>] netif_receive_skb+0x4b/0x51
+ [<e0a4ed3d>] cp_rx_poll+0x1e7/0x29c [8139cp]
+ [<c072275e>] net_rx_action+0x65/0x13a
+ [<c0445a54>] __do_softirq+0xa1/0x149
+ [<c04459b3>] ? __do_softirq+0x0/0x149
+ <IRQ>
+ [<c0445891>] ? irq_exit+0x37/0x72
+ [<c040a7e9>] ? do_IRQ+0x81/0x95
+ [<c07b3670>] ? common_interrupt+0x30/0x38
+ [<c0428058>] ? native_safe_halt+0xa/0xc
+ [<c040f5d7>] ? default_idle+0x58/0x92
+ [<c0408fb0>] ? cpu_idle+0x96/0xb2
+ [<c0797989>] ? rest_init+0x5d/0x5f
+ [<c09fd90c>] ? start_kernel+0x34b/0x350
+ [<c09fd0cb>] ? i386_start_kernel+0xba/0xc1
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Wei Yongjun <yjwei@cn.fujitsu.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/perf_event.h |  4 ++
- kernel/perf_event.c        | 91 ++++++++++++++++++++++++++++++++++------------
- 2 files changed, 71 insertions(+), 24 deletions(-)
+ net/sctp/sm_make_chunk.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index eea9188..c6e1432 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -571,6 +571,9 @@ enum perf_group_flag {
- 	PERF_GROUP_SOFTWARE = 0x1,
- };
+diff --git a/net/sctp/sm_make_chunk.c b/net/sctp/sm_make_chunk.c
+index 70d6c10..ad633d9 100644
+--- a/net/sctp/sm_make_chunk.c
++++ b/net/sctp/sm_make_chunk.c
+@@ -3110,10 +3110,10 @@ struct sctp_chunk *sctp_process_asconf(struct sctp_association *asoc,
  
-+#define PERF_ATTACH_CONTEXT	0x01
-+#define PERF_ATTACH_GROUP	0x02
-+
- /**
-  * struct perf_event - performance event kernel representation:
-  */
-@@ -585,6 +588,7 @@ struct perf_event {
- 	const struct pmu		*pmu;
- 
- 	enum perf_event_active_state	state;
-+	unsigned int			attach_state;
- 	atomic64_t			count;
- 
- 	/*
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 540c26b..0e4499e 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -291,14 +291,15 @@ ctx_group_list(struct perf_event *event, struct perf_event_context *ctx)
- static void
- list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- {
--	struct perf_event *group_leader = event->group_leader;
-+	WARN_ON_ONCE(event->attach_state & PERF_ATTACH_CONTEXT);
-+	event->attach_state |= PERF_ATTACH_CONTEXT;
- 
- 	/*
--	 * Depending on whether it is a standalone or sibling event,
--	 * add it straight to the context's event list, or to the group
--	 * leader's sibling list:
-+	 * If we're a stand alone event or group leader, we go to the context
-+	 * list, group events are kept attached to the group so that
-+	 * perf_group_detach can, at all times, locate all siblings.
+ 	/* create an ASCONF_ACK chunk.
+ 	 * Based on the definitions of parameters, we know that the size of
+-	 * ASCONF_ACK parameters are less than or equal to the twice of ASCONF
++	 * ASCONF_ACK parameters are less than or equal to the fourfold of ASCONF
+ 	 * parameters.
  	 */
--	if (group_leader == event) {
-+	if (event->group_leader == event) {
- 		struct list_head *list;
+-	asconf_ack = sctp_make_asconf_ack(asoc, serial, chunk_len * 2);
++	asconf_ack = sctp_make_asconf_ack(asoc, serial, chunk_len * 4);
+ 	if (!asconf_ack)
+ 		goto done;
  
- 		if (is_software_event(event))
-@@ -306,13 +307,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 
- 		list = ctx_group_list(event, ctx);
- 		list_add_tail(&event->group_entry, list);
--	} else {
--		if (group_leader->group_flags & PERF_GROUP_SOFTWARE &&
--		    !is_software_event(event))
--			group_leader->group_flags &= ~PERF_GROUP_SOFTWARE;
--
--		list_add_tail(&event->group_entry, &group_leader->sibling_list);
--		group_leader->nr_siblings++;
- 	}
- 
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
-@@ -321,6 +315,24 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 		ctx->nr_stat++;
- }
- 
-+static void perf_group_attach(struct perf_event *event)
-+{
-+	struct perf_event *group_leader = event->group_leader;
-+
-+	WARN_ON_ONCE(event->attach_state & PERF_ATTACH_GROUP);
-+	event->attach_state |= PERF_ATTACH_GROUP;
-+
-+	if (group_leader == event)
-+		return;
-+
-+	if (group_leader->group_flags & PERF_GROUP_SOFTWARE &&
-+			!is_software_event(event))
-+		group_leader->group_flags &= ~PERF_GROUP_SOFTWARE;
-+
-+	list_add_tail(&event->group_entry, &group_leader->sibling_list);
-+	group_leader->nr_siblings++;
-+}
-+
- /*
-  * Remove a event from the lists for its context.
-  * Must be called with ctx->mutex and ctx->lock held.
-@@ -328,17 +340,22 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- static void
- list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- {
--	if (list_empty(&event->group_entry))
-+	/*
-+	 * We can have double detach due to exit/hot-unplug + close.
-+	 */
-+	if (!(event->attach_state & PERF_ATTACH_CONTEXT))
- 		return;
-+
-+	event->attach_state &= ~PERF_ATTACH_CONTEXT;
-+
- 	ctx->nr_events--;
- 	if (event->attr.inherit_stat)
- 		ctx->nr_stat--;
- 
--	list_del_init(&event->group_entry);
- 	list_del_rcu(&event->event_entry);
- 
--	if (event->group_leader != event)
--		event->group_leader->nr_siblings--;
-+	if (event->group_leader == event)
-+		list_del_init(&event->group_entry);
- 
- 	update_group_times(event);
- 
-@@ -353,21 +370,39 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 		event->state = PERF_EVENT_STATE_OFF;
- }
- 
--static void
--perf_destroy_group(struct perf_event *event, struct perf_event_context *ctx)
-+static void perf_group_detach(struct perf_event *event)
- {
- 	struct perf_event *sibling, *tmp;
-+	struct list_head *list = NULL;
-+
-+	/*
-+	 * We can have double detach due to exit/hot-unplug + close.
-+	 */
-+	if (!(event->attach_state & PERF_ATTACH_GROUP))
-+		return;
-+
-+	event->attach_state &= ~PERF_ATTACH_GROUP;
-+
-+	/*
-+	 * If this is a sibling, remove it from its group.
-+	 */
-+	if (event->group_leader != event) {
-+		list_del_init(&event->group_entry);
-+		event->group_leader->nr_siblings--;
-+		return;
-+	}
-+
-+	if (!list_empty(&event->group_entry))
-+		list = &event->group_entry;
- 
- 	/*
- 	 * If this was a group event with sibling events then
- 	 * upgrade the siblings to singleton events by adding them
--	 * to the context list directly:
-+	 * to whatever list we are on.
- 	 */
- 	list_for_each_entry_safe(sibling, tmp, &event->sibling_list, group_entry) {
--		struct list_head *list;
--
--		list = ctx_group_list(event, ctx);
--		list_move_tail(&sibling->group_entry, list);
-+		if (list)
-+			list_move_tail(&sibling->group_entry, list);
- 		sibling->group_leader = sibling;
- 
- 		/* Inherit group flags from the previous leader */
-@@ -720,6 +755,7 @@ static void add_event_to_ctx(struct perf_event *event,
- 			       struct perf_event_context *ctx)
- {
- 	list_add_event(event, ctx);
-+	perf_group_attach(event);
- 	event->tstamp_enabled = ctx->time;
- 	event->tstamp_running = ctx->time;
- 	event->tstamp_stopped = ctx->time;
-@@ -1874,8 +1910,8 @@ int perf_event_release_kernel(struct perf_event *event)
- 	WARN_ON_ONCE(ctx->parent_ctx);
- 	mutex_lock(&ctx->mutex);
- 	raw_spin_lock_irq(&ctx->lock);
-+	perf_group_detach(event);
- 	list_del_event(event, ctx);
--	perf_destroy_group(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- 	mutex_unlock(&ctx->mutex);
- 
-@@ -4946,6 +4982,12 @@ SYSCALL_DEFINE5(perf_event_open,
- 	list_add_tail(&event->owner_entry, &current->perf_event_list);
- 	mutex_unlock(&current->perf_event_mutex);
- 
-+	/*
-+	 * Drop the reference on the group_event after placing the
-+	 * new event on the sibling_list. This ensures destruction
-+	 * of the group leader will find the pointer to itself in
-+	 * perf_group_detach().
-+	 */
- 	fput_light(group_file, fput_needed);
- 	fd_install(event_fd, event_file);
- 	return event_fd;
-@@ -5267,6 +5309,7 @@ static void perf_free_event(struct perf_event *event,
- 
- 	fput(parent->filp);
- 
-+	perf_group_detach(event);
- 	list_del_event(event, ctx);
- 	free_event(event);
- }
 -- 
 1.7.12.1
 
