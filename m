@@ -1,70 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552Ab3AHEXA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 23:23:00 -0500
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:50833 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809Ab3AHEW7 (ORCPT
+	id S1753199Ab3AHE1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 23:27:54 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:36399 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241Ab3AHE1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 23:22:59 -0500
-X-Greylist: delayed 41547 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 23:22:59 EST
-X-Originating-IP: 217.70.178.152
-X-Originating-IP: 50.43.39.152
-Date: Mon, 7 Jan 2013 20:22:50 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
-        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
-Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
-Message-ID: <20130108042249.GB12974@leaf>
-References: <20130105175059.GA15961@linux.vnet.ibm.com>
- <20130107155810.GC11145@leaf>
- <20130107165748.GF2525@linux.vnet.ibm.com>
- <20130107175606.GA9962@jtriplet-mobl1>
- <20130107221915.GA2525@linux.vnet.ibm.com>
+	Mon, 7 Jan 2013 23:27:52 -0500
+X-IronPort-AV: E=Sophos;i="4.84,428,1355126400"; 
+   d="scan'208";a="18367372"
+Date: Mon, 7 Jan 2013 20:27:50 -0800
+From: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org,
+        Mike Frysinger <vapier@gentoo.org>,
+        uclinux-dist-devel@blackfin.uclinux.org,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, mhocko@suse.cz, srivatsa.bhat@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 1/2] cpuhotplug/nohz: Remove offline cpus from
+ nohz-idle state
+Message-ID: <20130108042750.GA18214@quicinc.com>
+Reply-To: Srivatsa Vaddagiri <vatsa@codeaurora.org>
+References: <1357268318-7993-1-git-send-email-vatsa@codeaurora.org>
+ <20130105103627.GU2631@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130107221915.GA2525@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130105103627.GU2631@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 02:19:15PM -0800, Paul E. McKenney wrote:
-> On Mon, Jan 07, 2013 at 09:56:06AM -0800, Josh Triplett wrote:
-> > On Mon, Jan 07, 2013 at 08:57:48AM -0800, Paul E. McKenney wrote:
-> > > On Mon, Jan 07, 2013 at 07:58:10AM -0800, Josh Triplett wrote:
-> > > > This patch seems reasonable to me, but the repeated use of #if
-> > > > defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
-> > > > annoying, and fragile if you ever decide to change the conditions.  How
-> > > > about defining an appropriate symbol in Kconfig for stall warnings, and
-> > > > using that?
-> > > 
-> > > But I only just removed the config option for SMP RCU stall warnings.  ;-)
-> > > 
-> > > But I must agree that "defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)"
-> > > is a bit obscure.  The rationale is that RCU stall warnings are
-> > > unconditionally enabled in SMP kernels, but don't want to be in
-> > > TINY_RCU kernels due to size constraints.  I therefore put it under
-> > > CONFIG_RCU_TRACE, which also contains other TINY_RCU debugging-style
-> > > options.  Would adding a comment to this effect help?
-> > 
-> > I understand the rationale; I just think it would become clearer if you
-> > added an internal-only Kconfig symbol selected in both cases and change
-> > the conditionals to use that.
-> 
-> My concern was that this would confuse people into thinking that the
-> code under those #ifdefs was all the stall-warning code that there was.
-> 
-> I suppose this could be forestalled with a suitably clever name...
-> CONFIG_RCU_CPU_STALL_TINY_TOO?  Better names?
+* Russell King - ARM Linux <linux@arm.linux.org.uk> [2013-01-05 10:36:27]:
 
-How about CONFIG_RCU_STALL_COMMON, with associated help text saying
-"include the stall-detection code common to both rcutree and rcutiny"?
+> On Thu, Jan 03, 2013 at 06:58:38PM -0800, Srivatsa Vaddagiri wrote:
+> > I also think that the
+> > wait_for_completion() based wait in ARM's __cpu_die() can be replaced with a
+> > busy-loop based one, as the wait there in general should be terminated within
+> > few cycles.
+> 
+> Why open-code this stuff when we have infrastructure already in the kernel
+> for waiting for stuff to happen?  I chose to use the standard infrastructure
+> because its better tested, and avoids having to think about whether we need
+> CPU barriers and such like to ensure that updates are seen in a timely
+> manner.
 
-- Josh Triplett
+I was primarily thinking of calling as few generic functions as possible on
+a dead cpu. I recall several "am I running on a dead cpu?" checks
+(cpu_is_offline(this_cpu) that were put in generic routines during early
+versions of cpu hotplug [1] to educate code running on dead cpu, the need for
+which went away though with introduction of atomic/stop-machine variant. The
+need to add a RCU_NONIDLE() wrapper around ARM's cpu_die() [2] is perhaps a more
+recent example of educating code running on dead cpu. As quickly we die as
+possible after idle thread of dying cpu gains control, the better!
+
+1. http://lwn.net/Articles/69040/
+2. http://lists.infradead.org/pipermail/linux-arm-kernel/2012-July/107971.html
+
+- vatsa
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
