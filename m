@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756467Ab3AHO1k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:27:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42380 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756424Ab3AHO1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:27:39 -0500
-Date: Tue, 8 Jan 2013 15:27:15 +0100
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>
-Subject: Re: [RFC PATCH 5/6] uprobes: add bp_vaddr argument to consumer
- handler
-Message-ID: <20130108142715.GA16849@bandura.brq.redhat.com>
-References: <1356088596-17858-1-git-send-email-anton@redhat.com>
- <1356088596-17858-6-git-send-email-anton@redhat.com>
- <20121222163545.GE18082@redhat.com>
- <20121222171329.GA20691@redhat.com>
- <20121223154910.GA7106@redhat.com>
+	id S1756452Ab3AHOa0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:30:26 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:43476 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382Ab3AHOaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 09:30:25 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20121223154910.GA7106@redhat.com>
-X-PGP-Key: http://people.redhat.com/aarapov/gpg
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1356141435-17340-3-git-send-email-tj@kernel.org>
+References: <1356141435-17340-1-git-send-email-tj@kernel.org>
+	<1356141435-17340-3-git-send-email-tj@kernel.org>
+Date: Tue, 8 Jan 2013 15:30:23 +0100
+Message-ID: <CACRpkdYeHP6DCDH5XO8EyqAUaQWczqffGKaMEMXXDPVSAE_DWQ@mail.gmail.com>
+Subject: Re: [PATCH 02/25] ab8500_charger: don't use [delayed_]work_pending()
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Marcus COOPER <marcus.xm.cooper@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 23, 2012 at 04:49:10PM +0100, Oleg Nesterov wrote:
-> On 12/22, Oleg Nesterov wrote:
-> >
-> > Forgot to ask...
-> >
-> > On 12/22, Oleg Nesterov wrote:
-> > >
-> > > On 12/21, Anton Arapov wrote:
-> > > >
-> > > >  struct uprobe_consumer {
-> > > > -	int (*handler)(struct uprobe_consumer *self, struct pt_regs *regs);
-> > > > +	int (*handler)(struct uprobe_consumer *self, unsigned long bp_vaddr, struct pt_regs *regs);
-> > >
-> > > It seems that we can do better...
-> > >
-> > > Just change regs->ip before calling ->handler().
-> >
-> > Josh, Frank, will it work for you?
-> 
-> Wait, probably I was confused by this patch and 4/6...
-> 
-> To simplify, lets ignore the normal uprobes. Yes I still think that it
-> would be better to set "regs->ip = orig_return_vaddr" before calling
-> ->handler() and not pass it as an argument.
-> 
-> But, probably uprobe_consumer also needs to know bp_vaddr? IOW, the
-> address of the function which we are going to return from? In this case,
-> yes, we also need another argument. And prepare_uretprobe/etc should
-> be changed to record bp_vaddr passed from handle_swbp(). And
-> uretprobe_run_handlers() should pass this bp_vaddr, not orig_return_vaddr.
-> 
-> Or I am confused.
-> 
-> Anton?
+On Sat, Dec 22, 2012 at 2:56 AM, Tejun Heo <tj@kernel.org> wrote:
 
-  Oleg, you are absolutely right and change the ip before calling the
-->handle is much better then what I 'invented'.
- 
-  I'm working on v2 to address this and other issues, will post it soon.
+> There's no need to test whether a (delayed) work item in pending
+> before queueing, flushing or cancelling it.  Most uses are unnecessary
+> and quite a few of them are buggy.
+>
+> Remove unnecessary pending tests from ab8500_charger.  Only compile
+> tested.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
 
-Anton.
+Works like a charm for us, thanks!
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Tested-by: Marcus Cooper <marcus.xm.cooper@stericsson.com>
+
+Yours,
+Linus Walleij
