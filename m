@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756301Ab3AHNER (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 08:04:17 -0500
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:36696 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756243Ab3AHNEQ (ORCPT
+	id S1755915Ab3AHNGJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 08:06:09 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:53137 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3AHNGH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 08:04:16 -0500
+	Tue, 8 Jan 2013 08:06:07 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Subject: Re: [PATCH 0/4] gpio: introduce descriptor-based interface
+Date: Tue, 8 Jan 2013 13:06:02 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree-discuss@lists.ozlabs.org,
+        Alexandre Courbot <gnurou@gmail.com>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1357629535-26033-1-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
-References: <20130105152208.GA3386@redhat.com>
-	<CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
-	<alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
-	<CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
-	<CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
-Date: Tue, 8 Jan 2013 21:04:15 +0800
-Message-ID: <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
-Subject: Re: oops in copy_page_rep()
-From: Hillf Danton <dhillf@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hugh Dickins <hughd@google.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301081306.02942.arnd@arndb.de>
+X-Provags-ID: V02:K0:5Mm65qNkl22rRxjZgd1hPu8SVaccAfD0HU639Vxt3CQ
+ mzwqLQ2SkFV/y8T/SRmXcwFCCDYH2W4T8XO4LqXI18MTZYiHrR
+ +rVEoTLfATMCj0svSHM52zST54BEcliqS1BCWIJTQPl8SHf1iB
+ HX0Lp2RYme5uTsilvbjPtP0xkTULGFSzeVMNmG0SegyJs4fspg
+ NGj0yTGIWraYhMNiWVM3U26GRX03WOd0nih2l4uWmPCP8XfpwB
+ iIhxtnx/A91elCH7XD2Vuav589c4T3lsH6kOjuiGUarYhfOrf6
+ etewsrdv/VB0EfWWq9vC4ATpX83kz/07IDFrPQu6MTr5iAL93w
+ 5VAKeTIrBhvmVhSkyoR8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 8, 2013 at 1:34 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Mon, Jan 7, 2013 at 4:24 AM, Hillf Danton <dhillf@gmail.com> wrote:
->>
->> I take another try with waiting added, take a look please.
->
-> Hmm. Is there some reason we never need to worry about it for the
-> "pmd_numa()" case just above?
->
-> A comment about this all might be a really good idea.
->
-Yes Sir, added.
----
-From: Hillf Danton <dhillf@gmail.com>
-Subject: [PATCH] mm: restore huge pmd splitting check
+On Tuesday 08 January 2013, Alexandre Courbot wrote:
+> This series introduce a first take at implementing the RFC for the new GPIO API
+> that I submitted last month. It proposes a new, opaque descriptor-based GPIO API
+> that becomes available when GPIOlib is compiled, and provides a safer, more
+> abstract alternative to the current integer-based interface. GPIOlib internals
+> are also switched to use the descriptor logic, and the former integer API
+> becomes a lightweight wrapper around the new descriptor-based API.
+> 
+> Functionally speaking the new API is identical to the integer-based API, with
+> only the prefix changing from gpio_ to gpiod_. However, the second patch
+> introduces new functions for obtaining GPIOs from a device and a consumer name,
+> in a fashion similar to what is done with e.g. regulators and PWMs.
 
-Hugh said, it's clear that 3.7 had an important pmd_trans_splitting(orig_pmd)
-check there, which went AWOL in
-d10e63f29488 "mm: numa: Create basic numa page hinting infrastructure".
+I like the interface, good idea!
 
-It is restored for handling stable page fault, with wait_split_huge_page()
-added, as suggested also by Hugh, to avoid reapted faults until the split
-has completed.
+A few questions:
 
-This work is inspired by the oops reported by Dave Jones at
-https://lkml.org/lkml/2013/1/5/115
+Is there a plan for migrating all the existing users of the current GPIO
+interface?
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+How do you want to deal with drivers that work on platforms that currently
+don't use gpiolib but have their own implementation of asm/gpio.h? Are
+we going to phase them out?
 
---- a/mm/memory.c	Sun Jan  6 19:49:50 2013
-+++ b/mm/memory.c	Tue Jan  8 20:28:04 2013
-@@ -3710,6 +3710,14 @@ retry:
- 				return do_huge_pmd_numa_page(mm, vma, address,
- 							     orig_pmd, pmd);
+If we are adding a new way to deal with GPIOs, would it make sense to
+have that more closely integrated into pinctrl in one form or another?
+My feeling is that there is already a significant overlap between the
+two, and while the addition of the gpiod_* functions doesn't necessarily
+make this worse, it could be a chance to improve the current situation
+to make the interface more consistent with pinctrl.
 
-+			/*
-+			 * Check if pmd is stable
-+			 * (numa pmd is stable, see change_huge_pmd())
-+			 */
-+			if (pmd_trans_splitting(orig_pmd)) {
-+				wait_split_huge_page(vma->anon_vma, pmd);
-+				goto retry;
-+			}
- 			if (dirty && !pmd_write(orig_pmd)) {
- 				ret = do_huge_pmd_wp_page(mm, vma, address, pmd,
- 							  orig_pmd);
---
+	Arnd
