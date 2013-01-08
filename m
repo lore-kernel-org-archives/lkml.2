@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756867Ab3AHSIN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:08:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33486 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756765Ab3AHSIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:08:11 -0500
-Date: Tue, 8 Jan 2013 13:08:04 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 21/24] blkcg: make blkcg_print_blkgs() grab q locks
- instead of blkcg lock
-Message-ID: <20130108180804.GC29933@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-22-git-send-email-tj@kernel.org>
+	id S1756890Ab3AHSIh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:08:37 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:41857 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756765Ab3AHSIf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:08:35 -0500
+Date: Tue, 8 Jan 2013 10:08:28 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Greg Thelen <gthelen@google.com>, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] cgroups: fix cgroup_event_listener error handling
+Message-ID: <20130108180828.GA3926@htj.dyndns.org>
+References: <1357333518-28899-1-git-send-email-gthelen@google.com>
+ <1357333518-28899-2-git-send-email-gthelen@google.com>
+ <20130107174427.GM3926@htj.dyndns.org>
+ <xr93a9sklqme.fsf@gthelen.mtv.corp.google.com>
+ <50EBBC9C.7060909@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1356726946-26037-22-git-send-email-tj@kernel.org>
+In-Reply-To: <50EBBC9C.7060909@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:43PM -0800, Tejun Heo wrote:
-> Instead of holding blkcg->lock while walking ->blkg_list and executing
-> prfill(), RCU walk ->blkg_list and hold the blkg's queue lock while
-> executing prfill().  This makes prfill() implementations easier as
-> stats are mostly protected by queue lock.
+On Tue, Jan 08, 2013 at 02:28:44PM +0800, Li Zefan wrote:
+> > cgroups: fix cgroup_event_listener error handling
+> > 
+> > The error handling in cgroup_event_listener.c did not correctly deal
+> > with either an error opening either <control_file> or
+> > cgroup.event_control.  Due to an uninitialized variable the program
+> > exit code was undefined if either of these opens failed.
+> > 
+> > This patch simplifies and corrects cgroup_event_listener.c error
+> > handling by:
+> > 1. using err*() rather than printf(),exit()
+> > 2. depending on process exit to close open files
+> > 
+> > With this patch failures always return non-zero error.
+> > 
+> > Signed-off-by: Greg Thelen <gthelen@google.com>
 > 
-> This will be used to implement hierarchical stats.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Acked-by: Li Zefan <lizefan@huawei.com>
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Applied to cgroup/for-3.9.
 
-Vivek
+Thanks.
+
+-- 
+tejun
