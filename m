@@ -1,166 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755810Ab3AHX2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:28:31 -0500
-Received: from mail-vb0-f49.google.com ([209.85.212.49]:54554 "EHLO
-	mail-vb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab3AHX23 (ORCPT
+	id S1755951Ab3AHXcI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:32:08 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:15732 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab3AHXcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:28:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <1357680056.5190.39.camel@gandalf.local.home>
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
-	<1357610913-1080-5-git-send-email-fweisbec@gmail.com>
-	<1357680056.5190.39.camel@gandalf.local.home>
-Date: Wed, 9 Jan 2013 00:22:33 +0100
-Message-ID: <CAFTL4hzpgDyHZ9qySLmouNBMgr6jqNd--w=1R4spVHELMt-z2A@mail.gmail.com>
-Subject: Re: [PATCH 04/33] cputime: Allow dynamic switch between tick/virtual
- based cputime accounting
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Jan 2013 18:32:05 -0500
+X-AuditID: cbfee61b-b7f616d00000319b-74-50ecac73e05c
+From: Byungho An <bh74.an@samsung.com>
+To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: "'Giuseppe CAVALLARO'" <peppe.cavallaro@st.com>, davem@davemloft.net,
+        jeffrey.t.kirsher@intel.com, kgene.kim@samsung.com
+Subject: [PATCH v2 3/3] net: stmmac: add gmac autonego set for ethtool support
+Date: Tue, 08 Jan 2013 15:32:02 -0800
+Message-id: <000601cdedf8$5d39bdf0$17ad39d0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac3t+FtJH0LrKcltSo2EIxumOw3VeQ==
+Content-language: en-zw
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPIsWRmVeSWpSXmKPExsVy+t8zQ93iNW8CDO5c47C4vGsOm8WxBWIO
+	TB6fN8kFMEZx2aSk5mSWpRbp2yVwZWxewV7wlLNiQd8PlgbG+RxdjJwcEgImEvMvr2KBsMUk
+	Ltxbz9bFyMUhJLCMUeL9wjPsXYwcYEX/GrQh4osYJf5f3cAM4fxmlLj1fQZYN5uAmkTzzMts
+	IA0iAhYSJ9qyQMLMAjUSVy/fYASxhQX8JH4e2ckOYrMIqEpsf7sGzOYVsJRYt+QTE4QtKPFj
+	8j0WiF4tifU7jzNB2PISm9e8ZYY4VEFix9nXYDNFBPQk3n6fAnYns4C4xLSmIojxAhLfJh9i
+	gThfVmLTAbCLJQT62SUOt0CMlBCQlDi44gbLBEaxWUg2z0KyeRaSzbMQNixgZFnFKJpakFxQ
+	nJSea6RXnJhbXJqXrpecn7uJERIr0jsYVzVYHGIU4GBU4uF9OO1NgBBrYllxZe4hRgkOZiUR
+	3rveQCHelMTKqtSi/Pii0pzU4kOMPkCHT2SWEk3OB8ZxXkm8obGxiZmJqYm5pam5KQ5hJXFe
+	xlNPAoQE0hNLUrNTUwtSi2DGMXFwSjUwegeGCcTuz1aRuRXM+em1gqBP+R/VrHkWV7a1qcss
+	EzB8ePyvSdyl3FWiDJe+XNotdFjjknvgtGuv525u/S9iuU7Kkbn5BsPRMwanZf7aFvdNTlQO
+	VjL3X5V7rt5aqGEig8spw2uPfViDdC1SN9fPm3rJcItghMnhgxvXfUqdaPAnZK1xTsFUJZbi
+	jERDLeai4kQA0AEEcsICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHIsWRmVeSWpSXmKPExsVy+t9jAd3iNW8CDL4dZ7a4vGsOm8WxBWIO
+	TB6fN8kFMEY1MNpkpCampBYppOYl56dk5qXbKnkHxzvHm5oZGOoaWlqYKynkJeam2iq5+ATo
+	umXmAE1WUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMWZsXsFe8JSzYkHf
+	D5YGxvkcXYwcHBICJhL/GrS7GDmBTDGJC/fWs3UxcnEICSxilPh/dQMzhPObUeLW9xksIFVs
+	AmoSzTMvs4E0iwhYSJxoywIJMwvUSFy9fIMRxBYW8JP4eWQnO4jNIqAqsf3tGjCbV8BSYt2S
+	T0wQtqDEj8n3WCB6tSTW7zzOBGHLS2xe85YZ4iAFiR1nX4PNFBHQk3j7fQo7yFpmAXGJaU1F
+	ExgFZiGZNAvJpFlIJs1C6FjAyLKKUTS1ILmgOCk910ivODG3uDQvXS85P3cTIzgSn0nvYFzV
+	YHGIUYCDUYmH9+G0NwFCrIllxZW5hxglOJiVRHjvegOFeFMSK6tSi/Lji0pzUosPMfoA/TmR
+	WUo0OR+YJPJK4g2NTcyMLI3MLIxMzM1xCCuJ8zKeehIgJJCeWJKanZpakFoEM46Jg1OqgVEg
+	X07DUmSJTI1QCt8EK9NTE8T0AzYyKP/sf/6rLY15/7G0iW6Bu1mknm1dkOHus1FFuYFx14Jw
+	5+15L5qZQm9qfpm0p+LFG9YlHeWn2efVZR08qjo7/I5GlMAv9o0RxxaLSk/UeWj460PI7B+G
+	nYxn2K2T9dcl1t+++24R14IdC1p9flj78SuxFGckGmoxFxUnAgCJMLOd8QIAAA==
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2013/1/8 Steven Rostedt <rostedt@goodmis.org>:
-> On Tue, 2013-01-08 at 03:08 +0100, Frederic Weisbecker wrote:
->
->> @@ -439,29 +443,13 @@ void account_idle_ticks(unsigned long ticks)
->>
->>       account_idle_time(jiffies_to_cputime(ticks));
->>  }
->> -
->>  #endif
->>
->> +
->
-> Spurious newline.
 
-There may be even more around on the other patches :)
+This patch adds gmac auto-negotiation setting for ethtool.
+If interface is SGMII, TBI or RTBI, gmac's auto-negotiation
+enable bit is need to set.
 
->> +#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
->> +void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
->> +{
->> +     *ut = p->utime;
->> +     *st = p->stime;
->> +}
->
-> Why not keep this out in the open like:
->
-> static void __task_cputime_adjusted() {
->         ...
-> }
->
-> #ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-> void task_cputime_adjusted(...)
-> {
->         __task_cputime_adjusted(p, ut, st);
-> }
->
->> +
->> +void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
->> +{
->> +     struct task_cputime cputime;
->> +
->> +     thread_group_cputime(p, &cputime);
->> +
->> +     *ut = cputime.utime;
->> +     *st = cputime.stime;
->> +}
->> +#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
->>
->>  #ifndef nsecs_to_cputime
->>  # define nsecs_to_cputime(__nsecs)   nsecs_to_jiffies(__nsecs)
->> @@ -548,6 +553,12 @@ static void cputime_adjust(struct task_cputime *curr,
->>  {
->>       cputime_t rtime, utime, total;
->>
->> +     if (vtime_accounting_enabled()) {
->> +             *ut = curr->utime;
->> +             *st = curr->stime;
->
-> Then here, we can do:
->
->                 __task_cputime_adjusted(curr, ut, st);
->> +             return;
+Signed-off-by: Byungho An <bh74.an@samsung.com>
+---
+ drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-Note curr above is not a task but a struct task_cputime. But it could be:
+diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+index 1372ce2..457c1a4 100644
+--- a/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
++++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_ethtool.c
+@@ -335,6 +335,7 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ 	struct phy_device *phy = priv->phydev;
+ 	int new_pause = FLOW_OFF;
+ 	int ret = 0;
++	int interface = priv->plat->interface;
+ 
+ 	spin_lock(&priv->lock);
+ 
+@@ -348,6 +349,10 @@ stmmac_set_pauseparam(struct net_device *netdev,
+ 
+ 	if (phy->autoneg) {
+ 		if (netif_running(netdev))
++			if((interface == PHY_INTERFACE_MODE_SGMII) ||
++				(interface == PHY_INTERFACE_MODE_TBI) ||
++				(interface == PHY_INTERFACE_MODE_RTBI)) 
++				priv->hw->mac->set_autoneg(priv->ioaddr);
+ 			ret = phy_start_aneg(phy);
+ 	} else
+ 		priv->hw->mac->flow_ctrl(priv->ioaddr, phy->duplex,
+-- 
+1.7.10.4
 
-__task_cputime_adjusted(curr->utime, curr->stime, ut, st);
 
-But thinking more about it, I should just remove this:
-
-+     if (vtime_accounting_enabled()) {
-+             *ut = curr->utime;
-+             *st = curr->stime;
-
-It concerns CONFIG_VIRT_CPU_ACCOUNTING_GEN which is actually not
-enough precise (it's jiffies based) and thus needs the same adjusting
-performed on normal tick based cputime.
-
->
-> Isn't suppose to do basically the same thing, when
-> vtime_accounting_enabled() is set?
->
->> +     }
->> +
->>       utime = curr->utime;
->>       total = utime + curr->stime;
->>
->> @@ -601,7 +612,7 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
->>       thread_group_cputime(p, &cputime);
->>       cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
->>  }
->> -#endif
->> +#endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
->>
->>  #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
->>  static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
->> @@ -643,6 +654,11 @@ void vtime_account_idle(struct task_struct *tsk)
->>       account_idle_time(delta_cpu);
->>  }
->>
->> +bool vtime_accounting_enabled(void)
->> +{
->> +     return context_tracking_active();
->> +}
->> +
->>  static int __cpuinit vtime_cpu_notify(struct notifier_block *self,
->>                                     unsigned long action, void *hcpu)
->>  {
->> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
->> index fb8e5e4..314b9ee 100644
->> --- a/kernel/time/tick-sched.c
->> +++ b/kernel/time/tick-sched.c
->> @@ -632,8 +632,11 @@ static void tick_nohz_restart_sched_tick(struct tick_sched *ts, ktime_t now)
->>
->>  static void tick_nohz_account_idle_ticks(struct tick_sched *ts)
->>  {
->> -#ifndef CONFIG_VIRT_CPU_ACCOUNTING
->> +#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
->>       unsigned long ticks;
->> +
->> +     if (vtime_accounting_enabled())
->> +             return;
->
-> If this can be dynamically changed at runtime, wouldn't some of these
-> accounting variables get corrupted? Like the last_jiffies per_cpu
-> variable?
-
-It can't yet be dynamically changed at runtime because full dynticks
-CPUs are defined through boot parameters. But it's indeed something
-we'll need to care about when we'll have a runtime interface.
