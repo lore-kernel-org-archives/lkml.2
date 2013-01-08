@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab3AHRu3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 12:50:29 -0500
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:54045 "EHLO nsa.gov"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756485Ab3AHRu1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 12:50:27 -0500
-X-TM-IMSS-Message-ID: <9e841371000fc41c@nsa.gov>
-Message-ID: <50EC5BCD.9000908@tycho.nsa.gov>
-Date: Tue, 08 Jan 2013 12:47:57 -0500
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756859Ab3AHRuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 12:50:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:5517 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756485Ab3AHRuj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 12:50:39 -0500
+Date: Tue, 8 Jan 2013 18:49:51 +0100
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>
+Subject: Re: oops in copy_page_rep()
+Message-ID: <20130108174951.GG9163@redhat.com>
+References: <20130105152208.GA3386@redhat.com>
+ <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
+ <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
+ <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
+ <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
+ <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
+ <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
+ <20130108163141.GA27555@shutemov.name>
+ <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
+ <20130108173058.GA27727@shutemov.name>
 MIME-Version: 1.0
-To: Casey Schaufler <casey@schaufler-ca.com>
-CC: James Morris <jmorris@namei.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>
-Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
-References: <50EB7C50.3070605@schaufler-ca.com>
-In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130108173058.GA27727@shutemov.name>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2013 08:54 PM, Casey Schaufler wrote:
-> Subject: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
->
-> Change the infrastructure for Linux Security Modules (LSM)s
-> from a single vector of hook handlers to a list based method
-> for handling multiple concurrent modules.
->
-> A level of indirection has been introduced in the handling of
-> security blobs. LSMs no longer access ->security fields directly,
-> instead they use an abstraction provided by lsm_[gs]et field
-> functions.
->
-> The XFRM hooks are only used by SELinux and it is not clear
-> that they can be shared. The First LSM that registers using
-> those hooks gets to use them. Any subsequent LSM that uses
-> those hooks is denied registration.
->
-> Secids have not been made shareable. Only one LSM that uses
-> secids (SELinux and Smack) can be used at a time. The first
-> to register wins.
->
-> The "security=" boot option takes a comma separated list of
-> LSMs, registering them in the order presented. The LSM hooks
-> will be executed in the order registered. Hooks that return
-> errors are not short circuited. All hooks are called even
-> if one of the LSM hooks fails. The result returned will be
-> that of the last LSM hook that failed.
->
-> Some hooks don't fit that model. setprocattr, getprocattr,
-> and a few others are special cased. All behavior from
-> security/capability.c has been moved into the hook handling.
-> The security/commoncap functions used to get called from
-> the LSM specific code. The handling of the capability
-> functions has been moved out of the LSMs and into the
-> hook handling.
->
-> The /proc/*/attr interfaces are given to one LSM. This
-> can be done by setting CONFIG_SECURITY_PRESENT. Additional
-> interfaces have been created in /proc/*/attr so that
-> each LSM has its own named interfaces.
->
-> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+Hi Kirill,
 
-Have you run any benchmarks, particularly to compare performance 
-overhead in the simple case of a single LSM?
+On Tue, Jan 08, 2013 at 07:30:58PM +0200, Kirill A. Shutemov wrote:
+> Merged patch is obviously broken: huge_pmd_set_accessed() can be called
+> only if the pmd is under splitting.
 
-IIRC, the AppArmor devs indicated that they plan to start using secids, 
-which would mean that it would not be possible to stack AppArmor with 
-Smack or SELinux using this mechanism.  So eventually that would have to 
-be addressed in order for this to even support the AppArmor+Smack or 
-AppArmor+SELinux use cases.
+Of course I assume you meant "only if the pmd is not under splitting".
 
+But no, setting a bitflag like the young bit or clearing or setting
+the numa bit won't screw with split_huge_page and it's safe even if
+the pmd is under splitting.
 
+Those bits are only checked here at the last stage of
+split_huge_page_map after taking the PT lock:
+
+	spin_lock(&mm->page_table_lock);
+	pmd = page_check_address_pmd(page, mm, address,
+				     PAGE_CHECK_ADDRESS_PMD_SPLITTING_FLAG);
+	if (pmd) {
+		pgtable = pgtable_trans_huge_withdraw(mm);
+		pmd_populate(mm, &_pmd, pgtable);
+
+		haddr = address;
+		for (i = 0; i < HPAGE_PMD_NR; i++, haddr += PAGE_SIZE) {
+			pte_t *pte, entry;
+			BUG_ON(PageCompound(page+i));
+			entry = mk_pte(page + i, vma->vm_page_prot);
+			entry = maybe_mkwrite(pte_mkdirty(entry), vma);
+			if (!pmd_write(*pmd))
+				entry = pte_wrprotect(entry);
+			else
+				BUG_ON(page_mapcount(page) != 1);
+			if (!pmd_young(*pmd))
+				entry = pte_mkold(entry);
+			if (pmd_numa(*pmd))
+				entry = pte_mknuma(entry);
+			pte = pte_offset_map(&_pmd, haddr);
+			BUG_ON(!pte_none(*pte));
+			set_pte_at(mm, haddr, pte, entry);
+			pte_unmap(pte);
+		}
+
+If "young" or "numa" bitflags changed on the original *pmd for the
+previous part of split_huge_page, nothing will go wrong by the time we
+get to split_huge_page_map (the same is not true if the pfn changes!).
+
+If you think this is too tricky, we could also decide to forbid
+huge_pmd_set_accessed if the pmd is in splitting state, but I don't
+think that flipping young/numa bits while in splitting state, can
+cause any problem (if done correctly with PT lock + pmd_same).
+
+Thanks!
