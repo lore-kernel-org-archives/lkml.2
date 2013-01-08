@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab3AHEL3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 23:11:29 -0500
-Received: from nm25.access.bullet.mail.mud.yahoo.com ([66.94.237.90]:47354
-	"EHLO nm25.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751214Ab3AHEL2 (ORCPT
+	id S1751552Ab3AHEXA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 23:23:00 -0500
+Received: from relay5-d.mail.gandi.net ([217.70.183.197]:50833 "EHLO
+	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3AHEW7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 23:11:28 -0500
-X-Yahoo-Newman-Id: 447219.16477.bm@smtp108.biz.mail.ne1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: jv6rESsVM1k8LByBK7Rpu0gH75cQZqVtsbMdArjtOv8Csvr
- 8Z8vr.OgD24uvqSVKmtwqoFIZCnQzZF07tMnHSNiAkQ0to3TZqAWtI81D7BQ
- Y7ivb97u3TGrmOPvwuhoM3tMIDPOlIh_eJyIUqW9UUhcIg_koy0gjWElEgcs
- NQW7yRsA1lTudYg8c2kv3zjD1D.h7S4SHAGewDuuuAv0GAzkbVw.owVcxQvw
- x4Kvu1wEgY483GTOCmjsgmDrkI9e3zDo05JgNZFySWz1UV537VtdygZHPQIj
- eopPsoZLP4ssO325wnvxFONYiB9hpnQS62aLTd1RyDKK8vZpyV_IqHzpGW0H
- 9xQYgRjrbJIM7GOKQmNJsBrd3EEieapnzh1EdJJ2m19SJkkEzriCKAOntOFw
- lmhk1LRVRJhDzRua4BUoPRCiUgzm1Ly30mypGOcsst7FBS23XcxeK5TzvnSB
- wMhjU
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50EB9C7E.7090304@schaufler-ca.com>
-Date: Mon, 07 Jan 2013 20:11:42 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 7 Jan 2013 23:22:59 -0500
+X-Greylist: delayed 41547 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 23:22:59 EST
+X-Originating-IP: 217.70.178.152
+X-Originating-IP: 50.43.39.152
+Date: Mon, 7 Jan 2013 20:22:50 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@efficios.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, edumazet@google.com, darren@dvhart.com,
+        fweisbec@gmail.com, sbw@mit.edu, patches@linaro.org
+Subject: Re: [PATCH tip/core/rcu 1/1] Tiny RCU changes for 3.9
+Message-ID: <20130108042249.GB12974@leaf>
+References: <20130105175059.GA15961@linux.vnet.ibm.com>
+ <20130107155810.GC11145@leaf>
+ <20130107165748.GF2525@linux.vnet.ibm.com>
+ <20130107175606.GA9962@jtriplet-mobl1>
+ <20130107221915.GA2525@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: James Morris <jmorris@namei.org>,
-        LSM <linux-security-module@vger.kernel.org>,
-        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
-        John Johansen <john.johansen@canonical.com>,
-        Eric Paris <eparis@redhat.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Kees Cook <keescook@chromium.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
-References: <50EB7C50.3070605@schaufler-ca.com> <20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au> <20130108145922.58ab8ad4796076c9d14b6197@canb.auug.org.au>
-In-Reply-To: <20130108145922.58ab8ad4796076c9d14b6197@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130107221915.GA2525@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/7/2013 7:59 PM, Stephen Rothwell wrote:
-> Hi Casey,
->
-> On Tue, 8 Jan 2013 14:01:59 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Let me ask Andrew's question:  Why do you want to do this (what is the
->> use case)?  What does this gain us?
->>
->> Also, you should use unique subjects for each of the patches in the
->> series.
-> You probably also want to think a bit harder about the order of the
-> patches - you should introduce new APIs before you use them and remove
-> calls to functions before you remove the functions.
->
-The unfortunate reality is that I couldn't find a good way to stage the
-changes. It's a wonking big set of infrastructure change. I could introduce
-the security blob abstraction separately but that is a fraction of the
-change. If it would have gone through mail filters as a single patch I'd
-have sent it that way.
+On Mon, Jan 07, 2013 at 02:19:15PM -0800, Paul E. McKenney wrote:
+> On Mon, Jan 07, 2013 at 09:56:06AM -0800, Josh Triplett wrote:
+> > On Mon, Jan 07, 2013 at 08:57:48AM -0800, Paul E. McKenney wrote:
+> > > On Mon, Jan 07, 2013 at 07:58:10AM -0800, Josh Triplett wrote:
+> > > > This patch seems reasonable to me, but the repeated use of #if
+> > > > defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE) seems somewhat
+> > > > annoying, and fragile if you ever decide to change the conditions.  How
+> > > > about defining an appropriate symbol in Kconfig for stall warnings, and
+> > > > using that?
+> > > 
+> > > But I only just removed the config option for SMP RCU stall warnings.  ;-)
+> > > 
+> > > But I must agree that "defined(CONFIG_SMP) || defined(CONFIG_RCU_TRACE)"
+> > > is a bit obscure.  The rationale is that RCU stall warnings are
+> > > unconditionally enabled in SMP kernels, but don't want to be in
+> > > TINY_RCU kernels due to size constraints.  I therefore put it under
+> > > CONFIG_RCU_TRACE, which also contains other TINY_RCU debugging-style
+> > > options.  Would adding a comment to this effect help?
+> > 
+> > I understand the rationale; I just think it would become clearer if you
+> > added an internal-only Kconfig symbol selected in both cases and change
+> > the conditionals to use that.
+> 
+> My concern was that this would confuse people into thinking that the
+> code under those #ifdefs was all the stall-warning code that there was.
+> 
+> I suppose this could be forestalled with a suitably clever name...
+> CONFIG_RCU_CPU_STALL_TINY_TOO?  Better names?
 
-I can spend time on patch presentation, and will if necessary. As it is,
-I can start getting substantive commentary from beyond the LSM crowd, who
-have already been extremely cooperative and often critical.
+How about CONFIG_RCU_STALL_COMMON, with associated help text saying
+"include the stall-detection code common to both rcutree and rcutiny"?
 
+- Josh Triplett
