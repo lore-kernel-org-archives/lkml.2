@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261Ab3AHWZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 17:25:21 -0500
-Received: from mail-vb0-f43.google.com ([209.85.212.43]:41712 "EHLO
-	mail-vb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab3AHWZS (ORCPT
+	id S1755321Ab3AHWbA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 17:31:00 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:33784 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753851Ab3AHWa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 17:25:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFyEE6pM2gVfgd3xjQR5rF6ij5pG7BXjkH+C5aHbxAk6mg@mail.gmail.com>
-References: <CAAJw_Zv8O1LPX-jmpg3fvNrWMLWbQC=1tbZ6T7nsm6cyC008fg@mail.gmail.com>
-	<CA+55aFxXAMz5Sg44e-TJ0P=LY+3VkfdNtZMS3EJEHdztY2kC0Q@mail.gmail.com>
-	<CAAJw_ZtpubRhSF3K=B91oHXMPaTX6jGNLZn+e6ks83JS92k=bw@mail.gmail.com>
-	<CA+55aFyEE6pM2gVfgd3xjQR5rF6ij5pG7BXjkH+C5aHbxAk6mg@mail.gmail.com>
-Date: Wed, 9 Jan 2013 06:25:17 +0800
-Message-ID: <CAAJw_ZseBZZkv3W-ec_bLLMmpLLAyJx4KMvE0z=drQZH4L5yKA@mail.gmail.com>
-Subject: Re: 2nd attempt: help with dma_alloc_coherent() + dma_free_coherent()
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 8 Jan 2013 17:30:59 -0500
+Date: Tue, 08 Jan 2013 14:30:58 -0800 (PST)
+Message-Id: <20130108.143058.802178708339067441.davem@davemloft.net>
+To: ariele@broadcom.com
+Cc: dan.carpenter@oracle.com, eilong@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] bnx2x: NULL dereference on error in debug code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <6AE768456CEC4B4A9B2248CB6B87EB3E1BCC7E9F@SJEXCHMB05.corp.ad.broadcom.com>
+References: <20130108134213.GA23742@elgon.mountain>
+	<6AE768456CEC4B4A9B2248CB6B87EB3E1BCC7E9F@SJEXCHMB05.corp.ad.broadcom.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 1:24 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Tue, Jan 8, 2013 at 9:17 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->>
->> Interesting, but there are 54 lines under the kernel directories that
->> use "dma_alloc_coherent(NULL," followed by "dma_free_coherent(NULL,"
->
-> As mentioned, it works on some platforms. That doesn't make it right.
->
->> So, shouldn't they be fixed as well? ... unless they are so old that
->> nobody cares anymore ...
->
-> Some of the ones I saw are in MIPS or blackfin. Others probably *are*
-> so old that nobody cares, and happen to work because there's iommu's
-> or other things that simply don't care about the device.
->
->> # find . -exec grep -H "dma_alloc_coherent(NULL" {} \; | wc -l
->> 54
->>
->> #find . -exec grep -H "dma_free_coherent(NULL" {} \; | wc -l
->> 72
->
-> Let me tell you about "git grep", so that you never need to do that
-> disgusting "find -exec grep" ever again.
->
-> It does threading, it's fast, and it just works.
->
->                 Linus
+From: "Ariel Elior" <ariele@broadcom.com>
+Date: Tue, 8 Jan 2013 14:50:50 +0000
 
-Yes, "git grep" is really fast. Cool! ... didn't know that before.
+>> -----Original Message-----
+>> From: netdev-owner@vger.kernel.org [mailto:netdev-
+>> owner@vger.kernel.org] On Behalf Of Dan Carpenter
+>> Sent: Tuesday, January 08, 2013 3:42 PM
+>> To: Eilon Greenstein
+>> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-
+>> janitors@vger.kernel.org
+>> Subject: [patch] bnx2x: NULL dereference on error in debug code
+>> 
+>> "vfop" is NULL here.  I've changed the debugging to not use it.
+>> 
+>> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+>> ---
+>> Only needed in linux-next.
+>> 
+>> diff --git a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+>> b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+>> index 71fcef0..3eef972 100644
+>> --- a/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+>> +++ b/drivers/net/ethernet/broadcom/bnx2x/bnx2x_sriov.c
+>> @@ -463,8 +463,7 @@ static int bnx2x_vfop_qdtor_cmd(struct bnx2x *bp,
+>>  		return bnx2x_vfop_transition(bp, vf, bnx2x_vfop_qdtor,
+>>  					     cmd->block);
+>>  	}
+>> -	DP(BNX2X_MSG_IOV, "VF[%d] failed to add a vfop. rc %d\n",
+>> -	   vf->abs_vfid, vfop->rc);
+>> +	DP(BNX2X_MSG_IOV, "VF[%d] failed to add a vfop.\n", vf->abs_vfid);
+>>  	return -ENOMEM;
+>>  }
+>> 
+> Right you are. Ack.
 
-Thanks again for the help.
+This is not the correct way to ack a patch, this is:
 
-Jeff.
+Acked-by: Ariel Elior <ariele@broadcom.com>
