@@ -1,182 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab3AHVo3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:44:29 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49972 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754972Ab3AHVo0 (ORCPT
+	id S1754422Ab3AHVnh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:43:37 -0500
+Received: from mail.free-electrons.com ([94.23.32.191]:45515 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754089Ab3AHVne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:44:26 -0500
-Date: Tue, 8 Jan 2013 13:44:24 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-Id: <20130108134424.0423dc1f.akpm@linux-foundation.org>
-In-Reply-To: <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
-	<1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jan 2013 16:43:34 -0500
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org, Stefan Roese <sr@denx.de>,
+        Alejandro Mery <amery@geeks.cl>,
+        Linus Walleij <linus.walleij@linaro.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/7] ARM: pinctrl: sunxi: Add the pinctrl pin set for sun5i
+Date: Tue,  8 Jan 2013 22:43:14 +0100
+Message-Id: <1357681398-23956-4-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1357681398-23956-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1357681398-23956-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  4 Jan 2013 00:29:11 -0800
-Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
+Since the Allwinner SoCs variants don't have the same set of pins to
+handle, we need to declare the pin ranges available.
 
-> This commit implements David Rientjes' idea of mempressure cgroup.
-> 
-> The main characteristics are the same to what I've tried to add to vmevent
-> API; internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
-> pressure index calculation. But we don't expose the index to the userland.
-> Instead, there are three levels of the pressure:
-> 
->  o low (just reclaiming, e.g. caches are draining);
->  o medium (allocation cost becomes high, e.g. swapping);
->  o oom (about to oom very soon).
-> 
-> The rationale behind exposing levels and not the raw pressure index
-> described here: http://lkml.org/lkml/2012/11/16/675
-> 
-> For a task it is possible to be in both cpusets, memcg and mempressure
-> cgroups, so by rearranging the tasks it is possible to watch a specific
-> pressure (i.e. caused by cpuset and/or memcg).
-> 
-> Note that while this adds the cgroups support, the code is well separated
-> and eventually we might add a lightweight, non-cgroups API, i.e. vmevent.
-> But this is another story.
-> 
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/pinctrl/pinctrl-sunxi.c |  253 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 253 insertions(+)
 
-I'd have thought that it's pretty important offer this feature to
-non-cgroups setups.  Restricting it to cgroups-only seems a large
-limitation.
-
-> diff --git a/mm/mempressure.c b/mm/mempressure.c
-> new file mode 100644
-> index 0000000..ea312bb
-> --- /dev/null
-> +++ b/mm/mempressure.c
-> @@ -0,0 +1,330 @@
-> +/*
-> + * Linux VM pressure
-> + *
-> + * Copyright 2012 Linaro Ltd.
-> + *		  Anton Vorontsov <anton.vorontsov@linaro.org>
-> + *
-> + * Based on ideas from Andrew Morton, David Rientjes, KOSAKI Motohiro,
-> + * Leonid Moiseichuk, Mel Gorman, Minchan Kim and Pekka Enberg.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published
-> + * by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/cgroup.h>
-> +#include <linux/fs.h>
-> +#include <linux/sched.h>
-> +#include <linux/mm.h>
-> +#include <linux/vmstat.h>
-> +#include <linux/eventfd.h>
-> +#include <linux/swap.h>
-> +#include <linux/printk.h>
-> +
-> +static void mpc_vmpressure(struct mem_cgroup *memcg, ulong s, ulong r);
-
-mm/ doesn't use uint or ulong.  In fact I can find zero uses of either
-in all of mm/.
-
-I don't have a problem with them personally - they're short and clear. 
-But we just ...  don't do that.  Perhaps we shold start using them.
-
-> +
-> +/*
-> + * Generic VM Pressure routines (no cgroups or any other API details)
-> + */
-> +
-> +/*
-> + * The window size is the number of scanned pages before we try to analyze
-> + * the scanned/reclaimed ratio (or difference).
-> + *
-> + * It is used as a rate-limit tunable for the "low" level notification,
-> + * and for averaging medium/oom levels. Using small window sizes can cause
-> + * lot of false positives, but too big window size will delay the
-> + * notifications.
-> + */
-> +static const uint vmpressure_win = SWAP_CLUSTER_MAX * 16;
-> +static const uint vmpressure_level_med = 60;
-> +static const uint vmpressure_level_oom = 99;
-> +static const uint vmpressure_level_oom_prio = 4;
-> +
-> +enum vmpressure_levels {
-> +	VMPRESSURE_LOW = 0,
-> +	VMPRESSURE_MEDIUM,
-> +	VMPRESSURE_OOM,
-
-VMPRESSURE_OOM seems an odd-man-out.  VMPRESSURE_HIGH would be pleasing.
-
-> +	VMPRESSURE_NUM_LEVELS,
-> +};
-> +
->
-> ...
->
-> +static void mpc_vmpressure(struct mem_cgroup *memcg, ulong s, ulong r)
-> +{
-> +	/*
-> +	 * There are two options for implementing cgroup pressure
-> +	 * notifications:
-> +	 *
-> +	 * - Store pressure counter atomically in the task struct. Upon
-> +	 *   hitting 'window' wake up a workqueue that will walk every
-> +	 *   task and sum per-thread pressure into cgroup pressure (to
-> +	 *   which the task belongs). The cons are obvious: bloats task
-> +	 *   struct, have to walk all processes and makes pressue less
-> +	 *   accurate (the window becomes per-thread);
-> +	 *
-> +	 * - Store pressure counters in per-cgroup state. This is easy and
-> +	 *   straightforward, and that's how we do things here. But this
-> +	 *   requires us to not put the vmpressure hooks into hotpath,
-> +	 *   since we have to grab some locks.
-> +	 */
-> +
-> +#ifdef CONFIG_MEMCG
-> +	if (memcg) {
-> +		struct cgroup_subsys_state *css = mem_cgroup_css(memcg);
-> +		struct cgroup *cg = css->cgroup;
-> +		struct mpc_state *mpc = cg2mpc(cg);
-> +
-> +		if (mpc)
-> +			__mpc_vmpressure(mpc, s, r);
-> +		return;
-> +	}
-> +#endif
-> +	task_lock(current);
-> +	__mpc_vmpressure(tsk2mpc(current), s, r);
-> +	task_unlock(current);
-> +}
-
-The task_lock() is mysterious.  What's it protecting?  That's unobvious
-and afacit undocumented.
-
-Also it is buggy: __mpc_vmpressure() does mutex_lock(). 
-Documentation/SubmitChecklist section 12 has handy hints!
-
->
-> ...
->
+diff --git a/drivers/pinctrl/pinctrl-sunxi.c b/drivers/pinctrl/pinctrl-sunxi.c
+index 1b85a81..7d01eb4 100644
+--- a/drivers/pinctrl/pinctrl-sunxi.c
++++ b/drivers/pinctrl/pinctrl-sunxi.c
+@@ -26,6 +26,258 @@
+ #include "core.h"
+ #include "pinctrl-sunxi.h"
+ 
++static const struct sunxi_desc_pin sun5i_a13_pins[] = {
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB0,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB1,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB2,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB3,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB4,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB10,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB15,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB16,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB17,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PB18,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC0,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC1,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC2,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC3,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC4,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC5,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC6,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC7,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC8,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC9,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC10,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC11,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC12,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC13,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC14,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC15,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PC19,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD2,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD3,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD4,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD5,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD6,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD7,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD10,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD11,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD12,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD13,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD14,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD15,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD18,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD19,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD20,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD21,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD22,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD23,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD24,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD25,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD26,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PD27,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE0,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE1,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE2,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE3,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE4,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE5,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE6,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE7,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE8,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE9,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE10,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION(0x4, "uart1")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PE11,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION(0x4, "uart1")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PF0,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PF1,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PF2,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PF3,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PF4,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PF5,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG0,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG1,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG2,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG3,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION(0x4, "uart1")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG4,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out"),
++		SUNXI_FUNCTION(0x4, "uart1")),
++	/* Hole */
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG9,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG10,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG11,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++	SUNXI_PIN(SUNXI_PINCTRL_PIN_PG12,
++		SUNXI_FUNCTION(0x0, "gpio_in"),
++		SUNXI_FUNCTION(0x1, "gpio_out")),
++};
++
++static const struct sunxi_pinctrl_desc sun5i_a13_pinctrl_data = {
++	.pins = sun5i_a13_pins,
++	.npins = ARRAY_SIZE(sun5i_a13_pins),
++};
++
+ static struct sunxi_pinctrl_group *
+ sunxi_pinctrl_find_group_by_name(struct sunxi_pinctrl *pctl, const char *group)
+ {
+@@ -372,6 +624,7 @@ static struct pinctrl_desc sunxi_pctrl_desc = {
+ };
+ 
+ static struct of_device_id sunxi_pinctrl_match[] __devinitconst = {
++	{ .compatible = "allwinner,sun5i-a13-pinctrl", .data = (void *)&sun5i_a13_pinctrl_data },
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(of, sunxi_pinctrl_match);
+-- 
+1.7.10.4
 
