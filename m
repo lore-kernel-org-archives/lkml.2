@@ -1,122 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753114Ab3AHCMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:12:51 -0500
-Received: from mail-wg0-f52.google.com ([74.125.82.52]:47604 "EHLO
-	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755693Ab3AHCJh (ORCPT
+	id S1753491Ab3AHCNN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:13:13 -0500
+Received: from nm14-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.162]:21856
+	"EHLO nm14-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755892Ab3AHCJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:37 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 23/33] nohz: Don't turn off the tick if rcu needs it
-Date: Tue,  8 Jan 2013 03:08:23 +0100
-Message-Id: <1357610913-1080-24-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+	Mon, 7 Jan 2013 21:09:33 -0500
+X-Yahoo-Newman-Id: 587635.99058.bm@smtp105.biz.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: JfoQOrUVM1nNC.PaaEqF_.MMvQaVCuwKP3zyOAZob8DLPK_
+ ZRh7jJI5M5hcWkZVSA2mG01KS7hpFI.KuhezcR1UheulWLRWeTToXsg6Yz6j
+ ar1c1bSlCqXPQVXF5F5Z_eORViqTED1Yf5Z.JrYGhL6RUq2M1mv4RHx0EcLH
+ SP_pcxIfgO2vXo7qG7G_PZdTF.NNVYWQo4th4KkoGSNkUVUKdjPAnBTW9qyj
+ VCxhu1zyjg5SIjodA21zYHqehiWwxmDZ4fWBHRlLnmG5d0DJnOAcBBS2l0pj
+ eJFVLZMu7l8ti7MsCKuRlO4knyq.y4i7qlpi2vIGMo3jB.CzP8iQkjLZAecz
+ lfT_wAE7ldNuepNLgxIL7E5eFYSHMYAXqgY_LU6AGayRYyA7Qge6z1LeTQek
+ kEu9pMCozOvdthob7srvdnw.MEmMQoUX7Msa5MUXbuBDzuMdjj6i30YBhqre
+ l_4d5
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EB7FEB.2070506@schaufler-ca.com>
+Date: Mon, 07 Jan 2013 18:09:47 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: James Morris <jmorris@namei.org>
+CC: Casey Schaufler <casey@schaufler-ca.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH v12 9/9] LSM: Multiple concurrent LSMs
+References: <50EB7C50.3070605@schaufler-ca.com>
+In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If RCU is waiting for the current CPU to complete a grace
-period, don't turn off the tick. Unlike dynctik-idle, we
-are not necessarily going to enter into rcu extended quiescent
-state, so we may need to keep the tick to note current CPU's
-quiescent states.
+Subject: [PATCH v12 9/9] LSM: Multiple concurrent LSMs
 
-[added build fix from Zen Lin]
+Change the infrastructure for Linux Security Modules (LSM)s
+from a single vector of hook handlers to a list based method
+for handling multiple concurrent modules. 
 
-CHECKME: OTOH we don't want to handle a locally started
-grace period, this should be offloaded for rcu_nocb CPUs.
-What we want is to be kicked if we stay dynticks in the kernel
-for too long (ie: to report a quiescent state).
-rcu_pending() is perhaps an overkill just for that.
+Remove special case Yama stacking. Remove commoncap calls.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+
 ---
- include/linux/rcupdate.h |    1 +
- kernel/rcutree.c         |    3 +--
- kernel/time/tick-sched.c |    3 +++
- 3 files changed, 5 insertions(+), 2 deletions(-)
+ security/yama/Kconfig    |    7 -------
+ security/yama/yama_lsm.c |   33 +++------------------------------
+ 2 files changed, 3 insertions(+), 37 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 829312e..2ebadac 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -211,6 +211,7 @@ static inline int rcu_preempt_depth(void)
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
- extern void rcu_check_callbacks(int cpu, int user);
-+extern int rcu_pending(int cpu);
- struct notifier_block;
- extern void rcu_idle_enter(void);
- extern void rcu_idle_exit(void);
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e9e0ffa..6ba3e02 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -232,7 +232,6 @@ module_param(jiffies_till_next_fqs, ulong, 0644);
+diff --git a/security/yama/Kconfig b/security/yama/Kconfig
+index 20ef514..a99aa1d 100644
+--- a/security/yama/Kconfig
++++ b/security/yama/Kconfig
+@@ -12,10 +12,3 @@ config SECURITY_YAMA
  
- static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *));
- static void force_quiescent_state(struct rcu_state *rsp);
--static int rcu_pending(int cpu);
+ 	  If you are unsure how to answer this question, answer N.
  
- /*
-  * Return the number of RCU-sched batches processed thus far for debug & stats.
-@@ -2521,7 +2520,7 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
-  * by the current CPU, returning 1 if so.  This function is part of the
-  * RCU implementation; it is -not- an exported member of the RCU API.
-  */
--static int rcu_pending(int cpu)
-+int rcu_pending(int cpu)
+-config SECURITY_YAMA_STACKED
+-	bool "Yama stacked with other LSMs"
+-	depends on SECURITY_YAMA
+-	default n
+-	help
+-	  When Yama is built into the kernel, force it to stack with the
+-	  selected primary LSM.
+diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
+index 23414b9..acfe1f0 100644
+--- a/security/yama/yama_lsm.c
++++ b/security/yama/yama_lsm.c
+@@ -154,13 +154,9 @@ void yama_task_free(struct task_struct *task)
+ int yama_task_prctl(int option, unsigned long arg2, unsigned long arg3,
+ 			   unsigned long arg4, unsigned long arg5)
  {
- 	struct rcu_state *rsp;
+-	int rc;
++	int rc = -ENOSYS;
+ 	struct task_struct *myself = current;
  
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 805eded..743b021 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -596,6 +596,9 @@ static bool can_stop_full_tick(int cpu)
- 	if (!rcu_is_nocb_cpu(cpu))
- 		return false;
+-	rc = cap_task_prctl(option, arg2, arg3, arg4, arg5);
+-	if (rc != -ENOSYS)
+-		return rc;
+-
+ 	switch (option) {
+ 	case PR_SET_PTRACER:
+ 		/* Since a thread can call prctl(), find the group leader
+@@ -282,14 +278,7 @@ static int ptracer_exception_found(struct task_struct *tracer,
+ int yama_ptrace_access_check(struct task_struct *child,
+ 				    unsigned int mode)
+ {
+-	int rc;
+-
+-	/* If standard caps disallows it, so does Yama.  We should
+-	 * only tighten restrictions further.
+-	 */
+-	rc = cap_ptrace_access_check(child, mode);
+-	if (rc)
+-		return rc;
++	int rc = 0;
  
-+	if (rcu_pending(cpu))
-+		return false;
-+
- 	return true;
+ 	/* require ptrace target be a child of ptracer on attach */
+ 	if (mode == PTRACE_MODE_ATTACH) {
+@@ -335,14 +324,7 @@ int yama_ptrace_access_check(struct task_struct *child,
+  */
+ int yama_ptrace_traceme(struct task_struct *parent)
+ {
+-	int rc;
+-
+-	/* If standard caps disallows it, so does Yama.  We should
+-	 * only tighten restrictions further.
+-	 */
+-	rc = cap_ptrace_traceme(parent);
+-	if (rc)
+-		return rc;
++	int rc = 0;
+ 
+ 	/* Only disallow PTRACE_TRACEME on more aggressive settings. */
+ 	switch (ptrace_scope) {
+@@ -366,7 +348,6 @@ int yama_ptrace_traceme(struct task_struct *parent)
+ 	return rc;
  }
- #endif
--- 
-1.7.5.4
+ 
+-#ifndef CONFIG_SECURITY_YAMA_STACKED
+ static struct security_operations yama_ops = {
+ 	.name =			"yama",
+ 
+@@ -375,7 +356,6 @@ static struct security_operations yama_ops = {
+ 	.task_prctl =		yama_task_prctl,
+ 	.task_free =		yama_task_free,
+ };
+-#endif
+ 
+ #ifdef CONFIG_SYSCTL
+ static int yama_dointvec_minmax(struct ctl_table *table, int write,
+@@ -422,18 +402,11 @@ static struct ctl_table yama_sysctl_table[] = {
+ 
+ static __init int yama_init(void)
+ {
+-#ifndef CONFIG_SECURITY_YAMA_STACKED
+ 	if (!security_module_enable(&yama_ops))
+ 		return 0;
+-#endif
+ 
+ 	printk(KERN_INFO "Yama: becoming mindful.\n");
+ 
+-#ifndef CONFIG_SECURITY_YAMA_STACKED
+-	if (register_security(&yama_ops))
+-		panic("Yama: kernel registration failed.\n");
+-#endif
+-
+ #ifdef CONFIG_SYSCTL
+ 	if (!register_sysctl_paths(yama_sysctl_path, yama_sysctl_table))
+ 		panic("Yama: sysctl registration failed.\n");
 
