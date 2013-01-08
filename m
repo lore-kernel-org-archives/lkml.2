@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756899Ab3AIACM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 19:02:12 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53587 "EHLO
+	id S1756336Ab3AHXhH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:07 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53580 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756341Ab3AHXhI (ORCPT
+	with ESMTP id S1755474Ab3AHXhD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:08 -0500
+	Tue, 8 Jan 2013 18:37:03 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Seth Heasley <seth.heasley@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [v2.6.34-stable 09/77] ALSA: hda - ALSA HD Audio patch for Intel Panther Point DeviceIDs
-Date: Tue, 8 Jan 2013 18:34:48 -0500
-Message-ID: <1357688156-25387-10-git-send-email-paul.gortmaker@windriver.com>
+CC: Seth Heasley <seth.heasley@intel.com>, Takashi Iwai <tiwai@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 05/77] ALSA: hda_intel: ALSA HD Audio patch for Intel Patsburg DeviceIDs
+Date: Tue, 8 Jan 2013 18:34:44 -0500
+Message-ID: <1357688156-25387-6-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,37 +31,38 @@ From: Seth Heasley <seth.heasley@intel.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d2edeb7c6f1dada8ca7d5c23e42d604e92ae0c76 upstream.
+commit cea310e8f8702226f982f09386cfd3c5793c5e2f upstream.
 
-This patch adds the HD Audio Controller DeviceIDs for the Intel Panther Point PCH.
+This patch adds the Intel Patsburg (PCH) HD Audio Controller DeviceIDs.
 
 Signed-off-by: Seth Heasley <seth.heasley@intel.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
  sound/pci/hda/hda_intel.c | 3 +++
  1 file changed, 3 insertions(+)
 
 diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
-index 144d41d..2a6c825 100644
+index 3cf21ff..3072fcf 100644
 --- a/sound/pci/hda/hda_intel.c
 +++ b/sound/pci/hda/hda_intel.c
 @@ -126,6 +126,7 @@ MODULE_SUPPORTED_DEVICE("{{Intel, ICH6},"
  			 "{Intel, ICH10},"
  			 "{Intel, PCH},"
  			 "{Intel, CPT},"
-+			 "{Intel, PPT},"
- 			 "{Intel, PBG},"
++			 "{Intel, PBG},"
  			 "{Intel, SCH},"
  			 "{ATI, SB450},"
-@@ -2720,6 +2721,8 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+ 			 "{ATI, SB600},"
+@@ -2730,6 +2731,8 @@ static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+ 	{ PCI_DEVICE(0x8086, 0x3b57), .driver_data = AZX_DRIVER_ICH },
+ 	/* CPT */
  	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_PCH },
- 	/* PBG */
- 	{ PCI_DEVICE(0x8086, 0x1d20), .driver_data = AZX_DRIVER_PCH },
-+	/* Panther Point */
-+	{ PCI_DEVICE(0x8086, 0x1e20), .driver_data = AZX_DRIVER_PCH },
++	/* PBG */
++	{ PCI_DEVICE(0x8086, 0x1d20), .driver_data = AZX_DRIVER_PCH },
  	/* SCH */
  	{ PCI_DEVICE(0x8086, 0x811b), .driver_data = AZX_DRIVER_SCH },
- 	/* Generic Intel */
+ 	/* ATI SB 450/600 */
 -- 
 1.7.12.1
 
