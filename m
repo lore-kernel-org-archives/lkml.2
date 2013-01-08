@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756366Ab3AHXhK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:37:10 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53582 "EHLO
+	id S1756489Ab3AHXhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:17 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53599 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755961Ab3AHXhF (ORCPT
+	with ESMTP id S1756390Ab3AHXhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:05 -0500
+	Tue, 8 Jan 2013 18:37:13 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 23/77] ARM: 7161/1: errata: no automatic store buffer drain
-Date: Tue, 8 Jan 2013 18:35:02 -0500
-Message-ID: <1357688156-25387-24-git-send-email-paul.gortmaker@windriver.com>
+CC: NeilBrown <neilb@suse.de>, Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 13/77] md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
+Date: Tue, 8 Jan 2013 18:34:52 -0500
+Message-ID: <1357688156-25387-14-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +22,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Will Deacon <will.deacon@arm.com>
+From: NeilBrown <neilb@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,64 +30,67 @@ From: Will Deacon <will.deacon@arm.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 11ed0ba1754841316d4095478944300acf19acc3 upstream.
+commit 27a7b260f71439c40546b43588448faac01adb93 upstream.
 
-This patch implements a workaround for PL310 erratum 769419. On
-revisions of the PL310 prior to r3p2, the Store Buffer does not
-automatically drain. This can cause normal, non-cacheable writes to be
-retained when the memory system is idle, leading to suboptimal I/O
-performance for drivers using coherent DMA.
+0.90 metadata uses an unsigned 32bit number to count the number of
+kilobytes used from each device.
+This should allow up to 4TB per device.
+However we multiply this by 2 (to get sectors) before casting to a
+larger type, so sizes above 2TB get truncated.
 
-This patch adds an optional wmb() call to the cpu_idle loop. On systems
-with an outer cache, this causes an explicit flush of the store buffer.
+Also we allow rdev->sectors to be larger than 4TB, so it is possible
+for the array to be resized larger than the metadata can handle.
+So make sure rdev->sectors never exceeds 4TB when 0.90 metadata is in
+used.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Tested-by: Marc Zyngier <marc.zyngier@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Also the sanity check at the end of super_90_load should include level
+1 as it used ->size too. (RAID0 and Linear don't use ->size at all).
+
+Reported-by: Pim Zandbergen <P.Zandbergen@macroscoop.nl>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/arm/Kconfig          | 12 ++++++++++++
- arch/arm/kernel/process.c |  3 +++
- 2 files changed, 15 insertions(+)
+ drivers/md/md.c | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 811dedc..3ee6a06 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1380,6 +1380,18 @@ config UACCESS_WITH_MEMCPY
- 	  However, if the CPU data cache is using a write-allocate mode,
- 	  this option is unlikely to provide any performance gain.
+diff --git a/drivers/md/md.c b/drivers/md/md.c
+index d26df7f..4788c82 100644
+--- a/drivers/md/md.c
++++ b/drivers/md/md.c
+@@ -985,8 +985,11 @@ static int super_90_load(mdk_rdev_t *rdev, mdk_rdev_t *refdev, int minor_version
+ 			ret = 0;
+ 	}
+ 	rdev->sectors = rdev->sb_start;
++	/* Limit to 4TB as metadata cannot record more than that */
++	if (rdev->sectors >= (2ULL << 32))
++		rdev->sectors = (2ULL << 32) - 2;
  
-+config PL310_ERRATA_769419
-+	bool "PL310 errata: no automatic Store Buffer drain"
-+	depends on CACHE_L2X0
-+	help
-+	  On revisions of the PL310 prior to r3p2, the Store Buffer does
-+	  not automatically drain. This can cause normal, non-cacheable
-+	  writes to be retained when the memory system is idle, leading
-+	  to suboptimal I/O performance for drivers using coherent DMA.
-+	  This option adds a write barrier to the cpu_idle loop so that,
-+	  on systems with an outer cache, the store buffer is drained
-+	  explicitly.
-+
- endmenu
+-	if (rdev->sectors < sb->size * 2 && sb->level > 1)
++	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
+ 		/* "this cannot possibly happen" ... */
+ 		ret = -EINVAL;
  
- menu "Boot options"
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index acf5e6f..7f170f4 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -155,6 +155,9 @@ void cpu_idle(void)
- #endif
- 
- 			local_irq_disable();
-+#ifdef CONFIG_PL310_ERRATA_769419
-+			wmb();
-+#endif
- 			if (hlt_counter) {
- 				local_irq_enable();
- 				cpu_relax();
+@@ -1021,7 +1024,7 @@ static int super_90_validate(mddev_t *mddev, mdk_rdev_t *rdev)
+ 		mddev->clevel[0] = 0;
+ 		mddev->layout = sb->layout;
+ 		mddev->raid_disks = sb->raid_disks;
+-		mddev->dev_sectors = sb->size * 2;
++		mddev->dev_sectors = ((sector_t)sb->size) * 2;
+ 		mddev->events = ev1;
+ 		mddev->bitmap_info.offset = 0;
+ 		mddev->bitmap_info.default_offset = MD_SB_BYTES >> 9;
+@@ -1260,6 +1263,11 @@ super_90_rdev_size_change(mdk_rdev_t *rdev, sector_t num_sectors)
+ 	rdev->sb_start = calc_dev_sboffset(rdev->bdev);
+ 	if (!num_sectors || num_sectors > rdev->sb_start)
+ 		num_sectors = rdev->sb_start;
++	/* Limit to 4TB as metadata cannot record more than that.
++	 * 4TB == 2^32 KB, or 2*2^32 sectors.
++	 */
++	if (num_sectors >= (2ULL << 32))
++		num_sectors = (2ULL << 32) - 2;
+ 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
+ 		       rdev->sb_page);
+ 	md_super_wait(rdev->mddev);
 -- 
 1.7.12.1
 
