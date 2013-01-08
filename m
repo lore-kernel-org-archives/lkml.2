@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab3AHKkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:40:47 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16532 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755705Ab3AHKkp (ORCPT
+	id S1755856Ab3AHKmT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:42:19 -0500
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:57315 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755736Ab3AHKmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:40:45 -0500
-X-AuditID: cbfec7f4-b7f6d6d000001620-66-50ebf7ab8fad
-Message-id: <50EBF7A9.6070802@samsung.com>
-Date: Tue, 08 Jan 2013 11:40:41 +0100
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-version: 1.0
-To: Federico Vaga <federico.vaga@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Pawel Osciak <pawel@osciak.com>, Hans Verkuil <hans.verkuil@cisco.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Giancarlo Asnaghi <giancarlo.asnaghi@st.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: Re: [PATCH v4 1/3] videobuf2-dma-contig: user can specify GFP flags
-References: <1357493343-13090-1-git-send-email-federico.vaga@gmail.com>
- <50EBC26E.5090803@samsung.com> <1609748.zs7bdcvuG8@harkonnen>
-In-reply-to: <1609748.zs7bdcvuG8@harkonnen>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMLMWRmVeSWpSXmKPExsVy+t/xy7qrv78OMJjao2JxedccNoueDVtZ
-	HZg8Pm+SC2CM4rJJSc3JLEst0rdL4Mr4ffoCW8ESnoqte3axNjBe5uxi5OSQEDCR+Hb1LBuE
-	LSZx4d56IJuLQ0hgKaPEvjM/WCGcZiaJebfOsIBU8QpoSXx4soEJxGYRUJV42PoKrJtNwFCi
-	620XmC0q4Csx7dc1Joh6QYkfk++B9YoIaEs0T3sOtoFZYAeTxMw7TawgCWEBH4nl6y5DbWtn
-	lPg8ey1YghOoY2bzArBuZgEziUct65ghbHmJzWveMk9gFJiFZMksJGWzkJQtYGRexSiaWppc
-	UJyUnmuoV5yYW1yal66XnJ+7iRESkF92MC4+ZnWIUYCDUYmHtzLqdYAQa2JZcWXuIUYJDmYl
-	EV77fUAh3pTEyqrUovz4otKc1OJDjEwcnFINjPJdL5xvKqi1neNr3Xnt+OZP1Yuv5vFdlLR7
-	Ev/m9czPrE8udzPmnSyYeOuftR1jvPpbBwMW/VVCxkcY3bukF9U4aqovq5M9aunxZuqq0h9r
-	vVZ6P2H7Fq9et1riLWPcUfNz5Va7mGcfF2ePM+Zlm1R33ZD9HLfNyr9eS9W+b9rtv3h/xFut
-	aCWW4oxEQy3mouJEAAO9S0smAgAA
+	Tue, 8 Jan 2013 05:42:17 -0500
+Date: Tue, 8 Jan 2013 19:42:38 +0900
+From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+To: mtosatti@redhat.com, gleb@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7 -v2] KVM: Alleviate mmu_lock hold time when we start
+ dirty logging
+Message-Id: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Changelog v1->v2:
+  The condition in patch 1 was changed like this:
+    npages && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES)
 
-On 1/8/2013 11:15 AM, Federico Vaga wrote:
-> > > @@ -165,7 +161,8 @@ static void *vb2_dc_alloc(void *alloc_ctx, unsigned
-> > > long size)>
-> > >   	/* align image size to PAGE_SIZE */
-> > >   	size = PAGE_ALIGN(size);
-> > >
-> > > -	buf->vaddr = dma_alloc_coherent(dev, size, &buf->dma_addr,
-> GFP_KERNEL);
-> > > +	buf->vaddr = dma_alloc_coherent(dev, size, &buf->dma_addr,
-> > > +									
-> GFP_KERNEL | conf->mem_flags);
-> >
-> > I think we can add GFP_DMA flag unconditionally to the vb2_dc_contig
-> > allocator.
-> > It won't hurt existing clients as most of nowadays platforms doesn't
-> > have DMA
-> > zone (GFP_DMA is ignored in such case), but it should fix the issues
-> > with some
-> > older and non-standard systems.
->
-> I did not set GFP_DMA fixed in the allocator because I do not want to brake
-> something in the future. On x86 platform GFP_DMA allocates under 16MB and this
-> limit can be too strict. When many other drivers use GFP_DMA we can saturate
-> this tiny zone.
-> As you said, this fix the issue with _older_ and _non-standard_ (like sta2x11)
-> systems. But this fix has effect on every other standard and new systems.
-> That's why I preferred to set the flag optionally.
+This patch set makes kvm_mmu_slot_remove_write_access() rmap based and
+adds conditional rescheduling to it.
 
-Ok, then I would simply pass the flags from the driver without any 
-alternation
-in the allocator itself, so drivers can pass 'GFP_KERNEL' or
-'GFP_KERNEL | GFP_DMA' depending on their preference. Please also update 
-all
-the existing clients of vb2_dma_dc allocator.
+The motivation for this change is of course to reduce the mmu_lock hold
+time when we start dirty logging for a large memory slot.  You may not
+see the problem if you just give 8GB or less of the memory to the guest
+with THP enabled on the host -- this is for the worst case.
 
-Best regards
+Takuya Yoshikawa (7):
+  KVM: Write protect the updated slot only when dirty logging is enabled
+  KVM: MMU: Remove unused parameter level from __rmap_write_protect()
+  KVM: MMU: Make kvm_mmu_slot_remove_write_access() rmap based
+  KVM: Remove unused slot_bitmap from kvm_mmu_page
+  KVM: Make kvm_mmu_change_mmu_pages() take mmu_lock by itself
+  KVM: Make kvm_mmu_slot_remove_write_access() take mmu_lock by itself
+  KVM: MMU: Conditionally reschedule when kvm_mmu_slot_remove_write_access() takes a long time
+
+ Documentation/virtual/kvm/mmu.txt |    7 ----
+ arch/x86/include/asm/kvm_host.h   |    5 ---
+ arch/x86/kvm/mmu.c                |   56 +++++++++++++++++++-----------------
+ arch/x86/kvm/x86.c                |   12 ++++---
+ virt/kvm/kvm_main.c               |    1 -
+ 5 files changed, 37 insertions(+), 44 deletions(-)
+
 -- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
+1.7.5.4
 
