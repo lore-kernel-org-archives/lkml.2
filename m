@@ -1,544 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab3AHCTF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:19:05 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:56236 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755193Ab3AHCIz (ORCPT
+	id S1754638Ab3AHCTf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:19:35 -0500
+Received: from nm29.access.bullet.mail.sp2.yahoo.com ([98.139.44.156]:43953
+	"EHLO nm29.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755052Ab3AHCIu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:08:55 -0500
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 05/33] cputime: Use accessors to read task cputime stats
-Date: Tue,  8 Jan 2013 03:08:05 +0100
-Message-Id: <1357610913-1080-6-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+	Mon, 7 Jan 2013 21:08:50 -0500
+X-Yahoo-Newman-Id: 374038.43918.bm@smtp103.biz.mail.ne1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: iDaq4GMVM1l_Vgaz1mITj0GOVwf2BhXKDanC71IXIAf1Dai
+ sUTiGhrJC4LBihMffeQib338IYUsWYvw3Ak5prWIAS.E6p3g86y5cTIIoIkF
+ 5xtb6qGRFz0eDn48KHpM6sL4SjWXTOPMDk8cokZJ3rYpqDNa9ahUgdgSHVcU
+ 3qTLJ5xMzFCKRPMH0gZGaBPE.dSShbQC7ArWb2vsPMihYFNVl4w5ZWBA_oIb
+ prt1UYd8DeWdmTi29fC.Fgf.MMSTTsJ8ZLewjUpAUNqNJPYW8hZfZWJcPapv
+ xkXbtc0nB7S2nKoFVqE4gBjZGyYLcnGxNgAdH0njMuoLPg.MYG09VKLV1HPo
+ tzThZTVbuQ5ulJqMNybiqZgmT6_4ReZ46kUVNHvl0rTcPiWQ0IlkWtxjoz09
+ AGd.jetz4IUTC8t6MWoYctUOUKAeSI2cxGVBK8JZP4mumhO2lZGXmCqDFUfn
+ wqF8D
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EB7FBE.80309@schaufler-ca.com>
+Date: Mon, 07 Jan 2013 18:09:02 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: James Morris <jmorris@namei.org>
+CC: Casey Schaufler <casey@schaufler-ca.com>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>
+Subject: [PATCH v12 1/9] LSM: Multiple concurrent LSMs
+References: <50EB7C50.3070605@schaufler-ca.com>
+In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is in preparation for the full dynticks feature. While
-remotely reading the cputime of a task running in a full
-dynticks CPU, we'll need to do some extra-computation. This
-way we can account the time it spent tickless in userspace
-since its last cputime snapshot.
+Subject: [PATCH v12 1/9] LSM: Multiple concurrent LSMs
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Alessio Igor Bogani <abogani@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Geoff Levand <geoff@infradead.org>
-Cc: Gilad Ben Yossef <gilad@benyossef.com>
-Cc: Hakan Akkan <hakanakkan@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Namhyung Kim <namhyung.kim@lge.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+Change the infrastructure for Linux Security Modules (LSM)s
+from a single vector of hook handlers to a list based method
+for handling multiple concurrent modules. 
+
+Changes for AppArmor. Abstract access to security blobs.
+Remove commoncap calls.
+
+
+Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+
 ---
- arch/alpha/kernel/osf_sys.c |    6 ++++--
- arch/x86/kernel/apm_32.c    |   11 ++++++-----
- drivers/isdn/mISDN/stack.c  |    7 ++++++-
- fs/binfmt_elf.c             |    8 ++++++--
- fs/binfmt_elf_fdpic.c       |    7 +++++--
- include/linux/sched.h       |   18 ++++++++++++++++++
- kernel/acct.c               |    6 ++++--
- kernel/cpu.c                |    4 +++-
- kernel/delayacct.c          |    7 +++++--
- kernel/exit.c               |    6 ++++--
- kernel/posix-cpu-timers.c   |   28 ++++++++++++++++++++++------
- kernel/sched/cputime.c      |    9 +++++----
- kernel/signal.c             |   12 ++++++++----
- kernel/tsacct.c             |   19 +++++++++++++------
- 14 files changed, 109 insertions(+), 39 deletions(-)
+ security/apparmor/context.c         |   10 +++---
+ security/apparmor/domain.c          |   19 ++++------
+ security/apparmor/include/context.h |   13 +++++--
+ security/apparmor/lsm.c             |   66 +++++++++++++----------------------
+ 4 files changed, 45 insertions(+), 63 deletions(-)
 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 14db93e..dbc1760 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -1139,6 +1139,7 @@ struct rusage32 {
- SYSCALL_DEFINE2(osf_getrusage, int, who, struct rusage32 __user *, ru)
- {
- 	struct rusage32 r;
-+	cputime_t utime, stime;
- 
- 	if (who != RUSAGE_SELF && who != RUSAGE_CHILDREN)
- 		return -EINVAL;
-@@ -1146,8 +1147,9 @@ SYSCALL_DEFINE2(osf_getrusage, int, who, struct rusage32 __user *, ru)
- 	memset(&r, 0, sizeof(r));
- 	switch (who) {
- 	case RUSAGE_SELF:
--		jiffies_to_timeval32(current->utime, &r.ru_utime);
--		jiffies_to_timeval32(current->stime, &r.ru_stime);
-+		task_cputime(current, &utime, &stime);
-+		jiffies_to_timeval32(utime, &r.ru_utime);
-+		jiffies_to_timeval32(stime, &r.ru_stime);
- 		r.ru_minflt = current->min_flt;
- 		r.ru_majflt = current->maj_flt;
- 		break;
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index d65464e..8d7012b 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -899,6 +899,7 @@ static void apm_cpu_idle(void)
- 	static int use_apm_idle; /* = 0 */
- 	static unsigned int last_jiffies; /* = 0 */
- 	static unsigned int last_stime; /* = 0 */
-+	cputime_t stime;
- 
- 	int apm_idle_done = 0;
- 	unsigned int jiffies_since_last_check = jiffies - last_jiffies;
-@@ -906,23 +907,23 @@ static void apm_cpu_idle(void)
- 
- 	WARN_ONCE(1, "deprecated apm_cpu_idle will be deleted in 2012");
- recalc:
-+	task_cputime(current, NULL, &stime);
- 	if (jiffies_since_last_check > IDLE_CALC_LIMIT) {
- 		use_apm_idle = 0;
--		last_jiffies = jiffies;
--		last_stime = current->stime;
- 	} else if (jiffies_since_last_check > idle_period) {
- 		unsigned int idle_percentage;
- 
--		idle_percentage = current->stime - last_stime;
-+		idle_percentage = stime - last_stime;
- 		idle_percentage *= 100;
- 		idle_percentage /= jiffies_since_last_check;
- 		use_apm_idle = (idle_percentage > idle_threshold);
- 		if (apm_info.forbid_idle)
- 			use_apm_idle = 0;
--		last_jiffies = jiffies;
--		last_stime = current->stime;
- 	}
- 
-+	last_jiffies = jiffies;
-+	last_stime = stime;
-+
- 	bucket = IDLE_LEAKY_MAX;
- 
- 	while (!need_resched()) {
-diff --git a/drivers/isdn/mISDN/stack.c b/drivers/isdn/mISDN/stack.c
-index 5f21f62..deda591 100644
---- a/drivers/isdn/mISDN/stack.c
-+++ b/drivers/isdn/mISDN/stack.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- #include <linux/mISDNif.h>
- #include <linux/kthread.h>
-+#include <linux/sched.h>
- #include "core.h"
- 
- static u_int	*debug;
-@@ -202,6 +203,9 @@ static int
- mISDNStackd(void *data)
- {
- 	struct mISDNstack *st = data;
-+#ifdef MISDN_MSG_STATS
-+	cputime_t utime, stime;
-+#endif
- 	int err = 0;
- 
- 	sigfillset(&current->blocked);
-@@ -303,9 +307,10 @@ mISDNStackd(void *data)
- 	       "msg %d sleep %d stopped\n",
- 	       dev_name(&st->dev->dev), st->msg_cnt, st->sleep_cnt,
- 	       st->stopped_cnt);
-+	task_cputime(st->thread, &utime, &stime);
- 	printk(KERN_DEBUG
- 	       "mISDNStackd daemon for %s utime(%ld) stime(%ld)\n",
--	       dev_name(&st->dev->dev), st->thread->utime, st->thread->stime);
-+	       dev_name(&st->dev->dev), utime, stime);
- 	printk(KERN_DEBUG
- 	       "mISDNStackd daemon for %s nvcsw(%ld) nivcsw(%ld)\n",
- 	       dev_name(&st->dev->dev), st->thread->nvcsw, st->thread->nivcsw);
-diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
-index 0c42cdb..49d0b43 100644
---- a/fs/binfmt_elf.c
-+++ b/fs/binfmt_elf.c
-@@ -33,6 +33,7 @@
- #include <linux/elf.h>
- #include <linux/utsname.h>
- #include <linux/coredump.h>
-+#include <linux/sched.h>
- #include <asm/uaccess.h>
- #include <asm/param.h>
- #include <asm/page.h>
-@@ -1320,8 +1321,11 @@ static void fill_prstatus(struct elf_prstatus *prstatus,
- 		cputime_to_timeval(cputime.utime, &prstatus->pr_utime);
- 		cputime_to_timeval(cputime.stime, &prstatus->pr_stime);
- 	} else {
--		cputime_to_timeval(p->utime, &prstatus->pr_utime);
--		cputime_to_timeval(p->stime, &prstatus->pr_stime);
-+		cputime_t utime, stime;
-+
-+		task_cputime(p, &utime, &stime);
-+		cputime_to_timeval(utime, &prstatus->pr_utime);
-+		cputime_to_timeval(stime, &prstatus->pr_stime);
- 	}
- 	cputime_to_timeval(p->signal->cutime, &prstatus->pr_cutime);
- 	cputime_to_timeval(p->signal->cstime, &prstatus->pr_cstime);
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index dc84732..cb240dd 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -1375,8 +1375,11 @@ static void fill_prstatus(struct elf_prstatus *prstatus,
- 		cputime_to_timeval(cputime.utime, &prstatus->pr_utime);
- 		cputime_to_timeval(cputime.stime, &prstatus->pr_stime);
- 	} else {
--		cputime_to_timeval(p->utime, &prstatus->pr_utime);
--		cputime_to_timeval(p->stime, &prstatus->pr_stime);
-+		cputime_t utime, stime;
-+
-+		task_cputime(p, &utime, &stime);
-+		cputime_to_timeval(utime, &prstatus->pr_utime);
-+		cputime_to_timeval(stime, &prstatus->pr_stime);
- 	}
- 	cputime_to_timeval(p->signal->cutime, &prstatus->pr_cutime);
- 	cputime_to_timeval(p->signal->cstime, &prstatus->pr_cstime);
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 66b2344..d57e20f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1792,6 +1792,24 @@ static inline void put_task_struct(struct task_struct *t)
- 		__put_task_struct(t);
- }
- 
-+static inline void task_cputime(struct task_struct *t,
-+				cputime_t *utime, cputime_t *stime)
-+{
-+	if (utime)
-+		*utime = t->utime;
-+	if (stime)
-+		*stime = t->stime;
-+}
-+
-+static inline void task_cputime_scaled(struct task_struct *t,
-+				       cputime_t *utimescaled,
-+				       cputime_t *stimescaled)
-+{
-+	if (utimescaled)
-+		*utimescaled = t->utimescaled;
-+	if (stimescaled)
-+		*stimescaled = t->stimescaled;
-+}
- extern void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
- extern void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st);
- 
-diff --git a/kernel/acct.c b/kernel/acct.c
-index 051e071..e8b1627 100644
---- a/kernel/acct.c
-+++ b/kernel/acct.c
-@@ -566,6 +566,7 @@ out:
- void acct_collect(long exitcode, int group_dead)
- {
- 	struct pacct_struct *pacct = &current->signal->pacct;
-+	cputime_t utime, stime;
- 	unsigned long vsize = 0;
- 
- 	if (group_dead && current->mm) {
-@@ -593,8 +594,9 @@ void acct_collect(long exitcode, int group_dead)
- 		pacct->ac_flag |= ACORE;
- 	if (current->flags & PF_SIGNALED)
- 		pacct->ac_flag |= AXSIG;
--	pacct->ac_utime += current->utime;
--	pacct->ac_stime += current->stime;
-+	task_cputime(current, &utime, &stime);
-+	pacct->ac_utime += utime;
-+	pacct->ac_stime += stime;
- 	pacct->ac_minflt += current->min_flt;
- 	pacct->ac_majflt += current->maj_flt;
- 	spin_unlock_irq(&current->sighand->siglock);
-diff --git a/kernel/cpu.c b/kernel/cpu.c
-index 3046a50..e5d5e8e 100644
---- a/kernel/cpu.c
-+++ b/kernel/cpu.c
-@@ -224,11 +224,13 @@ void clear_tasks_mm_cpumask(int cpu)
- static inline void check_for_tasks(int cpu)
- {
- 	struct task_struct *p;
-+	cputime_t utime, stime;
- 
- 	write_lock_irq(&tasklist_lock);
- 	for_each_process(p) {
-+		task_cputime(p, &utime, &stime);
- 		if (task_cpu(p) == cpu && p->state == TASK_RUNNING &&
--		    (p->utime || p->stime))
-+		    (utime || stime))
- 			printk(KERN_WARNING "Task %s (pid = %d) is on cpu %d "
- 				"(state = %ld, flags = %x)\n",
- 				p->comm, task_pid_nr(p), cpu,
-diff --git a/kernel/delayacct.c b/kernel/delayacct.c
-index 418b3f7..d473988 100644
---- a/kernel/delayacct.c
-+++ b/kernel/delayacct.c
-@@ -106,6 +106,7 @@ int __delayacct_add_tsk(struct taskstats *d, struct task_struct *tsk)
- 	unsigned long long t2, t3;
- 	unsigned long flags;
- 	struct timespec ts;
-+	cputime_t utime, stime, stimescaled, utimescaled;
- 
- 	/* Though tsk->delays accessed later, early exit avoids
- 	 * unnecessary returning of other data
-@@ -114,12 +115,14 @@ int __delayacct_add_tsk(struct taskstats *d, struct task_struct *tsk)
- 		goto done;
- 
- 	tmp = (s64)d->cpu_run_real_total;
--	cputime_to_timespec(tsk->utime + tsk->stime, &ts);
-+	task_cputime(tsk, &utime, &stime);
-+	cputime_to_timespec(utime + stime, &ts);
- 	tmp += timespec_to_ns(&ts);
- 	d->cpu_run_real_total = (tmp < (s64)d->cpu_run_real_total) ? 0 : tmp;
- 
- 	tmp = (s64)d->cpu_scaled_run_real_total;
--	cputime_to_timespec(tsk->utimescaled + tsk->stimescaled, &ts);
-+	task_cputime_scaled(tsk, &utimescaled, &stimescaled);
-+	cputime_to_timespec(utimescaled + stimescaled, &ts);
- 	tmp += timespec_to_ns(&ts);
- 	d->cpu_scaled_run_real_total =
- 		(tmp < (s64)d->cpu_scaled_run_real_total) ? 0 : tmp;
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b4df219..5d1b0ff 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -85,6 +85,7 @@ static void __exit_signal(struct task_struct *tsk)
- 	bool group_dead = thread_group_leader(tsk);
- 	struct sighand_struct *sighand;
- 	struct tty_struct *uninitialized_var(tty);
-+	cputime_t utime, stime;
- 
- 	sighand = rcu_dereference_check(tsk->sighand,
- 					lockdep_tasklist_lock_is_held());
-@@ -123,8 +124,9 @@ static void __exit_signal(struct task_struct *tsk)
- 		 * We won't ever get here for the group leader, since it
- 		 * will have been the last reference on the signal_struct.
- 		 */
--		sig->utime += tsk->utime;
--		sig->stime += tsk->stime;
-+		task_cputime(tsk, &utime, &stime);
-+		sig->utime += utime;
-+		sig->stime += stime;
- 		sig->gtime += tsk->gtime;
- 		sig->min_flt += tsk->min_flt;
- 		sig->maj_flt += tsk->maj_flt;
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index a278cad..165d476 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -155,11 +155,19 @@ static void bump_cpu_timer(struct k_itimer *timer,
- 
- static inline cputime_t prof_ticks(struct task_struct *p)
- {
--	return p->utime + p->stime;
-+	cputime_t utime, stime;
-+
-+	task_cputime(p, &utime, &stime);
-+
-+	return utime + stime;
- }
- static inline cputime_t virt_ticks(struct task_struct *p)
- {
--	return p->utime;
-+	cputime_t utime;
-+
-+	task_cputime(p, &utime, NULL);
-+
-+	return utime;
- }
- 
- static int
-@@ -471,18 +479,23 @@ static void cleanup_timers(struct list_head *head,
+diff --git a/security/apparmor/context.c b/security/apparmor/context.c
+index 8a9b502..3d9e460 100644
+--- a/security/apparmor/context.c
++++ b/security/apparmor/context.c
+@@ -76,7 +76,7 @@ void aa_dup_task_context(struct aa_task_cxt *new, const struct aa_task_cxt *old)
   */
- void posix_cpu_timers_exit(struct task_struct *tsk)
+ int aa_replace_current_profile(struct aa_profile *profile)
  {
-+	cputime_t utime, stime;
-+
- 	add_device_randomness((const void*) &tsk->se.sum_exec_runtime,
- 						sizeof(unsigned long long));
-+	task_cputime(tsk, &utime, &stime);
- 	cleanup_timers(tsk->cpu_timers,
--		       tsk->utime, tsk->stime, tsk->se.sum_exec_runtime);
-+		       utime, stime, tsk->se.sum_exec_runtime);
+-	struct aa_task_cxt *cxt = current_cred()->security;
++	struct aa_task_cxt *cxt = lsm_get_cred(current_cred(), &apparmor_ops);
+ 	struct cred *new;
+ 	BUG_ON(!profile);
  
- }
- void posix_cpu_timers_exit_group(struct task_struct *tsk)
- {
- 	struct signal_struct *const sig = tsk->signal;
-+	cputime_t utime, stime;
+@@ -87,7 +87,7 @@ int aa_replace_current_profile(struct aa_profile *profile)
+ 	if (!new)
+ 		return -ENOMEM;
  
-+	task_cputime(tsk, &utime, &stime);
- 	cleanup_timers(tsk->signal->cpu_timers,
--		       tsk->utime + sig->utime, tsk->stime + sig->stime,
-+		       utime + sig->utime, stime + sig->stime,
- 		       tsk->se.sum_exec_runtime + sig->sum_sched_runtime);
- }
+-	cxt = new->security;
++	cxt = lsm_get_cred(new, &apparmor_ops);
+ 	if (unconfined(profile) || (cxt->profile->ns != profile->ns)) {
+ 		/* if switching to unconfined or a different profile namespace
+ 		 * clear out context state
+@@ -123,7 +123,7 @@ int aa_set_current_onexec(struct aa_profile *profile)
+ 	if (!new)
+ 		return -ENOMEM;
  
-@@ -1226,11 +1239,14 @@ static inline int task_cputime_expired(const struct task_cputime *sample,
- static inline int fastpath_timer_check(struct task_struct *tsk)
- {
- 	struct signal_struct *sig;
-+	cputime_t utime, stime;
-+
-+	task_cputime(tsk, &utime, &stime);
+-	cxt = new->security;
++	cxt = lsm_get_cred(new, &apparmor_ops);
+ 	aa_get_profile(profile);
+ 	aa_put_profile(cxt->onexec);
+ 	cxt->onexec = profile;
+@@ -150,7 +150,7 @@ int aa_set_current_hat(struct aa_profile *profile, u64 token)
+ 		return -ENOMEM;
+ 	BUG_ON(!profile);
  
- 	if (!task_cputime_zero(&tsk->cputime_expires)) {
- 		struct task_cputime task_sample = {
--			.utime = tsk->utime,
--			.stime = tsk->stime,
-+			.utime = utime,
-+			.stime = stime,
- 			.sum_exec_runtime = tsk->se.sum_exec_runtime
- 		};
+-	cxt = new->security;
++	cxt = lsm_get_cred(new, &apparmor_ops);
+ 	if (!cxt->previous) {
+ 		/* transfer refcount */
+ 		cxt->previous = cxt->profile;
+@@ -187,7 +187,7 @@ int aa_restore_previous_profile(u64 token)
+ 	if (!new)
+ 		return -ENOMEM;
  
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 3ea4233..07912dd 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -296,6 +296,7 @@ static __always_inline bool steal_account_process_tick(void)
- void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- {
- 	struct signal_struct *sig = tsk->signal;
-+	cputime_t utime, stime;
- 	struct task_struct *t;
- 
- 	times->utime = sig->utime;
-@@ -309,8 +310,9 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
- 
- 	t = tsk;
- 	do {
--		times->utime += t->utime;
--		times->stime += t->stime;
-+		task_cputime(tsk, &utime, &stime);
-+		times->utime += utime;
-+		times->stime += stime;
- 		times->sum_exec_runtime += task_sched_runtime(t);
- 	} while_each_thread(tsk, t);
- out:
-@@ -594,11 +596,10 @@ static void cputime_adjust(struct task_cputime *curr,
- void task_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime_t *st)
- {
- 	struct task_cputime cputime = {
--		.utime = p->utime,
--		.stime = p->stime,
- 		.sum_exec_runtime = p->se.sum_exec_runtime,
+-	cxt = new->security;
++	cxt = lsm_get_cred(new, &apparmor_ops);
+ 	if (cxt->token != token) {
+ 		abort_creds(new);
+ 		return -EACCES;
+diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+index 60f0c76..7ad4e26 100644
+--- a/security/apparmor/domain.c
++++ b/security/apparmor/domain.c
+@@ -353,14 +353,12 @@ int apparmor_bprm_set_creds(struct linux_binprm *bprm)
+ 		bprm->file->f_path.dentry->d_inode->i_mode
  	};
+ 	const char *name = NULL, *target = NULL, *info = NULL;
+-	int error = cap_bprm_set_creds(bprm);
+-	if (error)
+-		return error;
++	int error = 0;
  
-+	task_cputime(p, &cputime.utime, &cputime.stime);
- 	cputime_adjust(&cputime, &p->prev_cputime, ut, st);
+ 	if (bprm->cred_prepared)
+ 		return 0;
+ 
+-	cxt = bprm->cred->security;
++	cxt = lsm_get_cred(bprm->cred, &apparmor_ops);
+ 	BUG_ON(!cxt);
+ 
+ 	profile = aa_get_profile(aa_newest_version(cxt->profile));
+@@ -539,15 +537,10 @@ cleanup:
+  */
+ int apparmor_bprm_secureexec(struct linux_binprm *bprm)
+ {
+-	int ret = cap_bprm_secureexec(bprm);
+-
+ 	/* the decision to use secure exec is computed in set_creds
+ 	 * and stored in bprm->unsafe.
+ 	 */
+-	if (!ret && (bprm->unsafe & AA_SECURE_X_NEEDED))
+-		ret = 1;
+-
+-	return ret;
++	return bprm->unsafe & AA_SECURE_X_NEEDED;
  }
  
-diff --git a/kernel/signal.c b/kernel/signal.c
-index 7aaa51d..9b3e319 100644
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -1638,6 +1638,7 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
- 	unsigned long flags;
- 	struct sighand_struct *psig;
- 	bool autoreap = false;
-+	cputime_t utime, stime;
- 
- 	BUG_ON(sig == -1);
- 
-@@ -1675,8 +1676,9 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
- 				       task_uid(tsk));
- 	rcu_read_unlock();
- 
--	info.si_utime = cputime_to_clock_t(tsk->utime + tsk->signal->utime);
--	info.si_stime = cputime_to_clock_t(tsk->stime + tsk->signal->stime);
-+	task_cputime(tsk, &utime, &stime);
-+	info.si_utime = cputime_to_clock_t(utime + tsk->signal->utime);
-+	info.si_stime = cputime_to_clock_t(stime + tsk->signal->stime);
- 
- 	info.si_status = tsk->exit_code & 0x7f;
- 	if (tsk->exit_code & 0x80)
-@@ -1740,6 +1742,7 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
- 	unsigned long flags;
- 	struct task_struct *parent;
- 	struct sighand_struct *sighand;
-+	cputime_t utime, stime;
- 
- 	if (for_ptracer) {
- 		parent = tsk->parent;
-@@ -1758,8 +1761,9 @@ static void do_notify_parent_cldstop(struct task_struct *tsk,
- 	info.si_uid = from_kuid_munged(task_cred_xxx(parent, user_ns), task_uid(tsk));
- 	rcu_read_unlock();
- 
--	info.si_utime = cputime_to_clock_t(tsk->utime);
--	info.si_stime = cputime_to_clock_t(tsk->stime);
-+	task_cputime(tsk, &utime, &stime);
-+	info.si_utime = cputime_to_clock_t(utime);
-+	info.si_stime = cputime_to_clock_t(stime);
- 
-  	info.si_code = why;
-  	switch (why) {
-diff --git a/kernel/tsacct.c b/kernel/tsacct.c
-index 625df0b..017181f 100644
---- a/kernel/tsacct.c
-+++ b/kernel/tsacct.c
-@@ -32,6 +32,7 @@ void bacct_add_tsk(struct user_namespace *user_ns,
+ /**
+@@ -557,7 +550,7 @@ int apparmor_bprm_secureexec(struct linux_binprm *bprm)
+ void apparmor_bprm_committing_creds(struct linux_binprm *bprm)
  {
- 	const struct cred *tcred;
- 	struct timespec uptime, ts;
-+	cputime_t utime, stime, utimescaled, stimescaled;
- 	u64 ac_etime;
+ 	struct aa_profile *profile = __aa_current_profile();
+-	struct aa_task_cxt *new_cxt = bprm->cred->security;
++	struct aa_task_cxt *new_cxt = lsm_get_cred(bprm->cred, &apparmor_ops);
  
- 	BUILD_BUG_ON(TS_COMM_LEN < TASK_COMM_LEN);
-@@ -65,10 +66,15 @@ void bacct_add_tsk(struct user_namespace *user_ns,
- 	stats->ac_ppid	 = pid_alive(tsk) ?
- 		task_tgid_nr_ns(rcu_dereference(tsk->real_parent), pid_ns) : 0;
- 	rcu_read_unlock();
--	stats->ac_utime = cputime_to_usecs(tsk->utime);
--	stats->ac_stime = cputime_to_usecs(tsk->stime);
--	stats->ac_utimescaled = cputime_to_usecs(tsk->utimescaled);
--	stats->ac_stimescaled = cputime_to_usecs(tsk->stimescaled);
-+
-+	task_cputime(tsk, &utime, &stime);
-+	stats->ac_utime = cputime_to_usecs(utime);
-+	stats->ac_stime = cputime_to_usecs(stime);
-+
-+	task_cputime_scaled(tsk, &utimescaled, &stimescaled);
-+	stats->ac_utimescaled = cputime_to_usecs(utimescaled);
-+	stats->ac_stimescaled = cputime_to_usecs(stimescaled);
-+
- 	stats->ac_minflt = tsk->min_flt;
- 	stats->ac_majflt = tsk->maj_flt;
+ 	/* bail out if unconfined or not changing profile */
+ 	if ((new_cxt->profile == profile) ||
+@@ -634,7 +627,7 @@ int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
  
-@@ -122,13 +128,14 @@ void xacct_add_tsk(struct taskstats *stats, struct task_struct *p)
- void acct_update_integrals(struct task_struct *tsk)
+ 	/* released below */
+ 	cred = get_current_cred();
+-	cxt = cred->security;
++	cxt = lsm_get_cred(cred, &apparmor_ops);
+ 	profile = aa_cred_profile(cred);
+ 	previous_profile = cxt->previous;
+ 
+@@ -770,7 +763,7 @@ int aa_change_profile(const char *ns_name, const char *hname, bool onexec,
+ 	}
+ 
+ 	cred = get_current_cred();
+-	cxt = cred->security;
++	cxt = lsm_get_cred(cred, &apparmor_ops);
+ 	profile = aa_cred_profile(cred);
+ 
+ 	/*
+diff --git a/security/apparmor/include/context.h b/security/apparmor/include/context.h
+index a9cbee4..8484e55 100644
+--- a/security/apparmor/include/context.h
++++ b/security/apparmor/include/context.h
+@@ -18,6 +18,7 @@
+ #include <linux/cred.h>
+ #include <linux/slab.h>
+ #include <linux/sched.h>
++#include <linux/lsm.h>
+ 
+ #include "policy.h"
+ 
+@@ -81,6 +82,8 @@ int aa_set_current_onexec(struct aa_profile *profile);
+ int aa_set_current_hat(struct aa_profile *profile, u64 token);
+ int aa_restore_previous_profile(u64 cookie);
+ 
++extern struct security_operations apparmor_ops;
++
+ /**
+  * __aa_task_is_confined - determine if @task has any confinement
+  * @task: task to check confinement of  (NOT NULL)
+@@ -89,7 +92,9 @@ int aa_restore_previous_profile(u64 cookie);
+  */
+ static inline bool __aa_task_is_confined(struct task_struct *task)
  {
- 	if (likely(tsk->mm)) {
--		cputime_t time, dtime;
-+		cputime_t time, dtime, stime, utime;
- 		struct timeval value;
- 		unsigned long flags;
- 		u64 delta;
+-	struct aa_task_cxt *cxt = __task_cred(task)->security;
++	struct aa_task_cxt *cxt;
++
++	cxt = lsm_get_cred(__task_cred(task), &apparmor_ops);
  
- 		local_irq_save(flags);
--		time = tsk->stime + tsk->utime;
-+		task_cputime(tsk, &utime, &stime);
-+		time = stime + utime;
- 		dtime = time - tsk->acct_timexpd;
- 		jiffies_to_timeval(cputime_to_jiffies(dtime), &value);
- 		delta = value.tv_sec;
--- 
-1.7.5.4
+ 	BUG_ON(!cxt || !cxt->profile);
+ 	if (unconfined(aa_newest_version(cxt->profile)))
+@@ -108,7 +113,7 @@ static inline bool __aa_task_is_confined(struct task_struct *task)
+  */
+ static inline struct aa_profile *aa_cred_profile(const struct cred *cred)
+ {
+-	struct aa_task_cxt *cxt = cred->security;
++	struct aa_task_cxt *cxt = lsm_get_cred(cred, &apparmor_ops);
+ 	BUG_ON(!cxt || !cxt->profile);
+ 	return aa_newest_version(cxt->profile);
+ }
+@@ -136,8 +141,10 @@ static inline struct aa_profile *__aa_current_profile(void)
+  */
+ static inline struct aa_profile *aa_current_profile(void)
+ {
+-	const struct aa_task_cxt *cxt = current_cred()->security;
++	const struct aa_task_cxt *cxt;
+ 	struct aa_profile *profile;
++
++	cxt = lsm_get_cred(current_cred(), &apparmor_ops);
+ 	BUG_ON(!cxt || !cxt->profile);
+ 
+ 	profile = aa_newest_version(cxt->profile);
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
+index 8c2a7f6..28d6fd4 100644
+--- a/security/apparmor/lsm.c
++++ b/security/apparmor/lsm.c
+@@ -48,8 +48,8 @@ int apparmor_initialized __initdata;
+  */
+ static void apparmor_cred_free(struct cred *cred)
+ {
+-	aa_free_task_context(cred->security);
+-	cred->security = NULL;
++	aa_free_task_context(lsm_get_cred(cred, &apparmor_ops));
++	lsm_set_cred(cred, NULL, &apparmor_ops);
+ }
+ 
+ /*
+@@ -62,7 +62,7 @@ static int apparmor_cred_alloc_blank(struct cred *cred, gfp_t gfp)
+ 	if (!cxt)
+ 		return -ENOMEM;
+ 
+-	cred->security = cxt;
++	lsm_set_cred(cred, cxt, &apparmor_ops);
+ 	return 0;
+ }
+ 
+@@ -77,8 +77,8 @@ static int apparmor_cred_prepare(struct cred *new, const struct cred *old,
+ 	if (!cxt)
+ 		return -ENOMEM;
+ 
+-	aa_dup_task_context(cxt, old->security);
+-	new->security = cxt;
++	aa_dup_task_context(cxt, lsm_get_cred(old, &apparmor_ops));
++	lsm_set_cred(new, cxt, &apparmor_ops);
+ 	return 0;
+ }
+ 
+@@ -87,8 +87,8 @@ static int apparmor_cred_prepare(struct cred *new, const struct cred *old,
+  */
+ static void apparmor_cred_transfer(struct cred *new, const struct cred *old)
+ {
+-	const struct aa_task_cxt *old_cxt = old->security;
+-	struct aa_task_cxt *new_cxt = new->security;
++	const struct aa_task_cxt *old_cxt = lsm_get_cred(old, &apparmor_ops);
++	struct aa_task_cxt *new_cxt = lsm_get_cred(new, &apparmor_ops);
+ 
+ 	aa_dup_task_context(new_cxt, old_cxt);
+ }
+@@ -96,19 +96,11 @@ static void apparmor_cred_transfer(struct cred *new, const struct cred *old)
+ static int apparmor_ptrace_access_check(struct task_struct *child,
+ 					unsigned int mode)
+ {
+-	int error = cap_ptrace_access_check(child, mode);
+-	if (error)
+-		return error;
+-
+ 	return aa_ptrace(current, child, mode);
+ }
+ 
+ static int apparmor_ptrace_traceme(struct task_struct *parent)
+ {
+-	int error = cap_ptrace_traceme(parent);
+-	if (error)
+-		return error;
+-
+ 	return aa_ptrace(parent, current, PTRACE_MODE_ATTACH);
+ }
+ 
+@@ -140,14 +132,11 @@ static int apparmor_capable(const struct cred *cred, struct user_namespace *ns,
+ 			    int cap, int audit)
+ {
+ 	struct aa_profile *profile;
+-	/* cap_capable returns 0 on success, else -EPERM */
+-	int error = cap_capable(cred, ns, cap, audit);
+-	if (!error) {
+-		profile = aa_cred_profile(cred);
+-		if (!unconfined(profile))
+-			error = aa_capable(current, profile, cap, audit);
+-	}
+-	return error;
++
++	profile = aa_cred_profile(cred);
++	if (!unconfined(profile))
++		return aa_capable(current, profile, cap, audit);
++	return 0;
+ }
+ 
+ /**
+@@ -375,7 +364,7 @@ static int apparmor_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
+ 
+ static int apparmor_file_open(struct file *file, const struct cred *cred)
+ {
+-	struct aa_file_cxt *fcxt = file->f_security;
++	struct aa_file_cxt *fcxt = lsm_get_file(file, &apparmor_ops);
+ 	struct aa_profile *profile;
+ 	int error = 0;
+ 
+@@ -409,8 +398,8 @@ static int apparmor_file_open(struct file *file, const struct cred *cred)
+ static int apparmor_file_alloc_security(struct file *file)
+ {
+ 	/* freed by apparmor_file_free_security */
+-	file->f_security = aa_alloc_file_context(GFP_KERNEL);
+-	if (!file->f_security)
++	lsm_set_file(file, aa_alloc_file_context(GFP_KERNEL), &apparmor_ops);
++	if (!lsm_get_file(file, &apparmor_ops))
+ 		return -ENOMEM;
+ 	return 0;
+ 
+@@ -418,14 +407,15 @@ static int apparmor_file_alloc_security(struct file *file)
+ 
+ static void apparmor_file_free_security(struct file *file)
+ {
+-	struct aa_file_cxt *cxt = file->f_security;
++	struct aa_file_cxt *cxt = lsm_get_file(file, &apparmor_ops);
+ 
++	lsm_set_file(file, NULL, &apparmor_ops);
+ 	aa_free_file_context(cxt);
+ }
+ 
+ static int common_file_perm(int op, struct file *file, u32 mask)
+ {
+-	struct aa_file_cxt *fcxt = file->f_security;
++	struct aa_file_cxt *fcxt = lsm_get_file(file, &apparmor_ops);
+ 	struct aa_profile *profile, *fprofile = aa_cred_profile(file->f_cred);
+ 	int error = 0;
+ 
+@@ -472,7 +462,7 @@ static int common_mmap(int op, struct file *file, unsigned long prot,
+ 	struct dentry *dentry;
+ 	int mask = 0;
+ 
+-	if (!file || !file->f_security)
++	if (!file || !lsm_get_file(file, &apparmor_ops))
+ 		return 0;
+ 
+ 	if (prot & PROT_READ)
+@@ -510,7 +500,7 @@ static int apparmor_getprocattr(struct task_struct *task, char *name,
+ 	struct aa_profile *profile;
+ 	/* released below */
+ 	const struct cred *cred = get_task_cred(task);
+-	struct aa_task_cxt *cxt = cred->security;
++	struct aa_task_cxt *cxt = lsm_get_cred(cred, &apparmor_ops);
+ 	profile = aa_cred_profile(cred);
+ 
+ 	if (strcmp(name, "current") == 0)
+@@ -614,7 +604,7 @@ static int apparmor_task_setrlimit(struct task_struct *task,
+ 	return error;
+ }
+ 
+-static struct security_operations apparmor_ops = {
++struct security_operations apparmor_ops = {
+ 	.name =				"apparmor",
+ 
+ 	.ptrace_access_check =		apparmor_ptrace_access_check,
+@@ -878,6 +868,7 @@ static int param_set_mode(const char *val, struct kernel_param *kp)
+  */
+ static int __init set_init_cxt(void)
+ {
++	int rc;
+ 	struct cred *cred = (struct cred *)current->real_cred;
+ 	struct aa_task_cxt *cxt;
+ 
+@@ -886,9 +877,9 @@ static int __init set_init_cxt(void)
+ 		return -ENOMEM;
+ 
+ 	cxt->profile = aa_get_profile(root_ns->unconfined);
+-	cred->security = cxt;
++	rc = lsm_set_init_cred(cred, cxt, &apparmor_ops);
+ 
+-	return 0;
++	return rc;
+ }
+ 
+ static int __init apparmor_init(void)
+@@ -913,12 +904,6 @@ static int __init apparmor_init(void)
+ 		goto register_security_out;
+ 	}
+ 
+-	error = register_security(&apparmor_ops);
+-	if (error) {
+-		AA_ERROR("Unable to register AppArmor\n");
+-		goto set_init_cxt_out;
+-	}
+-
+ 	/* Report that AppArmor successfully initialized */
+ 	apparmor_initialized = 1;
+ 	if (aa_g_profile_mode == APPARMOR_COMPLAIN)
+@@ -930,9 +915,6 @@ static int __init apparmor_init(void)
+ 
+ 	return error;
+ 
+-set_init_cxt_out:
+-	aa_free_task_context(current->real_cred->security);
+-
+ register_security_out:
+ 	aa_free_root_ns();
+ 
 
