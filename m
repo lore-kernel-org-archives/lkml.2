@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755070Ab3AHVif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:38:35 -0500
-Received: from www84.your-server.de ([213.133.104.84]:50532 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753448Ab3AHVhN (ORCPT
+	id S1755203Ab3AHViq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:38:46 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:5111 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754845Ab3AHVin (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:37:13 -0500
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: stefani@seibold.net
-Subject: [PATCH 2/2] fix kfifo_alloc() and kfifo_init()
-Date: Tue,  8 Jan 2013 22:36:21 +0100
-Message-Id: <1357680984-23007-3-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.8.0.2
-In-Reply-To: <1357680984-23007-1-git-send-email-stefani@seibold.net>
-References: <1357680984-23007-1-git-send-email-stefani@seibold.net>
-X-Authenticated-Sender: stefani@seibold.net
+	Tue, 8 Jan 2013 16:38:43 -0500
+X-Authority-Analysis: v=2.0 cv=T70Ovo2Q c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=O_67QizI8w0A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=fLyonxBqlDMA:10 a=SbwudO-BzbdwtYbHyIMA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357681121.5190.42.camel@gandalf.local.home>
+Subject: [add to stable] ftrace: Do not function trace inlined functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ben Hutchings <ben@decadent.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Tue, 08 Jan 2013 16:38:41 -0500
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+Hi Greg and Ben,
 
-This patch fix the kfifo_alloc() and kfifo_init() to alloc at least the
-requested number of elements. Since the kfifo operates on power of 2 the
-request size will be rounded up to the next power of two.
+Can you add commit 45959ee7aa645815a5ce303a0ea1e48a21e67c6a to the
+stable trees.
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- lib/kfifo.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+Thanks,
 
-diff --git a/lib/kfifo.c b/lib/kfifo.c
-index 59dcf5b..7b7f830 100644
---- a/lib/kfifo.c
-+++ b/lib/kfifo.c
-@@ -42,8 +42,7 @@ int __kfifo_alloc(struct __kfifo *fifo, unsigned int size,
- 	 * round down to the next power of 2, since our 'let the indices
- 	 * wrap' technique works only in this case.
- 	 */
--	if (!is_power_of_2(size))
--		size = rounddown_pow_of_two(size);
-+	size = roundup_pow_of_two(size);
- 
- 	fifo->in = 0;
- 	fifo->out = 0;
-@@ -83,8 +82,7 @@ int __kfifo_init(struct __kfifo *fifo, void *buffer,
- {
- 	size /= esize;
- 
--	if (!is_power_of_2(size))
--		size = rounddown_pow_of_two(size);
-+	size = roundup_pow_of_two(size);
- 
- 	fifo->in = 0;
- 	fifo->out = 0;
--- 
-1.8.0.2
+-- Steve
+
 
