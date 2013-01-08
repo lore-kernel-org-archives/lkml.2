@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab3AHQqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 11:46:45 -0500
-Received: from mail127.messagelabs.com ([216.82.250.115]:52900 "EHLO
-	mail127.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab3AHQqn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 11:46:43 -0500
-X-Env-Sender: hartleys@visionengravers.com
-X-Msg-Ref: server-16.tower-127.messagelabs.com!1357663598!8103216!6
-X-Originating-IP: [216.166.12.98]
-X-StarScan-Received: 
-X-StarScan-Version: 6.6.1.8; banners=-,-,-
-X-VirusChecked: Checked
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>
-CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ian Abbott <abbotti@mev.co.uk>
-Date: Tue, 8 Jan 2013 10:46:38 -0600
-Subject: RE: linux-next: build failure after merge of the staging tree
-Thread-Topic: linux-next: build failure after merge of the staging tree
-Thread-Index: Ac3tWNMja1IzWgACSC+41jDwWCJkUQAZqBww
-Message-ID: <ADE657CA350FB648AAC2C43247A983F00206D6C990A5@AUSP01VMBX24.collaborationhost.net>
-References: <20130108132352.dbabdc281512cdaffbae5ae9@canb.auug.org.au>
-	<20130108042730.GA3936@kroah.com>
- <20130108152951.9fa6165c918e52ab5cfac435@canb.auug.org.au>
-In-Reply-To: <20130108152951.9fa6165c918e52ab5cfac435@canb.auug.org.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756720Ab3AHQr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 11:47:29 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:35655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756633Ab3AHQr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 11:47:27 -0500
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH] Only reset e820 once, even with multiple memmap=exactmap params
+Date: Tue, 8 Jan 2013 17:47:17 +0100
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-24-desktop; KDE/4.6.0; x86_64; ; )
+Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
+        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <3649945.08HKjS0y0c@hammer82.arch.suse.de> <CAE9FiQUueTB6gc5uMUApqeS7FtzMESLLFEt3ZuOMJgXsnjFQ0A@mail.gmail.com>
+In-Reply-To: <CAE9FiQUueTB6gc5uMUApqeS7FtzMESLLFEt3ZuOMJgXsnjFQ0A@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301081747.17853.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, January 07, 2013 9:30 PM, Stephen Rothwell wrote:
-> On Mon, 7 Jan 2013 20:27:30 -0800 Greg KH <greg@kroah.com> wrote:
->> On Tue, Jan 08, 2013 at 01:23:52PM +1100, Stephen Rothwell wrote:
->>> After merging the staging tree, today's linux-next build (x86_64
->>> allmodconfig) failed like this:
->>> 
->>> drivers/staging/comedi/comedi_fops.c: In function 'comedi_unlocked_ioctl':
->>> drivers/staging/comedi/comedi_fops.c:1665:4: error: 'dev_file_info' undeclared (first use in this function)
->>> 
->>> Caused by commit 4da5fa9a439f ("staging: comedi: use comedi_dev_from_minor
->>> ()") interacting with commit 7d3135af399e ("staging: comedi: prevent
->>> auto-unconfig of manually configured devices") from the staging.current
->>> tree.
->>> 
->>> I just reverted the latter commit in the hope that the bug is fixed in
->>> some other way in the staging tree.
->> 
->> Yes, I had to do some manual fixup when merging the branches together to
->> get it to work properly, which is what I did in my staging-next tree.
->> As the fixup was done in the merge commit, maybe you didn't get it when
->> you did the pull?
->
-> Presumably not (my top of staging-next is d7f9729f6e06) - it was changing
-> pretty rapidly this morning as I was fetching trees ...
->
-> At least it will be OK tomorrow.
+On Tuesday, January 08, 2013 04:04:56 AM Yinghai Lu wrote:
+> On Mon, Jan 7, 2013 at 4:42 PM, Thomas Renninger <trenn@suse.de> wrote:
+> > memmap=256M$3584M
+> 
+> may need to change to:
+> 
+> memmap=256M\$\$3584M
+The problem is (beside the special char $) that
+memmap=exactmap boot param resets all e820 maps every time the
+parameter is processed.
+And:
+/sbin/kexec -p xy --append="..." --initrd yx
+seem to magically add (append):
+memmap=exactmap memmap=640K@0K memmap=392556K@115328K elfcorehdr=507884K memmap=252K#3099760K
 
-Greg's staging tree on git.kernel.org looks correct.
+therefore all memmap= I try to pass are voided out by:
+memmap=exactmap
+which is always added by kexec after my params.
 
-If there is anything I need to do to help resolve this please let me know.
+I could come around with attached patch and passing:
+/sbin/kexec -p xy --append='... memmap=exactmap memmap=256M$3584M' --initrd yx
 
-Thanks,
-Hartley
+Now mmconfig is working in kdump kernel.
+This would mean mmconfig is broken by design in kexec?
 
+Only way to fix this I can think of is to export
+mmconfig area through /sys  (../kernel/debug/mmconfig?, possibly
+already in X$Y format?) in the productive kernel and make kexec add it
+like the other memmap= params automatically.
+
+I'll attach the output in a separate mail.
+
+   Thomas
+
+---
+
+x86 e820: Do not reset e820 map twice, even if memmap=exactmap is passed as boot param several times
+
+This is needed to be able to explicitly pass (debug) e820
+modifications through kexec via memmap=.
+Otherwise those get voided by kexec appending memmap=exactmap always
+after the user defined boot parameters.
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+
+ linux-2.6_t/arch/x86/kernel/e820.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: git/linux-2.6_t/arch/x86/kernel/e820.c
+===================================================================
+--- git.orig/linux-2.6_t/arch/x86/kernel/e820.c
++++ git/linux-2.6_t/arch/x86/kernel/e820.c
+@@ -845,7 +845,9 @@ static int __init parse_memmap_opt(char
+ 
+ 	if (!strncmp(p, "exactmap", 8)) {
+ #ifdef CONFIG_CRASH_DUMP
+-		/*
++		/* memmap=exactmap passed twice, do not reset tables again */
++		if (saved_max_pfn)
++			return 0;		/*
+ 		 * If we are doing a crash dump, we still need to know
+ 		 * the real mem size before original memory map is
+ 		 * reset.
