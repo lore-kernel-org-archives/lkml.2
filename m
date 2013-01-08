@@ -1,71 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663Ab3AHDTe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:19:34 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:42142 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753040Ab3AHDTc (ORCPT
+	id S1753569Ab3AHD2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:28:08 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:43127 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab3AHD2H convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:19:32 -0500
-Date: Tue, 8 Jan 2013 14:19:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kees Cook <keescook@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the drop-experimental tree with Linus'
- and the net-next  trees
-Message-Id: <20130108141927.5ad3a82b9758e75fc068f895@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_Jan_2013_14_19_27_+1100_NXhqwB/22=SIexiQ"
+	Mon, 7 Jan 2013 22:28:07 -0500
+MIME-Version: 1.0
+In-Reply-To: <1357555480-24022-2-git-send-email-mika.westerberg@linux.intel.com>
+References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
+ <1357555480-24022-2-git-send-email-mika.westerberg@linux.intel.com>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Tue, 8 Jan 2013 11:27:45 +0800
+Message-ID: <CAMPhdO9j_-zZUAfZ-u_tdB6C6iSzTVRtN9_at4Obe9wgTA8p4g@mail.gmail.com>
+Subject: Re: [PATCH 01/11] spi/pxa2xx: allow building on a 64-bit kernel
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>, chao.bi@intel.com,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Jan_2013_14_19_27_+1100_NXhqwB/22=SIexiQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jan 7, 2013 at 6:44 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> In addition fix following warnings seen when compiling 64-bit:
+>
+> drivers/spi/spi-pxa2xx.c: In function ‘map_dma_buffers’: drivers/spi/spi-pxa2xx.c:384:7: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+> drivers/spi/spi-pxa2xx.c:384:40: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+> drivers/spi/spi-pxa2xx.c: In function ‘pxa2xx_spi_probe’:
+> drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+> drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+> drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
+> drivers/spi/spi-pxa2xx.c:1572:27: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> ---
+>  drivers/spi/Kconfig      |    4 ++--
+>  drivers/spi/spi-pxa2xx.c |    5 ++---
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+> index 2e188e1..a90393d 100644
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@ -299,7 +299,7 @@ config SPI_PPC4xx
+>
+>  config SPI_PXA2XX
+>         tristate "PXA2xx SSP SPI master"
+> -       depends on (ARCH_PXA || (X86_32 && PCI)) && EXPERIMENTAL
+> +       depends on ARCH_PXA || PCI
+>         select PXA_SSP if ARCH_PXA
+>         help
+>           This enables using a PXA2xx or Sodaville SSP port as a SPI master
+> @@ -307,7 +307,7 @@ config SPI_PXA2XX
+>           additional documentation can be found a Documentation/spi/pxa2xx.
+>
+>  config SPI_PXA2XX_PCI
+> -       def_bool SPI_PXA2XX && X86_32 && PCI
+> +       def_tristate SPI_PXA2XX && PCI
+>
 
-Hi Kees,
+Generally looks good to me, I think we could split the changes to
 
-Today's linux-next merge of the drop-experimental tree got a conflict in
-drivers/net/ethernet/intel/Kconfig between commit c56283034ce2 ("pps,
-ptp: Remove dependencies on EXPERIMENTAL") from Linus' tree, commit
-483f777266f5 ("drivers/net: remove orphaned references to micro channel")
-from the net-next tree and commit a9270b9a8436
-("drivers/net/ethernet/intel: remove depends on CONFIG_EXPERIMENTAL")
-from the drop-experimental tree.
+* Kconfig (adding 64-bit support or removing restrictions of X86_32
+for the driver)
+* and to spi-pxa2xx.c (mostly to handle the alignment warnings)
 
-I fixed it up and can carry the fix as necessary (no action is required).
+>  config SPI_RSPI
+>         tristate "Renesas RSPI controller"
+> diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+> index 5c8c4f5..7fac65d 100644
+> --- a/drivers/spi/spi-pxa2xx.c
+> +++ b/drivers/spi/spi-pxa2xx.c
+> @@ -47,7 +47,7 @@ MODULE_ALIAS("platform:pxa2xx-spi");
+>
+>  #define DMA_INT_MASK           (DCSR_ENDINTR | DCSR_STARTINTR | DCSR_BUSERR)
+>  #define RESET_DMA_CHANNEL      (DCSR_NODESC | DMA_INT_MASK)
+> -#define IS_DMA_ALIGNED(x)      ((((u32)(x)) & 0x07) == 0)
+> +#define IS_DMA_ALIGNED(x)      IS_ALIGNED((unsigned long)x, DMA_ALIGNMENT)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+OK.
 
---Signature=_Tue__8_Jan_2013_14_19_27_+1100_NXhqwB/22=SIexiQ
-Content-Type: application/pgp-signature
+>  #define MAX_DMA_LEN            8191
+>  #define DMA_ALIGNMENT          8
+>
+> @@ -1569,8 +1569,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+>         master->transfer = transfer;
+>
+>         drv_data->ssp_type = ssp->type;
+> -       drv_data->null_dma_buf = (u32 *)ALIGN((u32)(drv_data +
+> -                                               sizeof(struct driver_data)), 8);
+> +       drv_data->null_dma_buf = (u32 *)PTR_ALIGN(drv_data + 1, 8);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
+Hmm... the original code seems to have big problem and interestingly no
+one has reported the issue, possibly due to null_dma_buf being seldomly
+used.
 
-iQIcBAEBCAAGBQJQ65A/AAoJEECxmPOUX5FEmdoP/iKs+T9hrT9FJVHZutyfEHmH
-RbwE9RLC/qmw7lSgXFuOajfuFH/H407hT4dLIRDfQbdkThHPnNfUV1A0MKmVccdo
-dymKpzztVJD+AlOr35MgEppsQhs1nBS9yhh/prMApyGTV05uiwavNlWoBH2RqAsT
-n/9RkbQYm7k3Fcq+LNEqXDdyjimWk457Mj8mBRSJsCj+NPLrrFaJ35WbQACWwqKd
-ca+iCbAe8tGHPjwElif3dpm2np+vo3fhdOMclBMn8BxRhvb5A/uV0vGRFbPil+A8
-fLFLR8U/JcNeidCMGlFwUlkn0E9BHWr8sOXNHjacJU4zrxCu5GIWt56tylIxR8sa
-iLXOqWwV+o0auRzFC/CSgGqEGrA5ddzAYvl15+UHTCC7MgLARiZIHoiPd8+i775W
-lE4OFawKX94SNPuMDlOv3RdLy9cXQEZL2tpn5U9DN21ZhgTR+W2WEC5PRVkfHoj0
-81q2mVWxfunK9oKw67CV3p86b1mfSKJ52utJE1+k936PODwXW5Qu7hG16yagWsJW
-z2fihoIGNL3/gEuWy4stacsYhQSbmhyq1XyipR5a3KXaXNL8uHAK0ID9pelycSJF
-E2lpOyguMLxemXPgPNg3vecuKphQHAINuQHYR9nmY34y7qfYOS2Vc0R0hHPkMdXT
-gaTmAd6MH1U6SiahuowR
-=0eqo
------END PGP SIGNATURE-----
+However, it's still a bit obscure to have 'drv_data + 1', 'drv_data[1]' might
+be a bit better for readability.
 
---Signature=_Tue__8_Jan_2013_14_19_27_+1100_NXhqwB/22=SIexiQ--
+And it'll be better to have DMA_ALIGNTMENT here instead of a hard-coded
+constant '8'.
+    u
+
+>
+>         drv_data->ioaddr = ssp->mmio_base;
+>         drv_data->ssdr_physical = ssp->phys_base + SSDR;
+> --
+> 1.7.10.4
+>
