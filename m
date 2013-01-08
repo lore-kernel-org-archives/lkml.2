@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756710Ab3AHPjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:39:19 -0500
-Received: from guide.wilmington.edu ([198.30.126.4]:58476 "EHLO
-	guide.wilmington.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756678Ab3AHPjO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:39:14 -0500
-From: "Max L. Gabbard" <mgabbard@athenian.wilmington.edu>
-To: "Max L. Gabbard" <mgabbard@athenian.wilmington.edu>
-Date: Tue, 8 Jan 2013 07:58:55 -0500
-Subject: RE: Good day, 
-Thread-Topic: Good day, 
-Thread-Index: AQHN7YeHz+Bn4iuqzE+4/99q6dtTyJg/Ycoq
-Message-ID: <DD0263699A239D42959DCC8F592D45C8D086FD0EA6@mbx01.wilmington.edu>
-References: <DD0263699A239D42959DCC8F592D45C8D086FD0DF4@mbx01.wilmington.edu>
-In-Reply-To: <DD0263699A239D42959DCC8F592D45C8D086FD0DF4@mbx01.wilmington.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756715Ab3AHPog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:44:36 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:44465 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756683Ab3AHPoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 10:44:34 -0500
+Date: Tue, 8 Jan 2013 16:44:31 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-edac <linux-edac@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] EDAC fixes for 3.8
+Message-ID: <20130108154430.GB14536@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-edac <linux-edac@vger.kernel.org>,
+	lkml <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
+
+please pull the 3 fixes below.
+
+Thanks.
+
+The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+
+  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_fixes_for_3.8
+
+for you to fetch changes up to 44d22e2404b3ce93a314654962d31acc8afcdd62:
+
+  EDAC: Cleanup device deregistering path (2013-01-07 17:43:00 +0100)
+
+----------------------------------------------------------------
+Two error path fixes causing a crash and a Kconfig fix for an issue
+which spilled all EDAC suboptions into the 'Device Drivers' menu.
+
+----------------------------------------------------------------
+Borislav Petkov (1):
+      EDAC: Fix EDAC Kconfig menu
+
+Konstantin Khlebnikov (1):
+      EDAC: Fix kernel panic on module unloading
+
+Lans Zhang (1):
+      EDAC: Cleanup device deregistering path
+
+ drivers/edac/Kconfig         |  8 +++-----
+ drivers/edac/edac_mc_sysfs.c | 19 ++++++-------------
+ 2 files changed, 9 insertions(+), 18 deletions(-)
 
 
-________________________________________
-From: Max L. Gabbard
-Sent: Tuesday, January 08, 2013 5:04 AM
-To: mrsmarycheng47@hotmail.com
-Subject: Good day,
+-- 
+Regards/Gruss,
+    Boris.
 
-Good day,
-I am Mrs.Mary Cheng,I have a Business Proposal of mutual benefits,Please contact me for a better brief of my offer on my Private email: mrsmarycheng47@hotmail.com for more details.
-Regards
-Mrs Mary Cheng
+Sent from a fat crate under my desk. Formatting is fine.
+--
