@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab3AHXhe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:37:34 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53627 "EHLO
+	id S1756810Ab3AHXuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:50:06 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53659 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab3AHXhW (ORCPT
+	with ESMTP id S1756635Ab3AHXhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:22 -0500
+	Tue, 8 Jan 2013 18:37:34 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Hans Verkuil <hans.verkuil@cisco.com>, Sekhar Nori <nsekhar@ti.com>,
+CC: John Stultz <john.stultz@linaro.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Prarit Bhargava <prarit@redhat.com>, Zhouping Liu <zliu@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 45/77] ARM: davinci: dm646x evm: wrong register used in setup_vpif_input_channel_mode
-Date: Tue, 8 Jan 2013 18:35:24 -0500
-Message-ID: <1357688156-25387-46-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 02/77] time: Improve sanity checking of timekeeping inputs
+Date: Tue, 8 Jan 2013 18:34:41 -0500
+Message-ID: <1357688156-25387-3-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans Verkuil <hans.verkuil@cisco.com>
+From: John Stultz <john.stultz@linaro.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -31,53 +34,129 @@ From: Hans Verkuil <hans.verkuil@cisco.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 83713fc9373be2e943f82e9d36213708c6b0050e upstream.
+commit 4e8b14526ca7fb046a81c94002c1c43b6fdf0e9b upstream.
 
-The function setup_vpif_input_channel_mode() used the VSCLKDIS register
-instead of VIDCLKCTL. This meant that when in HD mode videoport channel 0
-used a different clock from channel 1.
+Unexpected behavior could occur if the time is set to a value large
+enough to overflow a 64bit ktime_t (which is something larger then the
+year 2262).
 
-Clearly a copy-and-paste error.
+Also unexpected behavior could occur if large negative offsets are
+injected via adjtimex.
 
-Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
-Acked-by: Manjunath Hadli <manjunath.hadli@ti.com>
-Signed-off-by: Sekhar Nori <nsekhar@ti.com>
+So this patch improves the sanity check timekeeping inputs by
+improving the timespec_valid() check, and then makes better use of
+timespec_valid() to make sure we don't set the time to an invalid
+negative value or one that overflows ktime_t.
+
+Note: This does not protect from setting the time close to overflowing
+ktime_t and then letting natural accumulation cause the overflow.
+
+Reported-by: CAI Qian <caiqian@redhat.com>
+Reported-by: Sasha Levin <levinsasha928@gmail.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Prarit Bhargava <prarit@redhat.com>
+Cc: Zhouping Liu <zliu@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1344454580-17031-1-git-send-email-john.stultz@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/arm/mach-davinci/board-dm646x-evm.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/ktime.h     |  7 -------
+ include/linux/time.h      | 22 ++++++++++++++++++++--
+ kernel/time/timekeeping.c | 15 ++++++++++++++-
+ 3 files changed, 34 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
-index 5ba3cb2..ff0fd90 100644
---- a/arch/arm/mach-davinci/board-dm646x-evm.c
-+++ b/arch/arm/mach-davinci/board-dm646x-evm.c
-@@ -555,7 +555,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
- 	int val;
- 	u32 value;
+diff --git a/include/linux/ktime.h b/include/linux/ktime.h
+index ce59832..ecdf64e 100644
+--- a/include/linux/ktime.h
++++ b/include/linux/ktime.h
+@@ -58,13 +58,6 @@ union ktime {
  
--	if (!vpif_vsclkdis_reg || !cpld_client)
-+	if (!vpif_vidclkctl_reg || !cpld_client)
- 		return -ENXIO;
+ typedef union ktime ktime_t;		/* Kill this */
  
- 	val = i2c_smbus_read_byte(cpld_client);
-@@ -563,7 +563,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
- 		return val;
+-#define KTIME_MAX			((s64)~((u64)1 << 63))
+-#if (BITS_PER_LONG == 64)
+-# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
+-#else
+-# define KTIME_SEC_MAX			LONG_MAX
+-#endif
+-
+ /*
+  * ktime_t definitions when using the 64-bit scalar representation:
+  */
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 6e026e4..146b6f3 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -91,11 +91,29 @@ static inline struct timespec timespec_sub(struct timespec lhs,
+ 	return ts_delta;
+ }
  
- 	spin_lock_irqsave(&vpif_reg_lock, flags);
--	value = __raw_readl(vpif_vsclkdis_reg);
-+	value = __raw_readl(vpif_vidclkctl_reg);
- 	if (mux_mode) {
- 		val &= VPIF_INPUT_TWO_CHANNEL;
- 		value |= VIDCH1CLK;
-@@ -571,7 +571,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
- 		val |= VPIF_INPUT_ONE_CHANNEL;
- 		value &= ~VIDCH1CLK;
- 	}
--	__raw_writel(value, vpif_vsclkdis_reg);
-+	__raw_writel(value, vpif_vidclkctl_reg);
- 	spin_unlock_irqrestore(&vpif_reg_lock, flags);
++#define KTIME_MAX			((s64)~((u64)1 << 63))
++#if (BITS_PER_LONG == 64)
++# define KTIME_SEC_MAX			(KTIME_MAX / NSEC_PER_SEC)
++#else
++# define KTIME_SEC_MAX			LONG_MAX
++#endif
++
+ /*
+  * Returns true if the timespec is norm, false if denorm:
+  */
+-#define timespec_valid(ts) \
+-	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
++static inline bool timespec_valid(const struct timespec *ts)
++{
++	/* Dates before 1970 are bogus */
++	if (ts->tv_sec < 0)
++		return false;
++	/* Can't have more nanoseconds then a second */
++	if ((unsigned long)ts->tv_nsec >= NSEC_PER_SEC)
++		return false;
++	/* Disallow values that could overflow ktime_t */
++	if ((unsigned long long)ts->tv_sec >= KTIME_SEC_MAX)
++		return false;
++	return true;
++}
  
- 	err = i2c_smbus_write_byte(cpld_client, val);
+ extern struct timespec xtime;
+ extern struct timespec wall_to_monotonic;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 156fd67..0d59077 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -343,7 +343,7 @@ int do_settimeofday(struct timespec *tv)
+ 	struct timespec ts_delta;
+ 	unsigned long flags;
+ 
+-	if ((unsigned long)tv->tv_nsec >= NSEC_PER_SEC)
++	if (!timespec_valid(tv))
+ 		return -EINVAL;
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+@@ -559,7 +559,20 @@ void __init timekeeping_init(void)
+ 	struct timespec now, boot;
+ 
+ 	read_persistent_clock(&now);
++	if (!timespec_valid(&now)) {
++		printk("WARNING: Persistent clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		now.tv_sec = 0;
++		now.tv_nsec = 0;
++	}
++
+ 	read_boot_clock(&boot);
++	if (!timespec_valid(&boot)) {
++		printk("WARNING: Boot clock returned invalid value!\n"
++			"         Check your CMOS/BIOS settings.\n");
++		boot.tv_sec = 0;
++		boot.tv_nsec = 0;
++	}
+ 
+ 	write_seqlock_irqsave(&xtime_lock, flags);
+ 
 -- 
 1.7.12.1
 
