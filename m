@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222Ab3AHXmL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:42:11 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53815 "EHLO
+	id S1757155Ab3AHXmg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:42:36 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53808 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757151Ab3AHXkR (ORCPT
+	with ESMTP id S1757142Ab3AHXkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:40:17 -0500
+	Tue, 8 Jan 2013 18:40:16 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jan Kara <jack@suse.cz>, Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 59/77] udf: Fortify loading of sparing table
-Date: Tue, 8 Jan 2013 18:35:38 -0500
-Message-ID: <1357688156-25387-60-git-send-email-paul.gortmaker@windriver.com>
+CC: Nick Bowler <nbowler@elliptictech.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 71/77] crypto: ghash - Avoid null pointer dereference if no key is set
+Date: Tue, 8 Jan 2013 18:35:50 -0500
+Message-ID: <1357688156-25387-72-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Nick Bowler <nbowler@elliptictech.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -30,133 +32,102 @@ From: Jan Kara <jack@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1df2ae31c724e57be9d7ac00d78db8a5dabdd050 upstream.
+commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
 
-Add sanity checks when loading sparing table from disk to avoid accessing
-unallocated memory or writing to it.
+The ghash_update function passes a pointer to gf128mul_4k_lle which will
+be NULL if ghash_setkey is not called or if the most recent call to
+ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
+up by returning an error code in the null case.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-[PG: in 2.6.34 udf_err() is called udf_error()]
+This is trivially triggered from unprivileged userspace through the
+AF_ALG interface by simply writing to the socket without setting a key.
+
+The ghash_final function has a similar issue, but triggering it requires
+a memory allocation failure in ghash_setkey _after_ at least one
+successful call to ghash_update.
+
+  BUG: unable to handle kernel NULL pointer dereference at 00000670
+  IP: [<d88c92d4>] gf128mul_4k_lle+0x23/0x60 [gf128mul]
+  *pde = 00000000
+  Oops: 0000 [#1] PREEMPT SMP
+  Modules linked in: ghash_generic gf128mul algif_hash af_alg nfs lockd nfs_acl sunrpc bridge ipv6 stp llc
+
+  Pid: 1502, comm: hashatron Tainted: G        W   3.1.0-rc9-00085-ge9308cf #32 Bochs Bochs
+  EIP: 0060:[<d88c92d4>] EFLAGS: 00000202 CPU: 0
+  EIP is at gf128mul_4k_lle+0x23/0x60 [gf128mul]
+  EAX: d69db1f0 EBX: d6b8ddac ECX: 00000004 EDX: 00000000
+  ESI: 00000670 EDI: d6b8ddac EBP: d6b8ddc8 ESP: d6b8dda4
+   DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+  Process hashatron (pid: 1502, ti=d6b8c000 task=d6810000 task.ti=d6b8c000)
+  Stack:
+   00000000 d69db1f0 00000163 00000000 d6b8ddc8 c101a520 d69db1f0 d52aa000
+   00000ff0 d6b8dde8 d88d310f d6b8a3f8 d52aa000 00001000 d88d502c d6b8ddfc
+   00001000 d6b8ddf4 c11676ed d69db1e8 d6b8de24 c11679ad d52aa000 00000000
+  Call Trace:
+   [<c101a520>] ? kmap_atomic_prot+0x37/0xa6
+   [<d88d310f>] ghash_update+0x85/0xbe [ghash_generic]
+   [<c11676ed>] crypto_shash_update+0x18/0x1b
+   [<c11679ad>] shash_ahash_update+0x22/0x36
+   [<c11679cc>] shash_async_update+0xb/0xd
+   [<d88ce0ba>] hash_sendpage+0xba/0xf2 [algif_hash]
+   [<c121b24c>] kernel_sendpage+0x39/0x4e
+   [<d88ce000>] ? 0xd88cdfff
+   [<c121b298>] sock_sendpage+0x37/0x3e
+   [<c121b261>] ? kernel_sendpage+0x4e/0x4e
+   [<c10b4dbc>] pipe_to_sendpage+0x56/0x61
+   [<c10b4e1f>] splice_from_pipe_feed+0x58/0xcd
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b51f5>] __splice_from_pipe+0x36/0x55
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b6383>] splice_from_pipe+0x51/0x64
+   [<c10b63c2>] ? default_file_splice_write+0x2c/0x2c
+   [<c10b63d5>] generic_splice_sendpage+0x13/0x15
+   [<c10b4d66>] ? splice_from_pipe_begin+0x10/0x10
+   [<c10b527f>] do_splice_from+0x5d/0x67
+   [<c10b6865>] sys_splice+0x2bf/0x363
+   [<c129373b>] ? sysenter_exit+0xf/0x16
+   [<c104dc1e>] ? trace_hardirqs_on_caller+0x10e/0x13f
+   [<c129370c>] sysenter_do_call+0x12/0x32
+  Code: 83 c4 0c 5b 5e 5f c9 c3 55 b9 04 00 00 00 89 e5 57 8d 7d e4 56 53 8d 5d e4 83 ec 18 89 45 e0 89 55 dc 0f b6 70 0f c1 e6 04 01 d6 <f3> a5 be 0f 00 00 00 4e 89 d8 e8 48 ff ff ff 8b 45 e0 89 da 0f
+  EIP: [<d88c92d4>] gf128mul_4k_lle+0x23/0x60 [gf128mul] SS:ESP 0068:d6b8dda4
+  CR2: 0000000000000670
+  ---[ end trace 4eaa2a86a8e2da24 ]---
+  note: hashatron[1502] exited with preempt_count 1
+  BUG: scheduling while atomic: hashatron/1502/0x10000002
+  INFO: lockdep is turned off.
+  [...]
+
+Signed-off-by: Nick Bowler <nbowler@elliptictech.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/udf/super.c | 86 ++++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 53 insertions(+), 33 deletions(-)
+ crypto/ghash-generic.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 1e4543c..4551ad2 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -57,6 +57,7 @@
- #include <linux/seq_file.h>
- #include <linux/bitmap.h>
- #include <linux/crc-itu-t.h>
-+#include <linux/log2.h>
- #include <asm/byteorder.h>
+diff --git a/crypto/ghash-generic.c b/crypto/ghash-generic.c
+index be44256..7835b8f 100644
+--- a/crypto/ghash-generic.c
++++ b/crypto/ghash-generic.c
+@@ -67,6 +67,9 @@ static int ghash_update(struct shash_desc *desc,
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+ 	u8 *dst = dctx->buffer;
  
- #include "udf_sb.h"
-@@ -1239,11 +1240,59 @@ out_bh:
- 	return ret;
- }
++	if (!ctx->gf128)
++		return -ENOKEY;
++
+ 	if (dctx->bytes) {
+ 		int n = min(srclen, dctx->bytes);
+ 		u8 *pos = dst + (GHASH_BLOCK_SIZE - dctx->bytes);
+@@ -119,6 +122,9 @@ static int ghash_final(struct shash_desc *desc, u8 *dst)
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(desc->tfm);
+ 	u8 *buf = dctx->buffer;
  
-+static int udf_load_sparable_map(struct super_block *sb,
-+				 struct udf_part_map *map,
-+				 struct sparablePartitionMap *spm)
-+{
-+	uint32_t loc;
-+	uint16_t ident;
-+	struct sparingTable *st;
-+	struct udf_sparing_data *sdata = &map->s_type_specific.s_sparing;
-+	int i;
-+	struct buffer_head *bh;
++	if (!ctx->gf128)
++		return -ENOKEY;
 +
-+	map->s_partition_type = UDF_SPARABLE_MAP15;
-+	sdata->s_packet_len = le16_to_cpu(spm->packetLength);
-+	if (!is_power_of_2(sdata->s_packet_len)) {
-+		udf_error(sb, "error loading logical volume descriptor: "
-+			  "Invalid packet length %u\n",
-+			  (unsigned)sdata->s_packet_len);
-+		return -EIO;
-+	}
-+	if (spm->numSparingTables > 4) {
-+		udf_error(sb, "error loading logical volume descriptor: "
-+			  "Too many sparing tables (%d)\n",
-+			  (int)spm->numSparingTables);
-+		return -EIO;
-+	}
-+
-+	for (i = 0; i < spm->numSparingTables; i++) {
-+		loc = le32_to_cpu(spm->locSparingTable[i]);
-+		bh = udf_read_tagged(sb, loc, loc, &ident);
-+		if (!bh)
-+			continue;
-+
-+		st = (struct sparingTable *)bh->b_data;
-+		if (ident != 0 ||
-+		    strncmp(st->sparingIdent.ident, UDF_ID_SPARING,
-+			    strlen(UDF_ID_SPARING)) ||
-+		    sizeof(*st) + le16_to_cpu(st->reallocationTableLen) >
-+							sb->s_blocksize) {
-+			brelse(bh);
-+			continue;
-+		}
-+
-+		sdata->s_spar_map[i] = bh;
-+	}
-+	map->s_partition_func = udf_get_pblock_spar15;
-+	return 0;
-+}
-+
- static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 			       struct kernel_lb_addr *fileset)
- {
- 	struct logicalVolDesc *lvd;
--	int i, j, offset;
-+	int i, offset;
- 	uint8_t type;
- 	struct udf_sb_info *sbi = UDF_SB(sb);
- 	struct genericPartitionMap *gpm;
-@@ -1299,38 +1348,9 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 			} else if (!strncmp(upm2->partIdent.ident,
- 						UDF_ID_SPARABLE,
- 						strlen(UDF_ID_SPARABLE))) {
--				uint32_t loc;
--				struct sparingTable *st;
--				struct sparablePartitionMap *spm =
--					(struct sparablePartitionMap *)gpm;
--
--				map->s_partition_type = UDF_SPARABLE_MAP15;
--				map->s_type_specific.s_sparing.s_packet_len =
--						le16_to_cpu(spm->packetLength);
--				for (j = 0; j < spm->numSparingTables; j++) {
--					struct buffer_head *bh2;
--
--					loc = le32_to_cpu(
--						spm->locSparingTable[j]);
--					bh2 = udf_read_tagged(sb, loc, loc,
--							     &ident);
--					map->s_type_specific.s_sparing.
--							s_spar_map[j] = bh2;
--
--					if (bh2 == NULL)
--						continue;
--
--					st = (struct sparingTable *)bh2->b_data;
--					if (ident != 0 || strncmp(
--						st->sparingIdent.ident,
--						UDF_ID_SPARING,
--						strlen(UDF_ID_SPARING))) {
--						brelse(bh2);
--						map->s_type_specific.s_sparing.
--							s_spar_map[j] = NULL;
--					}
--				}
--				map->s_partition_func = udf_get_pblock_spar15;
-+				if (udf_load_sparable_map(sb, map,
-+				    (struct sparablePartitionMap *)gpm) < 0)
-+					goto out_bh;
- 			} else if (!strncmp(upm2->partIdent.ident,
- 						UDF_ID_METADATA,
- 						strlen(UDF_ID_METADATA))) {
+ 	ghash_flush(ctx, dctx);
+ 	memcpy(dst, buf, GHASH_BLOCK_SIZE);
+ 
 -- 
 1.7.12.1
 
