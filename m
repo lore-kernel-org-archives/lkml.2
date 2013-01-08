@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272Ab3AHJxe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 04:53:34 -0500
-Received: from mail-bk0-f48.google.com ([209.85.214.48]:56070 "EHLO
-	mail-bk0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754563Ab3AHJxc (ORCPT
+	id S1755387Ab3AHJ6P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 04:58:15 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:45641 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754843Ab3AHJ6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 04:53:32 -0500
-Date: Tue, 8 Jan 2013 09:53:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linus.walleij@linaro.org, arnd@arndb.de
-Subject: Re: [PATCH 4/5] Input: Enable STMPE keypad driver for Device Tree
-Message-ID: <20130108095326.GC21994@gmail.com>
-References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
- <1352900837-20759-5-git-send-email-lee.jones@linaro.org>
- <20130108083803.GY21994@gmail.com>
- <20130108092653.GA29695@core.coreip.homeip.net>
- <20130108093013.GB29695@core.coreip.homeip.net>
+	Tue, 8 Jan 2013 04:58:12 -0500
+X-SpamFilter-By: BOX Solutions SpamTrap 5.19 with qID r089vU23032613
+From: <wei_wang@realsil.com.cn>
+To: <cjb@laptop.org>, <sameo@linux.intel.com>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <arnd@arndb.de>, <oakad@yahoo.com>, <bp@alien8.de>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: [PATCH v4 2/8] MFD:rtsx: Remove redundant code
+Date: Tue, 8 Jan 2013 17:57:23 +0800
+Message-ID: <08bda2184701413431444c0e58219ace09c5d97b.1357638064.git.wei_wang@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1357638064.git.wei_wang@realsil.com.cn>
+References: <cover.1357638064.git.wei_wang@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130108093013.GB29695@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jan 2013, Dmitry Torokhov wrote:
+From: Wei WANG <wei_wang@realsil.com.cn>
 
-> On Tue, Jan 08, 2013 at 01:26:54AM -0800, Dmitry Torokhov wrote:
-> > Hi Lee,
-> > 
-> > On Tue, Jan 08, 2013 at 08:38:03AM +0000, Lee Jones wrote:
-> > > 
-> > > I'm less than pleased that you _stole_ authorship of this patch!
-> > > 
-> > > Especially, as I've been asking you to review it for some time.
-> > 
-> > My sincere apologies, it was never my intention to claim anyones work as
-> > my own.
-> > 
-> > It appears that "stg squash" command (I use stacked git to manage my WIP
-> > queue) produces result with authorship changed to the committer and if
-> > you check the thread you will see that I explicitly mentioned that I
-> > folded the device tree binding documentation (that was also authored by
-> > you) into this patch.
-> > 
-> > Now that I am looking it appears that sysrq keyreset patch by Mathieu
-> > Poirier was also committed as authored by me, and on that patch I aslo
-> > used "stg squash".
-> > 
-> > OK, I'll now be aware of this behavior and I will rewind my 'next'
-> > branch and correct the authorship on the commits.
-> 
-> *sigh* It looks like the stmpe patch is already in mainline, so I will
-> not be able to correct it.
-> 
-> I am very sorry.
+In function rtsx_pci_add_sg_tbl, the statement "ptr++" is useless.
 
-Okay, as long as it was a genuine mistake, I will bear no grudges.
+Signed-off-by: Wei WANG <wei_wang@realsil.com.cn>
+Acked-by: Borislav Petkov <bp@alien8.de>
+---
+ drivers/mfd/rtsx_pcr.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-Apology graciously accepted. :)
-
+diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+index 3a44efa..fa2c2bc 100644
+--- a/drivers/mfd/rtsx_pcr.c
++++ b/drivers/mfd/rtsx_pcr.c
+@@ -325,7 +325,6 @@ static void rtsx_pci_add_sg_tbl(struct rtsx_pcr *pcr,
+ 	val = ((u64)addr << 32) | ((u64)len << 12) | option;
+ 
+ 	put_unaligned_le64(val, ptr);
+-	ptr++;
+ 	pcr->sgi++;
+ }
+ 
 -- 
-Lee Jones
-Linaro ST-Ericsson Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
