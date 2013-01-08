@@ -1,225 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab3AHDD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:03:59 -0500
-Received: from out03.mta.xmission.com ([166.70.13.233]:39742 "EHLO
-	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791Ab3AHDD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:03:57 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<20130107152622.GD3219@phenom.dumpdata.com>
-	<CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<20130108024830.GE9865@phenom.dumpdata.com>
-Date: Mon, 07 Jan 2013 19:03:47 -0800
-In-Reply-To: <20130108024830.GE9865@phenom.dumpdata.com> (Konrad Rzeszutek
-	Wilk's message of "Mon, 7 Jan 2013 21:48:30 -0500")
-Message-ID: <87txqs1ilo.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	id S1753719Ab3AHDEd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:04:33 -0500
+Received: from ozlabs.org ([203.10.76.45]:57750 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753343Ab3AHDEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 22:04:31 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: kvm@vger.kernel.org, linux-scsi@vger.kernel.org, mst@redhat.com,
+        hutao@cn.fujitsu.com, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org, stefanha@redhat.com,
+        "Jens Axboe" <axboe@kernel.dk>
+Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of buffers
+In-Reply-To: <50EADB62.1010704@redhat.com>
+References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-2-git-send-email-pbonzini@redhat.com> <87r4m45g88.fsf@rustcorp.com.au> <50E54DC0.4040609@redhat.com> <87pq1h508k.fsf@rustcorp.com.au> <50EADB62.1010704@redhat.com>
+User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
+Date: Tue, 08 Jan 2013 10:42:13 +1030
+Message-ID: <87wqvo3542.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX19uqspWsGELmzkpzXcOgJYggyKWfnsEphg=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  2.9 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  3.0 XMDrug1234561 Drug references
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	*  0.8 BAYES_50 BODY: Bayes spam probability is 40 to 60%
-	*      [score: 0.4774]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: *****;Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not enough ram for it
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
-
-> On Mon, Jan 07, 2013 at 06:22:51PM -0800, Eric W. Biederman wrote:
->> Shuah Khan <shuahkhan@gmail.com> writes:
+Paolo Bonzini <pbonzini@redhat.com> writes:
+> Il 07/01/2013 01:02, Rusty Russell ha scritto:
+>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>>> Il 02/01/2013 06:03, Rusty Russell ha scritto:
+>>>> Paolo Bonzini <pbonzini@redhat.com> writes:
+>>>>> The virtqueue_add_buf function has two limitations:
+>>>>>
+>>>>> 1) it requires the caller to provide all the buffers in a single call;
+>>>>>
+>>>>> 2) it does not support chained scatterlists: the buffers must be
+>>>>> provided as an array of struct scatterlist;
+>>>>
+>>>> Chained scatterlists are a horrible interface, but that doesn't mean we
+>>>> shouldn't support them if there's a need.
+>>>>
+>>>> I think I once even had a patch which passed two chained sgs, rather
+>>>> than a combo sg and two length numbers.  It's very old, but I've pasted
+>>>> it below.
+>>>>
+>>>> Duplicating the implementation by having another interface is pretty
+>>>> nasty; I think I'd prefer the chained scatterlists, if that's optimal
+>>>> for you.
+>>>
+>>> Unfortunately, that cannot work because not all architectures support
+>>> chained scatterlists.
 >> 
->> > On Mon, Jan 7, 2013 at 8:26 AM, Konrad Rzeszutek Wilk
->> > <konrad.wilk@oracle.com> wrote:
->> >> On Fri, Jan 04, 2013 at 02:10:25PM -0800, Yinghai Lu wrote:
->> >>> On Fri, Jan 4, 2013 at 1:02 PM, Shuah Khan <shuahkhan@gmail.com> wrote:
->> >>> > Pani'cing the system doesn't sound like a good option to me in this
->> >>> > case. This change to disable swiotlb is made for kdump. However, with
->> >>> > this change several system fail to boot, unless crashkernel_low=72M is
->> >>> > specified.
->> >>>
->> >>> this patchset is new feature to put second kdump kernel above 4G.
->> >>>
->> >>> >
->> >>> > I would the say the right approach to solve this would be to not
->> >>> > change the current pci_swiotlb_detect_override() behavior and treat
->> >>> > swiotlb =1 upon entry equivalent to swiotlb_force set.
->> >>>
->> >>> that will make intel system have to take crashkernel_low=72M too.
->> >>> otherwise intel system will get panic during swiotlb allocation.
->> >>
->> >> Two things:
->> >>
->> >>  1). You need to wrap the 'is_enough_..' in CONFIG_KEXEC, which means
->> >>     that the function needs to go in a header file.
->> >>  2). The check for 1MB is suspect. Why only 1MB? You mentioned it is
->> >>      b/c of crashkernel_low=72M (which I am not seeing in v3.8 kernel-parameters.txt?
->> >>      Is that part of your mega-patchset?). Anyhow, there seems to be a disconnect -
->> >>      what if the user supplied crashkernel_low=27M? Perhaps the 'is_enough'
->> >>      should also parse the bootparams to double-check that there is enough
->> >>      low-mem space? But then if the kernel grows then 72M might not be enough -
->> >>      you might need 82M with 3.9.
->> >>
->> >>      Perhaps a better way for this is to do:
->> >>         1). Change 'is_enough' to check only for 4MB.
->> >>         2). When booting as kexec, the SWIOTLB would only use 4MB instead of 64MB?
->> >>
->> >>      Or, we could also use the post-late SWIOTLB initialization similiary to how it was
->> >>      done on ia64. This would mean that the AMD VI code would just call the
->> >>      .. something like this - NOT tested or even compile tested:
->> >>
->> >> diff --git a/drivers/iommu/amd_iommu.c b/drivers/iommu/amd_iommu.c
->> >> index c1c74e0..e7fa8f7 100644
->> >> --- a/drivers/iommu/amd_iommu.c
->> >> +++ b/drivers/iommu/amd_iommu.c
->> >> @@ -3173,6 +3173,24 @@ int __init amd_iommu_init_dma_ops(void)
->> >>         if (unhandled && max_pfn > MAX_DMA32_PFN) {
->> >>                 /* There are unhandled devices - initialize swiotlb for them */
->> >>                 swiotlb = 1;
->> >> +               /* Late (so no bootmem allocator) usage and only if the early SWIOTLB
->> >> +                * hadn't been allocated (which can happen on kexec kernels booted
->> >> +                * above 4GB). */
->> >> +               if (!swiotlb_nr_tbl()) {
->> >> +                       int retry = 3;
->> >> +                       int mb_size = 64;
->> >> +                       int rc = 0;
->> >> +retry_me:
->> >> +                       if (retry < 0)
->> >> +                               panic("We tried setting %dMB for SWIOTLB but got -ENOMEM", mb_size << 1);
->> >> +                       rc = swiotlb_late_init_with_default_size(mb_size * (1<<20));
->> >> +                       if (rc) {
->> >> +                               retry --;
->> >> +                               mb_size >> 1;
->> >> +                               goto retry_me;
->> >> +                       }
->> >> +                       dma_ops = &swiotlb_dma_ops;
->> >> +               }
->> >>         }
->> >>
->> >>         amd_iommu_stats_init();
->> >>
->> >> And then the early SWIOTLB initialization for 64MB can fail and we are still OK.
->> >>>
->> >
->> > Yinghai/Konrad,
->> >
->> > Did more testing. btw this patch depends on your [v7u1,25/31]
->> > memblock: add memblock_mem_size(). Here are the test results:
->> >
->> > 1. When there is not enough memory: (enough_mem_for_swiotlb() returns false)
->> > system will panic in amd_iommu_init_dma_ops().
->> >
->> > 2. When there is enough memory: (enough_mem_for_swiotlb() returns true):
->> > swiotlb is reserved
->> > pci_swiotlb_late_init() leaves the buffer allocated since swiotlb=1
->> > with that getting changed in amd_iommu_init_dma_ops().
->> >
->> > I agree with Konrad that the logic should be wrapped in CONFIG_KEXEC.
->> 
->> If enough_mem_for_swiotlb needs to be conditional on CONFIG_KEXEC the
->> code is architected wrong.  None of this logic has anything to do with
->> kexec except that the kexec path is one way to get this condition to
->> happen.  Especially since the kexec'd kernel where this condition occurs
->> does not need kexec support built in.
+>> WHAT?  I can't figure out what an arch needs to do to support this?
 >
-> Fair enough - with the 'memmap' command line options one can trigger
-> this.
->> 
->> Yinghai I sat down and read your patch and the approach you are taking
->> is totally wrong.
->> 
->> The problem is that swiotlb_init() in lib/swiotlb.c does not know how to
->> fail without panic'ing the system.
->> 
->> Which leaves two valid approaches.
->> - Create a variant of swiotlb_init that can fail for use on x86 and
->>   handle the failure.
+> It needs to use the iterator functions in its DMA driver.
+
+But we don't care for virtio.
+
+>> All archs we care about support them, though, so I think we can ignore
+>> this issue for now.
 >
-> As an safe-fail step we could retry with an smaller size until a fit is found.
->
->> - Delay initializing the swiotlb until someone actually needs a mapping
->>   from it.  
->
-> So late init the SWIOTLB and perhaps have multiple "segments" of 4MB
-> of SWIOTLB that can grow as we exhaust its memory. Could work.
->> 
->> Delaying the initialization of the swiotlb is out because the code
->> needs an early memory allocation to get a large chunk of contiguous
->> memory for the bounce buffers.
->
-> Or it can use the late init, but with a smaller chunk of memory.
+> Kind of... In principle all QEMU-supported arches can use virtio, and
+> the speedup can be quite useful.  And there is no Kconfig symbol for SG
+> chains that I can use to disable virtio-scsi on unsupported arches. :/
 
-A reasonable point.
+Well, we #error if it's not supported.  Then the lazy architectures can
+fix it.
 
->> Which means the panics that occurr in swiotlb_init() need to be delayed
->> until someone something actually needs bounce buffers from the swiotlb.
->> 
->> Although arguably what should actually happen instead of panic() is that
->> swiotlb_map_single should simply fail early when it was not possible to
->> preallocate bounce buffers.
->
-> This sounds like a Catch-22. Fail early implies that it would have to do
-> this when using the bootmem allocator.
-
-Sorry I meant was something like.
-
-... swiotlb_init(...)
-{
-        ...
-	if (!alloc_bootmem_low_pages(...))
-		noiotlb_memory = true;
- 	...
-}
-
-... swiotlb_map_single(...)
-{
-	if (noiotlb_memory)
-        	return SWIOTLB_MAP_ERROR;
-	....
-}
-
-With the noiotlb_memory check happening early.
-
-> But the swiotlb_map_single is not
-> called at that time - it is called _after_ the bootmem allocator has been
-> de-activated. Actually it is called pretty late - when built-in PCI devices
-> start off or when 'udev' starts scanning the PCI bus and loading modules.
->
-> I think I am misunderstanding you - could you clarify please?
-
-Does the above help?
-
-Eric
+Cheers,
+Rusty.
