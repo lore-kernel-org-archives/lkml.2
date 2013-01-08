@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab3AHNHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 08:07:24 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:51412 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3AHNHW (ORCPT
+	id S1756269Ab3AHNHl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 08:07:41 -0500
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:54450 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756228Ab3AHNHk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 08:07:22 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Subject: Re: [PATCH 2/4] gpiolib: add gpiod_get and gpiod_put functions
-Date: Tue, 8 Jan 2013 13:07:04 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Alexandre Courbot <gnurou@gmail.com>
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <1357629535-26033-3-git-send-email-acourbot@nvidia.com>
-In-Reply-To: <1357629535-26033-3-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301081307.04229.arnd@arndb.de>
-X-Provags-ID: V02:K0:3oWc8gdvKIPUQRchbMCrSlwIN+8Dvev0ZtwVTkjVBVD
- AuzgMRd78SloJa3slVERF3wWX7X0L5FRdRsajDCbzEXXsMqWrL
- SmmjnLaGukoEQdVHRkujvFaeVk/8icuKl8SLhkQPvwlT4glAZC
- puO43uJTDox5nYWX938Sl6OYCdsS5mBEGc7+oV1AdUndTm/jHa
- xMbTGeT3RaPGdAJaE7oXDvckzHAI+VMdRSeKlf1HCJeRXzPBbr
- KG1mCmaFRtnI4J7ef0I8k6fYQl1QJ1YTvlbgKCis0GSZQaa6TA
- bO62dkaENwNSX7yY4ka3FVAolzLIhMJuLSmT5pEasCuVIsKEhL
- 4CChtZE0SXyHcAEzhiz0=
+	Tue, 8 Jan 2013 08:07:40 -0500
+From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+To: mturquette@linaro.org
+Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Rajagopal Venkat <rajagopal.venkat@linaro.org>
+Subject: [PATCH] clk: remove unreachable code
+Date: Tue,  8 Jan 2013 18:33:11 +0530
+Message-Id: <1357650191-30842-1-git-send-email-rajagopal.venkat@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 January 2013, Alexandre Courbot wrote:
-> 
-> Adds new GPIO allocation functions that work with the opaque descriptor
-> interface.
-> 
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+while reparenting a clock, NULL check is done for clock in
+consideration and its new parent. So re-check is not required.
+If done, else part becomes unreachable.
 
-I think you need to reorder the patches slightly, since the gpiod_get
-function introduced here is already being used in the first patch, which
-breaks bisection.
+Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
+---
+ drivers/clk/clk.c |    5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
 
-	Arnd
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 251e45d..f896584 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -1048,10 +1048,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
+ 
+ 	hlist_del(&clk->child_node);
+ 
+-	if (new_parent)
+-		hlist_add_head(&clk->child_node, &new_parent->children);
+-	else
+-		hlist_add_head(&clk->child_node, &clk_orphan_list);
++	hlist_add_head(&clk->child_node, &new_parent->children);
+ 
+ #ifdef CONFIG_COMMON_CLK_DEBUG
+ 	if (!inited)
+-- 
+1.7.10.4
+
