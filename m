@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751066Ab3AHFKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 00:10:20 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57368 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab3AHFKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 00:10:19 -0500
-Message-ID: <50EBAA27.7030506@zytor.com>
-Date: Mon, 07 Jan 2013 21:09:59 -0800
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1751112Ab3AHFmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 00:42:32 -0500
+Received: from mail-da0-f42.google.com ([209.85.210.42]:38521 "EHLO
+	mail-da0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab3AHFmb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 00:42:31 -0500
+Message-ID: <50EBB1BE.3070501@gmail.com>
+Date: Tue, 08 Jan 2013 09:42:22 +0400
+From: Lijo Antony <lijo.kernel@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Shaohua Li <shli@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@redhat.com, hughd@google.com
-Subject: Re: [RFC]x86: clearing access bit don't flush tlb
-References: <20130107081213.GA21779@kernel.org> <50EAE66B.1020804@redhat.com> <50EB4CB9.9010104@zytor.com> <20130108045519.GB2459@kernel.org> <50EBA8AB.2060003@zytor.com> <50EBA9DC.9070400@redhat.com>
-In-Reply-To: <50EBA9DC.9070400@redhat.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=UTF-8
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+CC: Greg KH <gregkh@linuxfoundation.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "fmhess@users.sourceforge.net" <fmhess@users.sourceforge.net>,
+        "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] Staging: comedi: addi_common.h: checkpatch.pl fixes
+References: <1357395175-6077-1-git-send-email-lijo.kernel@gmail.com> <1357395175-6077-2-git-send-email-lijo.kernel@gmail.com> <20130107223941.GA3913@kroah.com> <ADE657CA350FB648AAC2C43247A983F00206D6C98F77@AUSP01VMBX24.collaborationhost.net>
+In-Reply-To: <ADE657CA350FB648AAC2C43247A983F00206D6C98F77@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/2013 09:08 PM, Rik van Riel wrote:
-> On 01/08/2013 12:03 AM, H. Peter Anvin wrote:
->> On 01/07/2013 08:55 PM, Shaohua Li wrote:
+On 01/08/2013 02:50 AM, H Hartley Sweeten wrote:
+> On Monday, January 07, 2013 3:40 PM, Greg KH wrote:
+>> On Sat, Jan 05, 2013 at 06:12:55PM +0400, Lijo Antony wrote:
+>>> Reduced line lengths to 80 chars by removing extra spaces.
 >>>
->>> I searched a little bit, the change (doing TLB flush to clear access
->>> bit) is
->>> made between 2.6.7 - 2.6.8, I can't find the changelog, but I found a
->>> patch:
->>> http://www.kernel.org/pub/linux/kernel/people/akpm/patches/2.6/2.6.7-rc2/2.6.7-rc2-mm2/broken-out/mm-flush-tlb-when-clearing-young.patch
->>>
->>>
->>> The changelog declaims this is for arm/ppc/ppc64.
->>>
+>>> Signed-off-by: Lijo Antony <lijo.kernel@gmail.com>
+>>> ---
+>>>   .../staging/comedi/drivers/addi-data/addi_common.h |   20 ++++++++++----------
+>>>   1 file changed, 10 insertions(+), 10 deletions(-)
+>
+> <snip>
+>
+>> As you didn't do this for all fields in the structure, it's not really
+>> worth doing it for just these, right?
 >>
->> Not really.  It says that those have stumbled over it already.  It is
->> true in general that this change will make very frequently used pages
->> (which stick in the TLB) candidates for eviction.
-> 
-> That is only true if the pages were to stay in the TLB for a
-> very very long time.  Probably multiple seconds.
-> 
->> x86 would seem to be just as affected, although possibly with a
->> different frequency.
->>
->> Do we have any actual metrics on anything here?
-> 
-> I suspect that if we do need to force a TLB flush for page
-> reclaim purposes, it may make sense to do that TLB flush
-> asynchronously. For example, kswapd could kick off a TLB
-> flush of every CPU in the system once a second, when the
-> system is under pageout pressure.
-> 
-> We would have to do this in a smart way, so the kswapds
-> from multiple nodes do not duplicate the work.
-> 
-> If people want that kind of functionality, I would be
-> happy to cook up an RFC patch.
-> 
+>> The proper thing to do is use kerneldoc format and document it all at
+>> the top of the structure, care to do that instead?
+>
+> Hopefully I will soon get the rest of the addi-data drivers split off of the
+> addi_common stuff. This will effectively remove this header file so I'm
+> not sure it's worth making patches against it.
 
-So it sounds like you're saying that this patch should never have been
-applied in the first place?
+Ok, I will wait!
+If the file is still around after your cleanup, I will make changes as 
+per Greg's suggestion.
 
-	-hpa
+Thanks,
+-lijo
+
 
