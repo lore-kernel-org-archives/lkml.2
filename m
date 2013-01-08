@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab3AHOmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:42:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:62847 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756428Ab3AHOmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:42:49 -0500
-Date: Tue, 8 Jan 2013 09:42:40 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH UPDATED 15/24] cfq-iosched: enable full blkcg hierarchy
- support
-Message-ID: <20130108144240.GA29635@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-16-git-send-email-tj@kernel.org>
- <20130107163405.GE3926@htj.dyndns.org>
+	id S1756532Ab3AHOnV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:43:21 -0500
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:63623 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756428Ab3AHOnT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 09:43:19 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130107163405.GE3926@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357652409-22907-1-git-send-email-laurent.navet@gmail.com>
+References: <1357652409-22907-1-git-send-email-laurent.navet@gmail.com>
+Date: Tue, 8 Jan 2013 15:43:19 +0100
+Message-ID: <CAH7P7Nh2S9pHyKs=eQ-9YRXeGnH6OV+oZDJAAfbC8y+eaQNLnA@mail.gmail.com>
+Subject: Re: [PATCH] drivers: i2c: muxes: fix sizeof(ptr)
+From: Laurent Navet <laurent.navet@gmail.com>
+To: w.sang@pengutronix.de
+Cc: ben-linux@fluff.org, khali@linux-fr.org, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Laurent Navet <laurent.navet@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 08:34:05AM -0800, Tejun Heo wrote:
+This is not really a bug as mux->busses is a multilevel pointer, so
+the result of sizeof(ptr) is the same as sizeof(*ptr).
+But I think this is more logical and according to CodingStyle rules like this.
+This is also what is done for mux->states a few lines above.
 
-[..]
-> +        weight leaf_weight
-> + root :  125    125
-> + A    :  500    750
-> + B    :  250    500
-> + AA   :  500    500
-> + AB   : 1000    500
-> +
-> +root never has a parent making its weight is meaningless. For backward
-> +compatibility, weight is always kept in sync with leaf_weight. B, AA
-> +and AB have no child and thus its tasks have no children cgroup to
-> +compete with. They always get 100% of what the cgroup won at the
-> +parent level. Considering only the weights which matter, the hierarchy
-> +looks like the following.
-> +
-> +          root
-> +       /    |   \
-> +      A     B    leaf
-> +     500   250   125
-> +   /  |  \
-> +  AA  AB  leaf
-> + 500 1000 750
-> +
-> +If all cgroups have active IOs and competing with each other, disk
-> +time will be distributed like the following.
-> +
-> +Distribution below root. The total active weight at this level is
-> +A:500 + B:250 + C:125 = 875.
-> +
-> + root-leaf :   125 /  875      =~ 14%
-> + A         :   500 /  875      =~ 57%
-> + B(-leaf)  :   250 /  875      =~ 28%
-> +
-> +A has children and further distributes its 57% among the children and
-> +the implicit leaf node. The total active weight at this level is
-> +AA:500 + AB:1000 + A-leaf:750 = 2250.
-> +
-> + A-leaf    : ( 750 / 2250) * A =~ 19%
-> + AA(-leaf) : ( 500 / 2250) * A =~ 12%
-> + AB(-leaf) : (1000 / 2250) * A =~ 25%
+Regards,
 
-Hi Tejun,
 
-What does (-leaf) is supposed to signify? I can understand that A-leaf
-tells the share of A's tasks which are effectively in A-leaf group. 
+2013/1/8, Laurent Navet <laurent.navet@gmail.com>:
+> sizeof when applied to a pointer typed expression gives the size of
+> the pointer
+>
+> The semantic patch that makes this output is available
+> in scripts/coccinelle/misc/noderef.cocci.
+>
+> More information about semantic patching is available at
+> http://coccinelle.lip6.fr/
+>
+> Signed-off-by: Laurent Navet <laurent.navet@gmail.com>
+> ---
+>  drivers/i2c/muxes/i2c-mux-pinctrl.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/i2c/muxes/i2c-mux-pinctrl.c
+> b/drivers/i2c/muxes/i2c-mux-pinctrl.c
+> index 7fa5b24..f958d0f 100644
+> --- a/drivers/i2c/muxes/i2c-mux-pinctrl.c
+> +++ b/drivers/i2c/muxes/i2c-mux-pinctrl.c
+> @@ -167,7 +167,7 @@ static int __devinit i2c_mux_pinctrl_probe(struct
+> platform_device *pdev)
+>  	}
+>
+>  	mux->busses = devm_kzalloc(&pdev->dev,
+> -				   sizeof(mux->busses) * mux->pdata->bus_count,
+> +				   sizeof(*mux->busses) * mux->pdata->bus_count,
+>  				   GFP_KERNEL);
+>  	if (!mux->busses) {
+>  		dev_err(&pdev->dev, "Cannot allocate busses\n");
+> --
+> 1.7.10.4
+>
+>
 
-Will just plain AA and AB be more clear?
 
-Rest looks good to me. Thanks for updating the blkio-controoler.txt too.
-
-Thanks
-Vivek
+-- 
+« On ne résout pas un problème avec les modes de pensée qui l’ont engendré. »
+« You cannot solve current problems with current thinking. Current
+problems are the result of current thinking »
