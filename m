@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab3AHXti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:49:38 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53663 "EHLO
+	id S1756652Ab3AHXhe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:34 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53627 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756694Ab3AHXho (ORCPT
+	with ESMTP id S1756519Ab3AHXhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:44 -0500
+	Tue, 8 Jan 2013 18:37:22 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+CC: Hans Verkuil <hans.verkuil@cisco.com>, Sekhar Nori <nsekhar@ti.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 33/77] USB: whci-hcd: fix endian conversion in qset_clear()
-Date: Tue, 8 Jan 2013 18:35:12 -0500
-Message-ID: <1357688156-25387-34-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 45/77] ARM: davinci: dm646x evm: wrong register used in setup_vpif_input_channel_mode
+Date: Tue, 8 Jan 2013 18:35:24 -0500
+Message-ID: <1357688156-25387-46-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +23,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,31 +31,53 @@ From: Dan Carpenter <dan.carpenter@oracle.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 8746c83d538cab273d335acb2be226d096f4a5af upstream.
+commit 83713fc9373be2e943f82e9d36213708c6b0050e upstream.
 
-qset->qh.link is an __le64 field and we should be using cpu_to_le64()
-to fill it.
+The function setup_vpif_input_channel_mode() used the VSCLKDIS register
+instead of VIDCLKCTL. This meant that when in HD mode videoport channel 0
+used a different clock from channel 1.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Clearly a copy-and-paste error.
+
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Manjunath Hadli <manjunath.hadli@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/host/whci/qset.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mach-davinci/board-dm646x-evm.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/whci/qset.c b/drivers/usb/host/whci/qset.c
-index b388dd1..c0f48e4 100644
---- a/drivers/usb/host/whci/qset.c
-+++ b/drivers/usb/host/whci/qset.c
-@@ -124,7 +124,7 @@ void qset_clear(struct whc *whc, struct whc_qset *qset)
- {
- 	qset->td_start = qset->td_end = qset->ntds = 0;
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index 5ba3cb2..ff0fd90 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -555,7 +555,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
+ 	int val;
+ 	u32 value;
  
--	qset->qh.link = cpu_to_le32(QH_LINK_NTDS(8) | QH_LINK_T);
-+	qset->qh.link = cpu_to_le64(QH_LINK_NTDS(8) | QH_LINK_T);
- 	qset->qh.status = qset->qh.status & QH_STATUS_SEQ_MASK;
- 	qset->qh.err_count = 0;
- 	qset->qh.scratch[0] = 0;
+-	if (!vpif_vsclkdis_reg || !cpld_client)
++	if (!vpif_vidclkctl_reg || !cpld_client)
+ 		return -ENXIO;
+ 
+ 	val = i2c_smbus_read_byte(cpld_client);
+@@ -563,7 +563,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
+ 		return val;
+ 
+ 	spin_lock_irqsave(&vpif_reg_lock, flags);
+-	value = __raw_readl(vpif_vsclkdis_reg);
++	value = __raw_readl(vpif_vidclkctl_reg);
+ 	if (mux_mode) {
+ 		val &= VPIF_INPUT_TWO_CHANNEL;
+ 		value |= VIDCH1CLK;
+@@ -571,7 +571,7 @@ static int setup_vpif_input_channel_mode(int mux_mode)
+ 		val |= VPIF_INPUT_ONE_CHANNEL;
+ 		value &= ~VIDCH1CLK;
+ 	}
+-	__raw_writel(value, vpif_vsclkdis_reg);
++	__raw_writel(value, vpif_vidclkctl_reg);
+ 	spin_unlock_irqrestore(&vpif_reg_lock, flags);
+ 
+ 	err = i2c_smbus_write_byte(cpld_client, val);
 -- 
 1.7.12.1
 
