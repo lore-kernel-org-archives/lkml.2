@@ -1,21 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab3AHXkZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:40:25 -0500
-Received: from mail.windriver.com ([147.11.1.11]:64295 "EHLO
+	id S1757210Ab3AHXlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:41:18 -0500
+Received: from mail.windriver.com ([147.11.1.11]:64296 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757135Ab3AHXkV (ORCPT
+	with ESMTP id S1757173Ab3AHXkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:40:21 -0500
+	Tue, 8 Jan 2013 18:40:23 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Richard Weinberger <richard@nod.at>, <namhyung@gmail.com>,
-        <davem@davemloft.net>, <fweisbec@gmail.com>, <dhowells@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>,
+        David Howells <dhowells@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Matt Turner <mattst88@gmail.com>, Tony Luck <tony.luck@intel.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
+        Chris Zankel <chris@zankel.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 76/77] x86: Get rid of asmregparm
-Date: Tue, 8 Jan 2013 18:35:55 -0500
-Message-ID: <1357688156-25387-77-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 74/77] rwsem: Remove redundant asmregparm annotation
+Date: Tue, 8 Jan 2013 18:35:53 -0500
+Message-ID: <1357688156-25387-75-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,7 +30,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Weinberger <richard@nod.at>
+From: Thomas Gleixner <tglx@linutronix.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,76 +38,95 @@ From: Richard Weinberger <richard@nod.at>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1b4ac2a935aaf194241a2f4165d6407ba9650e1a upstream.
+commit d123375425d7df4b6081a631fc1203fceafa59b2 upstream.
 
-As UML does no longer need asmregparm we can remove it.
+Peter Zijlstra pointed out, that the only user of asmregparm (x86) is
+compiling the kernel already with -mregparm=3. So the annotation of
+the rwsem functions is redundant. Remove it.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Cc: namhyung@gmail.com
-Cc: davem@davemloft.net
-Cc: fweisbec@gmail.com
-Cc: dhowells@redhat.com
-Link: http://lkml.kernel.org/r/%3C1306189085-29896-1-git-send-email-richard%40nod.at%3E
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Matt Turner <mattst88@gmail.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: David Miller <davem@davemloft.net>
+Cc: Chris Zankel <chris@zankel.net>
+LKML-Reference: <alpine.LFD.2.00.1101262130450.31804@localhost6.localdomain6>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[PG: fixes compile errors when using newer gcc on 2.6.34 baseline]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/linkage.h | 5 -----
- arch/x86/kernel/ptrace.c       | 4 ++--
- include/linux/linkage.h        | 4 ----
- 3 files changed, 2 insertions(+), 11 deletions(-)
+ arch/x86/include/asm/rwsem.h | 12 ++++--------
+ lib/rwsem.c                  | 10 ++++------
+ 2 files changed, 8 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/include/asm/linkage.h b/arch/x86/include/asm/linkage.h
-index 12d55e7..4814297 100644
---- a/arch/x86/include/asm/linkage.h
-+++ b/arch/x86/include/asm/linkage.h
-@@ -8,11 +8,6 @@
+diff --git a/arch/x86/include/asm/rwsem.h b/arch/x86/include/asm/rwsem.h
+index 606ede1..c46685c 100644
+--- a/arch/x86/include/asm/rwsem.h
++++ b/arch/x86/include/asm/rwsem.h
+@@ -45,14 +45,10 @@
  
- #ifdef CONFIG_X86_32
- #define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
--/*
-- * For 32-bit UML - mark functions implemented in assembly that use
-- * regparm input parameters:
-- */
--#define asmregparm __attribute__((regparm(3)))
+ struct rwsem_waiter;
+ 
+-extern asmregparm struct rw_semaphore *
+- rwsem_down_read_failed(struct rw_semaphore *sem);
+-extern asmregparm struct rw_semaphore *
+- rwsem_down_write_failed(struct rw_semaphore *sem);
+-extern asmregparm struct rw_semaphore *
+- rwsem_wake(struct rw_semaphore *);
+-extern asmregparm struct rw_semaphore *
+- rwsem_downgrade_wake(struct rw_semaphore *sem);
++extern struct rw_semaphore *rwsem_down_read_failed(struct rw_semaphore *sem);
++extern struct rw_semaphore *rwsem_down_write_failed(struct rw_semaphore *sem);
++extern struct rw_semaphore *rwsem_wake(struct rw_semaphore *);
++extern struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem);
  
  /*
-  * Make sure the compiler doesn't do anything stupid with the
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 2e9b550..8b57128 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -1730,7 +1730,7 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
-  * We must return the syscall number to actually look up in the table.
-  * This can be -1L to skip running any syscall at all.
+  * the semaphore definition
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index ceba8e2..a112c06 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -188,8 +188,7 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ /*
+  * wait for the read lock to be granted
   */
--asmregparm long syscall_trace_enter(struct pt_regs *regs)
-+long syscall_trace_enter(struct pt_regs *regs)
+-asmregparm struct rw_semaphore __sched *
+-rwsem_down_read_failed(struct rw_semaphore *sem)
++struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
  {
- 	long ret = 0;
+ 	struct rwsem_waiter waiter;
  
-@@ -1775,7 +1775,7 @@ asmregparm long syscall_trace_enter(struct pt_regs *regs)
- 	return ret ?: regs->orig_ax;
- }
- 
--asmregparm void syscall_trace_leave(struct pt_regs *regs)
-+void syscall_trace_leave(struct pt_regs *regs)
+@@ -202,8 +201,7 @@ rwsem_down_read_failed(struct rw_semaphore *sem)
+ /*
+  * wait for the write lock to be granted
+  */
+-asmregparm struct rw_semaphore __sched *
+-rwsem_down_write_failed(struct rw_semaphore *sem)
++struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
  {
- 	bool step;
+ 	struct rwsem_waiter waiter;
  
-diff --git a/include/linux/linkage.h b/include/linux/linkage.h
-index 5126cce..a500d6b 100644
---- a/include/linux/linkage.h
-+++ b/include/linux/linkage.h
-@@ -14,10 +14,6 @@
- #define asmlinkage CPP_ASMLINKAGE
- #endif
+@@ -217,7 +215,7 @@ rwsem_down_write_failed(struct rw_semaphore *sem)
+  * handle waking up a waiter on the semaphore
+  * - up_read/up_write has decremented the active part of count if we come here
+  */
+-asmregparm struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
++struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
  
--#ifndef asmregparm
--# define asmregparm
--#endif
--
- #define __page_aligned_data	__section(.data.page_aligned) __aligned(PAGE_SIZE)
- #define __page_aligned_bss	__section(.bss.page_aligned) __aligned(PAGE_SIZE)
+@@ -237,7 +235,7 @@ asmregparm struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
+  * - caller incremented waiting part of count and discovered it still negative
+  * - just wake up any readers at the front of the queue
+  */
+-asmregparm struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
++struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
+ {
+ 	unsigned long flags;
  
 -- 
 1.7.12.1
