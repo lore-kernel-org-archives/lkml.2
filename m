@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab3AHHDe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 02:03:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42131 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754133Ab3AHHDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 02:03:33 -0500
-Message-ID: <50EBC4BD.7010700@redhat.com>
-Date: Tue, 08 Jan 2013 02:03:25 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1753178Ab3AHHMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 02:12:53 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57971 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750923Ab3AHHMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 02:12:52 -0500
+Date: Tue, 8 Jan 2013 08:12:34 +0100
+From: Thierry Reding <thierry.reding@avionic-design.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>,
+        Laxman Dewangan <ldewangan@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [PATCH] spi: tegra: sequence compatible strings as per preference
+Message-ID: <20130108071234.GB2171@avionic-0098.adnet.avionic-design.de>
+References: <1352452052-13823-1-git-send-email-ldewangan@nvidia.com>
+ <509D37B8.8020606@wwwdotorg.org>
+ <20121109171008.GX23807@opensource.wolfsonmicro.com>
+ <509D3D46.7060102@wwwdotorg.org>
+ <20121110170741.GA17689@avionic-0098.mockup.avionic-design.de>
+ <20121219170009.54EE83E0C34@localhost>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Shaohua Li <shli@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        mingo@redhat.com, hughd@google.com
-Subject: Re: [RFC]x86: clearing access bit don't flush tlb
-References: <20130107081213.GA21779@kernel.org> <50EAE66B.1020804@redhat.com> <50EB4CB9.9010104@zytor.com> <20130108045519.GB2459@kernel.org> <50EBA8AB.2060003@zytor.com> <50EBA9DC.9070400@redhat.com> <50EBAA27.7030506@zytor.com>
-In-Reply-To: <50EBAA27.7030506@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="gj572EiMnwbLXET9"
+Content-Disposition: inline
+In-Reply-To: <20121219170009.54EE83E0C34@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Provags-ID: V02:K0:XdbkpVZ7iClKR/pxOKqKiR88nMZ+LCJwU/y9FBOp1ND
+ EcthymCrxggIeZuN+gPYGWE42ZggnlXsHNOwoGofB50RTkVvMT
+ 2BMXDO/OJ+++lNdxEyRPLgZQKry9xurlvpp0XSBBnKS7iAyDc5
+ e/LdlMog68vGMXVjyqbkHtS1k3byl7/o2tAAeX0BN/V57n7ffY
+ LMY62jBwumQzKSHqi53sBu8mkswDZOTEWgti4MyPeVYNB3hqo5
+ RCMl52FLq+J26Mq5g2chMU+k/wEc4xh0Dmdbt5DoPmuAMaEgyS
+ I7v4dPx//sHbivyrcu+55B8RbEk31nLppK7j5/lQlrHdZe7Tur
+ URNsBtn95VbzGrL7wKO4MfOa7hcArCpt3dH/Dr69+LK3Z4h9m/
+ Gt9ftUVqfD3U5NskEMLZhHE0eFmQg5HUbM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 12:09 AM, H. Peter Anvin wrote:
-> On 01/07/2013 09:08 PM, Rik van Riel wrote:
->> On 01/08/2013 12:03 AM, H. Peter Anvin wrote:
->>> On 01/07/2013 08:55 PM, Shaohua Li wrote:
->>>>
->>>> I searched a little bit, the change (doing TLB flush to clear access
->>>> bit) is
->>>> made between 2.6.7 - 2.6.8, I can't find the changelog, but I found a
->>>> patch:
->>>> http://www.kernel.org/pub/linux/kernel/people/akpm/patches/2.6/2.6.7-rc2/2.6.7-rc2-mm2/broken-out/mm-flush-tlb-when-clearing-young.patch
->>>>
->>>>
->>>> The changelog declaims this is for arm/ppc/ppc64.
->>>>
->>>
->>> Not really.  It says that those have stumbled over it already.  It is
->>> true in general that this change will make very frequently used pages
->>> (which stick in the TLB) candidates for eviction.
->>
->> That is only true if the pages were to stay in the TLB for a
->> very very long time.  Probably multiple seconds.
->>
->>> x86 would seem to be just as affected, although possibly with a
->>> different frequency.
->>>
->>> Do we have any actual metrics on anything here?
->>
->> I suspect that if we do need to force a TLB flush for page
->> reclaim purposes, it may make sense to do that TLB flush
->> asynchronously. For example, kswapd could kick off a TLB
->> flush of every CPU in the system once a second, when the
->> system is under pageout pressure.
->>
->> We would have to do this in a smart way, so the kswapds
->> from multiple nodes do not duplicate the work.
->>
->> If people want that kind of functionality, I would be
->> happy to cook up an RFC patch.
->>
->
-> So it sounds like you're saying that this patch should never have been
-> applied in the first place?
 
-It made sense at the time.
+--gj572EiMnwbLXET9
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-However, with larger SMP systems, we may need a different
-mechanism to get the TLB flushes done after we clear a bunch
-of accessed bits.
+On Wed, Dec 19, 2012 at 05:00:09PM +0000, Grant Likely wrote:
+> On Sat, 10 Nov 2012 18:07:42 +0100, Thierry Reding <thierry.reding@avioni=
+c-design.de> wrote:
+> > On Fri, Nov 09, 2012 at 10:28:38AM -0700, Stephen Warren wrote:
+> > > On 11/09/2012 10:10 AM, Mark Brown wrote:
+> > > > On Fri, Nov 09, 2012 at 10:04:56AM -0700, Stephen Warren wrote:
+> > > >=20
+> > > >> However just FYI, it should not be necessary for correctness; The
+> > > >> DT matching order is supposed to be driven purely by the order of
+> > > >> the compatible values in the DT now, and not affected by the
+> > > >> order of values in the table. (This wasn't always the case, but
+> > > >> was a bug that was fixed IIRC by Thierry Reding).
+> > > >=20
+> > > > I guess the driver is being used backported in older kernels which
+> > > > don't have that fix?
+> > >=20
+> > > That sounds likely. Laxman, it'd be a good idea to track down the fix
+> > > to the DT matching code and backport it, so that hard-to debug issues
+> > > aren't caused by the lack of that patch!
+> >=20
+> > Unfortunately the patch that was supposed to fixed this caused a
+> > regression and was therefore reverted. Rob (Cc'ed) said there was a
+> > patch to fix it properly and was supposed to go into 3.6 but it seems
+> > that never happened. Rob, what's the status on this?
+> >=20
+> > The revert is here: bc51b0c22cebf5c311a6f1895fcca9f78efd0478
+>=20
+> Rob, ping on this. I think we talked about it on IRC, but I cannot
+> remember what was said.... I must be getting old.
 
-One thing we could do is mark bits in a bitmap, keeping track
-of which CPUs should have their TLB flushed due to accessed bit
-scanning.
+Any news on this one?
 
-Then we could set a timer for eg. a 1 second timeout, after
-which the TLB flush IPIs get sent. If the timer is already
-pending, we do not start it, but piggyback on the invocation
-that is already scheduled to happen.
+Thierry
 
-Does something like that make sense?
+--gj572EiMnwbLXET9
+Content-Type: application/pgp-signature
 
--- 
-All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.19 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ68biAAoJEN0jrNd/PrOh6OYQALnxIcAYee7gi6zXv867rfCT
+EYC1p6J8ZQGghHBSyYo0dsemfcwrddUMvkvmtmSl3eSgMEPQgPd8TOvDMF9HuMOU
+I1KoP0l6tLSEn/+k9Mrlh2gOBa8lp73oF7jStyahZVaJcIfBsABVvFDHfU5zGBO+
+y2vAHlAQnQ60ZX60DBRakYai5sxpTU32yRa7pvyLUz+Tz1MYsayxCbUIiHaZ8Rjo
+SxsU8JhCiXEmbC6X9zJzggfbUGImKeWXCCIe87FH2lnj0iegHvRMEyzp3qddlXZ7
+XXYyJGc2p8Gpftqw3TojoIPSEkS0v7PqJ4hdIXryv1IOie2MgyIP0CSldN/9LuZe
+Us1AJiYx8YJX3nq0QfoVpa9a5sL4sNgd44l3QbKHCNL0IT+mP7x+fmjr2sF/43rQ
+6KOrW4gkpDT6Mf5JNF+KbM0FA4LClQZEySN0zFnSwzL1XAGDII28JGWZQaw4zb82
+6cWkMzevvsv9UPuRhIXvTl2gkS5BHEs7MzgU4kPznJ0d1zThAlcD+ar1YtS3PV4z
+mzvXZfvMuheQigDVqT/vjBRJZkiuSROzPgbwsWpHK1jefA3VdOY1EIVLk0+UM5Oy
+d6MymrE04SW2hBOcNy7sy7GhcQRaOOBsjT9KU63o2lH++LsigwLdwplKu6mbtk1Q
+ptodw/yyZ3kDx3KePDzw
+=0k4e
+-----END PGP SIGNATURE-----
+
+--gj572EiMnwbLXET9--
