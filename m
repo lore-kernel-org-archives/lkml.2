@@ -1,102 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab3AHHlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 02:41:42 -0500
-Received: from TYO200.gate.nec.co.jp ([210.143.35.50]:57253 "EHLO
-	tyo200.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab3AHHlk (ORCPT
+	id S1754214Ab3AHHwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 02:52:09 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:28303 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994Ab3AHHwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 02:41:40 -0500
-Message-ID: <50EBCB52.6020003@ce.jp.nec.com>
-Date: Tue, 08 Jan 2013 16:31:30 +0900
-From: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120911 Thunderbird/15.0.1
+	Tue, 8 Jan 2013 02:52:07 -0500
+Message-ID: <50EBD011.7040801@huawei.com>
+Date: Tue, 8 Jan 2013 15:51:45 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Vivek Goyal <vgoyal@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: [PATCH repost] blkcg: fix "scheduling while atomic" in blk_queue_bypass_start
-References: <50890937.7010809@ce.jp.nec.com> <20121026202105.GF24687@redhat.com> <508E572C.6000707@ce.jp.nec.com> <20121029163845.GB7709@redhat.com> <1351529115.24721.40.camel@twins> <20121029171346.GC3308@redhat.com>
-In-Reply-To: <20121029171346.GC3308@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH] cgroup: use new hashtable implementation
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.135.68.215]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
-on blk_register_queue() instead of blk_init_allocated_queue()"),
-the following warning appears when multipath is used with CONFIG_PREEMPT=y.
+Switch cgroup to use the new hashtable implementation. No functional changes.
 
-This patch moves blk_queue_bypass_start() before radix_tree_preload()
-to avoid the sleeping call while preemption is disabled.
-
-  BUG: scheduling while atomic: multipath/2460/0x00000002
-  1 lock held by multipath/2460:
-   #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
-  Modules linked in: ...
-  Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
-  Call Trace:
-   [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
-   [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
-   [<ffffffff814291e6>] schedule+0x64/0x66
-   [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
-   [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
-   [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
-   [<ffffffff814289e3>] wait_for_common+0x9d/0xee
-   [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
-   [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
-   [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
-   [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
-   [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
-   [<ffffffff8106fb18>] ? complete+0x21/0x53
-   [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
-   [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
-   [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
-   [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
-   [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
-   [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
-   [<ffffffff811d8c41>] elevator_init+0xe1/0x115
-   [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
-   [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
-   [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
-   [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
-   [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
-   [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
-   [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
-   [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
-   [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
-   [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
-   [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-   [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Alasdair G Kergon <agk@redhat.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
 ---
- block/blk-cgroup.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/cgroup.c | 92 ++++++++++++++++++++++++---------------------------------
+ 1 file changed, 39 insertions(+), 53 deletions(-)
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index b8858fb..53628e4 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -790,10 +790,10 @@ int blkcg_activate_policy(struct request_queue *q,
- 	if (!blkg)
- 		return -ENOMEM;
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 4855892..d8df073 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -52,7 +52,7 @@
+ #include <linux/module.h>
+ #include <linux/delayacct.h>
+ #include <linux/cgroupstats.h>
+-#include <linux/hash.h>
++#include <linux/hashtable.h>
+ #include <linux/namei.h>
+ #include <linux/pid_namespace.h>
+ #include <linux/idr.h>
+@@ -376,22 +376,18 @@ static int css_set_count;
+  * account cgroups in empty hierarchies.
+  */
+ #define CSS_SET_HASH_BITS	7
+-#define CSS_SET_TABLE_SIZE	(1 << CSS_SET_HASH_BITS)
+-static struct hlist_head css_set_table[CSS_SET_TABLE_SIZE];
++static DEFINE_HASHTABLE(css_set_table, CSS_SET_HASH_BITS);
  
--	preloaded = !radix_tree_preload(GFP_KERNEL);
+-static struct hlist_head *css_set_hash(struct cgroup_subsys_state *css[])
++static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
+ {
+ 	int i;
+-	int index;
+-	unsigned long tmp = 0UL;
++	unsigned long key = 0UL;
+ 
+ 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++)
+-		tmp += (unsigned long)css[i];
+-	tmp = (tmp >> 16) ^ tmp;
++		key += (unsigned long)css[i];
++	key = (key >> 16) ^ key;
+ 
+-	index = hash_long(tmp, CSS_SET_HASH_BITS);
 -
- 	blk_queue_bypass_start(q);
+-	return &css_set_table[index];
++	return key;
+ }
  
-+	preloaded = !radix_tree_preload(GFP_KERNEL);
-+
- 	/* make sure the root blkg exists and count the existing blkgs */
- 	spin_lock_irq(q->queue_lock);
+ /* We don't maintain the lists running through each css_set to its
+@@ -418,7 +414,7 @@ static void __put_css_set(struct css_set *cg, int taskexit)
+ 	}
  
+ 	/* This css_set is dead. unlink it and release cgroup refcounts */
+-	hlist_del(&cg->hlist);
++	hash_del(&cg->hlist);
+ 	css_set_count--;
+ 
+ 	list_for_each_entry_safe(link, saved_link, &cg->cg_links,
+@@ -550,9 +546,9 @@ static struct css_set *find_existing_css_set(
+ {
+ 	int i;
+ 	struct cgroupfs_root *root = cgrp->root;
+-	struct hlist_head *hhead;
+ 	struct hlist_node *node;
+ 	struct css_set *cg;
++	unsigned long key;
+ 
+ 	/*
+ 	 * Build the set of subsystem state objects that we want to see in the
+@@ -572,8 +568,8 @@ static struct css_set *find_existing_css_set(
+ 		}
+ 	}
+ 
+-	hhead = css_set_hash(template);
+-	hlist_for_each_entry(cg, node, hhead, hlist) {
++	key = css_set_hash(template);
++	hash_for_each_possible(css_set_table, cg, node, hlist, key) {
+ 		if (!compare_css_sets(cg, oldcg, cgrp, template))
+ 			continue;
+ 
+@@ -657,8 +653,8 @@ static struct css_set *find_css_set(
+ 
+ 	struct list_head tmp_cg_links;
+ 
+-	struct hlist_head *hhead;
+ 	struct cg_cgroup_link *link;
++	unsigned long key;
+ 
+ 	/* First see if we already have a cgroup group that matches
+ 	 * the desired set */
+@@ -704,8 +700,8 @@ static struct css_set *find_css_set(
+ 	css_set_count++;
+ 
+ 	/* Add this cgroup group to the hash table */
+-	hhead = css_set_hash(res->subsys);
+-	hlist_add_head(&res->hlist, hhead);
++	key = css_set_hash(res->subsys);
++	hash_add(css_set_table, &res->hlist, key);
+ 
+ 	write_unlock(&css_set_lock);
+ 
+@@ -1597,6 +1593,8 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		struct cgroupfs_root *existing_root;
+ 		const struct cred *cred;
+ 		int i;
++		struct hlist_node *node;
++		struct css_set *cg;
+ 
+ 		BUG_ON(sb->s_root != NULL);
+ 
+@@ -1650,14 +1648,8 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
+ 		/* Link the top cgroup in this hierarchy into all
+ 		 * the css_set objects */
+ 		write_lock(&css_set_lock);
+-		for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
+-			struct hlist_head *hhead = &css_set_table[i];
+-			struct hlist_node *node;
+-			struct css_set *cg;
+-
+-			hlist_for_each_entry(cg, node, hhead, hlist)
+-				link_css_set(&tmp_cg_links, cg, root_cgrp);
+-		}
++		hash_for_each(css_set_table, i, node, cg, hlist)
++			link_css_set(&tmp_cg_links, cg, root_cgrp);
+ 		write_unlock(&css_set_lock);
+ 
+ 		free_cg_links(&tmp_cg_links);
+@@ -4438,6 +4430,9 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ {
+ 	struct cgroup_subsys_state *css;
+ 	int i, ret;
++	struct hlist_node *node, *tmp;
++	struct css_set *cg;
++	unsigned long key;
+ 
+ 	/* check name and function validity */
+ 	if (ss->name == NULL || strlen(ss->name) > MAX_CGROUP_TYPE_NAMELEN ||
+@@ -4503,23 +4498,17 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+ 	 * this is all done under the css_set_lock.
+ 	 */
+ 	write_lock(&css_set_lock);
+-	for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
+-		struct css_set *cg;
+-		struct hlist_node *node, *tmp;
+-		struct hlist_head *bucket = &css_set_table[i], *new_bucket;
+-
+-		hlist_for_each_entry_safe(cg, node, tmp, bucket, hlist) {
+-			/* skip entries that we already rehashed */
+-			if (cg->subsys[ss->subsys_id])
+-				continue;
+-			/* remove existing entry */
+-			hlist_del(&cg->hlist);
+-			/* set new value */
+-			cg->subsys[ss->subsys_id] = css;
+-			/* recompute hash and restore entry */
+-			new_bucket = css_set_hash(cg->subsys);
+-			hlist_add_head(&cg->hlist, new_bucket);
+-		}
++	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
++		/* skip entries that we already rehashed */
++		if (cg->subsys[ss->subsys_id])
++			continue;
++		/* remove existing entry */
++		hlist_del(&cg->hlist);
++		/* set new value */
++		cg->subsys[ss->subsys_id] = css;
++		/* recompute hash and restore entry */
++		key = css_set_hash(cg->subsys);
++		hash_add(css_set_table, node, key);
+ 	}
+ 	write_unlock(&css_set_lock);
+ 
+@@ -4551,7 +4540,6 @@ EXPORT_SYMBOL_GPL(cgroup_load_subsys);
+ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ {
+ 	struct cg_cgroup_link *link;
+-	struct hlist_head *hhead;
+ 
+ 	BUG_ON(ss->module == NULL);
+ 
+@@ -4585,11 +4573,12 @@ void cgroup_unload_subsys(struct cgroup_subsys *ss)
+ 	write_lock(&css_set_lock);
+ 	list_for_each_entry(link, &dummytop->css_sets, cgrp_link_list) {
+ 		struct css_set *cg = link->cg;
++		unsigned long key;
+ 
+-		hlist_del(&cg->hlist);
++		hash_del(&cg->hlist);
+ 		cg->subsys[ss->subsys_id] = NULL;
+-		hhead = css_set_hash(cg->subsys);
+-		hlist_add_head(&cg->hlist, hhead);
++		key = css_set_hash(cg->subsys);
++		hash_add(css_set_table, &cg->hlist, key);
+ 	}
+ 	write_unlock(&css_set_lock);
+ 
+@@ -4631,9 +4620,6 @@ int __init cgroup_init_early(void)
+ 	list_add(&init_css_set_link.cg_link_list,
+ 		 &init_css_set.cg_links);
+ 
+-	for (i = 0; i < CSS_SET_TABLE_SIZE; i++)
+-		INIT_HLIST_HEAD(&css_set_table[i]);
+-
+ 	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+ 		struct cgroup_subsys *ss = subsys[i];
+ 
+@@ -4667,7 +4653,7 @@ int __init cgroup_init(void)
+ {
+ 	int err;
+ 	int i;
+-	struct hlist_head *hhead;
++	unsigned long key;
+ 
+ 	err = bdi_init(&cgroup_backing_dev_info);
+ 	if (err)
+@@ -4686,8 +4672,8 @@ int __init cgroup_init(void)
+ 	}
+ 
+ 	/* Add init_css_set to the hash table */
+-	hhead = css_set_hash(init_css_set.subsys);
+-	hlist_add_head(&init_css_set.hlist, hhead);
++	key = css_set_hash(init_css_set.subsys);
++	hash_add(css_set_table, &init_css_set.hlist, key);
+ 	BUG_ON(!init_root_id(&rootnode));
+ 
+ 	cgroup_kobj = kobject_create_and_add("cgroup", fs_kobj);
+-- 
+1.8.0.2
+
