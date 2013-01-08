@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab3AHKag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:30:36 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:52016 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab3AHKaf (ORCPT
+	id S1755724Ab3AHKg5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:36:57 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32991 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755550Ab3AHKg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:30:35 -0500
+	Tue, 8 Jan 2013 05:36:56 -0500
+Date: Tue, 8 Jan 2013 10:36:54 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sachin Kamat <sachin.kamat@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        sameo@linux.intel.com, patches@linaro.org
+Subject: Re: [PATCH 1/1] mfd: wm8994: Use devm_regulator_bulk_get API
+Message-ID: <20130108103653.GH4544@opensource.wolfsonmicro.com>
+References: <1357633882-5191-1-git-send-email-sachin.kamat@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20130107090210.GA20716@elgon.mountain>
-References: <20130107090210.GA20716@elgon.mountain>
-Date: Tue, 8 Jan 2013 19:30:34 +0900
-Message-ID: <CANKRQnh+USJwA=-+MYotvWQif7ZWQwPyUWnrbGQg5dFpvfh5Dg@mail.gmail.com>
-Subject: Re: add Packet hub driver for Topcliff Platform controller hub
-From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="17/8oYur5Y32USnW"
+Content-Disposition: inline
+In-Reply-To: <1357633882-5191-1-git-send-email-sachin.kamat@linaro.org>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dan,
 
-On Mon, Jan 7, 2013 at 6:02 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> The patch cf4ece53460c: "add Packet hub driver for Topcliff Platform
-> controller hub" from Sep 1, 2010, leads to the following warning:
-> drivers/misc/pch_phub.c:596 pch_phub_bin_write()
->          error: buffer overflow 'buf' 4096 <= 15359
->
-> Sorry my question is about an old patch.  Smatch complains because we
-> only pass a PAGE_SIZE buffer to sysfs files so the test for
-> "if (count > PCH_PHUB_OROM_SIZE) {" makes it think we are overflowing.
-> In fact, count is never more than 4096 so there is no overflow, but I
-> also think that it means only the first 4096 bytes of the firmware gets
-> updated.
->
-> drivers/misc/pch_phub.c
->    560  static ssize_t pch_phub_bin_write(struct file *filp, struct kobject *kobj,
->    561                                    struct bin_attribute *attr,
->    562                                    char *buf, loff_t off, size_t count)
->    563  {
->    564          int err;
->    565          unsigned int addr_offset;
->    566          int ret;
->    567          ssize_t rom_size;
->    568          struct pch_phub_reg *chip =
->    569                  dev_get_drvdata(container_of(kobj, struct device, kobj));
->    570
->    571          ret = mutex_lock_interruptible(&pch_phub_mutex);
->    572          if (ret)
->    573                  return -ERESTARTSYS;
->    574
->    575          if (off > PCH_PHUB_OROM_SIZE) {
->    576                  addr_offset = 0;
->    577                  goto return_ok;
->    578          }
->    579          if (count > PCH_PHUB_OROM_SIZE) {
->                             ^^^^^^^^^^^^^^^^^^
-> This is 15359.
->
->    580                  addr_offset = 0;
->    581                  goto return_ok;
->    582          }
->    583
->    584          chip->pch_phub_extrom_base_address = pci_map_rom(chip->pdev, &rom_size);
->    585          if (!chip->pch_phub_extrom_base_address) {
->    586                  err = -ENOMEM;
->    587                  goto exrom_map_err;
->    588          }
->    589
->    590          for (addr_offset = 0; addr_offset < count; addr_offset++) {
->    591                  if (PCH_PHUB_OROM_SIZE < off + addr_offset)
->    592                          goto return_ok;
->    593
->    594                  ret = pch_phub_write_serial_rom(chip,
->    595                              chip->pch_opt_rom_start_address + addr_offset + off,
->    596                              buf[addr_offset]);
->                                     ^^^^^^^^^^^^^^^^
-> Smatch complains because "buf" is only 4096 bytes.
->
+--17/8oYur5Y32USnW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I can understand your saying.
+On Tue, Jan 08, 2013 at 02:01:22PM +0530, Sachin Kamat wrote:
+> devm_regulator_bulk_get is device managed and saves some cleanup
+> and exit code.
 
-You mean just delete the following condition ?
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-579          if (count > PCH_PHUB_OROM_SIZE) {
+--17/8oYur5Y32USnW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
--- 
-ROHM Co., Ltd.
-tomoya
+iQIcBAEBAgAGBQJQ6/a+AAoJELSic+t+oim9YpAP/27SrJCgXwkrs6le0O816gWW
+pXBgYxBgUU8VFW0n0OubXHqJQ47KpT9/mInspRT5KNx9OZnk9NL9bQhCjqKLfFLj
+uA8k+5M+amdfLBW8OYu+fm7ZO89d06mI+1gAx7j4Rt6hsWx/uOOtCtBQJVfxRfcJ
+Q62md5POwMeDwQc557XAkDd9Gn8d44Fwkf2CG9NDSzRRNusEQZs1ErNqYqkq7PhS
+0islZB/kvfA0AAZF4Q00//0s92AQBPgAo5gjxYEMk+pr2+zt61rvqo78q4NeMqET
+CZ3Jh1oamTP4Mow4EhRjVmbihietLer1dnUEAQ2rxA2BwfS652YyNkELagq8WthQ
+mrr7h1kpmpcQiHND/FHiwQSExfZ/Df32Jjx5I1ZF6SnQ0iG4qIMYJ1JfV4Xr61au
+7yG11zelT5iICZNGwRXbxECJjb+tTkdTn8NUPGYG5DEA/Ijr+sFqlYOyUKHbIM66
+X8srmSVbwQRL0NtUp7TkYoC3L/cGITUg6b2j1XqyIdy12FEgTFJgouypYUBK9dzT
+zuYYKl7w0DPv/B2ySo85kNt8X9puK9y+K2qbFVElXLpONSgw7QNQd5tauOWMFjRB
+4nbr/OGvwbfhoB1QY5MN9GTJRTccO524IF+3XRULxRGffSX+CpGZSuRmyi41D+je
+JxlTP3L03gld7Gzgsz9l
+=gjCB
+-----END PGP SIGNATURE-----
+
+--17/8oYur5Y32USnW--
