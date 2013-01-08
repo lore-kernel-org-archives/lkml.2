@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481Ab3AHUKi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 15:10:38 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:55133 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab3AHUKh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 15:10:37 -0500
-Date: Tue, 8 Jan 2013 15:04:33 -0500
-From: Konrad Rzeszutek Wilk <konrad@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Asit K Mallick <asit.k.mallick@intel.com>,
-        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH v5 00/12] x86/microcode: Early load microcode
-Message-ID: <20130108200432.GE15194@phenom.dumpdata.com>
-References: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
- <20130103174455.GA7350@localhost.localdomain>
- <50E5C47B.6060707@zytor.com>
- <20130108194633.GA15194@phenom.dumpdata.com>
- <50EC77DB.6090300@zytor.com>
+	id S1751927Ab3AHULF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 15:11:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61017 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112Ab3AHULD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 15:11:03 -0500
+Message-ID: <50EC7DAF.8030606@redhat.com>
+Date: Tue, 08 Jan 2013 15:12:31 -0500
+From: Tony Camuso <tcamuso@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:16.0) Gecko/20121026 Thunderbird/16.0.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EC77DB.6090300@zytor.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: minyard@acm.org
+CC: Corey Minyard <tcminyard@gmail.com>, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, rob.herring@calxeda.com,
+        openipmi-developer@lists.sourceforge.net, grant.likely@secretlab.ca,
+        k-tanaka@ce.jp.nec.com, myamazak@redhat.com
+Subject: [PATCH] ipmi: replace call to try_smi_init() with call to add_smi()
+References: <1355424008-20491-1-git-send-email-tcamuso@redhat.com> <50CA31BB.2030507@acm.org> <50CB3662.5080100@redhat.com>
+In-Reply-To: <50CB3662.5080100@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 11:47:39AM -0800, H. Peter Anvin wrote:
-> On 01/08/2013 11:46 AM, Konrad Rzeszutek Wilk wrote:
-> > 
-> > OK. I am trying to figure out whether this usage of native_* for the
-> > MSRs was done on purpose - and it sounds like the answer is no. If so -
-> > can it be done using the normal 'safe_rdmsr' and 'wrmsr'?
-> > 
-> > That would allow at least in the case of Xen, to omit a whole bunch
-> > of MSR writes/reads during the boot that are not neccessary as we would
-> > not trap in the hypervisor - but could use the pvops version of
-> > read/write MSR calls to just do a nop.
-> > 
-> 
-> Why is this code invoked on Xen at all?  That seems crazy.
+Upstream commit 9e368fa0 added function ipmi_pnp_probe(), which
+calls try_smi_init() directly.
 
- [PATCH v4 09/11] x86/head64.c: Early update ucode in 64-bit
+try_smi_init() allocates resources for IPMI driver. However
+try_smi_init() can be called again, and the allocated resources
+can be unexpectedly released when the same IPMI resource
+information is found on both ACPI namespace and SMBIOS table.
+ipmi_pnp_probe() should call add_smi() instead of try_smi_init()
 
-has this in x86_64_start_kernel:
+For reference, see upstream commit ...
+2407d77a1a013b88ee3b817f2b934e420e5376f5
 
-..
-        load_idt((const struct desc_ptr *)&idt_descr);
+Signed-off-by: Tony Camuso <tcamuso@redhat.com>
 
-+       /*
-+        * Load microcode early on BSP.
-+        */
-+       load_ucode_bsp(__va(real_mode_data));
-+
-        copy_bootdata(__va(real_mode_data));
+---
+  drivers/char/ipmi/ipmi_si_intf.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Which gets called after xen_start_kernel has setup pagetables,
-bootparams, etc ready for the generic code to be invoked.
-
-Or am I looking at an old version of these patches.
-> 
-> 	-hpa
-> 
-> 
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index afb89be..20d13c6 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -2223,7 +2223,7 @@ static int __devinit ipmi_pnp_probe(struct pnp_dev *dev,
+  	info->dev = &dev->dev;
+  	pnp_set_drvdata(dev, info);
+  
+-	return try_smi_init(info);
++	return add_smi(info);
+  
+  err_free:
+  	kfree(info);
+-- 
+1.7.1
