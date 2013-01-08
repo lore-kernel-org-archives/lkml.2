@@ -1,126 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab3AHKZe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:25:34 -0500
-Received: from mga14.intel.com ([143.182.124.37]:37465 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751084Ab3AHKZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:25:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,430,1355126400"; 
-   d="scan'208";a="188802132"
-Date: Tue, 8 Jan 2013 12:29:01 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, chao.bi@intel.com,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 01/11] spi/pxa2xx: allow building on a 64-bit kernel
-Message-ID: <20130108102901.GG13897@intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
- <1357555480-24022-2-git-send-email-mika.westerberg@linux.intel.com>
- <CAMPhdO9j_-zZUAfZ-u_tdB6C6iSzTVRtN9_at4Obe9wgTA8p4g@mail.gmail.com>
+	id S1755656Ab3AHKZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:25:59 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:46069 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752899Ab3AHKZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 05:25:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAMPhdO9j_-zZUAfZ-u_tdB6C6iSzTVRtN9_at4Obe9wgTA8p4g@mail.gmail.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1357353529-20901-8-git-send-email-wenyou.yang@atmel.com>
+References: <1357353529-20901-1-git-send-email-wenyou.yang@atmel.com> <1357353529-20901-8-git-send-email-wenyou.yang@atmel.com>
+From: Fabio Porcedda <fabio.porcedda@gmail.com>
+Date: Tue, 8 Jan 2013 11:17:43 +0100
+Message-ID: <CAHkwnC8CTFxrJ8F=u=MqKW=cZ88SeoT+rA_hzW38jL8ffT9D2Q@mail.gmail.com>
+Subject: Re: [v3 PATCH 7/9] watchdog/at91sam9_wdt: Use module_platform_driver()
+To: Wenyou Yang <wenyou.yang@atmel.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        JM.Lin@atmel.com, Wim Van Sebroeck <wim@iguana.be>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 11:27:45AM +0800, Eric Miao wrote:
-> On Mon, Jan 7, 2013 at 6:44 PM, Mika Westerberg
-> <mika.westerberg@linux.intel.com> wrote:
-> > In addition fix following warnings seen when compiling 64-bit:
-> >
-> > drivers/spi/spi-pxa2xx.c: In function ‘map_dma_buffers’: drivers/spi/spi-pxa2xx.c:384:7: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> > drivers/spi/spi-pxa2xx.c:384:40: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> > drivers/spi/spi-pxa2xx.c: In function ‘pxa2xx_spi_probe’:
-> > drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> > drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> > drivers/spi/spi-pxa2xx.c:1572:34: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]
-> > drivers/spi/spi-pxa2xx.c:1572:27: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
-> >
-> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-> > ---
-> >  drivers/spi/Kconfig      |    4 ++--
-> >  drivers/spi/spi-pxa2xx.c |    5 ++---
-> >  2 files changed, 4 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-> > index 2e188e1..a90393d 100644
-> > --- a/drivers/spi/Kconfig
-> > +++ b/drivers/spi/Kconfig
-> > @@ -299,7 +299,7 @@ config SPI_PPC4xx
-> >
-> >  config SPI_PXA2XX
-> >         tristate "PXA2xx SSP SPI master"
-> > -       depends on (ARCH_PXA || (X86_32 && PCI)) && EXPERIMENTAL
-> > +       depends on ARCH_PXA || PCI
-> >         select PXA_SSP if ARCH_PXA
-> >         help
-> >           This enables using a PXA2xx or Sodaville SSP port as a SPI master
-> > @@ -307,7 +307,7 @@ config SPI_PXA2XX
-> >           additional documentation can be found a Documentation/spi/pxa2xx.
-> >
-> >  config SPI_PXA2XX_PCI
-> > -       def_bool SPI_PXA2XX && X86_32 && PCI
-> > +       def_tristate SPI_PXA2XX && PCI
-> >
-> 
-> Generally looks good to me, I think we could split the changes to
-> 
-> * Kconfig (adding 64-bit support or removing restrictions of X86_32
-> for the driver)
-> * and to spi-pxa2xx.c (mostly to handle the alignment warnings)
+On Sat, Jan 5, 2013 at 3:38 AM, Wenyou Yang <wenyou.yang@atmel.com> wrote:
+> Using module_platform_driver() replaces module_init() and module_exit()
+> and makes the code simpler.
+>
+> Remove '__init' annotation from the function 'at91wdt_probe'
+> since the driver becomes hot-plug aware now.
+>
+> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+> Cc: wim@iguana.be
+> Cc: linux-watchdog@vger.kernel.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  drivers/watchdog/at91sam9_wdt.c |   16 +++-------------
+>  1 file changed, 3 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/watchdog/at91sam9_wdt.c b/drivers/watchdog/at91sam9_wdt.c
+> index 94be9d6..7c13dda 100644
+> --- a/drivers/watchdog/at91sam9_wdt.c
+> +++ b/drivers/watchdog/at91sam9_wdt.c
+> @@ -204,7 +204,7 @@ static struct watchdog_device at91wdt_wdd = {
+>         .ops = &at91wdt_ops,
+>  };
+>
+> -static int __init at91wdt_probe(struct platform_device *pdev)
+> +static int at91wdt_probe(struct platform_device *pdev)
+>  {
+>         struct at91wdt_drvdata *driver_data;
+>         struct resource *r;
+> @@ -273,6 +273,7 @@ MODULE_DEVICE_TABLE(of, at91_wdt_dt_ids);
+>  #endif
+>
+>  static struct platform_driver at91wdt_driver = {
+> +       .probe          = at91wdt_probe,
+>         .remove         = __exit_p(at91wdt_remove),
+>         .driver         = {
+>                 .name   = "at91_wdt",
+> @@ -281,18 +282,7 @@ static struct platform_driver at91wdt_driver = {
+>         },
+>  };
+>
+> -static int __init at91sam_wdt_init(void)
+> -{
+> -       return platform_driver_probe(&at91wdt_driver, at91wdt_probe);
+> -}
+> -
+> -static void __exit at91sam_wdt_exit(void)
+> -{
+> -       platform_driver_unregister(&at91wdt_driver);
+> -}
+> -
+> -module_init(at91sam_wdt_init);
+> -module_exit(at91sam_wdt_exit);
+> +module_platform_driver(at91wdt_driver);
+>
+>  MODULE_AUTHOR("Renaud CERRATO <r.cerrato@til-technologies.fr>");
+>  MODULE_DESCRIPTION("Watchdog driver for Atmel AT91SAM9x processors");
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-watchdog" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-OK.
+The module_platform_driver isn't a substitute of platform_driver_probe,
+because module_platform_driver  use platform_driver_register/unregister.
+Using that macro we lose the advantage of platform_driver_probe,
+as stated in:
 
-> 
-> >  config SPI_RSPI
-> >         tristate "Renesas RSPI controller"
-> > diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
-> > index 5c8c4f5..7fac65d 100644
-> > --- a/drivers/spi/spi-pxa2xx.c
-> > +++ b/drivers/spi/spi-pxa2xx.c
-> > @@ -47,7 +47,7 @@ MODULE_ALIAS("platform:pxa2xx-spi");
-> >
-> >  #define DMA_INT_MASK           (DCSR_ENDINTR | DCSR_STARTINTR | DCSR_BUSERR)
-> >  #define RESET_DMA_CHANNEL      (DCSR_NODESC | DMA_INT_MASK)
-> > -#define IS_DMA_ALIGNED(x)      ((((u32)(x)) & 0x07) == 0)
-> > +#define IS_DMA_ALIGNED(x)      IS_ALIGNED((unsigned long)x, DMA_ALIGNMENT)
-> 
-> OK.
-> 
-> >  #define MAX_DMA_LEN            8191
-> >  #define DMA_ALIGNMENT          8
-> >
-> > @@ -1569,8 +1569,7 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
-> >         master->transfer = transfer;
-> >
-> >         drv_data->ssp_type = ssp->type;
-> > -       drv_data->null_dma_buf = (u32 *)ALIGN((u32)(drv_data +
-> > -                                               sizeof(struct driver_data)), 8);
-> > +       drv_data->null_dma_buf = (u32 *)PTR_ALIGN(drv_data + 1, 8);
-> 
-> Hmm... the original code seems to have big problem and interestingly no
-> one has reported the issue, possibly due to null_dma_buf being seldomly
-> used.
-> 
-> However, it's still a bit obscure to have 'drv_data + 1', 'drv_data[1]' might
-> be a bit better for readability.
-> 
-> And it'll be better to have DMA_ALIGNTMENT here instead of a hard-coded
-> constant '8'.
->     u
+https://lkml.org/lkml/2012/1/10/335
+On Tue, Jan 10, 2012 at 21:47, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> [...]
+>Still, setting up platform_driver.probe and removing __init from all probe
+>functions is not the right thing to do, as this make (non-__init) kernel code
+>size bigger, while none of these devices are hotpluggable and thus cannot
+>appear after bootup. That's why we have platform_driver_probe() in the
+>first place. So I think all of this should be reverted for non-hotpluggable
+>drivers.
+> [...]
 
-Sure, I'll change that.
+Best regards
 
-Thanks for your comments.
+--
+Fabio Porcedda
