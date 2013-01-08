@@ -1,72 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab3AHIXD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 03:23:03 -0500
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:9034 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754398Ab3AHIXA (ORCPT
+	id S1754831Ab3AHIZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 03:25:29 -0500
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54666 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754476Ab3AHIZ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 03:23:00 -0500
-X-IronPort-AV: E=Sophos;i="4.84,430,1355126400"; 
-   d="scan'208";a="18528802"
-Message-ID: <50EBD75F.7050805@codeaurora.org>
-Date: Tue, 08 Jan 2013 10:22:55 +0200
-From: Konstantin Dorfman <kdorfman@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 8 Jan 2013 03:25:28 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.8.4
+Message-ID: <50EBD7C0.4010100@jp.fujitsu.com>
+Date: Tue, 08 Jan 2013 17:24:32 +0900
+From: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: "Zhang, YiX X" <yix.x.zhang@intel.com>
-CC: "cjb@laptop.org" <cjb@laptop.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mmc: correct the EXCEPTION_EVENTS_STATUS vaule comment
-References: <1A230AD7863570458C6CF2BE7CD6618B102BE5CB@SHSMSX102.ccr.corp.intel.com>
-In-Reply-To: <1A230AD7863570458C6CF2BE7CD6618B102BE5CB@SHSMSX102.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Anton Vorontsov <anton.vorontsov@linaro.org>
+CC: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, kernel-team@android.com
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+References: <20130104082751.GA22227@lizard.gateway.2wire.net> <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org> <50EA8CA2.7020608@jp.fujitsu.com> <20130108072935.GA15431@lizard.gateway.2wire.net>
+In-Reply-To: <20130108072935.GA15431@lizard.gateway.2wire.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-May be it is worth to change all this struct comments to be:
-
-u8	raw_exception_status;	/* EXT_CSD_EXP_EVENTS_STATUS */
-
-This will reference actual offset value from "include/linux/mmc/mmc.h"
-
-Thanks,
-
-On 01/08/2013 08:07 AM, Zhang, YiX X wrote:
->  From aaea3405944d844f53679b295d4082584f33d9a3 Mon Sep 17 00:00:00 2001
-> From: ZhangYi <yix.x.zhang@intel.com>
-> Date: Tue, 8 Jan 2013 13:50:09 +0800
-> Subject: [PATCH] mmc: correct the EXCEPTION_EVENTS_STATUS vaule comment
+(2013/01/08 16:29), Anton Vorontsov wrote:
+> On Mon, Jan 07, 2013 at 05:51:46PM +0900, Kamezawa Hiroyuki wrote:
+> [...]
+>> I'm just curious..
 >
-> The right value is 54 according to eMMC 4.5 specification.
+> Thanks for taking a look! :)
 >
-> Signed-off-by: ZhangYi <yix.x.zhang@intel.com>
-> ---
->   include/linux/mmc/card.h |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+> [...]
+>>> +/*
+>>> + * The window size is the number of scanned pages before we try to analyze
+>>> + * the scanned/reclaimed ratio (or difference).
+>>> + *
+>>> + * It is used as a rate-limit tunable for the "low" level notification,
+>>> + * and for averaging medium/oom levels. Using small window sizes can cause
+>>> + * lot of false positives, but too big window size will delay the
+>>> + * notifications.
+>>> + */
+>>> +static const uint vmpressure_win = SWAP_CLUSTER_MAX * 16;
+>>> +static const uint vmpressure_level_med = 60;
+>>> +static const uint vmpressure_level_oom = 99;
+>>> +static const uint vmpressure_level_oom_prio = 4;
+>>> +
+>>
+>> Hmm... isn't this window size too small ?
+>> If vmscan cannot find a reclaimable page while scanning 2M of pages in a zone,
+>> oom notify will be returned. Right ?
 >
-> diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-> index 5c69315..ffde1d3 100644
-> --- a/include/linux/mmc/card.h
-> +++ b/include/linux/mmc/card.h
-> @@ -83,7 +83,7 @@ struct mmc_ext_csd {
->   	unsigned int            data_tag_unit_size;     /* DATA TAG UNIT size */
->   	unsigned int		boot_ro_lock;		/* ro lock support */
->   	bool			boot_ro_lockable;
-> -	u8			raw_exception_status;	/* 53 */
-> +	u8			raw_exception_status;	/* 54 */
->   	u8			raw_partition_support;	/* 160 */
->   	u8			raw_rpmb_size_mult;	/* 168 */
->   	u8			raw_erased_mem_count;	/* 181 */
+> Yup, you are right, if we were not able to find anything within the window
+> size (which is 2M, but see below), then it is effectively the "OOM level".
+> The thing is, the vmpressure reports... the pressure. :) Or, the
+> allocation cost, and if the cost becomes high, it is no good.
+>
+> The 2M is, of course, not ideal. And the "ideal" depends on many factors,
+> alike to vmstat. And, actually I dream about deriving the window size from
+> zone->stat_threshold, which would make the window automatically adjustable
+> for different "machine sizes" (as we do in calculate_normal_threshold(),
+> in vmstat.c).
+>
+> But again, this is all "implementation details"; tunable stuff that we can
+> either adjust ourselves as needed, or try to be smart, i.e. apply some
+> heuristics, again, as in vmstat.
 >
 
+Hmm, I like automatic adjustment for things like this (but may be need to be tunable by
+user). My concern is, for example, that if a qemu-kvm with pci-passthrough running on
+a node using the most of memory on it, the interface will say "Hey it's near to OOM"
+to users. We may need a complicated heuristics ;)
 
--- 
-Konstantin Dorfman,
-QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center,
-Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Anyway, your approach seems interesting to me but it seems peaky to usual users.
+Uses should know what they should check (vmstat, zoneinfo, malloc latency ??) when they
+get notify before rising real alarm. (not explained in the doc.)
+For example, if the user takes care of usage of swap, he should check it.
+
+I'm glad if you explain in Doc that this interface just makes a hint and notify status
+of _recent_ vmscans of some amount of window. That means latency of recent memory allocations.
+Users should confirm the real status and make the final judge by themselves.
+The point is that this notify is important because it's quick and related to ongoing memory
+allocation latency. But kernel is not sure there are long-standing heavy vm pressure.
+
+I'm sorry if I misundestand the concept.
+
+Thank you,
+-Kame
+
+
+
+  
+
+
