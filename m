@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756715Ab3AHPog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 10:44:36 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:44465 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756683Ab3AHPoe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 10:44:34 -0500
-Date: Tue, 8 Jan 2013 16:44:31 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] EDAC fixes for 3.8
-Message-ID: <20130108154430.GB14536@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-edac <linux-edac@vger.kernel.org>,
-	lkml <linux-kernel@vger.kernel.org>
+	id S1756555Ab3AHPvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 10:51:24 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:34934 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756299Ab3AHPvV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 10:51:21 -0500
+Date: Tue, 8 Jan 2013 10:51:20 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Josh Boyer <jwboyer@redhat.com>
+cc: gregkh@linuxfoundation.org, <laurent.pinchart@ideasonboard.com>,
+        <mdharm-usb@one-eyed-alien.net>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: USB autosuspend vs. URB submission
+In-Reply-To: <20130107204220.GB12363@hansolo.jdub.homelinux.org>
+Message-ID: <Pine.LNX.4.44L0.1301081047170.1535-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, 7 Jan 2013, Josh Boyer wrote:
 
-please pull the 3 fixes below.
+> Hi,
+> 
+> We've had a few reports in Fedora of users hitting the WARN_ONCE in
+> drivers/usb/core/urb.c that prints a warning about a usb_submit_urb
+> being called on an active URB.  One of them[1] is from the ums_realtek
+> driver and the other[2] is from the uvcvideo driver.  However, I noticed
+> that in both instances it seems the devices were coming back from what I
+> think is autosuspend.
+> 
+> I didn't immediately find any similar reports, and to my rather
+> inexperienced eyes the drivers didn't seem to be doing anything clearly
+> wrong.  I'm wondering if anyone has some possible ideas for debugging
+> and whether or not this might be a general issue?
 
-Thanks.
+I don't see anything wrong either.
 
-The following changes since commit d1c3ed669a2d452cacfb48c2d171a1f364dae2ed:
+Can you ask the users to collect a usbmon trace covering the period 
+when the problem occurs?
 
-  Linux 3.8-rc2 (2013-01-02 18:13:21 -0800)
+Alan Stern
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/edac_fixes_for_3.8
-
-for you to fetch changes up to 44d22e2404b3ce93a314654962d31acc8afcdd62:
-
-  EDAC: Cleanup device deregistering path (2013-01-07 17:43:00 +0100)
-
-----------------------------------------------------------------
-Two error path fixes causing a crash and a Kconfig fix for an issue
-which spilled all EDAC suboptions into the 'Device Drivers' menu.
-
-----------------------------------------------------------------
-Borislav Petkov (1):
-      EDAC: Fix EDAC Kconfig menu
-
-Konstantin Khlebnikov (1):
-      EDAC: Fix kernel panic on module unloading
-
-Lans Zhang (1):
-      EDAC: Cleanup device deregistering path
-
- drivers/edac/Kconfig         |  8 +++-----
- drivers/edac/edac_mc_sysfs.c | 19 ++++++-------------
- 2 files changed, 9 insertions(+), 18 deletions(-)
-
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
