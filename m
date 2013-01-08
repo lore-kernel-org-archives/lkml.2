@@ -1,74 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab3AHE1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 23:27:54 -0500
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:36399 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241Ab3AHE1w (ORCPT
+	id S1753002Ab3AHE3A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 23:29:00 -0500
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:40504 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab3AHE26 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 23:27:52 -0500
-X-IronPort-AV: E=Sophos;i="4.84,428,1355126400"; 
-   d="scan'208";a="18367372"
-Date: Mon, 7 Jan 2013 20:27:50 -0800
-From: Srivatsa Vaddagiri <vatsa@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Mike Frysinger <vapier@gentoo.org>,
-        uclinux-dist-devel@blackfin.uclinux.org,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        sparclinux@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, mhocko@suse.cz, srivatsa.bhat@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 1/2] cpuhotplug/nohz: Remove offline cpus from
- nohz-idle state
-Message-ID: <20130108042750.GA18214@quicinc.com>
-Reply-To: Srivatsa Vaddagiri <vatsa@codeaurora.org>
-References: <1357268318-7993-1-git-send-email-vatsa@codeaurora.org>
- <20130105103627.GU2631@n2100.arm.linux.org.uk>
+	Mon, 7 Jan 2013 23:28:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20130105103627.GU2631@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20130107173557.dadc0a7a.akpm@linux-foundation.org>
+References: <000b01cdea55$92725aa0$b7570fe0$%han@samsung.com>
+	<20130107160137.dec5098a.akpm@linux-foundation.org>
+	<003c01cded3f$0f25a3e0$2d70eba0$%han@samsung.com>
+	<20130107173557.dadc0a7a.akpm@linux-foundation.org>
+Date: Mon, 7 Jan 2013 23:28:57 -0500
+Message-ID: <CAHdPZaMDcVsWX8S5Te3nYtWYNqzK4G4+7D9HkE=JFjZ3bHq7KQ@mail.gmail.com>
+Subject: Re: [PATCH] backlight: check null deference of name when device is registered
+From: "devendra.aaru" <devendra.aaru@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-fbdev@vger.kernel.org, Richard Purdie <rpurdie@rpsys.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [2013-01-05 10:36:27]:
+On Mon, Jan 7, 2013 at 8:35 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Tue, 08 Jan 2013 10:25:35 +0900 Jingoo Han <jg1.han@samsung.com> wrote:
+>
+>> On Tuesday, January 08, 2013 9:02 AM, Andrew Morton wrote
+>> > On Fri, 04 Jan 2013 17:29:11 +0900
+>> > Jingoo Han <jg1.han@samsung.com> wrote:
+>> >
+>> > > NULL deference of name is checked when device is registered.
+>> > > If the name is null, it will cause a kernel oops in dev_set_name().
+>> > >
+>> > > ...
+>> > >
+>> > > --- a/drivers/video/backlight/backlight.c
+>> > > +++ b/drivers/video/backlight/backlight.c
+>> > > @@ -292,6 +292,11 @@ struct backlight_device *backlight_device_register(const char *name,
+>> > >   struct backlight_device *new_bd;
+>> > >   int rc;
+>> > >
+>> > > + if (name == NULL) {
+>> > > +         pr_err("backlight name is null\n");
+>> > > +         return ERR_PTR(-EINVAL);
+>> > > + }
+>> > > +
+>> > >   pr_debug("backlight_device_register: name=%s\n", name);
+>> >
+>> > I don't understand this.
+>> >
+>> > Is there some driver which is calling these functions with name=NULL?
+>> > If so, which one(s)?
+>>
+>> No, there is no one.
+>>
+>> >
+>> > If "no" then why don't we declare that "passing name=NULL is a bug" and
+>> > leave the code as-is?
+>>
+>> Do you mean following?
+>>
+>> +     if (name == NULL)
+>> +             pr_err("passing name=NULL is a bug");
+>> +
+>>       pr_debug("backlight_device_register: name=%s\n", name);
+>
+> Nope; I'm suggesting we leave the code alone.  If someone passes in
+> NULL they will get a nice oops and their bug will then get fixed.
+>
 
-> On Thu, Jan 03, 2013 at 06:58:38PM -0800, Srivatsa Vaddagiri wrote:
-> > I also think that the
-> > wait_for_completion() based wait in ARM's __cpu_die() can be replaced with a
-> > busy-loop based one, as the wait there in general should be terminated within
-> > few cycles.
-> 
-> Why open-code this stuff when we have infrastructure already in the kernel
-> for waiting for stuff to happen?  I chose to use the standard infrastructure
-> because its better tested, and avoids having to think about whether we need
-> CPU barriers and such like to ensure that updates are seen in a timely
-> manner.
+We still fail the probe in the patch Jingoo Han sent,
+anyways if i catch your point correctly is this the lines you wanted?
 
-I was primarily thinking of calling as few generic functions as possible on
-a dead cpu. I recall several "am I running on a dead cpu?" checks
-(cpu_is_offline(this_cpu) that were put in generic routines during early
-versions of cpu hotplug [1] to educate code running on dead cpu, the need for
-which went away though with introduction of atomic/stop-machine variant. The
-need to add a RCU_NONIDLE() wrapper around ARM's cpu_die() [2] is perhaps a more
-recent example of educating code running on dead cpu. As quickly we die as
-possible after idle thread of dying cpu gains control, the better!
-
-1. http://lwn.net/Articles/69040/
-2. http://lists.infradead.org/pipermail/linux-arm-kernel/2012-July/107971.html
-
-- vatsa
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
++ /**
++  * BUG if the name of the backlight device
++  * is a NULL
++  */
++ BUG_ON(!name);
