@@ -1,72 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab3AHMNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 07:13:14 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41948 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab3AHMNL (ORCPT
+	id S1756162Ab3AHMOD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 07:14:03 -0500
+Received: from e32.co.us.ibm.com ([32.97.110.150]:42581 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab3AHMOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 07:13:11 -0500
-Date: Tue, 8 Jan 2013 12:13:00 +0000
-From: Russell King <rmk@arm.linux.org.uk>
-To: "J. Bruce Fields" <bfields@redhat.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Commit 7032a3dd9 (svcrpc: demote some printks to a dprintk) adds
-	warnings
-Message-ID: <20130108121300.GA2251@flint.arm.linux.org.uk>
+	Tue, 8 Jan 2013 07:14:01 -0500
+Date: Tue, 8 Jan 2013 17:43:28 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/7] uprobes: Fix utask->xol_vaddr leak in pre_ssout()
+Message-ID: <20130108121328.GH1325@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121231175150.GA32066@redhat.com>
+ <20121231175226.GA32108@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20121231175226.GA32108@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010812-5406-0000-0000-000003FE3648
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruce,
+* Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:26]:
 
-Your commit below causes a new build warning in the kernel:
+> pre_ssout() should do xol_free_insn_slot() if arch_uprobe_pre_xol()
+> fails, otherwise nobody will free the allocated slot.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-net/sunrpc/svc.c: In function 'svc_printk':
-net/sunrpc/svc.c:1050:7: warning: unused variable 'buf'
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 
-which affects all ARM builds; it is the only warning in a lot of cases.
-Please can you resolve this new warning using whatever method you feel
-is most appropriate, thanks.
+(one nit below)
+> ---
+>  kernel/events/uprobes.c |    9 ++++++++-
+>  1 files changed, 8 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 2ed6239..bd94d2c 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1306,6 +1306,7 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
+>  {
+>  	struct uprobe_task *utask;
+>  	unsigned long xol_vaddr;
+> +	int err;
+> 
+>  	utask = current->utask;
+> 
+> @@ -1316,7 +1317,13 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
+>  	utask->xol_vaddr = xol_vaddr;
+>  	utask->vaddr = bp_vaddr;
+> 
+> -	return arch_uprobe_pre_xol(&uprobe->arch, regs);
+> +	err = arch_uprobe_pre_xol(&uprobe->arch, regs);
+> +	if (unlikely(err)) {
+> +		xol_free_insn_slot(current);
+> +		return err;
+> +	}
+> +
+> +	return 0;
+>  }
 
-commit 7032a3dd923f434132643321ad5faad128611f9e
-Author: J. Bruce Fields <bfields@redhat.com>
-Date:   Tue Oct 9 18:33:38 2012 -0400
+Nit: we could reduce a line or two with
 
-    svcrpc: demote some printks to a dprintk
-    
-    In general I'd rather random bad behavior on the network won't trigger a
-    printk.
-    
-    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+	err = arch_uprobe_pre_xol(&uprobe->arch, regs);
+	if (unlikely(err))
+		xol_free_insn_slot(current);
 
-diff --git a/net/sunrpc/svc.c b/net/sunrpc/svc.c
-index 3ee7461..be301e1 100644
---- a/net/sunrpc/svc.c
-+++ b/net/sunrpc/svc.c
-@@ -1035,7 +1035,7 @@ static void svc_unregister(const struct svc_serv *serv, struct net *net)
- }
- 
- /*
-- * Printk the given error with the address of the client that caused it.
-+ * dprintk the given error with the address of the client that caused it.
-  */
- static __printf(2, 3)
- void svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
-@@ -1049,8 +1049,7 @@ void svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
-        vaf.fmt = fmt;
-        vaf.va = &args;
- 
--       net_warn_ratelimited("svc: %s: %pV",
--                            svc_print_addr(rqstp, buf, sizeof(buf)), &vaf);
-+       dprintk("svc: %s: %pV", svc_print_addr(rqstp, buf, sizeof(buf)), &vaf);
- 
-        va_end(args);
- }
+	return err;
+> 
+>  /*
+> -- 
+> 1.5.5.1
+> 
 
--- 
-Russell King
