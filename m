@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab3AHQab (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 11:30:31 -0500
-Received: from shutemov.name ([204.155.152.216]:37696 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753271Ab3AHQaa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 11:30:30 -0500
-Date: Tue, 8 Jan 2013 18:31:41 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>
-Subject: Re: oops in copy_page_rep()
-Message-ID: <20130108163141.GA27555@shutemov.name>
-References: <20130105152208.GA3386@redhat.com>
- <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
- <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
- <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
- <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
- <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
- <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
+	id S1756600Ab3AHQjs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 11:39:48 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:47492 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380Ab3AHQjq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 11:39:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAAJw_Zv8O1LPX-jmpg3fvNrWMLWbQC=1tbZ6T7nsm6cyC008fg@mail.gmail.com>
+References: <CAAJw_Zv8O1LPX-jmpg3fvNrWMLWbQC=1tbZ6T7nsm6cyC008fg@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 Jan 2013 08:39:24 -0800
+X-Google-Sender-Auth: 7TEL2O0Szey98dTM0DFD0JRu0Eg
+Message-ID: <CA+55aFxXAMz5Sg44e-TJ0P=LY+3VkfdNtZMS3EJEHdztY2kC0Q@mail.gmail.com>
+Subject: Re: 2nd attempt: help with dma_alloc_coherent() + dma_free_coherent()
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 07:37:06AM -0800, Linus Torvalds wrote:
-> On Tue, Jan 8, 2013 at 5:04 AM, Hillf Danton <dhillf@gmail.com> wrote:
-> > On Tue, Jan 8, 2013 at 1:34 AM, Linus Torvalds
-> > <torvalds@linux-foundation.org> wrote:
-> >>
-> >> Hmm. Is there some reason we never need to worry about it for the
-> >> "pmd_numa()" case just above?
-> >>
-> >> A comment about this all might be a really good idea.
-> >>
-> > Yes Sir, added.
-> 
-> Heh. I was more thinking about why do_huge_pmd_wp_page() needs it, but
-> do_huge_pmd_numa_page() does not.
+On Tue, Jan 8, 2013 at 7:51 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+> No response so far ... I'm sure someone know this stuff ...  Thanks, Jeff.
+>
+> I'm trying to understand how this oops in the diva driver and it's just a
+> simple dma_alloc_coherent() followed by dma_free_coherent(), but it oops.
+> Why?
 
-It does. The check should be moved up.
+Umm. You're using a NULL 'dev' pointer?
 
-> Also, do we actually need it for huge_pmd_set_accessed()? The
-> *placement* of that thing confuses me. And because it confuses me, I'd
-> like to understand it.
+iommu_no_mapping() will look if the device is a PCI device, and that's
+where it oopses.
 
-We need it for huge_pmd_set_accessed() too.
+Now, it looks like some users "know" that the device doesn't matter
+(which is true on some platforms), but that's bogus. The device is how
+you even find out what the rules for DMA access are (see for example
+dma_set_mask() etc), so giving a NULL device is insane.
 
-Looks like a mis-merge. The original patch for huge_pmd_set_accessed() was
-correct: http://lkml.org/lkml/2012/10/25/402
-
--- 
- Kirill A. Shutemov
+              Linus
