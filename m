@@ -1,102 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753491Ab3AHVHq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:07:46 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:46933 "EHLO e8.ny.us.ibm.com"
+	id S1753716Ab3AHVIB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:08:01 -0500
+Received: from mga09.intel.com ([134.134.136.24]:29241 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112Ab3AHVHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:07:45 -0500
-Date: Tue, 8 Jan 2013 13:00:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 03/33] cputime: Generic on-demand virtual cputime
- accounting
-Message-ID: <20130108210035.GS2525@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
- <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
- <1357676771.5190.29.camel@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357676771.5190.29.camel@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010821-9360-0000-0000-00000EEC1793
+	id S1751112Ab3AHVH7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 16:07:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,433,1355126400"; 
+   d="scan'208";a="243604820"
+From: Tomas Winkler <tomas.winkler@intel.com>
+To: gregkh@linuxfoundation.org
+Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
+        Tomas Winkler <tomas.winkler@intel.com>
+Subject: [char-misc-next 00/21] MEI restructuring
+Date: Tue,  8 Jan 2013 23:07:11 +0200
+Message-Id: <1357679252-12958-1-git-send-email-tomas.winkler@intel.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 03:26:11PM -0500, Steven Rostedt wrote:
-> On Tue, 2013-01-08 at 03:08 +0100, Frederic Weisbecker wrote:
-> 
-> > diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-> > index c952770..bd461ad 100644
-> > --- a/kernel/context_tracking.c
-> > +++ b/kernel/context_tracking.c
-> > @@ -56,7 +56,7 @@ void user_enter(void)
-> >  	local_irq_save(flags);
-> >  	if (__this_cpu_read(context_tracking.active) &&
-> >  	    __this_cpu_read(context_tracking.state) != IN_USER) {
-> > -		__this_cpu_write(context_tracking.state, IN_USER);
-> > +		vtime_user_enter(current);
-> >  		/*
-> >  		 * At this stage, only low level arch entry code remains and
-> >  		 * then we'll run in userspace. We can assume there won't be
-> > @@ -65,6 +65,7 @@ void user_enter(void)
-> >  		 * on the tick.
-> >  		 */
-> >  		rcu_user_enter();
-> 
-> Hmm, the rcu_user_enter() can do quite a bit. Too bad we are accounting
-> it as user time. I wonder if we could move the vtime_user_enter() below
-> it. But then if vtime_user_enter() calls rcu_read_lock() it breaks.
+This series contains some initial restructuring
+of the MEI driver. It tries to make cleaner
+lines between ME hardware, Host Bust Messaging,
+and Client Management layers. For sake of that
+we have moved functions around and renamed some
+files. 
 
-If RCU_FAST_NO_HZ=y, the current mainline rcu_user_enter() can be a
-bit expensive.  It is going on a diet for 3.9, however.
 
-But there is a lower limit because the CPU moving to adaptive-tick user
-mode must reliably inform other CPUs of this, which involves some
-overhead due to memory-ordering issues.
+Tomas Winkler (21):
+  mei: add new hbm.h header to export hbm protocol
+  mei: move client functions to client.c
+  mei: fix client functions names
+  mei: implement mei_cl_connect function
+  mei: move watchdog prototypes to mei_dev.h from interface.h
+  mei: rename interface to hw-me
+  mei: drop read_pending member form struct mei_cl
+  mei: move me client storage allocation to hbm.c
+  mei: mei_dev.h - remove prototypes of dropped functions
+  mei: rename remaining amthi strings to amthif
+  mei: normalize me host client linking routines
+  mei: move MEI_IAMTHIF_IDLE to amthif host init function
+  mei: hw-me.c fix kernel doc
+  mei: remove write only need_reset member of struct mei_device
+  mei: remove mei_csr_clear_his prototype
+  mei: don't use cached value for hcsr in mei_hw_reset
+  mei: use non cached hcsr for interrupt enablement
+  mei: abstract host and device readieness
+  mei: reenable mei_hcsr_set abstraction
+  mei: make host csr and me csr internal to hw-me
+  mei: move work initialization to mei_device_init
 
-							Thanx, Paul
+ drivers/misc/mei/Makefile                 |    4 +-
+ drivers/misc/mei/amthif.c                 |  112 +++--
+ drivers/misc/mei/client.c                 |  678 +++++++++++++++++++++++++++++
+ drivers/misc/mei/client.h                 |   97 ++++
+ drivers/misc/mei/hbm.c                    |   42 ++-
+ drivers/misc/mei/hbm.h                    |   39 ++
+ drivers/misc/mei/hw-me-regs.h             |  167 +++++++
+ drivers/misc/mei/{interface.c => hw-me.c} |  241 +++++------
+ drivers/misc/mei/hw-me.h                  |  181 ++-------
+ drivers/misc/mei/init.c                   |  405 ++----------------
+ drivers/misc/mei/interface.h              |   83 ----
+ drivers/misc/mei/interrupt.c              |   37 +-
+ drivers/misc/mei/iorw.c                   |  366 ----------------
+ drivers/misc/mei/main.c                   |  184 ++++++---
+ drivers/misc/mei/mei_dev.h                |  115 ++----
+ drivers/misc/mei/wd.c                     |   49 ++-
+ 16 files changed, 1468 insertions(+), 1332 deletions(-)
+ create mode 100644 drivers/misc/mei/client.c
+ create mode 100644 drivers/misc/mei/client.h
+ create mode 100644 drivers/misc/mei/hbm.h
+ create mode 100644 drivers/misc/mei/hw-me-regs.h
+ rename drivers/misc/mei/{interface.c => hw-me.c} (68%)
+ delete mode 100644 drivers/misc/mei/interface.h
+ delete mode 100644 drivers/misc/mei/iorw.c
 
-> The notorious chicken vs egg ordeal!
-> 
-> -- Steve
-> 
-> > +		__this_cpu_write(context_tracking.state, IN_USER);
-> >  	}
-> >  	local_irq_restore(flags);
-> >  }
-> > @@ -90,12 +91,13 @@ void user_exit(void)
-> >  
-> >  	local_irq_save(flags);
-> >  	if (__this_cpu_read(context_tracking.state) == IN_USER) {
-> > -		__this_cpu_write(context_tracking.state, IN_KERNEL);
-> >  		/*
-> >  		 * We are going to run code that may use RCU. Inform
-> >  		 * RCU core about that (ie: we may need the tick again).
-> >  		 */
-> >  		rcu_user_exit();
-> > +		vtime_user_exit(current);
-> > +		__this_cpu_write(context_tracking.state, IN_KERNEL);
-> >  	}
-> >  	local_irq_restore(flags);
-> >  }
-> 
-> 
+-- 
+1.7.4.4
 
