@@ -1,68 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab3AHLZK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:25:10 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:45621 "EHLO e8.ny.us.ibm.com"
+	id S1756210Ab3AHL1N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:27:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53150 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab3AHLZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:25:08 -0500
-Date: Tue, 8 Jan 2013 16:54:22 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
-        Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] uprobes/x86: Change __skip_sstep() to actually
- skip	the whole insn
-Message-ID: <20130108112422.GB1325@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20121230154657.GA28488@redhat.com>
- <20121230154719.GA28510@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20121230154719.GA28510@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010811-9360-0000-0000-00000EE54EFC
+	id S1756114Ab3AHL1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 06:27:12 -0500
+From: Tomas Hozza <thozza@redhat.com>
+To: gregkh@linuxfoundation.org
+Cc: kys@microsoft.com, jasowang@redhat.com, haiyangz@microsoft.com,
+        linux-kernel@vger.kernel.org, habdi@microsoft.com,
+        Tomas Hozza <thozza@redhat.com>
+Subject: [PATCH 1/2] tools: hv: Fix how ifcfg-* file is created
+Date: Tue,  8 Jan 2013 12:26:42 +0100
+Message-Id: <1357644403-11140-1-git-send-email-thozza@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-12-30 16:47:19]:
+Fix for the daemon code and for hv_set_ifconfig.sh script, so
+that the created ifcfg-* file is consistent with initscripts
+documentation.
 
-> __skip_sstep() doesn't update regs->ip. Currently this is correct
-> but only "by accident" and it doesn't skip the whole insn. Change
-> it to advance ->ip by the length of the detected 0x66*0x90 sequence.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Tomas Hozza <thozza@redhat.com>
+---
+ tools/hv/hv_kvp_daemon.c    | 73 ++++++++++++++++++++++-----------------------
+ tools/hv/hv_set_ifconfig.sh | 22 ++++++--------
+ 2 files changed, 44 insertions(+), 51 deletions(-)
 
-Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-
-> ---
->  arch/x86/kernel/uprobes.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> index c71025b..4e33a35 100644
-> --- a/arch/x86/kernel/uprobes.c
-> +++ b/arch/x86/kernel/uprobes.c
-> @@ -680,8 +680,11 @@ static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
->  		if (auprobe->insn[i] == 0x66)
->  			continue;
-> 
-> -		if (auprobe->insn[i] == 0x90)
-> +		if (auprobe->insn[i] == 0x90) {
-> +			regs->ip = uprobe_get_swbp_addr(regs);
-> +			regs->ip += i + 1;
->  			return true;
-> +		}
-> 
->  		break;
->  	}
-> -- 
-> 1.5.5.1
-> 
+diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
+index d25a469..6b56b75 100644
+--- a/tools/hv/hv_kvp_daemon.c
++++ b/tools/hv/hv_kvp_daemon.c
+@@ -1162,16 +1162,13 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
+ 				snprintf(str, sizeof(str), "%s", "DNS");
+ 				break;
+ 			}
+-			if (i != 0) {
+-				if (type != DNS) {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"_%d", i++);
+-				} else {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"%d", ++i);
+-				}
+-			} else if (type == DNS) {
++			
++			if (type == DNS) {
+ 				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
++			} else if (type == GATEWAY && i == 0) {
++				++i;
++			} else {
++				snprintf(sub_str, sizeof(sub_str), "%d", i++);
+ 			}
+ 
+ 
+@@ -1191,17 +1188,13 @@ static int process_ip_string(FILE *f, char *ip_string, int type)
+ 				snprintf(str, sizeof(str), "%s",  "DNS");
+ 				break;
+ 			}
+-			if ((j != 0) || (type == DNS)) {
+-				if (type != DNS) {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"_%d", j++);
+-				} else {
+-					snprintf(sub_str, sizeof(sub_str),
+-						"%d", ++i);
+-				}
+-			} else if (type == DNS) {
+-				snprintf(sub_str, sizeof(sub_str),
+-					"%d", ++i);
++			
++			if (type == DNS) {
++				snprintf(sub_str, sizeof(sub_str), "%d", ++i);
++			} else if (j == 0) {
++				++j;
++			} else {
++				snprintf(sub_str, sizeof(sub_str), "_%d", j++);
+ 			}
+ 		} else {
+ 			return  HV_INVALIDARG;
+@@ -1244,18 +1237,19 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 	 * Here is the format of the ip configuration file:
+ 	 *
+ 	 * HWADDR=macaddr
+-	 * IF_NAME=interface name
+-	 * DHCP=yes (This is optional; if yes, DHCP is configured)
++	 * DEVICE=interface name
++	 * BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is configured
++	 *                       or "none" if no boot-time protocol should be used)
+ 	 *
+-	 * IPADDR=ipaddr1
+-	 * IPADDR_1=ipaddr2
+-	 * IPADDR_x=ipaddry (where y = x + 1)
++	 * IPADDR0=ipaddr1
++	 * IPADDR1=ipaddr2
++	 * IPADDRx=ipaddry (where y = x + 1)
+ 	 *
+-	 * NETMASK=netmask1
+-	 * NETMASK_x=netmasky (where y = x + 1)
++	 * NETMASK0=netmask1
++	 * NETMASKx=netmasky (where y = x + 1)
+ 	 *
+ 	 * GATEWAY=ipaddr1
+-	 * GATEWAY_x=ipaddry (where y = x + 1)
++	 * GATEWAYx=ipaddry (where y = x + 1)
+ 	 *
+ 	 * DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
+ 	 *
+@@ -1294,20 +1288,23 @@ static int kvp_set_ip_info(char *if_name, struct hv_kvp_ipaddr_value *new_val)
+ 	if (error)
+ 		goto setval_error;
+ 
+-	error = kvp_write_file(file, "IF_NAME", "", if_name);
++	error = kvp_write_file(file, "DEVICE", "", if_name);
+ 	if (error)
+ 		goto setval_error;
+ 
+-	if (new_val->dhcp_enabled) {
+-		error = kvp_write_file(file, "DHCP", "", "yes");
+-		if (error)
+-			goto setval_error;
++	if (new_val->dhcp_enabled)
++		error = kvp_write_file(file, "BOOTPROTO", "", "dhcp");
++	else
++		error = kvp_write_file(file, "BOOTPROTO", "", "none");
++        
++	if (error)
++		goto setval_error;
++
++	/*
++	 * We are done!.
++	 */
++	goto setval_done;
+ 
+-		/*
+-		 * We are done!.
+-		 */
+-		goto setval_done;
+-	}
+ 
+ 	/*
+ 	 * Write the configuration for ipaddress, netmask, gateway and
+diff --git a/tools/hv/hv_set_ifconfig.sh b/tools/hv/hv_set_ifconfig.sh
+index 3e9427e..00b66be 100755
+--- a/tools/hv/hv_set_ifconfig.sh
++++ b/tools/hv/hv_set_ifconfig.sh
+@@ -20,18 +20,19 @@
+ # Here is the format of the ip configuration file:
+ #
+ # HWADDR=macaddr
+-# IF_NAME=interface name
+-# DHCP=yes (This is optional; if yes, DHCP is configured)
++# DEVICE=interface name
++# BOOTPROTO=<protocol> (where <protocol> is "dhcp" if DHCP is configured
++#                       or "none" if no boot-time protocol should be used)
+ #
+-# IPADDR=ipaddr1
+-# IPADDR_1=ipaddr2
+-# IPADDR_x=ipaddry (where y = x + 1)
++# IPADDR0=ipaddr1
++# IPADDR1=ipaddr2
++# IPADDRx=ipaddry (where y = x + 1)
+ #
+-# NETMASK=netmask1
+-# NETMASK_x=netmasky (where y = x + 1)
++# NETMASK0=netmask1
++# NETMASKx=netmasky (where y = x + 1)
+ #
+ # GATEWAY=ipaddr1
+-# GATEWAY_x=ipaddry (where y = x + 1)
++# GATEWAYx=ipaddry (where y = x + 1)
+ #
+ # DNSx=ipaddrx (where first DNS address is tagged as DNS1 etc)
+ #
+@@ -53,11 +54,6 @@ echo "NM_CONTROLLED=no" >> $1
+ echo "PEERDNS=yes" >> $1
+ echo "ONBOOT=yes" >> $1
+ 
+-dhcp=$(grep "DHCP" $1 2>/dev/null)
+-if [ "$dhcp" != "" ];
+-then
+-echo "BOOTPROTO=dhcp" >> $1;
+-fi
+ 
+ cp $1 /etc/sysconfig/network-scripts/
+ 
+-- 
+1.7.11.7
 
