@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3AHXkt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:40:49 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53840 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756473Ab3AHXkp (ORCPT
+	id S1757186Ab3AHXkZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:40:25 -0500
+Received: from mail.windriver.com ([147.11.1.11]:64295 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757135Ab3AHXkV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:40:45 -0500
+	Tue, 8 Jan 2013 18:40:21 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Robert Richter <robert.richter@amd.com>,
-        John Lumby <johnlumby@hotmail.com>,
-        Maynard Johnson <maynardj@us.ibm.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+CC: Richard Weinberger <richard@nod.at>, <namhyung@gmail.com>,
+        <davem@davemloft.net>, <fweisbec@gmail.com>, <dhowells@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 56/77] oprofile, x86: Fix nmi-unsafe callgraph support
-Date: Tue, 8 Jan 2013 18:35:35 -0500
-Message-ID: <1357688156-25387-57-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 76/77] x86: Get rid of asmregparm
+Date: Tue, 8 Jan 2013 18:35:55 -0500
+Message-ID: <1357688156-25387-77-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -26,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Robert Richter <robert.richter@amd.com>
+From: Richard Weinberger <richard@nod.at>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -34,148 +33,77 @@ From: Robert Richter <robert.richter@amd.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit a0e3e70243f5b270bc3eca718f0a9fa5e6b8262e upstream.
+commit 1b4ac2a935aaf194241a2f4165d6407ba9650e1a upstream.
 
-Backport for stable kernel v2.6.32.y to v2.6.36.y.
+As UML does no longer need asmregparm we can remove it.
 
-Current oprofile's x86 callgraph support may trigger page faults
-throwing the BUG_ON(in_nmi()) message below. This patch fixes this by
-using the same nmi-safe copy-from-user code as in perf.
-
-------------[ cut here ]------------
-kernel BUG at .../arch/x86/kernel/traps.c:436!
-invalid opcode: 0000 [#1] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:0a.0/0000:07:00.0/0000:08:04.0/net/eth0/broadcast
-CPU 5
-Modules linked in:
-
-Pid: 8611, comm: opcontrol Not tainted 2.6.39-00007-gfe47ae7 #1 Advanced Micro Device Anaheim/Anaheim
-RIP: 0010:[<ffffffff813e8e35>]  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
-RSP: 0000:ffff88042fd47f28  EFLAGS: 00010002
-RAX: ffff88042c0a7fd8 RBX: 0000000000000001 RCX: 00000000c0000101
-RDX: 00000000ffff8804 RSI: ffffffffffffffff RDI: ffff88042fd47f58
-RBP: ffff88042fd47f48 R08: 0000000000000004 R09: 0000000000001484
-R10: 0000000000000001 R11: 0000000000000000 R12: ffff88042fd47f58
-R13: 0000000000000000 R14: ffff88042fd47d98 R15: 0000000000000020
-FS:  00007fca25e56700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-CR2: 0000000000000074 CR3: 000000042d28b000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process opcontrol (pid: 8611, threadinfo ffff88042c0a6000, task ffff88042c532310)
-Stack:
- 0000000000000000 0000000000000001 ffff88042c0a7fd8 0000000000000000
- ffff88042fd47de8 ffffffff813e897a 0000000000000020 ffff88042fd47d98
- 0000000000000000 ffff88042c0a7fd8 ffff88042fd47de8 0000000000000074
-Call Trace:
- <NMI>
- [<ffffffff813e897a>] nmi+0x1a/0x20
- [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
- <<EOE>>
-Code: ff 59 5b 41 5c 41 5d c9 c3 55 65 48 8b 04 25 88 b5 00 00 48 89 e5 41 55 41 54 49 89 fc 53 48 83 ec 08 f6 80 47 e0 ff ff 04 74 04 <0f> 0b eb fe 81 80 44 e0 ff ff 00 00 01 04 65 ff 04 25 c4 0f 01
-RIP  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
- RSP <ffff88042fd47f28>
----[ end trace ed6752185092104b ]---
-Kernel panic - not syncing: Fatal exception in interrupt
-Pid: 8611, comm: opcontrol Tainted: G      D     2.6.39-00007-gfe47ae7 #1
-Call Trace:
- <NMI>  [<ffffffff813e5e0a>] panic+0x8c/0x188
- [<ffffffff813e915c>] oops_end+0x81/0x8e
- [<ffffffff8100403d>] die+0x55/0x5e
- [<ffffffff813e8c45>] do_trap+0x11c/0x12b
- [<ffffffff810023c8>] do_invalid_op+0x91/0x9a
- [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
- [<ffffffff8131e6fa>] ? oprofile_add_sample+0x83/0x95
- [<ffffffff81321670>] ? op_amd_check_ctrs+0x4f/0x2cf
- [<ffffffff813ee4d5>] invalid_op+0x15/0x20
- [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
- [<ffffffff813e8e7a>] ? do_nmi+0x67/0x1ee
- [<ffffffff813e897a>] nmi+0x1a/0x20
- [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
- <<EOE>>
-
-Cc: John Lumby <johnlumby@hotmail.com>
-Cc: Maynard Johnson <maynardj@us.ibm.com>
-Signed-off-by: Robert Richter <robert.richter@amd.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Cc: namhyung@gmail.com
+Cc: davem@davemloft.net
+Cc: fweisbec@gmail.com
+Cc: dhowells@redhat.com
+Link: http://lkml.kernel.org/r/%3C1306189085-29896-1-git-send-email-richard%40nod.at%3E
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/oprofile/backtrace.c | 46 +++++++++++++++++++++++++++++++++++++++----
- 1 file changed, 42 insertions(+), 4 deletions(-)
+ arch/x86/include/asm/linkage.h | 5 -----
+ arch/x86/kernel/ptrace.c       | 4 ++--
+ include/linux/linkage.h        | 4 ----
+ 3 files changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 3855096..9859781 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -11,6 +11,8 @@
- #include <linux/oprofile.h>
- #include <linux/sched.h>
- #include <linux/mm.h>
-+#include <linux/highmem.h>
-+
- #include <asm/ptrace.h>
- #include <asm/uaccess.h>
- #include <asm/stacktrace.h>
-@@ -48,6 +50,42 @@ static struct stacktrace_ops backtrace_ops = {
- 	.walk_stack	= print_context_stack,
- };
+diff --git a/arch/x86/include/asm/linkage.h b/arch/x86/include/asm/linkage.h
+index 12d55e7..4814297 100644
+--- a/arch/x86/include/asm/linkage.h
++++ b/arch/x86/include/asm/linkage.h
+@@ -8,11 +8,6 @@
  
-+/* from arch/x86/kernel/cpu/perf_event.c: */
-+
-+/*
-+ * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-+ */
-+static unsigned long
-+copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-+{
-+	unsigned long offset, addr = (unsigned long)from;
-+	unsigned long size, len = 0;
-+	struct page *page;
-+	void *map;
-+	int ret;
-+
-+	do {
-+		ret = __get_user_pages_fast(addr, 1, 0, &page);
-+		if (!ret)
-+			break;
-+
-+		offset = addr & (PAGE_SIZE - 1);
-+		size = min(PAGE_SIZE - offset, n - len);
-+
-+		map = kmap_atomic(page, KM_USER0);
-+		memcpy(to, map+offset, size);
-+		kunmap_atomic(map, KM_USER0);
-+		put_page(page);
-+
-+		len  += size;
-+		to   += size;
-+		addr += size;
-+
-+	} while (len < n);
-+
-+	return len;
-+}
-+
- struct frame_head {
- 	struct frame_head *bp;
- 	unsigned long ret;
-@@ -55,12 +93,12 @@ struct frame_head {
+ #ifdef CONFIG_X86_32
+ #define asmlinkage CPP_ASMLINKAGE __attribute__((regparm(0)))
+-/*
+- * For 32-bit UML - mark functions implemented in assembly that use
+- * regparm input parameters:
+- */
+-#define asmregparm __attribute__((regparm(3)))
  
- static struct frame_head *dump_user_backtrace(struct frame_head *head)
+ /*
+  * Make sure the compiler doesn't do anything stupid with the
+diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
+index 2e9b550..8b57128 100644
+--- a/arch/x86/kernel/ptrace.c
++++ b/arch/x86/kernel/ptrace.c
+@@ -1730,7 +1730,7 @@ void send_sigtrap(struct task_struct *tsk, struct pt_regs *regs,
+  * We must return the syscall number to actually look up in the table.
+  * This can be -1L to skip running any syscall at all.
+  */
+-asmregparm long syscall_trace_enter(struct pt_regs *regs)
++long syscall_trace_enter(struct pt_regs *regs)
  {
-+	/* Also check accessibility of one struct frame_head beyond: */
- 	struct frame_head bufhead[2];
-+	unsigned long bytes;
+ 	long ret = 0;
  
--	/* Also check accessibility of one struct frame_head beyond */
--	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
--		return NULL;
--	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
-+	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
-+	if (bytes != sizeof(bufhead))
- 		return NULL;
+@@ -1775,7 +1775,7 @@ asmregparm long syscall_trace_enter(struct pt_regs *regs)
+ 	return ret ?: regs->orig_ax;
+ }
  
- 	oprofile_add_trace(bufhead[0].ret);
+-asmregparm void syscall_trace_leave(struct pt_regs *regs)
++void syscall_trace_leave(struct pt_regs *regs)
+ {
+ 	bool step;
+ 
+diff --git a/include/linux/linkage.h b/include/linux/linkage.h
+index 5126cce..a500d6b 100644
+--- a/include/linux/linkage.h
++++ b/include/linux/linkage.h
+@@ -14,10 +14,6 @@
+ #define asmlinkage CPP_ASMLINKAGE
+ #endif
+ 
+-#ifndef asmregparm
+-# define asmregparm
+-#endif
+-
+ #define __page_aligned_data	__section(.data.page_aligned) __aligned(PAGE_SIZE)
+ #define __page_aligned_bss	__section(.bss.page_aligned) __aligned(PAGE_SIZE)
+ 
 -- 
 1.7.12.1
 
