@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab3AHXjN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:39:13 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63723 "EHLO
+	id S1756923Ab3AHXid (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:38:33 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63703 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756935Ab3AHXif (ORCPT
+	with ESMTP id S1756898Ab3AHXib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:38:35 -0500
+	Tue, 8 Jan 2013 18:38:31 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Berg <johannes.berg@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 55/77] export __get_user_pages_fast() function
-Date: Tue, 8 Jan 2013 18:35:34 -0500
-Message-ID: <1357688156-25387-56-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 53/77] Make TASKSTATS require root access
+Date: Tue, 8 Jan 2013 18:35:32 -0500
+Message-ID: <1357688156-25387-54-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,44 +32,37 @@ From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 45888a0c6edc305495b6bd72a30e66bc40b324c6 upstream.
+commit 1a51410abe7d0ee4b1d112780f46df87d3621043 upstream.
 
-This function is used by KVM to pin process's page in the atomic context.
+Ok, this isn't optimal, since it means that 'iotop' needs admin
+capabilities, and we may have to work on this some more.  But at the
+same time it is very much not acceptable to let anybody just read
+anybody elses IO statistics quite at this level.
 
-Define the 'weak' function to avoid other architecture not support it
+Use of the GENL_ADMIN_PERM suggested by Johannes Berg as an alternative
+to checking the capabilities by hand.
 
-Acked-by: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Reported-by: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Johannes Berg <johannes.berg@intel.com>
+Acked-by: Balbir Singh <bsingharora@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- mm/util.c | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ kernel/taskstats.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/mm/util.c b/mm/util.c
-index f5712e8..4f0d32b 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -250,6 +250,19 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
- }
- #endif
+diff --git a/kernel/taskstats.c b/kernel/taskstats.c
+index 5e21645..d5a70a0 100644
+--- a/kernel/taskstats.c
++++ b/kernel/taskstats.c
+@@ -591,6 +591,7 @@ static struct genl_ops taskstats_ops = {
+ 	.cmd		= TASKSTATS_CMD_GET,
+ 	.doit		= taskstats_user_cmd,
+ 	.policy		= taskstats_cmd_get_policy,
++	.flags		= GENL_ADMIN_PERM,
+ };
  
-+/*
-+ * Like get_user_pages_fast() except its IRQ-safe in that it won't fall
-+ * back to the regular GUP.
-+ * If the architecture not support this fucntion, simply return with no
-+ * page pinned
-+ */
-+int __attribute__((weak)) __get_user_pages_fast(unsigned long start,
-+				 int nr_pages, int write, struct page **pages)
-+{
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(__get_user_pages_fast);
-+
- /**
-  * get_user_pages_fast() - pin user pages in memory
-  * @start:	starting user address
+ static struct genl_ops cgroupstats_ops = {
 -- 
 1.7.12.1
 
