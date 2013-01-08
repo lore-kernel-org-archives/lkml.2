@@ -1,79 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387Ab3AHDBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:01:05 -0500
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:46529 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111Ab3AHDBE (ORCPT
+	id S1753470Ab3AHDCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:02:16 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:33097 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753057Ab3AHDCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:01:04 -0500
-MIME-Version: 1.0
-In-Reply-To: <8762382z2c.fsf@xmission.com>
-References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
-	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
-	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
-	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
-	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
-	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
-	<20130107152622.GD3219@phenom.dumpdata.com>
-	<CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-Date: Mon, 7 Jan 2013 19:01:02 -0800
-X-Google-Sender-Auth: dNiMO49iWkm4OLtNZPqYHKOEFI0
-Message-ID: <CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Shuah Khan <shuahkhan@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Jan 2013 22:02:14 -0500
+Date: Tue, 8 Jan 2013 14:01:59 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: James Morris <jmorris@namei.org>,
+        LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+Message-Id: <20130108140159.83c07fa6a680e355f024970f@canb.auug.org.au>
+In-Reply-To: <50EB7C50.3070605@schaufler-ca.com>
+References: <50EB7C50.3070605@schaufler-ca.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__8_Jan_2013_14_01_59_+1100_n/JjKLTVP1o=F9dS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 7, 2013 at 6:22 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Yinghai I sat down and read your patch and the approach you are taking
-> is totally wrong.
+--Signature=_Tue__8_Jan_2013_14_01_59_+1100_n/JjKLTVP1o=F9dS
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for check the patch, did you check v3?
+Hi Casey,
 
+On Mon, 07 Jan 2013 17:54:24 -0800 Casey Schaufler <casey@schaufler-ca.com>=
+ wrote:
 >
-> The problem is that swiotlb_init() in lib/swiotlb.c does not know how to
-> fail without panic'ing the system.
+> Subject: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
+>=20
+> Change the infrastructure for Linux Security Modules (LSM)s
+> from a single vector of hook handlers to a list based method
+> for handling multiple concurrent modules.=20
+>=20
+> A level of indirection has been introduced in the handling of
+> security blobs. LSMs no longer access ->security fields directly,
+> instead they use an abstraction provided by lsm_[gs]et field
+> functions.=20
+>=20
+> The XFRM hooks are only used by SELinux and it is not clear
+> that they can be shared. The First LSM that registers using
+> those hooks gets to use them. Any subsequent LSM that uses
+> those hooks is denied registration.=20
+>=20
+> Secids have not been made shareable. Only one LSM that uses
+> secids (SELinux and Smack) can be used at a time. The first
+> to register wins.
+>=20
+> The "security=3D" boot option takes a comma separated list of
+> LSMs, registering them in the order presented. The LSM hooks
+> will be executed in the order registered. Hooks that return
+> errors are not short circuited. All hooks are called even
+> if one of the LSM hooks fails. The result returned will be
+> that of the last LSM hook that failed.
+>=20
+> Some hooks don't fit that model. setprocattr, getprocattr,
+> and a few others are special cased. All behavior from
+> security/capability.c has been moved into the hook handling.
+> The security/commoncap functions used to get called from
+> the LSM specific code. The handling of the capability
+> functions has been moved out of the LSMs and into the
+> hook handling.
+>=20
+> The /proc/*/attr interfaces are given to one LSM. This
+> can be done by setting CONFIG_SECURITY_PRESENT. Additional
+> interfaces have been created in /proc/*/attr so that
+> each LSM has its own named interfaces.
+>=20
+> Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
 
-I did not put panic in swiotlb, now I put panic in amd_iommu ops init
-when it need extra
-swiotlb for unhandled devices by AMD IOMMU.
+Let me ask Andrew's question:  Why do you want to do this (what is the
+use case)?  What does this gain us?
 
->
-> Which leaves two valid approaches.
-> - Create a variant of swiotlb_init that can fail for use on x86 and
->   handle the failure.
-> - Delay initializing the swiotlb until someone actually needs a mapping
->   from it.
->
-> Delaying the initialization of the swiotlb is out because the code
-> needs an early memory allocation to get a large chunk of contiguous
-> memory for the bounce buffers.
+Also, you should use unique subjects for each of the patches in the
+series.
 
-ok.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->
-> Which means the panics that occurr in swiotlb_init() need to be delayed
-> until someone something actually needs bounce buffers from the swiotlb.
->
-> Although arguably what should actually happen instead of panic() is that
-> swiotlb_map_single should simply fail early when it was not possible to
-> preallocate bounce buffers.
+--Signature=_Tue__8_Jan_2013_14_01_59_+1100_n/JjKLTVP1o=F9dS
+Content-Type: application/pgp-signature
 
-do you mean: actually needed dma buffer is much less than swiotlb
-buffer aka 64M?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
 
-Yinghai
+iQIcBAEBCAAGBQJQ64wnAAoJEECxmPOUX5FEt8EP/2oUttEX3DYPGXD9xW6WdAJ2
+H42CtYaOv2zwlu0/8rVD/DVY0OZy1wN27s5lkyt9NsRFjynPJ3w51AUU29yL4zWY
+Bx6IQk7TQKC3B+QIUThxTKsiA3vCFQgbHmfNHNV16UELOu90yW8HNUpBw4Wxjtt7
+90HBfLKAQQ9i/3In/3mW9Hz5kRtmNqPq9myUMFFUVeuFMHBRhcmqjQ2HVrW1qhzK
++cYY/ST1QJFI0j9y1G1R8RQyxFdwAhSlLwbKhpTfCNiB9BIK+r3Gkb+d0t8xtGoP
+NjRHjYcUl1jLNuv6/vp8qpK8AKxYrRueK3YAxSpwGRV3t6ItEMwX+b5JvcClAPLp
+kjhczpb9SW0FJZZGsUVAqTF3EJO9chBm+banuoF7B0AzdeHkOwANyG8hlInU2xnu
+pgHzxaWBr8MiKRy5XZY6muSAAASCqc/n1CW2f1Ax/HHNU59z2l6rgyi2w+9VJJVv
+9WsbIp5pgguz0ZAlKM8PWtTe+I07w0kOP584gqyBlhrjJolqTmIQ1V23pTGp/pVE
+5osioWiTdEf/6Of4H6v566BQGinqwtaw1W16K4GZxRPcnSOMvJMCBLaIfiNvByd+
+uk7UzjrzvaPYemop1aLSEH6uk1X/4SRpN7jxyZuGUeDtCPt3v0swJAEHMNQuhZgi
+NB5tn3hbn4riniRuJy3U
+=/Pji
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Jan_2013_14_01_59_+1100_n/JjKLTVP1o=F9dS--
