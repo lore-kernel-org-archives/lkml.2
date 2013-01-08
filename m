@@ -1,109 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755613Ab3AHLjF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:39:05 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:27951 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab3AHLjE (ORCPT
+	id S1755681Ab3AHLj3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:39:29 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:32826 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab3AHLj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:39:04 -0500
-Date: Tue, 8 Jan 2013 14:38:51 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Tomoya MORINAGA <tomoya.rohm@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: add Packet hub driver for Topcliff Platform controller hub
-Message-ID: <20130108113851.GP7302@mwanda>
-References: <20130107090210.GA20716@elgon.mountain>
- <CANKRQnh+USJwA=-+MYotvWQif7ZWQwPyUWnrbGQg5dFpvfh5Dg@mail.gmail.com>
+	Tue, 8 Jan 2013 06:39:28 -0500
+Date: Tue, 8 Jan 2013 17:09:01 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] uprobes: Change handle_swbp() to expose bp_vaddr
+ to handler_chain()
+Message-ID: <20130108113901.GC1325@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121230154657.GA28488@redhat.com>
+ <20121230154722.GA28513@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CANKRQnh+USJwA=-+MYotvWQif7ZWQwPyUWnrbGQg5dFpvfh5Dg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20121230154722.GA28513@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010811-3620-0000-0000-000000D6B059
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 07:30:34PM +0900, Tomoya MORINAGA wrote:
-> Hi Dan,
-> 
-> On Mon, Jan 7, 2013 at 6:02 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
-> > The patch cf4ece53460c: "add Packet hub driver for Topcliff Platform
-> > controller hub" from Sep 1, 2010, leads to the following warning:
-> > drivers/misc/pch_phub.c:596 pch_phub_bin_write()
-> >          error: buffer overflow 'buf' 4096 <= 15359
-> >
-> > Sorry my question is about an old patch.  Smatch complains because we
-> > only pass a PAGE_SIZE buffer to sysfs files so the test for
-> > "if (count > PCH_PHUB_OROM_SIZE) {" makes it think we are overflowing.
-> > In fact, count is never more than 4096 so there is no overflow, but I
-> > also think that it means only the first 4096 bytes of the firmware gets
-> > updated.
-> >
-> > drivers/misc/pch_phub.c
-> >    560  static ssize_t pch_phub_bin_write(struct file *filp, struct kobject *kobj,
-> >    561                                    struct bin_attribute *attr,
-> >    562                                    char *buf, loff_t off, size_t count)
-> >    563  {
-> >    564          int err;
-> >    565          unsigned int addr_offset;
-> >    566          int ret;
-> >    567          ssize_t rom_size;
-> >    568          struct pch_phub_reg *chip =
-> >    569                  dev_get_drvdata(container_of(kobj, struct device, kobj));
-> >    570
-> >    571          ret = mutex_lock_interruptible(&pch_phub_mutex);
-> >    572          if (ret)
-> >    573                  return -ERESTARTSYS;
-> >    574
-> >    575          if (off > PCH_PHUB_OROM_SIZE) {
-> >    576                  addr_offset = 0;
-> >    577                  goto return_ok;
-> >    578          }
-> >    579          if (count > PCH_PHUB_OROM_SIZE) {
-> >                             ^^^^^^^^^^^^^^^^^^
-> > This is 15359.
-> >
-> >    580                  addr_offset = 0;
-> >    581                  goto return_ok;
-> >    582          }
-> >    583
-> >    584          chip->pch_phub_extrom_base_address = pci_map_rom(chip->pdev, &rom_size);
-> >    585          if (!chip->pch_phub_extrom_base_address) {
-> >    586                  err = -ENOMEM;
-> >    587                  goto exrom_map_err;
-> >    588          }
-> >    589
-> >    590          for (addr_offset = 0; addr_offset < count; addr_offset++) {
-> >    591                  if (PCH_PHUB_OROM_SIZE < off + addr_offset)
-> >    592                          goto return_ok;
-> >    593
-> >    594                  ret = pch_phub_write_serial_rom(chip,
-> >    595                              chip->pch_opt_rom_start_address + addr_offset + off,
-> >    596                              buf[addr_offset]);
-> >                                     ^^^^^^^^^^^^^^^^
-> > Smatch complains because "buf" is only 4096 bytes.
-> >
-> 
-> I can understand your saying.
-> 
-> You mean just delete the following condition ?
-> 
-> 579          if (count > PCH_PHUB_OROM_SIZE) {
-> 
+* Oleg Nesterov <oleg@redhat.com> [2012-12-30 16:47:22]:
 
-What I'm saying is that sysfs files can only be 4096 bytes (larger
-on some arches with a larger PAGE_SIZE) and your firmware is larger
-than that.  It won't work.
-
-regards,
-dan carpenter
-
-> Thanks.
+> Change handle_swbp() to set regs->ip = bp_vaddr in advance, this is
+> what consumer->handler() needs but uprobe_get_swbp_addr() is not
+> exported.
 > 
+> This also simplifies the code and makes it more consistent across
+> the supported architectures. handle_swbp() becomes the only caller
+> of uprobe_get_swbp_addr().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  arch/x86/kernel/uprobes.c   |    1 -
+>  kernel/events/uprobes.c     |   15 +++++++--------
+>  kernel/trace/trace_uprobe.c |    4 ++--
+>  3 files changed, 9 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index 4e33a35..0ba4cfb 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+> @@ -681,7 +681,6 @@ static bool __skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
+>  			continue;
+> 
+>  		if (auprobe->insn[i] == 0x90) {
+> -			regs->ip = uprobe_get_swbp_addr(regs);
+>  			regs->ip += i + 1;
+>  			return true;
+>  		}
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 59b6e97..f883813 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1504,6 +1504,10 @@ static void handle_swbp(struct pt_regs *regs)
+>  		}
+>  		return;
+>  	}
+> +
+> +	/* change it in advance for ->handler() and restart */
+> +	instruction_pointer_set(regs, bp_vaddr);
+> +
+>  	/*
+>  	 * TODO: move copy_insn/etc into _register and remove this hack.
+>  	 * After we hit the bp, _unregister + _register can install the
+> @@ -1511,14 +1515,14 @@ static void handle_swbp(struct pt_regs *regs)
+>  	 */
+>  	smp_rmb(); /* pairs with wmb() in install_breakpoint() */
+>  	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
+> -		goto restart;
+> +		goto out;
+> 
+>  	utask = current->utask;
+>  	if (!utask) {
+>  		utask = add_utask();
+>  		/* Cannot allocate; re-execute the instruction. */
+>  		if (!utask)
+> -			goto restart;
+> +			goto out;
+>  	}
+> 
+>  	handler_chain(uprobe, regs);
+> @@ -1531,12 +1535,7 @@ static void handle_swbp(struct pt_regs *regs)
+>  		return;
+>  	}
+> 
+> -restart:
+> -	/*
+> -	 * cannot singlestep; cannot skip instruction;
+> -	 * re-execute the instruction.
+> -	 */
+> -	instruction_pointer_set(regs, bp_vaddr);
+> +	/* can_skip_sstep() succeeded, or restart if can't singlestep */
+>  out:
+>  	put_uprobe(uprobe);
+>  }
+> diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+> index 38eee92..52caead 100644
+> --- a/kernel/trace/trace_uprobe.c
+> +++ b/kernel/trace/trace_uprobe.c
+> @@ -488,7 +488,7 @@ static void uprobe_trace_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  		return;
+> 
+>  	entry = ring_buffer_event_data(event);
+> -	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
+> +	entry->ip = instruction_pointer(task_pt_regs(current));
+>  	data = (u8 *)&entry[1];
+>  	for (i = 0; i < tu->nr_args; i++)
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
+> @@ -663,7 +663,7 @@ static void uprobe_perf_func(struct trace_uprobe *tu, struct pt_regs *regs)
+>  	if (!entry)
+>  		goto out;
+> 
+> -	entry->ip = uprobe_get_swbp_addr(task_pt_regs(current));
+> +	entry->ip = instruction_pointer(task_pt_regs(current));
+>  	data = (u8 *)&entry[1];
+>  	for (i = 0; i < tu->nr_args; i++)
+>  		call_fetch(&tu->args[i].fetch, regs, data + tu->args[i].offset);
 > -- 
-> ROHM Co., Ltd.
-> tomoya
+> 1.5.5.1
+> 
+
