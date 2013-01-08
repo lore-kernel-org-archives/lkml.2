@@ -1,104 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208Ab3AHUXg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 15:23:36 -0500
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:27230 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751031Ab3AHUXf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 15:23:35 -0500
-X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=S0zgfAou480A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=-V7fij46oSQA:10 a=A_6YqKSnuX1M2ra_L3cA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 74.67.115.198
-Message-ID: <1357676611.5190.26.camel@gandalf.local.home>
-Subject: Re: [PATCH 03/33] cputime: Generic on-demand virtual cputime
- accounting
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alessio Igor Bogani <abogani@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
-        Geoff Levand <geoff@infradead.org>,
-        Gilad Ben Yossef <gilad@benyossef.com>,
-        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
-        Li Zhong <zhong@linux.vnet.ibm.com>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Date: Tue, 08 Jan 2013 15:23:31 -0500
-In-Reply-To: <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
-References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
-	 <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
+	id S1753266Ab3AHUZp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 15:25:45 -0500
+Received: from smtp3-g21.free.fr ([212.27.42.3]:55729 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751031Ab3AHUZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 15:25:44 -0500
+Message-ID: <1357676721.3776.3.camel@lamella>
+Subject: Re: [3.6.9 -> 3.7.1 regression] sound: snd_hda_intel codec probing
+ issue?
+From: Vincent Blut <vincent.debian@free.fr>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Maurizio Avogadro <mavoga@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Jan 2013 21:25:21 +0100
+In-Reply-To: <s5hehhvq1dm.wl%tiwai@suse.de>
+References: <1356704740.3953.26.camel@lamella>
+	 <s5hvcber5cz.wl%tiwai@suse.de> <1357421043.3912.13.camel@lamella>
+	 <s5h38ydpf45.wl%tiwai@suse.de> <1357648135.3849.7.camel@lamella>
+	 <s5hehhvq1dm.wl%tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.4.4-1 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 03:08 +0100, Frederic Weisbecker wrote:
-
-> +++ b/kernel/sched/cputime.c
-> @@ -3,6 +3,7 @@
->  #include <linux/tsacct_kern.h>
->  #include <linux/kernel_stat.h>
->  #include <linux/static_key.h>
-> +#include <linux/context_tracking.h>
->  #include "sched.h"
->  
+Le mardi 08 janvier 2013 à 13:56 +0100, Takashi Iwai a écrit :
+> At Tue, 08 Jan 2013 13:28:55 +0100,
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: hda - Disable runtime D3 for Intel CPT & co
 > 
-> @@ -495,10 +496,24 @@ void vtime_task_switch(struct task_struct *prev)
->  #ifndef __ARCH_HAS_VTIME_ACCOUNT
->  void vtime_account(struct task_struct *tsk)
->  {
-> -	if (in_interrupt() || !is_idle_task(tsk))
-> -		vtime_account_system(tsk);
-> -	else
-> -		vtime_account_idle(tsk);
-> +	if (!in_interrupt()) {
-> +		/*
-> +		 * If we interrupted user, context_tracking_in_user()
-> +		 * is 1 because the context tracking don't hook
-
-s/don't/doesn't/
-
-> +		 * on irq entry/exit. This way we know if
-> +		 * we need to flush user time on kernel entry.
-
-Also, the above comment is simply confusing. Why not just say something
-like:
-
- Context tracking doesn't hook on irq entry/exit. The context will still
- be user context if the interrupt preempted user space.
-
-No need to explain the implementation details of
-"context_tracing_in_user() is 1 ...".
-
--- Steve
-
-> +		 */
-> +		if (context_tracking_in_user()) {
-> +			vtime_account_user(tsk);
-> +			return;
-> +		}
+> We've got a few bug reports that the runtime D3 results in the dead
+> HD-audio controller.  It seems that the problem is in a deeper level
+> than the sound driver itself, so as a temporal solution, disable the
+> feature for these controllers again.
+> 
+> Reported-by: Vincent Blut <vincent.debian@free.fr>
+> Reported-by: Maurizio Avogadro <mavoga@gmail.com>
+> Cc: <stable@vger.kernel.org> [v3.7]
+> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+> ---
+>  sound/pci/hda/hda_intel.c | 13 ++++++++-----
+>  1 file changed, 8 insertions(+), 5 deletions(-)
+> 
+> diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+> index cca8727..0b6aeba 100644
+> --- a/sound/pci/hda/hda_intel.c
+> +++ b/sound/pci/hda/hda_intel.c
+> @@ -573,9 +573,12 @@ enum {
+>  #define AZX_DCAPS_PM_RUNTIME	(1 << 26)	/* runtime PM support */
+>  
+>  /* quirks for Intel PCH */
+> -#define AZX_DCAPS_INTEL_PCH \
+> +#define AZX_DCAPS_INTEL_PCH_NOPM \
+>  	(AZX_DCAPS_SCH_SNOOP | AZX_DCAPS_BUFSIZE | \
+> -	 AZX_DCAPS_COUNT_LPIB_DELAY | AZX_DCAPS_PM_RUNTIME)
+> +	 AZX_DCAPS_COUNT_LPIB_DELAY)
 > +
-> +		if (is_idle_task(tsk)) {
-> +			vtime_account_idle(tsk);
-> +			return;
-> +		}
-> +	}
-> +	vtime_account_system(tsk);
->  }
->  EXPORT_SYMBOL_GPL(vtime_account);
->  #endif /* __ARCH_HAS_VTIME_ACCOUNT */
-> @@ -587,3 +602,72 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
->  	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
->  }
->  #endif
+> +#define AZX_DCAPS_INTEL_PCH \
+> +	(AZX_DCAPS_INTEL_PCH_NOPM | AZX_DCAPS_PM_RUNTIME)
+>  
+>  /* quirks for ATI SB / AMD Hudson */
+>  #define AZX_DCAPS_PRESET_ATI_SB \
+> @@ -3586,13 +3589,13 @@ static void azx_remove(struct pci_dev *pci)
+>  static DEFINE_PCI_DEVICE_TABLE(azx_ids) = {
+>  	/* CPT */
+>  	{ PCI_DEVICE(0x8086, 0x1c20),
+> -	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
+>  	/* PBG */
+>  	{ PCI_DEVICE(0x8086, 0x1d20),
+> -	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
+>  	/* Panther Point */
+>  	{ PCI_DEVICE(0x8086, 0x1e20),
+> -	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
+> +	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH_NOPM },
+>  	/* Lynx Point */
+>  	{ PCI_DEVICE(0x8086, 0x8c20),
+>  	  .driver_data = AZX_DRIVER_PCH | AZX_DCAPS_INTEL_PCH },
 
+Well, my sound controller behaves nicely with the above quirk.
+
+Tested-by: Vincent Blut <vincent.debian@free.fr>
+
+Thanks Takashi for your support,
+Vincent
 
