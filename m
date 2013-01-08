@@ -1,43 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757228Ab3AHX50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:57:26 -0500
-Received: from norkia.v3.sk ([91.210.183.14]:53070 "EHLO norkia.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756585Ab3AHX5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:57:23 -0500
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
-        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>, linux-kernel@vger.kernel.org,
-        lkundrak@v3.sk
-Subject: [PATCH] Move sd8688*.bin images away from libertas tree
-Date: Wed,  9 Jan 2013 00:57:15 +0100
-Message-Id: <1357689435-8089-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
+	id S1756524Ab3AHXhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:22 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63466 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756171Ab3AHXhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:37:19 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Robert Richter <robert.richter@amd.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 40/77] oprofile, x86: Fix crash when unloading module (nmi timer mode)
+Date: Tue, 8 Jan 2013 18:35:19 -0500
+Message-ID: <1357688156-25387-41-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They are (unlike rest of sd8xxx images from libertas/ and mrvl/) not Libertas
-WiFi specific and are used for the bluetooth controller (btmrvl) which does not
-look for them in libertas/.
+From: Robert Richter <robert.richter@amd.com>
 
-This is fine for the WiFi driver that utilizes those, since it has always been
-looking in this place as well.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
+commit 97f7f8189fe54e3cfe324ef9ad35064f3d2d3bff upstream.
+
+If oprofile uses the nmi timer interrupt there is a crash while
+unloading the module. The bug can be triggered with oprofile build as
+module and kernel parameter nolapic set. This patch fixes this.
+
+oprofile: using NMI timer interrupt.
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000008
+IP: [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+PGD 42dbca067 PUD 41da6a067 PMD 0
+Oops: 0002 [#1] PREEMPT SMP
+CPU 5
+Modules linked in: oprofile(-) [last unloaded: oprofile]
+
+Pid: 2518, comm: modprobe Not tainted 3.1.0-rc7-00019-gb2fb49d #19 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff8123c226>]  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+RSP: 0018:ffff88041ef71e98  EFLAGS: 00010296
+RAX: 0000000000000000 RBX: ffffffffa0017100 RCX: dead000000200200
+RDX: 0000000000000000 RSI: dead000000100100 RDI: ffffffff8178c620
+RBP: ffff88041ef71ea8 R08: 0000000000000001 R09: 0000000000000082
+R10: 0000000000000000 R11: ffff88041ef71de8 R12: 0000000000000080
+R13: fffffffffffffff5 R14: 0000000000000001 R15: 0000000000610210
+FS:  00007fc902f20700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000008 CR3: 000000041cdb6000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process modprobe (pid: 2518, threadinfo ffff88041ef70000, task ffff88041d348040)
+Stack:
+ ffff88041ef71eb8 ffffffffa0017790 ffff88041ef71eb8 ffffffffa0013532
+ ffff88041ef71ec8 ffffffffa00132d6 ffff88041ef71ed8 ffffffffa00159b2
+ ffff88041ef71f78 ffffffff81073115 656c69666f72706f 0000000000610200
+Call Trace:
+ [<ffffffffa0013532>] op_nmi_exit+0x15/0x17 [oprofile]
+ [<ffffffffa00132d6>] oprofile_arch_exit+0xe/0x10 [oprofile]
+ [<ffffffffa00159b2>] oprofile_exit+0x1e/0x20 [oprofile]
+ [<ffffffff81073115>] sys_delete_module+0x1c3/0x22f
+ [<ffffffff811bf09e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+ [<ffffffff8148070b>] system_call_fastpath+0x16/0x1b
+Code: 20 c6 78 81 e8 c5 cc 23 00 48 8b 13 48 8b 43 08 48 be 00 01 10 00 00 00 ad de 48 b9 00 02 20 00 00 00 ad de 48 c7 c7 20 c6 78 81
+ 89 42 08 48 89 10 48 89 33 48 89 4b 08 e8 a6 c0 23 00 5a 5b
+RIP  [<ffffffff8123c226>] unregister_syscore_ops+0x41/0x58
+ RSP <ffff88041ef71e98>
+CR2: 0000000000000008
+---[ end trace 43a541a52956b7b0 ]---
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- libertas/sd8688.bin => sd8688.bin               |  Bin 259172 -> 259172 bytes
- libertas/sd8688_helper.bin => sd8688_helper.bin |  Bin 2616 -> 2616 bytes
- 2 files changed, 0 insertions(+), 0 deletions(-)
- rename libertas/sd8688.bin => sd8688.bin (100%)
- rename libertas/sd8688_helper.bin => sd8688_helper.bin (100%)
+ arch/x86/oprofile/init.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/oprofile/init.c b/arch/x86/oprofile/init.c
+index cdfe4c5..f148cf6 100644
+--- a/arch/x86/oprofile/init.c
++++ b/arch/x86/oprofile/init.c
+@@ -21,6 +21,7 @@ extern int op_nmi_timer_init(struct oprofile_operations *ops);
+ extern void op_nmi_exit(void);
+ extern void x86_backtrace(struct pt_regs * const regs, unsigned int depth);
+ 
++static int nmi_timer;
+ 
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ {
+@@ -31,8 +32,9 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ #ifdef CONFIG_X86_LOCAL_APIC
+ 	ret = op_nmi_init(ops);
+ #endif
++	nmi_timer = (ret != 0);
+ #ifdef CONFIG_X86_IO_APIC
+-	if (ret < 0)
++	if (nmi_timer)
+ 		ret = op_nmi_timer_init(ops);
+ #endif
+ 	ops->backtrace = x86_backtrace;
+@@ -44,6 +46,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ void oprofile_arch_exit(void)
+ {
+ #ifdef CONFIG_X86_LOCAL_APIC
+-	op_nmi_exit();
++	if (!nmi_timer)
++		op_nmi_exit();
+ #endif
+ }
 -- 
-1.7.1
+1.7.12.1
 
