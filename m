@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab3AHL13 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:27:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756114Ab3AHL12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:27:28 -0500
-From: Tomas Hozza <thozza@redhat.com>
-To: gregkh@linuxfoundation.org
-Cc: kys@microsoft.com, jasowang@redhat.com, haiyangz@microsoft.com,
-        linux-kernel@vger.kernel.org, habdi@microsoft.com,
-        Tomas Hozza <thozza@redhat.com>
-Subject: [PATCH 2/2] tools: hv: Use CLOEXEC when opening kvp_pool files
-Date: Tue,  8 Jan 2013 12:26:43 +0100
-Message-Id: <1357644403-11140-2-git-send-email-thozza@redhat.com>
-In-Reply-To: <1357644403-11140-1-git-send-email-thozza@redhat.com>
-References: <1357644403-11140-1-git-send-email-thozza@redhat.com>
+	id S1755343Ab3AHLg6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:36:58 -0500
+Received: from haggis.pcug.org.au ([203.10.76.10]:43466 "EHLO
+	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752112Ab3AHLg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 06:36:56 -0500
+Date: Tue, 8 Jan 2013 22:36:45 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: linux-next: comment in commit in the slave-dma tree (dmaengine:
+ dw_dmac: Enhance device tree support)
+Message-Id: <20130108223645.257ef71445b1c5ee6773938a@canb.auug.org.au>
+In-Reply-To: <20130108081735.GB19691@intel.com>
+References: <20130108093557.8a29d4a04b95702fc59790ff@canb.auug.org.au>
+	<20130108081735.GB19691@intel.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__8_Jan_2013_22_36_45_+1100_0wDpCxfHuK_Yb0RA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use CLOEXEC flag when opening kvp_pool_x files to prevent file
-descriptor leakage. Not using it was causing a problem when
-SELinux was enabled.
+--Signature=_Tue__8_Jan_2013_22_36_45_+1100_0wDpCxfHuK_Yb0RA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Tomas Hozza <thozza@redhat.com>
----
- tools/hv/hv_kvp_daemon.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+Hi Vinod,
 
-diff --git a/tools/hv/hv_kvp_daemon.c b/tools/hv/hv_kvp_daemon.c
-index 6b56b75..31f839cc 100644
---- a/tools/hv/hv_kvp_daemon.c
-+++ b/tools/hv/hv_kvp_daemon.c
-@@ -151,7 +151,7 @@ static void kvp_update_file(int pool)
- 	 */
- 	kvp_acquire_lock(pool);
- 
--	filep = fopen(kvp_file_info[pool].fname, "w");
-+	filep = fopen(kvp_file_info[pool].fname, "we");
- 	if (!filep) {
- 		kvp_release_lock(pool);
- 		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
-@@ -182,7 +182,7 @@ static void kvp_update_mem_state(int pool)
- 
- 	kvp_acquire_lock(pool);
- 
--	filep = fopen(kvp_file_info[pool].fname, "r");
-+	filep = fopen(kvp_file_info[pool].fname, "re");
- 	if (!filep) {
- 		kvp_release_lock(pool);
- 		syslog(LOG_ERR, "Failed to open file, pool: %d", pool);
-@@ -246,13 +246,13 @@ static int kvp_file_init(void)
- 		records_read = 0;
- 		num_blocks = 1;
- 		sprintf(fname, "/var/opt/hyperv/.kvp_pool_%d", i);
--		fd = open(fname, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IROTH);
-+		fd = open(fname, O_RDWR | O_CREAT | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IROTH);
- 
- 		if (fd == -1)
- 			return 1;
- 
- 
--		filep = fopen(fname, "r");
-+		filep = fopen(fname, "re");
- 		if (!filep)
- 			return 1;
- 
--- 
-1.7.11.7
+On Tue, 8 Jan 2013 00:17:35 -0800 Vinod Koul <vinod.koul@intel.com> wrote:
+>
+> I think I was trying to remove it. Anyway I have changed the commit to re=
+move
+> this and also another instance. So you should be happy about it :)
 
+Thanks.  I would have been even happier if you had just added another
+commit that removed them :-)  But I shan't be churlish.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__8_Jan_2013_22_36_45_+1100_0wDpCxfHuK_Yb0RA
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBCAAGBQJQ7ATNAAoJEECxmPOUX5FECjYQAJsqR41FqAxvwwG6ILiHSigk
+LFrb548nCZt/s8Fb04tR4IpikAUmKTEz5DMKs2w9mckgC/RjX9TAuhpXEPjIgYRl
+0jNr2ZaVbnz6yIj0BIvQKd44OhyaiLKpwjQmjvlND64lC1DB824O1HEjENoo8AtY
+9yRJU0buR89NeKPxbtr3tH2BE6+J4qxKIWYfh4BR/dJ08PRRLK3bxmncl75GRhKd
+HipU6cQSnmwzniRp/G/yXso1pcAwgSo2jl+U9jUsIMpiOG1Q6UtHv42zZSQ89JMQ
+mlhRmXnDYeAQukSDC+Fgm9Iw2OGosIuJNtQSSH6s/h0y1qiSCgOp4jRPbScfEjoG
+HNzWZ9vHr8HNRAGy/+tiC12glTb9O6lH/XysVVcqka0QvQ1s74K1vcrc1tTn5fox
+YQMEQu9uI5iomIztsCmYARJpY3vqydXwOjAaKHy13KYThHGYUXcEBwTsCeDMKPtK
+CyMjfnfwbNRBqmD2Iln3x7R0/hk01hkv6GrPYKkP+DcpNbXvN+IpgXtaTiZSkBo5
+tDICs2ow92mic9lG/VseQpflDe+1aTbQNS9V2dEa9/+Gcpa1I3LBJOIibLP0rElE
+0QefkcwdXLU9p59Y9zRtI32rno4yRBUemFzmUCLsUVQ8ogvBgsSpdMZA3kYcG/Xk
+ZsnxAMsji78OWt093xR0
+=ebI9
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Jan_2013_22_36_45_+1100_0wDpCxfHuK_Yb0RA--
