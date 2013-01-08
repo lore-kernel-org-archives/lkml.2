@@ -1,146 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab3AHXps (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:45:48 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53745 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757016Ab3AHXjq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:39:46 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thomas Graf <tgraf@infradead.org>, "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 63/77] sctp: ABORT if receive, reassmbly, or reodering queue is not empty while closing socket
-Date: Tue, 8 Jan 2013 18:35:42 -0500
-Message-ID: <1357688156-25387-64-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1757119Ab3AHXqU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:46:20 -0500
+Received: from ozlabs.org ([203.10.76.45]:39972 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757040Ab3AHXqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:46:19 -0500
+Date: Wed, 9 Jan 2013 10:46:17 +1100
+From: Anton Blanchard <anton@samba.org>
+To: eparis@redhat.com, viro@zeniv.linux.org.uk, benh@kernel.crashing.org,
+        paulus@samba.org
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH 1/4] audit: Syscall rules are not applied to existing
+ processes on non-x86
+Message-ID: <20130109104617.74e995a5@kryten>
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Graf <tgraf@infradead.org>
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+Commit b05d8447e782 (audit: inline audit_syscall_entry to reduce
+burden on archs) changed audit_syscall_entry to check for a dummy
+context before calling __audit_syscall_entry. Unfortunately the dummy
+context state is maintained in __audit_syscall_entry so once set it
+never gets cleared, even if the audit rules change.
 
-commit cd4fcc704f30f2064ab30b5300d44d431e46db50 upstream.
+As a result, if there are no auditing rules when a process starts
+then it will never be subject to any rules added later. x86 doesn't
+see this because it has an assembly fast path that calls directly into
+__audit_syscall_entry.
 
-Trigger user ABORT if application closes a socket which has data
-queued on the socket receive queue or chunks waiting on the
-reassembly or ordering queue as this would imply data being lost
-which defeats the point of a graceful shutdown.
+I noticed this issue when working on audit performance optimisations.
+I wrote a set of simple test cases available at:
 
-This behavior is already practiced in TCP.
+http://ozlabs.org/~anton/junkcode/audit_tests.tar.gz
 
-We do not check the input queue because that would mean to parse
-all chunks on it to look for unacknowledged data which seems too
-much of an effort. Control chunks or duplicated chunks may also
-be in the input queue and should not be stopping a graceful
-shutdown.
+02_new_rule.py fails without the patch and passes with it. The
+test case clears all rules, starts a process, adds a rule then
+verifies the process produces a syscall audit record.
 
-Signed-off-by: Thomas Graf <tgraf@infradead.org>
-Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Cc: <stable@kernel.org> # 3.3+
 ---
- include/net/sctp/ulpevent.h |  2 +-
- net/sctp/socket.c           | 13 ++++++++-----
- net/sctp/ulpevent.c         | 16 +++++++++++++---
- 3 files changed, 22 insertions(+), 9 deletions(-)
 
-diff --git a/include/net/sctp/ulpevent.h b/include/net/sctp/ulpevent.h
-index 7ea12e8..b93b719 100644
---- a/include/net/sctp/ulpevent.h
-+++ b/include/net/sctp/ulpevent.h
-@@ -80,7 +80,7 @@ static inline struct sctp_ulpevent *sctp_skb2event(struct sk_buff *skb)
- 
- void sctp_ulpevent_free(struct sctp_ulpevent *);
- int sctp_ulpevent_is_notification(const struct sctp_ulpevent *);
--void sctp_queue_purge_ulpevents(struct sk_buff_head *list);
-+unsigned int sctp_queue_purge_ulpevents(struct sk_buff_head *list);
- 
- struct sctp_ulpevent *sctp_ulpevent_make_assoc_change(
- 	const struct sctp_association *asoc,
-diff --git a/net/sctp/socket.c b/net/sctp/socket.c
-index 22631c1..03daceb 100644
---- a/net/sctp/socket.c
-+++ b/net/sctp/socket.c
-@@ -1373,6 +1373,7 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
- 	struct sctp_endpoint *ep;
- 	struct sctp_association *asoc;
- 	struct list_head *pos, *temp;
-+	unsigned int data_was_unread;
- 
- 	SCTP_DEBUG_PRINTK("sctp_close(sk: 0x%p, timeout:%ld)\n", sk, timeout);
- 
-@@ -1382,6 +1383,10 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
- 
- 	ep = sctp_sk(sk)->ep;
- 
-+	/* Clean up any skbs sitting on the receive queue.  */
-+	data_was_unread = sctp_queue_purge_ulpevents(&sk->sk_receive_queue);
-+	data_was_unread += sctp_queue_purge_ulpevents(&sctp_sk(sk)->pd_lobby);
-+
- 	/* Walk all associations on an endpoint.  */
- 	list_for_each_safe(pos, temp, &ep->asocs) {
- 		asoc = list_entry(pos, struct sctp_association, asocs);
-@@ -1399,7 +1404,9 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
- 			}
- 		}
- 
--		if (sock_flag(sk, SOCK_LINGER) && !sk->sk_lingertime) {
-+		if (data_was_unread || !skb_queue_empty(&asoc->ulpq.lobby) ||
-+		    !skb_queue_empty(&asoc->ulpq.reasm) ||
-+		    (sock_flag(sk, SOCK_LINGER) && !sk->sk_lingertime)) {
- 			struct sctp_chunk *chunk;
- 
- 			chunk = sctp_make_abort_user(asoc, NULL, 0);
-@@ -1409,10 +1416,6 @@ SCTP_STATIC void sctp_close(struct sock *sk, long timeout)
- 			sctp_primitive_SHUTDOWN(asoc, NULL);
- 	}
- 
--	/* Clean up any skbs sitting on the receive queue.  */
--	sctp_queue_purge_ulpevents(&sk->sk_receive_queue);
--	sctp_queue_purge_ulpevents(&sctp_sk(sk)->pd_lobby);
--
- 	/* On a TCP-style socket, block for at most linger_time if set. */
- 	if (sctp_style(sk, TCP) && timeout)
- 		sctp_wait_for_close(sk, timeout);
-diff --git a/net/sctp/ulpevent.c b/net/sctp/ulpevent.c
-index aa72e89..3b81c62 100644
---- a/net/sctp/ulpevent.c
-+++ b/net/sctp/ulpevent.c
-@@ -1053,9 +1053,19 @@ void sctp_ulpevent_free(struct sctp_ulpevent *event)
- }
- 
- /* Purge the skb lists holding ulpevents. */
--void sctp_queue_purge_ulpevents(struct sk_buff_head *list)
-+unsigned int sctp_queue_purge_ulpevents(struct sk_buff_head *list)
+Index: b/include/linux/audit.h
+===================================================================
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -119,7 +119,7 @@ static inline void audit_syscall_entry(i
+ 				       unsigned long a1, unsigned long a2,
+ 				       unsigned long a3)
  {
- 	struct sk_buff *skb;
--	while ((skb = skb_dequeue(list)) != NULL)
--		sctp_ulpevent_free(sctp_skb2event(skb));
-+	unsigned int data_unread = 0;
-+
-+	while ((skb = skb_dequeue(list)) != NULL) {
-+		struct sctp_ulpevent *event = sctp_skb2event(skb);
-+
-+		if (!sctp_ulpevent_is_notification(event))
-+			data_unread += skb->len;
-+
-+		sctp_ulpevent_free(event);
-+	}
-+
-+	return data_unread;
+-	if (unlikely(!audit_dummy_context()))
++	if (unlikely(current->audit_context))
+ 		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
  }
--- 
-1.7.12.1
-
+ static inline void audit_syscall_exit(void *pt_regs)
