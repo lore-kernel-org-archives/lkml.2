@@ -1,202 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab3AHVNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:13:54 -0500
-Received: from mga09.intel.com ([134.134.136.24]:29241 "EHLO mga09.intel.com"
+	id S1753662Ab3AHVQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:16:27 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37818 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753555Ab3AHVIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:08:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,433,1355126400"; 
-   d="scan'208";a="243604838"
-From: Tomas Winkler <tomas.winkler@intel.com>
-To: gregkh@linuxfoundation.org
-Cc: arnd@arndb.de, alan@linux.intel.com, linux-kernel@vger.kernel.org,
-        Tomas Winkler <tomas.winkler@intel.com>
-Subject: [char-misc-next 01/21] mei: add new hbm.h header to export hbm protocol
-Date: Tue,  8 Jan 2013 23:07:12 +0200
-Message-Id: <1357679252-12958-2-git-send-email-tomas.winkler@intel.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1357679252-12958-1-git-send-email-tomas.winkler@intel.com>
-References: <1357679252-12958-1-git-send-email-tomas.winkler@intel.com>
+	id S1751031Ab3AHVQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 16:16:26 -0500
+User-Agent: K-9 Mail for Android
+In-Reply-To: <20130108210840.GC23616@liondog.tnic>
+References: <1355814959-10573-1-git-send-email-yinghai@kernel.org> <20121222024225.GG3468@phenom.dumpdata.com> <eee81bb9-f11b-4ff8-8a84-72f122766fd8@email.android.com> <20121222132419.GB2936@phenom.dumpdata.com> <50D8FBF9.6050509@zytor.com> <20121225115226.GD7720@liondog.tnic> <e91771a5-0d4e-457b-a3da-f8e855a1baa0@email.android.com> <20130108210840.GC23616@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH v7 00/27] x86, boot, 64bit: Add support for loading ramdisk and bzImage above 4G
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Tue, 08 Jan 2013 13:15:41 -0800
+To: Borislav Petkov <bp@alien8.de>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Message-ID: <48eb20be-0b49-43f9-ba73-7ab6849f2bf1@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hbm.h provides access host bus messaging functionality
-for other MEI layers
+Yes, but why bother...
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
----
- drivers/misc/mei/amthif.c    |    1 +
- drivers/misc/mei/hbm.c       |    1 +
- drivers/misc/mei/hbm.h       |   39 +++++++++++++++++++++++++++++++++++++++
- drivers/misc/mei/init.c      |    1 +
- drivers/misc/mei/interface.h |    7 ++-----
- drivers/misc/mei/interrupt.c |    1 +
- drivers/misc/mei/iorw.c      |    1 +
- drivers/misc/mei/mei_dev.h   |   10 ----------
- drivers/misc/mei/wd.c        |    1 +
- 9 files changed, 47 insertions(+), 15 deletions(-)
- create mode 100644 drivers/misc/mei/hbm.h
+Borislav Petkov <bp@alien8.de> wrote:
 
-diff --git a/drivers/misc/mei/amthif.c b/drivers/misc/mei/amthif.c
-index 6e3cd31..add4254 100644
---- a/drivers/misc/mei/amthif.c
-+++ b/drivers/misc/mei/amthif.c
-@@ -34,6 +34,7 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "hbm.h"
- #include "interface.h"
- 
- const uuid_le mei_amthi_guid  = UUID_LE(0x12f80028, 0xb4b7, 0x4b2d, 0xac,
-diff --git a/drivers/misc/mei/hbm.c b/drivers/misc/mei/hbm.c
-index 6b58b0a..9956aaf 100644
---- a/drivers/misc/mei/hbm.c
-+++ b/drivers/misc/mei/hbm.c
-@@ -20,6 +20,7 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "hbm.h"
- #include "interface.h"
- 
- /**
-diff --git a/drivers/misc/mei/hbm.h b/drivers/misc/mei/hbm.h
-new file mode 100644
-index 0000000..b552afb
---- /dev/null
-+++ b/drivers/misc/mei/hbm.h
-@@ -0,0 +1,39 @@
-+/*
-+ *
-+ * Intel Management Engine Interface (Intel MEI) Linux driver
-+ * Copyright (c) 2003-2012, Intel Corporation.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ */
-+
-+#ifndef _MEI_HBM_H_
-+#define _MEI_HBM_H_
-+
-+void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr);
-+
-+static inline void mei_hbm_hdr(struct mei_msg_hdr *hdr, size_t length)
-+{
-+	hdr->host_addr = 0;
-+	hdr->me_addr = 0;
-+	hdr->length = length;
-+	hdr->msg_complete = 1;
-+	hdr->reserved = 0;
-+}
-+
-+void mei_hbm_start_req(struct mei_device *dev);
-+
-+int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl);
-+int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl);
-+int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl);
-+
-+
-+#endif /* _MEI_HBM_H_ */
-+
-diff --git a/drivers/misc/mei/init.c b/drivers/misc/mei/init.c
-index 418a85f..55895fc 100644
---- a/drivers/misc/mei/init.c
-+++ b/drivers/misc/mei/init.c
-@@ -22,6 +22,7 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "hbm.h"
- #include "interface.h"
- 
- const char *mei_dev_state_str(int state)
-diff --git a/drivers/misc/mei/interface.h b/drivers/misc/mei/interface.h
-index 90a3dfd..3d06c08 100644
---- a/drivers/misc/mei/interface.h
-+++ b/drivers/misc/mei/interface.h
-@@ -72,12 +72,9 @@ void mei_watchdog_unregister(struct mei_device *dev);
- int mei_other_client_is_connecting(struct mei_device *dev, struct mei_cl *cl);
- int mei_flow_ctrl_reduce(struct mei_device *dev, struct mei_cl *cl);
- 
--void mei_hbm_start_req(struct mei_device *dev);
-+void mei_host_client_init(struct work_struct *work);
-+
- 
--int mei_hbm_cl_flow_control_req(struct mei_device *dev, struct mei_cl *cl);
--int mei_hbm_cl_disconnect_req(struct mei_device *dev, struct mei_cl *cl);
--int mei_hbm_cl_connect_req(struct mei_device *dev, struct mei_cl *cl);
- 
--void mei_host_client_init(struct work_struct *work);
- 
- #endif /* _MEI_INTERFACE_H_ */
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index a735c8b..2495e35 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -24,6 +24,7 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "hbm.h"
- #include "interface.h"
- 
- 
-diff --git a/drivers/misc/mei/iorw.c b/drivers/misc/mei/iorw.c
-index d8e08bc..4328c2d 100644
---- a/drivers/misc/mei/iorw.c
-+++ b/drivers/misc/mei/iorw.c
-@@ -36,6 +36,7 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "hbm.h"
- #include "interface.h"
- 
- /**
-diff --git a/drivers/misc/mei/mei_dev.h b/drivers/misc/mei/mei_dev.h
-index 54ddac3..1b54e67 100644
---- a/drivers/misc/mei/mei_dev.h
-+++ b/drivers/misc/mei/mei_dev.h
-@@ -445,16 +445,6 @@ void mei_enable_interrupts(struct mei_device *dev);
- void mei_disable_interrupts(struct mei_device *dev);
- 
- 
--void mei_hbm_dispatch(struct mei_device *dev, struct mei_msg_hdr *hdr);
--
--static inline void mei_hbm_hdr(struct mei_msg_hdr *hdr, size_t length)
--{
--	hdr->host_addr = 0;
--	hdr->me_addr = 0;
--	hdr->length = length;
--	hdr->msg_complete = 1;
--	hdr->reserved = 0;
--}
- 
- #define MEI_HDR_FMT "hdr:host=%02d me=%02d len=%d comp=%1d"
- #define MEI_HDR_PRM(hdr)                  \
-diff --git a/drivers/misc/mei/wd.c b/drivers/misc/mei/wd.c
-index 4f2e9db..9814bc1 100644
---- a/drivers/misc/mei/wd.c
-+++ b/drivers/misc/mei/wd.c
-@@ -24,6 +24,7 @@
- #include <linux/mei.h>
- 
- #include "mei_dev.h"
-+#include "hbm.h"
- #include "interface.h"
- 
- static const u8 mei_start_wd_params[] = { 0x02, 0x12, 0x13, 0x10 };
+>On Tue, Dec 25, 2012 at 07:51:54AM -0800, H. Peter Anvin wrote:
+>> Right, it's the ljmpq issue.
+>> 
+>> Borislav Petkov <bp@alien8.de> wrote:
+>> 
+>> >On Mon, Dec 24, 2012 at 05:06:01PM -0800, H. Peter Anvin wrote:
+>> >> Could this be the ljmpq problem that Borislav reported
+>> >> (Intel implemented ljmpq, AMD didn't, and I was tempted by a
+>> >> micro-optimization which broke AMD which made it into the
+>patchset)?
+>> >
+>> >It has to be. Just booted Yinghai's -v8 in kvm on an AMD host and it
+>> >worked fine.
+>> >
+>> >With the change below it keeps rebooting like I reported earlier.
+>I'd
+>> >go
+>> >out on a limb here and guess that the guest is triple-faulting due
+>to
+>> >an
+>> >unhandled #GP caused by an invalid opcode or similar.
+>> >
+>> >---
+>> >diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+>> >index d94f6d68be2a..1842d30c96a2 100644
+>> >--- a/arch/x86/kernel/head_64.S
+>> >+++ b/arch/x86/kernel/head_64.S
+>> >@@ -279,11 +279,8 @@ ENTRY(secondary_startup_64)
+>> >         *      REX.W + FF /5 JMP m16:64 Jump far, absolute
+>indirect,
+>> >         *              address given in m16:64.
+>> >         */
+>> >-       movq    initial_code(%rip),%rax
+>> >        pushq   $0              # fake return address to stop
+>unwinder
+>> >-       pushq   $__KERNEL_CS    # set correct cs
+>> >-       pushq   %rax            # target address in negative space
+>> >-       lretq
+>> >+       rex64 ljmp *initial_code(%rip)
+>> > 
+>> > #ifdef CONFIG_HOTPLUG_CPU
+>
+>Btw, I'm being told that we could also do a JMP FAR through a call
+>gate in 64-bit mode. Basically, the insn operand contains a CS:OFFSET
+>whereas the OFFSET is ignored but only CS is looked at. It has to point
+>to a call gate descriptor which contains two pieces of a Code-Segment
+>Offset[0:63] and this points into the virtual address space where we
+>want to jump to.
+>
+>Here's a picture to explain it better (figure 4-31 on page 105):
+>http://support.amd.com/us/Processor_TechDocs/24593_APM_v2.pdf
+>
+>It looks like Intel should support that too, AFAICT.
+
 -- 
-1.7.4.4
-
+Sent from my mobile phone. Please excuse brevity and lack of formatting.
