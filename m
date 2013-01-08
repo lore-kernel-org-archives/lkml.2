@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3AHVeR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:34:17 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16391 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752139Ab3AHVeQ convert rfc822-to-8bit (ORCPT
+	id S1754437Ab3AHVhO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:37:14 -0500
+Received: from www84.your-server.de ([213.133.104.84]:50529 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178Ab3AHVhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:34:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,433,1355126400"; 
-   d="scan'208";a="269486434"
-Message-ID: <50EC90C3.2090604@intel.com>
-Date: Tue, 08 Jan 2013 22:33:55 +0100
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from platform
- data
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com> <1357555480-24022-6-git-send-email-mika.westerberg@linux.intel.com> <20130108110228.GM4544@opensource.wolfsonmicro.com> <20130108124153.GJ13897@intel.com> <20130108131008.GW4544@opensource.wolfsonmicro.com>
-In-Reply-To: <20130108131008.GW4544@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset=US-ASCII;
-	format=flowed
-Content-Transfer-Encoding: 7BIT
+	Tue, 8 Jan 2013 16:37:12 -0500
+From: stefani@seibold.net
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: stefani@seibold.net
+Subject: [PATCH 1/2] move kfifo.c from kernel/ to lib/
+Date: Tue,  8 Jan 2013 22:36:20 +0100
+Message-Id: <1357680984-23007-2-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.8.0.2
+In-Reply-To: <1357680984-23007-1-git-send-email-stefani@seibold.net>
+References: <1357680984-23007-1-git-send-email-stefani@seibold.net>
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/8/2013 2:10 PM, Mark Brown wrote:
-> On Tue, Jan 08, 2013 at 02:41:53PM +0200, Mika Westerberg wrote:
->> On Tue, Jan 08, 2013 at 11:02:28AM +0000, Mark Brown wrote:
->>> No, the way to do this is to fix x86 to enable the clock API there.  The
->>> x86 maintainers couldn't be bothered when I submitted a patch and
->>> getting anyone to take a patch to make it available by default appears
->>> to be unreasonably hard but perhaps if someone from Intel tries the x86
->>> maintainers might take a patch...
->> Do you mean enabling CONFIG_COMMON_CLK on x86?
-> Yes.
+From: Stefani Seibold <stefani@seibold.net>
 
-Why so?  x86 doesn't have a notion of direct clock control, at least not 
-on the ACPI systems.
+This patch move the kfifo.c file from kernel/ to lib/
 
->>> We shouldn't be adding special case code to every driver that might need
->>> a clock that gets used on an Intel system.
->> I agree and it is cleaner to have the same API for all arches. However, I'm
->> not sure how do we create the fixed clocks then? There is nothing in ACPI
->> namespace (or in the ACPI 5.0 spec) that allows you to describe clocks and
->> their relationships.
-> I'm sure it's not beyond the bounds of possibility that we could solve
-> this problem...
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ kernel/Makefile         | 2 +-
+ lib/Makefile            | 2 +-
+ {kernel => lib}/kfifo.c | 0
+ 3 files changed, 2 insertions(+), 2 deletions(-)
+ rename {kernel => lib}/kfifo.c (100%)
 
-No, it isn't.  Any suggestions?
-
->> So then we end up either:
->> 	1. Creating a custom board file for Lynxpoint which creates the
->> 	   clocks. This is something I think x86 maintainers don't want to
->> 	   see.
->> 	2. Creating the clock in the driver itself in its ACPI enumeration
->> 	   implementation. This might work but it litters the drivers with
->> 	   clock details.
->> Or is there something I'm missing?
-> Well, it seems fairly clear to me that the SoC wiring ought to be done
-> outside the driver.
->
-> It is something that needs to be resolved for your smartphone SoCs for
-
-We're not talking about smartphones and even not about SoCs here, sorry.
-
-This is a laptop CPU that happens to have an SPI controller integrated.
-
-> this and for other things like platform data for external chips, what's
-> actually happening in practical systems here is that people are just
-> hacking the arch code as there's no mechanism for providing
-> configuration at present.
-
-I'm not sure what you're referring to, but here we have ACPI as a 
-configuration mechanism.
-
-Which doesn't allow us to control clocks directly.
-
-Thanks,
-Rafael
-
----------------------------------------------------------------------
-Intel Technology Poland sp. z o.o.
-z siedziba w Gdansku
-ul. Slowackiego 173
-80-298 Gdansk
-
-Sad Rejonowy Gdansk Polnoc w Gdansku, 
-VII Wydzial Gospodarczy Krajowego Rejestru Sadowego, 
-numer KRS 101882
-
-NIP 957-07-52-316
-Kapital zakladowy 200.000 zl
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+diff --git a/kernel/Makefile b/kernel/Makefile
+index 6c072b6..619c79b 100644
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -7,7 +7,7 @@ obj-y     = fork.o exec_domain.o panic.o printk.o \
+ 	    sysctl.o sysctl_binary.o capability.o ptrace.o timer.o user.o \
+ 	    signal.o sys.o kmod.o workqueue.o pid.o task_work.o \
+ 	    rcupdate.o extable.o params.o posix-timers.o \
+-	    kthread.o wait.o kfifo.o sys_ni.o posix-cpu-timers.o mutex.o \
++	    kthread.o wait.o sys_ni.o posix-cpu-timers.o mutex.o \
+ 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
+ 	    notifier.o ksysfs.o cred.o \
+ 	    async.o range.o groups.o lglock.o smpboot.o
+diff --git a/lib/Makefile b/lib/Makefile
+index 02ed6c0..d7946ff 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -23,7 +23,7 @@ lib-y	+= kobject.o klist.o
+ obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
+ 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
+ 	 string_helpers.o gcd.o lcm.o list_sort.o uuid.o flex_array.o \
+-	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o
++	 bsearch.o find_last_bit.o find_next_bit.o llist.o memweight.o kfifo.o
+ obj-y += kstrtox.o
+ obj-$(CONFIG_TEST_KSTRTOX) += test-kstrtox.o
+ 
+diff --git a/kernel/kfifo.c b/lib/kfifo.c
+similarity index 100%
+rename from kernel/kfifo.c
+rename to lib/kfifo.c
+-- 
+1.8.0.2
 
