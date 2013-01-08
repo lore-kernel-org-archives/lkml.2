@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab3AHCJH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:09:07 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:59893 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3AHCJD (ORCPT
+	id S1754884Ab3AHCRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:17:43 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:41591 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755341Ab3AHCJH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:03 -0500
+	Mon, 7 Jan 2013 21:09:07 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 08/33] nohz: Assign timekeeping duty to a non-full-nohz CPU
-Date: Tue,  8 Jan 2013 03:08:08 +0100
-Message-Id: <1357610913-1080-9-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 10/33] nohz: Wake up full dynticks CPUs when a timer gets enqueued
+Date: Tue,  8 Jan 2013 03:08:10 +0100
+Message-Id: <1357610913-1080-11-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,13 +33,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This way the full nohz CPUs can safely run with the tick
-stopped with a guarantee that somebody else is taking
-care of the jiffies and gtod progression.
-
-NOTE: this doesn't handle CPU hotplug. Also we could use something
-more elaborated wrt. powersaving if we have more than one non full-nohz
-CPU running. But let's use this KISS solution for now.
+Wake up a CPU when a timer list timer is enqueued there and
+the CPU is in full dynticks mode. Sending an IPI to it makes
+it reconsidering the next timer to program on top of recent
+updates.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -57,78 +54,77 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-[fix have_nohz_full_mask offcase]
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/time/tick-broadcast.c |    3 ++-
- kernel/time/tick-common.c    |    5 ++++-
- kernel/time/tick-sched.c     |    9 ++++++++-
- 3 files changed, 14 insertions(+), 3 deletions(-)
+ include/linux/sched.h |    4 ++--
+ kernel/sched/core.c   |   18 +++++++++++++++++-
+ kernel/timer.c        |    2 +-
+ 3 files changed, 20 insertions(+), 4 deletions(-)
 
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index f113755..596c547 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -537,7 +537,8 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
- 		bc->event_handler = tick_handle_oneshot_broadcast;
- 
- 		/* Take the do_timer update */
--		tick_do_timer_cpu = cpu;
-+		if (!tick_nohz_full_cpu(cpu))
-+			tick_do_timer_cpu = cpu;
- 
- 		/*
- 		 * We must be careful here. There might be other CPUs
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index b1600a6..83f2bd9 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -163,7 +163,10 @@ static void tick_setup_device(struct tick_device *td,
- 		 * this cpu:
- 		 */
- 		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
--			tick_do_timer_cpu = cpu;
-+			if (!tick_nohz_full_cpu(cpu))
-+				tick_do_timer_cpu = cpu;
-+			else
-+				tick_do_timer_cpu = TICK_DO_TIMER_NONE;
- 			tick_next_period = ktime_get();
- 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
- 		}
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 494a2aa..b75e302 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -112,7 +112,8 @@ static void tick_sched_do_timer(ktime_t now)
- 	 * this duty, then the jiffies update is still serialized by
- 	 * jiffies_lock.
- 	 */
--	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
-+	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
-+	    && !tick_nohz_full_cpu(cpu))
- 		tick_do_timer_cpu = cpu;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 3bca36e..32860ae 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2061,9 +2061,9 @@ static inline void idle_task_exit(void) {}
  #endif
  
-@@ -163,6 +164,8 @@ static int __init tick_nohz_full_setup(char *str)
- 	return 1;
+ #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
+-extern void wake_up_idle_cpu(int cpu);
++extern void wake_up_nohz_cpu(int cpu);
+ #else
+-static inline void wake_up_idle_cpu(int cpu) { }
++static inline void wake_up_nohz_cpu(int cpu) { }
+ #endif
+ 
+ extern unsigned int sysctl_sched_latency;
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 257002c..63b25e2 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -587,7 +587,7 @@ unlock:
+  * account when the CPU goes back to idle and evaluates the timer
+  * wheel for the next timer event.
+  */
+-void wake_up_idle_cpu(int cpu)
++static void wake_up_idle_cpu(int cpu)
+ {
+ 	struct rq *rq = cpu_rq(cpu);
+ 
+@@ -617,6 +617,22 @@ void wake_up_idle_cpu(int cpu)
+ 		smp_send_reschedule(cpu);
  }
- __setup("full_nohz=", tick_nohz_full_setup);
-+#else
-+#define have_full_nohz_mask (0)
- #endif
  
- /*
-@@ -512,6 +515,10 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
- 		return false;
- 	}
- 
-+	/* If there are full nohz CPUs around, we need to keep the timekeeping duty */
-+	if (have_full_nohz_mask && tick_do_timer_cpu == cpu)
-+		return false;
++static bool wake_up_full_nohz_cpu(int cpu)
++{
++	if (tick_nohz_full_cpu(cpu)) {
++		smp_send_reschedule(cpu);
++		return true;
++	}
 +
- 	return true;
++	return false;
++}
++
++void wake_up_nohz_cpu(int cpu)
++{
++	if (!wake_up_full_nohz_cpu(cpu))
++		wake_up_idle_cpu(cpu);
++}
++
+ static inline bool got_nohz_idle_kick(void)
+ {
+ 	int cpu = smp_processor_id();
+diff --git a/kernel/timer.c b/kernel/timer.c
+index ff3b516..970b57d 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -936,7 +936,7 @@ void add_timer_on(struct timer_list *timer, int cpu)
+ 	 * makes sure that a CPU on the way to idle can not evaluate
+ 	 * the timer wheel.
+ 	 */
+-	wake_up_idle_cpu(cpu);
++	wake_up_nohz_cpu(cpu);
+ 	spin_unlock_irqrestore(&base->lock, flags);
  }
- 
+ EXPORT_SYMBOL_GPL(add_timer_on);
 -- 
 1.7.5.4
 
