@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755910Ab3AHKmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:42:54 -0500
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:57321 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755828Ab3AHKmx (ORCPT
+	id S1755922Ab3AHKnY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:43:24 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58520 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755736Ab3AHKnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:42:53 -0500
-Date: Tue, 8 Jan 2013 19:43:28 +0900
-From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-To: mtosatti@redhat.com, gleb@redhat.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] KVM: Write protect the updated slot only when dirty
- logging is enabled
-Message-Id: <20130108194328.af8c13ce.yoshikawa_takuya_b1@lab.ntt.co.jp>
-In-Reply-To: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
-References: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
-X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jan 2013 05:43:23 -0500
+Date: Tue, 8 Jan 2013 10:43:21 +0000
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: "Kim, Milo" <Milo.Kim@ti.com>
+Cc: Axel Lin <axel.lin@ingics.com>, "Girdwood, Liam" <lrg@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFT] regulator: lp8788-ldo: Use ldo->en_pin to check if
+ regulator is enabled by external pin
+Message-ID: <20130108104321.GJ4544@opensource.wolfsonmicro.com>
+References: <1357371223.22227.1.camel@phoenix>
+ <20130107110818.GB4544@opensource.wolfsonmicro.com>
+ <A874F61F95741C4A9BA573A70FE3998F69E11935@DQHE02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6J7GEvtanOfV9oXA"
+Content-Disposition: inline
+In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E11935@DQHE02.ent.ti.com>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling kvm_mmu_slot_remove_write_access() for a deleted slot does
-nothing but search for non-existent mmu pages which have mappings to
-that deleted memory; this is safe but a waste of time.
 
-Since we want to make the function rmap based in a later patch, in a
-manner which makes it unsafe to be called for a deleted slot, we makes
-the caller see if the slot is non-zero and being dirty logged.
+--6J7GEvtanOfV9oXA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
----
- arch/x86/kvm/x86.c  |    8 +++++++-
- virt/kvm/kvm_main.c |    1 -
- 2 files changed, 7 insertions(+), 2 deletions(-)
+On Mon, Jan 07, 2013 at 11:23:26PM +0000, Kim, Milo wrote:
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 1c9c834..add5e48 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6897,7 +6897,13 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
- 	spin_lock(&kvm->mmu_lock);
- 	if (nr_mmu_pages)
- 		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
--	kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-+	/*
-+	 * Write protect all pages for dirty logging.
-+	 * Existing largepage mappings are destroyed here and new ones will
-+	 * not be created until the end of the logging.
-+	 */
-+	if (npages && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES))
-+		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
- 	spin_unlock(&kvm->mmu_lock);
- 	/*
- 	 * If memory slot is created, or moved, we need to clear all
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index e45c20c..f689a6d 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -817,7 +817,6 @@ int __kvm_set_memory_region(struct kvm *kvm,
- 	if ((new.flags & KVM_MEM_LOG_DIRTY_PAGES) && !new.dirty_bitmap) {
- 		if (kvm_create_dirty_bitmap(&new) < 0)
- 			goto out_free;
--		/* destroy any largepage mappings for dirty tracking */
- 	}
- 
- 	if (!npages || base_gfn != old.base_gfn) {
--- 
-1.7.5.4
+> > Applied, thanks.  However we should be converting the driver to use the
+> > core support for this - the GPIO can just be given to the core in the
+> > regulator config which should handle everything transparently.
 
+> I have a question.
+> Do you mean the dependency of CONFIG_GENERIC_GPIO in this driver?
+
+No.  I mean you should use the regulator API core functionality for
+managing GPIO enables instead of open coding it.
+
+--6J7GEvtanOfV9oXA
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.12 (GNU/Linux)
+
+iQIcBAEBAgAGBQJQ6/g/AAoJELSic+t+oim9rK4QAJBfTDemX+WYzEp0fW2zaGqe
+5IWlBa86a26BDLviPVSytC2Bdg/5lotrcWpl8n/u78sfFS4c1W/e2SbrtqMJSZ0B
+Td7GexehPzn9FJ+Rn/Fju9WsSZ+FFWMB/KNNzBBI68jIHKY/H14PMY920Uet5T14
+A4YpqmlkqkFk36A1t1ZcxRcKiijc6cX2fUgjHIfyNZmjzybi0N15/GtQGaB2pLTI
+OndWtHGvCTwKbSHM0QIseGcDLa2CM49yeuhPrbvKcv2CuyfGXDC0WW6TJJl4ehKA
+1vMesKN1A/C/BeUehCmmiZJld/SBigpJlL0D9DBMhBRfgC+brNtUXqw6wYlrZizB
+X0TxR7kNMJx+JvijlQOl/EpWEg+TxOA186asYHksc2AtEo4y3Yk1LLL152VIl98j
+DlPwrGLn0rBhCGDWVAnEazgw4zs8suzR6+TXottJc+BsAT9YimMOTl1Fk3j5qdNs
++UmUs0zovbqBU8qotEAOKOKD/XlB1nqBzUAwq3/iLD6xA6cEdE9UoQb3LuzQII5b
+rJMh5+y8OY5PgS0V2LIIK7+YRUIl8jROAyleWqBzniMylANt+s1R+OBgBo068Qst
+nu6tT6xqrVrIov2gCwySzpfSczXp32gQvnNBtKmCWfkA543mrq/XpxvDZknN5lrC
+hIbhcoPBChEapkS659HT
+=AeoF
+-----END PGP SIGNATURE-----
+
+--6J7GEvtanOfV9oXA--
