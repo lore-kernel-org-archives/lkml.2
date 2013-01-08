@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab3AHDP1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:15:27 -0500
-Received: from haggis.pcug.org.au ([203.10.76.10]:48729 "EHLO
-	members.tip.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751331Ab3AHDPY (ORCPT
+	id S1753374Ab3AHDQd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:16:33 -0500
+Received: from mail-da0-f49.google.com ([209.85.210.49]:62301 "EHLO
+	mail-da0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3AHDQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:15:24 -0500
-Date: Tue, 8 Jan 2013 14:15:13 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kees Cook <keescook@google.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: linux-next: manual merge of the drop-experimental tree with the
- net-next tree
-Message-Id: <20130108141513.573d65ff946749624c9b4281@canb.auug.org.au>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__8_Jan_2013_14_15_13_+1100_lsZWrqV6hTh/1zuw"
+	Mon, 7 Jan 2013 22:16:32 -0500
+Date: Mon, 7 Jan 2013 19:16:29 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Mel Gorman <mgorman@suse.de>, Jason Liu <r64343@freescale.com>,
+        linux-kernel@vger.kernel.org, riel@redhat.com, minchan@kernel.org,
+        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return error
+ issue
+In-Reply-To: <20130107133354.03f2ba80.akpm@linux-foundation.org>
+Message-ID: <alpine.DEB.2.00.1301071916140.18525@chino.kir.corp.google.com>
+References: <1357458273-28558-1-git-send-email-r64343@freescale.com> <20130107135721.GD3885@suse.de> <20130107133354.03f2ba80.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__8_Jan_2013_14_15_13_+1100_lsZWrqV6hTh/1zuw
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, 7 Jan 2013, Andrew Morton wrote:
 
-Hi Kees,
+> --- a/mm/compaction.c~mm-compaction-fix-echo-1-compact_memory-return-error-issue-fix
+> +++ a/mm/compaction.c
+> @@ -1150,7 +1150,7 @@ unsigned long try_to_compact_pages(struc
+>  
+>  
+>  /* Compact all zones within a node */
+> -static int __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+> +static void __compact_pgdat(pg_data_t *pgdat, struct compact_control *cc)
+>  {
+>  	int zoneid;
+>  	struct zone *zone;
+> @@ -1183,11 +1183,9 @@ static int __compact_pgdat(pg_data_t *pg
+>  		VM_BUG_ON(!list_empty(&cc->freepages));
+>  		VM_BUG_ON(!list_empty(&cc->migratepages));
+>  	}
+> -
+> -	return 0;
+>  }
+>  
+> -int compact_pgdat(pg_data_t *pgdat, int order)
+> +void compact_pgdat(pg_data_t *pgdat, int order)
+>  {
+>  	struct compact_control cc = {
+>  		.order = order,
+> @@ -1195,10 +1193,10 @@ int compact_pgdat(pg_data_t *pgdat, int 
+>  		.page = NULL,
+>  	};
+>  
+> -	return __compact_pgdat(pgdat, &cc);
+> +	__compact_pgdat(pgdat, &cc);
+>  }
+>  
+> -static int compact_node(int nid)
+> +static void compact_node(int nid)
+>  {
+>  	struct compact_control cc = {
+>  		.order = -1,
+> @@ -1206,7 +1204,7 @@ static int compact_node(int nid)
+>  		.page = NULL,
+>  	};
+>  
+> -	return __compact_pgdat(NODE_DATA(nid), &cc);
+> +	__compact_pgdat(NODE_DATA(nid), &cc);
+>  }
+>  
+>  /* Compact all nodes in the system */
+> diff -puN include/linux/compaction.h~mm-compaction-fix-echo-1-compact_memory-return-error-issue-fix include/linux/compaction.h
+> --- a/include/linux/compaction.h~mm-compaction-fix-echo-1-compact_memory-return-error-issue-fix
+> +++ a/include/linux/compaction.h
+> @@ -23,7 +23,7 @@ extern int fragmentation_index(struct zo
+>  extern unsigned long try_to_compact_pages(struct zonelist *zonelist,
+>  			int order, gfp_t gfp_mask, nodemask_t *mask,
+>  			bool sync, bool *contended, struct page **page);
+> -extern int compact_pgdat(pg_data_t *pgdat, int order);
+> +extern void compact_pgdat(pg_data_t *pgdat, int order);
+>  extern void reset_isolation_suitable(pg_data_t *pgdat);
+>  extern unsigned long compaction_suitable(struct zone *zone, int order);
+>  
+> @@ -80,9 +80,8 @@ static inline unsigned long try_to_compa
+>  	return COMPACT_CONTINUE;
+>  }
+>  
+> -static inline int compact_pgdat(pg_data_t *pgdat, int order)
+> +static inline void compact_pgdat(pg_data_t *pgdat, int order)
+>  {
+> -	return COMPACT_CONTINUE;
+>  }
+>  
+>  static inline void reset_isolation_suitable(pg_data_t *pgdat)
 
-Today's linux-next merge of the drop-experimental tree got conflicts in
-drivers/net/ethernet/8390/Kconfig and drivers/net/ethernet/i825xx/Kconfig
-between commits 483f777266f5 ("drivers/net: remove orphaned references to
-micro channel") from the net-next tree and commits 16f5471ff2da
-("drivers/net/ethernet/8390: remove depends on CONFIG_EXPERIMENTAL") and
-65af6f091e6d ("drivers/net/ethernet/i825xx: remove depends on
-CONFIG_EXPERIMENTAL") from the drop-experimental tree.
-
-I fixed it up (I used the latter versions) and can carry the fix as
-necessary (no action is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__8_Jan_2013_14_15_13_+1100_lsZWrqV6hTh/1zuw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBCAAGBQJQ649BAAoJEECxmPOUX5FETPsP/RkelQ9UNweMhzUjSrU0tawT
-I+0pZjBXh8HviV+KFnRvSPYtP4BfoqGPmRY0l2gUZCEuz0O1m6jb7O9pWXteBKbH
-2HJEH5xg+o8Zxd5P143PAS39K7mvN2ui+FoUGXGABjGFambJbwi6P4Lgr+KI/Xrr
-WTl8z9lcTHMrraz9q64a+O3jHgzp7u4+q/k+qe3jTVp0VCA3Tl5yBUzInFc/ig0a
-B/k9g1UNZmUEXQbqjbsXrQ5Tb4F3cE0KCsCovIdsfWMp6AIuQP1iaqmv8Jbdwb30
-jD16z5BOh89HQAavAOnylO6+bh2aG6k9OqbC6pz669dr3jRfW7JHKjo2Zhp6T3MW
-EMAEtrq+Ym0oZhnZaWOo09pABXylIdw/vZ73wmaze+j9l/inukJBWEaqqCImJxBC
-Co6rAfdOXmfVs1Fu0a/4O6crbRDQ1J9o4qRnk8WPFi451ATjIJnDYvY28+PDm1T/
-IOwYBXbP5zUGp7f4zM64pGXgOu2ZxyqEqnP4c/f0BrcOYXo60w7bHN3m1Z701g5O
-vC7JBmZgnRE8vXUR4JlfKo0rUrjANz560S5Iy+Y4r5pic1WZQNxkDLIUdWLp2X0/
-bHcMqluhJXf1uGwD+VJgfNcJcEXAWjU8h9Oi6OzSmMZ6J31O1wLvJCxODvSfHMfH
-v7OMpxCJU8vNN9Cs/mwB
-=+Uaz
------END PGP SIGNATURE-----
-
---Signature=_Tue__8_Jan_2013_14_15_13_+1100_lsZWrqV6hTh/1zuw--
+Acked-by: David Rientjes <rientjes@google.com>
