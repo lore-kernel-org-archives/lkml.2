@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756739Ab3AHQvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 11:51:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756684Ab3AHQvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 11:51:13 -0500
-Date: Tue, 8 Jan 2013 11:51:01 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 16/24] blkcg: add blkg_policy_data->plid
-Message-ID: <20130108165101.GG29635@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-17-git-send-email-tj@kernel.org>
+	id S1756736Ab3AHQwg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 11:52:36 -0500
+Received: from mail-vb0-f45.google.com ([209.85.212.45]:54812 "EHLO
+	mail-vb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756543Ab3AHQwf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 11:52:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356726946-26037-17-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130108163141.GA27555@shutemov.name>
+References: <20130105152208.GA3386@redhat.com> <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
+ <alpine.LNX.2.00.1301061037140.28950@eggly.anvils> <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
+ <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
+ <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
+ <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com> <20130108163141.GA27555@shutemov.name>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 8 Jan 2013 08:52:14 -0800
+X-Google-Sender-Auth: 2o9Xp2m5z4mf2DLkfAFg3lqGosE
+Message-ID: <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
+Subject: Re: oops in copy_page_rep()
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
+        Dave Jones <davej@redhat.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:38PM -0800, Tejun Heo wrote:
-> Add pd->plid so that the policy a pd belongs to can be identified
-> easily.  This will be used to implement hierarchical blkg_[rw]stats.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+On Tue, Jan 8, 2013 at 8:31 AM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
+>>
+>> Heh. I was more thinking about why do_huge_pmd_wp_page() needs it, but
+>> do_huge_pmd_numa_page() does not.
+>
+> It does. The check should be moved up.
+>
+>> Also, do we actually need it for huge_pmd_set_accessed()? The
+>> *placement* of that thing confuses me. And because it confuses me, I'd
+>> like to understand it.
+>
+> We need it for huge_pmd_set_accessed() too.
+>
+> Looks like a mis-merge. The original patch for huge_pmd_set_accessed() was
+> correct: http://lkml.org/lkml/2012/10/25/402
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Not a merge error: the pmd_trans_splitting() check was removed by
+commit d10e63f29488 ("mm: numa: Create basic numa page hinting
+infrastructure").
 
-Vivek
+Now, *why* it was removed, I can't tell. And it's not clear why the
+original code just had it in a conditional, while the suggested patch
+has that "goto repeat" thing. I suspect re-trying the fault (which I
+assume the original code did) is actually better, because that way you
+go through all the "should I reschedule as I return through the
+exception" stuff. I dunno.
 
-> ---
->  block/blk-cgroup.c | 2 ++
->  block/blk-cgroup.h | 3 ++-
->  2 files changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index 10e1df9..3a8de32 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -113,6 +113,7 @@ static struct blkcg_gq *blkg_alloc(struct blkcg *blkcg, struct request_queue *q,
->  
->  		blkg->pd[i] = pd;
->  		pd->blkg = blkg;
-> +		pd->plid = i;
->  
->  		/* invoke per-policy init */
->  		if (pol->pd_init_fn)
-> @@ -908,6 +909,7 @@ int blkcg_activate_policy(struct request_queue *q,
->  
->  		blkg->pd[pol->plid] = pd;
->  		pd->blkg = blkg;
-> +		pd->plid = pol->plid;
->  		pol->pd_init_fn(blkg);
->  
->  		spin_unlock(&blkg->blkcg->lock);
-> diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-> index 2446225..40f5b97 100644
-> --- a/block/blk-cgroup.h
-> +++ b/block/blk-cgroup.h
-> @@ -81,8 +81,9 @@ struct blkg_rwstat {
->   * beginning and pd_size can't be smaller than pd.
->   */
->  struct blkg_policy_data {
-> -	/* the blkg this per-policy data belongs to */
-> +	/* the blkg and policy id this per-policy data belongs to */
->  	struct blkcg_gq			*blkg;
-> +	int				plid;
->  
->  	/* used during policy activation */
->  	struct list_head		alloc_node;
-> -- 
-> 1.8.0.2
+Mel, that original patch came from you , although it was based on
+previous work by Peter/Ingo/Andrea. Can you walk us through the
+history and thinking about the loss of pmd_trans_splitting(). Was it
+purely a mistake? It looks intentional.
+
+               Linus
