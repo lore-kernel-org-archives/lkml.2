@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757199Ab3AHXk2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:40:28 -0500
-Received: from mail.windriver.com ([147.11.1.11]:64291 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757170Ab3AHXkU (ORCPT
+	id S1757179Ab3AHXkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:40:49 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53840 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756473Ab3AHXkp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:40:20 -0500
+	Tue, 8 Jan 2013 18:40:45 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Jan Kara <jack@suse.cz>, Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 60/77] udf: Avoid run away loop when partition table length is corrupted
-Date: Tue, 8 Jan 2013 18:35:39 -0500
-Message-ID: <1357688156-25387-61-git-send-email-paul.gortmaker@windriver.com>
+CC: Robert Richter <robert.richter@amd.com>,
+        John Lumby <johnlumby@hotmail.com>,
+        Maynard Johnson <maynardj@us.ibm.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 56/77] oprofile, x86: Fix nmi-unsafe callgraph support
+Date: Tue, 8 Jan 2013 18:35:35 -0500
+Message-ID: <1357688156-25387-57-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,7 +26,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Kara <jack@suse.cz>
+From: Robert Richter <robert.richter@amd.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -30,53 +34,148 @@ From: Jan Kara <jack@suse.cz>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit adee11b2085bee90bd8f4f52123ffb07882d6256 upstream.
+commit a0e3e70243f5b270bc3eca718f0a9fa5e6b8262e upstream.
 
-Check provided length of partition table so that (possibly maliciously)
-corrupted partition table cannot cause accessing data beyond current buffer.
+Backport for stable kernel v2.6.32.y to v2.6.36.y.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-[PG: in 2.6.34 udf_err() is called udf_error()]
+Current oprofile's x86 callgraph support may trigger page faults
+throwing the BUG_ON(in_nmi()) message below. This patch fixes this by
+using the same nmi-safe copy-from-user code as in perf.
+
+------------[ cut here ]------------
+kernel BUG at .../arch/x86/kernel/traps.c:436!
+invalid opcode: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:0a.0/0000:07:00.0/0000:08:04.0/net/eth0/broadcast
+CPU 5
+Modules linked in:
+
+Pid: 8611, comm: opcontrol Not tainted 2.6.39-00007-gfe47ae7 #1 Advanced Micro Device Anaheim/Anaheim
+RIP: 0010:[<ffffffff813e8e35>]  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
+RSP: 0000:ffff88042fd47f28  EFLAGS: 00010002
+RAX: ffff88042c0a7fd8 RBX: 0000000000000001 RCX: 00000000c0000101
+RDX: 00000000ffff8804 RSI: ffffffffffffffff RDI: ffff88042fd47f58
+RBP: ffff88042fd47f48 R08: 0000000000000004 R09: 0000000000001484
+R10: 0000000000000001 R11: 0000000000000000 R12: ffff88042fd47f58
+R13: 0000000000000000 R14: ffff88042fd47d98 R15: 0000000000000020
+FS:  00007fca25e56700(0000) GS:ffff88042fd40000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000000000074 CR3: 000000042d28b000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process opcontrol (pid: 8611, threadinfo ffff88042c0a6000, task ffff88042c532310)
+Stack:
+ 0000000000000000 0000000000000001 ffff88042c0a7fd8 0000000000000000
+ ffff88042fd47de8 ffffffff813e897a 0000000000000020 ffff88042fd47d98
+ 0000000000000000 ffff88042c0a7fd8 ffff88042fd47de8 0000000000000074
+Call Trace:
+ <NMI>
+ [<ffffffff813e897a>] nmi+0x1a/0x20
+ [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
+ <<EOE>>
+Code: ff 59 5b 41 5c 41 5d c9 c3 55 65 48 8b 04 25 88 b5 00 00 48 89 e5 41 55 41 54 49 89 fc 53 48 83 ec 08 f6 80 47 e0 ff ff 04 74 04 <0f> 0b eb fe 81 80 44 e0 ff ff 00 00 01 04 65 ff 04 25 c4 0f 01
+RIP  [<ffffffff813e8e35>] do_nmi+0x22/0x1ee
+ RSP <ffff88042fd47f28>
+---[ end trace ed6752185092104b ]---
+Kernel panic - not syncing: Fatal exception in interrupt
+Pid: 8611, comm: opcontrol Tainted: G      D     2.6.39-00007-gfe47ae7 #1
+Call Trace:
+ <NMI>  [<ffffffff813e5e0a>] panic+0x8c/0x188
+ [<ffffffff813e915c>] oops_end+0x81/0x8e
+ [<ffffffff8100403d>] die+0x55/0x5e
+ [<ffffffff813e8c45>] do_trap+0x11c/0x12b
+ [<ffffffff810023c8>] do_invalid_op+0x91/0x9a
+ [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
+ [<ffffffff8131e6fa>] ? oprofile_add_sample+0x83/0x95
+ [<ffffffff81321670>] ? op_amd_check_ctrs+0x4f/0x2cf
+ [<ffffffff813ee4d5>] invalid_op+0x15/0x20
+ [<ffffffff813e8e35>] ? do_nmi+0x22/0x1ee
+ [<ffffffff813e8e7a>] ? do_nmi+0x67/0x1ee
+ [<ffffffff813e897a>] nmi+0x1a/0x20
+ [<ffffffff813f08ab>] ? bad_to_user+0x25/0x771
+ <<EOE>>
+
+Cc: John Lumby <johnlumby@hotmail.com>
+Cc: Maynard Johnson <maynardj@us.ibm.com>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/udf/super.c | 10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/x86/oprofile/backtrace.c | 46 +++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 42 insertions(+), 4 deletions(-)
 
-diff --git a/fs/udf/super.c b/fs/udf/super.c
-index 4551ad2..a48725b 100644
---- a/fs/udf/super.c
-+++ b/fs/udf/super.c
-@@ -1298,6 +1298,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 	struct genericPartitionMap *gpm;
- 	uint16_t ident;
- 	struct buffer_head *bh;
-+	unsigned int table_len;
- 	int ret = 0;
+diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
+index 3855096..9859781 100644
+--- a/arch/x86/oprofile/backtrace.c
++++ b/arch/x86/oprofile/backtrace.c
+@@ -11,6 +11,8 @@
+ #include <linux/oprofile.h>
+ #include <linux/sched.h>
+ #include <linux/mm.h>
++#include <linux/highmem.h>
++
+ #include <asm/ptrace.h>
+ #include <asm/uaccess.h>
+ #include <asm/stacktrace.h>
+@@ -48,6 +50,42 @@ static struct stacktrace_ops backtrace_ops = {
+ 	.walk_stack	= print_context_stack,
+ };
  
- 	bh = udf_read_tagged(sb, block, block, &ident);
-@@ -1305,6 +1306,13 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 		return 1;
- 	BUG_ON(ident != TAG_IDENT_LVD);
- 	lvd = (struct logicalVolDesc *)bh->b_data;
-+	table_len = le32_to_cpu(lvd->mapTableLength);
-+	if (sizeof(*lvd) + table_len > sb->s_blocksize) {
-+		udf_error(sb, "error loading logical volume descriptor: "
-+			  "Partition table too long (%u > %lu)\n", table_len,
-+			sb->s_blocksize - sizeof(*lvd));
-+		goto out_bh;
-+	}
++/* from arch/x86/kernel/cpu/perf_event.c: */
++
++/*
++ * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
++ */
++static unsigned long
++copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
++{
++	unsigned long offset, addr = (unsigned long)from;
++	unsigned long size, len = 0;
++	struct page *page;
++	void *map;
++	int ret;
++
++	do {
++		ret = __get_user_pages_fast(addr, 1, 0, &page);
++		if (!ret)
++			break;
++
++		offset = addr & (PAGE_SIZE - 1);
++		size = min(PAGE_SIZE - offset, n - len);
++
++		map = kmap_atomic(page, KM_USER0);
++		memcpy(to, map+offset, size);
++		kunmap_atomic(map, KM_USER0);
++		put_page(page);
++
++		len  += size;
++		to   += size;
++		addr += size;
++
++	} while (len < n);
++
++	return len;
++}
++
+ struct frame_head {
+ 	struct frame_head *bp;
+ 	unsigned long ret;
+@@ -55,12 +93,12 @@ struct frame_head {
  
- 	i = udf_sb_alloc_partition_maps(sb, le32_to_cpu(lvd->numPartitionMaps));
- 	if (i != 0) {
-@@ -1313,7 +1321,7 @@ static int udf_load_logicalvol(struct super_block *sb, sector_t block,
- 	}
+ static struct frame_head *dump_user_backtrace(struct frame_head *head)
+ {
++	/* Also check accessibility of one struct frame_head beyond: */
+ 	struct frame_head bufhead[2];
++	unsigned long bytes;
  
- 	for (i = 0, offset = 0;
--	     i < sbi->s_partitions && offset < le32_to_cpu(lvd->mapTableLength);
-+	     i < sbi->s_partitions && offset < table_len;
- 	     i++, offset += gpm->partitionMapLength) {
- 		struct udf_part_map *map = &sbi->s_partmaps[i];
- 		gpm = (struct genericPartitionMap *)
+-	/* Also check accessibility of one struct frame_head beyond */
+-	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
+-		return NULL;
+-	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
++	bytes = copy_from_user_nmi(bufhead, head, sizeof(bufhead));
++	if (bytes != sizeof(bufhead))
+ 		return NULL;
+ 
+ 	oprofile_add_trace(bufhead[0].ret);
 -- 
 1.7.12.1
 
