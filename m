@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab3AHCJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:09:54 -0500
-Received: from mail-we0-f177.google.com ([74.125.82.177]:65391 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756203Ab3AHCJw (ORCPT
+	id S1756232Ab3AHCJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:09:57 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:55993 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756211Ab3AHCJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:52 -0500
+	Mon, 7 Jan 2013 21:09:54 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 30/33] sched: Debug nohz rq clock
-Date: Tue,  8 Jan 2013 03:08:30 +0100
-Message-Id: <1357610913-1080-31-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 31/33] sched: Remove broken check for skip clock update
+Date: Tue,  8 Jan 2013 03:08:31 +0100
+Message-Id: <1357610913-1080-32-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,18 +33,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The runqueue clock is supposed to be periodically updated by the
-tick. On full dynticks CPU we call update_nohz_rq_clock() before
-reading it. Now the scheduler code is complicated enough that we
-may miss some update_nohz_rq_clock() calls before reading the
-runqueue clock.
+rq->skip_clock_update shouldn't be negative. Thus the check
+in put_prev_task() is useless.
 
-This therefore introduce a new debugging feature that detects
-when the rq clock is stale due to missing updates on full
-dynticks CPUs.
+It was probably intended to do the following check:
 
-This can be later expanded to debug stale clocks on dynticks-idle
-CPUs.
+	if (prev->on_rq && !rq->skip_clock_update)
+
+We only want to update the clock if it's not voluntarily
+sleeping: otherwise deactivate_task() already did the rq
+clock update in schedule(). But we want to ignore that
+update if a ttwu did it for us, in which case
+rq->skip_clock_update is 1.
+
+But update_rq_clock() already takes care of that so we
+can just remove the broken condition.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -63,53 +66,22 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- kernel/sched/sched.h |   23 +++++++++++++++++++++++
- 1 files changed, 23 insertions(+), 0 deletions(-)
+ kernel/sched/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index e1bac76..0fef0b3 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -502,16 +502,39 @@ DECLARE_PER_CPU(struct rq, runqueues);
- #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
- #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 15ba35e..8dfc461 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2886,7 +2886,7 @@ static inline void schedule_debug(struct task_struct *prev)
  
-+static inline void rq_clock_check(struct rq *rq)
-+{
-+#if defined(CONFIG_SCHED_DEBUG) && defined(CONFIG_NO_HZ_FULL)
-+	unsigned long long clock;
-+	unsigned long flags;
-+	int cpu;
-+
-+	cpu = cpu_of(rq);
-+	if (!tick_nohz_full_cpu(cpu) || rq->curr == rq->idle)
-+		return;
-+
-+	local_irq_save(flags);
-+	clock = sched_clock_cpu(cpu_of(rq));
-+	local_irq_restore(flags);
-+
-+	if (abs(clock - rq->clock) > (TICK_NSEC * 3))
-+		WARN_ON_ONCE(1);
-+#endif
-+}
-+
- static inline u64 rq_clock(struct rq *rq)
+ static void put_prev_task(struct rq *rq, struct task_struct *prev)
  {
-+	rq_clock_check(rq);
- 	return rq->clock;
+-	if (prev->on_rq || rq->skip_clock_update < 0)
++	if (prev->on_rq)
+ 		update_rq_clock(rq);
+ 	prev->sched_class->put_prev_task(rq, prev);
  }
- 
- static inline u64 rq_clock_task(struct rq *rq)
- {
-+	rq_clock_check(rq);
- 	return rq->clock_task;
- }
- 
-+
- #ifdef CONFIG_SMP
- 
- #define rcu_dereference_check_sched_domain(p) \
 -- 
 1.7.5.4
 
