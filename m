@@ -1,48 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755971Ab3AHKtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:49:22 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:62450 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3AHKtV (ORCPT
+	id S1755957Ab3AHKur (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:50:47 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:41568 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3AHKuq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:49:21 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Subject: Re: add Packet hub driver for Topcliff Platform controller hub
-Date: Tue, 8 Jan 2013 10:49:14 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: masa-korg@dsn.okisemi.com,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, Tomoya MORINAGA <tomoya.rohm@gmail.com>
-References: <20130107090210.GA20716@elgon.mountain>
-In-Reply-To: <20130107090210.GA20716@elgon.mountain>
+	Tue, 8 Jan 2013 05:50:46 -0500
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301081049.15118.arnd@arndb.de>
-X-Provags-ID: V02:K0:RmPKsTbLChPcJfE9uaAsqXLAZh8TAa8vgeYCItaHW78
- c4LDXiabhcYDTt6pmUXDkcn5W6QYbYCEmUyjaV2BxFD3gytoQp
- SbISQE2KV6pB6FXLwiF/k72A/m8I18BomZ0o8kHYzcBU2HgaJb
- K+MeY6q/Fn3ulaDrGPlJu0VHJH3gEsIcu73/s/+kB+dTmMaBGT
- zYKbeR1DG88MoGTcqydFUjY9IqHKmyeMKkTYzU0YfV1uhPuMpO
- +ZJ68QA9XPfIO4oDT8BJ8KEeYTycLZ2aTI05lHfvFoQIXBnAAk
- rvcdkgsOqoMNr+SFobtxseId0+rg2mbraaMDXhLaOVeNLtSKun
- FsOeWosRiVY9jTc+0N8U=
+In-Reply-To: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
+References: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
+Date: Tue, 8 Jan 2013 11:50:45 +0100
+Message-ID: <CAMXyS3MRx3D__60xtt4G4CCyHSTW2iHd1x1AR1LCQkrZrOiJ2g@mail.gmail.com>
+Subject: Re: tg3 v3.123 in 100Mbps Full-Duplex mode with autoneg off
+From: Marcin Miotk <marcinmiotk81@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 January 2013, Dan Carpenter wrote:
-> Sorry my question is about an old patch.  Smatch complains because we
-> only pass a PAGE_SIZE buffer to sysfs files so the test for
-> "if (count > PCH_PHUB_OROM_SIZE) {" makes it think we are overflowing.
-> In fact, count is never more than 4096 so there is no overflow, but I
-> also think that it means only the first 4096 bytes of the firmware gets
-> updated.
+Hi,
 
-I think it works correctly as long as user space keeps writing into the
-bin file when getting short write return (4096 bytes).
+any conclusions re this?
 
-	Arnd
+Regards,
+Marcin Miotk
