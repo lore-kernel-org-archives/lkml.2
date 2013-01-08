@@ -1,109 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab3AHHMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 02:12:53 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:57971 "EHLO
+	id S1753568Ab3AHHPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 02:15:44 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:59491 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750923Ab3AHHMw (ORCPT
+	with ESMTP id S1751038Ab3AHHPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 02:12:52 -0500
-Date: Tue, 8 Jan 2013 08:12:34 +0100
+	Tue, 8 Jan 2013 02:15:43 -0500
+Date: Tue, 8 Jan 2013 08:10:23 +0100
 From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>,
-        Laxman Dewangan <ldewangan@nvidia.com>,
-        Stephen Warren <swarren@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [PATCH] spi: tegra: sequence compatible strings as per preference
-Message-ID: <20130108071234.GB2171@avionic-0098.adnet.avionic-design.de>
-References: <1352452052-13823-1-git-send-email-ldewangan@nvidia.com>
- <509D37B8.8020606@wwwdotorg.org>
- <20121109171008.GX23807@opensource.wolfsonmicro.com>
- <509D3D46.7060102@wwwdotorg.org>
- <20121110170741.GA17689@avionic-0098.mockup.avionic-design.de>
- <20121219170009.54EE83E0C34@localhost>
+To: Boris BREZILLON <linux-arm@overkiz.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+Subject: Re: [PATCH v4 RESEND] pwm: atmel: add Timer Counter Block PWM driver
+Message-ID: <20130108071023.GA2171@avionic-0098.adnet.avionic-design.de>
+References: <1355994776-4764-1-git-send-email-linux-arm@overkiz.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gj572EiMnwbLXET9"
+	protocol="application/pgp-signature"; boundary="qDbXVdCdHGoSgWSk"
 Content-Disposition: inline
-In-Reply-To: <20121219170009.54EE83E0C34@localhost>
+In-Reply-To: <1355994776-4764-1-git-send-email-linux-arm@overkiz.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:XdbkpVZ7iClKR/pxOKqKiR88nMZ+LCJwU/y9FBOp1ND
- EcthymCrxggIeZuN+gPYGWE42ZggnlXsHNOwoGofB50RTkVvMT
- 2BMXDO/OJ+++lNdxEyRPLgZQKry9xurlvpp0XSBBnKS7iAyDc5
- e/LdlMog68vGMXVjyqbkHtS1k3byl7/o2tAAeX0BN/V57n7ffY
- LMY62jBwumQzKSHqi53sBu8mkswDZOTEWgti4MyPeVYNB3hqo5
- RCMl52FLq+J26Mq5g2chMU+k/wEc4xh0Dmdbt5DoPmuAMaEgyS
- I7v4dPx//sHbivyrcu+55B8RbEk31nLppK7j5/lQlrHdZe7Tur
- URNsBtn95VbzGrL7wKO4MfOa7hcArCpt3dH/Dr69+LK3Z4h9m/
- Gt9ftUVqfD3U5NskEMLZhHE0eFmQg5HUbM=
+X-Provags-ID: V02:K0:CUCqul9QjM2FPwxybO9zePDnstpnbfXGzxnmGDyM9uE
+ ciQWG9eLcHHssEKHrEUMqFAxN2DSZYVTgtGERr42csvpTw35bt
+ GTXoLA4h+N92c6MN8vqpmzS7Ir4D0bfQzpTFMhmXD6sO2zq04F
+ foAtPXpLmn5WTUOJgyLCUxSYVq9R1K9Qr8hXf8dkQlglVhM4DW
+ 9UvBS2xVpPaEhjDvnFOJbvR33A85hOuaBwT3Bn2t5RH9sYVPIl
+ VBtsB4OgUaautDzM3Pempbl5+boS66qK61sS2KXht+nwCGd1Zb
+ FI9OZt40kSXDQ4W++BpbCQUYswdRmDvs0wQMWE1DGOsVoMGNtm
+ 9CkrNEkSK87hsiYWjUPT3G6fk8RF3faLVWJNrOuDimmxTs95J8
+ TxwxsGOsK8TIK6H2uGvoUPi8ws6RnbiGwY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---gj572EiMnwbLXET9
+--qDbXVdCdHGoSgWSk
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, Dec 19, 2012 at 05:00:09PM +0000, Grant Likely wrote:
-> On Sat, 10 Nov 2012 18:07:42 +0100, Thierry Reding <thierry.reding@avioni=
-c-design.de> wrote:
-> > On Fri, Nov 09, 2012 at 10:28:38AM -0700, Stephen Warren wrote:
-> > > On 11/09/2012 10:10 AM, Mark Brown wrote:
-> > > > On Fri, Nov 09, 2012 at 10:04:56AM -0700, Stephen Warren wrote:
-> > > >=20
-> > > >> However just FYI, it should not be necessary for correctness; The
-> > > >> DT matching order is supposed to be driven purely by the order of
-> > > >> the compatible values in the DT now, and not affected by the
-> > > >> order of values in the table. (This wasn't always the case, but
-> > > >> was a bug that was fixed IIRC by Thierry Reding).
-> > > >=20
-> > > > I guess the driver is being used backported in older kernels which
-> > > > don't have that fix?
-> > >=20
-> > > That sounds likely. Laxman, it'd be a good idea to track down the fix
-> > > to the DT matching code and backport it, so that hard-to debug issues
-> > > aren't caused by the lack of that patch!
-> >=20
-> > Unfortunately the patch that was supposed to fixed this caused a
-> > regression and was therefore reverted. Rob (Cc'ed) said there was a
-> > patch to fix it properly and was supposed to go into 3.6 but it seems
-> > that never happened. Rob, what's the status on this?
-> >=20
-> > The revert is here: bc51b0c22cebf5c311a6f1895fcca9f78efd0478
+On Thu, Dec 20, 2012 at 10:12:56AM +0100, Boris BREZILLON wrote:
+> Hi,
 >=20
-> Rob, ping on this. I think we talked about it on IRC, but I cannot
-> remember what was said.... I must be getting old.
+> Sorry for resend. The previous version still has alignment issues on=20
+> atmel_tcb_pwm_set_polarity, atmel_tcb_pwm_request and
+> atmel_tcb_pwm_config function parameters.
+>=20
+> This patch adds a PWM driver based on Atmel Timer Counter Block.
+> Timer Counter Block is used in Waveform generator mode.
+>=20
+> A Timer Counter Block provides up to 6 PWM devices grouped by 2:
+> * group 0 =3D PWM 0 and 1
+> * group 1 =3D PWM 1 and 2
+> * group 2 =3D PMW 3 and 4
 
-Any news on this one?
+Should this be "PWM 2 and 3" and "PWM 4 and 5"? Or is PWM 1 shared
+between groups 0 and 1?
+
+> +static int atmel_tcb_pwm_request(struct pwm_chip *chip,
+> +				 struct pwm_device *pwm)
+> +{
+[...]
+> +	clk_enable(tc->clk[group]);
+
+You need to check the return value of clk_enable(). There's always a
+small possibility that it may fail.
+
+> +static void atmel_tcb_pwm_disable(struct pwm_chip *chip, struct pwm_devi=
+ce *pwm)
+> +{
+[...]
+> +	/* If duty is 0 reverse polarity */
+> +	if (tcbpwm->duty =3D=3D 0)
+> +		polarity =3D !polarity;
+
+Rather than commenting on what the code does, this should say why it
+does so.
+
+> +static int atmel_tcb_pwm_enable(struct pwm_chip *chip, struct pwm_device=
+ *pwm)
+> +{
+[...]
+> +	/* If duty is 0 reverse polarity */
+> +	if (tcbpwm->duty =3D=3D 0)
+> +		polarity =3D !polarity;
+
+Same here.
+
+> +static int atmel_tcb_pwm_probe(struct platform_device *pdev)
+> +{
+[...]
+> +	struct atmel_tcb_pwm_chip *tcbpwm;
+> +	struct device_node *np =3D pdev->dev.of_node;
+> +	struct atmel_tc *tc;
+> +	int err;
+> +	int tcblock;
+> +
+> +	err =3D of_property_read_u32(np, "tc-block", &tcblock);
+> +	if (err < 0) {
+> +		dev_err(&pdev->dev,
+> +			"failed to get tc block number from device tree (error: %d)\n",
+
+Maybe: "failed to get Timer Counter Block number..." to make it
+consistent with the error message below:
+
+> +	tc =3D atmel_tc_alloc(tcblock, "tcb-pwm");
+> +	if (tc =3D=3D NULL) {
+> +		dev_err(&pdev->dev, "failed to allocate Timer Counter Block\n");
+> +		return -ENOMEM;
+> +	}
+[...]
+> +static const struct of_device_id atmel_tcb_pwm_dt_ids[] =3D {
+> +	{ .compatible =3D "atmel,tcb-pwm", },
+> +	{ /* sentinel */ }
+> +};
+> +MODULE_DEVICE_TABLE(of, mxs_pwm_dt_ids);
+
+This is still wrong.
+
+> +static struct platform_driver atmel_tcb_pwm_driver =3D {
+> +	.driver =3D {
+> +		.name =3D "atmel-tcb-pwm",
+> +		.of_match_table =3D atmel_tcb_pwm_dt_ids,
+> +	},
+> +	.probe =3D atmel_tcb_pwm_probe,
+> +	.remove =3D atmel_tcb_pwm_remove,
+> +};
+> +module_platform_driver(atmel_tcb_pwm_driver);
+> +
+> +MODULE_AUTHOR("Boris BREZILLON <b.brezillon@overkiz.com>");
+> +MODULE_DESCRIPTION("Atmel Timer Counter Pulse Width Modulation Driver");
+> +MODULE_ALIAS("platform:atmel-tcb-pwm");
+
+I don't think you needMODULE_ALIAS() if the alias is the same as the
+driver name.
 
 Thierry
 
---gj572EiMnwbLXET9
+--qDbXVdCdHGoSgWSk
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.19 (GNU/Linux)
 
-iQIcBAEBAgAGBQJQ68biAAoJEN0jrNd/PrOh6OYQALnxIcAYee7gi6zXv867rfCT
-EYC1p6J8ZQGghHBSyYo0dsemfcwrddUMvkvmtmSl3eSgMEPQgPd8TOvDMF9HuMOU
-I1KoP0l6tLSEn/+k9Mrlh2gOBa8lp73oF7jStyahZVaJcIfBsABVvFDHfU5zGBO+
-y2vAHlAQnQ60ZX60DBRakYai5sxpTU32yRa7pvyLUz+Tz1MYsayxCbUIiHaZ8Rjo
-SxsU8JhCiXEmbC6X9zJzggfbUGImKeWXCCIe87FH2lnj0iegHvRMEyzp3qddlXZ7
-XXYyJGc2p8Gpftqw3TojoIPSEkS0v7PqJ4hdIXryv1IOie2MgyIP0CSldN/9LuZe
-Us1AJiYx8YJX3nq0QfoVpa9a5sL4sNgd44l3QbKHCNL0IT+mP7x+fmjr2sF/43rQ
-6KOrW4gkpDT6Mf5JNF+KbM0FA4LClQZEySN0zFnSwzL1XAGDII28JGWZQaw4zb82
-6cWkMzevvsv9UPuRhIXvTl2gkS5BHEs7MzgU4kPznJ0d1zThAlcD+ar1YtS3PV4z
-mzvXZfvMuheQigDVqT/vjBRJZkiuSROzPgbwsWpHK1jefA3VdOY1EIVLk0+UM5Oy
-d6MymrE04SW2hBOcNy7sy7GhcQRaOOBsjT9KU63o2lH++LsigwLdwplKu6mbtk1Q
-ptodw/yyZ3kDx3KePDzw
-=0k4e
+iQIcBAEBAgAGBQJQ68ZfAAoJEN0jrNd/PrOhArkQALf0m1p2mjiOeYMJUeXR6itC
+Xo3owVg5QuZY4f7rWT31p7BJ2SFU6xVauhxK4CDgH+f2KnJ4qKeMsuC+mlo/JUTa
+GTRWxytID2/mZCZuHnDXBDuESPDQlWZJ2V8Ul943Hs1ahcEQT9PzqFd7L0RsipBc
+C0jsoxo3gHmTGBZodhDCCWJdMNRrzYWzjtwCBRGCmmdCxd8gEBubW51fViPCs3tr
+xbPJWGrmFedzGzTdCkjNLIn8OArnjLl2IISYQMvcsbHve3B4+Z2PJcveYz6hpUlE
+EBYzW0zoZqm6E77Gu2PE4Q3QdmsUHZI5P6XAAyl+8fcGqqdjpjEziWLY526nw/bC
+R8Iobvdon4vZNBn9UpY6Py9x2fGZNwFpT1ohZbi5tpBqQyekumVF91V2e+R2g5JC
+aAWAZZ4NSophKOxXVO05LvYc3AB5lTLfaAsT4zaORO0+cBirTRCFq44oyjauoh4C
+ltH3CVIp/OavpnPaL5WHAi6iyUKja8X6NQRRwYut8U4803lsiigOQSHSB0xPNJB0
+MSsfZwUFhuW15JFYJdj7pS+NdyWokB2WVWVHt3G5q4K0HvodQShUuyOz7nJB/L96
+o4RzutpdrArvB9q/iJosxzaZF7JdojuJUwYjexIcTLBDQHzEq3oZN8D892PQMbs3
+lzdgM7RJBQj8KhWMM9jG
+=vyev
 -----END PGP SIGNATURE-----
 
---gj572EiMnwbLXET9--
+--qDbXVdCdHGoSgWSk--
