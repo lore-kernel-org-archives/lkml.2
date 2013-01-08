@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab3AHXj4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:39:56 -0500
-Received: from mail.windriver.com ([147.11.1.11]:64015 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008Ab3AHXjv (ORCPT
+	id S1757130Ab3AHXkL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:40:11 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53775 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab3AHXj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:39:51 -0500
+	Tue, 8 Jan 2013 18:39:59 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>,
+CC: Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 72/77] net: Fix ip link add netns oops
-Date: Tue, 8 Jan 2013 18:35:51 -0500
-Message-ID: <1357688156-25387-73-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 69/77] sched: fix divide by zero at {thread_group,task}_times
+Date: Tue, 8 Jan 2013 18:35:48 -0500
+Message-ID: <1357688156-25387-70-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,7 +25,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Eric W. Biederman" <ebiederm@xmission.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -32,120 +33,113 @@ From: "Eric W. Biederman" <ebiederm@xmission.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 13ad17745c2cbd437d9e24b2d97393e0be11c439 upstream.
+commit bea6832cc8c4a0a9a65dd17da6aaa657fe27bc3e upstream.
 
-Ed Swierk <eswierk@bigswitch.com> writes:
-> On 2.6.35.7
->  ip link add link eth0 netns 9999 type macvlan
-> where 9999 is a nonexistent PID triggers an oops and causes all network functions to hang:
-> [10663.821898] BUG: unable to handle kernel NULL pointer dereference at 000000000000006d
->  [10663.821917] IP: [<ffffffff8149c2fa>] __dev_alloc_name+0x9a/0x170
->  [10663.821933] PGD 1d3927067 PUD 22f5c5067 PMD 0
->  [10663.821944] Oops: 0000 [#1] SMP
->  [10663.821953] last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
->  [10663.821959] CPU 3
->  [10663.821963] Modules linked in: macvlan ip6table_filter ip6_tables rfcomm ipt_MASQUERADE binfmt_misc iptable_nat nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack sco ipt_REJECT bnep l2cap xt_tcpudp iptable_filter ip_tables x_tables bridge stp vboxnetadp vboxnetflt vboxdrv kvm_intel kvm parport_pc ppdev snd_hda_codec_intelhdmi snd_hda_codec_conexant arc4 iwlagn iwlcore mac80211 snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_seq_midi snd_rawmidi i915 snd_seq_midi_event snd_seq thinkpad_acpi drm_kms_helper btusb tpm_tis nvram uvcvideo snd_timer snd_seq_device bluetooth videodev v4l1_compat v4l2_compat_ioctl32 tpm drm tpm_bios snd cfg80211 psmouse serio_raw intel_ips soundcore snd_page_alloc intel_agp i2c_algo_bit video output netconsole configfs lp parport usbhid hid e1000e sdhci_pci ahci libahci sdhci led_class
->  [10663.822155]
->  [10663.822161] Pid: 6000, comm: ip Not tainted 2.6.35-23-generic #41-Ubuntu 2901CTO/2901CTO
->  [10663.822167] RIP: 0010:[<ffffffff8149c2fa>] [<ffffffff8149c2fa>] __dev_alloc_name+0x9a/0x170
->  [10663.822177] RSP: 0018:ffff88014aebf7b8 EFLAGS: 00010286
->  [10663.822182] RAX: 00000000fffffff4 RBX: ffff8801ad900800 RCX: 0000000000000000
->  [10663.822187] RDX: ffff880000000000 RSI: 0000000000000000 RDI: ffff88014ad63000
->  [10663.822191] RBP: ffff88014aebf808 R08: 0000000000000041 R09: 0000000000000041
->  [10663.822196] R10: 0000000000000000 R11: dead000000200200 R12: ffff88014aebf818
->  [10663.822201] R13: fffffffffffffffd R14: ffff88014aebf918 R15: ffff88014ad62000
->  [10663.822207] FS: 00007f00c487f700(0000) GS:ffff880001f80000(0000) knlGS:0000000000000000
->  [10663.822212] CS: 0010 DS: 0000 ES: 0000 CR0: 0000000080050033
->  [10663.822216] CR2: 000000000000006d CR3: 0000000231f19000 CR4: 00000000000026e0
->  [10663.822221] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
->  [10663.822226] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
->  [10663.822231] Process ip (pid: 6000, threadinfo ffff88014aebe000, task ffff88014afb16e0)
->  [10663.822236] Stack:
->  [10663.822240] ffff88014aebf808 ffffffff814a2bb5 ffff88014aebf7e8 00000000a00ee8d6
->  [10663.822251] <0> 0000000000000000 ffffffffa00ef940 ffff8801ad900800 ffff88014aebf818
->  [10663.822265] <0> ffff88014aebf918 ffff8801ad900800 ffff88014aebf858 ffffffff8149c413
->  [10663.822281] Call Trace:
->  [10663.822290] [<ffffffff814a2bb5>] ? dev_addr_init+0x75/0xb0
->  [10663.822298] [<ffffffff8149c413>] dev_alloc_name+0x43/0x90
->  [10663.822307] [<ffffffff814a85ee>] rtnl_create_link+0xbe/0x1b0
->  [10663.822314] [<ffffffff814ab2aa>] rtnl_newlink+0x48a/0x570
->  [10663.822321] [<ffffffff814aafcc>] ? rtnl_newlink+0x1ac/0x570
->  [10663.822332] [<ffffffff81030064>] ? native_x2apic_icr_read+0x4/0x20
->  [10663.822339] [<ffffffff814a8c17>] rtnetlink_rcv_msg+0x177/0x290
->  [10663.822346] [<ffffffff814a8aa0>] ? rtnetlink_rcv_msg+0x0/0x290
->  [10663.822354] [<ffffffff814c25d9>] netlink_rcv_skb+0xa9/0xd0
->  [10663.822360] [<ffffffff814a8a85>] rtnetlink_rcv+0x25/0x40
->  [10663.822367] [<ffffffff814c223e>] netlink_unicast+0x2de/0x2f0
->  [10663.822374] [<ffffffff814c303e>] netlink_sendmsg+0x1fe/0x2e0
->  [10663.822383] [<ffffffff81488533>] sock_sendmsg+0xf3/0x120
->  [10663.822391] [<ffffffff815899fe>] ? _raw_spin_lock+0xe/0x20
->  [10663.822400] [<ffffffff81168656>] ? __d_lookup+0x136/0x150
->  [10663.822406] [<ffffffff815899fe>] ? _raw_spin_lock+0xe/0x20
->  [10663.822414] [<ffffffff812b7a0d>] ? _atomic_dec_and_lock+0x4d/0x80
->  [10663.822422] [<ffffffff8116ea90>] ? mntput_no_expire+0x30/0x110
->  [10663.822429] [<ffffffff81486ff5>] ? move_addr_to_kernel+0x65/0x70
->  [10663.822435] [<ffffffff81493308>] ? verify_iovec+0x88/0xe0
->  [10663.822442] [<ffffffff81489020>] sys_sendmsg+0x240/0x3a0
-> [10663.822450] [<ffffffff8111e2a9>] ? __do_fault+0x479/0x560
->  [10663.822457] [<ffffffff815899fe>] ? _raw_spin_lock+0xe/0x20
->  [10663.822465] [<ffffffff8116cf4a>] ? alloc_fd+0x10a/0x150
->  [10663.822473] [<ffffffff8158d76e>] ? do_page_fault+0x15e/0x350
->  [10663.822482] [<ffffffff8100a0f2>] system_call_fastpath+0x16/0x1b
->  [10663.822487] Code: 90 48 8d 78 02 be 25 00 00 00 e8 92 1d e2 ff 48 85 c0 75 cf bf 20 00 00 00 e8 c3 b1 c6 ff 49 89 c7 b8 f4 ff ff ff 4d 85 ff 74 bd <4d> 8b 75 70 49 8d 45 70 48 89 45 b8 49 83 ee 58 eb 28 48 8d 55
->  [10663.822618] RIP [<ffffffff8149c2fa>] __dev_alloc_name+0x9a/0x170
->  [10663.822627] RSP <ffff88014aebf7b8>
->  [10663.822631] CR2: 000000000000006d
->  [10663.822636] ---[ end trace 3dfd6c3ad5327ca7 ]---
+On architectures where cputime_t is 64 bit type, is possible to trigger
+divide by zero on do_div(temp, (__force u32) total) line, if total is a
+non zero number but has lower 32 bit's zeroed. Removing casting is not
+a good solution since some do_div() implementations do cast to u32
+internally.
 
-This bug was introduced in:
-commit 81adee47dfb608df3ad0b91d230fb3cef75f0060
-Author: Eric W. Biederman <ebiederm@aristanetworks.com>
-Date:   Sun Nov 8 00:53:51 2009 -0800
+This problem can be triggered in practice on very long lived processes:
 
-    net: Support specifying the network namespace upon device creation.
+  PID: 2331   TASK: ffff880472814b00  CPU: 2   COMMAND: "oraagent.bin"
+   #0 [ffff880472a51b70] machine_kexec at ffffffff8103214b
+   #1 [ffff880472a51bd0] crash_kexec at ffffffff810b91c2
+   #2 [ffff880472a51ca0] oops_end at ffffffff814f0b00
+   #3 [ffff880472a51cd0] die at ffffffff8100f26b
+   #4 [ffff880472a51d00] do_trap at ffffffff814f03f4
+   #5 [ffff880472a51d60] do_divide_error at ffffffff8100cfff
+   #6 [ffff880472a51e00] divide_error at ffffffff8100be7b
+      [exception RIP: thread_group_times+0x56]
+      RIP: ffffffff81056a16  RSP: ffff880472a51eb8  RFLAGS: 00010046
+      RAX: bc3572c9fe12d194  RBX: ffff880874150800  RCX: 0000000110266fad
+      RDX: 0000000000000000  RSI: ffff880472a51eb8  RDI: 001038ae7d9633dc
+      RBP: ffff880472a51ef8   R8: 00000000b10a3a64   R9: ffff880874150800
+      R10: 00007fcba27ab680  R11: 0000000000000202  R12: ffff880472a51f08
+      R13: ffff880472a51f10  R14: 0000000000000000  R15: 0000000000000007
+      ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
+   #7 [ffff880472a51f00] do_sys_times at ffffffff8108845d
+   #8 [ffff880472a51f40] sys_times at ffffffff81088524
+   #9 [ffff880472a51f80] system_call_fastpath at ffffffff8100b0f2
+      RIP: 0000003808caac3a  RSP: 00007fcba27ab6d8  RFLAGS: 00000202
+      RAX: 0000000000000064  RBX: ffffffff8100b0f2  RCX: 0000000000000000
+      RDX: 00007fcba27ab6e0  RSI: 000000000076d58e  RDI: 00007fcba27ab6e0
+      RBP: 00007fcba27ab700   R8: 0000000000000020   R9: 000000000000091b
+      R10: 00007fcba27ab680  R11: 0000000000000202  R12: 00007fff9ca41940
+      R13: 0000000000000000  R14: 00007fcba27ac9c0  R15: 00007fff9ca41940
+      ORIG_RAX: 0000000000000064  CS: 0033  SS: 002b
 
-    There is no good reason to not support userspace specifying the
-    network namespace during device creation, and it makes it easier
-    to create a network device and pass it to a child network namespace
-    with a well known name.
-
-    We have to be careful to ensure that the target network namespace
-    for the new device exists through the life of the call.  To keep
-    that logic clear I have factored out the network namespace grabbing
-    logic into rtnl_link_get_net.
-
-    In addtion we need to continue to pass the source network namespace
-    to the rtnl_link_ops.newlink method so that we can find the base
-    device source network namespace.
-
-    Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
-    Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-Where apparently I forgot to add error handling to the path where we create
-a new network device in a new network namespace, and pass in an invalid pid.
-
-Reported-by: Ed Swierk <eswierk@bigswitch.com>
-Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20120808092714.GA3580@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[PG: sched/core.c is just sched.c in 2.6.34; also the do_div() on
+ __force u32 isn't explicitly seen since that is in v3.3-rc1~191^2~11]
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/core/rtnetlink.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched.c | 34 ++++++++++++++++++++--------------
+ 1 file changed, 20 insertions(+), 14 deletions(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 835f38c..e01b484 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -1324,6 +1324,9 @@ replay:
- 			snprintf(ifname, IFNAMSIZ, "%s%%d", ops->kind);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 245458e..e24d139 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -3410,6 +3410,20 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
+ #endif
  
- 		dest_net = rtnl_link_get_net(net, tb);
-+		if (IS_ERR(dest_net))
-+			return PTR_ERR(dest_net);
++static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
++{
++	u64 temp = (__force u64) rtime;
 +
- 		dev = rtnl_create_link(net, dest_net, ifname, ops, tb);
++	temp *= (__force u64) utime;
++
++	if (sizeof(cputime_t) == 4)
++		temp = div_u64(temp, (__force u32) total);
++	else
++		temp = div64_u64(temp, (__force u64) total);
++
++	return (__force cputime_t) temp;
++}
++
+ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ {
+ 	cputime_t rtime, utime = p->utime, total = cputime_add(utime, p->stime);
+@@ -3419,13 +3433,9 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	 */
+ 	rtime = nsecs_to_cputime(p->se.sum_exec_runtime);
  
- 		if (IS_ERR(dev))
+-	if (total) {
+-		u64 temp = rtime;
+-
+-		temp *= utime;
+-		do_div(temp, total);
+-		utime = (cputime_t)temp;
+-	} else
++	if (total)
++		utime = scale_utime(utime, rtime, total);
++	else
+ 		utime = rtime;
+ 
+ 	/*
+@@ -3452,13 +3462,9 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
+ 	total = cputime_add(cputime.utime, cputime.stime);
+ 	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
+ 
+-	if (total) {
+-		u64 temp = rtime;
+-
+-		temp *= cputime.utime;
+-		do_div(temp, total);
+-		utime = (cputime_t)temp;
+-	} else
++	if (total)
++		utime = scale_utime(cputime.utime, rtime, total);
++	else
+ 		utime = rtime;
+ 
+ 	sig->prev_utime = max(sig->prev_utime, utime);
 -- 
 1.7.12.1
 
