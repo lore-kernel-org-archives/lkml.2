@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756462Ab3AHObe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 09:31:34 -0500
-Received: from tex.lwn.net ([70.33.254.29]:40583 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756424Ab3AHObc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 09:31:32 -0500
-Date: Tue, 8 Jan 2013 07:31:30 -0700
-From: Jonathan Corbet <corbet@lwn.net>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Alessandro Rubini <rubini@gnudd.com>, federico.vaga@gmail.com,
-        mchehab@infradead.org, pawel@osciak.com, hans.verkuil@cisco.com,
-        giancarlo.asnaghi@st.com, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, s.nawrocki@samsung.com
-Subject: Re: [PATCH v3 2/4] videobuf2-dma-streaming: new videobuf2 memory
- allocator
-Message-ID: <20130108073130.38a8cc3d@lwn.net>
-In-Reply-To: <50EBC1C1.3060208@samsung.com>
-References: <3892735.vLSnhhCRFi@harkonnen>
-	<1348484332-8106-1-git-send-email-federico.vaga@gmail.com>
-	<1399400.izKZgEHXnP@harkonnen>
-	<12929800.xFTBAueAE0@harkonnen>
-	<20130106230947.GA17979@mail.gnudd.com>
-	<20130107124050.3fc5031b@lwn.net>
-	<20130107181500.24c56803@redhat.com>
-	<50EBC1C1.3060208@samsung.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1756483Ab3AHOcQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 09:32:16 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:53690 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756443Ab3AHOcP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 09:32:15 -0500
+Message-ID: <50EC2DED.7050207@canonical.com>
+Date: Tue, 08 Jan 2013 15:32:13 +0100
+From: David Henningsson <david.henningsson@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: Vincent Blut <vincent.debian@free.fr>, alsa-devel@alsa-project.org,
+        Maurizio Avogadro <mavoga@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [3.6.9 -> 3.7.1 regression] sound: snd_hda_intel
+ codec probing issue?
+References: <1356704740.3953.26.camel@lamella> <s5hvcber5cz.wl%tiwai@suse.de> <1357421043.3912.13.camel@lamella> <s5h38ydpf45.wl%tiwai@suse.de> <1357648135.3849.7.camel@lamella> <s5hehhvq1dm.wl%tiwai@suse.de>
+In-Reply-To: <s5hehhvq1dm.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jan 2013 07:50:41 +0100
-Marek Szyprowski <m.szyprowski@samsung.com> wrote:
+On 01/08/2013 01:56 PM, Takashi Iwai wrote:
+>> I'll test with enable_msi=0 later.
+>
+> Thanks.
+>
+> FWIW, below is a patch I'm considering to merge (after testing, of
+> course).  Could you buys check it?
+>
+>
+> Takashi
+>
+> ---
+> From: Takashi Iwai <tiwai@suse.de>
+> Subject: [PATCH] ALSA: hda - Disable runtime D3 for Intel CPT & co
 
-> > Couldn't this performance difference be due to the usage of GFP_DMA inside
-> > the VB2 code, like Federico's new patch series is proposing?
-> >
-> > If not, why are there a so large performance penalty?  
-> 
-> Nope, this was caused rather by a very poor CPU access to non-cached (aka
-> 'coherent') memory and the way the video data has been accessed/read 
-> with CPU.
+For reference, I'm seeing some of this too, and have asked for people to 
+test with enable_msi=0 and/or power_save_controller=0. I'm waiting for 
+replies from people with the hardware.
 
-Exactly.  Uncached memory *hurts*, especially if you're having to touch it
-all with the CPU.
 
-jon
+-- 
+David Henningsson, Canonical Ltd.
+https://launchpad.net/~diwic
