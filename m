@@ -1,119 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab3AHXYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:24:10 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:35198 "EHLO hydra.sisk.pl"
+	id S1755856Ab3AHXYe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:24:34 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35158 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753568Ab3AHXYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:24:08 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH v3 2/6] PCI: split registration of PCI bus devices into two stages
-Date: Wed, 09 Jan 2013 00:29:50 +0100
-Message-ID: <31602902.kR8ehd6tSR@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357663945-16054-3-git-send-email-jiang.liu@huawei.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <1357663945-16054-3-git-send-email-jiang.liu@huawei.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1755737Ab3AHXYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:24:32 -0500
+From: Cody P Schafer <cody@linux.vnet.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>, Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 0/2] Add decoder for GFP masks to tools.
+Date: Tue,  8 Jan 2013 15:24:13 -0800
+Message-Id: <1357687455-13234-1-git-send-email-cody@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.0.3
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010823-5806-0000-0000-00001DF81818
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 09, 2013 12:52:21 AM Jiang Liu wrote:
-> When handling BUS_NOTIFY_ADD_DEVICE event for a PCI bridge device,
-> the notification handler can't hold reference count to the new PCI bus
-> because the device object for the new bus (pci_dev->subordinate->dev)
-> hasn't been initialized yet.
-> 
-> Split the registration of PCI bus device into two stages as below,
-> so that the event handler could hold reference count to the new PCI bus
-> when handling BUS_NOTIFY_ADD_DEVICE event.
-> 
-> 1) device_initialize(&pci_dev->dev)
-> 2) device_initialize(&pci_dev->subordinate->dev)
-> 3) notify BUS_NOTIFY_ADD_DEVICE event for pci_dev
-> 4) device_add(&pci_dev->dev)
-> 5) device_add(&pci_dev->subordinate->dev)
-> 
-> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  drivers/pci/bus.c    |    2 +-
->  drivers/pci/probe.c  |    4 +++-
->  drivers/pci/remove.c |   10 +++++-----
->  3 files changed, 9 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
-> index ad6a8b6..2fea481 100644
-> --- a/drivers/pci/bus.c
-> +++ b/drivers/pci/bus.c
-> @@ -198,7 +198,7 @@ int pci_bus_add_child(struct pci_bus *bus)
->  	if (bus->bridge)
->  		bus->dev.parent = bus->bridge;
->  
-> -	retval = device_register(&bus->dev);
-> +	retval = device_add(&bus->dev);
->  	if (retval)
->  		return retval;
->  
-> diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-> index e557d6f..a8315c2 100644
-> --- a/drivers/pci/probe.c
-> +++ b/drivers/pci/probe.c
-> @@ -642,6 +642,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
->  	 */
->  	child->dev.class = &pcibus_class;
->  	dev_set_name(&child->dev, "%04x:%02x", pci_domain_nr(child), busnr);
-> +	device_initialize(&child->dev);
->  
->  	/*
->  	 * Set up the primary, secondary and subordinate
-> @@ -1678,7 +1679,8 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
->  	b->dev.class = &pcibus_class;
->  	b->dev.parent = b->bridge;
->  	dev_set_name(&b->dev, "%04x:%02x", pci_domain_nr(b), bus);
-> -	error = device_register(&b->dev);
-> +	device_initialize(&b->dev);
-> +	error = device_add(&b->dev);
+I needed to decode some gfp_masks to debug an oom-killer invocation, and wrote
+this tool to avoid doing the decoding manually.
 
-Well, the change here isn't really necessary, as far as I can say.
+Bad things about this: slightly hacky use of code intended for use with ftrace,
+splitting linux/gfp.h into 2 parts.
 
->  	if (error)
->  		goto class_dev_reg_err;
->  
-> diff --git a/drivers/pci/remove.c b/drivers/pci/remove.c
-> index fc38c48..a1fdd0f 100644
-> --- a/drivers/pci/remove.c
-> +++ b/drivers/pci/remove.c
-> @@ -48,11 +48,11 @@ void pci_remove_bus(struct pci_bus *bus)
->  	list_del(&bus->node);
->  	pci_bus_release_busn_res(bus);
->  	up_write(&pci_bus_sem);
-> -	if (!bus->is_added)
-> -		return;
-> -
-> -	pci_remove_legacy_files(bus);
-> -	device_unregister(&bus->dev);
-> +	if (bus->is_added) {
-> +		pci_remove_legacy_files(bus);
-> +		device_del(&bus->dev);
-> +	}
-> +	put_device(&bus->dev);
->  }
->  EXPORT_SYMBOL(pci_remove_bus);
->  
-> 
+Good things: No additional places need modification to keep the decoder up to
+date, no mistakes from manual gfp_mask decoding.
 
-Apart from the above
+ include/linux/gfp-flags.h     | 143 +++++++++++++++++++++++++++++++++++++++++
+ include/linux/gfp.h           | 144 +-----------------------------------------
+ tools/gfp-decode/.gitignore   |   1 +
+ tools/gfp-decode/Makefile     |  11 ++++
+ tools/gfp-decode/gfp-decode.c |  89 ++++++++++++++++++++++++++
+ 5 files changed, 245 insertions(+), 143 deletions(-)
 
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
 
+On the topic of writing Makefiles for tools/*, it would be extremely
+convienient if a system was setup which allowed simple specification of final
+executable(s) and the objects to compose them rather than having each tool
+write a custom Makefile.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+For example (potentially):
+
+	TARGETS = gfp-decode
+	obj-gfp-decode = gfp-decode.o
+	include ../scripts/Makefile.magic
+
