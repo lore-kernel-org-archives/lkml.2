@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab3AHCR0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:17:26 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:62846 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755197Ab3AHCJJ (ORCPT
+	id S1755375Ab3AHCJH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:09:07 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:59893 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755197Ab3AHCJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:09:09 -0500
+	Mon, 7 Jan 2013 21:09:03 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 11/33] rcu: Restart the tick on non-responding full dynticks CPUs
-Date: Tue,  8 Jan 2013 03:08:11 +0100
-Message-Id: <1357610913-1080-12-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 08/33] nohz: Assign timekeeping duty to a non-full-nohz CPU
+Date: Tue,  8 Jan 2013 03:08:08 +0100
+Message-Id: <1357610913-1080-9-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,9 +33,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a CPU in full dynticks mode doesn't respond to complete
-a grace period, issue it a specific IPI so that it restarts
-the tick and chases a quiescent state.
+This way the full nohz CPUs can safely run with the tick
+stopped with a guarantee that somebody else is taking
+care of the jiffies and gtod progression.
+
+NOTE: this doesn't handle CPU hotplug. Also we could use something
+more elaborated wrt. powersaving if we have more than one non full-nohz
+CPU running. But let's use this KISS solution for now.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -53,45 +57,76 @@ Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
-
+[fix have_nohz_full_mask offcase]
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/rcutree.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ kernel/time/tick-broadcast.c |    3 ++-
+ kernel/time/tick-common.c    |    5 ++++-
+ kernel/time/tick-sched.c     |    9 ++++++++-
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index e441b77..302d360 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -53,6 +53,7 @@
- #include <linux/delay.h>
- #include <linux/stop_machine.h>
- #include <linux/random.h>
-+#include <linux/tick.h>
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index f113755..596c547 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -537,7 +537,8 @@ void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ 		bc->event_handler = tick_handle_oneshot_broadcast;
  
- #include "rcutree.h"
- #include <trace/events/rcu.h>
-@@ -743,6 +744,12 @@ static int dyntick_save_progress_counter(struct rcu_data *rdp)
- 	return (rdp->dynticks_snap & 0x1) == 0;
+ 		/* Take the do_timer update */
+-		tick_do_timer_cpu = cpu;
++		if (!tick_nohz_full_cpu(cpu))
++			tick_do_timer_cpu = cpu;
+ 
+ 		/*
+ 		 * We must be careful here. There might be other CPUs
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index b1600a6..83f2bd9 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -163,7 +163,10 @@ static void tick_setup_device(struct tick_device *td,
+ 		 * this cpu:
+ 		 */
+ 		if (tick_do_timer_cpu == TICK_DO_TIMER_BOOT) {
+-			tick_do_timer_cpu = cpu;
++			if (!tick_nohz_full_cpu(cpu))
++				tick_do_timer_cpu = cpu;
++			else
++				tick_do_timer_cpu = TICK_DO_TIMER_NONE;
+ 			tick_next_period = ktime_get();
+ 			tick_period = ktime_set(0, NSEC_PER_SEC / HZ);
+ 		}
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 494a2aa..b75e302 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -112,7 +112,8 @@ static void tick_sched_do_timer(ktime_t now)
+ 	 * this duty, then the jiffies update is still serialized by
+ 	 * jiffies_lock.
+ 	 */
+-	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE))
++	if (unlikely(tick_do_timer_cpu == TICK_DO_TIMER_NONE)
++	    && !tick_nohz_full_cpu(cpu))
+ 		tick_do_timer_cpu = cpu;
+ #endif
+ 
+@@ -163,6 +164,8 @@ static int __init tick_nohz_full_setup(char *str)
+ 	return 1;
  }
+ __setup("full_nohz=", tick_nohz_full_setup);
++#else
++#define have_full_nohz_mask (0)
+ #endif
  
-+static void rcu_kick_nohz_cpu(int cpu)
-+{
-+	if (tick_nohz_full_cpu(cpu))
-+		smp_send_reschedule(cpu);
-+}
-+
  /*
-  * Return true if the specified CPU has passed through a quiescent
-  * state by virtue of being in or having passed through an dynticks
-@@ -790,6 +797,9 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 		rdp->offline_fqs++;
- 		return 1;
+@@ -512,6 +515,10 @@ static bool can_stop_idle_tick(int cpu, struct tick_sched *ts)
+ 		return false;
  	}
+ 
++	/* If there are full nohz CPUs around, we need to keep the timekeeping duty */
++	if (have_full_nohz_mask && tick_do_timer_cpu == cpu)
++		return false;
 +
-+	rcu_kick_nohz_cpu(rdp->cpu);
-+
- 	return 0;
+ 	return true;
  }
  
 -- 
