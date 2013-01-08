@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755555Ab3AHKoz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:44:55 -0500
-Received: from tama500.ecl.ntt.co.jp ([129.60.39.148]:36793 "EHLO
-	tama500.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755153Ab3AHKox (ORCPT
+	id S1755874Ab3AHKpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:45:34 -0500
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:57351 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755153Ab3AHKpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:44:53 -0500
-Date: Tue, 8 Jan 2013 19:45:28 +0900
+	Tue, 8 Jan 2013 05:45:33 -0500
+Date: Tue, 8 Jan 2013 19:46:07 +0900
 From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 To: mtosatti@redhat.com, gleb@redhat.com
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/7] KVM: Remove unused slot_bitmap from kvm_mmu_page
-Message-Id: <20130108194528.bed5eaaf.yoshikawa_takuya_b1@lab.ntt.co.jp>
+Subject: [PATCH 5/7] KVM: Make kvm_mmu_change_mmu_pages() take mmu_lock by
+ itself
+Message-Id: <20130108194607.008fb4ca.yoshikawa_takuya_b1@lab.ntt.co.jp>
 In-Reply-To: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
 References: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
 X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
@@ -23,84 +24,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not needed any more.
+No reason to make callers take mmu_lock since we do not need to protect
+kvm_mmu_change_mmu_pages() and kvm_mmu_slot_remove_write_access()
+together by mmu_lock in kvm_arch_commit_memory_region(): the former
+calls kvm_mmu_commit_zap_page() and flushes TLBs by itself.
+
+Note: we do not need to protect kvm->arch.n_requested_mmu_pages by
+mmu_lock as can be seen from the fact that it is read locklessly.
 
 Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
 ---
- Documentation/virtual/kvm/mmu.txt |    7 -------
- arch/x86/include/asm/kvm_host.h   |    5 -----
- arch/x86/kvm/mmu.c                |   10 ----------
- 3 files changed, 0 insertions(+), 22 deletions(-)
+ arch/x86/kvm/mmu.c |    4 ++++
+ arch/x86/kvm/x86.c |    9 ++++-----
+ 2 files changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/virtual/kvm/mmu.txt b/Documentation/virtual/kvm/mmu.txt
-index fa5f1db..43fcb76 100644
---- a/Documentation/virtual/kvm/mmu.txt
-+++ b/Documentation/virtual/kvm/mmu.txt
-@@ -187,13 +187,6 @@ Shadow pages contain the following information:
-     perform a reverse map from a pte to a gfn. When role.direct is set, any
-     element of this array can be calculated from the gfn field when used, in
-     this case, the array of gfns is not allocated. See role.direct and gfn.
--  slot_bitmap:
--    A bitmap containing one bit per memory slot.  If the page contains a pte
--    mapping a page from memory slot n, then bit n of slot_bitmap will be set
--    (if a page is aliased among several slots, then it is not guaranteed that
--    all slots will be marked).
--    Used during dirty logging to avoid scanning a shadow page if none if its
--    pages need tracking.
-   root_count:
-     A counter keeping track of how many hardware registers (guest cr3 or
-     pdptrs) are now pointing at the page.  While this counter is nonzero, the
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index c431b33..f75e1fe 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -219,11 +219,6 @@ struct kvm_mmu_page {
- 	u64 *spt;
- 	/* hold the gfn of each spte inside spt */
- 	gfn_t *gfns;
--	/*
--	 * One bit set per slot which has memory
--	 * in this shadow page.
--	 */
--	DECLARE_BITMAP(slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	bool unsync;
- 	int root_count;          /* Currently serving as active root */
- 	unsigned int unsync_children;
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index b4d4fd1..bb964b3 100644
+index bb964b3..fc7d84a 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1522,7 +1522,6 @@ static struct kvm_mmu_page *kvm_mmu_alloc_page(struct kvm_vcpu *vcpu,
- 		sp->gfns = mmu_memory_cache_alloc(&vcpu->arch.mmu_page_cache);
- 	set_page_private(virt_to_page(sp->spt), (unsigned long)sp);
- 	list_add(&sp->link, &vcpu->kvm->arch.active_mmu_pages);
--	bitmap_zero(sp->slot_bitmap, KVM_MEM_SLOTS_NUM);
- 	sp->parent_ptes = 0;
- 	mmu_page_add_parent_pte(vcpu, sp, parent_pte);
- 	kvm_mod_used_mmu_pages(vcpu->kvm, +1);
-@@ -2183,14 +2182,6 @@ int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+@@ -2143,6 +2143,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
+ 	 * change the value
+ 	 */
+ 
++	spin_lock(&kvm->mmu_lock);
++
+ 	if (kvm->arch.n_used_mmu_pages > goal_nr_mmu_pages) {
+ 		while (kvm->arch.n_used_mmu_pages > goal_nr_mmu_pages &&
+ 			!list_empty(&kvm->arch.active_mmu_pages)) {
+@@ -2157,6 +2159,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
+ 	}
+ 
+ 	kvm->arch.n_max_mmu_pages = goal_nr_mmu_pages;
++
++	spin_unlock(&kvm->mmu_lock);
  }
- EXPORT_SYMBOL_GPL(kvm_mmu_unprotect_page);
  
--static void page_header_update_slot(struct kvm *kvm, void *pte, gfn_t gfn)
--{
--	int slot = memslot_id(kvm, gfn);
--	struct kvm_mmu_page *sp = page_header(__pa(pte));
--
--	__set_bit(slot, sp->slot_bitmap);
--}
--
- /*
-  * The function is based on mtrr_type_lookup() in
-  * arch/x86/kernel/cpu/mtrr/generic.c
-@@ -2497,7 +2488,6 @@ static void mmu_set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
- 		++vcpu->kvm->stat.lpages;
+ int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index add5e48..080bbdc 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -3270,12 +3270,10 @@ static int kvm_vm_ioctl_set_nr_mmu_pages(struct kvm *kvm,
+ 		return -EINVAL;
  
- 	if (is_shadow_present_pte(*sptep)) {
--		page_header_update_slot(vcpu->kvm, sptep, gfn);
- 		if (!was_rmapped) {
- 			rmap_count = rmap_add(vcpu, sptep, gfn);
- 			if (rmap_count > RMAP_RECYCLE_THRESHOLD)
+ 	mutex_lock(&kvm->slots_lock);
+-	spin_lock(&kvm->mmu_lock);
+ 
+ 	kvm_mmu_change_mmu_pages(kvm, kvm_nr_mmu_pages);
+ 	kvm->arch.n_requested_mmu_pages = kvm_nr_mmu_pages;
+ 
+-	spin_unlock(&kvm->mmu_lock);
+ 	mutex_unlock(&kvm->slots_lock);
+ 	return 0;
+ }
+@@ -6894,7 +6892,6 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ 	if (!kvm->arch.n_requested_mmu_pages)
+ 		nr_mmu_pages = kvm_mmu_calculate_mmu_pages(kvm);
+ 
+-	spin_lock(&kvm->mmu_lock);
+ 	if (nr_mmu_pages)
+ 		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
+ 	/*
+@@ -6902,9 +6899,11 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+ 	 * Existing largepage mappings are destroyed here and new ones will
+ 	 * not be created until the end of the logging.
+ 	 */
+-	if (npages && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES))
++	if (npages && (mem->flags & KVM_MEM_LOG_DIRTY_PAGES)) {
++		spin_lock(&kvm->mmu_lock);
+ 		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
+-	spin_unlock(&kvm->mmu_lock);
++		spin_unlock(&kvm->mmu_lock);
++	}
+ 	/*
+ 	 * If memory slot is created, or moved, we need to clear all
+ 	 * mmio sptes.
 -- 
 1.7.5.4
 
