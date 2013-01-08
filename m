@@ -1,62 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab3AHXqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:46:20 -0500
-Received: from ozlabs.org ([203.10.76.45]:39972 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757040Ab3AHXqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:46:19 -0500
-Date: Wed, 9 Jan 2013 10:46:17 +1100
-From: Anton Blanchard <anton@samba.org>
-To: eparis@redhat.com, viro@zeniv.linux.org.uk, benh@kernel.crashing.org,
-        paulus@samba.org
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 1/4] audit: Syscall rules are not applied to existing
- processes on non-x86
-Message-ID: <20130109104617.74e995a5@kryten>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757126Ab3AHXqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:46:46 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53687 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867Ab3AHXiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:38:25 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Tejun Heo <tj@kernel.org>, Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 49/77] percpu: fix chunk range calculation
+Date: Tue, 8 Jan 2013 18:35:28 -0500
+Message-ID: <1357688156-25387-50-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.12.1
+In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Tejun Heo <tj@kernel.org>
 
-Commit b05d8447e782 (audit: inline audit_syscall_entry to reduce
-burden on archs) changed audit_syscall_entry to check for a dummy
-context before calling __audit_syscall_entry. Unfortunately the dummy
-context state is maintained in __audit_syscall_entry so once set it
-never gets cleared, even if the audit rules change.
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-As a result, if there are no auditing rules when a process starts
-then it will never be subject to any rules added later. x86 doesn't
-see this because it has an assembly fast path that calls directly into
-__audit_syscall_entry.
+commit a855b84c3d8c73220d4d3cd392a7bee7c83de70e upstream.
 
-I noticed this issue when working on audit performance optimisations.
-I wrote a set of simple test cases available at:
+Percpu allocator recorded the cpus which map to the first and last
+units in pcpu_first/last_unit_cpu respectively and used them to
+determine the address range of a chunk - e.g. it assumed that the
+first unit has the lowest address in a chunk while the last unit has
+the highest address.
 
-http://ozlabs.org/~anton/junkcode/audit_tests.tar.gz
+This simply isn't true.  Groups in a chunk can have arbitrary positive
+or negative offsets from the previous one and there is no guarantee
+that the first unit occupies the lowest offset while the last one the
+highest.
 
-02_new_rule.py fails without the patch and passes with it. The
-test case clears all rules, starts a process, adds a rule then
-verifies the process produces a syscall audit record.
+Fix it by actually comparing unit offsets to determine cpus occupying
+the lowest and highest offsets.  Also, rename pcu_first/last_unit_cpu
+to pcpu_low/high_unit_cpu to avoid confusion.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Cc: <stable@kernel.org> # 3.3+
+The chunk address range is used to flush cache on vmalloc area
+map/unmap and decide whether a given address is in the first chunk by
+per_cpu_ptr_to_phys() and the bug was discovered by invalid
+per_cpu_ptr_to_phys() translation for crash_note.
+
+Kudos to Dave Young for tracking down the problem.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: WANG Cong <xiyou.wangcong@gmail.com>
+Reported-by: Dave Young <dyoung@redhat.com>
+Tested-by: Dave Young <dyoung@redhat.com>
+LKML-Reference: <4EC21F67.10905@redhat.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
+ mm/percpu.c | 46 ++++++++++++++++++++++++++--------------------
+ 1 file changed, 26 insertions(+), 20 deletions(-)
 
-Index: b/include/linux/audit.h
-===================================================================
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -119,7 +119,7 @@ static inline void audit_syscall_entry(i
- 				       unsigned long a1, unsigned long a2,
- 				       unsigned long a3)
+diff --git a/mm/percpu.c b/mm/percpu.c
+index 558543b..83523d9 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -111,9 +111,9 @@ static int pcpu_atom_size __read_mostly;
+ static int pcpu_nr_slots __read_mostly;
+ static size_t pcpu_chunk_struct_size __read_mostly;
+ 
+-/* cpus with the lowest and highest unit numbers */
+-static unsigned int pcpu_first_unit_cpu __read_mostly;
+-static unsigned int pcpu_last_unit_cpu __read_mostly;
++/* cpus with the lowest and highest unit addresses */
++static unsigned int pcpu_low_unit_cpu __read_mostly;
++static unsigned int pcpu_high_unit_cpu __read_mostly;
+ 
+ /* the address of the first chunk which starts with the kernel static area */
+ void *pcpu_base_addr __read_mostly;
+@@ -747,8 +747,8 @@ static void pcpu_pre_unmap_flush(struct pcpu_chunk *chunk,
+ 				 int page_start, int page_end)
  {
--	if (unlikely(!audit_dummy_context()))
-+	if (unlikely(current->audit_context))
- 		__audit_syscall_entry(arch, major, a0, a1, a2, a3);
+ 	flush_cache_vunmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
  }
- static inline void audit_syscall_exit(void *pt_regs)
+ 
+ static void __pcpu_unmap_pages(unsigned long addr, int nr_pages)
+@@ -810,8 +810,8 @@ static void pcpu_post_unmap_tlb_flush(struct pcpu_chunk *chunk,
+ 				      int page_start, int page_end)
+ {
+ 	flush_tlb_kernel_range(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ static int __pcpu_map_pages(unsigned long addr, struct page **pages,
+@@ -888,8 +888,8 @@ static void pcpu_post_map_flush(struct pcpu_chunk *chunk,
+ 				int page_start, int page_end)
+ {
+ 	flush_cache_vmap(
+-		pcpu_chunk_addr(chunk, pcpu_first_unit_cpu, page_start),
+-		pcpu_chunk_addr(chunk, pcpu_last_unit_cpu, page_end));
++		pcpu_chunk_addr(chunk, pcpu_low_unit_cpu, page_start),
++		pcpu_chunk_addr(chunk, pcpu_high_unit_cpu, page_end));
+ }
+ 
+ /**
+@@ -1345,19 +1345,19 @@ phys_addr_t per_cpu_ptr_to_phys(void *addr)
+ {
+ 	void __percpu *base = __addr_to_pcpu_ptr(pcpu_base_addr);
+ 	bool in_first_chunk = false;
+-	unsigned long first_start, first_end;
++	unsigned long first_low, first_high;
+ 	unsigned int cpu;
+ 
+ 	/*
+-	 * The following test on first_start/end isn't strictly
++	 * The following test on unit_low/high isn't strictly
+ 	 * necessary but will speed up lookups of addresses which
+ 	 * aren't in the first chunk.
+ 	 */
+-	first_start = pcpu_chunk_addr(pcpu_first_chunk, pcpu_first_unit_cpu, 0);
+-	first_end = pcpu_chunk_addr(pcpu_first_chunk, pcpu_last_unit_cpu,
+-				    pcpu_unit_pages);
+-	if ((unsigned long)addr >= first_start &&
+-	    (unsigned long)addr < first_end) {
++	first_low = pcpu_chunk_addr(pcpu_first_chunk, pcpu_low_unit_cpu, 0);
++	first_high = pcpu_chunk_addr(pcpu_first_chunk, pcpu_high_unit_cpu,
++				     pcpu_unit_pages);
++	if ((unsigned long)addr >= first_low &&
++	    (unsigned long)addr < first_high) {
+ 		for_each_possible_cpu(cpu) {
+ 			void *start = per_cpu_ptr(base, cpu);
+ 
+@@ -1754,7 +1754,9 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 
+ 	for (cpu = 0; cpu < nr_cpu_ids; cpu++)
+ 		unit_map[cpu] = UINT_MAX;
+-	pcpu_first_unit_cpu = NR_CPUS;
++
++	pcpu_low_unit_cpu = NR_CPUS;
++	pcpu_high_unit_cpu = NR_CPUS;
+ 
+ 	for (group = 0, unit = 0; group < ai->nr_groups; group++, unit += i) {
+ 		const struct pcpu_group_info *gi = &ai->groups[group];
+@@ -1774,9 +1776,13 @@ int __init pcpu_setup_first_chunk(const struct pcpu_alloc_info *ai,
+ 			unit_map[cpu] = unit + i;
+ 			unit_off[cpu] = gi->base_offset + i * ai->unit_size;
+ 
+-			if (pcpu_first_unit_cpu == NR_CPUS)
+-				pcpu_first_unit_cpu = cpu;
+-			pcpu_last_unit_cpu = cpu;
++			/* determine low/high unit_cpu */
++			if (pcpu_low_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] < unit_off[pcpu_low_unit_cpu])
++				pcpu_low_unit_cpu = cpu;
++			if (pcpu_high_unit_cpu == NR_CPUS ||
++			    unit_off[cpu] > unit_off[pcpu_high_unit_cpu])
++				pcpu_high_unit_cpu = cpu;
+ 		}
+ 	}
+ 	pcpu_nr_units = unit;
+-- 
+1.7.12.1
+
