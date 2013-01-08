@@ -1,31 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab3AHXhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:37:55 -0500
-Received: from mail.windriver.com ([147.11.1.11]:63574 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756322Ab3AHXhu (ORCPT
+	id S1756859Ab3AHXiF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:38:05 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:53674 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756812Ab3AHXiB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:50 -0500
+	Tue, 8 Jan 2013 18:38:01 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: =?UTF-8?q?Marcin=20Ko=C5=9Bcielnicki?= <koriakin@0x04.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+CC: David Dillow <dave@thedillows.org>, Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 34/77] usb: ftdi_sio: add PID for Propox ISPcable III
-Date: Tue, 8 Jan 2013 18:35:13 -0500
-Message-ID: <1357688156-25387-35-git-send-email-paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 43/77] ALSA: sis7019 - give slow codecs more time to reset
+Date: Tue, 8 Jan 2013 18:35:22 -0500
+Message-ID: <1357688156-25387-44-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcin Kościelnicki <koriakin@0x04.net>
+From: David Dillow <dave@thedillows.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -33,40 +31,140 @@ From: Marcin Kościelnicki <koriakin@0x04.net>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 307369b0ca06b27b511b61714e335ddfccf19c4f upstream.
+commit fc084e0b930d546872ab23667052499f7daf0fed upstream.
 
-Signed-off-by: Marcin Kościelnicki <koriakin@0x04.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+There are some AC97 codec and board combinations that have been observed
+to take a very long time to respond after the cold reset has completed.
+In one case, more than 350 ms was required. To allow users to have sound
+on those platforms, we'll wait up to 500ms for the codec to become
+ready.
+
+As a board may have multiple codecs, with some faster than others to
+reset, we add a module parameter to inform the driver which codecs
+should be present.
+
+Reported-by: KotCzarny <tjosko@yahoo.com>
+Signed-off-by: David Dillow <dave@thedillows.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 1 +
- drivers/usb/serial/ftdi_sio_ids.h | 1 +
- 2 files changed, 2 insertions(+)
+ sound/pci/sis7019.c | 64 ++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 53 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index e4c3da1..646cc53 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -739,6 +739,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(TML_VID, TML_USB_SERIAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ELSTER_UNICOM_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_JTAGCABLEII_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_PROPOX_ISPCABLEIII_PID) },
- 	{ USB_DEVICE(OLIMEX_VID, OLIMEX_ARM_USB_OCD_PID),
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(FIC_VID, FIC_NEO1973_DEBUG_PID),
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index c4670e5..ce57c40 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -111,6 +111,7 @@
+diff --git a/sound/pci/sis7019.c b/sound/pci/sis7019.c
+index 9cc1b5a..7458323 100644
+--- a/sound/pci/sis7019.c
++++ b/sound/pci/sis7019.c
+@@ -41,6 +41,7 @@ MODULE_SUPPORTED_DEVICE("{{SiS,SiS7019 Audio Accelerator}}");
+ static int index = SNDRV_DEFAULT_IDX1;	/* Index 0-MAX */
+ static char *id = SNDRV_DEFAULT_STR1;	/* ID for this card */
+ static int enable = 1;
++static int codecs = 1;
  
- /* Propox devices */
- #define FTDI_PROPOX_JTAGCABLEII_PID	0xD738
-+#define FTDI_PROPOX_ISPCABLEIII_PID	0xD739
+ module_param(index, int, 0444);
+ MODULE_PARM_DESC(index, "Index value for SiS7019 Audio Accelerator.");
+@@ -48,6 +49,8 @@ module_param(id, charp, 0444);
+ MODULE_PARM_DESC(id, "ID string for SiS7019 Audio Accelerator.");
+ module_param(enable, bool, 0444);
+ MODULE_PARM_DESC(enable, "Enable SiS7019 Audio Accelerator.");
++module_param(codecs, int, 0444);
++MODULE_PARM_DESC(codecs, "Set bit to indicate that codec number is expected to be present (default 1)");
  
- /* Lenz LI-USB Computer Interface. */
- #define FTDI_LENZ_LIUSB_PID	0xD780
+ static DEFINE_PCI_DEVICE_TABLE(snd_sis7019_ids) = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_SI, 0x7019) },
+@@ -140,6 +143,9 @@ struct sis7019 {
+ 	dma_addr_t silence_dma_addr;
+ };
+ 
++/* These values are also used by the module param 'codecs' to indicate
++ * which codecs should be present.
++ */
+ #define SIS_PRIMARY_CODEC_PRESENT	0x0001
+ #define SIS_SECONDARY_CODEC_PRESENT	0x0002
+ #define SIS_TERTIARY_CODEC_PRESENT	0x0004
+@@ -1076,6 +1082,7 @@ static int sis_chip_init(struct sis7019 *sis)
+ {
+ 	unsigned long io = sis->ioport;
+ 	void __iomem *ioaddr = sis->ioaddr;
++	unsigned long timeout;
+ 	u16 status;
+ 	int count;
+ 	int i;
+@@ -1102,21 +1109,45 @@ static int sis_chip_init(struct sis7019 *sis)
+ 	while ((inw(io + SIS_AC97_STATUS) & SIS_AC97_STATUS_BUSY) && --count)
+ 		udelay(1);
+ 
++	/* Command complete, we can let go of the semaphore now.
++	 */
++	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
++	if (!count)
++		return -EIO;
++
+ 	/* Now that we've finished the reset, find out what's attached.
++	 * There are some codec/board combinations that take an extremely
++	 * long time to come up. 350+ ms has been observed in the field,
++	 * so we'll give them up to 500ms.
+ 	 */
+-	status = inl(io + SIS_AC97_STATUS);
+-	if (status & SIS_AC97_STATUS_CODEC_READY)
+-		sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
+-	if (status & SIS_AC97_STATUS_CODEC2_READY)
+-		sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
+-	if (status & SIS_AC97_STATUS_CODEC3_READY)
+-		sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
+-
+-	/* All done, let go of the semaphore, and check for errors
++	sis->codecs_present = 0;
++	timeout = msecs_to_jiffies(500) + jiffies;
++	while (time_before_eq(jiffies, timeout)) {
++		status = inl(io + SIS_AC97_STATUS);
++		if (status & SIS_AC97_STATUS_CODEC_READY)
++			sis->codecs_present |= SIS_PRIMARY_CODEC_PRESENT;
++		if (status & SIS_AC97_STATUS_CODEC2_READY)
++			sis->codecs_present |= SIS_SECONDARY_CODEC_PRESENT;
++		if (status & SIS_AC97_STATUS_CODEC3_READY)
++			sis->codecs_present |= SIS_TERTIARY_CODEC_PRESENT;
++
++		if (sis->codecs_present == codecs)
++			break;
++
++		msleep(1);
++	}
++
++	/* All done, check for errors.
+ 	 */
+-	outl(SIS_AC97_SEMA_RELEASE, io + SIS_AC97_SEMA);
+-	if (!sis->codecs_present || !count)
++	if (!sis->codecs_present) {
++		printk(KERN_ERR "sis7019: could not find any codecs\n");
+ 		return -EIO;
++	}
++
++	if (sis->codecs_present != codecs) {
++		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
++		       sis->codecs_present, codecs);
++	}
+ 
+ 	/* Let the hardware know that the audio driver is alive,
+ 	 * and enable PCM slots on the AC-link for L/R playback (3 & 4) and
+@@ -1388,6 +1419,17 @@ static int __devinit snd_sis7019_probe(struct pci_dev *pci,
+ 	if (!enable)
+ 		goto error_out;
+ 
++	/* The user can specify which codecs should be present so that we
++	 * can wait for them to show up if they are slow to recover from
++	 * the AC97 cold reset. We default to a single codec, the primary.
++	 *
++	 * We assume that SIS_PRIMARY_*_PRESENT matches bits 0-2.
++	 */
++	codecs &= SIS_PRIMARY_CODEC_PRESENT | SIS_SECONDARY_CODEC_PRESENT |
++		  SIS_TERTIARY_CODEC_PRESENT;
++	if (!codecs)
++		codecs = SIS_PRIMARY_CODEC_PRESENT;
++
+ 	rc = snd_card_create(index, id, THIS_MODULE, sizeof(*sis), &card);
+ 	if (rc < 0)
+ 		goto error_out;
 -- 
 1.7.12.1
 
