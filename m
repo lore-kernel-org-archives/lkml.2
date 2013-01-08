@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab3AHSQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:16:53 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:39885 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756509Ab3AHSQv (ORCPT
+	id S1757004Ab3AHSRg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:17:36 -0500
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:46584 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756988Ab3AHSRe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:16:51 -0500
-Date: Tue, 8 Jan 2013 10:16:46 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Yuanhan Liu <yuanhan.liu@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-omap@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, platform-driver-x86@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-iio@vger.kernel.org,
-        linux-rdma@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-mtd@lists.infradead.org,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
-        open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-serial@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-mm@kvack.org, dccp@vger.kernel.org,
-        linux-sctp@vger.kernel.org
-Subject: Re: [PATCH 5/5] kfifo: log based kfifo API
-Message-ID: <20130108181645.GA7972@core.coreip.homeip.net>
-References: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
- <1357657073-27352-6-git-send-email-yuanhan.liu@linux.intel.com>
+	Tue, 8 Jan 2013 13:17:34 -0500
+Date: Tue, 8 Jan 2013 10:17:29 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Li Zefan <lizefan@huawei.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: use new hashtable implementation
+Message-ID: <20130108181729.GB3926@htj.dyndns.org>
+References: <50EBD011.7040801@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1357657073-27352-6-git-send-email-yuanhan.liu@linux.intel.com>
+In-Reply-To: <50EBD011.7040801@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Yuanhan,
+Hello, Li.
 
-On Tue, Jan 08, 2013 at 10:57:53PM +0800, Yuanhan Liu wrote:
-> The current kfifo API take the kfifo size as input, while it rounds
->  _down_ the size to power of 2 at __kfifo_alloc. This may introduce
-> potential issue.
-> 
-> Take the code at drivers/hid/hid-logitech-dj.c as example:
-> 
-> 	if (kfifo_alloc(&djrcv_dev->notif_fifo,
->                        DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report),
->                        GFP_KERNEL)) {
-> 
-> Where, DJ_MAX_NUMBER_NOTIFICATIONS is 8, and sizeo of(struct dj_report)
-> is 15.
-> 
-> Which means it wants to allocate a kfifo buffer which can store 8
-> dj_report entries at once. The expected kfifo buffer size would be
-> 8 * 15 = 120 then. While, in the end, __kfifo_alloc will turn the
-> size to rounddown_power_of_2(120) =  64, and then allocate a buf
-> with 64 bytes, which I don't think this is the original author want.
-> 
-> With the new log API, we can do like following:
-> 
-> 	int kfifo_size_order = order_base_2(DJ_MAX_NUMBER_NOTIFICATIONS *
-> 					    sizeof(struct dj_report));
-> 
-> 	if (kfifo_alloc(&djrcv_dev->notif_fifo, kfifo_size_order, GFP_KERNEL)) {
-> 
-> This make sure we will allocate enough kfifo buffer for holding
-> DJ_MAX_NUMBER_NOTIFICATIONS dj_report entries.
+On Tue, Jan 08, 2013 at 03:51:45PM +0800, Li Zefan wrote:
+> -static struct hlist_head *css_set_hash(struct cgroup_subsys_state *css[])
+> +static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
+>  {
+>  	int i;
+> -	int index;
+> -	unsigned long tmp = 0UL;
+> +	unsigned long key = 0UL;
+>  
+>  	for (i = 0; i < CGROUP_SUBSYS_COUNT; i++)
+> -		tmp += (unsigned long)css[i];
+> -	tmp = (tmp >> 16) ^ tmp;
+> +		key += (unsigned long)css[i];
+> +	key = (key >> 16) ^ key;
 
-Why don't you simply change __kfifo_alloc to round the allocation up
-instead of down?
+@key is gonna go through hash function anyway.  Do we still need the
+above (key >> 16) ^ key?  It's not gonna help anything.
+
+> -	index = hash_long(tmp, CSS_SET_HASH_BITS);
+> -
+> -	return &css_set_table[index];
+> +	return key;
+>  }
+>  
+>  /* We don't maintain the lists running through each css_set to its
+> @@ -4503,23 +4498,17 @@ int __init_or_module cgroup_load_subsys(struct cgroup_subsys *ss)
+>  	 * this is all done under the css_set_lock.
+>  	 */
+>  	write_lock(&css_set_lock);
+> -	for (i = 0; i < CSS_SET_TABLE_SIZE; i++) {
+> -		struct css_set *cg;
+> -		struct hlist_node *node, *tmp;
+> -		struct hlist_head *bucket = &css_set_table[i], *new_bucket;
+> -
+> -		hlist_for_each_entry_safe(cg, node, tmp, bucket, hlist) {
+> -			/* skip entries that we already rehashed */
+> -			if (cg->subsys[ss->subsys_id])
+> -				continue;
+> -			/* remove existing entry */
+> -			hlist_del(&cg->hlist);
+> -			/* set new value */
+> -			cg->subsys[ss->subsys_id] = css;
+> -			/* recompute hash and restore entry */
+> -			new_bucket = css_set_hash(cg->subsys);
+> -			hlist_add_head(&cg->hlist, new_bucket);
+> -		}
+> +	hash_for_each_safe(css_set_table, i, node, tmp, cg, hlist) {
+> +		/* skip entries that we already rehashed */
+> +		if (cg->subsys[ss->subsys_id])
+> +			continue;
+> +		/* remove existing entry */
+> +		hlist_del(&cg->hlist);
+
+		hash_del()?
 
 Thanks.
 
 -- 
-Dmitry
+tejun
