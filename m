@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab3AHTni (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 14:43:38 -0500
-Received: from mail-vb0-f44.google.com ([209.85.212.44]:54357 "EHLO
+	id S1756393Ab3AHTqj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 14:46:39 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:61931 "EHLO
 	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753781Ab3AHTnh (ORCPT
+	with ESMTP id S1756209Ab3AHTqi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 14:43:37 -0500
-Date: Tue, 8 Jan 2013 14:44:25 -0500 (EST)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Subject: [PATCH] perf_event: missing field in PERF_RECORD_SAMPLE documentation
- (resend)
-In-Reply-To: <alpine.DEB.2.02.1211061529590.23901@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.02.1301081439300.24507@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.02.1211061529590.23901@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Tue, 8 Jan 2013 14:46:38 -0500
+Date: Tue, 8 Jan 2013 14:46:34 -0500
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v5 00/12] x86/microcode: Early load microcode
+Message-ID: <20130108194633.GA15194@phenom.dumpdata.com>
+References: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com>
+ <20130103174455.GA7350@localhost.localdomain>
+ <50E5C47B.6060707@zytor.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50E5C47B.6060707@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 03, 2013 at 09:48:43AM -0800, H. Peter Anvin wrote:
+> On 01/03/2013 09:44 AM, Konrad Rzeszutek Wilk wrote:
+> >
+> >A couple of questions - why the usage of native_[read|write]_msr? I get the
+> >__native_cpuid variant, but I am not sure I understand why you are using
+> >the native_* variants. Especially as this code ends up being called on
+> >Xen and lguest (at least on 64-bit) and probably should go through the
+> >paravirt interfaces.
+> >
+> 
+> For Xen, the early microcode update should be done in the hypervisor launch.
 
-I sent this in November with no response, but the patch still 
-applies.
+Right. That is the plan.
+> 
+> However, if you have a more specific flow in mind please clarify.
 
-While trying to write a perf_event/mmap test for my perf_event 
-test-suite I came across a missing field description in the 
-PERF_RECORD_SAMPLE documentation in perf_event.h
- 
-Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+> Keep in mind Xen is largely a black box to non-Xen developers
+> (#include <stdrant.h>).
 
-diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
-index 4f63c05..9fa9c62 100644
---- a/include/uapi/linux/perf_event.h
-+++ b/include/uapi/linux/perf_event.h
-@@ -579,7 +579,8 @@ enum perf_event_type {
- 	 *	{ u32			size;
- 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
- 	 *
--	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
-+	 *	{ u64                   nr;
-+	 *        { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
- 	 *
- 	 * 	{ u64			abi; # enum perf_sample_regs_abi
- 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
+OK. I am trying to figure out whether this usage of native_* for the
+MSRs was done on purpose - and it sounds like the answer is no. If so -
+can it be done using the normal 'safe_rdmsr' and 'wrmsr'?
+
+That would allow at least in the case of Xen, to omit a whole bunch
+of MSR writes/reads during the boot that are not neccessary as we would
+not trap in the hypervisor - but could use the pvops version of
+read/write MSR calls to just do a nop.
+
+> 
+> 	-hpa
+> 
+> P.S. Since when is lguest 64-bit?  Did I miss something?
+
+Oh, I assumed it could do it.
+> 
+> -- 
+> H. Peter Anvin, Intel Open Source Technology Center
+> I work for Intel.  I don't speak on their behalf.
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
