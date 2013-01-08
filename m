@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3AHXCR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:02:17 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:37303 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755486Ab3AHXCQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:02:16 -0500
-Date: Wed, 9 Jan 2013 00:02:13 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Tony Luck <tony.luck@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: x86, MCE: Retract most UAPI exports
-Message-ID: <20130108230213.GA28869@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Tony Luck <tony.luck@intel.com>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <20121221163455.GG15204@liondog.tnic>
- <CA+8MBb+yxuLtJhAzOWqcEtmhbF11iXXJymQ8Wyxq3CSJ-nfuLA@mail.gmail.com>
+	id S1755708Ab3AHXJz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:09:55 -0500
+Received: from magic.merlins.org ([209.81.13.136]:38576 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab3AHXJy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 18:09:54 -0500
+Date: Tue, 8 Jan 2013 15:09:54 -0800
+From: Marc MERLIN <marc@merlins.org>
+To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Supporting SYSRQ on broken laptops like the thinkpad T530
+Message-ID: <20130108230954.GN2044@merlins.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CA+8MBb+yxuLtJhAzOWqcEtmhbF11iXXJymQ8Wyxq3CSJ-nfuLA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Sysadmin: BOFH
+X-URL: http://marc.merlins.org/
+X-Operating-System: Proudly running Linux 3.1.5-core2-volpreempt-noide-hm64-20111218/Debian squeeze/sid
+X-Mailer: Some Outlooks can't quote properly without this header
+User-Agent: Mutt/1.5.13 (2006-08-11)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: marc@merlins.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 02:57:26PM -0800, Tony Luck wrote:
-> I think we should also pull "struct mce_log" definition back too. It's
-> purely an internal structure. "struct mce" is the only bit that is
-> user space visible via /dev/mcelog.
+In its infinite wisdom, lenovo has removed the sysrq key on the latest
+thinkpads, and replaced it with a stupid ALT+FN+S key combination, which
+doesn't really work for doing sysrq from the console (nor do I know how the
+genius who did that intended for SYSRQ-S to work).
+http://forums.lenovo.com/t5/T400-T500-and-newer-T-series/T430-s-T530-Where-are-the-shortcut-function-keys-break-Pause-etc/ta-p/781749
 
-Yes, you're right.
+I realize that one solution is to throw my laptop window at a suitable high
+floorand replace it with one from a vendor that doesn't randomly remove keys
+from the keyboard.
+That said, I was wondering if there were other solutions, especially
+considering that thinkpads used to be the better linux laptops.
 
-> I.e. the uapi version should only contain the "struct mce" definition
-> and the three ioctl codes.
-
-Great, thanks for looking at this. I'll redo the patch tomorrow and send
-to x86 guys.
-
+Thanks,
+Marc
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/  
