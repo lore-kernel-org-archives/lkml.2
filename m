@@ -1,87 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780Ab3AHLxM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 06:53:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754962Ab3AHLxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 06:53:11 -0500
-Date: Tue, 8 Jan 2013 13:50:26 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] KVM: Write protect the updated slot only when we
- start dirty logging
-Message-ID: <20130108115026.GA700@redhat.com>
-References: <20121218162558.65a8bfd3.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20121218162647.009f468e.yoshikawa_takuya_b1@lab.ntt.co.jp>
- <20130107201146.GA19224@amt.cnet>
+	id S1755823Ab3AHL4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 06:56:11 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:57764 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754962Ab3AHL4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 06:56:08 -0500
+Date: Tue, 8 Jan 2013 17:25:41 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
+        Josh Stone <jistone@redhat.com>,
+        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] uprobes: Fold xol_alloc_area() into get_xol_area()
+Message-ID: <20130108115541.GE1325@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20121231175150.GA32066@redhat.com>
+ <20121231175216.GA32091@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20130107201146.GA19224@amt.cnet>
+In-Reply-To: <20121231175216.GA32091@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010811-3620-0000-0000-000000D6BA05
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 06:11:46PM -0200, Marcelo Tosatti wrote:
-> On Tue, Dec 18, 2012 at 04:26:47PM +0900, Takuya Yoshikawa wrote:
-> > This is needed to make kvm_mmu_slot_remove_write_access() rmap based:
-> > otherwise we may end up using invalid rmap's.
-> > 
-> > Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
-> 
-> Why? memslot->arch.rmap[] has been properly allocated at this point.
-> 
-FWIW a long time ago in a galaxy far, far away there was a check for
-KVM_MEM_LOG_DIRTY_PAGES before call to kvm_mmu_slot_remove_write_access(),
-but it was removed by 90cb0529dd230548a7, as far as I can tell, accidentally.
+* Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:16]:
 
-> > ---
-> >  arch/x86/kvm/x86.c  |    9 ++++++++-
-> >  virt/kvm/kvm_main.c |    1 -
-> >  2 files changed, 8 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 1c9c834..9451efa 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -6897,7 +6897,14 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
-> >  	spin_lock(&kvm->mmu_lock);
-> >  	if (nr_mmu_pages)
-> >  		kvm_mmu_change_mmu_pages(kvm, nr_mmu_pages);
-> > -	kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> > +	/*
-> > +	 * Write protect all pages for dirty logging.
-> > +	 * Existing largepage mappings are destroyed here and new ones will
-> > +	 * not be created until the end of the logging.
-> > +	 */
-> > +	if ((mem->flags & KVM_MEM_LOG_DIRTY_PAGES) &&
-> > +	    !(old.flags & KVM_MEM_LOG_DIRTY_PAGES))
-> > +		kvm_mmu_slot_remove_write_access(kvm, mem->slot);
-> >  	spin_unlock(&kvm->mmu_lock);
-> >  	/*
-> >  	 * If memory slot is created, or moved, we need to clear all
-> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> > index bd31096..0ef5daa 100644
-> > --- a/virt/kvm/kvm_main.c
-> > +++ b/virt/kvm/kvm_main.c
-> > @@ -805,7 +805,6 @@ int __kvm_set_memory_region(struct kvm *kvm,
-> >  	if ((new.flags & KVM_MEM_LOG_DIRTY_PAGES) && !new.dirty_bitmap) {
-> >  		if (kvm_create_dirty_bitmap(&new) < 0)
-> >  			goto out_free;
-> > -		/* destroy any largepage mappings for dirty tracking */
-> >  	}
-> >  
-> >  	if (!npages || base_gfn != old.base_gfn) {
-> > -- 
-> > 1.7.5.4
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kvm" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Currently only xol_get_insn_slot() does get_xol_area() + xol_alloc_area(),
+> but this will have more users and we do not want to copy-and-paste this
+> code. This patch simply moves xol_alloc_area() into get_xol_area() to
+> simplify the current and future code.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
---
-			Gleb.
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
+> ---
+>  kernel/events/uprobes.c |   38 ++++++++++++++++----------------------
+>  1 files changed, 16 insertions(+), 22 deletions(-)
+> 
+> diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
+> index 1456f7d..ef81162 100644
+> --- a/kernel/events/uprobes.c
+> +++ b/kernel/events/uprobes.c
+> @@ -1070,27 +1070,21 @@ static int xol_add_vma(struct xol_area *area)
+>  	return ret;
+>  }
+> 
+> -static struct xol_area *get_xol_area(struct mm_struct *mm)
+> -{
+> -	struct xol_area *area;
+> -
+> -	area = mm->uprobes_state.xol_area;
+> -	smp_read_barrier_depends();	/* pairs with wmb in xol_add_vma() */
+> -
+> -	return area;
+> -}
+> -
+>  /*
+> - * xol_alloc_area - Allocate process's xol_area.
+> - * This area will be used for storing instructions for execution out of
+> - * line.
+> + * get_alloc_area - Allocate process's xol_area if necessary.
+> + * This area will be used for storing instructions for execution out of line.
+>   *
+>   * Returns the allocated area or NULL.
+>   */
+> -static struct xol_area *xol_alloc_area(void)
+> +static struct xol_area *get_xol_area(void)
+>  {
+> +	struct mm_struct *mm = current->mm;
+>  	struct xol_area *area;
+> 
+> +	area = mm->uprobes_state.xol_area;
+> +	if (area)
+> +		goto ret;
+> +
+>  	area = kzalloc(sizeof(*area), GFP_KERNEL);
+>  	if (unlikely(!area))
+>  		goto out;
+> @@ -1113,7 +1107,10 @@ static struct xol_area *xol_alloc_area(void)
+>   free_area:
+>  	kfree(area);
+>   out:
+> -	return get_xol_area(current->mm);
+> +	area = mm->uprobes_state.xol_area;
+> + ret:
+> +	smp_read_barrier_depends();     /* pairs with wmb in xol_add_vma() */
+> +	return area;
+>  }
+> 
+>  /*
+> @@ -1189,14 +1186,11 @@ static unsigned long xol_get_insn_slot(struct uprobe *uprobe, unsigned long slot
+>  	unsigned long offset;
+>  	void *vaddr;
+> 
+> -	area = get_xol_area(current->mm);
+> -	if (!area) {
+> -		area = xol_alloc_area();
+> -		if (!area)
+> -			return 0;
+> -	}
+> -	current->utask->xol_vaddr = xol_take_insn_slot(area);
+> +	area = get_xol_area();
+> +	if (!area)
+> +		return 0;
+> 
+> +	current->utask->xol_vaddr = xol_take_insn_slot(area);
+>  	/*
+>  	 * Initialize the slot if xol_vaddr points to valid
+>  	 * instruction slot.
+> -- 
+> 1.5.5.1
+> 
+
