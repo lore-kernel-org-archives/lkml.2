@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab3AHChB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:37:01 -0500
-Received: from amsterdam.lcs.mit.edu ([18.26.4.9]:54326 "EHLO
-	amsterdam.lcs.mit.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab3AHChA (ORCPT
+	id S1753211Ab3AHCqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:46:36 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:55134 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab3AHCqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:37:00 -0500
-From: Nickolai Zeldovich <nickolai@csail.mit.edu>
-To: Thomas Winischhofer <thomas@winischhofer.net>
-Cc: Nickolai Zeldovich <nickolai@csail.mit.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] sisusbvga: use proper device for dev_err() during probe
-Date: Mon,  7 Jan 2013 21:36:52 -0500
-Message-Id: <1357612612-37962-1-git-send-email-nickolai@csail.mit.edu>
-X-Mailer: git-send-email 1.7.10.4
+	Mon, 7 Jan 2013 21:46:35 -0500
+Date: Mon, 7 Jan 2013 18:46:31 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Simon Jeons <simon.jeons@gmail.com>
+cc: Petr Holasek <pholasek@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Anton Arapov <anton@redhat.com>
+Subject: Re: [PATCH v7 1/2] KSM: numa awareness sysfs knob
+In-Reply-To: <1357609227.4105.3.camel@kernel.cn.ibm.com>
+Message-ID: <alpine.LNX.2.00.1301071812001.18327@eggly.anvils>
+References: <20121224050817.GA25749@kroah.com> <1356658337-12540-1-git-send-email-pholasek@redhat.com> <1357015310.1379.2.camel@kernel.cn.ibm.com> <20130103122416.GB2277@thinkpad-work.redhat.com> <1357609227.4105.3.camel@kernel.cn.ibm.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kzalloc returns NULL, do not dereference the said NULL pointer as the
-first argument to dev_err(); use &dev->dev instead.  Similarly, before
-sisusb->sisusb_dev has been initialized to dev, use dev_err(&dev->dev)
-instead.
+On Mon, 7 Jan 2013, Simon Jeons wrote:
+> On Thu, 2013-01-03 at 13:24 +0100, Petr Holasek wrote:
+> > Hi Simon,
+> > 
+> > On Mon, 31 Dec 2012, Simon Jeons wrote:
+> > > On Fri, 2012-12-28 at 02:32 +0100, Petr Holasek wrote:
+> > > > 
+> > > > v7:	- added sysfs ABI documentation for KSM
+> > > 
+> > > Hi Petr,
+> > > 
+> > > How you handle "memory corruption because the ksm page still points to
+> > > the stable_node that has been freed" mentioned by Andrea this time?
+> > > 
+> > 
+> 
+> Hi Petr,
+> 
+> You still didn't answer my question mentioned above. :)
 
-Signed-off-by: Nickolai Zeldovich <nickolai@csail.mit.edu>
----
- drivers/usb/misc/sisusbvga/sisusb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Yes, I noticed that too :)  I think Petr probably hopes that I'll
+answer; and yes, I do hold myself responsible for solving this.
 
-diff --git a/drivers/usb/misc/sisusbvga/sisusb.c b/drivers/usb/misc/sisusbvga/sisusb.c
-index dd573ab..bf5f12c 100644
---- a/drivers/usb/misc/sisusbvga/sisusb.c
-+++ b/drivers/usb/misc/sisusbvga/sisusb.c
-@@ -3084,7 +3084,7 @@ static int sisusb_probe(struct usb_interface *intf,
- 
- 	/* Allocate memory for our private */
- 	if (!(sisusb = kzalloc(sizeof(*sisusb), GFP_KERNEL))) {
--		dev_err(&sisusb->sisusb_dev->dev, "Failed to allocate memory for private data\n");
-+		dev_err(&dev->dev, "Failed to allocate memory for private data\n");
- 		return -ENOMEM;
- 	}
- 	kref_init(&sisusb->kref);
-@@ -3093,7 +3093,7 @@ static int sisusb_probe(struct usb_interface *intf,
- 
- 	/* Register device */
- 	if ((retval = usb_register_dev(intf, &usb_sisusb_class))) {
--		dev_err(&sisusb->sisusb_dev->dev, "Failed to get a minor for device %d\n",
-+		dev_err(&dev->dev, "Failed to get a minor for device %d\n",
- 			dev->devnum);
- 		retval = -ENODEV;
- 		goto error_1;
--- 
-1.7.10.4
+The honest answer is that I forgot all about it for a while.  I
+had to go back to read the various threads to remind myself of what
+Andrea said back then, and the ideas I had in replying.  Thank you
+for reminding us.
 
+I do intend to fix it along the lines I suggested then, if that works
+out; but that is a danger in memory hotremove only, so at present I'm
+still wrestling with the more immediate problem of stale stable_nodes
+when switching merge_across_nodes between 1 and 0 and 1.
+
+Many of the problems there come from reclaim under memory pressure:
+stable pages being written out to swap, and faulted back in at "the
+wrong time".  Essentially, existing bugs in KSM_RUN_UNMERGE, that
+were not visible until merge_across_nodes brought us to rely upon it.
+
+I have "advanced" from kernel oopses to userspace corruption: that's
+no advance at all, no doubt I'm doing something stupid, but I haven't
+spotted it yet; and once I've fixed that up, shall probably want to
+look back at the little heap of fixups (a remove_all_stable_nodes()
+function) and go about it quite differently - but for now I'm still
+learning from the bugs I give myself.
+
+> 
+> > <snip>
+> > 
+> > > >  
+> > > > +		/*
+> > > > +		 * If tree_page has been migrated to another NUMA node, it
+> > > > +		 * will be flushed out and put into the right unstable tree
+> > > > +		 * next time: only merge with it if merge_across_nodes.
+> > > 
+> > > Why? Do you mean swap based migration? Or where I miss ....?
+> > > 
+> > 
+> > It can be physical page migration triggered by page compaction, memory hotplug
+> > or some NUMA sched/memory balancing algorithm developed recently.
+> > 
+> > > > +		 * Just notice, we don't have similar problem for PageKsm
+> > > > +		 * because their migration is disabled now. (62b61f611e)
+> > > > +		 */
+> > 
+> > Migration of KSM pages is disabled now, you can look into ^^^ commit and
+> > changes introduced to migrate.c.
+
+Migration of KSM pages is still enabled in the memory hotremove case.
+
+I don't remember how I tested that back then, so I want to enable KSM
+page migration generally, just to be able to test it more thoroughly.
+That would then benefit compaction, no longer frustrated by a KSM
+page in the way.
+
+Hugh
