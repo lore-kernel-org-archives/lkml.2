@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755431Ab3AHKHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:07:24 -0500
+	id S1755490Ab3AHKHe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:07:34 -0500
 Received: from cn.fujitsu.com ([222.73.24.84]:13179 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755372Ab3AHKHX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:07:23 -0500
+	id S1755377Ab3AHKHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 05:07:24 -0500
 X-IronPort-AV: E=Sophos;i="4.84,430,1355068800"; 
-   d="scan'208";a="6543956"
+   d="scan'208";a="6543957"
 From: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
@@ -15,23 +15,25 @@ Cc: Rusty Russell <rusty@rustcorp.com.au>,
         Jason Wang <jasowang@redhat.com>, Eric Dumazet <erdnetdev@gmail.com>,
         virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
         Wanlong Gao <gaowanlong@cn.fujitsu.com>
-Subject: [PATCH V3 1/2] virtio-net: fix the set affinity bug when CPU IDs are not consecutive
-Date: Tue, 8 Jan 2013 18:07:39 +0800
-Message-Id: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com>
+Subject: [PATCH V3 2/2] virtio-net: reset virtqueue affinity when doing cpu hotplug
+Date: Tue, 8 Jan 2013 18:07:40 +0800
+Message-Id: <1357639660-6660-2-git-send-email-gaowanlong@cn.fujitsu.com>
 X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com>
+References: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/01/08 18:06:49,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/08 18:06:49,
-	Serialize complete at 2013/01/08 18:06:49
+ 2013/01/08 18:06:50,
+	Serialize complete at 2013/01/08 18:06:50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Michael mentioned, set affinity and select queue will not work very
-well when CPU IDs are not consecutive, this can happen with hot unplug.
-Fix this bug by traversal the online CPUs, and create a per cpu variable
-to find the mapping from CPU to the preferable virtual-queue.
+Add a cpu notifier to virtio-net, so that we can reset the
+virtqueue affinity if the cpu hotplug happens. It improve
+the performance through enabling or disabling the virtqueue
+affinity after doing cpu hotplug.
 
 Cc: Rusty Russell <rusty@rustcorp.com.au>
 Cc: "Michael S. Tsirkin" <mst@redhat.com>
@@ -41,86 +43,78 @@ Cc: virtualization@lists.linux-foundation.org
 Cc: netdev@vger.kernel.org
 Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
 ---
- drivers/net/virtio_net.c | 39 +++++++++++++++++++++++++++++----------
- 1 file changed, 29 insertions(+), 10 deletions(-)
+ drivers/net/virtio_net.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
 diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index a6fcf15..a77f86c 100644
+index a77f86c..31a25db 100644
 --- a/drivers/net/virtio_net.c
 +++ b/drivers/net/virtio_net.c
-@@ -41,6 +41,8 @@ module_param(gso, bool, 0444);
- #define VIRTNET_SEND_COMMAND_SG_MAX    2
- #define VIRTNET_DRIVER_VERSION "1.0.0"
+@@ -26,6 +26,7 @@
+ #include <linux/scatterlist.h>
+ #include <linux/if_vlan.h>
+ #include <linux/slab.h>
++#include <linux/cpu.h>
  
-+DEFINE_PER_CPU(int, vq_index) = -1;
+ static int napi_weight = 128;
+ module_param(napi_weight, int, 0444);
+@@ -125,6 +126,9 @@ struct virtnet_info {
+ 
+ 	/* Does the affinity hint is set for virtqueues? */
+ 	bool affinity_hint_set;
 +
- struct virtnet_stats {
- 	struct u64_stats_sync tx_syncp;
- 	struct u64_stats_sync rx_syncp;
-@@ -1016,6 +1018,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
- static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- {
- 	int i;
-+	int cpu;
++	/* CPU hot plug notifier */
++	struct notifier_block nb;
+ };
  
- 	/* In multiqueue mode, when the number of cpu is equal to the number of
- 	 * queue pairs, we let the queue pairs to be private to one cpu by
-@@ -1029,16 +1032,29 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
- 			return;
+ struct skb_vnet_hdr {
+@@ -1057,6 +1061,23 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
  	}
- 
--	for (i = 0; i < vi->max_queue_pairs; i++) {
--		int cpu = set ? i : -1;
--		virtqueue_set_affinity(vi->rq[i].vq, cpu);
--		virtqueue_set_affinity(vi->sq[i].vq, cpu);
--	}
-+	if (set) {
-+		i = 0;
-+		for_each_online_cpu(cpu) {
-+			virtqueue_set_affinity(vi->rq[i].vq, cpu);
-+			virtqueue_set_affinity(vi->sq[i].vq, cpu);
-+			per_cpu(vq_index, cpu) = i;
-+			i++;
-+			if (i >= vi->max_queue_pairs)
-+				break;
-+		}
- 
--	if (set)
- 		vi->affinity_hint_set = true;
--	else
-+	} else {
-+		for(i = 0; i < vi->max_queue_pairs; i++) {
-+			virtqueue_set_affinity(vi->rq[i].vq, -1);
-+			virtqueue_set_affinity(vi->sq[i].vq, -1);
-+		}
-+
-+		for_each_online_cpu(cpu)
-+			per_cpu(vq_index, cpu) = -1;
-+
- 		vi->affinity_hint_set = false;
-+	}
  }
  
- static void virtnet_get_ringparam(struct net_device *dev,
-@@ -1127,12 +1143,15 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
- 
- /* To avoid contending a lock hold by a vcpu who would exit to host, select the
-  * txq based on the processor id.
-- * TODO: handle cpu hotplug.
-  */
- static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
- {
--	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
--		  smp_processor_id();
-+	int txq = 0;
++static int virtnet_cpu_callback(struct notifier_block *nfb,
++			        unsigned long action, void *hcpu)
++{
++	struct virtnet_info *vi = container_of(nfb, struct virtnet_info, nb);
++	switch(action) {
++	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
++	case CPU_DEAD:
++	case CPU_DEAD_FROZEN:
++		virtnet_set_affinity(vi, true);
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
 +
-+	if (skb_rx_queue_recorded(skb))
-+		txq = skb_get_rx_queue(skb);
-+	else if ((txq = per_cpu(vq_index, smp_processor_id())) == -1)
-+		txq = 0;
+ static void virtnet_get_ringparam(struct net_device *dev,
+ 				struct ethtool_ringparam *ring)
+ {
+@@ -1518,6 +1539,13 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 		}
+ 	}
  
- 	while (unlikely(txq >= dev->real_num_tx_queues))
- 		txq -= dev->real_num_tx_queues;
++	vi->nb.notifier_call = &virtnet_cpu_callback;
++	err = register_hotcpu_notifier(&vi->nb);
++	if (err) {
++		pr_debug("virtio_net: registering cpu notifier failed\n");
++		goto free_recv_bufs;
++	}
++
+ 	/* Assume link up if device can't report link status,
+ 	   otherwise get link status from config. */
+ 	if (virtio_has_feature(vi->vdev, VIRTIO_NET_F_STATUS)) {
+@@ -1562,6 +1590,8 @@ static void virtnet_remove(struct virtio_device *vdev)
+ {
+ 	struct virtnet_info *vi = vdev->priv;
+ 
++	unregister_hotcpu_notifier(&vi->nb);
++
+ 	/* Prevent config work handler from accessing the device. */
+ 	mutex_lock(&vi->config_lock);
+ 	vi->config_enable = false;
 -- 
 1.8.1
 
