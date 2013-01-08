@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab3AHRYd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 12:24:33 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:37961 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756346Ab3AHRYc (ORCPT
+	id S1756791Ab3AHRYz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 12:24:55 -0500
+Received: from mail-da0-f41.google.com ([209.85.210.41]:48738 "EHLO
+	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756346Ab3AHRYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 12:24:32 -0500
+	Tue, 8 Jan 2013 12:24:53 -0500
+Date: Tue, 8 Jan 2013 09:24:47 -0800
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ctalbott@google.com, rni@google.com,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH 11/24] cfq-iosched: add leaf_weight
+Message-ID: <20130108172447.GY3926@htj.dyndns.org>
+References: <1356726946-26037-1-git-send-email-tj@kernel.org>
+ <1356726946-26037-12-git-send-email-tj@kernel.org>
+ <20130108153448.GB29635@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAJw_ZtpubRhSF3K=B91oHXMPaTX6jGNLZn+e6ks83JS92k=bw@mail.gmail.com>
-References: <CAAJw_Zv8O1LPX-jmpg3fvNrWMLWbQC=1tbZ6T7nsm6cyC008fg@mail.gmail.com>
- <CA+55aFxXAMz5Sg44e-TJ0P=LY+3VkfdNtZMS3EJEHdztY2kC0Q@mail.gmail.com> <CAAJw_ZtpubRhSF3K=B91oHXMPaTX6jGNLZn+e6ks83JS92k=bw@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 8 Jan 2013 09:24:11 -0800
-X-Google-Sender-Auth: t_ZlaosZNJKh_3Shh0WsL0CPr48
-Message-ID: <CA+55aFyEE6pM2gVfgd3xjQR5rF6ij5pG7BXjkH+C5aHbxAk6mg@mail.gmail.com>
-Subject: Re: 2nd attempt: help with dma_alloc_coherent() + dma_free_coherent()
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jonathan Corbet <corbet@lwn.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130108153448.GB29635@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 8, 2013 at 9:17 AM, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
->
-> Interesting, but there are 54 lines under the kernel directories that
-> use "dma_alloc_coherent(NULL," followed by "dma_free_coherent(NULL,"
+Hello, Vivek.
 
-As mentioned, it works on some platforms. That doesn't make it right.
+On Tue, Jan 08, 2013 at 10:34:48AM -0500, Vivek Goyal wrote:
+> How does it help to map leaf weight to weight in root group. Old programs
+> anyway don't know about leaf_weight. So nobody is going to update it. And
+> if they update it, they better know what does it do.
 
-> So, shouldn't they be fixed as well? ... unless they are so old that
-> nobody cares anymore ...
+Because what cfq does before this patchset in flat hierarchy is
+basically treating root weight as the leaf weight.
 
-Some of the ones I saw are in MIPS or blackfin. Others probably *are*
-so old that nobody cares, and happen to work because there's iommu's
-or other things that simply don't care about the device.
+       R:500
+      /     \
+     A:250  B:750
 
-> # find . -exec grep -H "dma_alloc_coherent(NULL" {} \; | wc -l
-> 54
->
-> #find . -exec grep -H "dma_free_coherent(NULL" {} \; | wc -l
-> 72
+Ratio of R is computed as 500 / (500 + 250 + 750).  The root blkcg's
+tasks are competinig with the children blkcgs.  This is currently the
+only supported config and we don't want to break existing users, so
+keeping root's weight and leaf_weight synchronized and ignoring root's
+weight, which BTW can't mean anything anyway as it doesn't have a
+parent or siblings, keeps the behavior unchanged for flat configs.
 
-Let me tell you about "git grep", so that you never need to do that
-disgusting "find -exec grep" ever again.
+Thanks.
 
-It does threading, it's fast, and it just works.
-
-                Linus
+-- 
+tejun
