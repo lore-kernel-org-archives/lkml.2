@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615Ab3AHUOU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 15:14:20 -0500
-Received: from dcvr.yhbt.net ([64.71.152.64]:37010 "EHLO dcvr.yhbt.net"
+	id S1752992Ab3AHUQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 15:16:45 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:37379 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750748Ab3AHUOT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 15:14:19 -0500
-Date: Tue, 8 Jan 2013 20:14:19 +0000
-From: Eric Wong <normalperson@yhbt.net>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130108201419.GA30568@dcvr.yhbt.net>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130104160148.GB3885@suse.de>
- <20130106120700.GA24671@dcvr.yhbt.net>
- <20130107122516.GC3885@suse.de>
- <20130107223850.GA21311@dcvr.yhbt.net>
+	id S1751130Ab3AHUQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 15:16:44 -0500
+Message-ID: <50EC7E95.1060700@zytor.com>
+Date: Tue, 08 Jan 2013 12:16:21 -0800
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130107223850.GA21311@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Asit K Mallick <asit.k.mallick@intel.com>,
+        Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Borislav Petkov <borislav.petkov@amd.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH v5 00/12] x86/microcode: Early load microcode
+References: <1356075872-3054-1-git-send-email-fenghua.yu@intel.com> <20130103174455.GA7350@localhost.localdomain> <50E5C47B.6060707@zytor.com> <20130108194633.GA15194@phenom.dumpdata.com> <50EC77DB.6090300@zytor.com> <20130108200432.GE15194@phenom.dumpdata.com>
+In-Reply-To: <20130108200432.GE15194@phenom.dumpdata.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric Wong <normalperson@yhbt.net> wrote:
-> Mel Gorman <mgorman@suse.de> wrote:
-> > Right now it's difficult to see how the capture could be the source of
-> > this bug but I'm not ruling it out either so try the following (untested
-> > but should be ok) patch.  It's not a proper revert, it just disables the
-> > capture page logic to see if it's at fault.
+On 01/08/2013 12:04 PM, Konrad Rzeszutek Wilk wrote:
+>>
+>> Why is this code invoked on Xen at all?  That seems crazy.
 > 
-> Things look good so far with your change.
-> It's been running 2 hours on a VM and 1 hour on my regular machine.
-> Will update again in a few hours (or sooner if it's stuck again).
+>  [PATCH v4 09/11] x86/head64.c: Early update ucode in 64-bit
+> 
+> has this in x86_64_start_kernel:
+> 
+> ..
+>         load_idt((const struct desc_ptr *)&idt_descr);
+> 
+> +       /*
+> +        * Load microcode early on BSP.
+> +        */
+> +       load_ucode_bsp(__va(real_mode_data));
+> +
+>         copy_bootdata(__va(real_mode_data));
+> 
+> Which gets called after xen_start_kernel has setup pagetables,
+> bootparams, etc ready for the generic code to be invoked.
+> 
+> Or am I looking at an old version of these patches.
 
-Things still seem good on my regular machine.
+We really shouldn't do that in that flow.  This doesn't make sense on
+non-native.
+
+	-hpa
+
+
