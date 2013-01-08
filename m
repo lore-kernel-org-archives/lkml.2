@@ -1,142 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755624Ab3AHWnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 17:43:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49253 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab3AHWnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 17:43:19 -0500
-Date: Tue, 8 Jan 2013 22:43:13 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Eric Wong <normalperson@yhbt.net>
-Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
-Message-ID: <20130108224313.GA13304@suse.de>
-References: <20121228014503.GA5017@dcvr.yhbt.net>
- <20130102200848.GA4500@dcvr.yhbt.net>
- <20130104160148.GB3885@suse.de>
- <20130106120700.GA24671@dcvr.yhbt.net>
- <20130107122516.GC3885@suse.de>
- <20130107223850.GA21311@dcvr.yhbt.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20130107223850.GA21311@dcvr.yhbt.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755678Ab3AHWno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 17:43:44 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:46328 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753456Ab3AHWnm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 17:43:42 -0500
+Subject: Re: [PATCH 1/5] x86,smp: move waiting on contended ticket lock out
+ of line
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, aquini@redhat.com, walken@google.com,
+        lwoodman@redhat.com, jeremy@goop.org,
+        Jan Beulich <JBeulich@novell.com>, knoel@redhat.com,
+        chegu_vinod@hp.com, raghavendra.kt@linux.vnet.ibm.com,
+        mingo@redhat.com
+In-Reply-To: <20130108173252.02a42e89@annuminas.surriel.com>
+References: <20130108172632.1126898a@annuminas.surriel.com>
+	 <20130108173252.02a42e89@annuminas.surriel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Jan 2013 14:43:39 -0800
+Message-ID: <1357685019.18156.758.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 10:38:50PM +0000, Eric Wong wrote:
-> Mel Gorman <mgorman@suse.de> wrote:
-> > Right now it's difficult to see how the capture could be the source of
-> > this bug but I'm not ruling it out either so try the following (untested
-> > but should be ok) patch.  It's not a proper revert, it just disables the
-> > capture page logic to see if it's at fault.
+On Tue, 2013-01-08 at 17:32 -0500, Rik van Riel wrote:
+> Moving the wait loop for congested loops to its own function allows
+> us to add things to that wait loop, without growing the size of the
+> kernel text appreciably.
 > 
-> Things look good so far with your change.
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Reviewed-by: Steven Rostedt <rostedt@goodmiss.org>
+> Reviewed-by: Michel Lespinasse <walken@google.com>
+> Reviewed-by: Rafael Aquini <aquini@redhat.com>
+> ---
+> v2: clean up the code a little, after Michel's suggestion 
 
-Ok, so minimally reverting is an option once 2e30abd1 is preserved. The
-original motivation for the patch was to improve allocation success rates
-under load but due to a bug in the patch the likely source of the improvement
-was due to compacting more for THP allocations.
+Reviewed-by: Eric Dumazet <edumazet@google.com>
 
-> It's been running 2 hours on a VM and 1 hour on my regular machine.
-> Will update again in a few hours (or sooner if it's stuck again).
 
-When I looked at it for long enough I found a number of problems. Most
-affect timing but two serious issues are in there. One affects how long
-kswapd spends compacting versus reclaiming and the other increases lock
-contention meaning that async compaction can abort early. Both are serious
-and could explain why a driver would fail high-order allocations.
-
-Please try the following patch. However, even if it works the benefit of
-capture may be so marginal that partially reverting it and simplifying
-compaction.c is the better decision.
-
-diff --git a/mm/compaction.c b/mm/compaction.c
-index 6b807e4..03c82c0 100644
---- a/mm/compaction.c
-+++ b/mm/compaction.c
-@@ -857,7 +857,8 @@ static int compact_finished(struct zone *zone,
- 	} else {
- 		unsigned int order;
- 		for (order = cc->order; order < MAX_ORDER; order++) {
--			struct free_area *area = &zone->free_area[cc->order];
-+			struct free_area *area = &zone->free_area[order];
-+
- 			/* Job done if page is free of the right migratetype */
- 			if (!list_empty(&area->free_list[cc->migratetype]))
- 				return COMPACT_PARTIAL;
-@@ -929,6 +930,11 @@ static void compact_capture_page(struct compact_control *cc)
- 	if (!cc->page || *cc->page)
- 		return;
- 
-+	/* Check that watermarks are satisifed before acquiring locks */
-+	if (!zone_watermark_ok(cc->zone, cc->order, low_wmark_pages(cc->zone),
-+									0, 0))
-+		return;
-+
- 	/*
- 	 * For MIGRATE_MOVABLE allocations we capture a suitable page ASAP
- 	 * regardless of the migratetype of the freelist is is captured from.
-@@ -941,7 +947,7 @@ static void compact_capture_page(struct compact_control *cc)
- 	 */
- 	if (cc->migratetype == MIGRATE_MOVABLE) {
- 		mtype_low = 0;
--		mtype_high = MIGRATE_PCPTYPES;
-+		mtype_high = MIGRATE_PCPTYPES + 1;
- 	} else {
- 		mtype_low = cc->migratetype;
- 		mtype_high = cc->migratetype + 1;
-@@ -1118,7 +1124,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 	struct zoneref *z;
- 	struct zone *zone;
- 	int rc = COMPACT_SKIPPED;
--	int alloc_flags = 0;
- 
- 	/* Check if the GFP flags allow compaction */
- 	if (!order || !may_enter_fs || !may_perform_io)
-@@ -1126,10 +1131,6 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 
- 	count_compact_event(COMPACTSTALL);
- 
--#ifdef CONFIG_CMA
--	if (allocflags_to_migratetype(gfp_mask) == MIGRATE_MOVABLE)
--		alloc_flags |= ALLOC_CMA;
--#endif
- 	/* Compact each zone in the list */
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist, high_zoneidx,
- 								nodemask) {
-@@ -1139,9 +1140,8 @@ unsigned long try_to_compact_pages(struct zonelist *zonelist,
- 						contended, page);
- 		rc = max(status, rc);
- 
--		/* If a normal allocation would succeed, stop compacting */
--		if (zone_watermark_ok(zone, order, low_wmark_pages(zone), 0,
--				      alloc_flags))
-+		/* If a page was captured, stop compacting */
-+		if (*page)
- 			break;
- 	}
- 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4ba5e37..9d20c13 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2180,10 +2180,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
- 	current->flags &= ~PF_MEMALLOC;
- 
- 	/* If compaction captured a page, prep and use it */
--	if (page) {
--		prep_new_page(page, order, gfp_mask);
-+	if (page && !prep_new_page(page, order, gfp_mask))
- 		goto got_page;
--	}
- 
- 	if (*did_some_progress != COMPACT_SKIPPED) {
- 		/* Page migration frees to the PCP lists but we want merging */
