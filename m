@@ -1,186 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757030Ab3AHS2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 13:28:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48204 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756834Ab3AHS16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 13:27:58 -0500
-Date: Tue, 8 Jan 2013 13:27:50 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: lizefan@huawei.com, axboe@kernel.dk, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ctalbott@google.com, rni@google.com
-Subject: Re: [PATCH 24/24] cfq-iosched: add hierarchical cfq_group statistics
-Message-ID: <20130108182750.GF29933@redhat.com>
-References: <1356726946-26037-1-git-send-email-tj@kernel.org>
- <1356726946-26037-25-git-send-email-tj@kernel.org>
+	id S1756982Ab3AHS1a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 13:27:30 -0500
+Received: from mail-bk0-f45.google.com ([209.85.214.45]:49922 "EHLO
+	mail-bk0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756936Ab3AHS12 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 13:27:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1356726946-26037-25-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com>
+References: <20121030040237.GA10472@google.com>
+	<1352003971-22278-1-git-send-email-yinghai@kernel.org>
+	<CAE9FiQUn=bcgOLFzBwsBT1-O1poRNy9qYTb0w9EAya3_inKqAw@mail.gmail.com>
+	<CAErSpo5Z57asEXbfesOjXMEPj4WM3YMbzQH3s-v_NBrnPNmuVQ@mail.gmail.com>
+	<CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com>
+Date: Tue, 8 Jan 2013 10:27:25 -0800
+X-Google-Sender-Auth: f_nCh1eK9eLLRU546q0TO2ojHp4
+Message-ID: <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
+ hot-add root bus
+From: Yinghai Lu <yinghai@kernel.org>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 28, 2012 at 12:35:46PM -0800, Tejun Heo wrote:
-> Unfortunately, at this point, there's no way to make the existing
-> statistics hierarchical without creating nasty surprises for the
-> existing users.  Just create recursive counterpart of the existing
-> stats.
-> 
+On Tue, Jan 8, 2013 at 9:57 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> I'm really sorry that it's taken me so long to get to these.
+>>
+>> I applied these to my pci/yinghai-survey-resources branch.  I
+>> re-ordered the last two and reworked some of the changelogs.
+>
+> To be clear about this, the pci/yinghai-survey-resources branch I
+> mentioned is a staging branch that just gets build test coverage.  I
+> don't plan to actually merge this or put it into -next until the
+> questions below are resolved.
+>
+> My inclination, until I'm persuaded otherwise, is to wait for patches
+> that preserve the similarities among these architectures.
 
-No recursive counterparts for stats under DEBUG? Well, I would not 
-complain. There are too many stats already and if somebody needs
-recursive stats for debug stats, let them do it.
+I don't know, that could be separated patcheset after we conclude
+pci root bus hotplug support.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+>
+>> In general these look good.  My main concern is that they only touch
+>> x86, without touching the similar code in frv, microblaze, mn10300,
+>> and powerpc.
+>>
+>> This code (pcibios_resource_survey(), pcibios_assign_resources(),
+>> pcibios_allocate_resources(), pcibios_allocate_bus_resources()) was
+>> obviously copied from x86 originally, and I'd like to preserve the
+>> similarity between them.  It would be even better to refactor it so
+>> it's actually *shared*, but I don't think that's a requirement right
+>> now.
 
-Vivek
+yes, should be moved to drivers/pci
 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> ---
->  block/cfq-iosched.c | 105 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 105 insertions(+)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 4d75b79..b66365b 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -1528,6 +1528,32 @@ static void cfq_pd_offline(struct blkcg_gq *blkg)
->  	cfqg_stats_xfer_dead(blkg_to_cfqg(blkg));
->  }
->  
-> +/* offset delta from cfqg->stats to cfqg->dead_stats */
-> +static const int dead_stats_off_delta = offsetof(struct cfq_group, dead_stats) -
-> +					offsetof(struct cfq_group, stats);
-> +
-> +/* to be used by recursive prfill, sums live and dead stats recursively */
-> +static u64 cfqg_stat_pd_recursive_sum(struct blkg_policy_data *pd, int off)
-> +{
-> +	u64 sum = 0;
-> +
-> +	sum += blkg_stat_recursive_sum(pd, off);
-> +	sum += blkg_stat_recursive_sum(pd, off + dead_stats_off_delta);
-> +	return sum;
-> +}
-> +
-> +/* to be used by recursive prfill, sums live and dead rwstats recursively */
-> +static struct blkg_rwstat cfqg_rwstat_pd_recursive_sum(struct blkg_policy_data *pd,
-> +						       int off)
-> +{
-> +	struct blkg_rwstat a, b;
-> +
-> +	a = blkg_rwstat_recursive_sum(pd, off);
-> +	b = blkg_rwstat_recursive_sum(pd, off + dead_stats_off_delta);
-> +	blkg_rwstat_merge(&a, &b);
-> +	return a;
-> +}
-> +
->  static void cfq_pd_reset_stats(struct blkcg_gq *blkg)
->  {
->  	struct cfq_group *cfqg = blkg_to_cfqg(blkg);
-> @@ -1732,6 +1758,42 @@ static int cfqg_print_rwstat(struct cgroup *cgrp, struct cftype *cft,
->  	return 0;
->  }
->  
-> +static u64 cfqg_prfill_stat_recursive(struct seq_file *sf,
-> +				      struct blkg_policy_data *pd, int off)
-> +{
-> +	u64 sum = cfqg_stat_pd_recursive_sum(pd, off);
-> +
-> +	return __blkg_prfill_u64(sf, pd, sum);
-> +}
-> +
-> +static u64 cfqg_prfill_rwstat_recursive(struct seq_file *sf,
-> +					struct blkg_policy_data *pd, int off)
-> +{
-> +	struct blkg_rwstat sum = cfqg_rwstat_pd_recursive_sum(pd, off);
-> +
-> +	return __blkg_prfill_rwstat(sf, pd, &sum);
-> +}
-> +
-> +static int cfqg_print_stat_recursive(struct cgroup *cgrp, struct cftype *cft,
-> +				     struct seq_file *sf)
-> +{
-> +	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-> +
-> +	blkcg_print_blkgs(sf, blkcg, cfqg_prfill_stat_recursive,
-> +			  &blkcg_policy_cfq, cft->private, false);
-> +	return 0;
-> +}
-> +
-> +static int cfqg_print_rwstat_recursive(struct cgroup *cgrp, struct cftype *cft,
-> +				       struct seq_file *sf)
-> +{
-> +	struct blkcg *blkcg = cgroup_to_blkcg(cgrp);
-> +
-> +	blkcg_print_blkgs(sf, blkcg, cfqg_prfill_rwstat_recursive,
-> +			  &blkcg_policy_cfq, cft->private, true);
-> +	return 0;
-> +}
-> +
->  #ifdef CONFIG_DEBUG_BLK_CGROUP
->  static u64 cfqg_prfill_avg_queue_size(struct seq_file *sf,
->  				      struct blkg_policy_data *pd, int off)
-> @@ -1803,6 +1865,7 @@ static struct cftype cfq_blkcg_files[] = {
->  		.write_u64 = cfq_set_leaf_weight,
->  	},
->  
-> +	/* statistics, covers only the tasks in the cfqg */
->  	{
->  		.name = "time",
->  		.private = offsetof(struct cfq_group, stats.time),
-> @@ -1843,6 +1906,48 @@ static struct cftype cfq_blkcg_files[] = {
->  		.private = offsetof(struct cfq_group, stats.queued),
->  		.read_seq_string = cfqg_print_rwstat,
->  	},
-> +
-> +	/* the same statictics which cover the cfqg and its descendants */
-> +	{
-> +		.name = "time_recursive",
-> +		.private = offsetof(struct cfq_group, stats.time),
-> +		.read_seq_string = cfqg_print_stat_recursive,
-> +	},
-> +	{
-> +		.name = "sectors_recursive",
-> +		.private = offsetof(struct cfq_group, stats.sectors),
-> +		.read_seq_string = cfqg_print_stat_recursive,
-> +	},
-> +	{
-> +		.name = "io_service_bytes_recursive",
-> +		.private = offsetof(struct cfq_group, stats.service_bytes),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_serviced_recursive",
-> +		.private = offsetof(struct cfq_group, stats.serviced),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_service_time_recursive",
-> +		.private = offsetof(struct cfq_group, stats.service_time),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_wait_time_recursive",
-> +		.private = offsetof(struct cfq_group, stats.wait_time),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_merged_recursive",
-> +		.private = offsetof(struct cfq_group, stats.merged),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
-> +	{
-> +		.name = "io_queued_recursive",
-> +		.private = offsetof(struct cfq_group, stats.queued),
-> +		.read_seq_string = cfqg_print_rwstat_recursive,
-> +	},
->  #ifdef CONFIG_DEBUG_BLK_CGROUP
->  	{
->  		.name = "avg_queue_size",
-> -- 
-> 1.8.0.2
+>>
+>> If we allow it to diverge now, it will make it harder to refactor and
+>> harder to notice when bug fixes should be applied to all of them.  For
+>> example, looking at pcibios_allocate_resources(), commit 575939cf5
+>> added some SR-IOV support to x86.  Should similar code be added for
+>> frv, microblaze, mn10300, and powerpc?
+
+should be treated the same.
+
+>>
+>> Anybody else have thoughts on this?
+>>
+>> Bjorn
