@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755922Ab3AHKnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:43:24 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58520 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755736Ab3AHKnX (ORCPT
+	id S1755960Ab3AHKng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:43:36 -0500
+Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:57327 "EHLO
+	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755813Ab3AHKne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:43:23 -0500
-Date: Tue, 8 Jan 2013 10:43:21 +0000
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Kim, Milo" <Milo.Kim@ti.com>
-Cc: Axel Lin <axel.lin@ingics.com>, "Girdwood, Liam" <lrg@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFT] regulator: lp8788-ldo: Use ldo->en_pin to check if
- regulator is enabled by external pin
-Message-ID: <20130108104321.GJ4544@opensource.wolfsonmicro.com>
-References: <1357371223.22227.1.camel@phoenix>
- <20130107110818.GB4544@opensource.wolfsonmicro.com>
- <A874F61F95741C4A9BA573A70FE3998F69E11935@DQHE02.ent.ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="6J7GEvtanOfV9oXA"
-Content-Disposition: inline
-In-Reply-To: <A874F61F95741C4A9BA573A70FE3998F69E11935@DQHE02.ent.ti.com>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Jan 2013 05:43:34 -0500
+Date: Tue, 8 Jan 2013 19:44:09 +0900
+From: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+To: mtosatti@redhat.com, gleb@redhat.com
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/7] KVM: MMU: Remove unused parameter level from
+ __rmap_write_protect()
+Message-Id: <20130108194409.563b2a74.yoshikawa_takuya_b1@lab.ntt.co.jp>
+In-Reply-To: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
+References: <20130108194238.09ebc8bd.yoshikawa_takuya_b1@lab.ntt.co.jp>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+No longer need to care about the mapping level in this function.
 
---6J7GEvtanOfV9oXA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Takuya Yoshikawa <yoshikawa_takuya_b1@lab.ntt.co.jp>
+---
+ arch/x86/kvm/mmu.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-On Mon, Jan 07, 2013 at 11:23:26PM +0000, Kim, Milo wrote:
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 01d7c2a..bee3509 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1142,7 +1142,7 @@ spte_write_protect(struct kvm *kvm, u64 *sptep, bool *flush, bool pt_protect)
+ }
+ 
+ static bool __rmap_write_protect(struct kvm *kvm, unsigned long *rmapp,
+-				 int level, bool pt_protect)
++				 bool pt_protect)
+ {
+ 	u64 *sptep;
+ 	struct rmap_iterator iter;
+@@ -1180,7 +1180,7 @@ void kvm_mmu_write_protect_pt_masked(struct kvm *kvm,
+ 	while (mask) {
+ 		rmapp = __gfn_to_rmap(slot->base_gfn + gfn_offset + __ffs(mask),
+ 				      PT_PAGE_TABLE_LEVEL, slot);
+-		__rmap_write_protect(kvm, rmapp, PT_PAGE_TABLE_LEVEL, false);
++		__rmap_write_protect(kvm, rmapp, false);
+ 
+ 		/* clear the first set bit */
+ 		mask &= mask - 1;
+@@ -1199,7 +1199,7 @@ static bool rmap_write_protect(struct kvm *kvm, u64 gfn)
+ 	for (i = PT_PAGE_TABLE_LEVEL;
+ 	     i < PT_PAGE_TABLE_LEVEL + KVM_NR_PAGE_SIZES; ++i) {
+ 		rmapp = __gfn_to_rmap(gfn, i, slot);
+-		write_protected |= __rmap_write_protect(kvm, rmapp, i, true);
++		write_protected |= __rmap_write_protect(kvm, rmapp, true);
+ 	}
+ 
+ 	return write_protected;
+-- 
+1.7.5.4
 
-> > Applied, thanks.  However we should be converting the driver to use the
-> > core support for this - the GPIO can just be given to the core in the
-> > regulator config which should handle everything transparently.
-
-> I have a question.
-> Do you mean the dependency of CONFIG_GENERIC_GPIO in this driver?
-
-No.  I mean you should use the regulator API core functionality for
-managing GPIO enables instead of open coding it.
-
---6J7GEvtanOfV9oXA
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.12 (GNU/Linux)
-
-iQIcBAEBAgAGBQJQ6/g/AAoJELSic+t+oim9rK4QAJBfTDemX+WYzEp0fW2zaGqe
-5IWlBa86a26BDLviPVSytC2Bdg/5lotrcWpl8n/u78sfFS4c1W/e2SbrtqMJSZ0B
-Td7GexehPzn9FJ+Rn/Fju9WsSZ+FFWMB/KNNzBBI68jIHKY/H14PMY920Uet5T14
-A4YpqmlkqkFk36A1t1ZcxRcKiijc6cX2fUgjHIfyNZmjzybi0N15/GtQGaB2pLTI
-OndWtHGvCTwKbSHM0QIseGcDLa2CM49yeuhPrbvKcv2CuyfGXDC0WW6TJJl4ehKA
-1vMesKN1A/C/BeUehCmmiZJld/SBigpJlL0D9DBMhBRfgC+brNtUXqw6wYlrZizB
-X0TxR7kNMJx+JvijlQOl/EpWEg+TxOA186asYHksc2AtEo4y3Yk1LLL152VIl98j
-DlPwrGLn0rBhCGDWVAnEazgw4zs8suzR6+TXottJc+BsAT9YimMOTl1Fk3j5qdNs
-+UmUs0zovbqBU8qotEAOKOKD/XlB1nqBzUAwq3/iLD6xA6cEdE9UoQb3LuzQII5b
-rJMh5+y8OY5PgS0V2LIIK7+YRUIl8jROAyleWqBzniMylANt+s1R+OBgBo068Qst
-nu6tT6xqrVrIov2gCwySzpfSczXp32gQvnNBtKmCWfkA543mrq/XpxvDZknN5lrC
-hIbhcoPBChEapkS659HT
-=AeoF
------END PGP SIGNATURE-----
-
---6J7GEvtanOfV9oXA--
