@@ -1,130 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755783Ab3AHK0l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 05:26:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:22695 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab3AHK0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 05:26:39 -0500
-Message-ID: <50EBF44C.9040401@redhat.com>
-Date: Tue, 08 Jan 2013 18:26:20 +0800
-From: Jason Wang <jasowang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1755650Ab3AHKag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 05:30:36 -0500
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:52016 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab3AHKaf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 05:30:35 -0500
 MIME-Version: 1.0
-To: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Eric Dumazet <erdnetdev@gmail.com>,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org
-Subject: Re: [PATCH V3 1/2] virtio-net: fix the set affinity bug when CPU
- IDs are not consecutive
-References: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com>
-In-Reply-To: <1357639660-6660-1-git-send-email-gaowanlong@cn.fujitsu.com>
+In-Reply-To: <20130107090210.GA20716@elgon.mountain>
+References: <20130107090210.GA20716@elgon.mountain>
+Date: Tue, 8 Jan 2013 19:30:34 +0900
+Message-ID: <CANKRQnh+USJwA=-+MYotvWQif7ZWQwPyUWnrbGQg5dFpvfh5Dg@mail.gmail.com>
+Subject: Re: add Packet hub driver for Topcliff Platform controller hub
+From: Tomoya MORINAGA <tomoya.rohm@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 06:07 PM, Wanlong Gao wrote:
-> As Michael mentioned, set affinity and select queue will not work very
-> well when CPU IDs are not consecutive, this can happen with hot unplug.
-> Fix this bug by traversal the online CPUs, and create a per cpu variable
-> to find the mapping from CPU to the preferable virtual-queue.
+Hi Dan,
+
+On Mon, Jan 7, 2013 at 6:02 PM, Dan Carpenter <dan.carpenter@oracle.com> wrote:
+> The patch cf4ece53460c: "add Packet hub driver for Topcliff Platform
+> controller hub" from Sep 1, 2010, leads to the following warning:
+> drivers/misc/pch_phub.c:596 pch_phub_bin_write()
+>          error: buffer overflow 'buf' 4096 <= 15359
 >
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: Jason Wang <jasowang@redhat.com>
-> Cc: Eric Dumazet <erdnetdev@gmail.com>
-> Cc: virtualization@lists.linux-foundation.org
-> Cc: netdev@vger.kernel.org
-> Signed-off-by: Wanlong Gao <gaowanlong@cn.fujitsu.com>
-> ---
->  drivers/net/virtio_net.c | 39 +++++++++++++++++++++++++++++----------
->  1 file changed, 29 insertions(+), 10 deletions(-)
+> Sorry my question is about an old patch.  Smatch complains because we
+> only pass a PAGE_SIZE buffer to sysfs files so the test for
+> "if (count > PCH_PHUB_OROM_SIZE) {" makes it think we are overflowing.
+> In fact, count is never more than 4096 so there is no overflow, but I
+> also think that it means only the first 4096 bytes of the firmware gets
+> updated.
 >
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index a6fcf15..a77f86c 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -41,6 +41,8 @@ module_param(gso, bool, 0444);
->  #define VIRTNET_SEND_COMMAND_SG_MAX    2
->  #define VIRTNET_DRIVER_VERSION "1.0.0"
->  
-> +DEFINE_PER_CPU(int, vq_index) = -1;
-> +
+> drivers/misc/pch_phub.c
+>    560  static ssize_t pch_phub_bin_write(struct file *filp, struct kobject *kobj,
+>    561                                    struct bin_attribute *attr,
+>    562                                    char *buf, loff_t off, size_t count)
+>    563  {
+>    564          int err;
+>    565          unsigned int addr_offset;
+>    566          int ret;
+>    567          ssize_t rom_size;
+>    568          struct pch_phub_reg *chip =
+>    569                  dev_get_drvdata(container_of(kobj, struct device, kobj));
+>    570
+>    571          ret = mutex_lock_interruptible(&pch_phub_mutex);
+>    572          if (ret)
+>    573                  return -ERESTARTSYS;
+>    574
+>    575          if (off > PCH_PHUB_OROM_SIZE) {
+>    576                  addr_offset = 0;
+>    577                  goto return_ok;
+>    578          }
+>    579          if (count > PCH_PHUB_OROM_SIZE) {
+>                             ^^^^^^^^^^^^^^^^^^
+> This is 15359.
+>
+>    580                  addr_offset = 0;
+>    581                  goto return_ok;
+>    582          }
+>    583
+>    584          chip->pch_phub_extrom_base_address = pci_map_rom(chip->pdev, &rom_size);
+>    585          if (!chip->pch_phub_extrom_base_address) {
+>    586                  err = -ENOMEM;
+>    587                  goto exrom_map_err;
+>    588          }
+>    589
+>    590          for (addr_offset = 0; addr_offset < count; addr_offset++) {
+>    591                  if (PCH_PHUB_OROM_SIZE < off + addr_offset)
+>    592                          goto return_ok;
+>    593
+>    594                  ret = pch_phub_write_serial_rom(chip,
+>    595                              chip->pch_opt_rom_start_address + addr_offset + off,
+>    596                              buf[addr_offset]);
+>                                     ^^^^^^^^^^^^^^^^
+> Smatch complains because "buf" is only 4096 bytes.
+>
 
-I think this should not be a global one, consider we may have more than
-one virtio-net cards with different max queues.
->  struct virtnet_stats {
->  	struct u64_stats_sync tx_syncp;
->  	struct u64_stats_sync rx_syncp;
-> @@ -1016,6 +1018,7 @@ static int virtnet_vlan_rx_kill_vid(struct net_device *dev, u16 vid)
->  static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->  {
->  	int i;
-> +	int cpu;
->  
->  	/* In multiqueue mode, when the number of cpu is equal to the number of
->  	 * queue pairs, we let the queue pairs to be private to one cpu by
-> @@ -1029,16 +1032,29 @@ static void virtnet_set_affinity(struct virtnet_info *vi, bool set)
->  			return;
->  	}
->  
-> -	for (i = 0; i < vi->max_queue_pairs; i++) {
-> -		int cpu = set ? i : -1;
-> -		virtqueue_set_affinity(vi->rq[i].vq, cpu);
-> -		virtqueue_set_affinity(vi->sq[i].vq, cpu);
-> -	}
-> +	if (set) {
-> +		i = 0;
-> +		for_each_online_cpu(cpu) {
-> +			virtqueue_set_affinity(vi->rq[i].vq, cpu);
-> +			virtqueue_set_affinity(vi->sq[i].vq, cpu);
-> +			per_cpu(vq_index, cpu) = i;
-> +			i++;
-> +			if (i >= vi->max_queue_pairs)
-> +				break;
+I can understand your saying.
 
-Can this happen? we check only set when the number are equal.
-> +		}
->  
-> -	if (set)
->  		vi->affinity_hint_set = true;
-> -	else
-> +	} else {
-> +		for(i = 0; i < vi->max_queue_pairs; i++) {
-> +			virtqueue_set_affinity(vi->rq[i].vq, -1);
-> +			virtqueue_set_affinity(vi->sq[i].vq, -1);
-> +		}
-> +
-> +		for_each_online_cpu(cpu)
-> +			per_cpu(vq_index, cpu) = -1;
-> +
+You mean just delete the following condition ?
 
-This looks suboptimal since it may leads only txq zero is used.
->  		vi->affinity_hint_set = false;
-> +	}
->  }
->  
->  static void virtnet_get_ringparam(struct net_device *dev,
-> @@ -1127,12 +1143,15 @@ static int virtnet_change_mtu(struct net_device *dev, int new_mtu)
->  
->  /* To avoid contending a lock hold by a vcpu who would exit to host, select the
->   * txq based on the processor id.
-> - * TODO: handle cpu hotplug.
->   */
->  static u16 virtnet_select_queue(struct net_device *dev, struct sk_buff *skb)
->  {
-> -	int txq = skb_rx_queue_recorded(skb) ? skb_get_rx_queue(skb) :
-> -		  smp_processor_id();
-> +	int txq = 0;
-> +
-> +	if (skb_rx_queue_recorded(skb))
-> +		txq = skb_get_rx_queue(skb);
-> +	else if ((txq = per_cpu(vq_index, smp_processor_id())) == -1)
-> +		txq = 0;
->  
->  	while (unlikely(txq >= dev->real_num_tx_queues))
->  		txq -= dev->real_num_tx_queues;
+579          if (count > PCH_PHUB_OROM_SIZE) {
 
+Thanks.
+
+-- 
+ROHM Co., Ltd.
+tomoya
