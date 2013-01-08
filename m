@@ -1,178 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab3AHJpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 04:45:45 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:64604 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755224Ab3AHJpj (ORCPT
+	id S1755166Ab3AHJqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 04:46:35 -0500
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:43389 "EHLO
+	mx4-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754563Ab3AHJqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 04:45:39 -0500
-Message-ID: <1357638325.5678.47.camel@marge.simpson.net>
-Subject: Re: kernel BUG at kernel/sched_rt.c:493!
-From: Mike Galbraith <bitbucket@online.de>
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org
-Date: Tue, 08 Jan 2013 10:45:25 +0100
-In-Reply-To: <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
-References: <20130105174632.GB19226@u1004.rgmadvisors.com>
-	 <20130107175818.GA3411@BohrerMBP.rgmadvisors.com>
-	 <20130107230218.GB3411@BohrerMBP.rgmadvisors.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	Tue, 8 Jan 2013 04:46:33 -0500
+Date: Tue, 8 Jan 2013 04:46:32 -0500 (EST)
+From: CAI Qian <caiqian@redhat.com>
+To: linux-mm <linux-mm@kvack.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <239895331.1183913.1357638392087.JavaMail.root@redhat.com>
+Subject: mmap regression on power7?
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-Provags-ID: V02:K0:880nNIHzYpOCY1Ximod9aQNtBTPhorrI80pXYcPoIss
- hDdO25ccmy3OFTDcAc0GClPZkvk4MDhn2j1NAAOd5d5ZQYCHnY
- z07CbiSTPew3jxPLHo6Admrog0Wl3s7ziXwl7RN9qz2KcE4bdJ
- PZlq3C/kPjdPJqIiJjo1iv0iywmucJKMNvn9OHP2nlp8T6e/Z+
- XpmM2+Xap5zeiFj1ipzu5gxf787EPjDSmkAQO3Galc1lLypVOW
- jO1MxQjWb//ryx4zslBFXc9CPZwUAswMxVEGHLfLyInIQHzarB
- v/+LwAvUD12VgjLhM6uliPGf4Wiatozm8Qpo3vXoH8obBYp0Ev
- qhYNJSWKNUsirhrqfxrHjFxIrVd+ed0L/1kuTjf2HJRuDxXyeW
- BADfPyvd0YHSg==
+X-Originating-IP: [10.66.13.37]
+X-Mailer: Zimbra 7.2.0_GA_2669 (ZimbraWebClient - FF3.0 (Linux)/7.2.0_GA_2669)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2013-01-07 at 17:02 -0600, Shawn Bohrer wrote: 
-> On Mon, Jan 07, 2013 at 11:58:18AM -0600, Shawn Bohrer wrote:
-> > On Sat, Jan 05, 2013 at 11:46:32AM -0600, Shawn Bohrer wrote:
-> > > I've tried reproducing the issue, but so far I've been unsuccessful
-> > > but I believe that is because my RT tasks aren't using enough CPU
-> > > cause borrowing from the other runqueues.  Normally our RT tasks use
-> > > very little CPU so I'm not entirely sure what conditions caused them
-> > > to run into throttling on the day that this happened.
-> > 
-> > I've managed to reproduce this a couple times now on 3.1.9 I'll give
-> > this a try later with a more recent kernel.  Here is what I've done to
-> > reproduce the issue.
-> > 
-> > 
-> > # Setup in shell 1
-> > root@berbox39:/cgroup/cpuset# mkdir package0
-> > root@berbox39:/cgroup/cpuset# echo 0 > package0/cpuset.mems
-> > root@berbox39:/cgroup/cpuset# echo 0,2,4,6 > package0/cpuset.cpus
-> > root@berbox39:/cgroup/cpuset# cat cpuset.sched_load_balance
-> > 1
-> > root@berbox39:/cgroup/cpuset# cat package0/cpuset.sched_load_balance
-> > 1
-> > root@berbox39:/cgroup/cpuset# cat sysdefault/cpuset.sched_load_balance
-> > 1
-> > root@berbox39:/cgroup/cpuset# echo 1,3,5,7 > sysdefault/cpuset.cpus
-> > root@berbox39:/cgroup/cpuset# echo 0 > sysdefault/cpuset.mems
-> > root@berbox39:/cgroup/cpuset# echo $$ > package0/tasks
-> > 
-> > # Setup in shell 2
-> > root@berbox39:~# cd /cgroup/cpuset/
-> > root@berbox39:/cgroup/cpuset# chrt -f -p 60 $$
-> > root@berbox39:/cgroup/cpuset# echo $$ > sysdefault/tasks
-> > 
-> > # In shell 1
-> > root@berbox39:/cgroup/cpuset# chrt -f 1 /root/burn.sh &
-> > root@berbox39:/cgroup/cpuset# chrt -f 1 /root/burn.sh &
-> > 
-> > # In shell 2
-> > root@berbox39:/cgroup/cpuset# echo 0 > cpuset.sched_load_balance
-> > root@berbox39:/cgroup/cpuset# echo 1 > cpuset.sched_load_balance
-> > root@berbox39:/cgroup/cpuset# echo 0 > cpuset.sched_load_balance
-> > root@berbox39:/cgroup/cpuset# echo 1 > cpuset.sched_load_balance
-> > 
-> > I haven't found the exact magic combination but I've been going back
-> > and forth adding/killing burn.sh processes and toggling
-> > cpuset.sched_load_balance and in a couple of minutes I can usually get
-> > the machine to trigger the bug.
-> 
-> I've also managed to reproduce this on 3.8.0-rc2 so it appears the bug
-> is still present in the latest kernel.
-> 
-> Also just re-reading my instructions above /root/burn.sh is just a
-> simple:
-> 
-> while true; do : ; done
-> 
-> I've also had to make the kworker threads SCHED_FIFO with a higher
-> priority than burn.sh or as expected I can lock up the system due to
-> some xfs threads getting starved.
-> 
-> Let me know if anyone needs any more information, or needs me to try
-> anything since it appears I can trigger this fairly easily now.
+Noticed that this test is failing at the moment up to v3.8.0-rc1,
+http://ltp.git.sourceforge.net/git/gitweb.cgi?p=ltp/ltp.git;a=blob;f=testcases/kernel/mem/mtest06/mmap1.c
 
-I hit something very similar.
+mmap1       0  TINFO  :  created writing thread[70366791266816]
+mmap1       0  TINFO  :  [70366791266816] - map, change contents, unmap files 1000 times
+mmap1       0  TINFO  :  [70366799655424] - read contents of memory 0x3fff8b180000 1000 times
+mmap1       0  TINFO  :  created reading thread[70366799655424]
+mmap1       0  TINFO  :  [70366799655424] Unexpected page fault at 0x3fff8b1803a8
 
-In my case, I had booted with sched_debug, and a 57600 serial console
-connected to my local box via a horribly slow internet link, which led
-to it taking 40 seconds to get 2 of 80 cpus down for reboot.  There were
-a gaggle of CPUs with pilfered rt_runtime, a matching gaggle of bandits,
-no runqueues were throttled, nor were there any with rt_time accrued at
-crash time, but as CPU4 tried to go down, it couldn't find its property,
-so cleverly fired a thermonuclear pop-flare, lest thieves escape unseen,
-precious rt_runtime in hand.
+Bisecting going back to v2.6.38 has no such problem and keep running
+despite sometimes it triggered memory allocation failures.
 
-     runqueues 
-     0xffff88047f811180      rt_runtime = 888192922   cpu0
-     0xffff880c7f811180      rt_runtime = RUNTIME_INF cpu1
-     0xffff88087f811180      rt_runtime = RUNTIME_INF cpu2
-     0xffff880e7f811180      rt_runtime = 699462573   cpu3
-     0xffff88047f851180      rt_runtime = 841094505   cpu4
-     0xffff880c7f851180      rt_runtime = 926250000   cpu5
-     0xffff88087f851180      rt_runtime = 926250000   cpu6
-     0xffff880e7f851180      rt_runtime = 926250000   cpu7
-     0xffff88047f891180      rt_runtime = 926250000   cpu8
-     0xffff880c7f891180      rt_runtime = 926250000   cpu9
-     0xffff88087f891180      rt_runtime = 926250000   cpu10
-     0xffff880e7f891180      rt_runtime = 926250000   cpu11
-     0xffff88047f8d1180      rt_runtime = 926250000   cpu12
-     0xffff880c7f8d1180      rt_runtime = 926250000   cpu13
-     0xffff88087f8d1180      rt_runtime = 1000000000  cpu14
-     0xffff880e7f8d1180      rt_runtime = 1000000000  cpu15
-     0xffff88047f911180      rt_runtime = 1000000000  cpu16
-     0xffff880c7f911180      rt_runtime = 1000000000  cpu17
-     0xffff88087f911180      rt_runtime = 1000000000  cpu18
-     0xffff880e7f911180      rt_runtime = 1000000000  cpu19
-     0xffff88047f951180      rt_runtime = 1000000000  cpu20
-     0xffff880c7f951180      rt_runtime = 1000000000  cpu21
-     0xffff88087f951180      rt_runtime = 1000000000  cpu23
-     0xffff880e7f951180      rt_runtime = 1000000000  cpu24
-     0xffff88047f991180      rt_runtime = 1000000000  cpu25
-     0xffff880c7f991180      rt_runtime = 950000000   cpu26
-     0xffff88087f991180      rt_runtime = 1000000000  cpu27
-     0xffff880e7f991180      rt_runtime = 950000000   cpu28
-     ....
-     0xffff88087fcd1180      rt_runtime = 950000000   cpu79
+swapper: page allocation failure. order:0, mode:0x0
+Call Trace:
+[c00000013feab370] [c0000000000143f4] .show_stack+0x74/0x1c0 (unreliable)
+[c00000013feab420] [c0000000001474d0] .__alloc_pages_nodemask+0x4f0/0x8e0
+[c00000013feab5c0] [c000000000031870] .iommu_alloc_coherent+0x100/0x280
+[c00000013feab680] [c000000000031020] .dma_iommu_alloc_coherent+0x30/0x50
+[c00000013feab6f0] [d000000001712220] .ibmvscsi_queuecommand+0x5b0/0x600 [ibmvscsic]
+[c00000013feab7d0] [c0000000003aa0d0] .scsi_dispatch_cmd+0x120/0x380
+[c00000013feab870] [c0000000003b2a8c] .scsi_request_fn+0x4fc/0x620
+[c00000013feab950] [c0000000002a13ac] .__blk_run_queue+0x15c/0x1c0
+[c00000013feab9e0] [c0000000002a1514] .blk_run_queue+0x34/0x60
+[c00000013feaba70] [c0000000003b1894] .scsi_run_queue+0x114/0x450
+[c00000013feabb50] [c0000000003b2de8] .scsi_next_command+0x48/0x70
+[c00000013feabbe0] [c0000000003b3e60] .scsi_io_completion+0x3e0/0x580
+[c00000013feabcc0] [c0000000003a9d98] .scsi_finish_command+0x128/0x180
+[c00000013feabd60] [c0000000003b4118] .scsi_softirq_done+0x108/0x1d0
+[c00000013feabe00] [c0000000002a795c] .blk_done_softirq+0xbc/0xf0
+[c00000013feabea0] [c000000000092e90] .__do_softirq+0x110/0x290
+[c00000013feabf90] [c000000000020eb8] .call_do_softirq+0x14/0x24
+[c00000013e963960] [c00000000000f2b4] .do_softirq+0xf4/0x120
+[c00000013e963a00] [c000000000092ca4] .irq_exit+0xb4/0xc0
+[c00000013e963a80] [c00000000000f540] .do_IRQ+0x160/0x2c0
+[c00000013e963b40] [c000000000004898] hardware_interrupt_entry+0x18/0x80
+--- Exception: 501 at .arch_local_irq_restore+0x34/0x60
+    LR = .cpu_idle+0x170/0x210
+[c00000013e963e30] [c000000000016c14] .cpu_idle+0x164/0x210 (unreliable)
+[c00000013e963ee0] [c00000000059e454] .start_secondary+0x324/0x35c
+[c00000013e963f90] [c000000000008268] .start_secondary_prolog+0x10/0x14
+Mem-Info:
+Node 0 DMA per-cpu:
+CPU    0: hi:    6, btch:   1 usd:   5
+CPU    1: hi:    6, btch:   1 usd:   1
+CPU    2: hi:    6, btch:   1 usd:   5
+CPU    3: hi:    6, btch:   1 usd:   5
+CPU    4: hi:    6, btch:   1 usd:   3
+CPU    5: hi:    6, btch:   1 usd:   1
+CPU    6: hi:    6, btch:   1 usd:   5
+CPU    7: hi:    6, btch:   1 usd:   4
+CPU    8: hi:    6, btch:   1 usd:   1
+CPU    9: hi:    6, btch:   1 usd:   5
+CPU   10: hi:    6, btch:   1 usd:   5
+CPU   11: hi:    6, btch:   1 usd:   5
+CPU   12: hi:    6, btch:   1 usd:   4
+CPU   13: hi:    6, btch:   1 usd:   1
+CPU   14: hi:    6, btch:   1 usd:   5
+CPU   15: hi:    6, btch:   1 usd:   3
+CPU   16: hi:    6, btch:   1 usd:   5
+CPU   17: hi:    6, btch:   1 usd:   1
+CPU   18: hi:    6, btch:   1 usd:   5
+CPU   19: hi:    6, btch:   1 usd:   2
+CPU   20: hi:    6, btch:   1 usd:   4
+CPU   21: hi:    6, btch:   1 usd:   1
+CPU   22: hi:    6, btch:   1 usd:   5
+CPU   23: hi:    6, btch:   1 usd:   1
+CPU   24: hi:    6, btch:   1 usd:   5
+CPU   25: hi:    6, btch:   1 usd:   1
+CPU   26: hi:    6, btch:   1 usd:   5
+CPU   27: hi:    6, btch:   1 usd:   5
+CPU   28: hi:    6, btch:   1 usd:   5
+CPU   29: hi:    6, btch:   1 usd:   1
+CPU   30: hi:    6, btch:   1 usd:   1
+CPU   31: hi:    6, btch:   1 usd:   1
+CPU   32: hi:    6, btch:   1 usd:   5
+CPU   33: hi:    6, btch:   1 usd:   5
+CPU   34: hi:    6, btch:   1 usd:   1
+CPU   35: hi:    6, btch:   1 usd:   1
+CPU   36: hi:    6, btch:   1 usd:   5
+CPU   37: hi:    6, btch:   1 usd:   5
+CPU   38: hi:    6, btch:   1 usd:   4
+CPU   39: hi:    6, btch:   1 usd:   2
+CPU   40: hi:    6, btch:   1 usd:   4
+CPU   41: hi:    6, btch:   1 usd:   5
+CPU   42: hi:    6, btch:   1 usd:   5
+CPU   43: hi:    6, btch:   1 usd:   2
+CPU   44: hi:    6, btch:   1 usd:   5
+CPU   45: hi:    6, btch:   1 usd:   5
+CPU   46: hi:    6, btch:   1 usd:   5
+CPU   47: hi:    6, btch:   1 usd:   5
+CPU   48: hi:    6, btch:   1 usd:   1
+CPU   49: hi:    6, btch:   1 usd:   1
+CPU   50: hi:    6, btch:   1 usd:   3
+CPU   51: hi:    6, btch:   1 usd:   5
+CPU   52: hi:    6, btch:   1 usd:   5
+CPU   53: hi:    6, btch:   1 usd:   2
+CPU   54: hi:    6, btch:   1 usd:   5
+CPU   55: hi:    6, btch:   1 usd:   5
+CPU   56: hi:    6, btch:   1 usd:   1
+CPU   57: hi:    6, btch:   1 usd:   1
+CPU   58: hi:    6, btch:   1 usd:   5
+CPU   59: hi:    6, btch:   1 usd:   4
+Node 1 DMA per-cpu:
+CPU    0: hi:    6, btch:   1 usd:   5
+CPU    1: hi:    6, btch:   1 usd:   5
+CPU    2: hi:    6, btch:   1 usd:   5
+CPU    3: hi:    6, btch:   1 usd:   4
+CPU    4: hi:    6, btch:   1 usd:   5
+CPU    5: hi:    6, btch:   1 usd:   3
+CPU    6: hi:    6, btch:   1 usd:   5
+CPU    7: hi:    6, btch:   1 usd:   5
+CPU    8: hi:    6, btch:   1 usd:   5
+CPU    9: hi:    6, btch:   1 usd:   2
+CPU   10: hi:    6, btch:   1 usd:   5
+CPU   11: hi:    6, btch:   1 usd:   3
+CPU   12: hi:    6, btch:   1 usd:   5
+CPU   13: hi:    6, btch:   1 usd:   2
+CPU   14: hi:    6, btch:   1 usd:   5
+CPU   15: hi:    6, btch:   1 usd:   4
+CPU   16: hi:    6, btch:   1 usd:   5
+CPU   17: hi:    6, btch:   1 usd:   5
+CPU   18: hi:    6, btch:   1 usd:   5
+CPU   19: hi:    6, btch:   1 usd:   5
+CPU   20: hi:    6, btch:   1 usd:   5
+CPU   21: hi:    6, btch:   1 usd:   5
+CPU   22: hi:    6, btch:   1 usd:   5
+CPU   23: hi:    6, btch:   1 usd:   4
+CPU   24: hi:    6, btch:   1 usd:   5
+CPU   25: hi:    6, btch:   1 usd:   4
+CPU   26: hi:    6, btch:   1 usd:   5
+CPU   27: hi:    6, btch:   1 usd:   5
+CPU   28: hi:    6, btch:   1 usd:   5
+CPU   29: hi:    6, btch:   1 usd:   1
+CPU   30: hi:    6, btch:   1 usd:   5
+CPU   31: hi:    6, btch:   1 usd:   5
+CPU   32: hi:    6, btch:   1 usd:   5
+CPU   33: hi:    6, btch:   1 usd:   5
+CPU   34: hi:    6, btch:   1 usd:   2
+CPU   35: hi:    6, btch:   1 usd:   5
+CPU   36: hi:    6, btch:   1 usd:   5
+CPU   37: hi:    6, btch:   1 usd:   5
+CPU   38: hi:    6, btch:   1 usd:   1
+CPU   39: hi:    6, btch:   1 usd:   4
+CPU   40: hi:    6, btch:   1 usd:   0
+CPU   41: hi:    6, btch:   1 usd:   4
+CPU   42: hi:    6, btch:   1 usd:   5
+CPU   43: hi:    6, btch:   1 usd:   5
+CPU   44: hi:    6, btch:   1 usd:   5
+CPU   45: hi:    6, btch:   1 usd:   5
+CPU   46: hi:    6, btch:   1 usd:   5
+CPU   47: hi:    6, btch:   1 usd:   4
+CPU   48: hi:    6, btch:   1 usd:   5
+CPU   49: hi:    6, btch:   1 usd:   3
+CPU   50: hi:    6, btch:   1 usd:   5
+CPU   51: hi:    6, btch:   1 usd:   5
+CPU   52: hi:    6, btch:   1 usd:   5
+CPU   53: hi:    6, btch:   1 usd:   2
+CPU   54: hi:    6, btch:   1 usd:   2
+CPU   55: hi:    6, btch:   1 usd:   2
+CPU   56: hi:    6, btch:   1 usd:   5
+CPU   57: hi:    6, btch:   1 usd:   1
+CPU   58: hi:    6, btch:   1 usd:   5
+CPU   59: hi:    6, btch:   1 usd:   5
+active_anon:2553 inactive_anon:3246 isolated_anon:0
+ active_file:34958 inactive_file:31322 isolated_file:0
+ unevictable:0 dirty:13086 writeback:1581 unstable:0
+ free:291 slab_reclaimable:2076 slab_unreclaimable:3873
+ mapped:186 shmem:3 pagetables:796 bounce:0
+Node 0 DMA free:10176kB min:7296kB low:9088kB high:10944kB active_anon:96128kB inactive_anon:138368kB active_file:1837440kB inactive_file:1605056kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:4190720kB mlocked:0kB dirty:459840kB writeback:62848kB mapped:11840kB shmem:192kB slab_reclaimable:127360kB slab_unreclaimable:226688kB kernel_stack:9088kB pagetables:35520kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:32 all_unreclaimable? no
+lowmem_reserve[]: 0 0 0
+Node 1 DMA free:8448kB min:1792kB low:2240kB high:2688kB active_anon:67264kB inactive_anon:69376kB active_file:399872kB inactive_file:399552kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:1047680kB mlocked:0kB dirty:377664kB writeback:38336kB mapped:64kB shmem:0kB slab_reclaimable:5504kB slab_unreclaimable:21184kB kernel_stack:480kB pagetables:15424kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
+lowmem_reserve[]: 0 0 0
+Node 0 DMA: 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB 0*8192kB 0*16384kB = 0kB
+Node 1 DMA: 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB 0*8192kB 0*16384kB = 0kB
+66497 total pagecache pages
+56 pages in swap cache
+Swap cache stats: add 538, delete 482, find 127/141
+Free swap  = 5161024kB
+Total swap = 5177280kB
+81920 pages RAM
+900 pages reserved
+47062 pages shared
+39873 pages non-shared
+sd 0:0:1:0: Can't allocate memory for indirect table
+sd 0:0:1:0: couldn't convert cmd to srp_cmd
 
-crash> bt
-PID: 14735  TASK: ffff880e75e86500  CPU: 4   COMMAND: "reboot"
- #0 [ffff880e74b3d890] machine_kexec at ffffffff8102676e
- #1 [ffff880e74b3d8e0] crash_kexec at ffffffff810a3a3a
- #2 [ffff880e74b3d9b0] oops_end at ffffffff81446238
- #3 [ffff880e74b3d9d0] do_invalid_op at ffffffff810035d4
- #4 [ffff880e74b3da70] invalid_op at ffffffff8144d9bb
-    [exception RIP: __disable_runtime+494]
-    RIP: ffffffff81045dae  RSP: ffff880e74b3db28  RFLAGS: 00010082
-    RAX: 000000000000046a  RBX: ffff880e7fcd1310  RCX: ffffffff81d88a90
-    RDX: 000000000000046a  RSI: 0000000000000050  RDI: ffff880e7fcd19b0
-    RBP: ffff880e74b3db98   R8: 0000000000000010   R9: ffff88047f423408
-    R10: 0000000000000050  R11: ffffffff81250190  R12: 0000000000000050
-    R13: fffffffffde9f140  R14: ffff880e7fcd1310  R15: 000000000000122f
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #5 [ffff880e74b3dba0] rq_offline_rt at ffffffff8104b36a
- #6 [ffff880e74b3dbc0] set_rq_offline at ffffffff81043c9e
- #7 [ffff880e74b3dbe0] rq_attach_root at ffffffff8104c130
- #8 [ffff880e74b3dc10] cpu_attach_domain at ffffffff81054f44
- #9 [ffff880e74b3dc80] build_sched_domains at ffffffff81055525
-#10 [ffff880e74b3dcd0] partition_sched_domains at ffffffff81055835
-#11 [ffff880e74b3dd70] cpuset_cpu_inactive at ffffffff81055a0d
-#12 [ffff880e74b3dd80] notifier_call_chain at ffffffff81448907
-#13 [ffff880e74b3ddb0] _cpu_down at ffffffff8142b57b
-#14 [ffff880e74b3de10] disable_nonboot_cpus at ffffffff8105ba23
-#15 [ffff880e74b3de40] kernel_restart at ffffffff81071dde
-#16 [ffff880e74b3de50] sys_reboot at ffffffff81071fc3
-#17 [ffff880e74b3df80] system_call_fastpath at ffffffff8144ca12
-    RIP: 00007fed35778316  RSP: 00007fff23f7e198  RFLAGS: 00010202
-    RAX: 00000000000000a9  RBX: ffffffff8144ca12  RCX: 00007fed35771130
-    RDX: 0000000001234567  RSI: 0000000028121969  RDI: fffffffffee1dead
-    RBP: 0000000000000000   R8: 0000000000020fd0   R9: 000000000060d120
-    R10: 00007fff23f7df40  R11: 0000000000000202  R12: 0000000000000000
-    R13: 0000000000000000  R14: 0000000000000001  R15: 0000000000000000
-    ORIG_RAX: 00000000000000a9  CS: 0033  SS: 002b
-
+CAI Qian
