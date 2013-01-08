@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751326Ab3AHFyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 00:54:35 -0500
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:46327 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab3AHFyd (ORCPT
+	id S1751760Ab3AHFyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 00:54:44 -0500
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:46724 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab3AHFyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 00:54:33 -0500
+	Tue, 8 Jan 2013 00:54:41 -0500
 From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com, mturquette@linaro.org,
         rjw@sisk.pl
 Cc: patches@linaro.org, linaro-dev@lists.linaro.org, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org,
         Rajagopal Venkat <rajagopal.venkat@linaro.org>
-Subject: [PATCH 1/3] PM / devfreq: set min/max freq limit from freq table
-Date: Tue,  8 Jan 2013 11:20:37 +0530
-Message-Id: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+Subject: [PATCH 2/3] PM / devfreq: fix stats start time stamp
+Date: Tue,  8 Jan 2013 11:20:38 +0530
+Message-Id: <1357624239-13938-2-git-send-email-rajagopal.venkat@linaro.org>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
+References: <1357624239-13938-1-git-send-email-rajagopal.venkat@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set devfreq device min and max frequency limits when device
-is added to devfreq, provided frequency table is supplied.
-This helps governors to suggest target frequency with in
-limits.
+Mark the stats start time stamp when actual load monitoring is
+started for accuracy.
 
 Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
 ---
- drivers/devfreq/devfreq.c |   24 ++++++++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ drivers/devfreq/devfreq.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/devfreq/devfreq.c b/drivers/devfreq/devfreq.c
-index a8f0173..5782c9b 100644
+index 5782c9b..2843a22 100644
 --- a/drivers/devfreq/devfreq.c
 +++ b/drivers/devfreq/devfreq.c
-@@ -69,6 +69,29 @@ static struct devfreq *find_device_devfreq(struct device *dev)
- }
- 
- /**
-+ * devfreq_set_freq_limits() - Set min and max frequency from freq_table
-+ * @devfreq:	the devfreq instance
-+ */
-+static void devfreq_set_freq_limits(struct devfreq *devfreq)
-+{
-+	int idx;
-+	unsigned long min = ~0, max = 0;
+@@ -254,9 +254,12 @@ static void devfreq_monitor(struct work_struct *work)
+ void devfreq_monitor_start(struct devfreq *devfreq)
+ {
+ 	INIT_DEFERRABLE_WORK(&devfreq->work, devfreq_monitor);
+-	if (devfreq->profile->polling_ms)
++	if (devfreq->profile->polling_ms) {
+ 		queue_delayed_work(devfreq_wq, &devfreq->work,
+ 			msecs_to_jiffies(devfreq->profile->polling_ms));
 +
-+	if (!devfreq->profile->freq_table)
-+		return;
-+
-+	for (idx = 0; idx < devfreq->profile->max_state; idx++) {
-+		if (min > devfreq->profile->freq_table[idx])
-+			min = devfreq->profile->freq_table[idx];
-+		if (max < devfreq->profile->freq_table[idx])
-+			max = devfreq->profile->freq_table[idx];
++		devfreq->last_stat_updated = jiffies;
 +	}
-+
-+	devfreq->min_freq = min;
-+	devfreq->max_freq = max;
-+}
-+
-+/**
-  * devfreq_get_freq_level() - Lookup freq_table for the frequency
-  * @devfreq:	the devfreq instance
-  * @freq:	the target frequency
-@@ -476,6 +499,7 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ }
+ EXPORT_SYMBOL(devfreq_monitor_start);
+ 
+@@ -498,7 +501,6 @@ struct devfreq *devfreq_add_device(struct device *dev,
+ 	devfreq->time_in_state = devm_kzalloc(dev, sizeof(unsigned int) *
  						devfreq->profile->max_state,
  						GFP_KERNEL);
- 	devfreq->last_stat_updated = jiffies;
-+	devfreq_set_freq_limits(devfreq);
+-	devfreq->last_stat_updated = jiffies;
+ 	devfreq_set_freq_limits(devfreq);
  
  	dev_set_name(&devfreq->dev, dev_name(dev));
- 	err = device_register(&devfreq->dev);
 -- 
 1.7.10.4
 
