@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756489Ab3AHXhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 18:37:17 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53599 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756390Ab3AHXhN (ORCPT
+	id S1756568Ab3AHXh2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 18:37:28 -0500
+Received: from mail.windriver.com ([147.11.1.11]:63491 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756171Ab3AHXhY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:37:13 -0500
+	Tue, 8 Jan 2013 18:37:24 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: NeilBrown <neilb@suse.de>, Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [v2.6.34-stable 13/77] md: Fix handling for devices from 2TB to 4TB in 0.90 metadata.
-Date: Tue, 8 Jan 2013 18:34:52 -0500
-Message-ID: <1357688156-25387-14-git-send-email-paul.gortmaker@windriver.com>
+CC: Salman Qazi <sqazi@google.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [v2.6.34-stable 38/77] sched, x86: Avoid unnecessary overflow in sched_clock
+Date: Tue, 8 Jan 2013 18:35:17 -0500
+Message-ID: <1357688156-25387-39-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.12.1
 In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,7 +24,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Salman Qazi <sqazi@google.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
@@ -30,67 +32,72 @@ From: NeilBrown <neilb@suse.de>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 27a7b260f71439c40546b43588448faac01adb93 upstream.
+commit 4cecf6d401a01d054afc1e5f605bcbfe553cb9b9 upstream.
 
-0.90 metadata uses an unsigned 32bit number to count the number of
-kilobytes used from each device.
-This should allow up to 4TB per device.
-However we multiply this by 2 (to get sectors) before casting to a
-larger type, so sizes above 2TB get truncated.
+(Added the missing signed-off-by line)
 
-Also we allow rdev->sectors to be larger than 4TB, so it is possible
-for the array to be resized larger than the metadata can handle.
-So make sure rdev->sectors never exceeds 4TB when 0.90 metadata is in
-used.
+In hundreds of days, the __cycles_2_ns calculation in sched_clock
+has an overflow.  cyc * per_cpu(cyc2ns, cpu) exceeds 64 bits, causing
+the final value to become zero.  We can solve this without losing
+any precision.
 
-Also the sanity check at the end of super_90_load should include level
-1 as it used ->size too. (RAID0 and Linear don't use ->size at all).
+We can decompose TSC into quotient and remainder of division by the
+scale factor, and then use this to convert TSC into nanoseconds.
 
-Reported-by: Pim Zandbergen <P.Zandbergen@macroscoop.nl>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Salman Qazi <sqazi@google.com>
+Acked-by: John Stultz <johnstul@us.ibm.com>
+Reviewed-by: Paul Turner <pjt@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/20111115221121.7262.88871.stgit@dungbeetle.mtv.corp.google.com
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/md/md.c | 12 ++++++++++--
- 1 file changed, 10 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/timer.h | 23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/md/md.c b/drivers/md/md.c
-index d26df7f..4788c82 100644
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -985,8 +985,11 @@ static int super_90_load(mdk_rdev_t *rdev, mdk_rdev_t *refdev, int minor_version
- 			ret = 0;
- 	}
- 	rdev->sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that */
-+	if (rdev->sectors >= (2ULL << 32))
-+		rdev->sectors = (2ULL << 32) - 2;
+diff --git a/arch/x86/include/asm/timer.h b/arch/x86/include/asm/timer.h
+index 5469630..b93a9aa 100644
+--- a/arch/x86/include/asm/timer.h
++++ b/arch/x86/include/asm/timer.h
+@@ -38,6 +38,22 @@ extern int no_timer_check;
+  *  (mathieu.desnoyers@polymtl.ca)
+  *
+  *			-johnstul@us.ibm.com "math is hard, lets go shopping!"
++ *
++ * In:
++ *
++ * ns = cycles * cyc2ns_scale / SC
++ *
++ * Although we may still have enough bits to store the value of ns,
++ * in some cases, we may not have enough bits to store cycles * cyc2ns_scale,
++ * leading to an incorrect result.
++ *
++ * To avoid this, we can decompose 'cycles' into quotient and remainder
++ * of division by SC.  Then,
++ *
++ * ns = (quot * SC + rem) * cyc2ns_scale / SC
++ *    = quot * cyc2ns_scale + (rem * cyc2ns_scale) / SC
++ *
++ *			- sqazi@google.com
+  */
  
--	if (rdev->sectors < sb->size * 2 && sb->level > 1)
-+	if (rdev->sectors < ((sector_t)sb->size) * 2 && sb->level >= 1)
- 		/* "this cannot possibly happen" ... */
- 		ret = -EINVAL;
+ DECLARE_PER_CPU(unsigned long, cyc2ns);
+@@ -47,9 +63,14 @@ DECLARE_PER_CPU(unsigned long long, cyc2ns_offset);
  
-@@ -1021,7 +1024,7 @@ static int super_90_validate(mddev_t *mddev, mdk_rdev_t *rdev)
- 		mddev->clevel[0] = 0;
- 		mddev->layout = sb->layout;
- 		mddev->raid_disks = sb->raid_disks;
--		mddev->dev_sectors = sb->size * 2;
-+		mddev->dev_sectors = ((sector_t)sb->size) * 2;
- 		mddev->events = ev1;
- 		mddev->bitmap_info.offset = 0;
- 		mddev->bitmap_info.default_offset = MD_SB_BYTES >> 9;
-@@ -1260,6 +1263,11 @@ super_90_rdev_size_change(mdk_rdev_t *rdev, sector_t num_sectors)
- 	rdev->sb_start = calc_dev_sboffset(rdev->bdev);
- 	if (!num_sectors || num_sectors > rdev->sb_start)
- 		num_sectors = rdev->sb_start;
-+	/* Limit to 4TB as metadata cannot record more than that.
-+	 * 4TB == 2^32 KB, or 2*2^32 sectors.
-+	 */
-+	if (num_sectors >= (2ULL << 32))
-+		num_sectors = (2ULL << 32) - 2;
- 	md_super_write(rdev->mddev, rdev, rdev->sb_start, rdev->sb_size,
- 		       rdev->sb_page);
- 	md_super_wait(rdev->mddev);
+ static inline unsigned long long __cycles_2_ns(unsigned long long cyc)
+ {
++	unsigned long long quot;
++	unsigned long long rem;
+ 	int cpu = smp_processor_id();
+ 	unsigned long long ns = per_cpu(cyc2ns_offset, cpu);
+-	ns += cyc * per_cpu(cyc2ns, cpu) >> CYC2NS_SCALE_FACTOR;
++	quot = (cyc >> CYC2NS_SCALE_FACTOR);
++	rem = cyc & ((1ULL << CYC2NS_SCALE_FACTOR) - 1);
++	ns += quot * per_cpu(cyc2ns, cpu) +
++		((rem * per_cpu(cyc2ns, cpu)) >> CYC2NS_SCALE_FACTOR);
+ 	return ns;
+ }
+ 
 -- 
 1.7.12.1
 
