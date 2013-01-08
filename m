@@ -1,122 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754816Ab3AHB6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 20:58:15 -0500
-Received: from mail-oa0-f52.google.com ([209.85.219.52]:34287 "EHLO
-	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab3AHB6O (ORCPT
+	id S1754876Ab3AHCAa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:00:30 -0500
+Received: from nm21-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.176]:29558
+	"EHLO nm21-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753712Ab3AHCA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 20:58:14 -0500
+	Mon, 7 Jan 2013 21:00:29 -0500
+X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jan 2013 21:00:29 EST
+X-Yahoo-Newman-Id: 443930.98341.bm@smtp108.biz.mail.gq1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: Y6cm6MIVM1kZlhnOjeM8q03XkjRTPSnRT9mwQZAaxGntgP_
+ 07HIiFeZeluH2Xf0h5ASwb.zd6I1ZD4y1JFaPapZA.nW_x9Wdpwt.MMG4in.
+ jVI9zkOqS36zHnbdKHxlX.jRZYsvhlkgVkBpn.6Pel1twuuO0Zr1yzPuAC_O
+ KVanwDWA2SeSdUDZ_mQMIhJUMS1K74NWMUBBLaOHp88e3SfmblkZSqsaaM5f
+ BCzMixRYs8BwbxmvxQ7irIrtRRDE7L6HQytSVNMVO6j7HPSGjxvZyIpt7Q5l
+ XQIm2KaukFHltu7URMrHRm12W4OogJxUkklFh_SGhh4PrfuhzeYzxW7KsYki
+ v1up64oxkPRQEyqobF7r1sP6qP7RyE3AGaRaBqYCGsw8eztV8BCRY_iM1R.E
+ J2S_2BGEXRIegOMpXzV9CwpF2X8zr5rHpTWOJEFWqJEd1M0ha1N9DpiyVhqB
+ BANMDThj696C.HHKGiz5TbXY-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EB7C50.3070605@schaufler-ca.com>
+Date: Mon, 07 Jan 2013 17:54:24 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <1357374665.716.32.camel@ThinkPad-T5421.cn.ibm.com>
-References: <CANFwon03L14jDhLAE66F936WytwtN=+43QetETOG5ndUGptnow@mail.gmail.com>
- <1357374665.716.32.camel@ThinkPad-T5421.cn.ibm.com>
-From: Hui Zhu <teawater@gmail.com>
-Date: Tue, 8 Jan 2013 09:57:32 +0800
-Message-ID: <CANFwon2P8zumYjCpEZVJJbZsaKRc7C+f0hqOusC7OvcDNeApXw@mail.gmail.com>
-Subject: Re: [PATCH] Remove WARN_ON_ONCE in __smp_call_function_single and smp_call_function_single
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Nazarewicz <mina86@mina86.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Zhu Yanhai <gaoyang.zyh@taobao.com>,
-        yan@linux.vnet.ibm.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+CC: LSM <linux-security-module@vger.kernel.org>,
+        LKLM <linux-kernel@vger.kernel.org>, SE Linux <selinux@tycho.nsa.gov>,
+        John Johansen <john.johansen@canonical.com>,
+        Eric Paris <eparis@redhat.com>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        Kees Cook <keescook@chromium.org>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 5, 2013 at 4:31 PM, Li Zhong <zhong@linux.vnet.ibm.com> wrote:
-> On Sat, 2013-01-05 at 12:26 +0800, Hui Zhu wrote:
->> The comments of these WARN_ON_ONCE said "Can deadlock when called with
->> interrupts disabled".
->> But I didn't find anything that will block this function.
->
-> It seems that if two cpus try to IPI each other with wait equals true,
-> they will deadlock if interrupts are disabled, because neither of them
-> can take the interrupt.
->
-> If wait equals false, it seems deadlock is still possible, for example,
-> if smp_call_function_single() is called from interrupt context, then one
-> cpu might
->         -->call smp_call_function_single()
->         -->csd_lock()
->         -->be interrupted before sending the ipi out
->         -->in interrupt context, call smp_call_function_single() again
->         -->csd_lock_wait() forever in csd_lock()
+Subject: [PATCH v12 0/9] LSM: Multiple concurrent LSMs
 
-Thanks for your mail.  It make me more clear about these functions.
+Change the infrastructure for Linux Security Modules (LSM)s
+from a single vector of hook handlers to a list based method
+for handling multiple concurrent modules. 
 
-Best,
-Hui
+A level of indirection has been introduced in the handling of
+security blobs. LSMs no longer access ->security fields directly,
+instead they use an abstraction provided by lsm_[gs]et field
+functions. 
 
->
-> I'm not sure whether it is possible that irqs be enabled in interrupt
-> context? If so, maybe we also need check that if wait equals false?
->
-> Thanks, Zhong
->
->> So I think maybe this WARN_ON_ONCE is not need now.  So I post a patch for that.
->>
->> Signed-off-by: Hui Zhu <teawater@gmail.com>
->> Signed-off-by: Zhu Yanhai <gaoyang.zyh@taobao.com>
->>
->> --- a/kernel/smp.c
->> +++ b/kernel/smp.c
->> @@ -303,25 +303,13 @@ int smp_call_function_single(int cpu, sm
->>               .flags = 0,
->>       };
->>       unsigned long flags;
->> -     int this_cpu;
->>       int err = 0;
->>
->>       /*
->>        * prevent preemption and reschedule on another processor,
->>        * as well as CPU removal
->>        */
->> -     this_cpu = get_cpu();
->> -
->> -     /*
->> -      * Can deadlock when called with interrupts disabled.
->> -      * We allow cpu's that are not yet online though, as no one else can
->> -      * send smp call function interrupt to this cpu and as such deadlocks
->> -      * can't happen.
->> -      */
->> -     WARN_ON_ONCE(cpu_online(this_cpu) && irqs_disabled()
->> -                  && !oops_in_progress);
->> -
->> -     if (cpu == this_cpu) {
->> +     if (cpu == get_cpu()) {
->>               local_irq_save(flags);
->>               func(info);
->>               local_irq_restore(flags);
->> @@ -409,17 +397,7 @@ void __smp_call_function_single(int cpu,
->>       unsigned int this_cpu;
->>       unsigned long flags;
->>
->> -     this_cpu = get_cpu();
->> -     /*
->> -      * Can deadlock when called with interrupts disabled.
->> -      * We allow cpu's that are not yet online though, as no one else can
->> -      * send smp call function interrupt to this cpu and as such deadlocks
->> -      * can't happen.
->> -      */
->> -     WARN_ON_ONCE(cpu_online(smp_processor_id()) && wait && irqs_disabled()
->> -                  && !oops_in_progress);
->> -
->> -     if (cpu == this_cpu) {
->> +     if (cpu == get_cpu()) {
->>               local_irq_save(flags);
->>               data->func(data->info);
->>               local_irq_restore(flags);
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->
->
+The XFRM hooks are only used by SELinux and it is not clear
+that they can be shared. The First LSM that registers using
+those hooks gets to use them. Any subsequent LSM that uses
+those hooks is denied registration. 
+
+Secids have not been made shareable. Only one LSM that uses
+secids (SELinux and Smack) can be used at a time. The first
+to register wins.
+
+The "security=" boot option takes a comma separated list of
+LSMs, registering them in the order presented. The LSM hooks
+will be executed in the order registered. Hooks that return
+errors are not short circuited. All hooks are called even
+if one of the LSM hooks fails. The result returned will be
+that of the last LSM hook that failed.
+
+Some hooks don't fit that model. setprocattr, getprocattr,
+and a few others are special cased. All behavior from
+security/capability.c has been moved into the hook handling.
+The security/commoncap functions used to get called from
+the LSM specific code. The handling of the capability
+functions has been moved out of the LSMs and into the
+hook handling.
+
+The /proc/*/attr interfaces are given to one LSM. This
+can be done by setting CONFIG_SECURITY_PRESENT. Additional
+interfaces have been created in /proc/*/attr so that
+each LSM has its own named interfaces.
+
+Signed-off-by: Casey Schaufler <casey@schaufler-ca.com>
+
+---
+ fs/proc/base.c                      |   28 +-
+ include/linux/lsm.h                 |  174 ++++
+ include/linux/security.h            |  255 +++++-
+ security/Kconfig                    |   79 +-
+ security/Makefile                   |    3 +-
+ security/apparmor/context.c         |   10 +-
+ security/apparmor/domain.c          |   19 +-
+ security/apparmor/include/context.h |   13 +-
+ security/apparmor/lsm.c             |   66 +-
+ security/capability.c               | 1081 -------------------------
+ security/commoncap.c                |    6 -
+ security/inode.c                    |   79 +-
+ security/security.c                 | 1496 ++++++++++++++++++++++++++++-------
+ security/selinux/hooks.c            |  410 +++++-----
+ security/selinux/include/objsec.h   |    2 +
+ security/selinux/include/xfrm.h     |    2 +-
+ security/selinux/netlabel.c         |   13 +-
+ security/selinux/selinuxfs.c        |    6 +-
+ security/selinux/xfrm.c             |    9 +-
+ security/smack/smack.h              |   14 +-
+ security/smack/smack_access.c       |    2 +-
+ security/smack/smack_lsm.c          |  367 ++++-----
+ security/smack/smackfs.c            |   16 +-
+ security/tomoyo/common.h            |    6 +-
+ security/tomoyo/domain.c            |    2 +-
+ security/tomoyo/securityfs_if.c     |    9 +-
+ security/tomoyo/tomoyo.c            |   47 +-
+ security/yama/Kconfig               |    7 -
+ security/yama/yama_lsm.c            |   33 +-
+ 29 files changed, 2226 insertions(+), 2028 deletions(-)
+
