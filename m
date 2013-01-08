@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab3AHCIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 21:08:51 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:52921 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755035Ab3AHCIr (ORCPT
+	id S1755312Ab3AHCI7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 21:08:59 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:52192 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755094Ab3AHCIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 21:08:47 -0500
+	Mon, 7 Jan 2013 21:08:51 -0500
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>,
@@ -23,9 +23,9 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 02/33] context_tracking: Export context state for generic vtime
-Date: Tue,  8 Jan 2013 03:08:02 +0100
-Message-Id: <1357610913-1080-3-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 03/33] cputime: Generic on-demand virtual cputime accounting
+Date: Tue,  8 Jan 2013 03:08:03 +0100
+Message-Id: <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
 References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
@@ -33,12 +33,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Export the context state: whether we run in user / kernel
-from the context tracking subsystem point of view.
+If we want to stop the tick further idle, we need to be
+able to account the cputime without using the tick.
 
-This is going to be used by the generic virtual cputime
-accounting subsystem that is needed to implement the full
-dynticks.
+Virtual based cputime accounting solves that problem by
+hooking into kernel/user boundaries.
+
+However implementing CONFIG_VIRT_CPU_ACCOUNTING require
+to set low level hooks and involves more overhead. But
+we already have a generic context tracking subsystem
+that is required for RCU needs by archs which will want to
+shut down the tick outside idle.
+
+This patch implements a generic virtual based cputime
+accounting that relies on these generic kernel/user hooks.
+
+There are some upsides of doing this:
+
+- This requires no arch code to implement CONFIG_VIRT_CPU_ACCOUNTING
+if context tracking is already built (already necessary for RCU in full
+tickless mode).
+
+- We can rely on the generic context tracking subsystem to dynamically
+(de)activate the hooks, so that we can switch anytime between virtual
+and tick based accounting. This way we don't have the overhead
+of the virtual accounting when the tick is running periodically.
+
+And a few downsides:
+
+- It relies on jiffies and the hooks are set in high level code. This
+results in less precise cputime accounting than with a true native
+virtual based cputime accounting which hooks on low level code and use
+a cpu hardware clock. Precision is not the goal of this though.
+
+- There is probably more overhead than a native virtual based cputime
+accounting. But this relies on hooks that are already set anyway.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Alessio Igor Bogani <abogani@kernel.org>
@@ -57,85 +86,687 @@ Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/context_tracking.h |   28 ++++++++++++++++++++++++++++
- kernel/context_tracking.c        |   16 +---------------
- 2 files changed, 29 insertions(+), 15 deletions(-)
+ arch/ia64/include/asm/cputime.h        |    6 +-
+ arch/ia64/include/asm/thread_info.h    |    4 +-
+ arch/ia64/include/asm/xen/minstate.h   |    2 +-
+ arch/ia64/kernel/asm-offsets.c         |    2 +-
+ arch/ia64/kernel/entry.S               |   16 +++---
+ arch/ia64/kernel/fsys.S                |    4 +-
+ arch/ia64/kernel/head.S                |    4 +-
+ arch/ia64/kernel/ivt.S                 |    8 ++--
+ arch/ia64/kernel/minstate.h            |    2 +-
+ arch/ia64/kernel/time.c                |    4 +-
+ arch/powerpc/include/asm/cputime.h     |    6 +-
+ arch/powerpc/include/asm/lppaca.h      |    2 +-
+ arch/powerpc/include/asm/ppc_asm.h     |    4 +-
+ arch/powerpc/kernel/entry_64.S         |    4 +-
+ arch/powerpc/kernel/time.c             |    4 +-
+ arch/powerpc/platforms/pseries/dtl.c   |    6 +-
+ arch/powerpc/platforms/pseries/setup.c |    6 +-
+ include/linux/vtime.h                  |   16 ++++++
+ init/Kconfig                           |   15 +++++-
+ kernel/context_tracking.c              |    6 ++-
+ kernel/sched/cputime.c                 |   92 ++++++++++++++++++++++++++++++--
+ 21 files changed, 164 insertions(+), 49 deletions(-)
 
-diff --git a/include/linux/context_tracking.h b/include/linux/context_tracking.h
-index e24339c..b28d161 100644
---- a/include/linux/context_tracking.h
-+++ b/include/linux/context_tracking.h
-@@ -3,12 +3,40 @@
+diff --git a/arch/ia64/include/asm/cputime.h b/arch/ia64/include/asm/cputime.h
+index 7fcf7f0..af15d84 100644
+--- a/arch/ia64/include/asm/cputime.h
++++ b/arch/ia64/include/asm/cputime.h
+@@ -11,14 +11,14 @@
+  * as published by the Free Software Foundation; either version
+  * 2 of the License, or (at your option) any later version.
+  *
+- * If we have CONFIG_VIRT_CPU_ACCOUNTING, we measure cpu time in nsec.
++ * If we have CONFIG_VIRT_CPU_ACCOUNTING_NATIVE, we measure cpu time in nsec.
+  * Otherwise we measure cpu time in jiffies using the generic definitions.
+  */
  
- #ifdef CONFIG_CONTEXT_TRACKING
- #include <linux/sched.h>
-+#include <linux/percpu.h>
-+
-+struct context_tracking {
-+	/*
-+	 * When active is false, probes are unset in order
-+	 * to minimize overhead: TIF flags are cleared
-+	 * and calls to user_enter/exit are ignored. This
-+	 * may be further optimized using static keys.
-+	 */
-+	bool active;
-+	enum {
-+		IN_KERNEL = 0,
-+		IN_USER,
-+	} state;
-+};
-+
-+DECLARE_PER_CPU(struct context_tracking, context_tracking);
-+
-+static inline bool context_tracking_in_user(void)
-+{
-+	return __this_cpu_read(context_tracking.state) == IN_USER;
-+}
-+
-+static inline bool context_tracking_active(void)
-+{
-+	return __this_cpu_read(context_tracking.active);
-+}
+ #ifndef __IA64_CPUTIME_H
+ #define __IA64_CPUTIME_H
  
- extern void user_enter(void);
- extern void user_exit(void);
- extern void context_tracking_task_switch(struct task_struct *prev,
- 					 struct task_struct *next);
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ #include <asm-generic/cputime.h>
  #else
-+static inline bool context_tracking_in_user(void) { return false; }
- static inline void user_enter(void) { }
- static inline void user_exit(void) { }
- static inline void context_tracking_task_switch(struct task_struct *prev,
+ 
+@@ -105,5 +105,5 @@ static inline void cputime_to_timeval(const cputime_t ct, struct timeval *val)
+ 
+ extern void arch_vtime_task_switch(struct task_struct *tsk);
+ 
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ #endif /* __IA64_CPUTIME_H */
+diff --git a/arch/ia64/include/asm/thread_info.h b/arch/ia64/include/asm/thread_info.h
+index ff2ae41..020d655 100644
+--- a/arch/ia64/include/asm/thread_info.h
++++ b/arch/ia64/include/asm/thread_info.h
+@@ -31,7 +31,7 @@ struct thread_info {
+ 	mm_segment_t addr_limit;	/* user-level address space limit */
+ 	int preempt_count;		/* 0=premptable, <0=BUG; will also serve as bh-counter */
+ 	struct restart_block restart_block;
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	__u64 ac_stamp;
+ 	__u64 ac_leave;
+ 	__u64 ac_stime;
+@@ -69,7 +69,7 @@ struct thread_info {
+ #define task_stack_page(tsk)	((void *)(tsk))
+ 
+ #define __HAVE_THREAD_FUNCTIONS
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ #define setup_thread_stack(p, org)			\
+ 	*task_thread_info(p) = *task_thread_info(org);	\
+ 	task_thread_info(p)->ac_stime = 0;		\
+diff --git a/arch/ia64/include/asm/xen/minstate.h b/arch/ia64/include/asm/xen/minstate.h
+index c57fa91..00cf03e 100644
+--- a/arch/ia64/include/asm/xen/minstate.h
++++ b/arch/ia64/include/asm/xen/minstate.h
+@@ -1,5 +1,5 @@
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ /* read ar.itc in advance, and use it before leaving bank 0 */
+ #define XEN_ACCOUNT_GET_STAMP		\
+ 	MOV_FROM_ITC(pUStk, p6, r20, r2);
+diff --git a/arch/ia64/kernel/asm-offsets.c b/arch/ia64/kernel/asm-offsets.c
+index a48bd9a..46c9e30 100644
+--- a/arch/ia64/kernel/asm-offsets.c
++++ b/arch/ia64/kernel/asm-offsets.c
+@@ -41,7 +41,7 @@ void foo(void)
+ 	DEFINE(TI_FLAGS, offsetof(struct thread_info, flags));
+ 	DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
+ 	DEFINE(TI_PRE_COUNT, offsetof(struct thread_info, preempt_count));
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	DEFINE(TI_AC_STAMP, offsetof(struct thread_info, ac_stamp));
+ 	DEFINE(TI_AC_LEAVE, offsetof(struct thread_info, ac_leave));
+ 	DEFINE(TI_AC_STIME, offsetof(struct thread_info, ac_stime));
+diff --git a/arch/ia64/kernel/entry.S b/arch/ia64/kernel/entry.S
+index e25b784..7a89f0b 100644
+--- a/arch/ia64/kernel/entry.S
++++ b/arch/ia64/kernel/entry.S
+@@ -724,7 +724,7 @@ GLOBAL_ENTRY(__paravirt_leave_syscall)
+ #endif
+ .global __paravirt_work_processed_syscall;
+ __paravirt_work_processed_syscall:
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	adds r2=PT(LOADRS)+16,r12
+ 	MOV_FROM_ITC(pUStk, p9, r22, r19)	// fetch time at leave
+ 	adds r18=TI_FLAGS+IA64_TASK_SIZE,r13
+@@ -762,7 +762,7 @@ __paravirt_work_processed_syscall:
+ 
+ 	ld8 r29=[r2],16		// M0|1 load cr.ipsr
+ 	ld8 r28=[r3],16		// M0|1 load cr.iip
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ (pUStk) add r14=TI_AC_LEAVE+IA64_TASK_SIZE,r13
+ 	;;
+ 	ld8 r30=[r2],16		// M0|1 load cr.ifs
+@@ -793,7 +793,7 @@ __paravirt_work_processed_syscall:
+ 	ld8.fill r1=[r3],16			// M0|1 load r1
+ (pUStk) mov r17=1				// A
+ 	;;
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ (pUStk) st1 [r15]=r17				// M2|3
+ #else
+ (pUStk) st1 [r14]=r17				// M2|3
+@@ -813,7 +813,7 @@ __paravirt_work_processed_syscall:
+ 	shr.u r18=r19,16		// I0|1 get byte size of existing "dirty" partition
+ 	COVER				// B    add current frame into dirty partition & set cr.ifs
+ 	;;
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	mov r19=ar.bsp			// M2   get new backing store pointer
+ 	st8 [r14]=r22			// M	save time at leave
+ 	mov f10=f0			// F    clear f10
+@@ -948,7 +948,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
+ 	adds r16=PT(CR_IPSR)+16,r12
+ 	adds r17=PT(CR_IIP)+16,r12
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	.pred.rel.mutex pUStk,pKStk
+ 	MOV_FROM_PSR(pKStk, r22, r29)	// M2 read PSR now that interrupts are disabled
+ 	MOV_FROM_ITC(pUStk, p9, r22, r29)	// M  fetch time at leave
+@@ -981,7 +981,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
+ 	;;
+ 	ld8.fill r12=[r16],16
+ 	ld8.fill r13=[r17],16
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ (pUStk)	adds r3=TI_AC_LEAVE+IA64_TASK_SIZE,r18
+ #else
+ (pUStk)	adds r18=IA64_TASK_THREAD_ON_USTACK_OFFSET,r18
+@@ -989,7 +989,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
+ 	;;
+ 	ld8 r20=[r16],16	// ar.fpsr
+ 	ld8.fill r15=[r17],16
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ (pUStk)	adds r18=IA64_TASK_THREAD_ON_USTACK_OFFSET,r18	// deferred
+ #endif
+ 	;;
+@@ -997,7 +997,7 @@ GLOBAL_ENTRY(__paravirt_leave_kernel)
+ 	ld8.fill r2=[r17]
+ (pUStk)	mov r17=1
+ 	;;
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	//  mmi_ :  ld8 st1 shr;;         mmi_ : st8 st1 shr;;
+ 	//  mib  :  mov add br        ->  mib  : ld8 add br
+ 	//  bbb_ :  br  nop cover;;       mbb_ : mov br  cover;;
+diff --git a/arch/ia64/kernel/fsys.S b/arch/ia64/kernel/fsys.S
+index e662f17..c4cd45d 100644
+--- a/arch/ia64/kernel/fsys.S
++++ b/arch/ia64/kernel/fsys.S
+@@ -529,7 +529,7 @@ GLOBAL_ENTRY(paravirt_fsys_bubble_down)
+ 	nop.i 0
+ 	;;
+ 	mov ar.rsc=0				// M2   set enforced lazy mode, pl 0, LE, loadrs=0
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	MOV_FROM_ITC(p0, p6, r30, r23)		// M    get cycle for accounting
+ #else
+ 	nop.m 0
+@@ -555,7 +555,7 @@ GLOBAL_ENTRY(paravirt_fsys_bubble_down)
+ 	cmp.ne pKStk,pUStk=r0,r0		// A    set pKStk <- 0, pUStk <- 1
+ 	br.call.sptk.many b7=ia64_syscall_setup	// B
+ 	;;
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	// mov.m r30=ar.itc is called in advance
+ 	add r16=TI_AC_STAMP+IA64_TASK_SIZE,r2
+ 	add r17=TI_AC_LEAVE+IA64_TASK_SIZE,r2
+diff --git a/arch/ia64/kernel/head.S b/arch/ia64/kernel/head.S
+index 4738ff7..9be4e49 100644
+--- a/arch/ia64/kernel/head.S
++++ b/arch/ia64/kernel/head.S
+@@ -1073,7 +1073,7 @@ END(ia64_native_sched_clock)
+ sched_clock = ia64_native_sched_clock
+ #endif
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ GLOBAL_ENTRY(cycle_to_cputime)
+ 	alloc r16=ar.pfs,1,0,0,0
+ 	addl r8=THIS_CPU(ia64_cpu_info) + IA64_CPUINFO_NSEC_PER_CYC_OFFSET,r0
+@@ -1091,7 +1091,7 @@ GLOBAL_ENTRY(cycle_to_cputime)
+ 	shrp r8=r9,r8,IA64_NSEC_PER_CYC_SHIFT
+ 	br.ret.sptk.many rp
+ END(cycle_to_cputime)
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ #ifdef CONFIG_IA64_BRL_EMU
+ 
+diff --git a/arch/ia64/kernel/ivt.S b/arch/ia64/kernel/ivt.S
+index fa25689..689ffca 100644
+--- a/arch/ia64/kernel/ivt.S
++++ b/arch/ia64/kernel/ivt.S
+@@ -784,7 +784,7 @@ ENTRY(break_fault)
+ 
+ (p8)	adds r28=16,r28				// A    switch cr.iip to next bundle
+ (p9)	adds r8=1,r8				// A    increment ei to next slot
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	;;
+ 	mov b6=r30				// I0   setup syscall handler branch reg early
+ #else
+@@ -801,7 +801,7 @@ ENTRY(break_fault)
+ 	//
+ ///////////////////////////////////////////////////////////////////////
+ 	st1 [r16]=r0				// M2|3 clear current->thread.on_ustack flag
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	MOV_FROM_ITC(p0, p14, r30, r18)		// M    get cycle for accounting
+ #else
+ 	mov b6=r30				// I0   setup syscall handler branch reg early
+@@ -817,7 +817,7 @@ ENTRY(break_fault)
+ 	cmp.eq p14,p0=r9,r0			// A    are syscalls being traced/audited?
+ 	br.call.sptk.many b7=ia64_syscall_setup	// B
+ 1:
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 	// mov.m r30=ar.itc is called in advance, and r13 is current
+ 	add r16=TI_AC_STAMP+IA64_TASK_SIZE,r13	// A
+ 	add r17=TI_AC_LEAVE+IA64_TASK_SIZE,r13	// A
+@@ -1043,7 +1043,7 @@ END(ia64_syscall_setup)
+ 	DBG_FAULT(16)
+ 	FAULT(16)
+ 
+-#if defined(CONFIG_VIRT_CPU_ACCOUNTING) && defined(__IA64_ASM_PARAVIRTUALIZED_NATIVE)
++#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(__IA64_ASM_PARAVIRTUALIZED_NATIVE)
+ 	/*
+ 	 * There is no particular reason for this code to be here, other than
+ 	 * that there happens to be space here that would go unused otherwise.
+diff --git a/arch/ia64/kernel/minstate.h b/arch/ia64/kernel/minstate.h
+index d56753a..cc82a7d 100644
+--- a/arch/ia64/kernel/minstate.h
++++ b/arch/ia64/kernel/minstate.h
+@@ -4,7 +4,7 @@
+ #include "entry.h"
+ #include "paravirt_inst.h"
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ /* read ar.itc in advance, and use it before leaving bank 0 */
+ #define ACCOUNT_GET_STAMP				\
+ (pUStk) mov.m r20=ar.itc;
+diff --git a/arch/ia64/kernel/time.c b/arch/ia64/kernel/time.c
+index b1995ef..94a474d 100644
+--- a/arch/ia64/kernel/time.c
++++ b/arch/ia64/kernel/time.c
+@@ -77,7 +77,7 @@ static struct clocksource clocksource_itc = {
+ };
+ static struct clocksource *itc_clocksource;
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ 
+ #include <linux/kernel_stat.h>
+ 
+@@ -142,7 +142,7 @@ void vtime_account_idle(struct task_struct *tsk)
+ 	account_idle_time(vtime_delta(tsk));
+ }
+ 
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ static irqreturn_t
+ timer_interrupt (int irq, void *dev_id)
+diff --git a/arch/powerpc/include/asm/cputime.h b/arch/powerpc/include/asm/cputime.h
+index 483733b..607559a 100644
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -8,7 +8,7 @@
+  * as published by the Free Software Foundation; either version
+  * 2 of the License, or (at your option) any later version.
+  *
+- * If we have CONFIG_VIRT_CPU_ACCOUNTING, we measure cpu time in
++ * If we have CONFIG_VIRT_CPU_ACCOUNTING_NATIVE, we measure cpu time in
+  * the same units as the timebase.  Otherwise we measure cpu time
+  * in jiffies using the generic definitions.
+  */
+@@ -16,7 +16,7 @@
+ #ifndef __POWERPC_CPUTIME_H
+ #define __POWERPC_CPUTIME_H
+ 
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ #include <asm-generic/cputime.h>
+ #ifdef __KERNEL__
+ static inline void setup_cputime_one_jiffy(void) { }
+@@ -231,5 +231,5 @@ static inline cputime_t clock_t_to_cputime(const unsigned long clk)
+ static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
+ 
+ #endif /* __KERNEL__ */
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ #endif /* __POWERPC_CPUTIME_H */
+diff --git a/arch/powerpc/include/asm/lppaca.h b/arch/powerpc/include/asm/lppaca.h
+index 531fe0c3..b1e7f2a 100644
+--- a/arch/powerpc/include/asm/lppaca.h
++++ b/arch/powerpc/include/asm/lppaca.h
+@@ -145,7 +145,7 @@ struct dtl_entry {
+ extern struct kmem_cache *dtl_cache;
+ 
+ /*
+- * When CONFIG_VIRT_CPU_ACCOUNTING = y, the cpu accounting code controls
++ * When CONFIG_VIRT_CPU_ACCOUNTING_NATIVE = y, the cpu accounting code controls
+  * reading from the dispatch trace log.  If other code wants to consume
+  * DTL entries, it can set this pointer to a function that will get
+  * called once for each DTL entry that gets processed.
+diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
+index ea2a86e..2d0e1f5 100644
+--- a/arch/powerpc/include/asm/ppc_asm.h
++++ b/arch/powerpc/include/asm/ppc_asm.h
+@@ -24,7 +24,7 @@
+  * user_time and system_time fields in the paca.
+  */
+ 
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ #define ACCOUNT_CPU_USER_ENTRY(ra, rb)
+ #define ACCOUNT_CPU_USER_EXIT(ra, rb)
+ #define ACCOUNT_STOLEN_TIME
+@@ -70,7 +70,7 @@ END_FW_FTR_SECTION_IFSET(FW_FEATURE_SPLPAR)
+ 
+ #endif /* CONFIG_PPC_SPLPAR */
+ 
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ /*
+  * Macros for storing registers into and loading registers from
+diff --git a/arch/powerpc/kernel/entry_64.S b/arch/powerpc/kernel/entry_64.S
+index b310a05..a0ca42f 100644
+--- a/arch/powerpc/kernel/entry_64.S
++++ b/arch/powerpc/kernel/entry_64.S
+@@ -94,7 +94,7 @@ system_call_common:
+ 	addi	r9,r1,STACK_FRAME_OVERHEAD
+ 	ld	r11,exception_marker@toc(r2)
+ 	std	r11,-16(r9)		/* "regshere" marker */
+-#if defined(CONFIG_VIRT_CPU_ACCOUNTING) && defined(CONFIG_PPC_SPLPAR)
++#if defined(CONFIG_VIRT_CPU_ACCOUNTING_NATIVE) && defined(CONFIG_PPC_SPLPAR)
+ BEGIN_FW_FTR_SECTION
+ 	beq	33f
+ 	/* if from user, see if there are any DTL entries to process */
+@@ -110,7 +110,7 @@ BEGIN_FW_FTR_SECTION
+ 	addi	r9,r1,STACK_FRAME_OVERHEAD
+ 33:
+ END_FW_FTR_SECTION_IFSET(FW_FEATURE_SPLPAR)
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING && CONFIG_PPC_SPLPAR */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE && CONFIG_PPC_SPLPAR */
+ 
+ 	/*
+ 	 * A syscall should always be called with interrupts enabled
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index b3b1435..1ffe109 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -143,7 +143,7 @@ EXPORT_SYMBOL_GPL(ppc_proc_freq);
+ unsigned long ppc_tb_freq;
+ EXPORT_SYMBOL_GPL(ppc_tb_freq);
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ /*
+  * Factors for converting from cputime_t (timebase ticks) to
+  * jiffies, microseconds, seconds, and clock_t (1/USER_HZ seconds).
+@@ -377,7 +377,7 @@ void vtime_account_user(struct task_struct *tsk)
+ 	account_user_time(tsk, utime, utimescaled);
+ }
+ 
+-#else /* ! CONFIG_VIRT_CPU_ACCOUNTING */
++#else /* ! CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ #define calc_cputime_factors()
+ #endif
+ 
+diff --git a/arch/powerpc/platforms/pseries/dtl.c b/arch/powerpc/platforms/pseries/dtl.c
+index a764854..0cc0ac0 100644
+--- a/arch/powerpc/platforms/pseries/dtl.c
++++ b/arch/powerpc/platforms/pseries/dtl.c
+@@ -57,7 +57,7 @@ static u8 dtl_event_mask = 0x7;
+  */
+ static int dtl_buf_entries = N_DISPATCH_LOG;
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ struct dtl_ring {
+ 	u64	write_index;
+ 	struct dtl_entry *write_ptr;
+@@ -142,7 +142,7 @@ static u64 dtl_current_index(struct dtl *dtl)
+ 	return per_cpu(dtl_rings, dtl->cpu).write_index;
+ }
+ 
+-#else /* CONFIG_VIRT_CPU_ACCOUNTING */
++#else /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ static int dtl_start(struct dtl *dtl)
+ {
+@@ -188,7 +188,7 @@ static u64 dtl_current_index(struct dtl *dtl)
+ {
+ 	return lppaca_of(dtl->cpu).dtl_idx;
+ }
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ static int dtl_enable(struct dtl *dtl)
+ {
+diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
+index ca55882..527e12c 100644
+--- a/arch/powerpc/platforms/pseries/setup.c
++++ b/arch/powerpc/platforms/pseries/setup.c
+@@ -281,7 +281,7 @@ static struct notifier_block pci_dn_reconfig_nb = {
+ 
+ struct kmem_cache *dtl_cache;
+ 
+-#ifdef CONFIG_VIRT_CPU_ACCOUNTING
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
+ /*
+  * Allocate space for the dispatch trace log for all possible cpus
+  * and register the buffers with the hypervisor.  This is used for
+@@ -332,12 +332,12 @@ static int alloc_dispatch_logs(void)
+ 
+ 	return 0;
+ }
+-#else /* !CONFIG_VIRT_CPU_ACCOUNTING */
++#else /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ static inline int alloc_dispatch_logs(void)
+ {
+ 	return 0;
+ }
+-#endif /* CONFIG_VIRT_CPU_ACCOUNTING */
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+ 
+ static int alloc_dispatch_log_kmem_cache(void)
+ {
+diff --git a/include/linux/vtime.h b/include/linux/vtime.h
+index ae30ab5..21ef703 100644
+--- a/include/linux/vtime.h
++++ b/include/linux/vtime.h
+@@ -14,9 +14,25 @@ extern void vtime_account(struct task_struct *tsk);
+ static inline void vtime_task_switch(struct task_struct *prev) { }
+ static inline void vtime_account_system(struct task_struct *tsk) { }
+ static inline void vtime_account_system_irqsafe(struct task_struct *tsk) { }
++static inline void vtime_account_user(struct task_struct *tsk) { }
+ static inline void vtime_account(struct task_struct *tsk) { }
+ #endif
+ 
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
++static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
++static inline void vtime_user_enter(struct task_struct *tsk)
++{
++	vtime_account_system(tsk);
++}
++static inline void vtime_user_exit(struct task_struct *tsk)
++{
++	vtime_account_user(tsk);
++}
++#else
++static inline void vtime_user_enter(struct task_struct *tsk) { }
++static inline void vtime_user_exit(struct task_struct *tsk) { }
++#endif
++
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+ extern void irqtime_account_irq(struct task_struct *tsk);
+ #else
+diff --git a/init/Kconfig b/init/Kconfig
+index 5cc8713..51b5c33 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -322,6 +322,9 @@ source "kernel/time/Kconfig"
+ 
+ menu "CPU/Task time and stats accounting"
+ 
++config VIRT_CPU_ACCOUNTING
++	bool
++
+ choice
+ 	prompt "Cputime accounting"
+ 	default TICK_CPU_ACCOUNTING if !PPC64
+@@ -338,9 +341,10 @@ config TICK_CPU_ACCOUNTING
+ 
+ 	  If unsure, say Y.
+ 
+-config VIRT_CPU_ACCOUNTING
++config VIRT_CPU_ACCOUNTING_NATIVE
+ 	bool "Deterministic task and CPU time accounting"
+ 	depends on HAVE_VIRT_CPU_ACCOUNTING
++	select VIRT_CPU_ACCOUNTING
+ 	help
+ 	  Select this option to enable more accurate task and CPU time
+ 	  accounting.  This is done by reading a CPU counter on each
+@@ -350,6 +354,15 @@ config VIRT_CPU_ACCOUNTING
+ 	  this also enables accounting of stolen time on logically-partitioned
+ 	  systems.
+ 
++config VIRT_CPU_ACCOUNTING_GEN
++	bool "Full dynticks CPU time accounting"
++	depends on HAVE_CONTEXT_TRACKING
++	select VIRT_CPU_ACCOUNTING
++	select CONTEXT_TRACKING
++	help
++	  Implement a generic virtual based cputime accounting by using
++	  the context tracking subsystem.
++
+ config IRQ_TIME_ACCOUNTING
+ 	bool "Fine granularity task level IRQ time accounting"
+ 	depends on HAVE_IRQ_TIME_ACCOUNTING
 diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
-index 4b360b4..c952770 100644
+index c952770..bd461ad 100644
 --- a/kernel/context_tracking.c
 +++ b/kernel/context_tracking.c
-@@ -17,24 +17,10 @@
- #include <linux/context_tracking.h>
- #include <linux/rcupdate.h>
- #include <linux/sched.h>
--#include <linux/percpu.h>
- #include <linux/hardirq.h>
+@@ -56,7 +56,7 @@ void user_enter(void)
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.active) &&
+ 	    __this_cpu_read(context_tracking.state) != IN_USER) {
+-		__this_cpu_write(context_tracking.state, IN_USER);
++		vtime_user_enter(current);
+ 		/*
+ 		 * At this stage, only low level arch entry code remains and
+ 		 * then we'll run in userspace. We can assume there won't be
+@@ -65,6 +65,7 @@ void user_enter(void)
+ 		 * on the tick.
+ 		 */
+ 		rcu_user_enter();
++		__this_cpu_write(context_tracking.state, IN_USER);
+ 	}
+ 	local_irq_restore(flags);
+ }
+@@ -90,12 +91,13 @@ void user_exit(void)
  
--struct context_tracking {
--	/*
--	 * When active is false, probes are unset in order
--	 * to minimize overhead: TIF flags are cleared
--	 * and calls to user_enter/exit are ignored. This
--	 * may be further optimized using static keys.
--	 */
--	bool active;
--	enum {
--		IN_KERNEL = 0,
--		IN_USER,
--	} state;
--};
+ 	local_irq_save(flags);
+ 	if (__this_cpu_read(context_tracking.state) == IN_USER) {
+-		__this_cpu_write(context_tracking.state, IN_KERNEL);
+ 		/*
+ 		 * We are going to run code that may use RCU. Inform
+ 		 * RCU core about that (ie: we may need the tick again).
+ 		 */
+ 		rcu_user_exit();
++		vtime_user_exit(current);
++		__this_cpu_write(context_tracking.state, IN_KERNEL);
+ 	}
+ 	local_irq_restore(flags);
+ }
+diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+index 293b202..3749a0e 100644
+--- a/kernel/sched/cputime.c
++++ b/kernel/sched/cputime.c
+@@ -3,6 +3,7 @@
+ #include <linux/tsacct_kern.h>
+ #include <linux/kernel_stat.h>
+ #include <linux/static_key.h>
++#include <linux/context_tracking.h>
+ #include "sched.h"
  
--static DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
-+DEFINE_PER_CPU(struct context_tracking, context_tracking) = {
- #ifdef CONFIG_CONTEXT_TRACKING_FORCE
- 	.active = true,
+ 
+@@ -495,10 +496,24 @@ void vtime_task_switch(struct task_struct *prev)
+ #ifndef __ARCH_HAS_VTIME_ACCOUNT
+ void vtime_account(struct task_struct *tsk)
+ {
+-	if (in_interrupt() || !is_idle_task(tsk))
+-		vtime_account_system(tsk);
+-	else
+-		vtime_account_idle(tsk);
++	if (!in_interrupt()) {
++		/*
++		 * If we interrupted user, context_tracking_in_user()
++		 * is 1 because the context tracking don't hook
++		 * on irq entry/exit. This way we know if
++		 * we need to flush user time on kernel entry.
++		 */
++		if (context_tracking_in_user()) {
++			vtime_account_user(tsk);
++			return;
++		}
++
++		if (is_idle_task(tsk)) {
++			vtime_account_idle(tsk);
++			return;
++		}
++	}
++	vtime_account_system(tsk);
+ }
+ EXPORT_SYMBOL_GPL(vtime_account);
+ #endif /* __ARCH_HAS_VTIME_ACCOUNT */
+@@ -587,3 +602,72 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+ 	cputime_adjust(&cputime, &p->signal->prev_cputime, ut, st);
+ }
  #endif
++
++#ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
++static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
++
++static cputime_t get_vtime_delta(void)
++{
++	long delta;
++
++	delta = jiffies - __this_cpu_read(last_jiffies);
++	__this_cpu_add(last_jiffies, delta);
++
++	return jiffies_to_cputime(delta);
++}
++
++void vtime_account_system(struct task_struct *tsk)
++{
++	cputime_t delta_cpu = get_vtime_delta();
++
++	account_system_time(tsk, irq_count(), delta_cpu, cputime_to_scaled(delta_cpu));
++}
++
++void vtime_account_user(struct task_struct *tsk)
++{
++	cputime_t delta_cpu = get_vtime_delta();
++
++	/*
++	 * This is an unfortunate hack: if we flush user time only on
++	 * irq entry, we miss the jiffies update and the time is spuriously
++	 * accounted to system time.
++	 */
++	if (context_tracking_in_user())
++		account_user_time(tsk, delta_cpu, cputime_to_scaled(delta_cpu));
++}
++
++void vtime_account_idle(struct task_struct *tsk)
++{
++	cputime_t delta_cpu = get_vtime_delta();
++
++	account_idle_time(delta_cpu);
++}
++
++static int __cpuinit vtime_cpu_notify(struct notifier_block *self,
++				      unsigned long action, void *hcpu)
++{
++	long cpu = (long)hcpu;
++	long *last_jiffies_cpu = per_cpu_ptr(&last_jiffies, cpu);
++
++	switch (action) {
++	case CPU_UP_PREPARE:
++	case CPU_UP_PREPARE_FROZEN:
++		/*
++		 * CHECKME: ensure that's visible by the CPU
++		 * once it wakes up
++		 */
++		*last_jiffies_cpu = jiffies;
++	default:
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static int __init init_vtime(void)
++{
++	cpu_notifier(vtime_cpu_notify, 0);
++	return 0;
++}
++early_initcall(init_vtime);
++#endif /* CONFIG_VIRT_CPU_ACCOUNTING_GEN */
 -- 
 1.7.5.4
 
