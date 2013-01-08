@@ -1,100 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756412Ab3AHTjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 14:39:21 -0500
-Received: from smtp.snhosting.dk ([87.238.248.203]:57357 "EHLO
-	smtp.domainteam.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab3AHTjU (ORCPT
+	id S1756331Ab3AHTni (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 14:43:38 -0500
+Received: from mail-vb0-f44.google.com ([209.85.212.44]:54357 "EHLO
+	mail-vb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753781Ab3AHTnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 14:39:20 -0500
-Date: Tue, 8 Jan 2013 20:39:18 +0100
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jonathan Kliegman <kliegs@chromium.org>
-Cc: linux-kernel@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tony Lindgren <tony@atomide.com>, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] modpost: Add flag -f for making section mismatches
-	fatal
-Message-ID: <20130108193918.GA12615@merkur.ravnborg.org>
-References: <1356029364-11346-1-git-send-email-kliegs@chromium.org> <20130106093649.GA17429@merkur.ravnborg.org> <CAPQV+nP1UJP4R8AmoUf4bt873Yz_D0ZR2msaCRx5eAc49QFodA@mail.gmail.com> <20130108191600.GA12563@merkur.ravnborg.org> <CAPQV+nNHPw4r=+2ftqXDgRtFZHZXk3+n_ZCAAGyv9axWDt9KMg@mail.gmail.com>
+	Tue, 8 Jan 2013 14:43:37 -0500
+Date: Tue, 8 Jan 2013 14:44:25 -0500 (EST)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: linux-kernel@vger.kernel.org
+cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: [PATCH] perf_event: missing field in PERF_RECORD_SAMPLE documentation
+ (resend)
+In-Reply-To: <alpine.DEB.2.02.1211061529590.23901@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1301081439300.24507@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.02.1211061529590.23901@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAPQV+nNHPw4r=+2ftqXDgRtFZHZXk3+n_ZCAAGyv9axWDt9KMg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 02:38:10PM -0500, Jonathan Kliegman wrote:
-> On Tue, Jan 8, 2013 at 2:16 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> > On Sun, Jan 06, 2013 at 03:22:39PM -0500, Jonathan Kliegman wrote:
-> >> On Sun, Jan 6, 2013 at 4:36 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> >> > Hi Jonathan.
-> >> >
-> >> >> The section mismatch warning can be easy to miss during the kernel build
-> >> >> process.  Allow it to be marked as fatal to be easily caught and prevent
-> >> >> bugs from slipping in.
-> >> >>
-> >> >> Signed-off-by: Jonathan Kliegman <kliegs@chromium.org>
-> >> >
-> >> > Another way to make them much more visible would be to make
-> >> > the warnings always be verbose.
-> >>
-> >> I'd like to keep the option for a hard fail if a mismatch is detected.
-> >>  This way automated build systems will detect the failed build and can
-> >> reject a chan
-> >>
-> >> > In other words drop support for the "-S" options used below:
-> >> >>   $(if $(CONFIG_DEBUG_SECTION_MISMATCH),,-S)
-> >> >
-> >> > Previously the dev* stuff caused a lot of warnings, but
-> >> > since we have HOTPLUG always enabled this is a non-issue.
-> >> > So I think that this is a good time to enable the verboce
-> >> > warnings.
-> >> I can submit a second patch for this if you'd like, but I'm not
-> >> familiar with all the previous decisions in this area.  If I
-> >> understand correctly we'll still need the config option as it also
-> >> changes compiler flags for inlining.
-> >
-> > Correct.
-> > We need one config option that allows us to debug section mismatchs.
-> > This options adds another gcc option as you also points out.
-> > And this is the one that already exist.
-> >
-> > And then you suggest to add another options which makes section
-> > mismatch warnings fatal.
-> > This sounds like a good idea but reverse the logic.
-> > Something like:
-> >
-> >    CONFIG_SECTION_MISMATCH_WARN
-> >         bool "Section mismatch warnings produced by modpost are non-fatal"
-> >         default y
-> >         help
-> >           bla bla
-> >
-> > Because then you do not cause section mismatch to be fatal for allyesconfig and
-> > allmodconfig builds. We really do not want to go there yet (I think).
-> > I must admit I do not know how many section mismatch warnigns that are lingering
-> > for the different architectures.
-> > If the number is sufficiently low then we could consider go for fatal as default.
-> >
-> >
-> > And it would be good to have first patch that makes section mismatch warnings verbose,
-> > independent on any config options.
-> >
-> > This patch would have to do something like:
-> > - Makes it possible to set CONFIG_DEBUG_SECTION_MISMATCH using menuconfig (I recall there are
-> >   a dependency that avoids this today)
-> > - Drop support for the -S options and drop the bits that set it
-> > - Drop the reference to CONFIG_DEBUG_SECTION_MISMATCH in modpost error message
-> >
-> > I would be happy if you could do this and test it.
-> Ok - I understand what you mean now.  I'll put this together as a two
-> patch sequence then and upload it later this week.  Should I start a
-> new thread with that since its adding a new patch?  Or just respond
-> here with it?
-Start a new thread.
 
-	Sam
+I sent this in November with no response, but the patch still 
+applies.
+
+While trying to write a perf_event/mmap test for my perf_event 
+test-suite I came across a missing field description in the 
+PERF_RECORD_SAMPLE documentation in perf_event.h
+ 
+Signed-off-by: Vince Weaver <vincent.weaver@maine.edu>
+
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 4f63c05..9fa9c62 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -579,7 +579,8 @@ enum perf_event_type {
+ 	 *	{ u32			size;
+ 	 *	  char                  data[size];}&& PERF_SAMPLE_RAW
+ 	 *
+-	 *	{ u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
++	 *	{ u64                   nr;
++	 *        { u64 from, to, flags } lbr[nr];} && PERF_SAMPLE_BRANCH_STACK
+ 	 *
+ 	 * 	{ u64			abi; # enum perf_sample_regs_abi
+ 	 * 	  u64			regs[weight(mask)]; } && PERF_SAMPLE_REGS_USER
