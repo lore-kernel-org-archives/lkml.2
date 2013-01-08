@@ -1,108 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754911Ab3AHIc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 03:32:58 -0500
-Received: from mail.free-electrons.com ([94.23.32.191]:42765 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab3AHIc5 (ORCPT
+	id S1755011Ab3AHIiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 03:38:12 -0500
+Received: from mail-bk0-f41.google.com ([209.85.214.41]:50756 "EHLO
+	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754784Ab3AHIiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 03:32:57 -0500
-Message-ID: <50EBD9B6.3090601@free-electrons.com>
-Date: Tue, 08 Jan 2013 09:32:54 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Tue, 8 Jan 2013 03:38:09 -0500
+Date: Tue, 8 Jan 2013 08:38:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linus.walleij@linaro.org, arnd@arndb.de
+Subject: Re: [PATCH 4/5] Input: Enable STMPE keypad driver for Device Tree
+Message-ID: <20130108083803.GY21994@gmail.com>
+References: <1352900837-20759-1-git-send-email-lee.jones@linaro.org>
+ <1352900837-20759-5-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Andreas Schallenberg <Andreas.Schallenberg@3alitytechnica.com>,
-        Roland Stigge <stigge@antcom.de>, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2 1/3] gpio: pca953x: make the register access by GPIO
- bank
-References: <1357599097-19053-1-git-send-email-gregory.clement@free-electrons.com> <1357599097-19053-2-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1357599097-19053-2-git-send-email-gregory.clement@free-electrons.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1352900837-20759-5-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gregory,
+Dmitry,
 
-On 07/01/2013 23:51, Gregory CLEMENT wrote:
-> -static int pca953x_write_reg(struct pca953x_chip *chip, int reg, u32 val)
-> +static int pca953x_read_single(struct pca953x_chip *chip, int reg, u32 *val,
-> +				int off)
+> This patch allows the STMPE driver to be successfully probed and
+> initialised when Device Tree support is enabled. Besides the usual
+> platform data changes, we also separate the process of filling in
+> the 'in use' pin bitmap, as we have to extract the information from
+> Device Tree in the DT boot case.
+> 
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Cc: linux-input@vger.kernel.org
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/input/keyboard/stmpe-keypad.c |   67 ++++++++++++++++++++++++++++-----
+>  drivers/mfd/stmpe.c                   |    1 +
+>  2 files changed, 59 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
+> index 470a877..4ae01d5 100644
+> --- a/drivers/input/keyboard/stmpe-keypad.c
+> +++ b/drivers/input/keyboard/stmpe-keypad.c
+> @@ -257,19 +257,73 @@ static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
+>  			      (plat->debounce_ms << 1));
+>  }
+>  
+> +static int stmpe_keypad_fill_used_pins(struct platform_device *pdev,
+> +				struct stmpe_keypad *keypad,
+> +				struct stmpe_keypad_platform_data *plat)
 > +{
-> +	int ret;
-> +	int bank_shift = fls((chip->gpio_chip.ngpio - 1) / BANK_SZ);
-> +	int offset = off / BANK_SZ;
-> +
-> +	ret = i2c_smbus_read_byte_data(chip->client,
-> +				(reg << bank_shift) + offset);
-> +	*val = ret;
-> +
-> +	if (ret < 0) {
-> +		dev_err(&chip->client->dev, "failed reading register\n", reg);
-
-This triggers a warning, since you have an argument but nothing corresponding to it in your format string.
-
->  static irqreturn_t pca953x_irq_handler(int irq, void *devid)
->  {
->  	struct pca953x_chip *chip = devid;
-> -	u32 pending;
-> -	u32 level;
-> +	u8 pending[MAX_BANK];
-> +	u8 level;
+> +	struct device_node *np = pdev->dev.of_node;
+> +	unsigned int proplen;
+> +	const __be32 *prop;
 > +	int i;
+> +
+> +	if (np) {
+> +		prop = of_get_property(np, "linux,keymap", &proplen);
+> +		if (!prop) {
+> +			dev_err(&pdev->dev,
+> +				"linux,keymap property not defined\n");
+> +			return -EINVAL;
+> +		}
+> +
+> +		for (i = 0; i < proplen / sizeof(u32); i++) {
+> +			unsigned int key = be32_to_cpup(prop + i);
+> +
+> +			keypad->cols |= 1 << KEY_COL(key);
+> +			keypad->rows |= 1 << KEY_ROW(key);
+> +		}
+> +	} else {
+> +		for (i = 0; i < plat->keymap_data->keymap_size; i++) {
+> +			unsigned int key = plat->keymap_data->keymap[i];
+> +
+> +			keypad->cols |= 1 << KEY_COL(key);
+> +			keypad->rows |= 1 << KEY_ROW(key);
+> +		}
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static void __devinit stmpe_keypad_of_probe(struct device_node *np,
+> +				struct stmpe_keypad_platform_data *plat)
+> +{
+> +	of_property_read_u32(np, "debounce-interval", &plat->debounce_ms);
+> +	of_property_read_u32(np, "st,scan-count", &plat->scan_count);
+> +
+> +	if (of_get_property(np, "st,no-autorepeat", NULL))
+> +		plat->no_autorepeat = true;
+> +}
+> +
+>  static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+>  {
+>  	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
+>  	struct stmpe_keypad_platform_data *plat;
+> +	struct device_node *np = pdev->dev.of_node;
+>  	struct stmpe_keypad *keypad;
+>  	struct input_dev *input;
+>  	int ret;
+>  	int irq;
+> -	int i;
 >  
-> -	pending = pca953x_irq_pending(chip);
-> -
-> -	if (!pending)
-> +	if (!pca953x_irq_pending(chip, pending))
->  		return IRQ_HANDLED;
->  
-> -	do {
-> -		level = __ffs(pending);
-> -		handle_nested_irq(irq_find_mapping(chip->domain, level));
-> -
-> -		pending &= ~(1 << level);
-> -	} while (pending);
-> +	for (i = 0; i < NBANK(chip); i++) {
-> +		do {
-> +			level = __ffs(pending[i]);
-> +			handle_nested_irq(irq_find_mapping(chip->domain,
-> +							level + (BANK_SZ * i)));
-> +			pending[i] &= ~(1 << level);
-> +		} while (pending[i]);
+>  	plat = stmpe->pdata->keypad;
+> -	if (!plat)
+> -		return -ENODEV;
+> +	if (!plat) {
+> +		if (np) {
+> +			plat = devm_kzalloc(&pdev->dev,
+> +					sizeof(*plat), GFP_KERNEL);
+> +			if (!plat)
+> +				return -ENOMEM;
+> +
+> +			stmpe_keypad_of_probe(np, plat);
+> +		} else
+> +			return -ENODEV;
 > +	}
 >  
->  	return IRQ_HANDLED;
->  }
+>  	irq = platform_get_irq(pdev, 0);
+>  	if (irq < 0)
+> @@ -300,12 +354,7 @@ static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+>  	if (!plat->no_autorepeat)
+>  		__set_bit(EV_REP, input->evbit);
+>  
+> -	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
+> -		unsigned int key = plat->keymap_data->keymap[i];
+> -
+> -		keypad->cols |= 1 << KEY_COL(key);
+> -		keypad->rows |= 1 << KEY_ROW(key);
+> -	}
+> +	stmpe_keypad_fill_used_pins(pdev, keypad, plat);
+>  
+>  	keypad->stmpe = stmpe;
+>  	keypad->plat = plat;
+> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+> index ba157d4..b03cc64 100644
+> --- a/drivers/mfd/stmpe.c
+> +++ b/drivers/mfd/stmpe.c
+> @@ -321,6 +321,7 @@ static struct resource stmpe_keypad_resources[] = {
+>  
+>  static struct mfd_cell stmpe_keypad_cell = {
+>  	.name		= "stmpe-keypad",
+> +	.of_compatible  = "st,stmpe-keypad",
+>  	.resources	= stmpe_keypad_resources,
+>  	.num_resources	= ARRAY_SIZE(stmpe_keypad_resources),
+>  };
+> -- 
+> 1.7.9.5
+> 
 
-This triggers the following warning when an interrupt is raised:
+I'm less than pleased that you _stole_ authorship of this patch!
 
-[   30.773500] ------------[ cut here ]------------
-[   30.778843] WARNING: at /home/tmp/linux/kernel/irq/irqdomain.c:137 irq_domain_legacy_revmap+0x2c/0x48()
-[   30.788375] Modules linked in:
-[   30.791531] [<c0014100>] (unwind_backtrace+0x0/0xf0) from [<c001c878>] (warn_slowpath_common+0x4c/0x64)
-[   30.801125] [<c001c878>] (warn_slowpath_common+0x4c/0x64) from [<c001c8ac>] (warn_slowpath_null+0x1c/0x24)
-[   30.810968] [<c001c8ac>] (warn_slowpath_null+0x1c/0x24) from [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48)
-[   30.821187] [<c006b5e0>] (irq_domain_legacy_revmap+0x2c/0x48) from [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac)
-[   30.831656] [<c01c3734>] (pca953x_irq_handler+0x16c/0x1ac) from [<c0068688>] (irq_thread+0xd0/0x124)
-[   30.841000] [<c0068688>] (irq_thread+0xd0/0x124) from [<c003c238>] (kthread+0xa4/0xb0)
-[   30.849125] [<c003c238>] (kthread+0xa4/0xb0) from [<c000ed48>] (ret_from_fork+0x14/0x2c)
-[   30.857375] ---[ end trace 09584b7a73100a49 ]---
-
-Maxime
+Especially, as I've been asking you to review it for some time.
 
 -- 
-Maxime Ripard, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Lee Jones
+Linaro ST-Ericsson Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
