@@ -1,123 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753605Ab3AHVFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 16:05:12 -0500
-Received: from mail-qc0-f189.google.com ([209.85.216.189]:48320 "EHLO
-	mail-qc0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753323Ab3AHVFL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 16:05:11 -0500
-X-Greylist: delayed 8649 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jan 2013 16:05:10 EST
-Path: glegroupsg2000goo.googlegroups.com!not-for-mail
-Newsgroups: fa.linux.kernel
-Date: Tue, 8 Jan 2013 10:04:23 -0800 (PST)
-In-Reply-To: <fa.WShHQz59YhGkw1sSCIqXCXLEJ3Q@ifi.uio.no>
-Complaints-To: groups-abuse@google.com
-Injection-Info: glegroupsg2000goo.googlegroups.com; posting-host=122.167.45.138;
- posting-account=NCRxaQoAAAD54XcIcQi1OXMFZuM4f-KP
-NNTP-Posting-Host: 122.167.45.138
-References: <fa.WShHQz59YhGkw1sSCIqXCXLEJ3Q@ifi.uio.no>
-User-Agent: G2/1.0
-X-Google-Web-Client: true
-X-Google-IP: 122.167.45.138
+	id S1753491Ab3AHVHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 16:07:46 -0500
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:46933 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751112Ab3AHVHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 16:07:45 -0500
+Date: Tue, 8 Jan 2013 13:00:35 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 03/33] cputime: Generic on-demand virtual cputime
+ accounting
+Message-ID: <20130108210035.GS2525@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+ <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
+ <1357676771.5190.29.camel@gandalf.local.home>
 MIME-Version: 1.0
-Message-ID: <52efc2cd-6d8c-4195-882a-8bc4105bc715@googlegroups.com>
-Subject: Re: [block] allow blk_flush_policy to return REQ_FSEQ_DATA
- independent of *FLUSH
-From: ajithb.kumar@gmail.com
-To: fa.linux.kernel@googlegroups.com
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1357676771.5190.29.camel@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010821-9360-0000-0000-00000EEC1793
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-Could you please provide clarity on the following.
-">   Hmmm... yes, this can become a correctness issue if (and only if)
->   blk_queue_flush() is called to change q->flush_flags while requests
->   are in-flight;"
-Could you please clarify as to why is it a correctness issue only if blk_queue_flush() is used to change flush_flags when requests are in flight ?  As I understand, XFS does set WRITE_FLUSH_FUA flag in _xfs_buf_ioapply() function irrespective of whether the underlying device supports flush capabilities or not which will flow into blk_insert_flush().  Is my reading of the code correct and is there a general correctness issue here which potentially results in XFS file system corruption in case of an abrupt shutdown independent of q->flush_flags getting changed while request is in flight.
+On Tue, Jan 08, 2013 at 03:26:11PM -0500, Steven Rostedt wrote:
+> On Tue, 2013-01-08 at 03:08 +0100, Frederic Weisbecker wrote:
+> 
+> > diff --git a/kernel/context_tracking.c b/kernel/context_tracking.c
+> > index c952770..bd461ad 100644
+> > --- a/kernel/context_tracking.c
+> > +++ b/kernel/context_tracking.c
+> > @@ -56,7 +56,7 @@ void user_enter(void)
+> >  	local_irq_save(flags);
+> >  	if (__this_cpu_read(context_tracking.active) &&
+> >  	    __this_cpu_read(context_tracking.state) != IN_USER) {
+> > -		__this_cpu_write(context_tracking.state, IN_USER);
+> > +		vtime_user_enter(current);
+> >  		/*
+> >  		 * At this stage, only low level arch entry code remains and
+> >  		 * then we'll run in userspace. We can assume there won't be
+> > @@ -65,6 +65,7 @@ void user_enter(void)
+> >  		 * on the tick.
+> >  		 */
+> >  		rcu_user_enter();
+> 
+> Hmm, the rcu_user_enter() can do quite a bit. Too bad we are accounting
+> it as user time. I wonder if we could move the vtime_user_enter() below
+> it. But then if vtime_user_enter() calls rcu_read_lock() it breaks.
 
-Thanks,
-Ajith
+If RCU_FAST_NO_HZ=y, the current mainline rcu_user_enter() can be a
+bit expensive.  It is going on a diet for 3.9, however.
 
-On Tuesday, 9 August 2011 20:54:35 UTC+5:30, Jeff Moyer  wrote:
-> Hi,
+But there is a lower limit because the CPU moving to adaptive-tick user
+mode must reliably inform other CPUs of this, which involves some
+overhead due to memory-ordering issues.
+
+							Thanx, Paul
+
+> The notorious chicken vs egg ordeal!
 > 
-> blk_insert_flush has the following check:
+> -- Steve
 > 
-> 	/*
-> 	 * If there's data but flush is not necessary, the request can be
-> 	 * processed directly without going through flush machinery.  Queue
-> 	 * for normal execution.
-> 	 */
-> 	if ((policy & REQ_FSEQ_DATA) &&
-> 	    !(policy & (REQ_FSEQ_PREFLUSH | REQ_FSEQ_POSTFLUSH))) {
-> 		list_add_tail(&rq->queuelist, &q->queue_head);
-> 		return;
-> 	}
+> > +		__this_cpu_write(context_tracking.state, IN_USER);
+> >  	}
+> >  	local_irq_restore(flags);
+> >  }
+> > @@ -90,12 +91,13 @@ void user_exit(void)
+> >  
+> >  	local_irq_save(flags);
+> >  	if (__this_cpu_read(context_tracking.state) == IN_USER) {
+> > -		__this_cpu_write(context_tracking.state, IN_KERNEL);
+> >  		/*
+> >  		 * We are going to run code that may use RCU. Inform
+> >  		 * RCU core about that (ie: we may need the tick again).
+> >  		 */
+> >  		rcu_user_exit();
+> > +		vtime_user_exit(current);
+> > +		__this_cpu_write(context_tracking.state, IN_KERNEL);
+> >  	}
+> >  	local_irq_restore(flags);
+> >  }
 > 
-> However, blk_flush_policy will not return with policy set to only
-> REQ_FSEQ_DATA:
 > 
-> static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
-> {
-> 	unsigned int policy = 0;
-> 
-> 	if (fflags & REQ_FLUSH) {
-> 		if (rq->cmd_flags & REQ_FLUSH)
-> 			policy |= REQ_FSEQ_PREFLUSH;
-> 		if (blk_rq_sectors(rq))
-> 			policy |= REQ_FSEQ_DATA;
-> 		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
-> 			policy |= REQ_FSEQ_POSTFLUSH;
-> 	}
-> 	return policy;
-> }
-> 
-> Notice that REQ_FSEQ_DATA is only set if REQ_FLUSH is set.  Fix this
-> mismatch by moving the setting of REQ_FSEQ_DATA outside of the REQ_FLUSH
-> check.
-> 
-> Tejun notes:
-> 
->   Hmmm... yes, this can become a correctness issue if (and only if)
->   blk_queue_flush() is called to change q->flush_flags while requests
->   are in-flight; otherwise, requests wouldn't reach the function at all.
->   Also, I think it would be a generally good idea to always set
->   FSEQ_DATA if the request has data.
-> 
-> Cheers,
-> Jeff
-> 
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> Acked-by: Tejun Heo <tj@kernel.org>
-> 
-> diff --git a/block/blk-flush.c b/block/blk-flush.c
-> index bb21e4c..2d162bd 100644
-> --- a/block/blk-flush.c
-> +++ b/block/blk-flush.c
-> @@ -95,11 +95,12 @@ static unsigned int blk_flush_policy(unsigned int fflags, struct request *rq)
->  {
->  	unsigned int policy = 0;
->  
-> +	if (blk_rq_sectors(rq))
-> +		policy |= REQ_FSEQ_DATA;
-> +
->  	if (fflags & REQ_FLUSH) {
->  		if (rq->cmd_flags & REQ_FLUSH)
->  			policy |= REQ_FSEQ_PREFLUSH;
-> -		if (blk_rq_sectors(rq))
-> -			policy |= REQ_FSEQ_DATA;
->  		if (!(fflags & REQ_FUA) && (rq->cmd_flags & REQ_FUA))
->  			policy |= REQ_FSEQ_POSTFLUSH;
->  	}
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
 
