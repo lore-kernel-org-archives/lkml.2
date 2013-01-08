@@ -1,70 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719Ab3AHDEd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:04:33 -0500
-Received: from ozlabs.org ([203.10.76.45]:57750 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab3AHDEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:04:31 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, linux-scsi@vger.kernel.org, mst@redhat.com,
-        hutao@cn.fujitsu.com, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, stefanha@redhat.com,
-        "Jens Axboe" <axboe@kernel.dk>
-Subject: Re: [PATCH v2 1/5] virtio: add functions for piecewise addition of buffers
-In-Reply-To: <50EADB62.1010704@redhat.com>
-References: <1355833972-20319-1-git-send-email-pbonzini@redhat.com> <1355833972-20319-2-git-send-email-pbonzini@redhat.com> <87r4m45g88.fsf@rustcorp.com.au> <50E54DC0.4040609@redhat.com> <87pq1h508k.fsf@rustcorp.com.au> <50EADB62.1010704@redhat.com>
-User-Agent: Notmuch/0.14 (http://notmuchmail.org) Emacs/23.4.1 (i686-pc-linux-gnu)
-Date: Tue, 08 Jan 2013 10:42:13 +1030
-Message-ID: <87wqvo3542.fsf@rustcorp.com.au>
+	id S1754036Ab3AHDE7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:04:59 -0500
+Received: from mail-bk0-f46.google.com ([209.85.214.46]:59682 "EHLO
+	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753327Ab3AHDE6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jan 2013 22:04:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <3649945.08HKjS0y0c@hammer82.arch.suse.de>
+References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local>
+	<1593084.QhbTkmoq3N@hammer82.arch.suse.de>
+	<CAE9FiQWTiFu0+ymVroK84L-LCc7FBU1trdZAcaXqMGM2My6LzQ@mail.gmail.com>
+	<3649945.08HKjS0y0c@hammer82.arch.suse.de>
+Date: Mon, 7 Jan 2013 19:04:56 -0800
+X-Google-Sender-Auth: aTbu3TSPnS0PtIBlBnaBWgO_4lE
+Message-ID: <CAE9FiQUueTB6gc5uMUApqeS7FtzMESLLFEt3ZuOMJgXsnjFQ0A@mail.gmail.com>
+Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
+ with iommu
+From: Yinghai Lu <yinghai@kernel.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: MUNEDA Takahiro <muneda.takahiro@jp.fujitsu.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
+        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
+        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
+        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
-> Il 07/01/2013 01:02, Rusty Russell ha scritto:
->> Paolo Bonzini <pbonzini@redhat.com> writes:
->>> Il 02/01/2013 06:03, Rusty Russell ha scritto:
->>>> Paolo Bonzini <pbonzini@redhat.com> writes:
->>>>> The virtqueue_add_buf function has two limitations:
->>>>>
->>>>> 1) it requires the caller to provide all the buffers in a single call;
->>>>>
->>>>> 2) it does not support chained scatterlists: the buffers must be
->>>>> provided as an array of struct scatterlist;
->>>>
->>>> Chained scatterlists are a horrible interface, but that doesn't mean we
->>>> shouldn't support them if there's a need.
->>>>
->>>> I think I once even had a patch which passed two chained sgs, rather
->>>> than a combo sg and two length numbers.  It's very old, but I've pasted
->>>> it below.
->>>>
->>>> Duplicating the implementation by having another interface is pretty
->>>> nasty; I think I'd prefer the chained scatterlists, if that's optimal
->>>> for you.
->>>
->>> Unfortunately, that cannot work because not all architectures support
->>> chained scatterlists.
->> 
->> WHAT?  I can't figure out what an arch needs to do to support this?
->
-> It needs to use the iterator functions in its DMA driver.
+On Mon, Jan 7, 2013 at 4:42 PM, Thomas Renninger <trenn@suse.de> wrote:
+> memmap=256M$3584M
 
-But we don't care for virtio.
+may need to change to:
 
->> All archs we care about support them, though, so I think we can ignore
->> this issue for now.
->
-> Kind of... In principle all QEMU-supported arches can use virtio, and
-> the speedup can be quite useful.  And there is no Kconfig symbol for SG
-> chains that I can use to disable virtio-scsi on unsupported arches. :/
+memmap=256M\$\$3584M
 
-Well, we #error if it's not supported.  Then the lazy architectures can
-fix it.
+Thanks
 
-Cheers,
-Rusty.
+Yinghai
