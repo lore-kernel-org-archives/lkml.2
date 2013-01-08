@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756195Ab3AHMUk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 07:20:40 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:50031 "EHLO e9.ny.us.ibm.com"
+	id S1756200Ab3AHMYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 07:24:15 -0500
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37388 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755500Ab3AHMUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 07:20:39 -0500
-Date: Tue, 8 Jan 2013 17:50:13 +0530
+	id S1755500Ab3AHMYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 07:24:14 -0500
+Date: Tue, 8 Jan 2013 17:53:47 +0530
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
@@ -14,95 +14,50 @@ Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Anton Arapov <anton@redhat.com>, Frank Eigler <fche@redhat.com>,
         Josh Stone <jistone@redhat.com>,
         "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] uprobes: Do not allocate current->utask unnecessary
-Message-ID: <20130108122013.GI1325@linux.vnet.ibm.com>
+Subject: Re: [PATCH 7/7] uprobes: Kill the bogus IS_ERR_VALUE(xol_vaddr)
+ check
+Message-ID: <20130108122347.GJ1325@linux.vnet.ibm.com>
 Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 References: <20121231175150.GA32066@redhat.com>
- <20121231175229.GA32115@redhat.com>
+ <20121231175232.GA32118@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20121231175229.GA32115@redhat.com>
+In-Reply-To: <20121231175232.GA32118@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010812-7182-0000-0000-000004417390
+x-cbid: 13010812-7182-0000-0000-00000441754B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:29]:
+* Oleg Nesterov <oleg@redhat.com> [2012-12-31 18:52:32]:
 
-> handle_swbp() does get_utask() before can_skip_sstep() for no reason,
-> we do not need ->utask if can_skip_sstep() succeeds.
-> 
-> Move get_utask() to pre_ssout() who actually starts to use it. Move
-> the initialization of utask->active_uprobe/state as well. This way
-> the whole initialization is consolidated in pre_ssout().
+> utask->xol_vaddr is either zero or valid, remove the bogus
+> IS_ERR_VALUE() check in xol_free_insn_slot().
 > 
 > Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+
 > ---
->  kernel/events/uprobes.c |   16 ++++++----------
->  1 files changed, 6 insertions(+), 10 deletions(-)
+>  kernel/events/uprobes.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
 > diff --git a/kernel/events/uprobes.c b/kernel/events/uprobes.c
-> index bd94d2c..ad1245d 100644
+> index ad1245d..ed4fcbe 100644
 > --- a/kernel/events/uprobes.c
 > +++ b/kernel/events/uprobes.c
-> @@ -1308,7 +1308,9 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
->  	unsigned long xol_vaddr;
->  	int err;
-> 
-> -	utask = current->utask;
-> +	utask = get_utask();
-> +	if (!utask)
-> +		return -ENOMEM;
-> 
->  	xol_vaddr = xol_get_insn_slot(uprobe);
->  	if (!xol_vaddr)
-> @@ -1323,6 +1325,8 @@ pre_ssout(struct uprobe *uprobe, struct pt_regs *regs, unsigned long bp_vaddr)
->  		return err;
->  	}
-> 
-> +	utask->active_uprobe = uprobe;
-> +	utask->state = UTASK_SSTEP;
->  	return 0;
->  }
-> 
-> @@ -1474,7 +1478,6 @@ static void handler_chain(struct uprobe *uprobe, struct pt_regs *regs)
->   */
->  static void handle_swbp(struct pt_regs *regs)
->  {
-> -	struct uprobe_task *utask;
->  	struct uprobe *uprobe;
->  	unsigned long bp_vaddr;
->  	int uninitialized_var(is_swbp);
-> @@ -1512,19 +1515,12 @@ static void handle_swbp(struct pt_regs *regs)
->  	if (unlikely(!test_bit(UPROBE_COPY_INSN, &uprobe->flags)))
->  		goto out;
-> 
-> -	utask = get_utask();
-> -	if (!utask)
-> -		goto out;	/* re-execute the instruction. */
-> -
-
-
-If get_utask fails with the above change, Dont we end up calling
-handler_chain twice(or more)?. I think this is probably true with
-previous patch too.
-
->  	handler_chain(uprobe, regs);
->  	if (can_skip_sstep(uprobe, regs))
->  		goto out;
-> 
-> -	if (!pre_ssout(uprobe, regs, bp_vaddr)) {
-> -		utask->active_uprobe = uprobe;
-> -		utask->state = UTASK_SSTEP;
-> +	if (!pre_ssout(uprobe, regs, bp_vaddr))
+> @@ -1223,8 +1223,7 @@ static void xol_free_insn_slot(struct task_struct *tsk)
 >  		return;
-> -	}
 > 
->  	/* can_skip_sstep() succeeded, or restart if can't singlestep */
->  out:
+>  	slot_addr = tsk->utask->xol_vaddr;
+> -
+> -	if (unlikely(!slot_addr || IS_ERR_VALUE(slot_addr)))
+> +	if (unlikely(!slot_addr))
+>  		return;
+> 
+>  	area = tsk->mm->uprobes_state.xol_area;
 > -- 
 > 1.5.5.1
 > 
