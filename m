@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab3AHDO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jan 2013 22:14:57 -0500
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:48376 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751275Ab3AHDO4 (ORCPT
+	id S1753489Ab3AHDPJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jan 2013 22:15:09 -0500
+Received: from mail-da0-f43.google.com ([209.85.210.43]:55574 "EHLO
+	mail-da0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129Ab3AHDPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jan 2013 22:14:56 -0500
-Message-ID: <1357614894.4105.10.camel@kernel.cn.ibm.com>
-Subject: Re: [RFC]x86: clearing access bit don't flush tlb
-From: Simon Jeons <simon.jeons@gmail.com>
-To: Shaohua Li <shli@kernel.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, mingo@redhat.com, hpa@zytor.com,
-        riel@redhat.com
-Date: Mon, 07 Jan 2013 21:14:54 -0600
-In-Reply-To: <20130107081213.GA21779@kernel.org>
-References: <20130107081213.GA21779@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jan 2013 22:15:04 -0500
+Date: Mon, 7 Jan 2013 19:15:00 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jason Liu <r64343@freescale.com>
+cc: linux-kernel@vger.kernel.org, mgorman@suse.de, akpm@linux-foundation.org,
+        riel@redhat.com, minchan@kernel.org, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: compaction: fix echo 1 > compact_memory return error
+ issue
+In-Reply-To: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+Message-ID: <alpine.DEB.2.00.1301071914460.18525@chino.kir.corp.google.com>
+References: <1357458273-28558-1-git-send-email-r64343@freescale.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Shaohua,
+On Sun, 6 Jan 2013, Jason Liu wrote:
 
-On Mon, 2013-01-07 at 16:12 +0800, Shaohua Li wrote:
-> We use access bit to age a page at page reclaim. When clearing pte access bit,
-
-Who sets this flag to pte? mmu? tlb?
-
-> we could skip tlb flush for the virtual address. The side effect is if the pte
-> is in tlb and pte access bit is unset, when cpu access the page again, cpu will
-> not set pte's access bit. So next time page reclaim can reclaim hot pages
-> wrongly, but this doesn't corrupt anything. And according to intel manual, tlb
-> has less than 1k entries, which coverers < 4M memory. In today's system,
-> several giga byte memory is normal. After page reclaim clears pte access bit
-> and before cpu access the page again, it's quite unlikely this page's pte is
-> still in TLB. Skiping the tlb flush for this case sounds ok to me.
+> when run the folloing command under shell, it will return error
+> sh/$ echo 1 > /proc/sys/vm/compact_memory
+> sh/$ sh: write error: Bad address
 > 
-
-If one page is accessed more frequently than the other page before page
-reclaim, page reclaim treat them the same hot according to access flag
-since the flag used to age page just at page reclaim. How to handle this
-issue?
-
-> And in some workloads, TLB flush overhead is very heavy. In my simple
-> multithread app with a lot of swap to several pcie SSD, removing the tlb flush
-> gives about 20% ~ 30% swapout speedup.
+> After strace, I found the following log:
+> ...
+> write(1, "1\n", 2)               = 3
+> write(1, "", 4294967295)         = -1 EFAULT (Bad address)
+> write(2, "echo: write error: Bad address\n", 31echo: write error: Bad address
+> ) = 31
 > 
-> Signed-off-by: Shaohua Li <shli@fusionio.com>
-> ---
->  arch/x86/mm/pgtable.c |    7 +------
->  1 file changed, 1 insertion(+), 6 deletions(-)
+> This tells system return 3(COMPACT_COMPLETE) after write data to compact_memory.
 > 
-> Index: linux/arch/x86/mm/pgtable.c
-> ===================================================================
-> --- linux.orig/arch/x86/mm/pgtable.c	2012-12-17 16:54:37.847770807 +0800
-> +++ linux/arch/x86/mm/pgtable.c	2013-01-07 14:59:40.898066357 +0800
-> @@ -376,13 +376,8 @@ int pmdp_test_and_clear_young(struct vm_
->  int ptep_clear_flush_young(struct vm_area_struct *vma,
->  			   unsigned long address, pte_t *ptep)
->  {
-> -	int young;
->  
-> -	young = ptep_test_and_clear_young(vma, address, ptep);
-> -	if (young)
-> -		flush_tlb_page(vma, address);
-> -
-> -	return young;
-> +	return ptep_test_and_clear_young(vma, address, ptep);
->  }
->  
->  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+> The fix is to make the system just return 0 instead 3(COMPACT_COMPLETE) from
+> sysctl_compaction_handler after compaction_nodes finished.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Suggested-by:David Rientjes <rientjes@google.com>
+> Cc:Mel Gorman <mgorman@suse.de>
+> Cc:Andrew Morton <akpm@linux-foundation.org>
+> Cc:Rik van Riel <riel@redhat.com>
+> Cc:Minchan Kim <minchan@kernel.org>
+> Cc:KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Signed-off-by: Jason Liu <r64343@freescale.com>
 
-
+Acked-by: David Rientjes <rientjes@google.com>
