@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab3AIUii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:38 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42222 "EHLO mail.kernel.org"
+	id S933386Ab3AIUis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:48 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42336 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933274Ab3AIUic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:32 -0500
+	id S933110Ab3AIUip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Puneet Kumar <puneetster@chromium.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Damien Wyart <damien.wyart@free.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 20/80] mm: fix calculation of dirtyable memory
-Date: Wed,  9 Jan 2013 12:35:12 -0800
-Message-Id: <20130109201502.967841937@linuxfoundation.org>
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 044/123] NFS: Fix calls to drop_nlink()
+Date: Wed,  9 Jan 2013 12:34:43 -0800
+Message-Id: <20130109201504.222193479@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sonny Rao <sonnyrao@chromium.org>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit c8b74c2f6604923de91f8aa6539f8bb934736754 upstream.
+commit 1f018458b30b0d5c535c94e577aa0acbb92e1395 upstream.
 
-The system uses global_dirtyable_memory() to calculate number of
-dirtyable pages/pages that can be allocated to the page cache.  A bug
-causes an underflow thus making the page count look like a big unsigned
-number.  This in turn confuses the dirty writeback throttling to
-aggressively write back pages as they become dirty (usually 1 page at a
-time).  This generally only affects systems with highmem because the
-underflowed count gets subtracted from the global count of dirtyable
-memory.
+It is almost always wrong for NFS to call drop_nlink() after removing a
+file. What we really want is to mark the inode's attributes for
+revalidation, and we want to ensure that the VFS drops it if we're
+reasonably sure that this is the final unlink().
+Do the former using the usual cache validity flags, and the latter
+by testing if inode->i_nlink == 1, and clearing it in that case.
 
-The problem was introduced with v3.2-4896-gab8fabd
+This also fixes the following warning reported by Neil Brown and
+Jeff Layton (among others).
 
-Fix is to ensure we don't get an underflowed total of either highmem or
-global dirtyable memory.
+[634155.004438] WARNING:
+at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
+Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
+snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
+bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
+[634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
+[634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
+[634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
+[634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
+[634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
+[634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
+[634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
+[634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
+[634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
+[634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
+[634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
 
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Damien Wyart <damien.wyart@free.fr>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/page-writeback.c |   25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ fs/nfs/dir.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -187,6 +187,18 @@ static unsigned long highmem_dirtyable_m
- 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
- 	}
- 	/*
-+	 * Unreclaimable memory (kernel memory or anonymous memory
-+	 * without swap) can bring down the dirtyable pages below
-+	 * the zone's dirty balance reserve and the above calculation
-+	 * will underflow.  However we still want to add in nodes
-+	 * which are below threshold (negative values) to get a more
-+	 * accurate calculation but make sure that the total never
-+	 * underflows.
-+	 */
-+	if ((long)x < 0)
-+		x = 0;
-+
-+	/*
- 	 * Make sure that the number of highmem pages is never larger
- 	 * than the number of the total dirtyable memory. This can only
- 	 * occur in very strange VM situations but we want to make sure
-@@ -208,8 +220,8 @@ unsigned long global_dirtyable_memory(vo
- {
- 	unsigned long x;
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1156,11 +1156,14 @@ static int nfs_dentry_delete(const struc
  
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
--	    dirty_balance_reserve;
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x -= min(x, dirty_balance_reserve);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
-@@ -276,9 +288,12 @@ static unsigned long zone_dirtyable_memo
- 	 * highmem zone can hold its share of dirty pages, so we don't
- 	 * care about vm_highmem_is_dirtyable here.
- 	 */
--	return zone_page_state(zone, NR_FREE_PAGES) +
--	       zone_reclaimable_pages(zone) -
--	       zone->dirty_balance_reserve;
-+	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
-+		zone_reclaimable_pages(zone);
-+
-+	/* don't allow this to underflow */
-+	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
-+	return nr_pages;
  }
  
- /**
++/* Ensure that we revalidate inode->i_nlink */
+ static void nfs_drop_nlink(struct inode *inode)
+ {
+ 	spin_lock(&inode->i_lock);
+-	if (inode->i_nlink > 0)
+-		drop_nlink(inode);
++	/* drop the inode if we're reasonably sure this is the last link */
++	if (inode->i_nlink == 1)
++		clear_nlink(inode);
++	NFS_I(inode)->cache_validity |= NFS_INO_INVALID_ATTR;
+ 	spin_unlock(&inode->i_lock);
+ }
+ 
+@@ -1175,8 +1178,8 @@ static void nfs_dentry_iput(struct dentr
+ 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
+ 
+ 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
+-		drop_nlink(inode);
+ 		nfs_complete_unlink(dentry, inode);
++		nfs_drop_nlink(inode);
+ 	}
+ 	iput(inode);
+ }
+@@ -1647,10 +1650,8 @@ static int nfs_safe_remove(struct dentry
+ 	if (inode != NULL) {
+ 		NFS_PROTO(inode)->return_delegation(inode);
+ 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
+-		/* The VFS may want to delete this inode */
+ 		if (error == 0)
+ 			nfs_drop_nlink(inode);
+-		nfs_mark_for_revalidate(inode);
+ 	} else
+ 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
+ 	if (error == -ENOENT)
 
 
