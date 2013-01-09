@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933739Ab3AIVNb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:13:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42892 "EHLO mail.kernel.org"
+	id S934058Ab3AIVNd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:13:33 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42882 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933666Ab3AIUjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:44 -0500
+	id S933663Ab3AIUjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [ 061/123] genirq: Always force thread affinity
-Date: Wed,  9 Jan 2013 12:35:00 -0800
-Message-Id: <20130109201506.421124732@linuxfoundation.org>
+        Julius Werner <jwerner@chromium.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 50/80] xhci: fix null-pointer dereference when destroying half-built segment rings
+Date: Wed,  9 Jan 2013 12:35:42 -0800
+Message-Id: <20130109201506.846378394@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 04aa530ec04f61875b99c12721162e2964e3318c upstream.
+commit 68e5254adb88bede68285f11fb442a4d34fb550c upstream.
 
-Sankara reported that the genirq core code fails to adjust the
-affinity of an interrupt thread in several cases:
+xhci_alloc_segments_for_ring() builds a list of xhci_segments and links
+the tail to head at the end (forming a ring). When it bails out for OOM
+reasons half-way through, it tries to destroy its half-built list with
+xhci_free_segments_for_ring(), even though it is not a ring yet. This
+causes a null-pointer dereference upon hitting the last element.
 
- 1) On request/setup_irq() the call to setup_affinity() happens before
-    the new action is registered, so the new thread is not notified.
+Furthermore, one of its callers (xhci_ring_alloc()) mistakenly believes
+the output parameters to be valid upon this kind of OOM failure, and
+calls xhci_ring_free() on them. Since the (incomplete) list/ring should
+already be destroyed in that case, this would lead to a use after free.
 
- 2) For secondary shared interrupts nothing notifies the new thread to
-    change its affinity.
+This patch fixes those issues by having xhci_alloc_segments_for_ring()
+destroy its half-built, non-circular list manually and destroying the
+invalid struct xhci_ring in xhci_ring_alloc() with a plain kfree().
 
- 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
-    the thread either.
+This patch should be backported to kernels as old as 2.6.31, that
+contains the commit 0ebbab37422315a5d0cb29792271085bafdf38c0 "USB: xhci:
+Ring allocation and initialization."
 
-Fix this by setting the thread affinity flag right on thread creation
-time. This ensures that under all circumstances the thread moves to
-the right place. Requires a check in irq_thread_check_affinity for an
-existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
+A separate patch will need to be developed for kernels older than 3.4,
+since the ring allocation code was refactored in that kernel.
 
-Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci-mem.c |    9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -716,6 +716,7 @@ static void
- irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
- {
- 	cpumask_var_t mask;
-+	bool valid = true;
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -205,7 +205,12 @@ static int xhci_alloc_segments_for_ring(
  
- 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
- 		return;
-@@ -730,10 +731,18 @@ irq_thread_check_affinity(struct irq_des
- 	}
+ 		next = xhci_segment_alloc(xhci, cycle_state, flags);
+ 		if (!next) {
+-			xhci_free_segments_for_ring(xhci, *first);
++			prev = *first;
++			while (prev) {
++				next = prev->next;
++				xhci_segment_free(xhci, prev);
++				prev = next;
++			}
+ 			return -ENOMEM;
+ 		}
+ 		xhci_link_segments(xhci, prev, next, type);
+@@ -258,7 +263,7 @@ static struct xhci_ring *xhci_ring_alloc
+ 	return ring;
  
- 	raw_spin_lock_irq(&desc->lock);
--	cpumask_copy(mask, desc->irq_data.affinity);
-+	/*
-+	 * This code is triggered unconditionally. Check the affinity
-+	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
-+	 */
-+	if (desc->irq_data.affinity)
-+		cpumask_copy(mask, desc->irq_data.affinity);
-+	else
-+		valid = false;
- 	raw_spin_unlock_irq(&desc->lock);
- 
--	set_cpus_allowed_ptr(current, mask);
-+	if (valid)
-+		set_cpus_allowed_ptr(current, mask);
- 	free_cpumask_var(mask);
+ fail:
+-	xhci_ring_free(xhci, ring);
++	kfree(ring);
+ 	return NULL;
  }
- #else
-@@ -936,6 +945,16 @@ __setup_irq(unsigned int irq, struct irq
- 		 */
- 		get_task_struct(t);
- 		new->thread = t;
-+		/*
-+		 * Tell the thread to set its affinity. This is
-+		 * important for shared interrupt handlers as we do
-+		 * not invoke setup_affinity() for the secondary
-+		 * handlers as everything is already set up. Even for
-+		 * interrupts marked with IRQF_NO_BALANCE this is
-+		 * correct as we want the thread to move to the cpu(s)
-+		 * on which the requesting code placed the interrupt.
-+		 */
-+		set_bit(IRQTF_AFFINITY, &new->thread_flags);
- 	}
  
- 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
 
 
