@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933520Ab3AIUjO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42491 "EHLO mail.kernel.org"
+	id S933609Ab3AIVZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:25:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42604 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933442Ab3AIUjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:02 -0500
+	id S933515Ab3AIUjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Bhupesh Sharma <bhupesh.sharma@st.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 32/80] usb: gadget: uvc: fix error path in uvc_function_bind()
-Date: Wed,  9 Jan 2013 12:35:24 -0800
-Message-Id: <20130109201504.501614214@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 46/80] genirq: Always force thread affinity
+Date: Wed,  9 Jan 2013 12:35:38 -0800
+Message-Id: <20130109201506.304957462@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -27,96 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 0f9df939385527049c8062a099fbfa1479fe7ce0 upstream.
+commit 04aa530ec04f61875b99c12721162e2964e3318c upstream.
 
-The "video->minor = -1" assigment is done in V4L2 by
-video_register_device() so it is removed here.
-Now. uvc_function_bind() calls in error case uvc_function_unbind() for
-cleanup. The problem is that uvc_function_unbind() frees the uvc struct
-and uvc_bind_config() does as well in error case of usb_add_function().
-Removing kfree() in usb_add_function() would make the patch smaller but
-it would look odd because the new allocated memory is not cleaned up.
-However it is not guaranteed that if we call usb_add_function() we also
-get to the bind function.
-Therefore the patch extracts the conditional cleanup from
-uvc_function_unbind() applies to uvc_function_bind().
-uvc_function_unbind() now contains only the complete cleanup which is
-required once everything has been registrated.
+Sankara reported that the genirq core code fails to adjust the
+affinity of an interrupt thread in several cases:
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Bhupesh Sharma <bhupesh.sharma@st.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+ 1) On request/setup_irq() the call to setup_affinity() happens before
+    the new action is registered, so the new thread is not notified.
+
+ 2) For secondary shared interrupts nothing notifies the new thread to
+    change its affinity.
+
+ 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
+    the thread either.
+
+Fix this by setting the thread affinity flag right on thread creation
+time. This ensures that under all circumstances the thread moves to
+the right place. Requires a check in irq_thread_check_affinity for an
+existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
+
+Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_uvc.c |   39 +++++++++++++++++++++------------------
- 1 file changed, 21 insertions(+), 18 deletions(-)
+ kernel/irq/manage.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/f_uvc.c
-+++ b/drivers/usb/gadget/f_uvc.c
-@@ -335,7 +335,6 @@ uvc_register_video(struct uvc_device *uv
- 		return -ENOMEM;
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -708,6 +708,7 @@ static void
+ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	cpumask_var_t mask;
++	bool valid = true;
  
- 	video->parent = &cdev->gadget->dev;
--	video->minor = -1;
- 	video->fops = &uvc_v4l2_fops;
- 	video->release = video_device_release;
- 	strncpy(video->name, cdev->gadget->name, sizeof(video->name));
-@@ -462,23 +461,12 @@ uvc_function_unbind(struct usb_configura
+ 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
+ 		return;
+@@ -722,10 +723,18 @@ irq_thread_check_affinity(struct irq_des
+ 	}
  
- 	INFO(cdev, "uvc_function_unbind\n");
+ 	raw_spin_lock_irq(&desc->lock);
+-	cpumask_copy(mask, desc->irq_data.affinity);
++	/*
++	 * This code is triggered unconditionally. Check the affinity
++	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
++	 */
++	if (desc->irq_data.affinity)
++		cpumask_copy(mask, desc->irq_data.affinity);
++	else
++		valid = false;
+ 	raw_spin_unlock_irq(&desc->lock);
  
--	if (uvc->vdev) {
--		if (uvc->vdev->minor == -1)
--			video_device_release(uvc->vdev);
--		else
--			video_unregister_device(uvc->vdev);
--		uvc->vdev = NULL;
--	}
--
--	if (uvc->control_ep)
--		uvc->control_ep->driver_data = NULL;
--	if (uvc->video.ep)
--		uvc->video.ep->driver_data = NULL;
-+	video_unregister_device(uvc->vdev);
-+	uvc->control_ep->driver_data = NULL;
-+	uvc->video.ep->driver_data = NULL;
- 
--	if (uvc->control_req) {
--		usb_ep_free_request(cdev->gadget->ep0, uvc->control_req);
--		kfree(uvc->control_buf);
--	}
-+	usb_ep_free_request(cdev->gadget->ep0, uvc->control_req);
-+	kfree(uvc->control_buf);
- 
- 	kfree(f->descriptors);
- 	kfree(f->hs_descriptors);
-@@ -563,7 +551,22 @@ uvc_function_bind(struct usb_configurati
- 	return 0;
- 
- error:
--	uvc_function_unbind(c, f);
-+	if (uvc->vdev)
-+		video_device_release(uvc->vdev);
-+
-+	if (uvc->control_ep)
-+		uvc->control_ep->driver_data = NULL;
-+	if (uvc->video.ep)
-+		uvc->video.ep->driver_data = NULL;
-+
-+	if (uvc->control_req) {
-+		usb_ep_free_request(cdev->gadget->ep0, uvc->control_req);
-+		kfree(uvc->control_buf);
-+	}
-+
-+	kfree(f->descriptors);
-+	kfree(f->hs_descriptors);
-+	kfree(f->ss_descriptors);
- 	return ret;
+-	set_cpus_allowed_ptr(current, mask);
++	if (valid)
++		set_cpus_allowed_ptr(current, mask);
+ 	free_cpumask_var(mask);
  }
+ #else
+@@ -933,6 +942,16 @@ __setup_irq(unsigned int irq, struct irq
+ 		 */
+ 		get_task_struct(t);
+ 		new->thread = t;
++		/*
++		 * Tell the thread to set its affinity. This is
++		 * important for shared interrupt handlers as we do
++		 * not invoke setup_affinity() for the secondary
++		 * handlers as everything is already set up. Even for
++		 * interrupts marked with IRQF_NO_BALANCE this is
++		 * correct as we want the thread to move to the cpu(s)
++		 * on which the requesting code placed the interrupt.
++		 */
++		set_bit(IRQTF_AFFINITY, &new->thread_flags);
+ 	}
  
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
 
 
