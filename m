@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934199Ab3AIUsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:48:07 -0500
-Received: from moutng.kundenserver.de ([212.227.126.187]:49156 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934130Ab3AIUn0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:43:26 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-tegra@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: [PATCH 06/14] ARM: pci: Keep pci_common_init() around after init
-Date: Wed,  9 Jan 2013 21:43:06 +0100
-Message-Id: <1357764194-12677-7-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:3FqpPzcP1jcxg7vB4+MkShRkzDny4tK3z5RxwL3y9s6
- WzRhxVL7N11uUouWzT5Dg1pxkUbE9eDwyp7bnc4OC5hyniI/LJ
- c59XPD18zaa9vc5uRQ3ekI/bf7Yq7J3vt6oUqllrxqbnLz9pD/
- lTOChfM2nf/LydI3U2R29Vvb4yqgIomWI3L62nMPVV6Q0K43qr
- KbEySC3Vz+2NHI+JHgupTVtLfUVC1cLhcQGeydRbigBl/PutBm
- FNKam7GT6cZEJyt1QW+CFxrTn6X7ul2cXwiRfdJFZDjsONXFz3
- q9i4f8p0rMjmvCvi8Xtp44zcgDjKiqUkKCFSBQ9Bf6GYg/8rR3
- 7scGMeJZW97ZusL9TzgGZhDpCiaBvooE94KzlIQnu/c7sx2Guw
- GUhWyDEDJbT/ZpWvwA7WmbkgtWQ2RGFJQGFlK291av421X7ems
- U4PxJ
+	id S934182Ab3AIUsm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:48:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44004 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933985Ab3AIUl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:26 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Guenter Roeck <linux@roeck-us.net>,
+        Juergen Beisert <jbe@pengutronix.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 119/123] linux/kernel.h: fix DIV_ROUND_CLOSEST with unsigned divisors
+Date: Wed,  9 Jan 2013 12:35:58 -0800
+Message-Id: <20130109201513.604910016@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using deferred driver probing, PCI host controller drivers may
-actually require this function after the init stage.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+------------------
+
+From: Guenter Roeck <linux@roeck-us.net>
+
+commit c4e18497d8fd92eef2c6e7eadcc1a107ccd115ea upstream.
+
+Commit 263a523d18bc ("linux/kernel.h: Fix warning seen with W=1 due to
+change in DIV_ROUND_CLOSEST") fixes a warning seen with W=1 due to
+change in DIV_ROUND_CLOSEST.
+
+Unfortunately, the C compiler converts divide operations with unsigned
+divisors to unsigned, even if the dividend is signed and negative (for
+example, -10 / 5U = 858993457).  The C standard says "If one operand has
+unsigned int type, the other operand is converted to unsigned int", so
+the compiler is not to blame.  As a result, DIV_ROUND_CLOSEST(0, 2U) and
+similar operations now return bad values, since the automatic conversion
+of expressions such as "0 - 2U/2" to unsigned was not taken into
+account.
+
+Fix by checking for the divisor variable type when deciding which
+operation to perform.  This fixes DIV_ROUND_CLOSEST(0, 2U), but still
+returns bad values for negative dividends divided by unsigned divisors.
+Mark the latter case as unsupported.
+
+One observed effect of this problem is that the s2c_hwmon driver reports
+a value of 4198403 instead of 0 if the ADC reads 0.
+
+Other impact is unpredictable.  Problem is seen if the divisor is an
+unsigned variable or constant and the dividend is less than (divisor/2).
+
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Reported-by: Juergen Beisert <jbe@pengutronix.de>
+Tested-by: Juergen Beisert <jbe@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- arch/arm/kernel/bios32.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/kernel.h |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/bios32.c b/arch/arm/kernel/bios32.c
-index 379cf32..da7b0c9 100644
---- a/arch/arm/kernel/bios32.c
-+++ b/arch/arm/kernel/bios32.c
-@@ -413,7 +413,7 @@ static int pcibios_map_irq(const struct pci_dev *dev, u8 slot, u8 pin)
- 	return irq;
- }
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -77,13 +77,15 @@
  
--static int __init pcibios_init_resources(int busnr, struct pci_sys_data *sys)
-+static int pcibios_init_resources(int busnr, struct pci_sys_data *sys)
- {
- 	int ret;
- 	struct pci_host_bridge_window *window;
-@@ -445,7 +445,7 @@ static int __init pcibios_init_resources(int busnr, struct pci_sys_data *sys)
- 	return 0;
- }
- 
--static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
-+static void pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
- {
- 	struct pci_sys_data *sys = NULL;
- 	int ret;
-@@ -493,7 +493,7 @@ static void __init pcibios_init_hw(struct hw_pci *hw, struct list_head *head)
- 	}
- }
- 
--void __init pci_common_init(struct hw_pci *hw)
-+void pci_common_init(struct hw_pci *hw)
- {
- 	struct pci_sys_data *sys;
- 	LIST_HEAD(head);
--- 
-1.8.1
+ /*
+  * Divide positive or negative dividend by positive divisor and round
+- * to closest integer. Result is undefined for negative divisors.
++ * to closest integer. Result is undefined for negative divisors and
++ * for negative dividends if the divisor variable type is unsigned.
+  */
+ #define DIV_ROUND_CLOSEST(x, divisor)(			\
+ {							\
+ 	typeof(x) __x = x;				\
+ 	typeof(divisor) __d = divisor;			\
+-	(((typeof(x))-1) > 0 || (__x) > 0) ?		\
++	(((typeof(x))-1) > 0 ||				\
++	 ((typeof(divisor))-1) > 0 || (__x) > 0) ?	\
+ 		(((__x) + ((__d) / 2)) / (__d)) :	\
+ 		(((__x) - ((__d) / 2)) / (__d));	\
+ }							\
+
 
