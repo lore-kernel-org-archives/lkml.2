@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab3AIQaC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 11:30:02 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:47314 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932122Ab3AIQaA (ORCPT
+	id S932231Ab3AIQcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 11:32:23 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:33591 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932193Ab3AIQcW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 11:30:00 -0500
-Message-ID: <50ED9B03.3020606@gmail.com>
-Date: Thu, 10 Jan 2013 00:29:55 +0800
-From: Jiang Liu <liuj97@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 9 Jan 2013 11:32:22 -0500
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] PCI/acpiphp: update ACPI hotplug slot information
- when PCI hotplug happens
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <1357663945-16054-5-git-send-email-jiang.liu@huawei.com> <5038693.7d3RCgbghD@vostro.rjw.lan>
-In-Reply-To: <5038693.7d3RCgbghD@vostro.rjw.lan>
+In-Reply-To: <20130109085555.GA31678@gmail.com>
+References: <1355937587-31730-4-git-send-email-lee.jones@linaro.org>
+	<CACRpkda79O_b3Z8g7Sy7vMtW9neZU4x-Z=iEQgjqu4X5tFKyhw@mail.gmail.com>
+	<20121220192441.GC14363@n2100.arm.linux.org.uk>
+	<20121220203514.GN2691@gmail.com>
+	<20121220205113.GD14363@n2100.arm.linux.org.uk>
+	<20121221091306.GO2691@gmail.com>
+	<20121221092421.GG14363@n2100.arm.linux.org.uk>
+	<20121221114105.GP2691@gmail.com>
+	<20130103111450.GC14714@gmail.com>
+	<CACRpkda-4C+ezaZFSkxsNbmHnBN8RCoCeGePaOF-DzV0XnkzQw@mail.gmail.com>
+	<20130109085555.GA31678@gmail.com>
+Date: Wed, 9 Jan 2013 17:32:20 +0100
+Message-ID: <CAPDyKFqBVkJS=i_iULjj1e+LUgZQfVwH=sOHce7d7zbrHPFyqA@mail.gmail.com>
+Subject: Re: [PATCH 4/4 v3] net/smsc911x: Provide common clock functionality
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Steve Glendinning <steve.glendinning@shawell.net>,
+        Robert Marklund <robert.marklund@stericsson.com>,
+        linus.walleij@stericsson.com, arnd@arndb.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 08:04 AM, Rafael J. Wysocki wrote:
-> On Wednesday, January 09, 2013 12:52:23 AM Jiang Liu wrote:
->> Currently the acpiphp driver fails to update hotplug slot information under
->> several conditions, such as:
->> 1) The bridge device is removed through /sys/bus/pci/devices/.../remove
->> 2) The bridge device is added/removed by PCI hotplug driver other than the
->>    acpiphp driver itself. For example, if an IO expansion box with ACPI
->>    hotplug slots available is hot-added by the pciehp driver, all ACPI
->>    hotplug slots won't be discovered by the acpiphp driver.
+On 9 January 2013 09:55, Lee Jones <lee.jones@linaro.org> wrote:
+> On Thu, 03 Jan 2013, Linus Walleij wrote:
+>
+>> On Thu, Jan 3, 2013 at 12:14 PM, Lee Jones <lee.jones@linaro.org> wrote:
 >>
->> So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
->> update ACPI hotplug slot information when PCI hotplug event happens.
+>> > Some platforms provide clocks which require enabling before the
+>> > SMSC911x chip will power on. This patch uses the new common clk
+>> > framework to do just that. If no clock is provided, it will just
+>> > be ignored and the driver will continue to assume that no clock
+>> > is required for the chip to run successfully.
+>> >
+>> > Cc: Steve Glendinning <steve.glendinning@shawell.net>
+>> > Cc: netdev@vger.kernel.org
+>> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
 >>
->> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
->> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
->> ---
->>  drivers/pci/hotplug/acpiphp_glue.c |   62 ++++++++++++++++++++++++++++++++++--
->>  1 file changed, 60 insertions(+), 2 deletions(-)
->>
-snip
->> +static struct notifier_block acpi_pci_hp_notifier = {
->> +	.notifier_call = &acpi_pci_hp_notify_fn,
->> +};
->> +
->>  static struct acpi_pci_driver acpi_pci_hp_driver = {
->>  	.add =		add_bridge,
->>  	.remove =	remove_bridge,
->> @@ -1448,6 +1503,8 @@ int __init acpiphp_glue_init(void)
->>  	else
->>  		acpi_pci_register_driver(&acpi_pci_hp_driver);
->>  
->> +	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
-> 
-> Your previous patch adds a PCI bus notifier for a similar thing.  Why are
-> you adding another one here?
-Hi Rafael,
-	The acpiphp driver could be built as a module, and this bus notifier
-is used to setup/tear down ACPI based PCI hotplug controllers under a PCI bridge.
-The previous patch is to add/remove PCI slots. The PCI slot and PCI hotplug
-controller are related but different objects, so we use two notifiers to support
-them all.
-	Thanks!
-	Gerry
+>> Looks all right to me now:
+>> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+>
+> I still need a maintiner Ack for this before I can push it.
+>
+> Anyone?
+>
+> --
+> Lee Jones
+> Linaro ST-Ericsson Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-> 
-> 
->> +
->>  	return 0;
->>  }
->>  
->> @@ -1459,6 +1516,7 @@ int __init acpiphp_glue_init(void)
->>   */
->>  void  acpiphp_glue_exit(void)
->>  {
->> +	bus_unregister_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
->>  	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
->>  }
-> 
-> Thanks,
-> Rafael
-> 
-> 
-
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
