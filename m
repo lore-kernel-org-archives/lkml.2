@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197Ab3AIVsV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:48:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35342 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933059Ab3AIVsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:48:18 -0500
-Date: Wed, 9 Jan 2013 13:48:16 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
-Message-Id: <20130109134816.db51a820.akpm@linux-foundation.org>
-In-Reply-To: <50EDE41C.7090107@iskon.hr>
-References: <50EDE41C.7090107@iskon.hr>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933273Ab3AIVso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:48:44 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41607 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932517Ab3AIUhg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:36 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 023/123] ALSA: hda - Fix the wrong pincaps set in ALC861VD dallas/hp fixup
+Date: Wed,  9 Jan 2013 12:34:22 -0800
+Message-Id: <20130109201501.485382920@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jan 2013 22:41:48 +0100
-Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-> Currently we take a short nap (HZ/10) and wait for congestion to clear
-> before taking another pass with lower priority in balance_pgdat(). But
-> we do that only for the highest zone that we encounter is unbalanced
-> and congested.
-> 
-> This patch changes that to wait on all congested zones in a single
-> pass in the hope that it will save us some scanning that way. Also we
-> take a nap as soon as congested zone is encountered and sc.priority <
-> DEF_PRIORITY - 2 (aka kswapd in trouble).
-> 
-> ...
->
-> The patch is against the mm tree. Make sure that
-> mm-avoid-calling-pgdat_balanced-needlessly.patch is applied first (not
-> yet in the mmotm tree). Tested on half a dozen systems with different
-> workloads for the last few days, working really well!
+------------------
 
-But what are the user-observable effcets of this change?  Less kernel
-CPU consumption, presumably?  Did you quantify it?
+From: Takashi Iwai <tiwai@suse.de>
+
+commit b78562b10fa66175e30b76073e32a0ad8d92aa83 upstream.
+
+The workaround to force VREF50 for dallas/hp model with ALC861VD
+was introduced in commit 8fdcb6fe4204bdb4c6991652717ab5063751414e,
+but it contained wrong pincap override bits.
+
+This patch fixes to exclude VREF80 pincap bit correctly.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ sound/pci/hda/patch_realtek.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -6535,8 +6535,8 @@ static void alc861vd_fixup_dallas(struct
+ 				  const struct alc_fixup *fix, int action)
+ {
+ 	if (action == ALC_FIXUP_ACT_PRE_PROBE) {
+-		snd_hda_override_pin_caps(codec, 0x18, 0x00001714);
+-		snd_hda_override_pin_caps(codec, 0x19, 0x0000171c);
++		snd_hda_override_pin_caps(codec, 0x18, 0x00000734);
++		snd_hda_override_pin_caps(codec, 0x19, 0x0000073c);
+ 	}
+ }
+ 
+
 
