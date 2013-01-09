@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932754Ab3AIUhb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41494 "EHLO mail.kernel.org"
+	id S933055Ab3AIUhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41554 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933021Ab3AIUh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:28 -0500
+	id S933021Ab3AIUhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Popovec <popovec@fei.tuke.sk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 24/47] Input: walkera0701 - fix crash on startup
-Date: Wed,  9 Jan 2013 12:35:19 -0800
-Message-Id: <20130109201732.288985773@linuxfoundation.org>
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 11/80] inet_diag: avoid unsafe and nonsensical prefix matches in inet_diag_bc_run()
+Date: Wed,  9 Jan 2013 12:35:03 -0800
+Message-Id: <20130109201501.836947791@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Peter Popovec <popovec@oko.fei.tuke.sk>
 
-commit a455e2985f57e2a71566bb8850094af38b2c932d upstream.
+From: Neal Cardwell <ncardwell@google.com>
 
-The driver's timer must be set up before enabling IRQ handler, otherwise
-bad things may happen.
+[ Upstream commit f67caec9068cee426ec23cf9005a1dee2ecad187 ]
 
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Popovec <popovec@fei.tuke.sk>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Add logic to check the address family of the user-supplied conditional
+and the address family of the connection entry. We now do not do
+prefix matching of addresses from different address families (AF_INET
+vs AF_INET6), except for the previously existing support for having an
+IPv4 prefix match an IPv4-mapped IPv6 address (which this commit
+maintains as-is).
+
+This change is needed for two reasons:
+
+(1) The addresses are different lengths, so comparing a 128-bit IPv6
+prefix match condition to a 32-bit IPv4 connection address can cause
+us to unwittingly walk off the end of the IPv4 address and read
+garbage or oops.
+
+(2) The IPv4 and IPv6 address spaces are semantically distinct, so a
+simple bit-wise comparison of the prefixes is not meaningful, and
+would lead to bogus results (except for the IPv4-mapped IPv6 case,
+which this commit maintains).
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/input/joystick/walkera0701.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ net/ipv4/inet_diag.c |   28 +++++++++++++++++-----------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
 
---- a/drivers/input/joystick/walkera0701.c
-+++ b/drivers/input/joystick/walkera0701.c
-@@ -196,6 +196,7 @@ static void walkera0701_close(struct inp
- 	struct walkera_dev *w = input_get_drvdata(dev);
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -423,25 +423,31 @@ static int inet_diag_bc_run(const struct
+ 				break;
+ 			}
  
- 	parport_disable_irq(w->parport);
-+	hrtimer_cancel(&w->timer);
- }
+-			if (cond->prefix_len == 0)
+-				break;
+-
+ 			if (op->code == INET_DIAG_BC_S_COND)
+ 				addr = entry->saddr;
+ 			else
+ 				addr = entry->daddr;
  
- static int walkera0701_connect(struct walkera_dev *w, int parport)
-@@ -224,6 +225,9 @@ static int walkera0701_connect(struct wa
- 	if (parport_claim(w->pardevice))
- 		goto init_err1;
- 
-+	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	w->timer.function = timer_handler;
++			if (cond->family != AF_UNSPEC &&
++			    cond->family != entry->family) {
++				if (entry->family == AF_INET6 &&
++				    cond->family == AF_INET) {
++					if (addr[0] == 0 && addr[1] == 0 &&
++					    addr[2] == htonl(0xffff) &&
++					    bitstring_match(addr + 3,
++							    cond->addr,
++							    cond->prefix_len))
++						break;
++				}
++				yes = 0;
++				break;
++			}
 +
- 	w->input_dev = input_allocate_device();
- 	if (!w->input_dev)
- 		goto init_err2;
-@@ -254,8 +258,6 @@ static int walkera0701_connect(struct wa
- 	if (err)
- 		goto init_err3;
- 
--	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	w->timer.function = timer_handler;
- 	return 0;
- 
-  init_err3:
-@@ -271,7 +273,6 @@ static int walkera0701_connect(struct wa
- 
- static void walkera0701_disconnect(struct walkera_dev *w)
- {
--	hrtimer_cancel(&w->timer);
- 	input_unregister_device(w->input_dev);
- 	parport_release(w->pardevice);
- 	parport_unregister_device(w->pardevice);
++			if (cond->prefix_len == 0)
++				break;
+ 			if (bitstring_match(addr, cond->addr,
+ 					    cond->prefix_len))
+ 				break;
+-			if (entry->family == AF_INET6 &&
+-			    cond->family == AF_INET) {
+-				if (addr[0] == 0 && addr[1] == 0 &&
+-				    addr[2] == htonl(0xffff) &&
+-				    bitstring_match(addr + 3, cond->addr,
+-						    cond->prefix_len))
+-					break;
+-			}
+ 			yes = 0;
+ 			break;
+ 		}
 
 
