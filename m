@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933214Ab3AIVr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:47:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41666 "EHLO mail.kernel.org"
+	id S933073Ab3AIUhi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41597 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933079Ab3AIUhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:42 -0500
+	id S933021Ab3AIUhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jay Purohit <jspurohit@velocitylimitless.com>,
-        Valdis Kletnieks <valdis.kletnieks@vt.edu>,
-        Jan Ceuleers <jan.ceuleers@computer.org>,
+        Neal Cardwell <ncardwell@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 08/80] usb/ipheth: Add iPhone 5 support
-Date: Wed,  9 Jan 2013 12:35:00 -0800
-Message-Id: <20130109201501.456348691@linuxfoundation.org>
+Subject: [ 12/80] inet_diag: validate port comparison byte code to prevent unsafe reads
+Date: Wed,  9 Jan 2013 12:35:04 -0800
+Message-Id: <20130109201501.962241594@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -29,43 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Jay Purohit <jspurohit@velocitylimitless.com>
+From: Neal Cardwell <ncardwell@google.com>
 
-[ Upstream commit af1b85e49089f945deb46258b0fc4bc9910afb22 ]
+[ Upstream commit 5e1f54201cb481f40a04bc47e1bc8c093a189e23 ]
 
-I noticed that the iPhone ethernet driver did not support
-iPhone 5. I quickly added support to it in my kernel, here's
-a patch.
+Add logic to verify that a port comparison byte code operation
+actually has the second inet_diag_bc_op from which we read the port
+for such operations.
 
-Signed-off-by: Jay Purohit <jspurohit@velocitylimitless.com>
-Acked-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-Signed-off-by: Jan Ceuleers <jan.ceuleers@computer.org>
+Previously the code blindly referenced op[1] without first checking
+whether a second inet_diag_bc_op struct could fit there. So a
+malicious user could make the kernel read 4 bytes beyond the end of
+the bytecode array by claiming to have a whole port comparison byte
+code (2 inet_diag_bc_op structs) when in fact the bytecode was not
+long enough to hold both.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/usb/ipheth.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ipv4/inet_diag.c |   31 ++++++++++++++++++++++++-------
+ 1 file changed, 24 insertions(+), 7 deletions(-)
 
---- a/drivers/net/usb/ipheth.c
-+++ b/drivers/net/usb/ipheth.c
-@@ -62,6 +62,7 @@
- #define USB_PRODUCT_IPAD 0x129a
- #define USB_PRODUCT_IPHONE_4_VZW 0x129c
- #define USB_PRODUCT_IPHONE_4S	0x12a0
-+#define USB_PRODUCT_IPHONE_5	0x12a8
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -548,6 +548,17 @@ static bool valid_hostcond(const struct
+ 	return true;
+ }
  
- #define IPHETH_USBINTF_CLASS    255
- #define IPHETH_USBINTF_SUBCLASS 253
-@@ -113,6 +114,10 @@ static struct usb_device_id ipheth_table
- 		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_4S,
- 		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
- 		IPHETH_USBINTF_PROTO) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(
-+		USB_VENDOR_APPLE, USB_PRODUCT_IPHONE_5,
-+		IPHETH_USBINTF_CLASS, IPHETH_USBINTF_SUBCLASS,
-+		IPHETH_USBINTF_PROTO) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(usb, ipheth_table);
++/* Validate a port comparison operator. */
++static inline bool valid_port_comparison(const struct inet_diag_bc_op *op,
++					 int len, int *min_len)
++{
++	/* Port comparisons put the port in a follow-on inet_diag_bc_op. */
++	*min_len += sizeof(struct inet_diag_bc_op);
++	if (len < *min_len)
++		return false;
++	return true;
++}
++
+ static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
+ {
+ 	const void *bc = bytecode;
+@@ -563,24 +574,30 @@ static int inet_diag_bc_audit(const void
+ 		case INET_DIAG_BC_D_COND:
+ 			if (!valid_hostcond(bc, len, &min_len))
+ 				return -EINVAL;
+-			/* fall through */
+-		case INET_DIAG_BC_AUTO:
++			break;
+ 		case INET_DIAG_BC_S_GE:
+ 		case INET_DIAG_BC_S_LE:
+ 		case INET_DIAG_BC_D_GE:
+ 		case INET_DIAG_BC_D_LE:
+-		case INET_DIAG_BC_JMP:
+-			if (op->no < min_len || op->no > len + 4 || op->no & 3)
+-				return -EINVAL;
+-			if (op->no < len &&
+-			    !valid_cc(bytecode, bytecode_len, len - op->no))
++			if (!valid_port_comparison(bc, len, &min_len))
+ 				return -EINVAL;
+ 			break;
++		case INET_DIAG_BC_AUTO:
++		case INET_DIAG_BC_JMP:
+ 		case INET_DIAG_BC_NOP:
+ 			break;
+ 		default:
+ 			return -EINVAL;
+ 		}
++
++		if (op->code != INET_DIAG_BC_NOP) {
++			if (op->no < min_len || op->no > len + 4 || op->no & 3)
++				return -EINVAL;
++			if (op->no < len &&
++			    !valid_cc(bytecode, bytecode_len, len - op->no))
++				return -EINVAL;
++		}
++
+ 		if (op->yes < min_len || op->yes > len + 4 || op->yes & 3)
+ 			return -EINVAL;
+ 		bc  += op->yes;
 
 
