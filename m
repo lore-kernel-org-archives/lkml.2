@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab3AIUhZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41415 "EHLO mail.kernel.org"
+	id S933043Ab3AIVvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:51:55 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41450 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932702Ab3AIUhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:20 -0500
+	id S932992Ab3AIUhY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:24 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ondrej Zary <linux@rainbow-software.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [ 011/123] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
-Date: Wed,  9 Jan 2013 12:34:10 -0800
-Message-Id: <20130109201459.967119359@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [ 012/123] mm: highmem: export kmap_to_page for modules
+Date: Wed,  9 Jan 2013 12:34:11 -0800
+Message-Id: <20130109201500.098419143@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -28,55 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ondrej Zary <linux@rainbow-software.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
+commit f0263d2d222e9e25f2587e51a9dc58c6fb2a9352 upstream.
 
-Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
-line but resume code assumes that KBC was used.
-The laptop will not resume from S3 otherwise but powers off after a while
-and then powers on again stuck with a blank screen.
+Some virtio device drivers (9p) need to translate high virtual addresses
+to physical addresses, which are inserted into the virtqueue for
+processing by userspace.
 
-Fix it by enabling A20 using KBC in i8042_platform_init for x86.
+This patch exports the kmap_to_page symbol, so that the affected drivers
+can be compiled as modules.
 
-Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
-
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ mm/highmem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -921,6 +921,7 @@ static int __init i8042_platform_init(vo
- 	int retval;
+--- a/mm/highmem.c
++++ b/mm/highmem.c
+@@ -105,6 +105,7 @@ struct page *kmap_to_page(void *vaddr)
  
- #ifdef CONFIG_X86
-+	u8 a20_on = 0xdf;
- 	/* Just return if pre-detection shows no i8042 controller exist */
- 	if (!x86_platform.i8042_detect())
- 		return -ENODEV;
-@@ -960,6 +961,14 @@ static int __init i8042_platform_init(vo
+ 	return virt_to_page(addr);
+ }
++EXPORT_SYMBOL(kmap_to_page);
  
- 	if (dmi_check_system(i8042_dmi_dritek_table))
- 		i8042_dritek = true;
-+
-+	/*
-+	 * A20 was already enabled during early kernel init. But some buggy
-+	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
-+	 * resume from S3. So we do it here and hope that nothing breaks.
-+	 */
-+	i8042_command(&a20_on, 0x10d1);
-+	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
- #endif /* CONFIG_X86 */
- 
- 	return retval;
+ static void flush_all_zero_pkmaps(void)
+ {
 
 
