@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933187Ab3AIUiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:51 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42354 "EHLO mail.kernel.org"
+	id S933435Ab3AIUi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42418 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933384Ab3AIUis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:48 -0500
+	id S933418Ab3AIUiy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Neil Brown <neilb@suse.de>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 045/123] NFS: Dont use SetPageError in the NFS writeback code
-Date: Wed,  9 Jan 2013 12:34:44 -0800
-Message-Id: <20130109201504.348455272@linuxfoundation.org>
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [ 048/123] nfsd4: fix oops on unusual readlike compound
+Date: Wed,  9 Jan 2013 12:34:47 -0800
+Message-Id: <20130109201504.740269498@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,53 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit ada8e20d044c0fa5610e504ce6fb4578ebd3edd9 upstream.
+commit d5f50b0c290431c65377c4afa1c764e2c3fe5305 upstream.
 
-The writeback code is already capable of passing errors back to user space
-by means of the open_context->error. In the case of ENOSPC, Neil Brown
-is reporting seeing 2 errors being returned.
+If the argument and reply together exceed the maximum payload size, then
+a reply with a read-like operation can overlow the rq_pages array.
 
-Neil writes:
-
-"e.g. if /mnt2/ if an nfs mounted filesystem that has no space then
-
-strace dd if=/dev/zero conv=fsync >> /mnt2/afile count=1
-
-reported Input/output error and the relevant parts of the strace output are:
-
-write(1, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 512) = 512
-fsync(1)                                = -1 EIO (Input/output error)
-close(1)                                = -1 ENOSPC (No space left on device)"
-
-Neil then shows that the duplication of error messages appears to be due to
-the use of the PageError() mechanism, which causes filemap_fdatawait_range
-to return the extra EIO. The regression was introduced by
-commit 7b281ee026552f10862b617a2a51acf49c829554 (NFS: fsync() must exit
-with an error if page writeback failed).
-
-Fix this by removing the call to SetPageError(), and just relying on
-open_context->error reporting the ENOSPC back to fsync().
-
-Reported-by: Neil Brown <neilb@suse.de>
-Tested-by: Neil Brown <neilb@suse.de>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/write.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/nfsd/nfs4xdr.c |   11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -202,7 +202,6 @@ out:
- /* A writeback failed: mark the page as bad, and invalidate the page cache */
- static void nfs_set_pageerror(struct page *page)
- {
--	SetPageError(page);
- 	nfs_zap_mapping(page_file_mapping(page)->host, page_file_mapping(page));
- }
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2946,11 +2946,16 @@ nfsd4_encode_read(struct nfsd4_compoundr
+ 	len = maxcount;
+ 	v = 0;
+ 	while (len > 0) {
+-		pn = resp->rqstp->rq_resused++;
++		pn = resp->rqstp->rq_resused;
++		if (!resp->rqstp->rq_respages[pn]) { /* ran out of pages */
++			maxcount -= len;
++			break;
++		}
+ 		resp->rqstp->rq_vec[v].iov_base =
+ 			page_address(resp->rqstp->rq_respages[pn]);
+ 		resp->rqstp->rq_vec[v].iov_len =
+ 			len < PAGE_SIZE ? len : PAGE_SIZE;
++		resp->rqstp->rq_resused++;
+ 		v++;
+ 		len -= PAGE_SIZE;
+ 	}
+@@ -2996,6 +3001,8 @@ nfsd4_encode_readlink(struct nfsd4_compo
+ 		return nfserr;
+ 	if (resp->xbuf->page_len)
+ 		return nfserr_resource;
++	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
++		return nfserr_resource;
  
+ 	page = page_address(resp->rqstp->rq_respages[resp->rqstp->rq_resused++]);
+ 
+@@ -3045,6 +3052,8 @@ nfsd4_encode_readdir(struct nfsd4_compou
+ 		return nfserr;
+ 	if (resp->xbuf->page_len)
+ 		return nfserr_resource;
++	if (!resp->rqstp->rq_respages[resp->rqstp->rq_resused])
++		return nfserr_resource;
+ 
+ 	RESERVE_SPACE(NFS4_VERIFIER_SIZE);
+ 	savep = p;
 
 
