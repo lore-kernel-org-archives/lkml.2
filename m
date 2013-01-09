@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933733Ab3AIUj6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:58 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42997 "EHLO mail.kernel.org"
+	id S933811Ab3AIVI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:08:57 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43019 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933699Ab3AIUjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:54 -0500
+	id S933723Ab3AIUj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Eric Dumazet <edumazet@google.com>,
         Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        "H.K. Jerry Chu" <hkchu@google.com>,
-        Romain Francoise <romain@orebokech.com>,
+        Yuchung Cheng <ycheng@google.com>, Jerry Chu <hkchu@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 64/80] tcp: tcp_replace_ts_recent() should not be called from tcp_validate_incoming()
-Date: Wed,  9 Jan 2013 12:35:56 -0800
-Message-Id: <20130109201508.632338664@linuxfoundation.org>
+Subject: [ 65/80] tcp: RFC 5961 5.2 Blind Data Injection Attack Mitigation
+Date: Wed,  9 Jan 2013 12:35:57 -0800
+Message-Id: <20130109201508.755146101@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -34,71 +31,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit bd090dfc634ddd711a5fbd0cadc6e0ab4977bcaf ]
+[ Upstream commit 354e4aa391ed50a4d827ff6fc11e0667d0859b25 ]
 
-We added support for RFC 5961 in latest kernels but TCP fails
-to perform exhaustive check of ACK sequence.
+RFC 5961 5.2 [Blind Data Injection Attack].[Mitigation]
 
-We can update our view of peer tsval from a frame that is
-later discarded by tcp_ack()
+  All TCP stacks MAY implement the following mitigation.  TCP stacks
+  that implement this mitigation MUST add an additional input check to
+  any incoming segment.  The ACK value is considered acceptable only if
+  it is in the range of ((SND.UNA - MAX.SND.WND) <= SEG.ACK <=
+  SND.NXT).  All incoming segments whose ACK value doesn't satisfy the
+  above condition MUST be discarded and an ACK sent back.
 
-This makes timestamps enabled sessions vulnerable to injection of
-a high tsval : peers start an ACK storm, since the victim
-sends a dupack each time it receives an ACK from the other peer.
-
-As tcp_validate_incoming() is called before tcp_ack(), we should
-not peform tcp_replace_ts_recent() from it, and let callers do it
-at the right time.
+Move tcp_send_challenge_ack() before tcp_ack() to avoid a forward
+declaration.
 
 Signed-off-by: Eric Dumazet <edumazet@google.com>
 Cc: Neal Cardwell <ncardwell@google.com>
 Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Cc: H.K. Jerry Chu <hkchu@google.com>
-Cc: Romain Francoise <romain@orebokech.com>
+Cc: Jerry Chu <hkchu@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv4/tcp_input.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+ net/ipv4/tcp_input.c |   43 +++++++++++++++++++++++++------------------
+ 1 file changed, 25 insertions(+), 18 deletions(-)
 
 --- a/net/ipv4/tcp_input.c
 +++ b/net/ipv4/tcp_input.c
-@@ -5337,11 +5337,6 @@ static bool tcp_validate_incoming(struct
- 		goto discard;
- 	}
+@@ -3687,6 +3687,24 @@ static int tcp_process_frto(struct sock
+ 	return 0;
+ }
  
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++/* RFC 5961 7 [ACK Throttling] */
++static void tcp_send_challenge_ack(struct sock *sk)
++{
++	/* unprotected vars, we dont care of overwrites */
++	static u32 challenge_timestamp;
++	static unsigned int challenge_count;
++	u32 now = jiffies / HZ;
++
++	if (now != challenge_timestamp) {
++		challenge_timestamp = now;
++		challenge_count = 0;
++	}
++	if (++challenge_count <= sysctl_tcp_challenge_ack_limit) {
++		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPCHALLENGEACK);
++		tcp_send_ack(sk);
++	}
++}
++
+ /* This routine deals with incoming acks, but not outgoing ones. */
+ static int tcp_ack(struct sock *sk, const struct sk_buff *skb, int flag)
+ {
+@@ -3706,8 +3724,14 @@ static int tcp_ack(struct sock *sk, cons
+ 	/* If the ack is older than previous acks
+ 	 * then we can probably ignore it.
+ 	 */
+-	if (before(ack, prior_snd_una))
++	if (before(ack, prior_snd_una)) {
++		/* RFC 5961 5.2 [Blind Data Injection Attack].[Mitigation] */
++		if (before(ack, prior_snd_una - tp->max_window)) {
++			tcp_send_challenge_ack(sk);
++			return -1;
++		}
+ 		goto old_ack;
++	}
+ 
+ 	/* If the ack includes data we haven't sent yet, discard
+ 	 * this segment (RFC793 Section 3.9).
+@@ -5268,23 +5292,6 @@ out:
+ }
+ #endif /* CONFIG_NET_DMA */
+ 
+-static void tcp_send_challenge_ack(struct sock *sk)
+-{
+-	/* unprotected vars, we dont care of overwrites */
+-	static u32 challenge_timestamp;
+-	static unsigned int challenge_count;
+-	u32 now = jiffies / HZ;
 -
- 	/* step 3: check security and precedence [ignored] */
- 
- 	/* step 4: Check for a SYN
-@@ -5576,6 +5571,11 @@ step5:
- 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
- 		goto discard;
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
-+
- 	tcp_rcv_rtt_measure_ts(sk, skb);
- 
- 	/* Process urgent data. */
-@@ -6046,6 +6046,11 @@ int tcp_rcv_state_process(struct sock *s
- 	} else
- 		goto discard;
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
-+
- 	/* step 6: check the URG bit */
- 	tcp_urg(sk, skb, th);
- 
+-	if (now != challenge_timestamp) {
+-		challenge_timestamp = now;
+-		challenge_count = 0;
+-	}
+-	if (++challenge_count <= sysctl_tcp_challenge_ack_limit) {
+-		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPCHALLENGEACK);
+-		tcp_send_ack(sk);
+-	}
+-}
+-
+ /* Does PAWS and seqno based validation of an incoming segment, flags will
+  * play significant role here.
+  */
 
 
