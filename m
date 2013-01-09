@@ -1,105 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab3AIVDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:03:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43302 "EHLO mail.kernel.org"
+	id S933943Ab3AIVDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:03:52 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43281 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933821Ab3AIUkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:21 -0500
+	id S933627Ab3AIUkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 079/123] sparc64: Fix AES ctr mode block size.
-Date: Wed,  9 Jan 2013 12:35:18 -0800
-Message-Id: <20130109201508.746567176@linuxfoundation.org>
+Subject: [ 58/80] inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and dccp_v4/6_request_recv_sock
+Date: Wed,  9 Jan 2013 12:35:50 -0800
+Message-Id: <20130109201507.875146051@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
 
-From: "David S. Miller" <davem@davemloft.net>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-[ Upstream commit a8d97cef2168ffe5af1aeed6bf6cdc3ce53f3d0b ]
+[ Upstream commit e337e24d6624e74a558aa69071e112a65f7b5758 ]
 
-Like the generic versions, we need to support a block size
-of '1' for CTR mode AES.
+If in either of the above functions inet_csk_route_child_sock() or
+__inet_inherit_port() fails, the newsk will not be freed:
 
-This was discovered thanks to all of the new test cases added by
-Jussi Kivilinna.
+unreferenced object 0xffff88022e8a92c0 (size 1592):
+  comm "softirq", pid 0, jiffies 4294946244 (age 726.160s)
+  hex dump (first 32 bytes):
+    0a 01 01 01 0a 01 01 02 00 00 00 00 a7 cc 16 00  ................
+    02 00 03 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff8153d190>] kmemleak_alloc+0x21/0x3e
+    [<ffffffff810ab3e7>] kmem_cache_alloc+0xb5/0xc5
+    [<ffffffff8149b65b>] sk_prot_alloc.isra.53+0x2b/0xcd
+    [<ffffffff8149b784>] sk_clone_lock+0x16/0x21e
+    [<ffffffff814d711a>] inet_csk_clone_lock+0x10/0x7b
+    [<ffffffff814ebbc3>] tcp_create_openreq_child+0x21/0x481
+    [<ffffffff814e8fa5>] tcp_v4_syn_recv_sock+0x3a/0x23b
+    [<ffffffff814ec5ba>] tcp_check_req+0x29f/0x416
+    [<ffffffff814e8e10>] tcp_v4_do_rcv+0x161/0x2bc
+    [<ffffffff814eb917>] tcp_v4_rcv+0x6c9/0x701
+    [<ffffffff814cea9f>] ip_local_deliver_finish+0x70/0xc4
+    [<ffffffff814cec20>] ip_local_deliver+0x4e/0x7f
+    [<ffffffff814ce9f8>] ip_rcv_finish+0x1fc/0x233
+    [<ffffffff814cee68>] ip_rcv+0x217/0x267
+    [<ffffffff814a7bbe>] __netif_receive_skb+0x49e/0x553
+    [<ffffffff814a7cc3>] netif_receive_skb+0x50/0x82
 
+This happens, because sk_clone_lock initializes sk_refcnt to 2, and thus
+a single sock_put() is not enough to free the memory. Additionally, things
+like xfrm, memcg, cookie_values,... may have been initialized.
+We have to free them properly.
+
+This is fixed by forcing a call to tcp_done(), ending up in
+inet_csk_destroy_sock, doing the final sock_put(). tcp_done() is necessary,
+because it ends up doing all the cleanup on xfrm, memcg, cookie_values,
+xfrm,...
+
+Before calling tcp_done, we have to set the socket to SOCK_DEAD, to
+force it entering inet_csk_destroy_sock. To avoid the warning in
+inet_csk_destroy_sock, inet_num has to be set to 0.
+As inet_csk_destroy_sock does a dec on orphan_count, we first have to
+increase it.
+
+Calling tcp_done() allows us to remove the calls to
+tcp_clear_xmit_timer() and tcp_cleanup_congestion_control().
+
+A similar approach is taken for dccp by calling dccp_done().
+
+This is in the kernel since 093d282321 (tproxy: fix hash locking issue
+when using port redirection in __inet_inherit_port()), thus since
+version >= 2.6.37.
+
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- arch/sparc/crypto/aes_glue.c |   27 ++++++++++++++++++++++++---
- 1 file changed, 24 insertions(+), 3 deletions(-)
+ include/net/inet_connection_sock.h |    1 +
+ net/dccp/ipv4.c                    |    4 ++--
+ net/dccp/ipv6.c                    |    3 ++-
+ net/ipv4/inet_connection_sock.c    |   16 ++++++++++++++++
+ net/ipv4/tcp_ipv4.c                |    6 ++----
+ net/ipv6/tcp_ipv6.c                |    3 ++-
+ 6 files changed, 25 insertions(+), 8 deletions(-)
 
---- a/arch/sparc/crypto/aes_glue.c
-+++ b/arch/sparc/crypto/aes_glue.c
-@@ -329,6 +329,22 @@ static int cbc_decrypt(struct blkcipher_
- 	return err;
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -317,6 +317,7 @@ extern void inet_csk_reqsk_queue_prune(s
+ 				       const unsigned long max_rto);
+ 
+ extern void inet_csk_destroy_sock(struct sock *sk);
++extern void inet_csk_prepare_forced_close(struct sock *sk);
+ 
+ /*
+  * LISTEN is a special case for poll..
+--- a/net/dccp/ipv4.c
++++ b/net/dccp/ipv4.c
+@@ -435,8 +435,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	dccp_done(newsk);
+ 	goto exit;
  }
  
-+static void ctr_crypt_final(struct crypto_sparc64_aes_ctx *ctx,
-+			    struct blkcipher_walk *walk)
-+{
-+	u8 *ctrblk = walk->iv;
-+	u64 keystream[AES_BLOCK_SIZE / sizeof(u64)];
-+	u8 *src = walk->src.virt.addr;
-+	u8 *dst = walk->dst.virt.addr;
-+	unsigned int nbytes = walk->nbytes;
-+
-+	ctx->ops->ecb_encrypt(&ctx->key[0], (const u64 *)ctrblk,
-+			      keystream, AES_BLOCK_SIZE);
-+	crypto_xor((u8 *) keystream, src, nbytes);
-+	memcpy(dst, keystream, nbytes);
-+	crypto_inc(ctrblk, AES_BLOCK_SIZE);
-+}
-+
- static int ctr_crypt(struct blkcipher_desc *desc,
- 		     struct scatterlist *dst, struct scatterlist *src,
- 		     unsigned int nbytes)
-@@ -338,10 +354,11 @@ static int ctr_crypt(struct blkcipher_de
- 	int err;
+--- a/net/dccp/ipv6.c
++++ b/net/dccp/ipv6.c
+@@ -611,7 +611,8 @@ static struct sock *dccp_v6_request_recv
+ 	newinet->inet_rcv_saddr = LOOPBACK4_IPV6;
  
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	err = blkcipher_walk_virt(desc, &walk);
-+	err = blkcipher_walk_virt_block(desc, &walk, AES_BLOCK_SIZE);
-+	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
- 
- 	ctx->ops->load_encrypt_keys(&ctx->key[0]);
--	while ((nbytes = walk.nbytes)) {
-+	while ((nbytes = walk.nbytes) >= AES_BLOCK_SIZE) {
- 		unsigned int block_len = nbytes & AES_BLOCK_MASK;
- 
- 		if (likely(block_len)) {
-@@ -353,6 +370,10 @@ static int ctr_crypt(struct blkcipher_de
- 		nbytes &= AES_BLOCK_SIZE - 1;
- 		err = blkcipher_walk_done(desc, &walk, nbytes);
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		dccp_done(newsk);
+ 		goto out;
  	}
-+	if (walk.nbytes) {
-+		ctr_crypt_final(ctx, &walk);
-+		err = blkcipher_walk_done(desc, &walk, 0);
-+	}
- 	fprs_write(0);
- 	return err;
+ 	__inet6_hash(newsk, NULL);
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -659,6 +659,22 @@ void inet_csk_destroy_sock(struct sock *
  }
-@@ -418,7 +439,7 @@ static struct crypto_alg algs[] = { {
- 	.cra_driver_name	= "ctr-aes-sparc64",
- 	.cra_priority		= SPARC_CR_OPCODE_PRIORITY,
- 	.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
--	.cra_blocksize		= AES_BLOCK_SIZE,
-+	.cra_blocksize		= 1,
- 	.cra_ctxsize		= sizeof(struct crypto_sparc64_aes_ctx),
- 	.cra_alignmask		= 7,
- 	.cra_type		= &crypto_blkcipher_type,
+ EXPORT_SYMBOL(inet_csk_destroy_sock);
+ 
++/* This function allows to force a closure of a socket after the call to
++ * tcp/dccp_create_openreq_child().
++ */
++void inet_csk_prepare_forced_close(struct sock *sk)
++{
++	/* sk_clone_lock locked the socket and set refcnt to 2 */
++	bh_unlock_sock(sk);
++	sock_put(sk);
++
++	/* The below has to be done to allow calling inet_csk_destroy_sock */
++	sock_set_flag(sk, SOCK_DEAD);
++	percpu_counter_inc(sk->sk_prot->orphan_count);
++	inet_sk(sk)->inet_num = 0;
++}
++EXPORT_SYMBOL(inet_csk_prepare_forced_close);
++
+ int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1524,10 +1524,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	tcp_clear_xmit_timers(newsk);
+-	tcp_cleanup_congestion_control(newsk);
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	tcp_done(newsk);
+ 	goto exit;
+ }
+ EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1411,7 +1411,8 @@ static struct sock * tcp_v6_syn_recv_soc
+ #endif
+ 
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		tcp_done(newsk);
+ 		goto out;
+ 	}
+ 	__inet6_hash(newsk, NULL);
 
 
