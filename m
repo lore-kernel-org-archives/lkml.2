@@ -1,93 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758026Ab3AIWM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:12:59 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:60457 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752359Ab3AIWM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:12:57 -0500
-Message-ID: <50EDEB64.4060800@ti.com>
-Date: Wed, 9 Jan 2013 16:12:52 -0600
-From: Jon Hunter <jon-hunter@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	id S1757998Ab3AIWPg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:15:36 -0500
+Received: from mxout2.iskon.hr ([213.191.128.81]:41292 "EHLO mxout2.iskon.hr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756709Ab3AIWPf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:15:35 -0500
+X-Remote-IP: 213.191.128.133
+Date: Wed, 09 Jan 2013 23:15:29 +0100
+From: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Organization: Iskon Internet d.d.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
 MIME-Version: 1.0
-To: Pantelis Antoniou <panto@antoniou-consulting.com>
-CC: unlisted-recipients:"; Tony Lindgren" <tony@atomide.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Benoit Cousson <b-cousson@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Matt Porter <mporter@ti.com>,
-        Russ Dill <Russ.Dill@ti.com>, Koen Kooi <koen@dominion.thruhere.net>,
-        Joel A Fernandes <agnel.joel@gmail.com>,
-        Rob Clark <robdclark@gmail.com>,
-        Jason Kridner <jkridner@beagleboard.org>,
-        Matt Ranostay <mranostay@gmail.com>
-Illegal-Object: Syntax error in CC: address found on vger.kernel.org:
-	CC:	unlisted-recipients:;Tony Lindgren <tony@atomide.com>
-					     ^-missing end of address
-Subject: Re: [PATCH] omap: DT node Timer iteration fix
-References: <1357651902-21966-1-git-send-email-panto@antoniou-consulting.com>
-In-Reply-To: <1357651902-21966-1-git-send-email-panto@antoniou-consulting.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <50EDE41C.7090107@iskon.hr> <20130109134816.db51a820.akpm@linux-foundation.org>
+In-Reply-To: <20130109134816.db51a820.akpm@linux-foundation.org>
+Message-ID: <50EDEC01.7090807@iskon.hr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.157.144.139]
+Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
+	 bases: 20130109 #9040464, check: 20130109 clean
+X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 41234 [Jan 10 2013]
+X-SpamTest-Method: none
+X-SpamTest-Rate: 0
+X-SpamTest-SPF: none
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pantelis,
+On 09.01.2013 22:48, Andrew Morton wrote:
+> On Wed, 09 Jan 2013 22:41:48 +0100
+> Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
+>
+>> Currently we take a short nap (HZ/10) and wait for congestion to clear
+>> before taking another pass with lower priority in balance_pgdat(). But
+>> we do that only for the highest zone that we encounter is unbalanced
+>> and congested.
+>>
+>> This patch changes that to wait on all congested zones in a single
+>> pass in the hope that it will save us some scanning that way. Also we
+>> take a nap as soon as congested zone is encountered and sc.priority <
+>> DEF_PRIORITY - 2 (aka kswapd in trouble).
+>>
+>> ...
+>>
+>> The patch is against the mm tree. Make sure that
+>> mm-avoid-calling-pgdat_balanced-needlessly.patch is applied first (not
+>> yet in the mmotm tree). Tested on half a dozen systems with different
+>> workloads for the last few days, working really well!
+>
+> But what are the user-observable effcets of this change?  Less kernel
+> CPU consumption, presumably?  Did you quantify it?
+>
 
-On 01/08/2013 07:31 AM, Pantelis Antoniou wrote:
-> The iterator correctly handles of_node_put() calls.
-> Remove it before continue'ing the loop.
-> Without this patch you get:
+I have an observation that without it, under some circumstances that are 
+VERY HARD to repeat (many days need to pass and some stars to align to 
+see the effect), the page cache gets hit hard, 2/3 of it evicted in a 
+split second. And it's not even under high load! So, I'm still 
+monitoring it, but so far the memory utilization really seems better 
+with the patch applied (no more mysterious page cache shootdowns).
 
-Thanks for the fix!
+Other than that, it just seems more correct to wait on all congested 
+zones, not just the highest one. When I sent my first patch that 
+replaced congestion_wait() I didn't have much time to do elaborate 
+analysis (3.7.0 was released in a matter of hours). So, I just plugged 
+the hole and continued working on the proper solution.
 
-May be worth mentioning that this will only be seen with
-"CONFIG_OF_DYNAMIC" (and explains why I did not catch this one!).
-
-> ERROR: Bad of_node_put() on /ocp/timer@44e31000!
-> [<c001329c>] (unwind_backtrace+0x0/0xe0) from [<c03dd8f0>] (of_node_release+0x2c/0xa0)!
-> [<c03dd8f0>] (of_node_release+0x2c/0xa0) from [<c03ddea0>] (of_find_matching_node_and_match+0x78/0x90)!
-> [<c03ddea0>] (of_find_matching_node_and_match+0x78/0x90) from [<c06d349c>] (omap_get_timer_dt+0x78/0x90)!
-> [<c06d349c>] (omap_get_timer_dt+0x78/0x90) from [<c06d3664>] (omap_dm_timer_init_one.clone.2+0x34/0x2bc)!
-> [<c06d3664>] (omap_dm_timer_init_one.clone.2+0x34/0x2bc) from [<c06d3a2c>] (omap2_gptimer_clocksource_init.clone.4+0x24/0xa8)!
-> [<c06d3a2c>] (omap2_gptimer_clocksource_init.clone.4+0x24/0xa8) from [<c06cca58>] (time_init+0x20/0x30)!
-> [<c06cca58>] (time_init+0x20/0x30) from [<c06c9690>] (start_kernel+0x1a8/0x2fc)!
-> 
-> Signed-off-by: Pantelis Antoniou <panto@antoniou-consulting.com>
-> ---
->  arch/arm/mach-omap2/timer.c | 8 ++------
->  1 file changed, 2 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-> index 691aa67..b8ad6e6 100644
-> --- a/arch/arm/mach-omap2/timer.c
-> +++ b/arch/arm/mach-omap2/timer.c
-> @@ -165,15 +165,11 @@ static struct device_node * __init omap_get_timer_dt(struct of_device_id *match,
->  	struct device_node *np;
->  
->  	for_each_matching_node(np, match) {
-> -		if (!of_device_is_available(np)) {
-> -			of_node_put(np);
-> +		if (!of_device_is_available(np))
->  			continue;
-> -		}
->  
-> -		if (property && !of_get_property(np, property, NULL)) {
-> -			of_node_put(np);
-> +		if (property && !of_get_property(np, property, NULL))
->  			continue;
-> -		}
->  
->  		of_add_property(np, &device_disabled);
->  		return np;
-
-Otherwise ...
-
-Acked-by: Jon Hunter <jon-hunter@ti.com>
-
-Cheers
-Jon
-
+I do think that this is my last patch in this particular area 
+(balance_pgdat() & friends). But, I'll continue investigating for the 
+root cause of this interesting debalance that happens only on this 
+particular system. Because I think balance_pgdat() behaviour was just 
+revealing it, but the real problem is somewhere else.
+-- 
+Zlatko
