@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934088Ab3AIVL4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:11:56 -0500
-Received: from nm13-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.13]:26805
-	"EHLO nm13-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933689Ab3AIVLy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:11:54 -0500
-X-Yahoo-Newman-Id: 558485.14952.bm@smtp106.biz.mail.bf1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: yjozOMEVM1nANGsJVsvCvfHtiVLayOfr_sminvB82pgE5i5
- abkphdLhvck27Q5IuaC4gySSH8BBmhYyB6T_mA8bMefPK_4QUHzy9YCVK4JY
- 2nebEtIb0rLTsI86O_lN4MCwRzo9KZNv_.Vf8Mr78WetWVl00oKdUlPcLF4.
- H_OPBXH8UG.JjjoJOrNiq3omVNEzsUnDjJxFjjZVzsTiHLjmPNzZ6l0bdCLc
- p9D6jBcmL3v_c60El2PNZKenF_NdwDmSzCpFBlWLbl7bclJCU8xne0ihThmG
- ie5mHVCgSRAJ8RrkDiiRPzH_PqnnL8nEPDo3.nkIph72ygAG0I9bIdTMmOOd
- 5ozVCFLVJ.ymHEqfuoGET6KFnjVuOUgwPZfIA8O7H4fmvGtvkp5_xc0d54qr
- l6HTQMyuJHL85lxLOaZbhzeJ4vhzlIJVT1NTAA8ZPnLx.vOw9JG3llnvfh5H
- AgPSD
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50EDDD27.7030008@schaufler-ca.com>
-Date: Wed, 09 Jan 2013 13:12:07 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Jakub Jelinek <jakub@redhat.com>
-CC: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
-        sds@tycho.nsa.gov, segoon@openwall.com,
-        linux-security-module@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: Friendlier EPERM - Request for input
-References: <1357747463.2593.28.camel@localhost> <1357760637.2593.55.camel@localhost> <50EDCFC0.3010401@schaufler-ca.com> <1357763560.1342.7.camel@localhost> <50EDD8D4.60003@schaufler-ca.com> <20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
-In-Reply-To: <20130109205947.GE26036@sunsite.ms.mff.cuni.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S933883Ab3AIVM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:12:27 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42935 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933685Ab3AIUjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Afzal Mohammed <afzal@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [ 063/123] Revert "usb: musb: dsps: remove explicit NOP device creation"
+Date: Wed,  9 Jan 2013 12:35:02 -0800
+Message-Id: <20130109201506.691500886@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/9/2013 12:59 PM, Jakub Jelinek wrote:
-> On Wed, Jan 09, 2013 at 12:53:40PM -0800, Casey Schaufler wrote:
->> I'm suggesting that the string returned by get_extended_error_info()
->> ought to be the audit record the system call would generate, regardless
->> of whether the audit system would emit it or not.
-> What system call would that info be for and would it be reset on next
-> syscall that succeeded, or also failed?
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-It ought to be the same system call that generated the contents of errno.
+------------------
 
->
-> The thing is, various functions e.g. perform some syscall, save errno, do
-> some other syscall, and if they decide that the first syscall should be what
-> determines the whole function's errno, just restore errno from the saved
-> value and return.
+From: Afzal Mohammed <afzal@ti.com>
 
-Whichever system call generated the content of errno. If that means
-the functions that currently save away errno have to save away the
-audit text, that's what it would have to do. Simple. Not necessarily
-pleasant, but simple.
+commit d75542263a0b005876d112bbf9ffb23180cc3149 upstream.
 
+This reverts commit d8c3ef256f88b7c6ecd673d03073b5645be9c5e4.
 
-> Similarly, various functions just set errno upon
-> detecting some error condition in userspace.
+Above mentioned change was made along with multi usb phy change and
+adding DT support for nop transceiver. But other two changes did not
+make it to mainline. This in effect makes dsps musb wrapper unusable
+even for single instance.
 
-Then get_extended_error_info should return NULL.
-Or, if the library code prefers, creates its own
-audit record in valid audit record format.
+Hence revert it so that at least single instance can be supported.
 
-> There is no 1:1 mapping between many libc library calls and syscalls.
+Signed-off-by: Afzal Mohammed <afzal@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Truth. I'm suggesting the get_extended_error_info behavior
-match the errno behavior.
+---
+ drivers/usb/musb/musb_dsps.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> So, when would it be safe to call this new get_extended_error_info function
-> and how to determine to which syscall it was relevant?
+--- a/drivers/usb/musb/musb_dsps.c
++++ b/drivers/usb/musb/musb_dsps.c
+@@ -377,7 +377,8 @@ static int dsps_musb_init(struct musb *m
+ 	/* mentor core register starts at offset of 0x400 from musb base */
+ 	musb->mregs += wrp->musb_core_offset;
+ 
+-	/* Get the NOP PHY */
++	/* NOP driver needs change if supporting dual instance */
++	usb_nop_xceiv_register();
+ 	musb->xceiv = usb_get_phy(USB_PHY_TYPE_USB2);
+ 	if (IS_ERR_OR_NULL(musb->xceiv))
+ 		return -ENODEV;
 
-Any time you could look at errno you should be able to get a matching
-explanation from get_extended_error_info.
-
-
->
-> 	Jakub
->
 
