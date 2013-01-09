@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab3AIViw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:38:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42047 "EHLO mail.kernel.org"
+	id S933281Ab3AIVjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:39:24 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41992 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933226Ab3AIUiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:19 -0500
+	id S933209Ab3AIUiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tatyana Brokhman <tlinder@codeaurora.org>, Felipe Balbi <balbi@ti.com>
-Subject: [ 035/123] usb: gadget: network: fix bind() error path
-Date: Wed,  9 Jan 2013 12:34:34 -0800
-Message-Id: <20130109201503.063658553@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 024/123] ALSA: hda - Fix pin configuration of HP Pavilion dv7
+Date: Wed,  9 Jan 2013 12:34:23 -0800
+Message-Id: <20130109201501.605537989@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,98 +25,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit e79cc615a9bb44da72c499ccfa2c9c4bbea3aa84 upstream.
+commit 8ae5865ec77c22462c736846a0679947a6953548 upstream.
 
-I think this is wrong since 72c973dd ("usb: gadget: add
-usb_endpoint_descriptor to struct usb_ep"). If we fail to allocate an ep
-or bail out early we shouldn't check for the descriptor which is
-assigned at ep_enable() time.
+Fix the quirk entry for HP Pavilion dv7 in order to make the bass
+speaker working.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tatyana Brokhman <tlinder@codeaurora.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Reported-and-tested-by: Tomas Pospisek <tpo2@sourcepole.ch>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_ecm.c    |    4 ++--
- drivers/usb/gadget/f_eem.c    |    5 ++---
- drivers/usb/gadget/f_ncm.c    |    4 ++--
- drivers/usb/gadget/f_rndis.c  |    4 ++--
- drivers/usb/gadget/f_subset.c |    4 ++--
- 5 files changed, 10 insertions(+), 11 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/usb/gadget/f_ecm.c
-+++ b/drivers/usb/gadget/f_ecm.c
-@@ -808,9 +808,9 @@ fail:
- 	/* we might as well release our claims on endpoints */
- 	if (ecm->notify)
- 		ecm->notify->driver_data = NULL;
--	if (ecm->port.out_ep->desc)
-+	if (ecm->port.out_ep)
- 		ecm->port.out_ep->driver_data = NULL;
--	if (ecm->port.in_ep->desc)
-+	if (ecm->port.in_ep)
- 		ecm->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
---- a/drivers/usb/gadget/f_eem.c
-+++ b/drivers/usb/gadget/f_eem.c
-@@ -319,10 +319,9 @@ fail:
- 	if (f->hs_descriptors)
- 		usb_free_descriptors(f->hs_descriptors);
- 
--	/* we might as well release our claims on endpoints */
--	if (eem->port.out_ep->desc)
-+	if (eem->port.out_ep)
- 		eem->port.out_ep->driver_data = NULL;
--	if (eem->port.in_ep->desc)
-+	if (eem->port.in_ep)
- 		eem->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
---- a/drivers/usb/gadget/f_ncm.c
-+++ b/drivers/usb/gadget/f_ncm.c
-@@ -1259,9 +1259,9 @@ fail:
- 	/* we might as well release our claims on endpoints */
- 	if (ncm->notify)
- 		ncm->notify->driver_data = NULL;
--	if (ncm->port.out_ep->desc)
-+	if (ncm->port.out_ep)
- 		ncm->port.out_ep->driver_data = NULL;
--	if (ncm->port.in_ep->desc)
-+	if (ncm->port.in_ep)
- 		ncm->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
---- a/drivers/usb/gadget/f_rndis.c
-+++ b/drivers/usb/gadget/f_rndis.c
-@@ -803,9 +803,9 @@ fail:
- 	/* we might as well release our claims on endpoints */
- 	if (rndis->notify)
- 		rndis->notify->driver_data = NULL;
--	if (rndis->port.out_ep->desc)
-+	if (rndis->port.out_ep)
- 		rndis->port.out_ep->driver_data = NULL;
--	if (rndis->port.in_ep->desc)
-+	if (rndis->port.in_ep)
- 		rndis->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
---- a/drivers/usb/gadget/f_subset.c
-+++ b/drivers/usb/gadget/f_subset.c
-@@ -370,9 +370,9 @@ fail:
- 		usb_free_descriptors(f->hs_descriptors);
- 
- 	/* we might as well release our claims on endpoints */
--	if (geth->port.out_ep->desc)
-+	if (geth->port.out_ep)
- 		geth->port.out_ep->driver_data = NULL;
--	if (geth->port.in_ep->desc)
-+	if (geth->port.in_ep)
- 		geth->port.in_ep->driver_data = NULL;
- 
- 	ERROR(cdev, "%s: can't bind, err %d\n", f->name, status);
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -1724,7 +1724,7 @@ static const struct snd_pci_quirk stac92
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1658,
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x1659,
+-			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
++			  "HP Pavilion dv7", STAC_HP_DV7_4000),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x165A,
+ 			  "HP", STAC_92HD83XXX_HP_cNB11_INTQUAD),
+ 	SND_PCI_QUIRK(PCI_VENDOR_ID_HP, 0x165B,
 
 
