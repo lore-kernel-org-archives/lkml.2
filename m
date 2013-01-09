@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756748Ab3AICnm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:43:42 -0500
-Received: from na3sys009aog119.obsmtp.com ([74.125.149.246]:38301 "EHLO
-	na3sys009aog119.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755306Ab3AICnk (ORCPT
+	id S1756639Ab3AICpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:45:30 -0500
+Received: from magic.merlins.org ([209.81.13.136]:40249 "EHLO
+	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755306Ab3AICp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:43:40 -0500
-From: Bing Zhao <bzhao@marvell.com>
-To: Marcel Holtmann <marcel@holtmann.org>, Lubomir Rintel <lkundrak@v3.sk>
-CC: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
-        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 8 Jan 2013 18:43:23 -0800
-Subject: RE: [PATCH] Bluetooth: btmrvl_sdio: look for sd8688 firmware in
- alternate place
-Thread-Topic: [PATCH] Bluetooth: btmrvl_sdio: look for sd8688 firmware in
- alternate place
-Thread-Index: Ac3uER2MPuMcRpH8SLW8UXMVcs+KAgAAICjw
-Message-ID: <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
-References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-	 <1357689361-7969-2-git-send-email-lkundrak@v3.sk>
- <1357698538.1806.43.camel@aeonflux>
-In-Reply-To: <1357698538.1806.43.camel@aeonflux>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Tue, 8 Jan 2013 21:45:29 -0500
+Date: Tue, 8 Jan 2013 18:45:28 -0800
+From: Marc MERLIN <marc@merlins.org>
+To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Supporting SYSRQ on broken laptops like the thinkpad T530
+Message-ID: <20130109024528.GR2044@merlins.org>
+References: <20130108230954.GN2044@merlins.org> <20130109023643.GA7066@mobil.systemanalysen.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20130109023643.GA7066@mobil.systemanalysen.net>
+X-Sysadmin: BOFH
+X-URL: http://marc.merlins.org/
+X-Operating-System: Proudly running Linux 3.1.5-core2-volpreempt-noide-hm64-20111218/Debian squeeze/sid
+X-Mailer: Some Outlooks can't quote properly without this header
+User-Agent: Mutt/1.5.13 (2006-08-11)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: marc@merlins.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id r092hjsc004093
 
-
-> > linux-firmware ships the sd8688* firmware images that are shared with
-> > libertas_sdio WiFi driver under libertas/. libertas_sdio looks in both places
-> > and so should we.
-> >
-> > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> > ---
-> >  drivers/bluetooth/btmrvl_sdio.c |   24 ++++++++++++++++++++++--
-> >  drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
-> >  2 files changed, 26 insertions(+), 4 deletions(-)
+On Wed, Jan 09, 2013 at 03:36:44AM +0100, Roland Eggner wrote:
+> On 2013-01-08 Tuesday at 15:09 -0800 Marc MERLIN wrote:
+> > In its infinite wisdom, lenovo has removed the sysrq key on the latest
+> > thinkpads, and replaced it with a stupid ALT+FN+S key combination, which
+> > doesn't really work for doing sysrq from the console (nor do I know how the
+> > genius who did that intended for SYSRQ-S to work).
+> > http://forums.lenovo.com/t5/T400-T500-and-newer-T-series/T430-s-T530-Where-are-the-shortcut-function-keys-break-Pause-etc/ta-p/781749
+> > 
+> > I realize that one solution is to throw my laptop window at a suitable high
+> > floorand replace it with one from a vendor that doesn't randomly remove keys
+> > from the keyboard.
+> > That said, I was wondering if there were other solutions, especially
+> > considering that thinkpads used to be the better linux laptops.
 > 
-> NAK from me on this one. I do not want the driver to check two
-> locations. That is what userspace can work around.
+> My Dell â€œPrecision M4500â€ notebook suffers similar (same?) problem.  So far 
+> I could not find a solution better than this:  e.g. Alt-Fn-SysRq-s
 > 
-> If we want to unify the location between the WiFi driver and the
-> Bluetooth driver, I am fine with that, but seriously, just pick one over
-> the other. I do not care which one.
+> press and hold Alt
+> press and hold Fn
+> press and leave F10|SysRq
+> leave Fn
+> press and leave s
+> leave Alt
 
-The unified location is mrvl/ directory.
+Holy crap. That works for me too. If only lenovo could have been bothered to
+document it properly. It's still a pitty to type and remmember the exact
+hold and release key sequences, but it's better than nothing.
 
-We can probably move SD8688 firmware & helper binaries to mrvl/ and have both drivers grab the images there?
+Thanks much.
 
-Regards,
-Bing
+> Several months ago a LKML user claimed, his cat had managed to press 
+> Alt-Fn-SysRq-c on his Dell Latitude notebook with similar keyboard, and provided 
+> photos showing the kernel crash message ;)
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Yeah, but my cat is not nearly smart enough for that :)
+
+Thanks for your help again,
+Marc
+-- 
+"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
+Microsoft is to operating systems ....
+                                      .... what McDonalds is to gourmet cooking
+Home page: http://marc.merlins.org/  
