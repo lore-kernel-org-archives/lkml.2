@@ -1,92 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092Ab3AIO4t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:56:49 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:53214 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756339Ab3AIO4s (ORCPT
+	id S932107Ab3AIO5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:57:23 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:38431 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756339Ab3AIO5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:56:48 -0500
+	Wed, 9 Jan 2013 09:57:21 -0500
+Message-ID: <50ED8537.3020409@windriver.com>
+Date: Wed, 9 Jan 2013 09:56:55 -0500
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130109134757.GN19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
-	<1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1357719435-29955-2-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130109134757.GN19691@intel.com>
-Date: Wed, 9 Jan 2013 16:56:45 +0200
-Message-ID: <CAHp75VfFyX=Pz3xRt15n6ffP=v0pa413BFF2zHGoiQowG1kKVg@mail.gmail.com>
-Subject: Re: [resend][PATCH 01/16] dw_dmac: call .probe after we have a device
- in place
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+To: Nick Bowler <nbowler@elliptictech.com>
+CC: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: [v2.6.34-stable 71/77] crypto: ghash - Avoid null pointer dereference
+ if no key is set
+References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com> <1357688156-25387-72-git-send-email-paul.gortmaker@windriver.com> <20130109025631.GA12832@elliptictech.com>
+In-Reply-To: <20130109025631.GA12832@elliptictech.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 3:47 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Wed, Jan 09, 2013 at 10:17:00AM +0200, Andy Shevchenko wrote:
->> If we don't yet have the platform device for the driver when it is being loaded
->> we fail to probe the driver. So instead of calling probe() directly we call
->> platform_driver_register(). It will call the probe() immediately if we have the
->> device but also makes the driver to work on platforms where the platform device
->> is created later.
-> Why wont you have the platform device?
-
-It's still the same device as before. The only difference is in
-boot/initialization sequence.
-
-> Is this only due to your approach of
-> creating the device in PCI probe?
-
-No. We had an issue when driver was initialized (and with old version
-immediately probed)
-just before it happened in the platform devices. In such case .probe() fails.
-Above patch makes sure that platform devices are already in the
-internal structures and we could match them safely.
-
+On 13-01-08 09:56 PM, Nick Bowler wrote:
+> On 2013-01-08 18:35 -0500, Paul Gortmaker wrote:
+>> From: Nick Bowler <nbowler@elliptictech.com>
 >>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->> ---
->>  drivers/dma/dw_dmac.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>                    -------------------
+>>     This is a commit scheduled for the next v2.6.34 longterm release.
+>>     http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
+>>     If you see a problem with using this for longterm, please comment.
+>>                    -------------------
 >>
->> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
->> index 476e9c8..b5f21ba 100644
->> --- a/drivers/dma/dw_dmac.c
->> +++ b/drivers/dma/dw_dmac.c
->> @@ -1829,6 +1829,7 @@ MODULE_DEVICE_TABLE(of, dw_dma_id_table);
->>  #endif
+>> commit 7ed47b7d142ec99ad6880bbbec51e9f12b3af74c upstream.
 >>
->>  static struct platform_driver dw_driver = {
->> +     .probe          = dw_probe,
->>       .remove         = dw_remove,
->>       .shutdown       = dw_shutdown,
->>       .driver = {
->> @@ -1840,7 +1841,7 @@ static struct platform_driver dw_driver = {
+>> The ghash_update function passes a pointer to gf128mul_4k_lle which will
+>> be NULL if ghash_setkey is not called or if the most recent call to
+>> ghash_setkey failed to allocate memory.  This causes an oops.  Fix this
+>> up by returning an error code in the null case.
 >>
->>  static int __init dw_init(void)
->>  {
->> -     return platform_driver_probe(&dw_driver, dw_probe);
->> +     return platform_driver_register(&dw_driver);
->>  }
->>  subsys_initcall(dw_init);
->>
->> --
->> 1.7.10.4
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> This is trivially triggered from unprivileged userspace through the
+>> AF_ALG interface by simply writing to the socket without setting a key.
+> 
+> I haven't been following 2.6.34-longterm development, but unless
+> you've also backported the AF_ALG userspace interface from 2.6.38,
+> this sequence can only be triggered by kernel code.  So while this
+> patch shouldn't break anything, it isn't really necessary.
 
+We've not backported any features or interfaces, as doing so is
+generally outside of the mandate of what -stable tries to achieve.
+So I'll simply drop the patch.
 
+Thanks for the info.
+Paul
+--
 
--- 
-With Best Regards,
-Andy Shevchenko
+> 
+> Cheers,
+> 
