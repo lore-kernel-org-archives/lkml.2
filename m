@@ -1,70 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab3AIBaK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 20:30:10 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:52574 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756389Ab3AIBaH convert rfc822-to-8bit (ORCPT
+	id S1756575Ab3AIBaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 20:30:35 -0500
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:54402 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756325Ab3AIB2c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 20:30:07 -0500
-From: "Kim, Milo" <Milo.Kim@ti.com>
-To: Jason Cooper <jason@lakedaemon.net>, Josh Coombs <josh.coombs@gmail.com>
-CC: "cooloney@gmail.com" <cooloney@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
-        linux ARM <linux-arm-kernel@lists.infradead.org>,
-        "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
-Subject: RE: [PATCH] Allow Marvell SATA driver to work with
- LEDS_TRIGGER_IDE_DISK
-Thread-Topic: [PATCH] Allow Marvell SATA driver to work with
- LEDS_TRIGGER_IDE_DISK
-Thread-Index: AQHN7cxO6Pxdsvbbfkaax4OUs3GcPpg/RPQAgAADGgCAAAzKAIAA24Cw
-Date: Wed, 9 Jan 2013 01:29:44 +0000
-Message-ID: <A874F61F95741C4A9BA573A70FE3998F69E12010@DQHE02.ent.ti.com>
-References: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
- <20130108190657.GW5075@titan.lakedaemon.net>
- <CAMW5UfY2vKEJ7K8tLJ1+JeKsr_hxtUTva9HGJxLan6k+KGdmvg@mail.gmail.com>
- <20130108200350.GX5075@titan.lakedaemon.net>
-In-Reply-To: <20130108200350.GX5075@titan.lakedaemon.net>
-Accept-Language: ko-KR, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.16.34.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Tue, 8 Jan 2013 20:28:32 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
+Subject: [PATCH 3/8] mm: use vm_unmapped_area() on frv architecture
+Date: Tue,  8 Jan 2013 17:28:10 -0800
+Message-Id: <1357694895-520-4-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1357694895-520-1-git-send-email-walken@google.com>
+References: <1357694895-520-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-leds-owner@vger.kernel.org [mailto:linux-leds-
-> owner@vger.kernel.org] On Behalf Of Jason Cooper
-> Sent: Wednesday, January 09, 2013 5:04 AM
-> To: Josh Coombs
-> Cc: cooloney@gmail.com; linux-kernel@vger.kernel.org; linux-
-> ide@vger.kernel.org; rpurdie@rpsys.net; linux ARM; jgarzik@pobox.com;
-> linux-leds@vger.kernel.org
-> Subject: Re: [PATCH] Allow Marvell SATA driver to work with
-> LEDS_TRIGGER_IDE_DISK
-> 
-> On Tue, Jan 08, 2013 at 02:18:04PM -0500, Josh Coombs wrote:
-> > Would it make more sense to add a second trigger
-> > for SATA instead?
-> 
-> I'll leave that up to the led guys, I just wanted to raise the point
-> that the driver could logically support other types of disks, and we
-> should come up with a migration path instead of adding capabilities
-> ad-hoc.
+Update the frv arch_get_unmapped_area function to make use of
+vm_unmapped_area() instead of implementing a brute force search.
 
-I agree with Jason's suggestion. One more thing to consider.
+Signed-off-by: Michel Lespinasse <walken@google.com>
 
-If we replace the name, 'ide-disk' or 'ide_disk' with general one,
-then we should change the value of 'default_trigger' under arch directory also.
-LED trigger works if the name is matched with trigger name of LED device.
+---
+ arch/frv/mm/elf-fdpic.c |   49 ++++++++++++++++------------------------------
+ 1 files changed, 17 insertions(+), 32 deletions(-)
 
-Thanks,
-Milo
+diff --git a/arch/frv/mm/elf-fdpic.c b/arch/frv/mm/elf-fdpic.c
+index 385fd30b142f..836f14707a62 100644
+--- a/arch/frv/mm/elf-fdpic.c
++++ b/arch/frv/mm/elf-fdpic.c
+@@ -60,7 +60,7 @@ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr, unsi
+ 				     unsigned long pgoff, unsigned long flags)
+ {
+ 	struct vm_area_struct *vma;
+-	unsigned long limit;
++	struct vm_unmapped_area_info info;
+ 
+ 	if (len > TASK_SIZE)
+ 		return -ENOMEM;
+@@ -79,39 +79,24 @@ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr, unsi
+ 	}
+ 
+ 	/* search between the bottom of user VM and the stack grow area */
+-	addr = PAGE_SIZE;
+-	limit = (current->mm->start_stack - 0x00200000);
+-	if (addr + len <= limit) {
+-		limit -= len;
+-
+-		if (addr <= limit) {
+-			vma = find_vma(current->mm, PAGE_SIZE);
+-			for (; vma; vma = vma->vm_next) {
+-				if (addr > limit)
+-					break;
+-				if (addr + len <= vma->vm_start)
+-					goto success;
+-				addr = vma->vm_end;
+-			}
+-		}
+-	}
++	info.flags = 0;
++	info.length = len;
++	info.low_limit = PAGE_SIZE;
++	info.high_limit = (current->mm->start_stack - 0x00200000);
++	info.align_mask = 0;
++	info.align_offset = 0;
++	addr = vm_unmapped_area(&info);
++	if (!(addr & ~PAGE_MASK))
++		goto success;
++	VM_BUG_ON(addr != -ENOMEM);
+ 
+ 	/* search from just above the WorkRAM area to the top of memory */
+-	addr = PAGE_ALIGN(0x80000000);
+-	limit = TASK_SIZE - len;
+-	if (addr <= limit) {
+-		vma = find_vma(current->mm, addr);
+-		for (; vma; vma = vma->vm_next) {
+-			if (addr > limit)
+-				break;
+-			if (addr + len <= vma->vm_start)
+-				goto success;
+-			addr = vma->vm_end;
+-		}
+-
+-		if (!vma && addr <= limit)
+-			goto success;
+-	}
++	info.low_limit = PAGE_ALIGN(0x80000000);
++	info.high_limit = TASK_SIZE;
++	addr = vm_unmapped_area(&info);
++	if (!(addr & ~PAGE_MASK))
++		goto success;
++	VM_BUG_ON(addr != -ENOMEM);
+ 
+ #if 0
+ 	printk("[area] l=%lx (ENOMEM) f='%s'\n",
+-- 
+1.7.7.3
