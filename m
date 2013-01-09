@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab3AIUjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:44 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42849 "EHLO mail.kernel.org"
+	id S933739Ab3AIVNb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:13:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42892 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596Ab3AIUjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:39 -0500
+	id S933666Ab3AIUjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Alexis R. Cortes" <alexis.cortes@ti.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: [ 068/123] usb: host: xhci: Stricter conditional for Z1 system models for Compliance Mode Patch
-Date: Wed,  9 Jan 2013 12:35:07 -0800
-Message-Id: <20130109201507.333892789@linuxfoundation.org>
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [ 061/123] genirq: Always force thread affinity
+Date: Wed,  9 Jan 2013 12:35:00 -0800
+Message-Id: <20130109201506.421124732@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,36 +25,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Alexis R. Cortes" <alexis.cortes@ti.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit b0e4e606ff6ff26da0f60826e75577b56ba4e463 upstream.
+commit 04aa530ec04f61875b99c12721162e2964e3318c upstream.
 
-This minor patch creates a more stricter conditional for the Z1 sytems for applying
-the Compliance Mode Patch, this to avoid the quirk to be applied to models that
-contain a "Z1" in their dmi product string but are different from Z1 systems.
+Sankara reported that the genirq core code fails to adjust the
+affinity of an interrupt thread in several cases:
 
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 71c731a296f1b08a3724bd1b514b64f1bda87a23 "usb: host:
-xhci: Fix Compliance Mode on SN65LVPE502CP Hardware"
+ 1) On request/setup_irq() the call to setup_affinity() happens before
+    the new action is registered, so the new thread is not notified.
 
-Signed-off-by: Alexis R. Cortes <alexis.cortes@ti.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+ 2) For secondary shared interrupts nothing notifies the new thread to
+    change its affinity.
+
+ 3) Interrupts which have the IRQ_NO_BALANCE flag set are not moving
+    the thread either.
+
+Fix this by setting the thread affinity flag right on thread creation
+time. This ensures that under all circumstances the thread moves to
+the right place. Requires a check in irq_thread_check_affinity for an
+existing affinity mask (CONFIG_CPU_MASK_OFFSTACK=y)
+
+Reported-and-tested-by: Sankara Muthukrishnan <sankara.m@gmail.com>
+Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1209041738200.2754@ionos
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/irq/manage.c |   23 +++++++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -480,7 +480,7 @@ static bool compliance_mode_recovery_tim
- 	if (strstr(dmi_product_name, "Z420") ||
- 			strstr(dmi_product_name, "Z620") ||
- 			strstr(dmi_product_name, "Z820") ||
--			strstr(dmi_product_name, "Z1"))
-+			strstr(dmi_product_name, "Z1 Workstation"))
- 		return true;
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -716,6 +716,7 @@ static void
+ irq_thread_check_affinity(struct irq_desc *desc, struct irqaction *action)
+ {
+ 	cpumask_var_t mask;
++	bool valid = true;
  
- 	return false;
+ 	if (!test_and_clear_bit(IRQTF_AFFINITY, &action->thread_flags))
+ 		return;
+@@ -730,10 +731,18 @@ irq_thread_check_affinity(struct irq_des
+ 	}
+ 
+ 	raw_spin_lock_irq(&desc->lock);
+-	cpumask_copy(mask, desc->irq_data.affinity);
++	/*
++	 * This code is triggered unconditionally. Check the affinity
++	 * mask pointer. For CPU_MASK_OFFSTACK=n this is optimized out.
++	 */
++	if (desc->irq_data.affinity)
++		cpumask_copy(mask, desc->irq_data.affinity);
++	else
++		valid = false;
+ 	raw_spin_unlock_irq(&desc->lock);
+ 
+-	set_cpus_allowed_ptr(current, mask);
++	if (valid)
++		set_cpus_allowed_ptr(current, mask);
+ 	free_cpumask_var(mask);
+ }
+ #else
+@@ -936,6 +945,16 @@ __setup_irq(unsigned int irq, struct irq
+ 		 */
+ 		get_task_struct(t);
+ 		new->thread = t;
++		/*
++		 * Tell the thread to set its affinity. This is
++		 * important for shared interrupt handlers as we do
++		 * not invoke setup_affinity() for the secondary
++		 * handlers as everything is already set up. Even for
++		 * interrupts marked with IRQF_NO_BALANCE this is
++		 * correct as we want the thread to move to the cpu(s)
++		 * on which the requesting code placed the interrupt.
++		 */
++		set_bit(IRQTF_AFFINITY, &new->thread_flags);
+ 	}
+ 
+ 	if (!alloc_cpumask_var(&mask, GFP_KERNEL)) {
 
 
