@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933817Ab3AIUkT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:40:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43211 "EHLO mail.kernel.org"
+	id S933798Ab3AIUkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43131 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933675Ab3AIUkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:14 -0500
+	id S933569Ab3AIUkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gao feng <gaofeng@cn.fujitsu.com>, Li Zefan <lizefan@huawei.com>,
-        Tejun Heo <tj@redhat.com>
-Subject: [ 072/123] cgroup_rm_file: dont delete the uncreated files
-Date: Wed,  9 Jan 2013 12:35:11 -0800
-Message-Id: <20130109201507.859215171@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 070/123] cgroup: cgroup_subsys->fork() should be called after the task is added to css_set
+Date: Wed,  9 Jan 2013 12:35:09 -0800
+Message-Id: <20130109201507.595125395@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,53 +26,209 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gao feng <gaofeng@cn.fujitsu.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit f33fddc2b9573d8359f1007d4bbe5cd587a0c093 upstream.
+commit 5edee61edeaaebafe584f8fb7074c1ef4658596b upstream.
 
-in cgroup_add_file,when creating files for cgroup,
-some of creation may be skipped. So we need to avoid
-deleting these uncreated files in cgroup_rm_file,
-otherwise the warning msg will be triggered.
+cgroup core has a bug which violates a basic rule about event
+notifications - when a new entity needs to be added, you add that to
+the notification list first and then make the new entity conform to
+the current state.  If done in the reverse order, an event happening
+inbetween will be lost.
 
-"cgroup_addrm_files: failed to remove memory_pressure_enabled, err=-2"
+cgroup_subsys->fork() is invoked way before the new task is added to
+the css_set.  Currently, cgroup_freezer is the only user of ->fork()
+and uses it to make new tasks conform to the current state of the
+freezer.  If FROZEN state is requested while fork is in progress
+between cgroup_fork_callbacks() and cgroup_post_fork(), the child
+could escape freezing - the cgroup isn't frozen when ->fork() is
+called and the freezer couldn't see the new task on the css_set.
 
-Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
-Acked-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Tejun Heo <tj@redhat.com>
+This patch moves cgroup_subsys->fork() invocation to
+cgroup_post_fork() after the new task is added to the css_set.
+cgroup_fork_callbacks() is removed.
+
+Because now a task may be migrated during cgroup_subsys->fork(),
+freezer_fork() is updated so that it adheres to the usual RCU locking
+and the rather pointless comment on why locking can be different there
+is removed (if it doesn't make anything simpler, why even bother?).
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/cgroup.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ include/linux/cgroup.h  |    1 
+ kernel/cgroup.c         |   62 +++++++++++++++++++++++-------------------------
+ kernel/cgroup_freezer.c |   13 +++-------
+ kernel/fork.c           |    9 ------
+ 4 files changed, 35 insertions(+), 50 deletions(-)
 
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -34,7 +34,6 @@ extern int cgroup_lock_is_held(void);
+ extern bool cgroup_lock_live_group(struct cgroup *cgrp);
+ extern void cgroup_unlock(void);
+ extern void cgroup_fork(struct task_struct *p);
+-extern void cgroup_fork_callbacks(struct task_struct *p);
+ extern void cgroup_post_fork(struct task_struct *p);
+ extern void cgroup_exit(struct task_struct *p, int run_callbacks);
+ extern int cgroupstats_build(struct cgroupstats *stats,
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2789,12 +2789,6 @@ static int cgroup_add_file(struct cgroup
+@@ -4832,44 +4832,19 @@ void cgroup_fork(struct task_struct *chi
+ }
  
- 	simple_xattrs_init(&cft->xattrs);
- 
--	/* does @cft->flags tell us to skip creation on @cgrp? */
--	if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
--		return 0;
--	if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
--		return 0;
+ /**
+- * cgroup_fork_callbacks - run fork callbacks
+- * @child: the new task
+- *
+- * Called on a new task very soon before adding it to the
+- * tasklist. No need to take any locks since no-one can
+- * be operating on this task.
+- */
+-void cgroup_fork_callbacks(struct task_struct *child)
+-{
+-	if (need_forkexit_callback) {
+-		int i;
+-		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
+-			struct cgroup_subsys *ss = subsys[i];
 -
- 	if (subsys && !test_bit(ROOT_NOPREFIX, &cgrp->root->flags)) {
- 		strcpy(name, subsys->name);
- 		strcat(name, ".");
-@@ -2835,6 +2829,12 @@ static int cgroup_addrm_files(struct cgr
- 	int err, ret = 0;
- 
- 	for (cft = cfts; cft->name[0] != '\0'; cft++) {
-+		/* does cft->flags tell us to skip this file on @cgrp? */
-+		if ((cft->flags & CFTYPE_NOT_ON_ROOT) && !cgrp->parent)
-+			continue;
-+		if ((cft->flags & CFTYPE_ONLY_ON_ROOT) && cgrp->parent)
-+			continue;
+-			/*
+-			 * forkexit callbacks are only supported for
+-			 * builtin subsystems.
+-			 */
+-			if (!ss || ss->module)
+-				continue;
+-
+-			if (ss->fork)
+-				ss->fork(child);
+-		}
+-	}
+-}
+-
+-/**
+  * cgroup_post_fork - called on a new task after adding it to the task list
+  * @child: the task in question
+  *
+- * Adds the task to the list running through its css_set if necessary.
+- * Has to be after the task is visible on the task list in case we race
+- * with the first call to cgroup_iter_start() - to guarantee that the
+- * new task ends up on its list.
++ * Adds the task to the list running through its css_set if necessary and
++ * call the subsystem fork() callbacks.  Has to be after the task is
++ * visible on the task list in case we race with the first call to
++ * cgroup_iter_start() - to guarantee that the new task ends up on its
++ * list.
+  */
+ void cgroup_post_fork(struct task_struct *child)
+ {
++	int i;
 +
- 		if (is_add)
- 			err = cgroup_add_file(cgrp, subsys, cft);
- 		else
+ 	/*
+ 	 * use_task_css_set_links is set to 1 before we walk the tasklist
+ 	 * under the tasklist_lock and we read it here after we added the child
+@@ -4889,7 +4864,30 @@ void cgroup_post_fork(struct task_struct
+ 		task_unlock(child);
+ 		write_unlock(&css_set_lock);
+ 	}
++
++	/*
++	 * Call ss->fork().  This must happen after @child is linked on
++	 * css_set; otherwise, @child might change state between ->fork()
++	 * and addition to css_set.
++	 */
++	if (need_forkexit_callback) {
++		for (i = 0; i < CGROUP_SUBSYS_COUNT; i++) {
++			struct cgroup_subsys *ss = subsys[i];
++
++			/*
++			 * fork/exit callbacks are supported only for
++			 * builtin subsystems and we don't need further
++			 * synchronization as they never go away.
++			 */
++			if (!ss || ss->module)
++				continue;
++
++			if (ss->fork)
++				ss->fork(child);
++		}
++	}
+ }
++
+ /**
+  * cgroup_exit - detach cgroup from exiting task
+  * @tsk: pointer to task_struct of exiting process
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -186,23 +186,15 @@ static void freezer_fork(struct task_str
+ {
+ 	struct freezer *freezer;
+ 
+-	/*
+-	 * No lock is needed, since the task isn't on tasklist yet,
+-	 * so it can't be moved to another cgroup, which means the
+-	 * freezer won't be removed and will be valid during this
+-	 * function call.  Nevertheless, apply RCU read-side critical
+-	 * section to suppress RCU lockdep false positives.
+-	 */
+ 	rcu_read_lock();
+ 	freezer = task_freezer(task);
+-	rcu_read_unlock();
+ 
+ 	/*
+ 	 * The root cgroup is non-freezable, so we can skip the
+ 	 * following check.
+ 	 */
+ 	if (!freezer->css.cgroup->parent)
+-		return;
++		goto out;
+ 
+ 	spin_lock_irq(&freezer->lock);
+ 	BUG_ON(freezer->state == CGROUP_FROZEN);
+@@ -210,7 +202,10 @@ static void freezer_fork(struct task_str
+ 	/* Locking avoids race with FREEZING -> THAWED transitions. */
+ 	if (freezer->state == CGROUP_FREEZING)
+ 		freeze_task(task);
++
+ 	spin_unlock_irq(&freezer->lock);
++out:
++	rcu_read_unlock();
+ }
+ 
+ /*
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1135,7 +1135,6 @@ static struct task_struct *copy_process(
+ {
+ 	int retval;
+ 	struct task_struct *p;
+-	int cgroup_callbacks_done = 0;
+ 
+ 	if ((clone_flags & (CLONE_NEWNS|CLONE_FS)) == (CLONE_NEWNS|CLONE_FS))
+ 		return ERR_PTR(-EINVAL);
+@@ -1393,12 +1392,6 @@ static struct task_struct *copy_process(
+ 	INIT_LIST_HEAD(&p->thread_group);
+ 	p->task_works = NULL;
+ 
+-	/* Now that the task is set up, run cgroup callbacks if
+-	 * necessary. We need to run them before the task is visible
+-	 * on the tasklist. */
+-	cgroup_fork_callbacks(p);
+-	cgroup_callbacks_done = 1;
+-
+ 	/* Need tasklist lock for parent etc handling! */
+ 	write_lock_irq(&tasklist_lock);
+ 
+@@ -1503,7 +1496,7 @@ bad_fork_cleanup_cgroup:
+ #endif
+ 	if (clone_flags & CLONE_THREAD)
+ 		threadgroup_change_end(current);
+-	cgroup_exit(p, cgroup_callbacks_done);
++	cgroup_exit(p, 0);
+ 	delayacct_tsk_free(p);
+ 	module_put(task_thread_info(p)->exec_domain->module);
+ bad_fork_cleanup_count:
 
 
