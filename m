@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933234Ab3AIVlX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:41:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41909 "EHLO mail.kernel.org"
+	id S933277Ab3AIVlm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:41:42 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41884 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933139Ab3AIUiF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:05 -0500
+	id S933162Ab3AIUiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [ 025/123] ALSA: hda - add mute LED for HP Pavilion 17 (Realtek codec)
-Date: Wed,  9 Jan 2013 12:34:24 -0800
-Message-Id: <20130109201501.732600063@linuxfoundation.org>
+        David Woodhouse <David.Woodhouse@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 39/47] solos-pci: fix double-free of TX skb in DMA mode
+Date: Wed,  9 Jan 2013 12:35:34 -0800
+Message-Id: <20130109201733.982505528@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: David Woodhouse <dwmw2@infradead.org>
 
-commit 6d3cd5d444223c41eabb70dccff14fae4e8cb8b1 upstream.
+commit cae49ede00ec3d0cda290b03fee55b72b49efc11 upstream.
 
-The mute LED is in this case connected to the Mic1 VREF.
+We weren't clearing card->tx_skb[port] when processing the TX done interrupt.
+If there wasn't another skb ready to transmit immediately, this led to a
+double-free because we'd free it *again* next time we did have a packet to
+send.
 
-The machine also exposes the following string in BIOS:
-"HP_Mute_LED_0_A", so if more machines are coming, it probably
-makes sense to try to do something more generic, like for the
-IDT codec.
-
-BugLink: https://bugs.launchpad.net/bugs/1096789
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ drivers/atm/solos-pci.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -5986,6 +5986,30 @@ static void alc269_fixup_quanta_mute(str
- 	spec->automute_hook = alc269_quanta_automute;
- }
- 
-+/* update mute-LED according to the speaker mute state via mic1 VREF pin */
-+static void alc269_fixup_mic1_mute_hook(void *private_data, int enabled)
-+{
-+	struct hda_codec *codec = private_data;
-+	unsigned int pinval = AC_PINCTL_IN_EN + (enabled ?
-+			      AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
-+	snd_hda_set_pin_ctl_cache(codec, 0x18, pinval);
-+}
-+
-+static void alc269_fixup_mic1_mute(struct hda_codec *codec,
-+				   const struct alc_fixup *fix, int action)
-+{
-+	struct alc_spec *spec = codec->spec;
-+	switch (action) {
-+	case ALC_FIXUP_ACT_BUILD:
-+		spec->vmaster_mute.hook = alc269_fixup_mic1_mute_hook;
-+		snd_hda_add_vmaster_hook(codec, &spec->vmaster_mute, true);
-+		/* fallthru */
-+	case ALC_FIXUP_ACT_INIT:
-+		snd_hda_sync_vmaster_hook(&spec->vmaster_mute);
-+		break;
-+	}
-+}
-+
- /* update mute-LED according to the speaker mute state via mic2 VREF pin */
- static void alc269_fixup_mic2_mute_hook(void *private_data, int enabled)
- {
-@@ -6027,6 +6051,7 @@ enum {
- 	ALC269_FIXUP_DMIC,
- 	ALC269VB_FIXUP_AMIC,
- 	ALC269VB_FIXUP_DMIC,
-+	ALC269_FIXUP_MIC1_MUTE_LED,
- 	ALC269_FIXUP_MIC2_MUTE_LED,
- 	ALC269_FIXUP_INV_DMIC,
- 	ALC269_FIXUP_LENOVO_DOCK,
-@@ -6153,6 +6178,10 @@ static const struct alc_fixup alc269_fix
- 			{ }
- 		},
- 	},
-+	[ALC269_FIXUP_MIC1_MUTE_LED] = {
-+		.type = ALC_FIXUP_FUNC,
-+		.v.func = alc269_fixup_mic1_mute,
-+	},
- 	[ALC269_FIXUP_MIC2_MUTE_LED] = {
- 		.type = ALC_FIXUP_FUNC,
- 		.v.func = alc269_fixup_mic2_mute,
-@@ -6181,6 +6210,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_MIC2_MUTE_LED),
-+	SND_PCI_QUIRK(0x103c, 0x1972, "HP Pavilion 17", ALC269_FIXUP_MIC1_MUTE_LED),
- 	SND_PCI_QUIRK(0x1043, 0x1427, "Asus Zenbook UX31E", ALC269VB_FIXUP_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x1517, "Asus Zenbook UX31A", ALC269VB_FIXUP_DMIC),
- 	SND_PCI_QUIRK(0x1043, 0x1a13, "Asus G73Jw", ALC269_FIXUP_ASUS_G73JW),
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -967,10 +967,11 @@ static uint32_t fpga_tx(struct solos_car
+ 	for (port = 0; tx_pending; tx_pending >>= 1, port++) {
+ 		if (tx_pending & 1) {
+ 			struct sk_buff *oldskb = card->tx_skb[port];
+-			if (oldskb)
++			if (oldskb) {
+ 				pci_unmap_single(card->dev, SKB_CB(oldskb)->dma_addr,
+ 						 oldskb->len, PCI_DMA_TODEVICE);
+-
++				card->tx_skb[port] = NULL;
++			}
+ 			spin_lock(&card->tx_queue_lock);
+ 			skb = skb_dequeue(&card->tx_queue[port]);
+ 			if (!skb)
 
 
