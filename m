@@ -1,89 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635Ab3AIKrk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 05:47:40 -0500
-Received: from mga01.intel.com ([192.55.52.88]:64043 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199Ab3AIKrj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 05:47:39 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
-   d="scan'208";a="271729418"
-Date: Wed, 9 Jan 2013 12:51:07 +0200
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
-        linus.walleij@linaro.org, eric.y.miao@gmail.com,
-        linux@arm.linux.org.uk, haojian.zhuang@gmail.com, chao.bi@intel.com,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: Re: [PATCH 05/11] spi/pxa2xx: make clock rate configurable from
- platform data
-Message-ID: <20130109105107.GT13897@intel.com>
-References: <1357555480-24022-1-git-send-email-mika.westerberg@linux.intel.com>
- <1357555480-24022-6-git-send-email-mika.westerberg@linux.intel.com>
- <20130108110228.GM4544@opensource.wolfsonmicro.com>
- <20130108124153.GJ13897@intel.com>
- <20130108131008.GW4544@opensource.wolfsonmicro.com>
- <50EC90C3.2090604@intel.com>
+	id S1757166Ab3AIKso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 05:48:44 -0500
+Received: from 6.mo3.mail-out.ovh.net ([188.165.43.173]:58372 "EHLO
+	mo3.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755762Ab3AIKsm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 05:48:42 -0500
+Message-ID: <50ED4932.50907@overkiz.com>
+Date: Wed, 09 Jan 2013 11:40:50 +0100
+From: Boris BREZILLON <linux-arm@overkiz.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EC90C3.2090604@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thierry Reding <thierry.reding@avionic-design.de>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Victor <linux@maxim.org.za>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Haavard Skinnemoen <hskinnemoen@gmail.com>,
+        Hans-Christian Egtvedt <egtvedt@samfundet.no>
+X-Ovh-Mailout: 178.32.228.3 (mo3.mail-out.ovh.net)
+Subject: Re: [PATCH v5] pwm: atmel: add Timer Counter Block PWM driver
+References: <1357659402-4574-1-git-send-email-linux-arm@overkiz.com> <20130109074630.GB12782@avionic-0098.adnet.avionic-design.de>
+In-Reply-To: <20130109074630.GB12782@avionic-0098.adnet.avionic-design.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 5274278115340891158
+X-Ovh-Remote: 80.245.18.66 ()
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrgedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeehledrgedvucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 10:33:55PM +0100, Rafael J. Wysocki wrote:
-> On 1/8/2013 2:10 PM, Mark Brown wrote:
-> >On Tue, Jan 08, 2013 at 02:41:53PM +0200, Mika Westerberg wrote:
-> >>On Tue, Jan 08, 2013 at 11:02:28AM +0000, Mark Brown wrote:
-> >>>No, the way to do this is to fix x86 to enable the clock API there.  The
-> >>>x86 maintainers couldn't be bothered when I submitted a patch and
-> >>>getting anyone to take a patch to make it available by default appears
-> >>>to be unreasonably hard but perhaps if someone from Intel tries the x86
-> >>>maintainers might take a patch...
-> >>Do you mean enabling CONFIG_COMMON_CLK on x86?
-> >Yes.
+On 09/01/2013 08:46, Thierry Reding wrote:
+> On Tue, Jan 08, 2013 at 04:36:42PM +0100, Boris BREZILLON wrote:
+>> Hi,
+>>
+>> This patch adds a PWM driver based on Atmel Timer Counter Block.
+>> Timer Counter Block is used in Waveform generator mode.
+>>
+>> A Timer Counter Block provides up to 6 PWM devices grouped by 2:
+>> * group 0 = PWM 0 and 1
+>> * group 1 = PWM 2 and 3
+>> * group 2 = PMW 4 and 5
+>>
+>> PWM devices in a given group must be configured with the same
+>> period value.
+>> If a PWM device in a group tries to change the period value and
+>> the other device is already configured with a different value an
+>> error will be returned.
+>>
+>> This driver requires device tree support.
+>> The Timer Counter Block number used to create a PWM chip is
+>> given by tc-block field in an "atmel,tcb-pwm" compatible node.
+>>
+>> This patch was tested on kizbox board (at91sam9g20 SoC) with 
+>> pwm-leds.
+>>
+>> Regards,
+>>
+>> Boris
+>>
+>> Signed-off-by: Boris BREZILLON <linux-arm@overkiz.com>
+>> ---
+>> Changes since v1:
+>> 	- Fix device tree binding Documentation
+>> 	- Fix Kconfig issues (missing OF dependency, 
+>> 				deprecated HAVE_PWM select, ...)
+>> 	- Fix various coding style issues.
+>> 	- Cleanup code and add some comments.
+>>
+>> Changes since v2:
+>> 	- Replace kzalloc/kfree with managed versions
+>> 	  (devm_kzalloc/devm_kfree).
+>> 	- Add one cell to device tree binding to support polarity
+>> 	  flag.
+>> 	- Replace min computation (2 div -> 1 mul + 1 div).
+>>
+>> Changes since v3:
+>> 	- Fix device tree binding Documentation
+>> 	- Fix Kconfig description
+>> 	- Fix coding style issues (function parameters alignment)
+>> 	- Replace 1000000000 value with NSEC_PER_SEC macro
+>> 	- Get rid of newcmr variable in enable/disable functions
+>> 	- Remove unneeded devm_kfree
+>> 	- Add missing atmel_tc_free
+>>
+>> Changes since v4:
+>> 	- Add missing comments
+>> 	- Fix coding style issues (multi-line error string)
+>> 	- Fix wrong MODULE_DEVICE_TABLE setting
+>> 	- Remove unneeded MODULE_ALIAS declaration
+>>
+>>  .../devicetree/bindings/pwm/atmel-tcb-pwm.txt      |   18 +
+>>  drivers/pwm/Kconfig                                |   12 +
+>>  drivers/pwm/Makefile                               |    1 +
+>>  drivers/pwm/pwm-atmel-tcb.c                        |  445 ++++++++++++++++++++
+>>  4 files changed, 476 insertions(+), 0 deletions(-)
+>>  create mode 100644 Documentation/devicetree/bindings/pwm/atmel-tcb-pwm.txt
+>>  create mode 100644 drivers/pwm/pwm-atmel-tcb.c
 > 
-> Why so?  x86 doesn't have a notion of direct clock control, at least
-> not on the ACPI systems.
+> Applied with minor changes to the commit message, thanks.
 > 
-> >>>We shouldn't be adding special case code to every driver that might need
-> >>>a clock that gets used on an Intel system.
-> >>I agree and it is cleaner to have the same API for all arches. However, I'm
-> >>not sure how do we create the fixed clocks then? There is nothing in ACPI
-> >>namespace (or in the ACPI 5.0 spec) that allows you to describe clocks and
-> >>their relationships.
-> >I'm sure it's not beyond the bounds of possibility that we could solve
-> >this problem...
+> Thierry
 > 
-> No, it isn't.  Any suggestions?
 
-I have one suggestion.
-
-Since even on x86 we are now starting to see peripherals that exists
-normally on traditional SoCs, like the SPI controller, and the drivers
-expect to have clock for these.
-
-What if we make drivers/clk/clk-x86.c that initializes necessary clocks
-like the LPSS 100MHz fixed clock and registers this to all the LPSS
-devices? Something along the lines of:
-
-        clk = clk_register_fixed_rate(NULL, "lpss_iclk", NULL, CLK_IS_ROOT,
-				      100000000);
-
-	...
-
-	clk_register_clkdev(clk, NULL, "INT33C0:00");
-
-These are clocks that you really can't control (enable/disable) but they
-allow one to get the clock rate using the standard clk API.
-
-One problem (among other things) with this is that now we have these clocks
-created and registered on every single x86 system. Other problem is that
-this setup needs manual maintenance as we can't get the configuration from
-ACPI.
+Thanks
