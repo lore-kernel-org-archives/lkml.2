@@ -1,44 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934010Ab3AIU5V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:57:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:61162 "EHLO mx1.redhat.com"
+	id S933931Ab3AIUkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:47 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43576 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933735Ab3AIU5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:57:17 -0500
-Message-ID: <50EDD9A5.8060404@redhat.com>
-Date: Wed, 09 Jan 2013 15:57:09 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 6/8] mm: remove free_area_cache use in powerpc architecture
-References: <1357694895-520-1-git-send-email-walken@google.com> <1357694895-520-7-git-send-email-walken@google.com>
-In-Reply-To: <1357694895-520-7-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933789Ab3AIUkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:40 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Andy Lutomirski <luto@amacapital.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Chris Ball <cjb@laptop.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: [ 70/80] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
+Date: Wed,  9 Jan 2013 12:36:02 -0800
+Message-Id: <20130109201509.404294787@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 08:28 PM, Michel Lespinasse wrote:
-> As all other architectures have been converted to use vm_unmapped_area(),
-> we are about to retire the free_area_cache.
->
-> This change simply removes the use of that cache in
-> slice_get_unmapped_area(), which will most certainly have a
-> performance cost. Next one will convert that function to use the
-> vm_unmapped_area() infrastructure and regain the performance.
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+------------------
+
+From: Andy Lutomirski <luto@amacapital.net>
+
+commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
+
+Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
+
+    mmc0: new SDHC card at address b368
+    mmcblk0: mmc0:b368 SDC   15.0 GiB
+    mmcblk0: error -110 sending status command, retrying
+    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
+
+Tested on my Lenovo x200 laptop.
+
+[bhelgaas: changelog]
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Chris Ball <cjb@laptop.org>
+CC: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/quirks.c    |    7 +++++--
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2708,7 +2708,7 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	if (PCI_FUNC(dev->devfn))
+ 		return;
+ 	/*
+-	 * RICOH 0xe823 SD/MMC card reader fails to recognize
++	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
+ 	 * certain types of SD/MMC cards. Lowering the SD base
+ 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
+ 	 *
+@@ -2719,7 +2719,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	 * 0xf9  - Key register for 0x150
+ 	 * 0xfc  - key register for 0xe1
+ 	 */
+-	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
++	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
++	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
+ 		pci_write_config_byte(dev, 0xf9, 0xfc);
+ 		pci_write_config_byte(dev, 0x150, 0x10);
+ 		pci_write_config_byte(dev, 0xf9, 0x00);
+@@ -2746,6 +2747,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ #endif /*CONFIG_MMC_RICOH_MMC*/
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1565,6 +1565,7 @@
+ #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
+ #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
+ #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
++#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
+ #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
+ #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
+ #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
+
 
