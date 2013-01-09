@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab3AITi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 14:38:57 -0500
-Received: from mout.gmx.net ([212.227.17.21]:60053 "EHLO mout.gmx.net"
+	id S932405Ab3AIToZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 14:44:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:64883 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab3AITi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:38:56 -0500
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18TGyVhuhYTT0Qcr6Ut7dMNY13KW0U/7/Yjbq9YSY
-	1inUHIiJiWoKCm
-From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
-To: tpmdd-devel@lists.sourceforge.net
-Subject: Re: [tpmdd-devel] [PATCH 1/1] TPM: STMicroelectronics ST33 I2C KERNEL 3.x.x OOPS!
-Date: Wed, 9 Jan 2013 20:41:18 +0100
-User-Agent: KMail/1.13.7 (Linux/3.7.1; KDE/4.9.3; x86_64; ; )
-Cc: Mathias LEBLANC <Mathias.LEBLANC@st.com>,
-        Kent Yoder <key@linux.vnet.ibm.com>,
-        "Jean-Luc BLANC" <jean-luc.blanc@st.com>,
-        "Sirrix@jasper.es" <Sirrix@jasper.es>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Kent Yoder <shpedoikal@gmail.com>
-References: <1353363322-2923-1-git-send-email-mathias.leblanc@st.com> <20130108172053.GA11223@ennui.austin.ibm.com> <35286B1AE75A7C47BFF0870081A31B4B3A9E2CB82D@SAFEX1MAIL4.st.com>
-In-Reply-To: <35286B1AE75A7C47BFF0870081A31B4B3A9E2CB82D@SAFEX1MAIL4.st.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932231Ab3AIToX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 14:44:23 -0500
+Message-ID: <1357760637.2593.55.camel@localhost>
+Subject: Re: Friendlier EPERM - Request for input
+From: Eric Paris <eparis@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: libc-alpha@sourceware.org, dwalsh@redhat.com, dmalcolm@redhat.com,
+        sds@tycho.nsa.gov, segoon@openwall.com,
+        linux-security-module@vger.kernel.org
+Date: Wed, 09 Jan 2013 14:43:57 -0500
+In-Reply-To: <1357747463.2593.28.camel@localhost>
+References: <1357747463.2593.28.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301092041.18888.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+>On Wed, 2013-01-09 at 11:04 -0500, Eric Paris wrote:
+> >Getting an EPERM/EACCES in userspace really kinda blows.  As a user you
+> >don't have any idea why you got it.  
 
-> Do you have the I2C configuration activated ?
-> I have this error when I add the driver in a kernel with no I2C activated
+Stephen Smalley wrote:
+> What if the denial was due to lacking sufficient permission to stat
+> the file (in which case you shouldn't leak the file's attributes to the
+> caller)?
+>
+> Also, the present inability of (unprivileged) userspace to distinguish
+> DAC from MAC denials is relied upon to avoid any covert channel when
+> the DAC check happens before the MAC check, as otherwise you leak
+> information about the DAC attributes.  If you are going to indicate to
+> all of userspace whether it was DAC or MAC, you have to make sure that
+> the MAC check / LSM hook always comes first in every case.  Which then
+> leads to lots of unnecessary MAC audit messages that would have been
+> denied by DAC anyway.
 
-I2C works fine on my beaglebone, however  I did not add the platform data to my 
-boardfile.
-a) as I don't use board files anymore but device trees ;)
-b) it's perfectly legit to load a driver without the platform data and probe 
-it at runtime (which then in doubt fails to probe).
+I'd have to fall back to my original thought about who to expose this
+information to:
 
-In my opinion a driver should never ever oops, even if the user does something 
-stupid (e.g. like probing from userspace ;)
+> >Another thought was that some people might want to turn off the ability
+> >to get this information.  I don't see a reason a sysctl couldn't be used
+> >to disable extended errno information if the admin so chose.
 
-The fix is as simple as adding a simple 
-if (!platform_data) return -ENODEV;
-or something similar.
+On systems with a strict security policy worried about such things this
+would quite reasonably need to be disabled.  But most of the reason
+people turn off LSMs is because it gets in the way and they get pissed
+getting an EPERM, checking rwx bits, having no idea WTF happened, and
+then being REALLY pissed at the LSM when they figure out that was the
+problem.  I want to put it right there, out front, here is what went
+wrong for the common case.
 
-Thanks,
-Peter
+I mean, we sorta, kinda sometimes, poorly give this information.  Isn't
+DAC usually EPERM and LSMs usually EACCES.  From a DAC PoV exposing the
+DAC info is completely reasonable.  You can't hide a stat(), even
+setting chmod 000.  So this is an LSM issue.  Not an issue for
+DAC/Capabilities/ACLs.  We can add an LSM hook on the /proc file to make
+sure nothing can get the data even if the global sysctl allows such
+access.
+
+We could if it was worth it make filling in the extended dial
+information an LSM hook where you can check on a per denial basis.  But
+I don't see the need.
+
+> Privileged userspace already has a way to identify when it was a MAC
+> denial, via the audit logs.  But those are considered
+> security-sensitive, and so exposing that same information to
+> unprivileged userspace will be a problem.
+
+The audit log is complete crap from a usability PoV.  If a web admin is
+trying to figure out why his web server isn't serving out web pages
+in /home he's going to look in the web server logs and see EPERM.
+That's it.  Now he has to start blindly guessing which of the many
+possible reasons for EPERM is his problem.  Wouldn't it be better if the
+information was actually available?  Using the audit log in real time is
+a bloody nightmare.  As the audit maintainer I know how to use ausearch,
+but then again, as the SELinux maintainer I know how to figure out which
+of the many possibilities from EPERM are the cause.  But I want to make
+it easier for a normal admin to figure that out.
+
+I know many people are worried about information leaks, so I'll right up
+front say lets add the sysctl to disable the interface for those who are
+concerned about the metadata information leak.  But for most of us I
+want that data right when it happens, where it happens, so It can be
+exposed, used, and acted upon by the admin trying to troubleshoot why
+the shit just hit the fan.
+
+-Eric
 
