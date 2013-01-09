@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369Ab3AIUip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:45 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42154 "EHLO mail.kernel.org"
+	id S933416Ab3AIVdS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:33:18 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42324 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933110Ab3AIUi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:28 -0500
+	id S933360Ab3AIUio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dimitris Damigos <damigos@freemail.gr>, Aaron Lu <aaron.lu@intel.com>,
-        Jeff Garzik <jgarzik@redhat.com>
-Subject: [ 037/123] libata: restore acpi disable functionality
-Date: Wed,  9 Jan 2013 12:34:36 -0800
-Message-Id: <20130109201503.331272600@linuxfoundation.org>
+        Edgar Toernig <froese@gmx.de>, Tony Prisk <linux@prisktech.co.nz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 45/47] drivers/rtc/rtc-vt8500.c: fix handling of data passed in struct rtc_time
+Date: Wed,  9 Jan 2013 12:35:40 -0800
+Message-Id: <20130109201734.680384900@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Aaron Lu <aaron.lu@intel.com>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-commit 0d0cdb028f9d9771e2b346038707734121f906e3 upstream.
+commit 2f90b68309683f2c5765a1b04ca23d71e51f1494 upstream.
 
-Commit 66fa7f215 "libata-acpi: improve ACPI disabling" introdcued the
-behaviour of disabling ATA ACPI if ata_acpi_on_devcfg failed the 2nd
-time, but commit 30dcf76ac dropped this behaviour and this caused
-problem for Dimitris Damigos, where his laptop can not resume correctly.
+tm_mon is 0..11, whereas vt8500 expects 1..12 for the month field,
+causing invalid date errors for January, and causing the day field to
+roll over incorrectly.
 
-The bugzilla page for it is:
-https://bugzilla.kernel.org/show_bug.cgi?id=49331
+The century flag is only handled in vt8500_rtc_read_time, but not set in
+vt8500_rtc_set_time.  This patch corrects the behaviour of the century
+flag.
 
-The problem is, ata_dev_push_id will fail the 2nd time it is invoked,
-and due to disabling ACPI code is dropped, ata_acpi_on_devcfg which
-calls ata_dev_push_id will keep failing and eventually made the device
-disabled.
-
-This patch restores the original behaviour, if acpi failed the 2nd time,
-disable acpi functionality for the device(and we do not event need to
-add a debug message for this as it is still there ;-).
-
-Reported-by: Dimitris Damigos <damigos@freemail.gr>
-Signed-off-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Edgar Toernig <froese@gmx.de>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-acpi.c |    4 ++++
- include/linux/libata.h    |    1 +
- 2 files changed, 5 insertions(+)
+ drivers/rtc/rtc-vt8500.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-acpi.c
-+++ b/drivers/ata/libata-acpi.c
-@@ -76,6 +76,9 @@ acpi_handle ata_dev_acpi_handle(struct a
- 	acpi_integer adr;
- 	struct ata_port *ap = dev->link->ap;
- 
-+	if (dev->flags & ATA_DFLAG_ACPI_DISABLED)
-+		return NULL;
-+
- 	if (ap->flags & ATA_FLAG_ACPI_SATA) {
- 		if (!sata_pmp_attached(ap))
- 			adr = SATA_ADR(ap->port_no, NO_PORT_MULT);
-@@ -945,6 +948,7 @@ int ata_acpi_on_devcfg(struct ata_device
- 		return rc;
+--- a/drivers/rtc/rtc-vt8500.c
++++ b/drivers/rtc/rtc-vt8500.c
+@@ -116,7 +116,7 @@ static int vt8500_rtc_read_time(struct d
+ 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
+ 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
+ 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
+-	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
++	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
+ 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
+ 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
+ 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
+@@ -135,8 +135,9 @@ static int vt8500_rtc_set_time(struct de
  	}
  
-+	dev->flags |= ATA_DFLAG_ACPI_DISABLED;
- 	ata_dev_warn(dev, "ACPI: failed the second time, disabled\n");
- 
- 	/* We can safely continue if no _GTF command has been executed
---- a/include/linux/libata.h
-+++ b/include/linux/libata.h
-@@ -163,6 +163,7 @@ enum {
- 
- 	ATA_DFLAG_DA		= (1 << 26), /* device supports Device Attention */
- 	ATA_DFLAG_DEVSLP	= (1 << 27), /* device supports Device Sleep */
-+	ATA_DFLAG_ACPI_DISABLED = (1 << 28), /* ACPI for the device is disabled */
- 
- 	ATA_DEV_UNKNOWN		= 0,	/* unknown device */
- 	ATA_DEV_ATA		= 1,	/* ATA device */
+ 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
+-		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
+-		| (bin2bcd(tm->tm_mday)),
++		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
++		| (bin2bcd(tm->tm_mday))
++		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
+ 		vt8500_rtc->regbase + VT8500_RTC_DS);
+ 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
+ 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
 
 
