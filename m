@@ -1,79 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933925Ab3AIVG3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:06:29 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43153 "EHLO mail.kernel.org"
+	id S934003Ab3AIVGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:06:45 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43142 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933773Ab3AIUkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:09 -0500
+	id S933771Ab3AIUkI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Willy Tarreau <w@1wt.eu>, Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 60/80] tcp: fix MSG_SENDPAGE_NOTLAST logic
-Date: Wed,  9 Jan 2013 12:35:52 -0800
-Message-Id: <20130109201508.136428593@linuxfoundation.org>
+        Russell Webb <russell.webb@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 069/123] xhci: Add Lynx Point LP to list of Intel switchable hosts
+Date: Wed,  9 Jan 2013 12:35:08 -0800
+Message-Id: <20130109201507.465072020@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Russell Webb <russell.webb@linux.intel.com>
 
-From: Eric Dumazet <edumazet@google.com>
+commit bb1e5dd7113d2fd178d3af9aca8f480ae0468edf upstream.
 
-[ Upstream commit ae62ca7b03217be5e74759dc6d7698c95df498b3 ]
+Like Lynx Point, Lynx Point LP is also switchable.  See
+1c12443ab8eba71a658fae4572147e56d1f84f66 for more details.
 
-commit 35f9c09fe9c72e (tcp: tcp_sendpages() should call tcp_push() once)
-added an internal flag : MSG_SENDPAGE_NOTLAST meant to be set on all
-frags but the last one for a splice() call.
+This patch should be backported to stable kernels as old as 3.0,
+that contain commit 69e848c2090aebba5698a1620604c7dccb448684
+"Intel xhci: Support EHCI/xHCI port switching."
 
-The condition used to set the flag in pipe_to_sendpage() relied on
-splice() user passing the exact number of bytes present in the pipe,
-or a smaller one.
-
-But some programs pass an arbitrary high value, and the test fails.
-
-The effect of this bug is a lack of tcp_push() at the end of a
-splice(pipe -> socket) call, and possibly very slow or erratic TCP
-sessions.
-
-We should both test sd->total_len and fact that another fragment
-is in the pipe (pipe->nrbufs > 1)
-
-Many thanks to Willy for providing very clear bug report, bisection
-and test programs.
-
-Reported-by: Willy Tarreau <w@1wt.eu>
-Bisected-by: Willy Tarreau <w@1wt.eu>
-Tested-by: Willy Tarreau <w@1wt.eu>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Russell Webb <russell.webb@linux.intel.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- fs/splice.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -696,8 +696,10 @@ static int pipe_to_sendpage(struct pipe_
- 		return -EINVAL;
- 
- 	more = (sd->flags & SPLICE_F_MORE) ? MSG_MORE : 0;
--	if (sd->len < sd->total_len)
-+
-+	if (sd->len < sd->total_len && pipe->nrbufs > 1)
- 		more |= MSG_SENDPAGE_NOTLAST;
-+
- 	return file->f_op->sendpage(file, buf->page, buf->offset,
- 				    sd->len, &pos, more);
+---
+ drivers/usb/host/ehci-pci.c   |    3 ++-
+ drivers/usb/host/pci-quirks.c |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -334,7 +334,8 @@ static bool usb_is_intel_switchable_ehci
+ 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
+ 		(pdev->device == 0x1E26 ||
+ 		 pdev->device == 0x8C2D ||
+-		 pdev->device == 0x8C26);
++		 pdev->device == 0x8C26 ||
++		 pdev->device == 0x9C26);
  }
+ 
+ static void ehci_enable_xhci_companion(void)
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -723,6 +723,7 @@ static int handshake(void __iomem *ptr,
+ }
+ 
+ #define PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI	0x8C31
++#define PCI_DEVICE_ID_INTEL_LYNX_POINT_LP_XHCI	0x9C31
+ 
+ bool usb_is_intel_ppt_switchable_xhci(struct pci_dev *pdev)
+ {
+@@ -736,7 +737,8 @@ bool usb_is_intel_lpt_switchable_xhci(st
+ {
+ 	return pdev->class == PCI_CLASS_SERIAL_USB_XHCI &&
+ 		pdev->vendor == PCI_VENDOR_ID_INTEL &&
+-		pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI;
++		(pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_XHCI ||
++		 pdev->device == PCI_DEVICE_ID_INTEL_LYNX_POINT_LP_XHCI);
+ }
+ 
+ bool usb_is_intel_switchable_xhci(struct pci_dev *pdev)
 
 
