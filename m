@@ -1,64 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932312Ab3AIXLq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 18:11:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35753 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932248Ab3AIXLm (ORCPT
+	id S1758193Ab3AIXKv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 18:10:51 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:36331 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab3AIXKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 18:11:42 -0500
-Date: Wed, 9 Jan 2013 15:11:40 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 02/15] memory-hotplug: check whether all memory
- blocks are offlined or not when removing memory
-Message-Id: <20130109151140.76982b9e.akpm@linux-foundation.org>
-In-Reply-To: <1357723959-5416-3-git-send-email-tangchen@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-	<1357723959-5416-3-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jan 2013 18:10:44 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, rusty@rustcorp.com.au, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, masami.hiramatsu.pt@hitachi.com,
+        jbaron@redhat.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH 4/5] alternatives: constify alternatives_text_reserved
+Date: Wed,  9 Jan 2013 18:09:19 -0500
+Message-Id: <1357772960-4436-4-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
+References: <1357772960-4436-1-git-send-email-sasha.levin@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013 17:32:26 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ arch/x86/include/asm/alternative.h | 4 ++--
+ arch/x86/kernel/alternative.c      | 6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-> We remove the memory like this:
-> 1. lock memory hotplug
-> 2. offline a memory block
-> 3. unlock memory hotplug
-> 4. repeat 1-3 to offline all memory blocks
-> 5. lock memory hotplug
-> 6. remove memory(TODO)
-> 7. unlock memory hotplug
-> 
-> All memory blocks must be offlined before removing memory. But we don't hold
-> the lock in the whole operation. So we should check whether all memory blocks
-> are offlined before step6. Otherwise, kernel maybe panicked.
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 58ed6d9..4d0d2fb 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -61,7 +61,7 @@ extern void alternatives_smp_module_add(struct module *mod, char *name,
+ 					void *text, void *text_end);
+ extern void alternatives_smp_module_del(struct module *mod);
+ extern void alternatives_enable_smp(void);
+-extern int alternatives_text_reserved(void *start, void *end);
++extern int alternatives_text_reserved(const void *start, const void *end);
+ extern bool skip_smp_alternatives;
+ #else
+ static inline void alternatives_smp_module_add(struct module *mod, char *name,
+@@ -69,7 +69,7 @@ static inline void alternatives_smp_module_add(struct module *mod, char *name,
+ 					       void *text, void *text_end) {}
+ static inline void alternatives_smp_module_del(struct module *mod) {}
+ static inline void alternatives_enable_smp(void) {}
+-static inline int alternatives_text_reserved(void *start, void *end)
++static inline int alternatives_text_reserved(const void *start, const void *end)
+ {
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index ef5ccca..0994e41 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -431,12 +431,12 @@ void alternatives_enable_smp(void)
+ }
+ 
+ /* Return 1 if the address range is reserved for smp-alternatives */
+-int alternatives_text_reserved(void *start, void *end)
++int alternatives_text_reserved(const void *start, const void *end)
+ {
+ 	struct smp_alt_module *mod;
+ 	const s32 *poff;
+-	u8 *text_start = start;
+-	u8 *text_end = end;
++	const u8 *text_start = start;
++	const u8 *text_end = end;
+ 
+ 	list_for_each_entry(mod, &smp_alt_modules, next) {
+ 		if (mod->text > text_end || mod->text_end < text_start)
+-- 
+1.8.1
 
-Well, the obvious question is: why don't we hold lock_memory_hotplug()
-for all of steps 1-4?  Please send the reasons for this in a form which
-I can paste into the changelog.
-
-
-Actually, I wonder if doing this would fix a race in the current
-remove_memory() repeat: loop.  That code does a
-find_memory_block_hinted() followed by offline_memory_block(), but
-afaict find_memory_block_hinted() only does a get_device().  Is the
-get_device() sufficiently strong to prevent problems if another thread
-concurrently offlines or otherwise alters this memory_block's state?
