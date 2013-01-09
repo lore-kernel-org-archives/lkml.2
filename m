@@ -1,58 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125Ab3AIPwl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:52:41 -0500
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:55494
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932072Ab3AIPwk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:52:40 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1ee6h1de0h1202h1e76h1d1ah1d2ahzz8275bhz2dh2a8h668h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1155h)
-From: Fabio Estevam <fabio.estevam@freescale.com>
-To: <gregkh@linuxfoundation.org>
-CC: <s.hauer@pengutronix.de>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: [PATCH] staging: ipu-di: Change DI address info to dev_dbg
-Date: Wed, 9 Jan 2013 13:52:30 -0200
-Message-ID: <1357746750-28675-1-git-send-email-fabio.estevam@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S932134Ab3AIPwz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:52:55 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:9342 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932072Ab3AIPwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 10:52:53 -0500
+Date: Wed, 9 Jan 2013 10:52:41 -0500
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Cc: Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <peterz@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        device-mapper development <dm-devel@redhat.com>,
+        Tejun Heo <tj@kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [PATCH repost] blkcg: fix "scheduling while atomic" in
+ blk_queue_bypass_start
+Message-ID: <20130109155241.GE21265@redhat.com>
+References: <50890937.7010809@ce.jp.nec.com>
+ <20121026202105.GF24687@redhat.com>
+ <508E572C.6000707@ce.jp.nec.com>
+ <20121029163845.GB7709@redhat.com>
+ <1351529115.24721.40.camel@twins>
+ <20121029171346.GC3308@redhat.com>
+ <50EBCB52.6020003@ce.jp.nec.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EBCB52.6020003@ce.jp.nec.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when ipuv3 is probed we have:
+On Tue, Jan 08, 2013 at 04:31:30PM +0900, Jun'ichi Nomura wrote:
+> With 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
+> on blk_register_queue() instead of blk_init_allocated_queue()"),
+> the following warning appears when multipath is used with CONFIG_PREEMPT=y.
+> 
+> This patch moves blk_queue_bypass_start() before radix_tree_preload()
+> to avoid the sleeping call while preemption is disabled.
 
-imx-ipuv3 40000000.ipu: DI0 base: 0x5e040000 remapped to a08aa000
-imx-ipuv3 40000000.ipu: DI1 base: 0x5e048000 remapped to a08ac000
-imx-ipuv3 40000000.ipu: IPUv3EX probed
+Ok, raix_tree_preload() disabled preemption and blk_queue_bypass_start()
+calls synchronize_rcu() which in turn leads to schedule(), hence the
+warning.
 
-The DI base address and the remapped address are more interesting for debug 
-purposes, so mark this message as dev_dbg instead.
+We also call __blkg_lookup_create() with preemption disabled and this
+can do blkg allocation. But allocation currently is GFP_ATOMIC, so not
+sleeping and scheduling here. So it should be fine.
 
-Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
----
- drivers/staging/imx-drm/ipu-v3/ipu-di.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So fix looks good to me.
 
-diff --git a/drivers/staging/imx-drm/ipu-v3/ipu-di.c b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-index 67d974f..ec340da 100644
---- a/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-+++ b/drivers/staging/imx-drm/ipu-v3/ipu-di.c
-@@ -677,7 +677,7 @@ int ipu_di_init(struct ipu_soc *ipu, struct device *dev, int id,
- 		goto failed_clk_register;
- 	}
- 
--	dev_info(dev, "DI%d base: 0x%08lx remapped to %p\n",
-+	dev_dbg(dev, "DI%d base: 0x%08lx remapped to %p\n",
- 			id, base, di->base);
- 	di->inuse = false;
- 	di->ipu = ipu;
--- 
-1.7.9.5
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
-
+Vivek 
+> 
+>   BUG: scheduling while atomic: multipath/2460/0x00000002
+>   1 lock held by multipath/2460:
+>    #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
+>   Modules linked in: ...
+>   Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
+>   Call Trace:
+>    [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
+>    [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
+>    [<ffffffff814291e6>] schedule+0x64/0x66
+>    [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
+>    [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
+>    [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
+>    [<ffffffff814289e3>] wait_for_common+0x9d/0xee
+>    [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
+>    [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
+>    [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
+>    [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
+>    [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
+>    [<ffffffff8106fb18>] ? complete+0x21/0x53
+>    [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
+>    [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
+>    [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
+>    [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
+>    [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
+>    [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
+>    [<ffffffff811d8c41>] elevator_init+0xe1/0x115
+>    [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
+>    [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
+>    [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
+>    [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
+>    [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
+>    [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
+>    [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
+>    [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
+>    [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
+>    [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
+>    [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>    [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
+> 
+> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Jens Axboe <axboe@kernel.dk>
+> Cc: Alasdair G Kergon <agk@redhat.com>
+> ---
+>  block/blk-cgroup.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+> index b8858fb..53628e4 100644
+> --- a/block/blk-cgroup.c
+> +++ b/block/blk-cgroup.c
+> @@ -790,10 +790,10 @@ int blkcg_activate_policy(struct request_queue *q,
+>  	if (!blkg)
+>  		return -ENOMEM;
+>  
+> -	preloaded = !radix_tree_preload(GFP_KERNEL);
+> -
+>  	blk_queue_bypass_start(q);
+>  
+> +	preloaded = !radix_tree_preload(GFP_KERNEL);
+> +
+>  	/* make sure the root blkg exists and count the existing blkgs */
+>  	spin_lock_irq(q->queue_lock);
+>  
