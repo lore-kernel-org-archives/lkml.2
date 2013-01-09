@@ -1,90 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab3AIOgB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:36:01 -0500
-Received: from dcmx03.tekelec.com ([198.89.35.103]:9498 "EHLO
-	dcexchedge02.tekelec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756240Ab3AIOf7 convert rfc822-to-8bit (ORCPT
+	id S1757911Ab3AIOgw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:36:52 -0500
+Received: from us02smtp2.synopsys.com ([198.182.60.77]:53355 "EHLO
+	alvesta.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756240Ab3AIOgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:35:59 -0500
-From: "Hassink, Brian" <Brian.Hassink@tekelec.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 9 Jan 2013 09:35:30 -0500
-Subject: RE: epoll and listener sockets
-Thread-Topic: epoll and listener sockets
-Thread-Index: Ac3t7SwE22BkCpU1QE2Q6D8cn7ZT0wAAqFXQACF23BA=
-Message-ID: <F4F95B37FBE5E644988011E91104C7620A8F199A6D@MAIL1.tekelec.com>
-References: <F4F95B37FBE5E644988011E91104C7620A8F199879@MAIL1.tekelec.com>
-In-Reply-To: <F4F95B37FBE5E644988011E91104C7620A8F199879@MAIL1.tekelec.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 9 Jan 2013 09:36:50 -0500
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+To: <tony.luck@intel.com>
+CC: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arch@vger.kernel.org>
+Subject: [PATCH v2] sysctl: Enable IA64 "ignore-unaligned-usertrap" to be used cross-arch
+Date: Wed, 9 Jan 2013 20:06:28 +0530
+Message-ID: <1357742188-8941-1-git-send-email-vgupta@synopsys.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <50ED7B4B.7080603@synopsys.com>
+References: <50ED7B4B.7080603@synopsys.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.12.197.205]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a little more information on this problem...
+IA64 defines /proc/sys/kernel/ignore-unaligned-usertrap to control
+verbose warnings on unaligned access emulation.
 
-I modified my test so that after the connection attempt is made, I force the listener to do an accept() and found that the connection is in the listener queue.
+The exact mechanics of what to do with sysctl (ignore/shout) are arch
+specific, this change enables the sysctl to be usable cross-arch.
 
-As I mentioned below, the connection attempt is made a full second after the listener is added to the epoll set, so there should not be any sort of race condition occurring.
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-arch@vger.kernel.org
+---
+ arch/ia64/Kconfig |    1 +
+ init/Kconfig      |    7 +++++++
+ kernel/sysctl.c   |    9 +++++++--
+ 3 files changed, 15 insertions(+), 2 deletions(-)
 
--Brian
-
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Hassink, Brian
-Sent: Tuesday, January 08, 2013 5:32 PM
-To: linux-kernel@vger.kernel.org
-Subject: epoll and listener sockets
-
-$ uname -r
-2.6.32-279.5.2.el6prerel6.0.0_80.23.0.x86_64
-$ cat /etc/issue
-CentOS release 6.3 (Final)
-
-I sincerely hope this is the correct forum in which to ask about this, and apologize profusely if it is not.
-
-I have a listener socket in an epoll set, and it will occasionally fail to receive an EPOLLIN event for a connection.  I have looked at a few example programs, which typically have the following sequence...
-
-  1. call socket()
-  2. call bind()
-  3. call fcntl() to make fd non-blocking
-  4. call epoll_ctl() to add the fd with (EPOLLET | EPOLLONESHOT | EPOLLIN)
-  5. call listen()
-  6. enter epoll_wait() loop
-
-...where the listener socket is added to the epoll set before the epoll_wait() loop.
-
-In my application, concurrent threads are running in an epoll_wait() loop and a listener socket may be created at any time.  I had initially tried this sequence...
-
-  1. call socket()
-  2. call bind()
-  3. call fcntl() to make fd non-blocking
-  4. call epoll_ctl() to add the fd with (EPOLLET | EPOLLONESHOT | EPOLLIN)
-  5. call listen()
-
-...but often received an EPOLLHUP event because of a concurrent epoll_wait() call between step 4 and 5.  So I switched the sequence to...
-
-  1. call socket()
-  2. call bind()
-  3. call fcntl() to make fd non-blocking
-  4. call listen()
-  5. call epoll_ctl() to add the fd with (EPOLLET | EPOLLONESHOT | EPOLLIN)
-
-In my testing there is only one connection attempt to the listener port, so EPOLLONESHOT should not be a factor.  I have also tried level-triggered with the same result.
-
-I should also note that the connection attempt is made exactly one second after the listener is created.  So there isn't a race where the connection attempt is already queued before the listener is added to the epoll set.
-
-I saw that there was a recent patch for EPOLL_CTL_MOD and EPOLLONESHOT, but I don't think that is relevant here.  Any thoughts on what the problem might be?
-
-Thanks in advance,
-Brian
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/arch/ia64/Kconfig b/arch/ia64/Kconfig
+index 3279646..5fb1064 100644
+--- a/arch/ia64/Kconfig
++++ b/arch/ia64/Kconfig
+@@ -40,6 +40,7 @@ config IA64
+ 	select ARCH_THREAD_INFO_ALLOCATOR
+ 	select ARCH_CLOCKSOURCE_DATA
+ 	select GENERIC_TIME_VSYSCALL_OLD
++	select SYSCTL_ARCH_UNALIGN_NO_WARN
+ 	select HAVE_MOD_ARCH_SPECIFIC
+ 	select MODULES_USE_ELF_RELA
+ 	default y
+diff --git a/init/Kconfig b/init/Kconfig
+index 7d30240..523bee1 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1232,6 +1232,13 @@ config SYSCTL_EXCEPTION_TRACE
+ 	help
+ 	  Enable support for /proc/sys/debug/exception-trace.
+ 
++config SYSCTL_ARCH_UNALIGN_NO_WARN
++	bool
++	help
++	  Enable support for /proc/sys/kernel/ignore-unaligned-usertrap
++	  Allows arch to define/use @no_unaligned_warning to possibly warn
++	  about unaligned access emulation going on under the hood.
++
+ config KALLSYMS
+ 	 bool "Load all symbols for debugging/ksymoops" if EXPERT
+ 	 default y
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index c88878d..840fd5e 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -161,10 +161,13 @@ extern int unaligned_enabled;
+ #endif
+ 
+ #ifdef CONFIG_IA64
+-extern int no_unaligned_warning;
+ extern int unaligned_dump_stack;
+ #endif
+ 
++#ifdef CONFIG_SYSCTL_ARCH_UNALIGN_NO_WARN
++extern int no_unaligned_warning;
++#endif
++
+ #ifdef CONFIG_PROC_SYSCTL
+ static int proc_do_cad_pid(struct ctl_table *table, int write,
+ 		  void __user *buffer, size_t *lenp, loff_t *ppos);
+@@ -911,7 +914,7 @@ static struct ctl_table kern_table[] = {
+ 		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ #endif
+-#ifdef CONFIG_IA64
++#ifdef CONFIG_SYSCTL_ARCH_UNALIGN_NO_WARN
+ 	{
+ 		.procname	= "ignore-unaligned-usertrap",
+ 		.data		= &no_unaligned_warning,
+@@ -919,6 +922,8 @@ static struct ctl_table kern_table[] = {
+ 	 	.mode		= 0644,
+ 		.proc_handler	= proc_dointvec,
+ 	},
++#endif
++#ifdef CONFIG_IA64
+ 	{
+ 		.procname	= "unaligned-dump-stack",
+ 		.data		= &unaligned_dump_stack,
+-- 
+1.7.4.1
 
