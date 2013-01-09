@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab3AIQ0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 11:26:08 -0500
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:63095 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932132Ab3AIQ0G convert rfc822-to-8bit (ORCPT
+	id S932209Ab3AIQaC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 11:30:02 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:47314 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122Ab3AIQaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 11:26:06 -0500
+	Wed, 9 Jan 2013 11:30:00 -0500
+Message-ID: <50ED9B03.3020606@gmail.com>
+Date: Thu, 10 Jan 2013 00:29:55 +0800
+From: Jiang Liu <liuj97@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130109085636.GB31678@gmail.com>
-References: <1355937587-31730-1-git-send-email-lee.jones@linaro.org>
-	<1355937587-31730-3-git-send-email-lee.jones@linaro.org>
-	<20130109085636.GB31678@gmail.com>
-Date: Wed, 9 Jan 2013 17:26:04 +0100
-Message-ID: <CAPDyKFpP6tWOGPka7VK+=1FOk-gUk3f2HrvwEXBVR0Hx8j_7Yg@mail.gmail.com>
-Subject: Re: [PATCH 3/4] clk: ux500: Provide an alias for the SMSC911x
- Ethernet chip
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        arnd@arndb.de, linus.walleij@stericsson.com,
-        Mike Turquette <mturquette@linaro.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
+        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v3 4/6] PCI/acpiphp: update ACPI hotplug slot information
+ when PCI hotplug happens
+References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <1357663945-16054-5-git-send-email-jiang.liu@huawei.com> <5038693.7d3RCgbghD@vostro.rjw.lan>
+In-Reply-To: <5038693.7d3RCgbghD@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 January 2013 09:56, Lee Jones <lee.jones@linaro.org> wrote:
-> On Wed, 19 Dec 2012, Lee Jones wrote:
->
->> In the case of some of the ux500 platforms, an Ethernet chip is
->> placed on an extended bus which is traditionally used as a NAND
->> flash chip placeholder. The p3_pclk0 clock is used to control it,
->> so we are required to provide and easy way to access it from the
->> SMSC911x driver. We do this using an alias provided by this patch.
+On 01/09/2013 08:04 AM, Rafael J. Wysocki wrote:
+> On Wednesday, January 09, 2013 12:52:23 AM Jiang Liu wrote:
+>> Currently the acpiphp driver fails to update hotplug slot information under
+>> several conditions, such as:
+>> 1) The bridge device is removed through /sys/bus/pci/devices/.../remove
+>> 2) The bridge device is added/removed by PCI hotplug driver other than the
+>>    acpiphp driver itself. For example, if an IO expansion box with ACPI
+>>    hotplug slots available is hot-added by the pciehp driver, all ACPI
+>>    hotplug slots won't be discovered by the acpiphp driver.
 >>
->> Cc: Mike Turquette <mturquette@linaro.org>
->> Cc: Ulf Hansson <ulf.hansson@linaro.org>
->> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+>> So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
+>> update ACPI hotplug slot information when PCI hotplug event happens.
+>>
+>> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 >> ---
->>  drivers/clk/ux500/u8500_clk.c |    1 +
->>  1 file changed, 1 insertion(+)
+>>  drivers/pci/hotplug/acpiphp_glue.c |   62 ++++++++++++++++++++++++++++++++++--
+>>  1 file changed, 60 insertions(+), 2 deletions(-)
 >>
->> diff --git a/drivers/clk/ux500/u8500_clk.c b/drivers/clk/ux500/u8500_clk.c
->> index a601802..9d9add1 100644
->> --- a/drivers/clk/ux500/u8500_clk.c
->> +++ b/drivers/clk/ux500/u8500_clk.c
->> @@ -325,6 +325,7 @@ void u8500_clk_init(void)
->>       clk = clk_reg_prcc_pclk("p3_pclk0", "per3clk", U8500_CLKRST3_BASE,
->>                               BIT(0), 0);
->>       clk_register_clkdev(clk, "fsmc", NULL);
->> +     clk_register_clkdev(clk, NULL, "smsc911x");
->>
->>       clk = clk_reg_prcc_pclk("p3_pclk1", "per3clk", U8500_CLKRST3_BASE,
->>                               BIT(1), 0);
->> --
->> 1.7.9.5
->>
->
-> I still need a maintiner Ack for this before I can push it.
->
-> Mike?
->
-> --
-> Lee Jones
-> Linaro ST-Ericsson Landing Team Lead
-> Linaro.org │ Open source software for ARM SoCs
-> Follow Linaro: Facebook | Twitter | Blog
+snip
+>> +static struct notifier_block acpi_pci_hp_notifier = {
+>> +	.notifier_call = &acpi_pci_hp_notify_fn,
+>> +};
+>> +
+>>  static struct acpi_pci_driver acpi_pci_hp_driver = {
+>>  	.add =		add_bridge,
+>>  	.remove =	remove_bridge,
+>> @@ -1448,6 +1503,8 @@ int __init acpiphp_glue_init(void)
+>>  	else
+>>  		acpi_pci_register_driver(&acpi_pci_hp_driver);
+>>  
+>> +	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
+> 
+> Your previous patch adds a PCI bus notifier for a similar thing.  Why are
+> you adding another one here?
+Hi Rafael,
+	The acpiphp driver could be built as a module, and this bus notifier
+is used to setup/tear down ACPI based PCI hotplug controllers under a PCI bridge.
+The previous patch is to add/remove PCI slots. The PCI slot and PCI hotplug
+controller are related but different objects, so we use two notifiers to support
+them all.
+	Thanks!
+	Gerry
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> 
+> 
+>> +
+>>  	return 0;
+>>  }
+>>  
+>> @@ -1459,6 +1516,7 @@ int __init acpiphp_glue_init(void)
+>>   */
+>>  void  acpiphp_glue_exit(void)
+>>  {
+>> +	bus_unregister_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
+>>  	acpi_pci_unregister_driver(&acpi_pci_hp_driver);
+>>  }
+> 
+> Thanks,
+> Rafael
+> 
+> 
+
