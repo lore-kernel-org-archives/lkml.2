@@ -1,185 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab3AITaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 14:30:21 -0500
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41516 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932106Ab3AITaT (ORCPT
+	id S932373Ab3AITck (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 14:32:40 -0500
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:58810 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932096Ab3AITcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:30:19 -0500
-Date: Wed, 9 Jan 2013 14:18:18 -0500
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless 2013-01-09
-Message-ID: <20130109191817.GA17321@tuxdriver.com>
+	Wed, 9 Jan 2013 14:32:39 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <50EB76DF.5070508@huawei.com>
+References: <1357248967-24959-1-git-send-email-tj@kernel.org>
+ <50E93554.3070102@huawei.com> <20130107164453.GH3926@htj.dyndns.org> <50EB76DF.5070508@huawei.com>
+From: Paul Menage <paul@paulmenage.org>
+Date: Wed, 9 Jan 2013 11:32:18 -0800
+X-Google-Sender-Auth: 3Vk6o65x8EWJ4rCOWJuYh2q57hE
+Message-ID: <CALdu-PCmeXNF7FCVstVBNRzQDgkhBAPnWs0Czt9HOHZ4mT68-A@mail.gmail.com>
+Subject: Re: [PATCHSET] cpuset: decouple cpuset locking from cgroup core, take#2
+To: Li Zefan <lizefan@huawei.com>
+Cc: Tejun Heo <tj@kernel.org>, glommer@parallels.com,
+        containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        peterz@infradead.org, mhocko@suse.cz, bsingharora@gmail.com,
+        hannes@cmpxchg.org, kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On Mon, Jan 7, 2013 at 5:31 PM, Li Zefan <lizefan@huawei.com> wrote:
+>
+> I don't think Paul's still maintaining cpusets. Normally it's Andrew
+> that picks up cpuset patches. It's fine you route it through cgroup
+> tree.
 
-Please pull this batch of fixes (and a new driver) for the 3.8 stream...
+Yes, I'm sorry - I should have handed on cpusets at the time I had to
+hand on cgroups. I was only really ever the maintainer for cpusets
+because Paul Jackson asked me to take it over when he retired, as I
+understood the cgroups-related parts of it. I never really had a good
+grasp of how the some of the lower-level parts of it interacted with
+the rest of the system (e.g. offlining, CPUs, scheduler domains, etc)
+anyway ...
 
-Included is a mac80211 pull, of which Johannes says the following:
-
-'This includes a number of fixes for various pieces of mac80211. I've
-also included Thomas's memory RMC hash table optimisation since it
-saves so much memory.'
-
-Also from Johannes is an iwlwifi pull:
-
-'I have two fixes for iwlwifi: one to fix a lost return value that was
-dropped in a previous patch and could cause "nobody cared" IRQ messages,
-and one to work around a firmware issue.'
-
-Amitkumar Karwar brings an mwifiex for a typo in an comparison.
-
-Bing Zhao gives us an mwifiex fix to properly check the return value
-from wait_event_interruptible and handle it properly.
-
-Chen Gang provides a fix to make iwlegacy use strlcpy instead of
-strncpy, avoiding a potential buffer underflow.
-
-Julian Wollrath fixes a typo in an error message in rtlwifi.
-
-Larry Finger brings a b43 fix for a firmware loading problem.
-
-Nickolai Zeldovich avoids a use-after-free in the mwl8k driver.
-
-Vladimir Kondratiev brings the last big piece, the new Qualcomm/Atheros
-wil6210 802.11ad driver.  Since it is for new hardware, I hope that
-taking it for 3.8 is not a problem.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
----
-
-The following changes since commit c9be4a5c49cf51cc70a993f004c5bb30067a65ce:
-
-  net: prevent setting ttl=0 via IP_TTL (2013-01-08 17:57:10 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git for-davem
-
-for you to fetch changes up to a9b8a894ad7d0b90b0464c9ac7e8e5c1687edcae:
-
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless into for-davem (2013-01-09 11:01:37 -0500)
-
-----------------------------------------------------------------
-
-Amitkumar Karwar (1):
-      mwifiex: fix typo in setting up ibss network parameters
-
-Bing Zhao (1):
-      mwifiex: check wait_event_interruptible return value
-
-Chaitanya (1):
-      mac80211: fix maximum MTU
-
-Chen Gang (1):
-      drivers/net/wireless/iwlegacy: use strlcpy instead of strncpy
-
-Emmanuel Grumbach (1):
-      iwlwifi: fix the reclaimed packet tracking upon flush queue
-
-Felix Fietkau (1):
-      mac80211: flush AP_VLAN stations when tearing down the BSS AP
-
-Johannes Berg (5):
-      mac80211: assign VLAN channel contexts
-      mac80211: fix station destruction in AP/mesh modes
-      mac80211: use del_timer_sync for final sta cleanup timer deletion
-      mac80211: fix dtim_period in hidden SSID AP association
-      iwlwifi: fix PCIe interrupt handle return value
-
-John W. Linville (3):
-      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
-      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
-
-Julian Wollrath (1):
-      rtlwifi: Fix typo in debug output of rtl8192c and rtl8723ae
-
-Larry Finger (1):
-      b43: Fix firmware loading when driver is built into the kernel
-
-Nickolai Zeldovich (1):
-      drivers/net/wireless/mwl8k.c: avoid use-after-free
-
-Stanislaw Gruszka (1):
-      mac80211: fix ibss scanning
-
-Thomas Pedersen (1):
-      mac80211: RMC buckets are just list heads
-
-Vladimir Kondratiev (1):
-      wireless: add new wil6210 802.11ad 60GHz driver
-
- MAINTAINERS                                        |    8 +
- drivers/net/wireless/ath/Kconfig                   |    1 +
- drivers/net/wireless/ath/Makefile                  |    1 +
- drivers/net/wireless/ath/wil6210/Kconfig           |   29 +
- drivers/net/wireless/ath/wil6210/Makefile          |   13 +
- drivers/net/wireless/ath/wil6210/cfg80211.c        |  573 ++++++++++
- drivers/net/wireless/ath/wil6210/dbg_hexdump.h     |   30 +
- drivers/net/wireless/ath/wil6210/debugfs.c         |  603 +++++++++++
- drivers/net/wireless/ath/wil6210/interrupt.c       |  471 +++++++++
- drivers/net/wireless/ath/wil6210/main.c            |  407 +++++++
- drivers/net/wireless/ath/wil6210/netdev.c          |  157 +++
- drivers/net/wireless/ath/wil6210/pcie_bus.c        |  223 ++++
- drivers/net/wireless/ath/wil6210/txrx.c            |  871 +++++++++++++++
- drivers/net/wireless/ath/wil6210/txrx.h            |  362 +++++++
- drivers/net/wireless/ath/wil6210/wil6210.h         |  363 +++++++
- drivers/net/wireless/ath/wil6210/wmi.c             |  975 +++++++++++++++++
- drivers/net/wireless/ath/wil6210/wmi.h             | 1116 ++++++++++++++++++++
- drivers/net/wireless/b43/b43.h                     |    5 +
- drivers/net/wireless/b43/main.c                    |   54 +-
- drivers/net/wireless/b43/main.h                    |    5 +-
- drivers/net/wireless/iwlegacy/3945-mac.c           |    2 +-
- drivers/net/wireless/iwlwifi/dvm/tx.c              |   24 +-
- drivers/net/wireless/iwlwifi/pcie/rx.c             |    1 +
- drivers/net/wireless/mwifiex/cfg80211.c            |    2 +-
- drivers/net/wireless/mwifiex/sta_ioctl.c           |   21 +-
- drivers/net/wireless/mwl8k.c                       |    4 +-
- drivers/net/wireless/rtlwifi/rtl8192c/phy_common.c |    2 +-
- drivers/net/wireless/rtlwifi/rtl8723ae/phy.c       |    2 +-
- net/mac80211/cfg.c                                 |    2 +
- net/mac80211/chan.c                                |   38 +
- net/mac80211/ibss.c                                |    9 +-
- net/mac80211/ieee80211_i.h                         |   16 +-
- net/mac80211/iface.c                               |   48 +-
- net/mac80211/mesh.c                                |    8 +-
- net/mac80211/mesh.h                                |    2 +-
- net/mac80211/mlme.c                                |   75 +-
- net/mac80211/scan.c                                |   46 +-
- net/mac80211/sta_info.c                            |   46 +-
- net/mac80211/sta_info.h                            |    3 +-
- 39 files changed, 6488 insertions(+), 130 deletions(-)
- create mode 100644 drivers/net/wireless/ath/wil6210/Kconfig
- create mode 100644 drivers/net/wireless/ath/wil6210/Makefile
- create mode 100644 drivers/net/wireless/ath/wil6210/cfg80211.c
- create mode 100644 drivers/net/wireless/ath/wil6210/dbg_hexdump.h
- create mode 100644 drivers/net/wireless/ath/wil6210/debugfs.c
- create mode 100644 drivers/net/wireless/ath/wil6210/interrupt.c
- create mode 100644 drivers/net/wireless/ath/wil6210/main.c
- create mode 100644 drivers/net/wireless/ath/wil6210/netdev.c
- create mode 100644 drivers/net/wireless/ath/wil6210/pcie_bus.c
- create mode 100644 drivers/net/wireless/ath/wil6210/txrx.c
- create mode 100644 drivers/net/wireless/ath/wil6210/txrx.h
- create mode 100644 drivers/net/wireless/ath/wil6210/wil6210.h
- create mode 100644 drivers/net/wireless/ath/wil6210/wmi.c
- create mode 100644 drivers/net/wireless/ath/wil6210/wmi.h
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Paul
