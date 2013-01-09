@@ -1,59 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933549Ab3AIUjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42577 "EHLO mail.kernel.org"
+	id S934160Ab3AIVUI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:20:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42678 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933496Ab3AIUjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:11 -0500
+	id S933252Ab3AIUjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:21 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christophe TORDEUX <christophe@tordeux.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 45/80] Input: sentelic - only report position of first finger as ST coordinates
-Date: Wed,  9 Jan 2013 12:35:37 -0800
-Message-Id: <20130109201506.169210788@linuxfoundation.org>
+        Weston Andros Adamson <dros@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 050/123] NFS: Fix access to suid/sgid executables
+Date: Wed,  9 Jan 2013 12:34:49 -0800
+Message-Id: <20130109201504.973261871@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Christophe TORDEUX <christophe@tordeux.net>
+From: Weston Andros Adamson <dros@netapp.com>
 
-commit a25461659050b913e114d282bf58823682eb56b6 upstream.
+commit f8d9a897d4384b77f13781ea813156568f68b83e upstream.
 
-Report only the position of the first finger as absolute non-MT coordinates,
-instead of reporting both fingers alternatively. Actual MT events are
-unaffected.
+nfs_open_permission_mask() should only check MAY_EXEC for files that
+are opened with __FMODE_EXEC.
 
-This fixes horizontal and improves vertical scrolling with the touchpad.
+Also fix NFSv4 access-in-open path in a similar way -- openflags must be
+used because fmode will not always have FMODE_EXEC set.
 
-Signed-off-by: Christophe TORDEUX <christophe@tordeux.net>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=49101
+
+Signed-off-by: Weston Andros Adamson <dros@netapp.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/mouse/sentelic.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/dir.c      |   16 ++++++++++------
+ fs/nfs/nfs4proc.c |   18 +++++++++++-------
+ 2 files changed, 21 insertions(+), 13 deletions(-)
 
---- a/drivers/input/mouse/sentelic.c
-+++ b/drivers/input/mouse/sentelic.c
-@@ -759,7 +759,7 @@ static psmouse_ret_t fsp_process_byte(st
- 			fsp_set_slot(dev, 0, fgrs > 0, abs_x, abs_y);
- 			fsp_set_slot(dev, 1, false, 0, 0);
- 		}
--		if (fgrs > 0) {
-+		if (fgrs == 1 || (fgrs == 2 && !(packet[0] & FSP_PB0_MFMC_FGR2))) {
- 			input_report_abs(dev, ABS_X, abs_x);
- 			input_report_abs(dev, ABS_Y, abs_y);
- 		}
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -2148,12 +2148,16 @@ static int nfs_open_permission_mask(int
+ {
+ 	int mask = 0;
+ 
+-	if ((openflags & O_ACCMODE) != O_WRONLY)
+-		mask |= MAY_READ;
+-	if ((openflags & O_ACCMODE) != O_RDONLY)
+-		mask |= MAY_WRITE;
+-	if (openflags & __FMODE_EXEC)
+-		mask |= MAY_EXEC;
++	if (openflags & __FMODE_EXEC) {
++		/* ONLY check exec rights */
++		mask = MAY_EXEC;
++	} else {
++		if ((openflags & O_ACCMODE) != O_WRONLY)
++			mask |= MAY_READ;
++		if ((openflags & O_ACCMODE) != O_RDONLY)
++			mask |= MAY_WRITE;
++	}
++
+ 	return mask;
+ }
+ 
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -1721,7 +1721,8 @@ static int _nfs4_recover_proc_open(struc
+ 
+ static int nfs4_opendata_access(struct rpc_cred *cred,
+ 				struct nfs4_opendata *opendata,
+-				struct nfs4_state *state, fmode_t fmode)
++				struct nfs4_state *state, fmode_t fmode,
++				int openflags)
+ {
+ 	struct nfs_access_entry cache;
+ 	u32 mask;
+@@ -1733,11 +1734,14 @@ static int nfs4_opendata_access(struct r
+ 
+ 	mask = 0;
+ 	/* don't check MAY_WRITE - a newly created file may not have
+-	 * write mode bits, but POSIX allows the creating process to write */
+-	if (fmode & FMODE_READ)
+-		mask |= MAY_READ;
+-	if (fmode & FMODE_EXEC)
+-		mask |= MAY_EXEC;
++	 * write mode bits, but POSIX allows the creating process to write.
++	 * use openflags to check for exec, because fmode won't
++	 * always have FMODE_EXEC set when file open for exec. */
++	if (openflags & __FMODE_EXEC) {
++		/* ONLY check for exec rights */
++		mask = MAY_EXEC;
++	} else if (fmode & FMODE_READ)
++		mask = MAY_READ;
+ 
+ 	cache.cred = cred;
+ 	cache.jiffies = jiffies;
+@@ -2009,7 +2013,7 @@ static int _nfs4_do_open(struct inode *d
+ 	if (server->caps & NFS_CAP_POSIX_LOCK)
+ 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
+ 
+-	status = nfs4_opendata_access(cred, opendata, state, fmode);
++	status = nfs4_opendata_access(cred, opendata, state, fmode, flags);
+ 	if (status != 0)
+ 		goto err_opendata_put;
+ 
 
 
