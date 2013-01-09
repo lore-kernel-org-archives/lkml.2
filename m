@@ -1,159 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab3AIUhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:46 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41627 "EHLO mail.kernel.org"
+	id S933209Ab3AIVpq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:45:46 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41734 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933072Ab3AIUhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:38 -0500
+	id S933106Ab3AIUhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 13/80] b43legacy: Fix firmware loading when driver is built into the kernel
-Date: Wed,  9 Jan 2013 12:35:05 -0800
-Message-Id: <20130109201502.082996944@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [ 020/123] ALSA: hda - Move runtime PM check to runtime_idle callback
+Date: Wed,  9 Jan 2013 12:34:19 -0800
+Message-Id: <20130109201501.095006832@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 576d28a7c73013717311cfcb514dbcae27c82eeb upstream.
+commit 6eb827d23577a4efec2b10a9c4cc9ded268a1d1c upstream.
 
-Recent versions of udev cause synchronous firmware loading from the
-probe routine to fail because the request to user space times out.
-The original fix for b43legacy (commit a3ea2c7) moved the firmware
-load from the probe routine to a work queue, but it still used synchronous
-firmware loading. This method is OK when b43legacy is built as a module;
-however, it fails when the driver is compiled into the kernel.
+The runtime_idle callback is the right place to check the suspend
+capability, but currently we do it wrongly in the runtime_suspend
+callback.  This leads to a kernel error message like:
+   pci_pm_runtime_suspend(): azx_runtime_suspend+0x0/0x50 [snd_hda_intel] returns -11
+and the runtime PM core would even repeat the attempts.
 
-This version changes the code to load the initial firmware file
-using request_firmware_nowait(). A completion event is used to
-hold the work queue until that file is available. The remaining
-firmware files are read synchronously.
-
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-and-tested-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43legacy/b43legacy.h |    5 +++
- drivers/net/wireless/b43legacy/main.c      |   37 ++++++++++++++++++++++++-----
- 2 files changed, 36 insertions(+), 6 deletions(-)
+ sound/pci/hda/hda_intel.c |   19 ++++++++++++++-----
+ 1 file changed, 14 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/b43legacy/b43legacy.h
-+++ b/drivers/net/wireless/b43legacy/b43legacy.h
-@@ -13,6 +13,7 @@
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2557,10 +2557,6 @@ static int azx_runtime_suspend(struct de
+ 	struct snd_card *card = dev_get_drvdata(dev);
+ 	struct azx *chip = card->private_data;
  
- #include <linux/ssb/ssb.h>
- #include <linux/ssb/ssb_driver_chipcommon.h>
-+#include <linux/completion.h>
- 
- #include <net/mac80211.h>
- 
-@@ -733,6 +734,10 @@ struct b43legacy_wldev {
- 
- 	/* Firmware data */
- 	struct b43legacy_firmware fw;
-+	const struct firmware *fwp;	/* needed to pass fw pointer */
-+
-+	/* completion struct for firmware loading */
-+	struct completion fw_load_complete;
- 
- 	/* Devicelist in struct b43legacy_wl (all 802.11 cores) */
- 	struct list_head list;
---- a/drivers/net/wireless/b43legacy/main.c
-+++ b/drivers/net/wireless/b43legacy/main.c
-@@ -1511,9 +1511,17 @@ static void b43legacy_print_fw_helptext(
- 		     "and download the correct firmware (version 3).\n");
+-	if (!power_save_controller ||
+-	    !(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
+-		return -EAGAIN;
+-
+ 	azx_stop_chip(chip);
+ 	azx_clear_irq_pending(chip);
+ 	return 0;
+@@ -2575,12 +2571,25 @@ static int azx_runtime_resume(struct dev
+ 	azx_init_chip(chip, 1);
+ 	return 0;
  }
- 
-+static void b43legacy_fw_cb(const struct firmware *firmware, void *context)
-+{
-+	struct b43legacy_wldev *dev = context;
 +
-+	dev->fwp = firmware;
-+	complete(&dev->fw_load_complete);
++static int azx_runtime_idle(struct device *dev)
++{
++	struct snd_card *card = dev_get_drvdata(dev);
++	struct azx *chip = card->private_data;
++
++	if (!power_save_controller ||
++	    !(chip->driver_caps & AZX_DCAPS_PM_RUNTIME))
++		return -EBUSY;
++
++	return 0;
 +}
 +
- static int do_request_fw(struct b43legacy_wldev *dev,
- 			 const char *name,
--			 const struct firmware **fw)
-+			 const struct firmware **fw, bool async)
- {
- 	char path[sizeof(modparam_fwpostfix) + 32];
- 	struct b43legacy_fw_header *hdr;
-@@ -1526,7 +1534,24 @@ static int do_request_fw(struct b43legac
- 	snprintf(path, ARRAY_SIZE(path),
- 		 "b43legacy%s/%s.fw",
- 		 modparam_fwpostfix, name);
--	err = request_firmware(fw, path, dev->dev->dev);
-+	b43legacyinfo(dev->wl, "Loading firmware %s\n", path);
-+	if (async) {
-+		init_completion(&dev->fw_load_complete);
-+		err = request_firmware_nowait(THIS_MODULE, 1, path,
-+					      dev->dev->dev, GFP_KERNEL,
-+					      dev, b43legacy_fw_cb);
-+		if (err) {
-+			b43legacyerr(dev->wl, "Unable to load firmware\n");
-+			return err;
-+		}
-+		/* stall here until fw ready */
-+		wait_for_completion(&dev->fw_load_complete);
-+		if (!dev->fwp)
-+			err = -EINVAL;
-+		*fw = dev->fwp;
-+	} else {
-+		err = request_firmware(fw, path, dev->dev->dev);
-+	}
- 	if (err) {
- 		b43legacyerr(dev->wl, "Firmware file \"%s\" not found "
- 		       "or load failed.\n", path);
-@@ -1578,7 +1603,7 @@ static void b43legacy_request_firmware(s
- 			filename = "ucode4";
- 		else
- 			filename = "ucode5";
--		err = do_request_fw(dev, filename, &fw->ucode);
-+		err = do_request_fw(dev, filename, &fw->ucode, true);
- 		if (err)
- 			goto err_load;
- 	}
-@@ -1587,7 +1612,7 @@ static void b43legacy_request_firmware(s
- 			filename = "pcm4";
- 		else
- 			filename = "pcm5";
--		err = do_request_fw(dev, filename, &fw->pcm);
-+		err = do_request_fw(dev, filename, &fw->pcm, false);
- 		if (err)
- 			goto err_load;
- 	}
-@@ -1605,7 +1630,7 @@ static void b43legacy_request_firmware(s
- 		default:
- 			goto err_no_initvals;
- 		}
--		err = do_request_fw(dev, filename, &fw->initvals);
-+		err = do_request_fw(dev, filename, &fw->initvals, false);
- 		if (err)
- 			goto err_load;
- 	}
-@@ -1625,7 +1650,7 @@ static void b43legacy_request_firmware(s
- 		default:
- 			goto err_no_initvals;
- 		}
--		err = do_request_fw(dev, filename, &fw->initvals_band);
-+		err = do_request_fw(dev, filename, &fw->initvals_band, false);
- 		if (err)
- 			goto err_load;
- 	}
+ #endif /* CONFIG_PM_RUNTIME */
+ 
+ #ifdef CONFIG_PM
+ static const struct dev_pm_ops azx_pm = {
+ 	SET_SYSTEM_SLEEP_PM_OPS(azx_suspend, azx_resume)
+-	SET_RUNTIME_PM_OPS(azx_runtime_suspend, azx_runtime_resume, NULL)
++	SET_RUNTIME_PM_OPS(azx_runtime_suspend, azx_runtime_resume, azx_runtime_idle)
+ };
+ 
+ #define AZX_PM_OPS	&azx_pm
 
 
