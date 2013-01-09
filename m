@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933716Ab3AIUjx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42954 "EHLO mail.kernel.org"
+	id S933749Ab3AIUkC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:02 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43038 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933699Ab3AIUju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:50 -0500
+	id S933699Ab3AIUj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gabor Juhos <juhosg@openwrt.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 059/123] Input: gpio_keys_polled - defer probing if GPIO probing is deferred
-Date: Wed,  9 Jan 2013 12:34:58 -0800
-Message-Id: <20130109201506.147164124@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [ 076/123] freezer: add missing mbs to freezer_count() and freezer_should_skip()
+Date: Wed,  9 Jan 2013 12:35:15 -0800
+Message-Id: <20130109201508.367331893@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,57 +26,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gabor Juhos <juhosg@openwrt.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit d46329a708c1a3301e272a029266b69339c0877f upstream.
+commit dd67d32dbc5de299d70cc9e10c6c1e29ffa56b92 upstream.
 
-If GPIO probing is deferred, the driver tries to claim an invalid GPIO line
-which leads to an error message like this:
+A task is considered frozen enough between freezer_do_not_count() and
+freezer_count() and freezers use freezer_should_skip() to test this
+condition.  This supposedly works because freezer_count() always calls
+try_to_freezer() after clearing %PF_FREEZER_SKIP.
 
-  gpio-keys-polled buttons.2: unable to claim gpio 4294966779, err=-22
-  gpio-keys-polled: probe of buttons.2 failed with error -22
+However, there currently is nothing which guarantees that
+freezer_count() sees %true freezing() after clearing %PF_FREEZER_SKIP
+when freezing is in progress, and vice-versa.  A task can escape the
+freezing condition in effect by freezer_count() seeing !freezing() and
+freezer_should_skip() seeing %PF_FREEZER_SKIP.
 
-We should make sure that error code returned by of_get_gpio_flags (including
--EPROBE_DEFER) is propagated up the stack.
+This patch adds smp_mb()'s to freezer_count() and
+freezer_should_skip() such that either %true freezing() is visible to
+freezer_count() or !PF_FREEZER_SKIP is visible to
+freezer_should_skip().
 
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/keyboard/gpio_keys_polled.c |   13 ++++++++++++-
- 1 file changed, 12 insertions(+), 1 deletion(-)
+ include/linux/freezer.h |   50 ++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 42 insertions(+), 8 deletions(-)
 
---- a/drivers/input/keyboard/gpio_keys_polled.c
-+++ b/drivers/input/keyboard/gpio_keys_polled.c
-@@ -136,6 +136,7 @@ gpio_keys_polled_get_devtree_pdata(struc
+--- a/include/linux/freezer.h
++++ b/include/linux/freezer.h
+@@ -75,28 +75,62 @@ static inline bool cgroup_freezing(struc
+  */
  
- 	i = 0;
- 	for_each_child_of_node(node, pp) {
-+		int gpio;
- 		enum of_gpio_flags flags;
  
- 		if (!of_find_property(pp, "gpios", NULL)) {
-@@ -144,9 +145,19 @@ gpio_keys_polled_get_devtree_pdata(struc
- 			continue;
- 		}
+-/* Tell the freezer not to count the current task as freezable. */
++/**
++ * freezer_do_not_count - tell freezer to ignore %current
++ *
++ * Tell freezers to ignore the current task when determining whether the
++ * target frozen state is reached.  IOW, the current task will be
++ * considered frozen enough by freezers.
++ *
++ * The caller shouldn't do anything which isn't allowed for a frozen task
++ * until freezer_cont() is called.  Usually, freezer[_do_not]_count() pair
++ * wrap a scheduling operation and nothing much else.
++ */
+ static inline void freezer_do_not_count(void)
+ {
+ 	current->flags |= PF_FREEZER_SKIP;
+ }
  
-+		gpio = of_get_gpio_flags(pp, 0, &flags);
-+		if (gpio < 0) {
-+			error = gpio;
-+			if (error != -EPROBE_DEFER)
-+				dev_err(dev,
-+					"Failed to get gpio flags, error: %d\n",
-+					error);
-+			goto err_free_pdata;
-+		}
-+
- 		button = &pdata->buttons[i++];
+-/*
+- * Tell the freezer to count the current task as freezable again and try to
+- * freeze it.
++/**
++ * freezer_count - tell freezer to stop ignoring %current
++ *
++ * Undo freezer_do_not_count().  It tells freezers that %current should be
++ * considered again and tries to freeze if freezing condition is already in
++ * effect.
+  */
+ static inline void freezer_count(void)
+ {
+ 	current->flags &= ~PF_FREEZER_SKIP;
++	/*
++	 * If freezing is in progress, the following paired with smp_mb()
++	 * in freezer_should_skip() ensures that either we see %true
++	 * freezing() or freezer_should_skip() sees !PF_FREEZER_SKIP.
++	 */
++	smp_mb();
+ 	try_to_freeze();
+ }
  
--		button->gpio = of_get_gpio_flags(pp, 0, &flags);
-+		button->gpio = gpio;
- 		button->active_low = flags & OF_GPIO_ACTIVE_LOW;
+-/*
+- * Check if the task should be counted as freezable by the freezer
++/**
++ * freezer_should_skip - whether to skip a task when determining frozen
++ *			 state is reached
++ * @p: task in quesion
++ *
++ * This function is used by freezers after establishing %true freezing() to
++ * test whether a task should be skipped when determining the target frozen
++ * state is reached.  IOW, if this function returns %true, @p is considered
++ * frozen enough.
+  */
+-static inline int freezer_should_skip(struct task_struct *p)
++static inline bool freezer_should_skip(struct task_struct *p)
+ {
+-	return !!(p->flags & PF_FREEZER_SKIP);
++	/*
++	 * The following smp_mb() paired with the one in freezer_count()
++	 * ensures that either freezer_count() sees %true freezing() or we
++	 * see cleared %PF_FREEZER_SKIP and return %false.  This makes it
++	 * impossible for a task to slip frozen state testing after
++	 * clearing %PF_FREEZER_SKIP.
++	 */
++	smp_mb();
++	return p->flags & PF_FREEZER_SKIP;
+ }
  
- 		if (of_property_read_u32(pp, "linux,code", &button->code)) {
+ /*
 
 
