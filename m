@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933638Ab3AIVUE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:20:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42684 "EHLO mail.kernel.org"
+	id S934212Ab3AIVVj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:21:39 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42656 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933552Ab3AIUjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:22 -0500
+	id S933544Ab3AIUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 40/80] nfsd: fix v4 reply caching
-Date: Wed,  9 Jan 2013 12:35:32 -0800
-Message-Id: <20130109201505.562904671@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Binderman <dcb314@hotmail.com>
+Subject: [ 48/80] xhci: Fix conditional check in bandwidth calculation.
+Date: Wed,  9 Jan 2013 12:35:40 -0800
+Message-Id: <20130109201506.580134532@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -25,33 +26,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 57d276d71aef7d8305ff002a070cb98deb2edced upstream.
+commit 392a07ae3316f2b90b39ce41e66d6f6b5c95de90 upstream.
 
-Very embarassing: 1091006c5eb15cba56785bd5b498a8d0b9546903 "nfsd: turn
-on reply cache for NFSv4" missed a line, effectively leaving the reply
-cache off in the v4 case.  I thought I'd tested that, but I guess not.
+David reports that at drivers/usb/host/xhci.c:2257:
 
-This time, wrote a pynfs test to confirm it works.
+static bool xhci_is_sync_in_ep(unsigned int ep_type)
+{
+    return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
+}
 
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+The static analyser cppcheck says
+
+[linux-3.7-rc2/drivers/usb/host/xhci.c:2257]: (style) Redundant condition: If ep_type == 5, the comparison ep_type != 7 is always true.
+
+Maybe the original programmer intention was something like
+
+static bool xhci_is_sync_in_ep(unsigned int ep_type)
+{
+    return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
+}
+
+Fix this.
+
+This patch should be backported to stable kernels as old as 3.2, that
+contain the commit 2b69899934c63b7b9432568584fb4c4a2924f40c "xhci: USB
+3.0 BW checking."
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: David Binderman <dcb314@hotmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfsd/nfssvc.c |    2 +-
+ drivers/usb/host/xhci.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfsd/nfssvc.c
-+++ b/fs/nfsd/nfssvc.c
-@@ -650,7 +650,7 @@ nfsd_dispatch(struct svc_rqst *rqstp, __
- 	}
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2253,7 +2253,7 @@ static bool xhci_is_async_ep(unsigned in
  
- 	/* Store reply in cache. */
--	nfsd_cache_update(rqstp, proc->pc_cachetype, statp + 1);
-+	nfsd_cache_update(rqstp, rqstp->rq_cachetype, statp + 1);
- 	return 1;
+ static bool xhci_is_sync_in_ep(unsigned int ep_type)
+ {
+-	return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
++	return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
  }
  
+ static unsigned int xhci_get_ss_bw_consumed(struct xhci_bw_info *ep_bw)
 
 
