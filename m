@@ -1,86 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933411Ab3AIVgb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:36:31 -0500
-Received: from nm16-vm0.access.bullet.mail.sp2.yahoo.com ([98.139.44.166]:42448
-	"EHLO nm16-vm0.access.bullet.mail.sp2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933381Ab3AIVg2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:36:28 -0500
-X-Yahoo-Newman-Id: 700013.17475.bm@smtp108.biz.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: OiEbzs4VM1lAQiU_sBdzgQApr2hyZcnfq70Tl.2Aezgh9V.
- FqyZMZwkanf4tCw.Z6KIzIn6zmX6oC2wEKzoD4alhvBeK6rEopXbwFhRQ9FJ
- L_XWq273CuKDX2HedQNOOzWPZIAK2Zs8svy.TyB.2dG0f.so_5.VjCKvkZW8
- q2eFG7b7QxK8sClp7ZuPpHUwkrW_8lYors3UOmnSJ9O0fE7I81cWLcAI723R
- _VvjPhkRVU_EavDZ2KUxI9ziSnDsC9_xo9I.sOBdkZU7i.ewuEImUTw5yxMF
- UgosOoBcPtbiVL3KFBHMxs4pS6ppXtn_MceEkuWrbWwTht5ytvuRYWKylRx2
- PxJp0q3z9wWl1MnWYld9tL2L19YpdzG3bDhaNMfWFWewpN0LG3TxyproM4RK
- MACDvsgCkU0jhKwPx.xa1Uvpqi.bJyUU6hzmWssQ2E7YxbAefy1VfGQIaUQe
- mOXYOEZ1S80dX5440CJSCfM8-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <50EDE2EC.1080104@schaufler-ca.com>
-Date: Wed, 09 Jan 2013 13:36:44 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>
-CC: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org, dwalsh@redhat.com,
-        dmalcolm@redhat.com, sds@tycho.nsa.gov, segoon@openwall.com,
-        linux-security-module@vger.kernel.org
-Subject: Re: Friendlier EPERM - Request for input
-References: <1357747463.2593.28.camel@localhost>   <1357760637.2593.55.camel@localhost> <50EDCFC0.3010401@schaufler-ca.com>  <1357763560.1342.7.camel@localhost> <50EDD8D4.60003@schaufler-ca.com> <1357765998.1342.25.camel@localhost>
-In-Reply-To: <1357765998.1342.25.camel@localhost>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S933345Ab3AIVg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:36:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42245 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933281Ab3AIUif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:35 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 46/47] mm: limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT
+Date: Wed,  9 Jan 2013 12:35:41 -0800
+Message-Id: <20130109201734.795331570@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/9/2013 1:13 PM, Eric Paris wrote:
-> On Wed, 2013-01-09 at 12:53 -0800, Casey Schaufler wrote:
->
->> Let me try again, I think I didn't quite get the idea across.
->>
->> I'm suggesting that the string returned by get_extended_error_info()
->> ought to be the audit record the system call would generate, regardless
->> of whether the audit system would emit it or not.
->> If the audit record doesn't have the information you need we should
->> fix the audit system to provide it. Any bit of the information in
->> the audit record might be relevant, and your admin or developer might
->> need to see it.
->>
->> I'm suggesting using the audit record because there are tools to
->> examine them and it's a pity to use a different format instead of
->> fixing the one that's already there.
-> I get the point.  My problem with using audit records is that they have
-> to be stored on disk, forever.  We have to store a record on disk for
-> EVERY denial because of rwx bits, acls, capabilities, LSM, etc.  We
-> don't do that today and I'm scared of disk growth explosion.  Then we
-> could have a kernel interface, say get_last_audit_record(), which could
-> query the audit system for that record number.
->
-> A thought on disk size explosion might be something like generating
-> these records in the kernel and just store them in the task struct until
-> some later point in time.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-Yes! This is exactly what I'm suggesting.
+------------------
 
-> If userspace calls get_last_audit_record() we
-> might be able to dump the record to auditd.
+From: Michal Hocko <mhocko@suse.cz>
 
-No! Have reading /proc/self/whatwentwrong return the audit record
-associated with the errno last set by the kernel.
+commit 53a59fc67f97374758e63a9c785891ec62324c81 upstream.
 
-> If another record comes
-> along we have to free the last one and replace it.  Lot more of a perf
-> hit than setting a couple of ints and taking the hit at the time when
-> userspace actually wants to collect/use this information.
->
-> But are we just building up a rube goldburg machine?  I don't see a
-> problem storing the last audit record if it exists, but I don't like
-> making audit part of the normal workflow.  I'd do it if others like that
-> though....
->
->
+Since commit e303297e6c3a ("mm: extended batches for generic
+mmu_gather") we are batching pages to be freed until either
+tlb_next_batch cannot allocate a new batch or we are done.
+
+This works just fine most of the time but we can get in troubles with
+non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
+on large machines where too aggressive batching might lead to soft
+lockups during process exit path (exit_mmap) because there are no
+scheduling points down the free_pages_and_swap_cache path and so the
+freeing can take long enough to trigger the soft lockup.
+
+The lockup is harmless except when the system is setup to panic on
+softlockup which is not that unusual.
+
+The simplest way to work around this issue is to limit the maximum
+number of batches in a single mmu_gather.  10k of collected pages should
+be safe to prevent from soft lockups (we would have 2ms for one) even if
+they are all freed without an explicit scheduling point.
+
+This patch doesn't add any new explicit scheduling points because it
+relies on zap_pmd_range during page tables zapping which calls
+cond_resched per PMD.
+
+The following lockup has been reported for 3.0 kernel with a huge
+process (in order of hundreds gigs but I do know any more details).
+
+  BUG: soft lockup - CPU#56 stuck for 22s! [kernel:31053]
+  Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc mptctl mptbase autofs4 binfmt_misc dm_round_robin dm_multipath bonding cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq mperf microcode fuse loop osst sg sd_mod crc_t10dif st qla2xxx scsi_transport_fc scsi_tgt netxen_nic i7core_edac iTCO_wdt joydev e1000e serio_raw pcspkr edac_core iTCO_vendor_support acpi_power_meter rtc_cmos hpwdt hpilo button container usbhid hid dm_mirror dm_region_hash dm_log linear uhci_hcd ehci_hcd usbcore usb_common scsi_dh_emc scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh dm_snapshot pcnet32 mii edd dm_mod raid1 ext3 mbcache jbd fan thermal processor thermal_sys hwmon cciss scsi_mod
+  Supported: Yes
+  CPU 56
+  Pid: 31053, comm: kernel Not tainted 3.0.31-0.9-default #1 HP ProLiant DL580 G7
+  RIP: 0010:  _raw_spin_unlock_irqrestore+0x8/0x10
+  RSP: 0018:ffff883ec1037af0  EFLAGS: 00000206
+  RAX: 0000000000000e00 RBX: ffffea01a0817e28 RCX: ffff88803ffd9e80
+  RDX: 0000000000000200 RSI: 0000000000000206 RDI: 0000000000000206
+  RBP: 0000000000000002 R08: 0000000000000001 R09: ffff887ec724a400
+  R10: 0000000000000000 R11: dead000000200200 R12: ffffffff8144c26e
+  R13: 0000000000000030 R14: 0000000000000297 R15: 000000000000000e
+  FS:  00007ed834282700(0000) GS:ffff88c03f200000(0000) knlGS:0000000000000000
+  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+  CR2: 000000000068b240 CR3: 0000003ec13c5000 CR4: 00000000000006e0
+  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+  Process kernel (pid: 31053, threadinfo ffff883ec1036000, task ffff883ebd5d4100)
+  Call Trace:
+    release_pages+0xc5/0x260
+    free_pages_and_swap_cache+0x9d/0xc0
+    tlb_flush_mmu+0x5c/0x80
+    tlb_finish_mmu+0xe/0x50
+    exit_mmap+0xbd/0x120
+    mmput+0x49/0x120
+    exit_mm+0x122/0x160
+    do_exit+0x17a/0x430
+    do_group_exit+0x3d/0xb0
+    get_signal_to_deliver+0x247/0x480
+    do_signal+0x71/0x1b0
+    do_notify_resume+0x98/0xb0
+    int_signal+0x12/0x17
+  DWARF2 unwinder stuck at int_signal+0x12/0x17
+
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ include/asm-generic/tlb.h |    9 +++++++++
+ mm/memory.c               |    5 +++++
+ 2 files changed, 14 insertions(+)
+
+--- a/include/asm-generic/tlb.h
++++ b/include/asm-generic/tlb.h
+@@ -78,6 +78,14 @@ struct mmu_gather_batch {
+ #define MAX_GATHER_BATCH	\
+ 	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+ 
++/*
++ * Limit the maximum number of mmu_gather batches to reduce a risk of soft
++ * lockups for non-preemptible kernels on huge machines when a lot of memory
++ * is zapped during unmapping.
++ * 10K pages freed at once should be safe even without a preemption point.
++ */
++#define MAX_GATHER_BATCH_COUNT	(10000UL/MAX_GATHER_BATCH)
++
+ /* struct mmu_gather is an opaque type used by the mm code for passing around
+  * any data needed by arch specific code for tlb_remove_page.
+  */
+@@ -94,6 +102,7 @@ struct mmu_gather {
+ 	struct mmu_gather_batch *active;
+ 	struct mmu_gather_batch	local;
+ 	struct page		*__pages[MMU_GATHER_BUNDLE];
++	unsigned int		batch_count;
+ };
+ 
+ #define HAVE_GENERIC_MMU_GATHER
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -205,10 +205,14 @@ static int tlb_next_batch(struct mmu_gat
+ 		return 1;
+ 	}
+ 
++	if (tlb->batch_count == MAX_GATHER_BATCH_COUNT)
++		return 0;
++
+ 	batch = (void *)__get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
+ 	if (!batch)
+ 		return 0;
+ 
++	tlb->batch_count++;
+ 	batch->next = NULL;
+ 	batch->nr   = 0;
+ 	batch->max  = MAX_GATHER_BATCH;
+@@ -235,6 +239,7 @@ void tlb_gather_mmu(struct mmu_gather *t
+ 	tlb->local.nr   = 0;
+ 	tlb->local.max  = ARRAY_SIZE(tlb->__pages);
+ 	tlb->active     = &tlb->local;
++	tlb->batch_count = 0;
+ 
+ #ifdef CONFIG_HAVE_RCU_TABLE_FREE
+ 	tlb->batch = NULL;
+
 
