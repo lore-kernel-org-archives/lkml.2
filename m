@@ -1,173 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932608Ab3AIUER (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:04:17 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:33190 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932527Ab3AIT7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:59:12 -0500
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
-        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V5 13/30] aio: add aio support for iov_iter arguments
-Date: Wed,  9 Jan 2013 13:58:28 -0600
-Message-Id: <1357761525-22718-14-git-send-email-dave.kleikamp@oracle.com>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S932643Ab3AIUFV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:05:21 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36072 "EHLO hydra.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932466Ab3AIUFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:05:16 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Len Brown <lenb@kernel.org>,
+        Taku Izumi <izumi.taku@jp.fujitsu.com>,
+        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for hot-add root bus
+Date: Wed, 09 Jan 2013 21:10:56 +0100
+Message-ID: <5274779.gJQ3WSr6QB@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <CAE9FiQWm6=1JXA7EB-a0aqgTFQ5ZeCxz_gAU+ABUce1Ovn1Siw@mail.gmail.com>
+References: <20121030040237.GA10472@google.com> <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com> <CAE9FiQWm6=1JXA7EB-a0aqgTFQ5ZeCxz_gAU+ABUce1Ovn1Siw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
+On Wednesday, January 09, 2013 11:01:39 AM Yinghai Lu wrote:
+> On Wed, Jan 9, 2013 at 10:39 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> >> the reason why we need to change those codes for x86, we want to make it support
+> >> pci root bus hotplug. So it would be reasonable for us to align other
+> >> platform to x86
+> >> changes after pci root bus hotplug change is completely done.
+> >
+> > OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
+> > way to keep track of this consistency issue and merged
+> > pci/yinghai-survey-resources to my -next branch.
+> 
+> Thanks a lot. will send other pci root bus hotplug out.
+> 
+> question: now Rafael's tree has acpi-scan branch and it touches pci-root.c.
+> 
+> so is it ok for me to base patches on your pci/next and his pm/acpi-scan?
+> how?
+> can you two have some arrangement like you pulling Rafael's branch?
 
-This adds iocb cmds which specify that memory is held in iov_iter
-structures.  This lets kernel callers specify memory that can be
-expressed in an iov_iter, which includes pages in bio_vec arrays.
+My acpi-scan branch is not going to be rebased going forward, so it can be
+pulled from safely if that helps.
 
-Only kernel callers can provide an iov_iter so it doesn't make a lot of
-sense to expose the IOCB_CMD values for this as part of the user space
-ABI.
+Thanks,
+Rafael
 
-But kernel callers should also be able to perform the usual aio
-operations which suggests using the the existing operation namespace and
-support code.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
----
- fs/aio.c                     | 64 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/aio.h          |  3 +++
- include/uapi/linux/aio_abi.h |  2 ++
- 3 files changed, 69 insertions(+)
-
-diff --git a/fs/aio.c b/fs/aio.c
-index 9a1a6fc..2c03681 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -1424,6 +1424,26 @@ static ssize_t aio_setup_single_vector(int type, struct file * file, struct kioc
- 	return 0;
- }
- 
-+static ssize_t aio_read_iter(struct kiocb *iocb)
-+{
-+	struct file *file = iocb->ki_filp;
-+	ssize_t ret = -EINVAL;
-+
-+	if (file->f_op->read_iter)
-+		ret = file->f_op->read_iter(iocb, iocb->ki_iter, iocb->ki_pos);
-+	return ret;
-+}
-+
-+static ssize_t aio_write_iter(struct kiocb *iocb)
-+{
-+	struct file *file = iocb->ki_filp;
-+	ssize_t ret = -EINVAL;
-+
-+	if (file->f_op->write_iter)
-+		ret = file->f_op->write_iter(iocb, iocb->ki_iter, iocb->ki_pos);
-+	return ret;
-+}
-+
- /*
-  * aio_setup_iocb:
-  *	Performs the initial checks and aio retry method
-@@ -1487,6 +1507,34 @@ static ssize_t aio_setup_iocb(struct kiocb *kiocb, bool compat)
- 		if (file->f_op->aio_write)
- 			kiocb->ki_retry = aio_rw_vect_retry;
- 		break;
-+	case IOCB_CMD_READ_ITER:
-+		ret = -EINVAL;
-+		if (unlikely(!is_kernel_kiocb(kiocb)))
-+			break;
-+		ret = -EBADF;
-+		if (unlikely(!(file->f_mode & FMODE_READ)))
-+			break;
-+		ret = security_file_permission(file, MAY_READ);
-+		if (unlikely(ret))
-+			break;
-+		ret = -EINVAL;
-+		if (file->f_op->read_iter)
-+			kiocb->ki_retry = aio_read_iter;
-+		break;
-+	case IOCB_CMD_WRITE_ITER:
-+		ret = -EINVAL;
-+		if (unlikely(!is_kernel_kiocb(kiocb)))
-+			break;
-+		ret = -EBADF;
-+		if (unlikely(!(file->f_mode & FMODE_WRITE)))
-+			break;
-+		ret = security_file_permission(file, MAY_WRITE);
-+		if (unlikely(ret))
-+			break;
-+		ret = -EINVAL;
-+		if (file->f_op->write_iter)
-+			kiocb->ki_retry = aio_write_iter;
-+		break;
- 	case IOCB_CMD_FDSYNC:
- 		ret = -EINVAL;
- 		if (file->f_op->aio_fsync)
-@@ -1553,6 +1601,22 @@ void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
- }
- EXPORT_SYMBOL_GPL(aio_kernel_init_rw);
- 
-+/*
-+ * The iter count must be set before calling here.  Some filesystems uses
-+ * iocb->ki_left as an indicator of the size of an IO.
-+ */
-+void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
-+			  unsigned short op, struct iov_iter *iter, loff_t off)
-+{
-+	iocb->ki_filp = filp;
-+	iocb->ki_iter = iter;
-+	iocb->ki_opcode = op;
-+	iocb->ki_pos = off;
-+	iocb->ki_nbytes = iov_iter_count(iter);
-+	iocb->ki_left = iocb->ki_nbytes;
-+}
-+EXPORT_SYMBOL_GPL(aio_kernel_init_iter);
-+
- void aio_kernel_init_callback(struct kiocb *iocb,
- 			      void (*complete)(u64 user_data, long res),
- 			      u64 user_data)
-diff --git a/include/linux/aio.h b/include/linux/aio.h
-index f9e0292..2598e6c 100644
---- a/include/linux/aio.h
-+++ b/include/linux/aio.h
-@@ -126,6 +126,7 @@ struct kiocb {
- 	 * this is the underlying eventfd context to deliver events to.
- 	 */
- 	struct eventfd_ctx	*ki_eventfd;
-+	struct iov_iter		*ki_iter;
- };
- 
- static inline bool is_sync_kiocb(struct kiocb *kiocb)
-@@ -229,6 +230,8 @@ struct kiocb *aio_kernel_alloc(gfp_t gfp);
- void aio_kernel_free(struct kiocb *iocb);
- void aio_kernel_init_rw(struct kiocb *iocb, struct file *filp,
- 			unsigned short op, void *ptr, size_t nr, loff_t off);
-+void aio_kernel_init_iter(struct kiocb *iocb, struct file *filp,
-+			  unsigned short op, struct iov_iter *iter, loff_t off);
- void aio_kernel_init_callback(struct kiocb *iocb,
- 			      void (*complete)(u64 user_data, long res),
- 			      u64 user_data);
-diff --git a/include/uapi/linux/aio_abi.h b/include/uapi/linux/aio_abi.h
-index 86fa7a7..bd39bb2 100644
---- a/include/uapi/linux/aio_abi.h
-+++ b/include/uapi/linux/aio_abi.h
-@@ -44,6 +44,8 @@ enum {
- 	IOCB_CMD_NOOP = 6,
- 	IOCB_CMD_PREADV = 7,
- 	IOCB_CMD_PWRITEV = 8,
-+	IOCB_CMD_READ_ITER = 9,
-+	IOCB_CMD_WRITE_ITER = 10,
- };
- 
- /*
 -- 
-1.8.1
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
