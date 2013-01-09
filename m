@@ -1,108 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab3AIVWQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:22:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42645 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933371Ab3AIUjS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:18 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>, "J. Bruce Fields" <bfields@redhat.com>
-Subject: [ 049/123] nfsd: avoid permission checks on EXCLUSIVE_CREATE replay
-Date: Wed,  9 Jan 2013 12:34:48 -0800
-Message-Id: <20130109201504.858155277@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933623Ab3AIVWd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:22:33 -0500
+Received: from moutng.kundenserver.de ([212.227.17.9]:53315 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933371Ab3AIVW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:22:29 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 10/14] PCI: tegra: Move PCIe driver to drivers/pci/host
+Date: Wed, 9 Jan 2013 21:22:07 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-11-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1357764194-12677-11-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301092122.08011.arnd@arndb.de>
+X-Provags-ID: V02:K0:2aWtxGZjfXHJzTaOIdhFW1/IQ3Tu3+s4Oa7xzfZ4qXW
+ MhMGlE1EUhE3xTfjixFeXmpsdctTp49toR0VdcP28YoX+/JIZ2
+ tBCiiHWfmLxhLc4uR6Api8ff3Tq+k+jQ9pBWVaXFccG/r6QfXf
+ fehg44LN1o0aZKTZ7byDNRXtkElm8nHjie432CxxHoS8oqk5Au
+ nH2RGpRhNCN3wcDsp185HPC9yTCVEp/fV5kGP0F1+9/+bcJL1O
+ vfuL3MWBdzijejlwGlmGQfrGVSYeaqHDGSVi9Yv1ytr8ztucgH
+ OI/TzWOq6F+7ssDKOjhH/RCw5shqL+Cftn/gdskDKcimMT+epv
+ rcKL4SmN4JTv6coNg9f4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday 09 January 2013, Thierry Reding wrote:
+> Move the PCIe driver from arch/arm/mach-tegra into the drivers/pci/host
+> directory. The motivation is to collect various host controller drivers
+> in the same location in order to facilitate refactoring.
+> 
+> The Tegra PCIe driver has been largely rewritten, both in order to turn
+> it into a proper platform driver and to add MSI (based on code by
+> Krishna Kishore <kthota@nvidia.com>) as well as device tree support.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-------------------
+Can you split this patch into two patches, one that moves the file,
+and another one that does all the changes? It's a little hard to
+review when I can't easily see which code is actually new here.
 
-From: Neil Brown <neilb@suse.de>
-
-commit 7007c90fb9fef593b4aeaeee57e6a6754276c97c upstream.
-
-With NFSv4, if we create a file then open it we explicit avoid checking
-the permissions on the file during the open because the fact that we
-created it ensures we should be allow to open it (the create and the
-open should appear to be a single operation).
-
-However if the reply to an EXCLUSIVE create gets lots and the client
-resends the create, the current code will perform the permission check -
-because it doesn't realise that it did the open already..
-
-This patch should fix this.
-
-Note that I haven't actually seen this cause a problem.  I was just
-looking at the code trying to figure out a different EXCLUSIVE open
-related issue, and this looked wrong.
-
-(Fix confirmed with pynfs 4.0 test OPEN4--bfields)
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-[bfields: use OWNER_OVERRIDE and update for 4.1]
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfsd/nfs4proc.c |    8 +++++---
- fs/nfsd/vfs.c      |   10 ++++++++--
- 2 files changed, 13 insertions(+), 5 deletions(-)
-
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -194,6 +194,7 @@ static __be32
- do_open_lookup(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_open *open)
- {
- 	struct svc_fh *resfh;
-+	int accmode;
- 	__be32 status;
- 
- 	resfh = kmalloc(sizeof(struct svc_fh), GFP_KERNEL);
-@@ -253,9 +254,10 @@ do_open_lookup(struct svc_rqst *rqstp, s
- 	/* set reply cache */
- 	fh_copy_shallow(&open->op_openowner->oo_owner.so_replay.rp_openfh,
- 			&resfh->fh_handle);
--	if (!open->op_created)
--		status = do_open_permission(rqstp, resfh, open,
--					    NFSD_MAY_NOP);
-+	accmode = NFSD_MAY_NOP;
-+	if (open->op_created)
-+		accmode |= NFSD_MAY_OWNER_OVERRIDE;
-+	status = do_open_permission(rqstp, resfh, open, accmode);
- 	set_change_info(&open->op_cinfo, current_fh);
- 	fh_dup2(current_fh, resfh);
- out:
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -1485,13 +1485,19 @@ do_nfsd_create(struct svc_rqst *rqstp, s
- 		case NFS3_CREATE_EXCLUSIVE:
- 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
- 			    && dchild->d_inode->i_atime.tv_sec == v_atime
--			    && dchild->d_inode->i_size  == 0 )
-+			    && dchild->d_inode->i_size  == 0 ) {
-+				if (created)
-+					*created = 1;
- 				break;
-+			}
- 		case NFS4_CREATE_EXCLUSIVE4_1:
- 			if (   dchild->d_inode->i_mtime.tv_sec == v_mtime
- 			    && dchild->d_inode->i_atime.tv_sec == v_atime
--			    && dchild->d_inode->i_size  == 0 )
-+			    && dchild->d_inode->i_size  == 0 ) {
-+				if (created)
-+					*created = 1;
- 				goto set_attr;
-+			}
- 			 /* fallthru */
- 		case NFS3_CREATE_GUARDED:
- 			err = nfserr_exist;
-
-
+	Arnd
