@@ -1,112 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932970Ab3AIUhQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:16 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41301 "EHLO mail.kernel.org"
+	id S933022Ab3AIUh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:28 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41394 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932655Ab3AIUhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:08 -0500
+	id S932971Ab3AIUhQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Puneet Kumar <puneetster@chromium.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Damien Wyart <damien.wyart@free.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 015/123] mm: fix calculation of dirtyable memory
-Date: Wed,  9 Jan 2013 12:34:14 -0800
-Message-Id: <20130109201500.463211651@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>,
+        Kiran Kumar Kella <kkiran@broadcom.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 32/47] tcp: implement RFC 5961 3.2
+Date: Wed,  9 Jan 2013 12:35:27 -0800
+Message-Id: <20130109201733.185558289@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sonny Rao <sonnyrao@chromium.org>
 
-commit c8b74c2f6604923de91f8aa6539f8bb934736754 upstream.
+From: Eric Dumazet <edumazet@google.com>
 
-The system uses global_dirtyable_memory() to calculate number of
-dirtyable pages/pages that can be allocated to the page cache.  A bug
-causes an underflow thus making the page count look like a big unsigned
-number.  This in turn confuses the dirty writeback throttling to
-aggressively write back pages as they become dirty (usually 1 page at a
-time).  This generally only affects systems with highmem because the
-underflowed count gets subtracted from the global count of dirtyable
-memory.
+[ Upstream commit 282f23c6ee343126156dd41218b22ece96d747e3 ]
 
-The problem was introduced with v3.2-4896-gab8fabd
+Implement the RFC 5691 mitigation against Blind
+Reset attack using RST bit.
 
-Fix is to ensure we don't get an underflowed total of either highmem or
-global dirtyable memory.
+Idea is to validate incoming RST sequence,
+to match RCV.NXT value, instead of previouly accepted
+window : (RCV.NXT <= SEG.SEQ < RCV.NXT+RCV.WND)
 
-Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
-Signed-off-by: Puneet Kumar <puneetster@chromium.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Tested-by: Damien Wyart <damien.wyart@free.fr>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+If sequence is in window but not an exact match, send
+a "challenge ACK", so that the other part can resend an
+RST with the appropriate sequence.
+
+Add a new sysctl, tcp_challenge_ack_limit, to limit
+number of challenge ACK sent per second.
+
+Add a new SNMP counter to count number of challenge acks sent.
+(netstat -s | grep TCPChallengeACK)
+
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Kiran Kumar Kella <kkiran@broadcom.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/page-writeback.c |   25 ++++++++++++++++++++-----
- 1 file changed, 20 insertions(+), 5 deletions(-)
+ Documentation/networking/ip-sysctl.txt |    5 +++++
+ include/linux/snmp.h                   |    1 +
+ include/net/tcp.h                      |    1 +
+ net/ipv4/proc.c                        |    1 +
+ net/ipv4/sysctl_net_ipv4.c             |    7 +++++++
+ net/ipv4/tcp_input.c                   |   31 ++++++++++++++++++++++++++++++-
+ 6 files changed, 45 insertions(+), 1 deletion(-)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -201,6 +201,18 @@ static unsigned long highmem_dirtyable_m
- 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
- 	}
- 	/*
-+	 * Unreclaimable memory (kernel memory or anonymous memory
-+	 * without swap) can bring down the dirtyable pages below
-+	 * the zone's dirty balance reserve and the above calculation
-+	 * will underflow.  However we still want to add in nodes
-+	 * which are below threshold (negative values) to get a more
-+	 * accurate calculation but make sure that the total never
-+	 * underflows.
-+	 */
-+	if ((long)x < 0)
-+		x = 0;
-+
-+	/*
- 	 * Make sure that the number of highmem pages is never larger
- 	 * than the number of the total dirtyable memory. This can only
- 	 * occur in very strange VM situations but we want to make sure
-@@ -222,8 +234,8 @@ static unsigned long global_dirtyable_me
- {
- 	unsigned long x;
+--- a/Documentation/networking/ip-sysctl.txt
++++ b/Documentation/networking/ip-sysctl.txt
+@@ -534,6 +534,11 @@ tcp_thin_dupack - BOOLEAN
+ 	Documentation/networking/tcp-thin.txt
+ 	Default: 0
  
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
--	    dirty_balance_reserve;
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+	x -= min(x, dirty_balance_reserve);
- 
- 	if (!vm_highmem_is_dirtyable)
- 		x -= highmem_dirtyable_memory(x);
-@@ -290,9 +302,12 @@ static unsigned long zone_dirtyable_memo
- 	 * highmem zone can hold its share of dirty pages, so we don't
- 	 * care about vm_highmem_is_dirtyable here.
- 	 */
--	return zone_page_state(zone, NR_FREE_PAGES) +
--	       zone_reclaimable_pages(zone) -
--	       zone->dirty_balance_reserve;
-+	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
-+		zone_reclaimable_pages(zone);
++tcp_challenge_ack_limit - INTEGER
++	Limits number of Challenge ACK sent per second, as recommended
++	in RFC 5961 (Improving TCP's Robustness to Blind In-Window Attacks)
++	Default: 100
 +
-+	/* don't allow this to underflow */
-+	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
-+	return nr_pages;
+ UDP variables:
+ 
+ udp_mem - vector of 3 INTEGERs: min, pressure, max
+--- a/include/linux/snmp.h
++++ b/include/linux/snmp.h
+@@ -231,6 +231,7 @@ enum
+ 	LINUX_MIB_TCPDEFERACCEPTDROP,
+ 	LINUX_MIB_IPRPFILTER, /* IP Reverse Path Filter (rp_filter) */
+ 	LINUX_MIB_TCPTIMEWAITOVERFLOW,		/* TCPTimeWaitOverflow */
++	LINUX_MIB_TCPCHALLENGEACK,		/* TCPChallengeACK */
+ 	__LINUX_MIB_MAX
+ };
+ 
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -246,6 +246,7 @@ extern int sysctl_tcp_max_ssthresh;
+ extern int sysctl_tcp_cookie_size;
+ extern int sysctl_tcp_thin_linear_timeouts;
+ extern int sysctl_tcp_thin_dupack;
++extern int sysctl_tcp_challenge_ack_limit;
+ 
+ extern atomic_long_t tcp_memory_allocated;
+ extern struct percpu_counter tcp_sockets_allocated;
+--- a/net/ipv4/proc.c
++++ b/net/ipv4/proc.c
+@@ -254,6 +254,7 @@ static const struct snmp_mib snmp4_net_l
+ 	SNMP_MIB_ITEM("TCPDeferAcceptDrop", LINUX_MIB_TCPDEFERACCEPTDROP),
+ 	SNMP_MIB_ITEM("IPReversePathFilter", LINUX_MIB_IPRPFILTER),
+ 	SNMP_MIB_ITEM("TCPTimeWaitOverflow", LINUX_MIB_TCPTIMEWAITOVERFLOW),
++	SNMP_MIB_ITEM("TCPChallengeACK", LINUX_MIB_TCPCHALLENGEACK),
+ 	SNMP_MIB_SENTINEL
+ };
+ 
+--- a/net/ipv4/sysctl_net_ipv4.c
++++ b/net/ipv4/sysctl_net_ipv4.c
+@@ -566,6 +566,13 @@ static struct ctl_table ipv4_table[] = {
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dointvec
+ 	},
++	{
++		.procname	= "tcp_challenge_ack_limit",
++		.data		= &sysctl_tcp_challenge_ack_limit,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec
++	},
+ #ifdef CONFIG_NET_DMA
+ 	{
+ 		.procname	= "tcp_dma_copybreak",
+--- a/net/ipv4/tcp_input.c
++++ b/net/ipv4/tcp_input.c
+@@ -86,6 +86,9 @@ int sysctl_tcp_app_win __read_mostly = 3
+ int sysctl_tcp_adv_win_scale __read_mostly = 1;
+ EXPORT_SYMBOL(sysctl_tcp_adv_win_scale);
+ 
++/* rfc5961 challenge ack rate limiting */
++int sysctl_tcp_challenge_ack_limit = 100;
++
+ int sysctl_tcp_stdurg __read_mostly;
+ int sysctl_tcp_rfc1337 __read_mostly;
+ int sysctl_tcp_max_orphans __read_mostly = NR_FILE;
+@@ -5165,6 +5168,23 @@ out:
  }
+ #endif /* CONFIG_NET_DMA */
  
- /**
++static void tcp_send_challenge_ack(struct sock *sk)
++{
++	/* unprotected vars, we dont care of overwrites */
++	static u32 challenge_timestamp;
++	static unsigned int challenge_count;
++	u32 now = jiffies / HZ;
++
++	if (now != challenge_timestamp) {
++		challenge_timestamp = now;
++		challenge_count = 0;
++	}
++	if (++challenge_count <= sysctl_tcp_challenge_ack_limit) {
++		NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_TCPCHALLENGEACK);
++		tcp_send_ack(sk);
++	}
++}
++
+ /* Does PAWS and seqno based validation of an incoming segment, flags will
+  * play significant role here.
+  */
+@@ -5201,7 +5221,16 @@ static int tcp_validate_incoming(struct
+ 
+ 	/* Step 2: check RST bit */
+ 	if (th->rst) {
+-		tcp_reset(sk);
++		/* RFC 5961 3.2 :
++		 * If sequence number exactly matches RCV.NXT, then
++		 *     RESET the connection
++		 * else
++		 *     Send a challenge ACK
++		 */
++		if (TCP_SKB_CB(skb)->seq == tp->rcv_nxt)
++			tcp_reset(sk);
++		else
++			tcp_send_challenge_ack(sk);
+ 		goto discard;
+ 	}
+ 
 
 
