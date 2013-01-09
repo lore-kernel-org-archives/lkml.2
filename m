@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722Ab3AIFXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 00:23:04 -0500
-Received: from co9ehsobe003.messaging.microsoft.com ([207.46.163.26]:59623
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750799Ab3AIFXC (ORCPT
+	id S1751736Ab3AIFbv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 00:31:51 -0500
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:63915 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767Ab3AIFbu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 00:23:02 -0500
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1ee6h1de0h1202h1e76h1d1ah1d2ahz8dhz8275bh8275dhz2dh87h2a8h668h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1155h)
-X-FB-DOMAIN-IP-MATCH: fail
-Date: Wed, 9 Jan 2013 13:50:19 +0800
-From: Shawn Guo <shawn.guo@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-CC: <mturquette@linaro.org>, <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] clk: mxs: Index is always positive
-Message-ID: <20130109055017.GA12525@S2100-06.ap.freescale.net>
-References: <1357609135-13922-1-git-send-email-festevam@gmail.com>
+	Wed, 9 Jan 2013 00:31:50 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1357609135-13922-1-git-send-email-festevam@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: sigmatel.com
+In-Reply-To: <20130109042533.GA9164@kroah.com>
+References: <20130108223611.GA19672@kroah.com>
+	<20130109003824.GA21075@kroah.com>
+	<CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
+	<20130109042533.GA9164@kroah.com>
+Date: Wed, 9 Jan 2013 15:31:50 +1000
+Message-ID: <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
+Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
+From: Dave Airlie <airlied@gmail.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 11:38:55PM -0200, Fabio Estevam wrote:
-> From: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-> Fix the following warnings when building with W=1 option:
-> 
-> drivers/clk/mxs/clk-imx23.c: In function 'mx23_clocks_init':
-> drivers/clk/mxs/clk-imx23.c:149:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-> drivers/clk/mxs/clk-imx23.c:165:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-> ...
-> 
-> drivers/clk/mxs/clk-imx28.c: In function 'mx28_clocks_init':
-> drivers/clk/mxs/clk-imx28.c:227:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-> drivers/clk/mxs/clk-imx28.c:244:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-> 
-> Signed-off-by: Fabio Estevam <fabio.estevam@freescale.com>
+On Wed, Jan 9, 2013 at 2:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Jan 09, 2013 at 01:42:39PM +1000, Dave Airlie wrote:
+>> >> Hi all,
+>> >>
+>> >> I've hit this 3 times today on Linus's latest 3.8-rc2+ tree:
+>> >>
+>> >> [11868.414648] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+>> >> [11868.414655] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+>> >> [11870.408342] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+>> >> [11870.408412] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
+>> >> [11870.408414] [drm:i915_reset] *ERROR* Failed to reset chip.
+>> >> [11883.083225] gnome-shell[19396]: segfault at 218 ip 00007feef5f32333 sp 00007ffffc1dc930 error 4 in i965_dri.so[7feef5ecb000+d0000]
+>> >
+>> > I just hit this again.  And, as the kernel was asking for it, attached
+>> > is the i915_error_state file, compressed due to the size of it.
+>> >
+>> Welcome to sink hole that is
+>> https://bugs.freedesktop.org/show_bug.cgi?id=55984
+>>
+>> 3 months and ticking, Intel guys are all running away from it saying
+>> they can't reproduce, everyone else on planet seems to reproduce quite
+>> easily.
+>>
+>> Its generally considered a bug in the relocation/shrinker/no idea category,
+>
+> Ugh, what a mess.
+>
+>> Assuming you have an Ironlake machine which I'm going to guess you do.
+>
+> I don't know, it's an old i5 machine that has never had any video
+> problems for many years now.  How do I tell?
 
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
+lspci -nn probably an 8086:0046 device.
 
+Old i5 probably means original i5 which means ironlake.
+
+Dave.
