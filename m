@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934193Ab3AIUwA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:52:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43848 "EHLO mail.kernel.org"
+	id S934149Ab3AIUv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:51:59 -0500
+Received: from hydra.sisk.pl ([212.160.235.94]:36105 "EHLO hydra.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934030Ab3AIUlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:11 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Ulrich Eckhardt <usb@uli-eckhardt.de>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 106/123] PCI/PM: Do not suspend port if any subordinate device needs PME polling
-Date: Wed,  9 Jan 2013 12:35:45 -0800
-Message-Id: <20130109201512.087668690@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933894Ab3AIUv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:51:56 -0500
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: SRAT: report non-volatile memory in debug
+Date: Wed, 09 Jan 2013 21:57:40 +0100
+Message-ID: <1571870.Rvy3fV1yKf@vostro.rjw.lan>
+User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
+In-Reply-To: <1357691375.1890.16.camel@buesod1.americas.hpqcorp.net>
+References: <1357690556.1890.13.camel@buesod1.americas.hpqcorp.net> <1692605.TGpS6mF86Q@vostro.rjw.lan> <1357691375.1890.16.camel@buesod1.americas.hpqcorp.net>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Tuesday, January 08, 2013 04:29:35 PM Davidlohr Bueso wrote:
+> On Wed, 2013-01-09 at 01:34 +0100, Rafael J. Wysocki wrote:
+> > On Tuesday, January 08, 2013 04:15:56 PM Davidlohr Bueso wrote:
+> > > Just as with the other memory affinity flags, report
+> > > non-volatile memory with ACPI debug.
+> > 
+> > Looks kind of good, but ->
+> > 
+> > > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > > ---
+> > >  drivers/acpi/numa.c | 4 +++-
+> > >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+> > > index cb31298..68077ac 100644
+> > > --- a/drivers/acpi/numa.c
+> > > +++ b/drivers/acpi/numa.c
+> > > @@ -116,12 +116,14 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
+> > >  			struct acpi_srat_mem_affinity *p =
+> > >  			    (struct acpi_srat_mem_affinity *)header;
+> > >  			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> > > -					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s\n",
+> > > +					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s%s\n",
+> > >  					  (unsigned long)p->base_address,
+> > >  					  (unsigned long)p->length,
+> > >  					  p->proximity_domain,
+> > >  					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
+> > >  					  "enabled" : "disabled",
+> > > +					  (p->flags & ACPI_SRAT_MEM_NON_VOLATILE)?
+> > > +					  " non-volatile" : "",
+> > 
+> > -> why did you put non-volatile before hot-pluggable?
+> 
+> No particular reason. Should I send a v2 with non-volatile at the end?
 
-------------------
+Yes, please.
 
-From: Huang Ying <ying.huang@intel.com>
-
-commit c733b77475707cc3980542c86ee0ad5c841d544c upstream.
-
-Ulrich reported that his USB3 cardreader does not work reliably when
-connected to the USB3 port.  It turns out that USB3 controller failed to
-awaken when plugging in the USB3 cardreader.  Further experiments found
-that the USB3 host controller can only be awakened via polling, not via PME
-interrupt.  But if the PCIe port to which the USB3 host controller is
-connected is suspended, we cannot poll the controller because its config
-space is not accessible when the PCIe port is in a low power state.
-
-To solve the issue, the PCIe port will not be suspended if any subordinate
-device needs PME polling.
-
-[bhelgaas: use bool consistently rather than mixing int/bool]
-Reference: http://lkml.kernel.org/r/50841CCC.9030809@uli-eckhardt.de
-Reported-by: Ulrich Eckhardt <usb@uli-eckhardt.de>
-Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/pci/pcie/portdrv_pci.c |   20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
-
---- a/drivers/pci/pcie/portdrv_pci.c
-+++ b/drivers/pci/pcie/portdrv_pci.c
-@@ -134,10 +134,28 @@ static int pcie_port_runtime_resume(stru
- 	return 0;
- }
- 
-+static int pci_dev_pme_poll(struct pci_dev *pdev, void *data)
-+{
-+	bool *pme_poll = data;
-+
-+	if (pdev->pme_poll)
-+		*pme_poll = true;
-+	return 0;
-+}
-+
- static int pcie_port_runtime_idle(struct device *dev)
- {
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+	bool pme_poll = false;
-+
-+	/*
-+	 * If any subordinate device needs pme poll, we should keep
-+	 * the port in D0, because we need port in D0 to poll it.
-+	 */
-+	pci_walk_bus(pdev->subordinate, pci_dev_pme_poll, &pme_poll);
- 	/* Delay for a short while to prevent too frequent suspend/resume */
--	pm_schedule_suspend(dev, 10);
-+	if (!pme_poll)
-+		pm_schedule_suspend(dev, 10);
- 	return -EBUSY;
- }
- #else
+Thanks,
+Rafael
 
 
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
