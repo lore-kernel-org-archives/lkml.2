@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933986Ab3AIU7d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:59:33 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43550 "EHLO mail.kernel.org"
+	id S933912Ab3AIU7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:59:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43598 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933899Ab3AIUki (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:38 -0500
+	id S933710Ab3AIUkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Michal Hocko <mhocko@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 78/80] mm: limit mmu_gather batching to fix soft lockups on !CONFIG_PREEMPT
-Date: Wed,  9 Jan 2013 12:36:10 -0800
-Message-Id: <20130109201510.398039982@linuxfoundation.org>
+        Marcos Chaparro <marcos@mrkindustries.com.ar>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [ 71/80] Bluetooth: ath3k: Add support for VAIO VPCEH [0489:e027]
+Date: Wed,  9 Jan 2013 12:36:03 -0800
+Message-Id: <20130109201509.513554860@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -29,132 +27,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michal Hocko <mhocko@suse.cz>
+From: Marcos Chaparro <marcos@mrkindustries.com.ar>
 
-commit 53a59fc67f97374758e63a9c785891ec62324c81 upstream.
+commit acd9454433e28c1a365d8b069813c35c1c3a8ac3 upstream.
 
-Since commit e303297e6c3a ("mm: extended batches for generic
-mmu_gather") we are batching pages to be freed until either
-tlb_next_batch cannot allocate a new batch or we are done.
+Added Atheros AR3011 internal bluetooth device found in Sony VAIO VPCEH to the
+devices list.
+Before this, the bluetooth module was identified as an Foxconn / Hai bluetooth
+device [0489:e027], now it claims to be an AtherosAR3011 Bluetooth
+[0cf3:3005].
 
-This works just fine most of the time but we can get in troubles with
-non-preemptible kernel (CONFIG_PREEMPT_NONE or CONFIG_PREEMPT_VOLUNTARY)
-on large machines where too aggressive batching might lead to soft
-lockups during process exit path (exit_mmap) because there are no
-scheduling points down the free_pages_and_swap_cache path and so the
-freeing can take long enough to trigger the soft lockup.
+T:  Bus=01 Lev=02 Prnt=02 Port=04 Cnt=02 Dev#=  4 Spd=12   MxCh= 0
+D:  Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0489 ProdID=e027 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=81(I) Atr=03(Int.) MxPS=  16 Ivl=1ms
+E:  Ad=82(I) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+E:  Ad=02(O) Atr=02(Bulk) MxPS=  64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   0 Ivl=1ms
+I:  If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=   9 Ivl=1ms
+I:  If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  17 Ivl=1ms
+I:  If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  25 Ivl=1ms
+I:  If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  33 Ivl=1ms
+I:  If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E:  Ad=83(I) Atr=01(Isoc) MxPS=  49 Ivl=1ms
+E:  Ad=03(O) Atr=01(Isoc) MxPS=  49 Ivl=1ms
 
-The lockup is harmless except when the system is setup to panic on
-softlockup which is not that unusual.
-
-The simplest way to work around this issue is to limit the maximum
-number of batches in a single mmu_gather.  10k of collected pages should
-be safe to prevent from soft lockups (we would have 2ms for one) even if
-they are all freed without an explicit scheduling point.
-
-This patch doesn't add any new explicit scheduling points because it
-relies on zap_pmd_range during page tables zapping which calls
-cond_resched per PMD.
-
-The following lockup has been reported for 3.0 kernel with a huge
-process (in order of hundreds gigs but I do know any more details).
-
-  BUG: soft lockup - CPU#56 stuck for 22s! [kernel:31053]
-  Modules linked in: af_packet nfs lockd fscache auth_rpcgss nfs_acl sunrpc mptctl mptbase autofs4 binfmt_misc dm_round_robin dm_multipath bonding cpufreq_conservative cpufreq_userspace cpufreq_powersave pcc_cpufreq mperf microcode fuse loop osst sg sd_mod crc_t10dif st qla2xxx scsi_transport_fc scsi_tgt netxen_nic i7core_edac iTCO_wdt joydev e1000e serio_raw pcspkr edac_core iTCO_vendor_support acpi_power_meter rtc_cmos hpwdt hpilo button container usbhid hid dm_mirror dm_region_hash dm_log linear uhci_hcd ehci_hcd usbcore usb_common scsi_dh_emc scsi_dh_alua scsi_dh_hp_sw scsi_dh_rdac scsi_dh dm_snapshot pcnet32 mii edd dm_mod raid1 ext3 mbcache jbd fan thermal processor thermal_sys hwmon cciss scsi_mod
-  Supported: Yes
-  CPU 56
-  Pid: 31053, comm: kernel Not tainted 3.0.31-0.9-default #1 HP ProLiant DL580 G7
-  RIP: 0010:  _raw_spin_unlock_irqrestore+0x8/0x10
-  RSP: 0018:ffff883ec1037af0  EFLAGS: 00000206
-  RAX: 0000000000000e00 RBX: ffffea01a0817e28 RCX: ffff88803ffd9e80
-  RDX: 0000000000000200 RSI: 0000000000000206 RDI: 0000000000000206
-  RBP: 0000000000000002 R08: 0000000000000001 R09: ffff887ec724a400
-  R10: 0000000000000000 R11: dead000000200200 R12: ffffffff8144c26e
-  R13: 0000000000000030 R14: 0000000000000297 R15: 000000000000000e
-  FS:  00007ed834282700(0000) GS:ffff88c03f200000(0000) knlGS:0000000000000000
-  CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-  CR2: 000000000068b240 CR3: 0000003ec13c5000 CR4: 00000000000006e0
-  DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-  DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-  Process kernel (pid: 31053, threadinfo ffff883ec1036000, task ffff883ebd5d4100)
-  Call Trace:
-    release_pages+0xc5/0x260
-    free_pages_and_swap_cache+0x9d/0xc0
-    tlb_flush_mmu+0x5c/0x80
-    tlb_finish_mmu+0xe/0x50
-    exit_mmap+0xbd/0x120
-    mmput+0x49/0x120
-    exit_mm+0x122/0x160
-    do_exit+0x17a/0x430
-    do_group_exit+0x3d/0xb0
-    get_signal_to_deliver+0x247/0x480
-    do_signal+0x71/0x1b0
-    do_notify_resume+0x98/0xb0
-    int_signal+0x12/0x17
-  DWARF2 unwinder stuck at int_signal+0x12/0x17
-
-Signed-off-by: Michal Hocko <mhocko@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Marcos Chaparro <marcos@mrkindustries.com.ar>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/asm-generic/tlb.h |    9 +++++++++
- mm/memory.c               |    5 +++++
- 2 files changed, 14 insertions(+)
+ drivers/bluetooth/ath3k.c |    1 +
+ drivers/bluetooth/btusb.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/include/asm-generic/tlb.h
-+++ b/include/asm-generic/tlb.h
-@@ -78,6 +78,14 @@ struct mmu_gather_batch {
- #define MAX_GATHER_BATCH	\
- 	((PAGE_SIZE - sizeof(struct mmu_gather_batch)) / sizeof(void *))
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -66,6 +66,7 @@ static struct usb_device_id ath3k_table[
+ 	{ USB_DEVICE(0x13d3, 0x3304) },
+ 	{ USB_DEVICE(0x0930, 0x0215) },
+ 	{ USB_DEVICE(0x0489, 0xE03D) },
++	{ USB_DEVICE(0x0489, 0xE027) },
  
-+/*
-+ * Limit the maximum number of mmu_gather batches to reduce a risk of soft
-+ * lockups for non-preemptible kernels on huge machines when a lot of memory
-+ * is zapped during unmapping.
-+ * 10K pages freed at once should be safe even without a preemption point.
-+ */
-+#define MAX_GATHER_BATCH_COUNT	(10000UL/MAX_GATHER_BATCH)
-+
- /* struct mmu_gather is an opaque type used by the mm code for passing around
-  * any data needed by arch specific code for tlb_remove_page.
-  */
-@@ -94,6 +102,7 @@ struct mmu_gather {
- 	struct mmu_gather_batch *active;
- 	struct mmu_gather_batch	local;
- 	struct page		*__pages[MMU_GATHER_BUNDLE];
-+	unsigned int		batch_count;
- };
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03F0, 0x311D) },
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -130,6 +130,7 @@ static struct usb_device_id blacklist_ta
+ 	{ USB_DEVICE(0x13d3, 0x3304), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0930, 0x0215), .driver_info = BTUSB_IGNORE },
+ 	{ USB_DEVICE(0x0489, 0xe03d), .driver_info = BTUSB_IGNORE },
++	{ USB_DEVICE(0x0489, 0xe027), .driver_info = BTUSB_IGNORE },
  
- #define HAVE_GENERIC_MMU_GATHER
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -182,10 +182,14 @@ static int tlb_next_batch(struct mmu_gat
- 		return 1;
- 	}
- 
-+	if (tlb->batch_count == MAX_GATHER_BATCH_COUNT)
-+		return 0;
-+
- 	batch = (void *)__get_free_pages(GFP_NOWAIT | __GFP_NOWARN, 0);
- 	if (!batch)
- 		return 0;
- 
-+	tlb->batch_count++;
- 	batch->next = NULL;
- 	batch->nr   = 0;
- 	batch->max  = MAX_GATHER_BATCH;
-@@ -212,6 +216,7 @@ void tlb_gather_mmu(struct mmu_gather *t
- 	tlb->local.nr   = 0;
- 	tlb->local.max  = ARRAY_SIZE(tlb->__pages);
- 	tlb->active     = &tlb->local;
-+	tlb->batch_count = 0;
- 
- #ifdef CONFIG_HAVE_RCU_TABLE_FREE
- 	tlb->batch = NULL;
+ 	/* Atheros AR9285 Malbec with sflash firmware */
+ 	{ USB_DEVICE(0x03f0, 0x311d), .driver_info = BTUSB_IGNORE },
 
 
