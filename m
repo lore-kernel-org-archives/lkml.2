@@ -1,111 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081Ab3AIWXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:23:19 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35475 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757450Ab3AIWXQ (ORCPT
+	id S1758116Ab3AIWau (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:30:50 -0500
+Received: from moutng.kundenserver.de ([212.227.126.171]:52532 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758044Ab3AIWat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:23:16 -0500
-Date: Wed, 9 Jan 2013 14:23:14 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: rientjes@google.com, len.brown@intel.com, benh@kernel.crashing.org,
-        paulus@samba.org, cl@linux.com, minchan.kim@gmail.com,
-        kosaki.motohiro@jp.fujitsu.com, isimatu.yasuaki@jp.fujitsu.com,
-        wujianguo@huawei.com, wency@cn.fujitsu.com, hpa@zytor.com,
-        linfeng@cn.fujitsu.com, laijs@cn.fujitsu.com, mgorman@suse.de,
-        yinghai@kernel.org, glommer@parallels.com, x86@kernel.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, linux-acpi@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
-Message-Id: <20130109142314.1ce04a96.akpm@linux-foundation.org>
-In-Reply-To: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 9 Jan 2013 17:30:49 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 02/10] goldfish: add the goldfish virtual bus
+Date: Wed, 9 Jan 2013 22:30:40 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+        mikechan@google.com
+References: <20130109142212.9239.62026.stgit@bob.linux.org.uk> <20130109142305.9239.37581.stgit@bob.linux.org.uk>
+In-Reply-To: <20130109142305.9239.37581.stgit@bob.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201301092230.40331.arnd@arndb.de>
+X-Provags-ID: V02:K0:yxlayqG5+9lqWlN7gVfsoACTvb7pzpLJcRQ02jjc/6f
+ kQ6eXpGE16iL0hdxI0nEY9/dUGoAlHTESCszagXxEkkiUqEfHm
+ xMwG/idn7EO9J4vuTRT8bUvYzG8duh4PBaZk7KjpMDvdV1Xwu1
+ HcAZI/MYu0SFmjqvi7RINoN2fHINUiFetHJ30wbnq1uTYz8ww4
+ gS5rnf+L4KMF2dN95QHEAjzh53P1/DLt7OU66UEhTyrA3BKEB2
+ TvYRA+QEtMRGKTzV3+sUv4VVXyWu724x3sgvgmeLCMlHki6bC1
+ ly71kk074F15nQEGFd/lHxKgV3a25jthTYFFzuSB3216ESWKjm
+ TTBDkQfhrBK4e1urX3Pg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 9 Jan 2013 17:32:24 +0800
-Tang Chen <tangchen@cn.fujitsu.com> wrote:
-
-> Here is the physical memory hot-remove patch-set based on 3.8rc-2.
+On Wednesday 09 January 2013, Alan Cox wrote:
+> From: Jun Nakajima <jnakajim@gmail.com>
 > 
-> This patch-set aims to implement physical memory hot-removing.
+> This imports the current Google code and cleans it up slightly to use pr_ and
+> to properly request its resources.
 > 
-> The patches can free/remove the following things:
+> Goldfish is an emulator used for Android development. It has a virtual bus where
+> the emulator passes platform device information to the guest which then creates
+> the appropriate devices.
 > 
->   - /sys/firmware/memmap/X/{end, start, type} : [PATCH 4/15]
->   - memmap of sparse-vmemmap                  : [PATCH 6,7,8,10/15]
->   - page table of removed memory              : [RFC PATCH 7,8,10/15]
->   - node and related sysfs files              : [RFC PATCH 13-15/15]
-> 
-> 
-> Existing problem:
-> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
-> when we online pages.
-> 
-> For example: there is a memory device on node 1. The address range
-> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
-> and memory11 under the directory /sys/devices/system/memory/.
-> 
-> If CONFIG_MEMCG is selected, when we online memory8, the memory stored page
-> cgroup is not provided by this memory device. But when we online memory9, the
-> memory stored page cgroup may be provided by memory8. So we can't offline
-> memory8 now. We should offline the memory in the reversed order.
-> 
-> When the memory device is hotremoved, we will auto offline memory provided
-> by this memory device. But we don't know which memory is onlined first, so
-> offlining memory may fail.
+> This part of the emulation is not architecture specific so should not be hiding
+> in architecture trees as it does in the Google Android tree. The constants it
+> uses do depend on the platform and so live in arch/goldfish.h
 
-This does sound like a significant problem.  We should assume that
-mmecg is available and in use.
+Ah, quite nice.
 
-> In patch1, we provide a solution which is not good enough:
-> Iterate twice to offline the memory.
-> 1st iterate: offline every non primary memory block.
-> 2nd iterate: offline primary (i.e. first added) memory block.
+>  drivers/platform/Makefile            |    1 
+>  drivers/platform/goldfish/Makefile   |    4 +
+>  drivers/platform/goldfish/pdev_bus.c |  265 ++++++++++++++++++++++++++++++++++
+>  3 files changed, 270 insertions(+)
 
-Let's flesh this out a bit.
+Maybe drivers/bus would be more appropriate though. Every platform
+handles platforms differently, and x86 seems to be the only one that
+likes the model of putting stuff under drivers/platform.
 
-If we online memory8, memory9, memory10 and memory11 then I'd have
-thought that they would need to offlined in reverse order, which will
-require four iterations, not two.  Is this wrong and if so, why?
+> +static int __devexit goldfish_pdev_bus_remove(struct platform_device *pdev)
+> +{
+> +	free_irq(pdev_bus_irq, pdev);
+> +	release_region(pdev_bus_addr, GOLDFISH_IO_SIZE);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver goldfish_pdev_bus_driver = {
+> +	.probe = goldfish_pdev_bus_probe,
+> +	.remove = __devexit_p(goldfish_pdev_bus_remove),
+> +	.driver = {
+> +		.name = "goldfish_pdev_bus"
+> +	}
+> +};
 
-Also, what happens if we wish to offline only memory9?  Do we offline
-memory11 then memory10 then memory9 and then re-online memory10 and
-memory11?
+__devinit/__devexit are going away, so you can skip adding them
+for new code.
 
-> And a new idea from Wen Congyang <wency@cn.fujitsu.com> is:
-> allocate the memory from the memory block they are describing.
+> +
+> +static int __init goldfish_pdev_bus_init(void)
+> +{
+> +	return platform_driver_register(&goldfish_pdev_bus_driver);
+> +}
+> +
+> +static void __exit goldfish_pdev_bus_exit(void)
+> +{
+> +	platform_driver_unregister(&goldfish_pdev_bus_driver);
+> +}
+> +
+> +module_init(goldfish_pdev_bus_init);
+> +module_exit(goldfish_pdev_bus_exit);
 
-Yes.
+The module_platform_driver() macro takes care of this.
 
-> But we are not sure if it is OK to do so because there is not existing API
-> to do so, and we need to move page_cgroup memory allocation from MEM_GOING_ONLINE
-> to MEM_ONLINE.
+> +static struct resource goldfish_pdev_bus_resources[] = {
+> +	{
+> +		.start  = GOLDFISH_PDEV_BUS_BASE,
+> +		.end    = GOLDFISH_PDEV_BUS_BASE + GOLDFISH_PDEV_BUS_END - 1,
+> +		.flags  = IORESOURCE_IO,
+> +	},
+> +	{
+> +		.start	= GOLDFISH_PDEV_BUS_IRQ,
+> +		.end	= GOLDFISH_PDEV_BUS_IRQ,
+> +		.flags	= IORESOURCE_IRQ,
+> +	}
+> +};
+> +
+> +struct platform_device goldfish_pdev_bus_device = {
+> +	.name = "goldfish_pdev_bus",
+> +	.id = -1,
+> +	.num_resources = ARRAY_SIZE(goldfish_pdev_bus_resources),
+> +	.resource = goldfish_pdev_bus_resources
+> +};
+> +
+> +static int __init goldfish_init(void)
+> +{
+> +	return platform_device_register(&goldfish_pdev_bus_device);
+> +}
+> +device_initcall(goldfish_init);
 
-This all sounds solvable - can we proceed in this fashion?
+This is the part that I think should actually be part of the architecture
+tree. That way, no architecture specific header files will be necessary,
+and it's possible to create the platform device differently, e.g. from
+devicetree on architectures that support it, or from ACPI.
 
-> And also, it may interfere the hugepage.
+Note that statically declaring a platform device is not recommended any
+more, a call to platform_device_register_simple() makes this code
+simpler and smaller, and allows proper reference counting on the device.
 
-Please provide full details on this problem.
-
-> Note: if the memory provided by the memory device is used by the kernel, it
-> can't be offlined. It is not a bug.
-
-Right.  But how often does this happen in testing?  In other words,
-please provide an overall description of how well memory hot-remove is
-presently operating.  Is it reliable?  What is the success rate in
-real-world situations?  Are there precautions which the administrator
-can take to improve the success rate?  What are the remaining problems
-and are there plans to address them?
-
-
+	Arnd
