@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933880Ab3AIVFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:05:35 -0500
-Received: from gate.crashing.org ([63.228.1.57]:41580 "EHLO gate.crashing.org"
+	id S933786Ab3AIUkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43082 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933751Ab3AIVFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:05:30 -0500
-Message-ID: <1357765188.4838.52.camel@pasglop>
-Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
- hot-add root bus
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Len Brown <lenb@kernel.org>, Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Paul Mackerras <paulus@samba.org>
-Date: Thu, 10 Jan 2013 07:59:48 +1100
-In-Reply-To: <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com>
-References: <20121030040237.GA10472@google.com>
-	 <1352003971-22278-1-git-send-email-yinghai@kernel.org>
-	 <CAE9FiQUn=bcgOLFzBwsBT1-O1poRNy9qYTb0w9EAya3_inKqAw@mail.gmail.com>
-	 <CAErSpo5Z57asEXbfesOjXMEPj4WM3YMbzQH3s-v_NBrnPNmuVQ@mail.gmail.com>
-	 <CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com>
-	 <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
-	 <CAErSpo5vEb=63jGsqfau1G=f54oqq17pc3ZzcpzhL7hQrtYhng@mail.gmail.com>
-	 <CAE9FiQUxxjZmd3C33_ujSeL1EjcKHHSoGusQwfBD+Zd=cwCDZA@mail.gmail.com>
-	 <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933751Ab3AIUkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:03 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 67/80] ARM: missing ->mmap_sem around find_vma() in swp_emulate.c
+Date: Wed,  9 Jan 2013 12:35:59 -0800
+Message-Id: <20130109201509.013336490@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 11:39 -0700, Bjorn Helgaas wrote:
-> 
-> > the reason why we need to change those codes for x86, we want to
-> make it support
-> > pci root bus hotplug. So it would be reasonable for us to align
-> other
-> > platform to x86
-> > changes after pci root bus hotplug change is completely done.
-> 
-> OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
-> way to keep track of this consistency issue and merged
-> pci/yinghai-survey-resources to my -next branch.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Hrm... that's going to be tricky. For example the SR-IOV stuff will not
-work for us, we are working on a different implementation, due to some
-of "interesting" bridge constraints etc...
+------------------
 
-It would be nice to get more of the resource survey in common, our
-original code was actually completely different and I reconciled it a
-lot with x86 in the past few years, but I'm sure we can do better.
-However there are still going to be corner cases....
+From: Al Viro <viro@ZenIV.linux.org.uk>
 
-Ben.
+commit 7bf9b7bef881aac820bf1f2e9951a17b09bd7e04 upstream.
+
+find_vma() is *not* safe when somebody else is removing vmas.  Not just
+the return value might get bogus just as you are getting it (this instance
+doesn't try to dereference the resulting vma), the search itself can get
+buggered in rather spectacular ways.  IOW, ->mmap_sem really, really is
+not optional here.
+
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/arm/kernel/swp_emulate.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/arch/arm/kernel/swp_emulate.c
++++ b/arch/arm/kernel/swp_emulate.c
+@@ -109,10 +109,12 @@ static void set_segfault(struct pt_regs
+ {
+ 	siginfo_t info;
+ 
++	down_read(&current->mm->mmap_sem);
+ 	if (find_vma(current->mm, addr) == NULL)
+ 		info.si_code = SEGV_MAPERR;
+ 	else
+ 		info.si_code = SEGV_ACCERR;
++	up_read(&current->mm->mmap_sem);
+ 
+ 	info.si_signo = SIGSEGV;
+ 	info.si_errno = 0;
 
 
