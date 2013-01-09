@@ -1,45 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab3AIGNw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 01:13:52 -0500
-Received: from server.prisktech.co.nz ([115.188.14.127]:62805 "EHLO
-	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792Ab3AIGNv (ORCPT
+	id S1757197Ab3AIGVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 01:21:19 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:44917 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752187Ab3AIGVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 01:13:51 -0500
-Message-ID: <1357712039.774.0.camel@gitbox>
-Subject: Re: [PATCH 1/4] arm: vt8500: Add support for Wondermedia
- WM8750/WM8850
-From: Tony Prisk <linux@prisktech.co.nz>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        vt8500-wm8505-linux-kernel@googlegroups.com
-Date: Wed, 09 Jan 2013 19:13:59 +1300
-In-Reply-To: <1356650452-16559-2-git-send-email-linux@prisktech.co.nz>
-References: <1356650452-16559-1-git-send-email-linux@prisktech.co.nz>
-	 <1356650452-16559-2-git-send-email-linux@prisktech.co.nz>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 9 Jan 2013 01:21:18 -0500
+X-AuditID: 9c930179-b7c7fae00000255c-ac-50ed0c5c6839
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Sonny Rao <sonnyrao@google.com>, Bryan Freed <bfreed@google.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>
+Subject: [PATCH 0/2] Use up free swap space before reaching OOM kill
+Date: Wed,  9 Jan 2013 15:21:12 +0900
+Message-Id: <1357712474-27595-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2012-12-28 at 12:20 +1300, Tony Prisk wrote:
-> This patch adds support for the WM8750 (ARMv6) and WM8850 (ARMv7).
-> 
-> Common features across all SoCs are split into ARCH_VT8500 and
-> unique features are specified by each SoC option.
-> 
-> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Recently, Luigi reported there are lots of free swap space when
+OOM happens. It's easily reproduced on zram-over-swap, where
+many instance of memory hogs are running and laptop_mode = 2.
+http://marc.info/?l=linux-mm&m=135421750914807&w=2
 
+This patchset fixes the problem. In fact, if we apply one of two,
+we can fix the problem but I send two all because it's separate
+issue although each of them solves this issues.
 
-Hi Arnd, Olof,
+Andrew, Could you replace [1] with this patchset in mmotm?
+I think this patchset is better than [1].
 
-Haven't heard anything re: this patch series. Problem?
+[1] mm-swap-out-anonymous-page-regardless-of-laptop_mode.patch
 
-Regards
-Tony P
+Minchan Kim (2):
+  [1/2] mm: prevent to add a page to swap if may_writepage is unset
+  [2/2] mm: forcely swapout when we are out of page cache
+
+ mm/vmscan.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+-- 
+1.7.9.5
 
