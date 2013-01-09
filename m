@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933386Ab3AIUis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:48 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42336 "EHLO mail.kernel.org"
+	id S933187Ab3AIUiv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42354 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933110Ab3AIUip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:45 -0500
+	id S933384Ab3AIUis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Neil Brown <neilb@suse.de>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 044/123] NFS: Fix calls to drop_nlink()
-Date: Wed,  9 Jan 2013 12:34:43 -0800
-Message-Id: <20130109201504.222193479@linuxfoundation.org>
+Subject: [ 045/123] NFS: Dont use SetPageError in the NFS writeback code
+Date: Wed,  9 Jan 2013 12:34:44 -0800
+Message-Id: <20130109201504.348455272@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,81 +28,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 1f018458b30b0d5c535c94e577aa0acbb92e1395 upstream.
+commit ada8e20d044c0fa5610e504ce6fb4578ebd3edd9 upstream.
 
-It is almost always wrong for NFS to call drop_nlink() after removing a
-file. What we really want is to mark the inode's attributes for
-revalidation, and we want to ensure that the VFS drops it if we're
-reasonably sure that this is the final unlink().
-Do the former using the usual cache validity flags, and the latter
-by testing if inode->i_nlink == 1, and clearing it in that case.
+The writeback code is already capable of passing errors back to user space
+by means of the open_context->error. In the case of ENOSPC, Neil Brown
+is reporting seeing 2 errors being returned.
 
-This also fixes the following warning reported by Neil Brown and
-Jeff Layton (among others).
+Neil writes:
 
-[634155.004438] WARNING:
-at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
-Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
-snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
-bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
-[634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
-[634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
-[634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
-[634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
-[634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
-[634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
-[634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
-[634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
-[634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
-[634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
-[634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
+"e.g. if /mnt2/ if an nfs mounted filesystem that has no space then
 
+strace dd if=/dev/zero conv=fsync >> /mnt2/afile count=1
+
+reported Input/output error and the relevant parts of the strace output are:
+
+write(1, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"..., 512) = 512
+fsync(1)                                = -1 EIO (Input/output error)
+close(1)                                = -1 ENOSPC (No space left on device)"
+
+Neil then shows that the duplication of error messages appears to be due to
+the use of the PageError() mechanism, which causes filemap_fdatawait_range
+to return the extra EIO. The regression was introduced by
+commit 7b281ee026552f10862b617a2a51acf49c829554 (NFS: fsync() must exit
+with an error if page writeback failed).
+
+Fix this by removing the call to SetPageError(), and just relying on
+open_context->error reporting the ENOSPC back to fsync().
+
+Reported-by: Neil Brown <neilb@suse.de>
+Tested-by: Neil Brown <neilb@suse.de>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/dir.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ fs/nfs/write.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1156,11 +1156,14 @@ static int nfs_dentry_delete(const struc
- 
- }
- 
-+/* Ensure that we revalidate inode->i_nlink */
- static void nfs_drop_nlink(struct inode *inode)
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -202,7 +202,6 @@ out:
+ /* A writeback failed: mark the page as bad, and invalidate the page cache */
+ static void nfs_set_pageerror(struct page *page)
  {
- 	spin_lock(&inode->i_lock);
--	if (inode->i_nlink > 0)
--		drop_nlink(inode);
-+	/* drop the inode if we're reasonably sure this is the last link */
-+	if (inode->i_nlink == 1)
-+		clear_nlink(inode);
-+	NFS_I(inode)->cache_validity |= NFS_INO_INVALID_ATTR;
- 	spin_unlock(&inode->i_lock);
+-	SetPageError(page);
+ 	nfs_zap_mapping(page_file_mapping(page)->host, page_file_mapping(page));
  }
  
-@@ -1175,8 +1178,8 @@ static void nfs_dentry_iput(struct dentr
- 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
- 
- 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
--		drop_nlink(inode);
- 		nfs_complete_unlink(dentry, inode);
-+		nfs_drop_nlink(inode);
- 	}
- 	iput(inode);
- }
-@@ -1647,10 +1650,8 @@ static int nfs_safe_remove(struct dentry
- 	if (inode != NULL) {
- 		NFS_PROTO(inode)->return_delegation(inode);
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
--		/* The VFS may want to delete this inode */
- 		if (error == 0)
- 			nfs_drop_nlink(inode);
--		nfs_mark_for_revalidate(inode);
- 	} else
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
- 	if (error == -ENOENT)
 
 
