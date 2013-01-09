@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab3AIK0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 05:26:07 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42600 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754Ab3AIK0G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 05:26:06 -0500
-Date: Wed, 9 Jan 2013 10:25:48 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH 1/4] gpiolib: introduce descriptor-based GPIO interface
-Message-ID: <20130109102548.GD3931@n2100.arm.linux.org.uk>
-References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <1357629535-26033-2-git-send-email-acourbot@nvidia.com> <201301081259.29839.arnd@arndb.de> <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com>
+	id S1755870Ab3AIKbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 05:31:36 -0500
+Received: from mga14.intel.com ([143.182.124.37]:13723 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751895Ab3AIKbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 05:31:35 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
+   d="scan'208";a="189235141"
+Message-ID: <50ED4615.1040204@intel.com>
+Date: Wed, 09 Jan 2013 10:27:33 +0000
+From: Tadeusz Struk <tadeusz.struk@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Don Dutile <ddutile@redhat.com>
+CC: bhelgaas@google.com, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH] PCI: Make pci_find_upstream_pcie_bridge() handle non
+ PCIE VFs well
+References: <50ec2e19.EUrQfXEnsRJiPCTv%tadeusz.struk@intel.com> <50EC51E3.6070306@redhat.com>
+In-Reply-To: <50EC51E3.6070306@redhat.com>
+X-Enigmail-Version: 1.4.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 10:06:16AM +0900, Alexandre Courbot wrote:
-> On Tue, Jan 8, 2013 at 9:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > Please avoid the use of IS_ERR_OR_NULL(), especially on interfaces you
-> > introduce yourself. AFAICT, gpiod_get cannot return NULL, so you
-> > should not check for that.
-> 
-> Sure - you sound like IS_ERR_OR_NULL() is generally considered evil,
-> may I ask why this is the case?
+On 01/08/2013 05:05 PM, Don Dutile wrote:
 
-I think I've explained that in the past; many people just do not think.
-They just use whatever macro they feel like is the right one.  We keep
-seeing this, and this is a persistent problem. It's getting to be more
-of a problem because people are starting to argue back when you point
-out that they're wrong.
+> (a) no such thing as a non-PCIe VF -- all VFs
+>     are PCIe-based.
 
-People are even starting to believe that documentation which specifies
-explicitly "values where IS_ERR() is true are considered errors,
-everything else is valid" means that the use of IS_ERR_OR_NULL() in such
-cases is permissible.  (I've had such an argument with two people
-recently.)
+The sriov spec says that a VF doesn't necessarily has to have PCIE cap:
+"3.5 PCI Express Capability:
+   ...
+   PFs and VFs are required to implement this capability ... subject to
+   the exceptions and additional requirements described below"
 
-So, interfaces which have well defined return values and even interfaces
-which specify _how_ errors should be checked end up being checked with
-the wrong macros.  People constantly translate IS_ERR() to IS_ERR_OR_NULL()
-even when it's inappropriate.
+> (b) code says to return null if VF doesn't have PCIe cap,
+>     but the code checks if pdev is VF and if PF is PCIe,
+>     which it must be! ...
 
-People don't think and people don't read documentation.  People don't
-remember this level of detail.  Whatever the excuse, the problem remains.
-IS_ERR_OR_NULL() always gets used inappropriately and without any regard
-to whether it's correct or not.
+You are right, I should rather check if the VF is not a pcie.
 
-So yes, IS_ERR_OR_NULL() _is_ pure evil.  IMHO this macro is doing more
-harm than good.
+> nack until a better &/or matching explanation of what
+> the real problem is, and what the solution is trying to do.
+
+The problem is that I do have a device where VFs are not PCIE and I get this nasty warning.
+For now I have a workaround, but it would be nice it Linux would support non PCIE VFs.
+
+Thanks,
+T
+
