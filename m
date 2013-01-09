@@ -1,64 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597Ab3AIUj2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:28 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42712 "EHLO mail.kernel.org"
+	id S933625Ab3AIUjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42746 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933314Ab3AIUjZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:25 -0500
+	id S933596Ab3AIUj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Xi Wang <xi.wang@gmail.com>,
         Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 052/123] nfs: fix null checking in nfs_get_option_str()
-Date: Wed,  9 Jan 2013 12:34:51 -0800
-Message-Id: <20130109201505.225886203@linuxfoundation.org>
+Subject: [ 38/80] NFS: Fix calls to drop_nlink()
+Date: Wed,  9 Jan 2013 12:35:30 -0800
+Message-Id: <20130109201505.304372362@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Xi Wang <xi.wang@gmail.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit e25fbe380c4e3c09afa98bcdcd9d3921443adab8 upstream.
+commit 1f018458b30b0d5c535c94e577aa0acbb92e1395 upstream.
 
-The following null pointer check is broken.
+It is almost always wrong for NFS to call drop_nlink() after removing a
+file. What we really want is to mark the inode's attributes for
+revalidation, and we want to ensure that the VFS drops it if we're
+reasonably sure that this is the final unlink().
+Do the former using the usual cache validity flags, and the latter
+by testing if inode->i_nlink == 1, and clearing it in that case.
 
-	*option = match_strdup(args);
-	return !option;
+This also fixes the following warning reported by Neil Brown and
+Jeff Layton (among others).
 
-The pointer `option' must be non-null, and thus `!option' is always false.
-Use `!*option' instead.
+[634155.004438] WARNING:
+at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
+Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
+snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
+bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
+[634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
+[634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
+[634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
+[634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
+[634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
+[634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
+[634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
+[634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
+[634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
+[634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
+[634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
 
-The bug was introduced in commit c5cb09b6f8 ("Cleanup: Factor out some
-cut-and-paste code.").
-
-Signed-off-by: Xi Wang <xi.wang@gmail.com>
 Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/super.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/dir.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
---- a/fs/nfs/super.c
-+++ b/fs/nfs/super.c
-@@ -1150,7 +1150,7 @@ static int nfs_get_option_str(substring_
- {
- 	kfree(*option);
- 	*option = match_strdup(args);
--	return !option;
-+	return !*option;
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1219,11 +1219,14 @@ static int nfs_dentry_delete(const struc
+ 
  }
  
- static int nfs_get_option_ul(substring_t args[], unsigned long *option)
++/* Ensure that we revalidate inode->i_nlink */
+ static void nfs_drop_nlink(struct inode *inode)
+ {
+ 	spin_lock(&inode->i_lock);
+-	if (inode->i_nlink > 0)
+-		drop_nlink(inode);
++	/* drop the inode if we're reasonably sure this is the last link */
++	if (inode->i_nlink == 1)
++		clear_nlink(inode);
++	NFS_I(inode)->cache_validity |= NFS_INO_INVALID_ATTR;
+ 	spin_unlock(&inode->i_lock);
+ }
+ 
+@@ -1238,8 +1241,8 @@ static void nfs_dentry_iput(struct dentr
+ 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
+ 
+ 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
+-		drop_nlink(inode);
+ 		nfs_complete_unlink(dentry, inode);
++		nfs_drop_nlink(inode);
+ 	}
+ 	iput(inode);
+ }
+@@ -1800,10 +1803,8 @@ static int nfs_safe_remove(struct dentry
+ 	if (inode != NULL) {
+ 		nfs_inode_return_delegation(inode);
+ 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
+-		/* The VFS may want to delete this inode */
+ 		if (error == 0)
+ 			nfs_drop_nlink(inode);
+-		nfs_mark_for_revalidate(inode);
+ 	} else
+ 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
+ 	if (error == -ENOENT)
 
 
