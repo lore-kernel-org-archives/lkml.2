@@ -1,185 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933943Ab3AIVDw (ORCPT <rfc822;w@1wt.eu>);
+	id S933824Ab3AIVEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:04:05 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:45381 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933863Ab3AIVDw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jan 2013 16:03:52 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43281 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933627Ab3AIUkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:19 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christoph Paasch <christoph.paasch@uclouvain.be>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 58/80] inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and dccp_v4/6_request_recv_sock
-Date: Wed,  9 Jan 2013 12:35:50 -0800
-Message-Id: <20130109201507.875146051@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Tony Luck <tony.luck@gmail.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <50ED7B4B.7080603@synopsys.com>
+	<1357742188-8941-1-git-send-email-vgupta@synopsys.com>
+	<CA+8MBbJNrJYeZoGXt37ki_YCpb7kqiE1toFoBBHrtmnY8a75VA@mail.gmail.com>
+Date: Wed, 09 Jan 2013 13:03:42 -0800
+In-Reply-To: <CA+8MBbJNrJYeZoGXt37ki_YCpb7kqiE1toFoBBHrtmnY8a75VA@mail.gmail.com>
+	(Tony Luck's message of "Wed, 9 Jan 2013 10:55:27 -0800")
+Message-ID: <876236ul01.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX199wkbPIm1OPAv8uqFFlMBfYjAYqqWUXXc=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  3.0 XMDrug1234561 Drug references
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0002]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
+X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Tony Luck <tony.luck@gmail.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v2] sysctl: Enable IA64 "ignore-unaligned-usertrap" to be used cross-arch
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Tony Luck <tony.luck@gmail.com> writes:
 
-------------------
+> Ok. Queued for 3.9 merge window.  It should show up in linux-next in
+> the next day or two.  We'll see if anyone complains about the name
+> SYSCTL_ARCH_UNALIGN_NO_WARN (every time I touch the Kconfig
+> bits it seems that there is some other, better way that we do this
+> now).
 
+The other semi-sane way I could see to do this would be to break the
+code out of kernel/sysctl.c into it's own sysctl table and have the
+arches that want this sysctl just register it themselves.
 
-From: Christoph Paasch <christoph.paasch@uclouvain.be>
+Shrug.  It probably isn't worth the effor right now.
 
-[ Upstream commit e337e24d6624e74a558aa69071e112a65f7b5758 ]
-
-If in either of the above functions inet_csk_route_child_sock() or
-__inet_inherit_port() fails, the newsk will not be freed:
-
-unreferenced object 0xffff88022e8a92c0 (size 1592):
-  comm "softirq", pid 0, jiffies 4294946244 (age 726.160s)
-  hex dump (first 32 bytes):
-    0a 01 01 01 0a 01 01 02 00 00 00 00 a7 cc 16 00  ................
-    02 00 03 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<ffffffff8153d190>] kmemleak_alloc+0x21/0x3e
-    [<ffffffff810ab3e7>] kmem_cache_alloc+0xb5/0xc5
-    [<ffffffff8149b65b>] sk_prot_alloc.isra.53+0x2b/0xcd
-    [<ffffffff8149b784>] sk_clone_lock+0x16/0x21e
-    [<ffffffff814d711a>] inet_csk_clone_lock+0x10/0x7b
-    [<ffffffff814ebbc3>] tcp_create_openreq_child+0x21/0x481
-    [<ffffffff814e8fa5>] tcp_v4_syn_recv_sock+0x3a/0x23b
-    [<ffffffff814ec5ba>] tcp_check_req+0x29f/0x416
-    [<ffffffff814e8e10>] tcp_v4_do_rcv+0x161/0x2bc
-    [<ffffffff814eb917>] tcp_v4_rcv+0x6c9/0x701
-    [<ffffffff814cea9f>] ip_local_deliver_finish+0x70/0xc4
-    [<ffffffff814cec20>] ip_local_deliver+0x4e/0x7f
-    [<ffffffff814ce9f8>] ip_rcv_finish+0x1fc/0x233
-    [<ffffffff814cee68>] ip_rcv+0x217/0x267
-    [<ffffffff814a7bbe>] __netif_receive_skb+0x49e/0x553
-    [<ffffffff814a7cc3>] netif_receive_skb+0x50/0x82
-
-This happens, because sk_clone_lock initializes sk_refcnt to 2, and thus
-a single sock_put() is not enough to free the memory. Additionally, things
-like xfrm, memcg, cookie_values,... may have been initialized.
-We have to free them properly.
-
-This is fixed by forcing a call to tcp_done(), ending up in
-inet_csk_destroy_sock, doing the final sock_put(). tcp_done() is necessary,
-because it ends up doing all the cleanup on xfrm, memcg, cookie_values,
-xfrm,...
-
-Before calling tcp_done, we have to set the socket to SOCK_DEAD, to
-force it entering inet_csk_destroy_sock. To avoid the warning in
-inet_csk_destroy_sock, inet_num has to be set to 0.
-As inet_csk_destroy_sock does a dec on orphan_count, we first have to
-increase it.
-
-Calling tcp_done() allows us to remove the calls to
-tcp_clear_xmit_timer() and tcp_cleanup_congestion_control().
-
-A similar approach is taken for dccp by calling dccp_done().
-
-This is in the kernel since 093d282321 (tproxy: fix hash locking issue
-when using port redirection in __inet_inherit_port()), thus since
-version >= 2.6.37.
-
-Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/inet_connection_sock.h |    1 +
- net/dccp/ipv4.c                    |    4 ++--
- net/dccp/ipv6.c                    |    3 ++-
- net/ipv4/inet_connection_sock.c    |   16 ++++++++++++++++
- net/ipv4/tcp_ipv4.c                |    6 ++----
- net/ipv6/tcp_ipv6.c                |    3 ++-
- 6 files changed, 25 insertions(+), 8 deletions(-)
-
---- a/include/net/inet_connection_sock.h
-+++ b/include/net/inet_connection_sock.h
-@@ -317,6 +317,7 @@ extern void inet_csk_reqsk_queue_prune(s
- 				       const unsigned long max_rto);
- 
- extern void inet_csk_destroy_sock(struct sock *sk);
-+extern void inet_csk_prepare_forced_close(struct sock *sk);
- 
- /*
-  * LISTEN is a special case for poll..
---- a/net/dccp/ipv4.c
-+++ b/net/dccp/ipv4.c
-@@ -435,8 +435,8 @@ exit:
- 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
- 	return NULL;
- put_and_exit:
--	bh_unlock_sock(newsk);
--	sock_put(newsk);
-+	inet_csk_prepare_forced_close(newsk);
-+	dccp_done(newsk);
- 	goto exit;
- }
- 
---- a/net/dccp/ipv6.c
-+++ b/net/dccp/ipv6.c
-@@ -611,7 +611,8 @@ static struct sock *dccp_v6_request_recv
- 	newinet->inet_rcv_saddr = LOOPBACK4_IPV6;
- 
- 	if (__inet_inherit_port(sk, newsk) < 0) {
--		sock_put(newsk);
-+		inet_csk_prepare_forced_close(newsk);
-+		dccp_done(newsk);
- 		goto out;
- 	}
- 	__inet6_hash(newsk, NULL);
---- a/net/ipv4/inet_connection_sock.c
-+++ b/net/ipv4/inet_connection_sock.c
-@@ -659,6 +659,22 @@ void inet_csk_destroy_sock(struct sock *
- }
- EXPORT_SYMBOL(inet_csk_destroy_sock);
- 
-+/* This function allows to force a closure of a socket after the call to
-+ * tcp/dccp_create_openreq_child().
-+ */
-+void inet_csk_prepare_forced_close(struct sock *sk)
-+{
-+	/* sk_clone_lock locked the socket and set refcnt to 2 */
-+	bh_unlock_sock(sk);
-+	sock_put(sk);
-+
-+	/* The below has to be done to allow calling inet_csk_destroy_sock */
-+	sock_set_flag(sk, SOCK_DEAD);
-+	percpu_counter_inc(sk->sk_prot->orphan_count);
-+	inet_sk(sk)->inet_num = 0;
-+}
-+EXPORT_SYMBOL(inet_csk_prepare_forced_close);
-+
- int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
- {
- 	struct inet_sock *inet = inet_sk(sk);
---- a/net/ipv4/tcp_ipv4.c
-+++ b/net/ipv4/tcp_ipv4.c
-@@ -1524,10 +1524,8 @@ exit:
- 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
- 	return NULL;
- put_and_exit:
--	tcp_clear_xmit_timers(newsk);
--	tcp_cleanup_congestion_control(newsk);
--	bh_unlock_sock(newsk);
--	sock_put(newsk);
-+	inet_csk_prepare_forced_close(newsk);
-+	tcp_done(newsk);
- 	goto exit;
- }
- EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
---- a/net/ipv6/tcp_ipv6.c
-+++ b/net/ipv6/tcp_ipv6.c
-@@ -1411,7 +1411,8 @@ static struct sock * tcp_v6_syn_recv_soc
- #endif
- 
- 	if (__inet_inherit_port(sk, newsk) < 0) {
--		sock_put(newsk);
-+		inet_csk_prepare_forced_close(newsk);
-+		tcp_done(newsk);
- 		goto out;
- 	}
- 	__inet6_hash(newsk, NULL);
-
-
+Eric
