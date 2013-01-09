@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757805Ab3AIMCN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 07:02:13 -0500
-Received: from smtp.eu.citrix.com ([46.33.159.39]:46092 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757578Ab3AIMCL (ORCPT
+	id S1757828Ab3AIMCU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 07:02:20 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:57047 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757619Ab3AIMCR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 07:02:11 -0500
-X-IronPort-AV: E=Sophos;i="4.84,436,1355097600"; 
-   d="scan'208";a="543451"
-Message-ID: <1357732929.7989.250.camel@zakaz.uk.xensource.com>
-Subject: Re: [Xen-devel] [PATCH v2] xen/grant-table: correctly initialize
- grant table version 1
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: ANNIE LI <annie.li@oracle.com>
-CC: Matt Wilson <msw@amazon.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>
-Date: Wed, 9 Jan 2013 12:02:09 +0000
-In-Reply-To: <50ECD89A.50100@oracle.com>
-References: <Message-ID: <1355997710.26722.12.camel@zakaz.uk.xensource.com>
-	 <1357470882-17345-1-git-send-email-msw@amazon.com>
-	 <50ECD89A.50100@oracle.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-1 
+	Wed, 9 Jan 2013 07:02:17 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 2/3] ARM: ux500: Turn on the 'heartbeat' LED trigger
+Date: Wed, 9 Jan 2013 12:02:13 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com
+References: <1357725965-27342-1-git-send-email-lee.jones@linaro.org> <201301091156.55644.arnd@arndb.de> <20130109115911.GI3931@n2100.arm.linux.org.uk>
+In-Reply-To: <20130109115911.GI3931@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201301091202.14105.arnd@arndb.de>
+X-Provags-ID: V02:K0:/w+VV96h1WkPKWcfLjnGw+TGGM0p/j5KMsOkCp7GvA/
+ 3v8FF+yYO18OF1IFHqu8HUNlclwwf7XFb046LgAeu0seuLQqrc
+ Dz+bEuIZESx6cuEx5YGXPeV3uxMNLWyHiukGsYGBta9fkfhbZg
+ /k5sq0cSE+CVaPJAxUHbFZVtATEX7psHT6yEbAuUquQwk+vG5W
+ p6TW5SPGdqzJRJWzIFyv68qby8L9Rly+9/RZPdsLCGA8y2eafj
+ jPmPsILVOl9hNoPPRPZrKeH8pRkJ45glnpn1+6KI8PcN8BBoqw
+ WURTD4RnagqJCA7QUGySgCGmYtDVYPHcT6k95H9fS6GQWloPzm
+ r/Wuiq23OIWWGrqrNkHM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2013-01-09 at 02:40 +0000, ANNIE LI wrote:
-> > @@ -1080,18 +1081,18 @@ static void gnttab_request_version(void)
-> >   		panic("we need grant tables version 2, but only version 1 is available");
-> >   	} else {
-> >   		grant_table_version = 1;
-> > +		grefs_per_grant_frame = PAGE_SIZE / sizeof(struct grant_entry_v1);
-> >   		gnttab_interface =&gnttab_v1_ops;
-> >   	}
-> > -	printk(KERN_INFO "Grant tables using version %d layout.\n",
-> > -		grant_table_version);
-> >   }
-> >   
+On Wednesday 09 January 2013, Russell King - ARM Linux wrote:
+> On Wed, Jan 09, 2013 at 11:56:55AM +0000, Arnd Bergmann wrote:
+
+> > Right. The change I suggested fixes the build errors but doesn't actually
+> > make the intended behavior correct. Just using a configuration file is the
+> > right solution here.
 > 
-> Is it better to keep printk here? In your last patch, you removed it 
-> because gnttab_request_version and gnttab_resume are all called in 
-> gnttab_init. and gnttab_resume also contains calling of 
-> gnttab_request_version. But in this patch, gnttab_setup is used, and 
-> does not have this issue now.
+> Hang on a moment: if the lack of the LEDs support leads to build errors,
+> doesn't that mean there's missing conditional compilation?
 
-Yes, I think we want to print this at both start of day and resume?
+The build error would have come only from selecting LEDS_TRIGGERS without
+also selecting NEW_LEDS and LEDS_CLASS. I haven't actually tried if that
+results in a hard error, but you'd get at least a Kconfig warning.
 
-Either by adding a print to gnttab_resume() or by keeping the existing
-one here in preference to moving it to gnttab_setup(). I'd prefer the
-latter to avoid the duplication, unless I'm mistaken and request_version
-is called in more than those two locations.
-
-Ian.
-
+	Arnd
