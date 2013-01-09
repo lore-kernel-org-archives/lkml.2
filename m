@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934073Ab3AIUlS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:18 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43886 "EHLO mail.kernel.org"
+	id S934088Ab3AIUlW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:22 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43926 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934057Ab3AIUlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:15 -0500
+	id S934057Ab3AIUlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 110/123] Bluetooth: cancel power_on work when unregistering the device
-Date: Wed,  9 Jan 2013 12:35:49 -0800
-Message-Id: <20130109201512.566611776@linuxfoundation.org>
+        Andy Lutomirski <luto@amacapital.net>,
+        Bjorn Helgaas <bhelgaas@google.com>, Chris Ball <cjb@laptop.org>,
+        Manoj Iyer <manoj.iyer@canonical.com>
+Subject: [ 105/123] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
+Date: Wed,  9 Jan 2013 12:35:44 -0800
+Message-Id: <20130109201511.969940216@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,64 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit b9b5ef188e5a2222cfc16ef62a4703080750b451 upstream.
+commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
 
-We need to cancel the hci_power_on work in order to avoid it run when we
-try to free the hdev.
+Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
 
-[ 1434.201149] ------------[ cut here ]------------
-[ 1434.204998] WARNING: at lib/debugobjects.c:261 debug_print_object+0x8e/0xb0()
-[ 1434.208324] ODEBUG: free active (active state 0) object type: work_struct hint: hci
-_power_on+0x0/0x90
-[ 1434.210386] Pid: 8564, comm: trinity-child25 Tainted: G        W    3.7.0-rc5-next-
-20121112-sasha-00018-g2f4ce0e #127
-[ 1434.210760] Call Trace:
-[ 1434.210760]  [<ffffffff819f3d6e>] ? debug_print_object+0x8e/0xb0
-[ 1434.210760]  [<ffffffff8110b887>] warn_slowpath_common+0x87/0xb0
-[ 1434.210760]  [<ffffffff8110b911>] warn_slowpath_fmt+0x41/0x50
-[ 1434.210760]  [<ffffffff819f3d6e>] debug_print_object+0x8e/0xb0
-[ 1434.210760]  [<ffffffff8376b750>] ? hci_dev_open+0x310/0x310
-[ 1434.210760]  [<ffffffff83bf94e5>] ? _raw_spin_unlock_irqrestore+0x55/0xa0
-[ 1434.210760]  [<ffffffff819f3ee5>] __debug_check_no_obj_freed+0xa5/0x230
-[ 1434.210760]  [<ffffffff83785db0>] ? bt_host_release+0x10/0x20
-[ 1434.210760]  [<ffffffff819f4d15>] debug_check_no_obj_freed+0x15/0x20
-[ 1434.210760]  [<ffffffff8125eee7>] kfree+0x227/0x330
-[ 1434.210760]  [<ffffffff83785db0>] bt_host_release+0x10/0x20
-[ 1434.210760]  [<ffffffff81e539e5>] device_release+0x65/0xc0
-[ 1434.210760]  [<ffffffff819d3975>] kobject_cleanup+0x145/0x190
-[ 1434.210760]  [<ffffffff819d39cd>] kobject_release+0xd/0x10
-[ 1434.210760]  [<ffffffff819d33cc>] kobject_put+0x4c/0x60
-[ 1434.210760]  [<ffffffff81e548b2>] put_device+0x12/0x20
-[ 1434.210760]  [<ffffffff8376a334>] hci_free_dev+0x24/0x30
-[ 1434.210760]  [<ffffffff82fd8fe1>] vhci_release+0x31/0x60
-[ 1434.210760]  [<ffffffff8127be12>] __fput+0x122/0x250
-[ 1434.210760]  [<ffffffff811cab0d>] ? rcu_user_exit+0x9d/0xd0
-[ 1434.210760]  [<ffffffff8127bf49>] ____fput+0x9/0x10
-[ 1434.210760]  [<ffffffff81133402>] task_work_run+0xb2/0xf0
-[ 1434.210760]  [<ffffffff8106cfa7>] do_notify_resume+0x77/0xa0
-[ 1434.210760]  [<ffffffff83bfb0ea>] int_signal+0x12/0x17
-[ 1434.210760] ---[ end trace a6d57fefbc8a8cc7 ]---
+    mmc0: new SDHC card at address b368
+    mmcblk0: mmc0:b368 SDC   15.0 GiB
+    mmcblk0: error -110 sending status command, retrying
+    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
 
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Tested on my Lenovo x200 laptop.
+
+[bhelgaas: changelog]
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Chris Ball <cjb@laptop.org>
+CC: Manoj Iyer <manoj.iyer@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_core.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pci/quirks.c    |    7 +++++--
+ include/linux/pci_ids.h |    1 +
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
---- a/net/bluetooth/hci_core.c
-+++ b/net/bluetooth/hci_core.c
-@@ -1793,6 +1793,8 @@ void hci_unregister_dev(struct hci_dev *
- 	for (i = 0; i < NUM_REASSEMBLY; i++)
- 		kfree_skb(hdev->reassembly[i]);
- 
-+	cancel_work_sync(&hdev->power_on);
-+
- 	if (!test_bit(HCI_INIT, &hdev->flags) &&
- 	    !test_bit(HCI_SETUP, &hdev->dev_flags)) {
- 		hci_dev_lock(hdev);
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2686,7 +2686,7 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	if (PCI_FUNC(dev->devfn))
+ 		return;
+ 	/*
+-	 * RICOH 0xe823 SD/MMC card reader fails to recognize
++	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
+ 	 * certain types of SD/MMC cards. Lowering the SD base
+ 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
+ 	 *
+@@ -2697,7 +2697,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ 	 * 0xf9  - Key register for 0x150
+ 	 * 0xfc  - key register for 0xe1
+ 	 */
+-	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
++	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
++	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
+ 		pci_write_config_byte(dev, 0xf9, 0xfc);
+ 		pci_write_config_byte(dev, 0x150, 0x10);
+ 		pci_write_config_byte(dev, 0xf9, 0x00);
+@@ -2724,6 +2725,8 @@ static void ricoh_mmc_fixup_r5c832(struc
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
++DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
+ #endif /*CONFIG_MMC_RICOH_MMC*/
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -1568,6 +1568,7 @@
+ #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
+ #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
+ #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
++#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
+ #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
+ #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
+ #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
 
 
