@@ -1,263 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934221Ab3AIUnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:43:42 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:62346 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934210Ab3AIUni (ORCPT
+	id S934186Ab3AIUqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:46:23 -0500
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54218 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab3AIUqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:43:38 -0500
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: linux-tegra@vger.kernel.org
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: [PATCH 12/14] ARM: tegra: tec: Add PCIe support
-Date: Wed,  9 Jan 2013 21:43:12 +0100
-Message-Id: <1357764194-12677-13-git-send-email-thierry.reding@avionic-design.de>
-X-Mailer: git-send-email 1.8.1
-In-Reply-To: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de>
-X-Provags-ID: V02:K0:EjgDFW26M3f9R4kn/lQcr3AUj5eT1d7fPWbyao2MsUJ
- ZSrdKDr4NZ9uwLm75No/vbF8QtHM3OwleCxMqpH4fNimsgEMWH
- 4NVVMZOhVTWz5nJ0k0TEbrcQU3+tQP8e86qZtz2Hky5ADkLBs9
- rdJsDBL+iCg7TrQ6aYv+yOUTiu7kjmq4QQT7ip4k2RaNlsbCu/
- Dfg7b1dyfOgk3N4H7Q3J3oYbMjN4l8mrSaW23ENkF9qQ3tO32y
- Da0FWqb8KYSqVM6GyPj8AUgOGPcYe9WVV7WVsS1VUgBFF7v1Xk
- 8oZLAxq+a7uL3AXpfWq/jYI9Ij9bq2aK896/KRx80i547LyVsG
- 9iNFlZMJs9VcpT2gHjf0zEoAQV9rbP0pQEIoEhGa+OpiZ/95zn
- JZlmCyQVY3Xzip1T8jScX97CVsghNfAOqHQ/+MVhO0SNrjr4Mv
- F4Kji
+	Wed, 9 Jan 2013 15:46:20 -0500
+X-IronPort-AV: E=Sophos;i="4.84,440,1355126400"; 
+   d="scan'208";a="18812854"
+Message-ID: <50EDD71A.5030406@codeaurora.org>
+Date: Wed, 09 Jan 2013 12:46:18 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: linux-kernel@vger.kernel.org, nico@linaro.org, marc.zyngier@arm.com,
+        will.deacon@arm.com, john.stultz@linaro.org, tglx@linutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCHv2 0/4] clockevents: decouple broadcast mechanism from
+ drivers
+References: <1357742770-15028-1-git-send-email-mark.rutland@arm.com>
+In-Reply-To: <1357742770-15028-1-git-send-email-mark.rutland@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the first PCIe root port which is connected to an FPGA on the
-Tamonten Evaluation Carrier and add device nodes for each of the PCI
-endpoints available in the standard configuration.
+On 01/09/13 06:46, Mark Rutland wrote:
+> This is an updated version of the series I posted back in December:
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2012-December/137929.html
+>
+> Changes since v1:
+> * Drop removal of guards in smp.c
+> * Removed useless evt->evt_handler check in tick_receive_broadcast
+> * Fix up tick_receive_broadcast when !GENERIC_CLOCKEVENTS_BROADCAST
+> * Fix checkpatch issues (multi-line strings)
+>
+> Thanks go to Stephen Boyd and Santosh Shilimkar for their commments.
+>
+> In some SMP systems, cpu-local timers may stop delivering interrupts
+> when in low power states, or not all CPUs may have local timers. To
+> support these systems we have a mechanism for broadcasting timer ticks
+> to other CPUs. This mechanism relies on the struct
+> clock_event_device::broadcast function pointer, which is a
+> driver-specific mechanism for broadcasting ticks to other CPUs.
+>
+> As the broadcast mechanism is architecture-specific, placing the
+> broadcast function on struct clock_event_device ties each driver to a
+> single architecture. Additionally the driver or architecture backend
+> must handle the routing of broadcast ticks to the correct
+> clock_event_device, leading to duplication of the list of active
+> clock_event_devices.
+>
+> These patches introduce a generic mechanism for handling the receipt of
+> timer broadcasts, and an optional architecture-specific broadcast
+> function which allows drivers to be decoupled from a particular
+> architecture will retaining support for timer tick broadcasts. These
+> mechanisms are wired up for the arm port, and have been boot-tested on a
+> pandaboard.
+>
 
-Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
----
- arch/arm/boot/dts/tegra20-tec.dts | 198 ++++++++++++++++++++++++++++++++++++++
- 1 file changed, 198 insertions(+)
+For the series:
 
-diff --git a/arch/arm/boot/dts/tegra20-tec.dts b/arch/arm/boot/dts/tegra20-tec.dts
-index 25f70ee..b75f979 100644
---- a/arch/arm/boot/dts/tegra20-tec.dts
-+++ b/arch/arm/boot/dts/tegra20-tec.dts
-@@ -60,6 +60,204 @@
- 		};
- 	};
- 
-+	pcie-controller {
-+		vdd-supply = <&pci_vdd_reg>;
-+		pex-clk-supply = <&pci_clk_reg>;
-+		status = "okay";
-+
-+		pci@1,0 {
-+			bus-range = <0x01 0x0a>;
-+			status = "okay";
-+
-+			pci@0,0 {
-+				reg = <0x010000 0 0 0 0>;
-+				bus-range = <0x02 0x0a>;
-+
-+				compatible = "plda,pcie";
-+				device_type = "pci";
-+
-+				#address-cells = <3>;
-+				#size-cells = <2>;
-+
-+				pci@0,0 {
-+					reg = <0x020000 0 0 0 0>;
-+					bus-range = <0x03 0x03>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci-test-ep@0,0 {
-+						compatible = "ad,pcietest";
-+						reg = <0x030000 0 0 0 0>;
-+					};
-+				};
-+
-+				pci@1,0 {
-+					reg = <0x020800 0 0 0 0>;
-+					bus-range = <0x04 0x04>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci@0,0 {
-+						compatible = "opencores,spi";
-+						reg = <0x040000 0 0 0 0>;
-+
-+						#address-cells = <1>;
-+						#size-cells = <0>;
-+
-+						clock-frequency = <66000000>;
-+
-+						m25p80@0 {
-+							compatible = "m25p80";
-+							reg = <0>;
-+
-+							spi-max-frequency = <25000000>;
-+
-+							#address-cells = <1>;
-+							#size-cells = <1>;
-+
-+							partition@0 {
-+								reg = <0x00000000 0x00400000>;
-+								label = "FPGA";
-+							};
-+
-+							partition@400000 {
-+								reg = <0x00400000 0x00400000>;
-+								label = "FPGA (gold)";
-+								read-only;
-+							};
-+						};
-+					};
-+				};
-+
-+				pci@2,0 {
-+					reg = <0x021000 0 0 0 0>;
-+					bus-range = <0x05 0x05>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci-i2c-ep@0,0 {
-+						compatible = "opencores,i2c";
-+						reg = <0x050000 0 0 0 0>;
-+
-+						clock-frequency = <66000000>;
-+						reg-io-width = <4>;
-+						reg-shift = <3>;
-+					};
-+				};
-+
-+				pci@3,0 {
-+					reg = <0x021800 0 0 0 0>;
-+					bus-range = <0x06 0x06>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci@0,0 {
-+						compatible = "ad,gpio-ad64p";
-+						reg = <0x060000 0 0 0 0>;
-+
-+						gpio-controller;
-+						#gpio-cells = <2>;
-+
-+						interrupt-controller;
-+						#interrupt-cells = <2>;
-+					};
-+				};
-+
-+				pci@4,0 {
-+					reg = <0x022000 0 0 0 0>;
-+					bus-range = <0x07 0x07>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci@0,0 {
-+						compatible = "opencores,uart";
-+						reg = <0x070000 0 0 0 0>;
-+					};
-+				};
-+
-+				pci@5,0 {
-+					reg = <0x022800 0 0 0 0>;
-+					bus-range = <0x08 0x08>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci@0,0 {
-+						compatible = "opencores,ethmac";
-+						reg = <0x080000 0 0 0 0>;
-+					};
-+				};
-+
-+				pci@6,0 {
-+					reg = <0x023000 0 0 0 0>;
-+					bus-range = <0x09 0x09>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci@0,0 {
-+						compatible = "opencores,can";
-+						reg = <0x090000 0 0 0 0>;
-+					};
-+				};
-+
-+				pci@7,0 {
-+					reg = <0x023800 0 0 0 0>;
-+					bus-range = <0x0a 0x0a>;
-+
-+					compatible = "ad,pcie";
-+					device_type = "pci";
-+
-+					#address-cells = <3>;
-+					#size-cells = <2>;
-+
-+					pci@0,0 {
-+						compatible = "opencores,can";
-+						reg = <0x0a0000 0 0 0 0>;
-+					};
-+				};
-+			};
-+		};
-+	};
-+
-+	regulators {
-+		pci_vdd_reg: regulator@1 {
-+			compatible = "regulator-fixed";
-+			reg = <1>;
-+			regulator-name = "vdd_1v05";
-+			regulator-min-microvolt = <1050000>;
-+			regulator-max-microvolt = <1050000>;
-+			gpio = <&pmic 2 0>;
-+			enable-active-high;
-+		};
-+	};
-+
- 	sound {
- 		compatible = "ad,tegra-audio-wm8903-tec",
- 			     "nvidia,tegra-audio-wm8903";
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+
 -- 
-1.8.1
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
 
