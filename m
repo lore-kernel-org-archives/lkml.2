@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934154Ab3AIUlh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:44040 "EHLO mail.kernel.org"
+	id S934140Ab3AIUlf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44052 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934091Ab3AIUlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:31 -0500
+	id S934039Ab3AIUlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
-Subject: [ 122/123] cifs: rename cifs_readdir_lookup to cifs_prime_dcache and make it void return
-Date: Wed,  9 Jan 2013 12:36:01 -0800
-Message-Id: <20130109201513.942890612@linuxfoundation.org>
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        "Serge E. Hallyn" <serge.hallyn@ubuntu.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 113/123] proc: pid/status: show all supplementary groups
+Date: Wed,  9 Jan 2013 12:35:52 -0800
+Message-Id: <20130109201512.904787824@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -25,120 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 
-commit eb1b3fa5cdb9c27bdec8f262acf757a06588eb2d upstream.
+commit 8d238027b87e654be552eabdf492042a34c5c300 upstream.
 
-The caller doesn't do anything with the dentry, so there's no point in
-holding a reference to it on return. Also cifs_prime_dcache better
-describes the actual purpose of the function.
+We display a list of supplementary group for each process in
+/proc/<pid>/status.  However, we show only the first 32 groups, not all of
+them.
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <smfrench@gmail.com>
+Although this is rare, but sometimes processes do have more than 32
+supplementary groups, and this kernel limitation breaks user-space apps
+that rely on the group list in /proc/<pid>/status.
+
+Number 32 comes from the internal NGROUPS_SMALL macro which defines the
+length for the internal kernel "small" groups buffer.  There is no
+apparent reason to limit to this value.
+
+This patch removes the 32 groups printing limit.
+
+The Linux kernel limits the amount of supplementary groups by NGROUPS_MAX,
+which is currently set to 65536.  And this is the maximum count of groups
+we may possibly print.
+
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Acked-by: Serge E. Hallyn <serge.hallyn@ubuntu.com>
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/cifs/readdir.c |   42 ++++++++++++++++++------------------------
- 1 file changed, 18 insertions(+), 24 deletions(-)
+ fs/proc/array.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/cifs/readdir.c
-+++ b/fs/cifs/readdir.c
-@@ -66,18 +66,20 @@ static inline void dump_cifs_file_struct
- #endif /* DEBUG2 */
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -212,7 +212,7 @@ static inline void task_state(struct seq
+ 	group_info = cred->group_info;
+ 	task_unlock(p);
  
- /*
-+ * Attempt to preload the dcache with the results from the FIND_FIRST/NEXT
-+ *
-  * Find the dentry that matches "name". If there isn't one, create one. If it's
-  * a negative dentry or the uniqueid changed, then drop it and recreate it.
-  */
--static struct dentry *
--cifs_readdir_lookup(struct dentry *parent, struct qstr *name,
-+static void
-+cifs_prime_dcache(struct dentry *parent, struct qstr *name,
- 		    struct cifs_fattr *fattr)
- {
- 	struct dentry *dentry, *alias;
- 	struct inode *inode;
- 	struct super_block *sb = parent->d_inode->i_sb;
- 
--	cFYI(1, "For %s", name->name);
-+	cFYI(1, "%s: for %s", __func__, name->name);
- 
- 	if (parent->d_op && parent->d_op->d_hash)
- 		parent->d_op->d_hash(parent, parent->d_inode, name);
-@@ -87,37 +89,32 @@ cifs_readdir_lookup(struct dentry *paren
- 	dentry = d_lookup(parent, name);
- 	if (dentry) {
- 		int err;
-+
- 		inode = dentry->d_inode;
- 		/* update inode in place if i_ino didn't change */
- 		if (inode && CIFS_I(inode)->uniqueid == fattr->cf_uniqueid) {
- 			cifs_fattr_to_inode(inode, fattr);
--			return dentry;
-+			goto out;
- 		}
- 		err = d_invalidate(dentry);
- 		dput(dentry);
- 		if (err)
--			return NULL;
-+			return;
- 	}
- 
- 	dentry = d_alloc(parent, name);
--	if (dentry == NULL)
--		return NULL;
-+	if (!dentry)
-+		return;
- 
- 	inode = cifs_iget(sb, fattr);
--	if (!inode) {
--		dput(dentry);
--		return NULL;
--	}
-+	if (!inode)
-+		goto out;
- 
- 	alias = d_materialise_unique(dentry, inode);
--	if (alias != NULL) {
--		dput(dentry);
--		if (IS_ERR(alias))
--			return NULL;
--		dentry = alias;
--	}
--
--	return dentry;
-+	if (alias && !IS_ERR(alias))
-+		dput(alias);
-+out:
-+	dput(dentry);
- }
- 
- static void
-@@ -652,7 +649,6 @@ static int cifs_filldir(char *find_entry
- 	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
- 	struct cifs_dirent de = { NULL, };
- 	struct cifs_fattr fattr;
--	struct dentry *dentry;
- 	struct qstr name;
- 	int rc = 0;
- 	ino_t ino;
-@@ -723,13 +719,11 @@ static int cifs_filldir(char *find_entry
- 		 */
- 		fattr.cf_flags |= CIFS_FATTR_NEED_REVAL;
- 
--	ino = cifs_uniqueid_to_ino_t(fattr.cf_uniqueid);
--	dentry = cifs_readdir_lookup(file->f_dentry, &name, &fattr);
-+	cifs_prime_dcache(file->f_dentry, &name, &fattr);
- 
-+	ino = cifs_uniqueid_to_ino_t(fattr.cf_uniqueid);
- 	rc = filldir(dirent, name.name, name.len, file->f_pos, ino,
- 		     fattr.cf_dtype);
--
--	dput(dentry);
- 	return rc;
- }
- 
+-	for (g = 0; g < min(group_info->ngroups, NGROUPS_SMALL); g++)
++	for (g = 0; g < group_info->ngroups; g++)
+ 		seq_printf(m, "%d ",
+ 			   from_kgid_munged(user_ns, GROUP_AT(group_info, g)));
+ 	put_cred(cred);
 
 
