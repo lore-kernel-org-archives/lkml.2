@@ -1,117 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934160Ab3AIVUI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:20:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42678 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933252Ab3AIUjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:21 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Weston Andros Adamson <dros@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 050/123] NFS: Fix access to suid/sgid executables
-Date: Wed,  9 Jan 2013 12:34:49 -0800
-Message-Id: <20130109201504.973261871@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S934186Ab3AIVU2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:20:28 -0500
+Received: from moutng.kundenserver.de ([212.227.126.186]:60275 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933673Ab3AIVUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:20:06 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
+Date: Wed, 9 Jan 2013 21:19:56 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-6-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1357764194-12677-6-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301092119.57067.arnd@arndb.de>
+X-Provags-ID: V02:K0:KnHr+sLDDcrqIXMQ7S2P5R9s9w0cjGLeHJ+lDqhzdNj
+ Z1w6WId9mRWpoZzza9EyaegBa699ut3aV3lzNpLHnv1cE0I3tu
+ qGmrztvNX1lYICRDAgqiQ1i/SdjDVhYmNYvM4u5jzyE56eIRZG
+ doiQVyqPr2ze+Hz54/R9faFvT2byFGkfZXkduPH6fIaddDk96t
+ STcMm1Q+dkQkrFSVEItAQSAQC7KzEpDjOkeeBSP8PYi9pmtaqh
+ mv5rDQ2A++fJIUcSMnX2fRMC9tNlSvoIibxj5LAwGoggOmh6lI
+ vfCBwk/hzBI22DODjXbhatk1C6WqqjrIpkkq32K+InEfIDPojk
+ U2Ho2YCzqRZt7YX+1B6g=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday 09 January 2013, Thierry Reding wrote:
+> The I/O map cache is used to map large regions of physical memory in
+> smaller chunks to avoid running out of vmalloc()/ioremap() space.
+> 
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
 
-------------------
+Can you explain why this is necessary and which problem it solves?
+The implementation looks reasonable, but it's not clear to me if
+we really need this new interface.
 
-From: Weston Andros Adamson <dros@netapp.com>
+In what cases does it actually save ioremap space?
 
-commit f8d9a897d4384b77f13781ea813156568f68b83e upstream.
-
-nfs_open_permission_mask() should only check MAY_EXEC for files that
-are opened with __FMODE_EXEC.
-
-Also fix NFSv4 access-in-open path in a similar way -- openflags must be
-used because fmode will not always have FMODE_EXEC set.
-
-This patch fixes https://bugzilla.kernel.org/show_bug.cgi?id=49101
-
-Signed-off-by: Weston Andros Adamson <dros@netapp.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/nfs/dir.c      |   16 ++++++++++------
- fs/nfs/nfs4proc.c |   18 +++++++++++-------
- 2 files changed, 21 insertions(+), 13 deletions(-)
-
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -2148,12 +2148,16 @@ static int nfs_open_permission_mask(int
- {
- 	int mask = 0;
- 
--	if ((openflags & O_ACCMODE) != O_WRONLY)
--		mask |= MAY_READ;
--	if ((openflags & O_ACCMODE) != O_RDONLY)
--		mask |= MAY_WRITE;
--	if (openflags & __FMODE_EXEC)
--		mask |= MAY_EXEC;
-+	if (openflags & __FMODE_EXEC) {
-+		/* ONLY check exec rights */
-+		mask = MAY_EXEC;
-+	} else {
-+		if ((openflags & O_ACCMODE) != O_WRONLY)
-+			mask |= MAY_READ;
-+		if ((openflags & O_ACCMODE) != O_RDONLY)
-+			mask |= MAY_WRITE;
-+	}
-+
- 	return mask;
- }
- 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -1721,7 +1721,8 @@ static int _nfs4_recover_proc_open(struc
- 
- static int nfs4_opendata_access(struct rpc_cred *cred,
- 				struct nfs4_opendata *opendata,
--				struct nfs4_state *state, fmode_t fmode)
-+				struct nfs4_state *state, fmode_t fmode,
-+				int openflags)
- {
- 	struct nfs_access_entry cache;
- 	u32 mask;
-@@ -1733,11 +1734,14 @@ static int nfs4_opendata_access(struct r
- 
- 	mask = 0;
- 	/* don't check MAY_WRITE - a newly created file may not have
--	 * write mode bits, but POSIX allows the creating process to write */
--	if (fmode & FMODE_READ)
--		mask |= MAY_READ;
--	if (fmode & FMODE_EXEC)
--		mask |= MAY_EXEC;
-+	 * write mode bits, but POSIX allows the creating process to write.
-+	 * use openflags to check for exec, because fmode won't
-+	 * always have FMODE_EXEC set when file open for exec. */
-+	if (openflags & __FMODE_EXEC) {
-+		/* ONLY check for exec rights */
-+		mask = MAY_EXEC;
-+	} else if (fmode & FMODE_READ)
-+		mask = MAY_READ;
- 
- 	cache.cred = cred;
- 	cache.jiffies = jiffies;
-@@ -2009,7 +2013,7 @@ static int _nfs4_do_open(struct inode *d
- 	if (server->caps & NFS_CAP_POSIX_LOCK)
- 		set_bit(NFS_STATE_POSIX_LOCKS, &state->flags);
- 
--	status = nfs4_opendata_access(cred, opendata, state, fmode);
-+	status = nfs4_opendata_access(cred, opendata, state, fmode, flags);
- 	if (status != 0)
- 		goto err_opendata_put;
- 
-
-
+	Arnd
