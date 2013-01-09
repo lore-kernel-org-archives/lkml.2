@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756604Ab3AIB2n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 20:28:43 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:50749 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756462Ab3AIB2h (ORCPT
+	id S1756540Ab3AIB3K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 20:29:10 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:58842 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756447Ab3AIB2l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 20:28:37 -0500
+	Tue, 8 Jan 2013 20:28:41 -0500
 From: Michel Lespinasse <walken@google.com>
 To: Rik van Riel <riel@redhat.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,9 +17,9 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
         linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
         linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: [PATCH 6/8] mm: remove free_area_cache use in powerpc architecture
-Date: Tue,  8 Jan 2013 17:28:13 -0800
-Message-Id: <1357694895-520-7-git-send-email-walken@google.com>
+Subject: [PATCH 8/8] mm: remove free_area_cache
+Date: Tue,  8 Jan 2013 17:28:15 -0800
+Message-Id: <1357694895-520-9-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.7.3
 In-Reply-To: <1357694895-520-1-git-send-email-walken@google.com>
 References: <1357694895-520-1-git-send-email-walken@google.com>
@@ -27,288 +27,349 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As all other architectures have been converted to use vm_unmapped_area(),
-we are about to retire the free_area_cache.
-
-This change simply removes the use of that cache in
-slice_get_unmapped_area(), which will most certainly have a
-performance cost. Next one will convert that function to use the
-vm_unmapped_area() infrastructure and regain the performance.
+Since all architectures have been converted to use vm_unmapped_area(),
+there is no remaining use for the free_area_cache.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 
 ---
- arch/powerpc/include/asm/page_64.h       |    3 +-
- arch/powerpc/mm/hugetlbpage.c            |    2 +-
- arch/powerpc/mm/slice.c                  |  108 +++++------------------------
- arch/powerpc/platforms/cell/spufs/file.c |    2 +-
- 4 files changed, 22 insertions(+), 93 deletions(-)
+ arch/arm/mm/mmap.c               |    2 --
+ arch/arm64/mm/mmap.c             |    2 --
+ arch/mips/mm/mmap.c              |    2 --
+ arch/powerpc/mm/mmap_64.c        |    2 --
+ arch/s390/mm/mmap.c              |    4 ----
+ arch/sparc/kernel/sys_sparc_64.c |    2 --
+ arch/tile/mm/mmap.c              |    2 --
+ arch/x86/ia32/ia32_aout.c        |    2 --
+ arch/x86/mm/mmap.c               |    2 --
+ fs/binfmt_aout.c                 |    2 --
+ fs/binfmt_elf.c                  |    2 --
+ include/linux/mm_types.h         |    3 ---
+ include/linux/sched.h            |    2 --
+ kernel/fork.c                    |    4 ----
+ mm/mmap.c                        |   28 ----------------------------
+ mm/nommu.c                       |    4 ----
+ mm/util.c                        |    1 -
+ 17 files changed, 0 insertions(+), 66 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/page_64.h b/arch/powerpc/include/asm/page_64.h
-index cd915d6b093d..88693cef4f3d 100644
---- a/arch/powerpc/include/asm/page_64.h
-+++ b/arch/powerpc/include/asm/page_64.h
-@@ -99,8 +99,7 @@ extern unsigned long slice_get_unmapped_area(unsigned long addr,
- 					     unsigned long len,
- 					     unsigned long flags,
- 					     unsigned int psize,
--					     int topdown,
--					     int use_cache);
-+					     int topdown);
+diff --git a/arch/arm/mm/mmap.c b/arch/arm/mm/mmap.c
+index 10062ceadd1c..0c6356255fe3 100644
+--- a/arch/arm/mm/mmap.c
++++ b/arch/arm/mm/mmap.c
+@@ -181,11 +181,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base(random_factor);
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
  
- extern unsigned int get_slice_psize(struct mm_struct *mm,
- 				    unsigned long addr);
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index 1a6de0a7d8eb..5dc52d803ed8 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -742,7 +742,7 @@ unsigned long hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
- 	struct hstate *hstate = hstate_file(file);
- 	int mmu_psize = shift_to_mmu_psize(huge_page_shift(hstate));
+diff --git a/arch/arm64/mm/mmap.c b/arch/arm64/mm/mmap.c
+index 7c7be7855638..8ed6cb1a900f 100644
+--- a/arch/arm64/mm/mmap.c
++++ b/arch/arm64/mm/mmap.c
+@@ -90,11 +90,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(arch_pick_mmap_layout);
+diff --git a/arch/mips/mm/mmap.c b/arch/mips/mm/mmap.c
+index d9be7540a6be..f4e63c29d044 100644
+--- a/arch/mips/mm/mmap.c
++++ b/arch/mips/mm/mmap.c
+@@ -158,11 +158,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base(random_factor);
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
  
--	return slice_get_unmapped_area(addr, len, flags, mmu_psize, 1, 0);
-+	return slice_get_unmapped_area(addr, len, flags, mmu_psize, 1);
+diff --git a/arch/powerpc/mm/mmap_64.c b/arch/powerpc/mm/mmap_64.c
+index 67a42ed0d2fc..cb8bdbe4972f 100644
+--- a/arch/powerpc/mm/mmap_64.c
++++ b/arch/powerpc/mm/mmap_64.c
+@@ -92,10 +92,8 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+diff --git a/arch/s390/mm/mmap.c b/arch/s390/mm/mmap.c
+index c59a5efa58b1..f2a462625c9e 100644
+--- a/arch/s390/mm/mmap.c
++++ b/arch/s390/mm/mmap.c
+@@ -91,11 +91,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+ 
+@@ -173,11 +171,9 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE;
+ 		mm->get_unmapped_area = s390_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = s390_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+ 
+diff --git a/arch/sparc/kernel/sys_sparc_64.c b/arch/sparc/kernel/sys_sparc_64.c
+index 708bc29d36a8..f3c169f9d3a1 100644
+--- a/arch/sparc/kernel/sys_sparc_64.c
++++ b/arch/sparc/kernel/sys_sparc_64.c
+@@ -290,7 +290,6 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	    sysctl_legacy_va_layout) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE + random_factor;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		/* We know it's 32-bit */
+ 		unsigned long task_size = STACK_TOP32;
+@@ -302,7 +301,6 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 
+ 		mm->mmap_base = PAGE_ALIGN(task_size - gap - random_factor);
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+ 
+diff --git a/arch/tile/mm/mmap.c b/arch/tile/mm/mmap.c
+index f96f4cec602a..d67d91ebf63e 100644
+--- a/arch/tile/mm/mmap.c
++++ b/arch/tile/mm/mmap.c
+@@ -66,10 +66,8 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (!is_32bit || rlimit(RLIMIT_STACK) == RLIM_INFINITY) {
+ 		mm->mmap_base = TASK_UNMAPPED_BASE;
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base(mm);
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+diff --git a/arch/x86/ia32/ia32_aout.c b/arch/x86/ia32/ia32_aout.c
+index a703af19c281..3b3558577642 100644
+--- a/arch/x86/ia32/ia32_aout.c
++++ b/arch/x86/ia32/ia32_aout.c
+@@ -309,8 +309,6 @@ static int load_aout_binary(struct linux_binprm *bprm)
+ 		(current->mm->start_data = N_DATADDR(ex));
+ 	current->mm->brk = ex.a_bss +
+ 		(current->mm->start_brk = N_BSSADDR(ex));
+-	current->mm->free_area_cache = TASK_UNMAPPED_BASE;
+-	current->mm->cached_hole_size = 0;
+ 
+ 	retval = setup_arg_pages(bprm, IA32_STACK_TOP, EXSTACK_DEFAULT);
+ 	if (retval < 0) {
+diff --git a/arch/x86/mm/mmap.c b/arch/x86/mm/mmap.c
+index 845df6835f9f..62c29a5bfe26 100644
+--- a/arch/x86/mm/mmap.c
++++ b/arch/x86/mm/mmap.c
+@@ -115,10 +115,8 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
+ 	if (mmap_is_legacy()) {
+ 		mm->mmap_base = mmap_legacy_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area;
+-		mm->unmap_area = arch_unmap_area;
+ 	} else {
+ 		mm->mmap_base = mmap_base();
+ 		mm->get_unmapped_area = arch_get_unmapped_area_topdown;
+-		mm->unmap_area = arch_unmap_area_topdown;
+ 	}
+ }
+diff --git a/fs/binfmt_aout.c b/fs/binfmt_aout.c
+index 6043567b95c2..692e75ca6415 100644
+--- a/fs/binfmt_aout.c
++++ b/fs/binfmt_aout.c
+@@ -256,8 +256,6 @@ static int load_aout_binary(struct linux_binprm * bprm)
+ 		(current->mm->start_data = N_DATADDR(ex));
+ 	current->mm->brk = ex.a_bss +
+ 		(current->mm->start_brk = N_BSSADDR(ex));
+-	current->mm->free_area_cache = current->mm->mmap_base;
+-	current->mm->cached_hole_size = 0;
+ 
+ 	retval = setup_arg_pages(bprm, STACK_TOP, EXSTACK_DEFAULT);
+ 	if (retval < 0) {
+diff --git a/fs/binfmt_elf.c b/fs/binfmt_elf.c
+index 0c42cdbabecf..e2087dea9c1e 100644
+--- a/fs/binfmt_elf.c
++++ b/fs/binfmt_elf.c
+@@ -730,8 +730,6 @@ static int load_elf_binary(struct linux_binprm *bprm)
+ 
+ 	/* Do this so that we can load the interpreter, if need be.  We will
+ 	   change some of these later */
+-	current->mm->free_area_cache = current->mm->mmap_base;
+-	current->mm->cached_hole_size = 0;
+ 	retval = setup_arg_pages(bprm, randomize_stack_top(STACK_TOP),
+ 				 executable_stack);
+ 	if (retval < 0) {
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index f8f5162a3571..e50eb047ea8a 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -329,12 +329,9 @@ struct mm_struct {
+ 	unsigned long (*get_unmapped_area) (struct file *filp,
+ 				unsigned long addr, unsigned long len,
+ 				unsigned long pgoff, unsigned long flags);
+-	void (*unmap_area) (struct mm_struct *mm, unsigned long addr);
+ #endif
+ 	unsigned long mmap_base;		/* base of mmap area */
+ 	unsigned long task_size;		/* size of task vm space */
+-	unsigned long cached_hole_size; 	/* if non-zero, the largest hole below free_area_cache */
+-	unsigned long free_area_cache;		/* first hole of size cached_hole_size or larger */
+ 	unsigned long highest_vm_end;		/* highest vma end address */
+ 	pgd_t * pgd;
+ 	atomic_t mm_users;			/* How many users with user space? */
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 206bb089c06b..fa7e0a60ebe9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -366,8 +366,6 @@ extern unsigned long
+ arch_get_unmapped_area_topdown(struct file *filp, unsigned long addr,
+ 			  unsigned long len, unsigned long pgoff,
+ 			  unsigned long flags);
+-extern void arch_unmap_area(struct mm_struct *, unsigned long);
+-extern void arch_unmap_area_topdown(struct mm_struct *, unsigned long);
+ #else
+ static inline void arch_pick_mmap_layout(struct mm_struct *mm) {}
+ #endif
+diff --git a/kernel/fork.c b/kernel/fork.c
+index a31b823b3c2d..bdf61755ef4a 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -364,8 +364,6 @@ static int dup_mmap(struct mm_struct *mm, struct mm_struct *oldmm)
+ 	mm->locked_vm = 0;
+ 	mm->mmap = NULL;
+ 	mm->mmap_cache = NULL;
+-	mm->free_area_cache = oldmm->mmap_base;
+-	mm->cached_hole_size = ~0UL;
+ 	mm->map_count = 0;
+ 	cpumask_clear(mm_cpumask(mm));
+ 	mm->mm_rb = RB_ROOT;
+@@ -539,8 +537,6 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p)
+ 	mm->nr_ptes = 0;
+ 	memset(&mm->rss_stat, 0, sizeof(mm->rss_stat));
+ 	spin_lock_init(&mm->page_table_lock);
+-	mm->free_area_cache = TASK_UNMAPPED_BASE;
+-	mm->cached_hole_size = ~0UL;
+ 	mm_init_aio(mm);
+ 	mm_init_owner(mm, p);
+ 
+diff --git a/mm/mmap.c b/mm/mmap.c
+index f54b235f29a9..532f447879d4 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -1800,15 +1800,6 @@ arch_get_unmapped_area(struct file *filp, unsigned long addr,
+ }
+ #endif	
+ 
+-void arch_unmap_area(struct mm_struct *mm, unsigned long addr)
+-{
+-	/*
+-	 * Is this a new hole at the lowest possible address?
+-	 */
+-	if (addr >= TASK_UNMAPPED_BASE && addr < mm->free_area_cache)
+-		mm->free_area_cache = addr;
+-}
+-
+ /*
+  * This mmap-allocator allocates new areas top-down from below the
+  * stack's low limit (the base):
+@@ -1865,19 +1856,6 @@ arch_get_unmapped_area_topdown(struct file *filp, const unsigned long addr0,
  }
  #endif
  
-diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
-index cf9dada734b6..999a74f25ebe 100644
---- a/arch/powerpc/mm/slice.c
-+++ b/arch/powerpc/mm/slice.c
-@@ -240,23 +240,15 @@ static void slice_convert(struct mm_struct *mm, struct slice_mask mask, int psiz
- static unsigned long slice_find_area_bottomup(struct mm_struct *mm,
- 					      unsigned long len,
- 					      struct slice_mask available,
--					      int psize, int use_cache)
-+					      int psize)
+-void arch_unmap_area_topdown(struct mm_struct *mm, unsigned long addr)
+-{
+-	/*
+-	 * Is this a new hole at the highest possible address?
+-	 */
+-	if (addr > mm->free_area_cache)
+-		mm->free_area_cache = addr;
+-
+-	/* dont allow allocations above current base */
+-	if (mm->free_area_cache > mm->mmap_base)
+-		mm->free_area_cache = mm->mmap_base;
+-}
+-
+ unsigned long
+ get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
+ 		unsigned long pgoff, unsigned long flags)
+@@ -2276,7 +2254,6 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
  {
- 	struct vm_area_struct *vma;
--	unsigned long start_addr, addr;
-+	unsigned long addr;
- 	struct slice_mask mask;
- 	int pshift = max_t(int, mmu_psize_defs[psize].shift, PAGE_SHIFT);
+ 	struct vm_area_struct **insertion_point;
+ 	struct vm_area_struct *tail_vma = NULL;
+-	unsigned long addr;
  
--	if (use_cache) {
--		if (len <= mm->cached_hole_size) {
--			start_addr = addr = TASK_UNMAPPED_BASE;
--			mm->cached_hole_size = 0;
--		} else
--			start_addr = addr = mm->free_area_cache;
--	} else
--		start_addr = addr = TASK_UNMAPPED_BASE;
-+	addr = TASK_UNMAPPED_BASE;
+ 	insertion_point = (prev ? &prev->vm_next : &mm->mmap);
+ 	vma->vm_prev = NULL;
+@@ -2293,11 +2270,6 @@ detach_vmas_to_be_unmapped(struct mm_struct *mm, struct vm_area_struct *vma,
+ 	} else
+ 		mm->highest_vm_end = prev ? prev->vm_end : 0;
+ 	tail_vma->vm_next = NULL;
+-	if (mm->unmap_area == arch_unmap_area)
+-		addr = prev ? prev->vm_end : mm->mmap_base;
+-	else
+-		addr = vma ?  vma->vm_start : mm->mmap_base;
+-	mm->unmap_area(mm, addr);
+ 	mm->mmap_cache = NULL;		/* Kill the cache. */
+ }
  
--full_search:
- 	for (;;) {
- 		addr = _ALIGN_UP(addr, 1ul << pshift);
- 		if ((TASK_SIZE - len) < addr)
-@@ -272,63 +264,24 @@ full_search:
- 				addr = _ALIGN_UP(addr + 1,  1ul << SLICE_HIGH_SHIFT);
- 			continue;
- 		}
--		if (!vma || addr + len <= vma->vm_start) {
--			/*
--			 * Remember the place where we stopped the search:
--			 */
--			if (use_cache)
--				mm->free_area_cache = addr + len;
-+		if (!vma || addr + len <= vma->vm_start)
- 			return addr;
--		}
--		if (use_cache && (addr + mm->cached_hole_size) < vma->vm_start)
--		        mm->cached_hole_size = vma->vm_start - addr;
- 		addr = vma->vm_end;
- 	}
- 
--	/* Make sure we didn't miss any holes */
--	if (use_cache && start_addr != TASK_UNMAPPED_BASE) {
--		start_addr = addr = TASK_UNMAPPED_BASE;
--		mm->cached_hole_size = 0;
--		goto full_search;
--	}
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 79c3cac87afa..b5535ff2f9d1 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1852,10 +1852,6 @@ unsigned long arch_get_unmapped_area(struct file *file, unsigned long addr,
  	return -ENOMEM;
  }
  
- static unsigned long slice_find_area_topdown(struct mm_struct *mm,
- 					     unsigned long len,
- 					     struct slice_mask available,
--					     int psize, int use_cache)
-+					     int psize)
+-void arch_unmap_area(struct mm_struct *mm, unsigned long addr)
+-{
+-}
+-
+ void unmap_mapping_range(struct address_space *mapping,
+ 			 loff_t const holebegin, loff_t const holelen,
+ 			 int even_cows)
+diff --git a/mm/util.c b/mm/util.c
+index c55e26b17d93..4c19aa6a1b43 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -293,7 +293,6 @@ void arch_pick_mmap_layout(struct mm_struct *mm)
  {
- 	struct vm_area_struct *vma;
- 	unsigned long addr;
- 	struct slice_mask mask;
- 	int pshift = max_t(int, mmu_psize_defs[psize].shift, PAGE_SHIFT);
- 
--	/* check if free_area_cache is useful for us */
--	if (use_cache) {
--		if (len <= mm->cached_hole_size) {
--			mm->cached_hole_size = 0;
--			mm->free_area_cache = mm->mmap_base;
--		}
--
--		/* either no address requested or can't fit in requested
--		 * address hole
--		 */
--		addr = mm->free_area_cache;
--
--		/* make sure it can fit in the remaining address space */
--		if (addr > len) {
--			addr = _ALIGN_DOWN(addr - len, 1ul << pshift);
--			mask = slice_range_to_mask(addr, len);
--			if (slice_check_fit(mask, available) &&
--			    slice_area_is_free(mm, addr, len))
--					/* remember the address as a hint for
--					 * next time
--					 */
--					return (mm->free_area_cache = addr);
--		}
--	}
--
- 	addr = mm->mmap_base;
- 	while (addr > len) {
- 		/* Go down by chunk size */
-@@ -352,16 +305,8 @@ static unsigned long slice_find_area_topdown(struct mm_struct *mm,
- 		 * return with success:
- 		 */
- 		vma = find_vma(mm, addr);
--		if (!vma || (addr + len) <= vma->vm_start) {
--			/* remember the address as a hint for next time */
--			if (use_cache)
--				mm->free_area_cache = addr;
-+		if (!vma || (addr + len) <= vma->vm_start)
- 			return addr;
--		}
--
--		/* remember the largest hole we saw so far */
--		if (use_cache && (addr + mm->cached_hole_size) < vma->vm_start)
--		        mm->cached_hole_size = vma->vm_start - addr;
- 
- 		/* try just below the current vma->vm_start */
- 		addr = vma->vm_start;
-@@ -373,28 +318,18 @@ static unsigned long slice_find_area_topdown(struct mm_struct *mm,
- 	 * can happen with large stack limits and large mmap()
- 	 * allocations.
- 	 */
--	addr = slice_find_area_bottomup(mm, len, available, psize, 0);
--
--	/*
--	 * Restore the topdown base:
--	 */
--	if (use_cache) {
--		mm->free_area_cache = mm->mmap_base;
--		mm->cached_hole_size = ~0UL;
--	}
--
--	return addr;
-+	return slice_find_area_bottomup(mm, len, available, psize);
+ 	mm->mmap_base = TASK_UNMAPPED_BASE;
+ 	mm->get_unmapped_area = arch_get_unmapped_area;
+-	mm->unmap_area = arch_unmap_area;
  }
- 
- 
- static unsigned long slice_find_area(struct mm_struct *mm, unsigned long len,
- 				     struct slice_mask mask, int psize,
--				     int topdown, int use_cache)
-+				     int topdown)
- {
- 	if (topdown)
--		return slice_find_area_topdown(mm, len, mask, psize, use_cache);
-+		return slice_find_area_topdown(mm, len, mask, psize);
- 	else
--		return slice_find_area_bottomup(mm, len, mask, psize, use_cache);
-+		return slice_find_area_bottomup(mm, len, mask, psize);
- }
- 
- #define or_mask(dst, src)	do {			\
-@@ -415,7 +350,7 @@ static unsigned long slice_find_area(struct mm_struct *mm, unsigned long len,
- 
- unsigned long slice_get_unmapped_area(unsigned long addr, unsigned long len,
- 				      unsigned long flags, unsigned int psize,
--				      int topdown, int use_cache)
-+				      int topdown)
- {
- 	struct slice_mask mask = {0, 0};
- 	struct slice_mask good_mask;
-@@ -430,8 +365,8 @@ unsigned long slice_get_unmapped_area(unsigned long addr, unsigned long len,
- 	BUG_ON(mm->task_size == 0);
- 
- 	slice_dbg("slice_get_unmapped_area(mm=%p, psize=%d...\n", mm, psize);
--	slice_dbg(" addr=%lx, len=%lx, flags=%lx, topdown=%d, use_cache=%d\n",
--		  addr, len, flags, topdown, use_cache);
-+	slice_dbg(" addr=%lx, len=%lx, flags=%lx, topdown=%d\n",
-+		  addr, len, flags, topdown);
- 
- 	if (len > mm->task_size)
- 		return -ENOMEM;
-@@ -503,8 +438,7 @@ unsigned long slice_get_unmapped_area(unsigned long addr, unsigned long len,
- 		/* Now let's see if we can find something in the existing
- 		 * slices for that size
- 		 */
--		newaddr = slice_find_area(mm, len, good_mask, psize, topdown,
--					  use_cache);
-+		newaddr = slice_find_area(mm, len, good_mask, psize, topdown);
- 		if (newaddr != -ENOMEM) {
- 			/* Found within the good mask, we don't have to setup,
- 			 * we thus return directly
-@@ -536,8 +470,7 @@ unsigned long slice_get_unmapped_area(unsigned long addr, unsigned long len,
- 	 * anywhere in the good area.
- 	 */
- 	if (addr) {
--		addr = slice_find_area(mm, len, good_mask, psize, topdown,
--				       use_cache);
-+		addr = slice_find_area(mm, len, good_mask, psize, topdown);
- 		if (addr != -ENOMEM) {
- 			slice_dbg(" found area at 0x%lx\n", addr);
- 			return addr;
-@@ -547,15 +480,14 @@ unsigned long slice_get_unmapped_area(unsigned long addr, unsigned long len,
- 	/* Now let's see if we can find something in the existing slices
- 	 * for that size plus free slices
- 	 */
--	addr = slice_find_area(mm, len, potential_mask, psize, topdown,
--			       use_cache);
-+	addr = slice_find_area(mm, len, potential_mask, psize, topdown);
- 
- #ifdef CONFIG_PPC_64K_PAGES
- 	if (addr == -ENOMEM && psize == MMU_PAGE_64K) {
- 		/* retry the search with 4k-page slices included */
- 		or_mask(potential_mask, compat_mask);
- 		addr = slice_find_area(mm, len, potential_mask, psize,
--				       topdown, use_cache);
-+				       topdown);
- 	}
  #endif
- 
-@@ -586,8 +518,7 @@ unsigned long arch_get_unmapped_area(struct file *filp,
- 				     unsigned long flags)
- {
- 	return slice_get_unmapped_area(addr, len, flags,
--				       current->mm->context.user_psize,
--				       0, 1);
-+				       current->mm->context.user_psize, 0);
- }
- 
- unsigned long arch_get_unmapped_area_topdown(struct file *filp,
-@@ -597,8 +528,7 @@ unsigned long arch_get_unmapped_area_topdown(struct file *filp,
- 					     const unsigned long flags)
- {
- 	return slice_get_unmapped_area(addr0, len, flags,
--				       current->mm->context.user_psize,
--				       1, 1);
-+				       current->mm->context.user_psize, 1);
- }
- 
- unsigned int get_slice_psize(struct mm_struct *mm, unsigned long addr)
-diff --git a/arch/powerpc/platforms/cell/spufs/file.c b/arch/powerpc/platforms/cell/spufs/file.c
-index 0cfece4cf6ef..2eb4df2a9388 100644
---- a/arch/powerpc/platforms/cell/spufs/file.c
-+++ b/arch/powerpc/platforms/cell/spufs/file.c
-@@ -352,7 +352,7 @@ static unsigned long spufs_get_unmapped_area(struct file *file,
- 
- 	/* Else, try to obtain a 64K pages slice */
- 	return slice_get_unmapped_area(addr, len, flags,
--				       MMU_PAGE_64K, 1, 0);
-+				       MMU_PAGE_64K, 1);
- }
- #endif /* CONFIG_SPU_FS_64K_LS */
  
 -- 
 1.7.7.3
