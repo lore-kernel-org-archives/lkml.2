@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932748Ab3AIUgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:36:37 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40932 "EHLO mail.kernel.org"
+	id S932768Ab3AIWCb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:02:31 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40998 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932395Ab3AIUgb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:31 -0500
+	id S932395Ab3AIUgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:37 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
-        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 09/47] exec: do not leave bprm->interp on stack
-Date: Wed,  9 Jan 2013 12:35:04 -0800
-Message-Id: <20130109201730.562524687@linuxfoundation.org>
+Subject: [ 13/47] tmpfs mempolicy: fix /proc/mounts corrupting memory
+Date: Wed,  9 Jan 2013 12:35:08 -0800
+Message-Id: <20130109201731.014766529@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -28,114 +26,172 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <keescook@chromium.org>
+From: Hugh Dickins <hughd@google.com>
 
-commit b66c5984017533316fd1951770302649baf1aa33 upstream.
+commit f2a07f40dbc603c15f8b06e6ec7f768af67b424f upstream.
 
-If a series of scripts are executed, each triggering module loading via
-unprintable bytes in the script header, kernel stack contents can leak
-into the command line.
+Recently I suggested using "mount -o remount,mpol=local /tmp" in NUMA
+mempolicy testing.  Very nasty.  Reading /proc/mounts, /proc/pid/mounts
+or /proc/pid/mountinfo may then corrupt one bit of kernel memory, often
+in a page table (causing "Bad swap" or "Bad page map" warning or "Bad
+pagetable" oops), sometimes in a vm_area_struct or rbnode or somewhere
+worse.  "mpol=prefer" and "mpol=prefer:Node" are equally toxic.
 
-Normally execution of binfmt_script and binfmt_misc happens recursively.
-However, when modules are enabled, and unprintable bytes exist in the
-bprm->buf, execution will restart after attempting to load matching
-binfmt modules.  Unfortunately, the logic in binfmt_script and
-binfmt_misc does not expect to get restarted.  They leave bprm->interp
-pointing to their local stack.  This means on restart bprm->interp is
-left pointing into unused stack memory which can then be copied into the
-userspace argv areas.
+Recent NUMA enhancements are not to blame: this dates back to 2.6.35,
+when commit e17f74af351c "mempolicy: don't call mpol_set_nodemask() when
+no_context" skipped mpol_parse_str()'s call to mpol_set_nodemask(),
+which used to initialize v.preferred_node, or set MPOL_F_LOCAL in flags.
+With slab poisoning, you can then rely on mpol_to_str() to set the bit
+for node 0x6b6b, probably in the next page above the caller's stack.
 
-After additional study, it seems that both recursion and restart remains
-the desirable way to handle exec with scripts, misc, and modules.  As
-such, we need to protect the changes to interp.
+mpol_parse_str() is only called from shmem_parse_options(): no_context
+is always true, so call it unused for now, and remove !no_context code.
+Set v.nodes or v.preferred_node or MPOL_F_LOCAL as mpol_to_str() might
+expect.  Then mpol_to_str() can ignore its no_context argument also,
+the mpol being appropriately initialized whether contextualized or not.
+Rename its no_context unused too, and let subsequent patch remove them
+(that's not needed for stable backporting, which would involve rejects).
 
-This changes the logic to require allocation for any changes to the
-bprm->interp.  To avoid adding a new kmalloc to every exec, the default
-value is left as-is.  Only when passing through binfmt_script or
-binfmt_misc does an allocation take place.
+I don't understand why MPOL_LOCAL is described as a pseudo-policy:
+it's a reasonable policy which suffers from a confusing implementation
+in terms of MPOL_PREFERRED with MPOL_F_LOCAL.  I believe this would be
+much more robust if MPOL_LOCAL were recognized in switch statements
+throughout, MPOL_F_LOCAL deleted, and MPOL_PREFERRED use the (possibly
+empty) nodes mask like everyone else, instead of its preferred_node
+variant (I presume an optimization from the days before MPOL_LOCAL).
+But that would take me too long to get right and fully tested.
 
-For a proof of concept, see DoTest.sh from:
-
-   http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Cc: halfdog <me@halfdog.net>
-Cc: P J P <ppandit@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Hugh Dickins <hughd@google.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/binfmt_misc.c        |    5 ++++-
- fs/binfmt_script.c      |    4 +++-
- fs/exec.c               |   15 +++++++++++++++
- include/linux/binfmts.h |    1 +
- 4 files changed, 23 insertions(+), 2 deletions(-)
+ mm/mempolicy.c |   64 +++++++++++++++++++++++----------------------------------
+ 1 file changed, 26 insertions(+), 38 deletions(-)
 
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -176,7 +176,10 @@ static int load_misc_binary(struct linux
- 		goto _error;
- 	bprm->argc ++;
- 
--	bprm->interp = iname;	/* for binfmt_script */
-+	/* Update interp in case binfmt_script needs it. */
-+	retval = bprm_change_interp(iname, bprm);
-+	if (retval < 0)
-+		goto _error;
- 
- 	interp_file = open_exec (iname);
- 	retval = PTR_ERR (interp_file);
---- a/fs/binfmt_script.c
-+++ b/fs/binfmt_script.c
-@@ -82,7 +82,9 @@ static int load_script(struct linux_binp
- 	retval = copy_strings_kernel(1, &i_name, bprm);
- 	if (retval) return retval; 
- 	bprm->argc++;
--	bprm->interp = interp;
-+	retval = bprm_change_interp(interp, bprm);
-+	if (retval < 0)
-+		return retval;
- 
- 	/*
- 	 * OK, now restart the process with the interpreter's dentry.
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1192,9 +1192,24 @@ void free_bprm(struct linux_binprm *bprm
- 		mutex_unlock(&current->signal->cred_guard_mutex);
- 		abort_creds(bprm->cred);
- 	}
-+	/* If a binfmt changed the interp, free it. */
-+	if (bprm->interp != bprm->filename)
-+		kfree(bprm->interp);
- 	kfree(bprm);
- }
- 
-+int bprm_change_interp(char *interp, struct linux_binprm *bprm)
-+{
-+	/* If a binfmt changed the interp, free it first. */
-+	if (bprm->interp != bprm->filename)
-+		kfree(bprm->interp);
-+	bprm->interp = kstrdup(interp, GFP_KERNEL);
-+	if (!bprm->interp)
-+		return -ENOMEM;
-+	return 0;
-+}
-+EXPORT_SYMBOL(bprm_change_interp);
-+
- /*
-  * install the new credentials for this executable
+--- a/mm/mempolicy.c
++++ b/mm/mempolicy.c
+@@ -2308,8 +2308,7 @@ void numa_default_policy(void)
   */
---- a/include/linux/binfmts.h
-+++ b/include/linux/binfmts.h
-@@ -126,6 +126,7 @@ extern int setup_arg_pages(struct linux_
- 			   unsigned long stack_top,
- 			   int executable_stack);
- extern int bprm_mm_init(struct linux_binprm *bprm);
-+extern int bprm_change_interp(char *interp, struct linux_binprm *bprm);
- extern int copy_strings_kernel(int argc, const char *const *argv,
- 			       struct linux_binprm *bprm);
- extern int prepare_bprm_creds(struct linux_binprm *bprm);
+ 
+ /*
+- * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
+- * Used only for mpol_parse_str() and mpol_to_str()
++ * "local" is implemented internally by MPOL_PREFERRED with MPOL_F_LOCAL flag.
+  */
+ #define MPOL_LOCAL MPOL_MAX
+ static const char * const policy_modes[] =
+@@ -2324,28 +2323,21 @@ static const char * const policy_modes[]
+ 
+ #ifdef CONFIG_TMPFS
+ /**
+- * mpol_parse_str - parse string to mempolicy
++ * mpol_parse_str - parse string to mempolicy, for tmpfs mpol mount option.
+  * @str:  string containing mempolicy to parse
+  * @mpol:  pointer to struct mempolicy pointer, returned on success.
+- * @no_context:  flag whether to "contextualize" the mempolicy
++ * @unused:  redundant argument, to be removed later.
+  *
+  * Format of input:
+  *	<mode>[=<flags>][:<nodelist>]
+  *
+- * if @no_context is true, save the input nodemask in w.user_nodemask in
+- * the returned mempolicy.  This will be used to "clone" the mempolicy in
+- * a specific context [cpuset] at a later time.  Used to parse tmpfs mpol
+- * mount option.  Note that if 'static' or 'relative' mode flags were
+- * specified, the input nodemask will already have been saved.  Saving
+- * it again is redundant, but safe.
+- *
+  * On success, returns 0, else 1
+  */
+-int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
++int mpol_parse_str(char *str, struct mempolicy **mpol, int unused)
+ {
+ 	struct mempolicy *new = NULL;
+ 	unsigned short mode;
+-	unsigned short uninitialized_var(mode_flags);
++	unsigned short mode_flags;
+ 	nodemask_t nodes;
+ 	char *nodelist = strchr(str, ':');
+ 	char *flags = strchr(str, '=');
+@@ -2433,24 +2425,23 @@ int mpol_parse_str(char *str, struct mem
+ 	if (IS_ERR(new))
+ 		goto out;
+ 
+-	if (no_context) {
+-		/* save for contextualization */
+-		new->w.user_nodemask = nodes;
+-	} else {
+-		int ret;
+-		NODEMASK_SCRATCH(scratch);
+-		if (scratch) {
+-			task_lock(current);
+-			ret = mpol_set_nodemask(new, &nodes, scratch);
+-			task_unlock(current);
+-		} else
+-			ret = -ENOMEM;
+-		NODEMASK_SCRATCH_FREE(scratch);
+-		if (ret) {
+-			mpol_put(new);
+-			goto out;
+-		}
+-	}
++	/*
++	 * Save nodes for mpol_to_str() to show the tmpfs mount options
++	 * for /proc/mounts, /proc/pid/mounts and /proc/pid/mountinfo.
++	 */
++	if (mode != MPOL_PREFERRED)
++		new->v.nodes = nodes;
++	else if (nodelist)
++		new->v.preferred_node = first_node(nodes);
++	else
++		new->flags |= MPOL_F_LOCAL;
++
++	/*
++	 * Save nodes for contextualization: this will be used to "clone"
++	 * the mempolicy in a specific context [cpuset] at a later time.
++	 */
++	new->w.user_nodemask = nodes;
++
+ 	err = 0;
+ 
+ out:
+@@ -2470,13 +2461,13 @@ out:
+  * @buffer:  to contain formatted mempolicy string
+  * @maxlen:  length of @buffer
+  * @pol:  pointer to mempolicy to be formatted
+- * @no_context:  "context free" mempolicy - use nodemask in w.user_nodemask
++ * @unused:  redundant argument, to be removed later.
+  *
+  * Convert a mempolicy into a string.
+  * Returns the number of characters in buffer (if positive)
+  * or an error (negative)
+  */
+-int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
++int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int unused)
+ {
+ 	char *p = buffer;
+ 	int l;
+@@ -2502,7 +2493,7 @@ int mpol_to_str(char *buffer, int maxlen
+ 	case MPOL_PREFERRED:
+ 		nodes_clear(nodes);
+ 		if (flags & MPOL_F_LOCAL)
+-			mode = MPOL_LOCAL;	/* pseudo-policy */
++			mode = MPOL_LOCAL;
+ 		else
+ 			node_set(pol->v.preferred_node, nodes);
+ 		break;
+@@ -2510,10 +2501,7 @@ int mpol_to_str(char *buffer, int maxlen
+ 	case MPOL_BIND:
+ 		/* Fall through */
+ 	case MPOL_INTERLEAVE:
+-		if (no_context)
+-			nodes = pol->w.user_nodemask;
+-		else
+-			nodes = pol->v.nodes;
++		nodes = pol->v.nodes;
+ 		break;
+ 
+ 	default:
 
 
