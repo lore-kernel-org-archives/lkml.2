@@ -1,106 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757977Ab3AIOF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:05:57 -0500
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43353 "EHLO
+	id S1757983Ab3AIOGK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:06:10 -0500
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43358 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757896Ab3AIOFz (ORCPT
+	with ESMTP id S1757828Ab3AIOGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:05:55 -0500
-Subject: [PATCH 09/10] goldfish: add QEMU pipe driver
+	Wed, 9 Jan 2013 09:06:08 -0500
+Subject: [PATCH 10/10] goldfish: NAND flash driver
 To: arve@android.com, x86@kernel.org, linux-kernel@vger.kernel.org,
         mikechan@google.com
 From: Alan Cox <alan@linux.intel.com>
-Date: Wed, 09 Jan 2013 14:25:59 +0000
-Message-ID: <20130109142557.9239.23153.stgit@bob.linux.org.uk>
+Date: Wed, 09 Jan 2013 14:26:11 +0000
+Message-ID: <20130109142610.9239.66301.stgit@bob.linux.org.uk>
 In-Reply-To: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
 References: <20130109142212.9239.62026.stgit@bob.linux.org.uk>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David 'Digit' Turner <digit@android.com>
+From: Arve Hjønnevåg <arve@google.com>
 
-A QEMU pipe is a very fast communication channel between the
-guest system and the emulator. Usage from the guest is simply
-something like;
+Fold together the NAND driver for Goldfish from Arve with cleanups by
+Jun Nakajima and a tidy up to 3.7 and checkpatch.
 
-  // connect to special device
-  fd = open("/dev/qemu_pipe", O_RDWR);
-
-  // tell which service we want to talk to (must be zero-terminated)
-  write(fd, "pipeName", strlen("pipeName")+1);
-
-  // do read()/write() through fd now
-  ...
-
-  // close channel
-  close(fd);
-
-Signed-off-by: David 'Digit' Turner <digit@android.com>
-[Added support for parameter buffers for speed]
-igned-off-by: Xin, Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Jiang, Yunhong <yunhong.jiang@intel.com>
-Signed-off-by: Nakajima, Jun <jun.nakajima@intel.com>
-[Ported to 3.6]
+Signed-off-by: Mike A. Chan <mikechan@google.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
+[Ported to handle x86]
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
+Signed-off-by: Xiaohui Xin <xiaohui.xin@intel.com>
+Signed-off-by: Jun Nakajima <jun.nakajima@intel.com>
+Signed-off-by: Bruce Beare <bruce.j.beare@intel.com>
+[Ported to 3.4]
 Signed-off-by: Tom Keel <thomas.keel@intel.com>
-[Ported to 3.7, moved to platform/goldfish]
+[Ported to 3.7 and tided for checkpatch etc]
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/platform/Kconfig                  |    4 
- drivers/platform/goldfish/Kconfig         |    5 
- drivers/platform/goldfish/Makefile        |    1 
- drivers/platform/goldfish/goldfish_pipe.c |  631 +++++++++++++++++++++++++++++
- 4 files changed, 641 insertions(+)
- create mode 100644 drivers/platform/goldfish/Kconfig
- create mode 100644 drivers/platform/goldfish/goldfish_pipe.c
+ drivers/mtd/devices/Kconfig             |    7 
+ drivers/mtd/devices/Makefile            |    3 
+ drivers/mtd/devices/goldfish_nand.c     |  475 +++++++++++++++++++++++++++++++
+ drivers/mtd/devices/goldfish_nand_reg.h |   72 +++++
+ 4 files changed, 556 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/mtd/devices/goldfish_nand.c
+ create mode 100644 drivers/mtd/devices/goldfish_nand_reg.h
 
 
-diff --git a/drivers/platform/Kconfig b/drivers/platform/Kconfig
-index 8390dca..69616ae 100644
---- a/drivers/platform/Kconfig
-+++ b/drivers/platform/Kconfig
-@@ -1,3 +1,7 @@
- if X86
- source "drivers/platform/x86/Kconfig"
- endif
-+if GOLDFISH
-+source "drivers/platform/goldfish/Kconfig"
-+endif
+diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
+index c187342..7edecf0 100644
+--- a/drivers/mtd/devices/Kconfig
++++ b/drivers/mtd/devices/Kconfig
+@@ -342,4 +342,11 @@ config MTD_DOCPROBE_55AA
+ 	  LinuxBIOS or if you need to recover a DiskOnChip Millennium on which
+ 	  you have managed to wipe the first block.
+ 
++config MTD_GOLDFISH_NAND
++	tristate "Goldfish NAND device"
++	depends on GOLDFISH
++	help
++	  Drives the emulated NAND flash device on the Google Goldfish
++	  Android virtual device.
 +
-diff --git a/drivers/platform/goldfish/Kconfig b/drivers/platform/goldfish/Kconfig
+ endmenu
+diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
+index 395733a..36d4791 100644
+--- a/drivers/mtd/devices/Makefile
++++ b/drivers/mtd/devices/Makefile
+@@ -20,5 +20,6 @@ obj-$(CONFIG_MTD_M25P80)	+= m25p80.o
+ obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
+ obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
+ obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
++obj-$(CONFIG_MTD_GOLDFISH_NAND)	+= goldfish_nand.o
+ 
+-CFLAGS_docg3.o			+= -I$(src)
+\ No newline at end of file
++CFLAGS_docg3.o			+= -I$(src)
+diff --git a/drivers/mtd/devices/goldfish_nand.c b/drivers/mtd/devices/goldfish_nand.c
 new file mode 100644
-index 0000000..635ef25
+index 0000000..5b932ba
 --- /dev/null
-+++ b/drivers/platform/goldfish/Kconfig
-@@ -0,0 +1,5 @@
-+config GOLDFISH_PIPE
-+	tristate "Goldfish virtual device for QEMU pipes"
-+	---help---
-+	  This is a virtual device to drive the QEMU pipe interface used by
-+	  the Goldfish Android Virtual Device.
-diff --git a/drivers/platform/goldfish/Makefile b/drivers/platform/goldfish/Makefile
-index 6c591f6..a002239 100644
---- a/drivers/platform/goldfish/Makefile
-+++ b/drivers/platform/goldfish/Makefile
-@@ -2,3 +2,4 @@
- # Makefile for Goldfish platform specific drivers
- #
- obj-$(CONFIG_GOLDFISH)	+=	pdev_bus.o
-+obj-$(CONFIG_GOLDFISH_PIPE)	+= goldfish_pipe.o
-diff --git a/drivers/platform/goldfish/goldfish_pipe.c b/drivers/platform/goldfish/goldfish_pipe.c
-new file mode 100644
-index 0000000..3c6ab47
---- /dev/null
-+++ b/drivers/platform/goldfish/goldfish_pipe.c
-@@ -0,0 +1,631 @@
++++ b/drivers/mtd/devices/goldfish_nand.c
+@@ -0,0 +1,475 @@
 +/*
-+ * Copyright (C) 2011 Google, Inc.
++ * drivers/mtd/devices/goldfish_nand.c
++ *
++ * Copyright (C) 2007 Google, Inc.
 + * Copyright (C) 2012 Intel, Inc.
 + *
 + * This software is licensed under the terms of the GNU General Public
@@ -114,620 +103,540 @@ index 0000000..3c6ab47
 + *
 + */
 +
-+/* This source file contains the implementation of a special device driver
-+ * that intends to provide a *very* fast communication channel between the
-+ * guest system and the QEMU emulator.
-+ *
-+ * Usage from the guest is simply the following (error handling simplified):
-+ *
-+ *    int  fd = open("/dev/qemu_pipe",O_RDWR);
-+ *    .... write() or read() through the pipe.
-+ *
-+ * This driver doesn't deal with the exact protocol used during the session.
-+ * It is intended to be as simple as something like:
-+ *
-+ *    // do this _just_ after opening the fd to connect to a specific
-+ *    // emulator service.
-+ *    const char*  msg = "<pipename>";
-+ *    if (write(fd, msg, strlen(msg)+1) < 0) {
-+ *       ... could not connect to <pipename> service
-+ *       close(fd);
-+ *    }
-+ *
-+ *    // after this, simply read() and write() to communicate with the
-+ *    // service. Exact protocol details left as an exercise to the reader.
-+ *
-+ * This driver is very fast because it doesn't copy any data through
-+ * intermediate buffers, since the emulator is capable of translating
-+ * guest user addresses into host ones.
-+ *
-+ * Note that we must however ensure that each user page involved in the
-+ * exchange is properly mapped during a transfer.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/interrupt.h>
-+#include <linux/kernel.h>
-+#include <linux/spinlock.h>
-+#include <linux/miscdevice.h>
-+#include <linux/platform_device.h>
-+#include <linux/poll.h>
-+#include <linux/sched.h>
-+#include <linux/bitops.h>
-+#include <linux/slab.h>
 +#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/ioport.h>
++#include <linux/vmalloc.h>
++#include <linux/init.h>
++#include <linux/mtd/mtd.h>
++#include <linux/platform_device.h>
 +
-+/*
-+ * IMPORTANT: The following constants must match the ones used and defined
-+ * in external/qemu/hw/goldfish_pipe.c in the Android source tree.
-+ */
++#include <asm/div64.h>
 +
-+/* pipe device registers */
-+#define PIPE_REG_COMMAND		0x00  /* write: value = command */
-+#define PIPE_REG_STATUS			0x04  /* read */
-+#define PIPE_REG_CHANNEL		0x08  /* read/write: channel id */
-+#define PIPE_REG_SIZE			0x0c  /* read/write: buffer size */
-+#define PIPE_REG_ADDRESS		0x10  /* write: physical address */
-+#define PIPE_REG_WAKES			0x14  /* read: wake flags */
-+#define PIPE_REG_PARAMS_ADDR_LOW	0x18  /* read/write: batch data address */
-+#define PIPE_REG_PARAMS_ADDR_HIGH	0x1c  /* read/write: batch data address */
-+#define PIPE_REG_ACCESS_PARAMS		0x20  /* write: batch access */
++#include "goldfish_nand_reg.h"
 +
-+/* list of commands for PIPE_REG_COMMAND */
-+#define CMD_OPEN			1  /* open new channel */
-+#define CMD_CLOSE			2  /* close channel (from guest) */
-+#define CMD_POLL			3  /* poll read/write status */
-+
-+/* List of bitflags returned in status of CMD_POLL command */
-+#define PIPE_POLL_IN			(1 << 0)
-+#define PIPE_POLL_OUT			(1 << 1)
-+#define PIPE_POLL_HUP			(1 << 2)
-+
-+/* The following commands are related to write operations */
-+#define CMD_WRITE_BUFFER	4  /* send a user buffer to the emulator */
-+#define CMD_WAKE_ON_WRITE	5  /* tell the emulator to wake us when writing
-+				     is possible */
-+
-+/* The following commands are related to read operations, they must be
-+ * listed in the same order than the corresponding write ones, since we
-+ * will use (CMD_READ_BUFFER - CMD_WRITE_BUFFER) as a special offset
-+ * in goldfish_pipe_read_write() below.
-+ */
-+#define CMD_READ_BUFFER        6  /* receive a user buffer from the emulator */
-+#define CMD_WAKE_ON_READ       7  /* tell the emulator to wake us when reading
-+				   * is possible */
-+
-+/* Possible status values used to signal errors - see goldfish_pipe_error_convert */
-+#define PIPE_ERROR_INVAL       -1
-+#define PIPE_ERROR_AGAIN       -2
-+#define PIPE_ERROR_NOMEM       -3
-+#define PIPE_ERROR_IO          -4
-+
-+/* Bit-flags used to signal events from the emulator */
-+#define PIPE_WAKE_CLOSED       (1 << 0)  /* emulator closed pipe */
-+#define PIPE_WAKE_READ         (1 << 1)  /* pipe can now be read from */
-+#define PIPE_WAKE_WRITE        (1 << 2)  /* pipe can now be written to */
-+
-+struct access_params {
-+	u32 channel;
-+	u32 size;
-+	u32 address;
-+	u32 cmd;
-+	u32 result;
-+	/* reserved for future extension */
-+	u32 flags;
++struct goldfish_nand {
++	spinlock_t              lock;
++	unsigned char __iomem  *base;
++	struct cmd_params       *cmd_params;
++	size_t                  mtd_count;
++	struct mtd_info         mtd[0];
 +};
 +
-+/* The global driver data. Holds a reference to the i/o page used to
-+ * communicate with the emulator, and a wake queue for blocked tasks
-+ * waiting to be awoken.
-+ */
-+struct goldfish_pipe_dev {
-+	spinlock_t lock;
-+	unsigned char __iomem *base;
-+	struct access_params *aps;
-+	int irq;
-+};
-+
-+static struct goldfish_pipe_dev   pipe_dev[1];
-+
-+/* This data type models a given pipe instance */
-+struct goldfish_pipe {
-+	struct goldfish_pipe_dev *dev;
-+	struct mutex lock;
-+	unsigned long flags;
-+	wait_queue_head_t wake_queue;
-+};
-+
-+
-+/* Bit flags for the 'flags' field */
-+enum {
-+	BIT_CLOSED_ON_HOST = 0,  /* pipe closed by host */
-+	BIT_WAKE_ON_WRITE  = 1,  /* want to be woken on writes */
-+	BIT_WAKE_ON_READ   = 2,  /* want to be woken on reads */
-+};
-+
-+
-+static u32 goldfish_cmd_status(struct goldfish_pipe *pipe, u32 cmd)
-+{ 
-+	unsigned long flags;
-+	u32 status;
-+	struct goldfish_pipe_dev *dev = pipe->dev;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	writel((u32)pipe, dev->base + PIPE_REG_CHANNEL);
-+	writel(cmd, dev->base + PIPE_REG_COMMAND);
-+	status = readl(dev->base + PIPE_REG_STATUS);
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+	return status;
-+}
-+
-+static void goldfish_cmd(struct goldfish_pipe *pipe, u32 cmd)
-+{ 
-+	unsigned long flags;
-+	struct goldfish_pipe_dev *dev = pipe->dev;
-+
-+	spin_lock_irqsave(&dev->lock, flags);
-+	writel((u32)pipe, dev->base + PIPE_REG_CHANNEL);
-+	writel(cmd, dev->base + PIPE_REG_COMMAND);
-+	spin_unlock_irqrestore(&dev->lock, flags);
-+}
-+
-+/* This function converts an error code returned by the emulator through
-+ * the PIPE_REG_STATUS i/o register into a valid negative errno value.
-+ */
-+static int goldfish_pipe_error_convert(int status)
++static u32 goldfish_nand_cmd_with_params(struct mtd_info *mtd,
++			enum nand_cmd cmd, u64 addr, u32 len,
++			void *ptr, u32 *rv)
 +{
-+	switch (status) {
-+	case PIPE_ERROR_AGAIN:
-+		return -EAGAIN;
-+	case PIPE_ERROR_NOMEM:
-+		return -ENOMEM;
-+	case PIPE_ERROR_IO:
-+		return -EIO;
++	u32 cmdp;
++	struct goldfish_nand *nand = mtd->priv;
++	struct cmd_params *cps = nand->cmd_params;
++	unsigned char __iomem  *base = nand->base;
++
++	if (cps == NULL)
++		return -1;
++
++	switch (cmd) {
++	case NAND_CMD_ERASE:
++		cmdp = NAND_CMD_ERASE_WITH_PARAMS;
++		break;
++	case NAND_CMD_READ:
++		cmdp = NAND_CMD_READ_WITH_PARAMS;
++		break;
++	case NAND_CMD_WRITE:
++		cmdp = NAND_CMD_WRITE_WITH_PARAMS;
++		break;
 +	default:
-+		return -EINVAL;
++		return -1;
 +	}
-+}
-+
-+/*
-+ * Notice: QEMU will return 0 for un-known register access, indicating
-+ * param_acess is supported or not
-+ */
-+static int valid_batchbuffer_addr(struct goldfish_pipe_dev *dev,
-+				  struct access_params *aps)
-+{
-+	u32 aph, apl;
-+	u64 paddr;
-+	aph = readl(dev->base + PIPE_REG_PARAMS_ADDR_HIGH);
-+	apl = readl(dev->base + PIPE_REG_PARAMS_ADDR_LOW);
-+
-+	paddr = ((u64)aph << 32) | apl;
-+	if (paddr != (__pa(aps)))
-+		return 0;
-+	return 1;
-+}
-+
-+/* 0 on success */
-+static int setup_access_params_addr(struct goldfish_pipe_dev *dev)
-+{
-+	u64 paddr;
-+	struct access_params *aps;
-+
-+	aps = kmalloc(sizeof(struct access_params), GFP_KERNEL);
-+	if (!aps)
-+		return -1;
-+
-+	/* FIXME */
-+	paddr = __pa(aps);
-+	writel((u32)(paddr >> 32), dev->base + PIPE_REG_PARAMS_ADDR_HIGH);
-+	writel((u32)paddr, dev->base + PIPE_REG_PARAMS_ADDR_LOW);
-+
-+	if (valid_batchbuffer_addr(dev, aps)) {
-+		dev->aps = aps;
-+		return 0;
-+	} else
-+		return -1;
-+}
-+
-+/* A value that will not be set by qemu emulator */
-+#define INITIAL_BATCH_RESULT (0xdeadbeaf)
-+static int access_with_param(struct goldfish_pipe_dev *dev, const int cmd,
-+				unsigned long address, unsigned long avail,
-+				struct goldfish_pipe *pipe, int *status)
-+{
-+	struct access_params *aps = dev->aps;
-+
-+	if (aps == NULL)
-+		return -1;
-+
-+	aps->result = INITIAL_BATCH_RESULT;
-+	aps->channel = (unsigned long)pipe;
-+	aps->size = avail;
-+	aps->address = address;
-+	aps->cmd = cmd;
-+	writel(cmd, dev->base + PIPE_REG_ACCESS_PARAMS);
-+	/*
-+	 * If the aps->result has not changed, that means
-+	 * that the batch command failed
-+	 */
-+	if (aps->result == INITIAL_BATCH_RESULT)
-+		return -1;
-+	*status = aps->result;
++	cps->dev = mtd - nand->mtd;
++	cps->addr_high = (u32)(addr >> 32);
++	cps->addr_low = (u32)addr;
++	cps->transfer_size = len;
++	cps->data = (u32)ptr;
++	writel(cmdp, base + NAND_COMMAND);
++	*rv = cps->result;
 +	return 0;
 +}
 +
-+/* This function is used for both reading from and writing to a given
-+ * pipe.
-+ */
-+static ssize_t goldfish_pipe_read_write(struct file *filp, char __user *buffer,
-+				    size_t bufflen, int is_write)
++static u32 goldfish_nand_cmd(struct mtd_info *mtd, enum nand_cmd cmd,
++				u64 addr, u32 len, void *ptr)
 +{
++	struct goldfish_nand *nand = mtd->priv;
++	u32 rv;
 +	unsigned long irq_flags;
-+	struct goldfish_pipe *pipe = filp->private_data;
-+	struct goldfish_pipe_dev *dev = pipe->dev;
-+	const int cmd_offset = is_write ? 0
-+					: (CMD_READ_BUFFER - CMD_WRITE_BUFFER);
-+	unsigned long address, address_end;
-+	int ret = 0;
++	unsigned char __iomem  *base = nand->base;
 +
-+	/* If the emulator already closed the pipe, no need to go further */
-+	if (test_bit(BIT_CLOSED_ON_HOST, &pipe->flags))
++	spin_lock_irqsave(&nand->lock, irq_flags);
++	if (goldfish_nand_cmd_with_params(mtd, cmd, addr, len, ptr, &rv)) {
++		writel(mtd - nand->mtd, base + NAND_DEV);
++		writel((u32)(addr >> 32), base + NAND_ADDR_HIGH);
++		writel((u32)addr, base + NAND_ADDR_LOW);
++		writel(len, base + NAND_TRANSFER_SIZE);
++		writel((u32)ptr, base + NAND_DATA);
++		writel(cmd, base + NAND_COMMAND);
++		rv = readl(base + NAND_RESULT);
++	}
++	spin_unlock_irqrestore(&nand->lock, irq_flags);
++	return rv;
++}
++
++static int goldfish_nand_erase(struct mtd_info *mtd, struct erase_info *instr)
++{
++	loff_t ofs = instr->addr;
++	u32 len = instr->len;
++	u32 rem;
++
++	if (ofs + len > mtd->size)
++		goto invalid_arg;
++	rem = do_div(ofs, mtd->writesize);
++	if (rem)
++		goto invalid_arg;
++	ofs *= (mtd->writesize + mtd->oobsize);
++
++	if (len % mtd->writesize)
++		goto invalid_arg;
++	len = len / mtd->writesize * (mtd->writesize + mtd->oobsize);
++
++	if (goldfish_nand_cmd(mtd, NAND_CMD_ERASE, ofs, len, NULL) != len) {
++		pr_err("goldfish_nand_erase: erase failed, start %llx, len %x, dev_size %llx, erase_size %x\n",
++			ofs, len, mtd->size, mtd->erasesize);
 +		return -EIO;
-+
-+	/* Null reads or writes succeeds */
-+	if (unlikely(bufflen) == 0)
-+		return 0;
-+
-+	/* Check the buffer range for access */
-+	if (!access_ok(is_write ? VERIFY_WRITE : VERIFY_READ,
-+			buffer, bufflen))
-+		return -EFAULT;
-+
-+	/* Serialize access to the pipe */
-+	if (mutex_lock_interruptible(&pipe->lock))
-+		return -ERESTARTSYS;
-+
-+	address = (unsigned long)(void *)buffer;
-+	address_end = address + bufflen;
-+
-+	while (address < address_end) {
-+		unsigned long  page_end = (address & PAGE_MASK) + PAGE_SIZE;
-+		unsigned long  next     = page_end < address_end ? page_end
-+								 : address_end;
-+		unsigned long  avail    = next - address;
-+		int status, wakeBit;
-+
-+		/* Ensure that the corresponding page is properly mapped */
-+		if (is_write) {
-+			char c;
-+			/* Ensure that the page is mapped and readable */
-+			if (__get_user(c, (char __user *)address)) {
-+				if (!ret)
-+					ret = -EFAULT;
-+				break;
-+			}
-+		} else {
-+			/* Ensure that the page is mapped and writable */
-+			if (__put_user(0, (char __user *)address)) {
-+				if (!ret)
-+					ret = -EFAULT;
-+				break;
-+			}
-+		}
-+
-+		/* Now, try to transfer the bytes in the current page */
-+		spin_lock_irqsave(&dev->lock, irq_flags);
-+		if (access_with_param(dev, CMD_WRITE_BUFFER + cmd_offset,
-+				address, avail, pipe, &status)) {
-+			writel((u32)pipe, dev->base + PIPE_REG_CHANNEL);
-+			writel(avail, dev->base + PIPE_REG_SIZE);
-+			writel(address, dev->base + PIPE_REG_ADDRESS);
-+			writel(CMD_WRITE_BUFFER + cmd_offset,
-+					dev->base + PIPE_REG_COMMAND);
-+			status = readl(dev->base + PIPE_REG_STATUS);
-+		}
-+		spin_unlock_irqrestore(&dev->lock, irq_flags);
-+
-+		if (status > 0) { /* Correct transfer */
-+			ret += status;
-+			address += status;
-+			continue;
-+		}
-+
-+		if (status == 0)  /* EOF */
-+			break;
-+
-+		/* An error occured. If we already transfered stuff, just
-+		* return with its count. We expect the next call to return
-+		* an error code */
-+		if (ret > 0)
-+			break;
-+
-+		/* If the error is not PIPE_ERROR_AGAIN, or if we are not in
-+		* non-blocking mode, just return the error code.
-+		*/
-+		if (status != PIPE_ERROR_AGAIN ||
-+			(filp->f_flags & O_NONBLOCK) != 0) {
-+			ret = goldfish_pipe_error_convert(status);
-+			break;
-+		}
-+
-+		/* We will have to wait until more data/space is available.
-+		* First, mark the pipe as waiting for a specific wake signal.
-+		*/
-+		wakeBit = is_write ? BIT_WAKE_ON_WRITE : BIT_WAKE_ON_READ;
-+		set_bit(wakeBit, &pipe->flags);
-+
-+		/* Tell the emulator we're going to wait for a wake event */
-+		goldfish_cmd(pipe, CMD_WAKE_ON_WRITE + cmd_offset);
-+
-+		/* Unlock the pipe, then wait for the wake signal */
-+		mutex_unlock(&pipe->lock);
-+
-+		while (test_bit(wakeBit, &pipe->flags)) {
-+			if (wait_event_interruptible(
-+					pipe->wake_queue,
-+					!test_bit(wakeBit, &pipe->flags)))
-+				return -ERESTARTSYS;
-+
-+			if (test_bit(BIT_CLOSED_ON_HOST, &pipe->flags))
-+				return -EIO;
-+		}
-+
-+		/* Try to re-acquire the lock */
-+		if (mutex_lock_interruptible(&pipe->lock))
-+			return -ERESTARTSYS;
-+
-+		/* Try the transfer again */
-+		continue;
 +	}
-+	mutex_unlock(&pipe->lock);
-+	return ret;
++
++	instr->state = MTD_ERASE_DONE;
++	mtd_erase_callback(instr);
++
++	return 0;
++
++invalid_arg:
++	pr_err("goldfish_nand_erase: invalid erase, start %llx, len %x, dev_size %llx, erase_size %x\n",
++		ofs, len, mtd->size, mtd->erasesize);
++	return -EINVAL;
 +}
 +
-+static ssize_t goldfish_pipe_read(struct file *filp, char __user *buffer,
-+			      size_t bufflen, loff_t *ppos)
++static int goldfish_nand_read_oob(struct mtd_info *mtd, loff_t ofs,
++				struct mtd_oob_ops *ops)
 +{
-+	return goldfish_pipe_read_write(filp, buffer, bufflen, 0);
++	u32 rem;
++
++	if (ofs + ops->len > mtd->size)
++		goto invalid_arg;
++	if (ops->datbuf && ops->len && ops->len != mtd->writesize)
++		goto invalid_arg;
++	if (ops->ooblen + ops->ooboffs > mtd->oobsize)
++		goto invalid_arg;
++
++	rem = do_div(ofs, mtd->writesize);
++	if (rem)
++		goto invalid_arg;
++	ofs *= (mtd->writesize + mtd->oobsize);
++
++	if (ops->datbuf)
++		ops->retlen = goldfish_nand_cmd(mtd, NAND_CMD_READ, ofs,
++						ops->len, ops->datbuf);
++	ofs += mtd->writesize + ops->ooboffs;
++	if (ops->oobbuf)
++		ops->oobretlen = goldfish_nand_cmd(mtd, NAND_CMD_READ, ofs,
++						ops->ooblen, ops->oobbuf);
++	return 0;
++
++invalid_arg:
++	pr_err("goldfish_nand_read_oob: invalid read, start %llx, len %x, ooblen %x, dev_size %llx, write_size %x\n",
++		ofs, ops->len, ops->ooblen, mtd->size, mtd->writesize);
++	return -EINVAL;
 +}
 +
-+static ssize_t goldfish_pipe_write(struct file *filp,
-+				const char __user *buffer, size_t bufflen,
-+				loff_t *ppos)
++static int goldfish_nand_write_oob(struct mtd_info *mtd, loff_t ofs,
++				struct mtd_oob_ops *ops)
 +{
-+	return goldfish_pipe_read_write(filp, (char __user *)buffer,
-+								bufflen, 1);
++	u32 rem;
++
++	if (ofs + ops->len > mtd->size)
++		goto invalid_arg;
++	if (ops->len && ops->len != mtd->writesize)
++		goto invalid_arg;
++	if (ops->ooblen + ops->ooboffs > mtd->oobsize)
++		goto invalid_arg;
++
++	rem = do_div(ofs, mtd->writesize);
++	if (rem)
++		goto invalid_arg;
++	ofs *= (mtd->writesize + mtd->oobsize);
++
++	if (ops->datbuf)
++		ops->retlen = goldfish_nand_cmd(mtd, NAND_CMD_WRITE, ofs,
++						ops->len, ops->datbuf);
++	ofs += mtd->writesize + ops->ooboffs;
++	if (ops->oobbuf)
++		ops->oobretlen = goldfish_nand_cmd(mtd, NAND_CMD_WRITE, ofs,
++						ops->ooblen, ops->oobbuf);
++	return 0;
++
++invalid_arg:
++	pr_err("goldfish_nand_write_oob: invalid write, start %llx, len %x, ooblen %x, dev_size %llx, write_size %x\n",
++		ofs, ops->len, ops->ooblen, mtd->size, mtd->writesize);
++	return -EINVAL;
 +}
 +
-+
-+static unsigned int goldfish_pipe_poll(struct file *filp, poll_table *wait)
++static int goldfish_nand_read(struct mtd_info *mtd, loff_t from, size_t len,
++				size_t *retlen, u_char *buf)
 +{
-+	struct goldfish_pipe *pipe = filp->private_data;
-+	unsigned int mask = 0;
-+	int status;
++	u32 rem;
 +
-+	mutex_lock(&pipe->lock);
++	if (from + len > mtd->size)
++		goto invalid_arg;
++	if (len != mtd->writesize)
++		goto invalid_arg;
 +
-+	poll_wait(filp, &pipe->wake_queue, wait);
++	rem = do_div(from, mtd->writesize);
++	if (rem)
++		goto invalid_arg;
++	from *= (mtd->writesize + mtd->oobsize);
 +
-+	status = goldfish_cmd_status(pipe, CMD_POLL);
++	*retlen = goldfish_nand_cmd(mtd, NAND_CMD_READ, from, len, buf);
++	return 0;
 +
-+	mutex_unlock(&pipe->lock);
-+
-+	if (status & PIPE_POLL_IN)
-+		mask |= POLLIN | POLLRDNORM;
-+
-+	if (status & PIPE_POLL_OUT)
-+		mask |= POLLOUT | POLLWRNORM;
-+
-+	if (status & PIPE_POLL_HUP)
-+		mask |= POLLHUP;
-+
-+	if (test_bit(BIT_CLOSED_ON_HOST, &pipe->flags))
-+		mask |= POLLERR;
-+
-+	return mask;
++invalid_arg:
++	pr_err("goldfish_nand_read: invalid read, start %llx, len %x, dev_size %llx, write_size %x\n",
++		from, len, mtd->size, mtd->writesize);
++	return -EINVAL;
 +}
 +
-+static irqreturn_t goldfish_pipe_interrupt(int irq, void *dev_id)
++static int goldfish_nand_write(struct mtd_info *mtd, loff_t to, size_t len,
++				size_t *retlen, const u_char *buf)
 +{
-+	struct goldfish_pipe_dev *dev = dev_id;
++	u32 rem;
++
++	if (to + len > mtd->size)
++		goto invalid_arg;
++	if (len != mtd->writesize)
++		goto invalid_arg;
++
++	rem = do_div(to, mtd->writesize);
++	if (rem)
++		goto invalid_arg;
++	to *= (mtd->writesize + mtd->oobsize);
++
++	*retlen = goldfish_nand_cmd(mtd, NAND_CMD_WRITE, to, len, (void *)buf);
++	return 0;
++
++invalid_arg:
++	pr_err("goldfish_nand_write: invalid write, start %llx, len %x, dev_size %llx, write_size %x\n",
++		to, len, mtd->size, mtd->writesize);
++	return -EINVAL;
++}
++
++static int goldfish_nand_block_isbad(struct mtd_info *mtd, loff_t ofs)
++{
++	u32 rem;
++
++	if (ofs >= mtd->size)
++		goto invalid_arg;
++
++	rem = do_div(ofs, mtd->erasesize);
++	if (rem)
++		goto invalid_arg;
++	ofs *= mtd->erasesize / mtd->writesize;
++	ofs *= (mtd->writesize + mtd->oobsize);
++
++	return goldfish_nand_cmd(mtd, NAND_CMD_BLOCK_BAD_GET, ofs, 0, NULL);
++
++invalid_arg:
++	pr_err("goldfish_nand_block_isbad: invalid arg, ofs %llx, dev_size %llx, write_size %x\n",
++		ofs, mtd->size, mtd->writesize);
++	return -EINVAL;
++}
++
++static int goldfish_nand_block_markbad(struct mtd_info *mtd, loff_t ofs)
++{
++	u32 rem;
++
++	if (ofs >= mtd->size)
++		goto invalid_arg;
++
++	rem = do_div(ofs, mtd->erasesize);
++	if (rem)
++		goto invalid_arg;
++	ofs *= mtd->erasesize / mtd->writesize;
++	ofs *= (mtd->writesize + mtd->oobsize);
++
++	if (goldfish_nand_cmd(mtd, NAND_CMD_BLOCK_BAD_SET, ofs, 0, NULL) != 1)
++		return -EIO;
++	return 0;
++
++invalid_arg:
++	pr_err("goldfish_nand_block_markbad: invalid arg, ofs %llx, dev_size %llx, write_size %x\n",
++		ofs, mtd->size, mtd->writesize);
++	return -EINVAL;
++}
++
++static int nand_setup_cmd_params(struct goldfish_nand *nand)
++{
++	u64 paddr;
++	unsigned char __iomem  *base = nand->base;
++
++	nand->cmd_params = kmalloc(sizeof(struct cmd_params), GFP_KERNEL);
++	if (!nand->cmd_params)
++		return -1;
++
++	paddr = __pa(nand->cmd_params);
++	writel((u32)(paddr >> 32), base + NAND_CMD_PARAMS_ADDR_HIGH);
++	writel((u32)paddr, base + NAND_CMD_PARAMS_ADDR_LOW);
++	return 0;
++}
++
++static int goldfish_nand_init_device(struct goldfish_nand *nand, int id)
++{
++	u32 name_len;
++	u32 result;
++	u32 flags;
 +	unsigned long irq_flags;
-+	int count = 0;
++	unsigned char __iomem  *base = nand->base;
++	struct mtd_info *mtd = &nand->mtd[id];
++	char *name;
 +
-+	/* We're going to read from the emulator a list of (channel,flags)
-+	* pairs corresponding to the wake events that occured on each
-+	* blocked pipe (i.e. channel).
-+	*/
-+	spin_lock_irqsave(&dev->lock, irq_flags);
-+	for (;;) {
-+		/* First read the channel, 0 means the end of the list */
-+		struct goldfish_pipe *pipe;
-+		unsigned long wakes;
-+		unsigned long channel = readl(dev->base + PIPE_REG_CHANNEL);
++	spin_lock_irqsave(&nand->lock, irq_flags);
++	writel(id, base + NAND_DEV);
++	flags = readl(base + NAND_DEV_FLAGS);
++	name_len = readl(base + NAND_DEV_NAME_LEN);
++	mtd->writesize = readl(base + NAND_DEV_PAGE_SIZE);
++	mtd->size = readl(base + NAND_DEV_SIZE_LOW);
++	mtd->size |= (u64)readl(base + NAND_DEV_SIZE_HIGH) << 32;
++	mtd->oobsize = readl(base + NAND_DEV_EXTRA_SIZE);
++	mtd->oobavail = mtd->oobsize;
++	mtd->erasesize = readl(base + NAND_DEV_ERASE_SIZE) /
++			(mtd->writesize + mtd->oobsize) * mtd->writesize;
++	do_div(mtd->size, mtd->writesize + mtd->oobsize);
++	mtd->size *= mtd->writesize;
++	pr_debug("goldfish nand dev%d: size %llx, page %d, extra %d, erase %d\n",
++	       id, mtd->size, mtd->writesize, mtd->oobsize, mtd->erasesize);
++	spin_unlock_irqrestore(&nand->lock, irq_flags);
 +
-+		if (channel == 0)
-+			break;
++	mtd->priv = nand;
 +
-+		/* Convert channel to struct pipe pointer + read wake flags */
-+		wakes = readl(dev->base + PIPE_REG_WAKES);
-+		pipe  = (struct goldfish_pipe *)(ptrdiff_t)channel;
-+
-+		/* Did the emulator just closed a pipe? */
-+		if (wakes & PIPE_WAKE_CLOSED) {
-+			set_bit(BIT_CLOSED_ON_HOST, &pipe->flags);
-+			wakes |= PIPE_WAKE_READ | PIPE_WAKE_WRITE;
-+		}
-+		if (wakes & PIPE_WAKE_READ)
-+			clear_bit(BIT_WAKE_ON_READ, &pipe->flags);
-+		if (wakes & PIPE_WAKE_WRITE)
-+			clear_bit(BIT_WAKE_ON_WRITE, &pipe->flags);
-+
-+		wake_up_interruptible(&pipe->wake_queue);
-+		count++;
-+	}
-+	spin_unlock_irqrestore(&dev->lock, irq_flags);
-+
-+	return (count == 0) ? IRQ_NONE : IRQ_HANDLED;
-+}
-+
-+/**
-+ *	goldfish_pipe_open	-	open a channel to the AVD
-+ *	@inode: inode of device
-+ *	@file: file struct of opener
-+ *
-+ *	Create a new pipe link between the emulator and the use application.
-+ *	Each new request produces a new pipe.
-+ *
-+ *	Note: we use the pipe ID as a mux. All goldfish emulations are 32bit
-+ *	right now so this is fine. A move to 64bit will need this addressing
-+ */
-+static int goldfish_pipe_open(struct inode *inode, struct file *file)
-+{
-+	struct goldfish_pipe *pipe;
-+	struct goldfish_pipe_dev *dev = pipe_dev;
-+	int32_t status;
-+
-+	/* Allocate new pipe kernel object */
-+	pipe = kzalloc(sizeof(*pipe), GFP_KERNEL);
-+	if (pipe == NULL)
++	mtd->name = name = kmalloc(name_len + 1, GFP_KERNEL);
++	if (name == NULL)
 +		return -ENOMEM;
 +
-+	pipe->dev = dev;
-+	mutex_init(&pipe->lock);
-+	init_waitqueue_head(&pipe->wake_queue);
++	result = goldfish_nand_cmd(mtd, NAND_CMD_GET_DEV_NAME, 0, name_len,
++									name);
++	if (result != name_len) {
++		kfree(mtd->name);
++		mtd->name = NULL;
++		pr_err("goldfish_nand_init_device failed to get dev name %d != %d\n",
++		       result, name_len);
++		return -ENODEV;
++	}
++	((char *) mtd->name)[name_len] = '\0';
 +
-+	/*
-+	 * Now, tell the emulator we're opening a new pipe. We use the
-+	 * pipe object's address as the channel identifier for simplicity.
-+	 */
++	/* Setup the MTD structure */
++	mtd->type = MTD_NANDFLASH;
++	mtd->flags = MTD_CAP_NANDFLASH;
++	if (flags & NAND_DEV_FLAG_READ_ONLY)
++		mtd->flags &= ~MTD_WRITEABLE;
++	if (flags & NAND_DEV_FLAG_CMD_PARAMS_CAP)
++		nand_setup_cmd_params(nand);
 +
-+	status = goldfish_cmd_status(pipe, CMD_OPEN);
-+	if (status < 0) {
-+		kfree(pipe);
-+		return status;
++	mtd->owner = THIS_MODULE;
++	mtd->_erase = goldfish_nand_erase;
++	mtd->_read = goldfish_nand_read;
++	mtd->_write = goldfish_nand_write;
++	mtd->_read_oob = goldfish_nand_read_oob;
++	mtd->_write_oob = goldfish_nand_write_oob;
++	mtd->_block_isbad = goldfish_nand_block_isbad;
++	mtd->_block_markbad = goldfish_nand_block_markbad;
++
++	if (mtd_device_register(mtd, NULL, 0)) {
++		kfree(mtd->name);
++		mtd->name = NULL;
++		return -EIO;
 +	}
 +
-+	/* All is done, save the pipe into the file's private data field */
-+	file->private_data = pipe;
 +	return 0;
 +}
 +
-+static int goldfish_pipe_release(struct inode *inode, struct file *filp)
++static int goldfish_nand_probe(struct platform_device *pdev)
 +{
-+	struct goldfish_pipe *pipe = filp->private_data;
-+
-+	/* The guest is closing the channel, so tell the emulator right now */
-+	goldfish_cmd(pipe, CMD_CLOSE);
-+	kfree(pipe);
-+	filp->private_data = NULL;
-+	return 0;
-+}
-+
-+static const struct file_operations goldfish_pipe_fops = {
-+	.owner = THIS_MODULE,
-+	.read = goldfish_pipe_read,
-+	.write = goldfish_pipe_write,
-+	.poll = goldfish_pipe_poll,
-+	.open = goldfish_pipe_open,
-+	.release = goldfish_pipe_release,
-+};
-+
-+static struct miscdevice goldfish_pipe_device = {
-+	.minor = MISC_DYNAMIC_MINOR,
-+	.name = "goldfish_pipe",
-+	.fops = &goldfish_pipe_fops,
-+};
-+
-+static int goldfish_pipe_probe(struct platform_device *pdev)
-+{
++	u32 num_dev;
++	int i;
 +	int err;
++	u32 num_dev_working;
++	u32 version;
 +	struct resource *r;
-+	struct goldfish_pipe_dev *dev = pipe_dev;
-+
-+	/* not thread safe, but this should not happen */
-+	WARN_ON(dev->base != NULL);
-+
-+	spin_lock_init(&dev->lock);
++	struct goldfish_nand *nand;
++	unsigned char __iomem  *base;
 +
 +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (r == NULL || resource_size(r) < PAGE_SIZE) {
-+		dev_err(&pdev->dev, "can't allocate i/o page\n");
-+		return -EINVAL;
-+	}
-+	dev->base = ioremap(r->start, PAGE_SIZE);
-+	if (dev->base == NULL) {
-+		dev_err(&pdev->dev, "ioremap failed\n");
-+		return -EINVAL;
-+	}
-+
-+	r = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 +	if (r == NULL) {
-+		err = -EINVAL;
-+		goto err_alloc_irq;
-+	}
-+	dev->irq = r->start;
-+
-+	err = request_irq(dev->irq, goldfish_pipe_interrupt, IRQF_SHARED,
-+				"goldfish_pipe", dev);
-+	if (err) {
-+		dev_err(&pdev->dev, "uable to allocate IRQ\n");
-+		goto err_alloc_irq;
++		err = -ENODEV;
++		goto err_no_io_base;
 +	}
 +
-+	err = misc_register(&goldfish_pipe_device);
-+	if (err)
-+		goto err_misc_register;
++	base = ioremap(r->start, PAGE_SIZE);
++	if (base == NULL) {
++		err = -ENOMEM;
++		goto err_ioremap;
++	}
++	version = readl(base + NAND_VERSION);
++	if (version != NAND_VERSION_CURRENT) {
++		pr_err("goldfish_nand_init: version mismatch, got %d, expected %d\n",
++			version, NAND_VERSION_CURRENT);
++		err = -ENODEV;
++		goto err_no_dev;
++	}
++	num_dev = readl(base + NAND_NUM_DEV);
++	if (num_dev == 0) {
++		err = -ENODEV;
++		goto err_no_dev;
++	}
 +
-+	setup_access_params_addr(dev);
++	nand = kzalloc(sizeof(*nand) + sizeof(struct mtd_info) * num_dev,
++								GFP_KERNEL);
++	if (nand == NULL) {
++		err = -ENOMEM;
++		goto err_nand_alloc_failed;
++	}
++	spin_lock_init(&nand->lock);
++	nand->base = base;
++	nand->mtd_count = num_dev;
++	platform_set_drvdata(pdev, nand);
++
++	num_dev_working = 0;
++	for (i = 0; i < num_dev; i++) {
++		err = goldfish_nand_init_device(nand, i);
++		if (err == 0)
++			num_dev_working++;
++	}
++	if (num_dev_working == 0) {
++		err = -ENODEV;
++		goto err_no_working_dev;
++	}
 +	return 0;
 +
-+err_misc_register:
-+	free_irq(dev->irq, pdev);
-+err_alloc_irq:
-+	iounmap(dev->base);
-+	dev->base = NULL;
++err_no_working_dev:
++	kfree(nand);
++err_nand_alloc_failed:
++err_no_dev:
++	iounmap(base);
++err_ioremap:
++err_no_io_base:
 +	return err;
 +}
 +
-+static int goldfish_pipe_remove(struct platform_device *pdev)
++static int goldfish_nand_remove(struct platform_device *pdev)
 +{
-+	struct goldfish_pipe_dev *dev = pipe_dev;
-+
-+	misc_deregister(&goldfish_pipe_device);
-+
-+	free_irq(dev->irq, pdev);
-+
-+	iounmap(dev->base);
-+	kfree(dev->aps);
-+	dev->base = NULL;
-+
++	struct goldfish_nand *nand = platform_get_drvdata(pdev);
++	int i;
++	for (i = 0; i < nand->mtd_count; i++) {
++		if (nand->mtd[i].name) {
++			mtd_device_unregister(&nand->mtd[i]);
++			kfree(nand->mtd[i].name);
++		}
++	}
++	kfree(nand->cmd_params);
++	iounmap(nand->base);
++	kfree(nand);
 +	return 0;
 +}
 +
-+static struct platform_driver goldfish_pipe = {
-+	.probe = goldfish_pipe_probe,
-+	.remove = goldfish_pipe_remove,
++static struct platform_driver goldfish_nand_driver = {
++	.probe		= goldfish_nand_probe,
++	.remove		= goldfish_nand_remove,
 +	.driver = {
-+		.name = "goldfish_pipe"
++		.name = "goldfish_nand"
 +	}
 +};
 +
-+static int __init goldfish_pipe_dev_init(void)
++static int __init goldfish_nand_init(void)
 +{
-+	return platform_driver_register(&goldfish_pipe);
++	return platform_driver_register(&goldfish_nand_driver);
 +}
 +
-+static void goldfish_pipe_dev_exit(void)
++static void __exit goldfish_nand_exit(void)
 +{
-+	platform_driver_unregister(&goldfish_pipe);
++	platform_driver_unregister(&goldfish_nand_driver);
 +}
 +
 +
-+module_init(goldfish_pipe_dev_init);
-+module_exit(goldfish_pipe_dev_exit);
++module_init(goldfish_nand_init);
++module_exit(goldfish_nand_exit);
+diff --git a/drivers/mtd/devices/goldfish_nand_reg.h b/drivers/mtd/devices/goldfish_nand_reg.h
+new file mode 100644
+index 0000000..956c6c3
+--- /dev/null
++++ b/drivers/mtd/devices/goldfish_nand_reg.h
+@@ -0,0 +1,72 @@
++/* drivers/mtd/devices/goldfish_nand_reg.h
++**
++** Copyright (C) 2007 Google, Inc.
++**
++** This software is licensed under the terms of the GNU General Public
++** License version 2, as published by the Free Software Foundation, and
++** may be copied, distributed, and modified under those terms.
++**
++** This program is distributed in the hope that it will be useful,
++** but WITHOUT ANY WARRANTY; without even the implied warranty of
++** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++** GNU General Public License for more details.
++**
++*/
 +
-+MODULE_AUTHOR("David Turner <digit@google.com>");
-+MODULE_LICENSE("GPL");
++#ifndef GOLDFISH_NAND_REG_H
++#define GOLDFISH_NAND_REG_H
++
++enum nand_cmd {
++	NAND_CMD_GET_DEV_NAME,  /* Write device name for NAND_DEV to NAND_DATA (vaddr) */
++	NAND_CMD_READ,
++	NAND_CMD_WRITE,
++	NAND_CMD_ERASE,
++	NAND_CMD_BLOCK_BAD_GET, /* NAND_RESULT is 1 if block is bad, 0 if it is not */
++	NAND_CMD_BLOCK_BAD_SET,
++	NAND_CMD_READ_WITH_PARAMS,
++	NAND_CMD_WRITE_WITH_PARAMS,
++	NAND_CMD_ERASE_WITH_PARAMS
++};
++
++enum nand_dev_flags {
++	NAND_DEV_FLAG_READ_ONLY = 0x00000001,
++	NAND_DEV_FLAG_CMD_PARAMS_CAP = 0x00000002,
++};
++
++#define NAND_VERSION_CURRENT (1)
++
++enum nand_reg {
++	/* Global */
++	NAND_VERSION        = 0x000,
++	NAND_NUM_DEV        = 0x004,
++	NAND_DEV            = 0x008,
++
++	/* Dev info */
++	NAND_DEV_FLAGS      = 0x010,
++	NAND_DEV_NAME_LEN   = 0x014,
++	NAND_DEV_PAGE_SIZE  = 0x018,
++	NAND_DEV_EXTRA_SIZE = 0x01c,
++	NAND_DEV_ERASE_SIZE = 0x020,
++	NAND_DEV_SIZE_LOW   = 0x028,
++	NAND_DEV_SIZE_HIGH  = 0x02c,
++
++	/* Command */
++	NAND_RESULT         = 0x040,
++	NAND_COMMAND        = 0x044,
++	NAND_DATA           = 0x048,
++	NAND_TRANSFER_SIZE  = 0x04c,
++	NAND_ADDR_LOW       = 0x050,
++	NAND_ADDR_HIGH      = 0x054,
++	NAND_CMD_PARAMS_ADDR_LOW = 0x058,
++	NAND_CMD_PARAMS_ADDR_HIGH = 0x05c,
++};
++
++struct cmd_params {
++	uint32_t dev;
++	uint32_t addr_low;
++	uint32_t addr_high;
++	uint32_t transfer_size;
++	uint32_t data;
++	uint32_t result;
++};
++#endif
 
