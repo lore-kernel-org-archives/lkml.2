@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934279Ab3AIVZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:25:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:24599 "EHLO mx1.redhat.com"
+	id S933673Ab3AIV0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:26:25 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42593 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933515Ab3AIVZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:25:32 -0500
-Message-ID: <50EDE041.1050908@redhat.com>
-Date: Wed, 09 Jan 2013 16:25:21 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Subject: Re: [PATCH 8/8] mm: remove free_area_cache
-References: <1357694895-520-1-git-send-email-walken@google.com> <1357694895-520-9-git-send-email-walken@google.com>
-In-Reply-To: <1357694895-520-9-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933439Ab3AIUjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:12 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Peter Popovec <popovec@fei.tuke.sk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 056/123] Input: walkera0701 - fix crash on startup
+Date: Wed,  9 Jan 2013 12:34:55 -0800
+Message-Id: <20130109201505.752363969@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/08/2013 08:28 PM, Michel Lespinasse wrote:
-> Since all architectures have been converted to use vm_unmapped_area(),
-> there is no remaining use for the free_area_cache.
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Yay
+------------------
 
-Acked-by: Rik van Riel <riel@redhat.com>
+From: Peter Popovec <popovec@oko.fei.tuke.sk>
+
+commit a455e2985f57e2a71566bb8850094af38b2c932d upstream.
+
+The driver's timer must be set up before enabling IRQ handler, otherwise
+bad things may happen.
+
+Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
+Signed-off-by: Peter Popovec <popovec@fei.tuke.sk>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/joystick/walkera0701.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/drivers/input/joystick/walkera0701.c
++++ b/drivers/input/joystick/walkera0701.c
+@@ -196,6 +196,7 @@ static void walkera0701_close(struct inp
+ 	struct walkera_dev *w = input_get_drvdata(dev);
+ 
+ 	parport_disable_irq(w->parport);
++	hrtimer_cancel(&w->timer);
+ }
+ 
+ static int walkera0701_connect(struct walkera_dev *w, int parport)
+@@ -224,6 +225,9 @@ static int walkera0701_connect(struct wa
+ 	if (parport_claim(w->pardevice))
+ 		goto init_err1;
+ 
++	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	w->timer.function = timer_handler;
++
+ 	w->input_dev = input_allocate_device();
+ 	if (!w->input_dev)
+ 		goto init_err2;
+@@ -254,8 +258,6 @@ static int walkera0701_connect(struct wa
+ 	if (err)
+ 		goto init_err3;
+ 
+-	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+-	w->timer.function = timer_handler;
+ 	return 0;
+ 
+  init_err3:
+@@ -271,7 +273,6 @@ static int walkera0701_connect(struct wa
+ 
+ static void walkera0701_disconnect(struct walkera_dev *w)
+ {
+-	hrtimer_cancel(&w->timer);
+ 	input_unregister_device(w->input_dev);
+ 	parport_release(w->pardevice);
+ 	parport_unregister_device(w->pardevice);
+
 
