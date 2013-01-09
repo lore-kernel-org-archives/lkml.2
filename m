@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934088Ab3AIUlW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43926 "EHLO mail.kernel.org"
+	id S934123Ab3AIUla (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43964 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934057Ab3AIUlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:19 -0500
+	id S934091Ab3AIUlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:22 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andy Lutomirski <luto@amacapital.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Chris Ball <cjb@laptop.org>,
-        Manoj Iyer <manoj.iyer@canonical.com>
-Subject: [ 105/123] PCI: Reduce Ricoh 0xe822 SD card reader base clock frequency to 50MHz
-Date: Wed,  9 Jan 2013 12:35:44 -0800
-Message-Id: <20130109201511.969940216@linuxfoundation.org>
+        Tony Prisk <linux@prisktech.co.nz>, Edgar Toernig <froese@gmx.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 116/123] drivers/rtc/rtc-vt8500.c: correct handling of CR_24H bitfield
+Date: Wed,  9 Jan 2013 12:35:55 -0800
+Message-Id: <20130109201513.261961789@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,70 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Tony Prisk <linux@prisktech.co.nz>
 
-commit 812089e01b9f65f90fc8fc670d8cce72a0e01fbb upstream.
+commit 532db570e5181abc8f4f7bfa6c77c69ec2240198 upstream.
 
-Otherwise it fails like this on cards like the Transcend 16GB SDHC card:
+Control register bitfield for 12H/24H mode is handled incorrectly.
+Setting CR_24H actually enables 12H mode.  This patch renames the define
+and changes the initialization code to correctly set 24H mode.
 
-    mmc0: new SDHC card at address b368
-    mmcblk0: mmc0:b368 SDC   15.0 GiB
-    mmcblk0: error -110 sending status command, retrying
-    mmcblk0: error -84 transferring data, sector 0, nr 8, cmd response 0x900, card status 0xb0
-
-Tested on my Lenovo x200 laptop.
-
-[bhelgaas: changelog]
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Acked-by: Chris Ball <cjb@laptop.org>
-CC: Manoj Iyer <manoj.iyer@canonical.com>
+Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
+Cc: Edgar Toernig <froese@gmx.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/quirks.c    |    7 +++++--
- include/linux/pci_ids.h |    1 +
- 2 files changed, 6 insertions(+), 2 deletions(-)
+ drivers/rtc/rtc-vt8500.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2686,7 +2686,7 @@ static void ricoh_mmc_fixup_r5c832(struc
- 	if (PCI_FUNC(dev->devfn))
- 		return;
- 	/*
--	 * RICOH 0xe823 SD/MMC card reader fails to recognize
-+	 * RICOH 0xe822 and 0xe823 SD/MMC card readers fail to recognize
- 	 * certain types of SD/MMC cards. Lowering the SD base
- 	 * clock frequency from 200Mhz to 50Mhz fixes this issue.
- 	 *
-@@ -2697,7 +2697,8 @@ static void ricoh_mmc_fixup_r5c832(struc
- 	 * 0xf9  - Key register for 0x150
- 	 * 0xfc  - key register for 0xe1
- 	 */
--	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
-+	if (dev->device == PCI_DEVICE_ID_RICOH_R5CE822 ||
-+	    dev->device == PCI_DEVICE_ID_RICOH_R5CE823) {
- 		pci_write_config_byte(dev, 0xf9, 0xfc);
- 		pci_write_config_byte(dev, 0x150, 0x10);
- 		pci_write_config_byte(dev, 0xf9, 0x00);
-@@ -2724,6 +2725,8 @@ static void ricoh_mmc_fixup_r5c832(struc
- }
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
-+DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE822, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5CE823, ricoh_mmc_fixup_r5c832);
- #endif /*CONFIG_MMC_RICOH_MMC*/
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -1568,6 +1568,7 @@
- #define PCI_DEVICE_ID_RICOH_RL5C476	0x0476
- #define PCI_DEVICE_ID_RICOH_RL5C478	0x0478
- #define PCI_DEVICE_ID_RICOH_R5C822	0x0822
-+#define PCI_DEVICE_ID_RICOH_R5CE822	0xe822
- #define PCI_DEVICE_ID_RICOH_R5CE823	0xe823
- #define PCI_DEVICE_ID_RICOH_R5C832	0x0832
- #define PCI_DEVICE_ID_RICOH_R5C843	0x0843
+--- a/drivers/rtc/rtc-vt8500.c
++++ b/drivers/rtc/rtc-vt8500.c
+@@ -70,7 +70,7 @@
+ 				| ALARM_SEC_BIT)
+ 
+ #define VT8500_RTC_CR_ENABLE	(1 << 0)	/* Enable RTC */
+-#define VT8500_RTC_CR_24H	(1 << 1)	/* 24h time format */
++#define VT8500_RTC_CR_12H	(1 << 1)	/* 12h time format */
+ #define VT8500_RTC_CR_SM_ENABLE	(1 << 2)	/* Enable periodic irqs */
+ #define VT8500_RTC_CR_SM_SEC	(1 << 3)	/* 0: 1Hz/60, 1: 1Hz */
+ #define VT8500_RTC_CR_CALIB	(1 << 4)	/* Enable calibration */
+@@ -249,7 +249,7 @@ static int __devinit vt8500_rtc_probe(st
+ 	}
+ 
+ 	/* Enable RTC and set it to 24-hour mode */
+-	writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H,
++	writel(VT8500_RTC_CR_ENABLE,
+ 	       vt8500_rtc->regbase + VT8500_RTC_CR);
+ 
+ 	vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
 
 
