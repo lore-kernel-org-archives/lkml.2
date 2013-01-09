@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757532Ab3AIL0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 06:26:34 -0500
-Received: from mga01.intel.com ([192.55.52.88]:29809 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757108Ab3AIL0d convert rfc822-to-8bit (ORCPT
+	id S1757525Ab3AIL1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 06:27:25 -0500
+Received: from mail-bk0-f44.google.com ([209.85.214.44]:49142 "EHLO
+	mail-bk0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756195Ab3AIL1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 06:26:33 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
-   d="scan'208";a="271741715"
-Message-ID: <1357730765.31620.210.camel@smile>
-Subject: Re: dw_dmac patches
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Date: Wed, 09 Jan 2013 13:26:05 +0200
-In-Reply-To: <20130108155423.GJ19691@intel.com>
-References: <1357563294.31620.145.camel@smile>
-	 <20130108155423.GJ19691@intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.4.4-1 
-Mime-Version: 1.0
+	Wed, 9 Jan 2013 06:27:24 -0500
+MIME-Version: 1.0
+X-Originating-IP: [178.83.130.250]
+In-Reply-To: <20130108143710.GA16343@fieldses.org>
+References: <20130103204624.GA2533@fieldses.org>
+	<CA+5PVA6PSsWGVAvSkdZXgoPaaroTuC0LvJ6-3mo1aU9LEUA1Sw@mail.gmail.com>
+	<20130103231123.GD3238@fieldses.org>
+	<20130106180652.GQ5737@phenom.ffwll.local>
+	<20130108143710.GA16343@fieldses.org>
+Date: Wed, 9 Jan 2013 12:27:22 +0100
+X-Google-Sender-Auth: xlZ1TgQMBWgMTPCEpT4KHh7ldKQ
+Message-ID: <CAKMK7uG-1xoc49HhCxrpgO2xgsskJ6YXo7GBHCwsgQrSuDXd4A@mail.gmail.com>
+Subject: Re: "Hangcheck timer elapsed... GPU hung" in 3.8.0-rc2
+From: Daniel Vetter <daniel@ffwll.ch>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 07:54 -0800, Vinod Koul wrote: 
-> On Mon, Jan 07, 2013 at 02:54:54PM +0200, Andy Shevchenko wrote:
-> > Hi, Vinod.
-> > 
-> > I noticed you missed the 3.8 merge window and I can't see any of my
-> > recent patches [1] in your next branch. So, what is your plan regarding
-> > to them?
-> Yes i missed quite a few due to my travel, but now am back :)
-> 
-> Can you please rebase below on my next and resend the below sequence. I can go
-> thru them quickly tomorrow and do the needful
+On Tue, Jan 8, 2013 at 3:37 PM, J. Bruce Fields <bfields@fieldses.org> wrote:
+>> please grab the i915_error_state file from debugfs
+>
+> As I said in the original mail, I've already done that:
+>
+>         http://fieldses.org/~bfields/3.8-hang/
 
-Done.
+Sorry, missed that the first time around.
 
-The series has been resent http://lkml.org/lkml/2013/1/9/89
+>> and file a bug on
+>> bugs.freedesktop.org against DRM - DRI (Intel).
+>
+> Would it still be useful for me to file a bug?  (Just going through the
+> new-account confirmation dance now.)
 
-> > pick 9f2b870 dw_dmac: call .probe after we have a device in place
-> > pick 5bcd7fe dw_dmac: absence of pdata isn't critical when autocfg is
-> > set
-> > pick 2fbca14 dmaengine: introduce is_slave_xfer function
-> > pick 6e98b1f dma: at_hdmac: check direction properly for cyclic
-> > transfers
-> > pick d1573d9 dma: dw_dmac: check direction properly in
-> > dw_dma_cyclic_prep
-> > pick f1071a3 dma: ep93xx_dma: reuse is_slave_xfer helper
-> > pick 191347f dma: ipu_idmac: reuse is_slave_xfer helper
-> > pick 4ec19c2 dma: ste_dma40: reuse is_slave_xfer helper
-> > pick 757978e dw_dmac: store direction in the custom channel structure
-> > pick 8e5ea839 dw_dmac: make usage of dw_dma_slave optional
-> > pick d0da3f4 dw_dmac: backlink to dw_dma in dw_dma_chan is superfluous
-> > pick ca7141d dw_dmac: check for mapping errors
-> > pick 281c298 dw_dmac: remove redundant check
-> > pick 217f956 dw_dmac: update tx_node_active in dwc_do_single_block
-> > pick fd144bd dma: dw_dmac: add dwc_chan_pause and dwc_chan_resume
-> > pick 59a6031 dma: dw_dmac: clear suspend bit during termination
+Looks like the ilk bug tracked at
+https://bugs.freedesktop.org/show_bug.cgi?id=55984
 
+-Daniel
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
