@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab3AIWCb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:02:31 -0500
-Received: from mail.kernel.org ([198.145.19.201]:40998 "EHLO mail.kernel.org"
+	id S1758096Ab3AIWCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:02:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:40983 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932395Ab3AIUgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:37 -0500
+	id S932595Ab3AIUgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Hugh Dickins <hughd@google.com>,
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Will Deacon <Will.Deacon@arm.com>, Steve Capper <Steve.Capper@arm.com>,
+        Christoph Lameter <cl@linux.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 13/47] tmpfs mempolicy: fix /proc/mounts corrupting memory
-Date: Wed,  9 Jan 2013 12:35:08 -0800
-Message-Id: <20130109201731.014766529@linuxfoundation.org>
+Subject: [ 12/47] mm: Fix PageHead when !CONFIG_PAGEFLAGS_EXTENDED
+Date: Wed,  9 Jan 2013 12:35:07 -0800
+Message-Id: <20130109201730.906491595@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -26,172 +30,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Christoffer Dall <cdall@cs.columbia.edu>
 
-commit f2a07f40dbc603c15f8b06e6ec7f768af67b424f upstream.
+commit ad4b3fb7ff9940bcdb1e4cd62bd189d10fa636ba upstream.
 
-Recently I suggested using "mount -o remount,mpol=local /tmp" in NUMA
-mempolicy testing.  Very nasty.  Reading /proc/mounts, /proc/pid/mounts
-or /proc/pid/mountinfo may then corrupt one bit of kernel memory, often
-in a page table (causing "Bad swap" or "Bad page map" warning or "Bad
-pagetable" oops), sometimes in a vm_area_struct or rbnode or somewhere
-worse.  "mpol=prefer" and "mpol=prefer:Node" are equally toxic.
+Unfortunately with !CONFIG_PAGEFLAGS_EXTENDED, (!PageHead) is false, and
+(PageHead) is true, for tail pages.  If this is indeed the intended
+behavior, which I doubt because it breaks cache cleaning on some ARM
+systems, then the nomenclature is highly problematic.
 
-Recent NUMA enhancements are not to blame: this dates back to 2.6.35,
-when commit e17f74af351c "mempolicy: don't call mpol_set_nodemask() when
-no_context" skipped mpol_parse_str()'s call to mpol_set_nodemask(),
-which used to initialize v.preferred_node, or set MPOL_F_LOCAL in flags.
-With slab poisoning, you can then rely on mpol_to_str() to set the bit
-for node 0x6b6b, probably in the next page above the caller's stack.
+This patch makes sure PageHead is only true for head pages and PageTail
+is only true for tail pages, and neither is true for non-compound pages.
 
-mpol_parse_str() is only called from shmem_parse_options(): no_context
-is always true, so call it unused for now, and remove !no_context code.
-Set v.nodes or v.preferred_node or MPOL_F_LOCAL as mpol_to_str() might
-expect.  Then mpol_to_str() can ignore its no_context argument also,
-the mpol being appropriately initialized whether contextualized or not.
-Rename its no_context unused too, and let subsequent patch remove them
-(that's not needed for stable backporting, which would involve rejects).
+[ This buglet seems ancient - seems to have been introduced back in Apr
+  2008 in commit 6a1e7f777f61: "pageflags: convert to the use of new
+  macros".  And the reason nobody noticed is because the PageHead()
+  tests are almost all about just sanity-checking, and only used on
+  pages that are actual page heads.  The fact that the old code returned
+  true for tail pages too was thus not really noticeable.   - Linus ]
 
-I don't understand why MPOL_LOCAL is described as a pseudo-policy:
-it's a reasonable policy which suffers from a confusing implementation
-in terms of MPOL_PREFERRED with MPOL_F_LOCAL.  I believe this would be
-much more robust if MPOL_LOCAL were recognized in switch statements
-throughout, MPOL_F_LOCAL deleted, and MPOL_PREFERRED use the (possibly
-empty) nodes mask like everyone else, instead of its preferred_node
-variant (I presume an optimization from the days before MPOL_LOCAL).
-But that would take me too long to get right and fully tested.
-
-Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Christoffer Dall <cdall@cs.columbia.edu>
+Acked-by:  Andrea Arcangeli <aarcange@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Will Deacon <Will.Deacon@arm.com>
+Cc: Steve Capper <Steve.Capper@arm.com>
+Cc: Christoph Lameter <cl@linux.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mempolicy.c |   64 +++++++++++++++++++++++----------------------------------
- 1 file changed, 26 insertions(+), 38 deletions(-)
+ include/linux/page-flags.h |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2308,8 +2308,7 @@ void numa_default_policy(void)
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -365,7 +365,7 @@ static inline void ClearPageCompound(str
+  * pages on the LRU and/or pagecache.
   */
+ TESTPAGEFLAG(Compound, compound)
+-__PAGEFLAG(Head, compound)
++__SETPAGEFLAG(Head, compound)  __CLEARPAGEFLAG(Head, compound)
  
  /*
-- * "local" is pseudo-policy:  MPOL_PREFERRED with MPOL_F_LOCAL flag
-- * Used only for mpol_parse_str() and mpol_to_str()
-+ * "local" is implemented internally by MPOL_PREFERRED with MPOL_F_LOCAL flag.
+  * PG_reclaim is used in combination with PG_compound to mark the
+@@ -377,8 +377,14 @@ __PAGEFLAG(Head, compound)
+  * PG_compound & PG_reclaim	=> Tail page
+  * PG_compound & ~PG_reclaim	=> Head page
   */
- #define MPOL_LOCAL MPOL_MAX
- static const char * const policy_modes[] =
-@@ -2324,28 +2323,21 @@ static const char * const policy_modes[]
++#define PG_head_mask ((1L << PG_compound))
+ #define PG_head_tail_mask ((1L << PG_compound) | (1L << PG_reclaim))
  
- #ifdef CONFIG_TMPFS
- /**
-- * mpol_parse_str - parse string to mempolicy
-+ * mpol_parse_str - parse string to mempolicy, for tmpfs mpol mount option.
-  * @str:  string containing mempolicy to parse
-  * @mpol:  pointer to struct mempolicy pointer, returned on success.
-- * @no_context:  flag whether to "contextualize" the mempolicy
-+ * @unused:  redundant argument, to be removed later.
-  *
-  * Format of input:
-  *	<mode>[=<flags>][:<nodelist>]
-  *
-- * if @no_context is true, save the input nodemask in w.user_nodemask in
-- * the returned mempolicy.  This will be used to "clone" the mempolicy in
-- * a specific context [cpuset] at a later time.  Used to parse tmpfs mpol
-- * mount option.  Note that if 'static' or 'relative' mode flags were
-- * specified, the input nodemask will already have been saved.  Saving
-- * it again is redundant, but safe.
-- *
-  * On success, returns 0, else 1
-  */
--int mpol_parse_str(char *str, struct mempolicy **mpol, int no_context)
-+int mpol_parse_str(char *str, struct mempolicy **mpol, int unused)
- {
- 	struct mempolicy *new = NULL;
- 	unsigned short mode;
--	unsigned short uninitialized_var(mode_flags);
-+	unsigned short mode_flags;
- 	nodemask_t nodes;
- 	char *nodelist = strchr(str, ':');
- 	char *flags = strchr(str, '=');
-@@ -2433,24 +2425,23 @@ int mpol_parse_str(char *str, struct mem
- 	if (IS_ERR(new))
- 		goto out;
- 
--	if (no_context) {
--		/* save for contextualization */
--		new->w.user_nodemask = nodes;
--	} else {
--		int ret;
--		NODEMASK_SCRATCH(scratch);
--		if (scratch) {
--			task_lock(current);
--			ret = mpol_set_nodemask(new, &nodes, scratch);
--			task_unlock(current);
--		} else
--			ret = -ENOMEM;
--		NODEMASK_SCRATCH_FREE(scratch);
--		if (ret) {
--			mpol_put(new);
--			goto out;
--		}
--	}
-+	/*
-+	 * Save nodes for mpol_to_str() to show the tmpfs mount options
-+	 * for /proc/mounts, /proc/pid/mounts and /proc/pid/mountinfo.
-+	 */
-+	if (mode != MPOL_PREFERRED)
-+		new->v.nodes = nodes;
-+	else if (nodelist)
-+		new->v.preferred_node = first_node(nodes);
-+	else
-+		new->flags |= MPOL_F_LOCAL;
++static inline int PageHead(struct page *page)
++{
++	return ((page->flags & PG_head_tail_mask) == PG_head_mask);
++}
 +
-+	/*
-+	 * Save nodes for contextualization: this will be used to "clone"
-+	 * the mempolicy in a specific context [cpuset] at a later time.
-+	 */
-+	new->w.user_nodemask = nodes;
-+
- 	err = 0;
- 
- out:
-@@ -2470,13 +2461,13 @@ out:
-  * @buffer:  to contain formatted mempolicy string
-  * @maxlen:  length of @buffer
-  * @pol:  pointer to mempolicy to be formatted
-- * @no_context:  "context free" mempolicy - use nodemask in w.user_nodemask
-+ * @unused:  redundant argument, to be removed later.
-  *
-  * Convert a mempolicy into a string.
-  * Returns the number of characters in buffer (if positive)
-  * or an error (negative)
-  */
--int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int no_context)
-+int mpol_to_str(char *buffer, int maxlen, struct mempolicy *pol, int unused)
+ static inline int PageTail(struct page *page)
  {
- 	char *p = buffer;
- 	int l;
-@@ -2502,7 +2493,7 @@ int mpol_to_str(char *buffer, int maxlen
- 	case MPOL_PREFERRED:
- 		nodes_clear(nodes);
- 		if (flags & MPOL_F_LOCAL)
--			mode = MPOL_LOCAL;	/* pseudo-policy */
-+			mode = MPOL_LOCAL;
- 		else
- 			node_set(pol->v.preferred_node, nodes);
- 		break;
-@@ -2510,10 +2501,7 @@ int mpol_to_str(char *buffer, int maxlen
- 	case MPOL_BIND:
- 		/* Fall through */
- 	case MPOL_INTERLEAVE:
--		if (no_context)
--			nodes = pol->w.user_nodemask;
--		else
--			nodes = pol->v.nodes;
-+		nodes = pol->v.nodes;
- 		break;
- 
- 	default:
+ 	return ((page->flags & PG_head_tail_mask) == PG_head_tail_mask);
 
 
