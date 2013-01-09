@@ -1,257 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab3AICkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:40:33 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:50179 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755884Ab3AICkb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:40:31 -0500
-Message-ID: <50ECD89A.50100@oracle.com>
-Date: Wed, 09 Jan 2013 10:40:26 +0800
-From: ANNIE LI <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	id S1756812Ab3AIClw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:41:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:36771 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755884Ab3AICls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 21:41:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,435,1355126400"; 
+   d="scan'208";a="274521281"
+Date: Wed, 9 Jan 2013 10:42:26 +0800
+From: Yuanhan Liu <yuanhan.liu@linux.intel.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Stefani Seibold <stefani@seibold.net>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-omap@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, platform-driver-x86@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-rdma@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-mtd@lists.infradead.org,
+        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-serial@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-mm@kvack.org, dccp@vger.kernel.org,
+        linux-sctp@vger.kernel.org
+Subject: Re: [PATCH 5/5] kfifo: log based kfifo API
+Message-ID: <20130109024226.GD304@yliu-dev.sh.intel.com>
+References: <1357657073-27352-1-git-send-email-yuanhan.liu@linux.intel.com>
+ <1357657073-27352-6-git-send-email-yuanhan.liu@linux.intel.com>
+ <20130108181645.GA7972@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Matt Wilson <msw@amazon.com>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, xen-devel@lists.xen.org
-Subject: Re: [Xen-devel] [PATCH v2] xen/grant-table: correctly initialize
- grant table version 1
-References: <Message-ID: <1355997710.26722.12.camel@zakaz.uk.xensource.com> <1357470882-17345-1-git-send-email-msw@amazon.com>
-In-Reply-To: <1357470882-17345-1-git-send-email-msw@amazon.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130108181645.GA7972@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks so much for posting this.
+On Tue, Jan 08, 2013 at 10:16:46AM -0800, Dmitry Torokhov wrote:
+> Hi Yuanhan,
+> 
+> On Tue, Jan 08, 2013 at 10:57:53PM +0800, Yuanhan Liu wrote:
+> > The current kfifo API take the kfifo size as input, while it rounds
+> >  _down_ the size to power of 2 at __kfifo_alloc. This may introduce
+> > potential issue.
+> > 
+> > Take the code at drivers/hid/hid-logitech-dj.c as example:
+> > 
+> > 	if (kfifo_alloc(&djrcv_dev->notif_fifo,
+> >                        DJ_MAX_NUMBER_NOTIFICATIONS * sizeof(struct dj_report),
+> >                        GFP_KERNEL)) {
+> > 
+> > Where, DJ_MAX_NUMBER_NOTIFICATIONS is 8, and sizeo of(struct dj_report)
+> > is 15.
+> > 
+> > Which means it wants to allocate a kfifo buffer which can store 8
+> > dj_report entries at once. The expected kfifo buffer size would be
+> > 8 * 15 = 120 then. While, in the end, __kfifo_alloc will turn the
+> > size to rounddown_power_of_2(120) =  64, and then allocate a buf
+> > with 64 bytes, which I don't think this is the original author want.
+> > 
+> > With the new log API, we can do like following:
+> > 
+> > 	int kfifo_size_order = order_base_2(DJ_MAX_NUMBER_NOTIFICATIONS *
+> > 					    sizeof(struct dj_report));
+> > 
+> > 	if (kfifo_alloc(&djrcv_dev->notif_fifo, kfifo_size_order, GFP_KERNEL)) {
+> > 
+> > This make sure we will allocate enough kfifo buffer for holding
+> > DJ_MAX_NUMBER_NOTIFICATIONS dj_report entries.
+> 
+> Why don't you simply change __kfifo_alloc to round the allocation up
+> instead of down?
 
-On 2013-1-6 19:14, Matt Wilson wrote:
-> Commit 85ff6acb075a484780b3d763fdf41596d8fc0970 (xen/granttable: Grant
-> tables V2 implementation) changed the GREFS_PER_GRANT_FRAME macro from
-> a constant to a conditional expression. The expression depends on
-> grant_table_version being appropriately set. Unfortunately, at init
-> time grant_table_version will be 0. The GREFS_PER_GRANT_FRAME
-> conditional expression checks for "grant_table_version == 1", and
-> therefore returns the number of grant references per frame for v2.
->
-> This causes gnttab_init() to allocate fewer pages for gnttab_list, as
-> a frame can old half the number of v2 entries than v1 entries. After
-> gnttab_resume() is called, grant_table_version is appropriately
-> set. nr_init_grefs will then be miscalculated and gnttab_free_count
-> will hold a value larger than the actual number of free gref entries.
->
-> If a guest is heavily utilizing improperly initialized v1 grant
-> tables, memory corruption can occur. One common manifestation is
-> corruption of the vmalloc list, resulting in a poisoned pointer
-> derefrence when accessing /proc/meminfo or /proc/vmallocinfo:
->
-> [   40.770064] BUG: unable to handle kernel paging request at 0000200200001407
-> [   40.770083] IP: [<ffffffff811a6fb0>] get_vmalloc_info+0x70/0x110
-> [   40.770102] PGD 0
-> [   40.770107] Oops: 0000 [#1] SMP
-> [   40.770114] CPU 10
->
-> This patch introduces a static variable, grefs_per_grant_frame, to
-> cache the calculated value. gnttab_init() now calls
-> gnttab_request_version() early so that grant_table_version and
-> grefs_per_grant_frame can be appropriately set. A few BUG_ON()s have
-> been added to prevent this type of bug from reoccurring in the future.
->
-> Signed-off-by: Matt Wilson<msw@amazon.com>
-> Reviewed-and-Tested-by: Steven Noonan<snoonan@amazon.com>
-> Cc: Ian Campbell<Ian.Campbell@citrix.com>
-> Cc: Konrad Rzeszutek Wilk<konrad.wilk@oracle.com>
-> Cc: Annie Li<annie.li@oracle.com>
-> Cc: xen-devel@lists.xen.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: stable@vger.kernel.org # v3.3 and newer
-> ---
-> Changes since v1:
-> * introduced a new gnttab_setup() function and moved all of the
->    initialization code from gnttab_resume() there.
-> ---
->   drivers/xen/grant-table.c |   52 ++++++++++++++++++++++++++------------------
->   1 files changed, 31 insertions(+), 21 deletions(-)
->
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 043bf07..53715de 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -55,10 +55,6 @@
->   /* External tools reserve first few grant table entries. */
->   #define NR_RESERVED_ENTRIES 8
->   #define GNTTAB_LIST_END 0xffffffff
-> -#define GREFS_PER_GRANT_FRAME \
-> -(grant_table_version == 1 ?                      \
-> -(PAGE_SIZE / sizeof(struct grant_entry_v1)) :   \
-> -(PAGE_SIZE / sizeof(union grant_entry_v2)))
->
->   static grant_ref_t **gnttab_list;
->   static unsigned int nr_grant_frames;
-> @@ -153,6 +149,7 @@ static struct gnttab_ops *gnttab_interface;
->   static grant_status_t *grstatus;
->
->   static int grant_table_version;
-> +static int grefs_per_grant_frame;
->
->   static struct gnttab_free_callback *gnttab_free_callback_list;
->
-> @@ -766,12 +763,14 @@ static int grow_gnttab_list(unsigned int more_frames)
->   	unsigned int new_nr_grant_frames, extra_entries, i;
->   	unsigned int nr_glist_frames, new_nr_glist_frames;
->
-> +	BUG_ON(grefs_per_grant_frame == 0);
-> +
->   	new_nr_grant_frames = nr_grant_frames + more_frames;
-> -	extra_entries       = more_frames * GREFS_PER_GRANT_FRAME;
-> +	extra_entries       = more_frames * grefs_per_grant_frame;
->
-> -	nr_glist_frames = (nr_grant_frames * GREFS_PER_GRANT_FRAME + RPP - 1) / RPP;
-> +	nr_glist_frames = (nr_grant_frames * grefs_per_grant_frame + RPP - 1) / RPP;
->   	new_nr_glist_frames =
-> -		(new_nr_grant_frames * GREFS_PER_GRANT_FRAME + RPP - 1) / RPP;
-> +		(new_nr_grant_frames * grefs_per_grant_frame + RPP - 1) / RPP;
->   	for (i = nr_glist_frames; i<  new_nr_glist_frames; i++) {
->   		gnttab_list[i] = (grant_ref_t *)__get_free_page(GFP_ATOMIC);
->   		if (!gnttab_list[i])
-> @@ -779,12 +778,12 @@ static int grow_gnttab_list(unsigned int more_frames)
->   	}
->
->
-> -	for (i = GREFS_PER_GRANT_FRAME * nr_grant_frames;
-> -	     i<  GREFS_PER_GRANT_FRAME * new_nr_grant_frames - 1; i++)
-> +	for (i = grefs_per_grant_frame * nr_grant_frames;
-> +	     i<  grefs_per_grant_frame * new_nr_grant_frames - 1; i++)
->   		gnttab_entry(i) = i + 1;
->
->   	gnttab_entry(i) = gnttab_free_head;
-> -	gnttab_free_head = GREFS_PER_GRANT_FRAME * nr_grant_frames;
-> +	gnttab_free_head = grefs_per_grant_frame * nr_grant_frames;
->   	gnttab_free_count += extra_entries;
->
->   	nr_grant_frames = new_nr_grant_frames;
-> @@ -904,7 +903,8 @@ EXPORT_SYMBOL_GPL(gnttab_unmap_refs);
->
->   static unsigned nr_status_frames(unsigned nr_grant_frames)
->   {
-> -	return (nr_grant_frames * GREFS_PER_GRANT_FRAME + SPP - 1) / SPP;
-> +	BUG_ON(grefs_per_grant_frame == 0);
-> +	return (nr_grant_frames * grefs_per_grant_frame + SPP - 1) / SPP;
->   }
->
->   static int gnttab_map_frames_v1(xen_pfn_t *frames, unsigned int nr_gframes)
-> @@ -1068,6 +1068,7 @@ static void gnttab_request_version(void)
->   	rc = HYPERVISOR_grant_table_op(GNTTABOP_set_version,&gsv, 1);
->   	if (rc == 0&&  gsv.version == 2) {
->   		grant_table_version = 2;
-> +		grefs_per_grant_frame = PAGE_SIZE / sizeof(union grant_entry_v2);
->   		gnttab_interface =&gnttab_v2_ops;
->   	} else if (grant_table_version == 2) {
->   		/*
-> @@ -1080,18 +1081,18 @@ static void gnttab_request_version(void)
->   		panic("we need grant tables version 2, but only version 1 is available");
->   	} else {
->   		grant_table_version = 1;
-> +		grefs_per_grant_frame = PAGE_SIZE / sizeof(struct grant_entry_v1);
->   		gnttab_interface =&gnttab_v1_ops;
->   	}
-> -	printk(KERN_INFO "Grant tables using version %d layout.\n",
-> -		grant_table_version);
->   }
->   
+Hi Dmitry,
 
-Is it better to keep printk here? In your last patch, you removed it 
-because gnttab_request_version and gnttab_resume are all called in 
-gnttab_init. and gnttab_resume also contains calling of 
-gnttab_request_version. But in this patch, gnttab_setup is used, and 
-does not have this issue now.
+Yes, it would be neat and that was my first reaction as well. I then
+sent out a patch, but it was NACKed by Stefani(the original kfifo
+author). Here is the link:
 
-> -int gnttab_resume(void)
-> +static int gnttab_setup(void)
->   {
->   	unsigned int max_nr_gframes;
->   	char *kmsg = "Failed to kmalloc pages for pv in hvm grant frames\n";
->
-> -	gnttab_request_version();
-> +	printk(KERN_INFO "Grant tables using version %d layout.\n",
-> +		grant_table_version);
+    https://lkml.org/lkml/2012/10/26/144
 
-See comments above.
+Then Stefani proposed to change the API to take log of size as input to
+root fix this kind of issues. And here it is.
 
-Thanks
-Annie
->   	max_nr_gframes = gnttab_max_grant_frames();
->   	if (max_nr_gframes<  nr_grant_frames)
->   		return -ENOSYS;
-> @@ -1126,6 +1127,12 @@ int gnttab_resume(void)
->   	return 0;
->   }
->
-> +int gnttab_resume(void)
-> +{
-> +	gnttab_request_version();
-> +	return gnttab_setup();
-> +}
-> +
->   int gnttab_suspend(void)
->   {
->   	gnttab_interface->unmap_frames();
-> @@ -1137,9 +1144,10 @@ static int gnttab_expand(unsigned int req_entries)
->   	int rc;
->   	unsigned int cur, extra;
->
-> +	BUG_ON(grefs_per_grant_frame == 0);
->   	cur = nr_grant_frames;
-> -	extra = ((req_entries + (GREFS_PER_GRANT_FRAME-1)) /
-> -		 GREFS_PER_GRANT_FRAME);
-> +	extra = ((req_entries + (grefs_per_grant_frame-1)) /
-> +		 grefs_per_grant_frame);
->   	if (cur + extra>  gnttab_max_grant_frames())
->   		return -ENOSPC;
->
-> @@ -1157,21 +1165,23 @@ int gnttab_init(void)
->   	unsigned int nr_init_grefs;
->   	int ret;
->
-> +	gnttab_request_version();
->   	nr_grant_frames = 1;
->   	boot_max_nr_grant_frames = __max_nr_grant_frames();
->
->   	/* Determine the maximum number of frames required for the
->   	 * grant reference free list on the current hypervisor.
->   	 */
-> +	BUG_ON(grefs_per_grant_frame == 0);
->   	max_nr_glist_frames = (boot_max_nr_grant_frames *
-> -			       GREFS_PER_GRANT_FRAME / RPP);
-> +			       grefs_per_grant_frame / RPP);
->
->   	gnttab_list = kmalloc(max_nr_glist_frames * sizeof(grant_ref_t *),
->   			      GFP_KERNEL);
->   	if (gnttab_list == NULL)
->   		return -ENOMEM;
->
-> -	nr_glist_frames = (nr_grant_frames * GREFS_PER_GRANT_FRAME + RPP - 1) / RPP;
-> +	nr_glist_frames = (nr_grant_frames * grefs_per_grant_frame + RPP - 1) / RPP;
->   	for (i = 0; i<  nr_glist_frames; i++) {
->   		gnttab_list[i] = (grant_ref_t *)__get_free_page(GFP_KERNEL);
->   		if (gnttab_list[i] == NULL) {
-> @@ -1180,12 +1190,12 @@ int gnttab_init(void)
->   		}
->   	}
->
-> -	if (gnttab_resume()<  0) {
-> +	if (gnttab_setup()<  0) {
->   		ret = -ENODEV;
->   		goto ini_nomem;
->   	}
->
-> -	nr_init_grefs = nr_grant_frames * GREFS_PER_GRANT_FRAME;
-> +	nr_init_grefs = nr_grant_frames * grefs_per_grant_frame;
->
->   	for (i = NR_RESERVED_ENTRIES; i<  nr_init_grefs - 1; i++)
->   		gnttab_entry(i) = i + 1;
+Thanks.
+
+	--yliu
