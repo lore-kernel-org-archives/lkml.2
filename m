@@ -1,111 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab3AILqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 06:46:44 -0500
-Received: from mailhub.sw.ru ([195.214.232.25]:5756 "EHLO relay.sw.ru"
+	id S1757608Ab3AILpi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 06:45:38 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:37684 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757614Ab3AILpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 06:45:40 -0500
+	id S1757166Ab3AILpg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 06:45:36 -0500
 From: Glauber Costa <glommer@parallels.com>
 To: <cgroups@vger.kernel.org>
 Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
         Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>
-Subject: [PATCH v5 10/11] sched: change nr_context_switches calculation.
-Date: Wed,  9 Jan 2013 15:45:37 +0400
-Message-Id: <1357731938-8417-11-git-send-email-glommer@parallels.com>
+        Paul Turner <pjt@google.com>
+Subject: [PATCH v5 00/11] per-cgroup cpu-stat
+Date: Wed,  9 Jan 2013 15:45:27 +0400
+Message-Id: <1357731938-8417-1-git-send-email-glommer@parallels.com>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1357731938-8417-1-git-send-email-glommer@parallels.com>
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes the calculation of nr_context_switches. The variable
-"nr_switches" is now used to account for the number of transition to the
-idle task, or stop task. It is removed from the schedule() path.
+[ update: I thought I posted this already before leaving for holidays. However,
+  now that I am checking for replies, I can't find nor replies nor the original
+  mail in my boxes or archives. I am posting again for safety sake, but sorry
+  you are getting this twice by any chance ]
 
-The total calculation can be made using the fact that the transitions to
-fair and rt classes are recorded in the root_task_group. One can easily
-derive the total figure by adding those quantities together.
+Hi all,
 
-Signed-off-by: Glauber Costa <glommer@parallels.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Paul Turner <pjt@google.com>
----
- kernel/sched/core.c      | 17 +++++++++++++++--
- kernel/sched/idle_task.c |  3 +++
- kernel/sched/stop_task.c |  2 ++
- 3 files changed, 20 insertions(+), 2 deletions(-)
+This is an attempt to provide userspace with enough information to reconstruct
+per-container version of files like "/proc/stat". In particular, we are
+interested in knowing the per-cgroup slices of user time, system time, wait
+time, number of processes, and a variety of statistics.
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c36df03..6bb56f0 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2001,13 +2001,27 @@ unsigned long nr_uninterruptible(void)
- 	return sum;
- }
- 
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+#define cfs_nr_switches(tg, cpu) (tg)->cfs_rq[cpu]->nr_switches
-+#else
-+#define cfs_nr_switches(tg, cpu) cpu_rq(cpu)->cfs.nr_switches
-+#endif
-+#ifdef CONFIG_RT_GROUP_SCHED
-+#define rt_nr_switches(tg, cpu) (tg)->rt_rq[cpu]->rt_nr_switches
-+#else
-+#define rt_nr_switches(tg, cpu) cpu_rq(cpu)->rt.rt_nr_switches
-+#endif
-+
- unsigned long long nr_context_switches(void)
- {
- 	int i;
- 	unsigned long long sum = 0;
- 
--	for_each_possible_cpu(i)
-+	for_each_possible_cpu(i) {
-+		sum += cfs_nr_switches(&root_task_group, i);
-+		sum += rt_nr_switches(&root_task_group, i);
- 		sum += cpu_rq(i)->nr_switches;
-+	}
- 
- 	return sum;
- }
-@@ -2929,7 +2943,6 @@ need_resched:
- 	rq->skip_clock_update = 0;
- 
- 	if (likely(prev != next)) {
--		rq->nr_switches++;
- 		rq->curr = next;
- 		++*switch_count;
- 
-diff --git a/kernel/sched/idle_task.c b/kernel/sched/idle_task.c
-index 07e6027..652d98c 100644
---- a/kernel/sched/idle_task.c
-+++ b/kernel/sched/idle_task.c
-@@ -28,6 +28,9 @@ pick_next_task_idle(struct rq *rq, struct task_struct *prev)
- 	if (prev)
- 		prev->sched_class->put_prev_task(rq, prev);
- 
-+	if (prev != rq->idle)
-+		rq->nr_switches++;
-+
- 	schedstat_inc(rq, sched_goidle);
- 	return rq->idle;
- }
-diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
-index 5f10918..d1e9b82 100644
---- a/kernel/sched/stop_task.c
-+++ b/kernel/sched/stop_task.c
-@@ -32,6 +32,8 @@ pick_next_task_stop(struct rq *rq, struct task_struct *prev)
- 		stop->se.exec_start = rq->clock_task;
- 		if (prev)
- 			prev->sched_class->put_prev_task(rq, prev);
-+		if (prev != rq->stop)
-+			rq->nr_switches++;
- 		return stop;
- 	}
- 
+This task is made more complicated by the fact that multiple controllers are
+involved in collecting those statistics: cpu and cpuacct. So the first thing I
+am doing here, is ressurecting Tejun's patches that aim at deprecating cpuacct.
+
+This is one of the major differences from earlier attempts: all data is provided
+by the cpu controller, resulting in greater simplicity.
+
+This also tries to hook into the existing scheduler hierarchy walks instead of
+providing new ones.
+
+Glauber Costa (7):
+  don't call cpuacct_charge in stop_task.c
+  sched: adjust exec_clock to use it as cpu usage metric
+  cpuacct: don't actually do anything.
+  account guest time per-cgroup as well.
+  record per-cgroup number of context switches
+  sched: change nr_context_switches calculation.
+  sched: introduce cgroup file stat_percpu
+
+Peter Zijlstra (1):
+  sched: Push put_prev_task() into pick_next_task()
+
+Tejun Heo (3):
+  cgroup: implement CFTYPE_NO_PREFIX
+  cgroup, sched: let cpu serve the same files as cpuacct
+  cgroup, sched: deprecate cpuacct
+
+ include/linux/cgroup.h   |   1 +
+ include/linux/sched.h    |   8 +-
+ init/Kconfig             |  11 +-
+ kernel/cgroup.c          |  57 ++++++-
+ kernel/sched/core.c      | 375 +++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched/cputime.c   |  28 +++-
+ kernel/sched/fair.c      |  38 ++++-
+ kernel/sched/idle_task.c |   9 +-
+ kernel/sched/rt.c        |  42 ++++--
+ kernel/sched/sched.h     |  18 ++-
+ kernel/sched/stop_task.c |   8 +-
+ 11 files changed, 551 insertions(+), 44 deletions(-)
+
 -- 
 1.7.11.7
 
