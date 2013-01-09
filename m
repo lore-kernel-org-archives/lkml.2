@@ -1,159 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933832Ab3AIUkW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:40:22 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43260 "EHLO mail.kernel.org"
+	id S933848Ab3AIUk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43326 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933806Ab3AIUkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:17 -0500
+	id S933806Ab3AIUkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:23 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Jianguo Wu <wujianguo@huawei.com>, Jiang Liu <jiang.liu@huawei.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 073/123] mm/hugetlb: create hugetlb cgroup file in hugetlb_init
-Date: Wed,  9 Jan 2013 12:35:12 -0800
-Message-Id: <20130109201507.984459071@linuxfoundation.org>
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 68/80] ARM: 7607/1: realview: fix private peripheral memory base for EB rev. B boards
+Date: Wed,  9 Jan 2013 12:36:00 -0800
+Message-Id: <20130109201509.124623383@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jianguo Wu <wujianguo@huawei.com>
+From: Will Deacon <will.deacon@arm.com>
 
-commit 7179e7bf4592ac5a7b30257a7df6259ee81e51da upstream.
+commit e6ee4b2b57a8e0d8e551031173de080b338d3969 upstream.
 
-Build kernel with CONFIG_HUGETLBFS=y,CONFIG_HUGETLB_PAGE=y and
-CONFIG_CGROUP_HUGETLB=y, then specify hugepagesz=xx boot option, system
-will fail to boot.
+Commit 34ae6c96a6a7 ("ARM: 7298/1: realview: fix mapping of MPCore
+private memory region") accidentally broke the definition for the base
+address of the private peripheral region on revision B Realview-EB
+boards.
 
-This failure is caused by following code path:
+This patch uses the correct address for REALVIEW_EB11MP_PRIV_MEM_BASE.
 
-  setup_hugepagesz
-    hugetlb_add_hstate
-      hugetlb_cgroup_file_init
-        cgroup_add_cftypes
-          kzalloc <--slab is *not available* yet
-
-For this path, slab is not available yet, so memory allocated will be
-failed, and cause WARN_ON() in hugetlb_cgroup_file_init().
-
-So I move hugetlb_cgroup_file_init() into hugetlb_init().
-
-[akpm@linux-foundation.org: tweak coding-style, remove pointless __init on inlined function]
-[akpm@linux-foundation.org: fix warning]
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Reviewed-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Tested-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/hugetlb_cgroup.h |    5 ++---
- mm/hugetlb.c                   |   11 +----------
- mm/hugetlb_cgroup.c            |   19 +++++++++++++++++--
- 3 files changed, 20 insertions(+), 15 deletions(-)
+ arch/arm/mach-realview/include/mach/board-eb.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/include/linux/hugetlb_cgroup.h
-+++ b/include/linux/hugetlb_cgroup.h
-@@ -62,7 +62,7 @@ extern void hugetlb_cgroup_uncharge_page
- 					 struct page *page);
- extern void hugetlb_cgroup_uncharge_cgroup(int idx, unsigned long nr_pages,
- 					   struct hugetlb_cgroup *h_cg);
--extern int hugetlb_cgroup_file_init(int idx) __init;
-+extern void hugetlb_cgroup_file_init(void) __init;
- extern void hugetlb_cgroup_migrate(struct page *oldhpage,
- 				   struct page *newhpage);
+--- a/arch/arm/mach-realview/include/mach/board-eb.h
++++ b/arch/arm/mach-realview/include/mach/board-eb.h
+@@ -47,7 +47,7 @@
+ #define REALVIEW_EB_USB_BASE		0x4F000000	/* USB */
  
-@@ -111,9 +111,8 @@ hugetlb_cgroup_uncharge_cgroup(int idx,
- 	return;
- }
- 
--static inline int __init hugetlb_cgroup_file_init(int idx)
-+static inline void hugetlb_cgroup_file_init(void)
- {
--	return 0;
- }
- 
- static inline void hugetlb_cgroup_migrate(struct page *oldhpage,
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1906,14 +1906,12 @@ static int __init hugetlb_init(void)
- 		default_hstate.max_huge_pages = default_hstate_max_huge_pages;
- 
- 	hugetlb_init_hstates();
--
- 	gather_bootmem_prealloc();
--
- 	report_hugepages();
- 
- 	hugetlb_sysfs_init();
--
- 	hugetlb_register_all_nodes();
-+	hugetlb_cgroup_file_init();
- 
- 	return 0;
- }
-@@ -1943,13 +1941,6 @@ void __init hugetlb_add_hstate(unsigned
- 	h->next_nid_to_free = first_node(node_states[N_HIGH_MEMORY]);
- 	snprintf(h->name, HSTATE_NAME_LEN, "hugepages-%lukB",
- 					huge_page_size(h)/1024);
--	/*
--	 * Add cgroup control files only if the huge page consists
--	 * of more than two normal pages. This is because we use
--	 * page[2].lru.next for storing cgoup details.
--	 */
--	if (order >= HUGETLB_CGROUP_MIN_ORDER)
--		hugetlb_cgroup_file_init(hugetlb_max_hstate - 1);
- 
- 	parsed_hstate = h;
- }
---- a/mm/hugetlb_cgroup.c
-+++ b/mm/hugetlb_cgroup.c
-@@ -340,7 +340,7 @@ static char *mem_fmt(char *buf, int size
- 	return buf;
- }
- 
--int __init hugetlb_cgroup_file_init(int idx)
-+static void __init __hugetlb_cgroup_file_init(int idx)
- {
- 	char buf[32];
- 	struct cftype *cft;
-@@ -382,7 +382,22 @@ int __init hugetlb_cgroup_file_init(int
- 
- 	WARN_ON(cgroup_add_cftypes(&hugetlb_subsys, h->cgroup_files));
- 
--	return 0;
-+	return;
-+}
-+
-+void __init hugetlb_cgroup_file_init(void)
-+{
-+	struct hstate *h;
-+
-+	for_each_hstate(h) {
-+		/*
-+		 * Add cgroup control files only if the huge page consists
-+		 * of more than two normal pages. This is because we use
-+		 * page[2].lru.next for storing cgroup details.
-+		 */
-+		if (huge_page_order(h) >= HUGETLB_CGROUP_MIN_ORDER)
-+			__hugetlb_cgroup_file_init(hstate_index(h));
-+	}
- }
- 
- /*
+ #ifdef CONFIG_REALVIEW_EB_ARM11MP_REVB
+-#define REALVIEW_EB11MP_PRIV_MEM_BASE	0x1F000000
++#define REALVIEW_EB11MP_PRIV_MEM_BASE	0x10100000
+ #define REALVIEW_EB11MP_L220_BASE	0x10102000	/* L220 registers */
+ #define REALVIEW_EB11MP_SYS_PLD_CTRL1	0xD8		/* Register offset for MPCore sysctl */
+ #else
 
 
