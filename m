@@ -1,210 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab3AICQP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:16:15 -0500
-Received: from gate.crashing.org ([63.228.1.57]:50306 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755615Ab3AICQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:16:12 -0500
-Message-ID: <1357697739.4838.30.camel@pasglop>
-Subject: Re: [PATCH 7/8] mm: use vm_unmapped_area() on powerpc architecture
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Rik van Riel <riel@redhat.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
-        Tony Luck <tony.luck@intel.com>, linux-mm@kvack.org,
+	id S1756907Ab3AICWH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:22:07 -0500
+Received: from smtp-outbound-2.vmware.com ([208.91.2.13]:48257 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755203Ab3AICWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 21:22:05 -0500
+Date: Tue, 8 Jan 2013 18:22:04 -0800
+From: Dmitry Torokhov <dtor@vmware.com>
+To: David Miller <davem@davemloft.net>
+Cc: pv-drivers@vmware.com, gregkh@linuxfoundation.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
-        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
-Date: Wed, 09 Jan 2013 13:15:39 +1100
-In-Reply-To: <1357694895-520-8-git-send-email-walken@google.com>
-References: <1357694895-520-1-git-send-email-walken@google.com>
-	 <1357694895-520-8-git-send-email-walken@google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.0-0ubuntu3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+        virtualization@lists.linux-foundation.org
+Subject: Re: [Pv-drivers] [PATCH 0/6] VSOCK for Linux upstreaming
+Message-ID: <20130109022204.GA22875@dtor-ws.eng.vmware.com>
+References: <20130109002110.GB5296@kroah.com>
+ <20130108.173056.1029788106028104571.davem@davemloft.net>
+ <1683801.VNKd61ZM1Q@dtor-d630.eng.vmware.com>
+ <20130108.174601.1788895671912734725.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20130108.174601.1788895671912734725.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2013-01-08 at 17:28 -0800, Michel Lespinasse wrote:
-> Update the powerpc slice_get_unmapped_area function to make use of
-> vm_unmapped_area() instead of implementing a brute force search.
+On Tue, Jan 08, 2013 at 05:46:01PM -0800, David Miller wrote:
+> From: Dmitry Torokhov <dtor@vmware.com>
+> Date: Tue, 08 Jan 2013 17:41:44 -0800
 > 
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+> > On Tuesday, January 08, 2013 05:30:56 PM David Miller wrote:
+> >> From: Greg KH <gregkh@linuxfoundation.org>
+> >> Date: Tue, 8 Jan 2013 16:21:10 -0800
+> >> 
+> >> > On Tue, Jan 08, 2013 at 03:59:08PM -0800, George Zhang wrote:
+> >> >> * * *
+> >> >> 
+> >> >> This series of VSOCK linux upstreaming patches include latest udpate from
+> >> >> VMware to address Greg's and all other's code review comments.
+> >> > 
+> >> > Dave, you acked these patches a while ago,
+> >> 
+> >> Really?  I'd like to see where I did that.
+> >> 
+> >> Instead, what I remember doing was deferring to the feedback these
+> >> folks received, stating that ideas that the virtio people had
+> >> mentioned should be considered instead.
+> >> 
+> >> http://marc.info/?l=linux-netdev&m=135301515818462&w=2
+> > 
+> > I believe Andy replied to Anthony's AF_VMCHANNEL post and the differences
+> > between the proposed solutions.
 > 
-> ---
->  arch/powerpc/mm/slice.c |  128 +++++++++++++++++++++++++++++-----------------
->  1 files changed, 81 insertions(+), 47 deletions(-)
+> I'd much rather see a hypervisor neutral solution than a hypervisor
+> specific one which this certainly is.
 
-That doesn't look good ... the resulting code is longer than the
-original, which makes me wonder how it is an improvement...
+Objectively speaking neither solution is hypervisor neutral as there are
+hypervisors that implement either VMCI or virtio or something else
+entirely.
 
-Now it could just be a matter of how the code is factored, I see
-quite a bit of duplication of the whole slice mask test...
+Our position is that VSOCK feature set is more complete and that it
+should be possible to use transports other than VMCI for VSOCK traffic,
+should interested parties implement them, and on this basis we ask to
+include VSOCK.
 
-Cheers,
-Ben.
-
-> diff --git a/arch/powerpc/mm/slice.c b/arch/powerpc/mm/slice.c
-> index 999a74f25ebe..048346b7eed5 100644
-> --- a/arch/powerpc/mm/slice.c
-> +++ b/arch/powerpc/mm/slice.c
-> @@ -242,31 +242,51 @@ static unsigned long slice_find_area_bottomup(struct mm_struct *mm,
->  					      struct slice_mask available,
->  					      int psize)
->  {
-> -	struct vm_area_struct *vma;
-> -	unsigned long addr;
-> -	struct slice_mask mask;
->  	int pshift = max_t(int, mmu_psize_defs[psize].shift, PAGE_SHIFT);
-> +	unsigned long addr, found, slice;
-> +	struct vm_unmapped_area_info info;
->  
-> -	addr = TASK_UNMAPPED_BASE;
-> +	info.flags = 0;
-> +	info.length = len;
-> +	info.align_mask = PAGE_MASK & ((1ul << pshift) - 1);
-> +	info.align_offset = 0;
->  
-> -	for (;;) {
-> -		addr = _ALIGN_UP(addr, 1ul << pshift);
-> -		if ((TASK_SIZE - len) < addr)
-> -			break;
-> -		vma = find_vma(mm, addr);
-> -		BUG_ON(vma && (addr >= vma->vm_end));
-> +	addr = TASK_UNMAPPED_BASE;
-> +	while (addr < TASK_SIZE) {
-> +		info.low_limit = addr;
-> +		if (addr < SLICE_LOW_TOP) {
-> +			slice = GET_LOW_SLICE_INDEX(addr);
-> +			addr = (slice + 1) << SLICE_LOW_SHIFT;
-> +			if (!(available.low_slices & (1u << slice)))
-> +				continue;
-> +		} else {
-> +			slice = GET_HIGH_SLICE_INDEX(addr);
-> +			addr = (slice + 1) << SLICE_HIGH_SHIFT;
-> +			if (!(available.high_slices & (1u << slice)))
-> +				continue;
-> +		}
->  
-> -		mask = slice_range_to_mask(addr, len);
-> -		if (!slice_check_fit(mask, available)) {
-> -			if (addr < SLICE_LOW_TOP)
-> -				addr = _ALIGN_UP(addr + 1,  1ul << SLICE_LOW_SHIFT);
-> -			else
-> -				addr = _ALIGN_UP(addr + 1,  1ul << SLICE_HIGH_SHIFT);
-> -			continue;
-> + next_slice:
-> +		if (addr >= TASK_SIZE)
-> +			addr = TASK_SIZE;
-> +		else if (addr < SLICE_LOW_TOP) {
-> +			slice = GET_LOW_SLICE_INDEX(addr);
-> +			if (available.low_slices & (1u << slice)) {
-> +				addr = (slice + 1) << SLICE_LOW_SHIFT;
-> +				goto next_slice;
-> +			}
-> +		} else {
-> +			slice = GET_HIGH_SLICE_INDEX(addr);
-> +			if (available.high_slices & (1u << slice)) {
-> +				addr = (slice + 1) << SLICE_HIGH_SHIFT;
-> +				goto next_slice;
-> +			}
->  		}
-> -		if (!vma || addr + len <= vma->vm_start)
-> -			return addr;
-> -		addr = vma->vm_end;
-> +		info.high_limit = addr;
-> +
-> +		found = vm_unmapped_area(&info);
-> +		if (!(found & ~PAGE_MASK))
-> +			return found;
->  	}
->  
->  	return -ENOMEM;
-> @@ -277,39 +297,53 @@ static unsigned long slice_find_area_topdown(struct mm_struct *mm,
->  					     struct slice_mask available,
->  					     int psize)
->  {
-> -	struct vm_area_struct *vma;
-> -	unsigned long addr;
-> -	struct slice_mask mask;
->  	int pshift = max_t(int, mmu_psize_defs[psize].shift, PAGE_SHIFT);
-> +	unsigned long addr, found, slice;
-> +	struct vm_unmapped_area_info info;
->  
-> -	addr = mm->mmap_base;
-> -	while (addr > len) {
-> -		/* Go down by chunk size */
-> -		addr = _ALIGN_DOWN(addr - len, 1ul << pshift);
-> +	info.flags = VM_UNMAPPED_AREA_TOPDOWN;
-> +	info.length = len;
-> +	info.align_mask = PAGE_MASK & ((1ul << pshift) - 1);
-> +	info.align_offset = 0;
->  
-> -		/* Check for hit with different page size */
-> -		mask = slice_range_to_mask(addr, len);
-> -		if (!slice_check_fit(mask, available)) {
-> -			if (addr < SLICE_LOW_TOP)
-> -				addr = _ALIGN_DOWN(addr, 1ul << SLICE_LOW_SHIFT);
-> -			else if (addr < (1ul << SLICE_HIGH_SHIFT))
-> -				addr = SLICE_LOW_TOP;
-> -			else
-> -				addr = _ALIGN_DOWN(addr, 1ul << SLICE_HIGH_SHIFT);
-> -			continue;
-> +	addr = mm->mmap_base;
-> +	while (addr > PAGE_SIZE) {
-> +		info.high_limit = addr;
-> +                if (addr < SLICE_LOW_TOP) {
-> +			slice = GET_LOW_SLICE_INDEX(addr - 1);
-> +			addr = slice << SLICE_LOW_SHIFT;
-> +			if (!(available.low_slices & (1u << slice)))
-> +				continue;
-> +		} else {
-> +			slice = GET_HIGH_SLICE_INDEX(addr - 1);
-> +			addr = slice ? (slice << SLICE_HIGH_SHIFT) :
-> +								SLICE_LOW_TOP;
-> +			if (!(available.high_slices & (1u << slice)))
-> +				continue;
->  		}
->  
-> -		/*
-> -		 * Lookup failure means no vma is above this address,
-> -		 * else if new region fits below vma->vm_start,
-> -		 * return with success:
-> -		 */
-> -		vma = find_vma(mm, addr);
-> -		if (!vma || (addr + len) <= vma->vm_start)
-> -			return addr;
-> + next_slice:
-> +		if (addr < PAGE_SIZE)
-> +			addr = PAGE_SIZE;
-> +		else if (addr < SLICE_LOW_TOP) {
-> +			slice = GET_LOW_SLICE_INDEX(addr - 1);
-> +			if (available.low_slices & (1u << slice)) {
-> +				addr = slice << SLICE_LOW_SHIFT;
-> +				goto next_slice;
-> +			}
-> +		} else {
-> +			slice = GET_HIGH_SLICE_INDEX(addr - 1);
-> +			if (available.high_slices & (1u << slice)) {
-> +				addr = slice ? (slice << SLICE_HIGH_SHIFT) :
-> +								SLICE_LOW_TOP;
-> +				goto next_slice;
-> +			}
-> +		}
-> +		info.low_limit = addr;
->  
-> -		/* try just below the current vma->vm_start */
-> -		addr = vma->vm_start;
-> +		found = vm_unmapped_area(&info);
-> +		if (!(found & ~PAGE_MASK))
-> +			return found;
->  	}
->  
->  	/*
-
-
+Thanks,
+Dmitry
