@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab3AINmK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 08:42:10 -0500
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:52794 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757709Ab3AINmF (ORCPT
+	id S1757743Ab3AINmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 08:42:15 -0500
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:64162 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757669Ab3AINmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 08:42:05 -0500
+	Wed, 9 Jan 2013 08:42:12 -0500
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -16,12 +16,10 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         LAK <linux-arm-kernel@lists.infradead.org>,
-        "Lad, Prabhakar" <prabhakar.lad@ti.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: [PATCH RFC 2/3] tvp514x: support asynchronous probing
-Date: Wed,  9 Jan 2013 19:11:26 +0530
-Message-Id: <1357738887-8701-3-git-send-email-prabhakar.lad@ti.com>
+        "Lad, Prabhakar" <prabhakar.lad@ti.com>
+Subject: [PATCH RFC 3/3] ARM: da850/omap-l138: vpif capture convert to asynchronously register of subdev
+Date: Wed,  9 Jan 2013 19:11:27 +0530
+Message-Id: <1357738887-8701-4-git-send-email-prabhakar.lad@ti.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1357738887-8701-1-git-send-email-prabhakar.lad@ti.com>
 References: <1357738887-8701-1-git-send-email-prabhakar.lad@ti.com>
@@ -29,96 +27,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both synchronous and asynchronous tvp514x subdevice probing is supported by
-this patch.
+Register the tvp514x decoder devices directly in board platform
+data instead of letting the vpif capture driver register them at
+their run-time. This uses the V4L2 asynchronous subdevice probing capability.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.lad@ti.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Sakari Ailus <sakari.ailus@iki.fi>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Sekhar Nori <nsekhar@ti.com>
 ---
- drivers/media/i2c/tvp514x.c |   20 ++++++++++++++------
- 1 files changed, 14 insertions(+), 6 deletions(-)
+ arch/arm/mach-davinci/board-da850-evm.c |   57 +++++++++++++++++++++++++++----
+ 1 files changed, 50 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/media/i2c/tvp514x.c b/drivers/media/i2c/tvp514x.c
-index aa94ebc..a4f0a70 100644
---- a/drivers/media/i2c/tvp514x.c
-+++ b/drivers/media/i2c/tvp514x.c
-@@ -34,6 +34,7 @@
- #include <linux/videodev2.h>
- #include <linux/module.h>
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index 0299915..089c127 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -49,6 +49,7 @@
  
+ #include <media/tvp514x.h>
+ #include <media/adv7343.h>
 +#include <media/v4l2-async.h>
- #include <media/v4l2-device.h>
- #include <media/v4l2-common.h>
- #include <media/v4l2-mediabus.h>
-@@ -102,6 +103,7 @@ struct tvp514x_decoder {
- 	struct v4l2_ctrl_handler hdl;
- 	struct tvp514x_reg tvp514x_regs[ARRAY_SIZE(tvp514x_reg_list_default)];
- 	const struct tvp514x_platform_data *pdata;
-+	struct v4l2_async_subdev_list	asdl;
  
- 	int ver;
- 	int streaming;
-@@ -941,22 +943,22 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
- {
- 	struct tvp514x_decoder *decoder;
- 	struct v4l2_subdev *sd;
-+	int ret;
+ #define DA850_EVM_PHY_ID		"davinci_mdio-0:00"
+ #define DA850_LCD_PWR_PIN		GPIO_TO_PIN(2, 8)
+@@ -732,6 +733,12 @@ static struct pca953x_platform_data da850_evm_bb_expander_info = {
+ 	.names		= da850_evm_bb_exp,
+ };
  
- 	/* Check if the adapter supports the needed features */
- 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
- 		return -EIO;
++static struct tvp514x_platform_data tvp5146_pdata = {
++		.clk_polarity = 0,
++		.hs_polarity  = 1,
++		.vs_polarity  = 1,
++};
++
+ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
+ 	{
+ 		I2C_BOARD_INFO("tlv320aic3x", 0x18),
+@@ -744,6 +751,14 @@ static struct i2c_board_info __initdata da850_evm_i2c_devices[] = {
+ 		I2C_BOARD_INFO("tca6416", 0x21),
+ 		.platform_data = &da850_evm_bb_expander_info,
+ 	},
++	{
++		I2C_BOARD_INFO("tvp5146", 0x5c),
++		.platform_data = &tvp5146_pdata,
++	},	{
++		I2C_BOARD_INFO("tvp5146", 0x5d),
++		.platform_data = &tvp5146_pdata,
++	},
++
+ };
  
--	if (!client->dev.platform_data) {
--		v4l2_err(client, "No platform data!!\n");
--		return -ENODEV;
--	}
--
- 	decoder = devm_kzalloc(&client->dev, sizeof(*decoder), GFP_KERNEL);
- 	if (!decoder)
- 		return -ENOMEM;
+ static struct davinci_i2c_platform_data da850_evm_i2c_0_pdata = {
+@@ -1170,15 +1185,10 @@ static __init int da850_evm_init_cpufreq(void) { return 0; }
  
- 	/* Initialize the tvp514x_decoder with default configuration */
- 	*decoder = tvp514x_dev;
-+	if (!client->dev.platform_data) {
-+		v4l2_err(client, "No platform data!!\n");
-+		return -EPROBE_DEFER;
-+	}
- 	/* Copy default register configuration */
- 	memcpy(decoder->tvp514x_regs, tvp514x_reg_list_default,
- 			sizeof(tvp514x_reg_list_default));
-@@ -980,6 +982,11 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ #if defined(CONFIG_DA850_UI_SD_VIDEO_PORT)
  
- 	/* Register with V4L2 layer as slave device */
- 	sd = &decoder->sd;
-+	decoder->asdl.subdev = &decoder->sd;
-+	decoder->asdl.dev = &client->dev;
-+	ret = v4l2_async_subdev_bind(&decoder->asdl);
-+	if (ret < 0)
-+		return ret;
- 	v4l2_i2c_subdev_init(sd, client, &tvp514x_ops);
+-#define TVP5147_CH0		"tvp514x-0"
+-#define TVP5147_CH1		"tvp514x-1"
++#define TVP5147_CH0		"tvp514x 1-005d"
++#define TVP5147_CH1		"tvp514x 1-005c"
  
- 	v4l2_ctrl_handler_init(&decoder->hdl, 5);
-@@ -1004,7 +1011,7 @@ tvp514x_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ /* VPIF capture configuration */
+-static struct tvp514x_platform_data tvp5146_pdata = {
+-		.clk_polarity = 0,
+-		.hs_polarity  = 1,
+-		.vs_polarity  = 1,
+-};
  
- 	v4l2_info(sd, "%s decoder driver registered !!\n", sd->name);
+ #define TVP514X_STD_ALL (V4L2_STD_NTSC | V4L2_STD_PAL)
  
--	return 0;
-+	return v4l2_async_subdev_bound(&decoder->asdl);
+@@ -1229,6 +1239,37 @@ static struct vpif_subdev_info da850_vpif_capture_sdev_info[] = {
+ 	},
+ };
  
- }
++static struct v4l2_async_subdev tvp1_sd = {
++	.hw = {
++		.bus_type = V4L2_ASYNC_BUS_I2C,
++		.match.i2c = {
++			.adapter_id = 1,
++			.address = 0x5c,
++		},
++	},
++};
++
++static struct v4l2_async_subdev tvp2_sd = {
++	.hw = {
++		.bus_type = V4L2_ASYNC_BUS_I2C,
++		.match.i2c = {
++			.adapter_id = 1,
++			.address = 0x5d,
++		},
++	},
++};
++
++static struct v4l2_async_subdev *vpif_capture_async_subdevs[] = {
++	/* Single 2-element group */
++	&tvp1_sd,
++	&tvp2_sd,
++};
++
++static int vpif_capture_async_subdev_sizes[] = {
++	ARRAY_SIZE(vpif_capture_async_subdevs),
++	0,
++};
++
+ static struct vpif_capture_config da850_vpif_capture_config = {
+ 	.subdev_info = da850_vpif_capture_sdev_info,
+ 	.subdev_count = ARRAY_SIZE(da850_vpif_capture_sdev_info),
+@@ -1253,6 +1294,8 @@ static struct vpif_capture_config da850_vpif_capture_config = {
+ 		},
+ 	},
+ 	.card_name = "DA850/OMAP-L138 Video Capture",
++	.asd = vpif_capture_async_subdevs,
++	.asd_sizes = vpif_capture_async_subdev_sizes,
+ };
  
-@@ -1020,6 +1027,7 @@ static int tvp514x_remove(struct i2c_client *client)
- 	struct v4l2_subdev *sd = i2c_get_clientdata(client);
- 	struct tvp514x_decoder *decoder = to_decoder(sd);
- 
-+	v4l2_async_subdev_unbind(&decoder->asdl);
- 	v4l2_device_unregister_subdev(sd);
- 	v4l2_ctrl_handler_free(&decoder->hdl);
- 	return 0;
+ /* VPIF display configuration */
 -- 
 1.7.4.1
 
