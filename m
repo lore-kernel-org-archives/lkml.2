@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933029Ab3AIV4I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:56:08 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41268 "EHLO mail.kernel.org"
+	id S933128Ab3AIV4a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:56:30 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41247 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932917Ab3AIUhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:04 -0500
+	id S932513Ab3AIUhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Will Deacon <will.deacon@arm.com>,
-        Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [ 014/123] virtio: force vring descriptors to be allocated from lowmem
-Date: Wed,  9 Jan 2013 12:34:13 -0800
-Message-Id: <20130109201500.346333461@linuxfoundation.org>
+        Andre Przywara <osp@andrep.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        CAI Qian <caiqian@redhat.com>
+Subject: [ 28/47] x86, amd: Disable way access filter on Piledriver CPUs
+Date: Wed,  9 Jan 2013 12:35:23 -0800
+Message-Id: <20130109201732.744868262@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Andre Przywara <andre.przywara@amd.com>
 
-commit b92b1b89a33c172c075edccf6afb0edc41d851fd upstream.
+commit 2bbf0a1427c377350f001fbc6260995334739ad7 upstream.
 
-Virtio devices may attempt to add descriptors to a virtqueue from atomic
-context using GFP_ATOMIC allocation. This is problematic because such
-allocations can fall outside of the lowmem mapping, causing virt_to_phys
-to report bogus physical addresses which are subsequently passed to
-userspace via the buffers for the virtual device.
+The Way Access Filter in recent AMD CPUs may hurt the performance of
+some workloads, caused by aliasing issues in the L1 cache.
+This patch disables it on the affected CPUs.
 
-This patch masks out __GFP_HIGH and __GFP_HIGHMEM from the requested
-flags when allocating descriptors for a virtqueue. If an atomic
-allocation is requested and later fails, we will return -ENOSPC which
-will be handled by the driver.
+The issue is similar to that one of last year:
+http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
+This new patch does not replace the old one, we just need another
+quirk for newer CPUs.
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Cc: Sasha Levin <levinsasha928@gmail.com>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+The performance penalty without the patch depends on the
+circumstances, but is a bit less than the last year's 3%.
+
+The workloads affected would be those that access code from the same
+physical page under different virtual addresses, so different
+processes using the same libraries with ASLR or multiple instances of
+PIE-binaries. The code needs to be accessed simultaneously from both
+cores of the same compute unit.
+
+More details can be found here:
+http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
+
+CPUs affected are anything with the core known as Piledriver.
+That includes the new parts of the AMD A-Series (aka Trinity) and the
+just released new CPUs of the FX-Series (aka Vishera).
+The model numbering is a bit odd here: FX CPUs have model 2,
+A-Series has model 10h, with possible extensions to 1Fh. Hence the
+range of model ids.
+
+Signed-off-by: Andre Przywara <osp@andrep.de>
+Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: CAI Qian <caiqian@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/virtio/virtio_ring.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -135,6 +135,13 @@ static int vring_add_indirect(struct vri
- 	unsigned head;
- 	int i;
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -554,6 +554,20 @@ static void __cpuinit init_amd(struct cp
+ 		}
+ 	}
  
 +	/*
-+	 * We require lowmem mappings for the descriptors because
-+	 * otherwise virt_to_phys will give us bogus addresses in the
-+	 * virtqueue.
++	 * The way access filter has a performance penalty on some workloads.
++	 * Disable it on the affected CPUs.
 +	 */
-+	gfp &= ~(__GFP_HIGHMEM | __GFP_HIGH);
++	if ((c->x86 == 0x15) &&
++	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
++		u64 val;
 +
- 	desc = kmalloc((out + in) * sizeof(struct vring_desc), gfp);
- 	if (!desc)
- 		return -ENOMEM;
++		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
++			val |= 0x1E;
++			checking_wrmsrl(0xc0011021, val);
++		}
++	}
++
+ 	cpu_detect_cache_sizes(c);
+ 
+ 	/* Multi core CPU? */
 
 
