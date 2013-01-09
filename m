@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756639Ab3AICpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 21:45:30 -0500
-Received: from magic.merlins.org ([209.81.13.136]:40249 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755306Ab3AICp3 (ORCPT
+	id S1756923Ab3AICyr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 21:54:47 -0500
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:49700 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756271Ab3AICyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 21:45:29 -0500
-Date: Tue, 8 Jan 2013 18:45:28 -0800
-From: Marc MERLIN <marc@merlins.org>
-To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Supporting SYSRQ on broken laptops like the thinkpad T530
-Message-ID: <20130109024528.GR2044@merlins.org>
-References: <20130108230954.GN2044@merlins.org> <20130109023643.GA7066@mobil.systemanalysen.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20130109023643.GA7066@mobil.systemanalysen.net>
-X-Sysadmin: BOFH
-X-URL: http://marc.merlins.org/
-X-Operating-System: Proudly running Linux 3.1.5-core2-volpreempt-noide-hm64-20111218/Debian squeeze/sid
-X-Mailer: Some Outlooks can't quote properly without this header
-User-Agent: Mutt/1.5.13 (2006-08-11)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: marc@merlins.org
+	Tue, 8 Jan 2013 21:54:45 -0500
+Subject: Re: ppoll() stuck on POLLIN while TCP peer is sending
+From: Eric Dumazet <erdnetdev@gmail.com>
+To: Eric Wong <normalperson@yhbt.net>, Mel Gorman <mgorman@suse.de>
+Cc: linux-mm@kvack.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1357698749.27446.6.camel@edumazet-glaptop>
+References: <20121228014503.GA5017@dcvr.yhbt.net>
+	 <20130102200848.GA4500@dcvr.yhbt.net> <20130104160148.GB3885@suse.de>
+	 <20130106120700.GA24671@dcvr.yhbt.net> <20130107122516.GC3885@suse.de>
+	 <20130107223850.GA21311@dcvr.yhbt.net> <20130108224313.GA13304@suse.de>
+	 <20130108232325.GA5948@dcvr.yhbt.net>
+	 <1357697647.18156.1217.camel@edumazet-glaptop>
+	 <1357698749.27446.6.camel@edumazet-glaptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Jan 2013 18:54:42 -0800
+Message-ID: <1357700082.27446.11.camel@edumazet-glaptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 03:36:44AM +0100, Roland Eggner wrote:
-> On 2013-01-08 Tuesday at 15:09 -0800 Marc MERLIN wrote:
-> > In its infinite wisdom, lenovo has removed the sysrq key on the latest
-> > thinkpads, and replaced it with a stupid ALT+FN+S key combination, which
-> > doesn't really work for doing sysrq from the console (nor do I know how the
-> > genius who did that intended for SYSRQ-S to work).
-> > http://forums.lenovo.com/t5/T400-T500-and-newer-T-series/T430-s-T530-Where-are-the-shortcut-function-keys-break-Pause-etc/ta-p/781749
-> > 
-> > I realize that one solution is to throw my laptop window at a suitable high
-> > floorand replace it with one from a vendor that doesn't randomly remove keys
-> > from the keyboard.
-> > That said, I was wondering if there were other solutions, especially
-> > considering that thinkpads used to be the better linux laptops.
+On Tue, 2013-01-08 at 18:32 -0800, Eric Dumazet wrote:
+
 > 
-> My Dell “Precision M4500” notebook suffers similar (same?) problem.  So far 
-> I could not find a solution better than this:  e.g. Alt-Fn-SysRq-s
+> Hmm, it seems sk_filter() can return -ENOMEM because skb has the
+> pfmemalloc() set.
+
 > 
-> press and hold Alt
-> press and hold Fn
-> press and leave F10|SysRq
-> leave Fn
-> press and leave s
-> leave Alt
+> One TCP socket keeps retransmitting an SKB via loopback, and TCP stack 
+> drops the packet again and again.
 
-Holy crap. That works for me too. If only lenovo could have been bothered to
-document it properly. It's still a pitty to type and remmember the exact
-hold and release key sequences, but it's better than nothing.
+sock_init_data() sets sk->sk_allocation to GFP_KERNEL
 
-Thanks much.
+Shouldnt it use (GFP_KERNEL | __GFP_NOMEMALLOC) instead ?
 
-> Several months ago a LKML user claimed, his cat had managed to press 
-> Alt-Fn-SysRq-c on his Dell Latitude notebook with similar keyboard, and provided 
-> photos showing the kernel crash message ;)
 
-Yeah, but my cat is not nearly smart enough for that :)
 
-Thanks for your help again,
-Marc
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/  
+diff --git a/net/core/sock.c b/net/core/sock.c
+index bc131d4..76c4b39 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -286,6 +286,7 @@ void sk_set_memalloc(struct sock *sk)
+ {
+ 	sock_set_flag(sk, SOCK_MEMALLOC);
+ 	sk->sk_allocation |= __GFP_MEMALLOC;
++	sk->sk_allocation &= ~__GFP_NOMEMALLOC;
+ 	static_key_slow_inc(&memalloc_socks);
+ }
+ EXPORT_SYMBOL_GPL(sk_set_memalloc);
+@@ -294,6 +295,7 @@ void sk_clear_memalloc(struct sock *sk)
+ {
+ 	sock_reset_flag(sk, SOCK_MEMALLOC);
+ 	sk->sk_allocation &= ~__GFP_MEMALLOC;
++	sk->sk_allocation |= __GFP_NOMEMALLOC;
+ 	static_key_slow_dec(&memalloc_socks);
+ 
+ 	/*
+@@ -2230,7 +2232,7 @@ void sock_init_data(struct socket *sock, struct sock *sk)
+ 
+ 	init_timer(&sk->sk_timer);
+ 
+-	sk->sk_allocation	=	GFP_KERNEL;
++	sk->sk_allocation	=	GFP_KERNEL | __GFP_NOMEMALLOC;
+ 	sk->sk_rcvbuf		=	sysctl_rmem_default;
+ 	sk->sk_sndbuf		=	sysctl_wmem_default;
+ 	sk->sk_state		=	TCP_CLOSE;
+
+
