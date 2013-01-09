@@ -1,50 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab3AIBbB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 20:31:01 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:35831 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756212Ab3AIBa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756787Ab3AIBa7 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 8 Jan 2013 20:30:59 -0500
-Date: Tue, 08 Jan 2013 17:30:56 -0800 (PST)
-Message-Id: <20130108.173056.1029788106028104571.davem@davemloft.net>
-To: gregkh@linuxfoundation.org
-Cc: georgezhang@vmware.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, pv-drivers@vmware.com
-Subject: Re: [PATCH 0/6] VSOCK for Linux upstreaming
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20130109002110.GB5296@kroah.com>
-References: <20130108235633.3719.6085.stgit@promb-2n-dhcp175.eng.vmware.com>
-	<20130109002110.GB5296@kroah.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Received: from mail-da0-f46.google.com ([209.85.210.46]:53572 "EHLO
+	mail-da0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756212Ab3AIB23 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jan 2013 20:28:29 -0500
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Matt Turner <mattst88@gmail.com>, David Howells <dhowells@redhat.com>,
+        Tony Luck <tony.luck@intel.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-parisc@vger.kernel.org,
+        linux-alpha@vger.kernel.org, linux-ia64@vger.kernel.org
+Subject: [PATCH 1/8] mm: use vm_unmapped_area() on parisc architecture
+Date: Tue,  8 Jan 2013 17:28:08 -0800
+Message-Id: <1357694895-520-2-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.7.3
+In-Reply-To: <1357694895-520-1-git-send-email-walken@google.com>
+References: <1357694895-520-1-git-send-email-walken@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Greg KH <gregkh@linuxfoundation.org>
-Date: Tue, 8 Jan 2013 16:21:10 -0800
+Update the parisc arch_get_unmapped_area function to make use of
+vm_unmapped_area() instead of implementing a brute force search.
 
-> On Tue, Jan 08, 2013 at 03:59:08PM -0800, George Zhang wrote:
->> 
->> * * *
->> 
->> This series of VSOCK linux upstreaming patches include latest udpate from
->> VMware to address Greg's and all other's code review comments.
-> 
-> Dave, you acked these patches a while ago,
+Signed-off-by: Michel Lespinasse <walken@google.com>
 
-Really?  I'd like to see where I did that.
+---
+ arch/parisc/kernel/sys_parisc.c |   46 ++++++++++++++------------------------
+ 1 files changed, 17 insertions(+), 29 deletions(-)
 
-Instead, what I remember doing was deferring to the feedback these
-folks received, stating that ideas that the virtio people had
-mentioned should be considered instead.
-
-http://marc.info/?l=linux-netdev&m=135301515818462&w=2
-
-So definitely NACK this code and any infrastructure you've
-merged which essentialy depends upon it.
+diff --git a/arch/parisc/kernel/sys_parisc.c b/arch/parisc/kernel/sys_parisc.c
+index f76c10863c62..6ab138088076 100644
+--- a/arch/parisc/kernel/sys_parisc.c
++++ b/arch/parisc/kernel/sys_parisc.c
+@@ -35,18 +35,15 @@
+ 
+ static unsigned long get_unshared_area(unsigned long addr, unsigned long len)
+ {
+-	struct vm_area_struct *vma;
++	struct vm_unmapped_area_info info;
+ 
+-	addr = PAGE_ALIGN(addr);
+-
+-	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
+-		/* At this point:  (!vma || addr < vma->vm_end). */
+-		if (TASK_SIZE - len < addr)
+-			return -ENOMEM;
+-		if (!vma || addr + len <= vma->vm_start)
+-			return addr;
+-		addr = vma->vm_end;
+-	}
++	info.flags = 0;
++	info.length = len;
++	info.low_limit = PAGE_ALIGN(addr);
++	info.high_limit = TASK_SIZE;
++	info.align_mask = 0;
++	info.align_offset = 0;
++	return vm_unmapped_area(&info);
+ }
+ 
+ #define DCACHE_ALIGN(addr) (((addr) + (SHMLBA - 1)) &~ (SHMLBA - 1))
+@@ -63,30 +60,21 @@ static unsigned long get_unshared_area(unsigned long addr, unsigned long len)
+  */
+ static int get_offset(struct address_space *mapping)
+ {
+-	int offset = (unsigned long) mapping << (PAGE_SHIFT - 8);
+-	return offset & 0x3FF000;
++	return (unsigned long) mapping >> 8;
+ }
+ 
+ static unsigned long get_shared_area(struct address_space *mapping,
+ 		unsigned long addr, unsigned long len, unsigned long pgoff)
+ {
+-	struct vm_area_struct *vma;
+-	int offset = mapping ? get_offset(mapping) : 0;
+-
+-	offset = (offset + (pgoff << PAGE_SHIFT)) & 0x3FF000;
++	struct vm_unmapped_area_info info;
+ 
+-	addr = DCACHE_ALIGN(addr - offset) + offset;
+-
+-	for (vma = find_vma(current->mm, addr); ; vma = vma->vm_next) {
+-		/* At this point:  (!vma || addr < vma->vm_end). */
+-		if (TASK_SIZE - len < addr)
+-			return -ENOMEM;
+-		if (!vma || addr + len <= vma->vm_start)
+-			return addr;
+-		addr = DCACHE_ALIGN(vma->vm_end - offset) + offset;
+-		if (addr < vma->vm_end) /* handle wraparound */
+-			return -ENOMEM;
+-	}
++	info.flags = 0;
++	info.length = len;
++	info.low_limit = PAGE_ALIGN(addr);
++	info.high_limit = TASK_SIZE;
++	info.align_mask = PAGE_MASK & (SHMLBA - 1);
++	info.align_offset = (get_offset(mapping) + pgoff) << PAGE_SHIFT;
++	return vm_unmapped_area(&info);
+ }
+ 
+ unsigned long arch_get_unmapped_area(struct file *filp, unsigned long addr,
+-- 
+1.7.7.3
