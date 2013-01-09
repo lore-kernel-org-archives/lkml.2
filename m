@@ -1,106 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757463Ab3AILoS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 06:44:18 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:41773 "EHLO mx2.suse.de"
+	id S1757489Ab3AILpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 06:45:25 -0500
+Received: from mailhub.sw.ru ([195.214.232.25]:27711 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756170Ab3AILoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 06:44:17 -0500
-Date: Wed, 9 Jan 2013 11:44:13 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Hugh Dickins <hughd@google.com>,
-        Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>, Rik van Riel <riel@redhat.com>
-Subject: Re: oops in copy_page_rep()
-Message-ID: <20130109114413.GA13475@suse.de>
-References: <20130105152208.GA3386@redhat.com>
- <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com>
- <alpine.LNX.2.00.1301061037140.28950@eggly.anvils>
- <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
- <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com>
- <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com>
- <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com>
- <20130108163141.GA27555@shutemov.name>
- <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756170Ab3AILpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 06:45:23 -0500
+From: Glauber Costa <glommer@parallels.com>
+To: <cgroups@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Turner <pjt@google.com>, Glauber Costa <glommer@parallels.com>,
+        Mike Galbraith <mgalbraith@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v5 01/11] don't call cpuacct_charge in stop_task.c
+Date: Wed,  9 Jan 2013 15:45:28 +0400
+Message-Id: <1357731938-8417-2-git-send-email-glommer@parallels.com>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1357731938-8417-1-git-send-email-glommer@parallels.com>
+References: <1357731938-8417-1-git-send-email-glommer@parallels.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 08:52:14AM -0800, Linus Torvalds wrote:
-> On Tue, Jan 8, 2013 at 8:31 AM, Kirill A. Shutemov <kirill@shutemov.name> wrote:
-> >>
-> >> Heh. I was more thinking about why do_huge_pmd_wp_page() needs it, but
-> >> do_huge_pmd_numa_page() does not.
-> >
-> > It does. The check should be moved up.
-> >
-> >> Also, do we actually need it for huge_pmd_set_accessed()? The
-> >> *placement* of that thing confuses me. And because it confuses me, I'd
-> >> like to understand it.
-> >
-> > We need it for huge_pmd_set_accessed() too.
-> >
-> > Looks like a mis-merge. The original patch for huge_pmd_set_accessed() was
-> > correct: http://lkml.org/lkml/2012/10/25/402
-> 
-> Not a merge error: the pmd_trans_splitting() check was removed by
-> commit d10e63f29488 ("mm: numa: Create basic numa page hinting
-> infrastructure").
-> 
-> Now, *why* it was removed, I can't tell. And it's not clear why the
-> original code just had it in a conditional, while the suggested patch
-> has that "goto repeat" thing.
+Commit 8f618968 changed stop_task to do the same bookkeping as the
+other classes. However, the call to cpuacct_charge() doesn't affect
+the scheduler decisions at all, and doesn't need to be moved over.
 
-It was a mistake by me to remove it and as I screwed up in October I no
-longer remember how I managed it.
+Moreover, being a kthread, the migration thread won't belong to any
+cgroup anyway, rendering this call quite useless.
 
-The retry versus "goto repeat" is a detail. By retrying the full fault
-there is a possibility the split will still be in progress on fault
-retry or that a new THP is collapsed underneath and a new split started
-while the mmap_sem is released but both are unlikely. On the other side,
-taking the anon_vma rwsem for write in wait_split_huge_page() could cause
-delays elsewhere that would be almost impossible to detect so it is not
-necessarily better. Retrying the fault as your patch does is reasonable.
+Signed-off-by: Glauber Costa <glommer@parallels.com>
+CC: Mike Galbraith <mgalbraith@suse.de>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/sched/stop_task.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-> I suspect re-trying the fault (which I
-> assume the original code did) is actually better, because that way you
-> go through all the "should I reschedule as I return through the
-> exception" stuff. I dunno.
-> 
-> Mel, that original patch came from you , although it was based on
-> previous work by Peter/Ingo/Andrea. Can you walk us through the
-> history and thinking about the loss of pmd_trans_splitting(). Was it
-> purely a mistake? It looks intentional.
-> 
-
-Mistake. Andrea, Peter and Ingo did not make similar mistakes.
-
-Looking at your patch, I also think that the check needs to be made before
-the call to do_huge_pmd_numa_page() so it can reply on a pmd_same() check
-to make sure a split did not start before the page table lock was taken.
-
-In response you said to Andrea
-
-	Also, and more fundamentally, since do_pmd_numa_page() doesn't
-	take the orig_pmd thing as an argument (and re-check it under the
-	page-table lock), testing pmd_trans_splitting() on it is pointless,
-	since it can change later.
-
-do_pmd_numa_page() is called for a normal PMD that is marked pmd_numa(), not
-a THP PMD. As the mmap_sem is held it cannot collapse to a THP underneath us
-after the pmd_trans_huge() check so it should be unnecessary to check
-pmd_trans_splitting() there.
-
+diff --git a/kernel/sched/stop_task.c b/kernel/sched/stop_task.c
+index da5eb5b..fda1cbe 100644
+--- a/kernel/sched/stop_task.c
++++ b/kernel/sched/stop_task.c
+@@ -68,7 +68,6 @@ static void put_prev_task_stop(struct rq *rq, struct task_struct *prev)
+ 	account_group_exec_runtime(curr, delta_exec);
+ 
+ 	curr->se.exec_start = rq->clock_task;
+-	cpuacct_charge(curr, delta_exec);
+ }
+ 
+ static void task_tick_stop(struct rq *rq, struct task_struct *curr, int queued)
 -- 
-Mel Gorman
-SUSE Labs
+1.7.11.7
+
