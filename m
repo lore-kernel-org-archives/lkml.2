@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab3AIH20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 02:28:26 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48082 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750767Ab3AIH2Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 02:28:25 -0500
-Message-ID: <50ED1C12.2090608@gmail.com>
-Date: Wed, 09 Jan 2013 11:28:18 +0400
-From: Lijo Antony <lijo.kernel@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1757306Ab3AIHdT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 02:33:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:56106 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750767Ab3AIHdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 02:33:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,435,1355126400"; 
+   d="scan'208";a="274591514"
+Message-ID: <50ED1D54.70208@intel.com>
+Date: Wed, 09 Jan 2013 15:33:40 +0800
+From: Alex Shi <alex.shi@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120912 Thunderbird/15.0.1
 MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
-References: <20130108223611.GA19672@kroah.com> <20130109003824.GA21075@kroah.com> <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com> <20130109042533.GA9164@kroah.com> <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
-In-Reply-To: <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Namhyung Kim <namhyung@kernel.org>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>, Mike Galbraith <efault@gmx.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: Re: [PATCH] sched: Get rid of unnecessary checks from select_idle_sibling
+References: <1357714256-24373-1-git-send-email-namhyung@kernel.org>
+In-Reply-To: <1357714256-24373-1-git-send-email-namhyung@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 09:31 AM, Dave Airlie wrote:
-> On Wed, Jan 9, 2013 at 2:25 PM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Wed, Jan 09, 2013 at 01:42:39PM +1000, Dave Airlie wrote:
->>>>> Hi all,
->>>>>
->>>>> I've hit this 3 times today on Linus's latest 3.8-rc2+ tree:
->>>>>
->>>>> [11868.414648] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
->>>>> [11868.414655] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
->>>>> [11870.408342] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
->>>>> [11870.408412] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
->>>>> [11870.408414] [drm:i915_reset] *ERROR* Failed to reset chip.
->>>>> [11883.083225] gnome-shell[19396]: segfault at 218 ip 00007feef5f32333 sp 00007ffffc1dc930 error 4 in i965_dri.so[7feef5ecb000+d0000]
->>>>
->>>> I just hit this again.  And, as the kernel was asking for it, attached
->>>> is the i915_error_state file, compressed due to the size of it.
->>>>
->>> Welcome to sink hole that is
->>> https://bugs.freedesktop.org/show_bug.cgi?id=55984
->>>
->>> 3 months and ticking, Intel guys are all running away from it saying
->>> they can't reproduce, everyone else on planet seems to reproduce quite
->>> easily.
->>>
->>> Its generally considered a bug in the relocation/shrinker/no idea category,
->>
->> Ugh, what a mess.
->>
->>> Assuming you have an Ironlake machine which I'm going to guess you do.
->>
->> I don't know, it's an old i5 machine that has never had any video
->> problems for many years now.  How do I tell?
->
-> lspci -nn probably an 8086:0046 device.
->
-> Old i5 probably means original i5 which means ironlake.
->
+On 01/09/2013 02:50 PM, Namhyung Kim wrote:
+> From: Namhyung Kim <namhyung.kim@lge.com>
+> 
+> AFAICS @target cpu of select_idle_sibling() is always either prev_cpu
+> or this_cpu.  So no need to check it again and the conditionals can be
+> consolidated.
+> 
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+> Cc: Vincent Guittot <vincent.guittot@linaro.org>
+> Cc: Alex Shi <alex.shi@intel.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  kernel/sched/fair.c | 17 ++++-------------
+>  1 file changed, 4 insertions(+), 13 deletions(-)
+> 
+> diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+> index 5eea8707234a..af665814c216 100644
+> --- a/kernel/sched/fair.c
+> +++ b/kernel/sched/fair.c
+> @@ -3254,25 +3254,16 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+>   */
+>  static int select_idle_sibling(struct task_struct *p, int target)
+>  {
+> -	int cpu = smp_processor_id();
+> -	int prev_cpu = task_cpu(p);
+>  	struct sched_domain *sd;
+>  	struct sched_group *sg;
+>  	int i;
+>  
+>  	/*
+> -	 * If the task is going to be woken-up on this cpu and if it is
+> -	 * already idle, then it is the right target.
+> -	 */
+> -	if (target == cpu && idle_cpu(cpu))
+> -		return cpu;
+> -
+> -	/*
+> -	 * If the task is going to be woken-up on the cpu where it previously
+> -	 * ran and if it is currently idle, then it the right target.
+> +	 * If the task is going to be woken-up on this cpu or the cpu where it
+> +	 * previously ran and it is already idle, then it is the right target.
+>  	 */
+> -	if (target == prev_cpu && idle_cpu(prev_cpu))
+> -		return prev_cpu;
+> +	if (idle_cpu(target))
+> +		return target;
 
-I have also seen this a couple of times on 3.7 and 3.8-rc1.
-Most of the times I was watching youtube video in chrome. Nothing 
-crashed though(I am not running gnome shell). System recovered after few 
-seconds.
+Uh, we don't know if the target is this_cpu or previous cpu, If we just
+check the target idle status, we may miss another idle cpu. So this
+patch change the logical in this function.
 
-I didn't see this on 3.8-rc2 yet, probably because I haven't watched any 
-video.
-
--lijo
-
+>  
+>  	/*
+>  	 * Otherwise, iterate the domains and find an elegible idle cpu.
+> 
 
 
+-- 
+Thanks Alex
