@@ -1,77 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934212Ab3AIVVj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:21:39 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42656 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933544Ab3AIUjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:19 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        David Binderman <dcb314@hotmail.com>
-Subject: [ 48/80] xhci: Fix conditional check in bandwidth calculation.
-Date: Wed,  9 Jan 2013 12:35:40 -0800
-Message-Id: <20130109201506.580134532@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933722Ab3AIVVh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:21:37 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:4973 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933252Ab3AIVVc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:21:32 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=ZDDkTe9yP_wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=cf0L7CG27rcA:10 a=mDV3o1hIAAAA:8 a=pGLkceISAAAA:8 a=JfrnYn6hAAAA:8 a=IxmHE6Ef7kAXMPTQnUUA:9 a=PUjeQqilurYA:10 a=lM8EmwarS4gA:10 a=MSl-tDqOz04A:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=JOcsZI7cM4vYDdRw:21 a=64x7Dli1aHD0K5_R:21 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357766490.5141.3.camel@gandalf.local.home>
+Subject: Re: [PATCH 1/2] Update FSF postal address to be URL's.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jon Stanley <jonstanley@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Wed, 09 Jan 2013 16:21:30 -0500
+In-Reply-To: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
+References: <1347049967-3143-1-git-send-email-jonstanley@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Arnaldo,
 
-------------------
+These seemed to have been missed. You can add them with my Acked-by.
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+-- Steve
 
-commit 392a07ae3316f2b90b39ce41e66d6f6b5c95de90 upstream.
 
-David reports that at drivers/usb/host/xhci.c:2257:
 
-static bool xhci_is_sync_in_ep(unsigned int ep_type)
-{
-    return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
-}
-
-The static analyser cppcheck says
-
-[linux-3.7-rc2/drivers/usb/host/xhci.c:2257]: (style) Redundant condition: If ep_type == 5, the comparison ep_type != 7 is always true.
-
-Maybe the original programmer intention was something like
-
-static bool xhci_is_sync_in_ep(unsigned int ep_type)
-{
-    return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
-}
-
-Fix this.
-
-This patch should be backported to stable kernels as old as 3.2, that
-contain the commit 2b69899934c63b7b9432568584fb4c4a2924f40c "xhci: USB
-3.0 BW checking."
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: David Binderman <dcb314@hotmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/host/xhci.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2253,7 +2253,7 @@ static bool xhci_is_async_ep(unsigned in
- 
- static bool xhci_is_sync_in_ep(unsigned int ep_type)
- {
--	return (ep_type == ISOC_IN_EP || ep_type != INT_IN_EP);
-+	return (ep_type == ISOC_IN_EP || ep_type == INT_IN_EP);
- }
- 
- static unsigned int xhci_get_ss_bw_consumed(struct xhci_bw_info *ep_bw)
+On Fri, 2012-09-07 at 16:32 -0400, Jon Stanley wrote:
+> The FSF now prefers to use URL's in copyright headers rather than
+> their postal address. This change updates the address to be
+> <http://www.gnu.org/licenses> per http://www.gnu.org/licenses/gpl-howto.html
+> 
+> Signed-off-by: Jon Stanley <jonstanley@gmail.com>
+> Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  tools/lib/traceevent/event-parse.c  |    3 +--
+>  tools/lib/traceevent/event-parse.h  |    3 +--
+>  tools/lib/traceevent/event-utils.h  |    3 +--
+>  tools/lib/traceevent/parse-filter.c |    3 +--
+>  tools/lib/traceevent/trace-seq.c    |    3 +--
+>  5 files changed, 5 insertions(+), 10 deletions(-)
+> 
+> diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+> index 5f34aa3..7b946f9 100644
+> --- a/tools/lib/traceevent/event-parse.c
+> +++ b/tools/lib/traceevent/event-parse.c
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   *
+> diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+> index 5772ad8..ea93a1a 100644
+> --- a/tools/lib/traceevent/event-parse.h
+> +++ b/tools/lib/traceevent/event-parse.h
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+> diff --git a/tools/lib/traceevent/event-utils.h b/tools/lib/traceevent/event-utils.h
+> index 0829638..ebd970c 100644
+> --- a/tools/lib/traceevent/event-utils.h
+> +++ b/tools/lib/traceevent/event-utils.h
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+> diff --git a/tools/lib/traceevent/parse-filter.c b/tools/lib/traceevent/parse-filter.c
+> index ad17855..5527c32 100644
+> --- a/tools/lib/traceevent/parse-filter.c
+> +++ b/tools/lib/traceevent/parse-filter.c
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
+> diff --git a/tools/lib/traceevent/trace-seq.c b/tools/lib/traceevent/trace-seq.c
+> index b1ccc92..a57db80 100644
+> --- a/tools/lib/traceevent/trace-seq.c
+> +++ b/tools/lib/traceevent/trace-seq.c
+> @@ -13,8 +13,7 @@
+>   * GNU Lesser General Public License for more details.
+>   *
+>   * You should have received a copy of the GNU Lesser General Public
+> - * License along with this program; if not, write to the Free Software
+> - * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+> + * License along with this program; if not,  see <http://www.gnu.org/licenses>
+>   *
+>   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>   */
 
 
