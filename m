@@ -1,81 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035Ab3AIVzZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:55:25 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:41096 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932816Ab3AIVzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:55:20 -0500
-Date: Wed, 9 Jan 2013 13:55:14 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: Glauber Costa <glommer@parallels.com>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130109215514.GD20454@htj.dyndns.org>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130109203731.GA20454@htj.dyndns.org>
- <50EDDF1E.6010705@parallels.com>
- <20130109213604.GA9475@lizard.fhda.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130109213604.GA9475@lizard.fhda.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932978Ab3AIVzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:55:51 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41315 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932924Ab3AIUhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:09 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [ 30/47] sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
+Date: Wed,  9 Jan 2013 12:35:25 -0800
+Message-Id: <20130109201732.957700447@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
+References: <20130109201729.435233560@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Anton.
+3.0-stable review patch.  If anyone has any objections, please let me know.
 
-On Wed, Jan 09, 2013 at 01:36:04PM -0800, Anton Vorontsov wrote:
-> On Thu, Jan 10, 2013 at 01:20:30AM +0400, Glauber Costa wrote:
-> [...]
-> > Given the above, I believe that ideally we should use this pressure
-> > mechanism in memcg replacing the current memcg notification mechanism.
-> 
-> Just a quick wonder: why would we need to place it into memcg, when we
-> don't need any of the memcg stuff for it? I see no benefits, not
-> design-wise, not implementation-wise or anything-wise. :)
+------------------
 
-Maybe I'm misunderstanding the whole thing but how can memory pressure
-exist apart from memcg when memcg is in use?  Memory limits, reclaim
-and OOM are all per-memcg, how do you even define memory pressure?  If
-ten tasks belong to a memcg w/ a lot of spare memory and one belongs
-to another which is about to hit OOM, is that mempressure cgroup under
-pressure?
 
-> We can use mempressure w/o memcg, and even then it can (or should :) be
-> useful (for cpuset, for example).
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-The problem is that you end with, at the very least, duplicate
-hierarchical accounting mechanisms which overlap with each other
-while, most likely, being slightly different.  About the same thing
-happened with cpu and cpuacct controllers and we're now trying to
-deprecate the latter.
+[ Upstream commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 ]
 
-Please talk with memcg people and fold it into memcg.  It can (and
-should) be done in a way to not incur overhead when only root memcg is
-in use and how this is done defines userland-visible interface, so
-let's please not repeat past mistakes.
+Modifying the huge pte's requires that all the underlying pte's be
+modified.
 
-Thanks.
+Version 2: added missing flush_tlb_page()
 
--- 
-tejun
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/include/asm/hugetlb.h |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(p
+ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+ 					   unsigned long addr, pte_t *ptep)
+ {
+-	ptep_set_wrprotect(mm, addr, ptep);
++	pte_t old_pte = *ptep;
++	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
+ }
+ 
+ static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
+ 					     unsigned long addr, pte_t *ptep,
+ 					     pte_t pte, int dirty)
+ {
+-	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
++	int changed = !pte_same(*ptep, pte);
++	if (changed) {
++		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
++		flush_tlb_page(vma, addr);
++	}
++	return changed;
+ }
+ 
+ static inline pte_t huge_ptep_get(pte_t *ptep)
+
+
