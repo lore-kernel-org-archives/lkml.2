@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934116Ab3AIU40 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:56:26 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43681 "EHLO mail.kernel.org"
+	id S933946Ab3AIUku (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:50 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43565 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933954Ab3AIUkv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:51 -0500
+	id S933904Ab3AIUkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 092/123] signals: sys_ssetmask() uses uninitialized newmask
-Date: Wed,  9 Jan 2013 12:35:31 -0800
-Message-Id: <20130109201510.416785675@linuxfoundation.org>
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 080/123] sparc64: Set CRYPTO_TFM_REQ_MAY_SLEEP consistently in AES code.
+Date: Wed,  9 Jan 2013 12:35:19 -0800
+Message-Id: <20130109201508.868544845@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,36 +25,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
 
-commit 5ba53ff648e785445a32ba39112ed07e4cf588d0 upstream.
+From: "David S. Miller" <davem@davemloft.net>
 
-Commit 77097ae503b1 ("most of set_current_blocked() callers want
-SIGKILL/SIGSTOP removed from set") removed the initialization of newmask
-by accident, causing ltp to complain like this:
+[ Upstream commit b35d282ef7345320b594d48d8d70caedfa962a01 ]
 
-  ssetmask01    1  TFAIL  :  sgetmask() failed: TEST_ERRNO=???(0): Success
+We use the FPU and therefore cannot sleep during the crypto
+loops.
 
-Restore the proper initialization.
-
-Reported-and-tested-by: CAI Qian <caiqian@redhat.com>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/signal.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/sparc/crypto/aes_glue.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -3221,6 +3221,7 @@ SYSCALL_DEFINE1(ssetmask, int, newmask)
- 	int old = current->blocked.sig[0];
- 	sigset_t newset;
+--- a/arch/sparc/crypto/aes_glue.c
++++ b/arch/sparc/crypto/aes_glue.c
+@@ -222,6 +222,7 @@ static int ecb_encrypt(struct blkcipher_
  
-+	siginitset(&newset, newmask);
- 	set_current_blocked(&newset);
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+ 	err = blkcipher_walk_virt(desc, &walk);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
  
- 	return old;
+ 	ctx->ops->load_encrypt_keys(&ctx->key[0]);
+ 	while ((nbytes = walk.nbytes)) {
+@@ -251,6 +252,7 @@ static int ecb_decrypt(struct blkcipher_
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+ 	err = blkcipher_walk_virt(desc, &walk);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	ctx->ops->load_decrypt_keys(&ctx->key[0]);
+ 	key_end = &ctx->key[ctx->expanded_key_length / sizeof(u64)];
+@@ -280,6 +282,7 @@ static int cbc_encrypt(struct blkcipher_
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+ 	err = blkcipher_walk_virt(desc, &walk);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	ctx->ops->load_encrypt_keys(&ctx->key[0]);
+ 	while ((nbytes = walk.nbytes)) {
+@@ -309,6 +312,7 @@ static int cbc_decrypt(struct blkcipher_
+ 
+ 	blkcipher_walk_init(&walk, dst, src, nbytes);
+ 	err = blkcipher_walk_virt(desc, &walk);
++	desc->flags &= ~CRYPTO_TFM_REQ_MAY_SLEEP;
+ 
+ 	ctx->ops->load_decrypt_keys(&ctx->key[0]);
+ 	key_end = &ctx->key[ctx->expanded_key_length / sizeof(u64)];
 
 
