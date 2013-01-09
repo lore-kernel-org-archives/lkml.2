@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab3AIWBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:01:19 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41039 "EHLO mail.kernel.org"
+	id S932779Ab3AIUgl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:36:41 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41008 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932725Ab3AIUgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:43 -0500
+	id S932725Ab3AIUgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:36:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 21/47] NFS: Fix calls to drop_nlink()
-Date: Wed,  9 Jan 2013 12:35:16 -0800
-Message-Id: <20130109201731.943325295@linuxfoundation.org>
+        Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [ 14/47] ALSA: usb-audio: Avoid autopm calls after disconnection
+Date: Wed,  9 Jan 2013 12:35:09 -0800
+Message-Id: <20130109201731.119234523@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
 References: <20130109201729.435233560@linuxfoundation.org>
@@ -25,83 +25,104 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 1f018458b30b0d5c535c94e577aa0acbb92e1395 upstream.
+commit 59866da9e4ae54819e3c4e0a8f426bdb0c2ef993 upstream.
 
-It is almost always wrong for NFS to call drop_nlink() after removing a
-file. What we really want is to mark the inode's attributes for
-revalidation, and we want to ensure that the VFS drops it if we're
-reasonably sure that this is the final unlink().
-Do the former using the usual cache validity flags, and the latter
-by testing if inode->i_nlink == 1, and clearing it in that case.
+Add a similar protection against the disconnection race and the
+invalid use of usb instance after disconnection, as well as we've done
+for the USB audio PCM.
 
-This also fixes the following warning reported by Neil Brown and
-Jeff Layton (among others).
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51201
 
-[634155.004438] WARNING:
-at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
-Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
-snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
-bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
-[634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
-[634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
-[634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
-[634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
-[634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
-[634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
-[634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
-[634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
-[634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
-[634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
-[634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/dir.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ sound/usb/midi.c |   23 ++++++++++++++++++++++-
+ 1 file changed, 22 insertions(+), 1 deletion(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1216,11 +1216,14 @@ static int nfs_dentry_delete(const struc
+--- a/sound/usb/midi.c
++++ b/sound/usb/midi.c
+@@ -115,6 +115,7 @@ struct snd_usb_midi {
+ 	struct list_head list;
+ 	struct timer_list error_timer;
+ 	spinlock_t disc_lock;
++	struct rw_semaphore disc_rwsem;
+ 	struct mutex mutex;
+ 	u32 usb_id;
+ 	int next_midi_device;
+@@ -1021,6 +1022,12 @@ static void substream_open(struct snd_ra
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct snd_kcontrol *ctl;
  
- }
- 
-+/* Ensure that we revalidate inode->i_nlink */
- static void nfs_drop_nlink(struct inode *inode)
- {
- 	spin_lock(&inode->i_lock);
--	if (inode->i_nlink > 0)
--		drop_nlink(inode);
-+	/* drop the inode if we're reasonably sure this is the last link */
-+	if (inode->i_nlink == 1)
-+		clear_nlink(inode);
-+	NFS_I(inode)->cache_validity |= NFS_INO_INVALID_ATTR;
- 	spin_unlock(&inode->i_lock);
- }
- 
-@@ -1235,8 +1238,8 @@ static void nfs_dentry_iput(struct dentr
- 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
- 
- 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
--		drop_nlink(inode);
- 		nfs_complete_unlink(dentry, inode);
-+		nfs_drop_nlink(inode);
++	down_read(&umidi->disc_rwsem);
++	if (umidi->disconnected) {
++		up_read(&umidi->disc_rwsem);
++		return;
++	}
++
+ 	mutex_lock(&umidi->mutex);
+ 	if (open) {
+ 		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
+@@ -1039,6 +1046,7 @@ static void substream_open(struct snd_ra
+ 		}
  	}
- 	iput(inode);
+ 	mutex_unlock(&umidi->mutex);
++	up_read(&umidi->disc_rwsem);
  }
-@@ -1788,10 +1791,8 @@ static int nfs_safe_remove(struct dentry
- 	if (inode != NULL) {
- 		nfs_inode_return_delegation(inode);
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
--		/* The VFS may want to delete this inode */
- 		if (error == 0)
- 			nfs_drop_nlink(inode);
--		nfs_mark_for_revalidate(inode);
- 	} else
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
- 	if (error == -ENOENT)
+ 
+ static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
+@@ -1059,8 +1067,15 @@ static int snd_usbmidi_output_open(struc
+ 		snd_BUG();
+ 		return -ENXIO;
+ 	}
++
++	down_read(&umidi->disc_rwsem);
++	if (umidi->disconnected) {
++		up_read(&umidi->disc_rwsem);
++		return -ENODEV;
++	}
+ 	err = usb_autopm_get_interface(umidi->iface);
+ 	port->autopm_reference = err >= 0;
++	up_read(&umidi->disc_rwsem);
+ 	if (err < 0 && err != -EACCES)
+ 		return -EIO;
+ 	substream->runtime->private_data = port;
+@@ -1075,8 +1090,10 @@ static int snd_usbmidi_output_close(stru
+ 	struct usbmidi_out_port *port = substream->runtime->private_data;
+ 
+ 	substream_open(substream, 0);
+-	if (port->autopm_reference)
++	down_read(&umidi->disc_rwsem);
++	if (!umidi->disconnected && port->autopm_reference)
+ 		usb_autopm_put_interface(umidi->iface);
++	up_read(&umidi->disc_rwsem);
+ 	return 0;
+ }
+ 
+@@ -1386,9 +1403,12 @@ void snd_usbmidi_disconnect(struct list_
+ 	 * a timer may submit an URB. To reliably break the cycle
+ 	 * a flag under lock must be used
+ 	 */
++	down_write(&umidi->disc_rwsem);
+ 	spin_lock_irq(&umidi->disc_lock);
+ 	umidi->disconnected = 1;
+ 	spin_unlock_irq(&umidi->disc_lock);
++	up_write(&umidi->disc_rwsem);
++
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
+ 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
+ 		if (ep->out)
+@@ -2100,6 +2120,7 @@ int snd_usbmidi_create(struct snd_card *
+ 	umidi->usb_protocol_ops = &snd_usbmidi_standard_ops;
+ 	init_timer(&umidi->error_timer);
+ 	spin_lock_init(&umidi->disc_lock);
++	init_rwsem(&umidi->disc_rwsem);
+ 	mutex_init(&umidi->mutex);
+ 	umidi->usb_id = USB_ID(le16_to_cpu(umidi->dev->descriptor.idVendor),
+ 			       le16_to_cpu(umidi->dev->descriptor.idProduct));
 
 
