@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab3AIAPo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 19:15:44 -0500
-Received: from mail-da0-f44.google.com ([209.85.210.44]:34960 "EHLO
-	mail-da0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755729Ab3AIAPn (ORCPT
+	id S1756086Ab3AIAQA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 19:16:00 -0500
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:13146 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755729Ab3AIAP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 19:15:43 -0500
-Date: Tue, 8 Jan 2013 16:15:39 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: George Zhang <georgezhang@vmware.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH 07/12] VMCI: queue pairs implementation.
-Message-ID: <20130109001539.GA24989@kroah.com>
-References: <20130108234751.2698.66606.stgit@promb-2n-dhcp175.eng.vmware.com>
- <20130108235444.2698.24076.stgit@promb-2n-dhcp175.eng.vmware.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130108235444.2698.24076.stgit@promb-2n-dhcp175.eng.vmware.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 8 Jan 2013 19:15:58 -0500
+Message-ID: <1357690556.1890.13.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] ACPI: SRAT: report non-volatile memory in debug
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 08 Jan 2013 16:15:56 -0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 03:54:54PM -0800, George Zhang wrote:
-> VMCI queue pairs allow for bi-directional ordered communication between host and guests.
+Just as with the other memory affinity flags, report
+non-volatile memory with ACPI debug.
 
-You should wrap your commit lines at 72 characters, like git asks you to :)
+Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+---
+ drivers/acpi/numa.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-> +/* Guest device port I/O. */
-> +struct PPNSet {
-> +	u64 num_produce_pages;
-> +	u64 num_consume_pages;
-> +	u32 *produce_ppns;
-> +	u32 *consume_ppns;
-> +	bool initialized;
-> +};
+diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+index cb31298..68077ac 100644
+--- a/drivers/acpi/numa.c
++++ b/drivers/acpi/numa.c
+@@ -116,12 +116,14 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
+ 			struct acpi_srat_mem_affinity *p =
+ 			    (struct acpi_srat_mem_affinity *)header;
+ 			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+-					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s\n",
++					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s%s\n",
+ 					  (unsigned long)p->base_address,
+ 					  (unsigned long)p->length,
+ 					  p->proximity_domain,
+ 					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
+ 					  "enabled" : "disabled",
++					  (p->flags & ACPI_SRAT_MEM_NON_VOLATILE)?
++					  " non-volatile" : "",
+ 					  (p->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)?
+ 					  " hot-pluggable" : ""));
+ 		}
+-- 
+1.7.11.7
 
-I know this is a private structure to the driver, so it's not that big
-of a deal at all, but the naming for this is a bit odd (mixed case.)
 
-Not a show stopper at all, but if you had run checkpatch.pl on it, it
-would have warned you about this.
 
-thanks,
-
-greg k-h
