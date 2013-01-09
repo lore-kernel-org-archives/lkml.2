@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932082Ab3AIPHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:07:50 -0500
-Received: from mail-la0-f45.google.com ([209.85.215.45]:37518 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756835Ab3AIPHt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:07:49 -0500
+	id S1758004Ab3AIPJs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:09:48 -0500
+Received: from mx2.parallels.com ([64.131.90.16]:34815 "EHLO mx2.parallels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757739Ab3AIPJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 10:09:45 -0500
+Message-ID: <50ED8834.1090804@parallels.com>
+Date: Wed, 9 Jan 2013 19:09:40 +0400
+From: Glauber Costa <glommer@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <20130109141826.GP19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
-	<1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	<1357719435-29955-17-git-send-email-andriy.shevchenko@linux.intel.com>
-	<20130109141826.GP19691@intel.com>
-Date: Wed, 9 Jan 2013 17:07:47 +0200
-Message-ID: <CAHp75VfPzZf2qBw5Mz_quMEZC_zKoLE6Cpswi9srMQ4egosEiw@mail.gmail.com>
-Subject: Re: [resend][PATCH 16/16] dma: dw_dmac: clear suspend bit during termination
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Vinod Koul <vinod.koul@intel.com>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+To: Wen Congyang <wency@cn.fujitsu.com>
+CC: Tang Chen <tangchen@cn.fujitsu.com>, <akpm@linux-foundation.org>,
+        <rientjes@google.com>, <liuj97@gmail.com>, <len.brown@intel.com>,
+        <benh@kernel.crashing.org>, <paulus@samba.org>, <cl@linux.com>,
+        <minchan.kim@gmail.com>, <kosaki.motohiro@jp.fujitsu.com>,
+        <isimatu.yasuaki@jp.fujitsu.com>, <wujianguo@huawei.com>,
+        <hpa@zytor.com>, <linfeng@cn.fujitsu.com>, <laijs@cn.fujitsu.com>,
+        <mgorman@suse.de>, <yinghai@kernel.org>, <x86@kernel.org>,
+        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-acpi@vger.kernel.org>,
+        <linux-s390@vger.kernel.org>, <linux-sh@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <cmetcalf@tilera.com>,
+        <sparclinux@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH v5 01/14] memory-hotplug: try to offline the memory twice
+ to avoid dependence
+References: <1356350964-13437-1-git-send-email-tangchen@cn.fujitsu.com> <1356350964-13437-2-git-send-email-tangchen@cn.fujitsu.com> <50D96543.6010903@parallels.com> <50DFD7F7.5090408@cn.fujitsu.com>
+In-Reply-To: <50DFD7F7.5090408@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 4:18 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> On Wed, Jan 09, 2013 at 10:17:15AM +0200, Andy Shevchenko wrote:
->> From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+On 12/30/2012 09:58 AM, Wen Congyang wrote:
+> At 12/25/2012 04:35 PM, Glauber Costa Wrote:
+>> On 12/24/2012 04:09 PM, Tang Chen wrote:
+>>> From: Wen Congyang <wency@cn.fujitsu.com>
+>>>
+>>> memory can't be offlined when CONFIG_MEMCG is selected.
+>>> For example: there is a memory device on node 1. The address range
+>>> is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
+>>> and memory11 under the directory /sys/devices/system/memory/.
+>>>
+>>> If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
+>>> when we online pages. When we online memory8, the memory stored page cgroup
+>>> is not provided by this memory device. But when we online memory9, the memory
+>>> stored page cgroup may be provided by memory8. So we can't offline memory8
+>>> now. We should offline the memory in the reversed order.
+>>>
+>>> When the memory device is hotremoved, we will auto offline memory provided
+>>> by this memory device. But we don't know which memory is onlined first, so
+>>> offlining memory may fail. In such case, iterate twice to offline the memory.
+>>> 1st iterate: offline every non primary memory block.
+>>> 2nd iterate: offline primary (i.e. first added) memory block.
+>>>
+>>> This idea is suggested by KOSAKI Motohiro.
+>>>
+>>> Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 >>
->> The DMA transfer could not be established if previously it was paused and
->> terminated. In that case the channel's suspend bit remains set that prevents to
->> transfer anything until channel is resumed.
+>> Maybe there is something here that I am missing - I admit that I came
+>> late to this one, but this really sounds like a very ugly hack, that
+>> really has no place in here.
 >>
->> The patch adds a code that clears the DWC_CFGL_CH_SUSP bit during termination.
-> No this patch calls resume to do so... Can you update the change log
+>> Retrying, of course, may make sense, if we have reasonable belief that
+>> we may now succeed. If this is the case, you need to document - in the
+>> code - while is that.
+>>
+>> The memcg argument, however, doesn't really cut it. Why can't we make
+>> all page_cgroup allocations local to the node they are describing? If
+>> memcg is the culprit here, we should fix it, and not retry. If there is
+>> still any benefit in retrying, then we retry being very specific about why.
+> 
+> We try to make all page_cgroup allocations local to the node they are describing
+> now. If the memory is the first memory onlined in this node, we will allocate
+> it from the other node.
+> 
+> For example, node1 has 4 memory blocks: 8-11, and we online it from 8 to 11
+> 1. memory block 8, page_cgroup allocations are in the other nodes
+> 2. memory block 9, page_cgroup allocations are in memory block 8
+> 
+> So we should offline memory block 9 first. But we don't know in which order
+> the user online the memory block.
+> 
+> I think we can modify memcg like this:
+> allocate the memory from the memory block they are describing
+> 
+> I am not sure it is OK to do so.
 
-Updated. Will occur in patch v2.
+I don't see a reason why not.
 
->>
->> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
->> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
->> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
->> ---
->>  drivers/dma/dw_dmac.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
->> index 6a8f8c7..c6ebea1 100644
->> --- a/drivers/dma/dw_dmac.c
->> +++ b/drivers/dma/dw_dmac.c
->> @@ -1059,7 +1059,7 @@ static int dwc_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
->>
->>               dwc_chan_disable(dw, dwc);
->>
->> -             dwc->paused = false;
->> +             dwc_chan_resume(dwc);
->>
->>               /* active_list entries will end up before queued entries */
->>               list_splice_init(&dwc->queue, &list);
->> --
->> 1.7.10.4
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+You would have to tweak a bit the lookup function for page_cgroup, but
+assuming you will always have the pfns and limits, it should be easy to do.
 
+I think the only tricky part is that today we have a single
+node_page_cgroup, and we would of course have to have one per memory
+block. My assumption is that the number of memory blocks is limited and
+likely not very big. So even a static array would do.
 
-
--- 
-With Best Regards,
-Andy Shevchenko
+Kamezawa, do you have any input in here?
