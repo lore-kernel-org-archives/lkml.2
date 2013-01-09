@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab3AIGfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 01:35:51 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:37379 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424Ab3AIGfu (ORCPT
+	id S1757210Ab3AIGvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 01:51:10 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:60740 "EHLO
+	LGEMRELSE6Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab3AIGvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 01:35:50 -0500
-Message-ID: <1357713345.1806.44.camel@aeonflux>
-Subject: Re: [PATCH] Bluetooth: btmrvl_sdio: look for sd8688 firmware in
- alternate place
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Bing Zhao <bzhao@marvell.com>, David Woodhouse <dwmw2@infradead.org>,
-        Ben Hutchings <ben@decadent.org.uk>,
-        "libertas-dev@lists.infradead.org" <libertas-dev@lists.infradead.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        Gustavo Padovan <gustavo@padovan.org>,
-        Johan Hedberg <johan.hedberg@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 08 Jan 2013 22:35:45 -0800
-In-Reply-To: <1357713088.1105.1.camel@unicorn>
-References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
-	 <1357689361-7969-2-git-send-email-lkundrak@v3.sk>
-	 <1357698538.1806.43.camel@aeonflux>
-	 <477F20668A386D41ADCC57781B1F70430D13FDB783@SC-VEXCH1.marvell.com>
-	 <1357713088.1105.1.camel@unicorn>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jan 2013 01:51:08 -0500
+X-AuditID: 9c930179-b7c7fae00000255c-32-50ed1359c3c4
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Mike Galbraith <efault@gmx.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Alex Shi <alex.shi@intel.com>
+Subject: [PATCH] sched: Get rid of unnecessary checks from select_idle_sibling
+Date: Wed,  9 Jan 2013 15:50:56 +0900
+Message-Id: <1357714256-24373-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lubomir,
+From: Namhyung Kim <namhyung.kim@lge.com>
 
-> > > > linux-firmware ships the sd8688* firmware images that are shared with
-> > > > libertas_sdio WiFi driver under libertas/. libertas_sdio looks in both places
-> > > > and so should we.
-> > > >
-> > > > Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
-> > > > ---
-> > > >  drivers/bluetooth/btmrvl_sdio.c |   24 ++++++++++++++++++++++--
-> > > >  drivers/bluetooth/btmrvl_sdio.h |    6 ++++--
-> > > >  2 files changed, 26 insertions(+), 4 deletions(-)
-> > > 
-> > > NAK from me on this one. I do not want the driver to check two
-> > > locations. That is what userspace can work around.
-> > > 
-> > > If we want to unify the location between the WiFi driver and the
-> > > Bluetooth driver, I am fine with that, but seriously, just pick one over
-> > > the other. I do not care which one.
-> > 
-> > The unified location is mrvl/ directory.
-> > 
-> > We can probably move SD8688 firmware & helper binaries to mrvl/ and have both drivers grab the images there?
-> 
-> That would break existing setups, wouldn't it?
-> 
-> I was under impression (commit 3d32a58b) that we care about
-> compatibility here. Do we?
+AFAICS @target cpu of select_idle_sibling() is always either prev_cpu
+or this_cpu.  So no need to check it again and the conditionals can be
+consolidated.
 
-that is what symlinks are for.
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: Alex Shi <alex.shi@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ kernel/sched/fair.c | 17 ++++-------------
+ 1 file changed, 4 insertions(+), 13 deletions(-)
 
-Regards
-
-Marcel
-
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 5eea8707234a..af665814c216 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -3254,25 +3254,16 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
+  */
+ static int select_idle_sibling(struct task_struct *p, int target)
+ {
+-	int cpu = smp_processor_id();
+-	int prev_cpu = task_cpu(p);
+ 	struct sched_domain *sd;
+ 	struct sched_group *sg;
+ 	int i;
+ 
+ 	/*
+-	 * If the task is going to be woken-up on this cpu and if it is
+-	 * already idle, then it is the right target.
+-	 */
+-	if (target == cpu && idle_cpu(cpu))
+-		return cpu;
+-
+-	/*
+-	 * If the task is going to be woken-up on the cpu where it previously
+-	 * ran and if it is currently idle, then it the right target.
++	 * If the task is going to be woken-up on this cpu or the cpu where it
++	 * previously ran and it is already idle, then it is the right target.
+ 	 */
+-	if (target == prev_cpu && idle_cpu(prev_cpu))
+-		return prev_cpu;
++	if (idle_cpu(target))
++		return target;
+ 
+ 	/*
+ 	 * Otherwise, iterate the domains and find an elegible idle cpu.
+-- 
+1.7.11.7
 
