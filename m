@@ -1,100 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932454Ab3AITox (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 14:44:53 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:18386 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932231Ab3AITow (ORCPT
+	id S932519Ab3AIT7K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 14:59:10 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:23431 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab3AIT7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:44:52 -0500
-Message-ID: <50EDC8A1.30307@oracle.com>
-Date: Wed, 09 Jan 2013 13:44:33 -0600
+	Wed, 9 Jan 2013 14:59:05 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130109 Thunderbird/17.0.2
-MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,gmane.comp.freedesktop.xorg.drivers.intel
-To: Lijo Antony <lijo.kernel@gmail.com>
-CC: Dave Airlie <airlied@gmail.com>, Greg KH <gregkh@linuxfoundation.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
-References: <20130108223611.GA19672@kroah.com> <20130109003824.GA21075@kroah.com> <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com> <20130109042533.GA9164@kroah.com> <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com> <50ED1C12.2090608@gmail.com>
-In-Reply-To: <50ED1C12.2090608@gmail.com>
-X-Enigmail-Version: 1.4.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
+        "Maxim V. Patlasov" <mpatlasov@parallels.com>,
+        Dave Kleikamp <dave.kleikamp@oracle.com>
+Subject: [PATCH V5 15/30] loop: use aio to perform io on the underlying file
+Date: Wed,  9 Jan 2013 13:58:30 -0600
+Message-Id: <1357761525-22718-16-git-send-email-dave.kleikamp@oracle.com>
+X-Mailer: git-send-email 1.8.1
+In-Reply-To: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 01:28 AM, Lijo Antony wrote:
-> On 01/09/2013 09:31 AM, Dave Airlie wrote:
->> On Wed, Jan 9, 2013 at 2:25 PM, Greg KH <gregkh@linuxfoundation.org>
->> wrote:
->>> On Wed, Jan 09, 2013 at 01:42:39PM +1000, Dave Airlie wrote:
->>>>>> Hi all,
->>>>>>
->>>>>> I've hit this 3 times today on Linus's latest 3.8-rc2+ tree:
->>>>>>
->>>>>> [11868.414648] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
->>>>>> elapsed... GPU hung
->>>>>> [11868.414655] [drm] capturing error event; look for more
->>>>>> information in /debug/dri/0/i915_error_state
->>>>>> [11870.408342] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer
->>>>>> elapsed... GPU hung
->>>>>> [11870.408412] [drm:i915_reset] *ERROR* GPU hanging too fast,
->>>>>> declaring wedged!
->>>>>> [11870.408414] [drm:i915_reset] *ERROR* Failed to reset chip.
->>>>>> [11883.083225] gnome-shell[19396]: segfault at 218 ip
->>>>>> 00007feef5f32333 sp 00007ffffc1dc930 error 4 in
->>>>>> i965_dri.so[7feef5ecb000+d0000]
->>>>>
->>>>> I just hit this again.  And, as the kernel was asking for it, attached
->>>>> is the i915_error_state file, compressed due to the size of it.
->>>>>
->>>> Welcome to sink hole that is
->>>> https://bugs.freedesktop.org/show_bug.cgi?id=55984
->>>>
->>>> 3 months and ticking, Intel guys are all running away from it saying
->>>> they can't reproduce, everyone else on planet seems to reproduce quite
->>>> easily.
->>>>
->>>> Its generally considered a bug in the relocation/shrinker/no idea
->>>> category,
->>>
->>> Ugh, what a mess.
->>>
->>>> Assuming you have an Ironlake machine which I'm going to guess you do.
->>>
->>> I don't know, it's an old i5 machine that has never had any video
->>> problems for many years now.  How do I tell?
->>
->> lspci -nn probably an 8086:0046 device.
->>
->> Old i5 probably means original i5 which means ironlake.
->>
-> 
-> I have also seen this a couple of times on 3.7 and 3.8-rc1.
-> Most of the times I was watching youtube video in chrome. Nothing
-> crashed though(I am not running gnome shell). System recovered after few
-> seconds.
-> 
-> I didn't see this on 3.8-rc2 yet, probably because I haven't watched any
-> video.
+From: Zach Brown <zab@zabbo.net>
 
-I can easily reproduce it running glxgears on 3.8-rc1 or 3.8-rc2.
+This uses the new kernel aio interface to process loopback IO by
+submitting concurrent direct aio.  Previously loop's IO was serialized
+by synchronous processing in a thread.
 
-00:02.0 VGA compatible controller [0300]: Intel Corporation Core
-Processor Integrated Graphics Controller [8086:0046] (rev 02)
+The aio operations specify the memory for the IO with the bio_vec arrays
+directly instead of mappings of the pages.
 
-Thinkpad T410
+The use of aio operations is enabled when the backing file supports the
+read_iter, write_iter and direct_IO methods.
 
-Shaggy
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Zach Brown <zab@zabbo.net>
+---
+ drivers/block/loop.c      | 148 +++++++++++++++++++++++++++++++++-------------
+ include/uapi/linux/loop.h |   1 +
+ 2 files changed, 109 insertions(+), 40 deletions(-)
 
-> 
-> -lijo
-> 
-> 
-> 
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index ae12512..fc6f201 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -76,6 +76,7 @@
+ #include <linux/sysfs.h>
+ #include <linux/miscdevice.h>
+ #include <linux/falloc.h>
++#include <linux/aio.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -213,6 +214,48 @@ lo_do_transfer(struct loop_device *lo, int cmd,
+ 	return lo->transfer(lo, cmd, rpage, roffs, lpage, loffs, size, rblock);
+ }
+ 
++#ifdef CONFIG_AIO
++static void lo_rw_aio_complete(u64 data, long res)
++{
++	struct bio *bio = (struct bio *)(uintptr_t)data;
++
++	if (res > 0)
++		res = 0;
++	else if (res < 0)
++		res = -EIO;
++
++	bio_endio(bio, res);
++}
++
++static int lo_rw_aio(struct loop_device *lo, struct bio *bio)
++{
++	struct file *file = lo->lo_backing_file;
++	struct kiocb *iocb;
++	unsigned short op;
++	struct iov_iter iter;
++	struct bio_vec *bvec;
++	size_t nr_segs;
++	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
++
++	iocb = aio_kernel_alloc(GFP_NOIO);
++	if (!iocb)
++		return -ENOMEM;
++
++	if (bio_rw(bio) & WRITE)
++		op = IOCB_CMD_WRITE_ITER;
++	else
++		op = IOCB_CMD_READ_ITER;
++
++	bvec = bio_iovec_idx(bio, bio->bi_idx);
++	nr_segs = bio_segments(bio);
++	iov_iter_init_bvec(&iter, bvec, nr_segs, bvec_length(bvec, nr_segs), 0);
++	aio_kernel_init_iter(iocb, file, op, &iter, pos);
++	aio_kernel_init_callback(iocb, lo_rw_aio_complete, (u64)(uintptr_t)bio);
++
++	return aio_kernel_submit(iocb);
++}
++#endif /* CONFIG_AIO */
++
+ /**
+  * __do_lo_send_write - helper for writing data to a loop device
+  *
+@@ -411,50 +454,33 @@ static int do_bio_filebacked(struct loop_device *lo, struct bio *bio)
+ 	pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
+ 
+ 	if (bio_rw(bio) == WRITE) {
+-		struct file *file = lo->lo_backing_file;
+-
+-		if (bio->bi_rw & REQ_FLUSH) {
+-			ret = vfs_fsync(file, 0);
+-			if (unlikely(ret && ret != -EINVAL)) {
+-				ret = -EIO;
+-				goto out;
+-			}
+-		}
++		ret = lo_send(lo, bio, pos);
++	} else
++		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
+ 
+-		/*
+-		 * We use punch hole to reclaim the free space used by the
+-		 * image a.k.a. discard. However we do not support discard if
+-		 * encryption is enabled, because it may give an attacker
+-		 * useful information.
+-		 */
+-		if (bio->bi_rw & REQ_DISCARD) {
+-			struct file *file = lo->lo_backing_file;
+-			int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
++	return ret;
++}
+ 
+-			if ((!file->f_op->fallocate) ||
+-			    lo->lo_encrypt_key_size) {
+-				ret = -EOPNOTSUPP;
+-				goto out;
+-			}
+-			ret = file->f_op->fallocate(file, mode, pos,
+-						    bio->bi_size);
+-			if (unlikely(ret && ret != -EINVAL &&
+-				     ret != -EOPNOTSUPP))
+-				ret = -EIO;
+-			goto out;
+-		}
++static int lo_discard(struct loop_device *lo, struct bio *bio)
++{
++	struct file *file = lo->lo_backing_file;
++	int mode = FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE;
++	loff_t pos = ((loff_t) bio->bi_sector << 9) + lo->lo_offset;
++	int ret;
+ 
+-		ret = lo_send(lo, bio, pos);
++	/*
++	 * We use punch hole to reclaim the free space used by the
++	 * image a.k.a. discard. However we do not support discard if
++	 * encryption is enabled, because it may give an attacker
++	 * useful information.
++	 */
+ 
+-		if ((bio->bi_rw & REQ_FUA) && !ret) {
+-			ret = vfs_fsync(file, 0);
+-			if (unlikely(ret && ret != -EINVAL))
+-				ret = -EIO;
+-		}
+-	} else
+-		ret = lo_receive(lo, bio, lo->lo_blocksize, pos);
++	if ((!file->f_op->fallocate) || lo->lo_encrypt_key_size)
++		return -EOPNOTSUPP;
+ 
+-out:
++	ret = file->f_op->fallocate(file, mode, pos, bio->bi_size);
++	if (unlikely(ret && ret != -EINVAL && ret != -EOPNOTSUPP))
++		ret = -EIO;
+ 	return ret;
+ }
+ 
+@@ -518,7 +544,35 @@ static inline void loop_handle_bio(struct loop_device *lo, struct bio *bio)
+ 		do_loop_switch(lo, bio->bi_private);
+ 		bio_put(bio);
+ 	} else {
+-		int ret = do_bio_filebacked(lo, bio);
++		int ret;
++
++		if (bio_rw(bio) == WRITE) {
++			if (bio->bi_rw & REQ_FLUSH) {
++				ret = vfs_fsync(lo->lo_backing_file, 1);
++				if (unlikely(ret && ret != -EINVAL))
++					goto out;
++			}
++			if (bio->bi_rw & REQ_DISCARD) {
++				ret = lo_discard(lo, bio);
++				goto out;
++			}
++		}
++#ifdef CONFIG_AIO
++		if (lo->lo_flags & LO_FLAGS_USE_AIO &&
++		    lo->transfer == transfer_none) {
++			ret = lo_rw_aio(lo, bio);
++			if (ret == 0)
++				return;
++		} else
++#endif
++			ret = do_bio_filebacked(lo, bio);
++
++		if ((bio_rw(bio) == WRITE) && bio->bi_rw & REQ_FUA && !ret) {
++			ret = vfs_fsync(lo->lo_backing_file, 0);
++			if (unlikely(ret && ret != -EINVAL))
++				ret = -EIO;
++		}
++out:
+ 		bio_endio(bio, ret);
+ 	}
+ }
+@@ -540,6 +594,12 @@ static int loop_thread(void *data)
+ 	struct loop_device *lo = data;
+ 	struct bio *bio;
+ 
++	/*
++	 * In cases where the underlying filesystem calls balance_dirty_pages()
++	 * we want less throttling to avoid lock ups trying to write dirty
++	 * pages through the loop device
++	 */
++	current->flags |= PF_LESS_THROTTLE;
+ 	set_user_nice(current, -20);
+ 
+ 	while (!kthread_should_stop() || !bio_list_empty(&lo->lo_bio_list)) {
+@@ -862,6 +922,14 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+ 	    !file->f_op->write)
+ 		lo_flags |= LO_FLAGS_READ_ONLY;
+ 
++#ifdef CONFIG_AIO
++	if (file->f_op->write_iter && file->f_op->read_iter &&
++	    mapping->a_ops->direct_IO) {
++		file->f_flags |= O_DIRECT;
++		lo_flags |= LO_FLAGS_USE_AIO;
++	}
++#endif
++
+ 	lo_blocksize = S_ISBLK(inode->i_mode) ?
+ 		inode->i_bdev->bd_block_size : PAGE_SIZE;
+ 
+diff --git a/include/uapi/linux/loop.h b/include/uapi/linux/loop.h
+index e0cecd2..6edc6b6 100644
+--- a/include/uapi/linux/loop.h
++++ b/include/uapi/linux/loop.h
+@@ -21,6 +21,7 @@ enum {
+ 	LO_FLAGS_READ_ONLY	= 1,
+ 	LO_FLAGS_AUTOCLEAR	= 4,
+ 	LO_FLAGS_PARTSCAN	= 8,
++	LO_FLAGS_USE_AIO	= 16,
+ };
+ 
+ #include <asm/posix_types.h>	/* for __kernel_old_dev_t */
+-- 
+1.8.1
+
