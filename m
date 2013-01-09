@@ -1,196 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757584Ab3AIL1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 06:27:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:13952 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757501Ab3AIL1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 06:27:43 -0500
-Date: Wed, 9 Jan 2013 06:27:33 -0500
-From: Jeff Layton <jlayton@redhat.com>
-To: jongman.heo@samsung.com
-Cc: Suresh Jayaraman <sjayaraman@suse.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [3.8-rc2] stuck at reading CIFS mounted directory
-Message-ID: <20130109062733.028a90a0@tlielax.poochiereds.net>
-In-Reply-To: <16401870.457771357701460059.JavaMail.weblogic@epml11>
-References: <16401870.457771357701460059.JavaMail.weblogic@epml11>
+	id S1757569Ab3AILfV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 06:35:21 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:62397 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757502Ab3AILfS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 06:35:18 -0500
+Message-ID: <1357731297.5239.1.camel@phoenix>
+Subject: [PATCH v2] regulator: max8998: Ensure enough delay time for
+ max8998_set_voltage_buck_time_sel
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 09 Jan 2013 19:34:57 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-Content-Type: text/plain; charset=euc-kr
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 09 Jan 2013 03:17:40 +0000 (GMT)
-«„¡æ∏∏ <jongman.heo@samsung.com> wrote:
+Use DIV_ROUND_UP to prevent truncation by integer division issue.
+This ensures we return enough delay time.
 
-> Hi,
-> 
-> > ------- Original Message -------
-> > Sender : Jeff Layton<jlayton@redhat.com>
-> > Date : 2013-01-08 00:13 (GMT+09:00)
-> > Title : Re: [3.8-rc2] stuck at reading CIFS mounted directory
-> > 
-> > On Mon, 07 Jan 2013 15:10:05 +0530
-> > Suresh Jayaraman wrote:
-> > 
-> > > (Cc linux-cifs@vger.kernel.org)
-> > > 
-> > > On 01/04/2013 06:27 AM, Jongman Heo wrote:
-> > > > Hi, all,
-> > > > 
-> > > > In 3.8-rc2, access to CIFS-mounted directory (df, ls, or similar) got stuck with following message.
-> > > > 
-> > > > It's mounted with...
-> > > >   mount -t cifs ///Share  /mnt/window -o user=jongman.heo,password=xxxx,sec=ntlm
-> > > > 
-> > > > 
-> > > > [16655.288591] INFO: task bash:4042 blocked for more than 120 seconds.
-> > > > [16655.318117] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > > [16655.318123] bash            D dada9c5c     0  4042      1 0x00000004
-> > > > [16655.318132]  dada9cd0 00000082 00000282 dada9c5c c09022c6 dada9c7c c044d316 c0c7c300
-> > > > [16655.318139]  d6db3a7b 00000f09 c0c7c300 00000000 00000f09 f3b7b240 c04401ba 00000000
-> > > > [16655.318145]  c0b9e0d8 f598e960 00000000 00000303 dada9c98 dada9c98 f598e960 00000006
-> > > > [16655.318150] Call Trace:
-> > > > [16655.342785]  [] ? _raw_spin_unlock_irqrestore+0xf/0x11
-> > > > [16655.351554]  [] ? __wake_up+0x3b/0x42
-> > > > [16655.358802]  [] ? call_usermodehelper_fns+0x148/0x152
-> > > > [16655.358840]  [] ? __request_module+0x15e/0x1a1
-> > > > [16655.358842]  [] ? call_usermodehelper_freeinfo+0x19/0x19
-> > > > [16655.358845]  [] schedule+0x51/0x53
-> > > > [16655.358847]  [] schedule_preempt_disabled+0x8/0xa
-> > > > [16655.384345]  [] __mutex_lock_common+0xd6/0x123
-> > > > [16655.384430]  [] __mutex_lock_slowpath+0x20/0x22
-> > > > [16655.384436]  [] ? mutex_lock+0x18/0x25
-> > > > [16655.384441]  [] mutex_lock+0x18/0x25
-> > > > [16655.384892]  [] cifs_reconnect_tcon+0x170/0x252
-> > > > [16655.384953]  [] ? should_resched+0x8/0x22
-> > > > [16655.384963]  [] ? _cond_resched+0x8/0x1c
-> > > > [16655.384969]  [] smb_init+0x1d/0x6d
-> > > > [16655.385023]  [] CIFSSMBQPathInfo+0x4e/0x1e4
-> > > > [16655.385071]  [] cifs_query_path_info+0x38/0x73
-> > > > [16655.385080]  [] cifs_get_inode_info+0x122/0x3ac
-> > > > [16655.385548]  [] ? walk_component+0x14a/0x17a
-> > > > [16655.385570]  [] ? build_path_from_dentry+0xa3/0x19e
-> > > > [16655.385585]  [] ? build_path_from_dentry+0xa3/0x19e
-> > > > [16655.385596]  [] ? build_path_from_dentry+0xa3/0x19e
-> > > > [16655.385601]  [] ? getname_flags+0x59/0xeb
-> > > > [16655.385606]  [] ? _raw_spin_lock+0x8/0xa
-> > > > [16655.385613]  [] cifs_revalidate_dentry_attr+0x120/0x168
-> > > > [16655.385618]  [] cifs_getattr+0x5e/0xe3
-> > > > [16655.385625]  [] vfs_getattr+0x37/0x4e
-> > > > [16655.385631]  [] ? cifs_revalidate_dentry+0x20/0x20
-> > > > [16655.385639]  [] vfs_fstatat+0x59/0x8a
-> > > > [16655.385645]  [] vfs_stat+0x19/0x1b
-> > > > [16655.385652]  [] sys_stat64+0x11/0x22
-> > > > [16655.385659]  [] ? should_resched+0x8/0x22
-> > > > [16655.385668]  [] ? _cond_resched+0x8/0x1c
-> > > > [16655.385674]  [] ? task_work_run+0x6d/0x79
-> > > > [16655.385825]  [] ? __do_page_fault+0x33b/0x33b
-> > > > [16655.385834]  [] ? do_page_fault+0x8/0xa
-> > > > [16655.385840]  [] sysenter_do_call+0x12/0x2c
-> > > > 
-> > > > N?????r??y???b?X???v?^?)?{.n?+????{????zX?????}????z?&j:+v???????zZ+??+zf???h???~????i???z??w????????&?)?f??^j?y?m??@A?a??? 0??h??i
-> > > > 
-> > > 
-> > > 
-> > 
-> > Looks like it's waiting on the session_mutex to become free. The
-> > question is what's holding it and why. Some questions:
-> > 
-> > 1) is this a regression? If so, what version were you using previously?
-> 
-> Yeah, regression. IIRC I didn't have this issue with 3.7.
-> 
-> > 2) any other processes stuck on on this mutex? What about the cifsd
-> > thread for this mount? Is it stuck holding it? You may want to
-> > "cat /proc//stack" on any other threads that might be related here
-> > and see if you can figure out what they're doing.
-> 
-> After the hang happens, CIFS is working well. Stack of cifsd doesn't show any interesting thing.
-> 
-> [ORANGE@/mnt/window] ps ax | grep cifsd
->  1135 ?        S      1:13 [cifsd]
-> [ORANGE@/mnt/window] cat /proc/1135/stack
-> [<c0833b8b>] sk_wait_data+0x63/0x9b
-> [<c0872e20>] tcp_recvmsg+0x3aa/0x780
-> [<c088cf40>] inet_recvmsg+0x51/0x63
-> [<c0830628>] sock_recvmsg+0x80/0x9d
-> [<c0830674>] kernel_recvmsg+0x2f/0x3f
-> [<c05ea2e9>] cifs_readv_from_socket+0x142/0x1d3
-> [<c05ea396>] cifs_read_from_socket+0x1c/0x1e
-> [<c05eaad2>] cifs_demultiplex_thread+0x701/0x72b
-> [<c0445ca4>] kthread+0x6b/0x70
-> [<c09078b7>] ret_from_kernel_thread+0x1b/0x28
-> [<ffffffff>] 0xffffffff
-> 
-> 
-> Host : Windows 7
-> Guest : VMWare Fedora 16 + 3.8 custom kernel
-> 
-> I feel that the issue is more likely to happen in this case.
-> 
->  mount cifs directory from VMWare guest -> go to S3 sleep mode (by closing lid of laptop) -> open lid -> check cifs directory of VMWare
-> 
-> 
-> Following is more call stack trace I hit today.
-> 
-> [23245.542488] INFO: task bash:2711 blocked for more than 120 seconds.
-> [23245.571664] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> [23245.571672] bash            D f3bd5c5c     0  2711   2689 0x00000000
-> [23245.580899]  f3bd5cd0 00000086 00000282 f3bd5c5c c0902306 f3bd5c7c c044d2be c0c7c300
-> [23245.580910]  b538a613 000014fd c0c7c300 00000000 000014fd f3bf0c90 c0440162 00000000
-> [23245.580919]  c0b9e0d8 f3b8ab60 00000000 00000303 f3bd5c98 f3bd5c98 f3b8ab60 00000006
-> [23245.580928] Call Trace:
-> [23245.603320]  [<c0902306>] ? _raw_spin_unlock_irqrestore+0xf/0x11
-> [23245.609972]  [<c044d2be>] ? __wake_up+0x3b/0x42
-> [23245.610114]  [<c0440162>] ? call_usermodehelper_fns+0x148/0x152
-> [23245.610389]  [<c0440410>] ? __request_module+0x15e/0x1a1
-> [23245.610397]  [<c043fde5>] ? call_usermodehelper_freeinfo+0x19/0x19
-> [23245.610404]  [<c0901ada>] schedule+0x51/0x53
-> [23245.610409]  [<c0901c2d>] schedule_preempt_disabled+0x8/0xa
-> [23245.610894]  [<c0900e26>] __mutex_lock_common+0xd6/0x123
-> [23245.610914]  [<c0900f79>] __mutex_lock_slowpath+0x20/0x22
-> [23245.610920]  [<c0900f1f>] ? mutex_lock+0x18/0x25
-> [23245.610925]  [<c0900f1f>] mutex_lock+0x18/0x25
-> [23245.611495]  [<c05e1580>] cifs_reconnect_tcon+0x170/0x252
-> [23245.611506]  [<c0450644>] ? resched_task+0x5e/0x61
-> [23245.620010]  [<c05e167f>] smb_init+0x1d/0x6d
-> [23245.620183]  [<c05e4eaf>] CIFSSMBQPathInfo+0x4e/0x1e4
-> [23245.620248]  [<c05fdfbc>] cifs_query_path_info+0x38/0x73
-> [23245.620265]  [<c05f455a>] cifs_get_inode_info+0x122/0x3ac
-> [23245.620721]  [<c04e1e87>] ? walk_component+0x14a/0x17a
-> [23245.620736]  [<c05ece9e>] ? build_path_from_dentry+0xa3/0x19e
-> [23245.620742]  [<c05ece9e>] ? build_path_from_dentry+0xa3/0x19e
-> [23245.620748]  [<c05ece9e>] ? build_path_from_dentry+0xa3/0x19e
-> [23245.620754]  [<c04e215c>] ? getname_flags+0x1/0xeb
-> [23245.620759]  [<c09022ba>] ? _raw_spin_lock+0x8/0xa
-> [23245.620766]  [<c05f5bd4>] cifs_revalidate_dentry_attr+0x120/0x168
-> [23245.620772]  [<c05f5cbd>] cifs_getattr+0x5e/0xe3
-> [23245.620779]  [<c04dda16>] ? cp_new_stat64+0xef/0x101
-> [23245.620785]  [<c04dddde>] vfs_getattr+0x37/0x4e
-> [23245.620790]  [<c05f5c5f>] ? cifs_revalidate_dentry+0x20/0x20
-> [23245.620796]  [<c04dde4e>] vfs_fstatat+0x59/0x8a
-> [23245.620816]  [<c04ddeb3>] vfs_stat+0x19/0x1b
-> [23245.620828]  [<c04de0b8>] sys_stat64+0x11/0x22
-> [23245.620887]  [<c0907951>] sysenter_do_call+0x12/0x2c
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+v2: Only fix integer division truncation issue, remove other optimization.
+ drivers/regulator/max8998.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-I can't tell much from those messages, unfortunately. They just tell me
-that this process is stuck waiting on a mutex (probably the
-session_mutex). One thing you could do is follow the instructions here:
-
-    https://wiki.samba.org/index.php/LinuxCIFS_troubleshooting#Oopses
-
-...and get a line number for cifs_reconnect_tcon+0x170.
-
-The real questions are what's holding this mutex and why isn't it
-releasing it?
-
-It might be worthwhile to poke around in the live kernel with a kernel
-debugger (such as "crash") to see if you can determine that.
-Alternately, git bisect might be another way to track this down.
-
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 06be8cc..1f0df40 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -447,7 +447,7 @@ static int max8998_set_voltage_buck_time_sel(struct regulator_dev *rdev,
+ 
+ 	difference = (new_selector - old_selector) * desc->step / 1000;
+ 	if (difference > 0)
+-		return difference / ((val & 0x0f) + 1);
++		return DIV_ROUND_UP(difference, (val & 0x0f) + 1);
+ 
+ 	return 0;
+ }
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.9.5
+
+
+
