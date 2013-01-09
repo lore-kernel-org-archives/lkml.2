@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933093Ab3AIUhn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:43 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41646 "EHLO mail.kernel.org"
+	id S933210Ab3AIVrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:47:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41690 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933021Ab3AIUhk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:40 -0500
+	id S933092Ab3AIUhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
         Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>
-Subject: [ 018/123] ALSA: usb-audio: Avoid autopm calls after disconnection
-Date: Wed,  9 Jan 2013 12:34:17 -0800
-Message-Id: <20130109201500.863380063@linuxfoundation.org>
+Subject: [ 019/123] ALSA: usb-audio: Fix missing autopm for MIDI input
+Date: Wed,  9 Jan 2013 12:34:18 -0800
+Message-Id: <20130109201500.962906337@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,13 +27,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 59866da9e4ae54819e3c4e0a8f426bdb0c2ef993 upstream.
+commit f5f165418cabf2218eb466c0e94693b8b1aee88b upstream.
 
-Add a similar protection against the disconnection race and the
-invalid use of usb instance after disconnection, as well as we've done
-for the USB audio PCM.
+The commit [88a8516a: ALSA: usbaudio: implement USB autosuspend] added
+the support of autopm for USB MIDI output, but it didn't take the MIDI
+input into account.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=51201
+This patch adds the following for fixing the autopm:
+- Manage the URB start at the first MIDI input stream open, instead of
+  the time of instance creation
+- Move autopm code to the common substream_open()
+- Make snd_usbmidi_input_start/_stop() more robust and add the running
+  state check
 
 Reviewd-by: Clemens Ladisch <clemens@ladisch.de>
 Tested-by: Clemens Ladisch <clemens@ladisch.de>
@@ -41,88 +46,199 @@ Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/midi.c |   23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
+ sound/usb/midi.c |   88 ++++++++++++++++++++++++++++---------------------------
+ 1 file changed, 46 insertions(+), 42 deletions(-)
 
 --- a/sound/usb/midi.c
 +++ b/sound/usb/midi.c
-@@ -116,6 +116,7 @@ struct snd_usb_midi {
- 	struct list_head list;
- 	struct timer_list error_timer;
- 	spinlock_t disc_lock;
-+	struct rw_semaphore disc_rwsem;
- 	struct mutex mutex;
- 	u32 usb_id;
- 	int next_midi_device;
-@@ -1038,6 +1039,12 @@ static void substream_open(struct snd_ra
+@@ -126,8 +126,10 @@ struct snd_usb_midi {
+ 		struct snd_usb_midi_in_endpoint *in;
+ 	} endpoints[MIDI_MAX_ENDPOINTS];
+ 	unsigned long input_triggered;
+-	unsigned int opened;
++	bool autopm_reference;
++	unsigned int opened[2];
+ 	unsigned char disconnected;
++	unsigned char input_running;
+ 
+ 	struct snd_kcontrol *roland_load_ctl;
+ };
+@@ -149,7 +151,6 @@ struct snd_usb_midi_out_endpoint {
+ 		struct snd_usb_midi_out_endpoint* ep;
+ 		struct snd_rawmidi_substream *substream;
+ 		int active;
+-		bool autopm_reference;
+ 		uint8_t cable;		/* cable number << 4 */
+ 		uint8_t state;
+ #define STATE_UNKNOWN	0
+@@ -1034,36 +1035,58 @@ static void update_roland_altsetting(str
+ 	snd_usbmidi_input_start(&umidi->list);
+ }
+ 
+-static void substream_open(struct snd_rawmidi_substream *substream, int open)
++static int substream_open(struct snd_rawmidi_substream *substream, int dir,
++			  int open)
+ {
  	struct snd_usb_midi* umidi = substream->rmidi->private_data;
  	struct snd_kcontrol *ctl;
++	int err;
  
-+	down_read(&umidi->disc_rwsem);
-+	if (umidi->disconnected) {
-+		up_read(&umidi->disc_rwsem);
-+		return;
-+	}
-+
+ 	down_read(&umidi->disc_rwsem);
+ 	if (umidi->disconnected) {
+ 		up_read(&umidi->disc_rwsem);
+-		return;
++		return open ? -ENODEV : 0;
+ 	}
+ 
  	mutex_lock(&umidi->mutex);
  	if (open) {
- 		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
-@@ -1056,6 +1063,7 @@ static void substream_open(struct snd_ra
+-		if (umidi->opened++ == 0 && umidi->roland_load_ctl) {
+-			ctl = umidi->roland_load_ctl;
+-			ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+-			snd_ctl_notify(umidi->card,
++		if (!umidi->opened[0] && !umidi->opened[1]) {
++			err = usb_autopm_get_interface(umidi->iface);
++			umidi->autopm_reference = err >= 0;
++			if (err < 0 && err != -EACCES) {
++				mutex_unlock(&umidi->mutex);
++				up_read(&umidi->disc_rwsem);
++				return -EIO;
++			}
++			if (umidi->roland_load_ctl) {
++				ctl = umidi->roland_load_ctl;
++				ctl->vd[0].access |= SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
+-			update_roland_altsetting(umidi);
++				update_roland_altsetting(umidi);
++			}
+ 		}
++		umidi->opened[dir]++;
++		if (umidi->opened[1])
++			snd_usbmidi_input_start(&umidi->list);
+ 	} else {
+-		if (--umidi->opened == 0 && umidi->roland_load_ctl) {
+-			ctl = umidi->roland_load_ctl;
+-			ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
+-			snd_ctl_notify(umidi->card,
++		umidi->opened[dir]--;
++		if (!umidi->opened[1])
++			snd_usbmidi_input_stop(&umidi->list);
++		if (!umidi->opened[0] && !umidi->opened[1]) {
++			if (umidi->roland_load_ctl) {
++				ctl = umidi->roland_load_ctl;
++				ctl->vd[0].access &= ~SNDRV_CTL_ELEM_ACCESS_INACTIVE;
++				snd_ctl_notify(umidi->card,
+ 				       SNDRV_CTL_EVENT_MASK_INFO, &ctl->id);
++			}
++			if (umidi->autopm_reference)
++				usb_autopm_put_interface(umidi->iface);
  		}
  	}
  	mutex_unlock(&umidi->mutex);
-+	up_read(&umidi->disc_rwsem);
+ 	up_read(&umidi->disc_rwsem);
++	return 0;
  }
  
  static int snd_usbmidi_output_open(struct snd_rawmidi_substream *substream)
-@@ -1076,8 +1084,15 @@ static int snd_usbmidi_output_open(struc
- 		snd_BUG();
+@@ -1071,7 +1094,6 @@ static int snd_usbmidi_output_open(struc
+ 	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+ 	struct usbmidi_out_port* port = NULL;
+ 	int i, j;
+-	int err;
+ 
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+ 		if (umidi->endpoints[i].out)
+@@ -1085,33 +1107,14 @@ static int snd_usbmidi_output_open(struc
  		return -ENXIO;
  	}
-+
-+	down_read(&umidi->disc_rwsem);
-+	if (umidi->disconnected) {
-+		up_read(&umidi->disc_rwsem);
-+		return -ENODEV;
-+	}
- 	err = usb_autopm_get_interface(umidi->iface);
- 	port->autopm_reference = err >= 0;
-+	up_read(&umidi->disc_rwsem);
- 	if (err < 0 && err != -EACCES)
- 		return -EIO;
- 	substream->runtime->private_data = port;
-@@ -1092,8 +1107,10 @@ static int snd_usbmidi_output_close(stru
- 	struct usbmidi_out_port *port = substream->runtime->private_data;
  
- 	substream_open(substream, 0);
--	if (port->autopm_reference)
-+	down_read(&umidi->disc_rwsem);
-+	if (!umidi->disconnected && port->autopm_reference)
- 		usb_autopm_put_interface(umidi->iface);
-+	up_read(&umidi->disc_rwsem);
+-	down_read(&umidi->disc_rwsem);
+-	if (umidi->disconnected) {
+-		up_read(&umidi->disc_rwsem);
+-		return -ENODEV;
+-	}
+-	err = usb_autopm_get_interface(umidi->iface);
+-	port->autopm_reference = err >= 0;
+-	up_read(&umidi->disc_rwsem);
+-	if (err < 0 && err != -EACCES)
+-		return -EIO;
+ 	substream->runtime->private_data = port;
+ 	port->state = STATE_UNKNOWN;
+-	substream_open(substream, 1);
+-	return 0;
++	return substream_open(substream, 0, 1);
+ }
+ 
+ static int snd_usbmidi_output_close(struct snd_rawmidi_substream *substream)
+ {
+-	struct snd_usb_midi* umidi = substream->rmidi->private_data;
+-	struct usbmidi_out_port *port = substream->runtime->private_data;
+-
+-	substream_open(substream, 0);
+-	down_read(&umidi->disc_rwsem);
+-	if (!umidi->disconnected && port->autopm_reference)
+-		usb_autopm_put_interface(umidi->iface);
+-	up_read(&umidi->disc_rwsem);
+-	return 0;
++	return substream_open(substream, 0, 0);
+ }
+ 
+ static void snd_usbmidi_output_trigger(struct snd_rawmidi_substream *substream, int up)
+@@ -1164,14 +1167,12 @@ static void snd_usbmidi_output_drain(str
+ 
+ static int snd_usbmidi_input_open(struct snd_rawmidi_substream *substream)
+ {
+-	substream_open(substream, 1);
+-	return 0;
++	return substream_open(substream, 1, 1);
+ }
+ 
+ static int snd_usbmidi_input_close(struct snd_rawmidi_substream *substream)
+ {
+-	substream_open(substream, 0);
+-	return 0;
++	return substream_open(substream, 1, 0);
+ }
+ 
+ static void snd_usbmidi_input_trigger(struct snd_rawmidi_substream *substream, int up)
+@@ -2080,12 +2081,15 @@ void snd_usbmidi_input_stop(struct list_
+ 	unsigned int i, j;
+ 
+ 	umidi = list_entry(p, struct snd_usb_midi, list);
++	if (!umidi->input_running)
++		return;
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
+ 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
+ 		if (ep->in)
+ 			for (j = 0; j < INPUT_URBS; ++j)
+ 				usb_kill_urb(ep->in->urbs[j]);
+ 	}
++	umidi->input_running = 0;
+ }
+ 
+ static void snd_usbmidi_input_start_ep(struct snd_usb_midi_in_endpoint* ep)
+@@ -2110,8 +2114,11 @@ void snd_usbmidi_input_start(struct list
+ 	int i;
+ 
+ 	umidi = list_entry(p, struct snd_usb_midi, list);
++	if (umidi->input_running || !umidi->opened[1])
++		return;
+ 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+ 		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
++	umidi->input_running = 1;
+ }
+ 
+ /*
+@@ -2250,9 +2257,6 @@ int snd_usbmidi_create(struct snd_card *
+ 	}
+ 
+ 	list_add_tail(&umidi->list, midi_list);
+-
+-	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i)
+-		snd_usbmidi_input_start_ep(umidi->endpoints[i].in);
  	return 0;
  }
  
-@@ -1403,9 +1420,12 @@ void snd_usbmidi_disconnect(struct list_
- 	 * a timer may submit an URB. To reliably break the cycle
- 	 * a flag under lock must be used
- 	 */
-+	down_write(&umidi->disc_rwsem);
- 	spin_lock_irq(&umidi->disc_lock);
- 	umidi->disconnected = 1;
- 	spin_unlock_irq(&umidi->disc_lock);
-+	up_write(&umidi->disc_rwsem);
-+
- 	for (i = 0; i < MIDI_MAX_ENDPOINTS; ++i) {
- 		struct snd_usb_midi_endpoint* ep = &umidi->endpoints[i];
- 		if (ep->out)
-@@ -2117,6 +2137,7 @@ int snd_usbmidi_create(struct snd_card *
- 	umidi->usb_protocol_ops = &snd_usbmidi_standard_ops;
- 	init_timer(&umidi->error_timer);
- 	spin_lock_init(&umidi->disc_lock);
-+	init_rwsem(&umidi->disc_rwsem);
- 	mutex_init(&umidi->mutex);
- 	umidi->usb_id = USB_ID(le16_to_cpu(umidi->dev->descriptor.idVendor),
- 			       le16_to_cpu(umidi->dev->descriptor.idProduct));
 
 
