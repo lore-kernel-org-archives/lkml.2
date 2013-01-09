@@ -1,96 +1,367 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757830Ab3AINND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 08:13:03 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:42833 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757758Ab3AINNA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 08:13:00 -0500
-Date: Wed, 9 Jan 2013 08:12:17 -0500
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Shuah Khan <shuahkhan@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-Message-ID: <20130109131217.GA18395@phenom.dumpdata.com>
-References: <CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
- <20130107152622.GD3219@phenom.dumpdata.com>
- <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
- <8762382z2c.fsf@xmission.com>
- <CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
- <87y5g4z7rp.fsf@xmission.com>
- <CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
- <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
- <20130109004340.GA12234@konrad-lan.dumpdata.com>
- <87txqruq8p.fsf@xmission.com>
+	id S1757813Ab3AINPV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 08:15:21 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46143 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757476Ab3AINPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 08:15:20 -0500
+Date: Wed, 9 Jan 2013 13:15:15 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] mm: migrate: Check page_count of THP before migrating
+Message-ID: <20130109131515.GC13304@suse.de>
+References: <20130107170815.GO3885@suse.de>
+ <alpine.LNX.2.00.1301081931530.20504@eggly.anvils>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <87txqruq8p.fsf@xmission.com>
+In-Reply-To: <alpine.LNX.2.00.1301081931530.20504@eggly.anvils>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 04:58:14PM -0800, Eric W. Biederman wrote:
-> Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> writes:
+On Tue, Jan 08, 2013 at 08:17:59PM -0800, Hugh Dickins wrote:
+> On Mon, 7 Jan 2013, Mel Gorman wrote:
 > 
-> > On Tue, Jan 08, 2013 at 03:40:11PM -0800, Yinghai Lu wrote:
-> >> On Mon, Jan 7, 2013 at 7:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >> > On Mon, Jan 7, 2013 at 7:13 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> >> >> I meant we should detect failure to allocate bounce buffers in in
-> >> >> swiotlb_init() instead of panicing.
-> >> >>
-> >> >> I meant swiotlb_map_single() should either panic or simply fail.
-> >> >>
-> >> >> If I have read lib/swiotlb.c correctly the only place we allocate a
-> >> >> bounce buffer is in swiotlb_map_single.  If there are more places we can
-> >> >> allocate bounce buffers those need to be handled as well.
-> >> >
-> >> > ok, will give it a try.
-> >> 
-> >> please check if you are ok with attached.
-> >> 
-> >> looks like it need more change of lines.
-> >
-> > The swiotlb_full check I don't believe is neccessary. You won't ever get
-> > to that unless swiotlb_map_page has at least provided a bounce buffer.
-> > And if the swiotlb_map_page does not have a bounce buffer it will exit
-> > with:
-> >
-> > +       if (no_iotlb_memory)                                                    
-> > +               return SWIOTLB_MAP_ERROR;                                       
-> > +                 
-> >
-> > which is dangerous. That is b/c there are drivers that don't use the
-> > dma_mapping_error check (so check the bus address after calling
-> > pci_map_*). This means they would try to do DMA on 0xffffffff (yikes!).
-> >
-> > That is reason the failback (v_overflow_buffer) is still in
-> > usage - b/c we have drivers that might just do this and this is the last
-> > resort for them. And until those drivers are fixed - we _need_ this
-> > fallback to work.
+> > Hugh Dickins pointed out that migrate_misplaced_transhuge_page() does not
+> > check page_count before migrating like base page migration and khugepage. He
+> > could not see why this was safe and he is right.
+> > 
+> > The potential impact of the bug is avoided due to the limitations of NUMA
+> > balancing.  The page_mapcount() check ensures that only a single address
+> > space is using this page and as THPs are typically private it should not be
+> > possible for another address space to fault it in parallel. If the address
+> > space has one associated task then it's difficult to have both a GUP pin
+> > and be referencing the page at the same time. If there are multiple tasks
+> > then a buggy scenario requires that another thread be accessing the page
+> > while the direct IO is in flight. This is dodgy behaviour as there is
+> > a possibility of corruption with or without THP migration. It would be
+> > difficult to identify the corruption as being a migration bug.
+> > 
+> > While we happen to be safe for the most part it is shoddy to depend on
+> > such "safety" so this patch checks the page count similar to anonymous
+> > pages. Note that this does not mean that the page_mapcount() check can go
+> > away. If we were to remove the page_mapcount() check the the THP would
+> > have to be unmapped from all referencing PTEs, replaced with migration
+> > PTEs and restored properly afterwards.
+> > 
+> > Reported-by: Hugh Dickins <hughd@google.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
 > 
-> So instead we need to say?
+> Sorry, Mel, it's a NAK:
+
+Don't be sorry. It's not your fault I am a muppet.
+
+> you will have expected an ack from me two weeks
+> or more ago; but somehow I had an intuition that if I sat on it for
+> long enough, a worm would crawl out.  Got down to looking again today,
+> and I notice that although the putback_lru_page() is right,
+> NR_ISOLATED_ANON is not restored on this path, so that would leak.
 > 
-> +       if (no_iotlb_memory)                                                    
-> +               panic("Cannot allocate SWIOTLB buffer");
-
-
-"Did not allocate SWIOTLB buffer earlier and can't now provide you with the
-DMA bounce buffer."
-
-> +                 
+> I expect you'll want to do something like:
+> 	if (isolated) {
+> 		putback_lru_page(page);
+> 		isolated = 0;
+> 		goto out;
+> 	}
+> and that may be the appropriate fix right now.
 > 
-> Which is just making the panic a little later than it used to be and
-> seems completely reasonable.
 
-Yes. When those drivers are all fixed and then we can remove that duct-tape.
+Yes, I sent what should be a correction so we can treat this cleanup as
+a potential replacemet for it.
+
+> But I do still dislike the way you always put_page in
+> numamigrate_isolate_page():
+
+At one point there was a conditional put_page depending on different
+failures and it was a very difficult to follow. This was easier to
+follow but could still be improved.
+
+> it makes sense in the case when
+> isolate_lru_page() succeeds (I've long thought that weird both to
+> insist on an existing page reference and add one of its own), but
+> I find it very confusing on the failure paths, to have the put_page
+> far away from the unlock_page - and I get worried when I see put_page
+> followed by unlock_page rather than vice versa (it happens on !pmd_same
+> paths: if the pmd is not the same, then can we be sure that the put_page
+> does not free the page?)
+> 
+
+I'm depending on the page table reference to prevent the put_page()
+freeing the page. As mmap_sem is held, there cannot be an munmap()
+freeing it. As we hold the page lock there cannot be a parallel reclaim
+as trylock_page() in shrink_page_list() will fail.
+
+> At the bottom I've put my own cleanup for this, which simplifies by
+> doing the putback_lru_page() inside numamigrate_isolate_page(), and
+> doesn't put_page when it doesn't isolate.
+> 
+> I think the only functional difference from yours (aside from fixing
+> up NR_ISOLATED) is that migrate_misplaced_transhuge_page() doesn't
+> have to pretend to its caller that it succeeded when actually it
+> failed at the last hurdle (because it already did the unlock_page,
+> which in yours the caller expects to do on failure).  Oh, and I'm
+> not holding page lock (sometimes) at clear_pmdnuma: I didn't see
+> the reason for that, perhaps I'm missing something important there.
+> 
+> Maybe our tastes differ, and you won't see mine as an improvement.
+> And I've hardly tested, so haven't signed off, and won't be
+> surprised if its own worms crawl out.
+> 
+> <SNIP>
+>
+> Not-signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+> 
+>  mm/huge_memory.c |   28 +++++----------
+>  mm/migrate.c     |   79 ++++++++++++++++++++++-----------------------
+>  2 files changed, 48 insertions(+), 59 deletions(-)
+> 
+> --- 3.8-rc2/mm/huge_memory.c	2012-12-22 09:43:27.616015582 -0800
+> +++ linux/mm/huge_memory.c	2013-01-08 17:39:06.340407864 -0800
+> @@ -1298,7 +1298,6 @@ int do_huge_pmd_numa_page(struct mm_stru
+>  	int target_nid;
+>  	int current_nid = -1;
+>  	bool migrated;
+> -	bool page_locked = false;
+>  
+>  	spin_lock(&mm->page_table_lock);
+>  	if (unlikely(!pmd_same(pmd, *pmdp)))
+> @@ -1320,7 +1319,6 @@ int do_huge_pmd_numa_page(struct mm_stru
+>  	/* Acquire the page lock to serialise THP migrations */
+>  	spin_unlock(&mm->page_table_lock);
+>  	lock_page(page);
+> -	page_locked = true;
+>  
+>  	/* Confirm the PTE did not while locked */
+>  	spin_lock(&mm->page_table_lock);
+> @@ -1333,34 +1331,26 @@ int do_huge_pmd_numa_page(struct mm_stru
+>  
+>  	/* Migrate the THP to the requested node */
+>  	migrated = migrate_misplaced_transhuge_page(mm, vma,
+> -				pmdp, pmd, addr,
+> -				page, target_nid);
+> -	if (migrated)
+> -		current_nid = target_nid;
+> -	else {
+> -		spin_lock(&mm->page_table_lock);
+> -		if (unlikely(!pmd_same(pmd, *pmdp))) {
+> -			unlock_page(page);
+> -			goto out_unlock;
+> -		}
+> -		goto clear_pmdnuma;
+> -	}
+> +				pmdp, pmd, addr, page, target_nid);
+> +	if (!migrated)
+> +		goto check_same;
+>  
+> -	task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
+> +	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
+>  	return 0;
+>  
+
+Ok.
+
+> +check_same:
+> +	spin_lock(&mm->page_table_lock);
+> +	if (unlikely(!pmd_same(pmd, *pmdp)))
+> +		goto out_unlock;
+
+Ok.
+
+>  clear_pmdnuma:
+>  	pmd = pmd_mknonnuma(pmd);
+>  	set_pmd_at(mm, haddr, pmdp, pmd);
+>  	VM_BUG_ON(pmd_numa(*pmdp));
+>  	update_mmu_cache_pmd(vma, addr, pmdp);
+> -	if (page_locked)
+> -		unlock_page(page);
+> -
+
+This is ok too. The lock page is to prevent the page being reclaimed in
+parallel during migration. In the two cases you end up in clear_pmdnuma
+the page table lock is taken and you've done a pmd_same check and the page
+lock is not necessary.
+
+>  out_unlock:
+>  	spin_unlock(&mm->page_table_lock);
+>  	if (current_nid != -1)
+> -		task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
+> +		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
+>  	return 0;
+>  }
+>  
+> --- 3.8-rc2/mm/migrate.c	2012-12-22 09:43:27.636015582 -0800
+> +++ linux/mm/migrate.c	2013-01-08 18:17:02.664144777 -0800
+> @@ -1555,39 +1555,38 @@ bool numamigrate_update_ratelimit(pg_dat
+>  
+>  int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
+>  {
+> -	int ret = 0;
+> +	int page_lru;
+>  
+>  	/* Avoid migrating to a node that is nearly full */
+> -	if (migrate_balanced_pgdat(pgdat, 1)) {
+> -		int page_lru;
+> +	if (!migrate_balanced_pgdat(pgdat, 1))
+> +		return 0;
+>  
+> -		if (isolate_lru_page(page)) {
+> -			put_page(page);
+> -			return 0;
+> -		}
+> -
+> -		/* Page is isolated */
+> -		ret = 1;
+> -		page_lru = page_is_file_cache(page);
+> -		if (!PageTransHuge(page))
+> -			inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
+> -		else
+> -			mod_zone_page_state(page_zone(page),
+> -					NR_ISOLATED_ANON + page_lru,
+> -					HPAGE_PMD_NR);
+> +	if (isolate_lru_page(page))
+> +		return 0;
+> +
+> +	/*
+> +	 * migrate_misplaced_transhuge_page() skips page migration's usual
+> +	 * check on page_count(), so we must do it here, now that the page
+> +	 * has been isolated: a GUP pin, or any other pin, prevents migration.
+> +	 * The expected page count is 3: 1 for page's mapcount and 1 for the
+> +	 * caller's pin and 1 for the reference taken by isolate_lru_page().
+> +	 */
+> +	if (PageTransHuge(page) && page_count(page) != 3) {
+> +		putback_lru_page(page);
+> +		return 0;
+>  	}
+>  
+
+Ok so you putback the page before the isolated count is updated. Makes
+sense.
+
+> +	page_lru = page_is_file_cache(page);
+> +	mod_zone_page_state(page_zone(page), NR_ISOLATED_ANON + page_lru,
+> +				hpage_nr_pages(page));
+> +
+>  	/*
+> -	 * Page is either isolated or there is not enough space on the target
+> -	 * node. If isolated, then it has taken a reference count and the
+> -	 * callers reference can be safely dropped without the page
+> -	 * disappearing underneath us during migration. Otherwise the page is
+> -	 * not to be migrated but the callers reference should still be
+> -	 * dropped so it does not leak.
+> +	 * Isolating the page has taken another reference, so the
+> +	 * caller's reference can be safely dropped without the page
+> +	 * disappearing underneath us during migration.
+>  	 */
+>  	put_page(page);
+> -
+> -	return ret;
+> +	return 1;
+>  }
+>  
+>  /*
+> @@ -1598,7 +1597,7 @@ int numamigrate_isolate_page(pg_data_t *
+>  int migrate_misplaced_page(struct page *page, int node)
+>  {
+>  	pg_data_t *pgdat = NODE_DATA(node);
+> -	int isolated = 0;
+> +	int isolated;
+>  	int nr_remaining;
+>  	LIST_HEAD(migratepages);
+>  
+> @@ -1606,20 +1605,16 @@ int migrate_misplaced_page(struct page *
+>  	 * Don't migrate pages that are mapped in multiple processes.
+>  	 * TODO: Handle false sharing detection instead of this hammer
+>  	 */
+> -	if (page_mapcount(page) != 1) {
+> -		put_page(page);
+> +	if (page_mapcount(page) != 1)
+>  		goto out;
+> -	}
+>  
+>  	/*
+>  	 * Rate-limit the amount of data that is being migrated to a node.
+>  	 * Optimal placement is no good if the memory bus is saturated and
+>  	 * all the time is being spent migrating!
+>  	 */
+> -	if (numamigrate_update_ratelimit(pgdat, 1)) {
+> -		put_page(page);
+> +	if (numamigrate_update_ratelimit(pgdat, 1))
+>  		goto out;
+> -	}
+>  
+>  	isolated = numamigrate_isolate_page(pgdat, page);
+>  	if (!isolated)
+> @@ -1636,8 +1631,11 @@ int migrate_misplaced_page(struct page *
+>  	} else
+>  		count_vm_numa_event(NUMA_PAGE_MIGRATE);
+>  	BUG_ON(!list_empty(&migratepages));
+> -out:
+>  	return isolated;
+> +
+> +out:
+> +	put_page(page);
+> +	return 0;
+>  }
+
+Ok.
+
+>  #endif /* CONFIG_NUMA_BALANCING */
+>  
+> @@ -1672,17 +1670,15 @@ int migrate_misplaced_transhuge_page(str
+>  
+>  	new_page = alloc_pages_node(node,
+>  		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
+> -	if (!new_page) {
+> -		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+> -		goto out_dropref;
+> -	}
+> +	if (!new_page)
+> +		goto out_fail;
+> +
+>  	page_xchg_last_nid(new_page, page_last_nid(page));
+>  
+>  	isolated = numamigrate_isolate_page(pgdat, page);
+>  	if (!isolated) {
+> -		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+>  		put_page(new_page);
+> -		goto out_keep_locked;
+> +		goto out_fail;
+>  	}
+>  
+>  	/* Prepare a page as a migration target */
+> @@ -1714,6 +1710,7 @@ int migrate_misplaced_transhuge_page(str
+>  		putback_lru_page(page);
+>  
+>  		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+> +		isolated = 0;
+>  		goto out;
+>  	}
+>  
+> @@ -1758,9 +1755,11 @@ out:
+>  			-HPAGE_PMD_NR);
+>  	return isolated;
+>  
+> +out_fail:
+> +	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
+>  out_dropref:
+> +	unlock_page(page);
+>  	put_page(page);
+> -out_keep_locked:
+>  	return 0;
+>  }
+>  #endif /* CONFIG_NUMA_BALANCING */
+
+I haven't tested this but I cannot see a problem with it either and the
+flow does look nicer. I'll test it this evening and look at it some
+more.
+
+-- 
+Mel Gorman
+SUSE Labs
