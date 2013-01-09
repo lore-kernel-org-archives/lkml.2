@@ -1,72 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933959Ab3AIVAb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:00:31 -0500
-Received: from out02.mta.xmission.com ([166.70.13.232]:33351 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933386Ab3AIVA1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:00:27 -0500
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-Date: Wed, 09 Jan 2013 13:00:12 -0800
-In-Reply-To: <CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	(Yinghai Lu's message of "Wed, 9 Jan 2013 09:27:46 -0800")
-Message-ID: <87d2xeul5v.fsf@xmission.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX18aJAQ2jYKCK/cu7QYrHwq4wSGH6Jf94hc=
-X-SA-Exim-Connect-IP: 98.207.153.68
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  2.9 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
-	*  3.0 XMDrug1234561 Drug references
-	*  0.1 XMSubLong Long Subject
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa07 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-X-Spam-DCC: XMission; sa07 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: **;Yinghai Lu <yinghai@kernel.org>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not enough ram for it
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S933886Ab3AIUkf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43382 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933806Ab3AIUk1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:27 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Tony Lindgren <tony@atomide.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [ 74/80] lib: atomic64: Initialize locks statically to fix early users
+Date: Wed,  9 Jan 2013 12:36:06 -0800
+Message-Id: <20130109201509.894193738@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yinghai Lu <yinghai@kernel.org> writes:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> please check updated attached. It should address all your request.
+------------------
 
-There is one significant bug that I can see.
+From: Stephen Boyd <sboyd@codeaurora.org>
 
-swiotlb_print_info tests no_iotlb_memory but no_iotlb_memory is set
-after swiotlb_init_with_tlb returns.
+commit fcc16882ac4532aaa644bff444f0c5d6228ba71e upstream.
 
-Eric
+The atomic64 library uses a handful of static spin locks to implement
+atomic 64-bit operations on architectures without support for atomic
+64-bit instructions.
+
+Unfortunately, the spinlocks are initialized in a pure initcall and that
+is too late for the vfs namespace code which wants to use atomic64
+operations before the initcall is run.
+
+This became a problem as of commit 8823c079ba71: "vfs: Add setns support
+for the mount namespace".
+
+This leads to BUG messages such as:
+
+  BUG: spinlock bad magic on CPU#0, swapper/0/0
+   lock: atomic64_lock+0x240/0x400, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
+    do_raw_spin_lock+0x158/0x198
+    _raw_spin_lock_irqsave+0x4c/0x58
+    atomic64_add_return+0x30/0x5c
+    alloc_mnt_ns.clone.14+0x44/0xac
+    create_mnt_ns+0xc/0x54
+    mnt_init+0x120/0x1d4
+    vfs_caches_init+0xe0/0x10c
+    start_kernel+0x29c/0x300
+
+coming out early on during boot when spinlock debugging is enabled.
+
+Fix this by initializing the spinlocks statically at compile time.
+
+Reported-and-tested-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
+Tested-by: Tony Lindgren <tony@atomide.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ lib/atomic64.c |   17 +++++------------
+ 1 file changed, 5 insertions(+), 12 deletions(-)
+
+--- a/lib/atomic64.c
++++ b/lib/atomic64.c
+@@ -31,7 +31,11 @@
+ static union {
+ 	raw_spinlock_t lock;
+ 	char pad[L1_CACHE_BYTES];
+-} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
++} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp = {
++	[0 ... (NR_LOCKS - 1)] = {
++		.lock =  __RAW_SPIN_LOCK_UNLOCKED(atomic64_lock.lock),
++	},
++};
+ 
+ static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
+ {
+@@ -173,14 +177,3 @@ int atomic64_add_unless(atomic64_t *v, l
+ 	return ret;
+ }
+ EXPORT_SYMBOL(atomic64_add_unless);
+-
+-static int init_atomic64_lock(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < NR_LOCKS; ++i)
+-		raw_spin_lock_init(&atomic64_lock[i].lock);
+-	return 0;
+-}
+-
+-pure_initcall(init_atomic64_lock);
+
 
