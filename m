@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933866Ab3AIVIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:08:11 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43054 "EHLO mail.kernel.org"
+	id S933830Ab3AIVIc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:08:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:45920 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933739Ab3AIUkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:00 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Nicolas Pitre <nico@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: [ 66/80] ARM: mm: use pteval_t to represent page protection values
-Date: Wed,  9 Jan 2013 12:35:58 -0800
-Message-Id: <20130109201508.879463966@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933739Ab3AIVI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:08:28 -0500
+Date: Wed, 9 Jan 2013 13:08:26 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Lijo Antony <lijo.kernel@gmail.com>, Dave Airlie <airlied@gmail.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
+Message-ID: <20130109210826.GA17512@kroah.com>
+References: <20130108223611.GA19672@kroah.com>
+ <20130109003824.GA21075@kroah.com>
+ <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
+ <20130109042533.GA9164@kroah.com>
+ <CAPM=9tyB4aKK2Z3-h9yEXLWvrnKGjxH2DaOHp8uA0mNNZQiVWQ@mail.gmail.com>
+ <50ED1C12.2090608@gmail.com>
+ <50EDC8A1.30307@oracle.com>
+ <50EDCF14.4080101@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <50EDCF14.4080101@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Jan 09, 2013 at 02:12:04PM -0600, Dave Kleikamp wrote:
+> On 01/09/2013 01:44 PM, Dave Kleikamp wrote:
+> > 
+> > I can easily reproduce it running glxgears on 3.8-rc1 or 3.8-rc2.
+> > 
+> > 00:02.0 VGA compatible controller [0300]: Intel Corporation Core
+> > Processor Integrated Graphics Controller [8086:0046] (rev 02)
+> > 
+> > Thinkpad T410
+> > 
+> > Shaggy
+> 
+> Daniel's patch:
+> 
+> drm/i915: Revert shrinker changes from "Track unbound pages"
+> 
+> fixes the problem for me.
 
-------------------
+Thanks for the hint, I'll go try that right now...
 
-From: Will Deacon <will.deacon@arm.com>
-
-commit 864aa04cd02979c2c755cb28b5f4fe56039171c0 upstream.
-
-When updating the page protection map after calculating the user_pgprot
-value, the base protection map is temporarily stored in an unsigned long
-type, causing truncation of the protection bits when LPAE is enabled.
-This effectively means that calls to mprotect() will corrupt the upper
-page attributes, clearing the XN bit unconditionally.
-
-This patch uses pteval_t to store the intermediate protection values,
-preserving the upper bits for 64-bit descriptors.
-
-Acked-by: Nicolas Pitre <nico@linaro.org>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/mm/mmu.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/arm/mm/mmu.c
-+++ b/arch/arm/mm/mmu.c
-@@ -497,7 +497,7 @@ static void __init build_mem_type_table(
- #endif
- 
- 	for (i = 0; i < 16; i++) {
--		unsigned long v = pgprot_val(protection_map[i]);
-+		pteval_t v = pgprot_val(protection_map[i]);
- 		protection_map[i] = __pgprot(v | user_pgprot);
- 	}
- 
-
-
+greg k-h
