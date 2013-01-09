@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933340Ab3AIUim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:42 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42191 "EHLO mail.kernel.org"
+	id S933361Ab3AIVef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:34:35 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42304 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933126Ab3AIUia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:30 -0500
+	id S933152Ab3AIUil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:41 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [ 038/123] ACPI / scan: Do not use dummy HID for system bus ACPI nodes
-Date: Wed,  9 Jan 2013 12:34:37 -0800
-Message-Id: <20130109201503.446040794@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 033/123] usb: gadget: tcm_usb_gadget: NULL terminate the FS descriptor list
+Date: Wed,  9 Jan 2013 12:34:32 -0800
+Message-Id: <20130109201502.802194819@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -25,33 +26,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 4f5f64cf0cc916220aaa055992e31195470cfe37 upstream.
+commit fad8deb274edcef1c8ca38946338f5f4f8126fe2 upstream.
 
-At one point acpi_device_set_id() checks if acpi_device_hid(device)
-returns NULL, but that never happens, so system bus devices with an
-empty list of PNP IDs are given the dummy HID ("device") instead of
-the "system bus HID" ("LNXSYBUS").  Fix the code to use the right
-check.
+The descriptor list for FS speed was not NULL terminated. This patch
+fixes this.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+While here one of the twe two bAlternateSetting assignments for the BOT
+interface. Both assign 0, one is enough.
+
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/scan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/tcm_usb_gadget.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -1227,7 +1227,7 @@ static void acpi_device_set_id(struct ac
- 			acpi_add_id(device, ACPI_DOCK_HID);
- 		else if (!acpi_ibm_smbus_match(device))
- 			acpi_add_id(device, ACPI_SMBUS_IBM_HID);
--		else if (!acpi_device_hid(device) &&
-+		else if (list_empty(&device->pnp.ids) &&
- 			 ACPI_IS_ROOT_DEVICE(device->parent)) {
- 			acpi_add_id(device, ACPI_BUS_HID); /* \_SB, LNXSYBUS */
- 			strcpy(device->pnp.device_name, ACPI_BUS_DEVICE_NAME);
+--- a/drivers/usb/gadget/tcm_usb_gadget.c
++++ b/drivers/usb/gadget/tcm_usb_gadget.c
+@@ -2139,6 +2139,7 @@ static struct usb_descriptor_header *uas
+ 	(struct usb_descriptor_header *) &uasp_status_pipe_desc,
+ 	(struct usb_descriptor_header *) &uasp_fs_cmd_desc,
+ 	(struct usb_descriptor_header *) &uasp_cmd_pipe_desc,
++	NULL,
+ };
+ 
+ static struct usb_descriptor_header *uasp_hs_function_desc[] = {
 
 
