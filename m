@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932613Ab3AIUSM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:18:12 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36092 "EHLO hydra.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932106Ab3AIUSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:18:10 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jiang Liu <liuj97@gmail.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@huawei.com>,
-        Yijing Wang <wangyijing@huawei.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-Subject: Re: [PATCH v3 4/6] PCI/acpiphp: update ACPI hotplug slot information when PCI hotplug happens
-Date: Wed, 09 Jan 2013 21:23:54 +0100
-Message-ID: <2474473.EXPaz4HMXx@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <50ED9B03.3020606@gmail.com>
-References: <1357663945-16054-1-git-send-email-jiang.liu@huawei.com> <5038693.7d3RCgbghD@vostro.rjw.lan> <50ED9B03.3020606@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S932479Ab3AIU2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:28:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34879 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932106Ab3AIU2U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:28:20 -0500
+Date: Wed, 9 Jan 2013 12:28:19 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Glauber Costa <glommer@parallels.com>
+Cc: Anton Vorontsov <anton.vorontsov@linaro.org>,
+        David Rientjes <rientjes@google.com>,
+        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Greg Thelen <gthelen@google.com>,
+        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
+        <patches@linaro.org>, <kernel-team@android.com>
+Subject: Re: [PATCH 1/2] Add mempressure cgroup
+Message-Id: <20130109122819.69c8f84e.akpm@linux-foundation.org>
+In-Reply-To: <50ED7A3A.2030700@parallels.com>
+References: <20130104082751.GA22227@lizard.gateway.2wire.net>
+	<1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
+	<20130108134424.0423dc1f.akpm@linux-foundation.org>
+	<50ED7A3A.2030700@parallels.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 10, 2013 12:29:55 AM Jiang Liu wrote:
-> On 01/09/2013 08:04 AM, Rafael J. Wysocki wrote:
-> > On Wednesday, January 09, 2013 12:52:23 AM Jiang Liu wrote:
-> >> Currently the acpiphp driver fails to update hotplug slot information under
-> >> several conditions, such as:
-> >> 1) The bridge device is removed through /sys/bus/pci/devices/.../remove
-> >> 2) The bridge device is added/removed by PCI hotplug driver other than the
-> >>    acpiphp driver itself. For example, if an IO expansion box with ACPI
-> >>    hotplug slots available is hot-added by the pciehp driver, all ACPI
-> >>    hotplug slots won't be discovered by the acpiphp driver.
-> >>
-> >> So hook the BUS_NOTIFY_ADD_DEVICE/BUS_NOTIFY_DEL_DEVICE events to
-> >> update ACPI hotplug slot information when PCI hotplug event happens.
-> >>
-> >> Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-> >> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-> >> ---
-> >>  drivers/pci/hotplug/acpiphp_glue.c |   62 ++++++++++++++++++++++++++++++++++--
-> >>  1 file changed, 60 insertions(+), 2 deletions(-)
-> >>
-> snip
-> >> +static struct notifier_block acpi_pci_hp_notifier = {
-> >> +	.notifier_call = &acpi_pci_hp_notify_fn,
-> >> +};
-> >> +
-> >>  static struct acpi_pci_driver acpi_pci_hp_driver = {
-> >>  	.add =		add_bridge,
-> >>  	.remove =	remove_bridge,
-> >> @@ -1448,6 +1503,8 @@ int __init acpiphp_glue_init(void)
-> >>  	else
-> >>  		acpi_pci_register_driver(&acpi_pci_hp_driver);
-> >>  
-> >> +	bus_register_notifier(&pci_bus_type, &acpi_pci_hp_notifier);
+On Wed, 9 Jan 2013 18:10:02 +0400
+Glauber Costa <glommer@parallels.com> wrote:
+
+> On 01/09/2013 01:44 AM, Andrew Morton wrote:
+> > On Fri,  4 Jan 2013 00:29:11 -0800
+> > Anton Vorontsov <anton.vorontsov@linaro.org> wrote:
 > > 
-> > Your previous patch adds a PCI bus notifier for a similar thing.  Why are
-> > you adding another one here?
-> Hi Rafael,
-> 	The acpiphp driver could be built as a module, and this bus notifier
-> is used to setup/tear down ACPI based PCI hotplug controllers under a PCI bridge.
-> The previous patch is to add/remove PCI slots. The PCI slot and PCI hotplug
-> controller are related but different objects, so we use two notifiers to support
-> them all.
+> >> This commit implements David Rientjes' idea of mempressure cgroup.
+> >>
+> >> The main characteristics are the same to what I've tried to add to vmevent
+> >> API; internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
+> >> pressure index calculation. But we don't expose the index to the userland.
+> >> Instead, there are three levels of the pressure:
+> >>
+> >>  o low (just reclaiming, e.g. caches are draining);
+> >>  o medium (allocation cost becomes high, e.g. swapping);
+> >>  o oom (about to oom very soon).
+> >>
+> >> The rationale behind exposing levels and not the raw pressure index
+> >> described here: http://lkml.org/lkml/2012/11/16/675
+> >>
+> >> For a task it is possible to be in both cpusets, memcg and mempressure
+> >> cgroups, so by rearranging the tasks it is possible to watch a specific
+> >> pressure (i.e. caused by cpuset and/or memcg).
+> >>
+> >> Note that while this adds the cgroups support, the code is well separated
+> >> and eventually we might add a lightweight, non-cgroups API, i.e. vmevent.
+> >> But this is another story.
+> >>
+> > 
+> > I'd have thought that it's pretty important offer this feature to
+> > non-cgroups setups.  Restricting it to cgroups-only seems a large
+> > limitation.
+> > 
+> 
+> Why is it so, Andrew?
+> 
+> When we talk about "cgroups", we are not necessarily talking about the
+> whole beast, with all controllers enabled. Much less we are talking
+> about hierarchies being created, and tasks put on it.
+> 
+> It's an interface only. And since all controllers will always have a
+> special "root" cgroup, this applies to the tasks in the system all the
+> same. In the end of the day, if we have something like
+> CONFIG_MEMPRESSURE that selects CONFIG_CGROUP, the user needs to do the
+> same thing to actually turn on the functionality: switch a config
+> option. It is not more expensive, and it doesn't bring in anything extra
+> as well.
+> 
+> To actually use it, one needs to mount the filesystem, and write to a
+> file. Nothing else.
+> 
 
-I would be much happier if those notifiers were not needed.  At least, I'm not
-sure why they need to be invoked by the driver core during device registration.
+Oh, OK, well if the feature can be used in a system-wide fashion in
+this manner then I guess that is sufficient.  For some reason I was
+thinking it was tied to memcg, doh.
 
-In my opinion it would be much better if they were called only for the devices
-that might need them instead of all PCI devices.
-
-Thanks,
-Rafael
-
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
