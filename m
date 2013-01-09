@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934133Ab3AIUt4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:49:56 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43914 "EHLO mail.kernel.org"
+	id S934058Ab3AIUlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:15 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43785 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934068Ab3AIUlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:17 -0500
+	id S933999Ab3AIUlD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tony Lindgren <tony@atomide.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [ 112/123] lib: atomic64: Initialize locks statically to fix early users
-Date: Wed,  9 Jan 2013 12:35:51 -0800
-Message-Id: <20130109201512.794583191@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 101/123] cifs: move check for NULL socket into smb_send_rqst
+Date: Wed,  9 Jan 2013 12:35:40 -0800
+Message-Id: <20130109201511.514879956@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -29,79 +25,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Boyd <sboyd@codeaurora.org>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit fcc16882ac4532aaa644bff444f0c5d6228ba71e upstream.
+commit ea702b80e0bbb2448e201472127288beb82ca2fe upstream.
 
-The atomic64 library uses a handful of static spin locks to implement
-atomic 64-bit operations on architectures without support for atomic
-64-bit instructions.
+Cai reported this oops:
 
-Unfortunately, the spinlocks are initialized in a pure initcall and that
-is too late for the vfs namespace code which wants to use atomic64
-operations before the initcall is run.
+[90701.616664] BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+[90701.625438] IP: [<ffffffff814a343e>] kernel_setsockopt+0x2e/0x60
+[90701.632167] PGD fea319067 PUD 103fda4067 PMD 0
+[90701.637255] Oops: 0000 [#1] SMP
+[90701.640878] Modules linked in: des_generic md4 nls_utf8 cifs dns_resolver binfmt_misc tun sg igb iTCO_wdt iTCO_vendor_support lpc_ich pcspkr i2c_i801 i2c_core i7core_edac edac_core ioatdma dca mfd_core coretemp kvm_intel kvm crc32c_intel microcode sr_mod cdrom ata_generic sd_mod pata_acpi crc_t10dif ata_piix libata megaraid_sas dm_mirror dm_region_hash dm_log dm_mod
+[90701.677655] CPU 10
+[90701.679808] Pid: 9627, comm: ls Tainted: G        W    3.7.1+ #10 QCI QSSC-S4R/QSSC-S4R
+[90701.688950] RIP: 0010:[<ffffffff814a343e>]  [<ffffffff814a343e>] kernel_setsockopt+0x2e/0x60
+[90701.698383] RSP: 0018:ffff88177b431bb8  EFLAGS: 00010206
+[90701.704309] RAX: ffff88177b431fd8 RBX: 00007ffffffff000 RCX: ffff88177b431bec
+[90701.712271] RDX: 0000000000000003 RSI: 0000000000000006 RDI: 0000000000000000
+[90701.720223] RBP: ffff88177b431bc8 R08: 0000000000000004 R09: 0000000000000000
+[90701.728185] R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000001
+[90701.736147] R13: ffff88184ef92000 R14: 0000000000000023 R15: ffff88177b431c88
+[90701.744109] FS:  00007fd56a1a47c0(0000) GS:ffff88105fc40000(0000) knlGS:0000000000000000
+[90701.753137] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+[90701.759550] CR2: 0000000000000028 CR3: 000000104f15f000 CR4: 00000000000007e0
+[90701.767512] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[90701.775465] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[90701.783428] Process ls (pid: 9627, threadinfo ffff88177b430000, task ffff88185ca4cb60)
+[90701.792261] Stack:
+[90701.794505]  0000000000000023 ffff88177b431c50 ffff88177b431c38 ffffffffa014fcb1
+[90701.802809]  ffff88184ef921bc 0000000000000000 00000001ffffffff ffff88184ef921c0
+[90701.811123]  ffff88177b431c08 ffffffff815ca3d9 ffff88177b431c18 ffff880857758000
+[90701.819433] Call Trace:
+[90701.822183]  [<ffffffffa014fcb1>] smb_send_rqst+0x71/0x1f0 [cifs]
+[90701.828991]  [<ffffffff815ca3d9>] ? schedule+0x29/0x70
+[90701.834736]  [<ffffffffa014fe6d>] smb_sendv+0x3d/0x40 [cifs]
+[90701.841062]  [<ffffffffa014fe96>] smb_send+0x26/0x30 [cifs]
+[90701.847291]  [<ffffffffa015801f>] send_nt_cancel+0x6f/0xd0 [cifs]
+[90701.854102]  [<ffffffffa015075e>] SendReceive+0x18e/0x360 [cifs]
+[90701.860814]  [<ffffffffa0134a78>] CIFSFindFirst+0x1a8/0x3f0 [cifs]
+[90701.867724]  [<ffffffffa013f731>] ? build_path_from_dentry+0xf1/0x260 [cifs]
+[90701.875601]  [<ffffffffa013f731>] ? build_path_from_dentry+0xf1/0x260 [cifs]
+[90701.883477]  [<ffffffffa01578e6>] cifs_query_dir_first+0x26/0x30 [cifs]
+[90701.890869]  [<ffffffffa015480d>] initiate_cifs_search+0xed/0x250 [cifs]
+[90701.898354]  [<ffffffff81195970>] ? fillonedir+0x100/0x100
+[90701.904486]  [<ffffffffa01554cb>] cifs_readdir+0x45b/0x8f0 [cifs]
+[90701.911288]  [<ffffffff81195970>] ? fillonedir+0x100/0x100
+[90701.917410]  [<ffffffff81195970>] ? fillonedir+0x100/0x100
+[90701.923533]  [<ffffffff81195970>] ? fillonedir+0x100/0x100
+[90701.929657]  [<ffffffff81195848>] vfs_readdir+0xb8/0xe0
+[90701.935490]  [<ffffffff81195b9f>] sys_getdents+0x8f/0x110
+[90701.941521]  [<ffffffff815d3b99>] system_call_fastpath+0x16/0x1b
+[90701.948222] Code: 66 90 55 65 48 8b 04 25 f0 c6 00 00 48 89 e5 53 48 83 ec 08 83 fe 01 48 8b 98 48 e0 ff ff 48 c7 80 48 e0 ff ff ff ff ff ff 74 22 <48> 8b 47 28 ff 50 68 65 48 8b 14 25 f0 c6 00 00 48 89 9a 48 e0
+[90701.970313] RIP  [<ffffffff814a343e>] kernel_setsockopt+0x2e/0x60
+[90701.977125]  RSP <ffff88177b431bb8>
+[90701.981018] CR2: 0000000000000028
+[90701.984809] ---[ end trace 24bd602971110a43 ]---
 
-This became a problem as of commit 8823c079ba71: "vfs: Add setns support
-for the mount namespace".
+This is likely due to a race vs. a reconnection event.
 
-This leads to BUG messages such as:
+The current code checks for a NULL socket in smb_send_kvec, but that's
+too late. By the time that check is done, the socket will already have
+been passed to kernel_setsockopt. Move the check into smb_send_rqst, so
+that it's checked earlier.
 
-  BUG: spinlock bad magic on CPU#0, swapper/0/0
-   lock: atomic64_lock+0x240/0x400, .magic: 00000000, .owner: <none>/-1, .owner_cpu: 0
-    do_raw_spin_lock+0x158/0x198
-    _raw_spin_lock_irqsave+0x4c/0x58
-    atomic64_add_return+0x30/0x5c
-    alloc_mnt_ns.clone.14+0x44/0xac
-    create_mnt_ns+0xc/0x54
-    mnt_init+0x120/0x1d4
-    vfs_caches_init+0xe0/0x10c
-    start_kernel+0x29c/0x300
+In truth, this is a bit of a half-assed fix. The -ENOTSOCK error
+return here looks like it could bubble back up to userspace. The locking
+rules around the ssocket pointer are really unclear as well. There are
+cases where the ssocket pointer is changed without holding the srv_mutex,
+but I'm not clear whether there's a potential race here yet or not.
 
-coming out early on during boot when spinlock debugging is enabled.
+This code seems like it could benefit from some fundamental re-think of
+how the socket handling should behave. Until then though, this patch
+should at least fix the above oops in most cases.
 
-Fix this by initializing the spinlocks statically at compile time.
-
-Reported-and-tested-by: Vaibhav Bedia <vaibhav.bedia@ti.com>
-Tested-by: Tony Lindgren <tony@atomide.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reported-and-Tested-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- lib/atomic64.c |   17 +++++------------
- 1 file changed, 5 insertions(+), 12 deletions(-)
+ fs/cifs/transport.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/lib/atomic64.c
-+++ b/lib/atomic64.c
-@@ -31,7 +31,11 @@
- static union {
- 	raw_spinlock_t lock;
- 	char pad[L1_CACHE_BYTES];
--} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp;
-+} atomic64_lock[NR_LOCKS] __cacheline_aligned_in_smp = {
-+	[0 ... (NR_LOCKS - 1)] = {
-+		.lock =  __RAW_SPIN_LOCK_UNLOCKED(atomic64_lock.lock),
-+	},
-+};
+--- a/fs/cifs/transport.c
++++ b/fs/cifs/transport.c
+@@ -144,9 +144,6 @@ smb_send_kvec(struct TCP_Server_Info *se
  
- static inline raw_spinlock_t *lock_addr(const atomic64_t *v)
- {
-@@ -173,14 +177,3 @@ int atomic64_add_unless(atomic64_t *v, l
- 	return ret;
- }
- EXPORT_SYMBOL(atomic64_add_unless);
+ 	*sent = 0;
+ 
+-	if (ssocket == NULL)
+-		return -ENOTSOCK; /* BB eventually add reconnect code here */
 -
--static int init_atomic64_lock(void)
--{
--	int i;
--
--	for (i = 0; i < NR_LOCKS; ++i)
--		raw_spin_lock_init(&atomic64_lock[i].lock);
--	return 0;
--}
--
--pure_initcall(init_atomic64_lock);
+ 	smb_msg.msg_name = (struct sockaddr *) &server->dstaddr;
+ 	smb_msg.msg_namelen = sizeof(struct sockaddr);
+ 	smb_msg.msg_control = NULL;
+@@ -291,6 +288,9 @@ smb_send_rqst(struct TCP_Server_Info *se
+ 	struct socket *ssocket = server->ssocket;
+ 	int val = 1;
+ 
++	if (ssocket == NULL)
++		return -ENOTSOCK;
++
+ 	cFYI(1, "Sending smb: smb_len=%u", smb_buf_length);
+ 	dump_smb(iov[0].iov_base, iov[0].iov_len);
+ 
 
 
