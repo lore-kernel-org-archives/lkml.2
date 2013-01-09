@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757422Ab3AIIkH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:40:07 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:38939 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757190Ab3AIIkG (ORCPT
+	id S1757451Ab3AIIkr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:40:47 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:41034 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757190Ab3AIIkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:40:06 -0500
+	Wed, 9 Jan 2013 03:40:46 -0500
 From: Patrik Karlin <patrik.karlin@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         Patrik Karlin <patrik.karlin@gmail.com>
-Subject: =?UTF-8?q?=5BPATCH=201/3=5D=20staging=3A=20rtl8192u=3A=20fixed=20some=20coding=20style=20issues=20in=20r8192U=5Fcore=2Ec?=
-Date: Wed,  9 Jan 2013 09:39:44 +0100
-Message-Id: <1357720784-4226-1-git-send-email-patrik.karlin@gmail.com>
+Subject: =?UTF-8?q?=5BPATCH=202/3=5D=20staging=3A=20rtl8192u=3A=20removed=20some=20non=20used=20else=27s?=
+Date: Wed,  9 Jan 2013 09:40:23 +0100
+Message-Id: <1357720823-4270-1-git-send-email-patrik.karlin@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <n>
 References: <n>
@@ -24,109 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes some coding style issues. in r8192U_core.c
-No logic is changed.
+This patch removes some else blocks that has no function in the
+code
 
 Signed-off-by: Patrik Kårlin <patrik.karlin@gmail.com>
 ---
- drivers/staging/rtl8192u/r8192U_core.c |   80 +++++++++++++++-----------------
- 1 file changed, 37 insertions(+), 43 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 56367f2..c2260de 100644
+index c2260de..193822e 100644
 --- a/drivers/staging/rtl8192u/r8192U_core.c
 +++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -190,53 +190,47 @@ static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv* priv)
- 	struct ieee80211_device* ieee = priv->ieee80211;
- 	switch (channel_plan)
+@@ -2176,7 +2176,7 @@ short rtl8192_tx(struct net_device *dev, struct sk_buff* skb)
+ 		dev->trans_start = jiffies;
+ 		atomic_inc(&priv->tx_pending[tcb_desc->queue_index]);
+ 		return 0;
+-	}else{
++	} else {
+ 		RT_TRACE(COMP_ERR, "Error TX URB %d, error %d", atomic_read(&priv->tx_pending[tcb_desc->queue_index]),
+ 				status);
+ 		return -1;
+@@ -4572,11 +4572,8 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
  	{
--		case COUNTRY_CODE_FCC:
--		case COUNTRY_CODE_IC:
--		case COUNTRY_CODE_ETSI:
--		case COUNTRY_CODE_SPAIN:
--		case COUNTRY_CODE_FRANCE:
--		case COUNTRY_CODE_MKK:
--		case COUNTRY_CODE_MKK1:
--		case COUNTRY_CODE_ISRAEL:
--		case COUNTRY_CODE_TELEC:
--		case COUNTRY_CODE_MIC:
--		{
--			Dot11d_Init(ieee);
--			ieee->bGlobalDomain = false;
--			//actually 8225 & 8256 rf chips only support B,G,24N mode
--			if ((priv->rf_chip == RF_8225) || (priv->rf_chip == RF_8256))
--			{
--				min_chan = 1;
--				max_chan = 14;
--			}
--			else
--			{
--				RT_TRACE(COMP_ERR, "unknown rf chip, can't set channel map in function:%s()\n", __FUNCTION__);
--			}
--			if (ChannelPlan[channel_plan].Len != 0){
--				// Clear old channel map
--				memset(GET_DOT11D_INFO(ieee)->channel_map, 0, sizeof(GET_DOT11D_INFO(ieee)->channel_map));
--				// Set new channel map
--				for (i=0;i<ChannelPlan[channel_plan].Len;i++)
--				{
--					if (ChannelPlan[channel_plan].Channel[i] < min_chan || ChannelPlan[channel_plan].Channel[i] > max_chan)
-+	case COUNTRY_CODE_FCC:
-+	case COUNTRY_CODE_IC:
-+	case COUNTRY_CODE_ETSI:
-+	case COUNTRY_CODE_SPAIN:
-+	case COUNTRY_CODE_FRANCE:
-+	case COUNTRY_CODE_MKK:
-+	case COUNTRY_CODE_MKK1:
-+	case COUNTRY_CODE_ISRAEL:
-+	case COUNTRY_CODE_TELEC:
-+	case COUNTRY_CODE_MIC:	
-+		Dot11d_Init(ieee);
-+		ieee->bGlobalDomain = false;
-+		//actually 8225 & 8256 rf chips only support B,G,24N mode
-+		if ((priv->rf_chip == RF_8225) || (priv->rf_chip == RF_8256)) {
-+			min_chan = 1;
-+			max_chan = 14;
-+		}
-+		else {
-+			RT_TRACE(COMP_ERR, "unknown rf chip, can't set channel map in function:%s()\n", __FUNCTION__);
-+		}
-+		if (ChannelPlan[channel_plan].Len != 0) {
-+			// Clear old channel map
-+			memset(GET_DOT11D_INFO(ieee)->channel_map, 0, sizeof(GET_DOT11D_INFO(ieee)->channel_map));
-+			// Set new channel map
-+			for (i=0;i<ChannelPlan[channel_plan].Len;i++) {
-+				if (ChannelPlan[channel_plan].Channel[i] < min_chan || ChannelPlan[channel_plan].Channel[i] > max_chan)
- 					break;
--					GET_DOT11D_INFO(ieee)->channel_map[ChannelPlan[channel_plan].Channel[i]] = 1;
--				}
-+				GET_DOT11D_INFO(ieee)->channel_map[ChannelPlan[channel_plan].Channel[i]] = 1;
- 			}
--			break;
- 		}
--		case COUNTRY_CODE_GLOBAL_DOMAIN:
--		{
--			GET_DOT11D_INFO(ieee)->bEnabled = 0;//this flag enabled to follow 11d country IE setting, otherwise, it shall follow global domain settings.
--			Dot11d_Reset(ieee);
--			ieee->bGlobalDomain = true;
--			break;
--		}
--		default:
--			break;
-+		break;
-+
-+	case COUNTRY_CODE_GLOBAL_DOMAIN:
-+		GET_DOT11D_INFO(ieee)->bEnabled = 0;//this flag enabled to follow 11d country IE setting, otherwise, it shall follow global domain settings.
-+		Dot11d_Reset(ieee);
-+		ieee->bGlobalDomain = true;
-+		break;
-+	
-+	default:
-+		break;
+ 		// if previous packet is not aggregated packet
+ 		bcheck = true;
+-	}else
+-	{
  	}
--	return;
+ 
+-
+ 	if(slide_rssi_statistics++ >= PHY_RSSI_SLID_WIN_MAX)
+ 	{
+ 		slide_rssi_statistics = PHY_RSSI_SLID_WIN_MAX;
+@@ -5676,10 +5673,6 @@ void rtl8192_rx_cmd(struct sk_buff *skb)
+ 
+ 		dev_kfree_skb_any(skb);
+ 	}
+-	else
+-		;
+-
+-
  }
  
- 
+ void rtl8192_irq_rx_tasklet(struct r8192_priv *priv)
 -- 
 1.7.10.4
 
