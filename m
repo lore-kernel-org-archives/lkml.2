@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542Ab3AIKTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 05:19:14 -0500
-Received: from moutng.kundenserver.de ([212.227.17.9]:49576 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756210Ab3AIKTL (ORCPT
+	id S1757588Ab3AIKUs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 05:20:48 -0500
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:35863 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756210Ab3AIKUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 05:19:11 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 2/3] ARM: ux500: Turn on the 'heartbeat' LED trigger
-Date: Wed, 9 Jan 2013 10:18:54 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linus.walleij@stericsson.com, sameo@linux.intel.com
-References: <1357725965-27342-1-git-send-email-lee.jones@linaro.org> <1357725965-27342-2-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1357725965-27342-2-git-send-email-lee.jones@linaro.org>
+	Wed, 9 Jan 2013 05:20:47 -0500
+Message-ID: <50ED446F.5090405@linux.vnet.ibm.com>
+Date: Wed, 09 Jan 2013 15:50:31 +0530
+From: shubham <shubham@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.7) Gecko/20120825 Thunderbird/10.0.7
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: ltp-list@lists.sourceforge.net, linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        yanegomi@gmail.com, chrubis@suse.cz, gaowanlong@cn.fujitsu.com,
+        czhang@redhat.com, vapier@gentoo.org
+Subject: [LTP] [ANNOUNCE] The Linux Test Project has been released for JANUARY
+ 2013
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201301091018.55058.arnd@arndb.de>
-X-Provags-ID: V02:K0:jhajq32Xz6S1IpSa9Kt3H4iD1SUgSygSV0R/x+sQxz+
- pGROr9Ewwi+aOGf2LKFqNj04954EXwlInbxZbGoJdg6j08u1Ah
- LvUVhag8S2aLx0FcO1V/un/jO3qNDNmu9+yTkvbn2W5clOvZ+K
- kxDU+ZvDlzRgZf1Vqe3FiAjdv1ESkli5zlhoQOkpOLi/s/5D00
- a9z31zQvUavpMWzR/7B0NfErnQPJ3K68Bqzify0abRgdzJRdaj
- 4eTPhnTGYXPtqLwG6f4rNyITKjPXR2h7s24g+9v78LmPULS8ne
- ZWkwI6ptsmaUsRID5uhkQli2UQPpXvNjGVlS5Q895B6ycIMnaI
- 8m4d108iqDaPYO79gba4=
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 13010910-3568-0000-0000-000003006575
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 January 2013, Lee Jones wrote:
-> diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-> index 5dea906..0f25b07 100644
-> --- a/arch/arm/mach-ux500/Kconfig
-> +++ b/arch/arm/mach-ux500/Kconfig
-> @@ -43,6 +43,8 @@ config MACH_HREFV60
->  config MACH_SNOWBALL
->         bool "U8500 Snowball platform"
->         select MACH_MOP500
-> +       select LEDS_TRIGGERS
-> +       select LEDS_TRIGGER_HEARTBEAT
->         help
->           Include support for the snowball development platform.
+Hello all,
 
-Be careful with "select" statements like this when there are other
-dependencies. I think LEDS_TRIGGERS depends on LEDS_CLASS, so this
-should probably be written as
+The first release of New year 2013 has been done for Linux Test Project 
+test suite.
 
-	select LEDS_TRIGGERS if LEDS_CLASS
+The latest version of the test-suite contains 3000+ tests for the Linux
+OS and can be found at:
+http://ltp.sourceforge.net/
 
-	Arnd
+You can explore our new github page at:
+https://github.com/linux-test-project/ltp
+
+
+Latest happenings in LTP can also be found at:
+http://ltp.sourceforge.net/wiki/,
+http://ltp.sourceforge.net/wikiArchives.php, and,
+IRC: irc.freenode.org #ltp.
+
+Our web site also contains other information such as:
+- A Linux test tools matrix
+- Technical papers
+- How To's on Linux testing
+- Code coverage analysis tool.
+
+We would encourage the community to post results to
+ltp-results@lists.sf.net,
+
+patches, new tests, bugs or comments/questions to ltp-list@lists.sf.net,
+
+http://sourceforge.net/tracker/?func=add&group_id=3382&atid=103382 (for
+New Bug(s)),
+http://sourceforge.net/tracker/?func=add&group_id=3382&atid=303382 (for
+New Patch(s)),
+http://sourceforge.net/tracker/?func=add&group_id=3382&atid=353382 (for
+New Feature Request(s))
+
+**Note: Some pending patches will be checked in for next release.
+
+Wish you all a terrific new year 2013.
+
+Thanks,
+Shubham
+
