@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933658Ab3AIVXl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:23:41 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42623 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933535Ab3AIUjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:16 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: [ 47/80] usb: musb: cppi_dma: export cppi_interrupt()
-Date: Wed,  9 Jan 2013 12:35:39 -0800
-Message-Id: <20130109201506.434259192@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S934248Ab3AIVXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:23:50 -0500
+Received: from moutng.kundenserver.de ([212.227.17.10]:49458 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933535Ab3AIVXq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:23:46 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thierry Reding <thierry.reding@avionic-design.de>
+Subject: Re: [PATCH 11/14] ARM: tegra: tamonten: Add PCIe support
+Date: Wed, 9 Jan 2013 21:23:37 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Andrew Murray <andrew.murray@arm.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
+References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-12-git-send-email-thierry.reding@avionic-design.de>
+In-Reply-To: <1357764194-12677-12-git-send-email-thierry.reding@avionic-design.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301092123.37491.arnd@arndb.de>
+X-Provags-ID: V02:K0:gNLshlMKvAcqwvMqVxpiBCahzDNPG1rHf4WfdjWzLVh
+ jRm4lvl0gxY9R22S7MxlgREu1V5HtdRMFyYu30lI25ULWEoTE6
+ vMP1N5RX61fv5xLtUHPAiWjqme7yvxAtrB87OOFVM2kfTr7Jhe
+ VTnxGdraqNiIfBaky0Spb6D4T+7VXYi+HogpiAcbF2wMdk5sCF
+ A+YkLWWmW5FbYQzdz3ToZVZibCUZuf1NnSA5U6TgEDlWSRyYZp
+ NnnkcpY2x7v+25GmZaeB3VWzAqdbA27h76McGlJdSF1A5UQkDA
+ PJRbi4hYhH0RSrITYGGK+Qae2H7oQyD6WesucpGQ5CmGg560Pb
+ BYbgWQWw7qd485gADGv4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Wednesday 09 January 2013, Thierry Reding wrote:
+> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+> ---
+>  arch/arm/boot/dts/tegra20-tamonten.dtsi | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-------------------
+It's not clear how this one-line patch adds PCIe support to the
+platform. Are you missing the actual change here?
 
-From: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-
-commit 8b416b0b25d5d8ddb3a91c1d20e1373582c50405 upstream.
-
-Now that DaVinci glue layer can be modular, we must export cppi_interrupt()
-that it may call...
-
-Signed-off-by: Sergei Shtylyov <sshtylyov@ru.mvista.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/usb/musb/cppi_dma.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/usb/musb/cppi_dma.c
-+++ b/drivers/usb/musb/cppi_dma.c
-@@ -1313,6 +1313,7 @@ irqreturn_t cppi_interrupt(int irq, void
- 
- 	return IRQ_HANDLED;
- }
-+EXPORT_SYMBOL_GPL(cppi_interrupt);
- 
- /* Instantiate a software object representing a DMA controller. */
- struct dma_controller *__init
-
-
+	Arnd
