@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933452Ab3AIUjE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:04 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42470 "EHLO mail.kernel.org"
+	id S933483Ab3AIVaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:30:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42501 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933440Ab3AIUjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:00 -0500
+	id S933444Ab3AIUjD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [ 31/80] usb: gadget: phonet: free requests in pn_bind()s error path
-Date: Wed,  9 Jan 2013 12:35:23 -0800
-Message-Id: <20130109201504.393263770@linuxfoundation.org>
+        NeilBrown <neilb@suse.de>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [ 043/123] NFS: avoid NULL dereference in nfs_destroy_server
+Date: Wed,  9 Jan 2013 12:34:42 -0800
+Message-Id: <20130109201504.099260040@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
-References: <20130109201500.410171651@linuxfoundation.org>
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+From: NeilBrown <neilb@suse.de>
 
-commit d0eca719dd11ad0619e8dd6a1f3eceb95b0216dd upstream.
+commit f259613a1e4b44a0cf85a5dafd931be96ee7c9e5 upstream.
 
-Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+In rare circumstances, nfs_clone_server() of a v2 or v3 server can get
+an error between setting server->destory (to nfs_destroy_server), and
+calling nfs_start_lockd (which will set server->nlm_host).
+
+If this happens, nfs_clone_server will call nfs_free_server which
+will call nfs_destroy_server and thence nlmclnt_done(NULL).  This
+causes the NULL to be dereferenced.
+
+So add a guard to only call nlmclnt_done() if ->nlm_host is not NULL.
+
+The other guards there are irrelevant as nlm_host can only be non-NULL
+if one of these flags are set - so remove those tests.  (Thanks to Trond
+for this suggestion).
+
+This is suitable for any stable kernel since 2.6.25.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/gadget/f_phonet.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/nfs/client.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/usb/gadget/f_phonet.c
-+++ b/drivers/usb/gadget/f_phonet.c
-@@ -531,7 +531,7 @@ int pn_bind(struct usb_configuration *c,
+--- a/fs/nfs/client.c
++++ b/fs/nfs/client.c
+@@ -615,8 +615,7 @@ EXPORT_SYMBOL_GPL(nfs_create_rpc_client)
+  */
+ static void nfs_destroy_server(struct nfs_server *server)
+ {
+-	if (!(server->flags & NFS_MOUNT_LOCAL_FLOCK) ||
+-			!(server->flags & NFS_MOUNT_LOCAL_FCNTL))
++	if (server->nlm_host)
+ 		nlmclnt_done(server->nlm_host);
+ }
  
- 		req = usb_ep_alloc_request(fp->out_ep, GFP_KERNEL);
- 		if (!req)
--			goto err;
-+			goto err_req;
- 
- 		req->complete = pn_rx_complete;
- 		fp->out_reqv[i] = req;
-@@ -540,14 +540,18 @@ int pn_bind(struct usb_configuration *c,
- 	/* Outgoing USB requests */
- 	fp->in_req = usb_ep_alloc_request(fp->in_ep, GFP_KERNEL);
- 	if (!fp->in_req)
--		goto err;
-+		goto err_req;
- 
- 	INFO(cdev, "USB CDC Phonet function\n");
- 	INFO(cdev, "using %s, OUT %s, IN %s\n", cdev->gadget->name,
- 		fp->out_ep->name, fp->in_ep->name);
- 	return 0;
- 
-+err_req:
-+	for (i = 0; i < phonet_rxq_size && fp->out_reqv[i]; i++)
-+		usb_ep_free_request(fp->out_ep, fp->out_reqv[i]);
- err:
-+
- 	if (fp->out_ep)
- 		fp->out_ep->driver_data = NULL;
- 	if (fp->in_ep)
 
 
