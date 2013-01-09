@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab3AIL4g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 06:56:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48193 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757453Ab3AIL4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 06:56:35 -0500
-From: Anton Arapov <anton@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Josh Stone <jistone@redhat.com>,
-        Frank Eigler <fche@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <anton@redhat.com>
-Subject: [RFC PATCH v2 1/4] uretprobes/x86: hijack return address
-Date: Wed,  9 Jan 2013 12:24:49 +0100
-Message-Id: <1357730692-3928-2-git-send-email-anton@redhat.com>
-In-Reply-To: <1357730692-3928-1-git-send-email-anton@redhat.com>
-References: <1357730692-3928-1-git-send-email-anton@redhat.com>
+	id S1757694Ab3AIL5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 06:57:09 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:54960 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757453Ab3AIL5I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 06:57:08 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH 2/3] ARM: ux500: Turn on the 'heartbeat' LED trigger
+Date: Wed, 9 Jan 2013 11:56:55 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Lee Jones <lee.jones@linaro.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linus.walleij@stericsson.com
+References: <1357725965-27342-1-git-send-email-lee.jones@linaro.org> <20130109110840.GD31678@gmail.com> <20130109111209.GH3931@n2100.arm.linux.org.uk>
+In-Reply-To: <20130109111209.GH3931@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201301091156.55644.arnd@arndb.de>
+X-Provags-ID: V02:K0:KFMirDnDx/4DOPEY0t84vSX2Kni6B25GBAXiIHRYbi6
+ MB8llfdWQySoHmEnfdTNqiXe1IOy6uPCZxfigUR7WxgPShtcCy
+ waCLQ8d0ySMh9Ys58ZrVDVcGRS3F0wjHIgkdFJbh218KX6gGii
+ C34EP1s99mEuYcJsIVijGajQY1FQX7Y4yC5A9U6JZmAEdLhU2a
+ lA8cnYHfQ8uSGu+g52sHiaLI5VJy74iijjXOfd3dAXRvxxr8CU
+ +54vQD1vVW0d2aZltxrnyjDlmb7/yUuAKzR+MNrnogmnuxSdRM
+ Hl/HBotiRMtFAN9LtWk9nXJRgS96peItUpWF2BjDfsCbrtc2jP
+ ygLo+HLYBV/A/r0MQHS0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function to hijack the return address, replace it with a "trampoline"
-and function to predict the stack pointer address value at return.
+On Wednesday 09 January 2013, Russell King - ARM Linux wrote:
+> > If so, that's wrong, as it covers many more boards than just Snowball
+> > and this is only applicable on the Snowball board. So how else can
+> > I enable this feature?
+> 
+> And why is it wrong to enable an optional feature in a defconfig which some
+> boards using that defconfig may want?
+> 
+> It's less wrong than forcing user selectable options to be mandatorily
+> selected.
 
-v2:
-  remove ->doomed flag, kill task immediately
+Right. The change I suggested fixes the build errors but doesn't actually
+make the intended behavior correct. Just using a configuration file is the
+right solution here.
 
-Signed-off-by: Anton Arapov <anton@redhat.com>
----
- arch/x86/include/asm/uprobes.h |  1 +
- arch/x86/kernel/uprobes.c      | 29 +++++++++++++++++++++++++++++
- 2 files changed, 30 insertions(+)
+It may be a good use case for the "suggest" Kconfig statement I brought
+up before: Rather than having snowball hard enable the LEDS subsystem,
+it could 'suggest LEDS_CORE' in order to change the default for that
+option, but still let users disable it if they want to.
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 8ff8be7..c353555 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -55,4 +55,5 @@ extern int  arch_uprobe_post_xol(struct arch_uprobe *aup, struct pt_regs *regs);
- extern bool arch_uprobe_xol_was_trapped(struct task_struct *tsk);
- extern int  arch_uprobe_exception_notify(struct notifier_block *self, unsigned long val, void *data);
- extern void arch_uprobe_abort_xol(struct arch_uprobe *aup, struct pt_regs *regs);
-+extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long rp_trampoline_vaddr, struct pt_regs *regs);
- #endif	/* _ASM_UPROBES_H */
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 0ba4cfb..85e2153 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -697,3 +697,32 @@ bool arch_uprobe_skip_sstep(struct arch_uprobe *auprobe, struct pt_regs *regs)
- 		send_sig(SIGTRAP, current, 0);
- 	return ret;
- }
-+
-+extern unsigned long arch_uretprobe_hijack_return_addr(unsigned long
-+		rp_trampoline_vaddr, struct pt_regs *regs)
-+{
-+	int rasize, ncopied;
-+	unsigned long orig_ret_vaddr = 0; /* clear high bits for 32-bit apps */
-+
-+	rasize = is_ia32_task() ? 4 : 8;
-+	ncopied = copy_from_user(&orig_ret_vaddr, (void __user *)regs->sp, rasize);
-+	if (unlikely(ncopied))
-+		return 0;
-+
-+	/* check whether address has been already hijacked */
-+	if (orig_ret_vaddr == rp_trampoline_vaddr)
-+		return orig_ret_vaddr;
-+
-+	ncopied = copy_to_user((void __user *)regs->sp, &rp_trampoline_vaddr, rasize);
-+	if (unlikely(ncopied)) {
-+		if (ncopied != rasize) {
-+			printk(KERN_ERR "uretprobe: return address clobbered: "
-+					"pid=%d, %%sp=%#lx, %%ip=%#lx\n",
-+					current->pid, regs->sp, regs->ip);
-+			/* kill task immediately */
-+			send_sig(SIGSEGV, current, 0);
-+		}
-+	}
-+
-+	return orig_ret_vaddr;
-+}
--- 
-1.8.0.2
-
+	Arnd
