@@ -1,74 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab3AIVPN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:15:13 -0500
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38423 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933645Ab3AIVPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:15:08 -0500
-MIME-Version: 1.0
-In-Reply-To: <87d2xeul5v.fsf@xmission.com>
-References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<87d2xeul5v.fsf@xmission.com>
-Date: Wed, 9 Jan 2013 13:15:06 -0800
-X-Google-Sender-Auth: knCxZBYZ7UPOVeMW5qNuDApJU2k
-Message-ID: <CAE9FiQX-OxTzt3BPh3nSLQxDUBGR=eKob5AqXYzy=Lw9NYTaGw@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933727Ab3AIVPy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:15:54 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42826 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933422Ab3AIUjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:37 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [ 067/123] USB: fix endpoint-disabling for failed config changes
+Date: Wed,  9 Jan 2013 12:35:06 -0800
+Message-Id: <20130109201507.213689431@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 1:00 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
-> Yinghai Lu <yinghai@kernel.org> writes:
->
->> please check updated attached. It should address all your request.
->
-> There is one significant bug that I can see.
->
-> swiotlb_print_info tests no_iotlb_memory but no_iotlb_memory is set
-> after swiotlb_init_with_tlb returns.
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-there is another swiotlb_print_info calling from
-pci_swiotlb_late_init
+------------------
 
-void __init pci_swiotlb_late_init(void)
-{
-        /* An IOMMU turned us off. */
-        if (!swiotlb)
-                swiotlb_free();
-        else {
-                printk(KERN_INFO "PCI-DMA: "
-                       "Using software bounce buffering for IO (SWIOTLB)\n");
-                swiotlb_print_info();
-        }
-}
+From: Alan Stern <stern@rowland.harvard.edu>
 
-so we need that checking when swiotlb == 1, but actually we can not
-allocate that before.
+commit 36caff5d795429c572443894e8789c2150dd796b upstream.
 
-Thanks
+This patch (as1631) fixes a bug that shows up when a config change
+fails for a device under an xHCI controller.  The controller needs to
+be told to disable the endpoints that have been enabled for the new
+config.  The existing code does this, but before storing the
+information about which endpoints were enabled!  As a result, any
+second attempt to install the new config is doomed to fail because
+xhci-hcd will refuse to enable an endpoint that is already enabled.
 
-Yinghai
+The patch optimistically initializes the new endpoints' device
+structures before asking the device to switch to the new config.  If
+the request fails then the endpoint information is already stored, so
+we can use usb_hcd_alloc_bandwidth() to disable the endpoints with no
+trouble.  The rest of the error path is slightly more complex now; we
+have to disable the new interfaces and call put_device() rather than
+simply deallocating them.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: Matthias Schniedermeyer <ms@citd.de>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/usb/core/message.c |   54 +++++++++++++++++++++++++--------------------
+ 1 file changed, 31 insertions(+), 23 deletions(-)
+
+--- a/drivers/usb/core/message.c
++++ b/drivers/usb/core/message.c
+@@ -1806,29 +1806,8 @@ free_interfaces:
+ 		goto free_interfaces;
+ 	}
+ 
+-	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+-			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
+-			      NULL, 0, USB_CTRL_SET_TIMEOUT);
+-	if (ret < 0) {
+-		/* All the old state is gone, so what else can we do?
+-		 * The device is probably useless now anyway.
+-		 */
+-		cp = NULL;
+-	}
+-
+-	dev->actconfig = cp;
+-	if (!cp) {
+-		usb_set_device_state(dev, USB_STATE_ADDRESS);
+-		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
+-		/* Leave LPM disabled while the device is unconfigured. */
+-		mutex_unlock(hcd->bandwidth_mutex);
+-		usb_autosuspend_device(dev);
+-		goto free_interfaces;
+-	}
+-	mutex_unlock(hcd->bandwidth_mutex);
+-	usb_set_device_state(dev, USB_STATE_CONFIGURED);
+-
+-	/* Initialize the new interface structures and the
++	/*
++	 * Initialize the new interface structures and the
+ 	 * hc/hcd/usbcore interface/endpoint state.
+ 	 */
+ 	for (i = 0; i < nintf; ++i) {
+@@ -1872,6 +1851,35 @@ free_interfaces:
+ 	}
+ 	kfree(new_interfaces);
+ 
++	ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
++			      USB_REQ_SET_CONFIGURATION, 0, configuration, 0,
++			      NULL, 0, USB_CTRL_SET_TIMEOUT);
++	if (ret < 0 && cp) {
++		/*
++		 * All the old state is gone, so what else can we do?
++		 * The device is probably useless now anyway.
++		 */
++		usb_hcd_alloc_bandwidth(dev, NULL, NULL, NULL);
++		for (i = 0; i < nintf; ++i) {
++			usb_disable_interface(dev, cp->interface[i], true);
++			put_device(&cp->interface[i]->dev);
++			cp->interface[i] = NULL;
++		}
++		cp = NULL;
++	}
++
++	dev->actconfig = cp;
++	mutex_unlock(hcd->bandwidth_mutex);
++
++	if (!cp) {
++		usb_set_device_state(dev, USB_STATE_ADDRESS);
++
++		/* Leave LPM disabled while the device is unconfigured. */
++		usb_autosuspend_device(dev);
++		return ret;
++	}
++	usb_set_device_state(dev, USB_STATE_CONFIGURED);
++
+ 	if (cp->string == NULL &&
+ 			!(dev->quirks & USB_QUIRK_CONFIG_INTF_STRINGS))
+ 		cp->string = usb_cache_string(dev, cp->desc.iConfiguration);
+
+
