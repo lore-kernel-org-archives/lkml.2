@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933673Ab3AIV0Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:26:25 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42593 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933439Ab3AIUjM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S933505Ab3AIUjM (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Jan 2013 15:39:12 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42450 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933439Ab3AIUi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:58 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Peter Popovec <popovec@fei.tuke.sk>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [ 056/123] Input: walkera0701 - fix crash on startup
-Date: Wed,  9 Jan 2013 12:34:55 -0800
-Message-Id: <20130109201505.752363969@linuxfoundation.org>
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Felipe Balbi <balbi@ti.com>
+Subject: [ 30/80] usb: gadget: midi: free hs descriptors
+Date: Wed,  9 Jan 2013 12:35:22 -0800
+Message-Id: <20130109201504.250690740@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Peter Popovec <popovec@oko.fei.tuke.sk>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit a455e2985f57e2a71566bb8850094af38b2c932d upstream.
+commit d185039f7982eb82cf8d03b6fb6689587ca5af24 upstream.
 
-The driver's timer must be set up before enabling IRQ handler, otherwise
-bad things may happen.
+The HS descriptors are only created if HS is supported by the UDC but we
+never free them.
 
-Reported-and-tested-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Peter Popovec <popovec@fei.tuke.sk>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/joystick/walkera0701.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/f_midi.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/input/joystick/walkera0701.c
-+++ b/drivers/input/joystick/walkera0701.c
-@@ -196,6 +196,7 @@ static void walkera0701_close(struct inp
- 	struct walkera_dev *w = input_get_drvdata(dev);
+--- a/drivers/usb/gadget/f_midi.c
++++ b/drivers/usb/gadget/f_midi.c
+@@ -416,6 +416,7 @@ static void f_midi_unbind(struct usb_con
+ 	midi->id = NULL;
  
- 	parport_disable_irq(w->parport);
-+	hrtimer_cancel(&w->timer);
+ 	usb_free_descriptors(f->descriptors);
++	usb_free_descriptors(f->hs_descriptors);
+ 	kfree(midi);
  }
  
- static int walkera0701_connect(struct walkera_dev *w, int parport)
-@@ -224,6 +225,9 @@ static int walkera0701_connect(struct wa
- 	if (parport_claim(w->pardevice))
- 		goto init_err1;
- 
-+	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	w->timer.function = timer_handler;
-+
- 	w->input_dev = input_allocate_device();
- 	if (!w->input_dev)
- 		goto init_err2;
-@@ -254,8 +258,6 @@ static int walkera0701_connect(struct wa
- 	if (err)
- 		goto init_err3;
- 
--	hrtimer_init(&w->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	w->timer.function = timer_handler;
- 	return 0;
- 
-  init_err3:
-@@ -271,7 +273,6 @@ static int walkera0701_connect(struct wa
- 
- static void walkera0701_disconnect(struct walkera_dev *w)
- {
--	hrtimer_cancel(&w->timer);
- 	input_unregister_device(w->input_dev);
- 	parport_release(w->pardevice);
- 	parport_unregister_device(w->pardevice);
 
 
