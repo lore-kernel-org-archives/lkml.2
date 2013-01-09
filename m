@@ -1,43 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932109Ab3AIPwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:52:12 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:30993 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758029Ab3AIPwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758058Ab3AIPwL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:52:11 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42858 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758000Ab3AIPwK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 9 Jan 2013 10:52:10 -0500
-Date: Wed, 9 Jan 2013 16:51:31 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Anton Arapov <anton@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Frank Eigler <fche@redhat.com>, Josh Stone <jistone@redhat.com>,
-        "Suzuki K. Poulose" <suzuki@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/7] uprobes: Fold xol_alloc_area() into get_xol_area()
-Message-ID: <20130109155131.GA27120@redhat.com>
-References: <20121231175150.GA32066@redhat.com> <20121231175216.GA32091@redhat.com> <20130109101654.GA21781@bandura.brq.redhat.com>
+Date: Wed, 9 Jan 2013 15:51:54 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] Proposed removal of IS_ERR_OR_NULL() (was: Re: [PATCH
+	1/4] gpiolib: introduce descriptor-based GPIO interface)
+Message-ID: <20130109155154.GN3931@n2100.arm.linux.org.uk>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <201301081259.29839.arnd@arndb.de> <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com> <201301091035.23206.arnd@arndb.de> <20130109104414.GF3931@n2100.arm.linux.org.uk> <20130109111055.GG3931@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1301090932400.6300@xanadu.home> <20130109150427.GL3931@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1301091020580.6300@xanadu.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130109101654.GA21781@bandura.brq.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LFD.2.02.1301091020580.6300@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09, Anton Arapov wrote:
->
-> On Mon, Dec 31, 2012 at 06:52:16PM +0100, Oleg Nesterov wrote:
-> > + * get_alloc_area - Allocate process's xol_area if necessary.
-> > + * This area will be used for storing instructions for execution out of line.
-> >   *
-> >   * Returns the allocated area or NULL.
-> >   */
->
-> + * get_xol_area ....
+On Wed, Jan 09, 2013 at 10:27:53AM -0500, Nicolas Pitre wrote:
+> Anyone with good coccinelle skills around to deal with the users?
 
-Ah, comment, yes. Thanks, fixed.
+I'm not sure that's a solution.
 
-Oleg.
+For example:
 
+        err = gpio_request(en_vdd_1v05, "EN_VDD_1V05");
+        if (err) {
+                pr_err("%s: gpio_request failed: %d\n", __func__, err);   
+                return err;   
+        }
+...
+        regulator = regulator_get(NULL, "vdd_ldo0,vddio_pex_clk");
+        if (IS_ERR_OR_NULL(regulator)) {
+                pr_err("%s: regulator_get failed: %d\n", __func__,
+                       (int)PTR_ERR(regulator));
+                goto err_reg;
+        }
+
+        regulator_enable(regulator);
+
+        err = tegra_pcie_init(true, true);
+...
+err_reg:
+        gpio_free(en_vdd_1v05);
+                
+        return err;
+}
+
+Now, regulator_get() returns error-pointers for real errors when it's
+configured in.  When regulator support is not configured, it returns
+NULL.
+
+So, one solution here would be:
+
+	if (IS_ERR(regulator)) {
+		err = PTR_ERR(regulator);
+		pr_err("%s: regulator_get failed: %d\n", __func__, err);
+		goto err_reg;
+	}
+
+but leaves us with the question: is it safe to call tegra_pcie_init()
+without regulator support?
+
+The problem there is that "fixing" this causes a behavioural change in
+the code, and we don't know what effect that change may have.
