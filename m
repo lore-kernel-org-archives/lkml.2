@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757114Ab3AIDml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 22:42:41 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:42418 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079Ab3AIDmk (ORCPT
+	id S1757109Ab3AIDxD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 22:53:03 -0500
+Received: from mms1.broadcom.com ([216.31.210.17]:1125 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756824Ab3AIDxB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 22:42:40 -0500
+	Tue, 8 Jan 2013 22:53:01 -0500
+X-Server-Uuid: 06151B78-6688-425E-9DE2-57CB27892261
+Subject: Re: tg3 v3.123 in 100Mbps Full-Duplex mode with autoneg off
+From: "Michael Chan" <mchan@broadcom.com>
+To: =?UTF-8?Q?=E7=8E=8B=E9=87=91=E6=B5=A6?= <jinpuwang@gmail.com>
+cc: "Marcin Miotk" <marcinmiotk81@gmail.com>,
+        "Matt Carlson" <mcarlson@broadcom.com>,
+        "Benjamin Li" <benli@broadcom.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAD9gYJL1GjZtPuEWozmgM37NzhJeAO1Oe69Tnzxi5bCPMijmcA@mail.gmail.com>
+References: <CAMXyS3Mvc8SkJxu4fCcUn+XpNcHrzEQ=M5w2eenVr-YKwa3AEQ@mail.gmail.com>
+ <CAMXyS3MRx3D__60xtt4G4CCyHSTW2iHd1x1AR1LCQkrZrOiJ2g@mail.gmail.com>
+ <CAD9gYJL1GjZtPuEWozmgM37NzhJeAO1Oe69Tnzxi5bCPMijmcA@mail.gmail.com>
+Date: Tue, 8 Jan 2013 19:52:45 -0800
+Message-ID: <1357703565.7140.217.camel@LTIRV-MCHAN1.corp.ad.broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <20130109003824.GA21075@kroah.com>
-References: <20130108223611.GA19672@kroah.com>
-	<20130109003824.GA21075@kroah.com>
-Date: Wed, 9 Jan 2013 13:42:39 +1000
-Message-ID: <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
-Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
-From: Dave Airlie <airlied@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Content-Type: text/plain; charset=ISO-8859-1
+X-WSS-ID: 7CF2369C1ZK11815847-01-01
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Hi all,
->>
->> I've hit this 3 times today on Linus's latest 3.8-rc2+ tree:
->>
->> [11868.414648] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
->> [11868.414655] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
->> [11870.408342] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
->> [11870.408412] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
->> [11870.408414] [drm:i915_reset] *ERROR* Failed to reset chip.
->> [11883.083225] gnome-shell[19396]: segfault at 218 ip 00007feef5f32333 sp 00007ffffc1dc930 error 4 in i965_dri.so[7feef5ecb000+d0000]
->
-> I just hit this again.  And, as the kernel was asking for it, attached
-> is the i915_error_state file, compressed due to the size of it.
->
-Welcome to sink hole that is
-https://bugs.freedesktop.org/show_bug.cgi?id=55984
+Please tell us what tg3 device you're using.  You can provide lspci
+output or tg3 probing dmesg output.  Thanks.
 
-3 months and ticking, Intel guys are all running away from it saying
-they can't reproduce, everyone else on planet seems to reproduce quite
-easily.
+On Wed, 2013-01-09 at 11:20 +0800, 王金浦 wrote: 
+> For this kind of driver related question, I suggest you send mail to
+> tg3 driver developers, who I already cced.
+> 
+> 
+> I think they should know what's going on, right?
+> 
+> 
+> Jack
+> 
+> 
+> 2013/1/8 Marcin Miotk <marcinmiotk81@gmail.com>
+>         Hi,
+>         
+>         any conclusions re this? 
+>         
+>         Regards,
+>         Marcin Miotk
+>         --
+>         To unsubscribe from this list: send the line "unsubscribe
+>         linux-kernel" in
+>         the body of a message to majordomo@vger.kernel.org
+>         More majordomo info at
+>          http://vger.kernel.org/majordomo-info.html
+>         Please read the FAQ at  http://www.tux.org/lkml/
+>         
+> 
+> 
 
-Its generally considered a bug in the relocation/shrinker/no idea category,
 
-Assuming you have an Ironlake machine which I'm going to guess you do.
 
-Dave.
