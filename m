@@ -1,140 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab3AIOtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 09:49:04 -0500
-Received: from mga03.intel.com ([143.182.124.21]:61230 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757828Ab3AIOtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 09:49:01 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,438,1355126400"; 
-   d="scan'208";a="189338591"
-Date: Wed, 9 Jan 2013 06:24:43 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>
-Cc: linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [resend][PATCH 11/16] dw_dmac: backlink to dw_dma in
- dw_dma_chan is superfluous
-Message-ID: <20130109142443.GQ19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
- <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1357719435-29955-12-git-send-email-andriy.shevchenko@linux.intel.com>
+	id S1757998Ab3AIOt2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 09:49:28 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:52028 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757828Ab3AIOt1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 09:49:27 -0500
+X-Greylist: delayed 60806 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jan 2013 09:49:26 EST
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357719435-29955-12-git-send-email-andriy.shevchenko@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1357742588-11366-1-git-send-email-mika.westerberg@linux.intel.com>
+References: <1357742588-11366-1-git-send-email-mika.westerberg@linux.intel.com>
+Date: Wed, 9 Jan 2013 15:49:25 +0100
+Message-ID: <CAN+gG=GrrEdgrCLXvO=xJ6SNeKgHFRobq6RSAfLMfesKkJcijA@mail.gmail.com>
+Subject: Re: [PATCH v2] HID: i2c-hid: add ACPI support
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 10:17:10AM +0200, Andy Shevchenko wrote:
-> The same information could be exctracted from the struct dma_chan.
-typo...                         ^^^^^^^^^^
-> The patch introduces helper function dwc_get_data_width() as well.
-> 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Hi Mika,
+
+On Wed, Jan 9, 2013 at 3:43 PM, Mika Westerberg
+<mika.westerberg@linux.intel.com> wrote:
+> The HID over I2C protocol specification states that when the device is
+> enumerated from ACPI the HID descriptor address can be obtained by
+> executing "_DSM" for the device with function 1. Enable this.
+>
+> Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+
+I'm eager to test it (hopefully next week).
+
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+
+Thanks,
+Benjamin
+
 > ---
->  drivers/dma/dw_dmac.c      |   27 ++++++++++++++++++++-------
->  drivers/dma/dw_dmac_regs.h |    3 ---
->  2 files changed, 20 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/dma/dw_dmac.c b/drivers/dma/dw_dmac.c
-> index ff9d68b..39a6506 100644
-> --- a/drivers/dma/dw_dmac.c
-> +++ b/drivers/dma/dw_dmac.c
-> @@ -73,6 +73,22 @@ static inline unsigned int dwc_get_sms(struct dw_dma_slave *slave)
->   */
->  #define NR_DESCS_PER_CHANNEL	64
->  
-> +#define SRC_MASTER	0
-> +#define DST_MASTER	1
+> Changes to previous version:
+>
+>         * platform data is embedded into struct i2c_hid
+>         * i2c_hid_acpi_pdata() returns error codes or 0 on success
+>         * i2c_hid_acpi_pdata() prints out errors if _DSM execution fails or
+>           returns something we don't understand
+>         * constify i2c_hid_acpi_match
+>         * set the hid device ACPI handle
+>
+> We still don't handle the GpioInt in case client->irq is not set but I
+> didn't want to implement it now as I'm unable to test it. So this only
+> works if the ACPI device has an Interrupt or IRQ resource set.
+>
+>  drivers/hid/i2c-hid/i2c-hid.c |   87 ++++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 81 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> index 9ef22244..9e46e42 100644
+> --- a/drivers/hid/i2c-hid/i2c-hid.c
+> +++ b/drivers/hid/i2c-hid/i2c-hid.c
+> @@ -34,6 +34,7 @@
+>  #include <linux/kernel.h>
+>  #include <linux/hid.h>
+>  #include <linux/mutex.h>
+> +#include <linux/acpi.h>
+>
+>  #include <linux/i2c/i2c-hid.h>
+>
+> @@ -139,6 +140,8 @@ struct i2c_hid {
+>         unsigned long           flags;          /* device flags */
+>
+>         wait_queue_head_t       wait;           /* For waiting the interrupt */
 > +
-> +static inline unsigned int dwc_get_data_width(struct dma_chan *chan, int master)
+> +       struct i2c_hid_platform_data pdata;
+>  };
+>
+>  static int __i2c_hid_command(struct i2c_client *client,
+> @@ -810,6 +813,70 @@ static int __devinit i2c_hid_fetch_hid_descriptor(struct i2c_hid *ihid)
+>         return 0;
+>  }
+>
+> +#ifdef CONFIG_ACPI
+> +static int i2c_hid_acpi_pdata(struct i2c_client *client,
+> +               struct i2c_hid_platform_data *pdata)
 > +{
-> +	struct dw_dma *dw = to_dw_dma(chan->device);
-> +	struct dw_dma_slave *dws = chan->private;
+> +       static u8 i2c_hid_guid[] = {
+> +               0xF7, 0xF6, 0xDF, 0x3C, 0x67, 0x42, 0x55, 0x45,
+> +               0xAD, 0x05, 0xB3, 0x0A, 0x3D, 0x89, 0x38, 0xDE,
+> +       };
+> +       struct acpi_buffer buf = { ACPI_ALLOCATE_BUFFER, NULL };
+> +       union acpi_object params[4], *obj;
+> +       struct acpi_object_list input;
+> +       struct acpi_device *adev;
+> +       acpi_handle handle;
 > +
-> +	if (master == SRC_MASTER)
-> +		return dw->data_width[dwc_get_sms(dws)];
-> +	else if (master == DST_MASTER)
-> +		return dw->data_width[dwc_get_dms(dws)];
+> +       handle = ACPI_HANDLE(&client->dev);
+> +       if (!handle || acpi_bus_get_device(handle, &adev))
+> +               return -ENODEV;
 > +
-> +	return 0;
+> +       input.count = ARRAY_SIZE(params);
+> +       input.pointer = params;
+> +
+> +       params[0].type = ACPI_TYPE_BUFFER;
+> +       params[0].buffer.length = sizeof(i2c_hid_guid);
+> +       params[0].buffer.pointer = i2c_hid_guid;
+> +       params[1].type = ACPI_TYPE_INTEGER;
+> +       params[1].integer.value = 1;
+> +       params[2].type = ACPI_TYPE_INTEGER;
+> +       params[2].integer.value = 1; /* HID function */
+> +       params[3].type = ACPI_TYPE_INTEGER;
+> +       params[3].integer.value = 0;
+> +
+> +       if (ACPI_FAILURE(acpi_evaluate_object(handle, "_DSM", &input, &buf))) {
+> +               dev_err(&client->dev, "device _DSM execution failed\n");
+> +               return -ENODEV;
+> +       }
+> +
+> +       obj = (union acpi_object *)buf.pointer;
+> +       if (obj->type != ACPI_TYPE_INTEGER) {
+> +               dev_err(&client->dev, "device _DSM returned invalid type: %d\n",
+> +                       obj->type);
+> +               kfree(buf.pointer);
+> +               return -EINVAL;
+> +       }
+> +
+> +       pdata->hid_descriptor_address = obj->integer.value;
+> +
+> +       kfree(buf.pointer);
+> +       return 0;
 > +}
 > +
->  /*----------------------------------------------------------------------*/
->  
->  /*
-> @@ -703,7 +719,6 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
->  		size_t len, unsigned long flags)
+> +static const struct acpi_device_id i2c_hid_acpi_match[] = {
+> +       {"ACPI0C50", 0 },
+> +       {"PNP0C50", 0 },
+> +       { },
+> +};
+> +MODULE_DEVICE_TABLE(acpi, i2c_hid_acpi_match);
+> +#else
+> +static inline int i2c_hid_acpi_pdata(struct i2c_client *client,
+> +               struct i2c_hid_platform_data *pdata)
+> +{
+> +       return -ENODEV;
+> +}
+> +#endif
+> +
+>  static int __devinit i2c_hid_probe(struct i2c_client *client,
+>                 const struct i2c_device_id *dev_id)
 >  {
->  	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
-> -	struct dw_dma_slave	*dws = chan->private;
->  	struct dw_desc		*desc;
->  	struct dw_desc		*first;
->  	struct dw_desc		*prev;
-> @@ -726,8 +741,8 @@ dwc_prep_dma_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
->  
->  	dwc->direction = DMA_MEM_TO_MEM;
->  
-> -	data_width = min_t(unsigned int, dwc->dw->data_width[dwc_get_sms(dws)],
-> -					 dwc->dw->data_width[dwc_get_dms(dws)]);
-> +	data_width = min_t(unsigned int, dwc_get_data_width(chan, SRC_MASTER),
-> +			   dwc_get_data_width(chan, DST_MASTER));
->  
->  	src_width = dst_width = min_t(unsigned int, data_width,
->  				      dwc_fast_fls(src | dest | len));
-> @@ -792,7 +807,6 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
->  		unsigned long flags, void *context)
->  {
->  	struct dw_dma_chan	*dwc = to_dw_dma_chan(chan);
-> -	struct dw_dma_slave	*dws = chan->private;
->  	struct dma_slave_config	*sconfig = &dwc->dma_sconfig;
->  	struct dw_desc		*prev;
->  	struct dw_desc		*first;
-> @@ -826,7 +840,7 @@ dwc_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
->  		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_M2P) :
->  			DWC_CTLL_FC(DW_DMA_FC_D_M2P);
->  
-> -		data_width = dwc->dw->data_width[dwc_get_sms(dws)];
-> +		data_width = dwc_get_data_width(chan, SRC_MASTER);
->  
->  		for_each_sg(sgl, sg, sg_len, i) {
->  			struct dw_desc	*desc;
-> @@ -889,7 +903,7 @@ slave_sg_todev_fill_desc:
->  		ctllo |= sconfig->device_fc ? DWC_CTLL_FC(DW_DMA_FC_P_P2M) :
->  			DWC_CTLL_FC(DW_DMA_FC_D_P2M);
->  
-> -		data_width = dwc->dw->data_width[dwc_get_dms(dws)];
-> +		data_width = dwc_get_data_width(chan, DST_MASTER);
->  
->  		for_each_sg(sgl, sg, sg_len, i) {
->  			struct dw_desc	*desc;
-> @@ -1720,7 +1734,6 @@ static int dw_probe(struct platform_device *pdev)
->  
->  		channel_clear_bit(dw, CH_EN, dwc->mask);
->  
-> -		dwc->dw = dw;
->  		dwc->direction = DMA_TRANS_NONE;
->  
->  		/* hardware configuration */
-> diff --git a/drivers/dma/dw_dmac_regs.h b/drivers/dma/dw_dmac_regs.h
-> index f9532c2..577f2dd 100644
-> --- a/drivers/dma/dw_dmac_regs.h
-> +++ b/drivers/dma/dw_dmac_regs.h
-> @@ -214,9 +214,6 @@ struct dw_dma_chan {
->  
->  	/* configuration passed via DMA_SLAVE_CONFIG */
->  	struct dma_slave_config dma_sconfig;
+> @@ -821,11 +888,6 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
+>
+>         dbg_hid("HID probe called for i2c 0x%02x\n", client->addr);
+>
+> -       if (!platform_data) {
+> -               dev_err(&client->dev, "HID register address not provided\n");
+> -               return -EINVAL;
+> -       }
 > -
-> -	/* backlink to dw_dma */
-> -	struct dw_dma		*dw;
->  };
->  
->  static inline struct dw_dma_chan_regs __iomem *
-> -- 
+>         if (!client->irq) {
+>                 dev_err(&client->dev,
+>                         "HID over i2c has not been provided an Int IRQ\n");
+> @@ -836,11 +898,22 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
+>         if (!ihid)
+>                 return -ENOMEM;
+>
+> +       if (!platform_data) {
+> +               ret = i2c_hid_acpi_pdata(client, &ihid->pdata);
+> +               if (ret) {
+> +                       dev_err(&client->dev,
+> +                               "HID register address not provided\n");
+> +                       goto err;
+> +               }
+> +       } else {
+> +               ihid->pdata = *platform_data;
+> +       }
+> +
+>         i2c_set_clientdata(client, ihid);
+>
+>         ihid->client = client;
+>
+> -       hidRegister = platform_data->hid_descriptor_address;
+> +       hidRegister = ihid->pdata.hid_descriptor_address;
+>         ihid->wHIDDescRegister = cpu_to_le16(hidRegister);
+>
+>         init_waitqueue_head(&ihid->wait);
+> @@ -873,6 +946,7 @@ static int __devinit i2c_hid_probe(struct i2c_client *client,
+>         hid->hid_get_raw_report = i2c_hid_get_raw_report;
+>         hid->hid_output_raw_report = i2c_hid_output_raw_report;
+>         hid->dev.parent = &client->dev;
+> +       ACPI_HANDLE_SET(&hid->dev, ACPI_HANDLE(&client->dev));
+>         hid->bus = BUS_I2C;
+>         hid->version = le16_to_cpu(ihid->hdesc.bcdVersion);
+>         hid->vendor = le16_to_cpu(ihid->hdesc.wVendorID);
+> @@ -964,6 +1038,7 @@ static struct i2c_driver i2c_hid_driver = {
+>                 .name   = "i2c_hid",
+>                 .owner  = THIS_MODULE,
+>                 .pm     = &i2c_hid_pm,
+> +               .acpi_match_table = ACPI_PTR(i2c_hid_acpi_match),
+>         },
+>
+>         .probe          = i2c_hid_probe,
+> --
 > 1.7.10.4
-> 
+>
