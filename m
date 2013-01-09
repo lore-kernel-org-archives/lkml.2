@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab3AIWww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:52:52 -0500
-Received: from mxout2.iskon.hr ([213.191.128.81]:41822 "EHLO mxout2.iskon.hr"
+	id S932192Ab3AIW5l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:57:41 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:45829 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758156Ab3AIWwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:52:51 -0500
-X-Remote-IP: 213.191.128.133
-Date: Wed, 09 Jan 2013 23:52:47 +0100
-From: Zlatko Calusic <zlatko.calusic@iskon.hr>
-Organization: Iskon Internet d.d.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Icedove/17.0
+	id S932085Ab3AIW5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:57:39 -0500
+Date: Wed, 9 Jan 2013 23:57:36 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org,
+        Alexander Duyck <alexander.h.duyck@intel.com>
+Subject: Re: [PATCH v7u1 09/31] x86, 64bit: #PF handler set page to cover 2M
+ only
+Message-ID: <20130109225736.GA16735@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Yinghai Lu <yinghai@kernel.org>,
+	Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jan Kiszka <jan.kiszka@web.de>,
+	Jason Wessel <jason.wessel@windriver.com>,
+	linux-kernel@vger.kernel.org,
+	Alexander Duyck <alexander.h.duyck@intel.com>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+ <1357260531-11115-10-git-send-email-yinghai@kernel.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <50EDE41C.7090107@iskon.hr> <20130109134816.db51a820.akpm@linux-foundation.org>
-In-Reply-To: <20130109134816.db51a820.akpm@linux-foundation.org>
-Message-ID: <50EDF4BF.7000108@iskon.hr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45/RELEASE,
-	 bases: 20130110 #9042073, check: 20130109 clean
-X-SpamTest-Envelope-From: zlatko.calusic@iskon.hr
-X-SpamTest-Group-ID: 00000000
-X-SpamTest-Info: Profiles 41238 [Jan 10 2013]
-X-SpamTest-Method: none
-X-SpamTest-Rate: 0
-X-SpamTest-SPF: none
-X-SpamTest-Status: Not detected
-X-SpamTest-Status-Extended: not_detected
-X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1357260531-11115-10-git-send-email-yinghai@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.01.2013 22:48, Andrew Morton wrote:
-> On Wed, 09 Jan 2013 22:41:48 +0100
-> Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
->
->> Currently we take a short nap (HZ/10) and wait for congestion to clear
->> before taking another pass with lower priority in balance_pgdat(). But
->> we do that only for the highest zone that we encounter is unbalanced
->> and congested.
->>
->> This patch changes that to wait on all congested zones in a single
->> pass in the hope that it will save us some scanning that way. Also we
->> take a nap as soon as congested zone is encountered and sc.priority <
->> DEF_PRIORITY - 2 (aka kswapd in trouble).
->>
->> ...
->>
->> The patch is against the mm tree. Make sure that
->> mm-avoid-calling-pgdat_balanced-needlessly.patch is applied first (not
->> yet in the mmotm tree). Tested on half a dozen systems with different
->> workloads for the last few days, working really well!
->
-> But what are the user-observable effcets of this change?  Less kernel
-> CPU consumption, presumably?  Did you quantify it?
->
+On Thu, Jan 03, 2013 at 04:48:29PM -0800, Yinghai Lu wrote:
+> Now #PF hanlder could map 1G per #PF, That causes same problem that
+> is fixed by
+> 	x86, mm: Only direct map addresses that are marked as E820_RAM
+> 
+> only add one 2M mapping instead of 1G accessing one time for dynamically
+> per #PF.
 
-And I forgot to answer all the questions... :(
+Ok, I can more or less grasp what the code does but this sentence above
+is a lot of fun. Do you mean:
 
-Actually, I did record kswapd CPU usage after 5 days of uptime and I 
-intend to compare it with the new data (after few more days pass). I 
-expect maybe slightly better results.
+"add only one 2M mapping per #PF instead of all 512 pmds comprising 1G"
 
-But, I think it's obvious from my first reply that my primary goal with 
-this patch is correctness, not optimization. So, I won't be dissapointed 
-a little bit if kswapd CPU usage stays the same, so long as the memory 
-utilization remains this smooth. ;)
+?
+
+Thanks.
 
 -- 
-Zlatko
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
