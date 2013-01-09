@@ -1,74 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932149Ab3AIQDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 11:03:11 -0500
-Received: from mga09.intel.com ([134.134.136.24]:43999 "EHLO mga09.intel.com"
+	id S932151Ab3AIQEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 11:04:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932132Ab3AIQDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 11:03:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.84,438,1355126400"; 
-   d="scan'208";a="270068694"
-Date: Wed, 9 Jan 2013 07:38:48 -0800
-From: Vinod Koul <vinod.koul@intel.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
-        linux-kernel@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [resend][PATCH 01/16] dw_dmac: call .probe after we have a
- device in place
-Message-ID: <20130109153848.GT19691@intel.com>
-References: <20130108155423.GJ19691@intel.com>
- <1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1357719435-29955-2-git-send-email-andriy.shevchenko@linux.intel.com>
- <20130109134757.GN19691@intel.com>
- <CAHp75VfFyX=Pz3xRt15n6ffP=v0pa413BFF2zHGoiQowG1kKVg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHp75VfFyX=Pz3xRt15n6ffP=v0pa413BFF2zHGoiQowG1kKVg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932099Ab3AIQEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 11:04:40 -0500
+Message-ID: <1357747463.2593.28.camel@localhost>
+Subject: Friendlier EPERM - Request for input
+From: Eric Paris <eparis@redhat.com>
+To: linux-kernel@vger.kernel.org, libc-alpha@sourceware.org
+Cc: dwalsh@redhat.com, dmalcolm@redhat.com
+Date: Wed, 09 Jan 2013 11:04:23 -0500
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 04:56:45PM +0200, Andy Shevchenko wrote:
-> On Wed, Jan 9, 2013 at 3:47 PM, Vinod Koul <vinod.koul@intel.com> wrote:
-> > On Wed, Jan 09, 2013 at 10:17:00AM +0200, Andy Shevchenko wrote:
-> >> If we don't yet have the platform device for the driver when it is being loaded
-> >> we fail to probe the driver. So instead of calling probe() directly we call
-> >> platform_driver_register(). It will call the probe() immediately if we have the
-> >> device but also makes the driver to work on platforms where the platform device
-> >> is created later.
-> > Why wont you have the platform device?
-> 
-> It's still the same device as before. The only difference is in
-> boot/initialization sequence.
-> 
-> > Is this only due to your approach of
-> > creating the device in PCI probe?
-> 
-> No. We had an issue when driver was initialized (and with old version
-> immediately probed)
-> just before it happened in the platform devices. In such case .probe() fails.
-> Above patch makes sure that platform devices are already in the
-> internal structures and we could match them safely.
-hmmm, but that its still not clear why that would happen. Driver init is called
-later when all device creation should already be done.
+Getting an EPERM/EACCES in userspace really kinda blows.  As a user you
+don't have any idea why you got it.  It could be SELinux, it could be
+rwx bits on the file, it could be a missing capability, it could be an
+ACL, it could be who knows what.  We'd like to start figuring out the
+who knows what and hopefully find a way to expose that to userspace.  My
+initial thought is a small buffer in the task struct in which the kernel
+can dump some data when it is going to send back an EPERM.  I was
+thinking of exposing that data via a /proc/self/task/[tid]/file which
+userspace could poll after an EPERM.  The hope would be to all userspace
+a better understanding of why it failed.  Wouldn't it be nice if instead
+of httpd log just saying 'permission denied' it would be able to say
+'permision denied because the file was 640"?
 
-> >>  }
-> >>  subsys_initcall(dw_init);
-Viresh, Linus
+I was thinking this buffer would look something like (very pseudo codie)
 
-We had this discussion sometime back. pl022 use dma and we need DMA before SPI.
-So if we have pl022 as late_init and dma as device_init. If we have one  more
-dependency then moving dw_dmac to fs_init should help too. But arch/subsys seems
-overkill here?
+struct friendly_response {
+        enum { NONE, CAPABILITIES, SELINUX, FILE_PERMS } type;
+        union {
+                struct capabilities {
+                        int cap;
+                };
+                struct selinux {
+                        __u32 source_label
+                        __u32 target_label
+                        __u32 operation;
+                        __u32 tclass;
+                };
+                struct file_perms {
+                        int uid;
+                        int gid;
+                        int file_uid;
+                        int file_gid;
+                        int file_mode;
+                };
+        };
+};
 
---
-~Vinod
+The idea being that the buffer should only hold stateless data which can
+be overwritten or destroyed on the next EPERM.  Reading the proc file
+could then translate that into something a little more useful, but
+hopefully still computer friendly enough that it can be translated and
+useful to a user/developer.  So after a denial from file permissions the
+proc file would return a string like:
 
+3 500 500 0 0 0640
+^  ^   ^  ^ ^  ^--- Mode
+|  |   |  | |--- File Gid
+|  |   |  |---File Uid
+|  |   |--- User Gid
+|  |---User Uid
+|--- Type for failure (file perms)
 
-why is dw_dmac a subsys init. One reason could be ensure these are before before
-the client devices, but 
+Or from SELinux:
+
+2 unconfined_u:unconfined_r:unconfined_t:s0 system_u:system_r:system_t:s0 { read } file
+
+This would take patching hundreds of call sites in the kernel to fill
+the buffer.  But just getting extended denial information in a couple of
+the hot spots would be a huge win.  Put it in capable(), LSM hooks, the
+open() syscall and path walk code.
+
+It was pointed out that this isn't perfect, and I'm well aware of that.
+Lots of userspace libraries do things like save errno, make other kernel
+calls which could overwrite the buffer, then pass errno up the stack.  I
+don't believe there is much that can done about that.  Other than
+userspace trying to save the extended error information as well?
+
+One suggestion was to make it a ring buffer of some configurable size
+instead.  I'm not sure how a program could find the 'right' message in
+the ring buffer, but it is a thought to help the problem of intervening
+kernel calls overwriting the last extended error info.  I was pointed to
+the win32 api for getLastError() as something to look at.  This API is
+mostly like errno/strerror in libc, except without the easy ability to
+save it for later.  My new proposed API would have the same problems.
+No 'easy' way to save it for later.  (also getLastError() doesn't pass
+any kind of extended information, so it seems to solve a different
+problem and I haven't seen any OS that is doing this, so point me to
+places I can learn)
+
+Another thought was that some people might want to turn off the ability
+to get this information.  I don't see a reason a sysctl couldn't be used
+to disable extended errno information if the admin so chose.
+
+But maybe those great minds on the lists can help me think of ways to
+get Friendlier denials that I haven't thought of.  Please.  What are you
+thoughts, concerns, issues?
+
+-Eric
+
