@@ -1,96 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab3AIPze (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:55:34 -0500
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:39438 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758024Ab3AIPzd (ORCPT
+	id S932130Ab3AIP6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:58:06 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:44131 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab3AIP6F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:55:33 -0500
-Date: Wed, 9 Jan 2013 07:55:28 -0800
-From: Tejun Heo <tj@kernel.org>
-To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        device-mapper development <dm-devel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: [PATCH repost] blkcg: fix "scheduling while atomic" in
- blk_queue_bypass_start
-Message-ID: <20130109155528.GJ3926@htj.dyndns.org>
-References: <50890937.7010809@ce.jp.nec.com>
- <20121026202105.GF24687@redhat.com>
- <508E572C.6000707@ce.jp.nec.com>
- <20121029163845.GB7709@redhat.com>
- <1351529115.24721.40.camel@twins>
- <20121029171346.GC3308@redhat.com>
- <50EBCB52.6020003@ce.jp.nec.com>
+	Wed, 9 Jan 2013 10:58:05 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <50EBCB52.6020003@ce.jp.nec.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20130109151001.GR19691@intel.com>
+References: <20130108155423.GJ19691@intel.com>
+	<1357719435-29955-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	<1357719435-29955-4-git-send-email-andriy.shevchenko@linux.intel.com>
+	<20130109135006.GO19691@intel.com>
+	<CAKohpokJGXKZ9jonGtYvTnPNLVr=wjhQ0DN_e=PF=U3nvusp-A@mail.gmail.com>
+	<CAHp75VdWWy7V=PQ2EfXrixX2==yDiakga=tA=jV9bzRrqqzZhw@mail.gmail.com>
+	<20130109151001.GR19691@intel.com>
+Date: Wed, 9 Jan 2013 17:51:17 +0200
+Message-ID: <CAHp75Vfi3C8EbfkvLDTR2BqxYbnfomA2zVQgE0tGfn7oBazWoQ@mail.gmail.com>
+Subject: Re: [resend][PATCH 03/16] dmaengine: introduce is_slave_xfer function
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.jf.intel.com>,
+        linux-kernel@vger.kernel.org, spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 04:31:30PM +0900, Jun'ichi Nomura wrote:
-> With 749fefe677 in v3.7 ("block: lift the initial queue bypass mode
-> on blk_register_queue() instead of blk_init_allocated_queue()"),
-> the following warning appears when multipath is used with CONFIG_PREEMPT=y.
-> 
-> This patch moves blk_queue_bypass_start() before radix_tree_preload()
-> to avoid the sleeping call while preemption is disabled.
-> 
->   BUG: scheduling while atomic: multipath/2460/0x00000002
->   1 lock held by multipath/2460:
->    #0:  (&md->type_lock){......}, at: [<ffffffffa019fb05>] dm_lock_md_type+0x17/0x19 [dm_mod]
->   Modules linked in: ...
->   Pid: 2460, comm: multipath Tainted: G        W    3.7.0-rc2 #1
->   Call Trace:
->    [<ffffffff810723ae>] __schedule_bug+0x6a/0x78
->    [<ffffffff81428ba2>] __schedule+0xb4/0x5e0
->    [<ffffffff814291e6>] schedule+0x64/0x66
->    [<ffffffff8142773a>] schedule_timeout+0x39/0xf8
->    [<ffffffff8108ad5f>] ? put_lock_stats+0xe/0x29
->    [<ffffffff8108ae30>] ? lock_release_holdtime+0xb6/0xbb
->    [<ffffffff814289e3>] wait_for_common+0x9d/0xee
->    [<ffffffff8107526c>] ? try_to_wake_up+0x206/0x206
->    [<ffffffff810c0eb8>] ? kfree_call_rcu+0x1c/0x1c
->    [<ffffffff81428aec>] wait_for_completion+0x1d/0x1f
->    [<ffffffff810611f9>] wait_rcu_gp+0x5d/0x7a
->    [<ffffffff81061216>] ? wait_rcu_gp+0x7a/0x7a
->    [<ffffffff8106fb18>] ? complete+0x21/0x53
->    [<ffffffff810c0556>] synchronize_rcu+0x1e/0x20
->    [<ffffffff811dd903>] blk_queue_bypass_start+0x5d/0x62
->    [<ffffffff811ee109>] blkcg_activate_policy+0x73/0x270
->    [<ffffffff81130521>] ? kmem_cache_alloc_node_trace+0xc7/0x108
->    [<ffffffff811f04b3>] cfq_init_queue+0x80/0x28e
->    [<ffffffffa01a1600>] ? dm_blk_ioctl+0xa7/0xa7 [dm_mod]
->    [<ffffffff811d8c41>] elevator_init+0xe1/0x115
->    [<ffffffff811e229f>] ? blk_queue_make_request+0x54/0x59
->    [<ffffffff811dd743>] blk_init_allocated_queue+0x8c/0x9e
->    [<ffffffffa019ffcd>] dm_setup_md_queue+0x36/0xaa [dm_mod]
->    [<ffffffffa01a60e6>] table_load+0x1bd/0x2c8 [dm_mod]
->    [<ffffffffa01a7026>] ctl_ioctl+0x1d6/0x236 [dm_mod]
->    [<ffffffffa01a5f29>] ? table_clear+0xaa/0xaa [dm_mod]
->    [<ffffffffa01a7099>] dm_ctl_ioctl+0x13/0x17 [dm_mod]
->    [<ffffffff811479fc>] do_vfs_ioctl+0x3fb/0x441
->    [<ffffffff811b643c>] ? file_has_perm+0x8a/0x99
->    [<ffffffff81147aa0>] sys_ioctl+0x5e/0x82
->    [<ffffffff812010be>] ? trace_hardirqs_on_thunk+0x3a/0x3f
->    [<ffffffff814310d9>] system_call_fastpath+0x16/0x1b
-> 
-> Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
-> Acked-by: Vivek Goyal <vgoyal@redhat.com>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Jens Axboe <axboe@kernel.dk>
-> Cc: Alasdair G Kergon <agk@redhat.com>
+On Wed, Jan 9, 2013 at 5:10 PM, Vinod Koul <vinod.koul@intel.com> wrote:
+> On Wed, Jan 09, 2013 at 04:58:02PM +0200, Andy Shevchenko wrote:
+>> On Wed, Jan 9, 2013 at 4:19 PM, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+>> > n 9 January 2013 19:20, Vinod Koul <vinod.koul@intel.com> wrote:
+>> >>> +static inline bool is_slave_xfer(enum dma_transfer_direction direction)
+>> >>> +{
+>> >>> +     return (direction == DMA_MEM_TO_DEV) || (direction == DMA_DEV_TO_MEM);
+>> >>> +}
+>> >> After reading the subsequent patch I understand what is intent here. Perhaps
+>> >> is_slave_dirn() would have been a beter one...
+>> >
+>> > dirn isn't readable, it took me some time to understand the intent...
+>> > Either have xfer or direction :)
+>>
+>> Agree with Viresh. I might rename it to is_slave_direction if you want to.
+> direction sounds fine too.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Okay, I'll rename it tomorrow and send v2 for that subseries and the
+other patch where changelog should be fixed.
 
-Thanks.
+>
+> --
+> ~Vinod
+
+
 
 -- 
-tejun
+With Best Regards,
+Andy Shevchenko
