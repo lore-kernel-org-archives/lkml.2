@@ -1,73 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934263Ab3AIV1A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:27:00 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:49260 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933299Ab3AIV06 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:26:58 -0500
-Message-ID: <50EDE0AB.1030509@parallels.com>
-Date: Thu, 10 Jan 2013 01:27:07 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S934273Ab3AIV1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:27:17 -0500
+Received: from moutng.kundenserver.de ([212.227.17.8]:61668 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933273Ab3AIV1P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:27:15 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Tony Prisk <linux@prisktech.co.nz>
+Subject: Re: [PATCH 1/4] arm: vt8500: Add support for Wondermedia WM8750/WM8850
+Date: Wed, 9 Jan 2013 21:27:05 +0000
+User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
+Cc: Olof Johansson <olof@lixom.net>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+References: <1356650452-16559-1-git-send-email-linux@prisktech.co.nz> <CAOesGMj6XTuW9tPqYnawPvO-wJBd7s5M5xTfdvQcmEioHw=Pnw@mail.gmail.com> <1357758570.27076.8.camel@gitbox>
+In-Reply-To: <1357758570.27076.8.camel@gitbox>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v5 11/11] sched: introduce cgroup file stat_percpu
-References: <1357731938-8417-1-git-send-email-glommer@parallels.com> <1357731938-8417-12-git-send-email-glommer@parallels.com> <20130109124220.ad9f1a54.akpm@linux-foundation.org> <50EDDCAA.6070004@parallels.com> <20130109131705.4156ba5c.akpm@linux-foundation.org>
-In-Reply-To: <20130109131705.4156ba5c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [46.39.244.6]
+Message-Id: <201301092127.05804.arnd@arndb.de>
+X-Provags-ID: V02:K0:Jp5ekt/YEEawfZIXZK5/OPvbCVgF/vVR6SE0T/QQDJB
+ 3WRN0BYmYGQyRkzRj32CHXSmhjpvpH3EWYVKs8L6YNL5xQz86h
+ B7OvQ0KJHkTFV+4mNBHgTE3uQpfWNLFWHUwz5Kwk9lo4jfjwyG
+ vA/7jR3Q80FNtCLtPU6Ez8gdY+y6Db5bYs+zhGjM5CfNN91H0c
+ LMsfGZjpnUysdoTWqGWKrT0M9IY/7RBa98ykUSgbJGQZnKS4Fs
+ Z9FIk00NaraffRanJAprxlNjWTZSwsGEAAEZ9IJqU0rEI0s6s0
+ rXVoERofZa3PTCbBCHVPbDEwOURec4fhCMyBh0yg+4lzdALzM/
+ aIqv4JlbXwBJSyhHT9L8=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/10/2013 01:17 AM, Andrew Morton wrote:
-> On Thu, 10 Jan 2013 01:10:02 +0400
-> Glauber Costa <glommer@parallels.com> wrote:
+On Wednesday 09 January 2013, Tony Prisk wrote:
+> I'm quite happy to send a pull request if that's what you prefer.
 > 
->> The main advantage I see in this approach, is that there is way less
->> data to be written using a header. Although your way works, it means we
->> will write the strings "nice", "system", etc. #cpu times. Quite a waste.
+> Generally people have just taken the patches straight from email, so
+> everytime I've done a pull-request I get a reply back saying the patches
+> have already been applied.
 > 
-> Yes, overhead can be a significant issue with this type of interface. 
-> But we already incurred a massive overhead by using a human-readable
-> ascii interface.  If performance is an issue, perhaps the whole thing
-> should be grafted onto taskstats instead.  Or create a new
-> taskstats-like thing.
+> Is there some 'rule' around pull-requests vs emailed patches?
 
-I think this would be a little alienish in the already alien world of
-cgroups.
+Generally, pull requests tend to be less work for us, so I prefer
+them. In particular, when you add a tag description or a signed
+tag, that gives automatically puts  nice text into the merge
+changeset.
 
-However, I was not so much talking about plain performance overhead as
-measurable in miliseconds-to-parse, but rather just alluding to the fact
-that we would be writing the same set of strings multiple times when a
-header would do just fine.
+> Should patches in pull-requests have Ack'd lines already?
 
-This is the same method used for instance by slabinfo.
+Yes.
 
-> 
-> btw, a more typical interface would be
-> 
-> cat /.../cpu0
-> nice:nn
-> system:nn
-> irq:nn
-> 
-
-Well, yes. But welcome to cgroups: directories have a meaning, so the
-only way to organize stuff is with plain files in the current hierarchy
-is by filling it with files. As many files as we have cpus.
-
-At this point you are certain to miss all the other files present in the
-directory.
-
-
-> - the traditional one-per-line name:value tuples.  But I'd assumed that
-> having a file per CPU would be aawkward.
-> 
-Indeed.
+	Arnd
 
