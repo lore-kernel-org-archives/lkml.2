@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934026Ab3AIUlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43706 "EHLO mail.kernel.org"
+	id S934193Ab3AIUwA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:52:00 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43848 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933904Ab3AIUkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:55 -0500
+	id S934030Ab3AIUlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Ben Myers <bpm@sgi.com>
-Subject: [ 094/123] xfs: fix stray dquot unlock when reclaiming dquots
-Date: Wed,  9 Jan 2013 12:35:33 -0800
-Message-Id: <20130109201510.663378387@linuxfoundation.org>
+        Ulrich Eckhardt <usb@uli-eckhardt.de>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Huang Ying <ying.huang@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [ 106/123] PCI/PM: Do not suspend port if any subordinate device needs PME polling
+Date: Wed,  9 Jan 2013 12:35:45 -0800
+Message-Id: <20130109201512.087668690@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,83 +28,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Huang Ying <ying.huang@intel.com>
 
-commit b870553cdecb26d5291af09602352b763e323df2 upstream.
+commit c733b77475707cc3980542c86ee0ad5c841d544c upstream.
 
-When we fail to get a dquot lock during reclaim, we jump to an error
-handler that unlocks the dquot. This is wrong as we didn't lock the
-dquot, and unlocking it means who-ever is holding the lock has had
-it silently taken away, and hence it results in a lock imbalance.
+Ulrich reported that his USB3 cardreader does not work reliably when
+connected to the USB3 port.  It turns out that USB3 controller failed to
+awaken when plugging in the USB3 cardreader.  Further experiments found
+that the USB3 host controller can only be awakened via polling, not via PME
+interrupt.  But if the PCIe port to which the USB3 host controller is
+connected is suspended, we cannot poll the controller because its config
+space is not accessible when the PCIe port is in a low power state.
 
-Found by inspection while modifying the code for the numa-lru
-patchset. This fixes a random hang I've been seeing on xfstest 232
-for the past several months.
+To solve the issue, the PCIe port will not be suspended if any subordinate
+device needs PME polling.
 
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Ben Myers <bpm@sgi.com>
+[bhelgaas: use bool consistently rather than mixing int/bool]
+Reference: http://lkml.kernel.org/r/50841CCC.9030809@uli-eckhardt.de
+Reported-by: Ulrich Eckhardt <usb@uli-eckhardt.de>
+Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/xfs/xfs_qm.c |   15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ drivers/pci/pcie/portdrv_pci.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
---- a/fs/xfs/xfs_qm.c
-+++ b/fs/xfs/xfs_qm.c
-@@ -1453,7 +1453,7 @@ xfs_qm_dqreclaim_one(
- 	int			error;
- 
- 	if (!xfs_dqlock_nowait(dqp))
--		goto out_busy;
-+		goto out_move_tail;
- 
- 	/*
- 	 * This dquot has acquired a reference in the meantime remove it from
-@@ -1476,7 +1476,7 @@ xfs_qm_dqreclaim_one(
- 	 * getting flushed to disk, we don't want to reclaim it.
- 	 */
- 	if (!xfs_dqflock_nowait(dqp))
--		goto out_busy;
-+		goto out_unlock_move_tail;
- 
- 	if (XFS_DQ_IS_DIRTY(dqp)) {
- 		struct xfs_buf	*bp = NULL;
-@@ -1487,7 +1487,7 @@ xfs_qm_dqreclaim_one(
- 		if (error) {
- 			xfs_warn(mp, "%s: dquot %p flush failed",
- 				 __func__, dqp);
--			goto out_busy;
-+			goto out_unlock_move_tail;
- 		}
- 
- 		xfs_buf_delwri_queue(bp, buffer_list);
-@@ -1496,7 +1496,7 @@ xfs_qm_dqreclaim_one(
- 		 * Give the dquot another try on the freelist, as the
- 		 * flushing will take some time.
- 		 */
--		goto out_busy;
-+		goto out_unlock_move_tail;
- 	}
- 	xfs_dqfunlock(dqp);
- 
-@@ -1515,14 +1515,13 @@ xfs_qm_dqreclaim_one(
- 	XFS_STATS_INC(xs_qm_dqreclaims);
- 	return;
- 
--out_busy:
--	xfs_dqunlock(dqp);
--
- 	/*
- 	 * Move the dquot to the tail of the list so that we don't spin on it.
- 	 */
-+out_unlock_move_tail:
-+	xfs_dqunlock(dqp);
-+out_move_tail:
- 	list_move_tail(&dqp->q_lru, &qi->qi_lru_list);
--
- 	trace_xfs_dqreclaim_busy(dqp);
- 	XFS_STATS_INC(xs_qm_dqreclaim_misses);
+--- a/drivers/pci/pcie/portdrv_pci.c
++++ b/drivers/pci/pcie/portdrv_pci.c
+@@ -134,10 +134,28 @@ static int pcie_port_runtime_resume(stru
+ 	return 0;
  }
+ 
++static int pci_dev_pme_poll(struct pci_dev *pdev, void *data)
++{
++	bool *pme_poll = data;
++
++	if (pdev->pme_poll)
++		*pme_poll = true;
++	return 0;
++}
++
+ static int pcie_port_runtime_idle(struct device *dev)
+ {
++	struct pci_dev *pdev = to_pci_dev(dev);
++	bool pme_poll = false;
++
++	/*
++	 * If any subordinate device needs pme poll, we should keep
++	 * the port in D0, because we need port in D0 to poll it.
++	 */
++	pci_walk_bus(pdev->subordinate, pci_dev_pme_poll, &pme_poll);
+ 	/* Delay for a short while to prevent too frequent suspend/resume */
+-	pm_schedule_suspend(dev, 10);
++	if (!pme_poll)
++		pm_schedule_suspend(dev, 10);
+ 	return -EBUSY;
+ }
+ #else
 
 
