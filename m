@@ -1,56 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab3AINnp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 08:43:45 -0500
-Received: from mx2.parallels.com ([64.131.90.16]:60182 "EHLO mx2.parallels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757436Ab3AINnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 08:43:43 -0500
-Message-ID: <50ED7411.50000@parallels.com>
-Date: Wed, 9 Jan 2013 17:43:45 +0400
-From: Glauber Costa <glommer@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Anton Vorontsov <anton.vorontsov@linaro.org>,
-        David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>, <linaro-kernel@lists.linaro.org>,
-        <patches@linaro.org>, <kernel-team@android.com>
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-References: <20130104082751.GA22227@lizard.gateway.2wire.net> <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org> <50ED30CE.8070208@parallels.com> <20130109011512.a87ffdfa.akpm@linux-foundation.org>
-In-Reply-To: <20130109011512.a87ffdfa.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	id S1757887Ab3AINqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 08:46:19 -0500
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:26377 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757865Ab3AINqR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 08:46:17 -0500
+X-Authority-Analysis: v=2.0 cv=O9a7TWBW c=1 sm=0 a=rXTBtCOcEpjy1lPqhTCpEQ==:17 a=mNMOxpOpBa8A:10 a=S0zgfAou480A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=meVymXHHAAAA:8 a=-V7fij46oSQA:10 a=bnYEFHe5BS6znBRDnhoA:9 a=PUjeQqilurYA:10 a=rXTBtCOcEpjy1lPqhTCpEQ==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 74.67.115.198
+Message-ID: <1357739175.5190.53.camel@gandalf.local.home>
+Subject: Re: [PATCH 03/33] cputime: Generic on-demand virtual cputime
+ accounting
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 09 Jan 2013 08:46:15 -0500
+In-Reply-To: <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+	 <1357610913-1080-4-git-send-email-fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2013 01:15 PM, Andrew Morton wrote:
-> On Wed, 9 Jan 2013 12:56:46 +0400 Glauber Costa <glommer@parallels.com> wrote:
-> 
->>> +#if IS_SUBSYS_ENABLED(CONFIG_CGROUP_MEMPRESSURE)
->>> +SUBSYS(mpc_cgroup)
->>> +#endif
->>
->> It might be just me, but if one does not know what this is about, "mpc"
->> immediately fetches something communication-related to mind. I would
->> suggest changing this to just plain "mempressure_cgroup", or something
->> more descriptive.
-> 
-> mempressure_cgroup is rather lengthy.  "mpcg" would be good - it's short
-> and rememberable.
-> 
-Or, since most of the cgroups don't actually use the suffix "cgroup"
-(with the exception of cpu and memcg), maybe just mempressure?
+On Tue, 2013-01-08 at 03:08 +0100, Frederic Weisbecker wrote:
+
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 5cc8713..51b5c33 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -322,6 +322,9 @@ source "kernel/time/Kconfig"
+>  
+>  menu "CPU/Task time and stats accounting"
+>  
+> +config VIRT_CPU_ACCOUNTING
+> +	bool
+> +
+>  choice
+>  	prompt "Cputime accounting"
+>  	default TICK_CPU_ACCOUNTING if !PPC64
+> @@ -338,9 +341,10 @@ config TICK_CPU_ACCOUNTING
+>  
+>  	  If unsure, say Y.
+>  
+> -config VIRT_CPU_ACCOUNTING
+> +config VIRT_CPU_ACCOUNTING_NATIVE
+>  	bool "Deterministic task and CPU time accounting"
+>  	depends on HAVE_VIRT_CPU_ACCOUNTING
+> +	select VIRT_CPU_ACCOUNTING
+>  	help
+>  	  Select this option to enable more accurate task and CPU time
+>  	  accounting.  This is done by reading a CPU counter on each
+> @@ -350,6 +354,15 @@ config VIRT_CPU_ACCOUNTING
+>  	  this also enables accounting of stolen time on logically-partitioned
+>  	  systems.
+>  
+> +config VIRT_CPU_ACCOUNTING_GEN
+> +	bool "Full dynticks CPU time accounting"
+> +	depends on HAVE_CONTEXT_TRACKING
+> +	select VIRT_CPU_ACCOUNTING
+> +	select CONTEXT_TRACKING
+
+	select CONTEXT_TRACKING_FORCE
+
+Otherwise the user time never gets updated.
+
+-- Steve
+
+> +	help
+> +	  Implement a generic virtual based cputime accounting by using
+> +	  the context tracking subsystem.
+> +
+>  config IRQ_TIME_ACCOUNTING
+>  	bool "Fine granularity task level IRQ time accounting"
+>  	depends on HAVE_IRQ_TIME_ACCOUNTING
+
 
 
