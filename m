@@ -1,76 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933283Ab3AIVjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:39:39 -0500
-Received: from mail-da0-f41.google.com ([209.85.210.41]:54480 "EHLO
-	mail-da0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933209Ab3AIVji (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:39:38 -0500
-Date: Wed, 9 Jan 2013 13:36:04 -0800
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
-To: Glauber Costa <glommer@parallels.com>
-Cc: Tejun Heo <tj@kernel.org>, David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130109213604.GA9475@lizard.fhda.edu>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
- <20130109203731.GA20454@htj.dyndns.org>
- <50EDDF1E.6010705@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <50EDDF1E.6010705@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933266Ab3AIVj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:39:56 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41965 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933196Ab3AIUiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:11 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Robin Holt <holt@sgi.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 16/80] SGI-XP: handle non-fatal traps
+Date: Wed,  9 Jan 2013 12:35:08 -0800
+Message-Id: <20130109201502.460305774@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 10, 2013 at 01:20:30AM +0400, Glauber Costa wrote:
-[...]
-> Given the above, I believe that ideally we should use this pressure
-> mechanism in memcg replacing the current memcg notification mechanism.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Just a quick wonder: why would we need to place it into memcg, when we
-don't need any of the memcg stuff for it? I see no benefits, not
-design-wise, not implementation-wise or anything-wise. :)
+------------------
 
-We can use mempressure w/o memcg, and even then it can (or should :) be
-useful (for cpuset, for example).
+From: Robin Holt <holt@sgi.com>
 
-> More or less like timer expiration happens: you could still write
-> numbers for compatibility, but those numbers would be internally mapped
-> into the levels Anton is proposing, that makes *way* more sense.
-> 
-> If that is not possible, they should coexist as "notification" and a
-> "pressure" mechanism inside memcg.
-> 
-> The main argument against it centered around cpusets also being able to
-> participate in the play. I haven't yet understood how would it take
-> place. In particular, I saw no mention to cpusets in the patches.
+commit 891348ca0f66206f1dc0e30d63757e3df1ae2d15 upstream.
 
-I didn't test it, but as I see it, once a process in a specific cpuset,
-the task can only use a specific allowed zones for reclaim/alloc, i.e.
-various checks like this in vmscan:
+We found a user code which was raising a divide-by-zero trap.  That trap
+would lead to XPC connections between system-partitions being torn down
+due to the die_chain notifier callouts it received.
 
-         if (!cpuset_zone_allowed_hardwall(zone, GFP_KERNEL))
-                     continue;
+This also revealed a different issue where multiple callers into
+xpc_die_deactivate() would all attempt to do the disconnect in parallel
+which would sometimes lock up but often overwhelm the console on very
+large machines as each would print at least one line of output at the
+end of the deactivate.
 
-So, vmscan simply won't call vmpressure() if the zone is not allowed (so
-we won't account that pressure, from that zone).
+I reviewed all the users of the die_chain notifier and changed the code
+to ignore the notifier callouts for reasons which will not actually lead
+to a system to continue on to call die().
 
-Thanks,
-Anton
+[akpm@linux-foundation.org: fix ia64]
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/misc/sgi-xp/xpc_main.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+--- a/drivers/misc/sgi-xp/xpc_main.c
++++ b/drivers/misc/sgi-xp/xpc_main.c
+@@ -53,6 +53,10 @@
+ #include <linux/kthread.h>
+ #include "xpc.h"
+ 
++#ifdef CONFIG_X86_64
++#include <asm/traps.h>
++#endif
++
+ /* define two XPC debug device structures to be used with dev_dbg() et al */
+ 
+ struct device_driver xpc_dbg_name = {
+@@ -1079,6 +1083,9 @@ xpc_system_reboot(struct notifier_block
+ 	return NOTIFY_DONE;
+ }
+ 
++/* Used to only allow one cpu to complete disconnect */
++static unsigned int xpc_die_disconnecting;
++
+ /*
+  * Notify other partitions to deactivate from us by first disengaging from all
+  * references to our memory.
+@@ -1092,6 +1099,9 @@ xpc_die_deactivate(void)
+ 	long keep_waiting;
+ 	long wait_to_print;
+ 
++	if (cmpxchg(&xpc_die_disconnecting, 0, 1))
++		return;
++
+ 	/* keep xpc_hb_checker thread from doing anything (just in case) */
+ 	xpc_exiting = 1;
+ 
+@@ -1159,7 +1169,7 @@ xpc_die_deactivate(void)
+  * about the lack of a heartbeat.
+  */
+ static int
+-xpc_system_die(struct notifier_block *nb, unsigned long event, void *unused)
++xpc_system_die(struct notifier_block *nb, unsigned long event, void *_die_args)
+ {
+ #ifdef CONFIG_IA64		/* !!! temporary kludge */
+ 	switch (event) {
+@@ -1191,7 +1201,27 @@ xpc_system_die(struct notifier_block *nb
+ 		break;
+ 	}
+ #else
+-	xpc_die_deactivate();
++	struct die_args *die_args = _die_args;
++
++	switch (event) {
++	case DIE_TRAP:
++		if (die_args->trapnr == X86_TRAP_DF)
++			xpc_die_deactivate();
++
++		if (((die_args->trapnr == X86_TRAP_MF) ||
++		     (die_args->trapnr == X86_TRAP_XF)) &&
++		    !user_mode_vm(die_args->regs))
++			xpc_die_deactivate();
++
++		break;
++	case DIE_INT3:
++	case DIE_DEBUG:
++		break;
++	case DIE_OOPS:
++	case DIE_GPF:
++	default:
++		xpc_die_deactivate();
++	}
+ #endif
+ 
+ 	return NOTIFY_DONE;
+
+
