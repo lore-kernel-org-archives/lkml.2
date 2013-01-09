@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933123Ab3AIUhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:50 -0500
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:33978 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933069Ab3AIUhi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:38 -0500
-Date: Wed, 9 Jan 2013 12:37:31 -0800
-From: Tejun Heo <tj@kernel.org>
-To: Anton Vorontsov <anton.vorontsov@linaro.org>
-Cc: David Rientjes <rientjes@google.com>, Pekka Enberg <penberg@kernel.org>,
-        Mel Gorman <mgorman@suse.de>, Glauber Costa <glommer@parallels.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Thelen <gthelen@google.com>,
-        Leonid Moiseichuk <leonid.moiseichuk@nokia.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Minchan Kim <minchan@kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        John Stultz <john.stultz@linaro.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, kernel-team@android.com
-Subject: Re: [PATCH 1/2] Add mempressure cgroup
-Message-ID: <20130109203731.GA20454@htj.dyndns.org>
-References: <20130104082751.GA22227@lizard.gateway.2wire.net>
- <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357288152-23625-1-git-send-email-anton.vorontsov@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S933149Ab3AIVpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:45:20 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41752 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933113Ab3AIUhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:48 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Neal Cardwell <ncardwell@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 10/80] inet_diag: validate byte code to prevent oops in inet_diag_bc_run()
+Date: Wed,  9 Jan 2013 12:35:02 -0800
+Message-Id: <20130109201501.714035659@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Can you please cc me too when posting further patches?  I kinda missed
-the whole discussion upto this point.
+------------------
 
-On Fri, Jan 04, 2013 at 12:29:11AM -0800, Anton Vorontsov wrote:
-> This commit implements David Rientjes' idea of mempressure cgroup.
-> 
-> The main characteristics are the same to what I've tried to add to vmevent
-> API; internally, it uses Mel Gorman's idea of scanned/reclaimed ratio for
-> pressure index calculation. But we don't expose the index to the userland.
-> Instead, there are three levels of the pressure:
-> 
->  o low (just reclaiming, e.g. caches are draining);
->  o medium (allocation cost becomes high, e.g. swapping);
->  o oom (about to oom very soon).
-> 
-> The rationale behind exposing levels and not the raw pressure index
-> described here: http://lkml.org/lkml/2012/11/16/675
-> 
-> For a task it is possible to be in both cpusets, memcg and mempressure
-> cgroups, so by rearranging the tasks it is possible to watch a specific
-> pressure (i.e. caused by cpuset and/or memcg).
 
-So, cgroup is headed towards single hierarchy.  Dunno how much it
-would affect mempressure but it probably isn't wise to design with
-focus on multiple hierarchies.
+From: Neal Cardwell <ncardwell@google.com>
 
-Isn't memory reclaim and oom condition tied to memcgs when memcg is in
-use?  It seems natural to tie mempressure to memcg.  Is there some
-reason this should be a separate cgroup.  I'm kinda worried this is
-headed cpuacct / cpu silliness we have.  Glauber, what's your opinion
-here?
+[ Upstream commit 405c005949e47b6e91359159c24753519ded0c67 ]
 
-Thanks.
+Add logic to validate INET_DIAG_BC_S_COND and INET_DIAG_BC_D_COND
+operations.
 
--- 
-tejun
+Previously we did not validate the inet_diag_hostcond, address family,
+address length, and prefix length. So a malicious user could make the
+kernel read beyond the end of the bytecode array by claiming to have a
+whole inet_diag_hostcond when the bytecode was not long enough to
+contain a whole inet_diag_hostcond of the given address family. Or
+they could make the kernel read up to about 27 bytes beyond the end of
+a connection address by passing a prefix length that exceeded the
+length of addresses of the given family.
+
+Signed-off-by: Neal Cardwell <ncardwell@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv4/inet_diag.c |   48 +++++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 45 insertions(+), 3 deletions(-)
+
+--- a/net/ipv4/inet_diag.c
++++ b/net/ipv4/inet_diag.c
+@@ -504,6 +504,44 @@ static int valid_cc(const void *bc, int
+ 	return 0;
+ }
+ 
++/* Validate an inet_diag_hostcond. */
++static bool valid_hostcond(const struct inet_diag_bc_op *op, int len,
++			   int *min_len)
++{
++	int addr_len;
++	struct inet_diag_hostcond *cond;
++
++	/* Check hostcond space. */
++	*min_len += sizeof(struct inet_diag_hostcond);
++	if (len < *min_len)
++		return false;
++	cond = (struct inet_diag_hostcond *)(op + 1);
++
++	/* Check address family and address length. */
++	switch (cond->family) {
++	case AF_UNSPEC:
++		addr_len = 0;
++		break;
++	case AF_INET:
++		addr_len = sizeof(struct in_addr);
++		break;
++	case AF_INET6:
++		addr_len = sizeof(struct in6_addr);
++		break;
++	default:
++		return false;
++	}
++	*min_len += addr_len;
++	if (len < *min_len)
++		return false;
++
++	/* Check prefix length (in bits) vs address length (in bytes). */
++	if (cond->prefix_len > 8 * addr_len)
++		return false;
++
++	return true;
++}
++
+ static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
+ {
+ 	const void *bc = bytecode;
+@@ -511,18 +549,22 @@ static int inet_diag_bc_audit(const void
+ 
+ 	while (len > 0) {
+ 		const struct inet_diag_bc_op *op = bc;
++		int min_len = sizeof(struct inet_diag_bc_op);
+ 
+ //printk("BC: %d %d %d {%d} / %d\n", op->code, op->yes, op->no, op[1].no, len);
+ 		switch (op->code) {
+-		case INET_DIAG_BC_AUTO:
+ 		case INET_DIAG_BC_S_COND:
+ 		case INET_DIAG_BC_D_COND:
++			if (!valid_hostcond(bc, len, &min_len))
++				return -EINVAL;
++			/* fall through */
++		case INET_DIAG_BC_AUTO:
+ 		case INET_DIAG_BC_S_GE:
+ 		case INET_DIAG_BC_S_LE:
+ 		case INET_DIAG_BC_D_GE:
+ 		case INET_DIAG_BC_D_LE:
+ 		case INET_DIAG_BC_JMP:
+-			if (op->no < 4 || op->no > len + 4 || op->no & 3)
++			if (op->no < min_len || op->no > len + 4 || op->no & 3)
+ 				return -EINVAL;
+ 			if (op->no < len &&
+ 			    !valid_cc(bytecode, bytecode_len, len - op->no))
+@@ -533,7 +575,7 @@ static int inet_diag_bc_audit(const void
+ 		default:
+ 			return -EINVAL;
+ 		}
+-		if (op->yes < 4 || op->yes > len + 4 || op->yes & 3)
++		if (op->yes < min_len || op->yes > len + 4 || op->yes & 3)
+ 			return -EINVAL;
+ 		bc  += op->yes;
+ 		len -= op->yes;
+
+
