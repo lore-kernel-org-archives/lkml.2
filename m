@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab3AIJdk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 04:33:40 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:24335 "EHLO song.cn.fujitsu.com"
+	id S1757788Ab3AIJiN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 04:38:13 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:37942 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754124Ab3AIJde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 04:33:34 -0500
+	id S1757531Ab3AIJdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 04:33:39 -0500
 X-IronPort-AV: E=Sophos;i="4.84,437,1355068800"; 
-   d="scan'208";a="6551286"
+   d="scan'208";a="6551288"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -21,14 +21,12 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: [PATCH v6 07/15] memory-hotplug: move pgdat_resize_lock into sparse_remove_one_section()
-Date: Wed, 9 Jan 2013 17:32:31 +0800
-Message-Id: <1357723959-5416-8-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v6 00/15] memory-hotplug: hot-remove physical memory
+Date: Wed, 9 Jan 2013 17:32:24 +0800
+Message-Id: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
-In-Reply-To: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
-References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/09 17:32:53,
+ 2013/01/09 17:32:52,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
  2013/01/09 17:32:58,
 	Serialize complete at 2013/01/09 17:32:58
@@ -36,111 +34,160 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __remove_section(), we locked pgdat_resize_lock when calling
-sparse_remove_one_section(). This lock will disable irq. But we don't need
-to lock the whole function. If we do some work to free pagetables in
-free_section_usemap(), we need to call flush_tlb_all(), which need
-irq enabled. Otherwise the WARN_ON_ONCE() in smp_call_function_many()
-will be triggered.
+Here is the physical memory hot-remove patch-set based on 3.8rc-2.
 
-If we lock the whole sparse_remove_one_section(), then we come to this call trace:
+This patch-set aims to implement physical memory hot-removing.
 
-[  454.796248] ------------[ cut here ]------------
-[  454.851408] WARNING: at kernel/smp.c:461 smp_call_function_many+0xbd/0x260()
-[  454.935620] Hardware name: PRIMEQUEST 1800E
-......
-[  455.652201] Call Trace:
-[  455.681391]  [<ffffffff8106e73f>] warn_slowpath_common+0x7f/0xc0
-[  455.753151]  [<ffffffff810560a0>] ? leave_mm+0x50/0x50
-[  455.814527]  [<ffffffff8106e79a>] warn_slowpath_null+0x1a/0x20
-[  455.884208]  [<ffffffff810e7a9d>] smp_call_function_many+0xbd/0x260
-[  455.959082]  [<ffffffff810e7ecb>] smp_call_function+0x3b/0x50
-[  456.027722]  [<ffffffff810560a0>] ? leave_mm+0x50/0x50
-[  456.089098]  [<ffffffff810e7f4b>] on_each_cpu+0x3b/0xc0
-[  456.151512]  [<ffffffff81055f0c>] flush_tlb_all+0x1c/0x20
-[  456.216004]  [<ffffffff8104f8de>] remove_pagetable+0x14e/0x1d0
-[  456.285683]  [<ffffffff8104f978>] vmemmap_free+0x18/0x20
-[  456.349139]  [<ffffffff811b8797>] sparse_remove_one_section+0xf7/0x100
-[  456.427126]  [<ffffffff811c5fc2>] __remove_section+0xa2/0xb0
-[  456.494726]  [<ffffffff811c6070>] __remove_pages+0xa0/0xd0
-[  456.560258]  [<ffffffff81669c7b>] arch_remove_memory+0x6b/0xc0
-[  456.629937]  [<ffffffff8166ad28>] remove_memory+0xb8/0xf0
-[  456.694431]  [<ffffffff813e686f>] acpi_memory_device_remove+0x53/0x96
-[  456.771379]  [<ffffffff813b33c4>] acpi_device_remove+0x90/0xb2
-[  456.841059]  [<ffffffff8144b02c>] __device_release_driver+0x7c/0xf0
-[  456.915928]  [<ffffffff8144b1af>] device_release_driver+0x2f/0x50
-[  456.988719]  [<ffffffff813b4476>] acpi_bus_remove+0x32/0x6d
-[  457.055285]  [<ffffffff813b4542>] acpi_bus_trim+0x91/0x102
-[  457.120814]  [<ffffffff813b463b>] acpi_bus_hot_remove_device+0x88/0x16b
-[  457.199840]  [<ffffffff813afda7>] acpi_os_execute_deferred+0x27/0x34
-[  457.275756]  [<ffffffff81091ece>] process_one_work+0x20e/0x5c0
-[  457.345434]  [<ffffffff81091e5f>] ? process_one_work+0x19f/0x5c0
-[  457.417190]  [<ffffffff813afd80>] ? acpi_os_wait_events_complete+0x23/0x23
-[  457.499332]  [<ffffffff81093f6e>] worker_thread+0x12e/0x370
-[  457.565896]  [<ffffffff81093e40>] ? manage_workers+0x180/0x180
-[  457.635574]  [<ffffffff8109a09e>] kthread+0xee/0x100
-[  457.694871]  [<ffffffff810dfaf9>] ? __lock_release+0x129/0x190
-[  457.764552]  [<ffffffff81099fb0>] ? __init_kthread_worker+0x70/0x70
-[  457.839427]  [<ffffffff81690aac>] ret_from_fork+0x7c/0xb0
-[  457.903914]  [<ffffffff81099fb0>] ? __init_kthread_worker+0x70/0x70
-[  457.978784] ---[ end trace 25e85300f542aa01 ]---
+The patches can free/remove the following things:
 
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memory_hotplug.c |    4 ----
- mm/sparse.c         |    5 ++++-
- 2 files changed, 4 insertions(+), 5 deletions(-)
+  - /sys/firmware/memmap/X/{end, start, type} : [PATCH 4/15]
+  - memmap of sparse-vmemmap                  : [PATCH 6,7,8,10/15]
+  - page table of removed memory              : [RFC PATCH 7,8,10/15]
+  - node and related sysfs files              : [RFC PATCH 13-15/15]
 
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 0682d2a..674e791 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -442,8 +442,6 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
- #else
- static int __remove_section(struct zone *zone, struct mem_section *ms)
- {
--	unsigned long flags;
--	struct pglist_data *pgdat = zone->zone_pgdat;
- 	int ret = -EINVAL;
- 
- 	if (!valid_section(ms))
-@@ -453,9 +451,7 @@ static int __remove_section(struct zone *zone, struct mem_section *ms)
- 	if (ret)
- 		return ret;
- 
--	pgdat_resize_lock(pgdat, &flags);
- 	sparse_remove_one_section(zone, ms);
--	pgdat_resize_unlock(pgdat, &flags);
- 	return 0;
- }
- #endif
-diff --git a/mm/sparse.c b/mm/sparse.c
-index aadbb2a..05ca73a 100644
---- a/mm/sparse.c
-+++ b/mm/sparse.c
-@@ -796,8 +796,10 @@ static inline void clear_hwpoisoned_pages(struct page *memmap, int nr_pages)
- void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- {
- 	struct page *memmap = NULL;
--	unsigned long *usemap = NULL;
-+	unsigned long *usemap = NULL, flags;
-+	struct pglist_data *pgdat = zone->zone_pgdat;
- 
-+	pgdat_resize_lock(pgdat, &flags);
- 	if (ms->section_mem_map) {
- 		usemap = ms->pageblock_flags;
- 		memmap = sparse_decode_mem_map(ms->section_mem_map,
-@@ -805,6 +807,7 @@ void sparse_remove_one_section(struct zone *zone, struct mem_section *ms)
- 		ms->section_mem_map = 0;
- 		ms->pageblock_flags = NULL;
- 	}
-+	pgdat_resize_unlock(pgdat, &flags);
- 
- 	clear_hwpoisoned_pages(memmap, PAGES_PER_SECTION);
- 	free_section_usemap(memmap, usemap);
--- 
-1.7.1
+
+Existing problem:
+If CONFIG_MEMCG is selected, we will allocate memory to store page cgroup
+when we online pages.
+
+For example: there is a memory device on node 1. The address range
+is [1G, 1.5G). You will find 4 new directories memory8, memory9, memory10,
+and memory11 under the directory /sys/devices/system/memory/.
+
+If CONFIG_MEMCG is selected, when we online memory8, the memory stored page
+cgroup is not provided by this memory device. But when we online memory9, the
+memory stored page cgroup may be provided by memory8. So we can't offline
+memory8 now. We should offline the memory in the reversed order.
+
+When the memory device is hotremoved, we will auto offline memory provided
+by this memory device. But we don't know which memory is onlined first, so
+offlining memory may fail.
+
+In patch1, we provide a solution which is not good enough:
+Iterate twice to offline the memory.
+1st iterate: offline every non primary memory block.
+2nd iterate: offline primary (i.e. first added) memory block.
+
+And a new idea from Wen Congyang <wency@cn.fujitsu.com> is:
+allocate the memory from the memory block they are describing.
+
+But we are not sure if it is OK to do so because there is not existing API
+to do so, and we need to move page_cgroup memory allocation from MEM_GOING_ONLINE
+to MEM_ONLINE. And also, it may interfere the hugepage.
+
+
+
+How to test this patchset?
+1. apply this patchset and build the kernel. MEMORY_HOTPLUG, MEMORY_HOTREMOVE,
+   ACPI_HOTPLUG_MEMORY must be selected.
+2. load the module acpi_memhotplug
+3. hotplug the memory device(it depends on your hardware)
+   You will see the memory device under the directory /sys/bus/acpi/devices/.
+   Its name is PNP0C80:XX.
+4. online/offline pages provided by this memory device
+   You can write online/offline to /sys/devices/system/memory/memoryX/state to
+   online/offline pages provided by this memory device
+5. hotremove the memory device
+   You can hotremove the memory device by the hardware, or writing 1 to
+   /sys/bus/acpi/devices/PNP0C80:XX/eject.
+
+
+Note: if the memory provided by the memory device is used by the kernel, it
+can't be offlined. It is not a bug.
+
+
+Changelogs from v5 to v6:
+ Patch3: Add some more comments to explain memory hot-remove.
+ Patch4: Remove bootmem member in struct firmware_map_entry.
+ Patch6: Repeatedly register bootmem pages when using hugepage.
+ Patch8: Repeatedly free bootmem pages when using hugepage.
+ Patch14: Don't free pgdat when offlining a node, just reset it to 0.
+ Patch15: New patch, pgdat is not freed in patch14, so don't allocate a new
+          one when online a node.
+
+Changelogs from v4 to v5:
+ Patch7: new patch, move pgdat_resize_lock into sparse_remove_one_section() to
+         avoid disabling irq because we need flush tlb when free pagetables.
+ Patch8: new patch, pick up some common APIs that are used to free direct mapping
+         and vmemmap pagetables.
+ Patch9: free direct mapping pagetables on x86_64 arch.
+ Patch10: free vmemmap pagetables.
+ Patch11: since freeing memmap with vmemmap has been implemented, the config
+          macro CONFIG_SPARSEMEM_VMEMMAP when defining __remove_section() is
+          no longer needed.
+ Patch13: no need to modify acpi_memory_disable_device() since it was removed,
+          and add nid parameter when calling remove_memory().
+
+Changelogs from v3 to v4:
+ Patch7: remove unused codes.
+ Patch8: fix nr_pages that is passed to free_map_bootmem()
+
+Changelogs from v2 to v3:
+ Patch9: call sync_global_pgds() if pgd is changed
+ Patch10: fix a problem int the patch
+
+Changelogs from v1 to v2:
+ Patch1: new patch, offline memory twice. 1st iterate: offline every non primary
+         memory block. 2nd iterate: offline primary (i.e. first added) memory
+         block.
+
+ Patch3: new patch, no logical change, just remove reduntant codes.
+
+ Patch9: merge the patch from wujianguo into this patch. flush tlb on all cpu
+         after the pagetable is changed.
+
+ Patch12: new patch, free node_data when a node is offlined.
+
+
+Tang Chen (6):
+  memory-hotplug: move pgdat_resize_lock into
+    sparse_remove_one_section()
+  memory-hotplug: remove page table of x86_64 architecture
+  memory-hotplug: remove memmap of sparse-vmemmap
+  memory-hotplug: Integrated __remove_section() of
+    CONFIG_SPARSEMEM_VMEMMAP.
+  memory-hotplug: remove sysfs file of node
+  memory-hotplug: Do not allocate pdgat if it was not freed when
+    offline.
+
+Wen Congyang (5):
+  memory-hotplug: try to offline the memory twice to avoid dependence
+  memory-hotplug: remove redundant codes
+  memory-hotplug: introduce new function arch_remove_memory() for
+    removing page table depends on architecture
+  memory-hotplug: Common APIs to support page tables hot-remove
+  memory-hotplug: free node_data when a node is offlined
+
+Yasuaki Ishimatsu (4):
+  memory-hotplug: check whether all memory blocks are offlined or not
+    when removing memory
+  memory-hotplug: remove /sys/firmware/memmap/X sysfs
+  memory-hotplug: implement register_page_bootmem_info_section of
+    sparse-vmemmap
+  memory-hotplug: memory_hotplug: clear zone when removing the memory
+
+ arch/arm64/mm/mmu.c                  |    3 +
+ arch/ia64/mm/discontig.c             |   10 +
+ arch/ia64/mm/init.c                  |   18 ++
+ arch/powerpc/mm/init_64.c            |   10 +
+ arch/powerpc/mm/mem.c                |   12 +
+ arch/s390/mm/init.c                  |   12 +
+ arch/s390/mm/vmem.c                  |   10 +
+ arch/sh/mm/init.c                    |   17 ++
+ arch/sparc/mm/init_64.c              |   10 +
+ arch/tile/mm/init.c                  |    8 +
+ arch/x86/include/asm/pgtable_types.h |    1 +
+ arch/x86/mm/init_32.c                |   12 +
+ arch/x86/mm/init_64.c                |  390 +++++++++++++++++++++++++++++
+ arch/x86/mm/pageattr.c               |   47 ++--
+ drivers/acpi/acpi_memhotplug.c       |    8 +-
+ drivers/base/memory.c                |    6 +
+ drivers/firmware/memmap.c            |   96 +++++++-
+ include/linux/bootmem.h              |    1 +
+ include/linux/firmware-map.h         |    6 +
+ include/linux/memory_hotplug.h       |   15 +-
+ include/linux/mm.h                   |    4 +-
+ mm/memory_hotplug.c                  |  459 +++++++++++++++++++++++++++++++---
+ mm/sparse.c                          |    8 +-
+ 23 files changed, 1094 insertions(+), 69 deletions(-)
 
