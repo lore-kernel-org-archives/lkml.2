@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932154Ab3AIWkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 17:40:40 -0500
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:54096 "EHLO e7.ny.us.ibm.com"
+	id S1758151Ab3AIWmx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 17:42:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:61075 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758132Ab3AIWkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 17:40:39 -0500
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-To: Linux PPC <linuxppc-dev@lists.ozlabs.org>, galak@kernel.crashing.org
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>
-Subject: [PATCH v2] powerpc/mm: eliminate unneeded for_each_memblock
-Date: Wed,  9 Jan 2013 14:40:18 -0800
-Message-Id: <1357771218-6499-1-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.0.3
-In-Reply-To: <82A31E2D-FA24-44CF-9812-9E8062AFA6F4@kernel.crashing.org>
-References: <82A31E2D-FA24-44CF-9812-9E8062AFA6F4@kernel.crashing.org>
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 13010922-5806-0000-0000-00001E0794C3
+	id S1758136Ab3AIWmv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 17:42:51 -0500
+Message-ID: <1357771504.12030.59.camel@dcbw.foobar.com>
+Subject: Re: sd8688 firmware location
+From: Dan Williams <dcbw@redhat.com>
+To: Lubomir Rintel <lkundrak@v3.sk>
+Cc: David Woodhouse <dwmw2@infradead.org>, Ben Hutchings <ben@decadent.org.uk>,
+        libertas-dev@lists.infradead.org, linux-bluetooth@vger.kernel.org,
+        Gustavo Padovan <gustavo@padovan.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, linux-kernel@vger.kernel.org
+Date: Wed, 09 Jan 2013 16:45:04 -0600
+In-Reply-To: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
+References: <1357689361-7969-1-git-send-email-lkundrak@v3.sk>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only persistent change made by this loop is calling
-memblock_set_node() once for each memblock, which is not useful (and has
-no effect) as memblock_set_node() is not called with any
-memblock-specific parameters.
+On Wed, 2013-01-09 at 00:56 +0100, Lubomir Rintel wrote:
+> Hi!
+> 
+> btmrvl_sdio and libertas_sdio both use firmware files sd8688.bin and
+> sd8688_helper.bin. In linux-firmware, they're present in libertas/ tree and
+> (since 3d32a58b) libertas_sdio perfers loading it from there, while it is able
+> to fallback to load it from linux-firmware root. btmrvl_sdio, on the other hand
+> only looks in the root and ends up not being successful.
+> 
+> Obviously, there are two solutions to the problem -- either teach btmrvl_sdio
+> to look into libertas/, or move the files in linux-firmware tree. I don't
+> really have a strong preference, though it probably makes less sense to keep in
+> in libertas/, since the bluetooth hardware is not really marketed as "Libertas."
+> 
+> I'm following up with patches to linux and linux-firmware and I'd be very
+> thankful if you could pick one (not both of them).
 
-Subsistute a single memblock_set_node().
+So the BT part and the wifi part have different SDIO IDs; are they
+actually connected separately to the SDIO bus?  Or is the chip only in
+one mode at one time or something like that?  Is there a problem with
+having both libertas and btmrvl loaded at the same time since they're
+essentially the same chip?
 
-Signed-off-by: Cody P Schafer <cody@linux.vnet.ibm.com>
----
+I don't really mind moving stuff to mrvl/ out of libertas/ for these
+devices, but I do want some backwards compat code in libertas for that.
+Unless, of course, Marcel was talking about symlinks in the
+linux-firmware git tree, which would be fine with me.  The important
+point is that simply updating your linux-firmware package or install or
+whatever *should not* result in a failed firmware load.
 
-Now with a signoff & wrapped comment line.
-
- arch/powerpc/mm/mem.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 0dba506..40df7c8 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -195,13 +195,10 @@ void __init do_init_bootmem(void)
- 	min_low_pfn = MEMORY_START >> PAGE_SHIFT;
- 	boot_mapsize = init_bootmem_node(NODE_DATA(0), start >> PAGE_SHIFT, min_low_pfn, max_low_pfn);
- 
--	/* Add active regions with valid PFNs */
--	for_each_memblock(memory, reg) {
--		unsigned long start_pfn, end_pfn;
--		start_pfn = memblock_region_memory_base_pfn(reg);
--		end_pfn = memblock_region_memory_end_pfn(reg);
--		memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
--	}
-+	/* Place all memblock_regions in the same node and merge contiguous
-+	 * memblock_regions
-+	 */
-+	memblock_set_node(0, (phys_addr_t)ULLONG_MAX, 0);
- 
- 	/* Add all physical memory to the bootmem map, mark each area
- 	 * present.
--- 
-1.8.0.3
+Dan
 
