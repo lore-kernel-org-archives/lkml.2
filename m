@@ -1,93 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932349Ab3AIRwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 12:52:24 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:43430 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758023Ab3AIRwW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 12:52:22 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 50.131.214.131
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18XTDYNqVgRB563V0fwv7AE
-Date: Wed, 9 Jan 2013 09:52:15 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: Re: [PATCH] Proposed removal of IS_ERR_OR_NULL() (was: Re: [PATCH
- 1/4] gpiolib: introduce descriptor-based GPIO interface)
-Message-ID: <20130109175215.GU14149@atomide.com>
-References: <201301091035.23206.arnd@arndb.de>
- <20130109104414.GF3931@n2100.arm.linux.org.uk>
- <20130109111055.GG3931@n2100.arm.linux.org.uk>
- <alpine.LFD.2.02.1301090932400.6300@xanadu.home>
- <20130109150427.GL3931@n2100.arm.linux.org.uk>
- <alpine.LFD.2.02.1301091020580.6300@xanadu.home>
- <20130109155154.GN3931@n2100.arm.linux.org.uk>
- <alpine.LFD.2.02.1301091058070.6300@xanadu.home>
- <20130109162145.GO3931@n2100.arm.linux.org.uk>
- <20130109171206.GQ3931@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20130109171206.GQ3931@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932377Ab3AIRwo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 12:52:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41727 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932217Ab3AIRwm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 12:52:42 -0500
+Message-ID: <1357753953.3224.769.camel@bling.home>
+Subject: Re: [PATCH 1/2] VFIO-AER: Vfio-pci driver changes for supporting AER
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Pandarathil, Vijaymohan R" <vijaymohan.pandarathil@hp.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Gleb Natapov <gleb@redhat.com>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "qemu-devel@nongnu.org" <qemu-devel@nongnu.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 09 Jan 2013 10:52:33 -0700
+In-Reply-To: <F9E001219150CB45BEDC82A650F360C90149602F@G9W0717.americas.hpqcorp.net>
+References: <F9E001219150CB45BEDC82A650F360C90149602F@G9W0717.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [130109 09:15]:
-> On Wed, Jan 09, 2013 at 04:21:45PM +0000, Russell King - ARM Linux wrote:
-> > On Wed, Jan 09, 2013 at 11:09:23AM -0500, Nicolas Pitre wrote:
-> > > On Wed, 9 Jan 2013, Russell King - ARM Linux wrote:
-> > > 
-> > > > On Wed, Jan 09, 2013 at 10:27:53AM -0500, Nicolas Pitre wrote:
-> > > > > Anyone with good coccinelle skills around to deal with the users?
-> > > > 
-> > > > I'm not sure that's a solution.
-> > > 
-> > > Well, I was thinking that coccinelle could handle the majority of the 
-> > > 354 users when the "fix" is obvious enough to be automated.
-> > > 
-> > > That said, if we want people to fix their code, it is probably necessary 
-> > > to merge your patch right away so the warnings are actually being seen, 
-> > > and revert it right before the final v3.8 release if the remaining 
-> > > warnings are still too numerous.  Repeat with next cycle.
-> > 
-> > Well, this is what I currently have for arch/arm thus far, and ooh look,
-> > we save some lines of code too.
+On Wed, 2013-01-09 at 06:26 +0000, Pandarathil, Vijaymohan R wrote:
+> 	- New ioctl which is used to pass the eventfd that is signaled when
+>           an error occurs in the vfio_pci_device
 > 
-> Actually, the OMAP dmtimer.c code needs a few more fixes while we're
-> reviewing this stuff...  This latest patch leaves three files in
-> arch/arm still using IS_ERR_OR_NULL() as they do seem to want to
-> legitimately check for error pointers _and_ NULL.
+> 	- Register pci_error_handler for the vfio_pci driver
 > 
-> I'm restricting the patch below to just those cases where it's wrong
-> in arch/arm.
+> 	- When the device encounters an error, the error handler registered by
+>           the vfio_pci driver gets invoked by the AER infrastructure
 > 
-> The omap_device.c changes probably also deserve some explanation.  As
-> far as I can see, if we have an 'od' then 'od->pdev' _must_ already
-> be valid (pdev is passed into omap_device_alloc() which creates the
-> 'od' - and the passed pdev better be checked _before_ it's passed in.)
-> It also appears that oh->od will _never_ be an error pointer value -
-> apart from tracing the paths creating that, there is some evidence for
-> this with tests elsewhere just for NULL here.  And lastly
-> omap_hwmod_lookup() is documented to _only_ return NULL on error, and
-> review of it confirms that.
+> 	- In the error handler, signal the eventfd registered for the device.
+> 
+> 	- This results in the qemu eventfd handler getting invoked and
+>           appropriate action taken for the guest.
+> 
+> Signed-off-by: Vijay Mohan Pandarathil <vijaymohan.pandarathil@hp.com>
+> ---
+>  drivers/vfio/pci/vfio_pci.c         | 29 +++++++++++++++++++++++++++++
+>  drivers/vfio/pci/vfio_pci_private.h |  1 +
+>  drivers/vfio/vfio.c                 |  8 ++++++++
+>  include/linux/vfio.h                |  1 +
+>  include/uapi/linux/vfio.h           |  9 +++++++++
+>  5 files changed, 48 insertions(+)
+> 
+> diff --git a/drivers/vfio/pci/vfio_pci.c b/drivers/vfio/pci/vfio_pci.c
+> index 6c11994..4ae9526 100644
+> --- a/drivers/vfio/pci/vfio_pci.c
+> +++ b/drivers/vfio/pci/vfio_pci.c
+> @@ -207,6 +207,8 @@ static long vfio_pci_ioctl(void *device_data,
+>  		if (vdev->reset_works)
+>  			info.flags |= VFIO_DEVICE_FLAGS_RESET;
+>  
+> +		info.flags |= VFIO_DEVICE_FLAGS_AER_NOTIFY;
+> +
 
-Looks correct to me.
+This appears to be a PCI specific flag, so the name should include
+_PCI_.  We also support non-PCIe devices and it seems like it would be
+possible to not have AER support available, so shouldn't this be
+conditional?
 
-Regards,
+>  		info.num_regions = VFIO_PCI_NUM_REGIONS;
+>  		info.num_irqs = VFIO_PCI_NUM_IRQS;
+>  
+> @@ -348,6 +350,19 @@ static long vfio_pci_ioctl(void *device_data,
+>  
+>  		return ret;
+>  
+> +	} else if (cmd == VFIO_DEVICE_SET_ERRFD) {
+> +		int32_t fd = (int32_t)arg;
+> +
+> +		if (fd < 0)
+> +			return -EINVAL;
+> +
+> +		vdev->err_trigger = eventfd_ctx_fdget(fd);
+> +
+> +		if (IS_ERR(vdev->err_trigger))
+> +			return PTR_ERR(vdev->err_trigger);
+> +
+> +		return 0;
+> +
 
-Tony
+I'm not sure why we wouldn't describe this as just another interrupt
+from the device and configure it via SET_IRQ.  This ioctl has very
+limited use and doesn't follow any of the conventions of all the other
+vfio ioctls.
+
+>  	} else if (cmd == VFIO_DEVICE_RESET)
+>  		return vdev->reset_works ?
+>  			pci_reset_function(vdev->pdev) : -EINVAL;
+> @@ -527,11 +542,25 @@ static void vfio_pci_remove(struct pci_dev *pdev)
+>  	kfree(vdev);
+>  }
+>  
+> +static pci_ers_result_t vfio_err_detected(struct pci_dev *pdev,
+> +				pci_channel_state_t state)
+> +{
+> +	struct vfio_pci_device *vdev = vfio_get_vdev(&pdev->dev);
+> +
+> +	eventfd_signal(vdev->err_trigger, 1);
+> +	return PCI_ERS_RESULT_CAN_RECOVER;
+> +}
+
+What if err_trigger hasn't been set?
+
+> +
+> +static const struct pci_error_handlers vfio_err_handlers = {
+> +	.error_detected = vfio_err_detected,
+> +};
+> +
+>  static struct pci_driver vfio_pci_driver = {
+>  	.name		= "vfio-pci",
+>  	.id_table	= NULL, /* only dynamic ids */
+>  	.probe		= vfio_pci_probe,
+>  	.remove		= vfio_pci_remove,
+> +	.err_handler	= &vfio_err_handlers,
+>  };
+>  
+>  static void __exit vfio_pci_cleanup(void)
+> diff --git a/drivers/vfio/pci/vfio_pci_private.h b/drivers/vfio/pci/vfio_pci_private.h
+> index 611827c..daee62f 100644
+> --- a/drivers/vfio/pci/vfio_pci_private.h
+> +++ b/drivers/vfio/pci/vfio_pci_private.h
+> @@ -55,6 +55,7 @@ struct vfio_pci_device {
+>  	bool			bardirty;
+>  	struct pci_saved_state	*pci_saved_state;
+>  	atomic_t		refcnt;
+> +	struct eventfd_ctx	*err_trigger;
+>  };
+>  
+>  #define is_intx(vdev) (vdev->irq_type == VFIO_PCI_INTX_IRQ_INDEX)
+> diff --git a/drivers/vfio/vfio.c b/drivers/vfio/vfio.c
+> index 56097c6..5ed5a54 100644
+> --- a/drivers/vfio/vfio.c
+> +++ b/drivers/vfio/vfio.c
+> @@ -693,6 +693,14 @@ void *vfio_del_group_dev(struct device *dev)
+>  }
+>  EXPORT_SYMBOL_GPL(vfio_del_group_dev);
+>  
+> +void *vfio_get_vdev(struct device *dev)
+> +{
+> +	struct vfio_device *device = dev_get_drvdata(dev);
+> +
+> +	return device->device_data;
+> +}
+> +EXPORT_SYMBOL_GPL(vfio_get_vdev);
+> +
+
+This is unsafe.  How do we know dev is a vfio device?  How do we keep
+that drvdata valid while you're using it?  I think you want to export
+the existing vfio_group_get_device() and vfio_device_put().  Thanks,
+
+Alex
+
+>  /**
+>   * VFIO base fd, /dev/vfio/vfio
+>   */
+> diff --git a/include/linux/vfio.h b/include/linux/vfio.h
+> index ab9e862..3c97b03 100644
+> --- a/include/linux/vfio.h
+> +++ b/include/linux/vfio.h
+> @@ -45,6 +45,7 @@ extern int vfio_add_group_dev(struct device *dev,
+>  			      void *device_data);
+>  
+>  extern void *vfio_del_group_dev(struct device *dev);
+> +extern void *vfio_get_vdev(struct device *dev);
+>  
+>  /**
+>   * struct vfio_iommu_driver_ops - VFIO IOMMU driver callbacks
+> diff --git a/include/uapi/linux/vfio.h b/include/uapi/linux/vfio.h
+> index 4758d1b..fa67213 100644
+> --- a/include/uapi/linux/vfio.h
+> +++ b/include/uapi/linux/vfio.h
+> @@ -147,6 +147,7 @@ struct vfio_device_info {
+>  	__u32	flags;
+>  #define VFIO_DEVICE_FLAGS_RESET	(1 << 0)	/* Device supports reset */
+>  #define VFIO_DEVICE_FLAGS_PCI	(1 << 1)	/* vfio-pci device */
+> +#define VFIO_DEVICE_FLAGS_AER_NOTIFY (1 << 2)	/* Supports aer notify */
+>  	__u32	num_regions;	/* Max region index + 1 */
+>  	__u32	num_irqs;	/* Max IRQ index + 1 */
+>  };
+> @@ -288,6 +289,14 @@ struct vfio_irq_set {
+>   */
+>  #define VFIO_DEVICE_RESET		_IO(VFIO_TYPE, VFIO_BASE + 11)
+>  
+> +/**
+> + * VFIO_DEVICE_SET_ERRFD - _IO(VFIO_TYPE, VFIO_BASE + 12)
+> + *
+> + * Pass the eventfd to the vfio-pci driver for signalling any device
+> + * error notifications
+> + */
+> +#define VFIO_DEVICE_SET_ERRFD		_IO(VFIO_TYPE, VFIO_BASE + 12)
+> +
+>  /*
+>   * The VFIO-PCI bus driver makes use of the following fixed region and
+>   * IRQ index mapping.  Unimplemented regions return a size of zero.
+
+
+
