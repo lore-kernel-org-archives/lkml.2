@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934123Ab3AIUla (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43964 "EHLO mail.kernel.org"
+	id S934154Ab3AIUlh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:44040 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934091Ab3AIUlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:22 -0500
+	id S934091Ab3AIUlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:31 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Tony Prisk <linux@prisktech.co.nz>, Edgar Toernig <froese@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [ 116/123] drivers/rtc/rtc-vt8500.c: correct handling of CR_24H bitfield
-Date: Wed,  9 Jan 2013 12:35:55 -0800
-Message-Id: <20130109201513.261961789@linuxfoundation.org>
+        Jeff Layton <jlayton@redhat.com>, Steve French <smfrench@gmail.com>
+Subject: [ 122/123] cifs: rename cifs_readdir_lookup to cifs_prime_dcache and make it void return
+Date: Wed,  9 Jan 2013 12:36:01 -0800
+Message-Id: <20130109201513.942890612@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,43 +25,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Prisk <linux@prisktech.co.nz>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 532db570e5181abc8f4f7bfa6c77c69ec2240198 upstream.
+commit eb1b3fa5cdb9c27bdec8f262acf757a06588eb2d upstream.
 
-Control register bitfield for 12H/24H mode is handled incorrectly.
-Setting CR_24H actually enables 12H mode.  This patch renames the define
-and changes the initialization code to correctly set 24H mode.
+The caller doesn't do anything with the dentry, so there's no point in
+holding a reference to it on return. Also cifs_prime_dcache better
+describes the actual purpose of the function.
 
-Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
-Cc: Edgar Toernig <froese@gmx.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rtc/rtc-vt8500.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/cifs/readdir.c |   42 ++++++++++++++++++------------------------
+ 1 file changed, 18 insertions(+), 24 deletions(-)
 
---- a/drivers/rtc/rtc-vt8500.c
-+++ b/drivers/rtc/rtc-vt8500.c
-@@ -70,7 +70,7 @@
- 				| ALARM_SEC_BIT)
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -66,18 +66,20 @@ static inline void dump_cifs_file_struct
+ #endif /* DEBUG2 */
  
- #define VT8500_RTC_CR_ENABLE	(1 << 0)	/* Enable RTC */
--#define VT8500_RTC_CR_24H	(1 << 1)	/* 24h time format */
-+#define VT8500_RTC_CR_12H	(1 << 1)	/* 12h time format */
- #define VT8500_RTC_CR_SM_ENABLE	(1 << 2)	/* Enable periodic irqs */
- #define VT8500_RTC_CR_SM_SEC	(1 << 3)	/* 0: 1Hz/60, 1: 1Hz */
- #define VT8500_RTC_CR_CALIB	(1 << 4)	/* Enable calibration */
-@@ -249,7 +249,7 @@ static int __devinit vt8500_rtc_probe(st
+ /*
++ * Attempt to preload the dcache with the results from the FIND_FIRST/NEXT
++ *
+  * Find the dentry that matches "name". If there isn't one, create one. If it's
+  * a negative dentry or the uniqueid changed, then drop it and recreate it.
+  */
+-static struct dentry *
+-cifs_readdir_lookup(struct dentry *parent, struct qstr *name,
++static void
++cifs_prime_dcache(struct dentry *parent, struct qstr *name,
+ 		    struct cifs_fattr *fattr)
+ {
+ 	struct dentry *dentry, *alias;
+ 	struct inode *inode;
+ 	struct super_block *sb = parent->d_inode->i_sb;
+ 
+-	cFYI(1, "For %s", name->name);
++	cFYI(1, "%s: for %s", __func__, name->name);
+ 
+ 	if (parent->d_op && parent->d_op->d_hash)
+ 		parent->d_op->d_hash(parent, parent->d_inode, name);
+@@ -87,37 +89,32 @@ cifs_readdir_lookup(struct dentry *paren
+ 	dentry = d_lookup(parent, name);
+ 	if (dentry) {
+ 		int err;
++
+ 		inode = dentry->d_inode;
+ 		/* update inode in place if i_ino didn't change */
+ 		if (inode && CIFS_I(inode)->uniqueid == fattr->cf_uniqueid) {
+ 			cifs_fattr_to_inode(inode, fattr);
+-			return dentry;
++			goto out;
+ 		}
+ 		err = d_invalidate(dentry);
+ 		dput(dentry);
+ 		if (err)
+-			return NULL;
++			return;
  	}
  
- 	/* Enable RTC and set it to 24-hour mode */
--	writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H,
-+	writel(VT8500_RTC_CR_ENABLE,
- 	       vt8500_rtc->regbase + VT8500_RTC_CR);
+ 	dentry = d_alloc(parent, name);
+-	if (dentry == NULL)
+-		return NULL;
++	if (!dentry)
++		return;
  
- 	vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
+ 	inode = cifs_iget(sb, fattr);
+-	if (!inode) {
+-		dput(dentry);
+-		return NULL;
+-	}
++	if (!inode)
++		goto out;
+ 
+ 	alias = d_materialise_unique(dentry, inode);
+-	if (alias != NULL) {
+-		dput(dentry);
+-		if (IS_ERR(alias))
+-			return NULL;
+-		dentry = alias;
+-	}
+-
+-	return dentry;
++	if (alias && !IS_ERR(alias))
++		dput(alias);
++out:
++	dput(dentry);
+ }
+ 
+ static void
+@@ -652,7 +649,6 @@ static int cifs_filldir(char *find_entry
+ 	struct cifs_sb_info *cifs_sb = CIFS_SB(sb);
+ 	struct cifs_dirent de = { NULL, };
+ 	struct cifs_fattr fattr;
+-	struct dentry *dentry;
+ 	struct qstr name;
+ 	int rc = 0;
+ 	ino_t ino;
+@@ -723,13 +719,11 @@ static int cifs_filldir(char *find_entry
+ 		 */
+ 		fattr.cf_flags |= CIFS_FATTR_NEED_REVAL;
+ 
+-	ino = cifs_uniqueid_to_ino_t(fattr.cf_uniqueid);
+-	dentry = cifs_readdir_lookup(file->f_dentry, &name, &fattr);
++	cifs_prime_dcache(file->f_dentry, &name, &fattr);
+ 
++	ino = cifs_uniqueid_to_ino_t(fattr.cf_uniqueid);
+ 	rc = filldir(dirent, name.name, name.len, file->f_pos, ino,
+ 		     fattr.cf_dtype);
+-
+-	dput(dentry);
+ 	return rc;
+ }
+ 
 
 
