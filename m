@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933923Ab3AIVBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:01:23 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43490 "EHLO mail.kernel.org"
+	id S933869Ab3AIUkc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:40:32 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43404 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933851Ab3AIUke (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:34 -0500
+	id S933851Ab3AIUk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Alexander Aring <alex.aring@gmail.com>,
+        Christoph Paasch <christoph.paasch@uclouvain.be>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [ 087/123] mac802154: fix NOHZ local_softirq_pending 08 warning
-Date: Wed,  9 Jan 2013 12:35:26 -0800
-Message-Id: <20130109201509.784434274@linuxfoundation.org>
+Subject: [ 085/123] inet: Fix kmemleak in tcp_v4/6_syn_recv_sock and dccp_v4/6_request_recv_sock
+Date: Wed,  9 Jan 2013 12:35:24 -0800
+Message-Id: <20130109201509.532373729@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,40 +27,159 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 
 
-From: Alexander Aring <alex.aring@googlemail.com>
+From: Christoph Paasch <christoph.paasch@uclouvain.be>
 
-[ Upstream commit 5ff3fec6d3fc848753c2fa30b18607358f89a202 ]
+[ Upstream commit e337e24d6624e74a558aa69071e112a65f7b5758 ]
 
-When using nanosleep() in an userspace application we get a
-ratelimit warning
+If in either of the above functions inet_csk_route_child_sock() or
+__inet_inherit_port() fails, the newsk will not be freed:
 
-NOHZ: local_softirq_pending 08
+unreferenced object 0xffff88022e8a92c0 (size 1592):
+  comm "softirq", pid 0, jiffies 4294946244 (age 726.160s)
+  hex dump (first 32 bytes):
+    0a 01 01 01 0a 01 01 02 00 00 00 00 a7 cc 16 00  ................
+    02 00 03 01 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff8153d190>] kmemleak_alloc+0x21/0x3e
+    [<ffffffff810ab3e7>] kmem_cache_alloc+0xb5/0xc5
+    [<ffffffff8149b65b>] sk_prot_alloc.isra.53+0x2b/0xcd
+    [<ffffffff8149b784>] sk_clone_lock+0x16/0x21e
+    [<ffffffff814d711a>] inet_csk_clone_lock+0x10/0x7b
+    [<ffffffff814ebbc3>] tcp_create_openreq_child+0x21/0x481
+    [<ffffffff814e8fa5>] tcp_v4_syn_recv_sock+0x3a/0x23b
+    [<ffffffff814ec5ba>] tcp_check_req+0x29f/0x416
+    [<ffffffff814e8e10>] tcp_v4_do_rcv+0x161/0x2bc
+    [<ffffffff814eb917>] tcp_v4_rcv+0x6c9/0x701
+    [<ffffffff814cea9f>] ip_local_deliver_finish+0x70/0xc4
+    [<ffffffff814cec20>] ip_local_deliver+0x4e/0x7f
+    [<ffffffff814ce9f8>] ip_rcv_finish+0x1fc/0x233
+    [<ffffffff814cee68>] ip_rcv+0x217/0x267
+    [<ffffffff814a7bbe>] __netif_receive_skb+0x49e/0x553
+    [<ffffffff814a7cc3>] netif_receive_skb+0x50/0x82
 
-for 10 times.
+This happens, because sk_clone_lock initializes sk_refcnt to 2, and thus
+a single sock_put() is not enough to free the memory. Additionally, things
+like xfrm, memcg, cookie_values,... may have been initialized.
+We have to free them properly.
 
-This patch replaces netif_rx() with netif_rx_ni() which has
-to be used from process/softirq context.
-The process/softirq context will be called from fakelb driver.
+This is fixed by forcing a call to tcp_done(), ending up in
+inet_csk_destroy_sock, doing the final sock_put(). tcp_done() is necessary,
+because it ends up doing all the cleanup on xfrm, memcg, cookie_values,
+xfrm,...
 
-See linux-kernel commit 481a819 for similar fix.
+Before calling tcp_done, we have to set the socket to SOCK_DEAD, to
+force it entering inet_csk_destroy_sock. To avoid the warning in
+inet_csk_destroy_sock, inet_num has to be set to 0.
+As inet_csk_destroy_sock does a dec on orphan_count, we first have to
+increase it.
 
-Signed-off-by: Alexander Aring <alex.aring@gmail.com>
+Calling tcp_done() allows us to remove the calls to
+tcp_clear_xmit_timer() and tcp_cleanup_congestion_control().
+
+A similar approach is taken for dccp by calling dccp_done().
+
+This is in the kernel since 093d282321 (tproxy: fix hash locking issue
+when using port redirection in __inet_inherit_port()), thus since
+version >= 2.6.37.
+
+Signed-off-by: Christoph Paasch <christoph.paasch@uclouvain.be>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/mac802154/wpan.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/net/inet_connection_sock.h |    1 +
+ net/dccp/ipv4.c                    |    4 ++--
+ net/dccp/ipv6.c                    |    3 ++-
+ net/ipv4/inet_connection_sock.c    |   16 ++++++++++++++++
+ net/ipv4/tcp_ipv4.c                |    6 ++----
+ net/ipv6/tcp_ipv6.c                |    3 ++-
+ 6 files changed, 25 insertions(+), 8 deletions(-)
 
---- a/net/mac802154/wpan.c
-+++ b/net/mac802154/wpan.c
-@@ -387,7 +387,7 @@ void mac802154_wpan_setup(struct net_dev
+--- a/include/net/inet_connection_sock.h
++++ b/include/net/inet_connection_sock.h
+@@ -318,6 +318,7 @@ extern void inet_csk_reqsk_queue_prune(s
+ 				       const unsigned long max_rto);
  
- static int mac802154_process_data(struct net_device *dev, struct sk_buff *skb)
- {
--	return netif_rx(skb);
-+	return netif_rx_ni(skb);
+ extern void inet_csk_destroy_sock(struct sock *sk);
++extern void inet_csk_prepare_forced_close(struct sock *sk);
+ 
+ /*
+  * LISTEN is a special case for poll..
+--- a/net/dccp/ipv4.c
++++ b/net/dccp/ipv4.c
+@@ -439,8 +439,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	dccp_done(newsk);
+ 	goto exit;
  }
  
- static int
+--- a/net/dccp/ipv6.c
++++ b/net/dccp/ipv6.c
+@@ -585,7 +585,8 @@ static struct sock *dccp_v6_request_recv
+ 	newinet->inet_rcv_saddr = LOOPBACK4_IPV6;
+ 
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		dccp_done(newsk);
+ 		goto out;
+ 	}
+ 	__inet6_hash(newsk, NULL);
+--- a/net/ipv4/inet_connection_sock.c
++++ b/net/ipv4/inet_connection_sock.c
+@@ -699,6 +699,22 @@ void inet_csk_destroy_sock(struct sock *
+ }
+ EXPORT_SYMBOL(inet_csk_destroy_sock);
+ 
++/* This function allows to force a closure of a socket after the call to
++ * tcp/dccp_create_openreq_child().
++ */
++void inet_csk_prepare_forced_close(struct sock *sk)
++{
++	/* sk_clone_lock locked the socket and set refcnt to 2 */
++	bh_unlock_sock(sk);
++	sock_put(sk);
++
++	/* The below has to be done to allow calling inet_csk_destroy_sock */
++	sock_set_flag(sk, SOCK_DEAD);
++	percpu_counter_inc(sk->sk_prot->orphan_count);
++	inet_sk(sk)->inet_num = 0;
++}
++EXPORT_SYMBOL(inet_csk_prepare_forced_close);
++
+ int inet_csk_listen_start(struct sock *sk, const int nr_table_entries)
+ {
+ 	struct inet_sock *inet = inet_sk(sk);
+--- a/net/ipv4/tcp_ipv4.c
++++ b/net/ipv4/tcp_ipv4.c
+@@ -1774,10 +1774,8 @@ exit:
+ 	NET_INC_STATS_BH(sock_net(sk), LINUX_MIB_LISTENDROPS);
+ 	return NULL;
+ put_and_exit:
+-	tcp_clear_xmit_timers(newsk);
+-	tcp_cleanup_congestion_control(newsk);
+-	bh_unlock_sock(newsk);
+-	sock_put(newsk);
++	inet_csk_prepare_forced_close(newsk);
++	tcp_done(newsk);
+ 	goto exit;
+ }
+ EXPORT_SYMBOL(tcp_v4_syn_recv_sock);
+--- a/net/ipv6/tcp_ipv6.c
++++ b/net/ipv6/tcp_ipv6.c
+@@ -1384,7 +1384,8 @@ static struct sock * tcp_v6_syn_recv_soc
+ #endif
+ 
+ 	if (__inet_inherit_port(sk, newsk) < 0) {
+-		sock_put(newsk);
++		inet_csk_prepare_forced_close(newsk);
++		tcp_done(newsk);
+ 		goto out;
+ 	}
+ 	__inet6_hash(newsk, NULL);
 
 
