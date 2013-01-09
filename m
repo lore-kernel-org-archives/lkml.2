@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190Ab3AIEYB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 23:24:01 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35877 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757132Ab3AIEX7 (ORCPT
+	id S1757219Ab3AIEZG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 23:25:06 -0500
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36979 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756568Ab3AIEZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 23:23:59 -0500
-Date: Tue, 8 Jan 2013 20:23:46 -0800 (PST)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Andrea Arcangeli <aarcange@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Hillf Danton <dhillf@gmail.com>, Dave Jones <davej@redhat.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, Linux-MM <linux-mm@kvack.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: oops in copy_page_rep()
-In-Reply-To: <20130108173747.GF9163@redhat.com>
-Message-ID: <alpine.LNX.2.00.1301082020280.2351@eggly.anvils>
-References: <20130105152208.GA3386@redhat.com> <CAJd=RBCb0oheRnVCM4okVKFvKGzuLp9GpZJCkVY3RR-J=XEoBA@mail.gmail.com> <alpine.LNX.2.00.1301061037140.28950@eggly.anvils> <CAJd=RBAps4Qk9WLYbQhLkJd8d12NLV0CbjPYC6uqH_-L+Vu0VQ@mail.gmail.com>
- <CA+55aFyYAf6ztDLsxWFD+6jb++y0YNjso-9j+83Mm+3uQ=8PdA@mail.gmail.com> <CAJd=RBDTvCcYV8qAd-++_DOyDSypQD4Dvt216pG9nTQnWA2uCA@mail.gmail.com> <CA+55aFzfUABPycR82aNQhHNasQkL1kmxLN1rD0DJcByFtead3g@mail.gmail.com> <20130108163141.GA27555@shutemov.name>
- <CA+55aFzaTvF7nYxWBT-G_b=xGz+_akRAeJ=U9iHy+Y=ZPo=pbA@mail.gmail.com> <20130108173747.GF9163@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 8 Jan 2013 23:25:05 -0500
+Date: Tue, 8 Jan 2013 20:25:33 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, daniel.vetter@ffwll.ch,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: i915_hangcheck_hung problem with 3.8-rc2+ (Linus's latest tree)
+Message-ID: <20130109042533.GA9164@kroah.com>
+References: <20130108223611.GA19672@kroah.com>
+ <20130109003824.GA21075@kroah.com>
+ <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAPM=9tw3o0e_3cRUFntwddxsWMsYkVKe1b5gDQhxijYKU=9m5g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jan 2013, Andrea Arcangeli wrote:
+On Wed, Jan 09, 2013 at 01:42:39PM +1000, Dave Airlie wrote:
+> >> Hi all,
+> >>
+> >> I've hit this 3 times today on Linus's latest 3.8-rc2+ tree:
+> >>
+> >> [11868.414648] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> >> [11868.414655] [drm] capturing error event; look for more information in /debug/dri/0/i915_error_state
+> >> [11870.408342] [drm:i915_hangcheck_hung] *ERROR* Hangcheck timer elapsed... GPU hung
+> >> [11870.408412] [drm:i915_reset] *ERROR* GPU hanging too fast, declaring wedged!
+> >> [11870.408414] [drm:i915_reset] *ERROR* Failed to reset chip.
+> >> [11883.083225] gnome-shell[19396]: segfault at 218 ip 00007feef5f32333 sp 00007ffffc1dc930 error 4 in i965_dri.so[7feef5ecb000+d0000]
+> >
+> > I just hit this again.  And, as the kernel was asking for it, attached
+> > is the i915_error_state file, compressed due to the size of it.
+> >
+> Welcome to sink hole that is
+> https://bugs.freedesktop.org/show_bug.cgi?id=55984
 > 
-> Looking at this, one thing that isn't clear is where the page_count is
-> checked in migrate_misplaced_transhuge_page. Ok that it's unable to
-> migrate anon transhuge COW shared pages so it doesn't need to mess
-> with rmap (the mapcount check makes it safe), but it shouldn't be
-> allowed to migrate memory that has gup direct-IO in flight (and that
-> can only be detected with a page_count vs mapcount check). Real
-> migrate does page_freeze_refs to be safe. Mel comments?
+> 3 months and ticking, Intel guys are all running away from it saying
+> they can't reproduce, everyone else on planet seems to reproduce quite
+> easily.
+> 
+> Its generally considered a bug in the relocation/shrinker/no idea category,
 
-Yes, I protested to Mel about that before the holidays, and he
-quickly provided a patch, now in akpm's tree; but checking it again
-today, I believe it's still not quite right yet - see other mail.
+Ugh, what a mess.
 
-Hugh
+> Assuming you have an Ironlake machine which I'm going to guess you do.
+
+I don't know, it's an old i5 machine that has never had any video
+problems for many years now.  How do I tell?
+
+thanks,
+
+greg k-h
