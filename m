@@ -1,104 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab3AIUhx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:53 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41743 "EHLO mail.kernel.org"
+	id S933171Ab3AIUiE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:04 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41792 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932793Ab3AIUhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:47 -0500
+	id S933139Ab3AIUhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Eric Dumazet <edumazet@google.com>,
-        Neal Cardwell <ncardwell@google.com>,
-        Yuchung Cheng <ycheng@google.com>,
-        Nandita Dukkipati <nanditad@google.com>,
-        "H.K. Jerry Chu" <hkchu@google.com>,
-        Romain Francoise <romain@orebokech.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 35/47] tcp: tcp_replace_ts_recent() should not be called from tcp_validate_incoming()
-Date: Wed,  9 Jan 2013 12:35:30 -0800
-Message-Id: <20130109201733.518145691@linuxfoundation.org>
+        Kees Cook <keescook@chromium.org>, halfdog <me@halfdog.net>,
+        P J P <ppandit@redhat.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 17/80] exec: do not leave bprm->interp on stack
+Date: Wed,  9 Jan 2013 12:35:09 -0800
+Message-Id: <20130109201502.578237407@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
+From: Kees Cook <keescook@chromium.org>
 
-From: Eric Dumazet <edumazet@google.com>
+commit b66c5984017533316fd1951770302649baf1aa33 upstream.
 
-[ Upstream commit bd090dfc634ddd711a5fbd0cadc6e0ab4977bcaf ]
+If a series of scripts are executed, each triggering module loading via
+unprintable bytes in the script header, kernel stack contents can leak
+into the command line.
 
-We added support for RFC 5961 in latest kernels but TCP fails
-to perform exhaustive check of ACK sequence.
+Normally execution of binfmt_script and binfmt_misc happens recursively.
+However, when modules are enabled, and unprintable bytes exist in the
+bprm->buf, execution will restart after attempting to load matching
+binfmt modules.  Unfortunately, the logic in binfmt_script and
+binfmt_misc does not expect to get restarted.  They leave bprm->interp
+pointing to their local stack.  This means on restart bprm->interp is
+left pointing into unused stack memory which can then be copied into the
+userspace argv areas.
 
-We can update our view of peer tsval from a frame that is
-later discarded by tcp_ack()
+After additional study, it seems that both recursion and restart remains
+the desirable way to handle exec with scripts, misc, and modules.  As
+such, we need to protect the changes to interp.
 
-This makes timestamps enabled sessions vulnerable to injection of
-a high tsval : peers start an ACK storm, since the victim
-sends a dupack each time it receives an ACK from the other peer.
+This changes the logic to require allocation for any changes to the
+bprm->interp.  To avoid adding a new kmalloc to every exec, the default
+value is left as-is.  Only when passing through binfmt_script or
+binfmt_misc does an allocation take place.
 
-As tcp_validate_incoming() is called before tcp_ack(), we should
-not peform tcp_replace_ts_recent() from it, and let callers do it
-at the right time.
+For a proof of concept, see DoTest.sh from:
 
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Neal Cardwell <ncardwell@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Cc: Nandita Dukkipati <nanditad@google.com>
-Cc: H.K. Jerry Chu <hkchu@google.com>
-Cc: Romain Francoise <romain@orebokech.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+   http://www.halfdog.net/Security/2012/LinuxKernelBinfmtScriptStackDataDisclosure/
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
+Cc: halfdog <me@halfdog.net>
+Cc: P J P <ppandit@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/tcp_input.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
 
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -5237,11 +5237,6 @@ static bool tcp_validate_incoming(struct
- 		goto discard;
+---
+ fs/binfmt_misc.c        |    5 ++++-
+ fs/binfmt_script.c      |    4 +++-
+ fs/exec.c               |   15 +++++++++++++++
+ include/linux/binfmts.h |    1 +
+ 4 files changed, 23 insertions(+), 2 deletions(-)
+
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -176,7 +176,10 @@ static int load_misc_binary(struct linux
+ 		goto _error;
+ 	bprm->argc ++;
+ 
+-	bprm->interp = iname;	/* for binfmt_script */
++	/* Update interp in case binfmt_script needs it. */
++	retval = bprm_change_interp(iname, bprm);
++	if (retval < 0)
++		goto _error;
+ 
+ 	interp_file = open_exec (iname);
+ 	retval = PTR_ERR (interp_file);
+--- a/fs/binfmt_script.c
++++ b/fs/binfmt_script.c
+@@ -82,7 +82,9 @@ static int load_script(struct linux_binp
+ 	retval = copy_strings_kernel(1, &i_name, bprm);
+ 	if (retval) return retval; 
+ 	bprm->argc++;
+-	bprm->interp = interp;
++	retval = bprm_change_interp(interp, bprm);
++	if (retval < 0)
++		return retval;
+ 
+ 	/*
+ 	 * OK, now restart the process with the interpreter's dentry.
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1206,9 +1206,24 @@ void free_bprm(struct linux_binprm *bprm
+ 		mutex_unlock(&current->signal->cred_guard_mutex);
+ 		abort_creds(bprm->cred);
  	}
++	/* If a binfmt changed the interp, free it. */
++	if (bprm->interp != bprm->filename)
++		kfree(bprm->interp);
+ 	kfree(bprm);
+ }
  
--	/* ts_recent update must be made after we are sure that the packet
--	 * is in window.
--	 */
--	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
--
- 	/* step 3: check security and precedence [ignored] */
- 
- 	/* step 4: Check for a SYN
-@@ -5476,6 +5471,11 @@ step5:
- 	if (th->ack && tcp_ack(sk, skb, FLAG_SLOWPATH) < 0)
- 		goto discard;
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
++int bprm_change_interp(char *interp, struct linux_binprm *bprm)
++{
++	/* If a binfmt changed the interp, free it first. */
++	if (bprm->interp != bprm->filename)
++		kfree(bprm->interp);
++	bprm->interp = kstrdup(interp, GFP_KERNEL);
++	if (!bprm->interp)
++		return -ENOMEM;
++	return 0;
++}
++EXPORT_SYMBOL(bprm_change_interp);
 +
- 	tcp_rcv_rtt_measure_ts(sk, skb);
- 
- 	/* Process urgent data. */
-@@ -5952,6 +5952,11 @@ int tcp_rcv_state_process(struct sock *s
- 	} else
- 		goto discard;
- 
-+	/* ts_recent update must be made after we are sure that the packet
-+	 * is in window.
-+	 */
-+	tcp_replace_ts_recent(tp, TCP_SKB_CB(skb)->seq);
-+
- 	/* step 6: check the URG bit */
- 	tcp_urg(sk, skb, th);
- 
+ /*
+  * install the new credentials for this executable
+  */
+--- a/include/linux/binfmts.h
++++ b/include/linux/binfmts.h
+@@ -128,6 +128,7 @@ extern int setup_arg_pages(struct linux_
+ 			   unsigned long stack_top,
+ 			   int executable_stack);
+ extern int bprm_mm_init(struct linux_binprm *bprm);
++extern int bprm_change_interp(char *interp, struct linux_binprm *bprm);
+ extern int copy_strings_kernel(int argc, const char *const *argv,
+ 			       struct linux_binprm *bprm);
+ extern int prepare_bprm_creds(struct linux_binprm *bprm);
 
 
