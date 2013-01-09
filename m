@@ -1,141 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab3AIJYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 04:24:10 -0500
-Received: from moutng.kundenserver.de ([212.227.17.8]:51770 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757458Ab3AIJYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 04:24:07 -0500
-Date: Wed, 9 Jan 2013 10:23:52 +0100
-From: Thierry Reding <thierry.reding@avionic-design.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Laxman Dewangan <ldewangan@nvidia.com>, grant.likely@secretlab.ca,
-        rob.herring@calxeda.com, swarren@nvidia.com,
-        devicetree-discuss@lists.ozlabs.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH v2 2/4] input: keyboard: tegra: use devm_* for resource
- allocation
-Message-ID: <20130109092352.GA28037@avionic-0098.adnet.avionic-design.de>
-References: <1357371910-3164-1-git-send-email-ldewangan@nvidia.com>
- <1357371910-3164-3-git-send-email-ldewangan@nvidia.com>
- <20130105080658.GA1315@core.coreip.homeip.net>
- <20130106192739.GA11566@avionic-0098.adnet.avionic-design.de>
- <20130106195748.GA28212@core.coreip.homeip.net>
- <20130109070745.GA12782@avionic-0098.adnet.avionic-design.de>
- <20130109091939.GA4369@core.coreip.homeip.net>
+	id S1757565Ab3AIJZB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 04:25:01 -0500
+Received: from mga02.intel.com ([134.134.136.20]:3265 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757498Ab3AIJY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 04:24:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.84,436,1355126400"; 
+   d="scan'208";a="269774060"
+Date: Wed, 9 Jan 2013 11:28:17 +0200
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [PATCH] HID: i2c-hid: add ACPI support
+Message-ID: <20130109092817.GP13897@intel.com>
+References: <1357650332-30031-1-git-send-email-mika.westerberg@linux.intel.com>
+ <CAN+gG=HzJaOwPfymx5JST1+r9QxfqU5D-gN8i95aVDkqQ=ot8Q@mail.gmail.com>
+ <20130108180958.GL13897@intel.com>
+ <CAN+gG=FGv=VJ=6Db_s7p_7XJQi3=FJXDfqeE1AVPtFznHnWQ0Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/9DWx/yDrRhgMJTb"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130109091939.GA4369@core.coreip.homeip.net>
+In-Reply-To: <CAN+gG=FGv=VJ=6Db_s7p_7XJQi3=FJXDfqeE1AVPtFznHnWQ0Q@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V02:K0:EcEUL6XuWUZFOqB8u52EJydGtNaQ2KkUiNj4ldJarfT
- EbCWxFD0Q/fP5h6k4LhnGDW/aVbT713pOkYRokvMUpA15R165O
- Mjf8Jsvke146zGfrKFYN17uhKDzDbN5UttZwfn3UGHdNsGHLTK
- UQVNAtEe2yVkugPxyesjH2QWMGIcZnEq6ikDoxg4H6MzGyE2Wi
- xZq1frHCJDmiOqxf11dorgjRrs9DEGD8y0QeOQylUAfVn0ReTV
- 590LxjtW9Kkfg5l0Cw39MJjnoksmXpm56kzLsSGjkIQqwsR9iE
- iTvnsFeNKeHMvdTb5OPkFiSxewUPLGpF9VGW6QfO+Pya7jKcIL
- ph+x4f2TSQmQqEl82wHVJnk8QgsOcNFes0PU/Cslyj0B48Ej0G
- +8M2677FXqPoZTnuRDCypVcPSWDrLZJFlc=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 08, 2013 at 10:55:59PM +0100, Benjamin Tissoires wrote:
+> On Tue, Jan 8, 2013 at 7:09 PM, Mika Westerberg
+> <mika.westerberg@linux.intel.com> wrote:
+> > On Tue, Jan 08, 2013 at 02:51:53PM +0100, Benjamin Tissoires wrote:
+> >> Hi Mika,
+> >>
+> >> On Tue, Jan 8, 2013 at 2:05 PM, Mika Westerberg
+> >> <mika.westerberg@linux.intel.com> wrote:
+> >> > The HID over I2C protocol specification states that when the device is
+> >> > enumerated from ACPI the HID descriptor address can be obtained by
+> >> > executing "_DSM" for the device with function 1. Enable this.
+> >>
+> >> Hehe, funny thing, I worked on the very same patch last Friday. I was
+> >> not able to send it upstream as I still don't have an ACPI 5 enabled
+> >> device...
+> >> So thanks for submitting (and testing) this!
+> >>
+> >> Before the review, I just have a quick question. All the HID/i2c
+> >> devices I saw so far present a reset line (through a GPIO). Does the
+> >> shipped device you have present this line, and if yes, how this meld
+> >> with the code (i.e. should we take this into account).
+> >
+> > Yes, there is either one or two GPIO lines. But there are also devices that
+> > don't have any GPIO lines.
+> 
+> Ouch. But if they don't have any GPIO, how can they manage to send
+> information? If they are using polling, then this will require some
+> more work in i2c-hid :(
 
---/9DWx/yDrRhgMJTb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Well they don't have GPIO resources because their interrupt is directly
+routed to the ioapic and exposed as an Interrupt resource.
 
-On Wed, Jan 09, 2013 at 01:19:39AM -0800, Dmitry Torokhov wrote:
-> On Wed, Jan 09, 2013 at 08:07:45AM +0100, Thierry Reding wrote:
-> > On Sun, Jan 06, 2013 at 11:57:48AM -0800, Dmitry Torokhov wrote:
-> > > On Sun, Jan 06, 2013 at 08:27:39PM +0100, Thierry Reding wrote:
-> > > > On Sat, Jan 05, 2013 at 12:06:58AM -0800, Dmitry Torokhov wrote:
-> > > > > On Sat, Jan 05, 2013 at 01:15:08PM +0530, Laxman Dewangan wrote:
-> > > > [...]
-> > > > > > @@ -735,25 +738,16 @@ static int tegra_kbc_probe(struct platfor=
-m_device *pdev)
-> > > > > >  	spin_lock_init(&kbc->lock);
-> > > > > >  	setup_timer(&kbc->timer, tegra_kbc_keypress_timer, (unsigned =
-long)kbc);
-> > > > > > =20
-> > > > > > -	res =3D request_mem_region(res->start, resource_size(res), pd=
-ev->name);
-> > > > > > -	if (!res) {
-> > > > > > -		dev_err(&pdev->dev, "failed to request I/O memory\n");
-> > > > > > -		err =3D -EBUSY;
-> > > > > > -		goto err_free_mem;
-> > > > > > -	}
-> > > > > > -
-> > > > > > -	kbc->mmio =3D ioremap(res->start, resource_size(res));
-> > > > > > +	kbc->mmio =3D devm_request_and_ioremap(&pdev->dev, res);
-> > > > > >  	if (!kbc->mmio) {
-> > > > > > -		dev_err(&pdev->dev, "failed to remap I/O memory\n");
-> > > > > > -		err =3D -ENXIO;
-> > > > > > -		goto err_free_mem_region;
-> > > > > > +		dev_err(&pdev->dev, "Cannot request memregion/iomap address\=
-n");
-> > > > > > +		return -EADDRNOTAVAIL;
-> > > > >=20
-> > > > > Erm, no, -EBUSY please.
-> > > >=20
-> > > > EADDRNOTAVAIL is the canonical error for devm_request_and_ioremap()
-> > > > failure. The kerneldoc comment in lib/devres.c even gives a short
-> > > > example that uses this error code.
-> > >=20
-> > > I am sorry, but I do not consider a function that was added a little
-> > > over a year ago as a canon. If you look at the uses of EADDRNOTAVAIL =
-it
-> > > is used predominantly in networking code to indicate that attempted
-> > > _network_ address is not available.
-> >=20
-> > EBUSY might be misleading, though. devm_request_and_ioremap() can fail
-> > in both the request_mem_region() and ioremap() calls. Furthermore it'd
-> > be good to settle on a consistent error-code instead of doing it
-> > differently depending on subsystem and/or driver. Currently the various
-> > error codes used are:
-> >=20
-> > 	EBUSY, EADDRNOTAVAIL, ENXIO, ENOMEM, ENODEV, ENOENT, EINVAL,
-> > 	EIO, EFAULT, EADDRINUSE
-> >=20
-> > Also if we can settle on one error code we should follow up with a patch
-> > to make it consistent across the tree and also update that kerneldoc
-> > comment. I volunteer to do that if nobody else steps up. I'm also Cc'ing
-> > Wolfram (the original author), maybe he has some thoughts on this.
-> >=20
->=20
-> If you going to change all drivers make devm_request_and_ioremap()
-> return ERR_PTR()-encoded errors and then we can differentiate what
-> part of it failed.
+> >
+> > We probably should take this into account. I'm not too familiar with HID
+> > drivers but what if we set the hid->dev.acpi_node and let the actual HID
+> > driver to deal with the GPIO?
+> 
+> Well, HID is a communication layer between the device and the kernel
+> in order to make it agnostic of the transport layer (usb, bt or i2c).
+> Even if some drivers do some transport tuning, I don't think it's a
+> good idea to ask HID drivers to do transport handling such as setting
+> up GPIOs.
 
-Yeah, that thought also crossed my mind. I'll give other people some
-time to comment before hurling myself into preparing patches.
+If they have reset GPIO or something like that, how else we should we
+handle this if not in the driver? The i2c-hid core doesn't know for what
+purpose a given GPIO line is.
 
-Thierry
+i2c-hid core can handle the GPIO interrupt if client->irq is not set (by
+converting the GPIO into interrupt number and passing it to the hid
+driver). I didn't implement that because we have the client->irq already
+set so I can't test this.
 
---/9DWx/yDrRhgMJTb
-Content-Type: application/pgp-signature
+> The closest thing which is already in the kernel tree is the handling
+> of device specific quirks in usbhid. We may be forced to do such a
+> thing if the DSDT is not explicit enough to guess the right behavior
+> (how to trigger the reset line, etc..)
+> 
+> Also, I missed one point in my previous review:
+> 
+> >
+> >> Please note that I can only compare this to my patch, based on the
+> >> DSDT example Microsoft gave in its spec. So sorry if I'm asking
+> >> useless things, but I like to understand... :)
+> >> Here are a few comments:
+> >>
+> >> >
+> >> > Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+> >> > ---
+> >> >  drivers/hid/i2c-hid/i2c-hid.c |   73 +++++++++++++++++++++++++++++++++++++++--
+> >> >  1 file changed, 71 insertions(+), 2 deletions(-)
+> >> >
+> >> > diff --git a/drivers/hid/i2c-hid/i2c-hid.c b/drivers/hid/i2c-hid/i2c-hid.c
+> >> > index 9ef22244..b2eebb6 100644
+>  (...snipped...)
+> 
+> >> > +
+> >> > +       pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
+> 
+> Here, I don't think mixing devm_* and regular allocations is a good thing.
+> I know it's a pain, but at the time I wrote the driver, the input
+> layer was not devm-ized, so I was not able to use devm allocs. Now it
+> should be feasible, but I didn't found the time to do it.
+> So I'm afraid, this allocation must use a regular kwalloc and it
+> should be freed somewhere later, until we devm-ize the whole module.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.19 (GNU/Linux)
+Good point.
 
-iQIcBAEBAgAGBQJQ7TcoAAoJEN0jrNd/PrOhIqMQAMBhD/S8tk7+4S0NYELrA/yn
-upCtFa68MncU9wAvuLAz7lvhuLwdB+rTTzickEgIOAR/Q7BqYNJ5baH1vC5sTPe8
-0VSOnO/3ZpVps+kaZCXrpEN2rDonfvjIkI0Z3ysim9rBegeednip04QV4IgAzjgO
-ZF+Cz7/7DNJJM/JcVlz+eAPiwPM1RjHnAYfhk1OnAJsekFw0s33RqUXKpxizDenI
-QVg0+vXO6JXtWRT+wCYQVeDMWVMkNQnX8SmoX/Z+qZiGRMcEpt0s9wW4nW4/41ip
-1KEsN7LL9wR1K0CA76M+MvBGjG9jd7829j7aR+1XOw/6iUO8MHD/oMEnR+rL/VaJ
-Rem9QBly5P8QWt0YvL+YgGLjuNoFHgWoM9GDXRuoJCjbqzmAnZG1Gyh6Fm3UKxVA
-WxithXn6DpZmLQ9sdAY21oJeF82K6IaYuTcx5SVIrmOrd5OAB4W0tCI6e1STqZIk
-DwKnq+hxWV/hbmZNAwmOH4ehVOjMwl8nE/ciwJuChUJDkj0JCYe3NPSWcKKRyB/g
-hfKtKqjlGKRqqwzOQ8NMVPIThVdwb59u+jxhlsgPRHZwXCKrYxiFjcHB92Bu/WRS
-AsYYu+ibCxLUkwB+3Zie3T80Gw5fV9xQnpi3WRT3cRvrwYNpgagL/RFtPnW5XxCr
-eTB8ACQunRliKECCrvMX
-=X3wL
------END PGP SIGNATURE-----
+I was thinking to embed the platform data in the i2c_hid structure so that
+it gets allocated at the same time as ihid and then we can handle setting
+the platform data like:
 
---/9DWx/yDrRhgMJTb--
+	if (!platform_data) {
+		ret = i2c_hid_acpi_pdata(client, &ihid->pdata);
+		/* handle error */
+	} else {
+		ihid->pdata = *platform_data;	
+	}
+
+Does that sound feasible to you?
+
+> >> > +       if (!pdata)
+> >> > +               goto fail;
+> >>
+> 
+> (...snipped...)
+> >> >         if (!platform_data) {
+> >> > -               dev_err(&client->dev, "HID register address not provided\n");
+> >> > -               return -EINVAL;
+> >> > +               platform_data = i2c_hid_acpi_pdata(client);
+> >> > +               if (!platform_data) {
+> >> > +                       dev_err(&client->dev, "HID register address not provided\n");
+> >>
+> >> You may have a line with more than 80 characters here (it's difficult
+> >> to guess thanks to my gmail client converting tabs into spaces...
+> >> grrr)
+> >
+> > Shouldn't be as checkpatch.pl didn't complain but I'll re-check.
+> 
+> It's strange if it didn't complained: I count 61 chars for the
+> dev_err() message + 3 tabs * 8 chars => 85 chars in total...
+
+You are right, it is over 85 chars.
+
+I've learned that checkpatch.pl doesn't complain if the line is longer than
+80 chars, if it contains quoted string.
+
+I'll fix it up.
