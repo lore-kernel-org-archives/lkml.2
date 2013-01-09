@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752432Ab3AIF6J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 00:58:09 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:39221 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644Ab3AIF6H (ORCPT
+	id S1756606Ab3AIGNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 01:13:52 -0500
+Received: from server.prisktech.co.nz ([115.188.14.127]:62805 "EHLO
+	server.prisktech.co.nz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792Ab3AIGNv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 00:58:07 -0500
-MIME-Version: 1.0
-In-Reply-To: <50ED0517.5090907@linaro.org>
-References: <1357650191-30842-1-git-send-email-rajagopal.venkat@linaro.org>
-	<50ED0517.5090907@linaro.org>
-Date: Wed, 9 Jan 2013 11:28:06 +0530
-Message-ID: <CA+Z25wXRxPzdBAHj3_En4bBEpk=0HChnt-w_tHAbrXOvS9Odww@mail.gmail.com>
-Subject: Re: [PATCH] clk: remove unreachable code
-From: Rajagopal Venkat <rajagopal.venkat@linaro.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: mturquette@linaro.org, patches@linaro.org, linaro-dev@lists.linaro.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 9 Jan 2013 01:13:51 -0500
+Message-ID: <1357712039.774.0.camel@gitbox>
+Subject: Re: [PATCH 1/4] arm: vt8500: Add support for Wondermedia
+ WM8750/WM8850
+From: Tony Prisk <linux@prisktech.co.nz>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com
+Date: Wed, 09 Jan 2013 19:13:59 +1300
+In-Reply-To: <1356650452-16559-2-git-send-email-linux@prisktech.co.nz>
+References: <1356650452-16559-1-git-send-email-linux@prisktech.co.nz>
+	 <1356650452-16559-2-git-send-email-linux@prisktech.co.nz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 January 2013 11:20, Tushar Behera <tushar.behera@linaro.org> wrote:
-> On 01/08/2013 06:33 PM, Rajagopal Venkat wrote:
->> while reparenting a clock, NULL check is done for clock in
->> consideration and its new parent. So re-check is not required.
->> If done, else part becomes unreachable.
->>
->> Signed-off-by: Rajagopal Venkat <rajagopal.venkat@linaro.org>
->> ---
->>  drivers/clk/clk.c |    5 +----
->>  1 file changed, 1 insertion(+), 4 deletions(-)
->>
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index 251e45d..f896584 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -1048,10 +1048,7 @@ void __clk_reparent(struct clk *clk, struct clk *new_parent)
->>
->>       hlist_del(&clk->child_node);
->>
->> -     if (new_parent)
->> -             hlist_add_head(&clk->child_node, &new_parent->children);
->> -     else
->> -             hlist_add_head(&clk->child_node, &clk_orphan_list);
->> +     hlist_add_head(&clk->child_node, &new_parent->children);
->>
->>  #ifdef CONFIG_COMMON_CLK_DEBUG
->>       if (!inited)
->>
->
-> The same logic holds good for following piece of code too.
->
-> 1060 |-------if (new_parent)
-> 1061 |-------|-------new_parent_d = new_parent->dentry;
-> 1062 |-------else
-> 1063 |-------|-------new_parent_d = orphandir;
-
-Yes. Thanks for pointing out.
-
->
->
-> --
-> Tushar Behera
+On Fri, 2012-12-28 at 12:20 +1300, Tony Prisk wrote:
+> This patch adds support for the WM8750 (ARMv6) and WM8850 (ARMv7).
+> 
+> Common features across all SoCs are split into ARCH_VT8500 and
+> unique features are specified by each SoC option.
+> 
+> Signed-off-by: Tony Prisk <linux@prisktech.co.nz>
 
 
+Hi Arnd, Olof,
 
--- 
-Regards,
-Rajagopal
+Haven't heard anything re: this patch series. Problem?
+
+Regards
+Tony P
+
