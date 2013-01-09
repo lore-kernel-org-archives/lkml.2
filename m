@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933364Ab3AIVne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:43:34 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41840 "EHLO mail.kernel.org"
+	id S933426Ab3AIVnx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:43:53 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41828 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933153Ab3AIUh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:59 -0500
+	id S932999Ab3AIUh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:57 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Christian Lamparter <chunkeey@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 029/123] p54usb: add USBIDs for two more p54usb devices
-Date: Wed,  9 Jan 2013 12:34:28 -0800
-Message-Id: <20130109201502.270279173@linuxfoundation.org>
+        Ondrej Zary <linux@rainbow-software.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [ 18/80] x86, 8042: Enable A20 using KBC to fix S3 resume on some MSI laptops
+Date: Wed,  9 Jan 2013 12:35:10 -0800
+Message-Id: <20130109201502.717976776@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
-References: <20130109201458.392601412@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.7-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Ondrej Zary <linux@rainbow-software.org>
 
-commit 4010fe21a315b4223c25376714c6a2b61b722e5c upstream.
+commit ad68652412276f68ad4fe3e1ecf5ee6880876783 upstream.
 
-This patch adds USBIDs for:
-	- DrayTek Vigor 530
-	- Zoom 4410a
+Some MSI laptop BIOSes are broken - INT 15h code uses port 92h to enable A20
+line but resume code assumes that KBC was used.
+The laptop will not resume from S3 otherwise but powers off after a while
+and then powers on again stuck with a blank screen.
 
-It also adds a note about Gemtek WUBI-100GW
-and SparkLAN WL-682 USBID conflict [WUBI-100GW
-is a ISL3886+NET2280 (LM86 firmare) solution,
-whereas WL-682 is a ISL3887 (LM87 firmware)]
-device.
+Fix it by enabling A20 using KBC in i8042_platform_init for x86.
 
-Source: <http://www.wikidevi.com/wiki/Intersil/p54/usb/windows>
+Fixes https://bugzilla.kernel.org/show_bug.cgi?id=12878
 
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Link: http://lkml.kernel.org/r/201212112218.06551.linux@rainbow-software.org
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/p54usb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/input/serio/i8042-x86ia64io.h |    9 +++++++++
+ 1 file changed, 9 insertions(+)
 
---- a/drivers/net/wireless/p54/p54usb.c
-+++ b/drivers/net/wireless/p54/p54usb.c
-@@ -47,6 +47,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x0411, 0x0050)},	/* Buffalo WLI2-USB2-G54 */
- 	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
- 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
-+	{USB_DEVICE(0x0675, 0x0530)},	/* DrayTek Vigor 530 */
- 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
- 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
- 	{USB_DEVICE(0x07aa, 0x001c)},	/* Corega CG-WLUSB2GT */
-@@ -82,6 +83,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
- 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
- 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
-+	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
- 	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
- 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
- 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
-@@ -102,6 +104,7 @@ static struct usb_device_id p54u_table[]
- 	{USB_DEVICE(0x13B1, 0x000C)},	/* Linksys WUSB54AG */
- 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
- 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
-+	/* {USB_DEVICE(0x15a9, 0x0002)}, * Also SparkLAN WL-682 with 3887 */
- 	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
- 	{USB_DEVICE(0x1740, 0x1000)},	/* Senao NUB-350 */
- 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
+--- a/drivers/input/serio/i8042-x86ia64io.h
++++ b/drivers/input/serio/i8042-x86ia64io.h
+@@ -921,6 +921,7 @@ static int __init i8042_platform_init(vo
+ 	int retval;
+ 
+ #ifdef CONFIG_X86
++	u8 a20_on = 0xdf;
+ 	/* Just return if pre-detection shows no i8042 controller exist */
+ 	if (!x86_platform.i8042_detect())
+ 		return -ENODEV;
+@@ -960,6 +961,14 @@ static int __init i8042_platform_init(vo
+ 
+ 	if (dmi_check_system(i8042_dmi_dritek_table))
+ 		i8042_dritek = true;
++
++	/*
++	 * A20 was already enabled during early kernel init. But some buggy
++	 * BIOSes (in MSI Laptops) require A20 to be enabled using 8042 to
++	 * resume from S3. So we do it here and hope that nothing breaks.
++	 */
++	i8042_command(&a20_on, 0x10d1);
++	i8042_command(NULL, 0x00ff);	/* Null command for SMM firmware */
+ #endif /* CONFIG_X86 */
+ 
+ 	return retval;
 
 
