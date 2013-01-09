@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934248Ab3AIVXu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:23:50 -0500
-Received: from moutng.kundenserver.de ([212.227.17.10]:49458 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933535Ab3AIVXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:23:46 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Subject: Re: [PATCH 11/14] ARM: tegra: tamonten: Add PCIe support
-Date: Wed, 9 Jan 2013 21:23:37 +0000
-User-Agent: KMail/1.12.2 (Linux/3.7.0-7-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-12-git-send-email-thierry.reding@avionic-design.de>
-In-Reply-To: <1357764194-12677-12-git-send-email-thierry.reding@avionic-design.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201301092123.37491.arnd@arndb.de>
-X-Provags-ID: V02:K0:gNLshlMKvAcqwvMqVxpiBCahzDNPG1rHf4WfdjWzLVh
- jRm4lvl0gxY9R22S7MxlgREu1V5HtdRMFyYu30lI25ULWEoTE6
- vMP1N5RX61fv5xLtUHPAiWjqme7yvxAtrB87OOFVM2kfTr7Jhe
- VTnxGdraqNiIfBaky0Spb6D4T+7VXYi+HogpiAcbF2wMdk5sCF
- A+YkLWWmW5FbYQzdz3ToZVZibCUZuf1NnSA5U6TgEDlWSRyYZp
- NnnkcpY2x7v+25GmZaeB3VWzAqdbA27h76McGlJdSF1A5UQkDA
- PJRbi4hYhH0RSrITYGGK+Qae2H7oQyD6WesucpGQ5CmGg560Pb
- BYbgWQWw7qd485gADGv4=
+	id S934244Ab3AIVY0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:24:26 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42613 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933442Ab3AIUjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:15 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Diego Calleja <diegocg@gmail.com>, Ping Cheng <pinglinux@gmail.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [ 057/123] Input: wacom - fix touch support for Bamboo Fun CTH-461
+Date: Wed,  9 Jan 2013 12:34:56 -0800
+Message-Id: <20130109201505.886227815@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 January 2013, Thierry Reding wrote:
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
-> ---
->  arch/arm/boot/dts/tegra20-tamonten.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-It's not clear how this one-line patch adds PCIe support to the
-platform. Are you missing the actual change here?
+------------------
 
-	Arnd
+From: Diego Calleja <diegocg@gmail.com>
+
+commit e12b3cecf221644ccab64d7c30a6df58b7630cb0 upstream.
+
+Commit f393ee2b814e3291c12565000210b3cf10aa5c1d forgot to add the
+touch_max property for Wacom Bamboo Fun CTH-461/S, ID 056a:00d2.
+
+This broke the touch functionality for that device. This patch,
+(done with help of Ping Cheng), adds the correct value and makes
+touch work again.
+
+Signed-off-by: Diego Calleja <diegocg@gmail.com>
+Reviewed-by: Ping Cheng <pinglinux@gmail.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/input/tablet/wacom_wac.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -2034,7 +2034,8 @@ static const struct wacom_features wacom
+ 	  .touch_max = 2 };
+ static const struct wacom_features wacom_features_0xD2 =
+ 	{ "Wacom Bamboo Craft",   WACOM_PKGLEN_BBFUN,     14720,  9200, 1023,
+-	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
++	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES,
++	  .touch_max = 2 };
+ static const struct wacom_features wacom_features_0xD3 =
+ 	{ "Wacom Bamboo 2FG 6x8", WACOM_PKGLEN_BBFUN,     21648, 13700, 1023,
+ 	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES,
+
+
