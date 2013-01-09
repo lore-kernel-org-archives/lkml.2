@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab3AIIPA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 03:15:00 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:57731 "EHLO
-	LGEMRELSE7Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756051Ab3AIIO7 (ORCPT
+	id S1757277Ab3AIIQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 03:16:18 -0500
+Received: from mail-ia0-f172.google.com ([209.85.210.172]:45729 "EHLO
+	mail-ia0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051Ab3AIIQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 03:14:59 -0500
-X-AuditID: 9c930197-b7cefae0000002d7-71-50ed27016949
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Minchan Kim <minchan@kernel.org>,
-        Kent Overstreet <koverstreet@google.com>
-Subject: [PATCH] Fix build error due to bio_endio_batch
-Date: Wed,  9 Jan 2013 17:14:55 +0900
-Message-Id: <1357719296-10562-1-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 9 Jan 2013 03:16:17 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACRpkdaLFjDh_k7BdrzvxNJ5E3ho-BV9n9tHey2AMzQzyuL+Qg@mail.gmail.com>
+References: <1355343907-11535-1-git-send-email-linus.walleij@stericsson.com>
+	<20121212215404.GA18555@kroah.com>
+	<CACRpkdaLFjDh_k7BdrzvxNJ5E3ho-BV9n9tHey2AMzQzyuL+Qg@mail.gmail.com>
+Date: Wed, 9 Jan 2013 09:16:16 +0100
+Message-ID: <CACRpkdYQdn107VAdO69r=o7UPSDy037xJOotOrfi4DuyXiDGcw@mail.gmail.com>
+Subject: Re: [PATCH v2] drivers/pinctrl: grab default handles from device core
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Felipe Balbi <balbi@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Mitch Bradley <wmb@firmworks.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Kevin Hilman <khilman@ti.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Rickard Andersson <rickard.andersson@stericsson.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes build error of recent mmotm.
+On Wed, Jan 2, 2013 at 2:42 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Wed, Dec 12, 2012 at 10:54 PM, Greg Kroah-Hartman
+> <gregkh@linuxfoundation.org> wrote:
+>> On Wed, Dec 12, 2012 at 09:25:07PM +0100, Linus Walleij wrote:
+>>> From: Linus Walleij <linus.walleij@linaro.org>
+>>>
+>>> This makes the device core auto-grab the pinctrl handle and set
+>>> the "default" (PINCTRL_STATE_DEFAULT) state for every device
+>>> that is present in the device model right before probe. This will
+>>> account for the lion's share of embedded silicon devcies.
+> (...)
+>>
+>> It looks ok, but this can't go in for 3.8, sorry, please wait for 3.9.
+>
+> Greg, now that v3.8-rc1 is out, can you give me an ACK on
+> this patch so I can put it into linux-next for some rotation
+> through the pinctrl tree?
 
-Cc: Kent Overstreet <koverstreet@google.com>
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
-I don't know who already fix it.
+Ping on Greg.
 
- include/linux/bio.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index ad62bdb..5f5491767 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -69,6 +69,8 @@
- #define bio_segments(bio)	((bio)->bi_vcnt - (bio)->bi_idx)
- #define bio_sectors(bio)	((bio)->bi_size >> 9)
- 
-+void bio_endio_batch(struct bio *bio, int error, struct batch_complete *batch);
-+
- static inline unsigned int bio_cur_bytes(struct bio *bio)
- {
- 	if (bio->bi_vcnt)
-@@ -542,8 +544,6 @@ static inline struct bio *bio_list_get(struct bio_list *bl)
- 	return bio;
- }
- 
--void bio_endio_batch(struct bio *bio, int error, struct batch_complete *batch);
--
- static inline void batch_complete_init(struct batch_complete *batch)
- {
- 	bio_list_init(&batch->bio);
--- 
-1.7.9.5
-
+Yours,
+Linus Walleij
