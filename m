@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab3AIJds (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 04:33:48 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:9001 "EHLO song.cn.fujitsu.com"
+	id S1757660Ab3AIJeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 04:34:03 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:37942 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757589Ab3AIJdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 04:33:45 -0500
+	id S1757612Ab3AIJds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 04:33:48 -0500
 X-IronPort-AV: E=Sophos;i="4.84,437,1355068800"; 
-   d="scan'208";a="6551295"
+   d="scan'208";a="6551299"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -21,60 +21,88 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: [PATCH v6 09/15] memory-hotplug: remove page table of x86_64 architecture
-Date: Wed, 9 Jan 2013 17:32:33 +0800
-Message-Id: <1357723959-5416-10-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v6 14/15] memory-hotplug: free node_data when a node is offlined
+Date: Wed, 9 Jan 2013 17:32:38 +0800
+Message-Id: <1357723959-5416-15-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
 X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/09 17:32:53,
+ 2013/01/09 17:32:54,
 	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2013/01/09 17:32:58,
-	Serialize complete at 2013/01/09 17:32:58
+ 2013/01/09 17:32:59,
+	Serialize complete at 2013/01/09 17:32:59
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch searches a page table about the removed memory, and clear
-page table for x86_64 architecture.
+From: Wen Congyang <wency@cn.fujitsu.com>
+
+We call hotadd_new_pgdat() to allocate memory to store node_data. So we
+should free it when removing a node.
 
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
-Signed-off-by: Jianguo Wu <wujianguo@huawei.com>
-Signed-off-by: Jiang Liu <jiang.liu@huawei.com>
-Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
+Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- arch/x86/mm/init_64.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ mm/memory_hotplug.c |   30 +++++++++++++++++++++++++++---
+ 1 files changed, 27 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index fe01116..d950f9b 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -981,6 +981,15 @@ remove_pagetable(unsigned long start, unsigned long end, bool direct)
- 	flush_tlb_all();
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index a8703f7..8b67752 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1699,9 +1699,12 @@ static int check_cpu_on_node(void *data)
+ /* offline the node if all memory sections of this node are removed */
+ static void try_offline_node(int nid)
+ {
+-	unsigned long start_pfn = NODE_DATA(nid)->node_start_pfn;
+-	unsigned long end_pfn = start_pfn + NODE_DATA(nid)->node_spanned_pages;
++	pg_data_t *pgdat = NODE_DATA(nid);
++	unsigned long start_pfn = pgdat->node_start_pfn;
++	unsigned long end_pfn = start_pfn + pgdat->node_spanned_pages;
+ 	unsigned long pfn;
++	struct page *pgdat_page = virt_to_page(pgdat);
++	int i;
+ 
+ 	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
+ 		unsigned long section_nr = pfn_to_section_nr(pfn);
+@@ -1719,7 +1722,7 @@ static void try_offline_node(int nid)
+ 		return;
+ 	}
+ 
+-	if (stop_machine(check_cpu_on_node, NODE_DATA(nid), NULL))
++	if (stop_machine(check_cpu_on_node, pgdat, NULL))
+ 		return;
+ 
+ 	/*
+@@ -1728,6 +1731,27 @@ static void try_offline_node(int nid)
+ 	 */
+ 	node_set_offline(nid);
+ 	unregister_one_node(nid);
++
++	if (!PageSlab(pgdat_page) && !PageCompound(pgdat_page))
++		/* node data is allocated from boot memory */
++		return;
++
++	/* free waittable in each zone */
++	for (i = 0; i < MAX_NR_ZONES; i++) {
++		struct zone *zone = pgdat->node_zones + i;
++
++		if (zone->wait_table)
++			vfree(zone->wait_table);
++	}
++
++	/*
++	 * Since there is no way to guarentee the address of pgdat/zone is not
++	 * on stack of any kernel threads or used by other kernel objects
++	 * without reference counting or other symchronizing method, do not
++	 * reset node_data and free pgdat here. Just reset it to 0 and reuse
++	 * the memory when the node is online again.
++	 */
++	memset(pgdat, 0, sizeof(*pgdat));
  }
  
-+void __meminit
-+kernel_physical_mapping_remove(unsigned long start, unsigned long end)
-+{
-+	start = (unsigned long)__va(start);
-+	end = (unsigned long)__va(end);
-+
-+	remove_pagetable(start, end, true);
-+}
-+
- #ifdef CONFIG_MEMORY_HOTREMOVE
- int __ref arch_remove_memory(u64 start, u64 size)
- {
-@@ -990,6 +999,7 @@ int __ref arch_remove_memory(u64 start, u64 size)
- 	int ret;
- 
- 	zone = page_zone(pfn_to_page(start_pfn));
-+	kernel_physical_mapping_remove(start, start + size);
- 	ret = __remove_pages(zone, start_pfn, nr_pages);
- 	WARN_ON_ONCE(ret);
- 
+ int __ref remove_memory(int nid, u64 start, u64 size)
 -- 
 1.7.1
 
