@@ -1,18 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934098Ab3AIUvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:51:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43878 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933823Ab3AIUlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S934043Ab3AIUlO (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Jan 2013 15:41:14 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43763 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933823Ab3AIUlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:01 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
-Subject: [ 109/123] Bluetooth: Add missing lock nesting notation
-Date: Wed,  9 Jan 2013 12:35:48 -0800
-Message-Id: <20130109201512.445535595@linuxfoundation.org>
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 099/123] ARM: 7606/1: cache: flush to LoUU instead of LoUIS on uniprocessor CPUs
+Date: Wed,  9 Jan 2013 12:35:38 -0800
+Message-Id: <20130109201511.290756698@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -25,63 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+From: Will Deacon <will.deacon@arm.com>
 
-commit dc2a0e20fbc85a71c63aa4330b496fda33f6bf80 upstream.
+commit d056a699dd3d9366dd3b4d9996e7848209199cda upstream.
 
-This patch fixes the following report, it happens when accepting rfcomm
-connections:
+flush_cache_louis flushes the D-side caches to the point of unification
+inner-shareable. On uniprocessor CPUs, this is defined as zero and
+therefore no flushing will take place. Rather than invent a new interface
+for UP systems, instead use our SMP_ON_UP patching code to read the
+LoUU from the CLIDR instead.
 
-[  228.165378] =============================================
-[  228.165378] [ INFO: possible recursive locking detected ]
-[  228.165378] 3.7.0-rc1-00536-gc1d5dc4 #120 Tainted: G        W
-[  228.165378] ---------------------------------------------
-[  228.165378] bluetoothd/1341 is trying to acquire lock:
-[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
-[<ffffffffa0000aa0>] bt_accept_dequeue+0xa0/0x180 [bluetooth]
-[  228.165378]
-[  228.165378] but task is already holding lock:
-[  228.165378]  (sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM){+.+...}, at:
-[<ffffffffa0205118>] rfcomm_sock_accept+0x58/0x2d0 [rfcomm]
-[  228.165378]
-[  228.165378] other info that might help us debug this:
-[  228.165378]  Possible unsafe locking scenario:
-[  228.165378]
-[  228.165378]        CPU0
-[  228.165378]        ----
-[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
-[  228.165378]   lock(sk_lock-AF_BLUETOOTH-BTPROTO_RFCOMM);
-[  228.165378]
-[  228.165378]  *** DEADLOCK ***
-[  228.165378]
-[  228.165378]  May be due to missing lock nesting notation
-
-Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+Tested-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/rfcomm/sock.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mm/cache-v7.S |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/net/bluetooth/rfcomm/sock.c
-+++ b/net/bluetooth/rfcomm/sock.c
-@@ -467,7 +467,7 @@ static int rfcomm_sock_accept(struct soc
- 	long timeo;
- 	int err = 0;
- 
--	lock_sock(sk);
-+	lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
- 
- 	if (sk->sk_type != SOCK_STREAM) {
- 		err = -EINVAL;
-@@ -504,7 +504,7 @@ static int rfcomm_sock_accept(struct soc
- 
- 		release_sock(sk);
- 		timeo = schedule_timeout(timeo);
--		lock_sock(sk);
-+		lock_sock_nested(sk, SINGLE_DEPTH_NESTING);
- 	}
- 	__set_current_state(TASK_RUNNING);
- 	remove_wait_queue(sk_sleep(sk), &wait);
+--- a/arch/arm/mm/cache-v7.S
++++ b/arch/arm/mm/cache-v7.S
+@@ -44,8 +44,10 @@ ENDPROC(v7_flush_icache_all)
+ ENTRY(v7_flush_dcache_louis)
+ 	dmb					@ ensure ordering with previous memory accesses
+ 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr, r0 = clidr
+-	ands	r3, r0, #0xe00000		@ extract LoUIS from clidr
+-	mov	r3, r3, lsr #20			@ r3 = LoUIS * 2
++	ALT_SMP(ands	r3, r0, #(7 << 21))	@ extract LoUIS from clidr
++	ALT_UP(ands	r3, r0, #(7 << 27))	@ extract LoUU from clidr
++	ALT_SMP(mov	r3, r3, lsr #20)	@ r3 = LoUIS * 2
++	ALT_UP(mov	r3, r3, lsr #26)	@ r3 = LoUU * 2
+ 	moveq	pc, lr				@ return if level == 0
+ 	mov	r10, #0				@ r10 (starting level) = 0
+ 	b	flush_levels			@ start flushing cache levels
 
 
