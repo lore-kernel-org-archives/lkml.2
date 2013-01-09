@@ -1,126 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254Ab3AISdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 13:33:22 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:52456 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932096Ab3AISdJ (ORCPT
+	id S932202Ab3AISfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 13:35:14 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:39677 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758023Ab3AISfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 13:33:09 -0500
-Date: Wed, 9 Jan 2013 19:33:03 +0100
+	Wed, 9 Jan 2013 13:35:12 -0500
+Date: Wed, 9 Jan 2013 19:35:06 +0100
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>,
-        akpm@linux-foundation.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH v2 repost] sched: cputime: avoid multiplication overflow
- (in common cases)
-Message-ID: <20130109183248.GA8293@somewhere.redhat.com>
-References: <20130107113144.GA7544@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Alessio Igor Bogani <abogani@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Chris Metcalf <cmetcalf@tilera.com>, Christoph Lameter <cl@linux.com>,
+        Geoff Levand <geoff@infradead.org>,
+        Gilad Ben Yossef <gilad@benyossef.com>,
+        Hakan Akkan <hakanakkan@gmail.com>, Ingo Molnar <mingo@kernel.org>,
+        Li Zhong <zhong@linux.vnet.ibm.com>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 06/33] cputime: Safely read cputime of full dynticks CPUs
+Message-ID: <20130109183454.GB8293@somewhere.redhat.com>
+References: <1357610913-1080-1-git-send-email-fweisbec@gmail.com>
+ <1357610913-1080-7-git-send-email-fweisbec@gmail.com>
+ <1357743251.5190.57.camel@gandalf.local.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20130107113144.GA7544@redhat.com>
+In-Reply-To: <1357743251.5190.57.camel@gandalf.local.home>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 07, 2013 at 12:31:45PM +0100, Stanislaw Gruszka wrote:
-> We scale stime, utime values based on rtime (sum_exec_runtime converted
-> to jiffies). During scaling we multiple rtime * utime, what seems to be
-> fine, since both values are converted to u64, but is not.
+On Wed, Jan 09, 2013 at 09:54:11AM -0500, Steven Rostedt wrote:
+> On Tue, 2013-01-08 at 03:08 +0100, Frederic Weisbecker wrote:
 > 
-> Let assume HZ is 1000 - 1ms tick. Process consist of 64 threads, run
-> for 1 day, threads utilize 100% cpu on user space. Machine has 64 cpus.
+> > diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> > index 07912dd..bf4f72d 100644
+> > --- a/kernel/sched/cputime.c
+> > +++ b/kernel/sched/cputime.c
+> > @@ -484,7 +484,7 @@ void vtime_task_switch(struct task_struct *prev)
+> >   * vtime_account().
+> >   */
+> >  #ifndef __ARCH_HAS_VTIME_ACCOUNT
+> > -void vtime_account(struct task_struct *tsk)
+> > +void vtime_account_irq_enter(struct task_struct *tsk)
+> >  {
+> >  	if (!in_interrupt()) {
+> >  		/*
+> > @@ -505,7 +505,7 @@ void vtime_account(struct task_struct *tsk)
+> >  	}
+> >  	vtime_account_system(tsk);
+> >  }
+> > -EXPORT_SYMBOL_GPL(vtime_account);
+> > +EXPORT_SYMBOL_GPL(vtime_account_irq_enter);
+> >  #endif /* __ARCH_HAS_VTIME_ACCOUNT */
+> >  #endif /* CONFIG_VIRT_CPU_ACCOUNTING */
+> >  
+> > @@ -616,41 +616,67 @@ void thread_group_cputime_adjusted(struct task_struct *p, cputime_t *ut, cputime
+> >  #endif /* !CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
+> >  
+> >  #ifdef CONFIG_VIRT_CPU_ACCOUNTING_GEN
+> > -static DEFINE_PER_CPU(long, last_jiffies) = INITIAL_JIFFIES;
+> > -
+> > -static cputime_t get_vtime_delta(void)
+> > +static cputime_t get_vtime_delta(struct task_struct *tsk)
+> >  {
+> >  	long delta;
+> >  
+> > -	delta = jiffies - __this_cpu_read(last_jiffies);
+> > -	__this_cpu_add(last_jiffies, delta);
+> > +	delta = jiffies - tsk->prev_jiffies;
+> > +	tsk->prev_jiffies += delta;
+> >  
+> >  	return jiffies_to_cputime(delta);
+> >  }
+> >  
+> > -void vtime_account_system(struct task_struct *tsk)
+> > +static void __vtime_account_system(struct task_struct *tsk)
+> >  {
+> > -	cputime_t delta_cpu = get_vtime_delta();
+> > +	cputime_t delta_cpu = get_vtime_delta(tsk);
+> >  
+> >  	account_system_time(tsk, irq_count(), delta_cpu, cputime_to_scaled(delta_cpu));
+> >  }
+> >  
+> > +void vtime_account_system(struct task_struct *tsk)
+> > +{
+> > +	write_seqlock(&tsk->vtime_seqlock);
+> > +	__vtime_account_system(tsk);
 > 
-> Process rtime = utime will be 64 * 24 * 60 * 60 * 1000 jiffies, what is
-> 0x149970000. Multiplication rtime * utime result is 0x1a855771100000000,
-> which can not be covered in 64 bits.
+> __vtime_account_system() calls account_system_time()
+> account_system_time() calls __account_system_time()
+> __account_system_time() calls acct_update_integrals()
+> (when CONFIG_TASK_XACCT is set)
+> acct_update_integrals() calls task_cputime()
+> task_cputime() grabs t->vtime_seqlock for read
 > 
-> Result of overflow is stall of utime values visible in user space
-> (prev_utime in kernel), even if application still consume lot of CPU
-> time.
+>  DEADLOCK
 > 
-> Probably good fix for the problem, will be using 128 bit variable and
-> proper mul128 and div_u128_u64 primitives. While mul128 is on it's
-> way to kernel, there is no 128 bit division yet. I'm not sure, if we
-> want to add it to kernel. Perhaps we could also change the way how
-> stime and utime are calculated, but I don't know how, so I come with
-> the below solution for the problem.
-> 
-> To avoid overflow patch change value we scale to min(stime, utime). This
-> is more like workaround, but will work for processes, which perform
-> mostly on user space or mostly on kernel space. Unfortunately processes,
-> which perform on kernel and user space equally, and additionally utilize
-> lot of CPU time, still will hit this overflow pretty quickly. However
-> such processes seems to be uncommon.
-> 
-> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> ironically the subject says *Safely* read cputime ;-)
 
-I can easily imagine that overflow to happen with user time on intensive
-CPU bound loads, or may be guests.
-
-But can we easily reach the same for system time? Even on intensive I/O bound
-loads we shouldn't spend that much time in the kernel. Most of it probably goes
-to idle.
-
-What do you think?
-
-If that assumption is right in most cases, the following patch should solve the
-issue:
-
-diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
-index 293b202..0650dd4 100644
---- a/kernel/sched/cputime.c
-+++ b/kernel/sched/cputime.c
-@@ -509,11 +509,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
- # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
- #endif
- 
--static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
-+static cputime_t scale_utime(cputime_t stime, cputime_t rtime, cputime_t total)
- {
- 	u64 temp = (__force u64) rtime;
- 
--	temp *= (__force u64) utime;
-+	temp *= (__force u64) stime;
- 
- 	if (sizeof(cputime_t) == 4)
- 		temp = div_u64(temp, (__force u32) total);
-@@ -531,10 +531,10 @@ static void cputime_adjust(struct task_cputime *curr,
- 			   struct cputime *prev,
- 			   cputime_t *ut, cputime_t *st)
- {
--	cputime_t rtime, utime, total;
-+	cputime_t rtime, stime, total;
- 
--	utime = curr->utime;
--	total = utime + curr->stime;
-+	stime = curr->stime;
-+	total = stime + curr->utime;
- 
- 	/*
- 	 * Tick based cputime accounting depend on random scheduling
-@@ -549,17 +549,17 @@ static void cputime_adjust(struct task_cputime *curr,
- 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
- 
- 	if (total)
--		utime = scale_utime(utime, rtime, total);
-+		stime = scale_stime(stime, rtime, total);
- 	else
--		utime = rtime;
-+		stime = rtime;
- 
- 	/*
- 	 * If the tick based count grows faster than the scheduler one,
- 	 * the result of the scaling may go backward.
- 	 * Let's enforce monotonicity.
- 	 */
--	prev->utime = max(prev->utime, utime);
--	prev->stime = max(prev->stime, rtime - prev->utime);
-+	prev->stime = max(prev->stime, stime);
-+	prev->utime = max(prev->utime, rtime - prev->stime);
- 
- 	*ut = prev->utime;
- 	*st = prev->stime;
+Well at least it crashes safely. Safely as in "deterministic".
