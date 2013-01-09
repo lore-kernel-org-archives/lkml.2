@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933625Ab3AIUjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:39:35 -0500
-Received: from mail.kernel.org ([198.145.19.201]:42746 "EHLO mail.kernel.org"
+	id S933642Ab3AIUji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:39:38 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42814 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933596Ab3AIUj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:39:28 -0500
+	id S933596Ab3AIUjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:39:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [ 38/80] NFS: Fix calls to drop_nlink()
-Date: Wed,  9 Jan 2013 12:35:30 -0800
-Message-Id: <20130109201505.304372362@linuxfoundation.org>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [ 56/80] sparc: huge_ptep_set_* functions need to call set_huge_pte_at()
+Date: Wed,  9 Jan 2013 12:35:48 -0800
+Message-Id: <20130109201507.629452294@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
 References: <20130109201500.410171651@linuxfoundation.org>
@@ -25,83 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 1f018458b30b0d5c535c94e577aa0acbb92e1395 upstream.
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
 
-It is almost always wrong for NFS to call drop_nlink() after removing a
-file. What we really want is to mark the inode's attributes for
-revalidation, and we want to ensure that the VFS drops it if we're
-reasonably sure that this is the final unlink().
-Do the former using the usual cache validity flags, and the latter
-by testing if inode->i_nlink == 1, and clearing it in that case.
+[ Upstream commit 6cb9c3697585c47977c42c5cc1b9fc49247ac530 ]
 
-This also fixes the following warning reported by Neil Brown and
-Jeff Layton (among others).
+Modifying the huge pte's requires that all the underlying pte's be
+modified.
 
-[634155.004438] WARNING:
-at /home/abuild/rpmbuild/BUILD/kernel-desktop-3.5.0/lin [634155.004442]
-Hardware name: Latitude E6510 [634155.004577]  crc_itu_t crc32c_intel
-snd_hwdep snd_pcm snd_timer snd soundcor [634155.004609] Pid: 13402, comm:
-bash Tainted: G        W    3.5.0-36-desktop # [634155.004611] Call Trace:
-[634155.004630]  [<ffffffff8100444a>] dump_trace+0xaa/0x2b0
-[634155.004641]  [<ffffffff815a23dc>] dump_stack+0x69/0x6f
-[634155.004653]  [<ffffffff81041a0b>] warn_slowpath_common+0x7b/0xc0
-[634155.004662]  [<ffffffff811832e4>] drop_nlink+0x34/0x40
-[634155.004687]  [<ffffffffa05bb6c3>] nfs_dentry_iput+0x33/0x70 [nfs]
-[634155.004714]  [<ffffffff8118049e>] dput+0x12e/0x230
-[634155.004726]  [<ffffffff8116b230>] __fput+0x170/0x230
-[634155.004735]  [<ffffffff81167c0f>] filp_close+0x5f/0x90
-[634155.004743]  [<ffffffff81167cd7>] sys_close+0x97/0x100
-[634155.004754]  [<ffffffff815c3b39>] system_call_fastpath+0x16/0x1b
-[634155.004767]  [<00007f2a73a0d110>] 0x7f2a73a0d10f
+Version 2: added missing flush_tlb_page()
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- fs/nfs/dir.c |   11 ++++++-----
- 1 file changed, 6 insertions(+), 5 deletions(-)
+ arch/sparc/include/asm/hugetlb.h |   10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1219,11 +1219,14 @@ static int nfs_dentry_delete(const struc
- 
- }
- 
-+/* Ensure that we revalidate inode->i_nlink */
- static void nfs_drop_nlink(struct inode *inode)
+--- a/arch/sparc/include/asm/hugetlb.h
++++ b/arch/sparc/include/asm/hugetlb.h
+@@ -58,14 +58,20 @@ static inline pte_t huge_pte_wrprotect(p
+ static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
+ 					   unsigned long addr, pte_t *ptep)
  {
- 	spin_lock(&inode->i_lock);
--	if (inode->i_nlink > 0)
--		drop_nlink(inode);
-+	/* drop the inode if we're reasonably sure this is the last link */
-+	if (inode->i_nlink == 1)
-+		clear_nlink(inode);
-+	NFS_I(inode)->cache_validity |= NFS_INO_INVALID_ATTR;
- 	spin_unlock(&inode->i_lock);
+-	ptep_set_wrprotect(mm, addr, ptep);
++	pte_t old_pte = *ptep;
++	set_huge_pte_at(mm, addr, ptep, pte_wrprotect(old_pte));
  }
  
-@@ -1238,8 +1241,8 @@ static void nfs_dentry_iput(struct dentr
- 		NFS_I(inode)->cache_validity |= NFS_INO_INVALID_DATA;
- 
- 	if (dentry->d_flags & DCACHE_NFSFS_RENAMED) {
--		drop_nlink(inode);
- 		nfs_complete_unlink(dentry, inode);
-+		nfs_drop_nlink(inode);
- 	}
- 	iput(inode);
+ static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
+ 					     unsigned long addr, pte_t *ptep,
+ 					     pte_t pte, int dirty)
+ {
+-	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
++	int changed = !pte_same(*ptep, pte);
++	if (changed) {
++		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
++		flush_tlb_page(vma, addr);
++	}
++	return changed;
  }
-@@ -1800,10 +1803,8 @@ static int nfs_safe_remove(struct dentry
- 	if (inode != NULL) {
- 		nfs_inode_return_delegation(inode);
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
--		/* The VFS may want to delete this inode */
- 		if (error == 0)
- 			nfs_drop_nlink(inode);
--		nfs_mark_for_revalidate(inode);
- 	} else
- 		error = NFS_PROTO(dir)->remove(dir, &dentry->d_name);
- 	if (error == -ENOENT)
+ 
+ static inline pte_t huge_ptep_get(pte_t *ptep)
 
 
