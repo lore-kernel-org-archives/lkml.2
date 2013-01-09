@@ -1,221 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617Ab3AIUDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:03:53 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:23556 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932535Ab3AIT7N (ORCPT
+	id S932655Ab3AIUET (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:04:19 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:33186 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932526Ab3AIT7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:59:13 -0500
+	Wed, 9 Jan 2013 14:59:12 -0500
 From: Dave Kleikamp <dave.kleikamp@oracle.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Zach Brown <zab@zabbo.net>,
         "Maxim V. Patlasov" <mpatlasov@parallels.com>,
-        Dave Kleikamp <dave.kleikamp@oracle.com>
-Subject: [PATCH V5 06/30] iov_iter: add bvec support
-Date: Wed,  9 Jan 2013 13:58:21 -0600
-Message-Id: <1357761525-22718-7-git-send-email-dave.kleikamp@oracle.com>
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Artem Bityutskiy <dedekind1@gmail.com>,
+        Adrian Hunter <adrian.hunter@intel.com>, linux-mtd@lists.infradead.org
+Subject: [PATCH V5 30/30] ubifs: convert file ops from aio_read/write to read/write_iter
+Date: Wed,  9 Jan 2013 13:58:45 -0600
+Message-Id: <1357761525-22718-31-git-send-email-dave.kleikamp@oracle.com>
 X-Mailer: git-send-email 1.8.1
 In-Reply-To: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
 References: <1357761525-22718-1-git-send-email-dave.kleikamp@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zach Brown <zab@zabbo.net>
-
-This adds a set of iov_iter_ops calls which work with memory which is
-specified by an array of bio_vec structs instead of an array of iovec
-structs.
-
-The big difference is that the pages referenced by the bio_vec elements
-are pinned.  They don't need to be faulted in and we can always use
-kmap_atomic() to map them one at a time.
-
 Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Zach Brown <zab@zabbo.net>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Adrian Hunter <adrian.hunter@intel.com>
+Cc: linux-mtd@lists.infradead.org
 ---
- fs/iov-iter.c      | 128 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h |  19 ++++++++
- 2 files changed, 147 insertions(+)
+ fs/ubifs/file.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/fs/iov-iter.c b/fs/iov-iter.c
-index bae1553..22ef9ca 100644
---- a/fs/iov-iter.c
-+++ b/fs/iov-iter.c
-@@ -5,6 +5,7 @@
- #include <linux/hardirq.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-+#include <linux/bio.h>
- 
- static size_t __iovec_copy_to_user(char *vaddr, const struct iovec *iov,
- 				   size_t base, size_t bytes, int atomic)
-@@ -86,6 +87,133 @@ static size_t ii_iovec_copy_to_user(struct page *page,
- 	return copied;
+diff --git a/fs/ubifs/file.c b/fs/ubifs/file.c
+index 5bc7781..cfe6210 100644
+--- a/fs/ubifs/file.c
++++ b/fs/ubifs/file.c
+@@ -44,7 +44,7 @@
+  * 'ubifs_writepage()' we are only guaranteed that the page is locked.
+  *
+  * Similarly, @i_mutex is not always locked in 'ubifs_readpage()', e.g., the
+- * read-ahead path does not lock it ("sys_read -> generic_file_aio_read ->
++ * read-ahead path does not lock it ("sys_read -> generic_file_read_iter ->
+  * ondemand_readahead -> readpage"). In case of readahead, @I_SYNC flag is not
+  * set as well. However, UBIFS disables readahead.
+  */
+@@ -1394,8 +1394,8 @@ static int update_mctime(struct ubifs_info *c, struct inode *inode)
+ 	return 0;
  }
  
-+#ifdef CONFIG_BLOCK
-+/*
-+ * As an easily verifiable first pass, we implement all the methods that
-+ * copy data to and from bvec pages with one function.  We implement it
-+ * all with kmap_atomic().
-+ */
-+static size_t bvec_copy_tofrom_page(struct iov_iter *iter, struct page *page,
-+				    unsigned long page_offset, size_t bytes,
-+				    int topage)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)iter->data;
-+	size_t bvec_offset = iter->iov_offset;
-+	size_t remaining = bytes;
-+	void *bvec_map;
-+	void *page_map;
-+	size_t copy;
-+
-+	page_map = kmap_atomic(page);
-+
-+	BUG_ON(bytes > iter->count);
-+	while (remaining) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec_offset >= bvec->bv_len);
-+		copy = min(remaining, bvec->bv_len - bvec_offset);
-+		bvec_map = kmap_atomic(bvec->bv_page);
-+		if (topage)
-+			memcpy(page_map + page_offset,
-+			       bvec_map + bvec->bv_offset + bvec_offset,
-+			       copy);
-+		else
-+			memcpy(bvec_map + bvec->bv_offset + bvec_offset,
-+			       page_map + page_offset,
-+			       copy);
-+		kunmap_atomic(bvec_map);
-+		remaining -= copy;
-+		bvec_offset += copy;
-+		page_offset += copy;
-+		if (bvec_offset == bvec->bv_len) {
-+			bvec_offset = 0;
-+			bvec++;
-+		}
-+	}
-+
-+	kunmap_atomic(page_map);
-+
-+	return bytes;
-+}
-+
-+static size_t ii_bvec_copy_to_user_atomic(struct page *page, struct iov_iter *i,
-+					  unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_to_user(struct page *page, struct iov_iter *i,
-+				   unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 0);
-+}
-+static size_t ii_bvec_copy_from_user_atomic(struct page *page,
-+					    struct iov_iter *i,
-+					    unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+static size_t ii_bvec_copy_from_user(struct page *page, struct iov_iter *i,
-+				     unsigned long offset, size_t bytes)
-+{
-+	return bvec_copy_tofrom_page(i, page, offset, bytes, 1);
-+}
-+
-+/*
-+ * bio_vecs have a stricter structure than iovecs that might have
-+ * come from userspace.  There are no zero length bio_vec elements.
-+ */
-+static void ii_bvec_advance(struct iov_iter *i, size_t bytes)
-+{
-+	struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	size_t offset = i->iov_offset;
-+	size_t delta;
-+
-+	BUG_ON(i->count < bytes);
-+	while (bytes) {
-+		BUG_ON(bvec->bv_len == 0);
-+		BUG_ON(bvec->bv_len <= offset);
-+		delta = min(bytes, bvec->bv_len - offset);
-+		offset += delta;
-+		i->count -= delta;
-+		bytes -= delta;
-+		if (offset == bvec->bv_len) {
-+			bvec++;
-+			offset = 0;
-+		}
-+	}
-+
-+	i->data = (unsigned long)bvec;
-+	i->iov_offset = offset;
-+}
-+
-+/*
-+ * pages pointed to by bio_vecs are always pinned.
-+ */
-+static int ii_bvec_fault_in_readable(struct iov_iter *i, size_t bytes)
-+{
-+	return 0;
-+}
-+
-+static size_t ii_bvec_single_seg_count(struct iov_iter *i)
-+{
-+	const struct bio_vec *bvec = (struct bio_vec *)i->data;
-+	if (i->nr_segs == 1)
-+		return i->count;
-+	else
-+		return min(i->count, bvec->bv_len - i->iov_offset);
-+}
-+
-+struct iov_iter_ops ii_bvec_ops = {
-+	.ii_copy_to_user_atomic = ii_bvec_copy_to_user_atomic,
-+	.ii_copy_to_user = ii_bvec_copy_to_user,
-+	.ii_copy_from_user_atomic = ii_bvec_copy_from_user_atomic,
-+	.ii_copy_from_user = ii_bvec_copy_from_user,
-+	.ii_advance = ii_bvec_advance,
-+	.ii_fault_in_readable = ii_bvec_fault_in_readable,
-+	.ii_single_seg_count = ii_bvec_single_seg_count,
-+};
-+EXPORT_SYMBOL(ii_bvec_ops);
-+#endif	/* CONFIG_BLOCK */
-+
- static size_t __iovec_copy_from_user(char *vaddr, const struct iovec *iov,
- 				     size_t base, size_t bytes, int atomic)
+-static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
+-			       unsigned long nr_segs, loff_t pos)
++static ssize_t ubifs_write_iter(struct kiocb *iocb, struct iov_iter *iter,
++				loff_t pos)
  {
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 5618301..955d79e 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -343,6 +343,25 @@ static inline size_t iov_iter_single_seg_count(struct iov_iter *i)
- 	return i->ops->ii_single_seg_count(i);
+ 	int err;
+ 	struct inode *inode = iocb->ki_filp->f_mapping->host;
+@@ -1405,7 +1405,7 @@ static ssize_t ubifs_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	if (err)
+ 		return err;
+ 
+-	return generic_file_aio_write(iocb, iov, nr_segs, pos);
++	return generic_file_write_iter(iocb, iter, pos);
  }
  
-+#ifdef CONFIG_BLOCK
-+extern struct iov_iter_ops ii_bvec_ops;
-+
-+struct bio_vec;
-+static inline void iov_iter_init_bvec(struct iov_iter *i,
-+				      struct bio_vec *bvec,
-+				      unsigned long nr_segs,
-+				      size_t count, size_t written)
-+{
-+	i->ops = &ii_bvec_ops;
-+	i->data = (unsigned long)bvec;
-+	i->nr_segs = nr_segs;
-+	i->iov_offset = 0;
-+	i->count = count + written;
-+
-+	iov_iter_advance(i, written);
-+}
-+#endif
-+
- extern struct iov_iter_ops ii_iovec_ops;
- 
- static inline void iov_iter_init(struct iov_iter *i,
+ static int ubifs_set_page_dirty(struct page *page)
+@@ -1580,8 +1580,8 @@ const struct file_operations ubifs_file_operations = {
+ 	.llseek         = generic_file_llseek,
+ 	.read           = do_sync_read,
+ 	.write          = do_sync_write,
+-	.aio_read       = generic_file_aio_read,
+-	.aio_write      = ubifs_aio_write,
++	.read_iter       = generic_file_read_iter,
++	.write_iter      = ubifs_write_iter,
+ 	.mmap           = ubifs_file_mmap,
+ 	.fsync          = ubifs_fsync,
+ 	.unlocked_ioctl = ubifs_ioctl,
 -- 
 1.8.1
 
