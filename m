@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab3AIA2x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 19:28:53 -0500
-Received: from smtp-outbound-1.vmware.com ([208.91.2.12]:51126 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755455Ab3AIA2w (ORCPT
+	id S1756080Ab3AIA3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 19:29:39 -0500
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:43747 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755019Ab3AIA3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 19:28:52 -0500
-From: Dmitry Torokhov <dtor@vmware.com>
-To: pv-drivers@vmware.com
-Cc: Greg KH <gregkh@linuxfoundation.org>,
-        George Zhang <georgezhang@vmware.com>, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [Pv-drivers] [PATCH 07/12] VMCI: queue pairs implementation.
-Date: Tue, 08 Jan 2013 16:28:51 -0800
-Message-ID: <2526541.2xuuOB7vZK@dtor-d630.eng.vmware.com>
-Organization: VMware, Inc.
-User-Agent: KMail/4.9.4 (Linux/3.7.0+; KDE/4.9.4; x86_64; ; )
-In-Reply-To: <20130109001539.GA24989@kroah.com>
-References: <20130108234751.2698.66606.stgit@promb-2n-dhcp175.eng.vmware.com> <20130108235444.2698.24076.stgit@promb-2n-dhcp175.eng.vmware.com> <20130109001539.GA24989@kroah.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 8 Jan 2013 19:29:37 -0500
+Message-ID: <1357691375.1890.16.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ACPI: SRAT: report non-volatile memory in debug
+From: Davidlohr Bueso <davidlohr.bueso@hp.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 08 Jan 2013 16:29:35 -0800
+In-Reply-To: <1692605.TGpS6mF86Q@vostro.rjw.lan>
+References: <1357690556.1890.13.camel@buesod1.americas.hpqcorp.net>
+	 <1692605.TGpS6mF86Q@vostro.rjw.lan>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4 (3.4.4-2.fc17) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Tuesday, January 08, 2013 04:15:39 PM Greg KH wrote:
-> On Tue, Jan 08, 2013 at 03:54:54PM -0800, George Zhang wrote:
+On Wed, 2013-01-09 at 01:34 +0100, Rafael J. Wysocki wrote:
+> On Tuesday, January 08, 2013 04:15:56 PM Davidlohr Bueso wrote:
+> > Just as with the other memory affinity flags, report
+> > non-volatile memory with ACPI debug.
 > 
-> > +/* Guest device port I/O. */
-> > +struct PPNSet {
-> > +	u64 num_produce_pages;
-> > +	u64 num_consume_pages;
-> > +	u32 *produce_ppns;
-> > +	u32 *consume_ppns;
-> > +	bool initialized;
-> > +};
+> Looks kind of good, but ->
 > 
-> I know this is a private structure to the driver, so it's not that big
-> of a deal at all, but the naming for this is a bit odd (mixed case.)
+> > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
+> > ---
+> >  drivers/acpi/numa.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
+> > index cb31298..68077ac 100644
+> > --- a/drivers/acpi/numa.c
+> > +++ b/drivers/acpi/numa.c
+> > @@ -116,12 +116,14 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
+> >  			struct acpi_srat_mem_affinity *p =
+> >  			    (struct acpi_srat_mem_affinity *)header;
+> >  			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
+> > -					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s\n",
+> > +					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s%s\n",
+> >  					  (unsigned long)p->base_address,
+> >  					  (unsigned long)p->length,
+> >  					  p->proximity_domain,
+> >  					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
+> >  					  "enabled" : "disabled",
+> > +					  (p->flags & ACPI_SRAT_MEM_NON_VOLATILE)?
+> > +					  " non-volatile" : "",
 > 
-> Not a show stopper at all, but if you had run checkpatch.pl on it, it
-> would have warned you about this.
+> -> why did you put non-volatile before hot-pluggable?
 
-Surprisingly it does not:
+No particular reason. Should I send a v2 with non-volatile at the end?
 
-[dtor@dtor-ws vmci]$ ./scripts/checkpatch.pl -f  
-drivers/misc/vmw_vmci/vmci_queue_pair.h 
-total: 0 errors, 0 warnings, 191 lines checked
+> 
+> >  					  (p->flags & ACPI_SRAT_MEM_HOT_PLUGGABLE)?
+> >  					  " hot-pluggable" : ""));
+> >  		}
+> 
+> Rafael
+> 
+> 
 
-drivers/misc/vmw_vmci/vmci_queue_pair.h has no obvious style problems and is 
-ready for submission.
-
-Also silent on the patch itself...
-
-We'll send a followup patch anyway.
-
-Thanks,
-Dmitry
 
