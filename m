@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757369Ab3AIHlT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 02:41:19 -0500
-Received: from mga02.intel.com ([134.134.136.20]:56595 "EHLO mga02.intel.com"
+	id S1757371Ab3AIHnG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 02:43:06 -0500
+Received: from mga09.intel.com ([134.134.136.24]:57438 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757286Ab3AIHlS convert rfc822-to-8bit (ORCPT
+	id S1757286Ab3AIHnE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 02:41:18 -0500
+	Wed, 9 Jan 2013 02:43:04 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.84,435,1355126400"; 
-   d="scan'208";a="269709530"
+   d="scan'208";a="269710216"
 From: "Liu, Jinsong" <jinsong.liu@intel.com>
 To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 CC: Konrad Rzeszutek Wilk <konrad@kernel.org>
-Subject: [PATCH V2 1/2] Xen stub driver for memory hotplug
-Thread-Topic: [PATCH V2 1/2] Xen stub driver for memory hotplug
-Thread-Index: Ac3uPLMxqVMpMelkR/S7DovT1xLYLQ==
-Date: Wed, 9 Jan 2013 07:41:13 +0000
-Message-ID: <DE8DF0795D48FD4CA783C40EC82923353BB0F4@SHSMSX101.ccr.corp.intel.com>
+Subject: [PATCH V2 2/2] Xen ACPI memory hotplug
+Thread-Topic: [PATCH V2 2/2] Xen ACPI memory hotplug
+Thread-Index: Ac3uPO4xgSdugiMySf2ZunvFOlFXHg==
+Date: Wed, 9 Jan 2013 07:42:52 +0000
+Message-ID: <DE8DF0795D48FD4CA783C40EC82923353BB10D@SHSMSX101.ccr.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -32,76 +32,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch create a file (xen-stub.c) for Xen stub drivers.
-Xen stub drivers are used to reserve space for Xen drivers, i.e.
-memory hotplug and cpu hotplug, and to block native drivers loaded,
-so that real Xen drivers can be modular and loaded on demand.
+This patch implements real Xen acpi memory hotplug driver as module.
+When loaded, it replaces Xen stub driver.
 
-This patch is specific for Xen memory hotplug (other Xen logic
-can add stub drivers on their own). The xen stub driver will
-occupied earlier via subsys_initcall (than native memory hotplug
-driver via module_init and so blocking native). Later real Xen
-memory hotplug logic will unregister the stub driver and register
-itself to take effect on demand.
+When an acpi memory device hotadd event occurs, it notifies OS and
+invokes notification callback, adding related memory device and parsing
+memory information, finally hypercall to xen hypervisor to add memory.
 
 Signed-off-by: Liu Jinsong <jinsong.liu@intel.com>
 ---
- drivers/xen/Kconfig    |   11 ++++++++
- drivers/xen/Makefile   |    1 +
- drivers/xen/xen-stub.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++++
- include/xen/acpi.h     |    6 ++++
- 4 files changed, 78 insertions(+), 0 deletions(-)
- create mode 100644 drivers/xen/xen-stub.c
+ drivers/xen/Kconfig               |   11 +
+ drivers/xen/Makefile              |    1 +
+ drivers/xen/xen-acpi-memhotplug.c |  487 +++++++++++++++++++++++++++++++++++++
+ include/xen/interface/platform.h  |   13 +-
+ 4 files changed, 508 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/xen/xen-acpi-memhotplug.c
 
 diff --git a/drivers/xen/Kconfig b/drivers/xen/Kconfig
-index cabfa97..2986de9 100644
+index 2986de9..b8cf899 100644
 --- a/drivers/xen/Kconfig
 +++ b/drivers/xen/Kconfig
-@@ -180,6 +180,17 @@ config XEN_PRIVCMD
- 	depends on XEN
- 	default m
+@@ -191,6 +191,17 @@ config XEN_STUB
  
-+config XEN_STUB
-+	bool "Xen stub drivers"
-+	depends on XEN_DOM0 && X86_64
-+	default y
+ 	  To enable Xen features like cpu and memory hotplug, select Y here.
+ 
++config XEN_ACPI_HOTPLUG_MEMORY
++	tristate "Xen ACPI memory hotplug"
++	depends on XEN_STUB && ACPI
++	default n
 +	help
-+	  Allow kernel to install stub drivers, to reserve space for Xen drivers,
-+	  i.e. memory hotplug and cpu hotplug, and to block native drivers loaded,
-+	  so that real Xen drivers can be modular.
++	  This is Xen ACPI memory hotplug.
 +
-+	  To enable Xen features like cpu and memory hotplug, select Y here.
++	  Currently Xen only support ACPI memory hot-add. If you want
++	  to hot-add memory at runtime (the hot-added memory cannot be
++	  removed until machine stop), select Y/M here, otherwise select N.
 +
  config XEN_ACPI_PROCESSOR
  	tristate "Xen ACPI processor"
  	depends on XEN && X86 && ACPI_PROCESSOR && CPU_FREQ
 diff --git a/drivers/xen/Makefile b/drivers/xen/Makefile
-index fb213cf..b63edd8 100644
+index b63edd8..1605f59 100644
 --- a/drivers/xen/Makefile
 +++ b/drivers/xen/Makefile
-@@ -30,6 +30,7 @@ obj-$(CONFIG_SWIOTLB_XEN)		+= swiotlb-xen.o
- obj-$(CONFIG_XEN_MCE_LOG)		+= mcelog.o
+@@ -31,6 +31,7 @@ obj-$(CONFIG_XEN_MCE_LOG)		+= mcelog.o
  obj-$(CONFIG_XEN_PCIDEV_BACKEND)	+= xen-pciback/
  obj-$(CONFIG_XEN_PRIVCMD)		+= xen-privcmd.o
-+obj-$(CONFIG_XEN_STUB)			+= xen-stub.o
+ obj-$(CONFIG_XEN_STUB)			+= xen-stub.o
++obj-$(CONFIG_XEN_ACPI_HOTPLUG_MEMORY)	+= xen-acpi-memhotplug.o
  obj-$(CONFIG_XEN_ACPI_PROCESSOR)	+= xen-acpi-processor.o
  xen-evtchn-y				:= evtchn.o
  xen-gntdev-y				:= gntdev.o
-diff --git a/drivers/xen/xen-stub.c b/drivers/xen/xen-stub.c
+diff --git a/drivers/xen/xen-acpi-memhotplug.c b/drivers/xen/xen-acpi-memhotplug.c
 new file mode 100644
-index 0000000..01a49e3
+index 0000000..d207fec
 --- /dev/null
-+++ b/drivers/xen/xen-stub.c
-@@ -0,0 +1,60 @@
++++ b/drivers/xen/xen-acpi-memhotplug.c
+@@ -0,0 +1,487 @@
 +/*
-+ * xen-stub.c - stub drivers to reserve space for Xen
-+ *
 + * Copyright (C) 2012 Intel Corporation
 + *    Author: Liu Jinsong <jinsong.liu@intel.com>
 + *    Author: Jiang Yunhong <yunhong.jiang@intel.com>
-+ *
-+ * Copyright (C) 2012 Oracle Inc
-+ *    Author: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -116,59 +106,505 @@ index 0000000..01a49e3
 + */
 +
 +#include <linux/kernel.h>
++#include <linux/module.h>
 +#include <linux/init.h>
-+#include <linux/export.h>
 +#include <linux/types.h>
 +#include <linux/acpi.h>
 +#include <acpi/acpi_drivers.h>
 +#include <xen/acpi.h>
++#include <xen/interface/platform.h>
++#include <asm/xen/hypercall.h>
 +
-+/*--------------------------------------------
-+	stub driver for Xen memory hotplug
-+--------------------------------------------*/
++#define PREFIX "ACPI:xen_memory_hotplug:"
 +
-+#ifdef CONFIG_ACPI
++struct acpi_memory_info {
++	struct list_head list;
++	u64 start_addr;		/* Memory Range start physical addr */
++	u64 length;		/* Memory Range length */
++	unsigned short caching;	/* memory cache attribute */
++	unsigned short write_protect;	/* memory read/write attribute */
++				/* copied from buffer getting from _CRS */
++	unsigned int enabled:1;
++};
++
++struct acpi_memory_device {
++	struct acpi_device *device;
++	struct list_head res_list;
++};
++
++static bool acpi_hotmem_initialized __read_mostly;
++
++static int xen_hotadd_memory(int pxm, struct acpi_memory_info *info)
++{
++	struct xen_platform_op op;
++
++	op.cmd = XENPF_mem_hotadd;
++	op.u.mem_add.spfn = info->start_addr >> PAGE_SHIFT;
++	op.u.mem_add.epfn = (info->start_addr + info->length) >> PAGE_SHIFT;
++	op.u.mem_add.pxm = pxm;
++
++	return HYPERVISOR_dom0_op(&op);
++}
++
++static int xen_acpi_get_pxm(acpi_handle h)
++{
++	unsigned long long pxm;
++	acpi_status status;
++	acpi_handle handle;
++	acpi_handle phandle = h;
++
++	do {
++		handle = phandle;
++		status = acpi_evaluate_integer(handle, "_PXM", NULL, &pxm);
++		if (ACPI_SUCCESS(status))
++			return pxm;
++		status = acpi_get_parent(handle, &phandle);
++	} while (ACPI_SUCCESS(status));
++	return -1;
++}
++
++static int xen_acpi_memory_enable_device(struct acpi_memory_device *mem_device)
++{
++	int pxm, result;
++	int num_enabled = 0;
++	struct acpi_memory_info *info;
++
++	if (!mem_device)
++		return -EINVAL;
++
++	pxm = xen_acpi_get_pxm(mem_device->device->handle);
++	if (pxm < 0)
++		return -EINVAL;
++
++	list_for_each_entry(info, &mem_device->res_list, list) {
++		if (info->enabled) { /* just sanity check...*/
++			num_enabled++;
++			continue;
++		}
++
++		if (!info->length)
++			continue;
++
++		result = xen_hotadd_memory(pxm, info);
++		if (result)
++			continue;
++		info->enabled = 1;
++		num_enabled++;
++	}
++
++	if (!num_enabled)
++		return -EINVAL;
++
++	return 0;
++}
++
++static acpi_status
++acpi_memory_get_resource(struct acpi_resource *resource, void *context)
++{
++	struct acpi_memory_device *mem_device = context;
++	struct acpi_resource_address64 address64;
++	struct acpi_memory_info *info, *new;
++	acpi_status status;
++
++	status = acpi_resource_to_address64(resource, &address64);
++	if (ACPI_FAILURE(status) ||
++	    (address64.resource_type != ACPI_MEMORY_RANGE))
++		return AE_OK;
++
++	list_for_each_entry(info, &mem_device->res_list, list) {
++		if ((info->caching == address64.info.mem.caching) &&
++		    (info->write_protect == address64.info.mem.write_protect) &&
++		    (info->start_addr + info->length == address64.minimum)) {
++			info->length += address64.address_length;
++			return AE_OK;
++		}
++	}
++
++	new = kzalloc(sizeof(struct acpi_memory_info), GFP_KERNEL);
++	if (!new)
++		return AE_ERROR;
++
++	INIT_LIST_HEAD(&new->list);
++	new->caching = address64.info.mem.caching;
++	new->write_protect = address64.info.mem.write_protect;
++	new->start_addr = address64.minimum;
++	new->length = address64.address_length;
++	list_add_tail(&new->list, &mem_device->res_list);
++
++	return AE_OK;
++}
++
++static int
++acpi_memory_get_device_resources(struct acpi_memory_device *mem_device)
++{
++	acpi_status status;
++	struct acpi_memory_info *info, *n;
++
++	if (!list_empty(&mem_device->res_list))
++		return 0;
++
++	status = acpi_walk_resources(mem_device->device->handle,
++		METHOD_NAME__CRS, acpi_memory_get_resource, mem_device);
++
++	if (ACPI_FAILURE(status)) {
++		list_for_each_entry_safe(info, n, &mem_device->res_list, list)
++			kfree(info);
++		INIT_LIST_HEAD(&mem_device->res_list);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int
++acpi_memory_get_device(acpi_handle handle,
++		       struct acpi_memory_device **mem_device)
++{
++	acpi_status status;
++	acpi_handle phandle;
++	struct acpi_device *device = NULL;
++	struct acpi_device *pdevice = NULL;
++	int result;
++
++	if (!acpi_bus_get_device(handle, &device) && device)
++		goto end;
++
++	status = acpi_get_parent(handle, &phandle);
++	if (ACPI_FAILURE(status)) {
++		pr_warn(PREFIX "Cannot find acpi parent\n");
++		return -EINVAL;
++	}
++
++	/* Get the parent device */
++	result = acpi_bus_get_device(phandle, &pdevice);
++	if (result) {
++		pr_warn(PREFIX "Cannot get acpi bus device\n");
++		return -EINVAL;
++	}
++
++	/*
++	 * Now add the notified device.  This creates the acpi_device
++	 * and invokes .add function
++	 */
++	result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
++	if (result) {
++		pr_warn(PREFIX "Cannot add acpi bus\n");
++		return -EINVAL;
++	}
++
++end:
++	*mem_device = acpi_driver_data(device);
++	if (!(*mem_device)) {
++		pr_err(PREFIX "Driver data not found\n");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static int acpi_memory_check_device(struct acpi_memory_device *mem_device)
++{
++	unsigned long long current_status;
++
++	/* Get device present/absent information from the _STA */
++	if (ACPI_FAILURE(acpi_evaluate_integer(mem_device->device->handle,
++				"_STA", NULL, &current_status)))
++		return -ENODEV;
++	/*
++	 * Check for device status. Device should be
++	 * present/enabled/functioning.
++	 */
++	if (!((current_status & ACPI_STA_DEVICE_PRESENT)
++	      && (current_status & ACPI_STA_DEVICE_ENABLED)
++	      && (current_status & ACPI_STA_DEVICE_FUNCTIONING)))
++		return -ENODEV;
++
++	return 0;
++}
++
++static int acpi_memory_disable_device(struct acpi_memory_device *mem_device)
++{
++	pr_warn(PREFIX "Xen does not support memory hotremove\n");
++
++	return -ENOSYS;
++}
++
++static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
++{
++	struct acpi_memory_device *mem_device;
++	struct acpi_device *device;
++	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
++
++	switch (event) {
++	case ACPI_NOTIFY_BUS_CHECK:
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			"\nReceived BUS CHECK notification for device\n"));
++		/* Fall Through */
++	case ACPI_NOTIFY_DEVICE_CHECK:
++		if (event == ACPI_NOTIFY_DEVICE_CHECK)
++			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			"\nReceived DEVICE CHECK notification for device\n"));
++
++		if (acpi_memory_get_device(handle, &mem_device)) {
++			pr_err(PREFIX "Cannot find driver data\n");
++			break;
++		}
++
++		ost_code = ACPI_OST_SC_SUCCESS;
++		break;
++
++	case ACPI_NOTIFY_EJECT_REQUEST:
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++			"\nReceived EJECT REQUEST notification for device\n"));
++
++		if (acpi_bus_get_device(handle, &device)) {
++			pr_err(PREFIX "Device doesn't exist\n");
++			break;
++		}
++		mem_device = acpi_driver_data(device);
++		if (!mem_device) {
++			pr_err(PREFIX "Driver Data is NULL\n");
++			break;
++		}
++
++		/*
++		 * TBD: implement acpi_memory_disable_device and invoke
++		 * acpi_bus_remove if Xen support hotremove in the future
++		 */
++		acpi_memory_disable_device(mem_device);
++		break;
++
++	default:
++		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
++				  "Unsupported event [0x%x]\n", event));
++		/* non-hotplug event; possibly handled by other handler */
++		return;
++	}
++
++	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
++	return;
++}
++
++static int xen_acpi_memory_device_add(struct acpi_device *device)
++{
++	int result;
++	struct acpi_memory_device *mem_device = NULL;
++
++
++	if (!device)
++		return -EINVAL;
++
++	mem_device = kzalloc(sizeof(struct acpi_memory_device), GFP_KERNEL);
++	if (!mem_device)
++		return -ENOMEM;
++
++	INIT_LIST_HEAD(&mem_device->res_list);
++	mem_device->device = device;
++	sprintf(acpi_device_name(device), "%s", ACPI_MEMORY_DEVICE_NAME);
++	sprintf(acpi_device_class(device), "%s", ACPI_MEMORY_DEVICE_CLASS);
++	device->driver_data = mem_device;
++
++	/* Get the range from the _CRS */
++	result = acpi_memory_get_device_resources(mem_device);
++	if (result) {
++		kfree(mem_device);
++		return result;
++	}
++
++	/*
++	 * Early boot code has recognized memory area by EFI/E820.
++	 * If DSDT shows these memory devices on boot, hotplug is not necessary
++	 * for them. So, it just returns until completion of this driver's
++	 * start up.
++	 */
++	if (!acpi_hotmem_initialized)
++		return 0;
++
++	if (!acpi_memory_check_device(mem_device))
++		result = xen_acpi_memory_enable_device(mem_device);
++
++	return result;
++}
++
++static int xen_acpi_memory_device_remove(struct acpi_device *device, int type)
++{
++	struct acpi_memory_device *mem_device = NULL;
++
++	if (!device || !acpi_driver_data(device))
++		return -EINVAL;
++
++	mem_device = acpi_driver_data(device);
++	kfree(mem_device);
++
++	return 0;
++}
++
++/*
++ * Helper function to check for memory device
++ */
++static acpi_status is_memory_device(acpi_handle handle)
++{
++	char *hardware_id;
++	acpi_status status;
++	struct acpi_device_info *info;
++
++	status = acpi_get_object_info(handle, &info);
++	if (ACPI_FAILURE(status))
++		return status;
++
++	if (!(info->valid & ACPI_VALID_HID)) {
++		kfree(info);
++		return AE_ERROR;
++	}
++
++	hardware_id = info->hardware_id.string;
++	if ((hardware_id == NULL) ||
++	    (strcmp(hardware_id, ACPI_MEMORY_DEVICE_HID)))
++		status = AE_ERROR;
++
++	kfree(info);
++	return status;
++}
++
++static acpi_status
++acpi_memory_register_notify_handler(acpi_handle handle,
++				    u32 level, void *ctxt, void **retv)
++{
++	acpi_status status;
++
++	status = is_memory_device(handle);
++	if (ACPI_FAILURE(status))
++		return AE_OK;	/* continue */
++
++	status = acpi_install_notify_handler(handle, ACPI_SYSTEM_NOTIFY,
++					     acpi_memory_device_notify, NULL);
++	/* continue */
++	return AE_OK;
++}
++
++static acpi_status
++acpi_memory_deregister_notify_handler(acpi_handle handle,
++				      u32 level, void *ctxt, void **retv)
++{
++	acpi_status status;
++
++	status = is_memory_device(handle);
++	if (ACPI_FAILURE(status))
++		return AE_OK;	/* continue */
++
++	status = acpi_remove_notify_handler(handle,
++					    ACPI_SYSTEM_NOTIFY,
++					    acpi_memory_device_notify);
++
++	return AE_OK;	/* continue */
++}
 +
 +static const struct acpi_device_id memory_device_ids[] = {
 +	{ACPI_MEMORY_DEVICE_HID, 0},
 +	{"", 0},
 +};
++MODULE_DEVICE_TABLE(acpi, memory_device_ids);
 +
-+struct acpi_driver xen_stub_memory_device_driver = {
-+	/* same name as native memory driver to block native loaded */
++static struct acpi_driver xen_acpi_memory_device_driver = {
 +	.name = "acpi_memhotplug",
 +	.class = ACPI_MEMORY_DEVICE_CLASS,
 +	.ids = memory_device_ids,
++	.ops = {
++		.add = xen_acpi_memory_device_add,
++		.remove = xen_acpi_memory_device_remove,
++		},
 +};
-+EXPORT_SYMBOL_GPL(xen_stub_memory_device_driver);
 +
-+static int __init xen_stub_memory_device_init(void)
++static int __init xen_acpi_memory_device_init(void)
 +{
++	int result;
++	acpi_status status;
++
 +	if (!xen_initial_domain())
 +		return -ENODEV;
 +
-+	/* just reserve space for Xen, block native driver loaded */
-+	return acpi_bus_register_driver(&xen_stub_memory_device_driver);
++	/* unregister the stub which only used to reserve driver space */
++	acpi_bus_unregister_driver(&xen_stub_memory_device_driver);
++
++	result = acpi_bus_register_driver(&xen_acpi_memory_device_driver);
++	if (result < 0)
++		return -ENODEV;
++
++	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
++				     ACPI_UINT32_MAX,
++				     acpi_memory_register_notify_handler,
++				     NULL, NULL, NULL);
++
++	if (ACPI_FAILURE(status)) {
++		pr_warn(PREFIX "walk_namespace failed\n");
++		acpi_bus_unregister_driver(&xen_acpi_memory_device_driver);
++		return -ENODEV;
++	}
++
++	acpi_hotmem_initialized = 1;
++	return 0;
 +}
-+subsys_initcall(xen_stub_memory_device_init);
 +
-+#endif
-diff --git a/include/xen/acpi.h b/include/xen/acpi.h
-index 48a9c01..7366e58 100644
---- a/include/xen/acpi.h
-+++ b/include/xen/acpi.h
-@@ -40,6 +40,12 @@
- #include <xen/xen.h>
- #include <linux/acpi.h>
++static void __exit xen_acpi_memory_device_exit(void)
++{
++	acpi_status status;
++
++	if (!xen_initial_domain())
++		return;
++
++	status = acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
++				     ACPI_UINT32_MAX,
++				     acpi_memory_deregister_notify_handler,
++				     NULL, NULL, NULL);
++	if (ACPI_FAILURE(status))
++		pr_warn(PREFIX "walk_namespace failed\n");
++
++	acpi_bus_unregister_driver(&xen_acpi_memory_device_driver);
++
++	/*
++	 * stub reserve space again to prevent any chance of native
++	 * driver loading, though not much meaning in real life
++	 */
++	acpi_bus_register_driver(&xen_stub_memory_device_driver);
++	return;
++}
++
++module_init(xen_acpi_memory_device_init);
++module_exit(xen_acpi_memory_device_exit);
++ACPI_MODULE_NAME("xen-acpi-memhotplug");
++MODULE_AUTHOR("Liu Jinsong <jinsong.liu@intel.com>");
++MODULE_DESCRIPTION("Xen Hotplug Mem Driver");
++MODULE_LICENSE("GPL");
+diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
+index 5e36932..2c4fb4b 100644
+--- a/include/xen/interface/platform.h
++++ b/include/xen/interface/platform.h
+@@ -324,10 +324,14 @@ struct xenpf_cpu_ol {
+ };
+ DEFINE_GUEST_HANDLE_STRUCT(xenpf_cpu_ol);
  
-+#define ACPI_MEMORY_DEVICE_CLASS        "memory"
-+#define ACPI_MEMORY_DEVICE_HID          "PNP0C80"
-+#define ACPI_MEMORY_DEVICE_NAME         "Hotplug Mem Device"
+-/*
+- * CMD 58 and 59 are reserved for cpu hotadd and memory hotadd,
+- * which are already occupied at Xen hypervisor side.
+- */
++#define XENPF_mem_hotadd	59
++struct xenpf_mem_hotadd {
++	uint64_t spfn;
++	uint64_t epfn;
++	uint32_t pxm;
++	uint32_t flags;
++};
 +
-+extern struct acpi_driver xen_stub_memory_device_driver;
-+
- int xen_acpi_notify_hypervisor_state(u8 sleep_state,
- 				     u32 pm1a_cnt, u32 pm1b_cnd);
- 
+ #define XENPF_core_parking     60
+ struct xenpf_core_parking {
+ 	/* IN variables */
+@@ -357,6 +361,7 @@ struct xen_platform_op {
+ 		struct xenpf_set_processor_pminfo set_pminfo;
+ 		struct xenpf_pcpuinfo          pcpu_info;
+ 		struct xenpf_cpu_ol            cpu_ol;
++		struct xenpf_mem_hotadd        mem_add;
+ 		struct xenpf_core_parking      core_parking;
+ 		uint8_t                        pad[128];
+ 	} u;
 -- 
 1.7.1
