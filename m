@@ -1,94 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932431Ab3AITN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 14:13:29 -0500
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:44834 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932302Ab3AITN2 (ORCPT
+	id S932475Ab3AITPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 14:15:11 -0500
+Received: from nm13-vm0.access.bullet.mail.mud.yahoo.com ([66.94.236.13]:45789
+	"EHLO nm13-vm0.access.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932420Ab3AITPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 14:13:28 -0500
+	Wed, 9 Jan 2013 14:15:09 -0500
+X-Yahoo-Newman-Id: 605639.95625.bm@smtp104.biz.mail.bf1.yahoo.com
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: JRYPvWoVM1khUWwAvSXh5tU2EtwRfHjdWSMkyZGl7pNAaDW
+ FxUfzz.g4lplVhms23cUkS1jn.Qn5nI9R7kZ6MHd.ubN1s6I0WVqyAWkvR.H
+ gW.1gKKxNpUe.PGc0aQnQHta7_WnrmSJ9RqBtjBb7dubHrLruM0pJ6A8bIbW
+ VKdjIB438vYNp0BjSan5m0o0qL8CSfglZV2I7acY15o8bo5JLpHrDuHLKl4H
+ moS2qrxEQMtaXFatZgARvKvhbx3HNBNY7mhCbrcNmez8UBAA5t9V.Jf561xS
+ Bo3EUVf1YYu0BL71Wbg5EH2LUwo.oPnNvX4X9LrGtXG5vmuY_45CTJ3b1..G
+ 3uf3dgYdDunfTCpVnPRFJK80ioA0iojGNR0mMCnwDzJIUE1HAHoAYKKx7aEy
+ xrW73j_0tLKsLPoi2.Sh0UXgmPftANWjxI6Kdas9YTQCwiy4zE0pbmSUAMYd
+ eAj3xi541e1pj8KZLewx.bjr7oFvCKDNwbdcT1hZp.fFbnD.Af3nFrMlPdep
+ q9cQUTeeJ.Y37.MIqm9FOe2IxhdDVDzsgR_c68JjF8Rk-
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <50EDC1C6.5090709@schaufler-ca.com>
+Date: Wed, 09 Jan 2013 11:15:18 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <CAKocOON0PcrqtXKBxK48uQvmRvEKkmhfPHC4F_6HmWvHKN6Qbw@mail.gmail.com>
-References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
-	<8762382z2c.fsf@xmission.com>
-	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
-	<87y5g4z7rp.fsf@xmission.com>
-	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
-	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
-	<20130109004340.GA12234@konrad-lan.dumpdata.com>
-	<87txqruq8p.fsf@xmission.com>
-	<CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
-	<CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
-	<20130109132409.GB18395@phenom.dumpdata.com>
-	<CAE9FiQUznCR6i56AW6jhiCCK-pQxnAquzxUoWWQamoSC8YAZKA@mail.gmail.com>
-	<CAKocOON0PcrqtXKBxK48uQvmRvEKkmhfPHC4F_6HmWvHKN6Qbw@mail.gmail.com>
-Date: Wed, 9 Jan 2013 11:13:26 -0800
-X-Google-Sender-Auth: DEiCA9Zlg1OnYFqNVwE6yuw5m-A
-Message-ID: <CAE9FiQVo_RismQPa_js6NEbhMAAgREUkrzKJtkig8p9GxhZUVQ@mail.gmail.com>
-Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
- enough ram for it
-From: Yinghai Lu <yinghai@kernel.org>
-To: Shuah Khan <shuahkhan@gmail.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+To: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
+CC: james.l.morris@oracle.com, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [PATCH] smack: SMACK_MAGIC to include/uapi/linux/magic.h
+References: <1352398094-1862-1-git-send-email-jarkko.sakkinen@iki.fi>
+In-Reply-To: <1352398094-1862-1-git-send-email-jarkko.sakkinen@iki.fi>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 10:01 AM, Shuah Khan <shuahkhan@gmail.com> wrote:
-> After several revisions, I am loosing track. Could you please write a
-> change log and explain the change to the existing behavior. If you
-> could addresses the following areas, it will be easier figure if we
-> are missing something (if any):
+On 11/8/2012 10:08 AM, Jarkko Sakkinen wrote:
+> SMACK_MAGIC moved to a proper place for easy user space access
+> (i.e. libsmack).
 >
-> 1. What happens when switolb is forced with iommu=soft on a system
-> with and without not enough low mem?
+> Signed-off-by: Jarkko Sakkinen <jarkko.sakkinen@iki.fi>
 
-panic later when device try to map_single with it.
-instead of panic early during swiotlb allocation.
+Applied to git://git.gitorious.org/smack-next/kernel.git#stage-for-3.9
 
-> 2. What happens when swiotlb is not forced, but iommu driver sets
-> swiotlb=1 after it gets done with its iommu initialization on a system
-> with and without enough low mem.
-
-panic later when device try to map_single with it.
-instead of panic early during swiotlb allocation.
-
-> 3. What happens when nopanic is used and when will the system fail?
-> Will it fail when driver runs into errors. I am hoping this won't be a
-> silent failure. Please see more on this below:
-
-according to eric/konrad, I make all use nopanic path,
-and only mips, and x86-xen still panic early when
-swiotlb_init_with_tab is called
-directly.
-
-hope mips, and x86-xen guys could convert to calling swiotlb_init instead.
-
+> ---
+>  include/uapi/linux/magic.h |    1 +
+>  security/smack/smack.h     |    6 +-----
+>  security/smack/smack_lsm.c |    1 -
+>  3 files changed, 2 insertions(+), 6 deletions(-)
 >
-> I did dma mapping error analysis a few months ago and found several
-> drivers that don't check dma mapping errors, don't unmap dma buffers
-> etc. Returning mapping error from switolb could cause problems when we
-> have drivers that don't check mapping errors. These drivers might not
-> fail cleanly either and could cause data corruption.
+> diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
+> index e15192c..12735ad 100644
+> --- a/include/uapi/linux/magic.h
+> +++ b/include/uapi/linux/magic.h
+> @@ -11,6 +11,7 @@
+>  #define DEBUGFS_MAGIC          0x64626720
+>  #define SECURITYFS_MAGIC	0x73636673
+>  #define SELINUX_MAGIC		0xf97cff8c
+> +#define SMACK_MAGIC		0x43415d53	/* "SMAC" */
+>  #define RAMFS_MAGIC		0x858458f6	/* some random number */
+>  #define TMPFS_MAGIC		0x01021994
+>  #define HUGETLBFS_MAGIC 	0x958458f6	/* some random number */
+> diff --git a/security/smack/smack.h b/security/smack/smack.h
+> index 99b3612..e3e7a4f 100644
+> --- a/security/smack/smack.h
+> +++ b/security/smack/smack.h
+> @@ -21,6 +21,7 @@
+>  #include <linux/list.h>
+>  #include <linux/rculist.h>
+>  #include <linux/lsm_audit.h>
+> +#include <linux/magic.h>
+>  
+>  /*
+>   * Smack labels were limited to 23 characters for a long time.
+> @@ -149,11 +150,6 @@ struct smack_known {
+>  #define SMACK_CIPSO_SOCKET	1
+>  
+>  /*
+> - * smackfs magic number
+> - */
+> -#define SMACK_MAGIC	0x43415d53 /* "SMAC" */
+> -
+> -/*
+>   * CIPSO defaults.
+>   */
+>  #define SMACK_CIPSO_DOI_DEFAULT		3	/* Historical */
+> diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+> index 38be92c..6e8fa99 100644
+> --- a/security/smack/smack_lsm.c
+> +++ b/security/smack/smack_lsm.c
+> @@ -32,7 +32,6 @@
+>  #include <linux/pipe_fs_i.h>
+>  #include <net/cipso_ipv4.h>
+>  #include <linux/audit.h>
+> -#include <linux/magic.h>
+>  #include <linux/dcache.h>
+>  #include <linux/personality.h>
+>  #include <linux/msg.h>
 
-Now, we are using panic with them, later after those drivers get fixed, we
-can change to returning MAP_ERROR instead.
-
->
-> Here is a link to the dma mapping error analysis I did:
->
-> http://linuxdriverproject.org/mediawiki/index.php/DMA_Mapping_Error_Analysis
-
-good, looks like need one generic way to fix the problem, like another wrapper?
-
-Thanks
-
-Yinghai
