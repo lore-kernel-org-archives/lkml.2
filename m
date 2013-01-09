@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab3AIPDS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:03:18 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39099 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758014Ab3AIPC6 (ORCPT
+	id S932105Ab3AIPEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:04:49 -0500
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42815 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932073Ab3AIPEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:02:58 -0500
-Message-ID: <50ED868D.7040608@oracle.com>
-Date: Wed, 09 Jan 2013 23:02:37 +0800
-From: annie li <annie.li@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Thunderbird 1.5.0.9 (Windows/20061207)
+	Wed, 9 Jan 2013 10:04:47 -0500
+Date: Wed, 9 Jan 2013 15:04:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Nicolas Pitre <nicolas.pitre@linaro.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arch@vger.kernel.org,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Guenter Roeck <linux@roeck-us.net>,
+        "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: [PATCH] Proposed removal of IS_ERR_OR_NULL() (was: Re: [PATCH 1/4]
+	gpiolib: introduce descriptor-based GPIO interface)
+Message-ID: <20130109150427.GL3931@n2100.arm.linux.org.uk>
+References: <1357629535-26033-1-git-send-email-acourbot@nvidia.com> <201301081259.29839.arnd@arndb.de> <CAAVeFu+4VbCbj9TaeMm+NMDJ9_M4-j4O0ONF7Yh_un63wS38+Q@mail.gmail.com> <201301091035.23206.arnd@arndb.de> <20130109104414.GF3931@n2100.arm.linux.org.uk> <20130109111055.GG3931@n2100.arm.linux.org.uk> <alpine.LFD.2.02.1301090932400.6300@xanadu.home>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Matt Wilson <msw@amazon.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [Xen-devel] [PATCH v2] xen/grant-table: correctly initialize
- grant table version 1
-References: <Message-ID: <1355997710.26722.12.camel@zakaz.uk.xensource.com>	<1357470882-17345-1-git-send-email-msw@amazon.com>	<50ECD89A.50100@oracle.com> <1357732929.7989.250.camel@zakaz.uk.xensource.com>
-In-Reply-To: <1357732929.7989.250.camel@zakaz.uk.xensource.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.02.1301090932400.6300@xanadu.home>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+So, it seems there's some concensus building here, and it seems that
+I've become the chosen victi^wvolunteer for this.  So, here's a patch.
+It's missing a Guns-supplied-by: tag though.
 
+From: Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Mark IS_ERR_OR_NULL() deprecated
 
-On 2013-1-9 20:02, Ian Campbell wrote:
-> On Wed, 2013-01-09 at 02:40 +0000, ANNIE LI wrote:
->   
->>> @@ -1080,18 +1081,18 @@ static void gnttab_request_version(void)
->>>   		panic("we need grant tables version 2, but only version 1 is available");
->>>   	} else {
->>>   		grant_table_version = 1;
->>> +		grefs_per_grant_frame = PAGE_SIZE / sizeof(struct grant_entry_v1);
->>>   		gnttab_interface =&gnttab_v1_ops;
->>>   	}
->>> -	printk(KERN_INFO "Grant tables using version %d layout.\n",
->>> -		grant_table_version);
->>>   }
->>>   
->>>       
->> Is it better to keep printk here? In your last patch, you removed it 
->> because gnttab_request_version and gnttab_resume are all called in 
->> gnttab_init. and gnttab_resume also contains calling of 
->> gnttab_request_version. But in this patch, gnttab_setup is used, and 
->> does not have this issue now.
->>     
->
-> Yes, I think we want to print this at both start of day and resume?
->   
-Right.
-> Either by adding a print to gnttab_resume()
-Only adding a print into gnttab_resume() would miss this print at start 
-of day. In gnttab_init, gnttab_request_version and gnttab_setup are 
-called, not gnttab_resume.
->  or by keeping the existing
-> one here in preference to moving it to gnttab_setup(). I'd prefer the
-> latter to avoid the duplication, unless I'm mistaken and request_version
-> is called in more than those two locations.
->   
-Yes, I'd like the latter. Request_version is only called in those two 
-locations.
+IS_ERR_OR_NULL() attracts a lot of abuse: people use it without much
+thought about it's effects.  Common errors include:
+ 1. checking the returned pointer for functions defined as only
+    returning errno-pointer values, rather than using IS_ERR().
+    This leads to: ptr = foo(); if (IS_ERR_OR_NULL(ptr)) return
+     PTR_ERR(ptr);
+ 2. using it to check functions which only ever return NULL on error,
+    thereby leading to another zero-error value return.
+In the case of debugfs functions, these return errno-pointer values when
+debugfs is configured out, which means code which blindly checks using 
+IS_ERR_OR_NULL() ends up returning errors, which is rather perverse for
+something that's not implemented.
 
-Thanks
-Annie
-> Ian.
->
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xen.org
-> http://lists.xen.org/xen-devel
->   
+Therefore, let's schedule it for removal in a few releases.
+
+Nicolas Pitre comments:
+> I do agree with Russell here.  Despite the original intentions behind
+> IS_ERR_OR_NULL() which were certainly legitimate, the end result in
+> practice is less reliable code with increased maintenance costs.
+> Unlike other convenience macros in the kernel, this one is giving a
+> false sense of correctness with too many people falling in the trap
+> of using it just because it is available.
+> 
+> I strongly think this macro should simply be removed from the source
+> tree entirely and the code reverted to explicit tests against NULL
+> when appropriate.
+
+Suggested-by: David Howells <dhowells@redhat.com>
+Tape-measuring-service-offered-by: Will Deacon <will.deacon@arm.com>
+Victim-for-firing-sqad: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+---
+Ok, so I'm in the firing line for suggesting this, but it appears
+several people wish this to happen.
+
+I'm not intending to push this patch forwards _just_ yet: we need to
+sort out the existing users _first_ to prevent the kernel turning into
+one hell of a mess of warnings.
+
+ include/linux/err.h |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/err.h b/include/linux/err.h
+index f2edce2..d5a85df 100644
+--- a/include/linux/err.h
++++ b/include/linux/err.h
+@@ -34,7 +34,22 @@ static inline long __must_check IS_ERR(const void *ptr)
+ 	return IS_ERR_VALUE((unsigned long)ptr);
+ }
+ 
+-static inline long __must_check IS_ERR_OR_NULL(const void *ptr)
++/*
++ * IS_ERR_OR_NULL() attracts a lot of abuse: people use it without much
++ * thought about it's effects.  Common errors include:
++ *  1. checking the returned pointer for functions defined as only returning
++ *     errno-pointer values, rather than using IS_ERR().
++ *     This leads to: ptr = foo(); if (IS_ERR_OR_NULL(ptr)) return PTR_ERR(ptr);
++ *  2. using it to check functions which only ever return NULL on error,
++ *     thereby leading to another zero-error value return.
++ * In the case of debugfs functions, these return errno-pointer values when
++ * debugfs is configured out, which means code which blindly checks using
++ * IS_ERR_OR_NULL() ends up returning errors, which is rather perverse for
++ * something that's not implemented.
++ *
++ * Therefore, let's schedule it for removal in a few releases.
++ */
++static inline long __must_check __deprecated IS_ERR_OR_NULL(const void *ptr)
+ {
+ 	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+ }
+
