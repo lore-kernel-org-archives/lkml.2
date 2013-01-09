@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933206Ab3AIUiM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:38:12 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41943 "EHLO mail.kernel.org"
+	id S933223Ab3AIUiQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:38:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41980 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933057Ab3AIUiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:38:09 -0500
+	id S933057Ab3AIUiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:12 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Dan Williams <dcbw@redhat.com>,
-        =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 026/123] qmi_wwan/cdc_ether: add Dell Wireless 5800 (Novatel E362) USB IDs
-Date: Wed,  9 Jan 2013 12:34:25 -0800
-Message-Id: <20130109201501.877415123@linuxfoundation.org>
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 027/123] rtlwifi: fix incorrect use of usb_alloc_coherent with usb_control_msg
+Date: Wed,  9 Jan 2013 12:34:26 -0800
+Message-Id: <20130109201501.990969304@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,73 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Williams <dcbw@redhat.com>
+From: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
 
-commit 0370acd4d4d2595a11b0b0a793acb506e19b9d4c upstream.
+commit 4c3de5920c486b8eefa6187ee6a181864c161100 upstream.
 
-Signed-off-by: Dan Williams <dcbw@redhat.com>
-Acked-by: Bjørn Mork <bjorn@mork.no>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Incorrect use of usb_alloc_coherent memory as input buffer to usb_control_msg
+can cause problems in arch DMA code, for example kernel BUG at
+'arch/arm/include/asm/dma-mapping.h:321' on ARM (linux-3.4).
+
+Change _usb_writeN_sync use kmalloc'd buffer instead.
+
+Signed-off-by: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/cdc_ether.c |   15 +++++++++++++++
- drivers/net/usb/qmi_wwan.c  |   14 ++++++++++++++
- 2 files changed, 29 insertions(+)
+ drivers/net/wireless/rtlwifi/usb.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
---- a/drivers/net/usb/cdc_ether.c
-+++ b/drivers/net/usb/cdc_ether.c
-@@ -487,6 +487,7 @@ static const struct driver_info wwan_inf
- #define HUAWEI_VENDOR_ID	0x12D1
- #define NOVATEL_VENDOR_ID	0x1410
- #define ZTE_VENDOR_ID		0x19D2
-+#define DELL_VENDOR_ID		0x413C
+--- a/drivers/net/wireless/rtlwifi/usb.c
++++ b/drivers/net/wireless/rtlwifi/usb.c
+@@ -210,17 +210,16 @@ static void _usb_writeN_sync(struct rtl_
+ 	u16 index = REALTEK_USB_VENQT_CMD_IDX;
+ 	int pipe = usb_sndctrlpipe(udev, 0); /* write_out */
+ 	u8 *buffer;
+-	dma_addr_t dma_addr;
  
- static const struct usb_device_id	products [] = {
- /*
-@@ -618,6 +619,20 @@ static const struct usb_device_id	produc
- 	.driver_info = 0,
- },
+-	wvalue = (u16)(addr&0x0000ffff);
+-	buffer = usb_alloc_coherent(udev, (size_t)len, GFP_ATOMIC, &dma_addr);
++	wvalue = (u16)(addr & 0x0000ffff);
++	buffer = kmalloc(len, GFP_ATOMIC);
+ 	if (!buffer)
+ 		return;
+ 	memcpy(buffer, data, len);
+ 	usb_control_msg(udev, pipe, request, reqtype, wvalue,
+ 			index, buffer, len, 50);
  
-+/* Dell Wireless 5800 (Novatel E362) - handled by qmi_wwan */
-+{
-+	USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, 0x8195, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = 0,
-+},
-+
-+/* Dell Wireless 5800 (Novatel E362) - handled by qmi_wwan */
-+{
-+	USB_DEVICE_AND_INTERFACE_INFO(DELL_VENDOR_ID, 0x8196, USB_CLASS_COMM,
-+			USB_CDC_SUBCLASS_ETHERNET, USB_CDC_PROTO_NONE),
-+	.driver_info = 0,
-+},
-+
- /*
-  * WHITELIST!!!
-  *
---- a/drivers/net/usb/qmi_wwan.c
-+++ b/drivers/net/usb/qmi_wwan.c
-@@ -383,6 +383,20 @@ static const struct usb_device_id produc
- 		                              USB_CDC_PROTO_NONE),
- 		.driver_info        = (unsigned long)&qmi_wwan_info,
- 	},
-+	{	/* Dell Wireless 5800 (Novatel E362) */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x413C, 0x8195,
-+					      USB_CLASS_COMM,
-+					      USB_CDC_SUBCLASS_ETHERNET,
-+					      USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
-+	{	/* Dell Wireless 5800 V2 (Novatel E362) */
-+		USB_DEVICE_AND_INTERFACE_INFO(0x413C, 0x8196,
-+					      USB_CLASS_COMM,
-+					      USB_CDC_SUBCLASS_ETHERNET,
-+					      USB_CDC_PROTO_NONE),
-+		.driver_info        = (unsigned long)&qmi_wwan_info,
-+	},
+-	usb_free_coherent(udev, (size_t)len, buffer, dma_addr);
++	kfree(buffer);
+ }
  
- 	/* 3. Combined interface devices matching on interface number */
- 	{QMI_FIXED_INTF(0x12d1, 0x140c, 1)},	/* Huawei E173 */
+ static void _rtl_usb_io_handler_init(struct device *dev,
 
 
