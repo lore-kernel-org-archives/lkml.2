@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933981Ab3AIUlA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:00 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43738 "EHLO mail.kernel.org"
+	id S934019Ab3AIU4B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:56:01 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43754 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933376Ab3AIUk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:40:57 -0500
+	id S933780Ab3AIUk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [ 089/123] sctp: jsctp_sf_eat_sack: fix jprobes function signature mismatch
-Date: Wed,  9 Jan 2013 12:35:28 -0800
-Message-Id: <20130109201510.038418844@linuxfoundation.org>
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [ 098/123] ARM: 7607/1: realview: fix private peripheral memory base for EB rev. B boards
+Date: Wed,  9 Jan 2013 12:35:37 -0800
+Message-Id: <20130109201511.175155296@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -27,38 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Will Deacon <will.deacon@arm.com>
 
-From: Daniel Borkmann <dborkman@redhat.com>
+commit e6ee4b2b57a8e0d8e551031173de080b338d3969 upstream.
 
-[ Upstream commit 4cb9d6eaf85ecdd266a9a5c6d825c56ca9eefc14 ]
+Commit 34ae6c96a6a7 ("ARM: 7298/1: realview: fix mapping of MPCore
+private memory region") accidentally broke the definition for the base
+address of the private peripheral region on revision B Realview-EB
+boards.
 
-Commit 24cb81a6a (sctp: Push struct net down into all of the
-state machine functions) introduced the net structure into all
-state machine functions, but jsctp_sf_eat_sack was not updated,
-hence when SCTP association probing is enabled in the kernel,
-any simple SCTP client/server program from userspace will panic
-the kernel.
+This patch uses the correct address for REALVIEW_EB11MP_PRIV_MEM_BASE.
 
-Cc: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
+Tested-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/probe.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/sctp/probe.c
-+++ b/net/sctp/probe.c
-@@ -122,7 +122,8 @@ static const struct file_operations sctp
- 	.llseek = noop_llseek,
- };
+---
+ arch/arm/mach-realview/include/mach/board-eb.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/arm/mach-realview/include/mach/board-eb.h
++++ b/arch/arm/mach-realview/include/mach/board-eb.h
+@@ -47,7 +47,7 @@
+ #define REALVIEW_EB_USB_BASE		0x4F000000	/* USB */
  
--sctp_disposition_t jsctp_sf_eat_sack(const struct sctp_endpoint *ep,
-+sctp_disposition_t jsctp_sf_eat_sack(struct net *net,
-+				     const struct sctp_endpoint *ep,
- 				     const struct sctp_association *asoc,
- 				     const sctp_subtype_t type,
- 				     void *arg,
+ #ifdef CONFIG_REALVIEW_EB_ARM11MP_REVB
+-#define REALVIEW_EB11MP_PRIV_MEM_BASE	0x1F000000
++#define REALVIEW_EB11MP_PRIV_MEM_BASE	0x10100000
+ #define REALVIEW_EB11MP_L220_BASE	0x10102000	/* L220 registers */
+ #define REALVIEW_EB11MP_SYS_PLD_CTRL1	0xD8		/* Register offset for MPCore sysctl */
+ #else
 
 
