@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757179Ab3AIEjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 23:39:52 -0500
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35697 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376Ab3AIEju (ORCPT
+	id S1751592Ab3AIFPz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 00:15:55 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:45680 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811Ab3AIFPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 23:39:50 -0500
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <50ECF467.2040008@jp.fujitsu.com>
-Date: Wed, 09 Jan 2013 13:39:03 +0900
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Wed, 9 Jan 2013 00:15:53 -0500
+Date: Tue, 8 Jan 2013 21:15:47 -0800 (PST)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+cc: Sha Zhengju <handai.szj@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
+        gthelen@google.com, fengguang.wu@intel.com, glommer@parallels.com,
+        dchinner@redhat.com, Sha Zhengju <handai.szj@taobao.com>
+Subject: Re: [PATCH V3 4/8] memcg: add per cgroup dirty pages accounting
+In-Reply-To: <50EA7E07.4070902@jp.fujitsu.com>
+Message-ID: <alpine.LNX.2.00.1301082030100.5319@eggly.anvils>
+References: <1356455919-14445-1-git-send-email-handai.szj@taobao.com> <1356456367-14660-1-git-send-email-handai.szj@taobao.com> <20130102104421.GC22160@dhcp22.suse.cz> <CAFj3OHXKyMO3gwghiBAmbowvqko-JqLtKroX2kzin1rk=q9tZg@mail.gmail.com>
+ <alpine.LNX.2.00.1301061135400.29149@eggly.anvils> <50EA7E07.4070902@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: trenn@suse.de
-CC: yinghai@kernel.org, muneda.takahiro@jp.fujitsu.com,
-        linux-pci@vger.kernel.org, x86@kernel.org,
-        linux-kernel@vger.kernel.org, andi@firstfloor.org,
-        tokunaga.keiich@jp.fujitsu.com, kexec@lists.infradead.org,
-        hbabu@us.ibm.com, mingo@redhat.com, ddutile@redhat.com,
-        vgoyal@redhat.com, ishii.hironobu@jp.fujitsu.com, hpa@zytor.com,
-        bhelgaas@google.com, tglx@linutronix.de, khalid@gonehiking.org
-Subject: Re: [PATCH v7 0/5] Reset PCIe devices to address DMA problem on kdump
- with iommu
-References: <20121127004144.3604.61708.sendpatchset@tindoh.g01.fujitsu.local> <201301081750.07296.trenn@suse.de> <CAE9FiQXUCtfeKuZVb1=13SL-UUu5hkNE3Q3K8MTZA2ap1qDCAg@mail.gmail.com> <3564889.4S6qWWRR6X@hammer82.arch.suse.de>
-In-Reply-To: <3564889.4S6qWWRR6X@hammer82.arch.suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Mon, 7 Jan 2013, Kamezawa Hiroyuki wrote:
+> (2013/01/07 5:02), Hugh Dickins wrote:
+> > 
+> > Forgive me, I must confess I'm no more than skimming this thread,
+> > and don't like dumping unsigned-off patches on people; but thought
+> > that on balance it might be more helpful than not if I offer you a
+> > patch I worked on around 3.6-rc2 (but have updated to 3.8-rc2 below).
+> > 
+> > I too was getting depressed by the constraints imposed by
+> > mem_cgroup_{begin,end}_update_page_stat (good job though Kamezawa-san
+> > did to minimize them), and wanted to replace by something freer, more
+> > RCU-like.  In the end it seemed more effort than it was worth to go
+> > as far as I wanted, but I do think that this is some improvement over
+> > what we currently have, and should deal with your recursion issue.
+> > 
+> In what case does this improve performance ?
 
-(2013/01/09 11:32), Thomas Renninger wrote:
-> On Tuesday, January 08, 2013 09:27:55 AM Yinghai Lu wrote:
->> On Tue, Jan 8, 2013 at 8:50 AM, Thomas Renninger <trenn@suse.de> wrote:
->>> megaraid_sas
->>
->> can you check if your initrd for kdump kernel has that driver and
->> module that it depends on like
->> scsi sas transport etc ?
->
-> Removing the 5 patches and the disk works and the
-> dump is written.
->
-> I can look a bit further at the memmap=exactmap issue tomorrow.
-> I can also double check above then, but I am rather sure about it
-> already:
-> I tried plain vanilla -> worked, dumping started
+Perhaps none.  I was aiming to not degrade performance at the stats
+update end, and make it more flexible, so new stats can be updated which
+would be problematic today (for lock ordering and recursion reasons).
 
-It seems that there are several disk controllers in your system.
+I've not done any performance measurement on it, and don't have enough
+cpus for an interesting report; but if someone thinks it might solve a
+problem for them, and has plenty of cpus to test with, please go ahead,
+we'd be glad to hear the results.
 
-00:1f.2 SATA controller [0106]: Intel Corporation Device [8086:1d02] (rev 05)
-02:00.0 RAID bus controller [0104]: LSI Logic / Symbios Logic Device [1000:005b] (rev 01)
-05:00.0 Serial Attached SCSI controller [0107]: LSI Logic / Symbios Logic SAS2116 PCI-Express Fusion-MPT SAS-2 [Meteor] [1000:0064] (rev 02)
+> Hi, this patch seems interesting but...doesn't this make move_account() very
+> slow if the number of cpus increases because of scanning all cpus per a page
+> ?
+> And this looks like reader-can-block-writer percpu rwlock..it's too heavy to
+> writers if there are many readers.
 
-Which disk are you using to save the vmcore?
+I was happy to make the relatively rare move_account end considerably
+heavier.  I'll be disappointed if it turns out to be prohibitively
+heavy at that end - if we're going to make move_account impossible,
+there are much easier ways to achieve that! - but it is a possibility.
 
+Something you might have missed when considering many readers (stats
+updaters): the move_account end does not wait for a moment when there
+are no readers, that would indeed be a losing strategy; it just waits
+for each cpu that's updating page stats to leave that section, so every
+cpu is sure to notice and hold off if it then tries to update the page
+which is to be moved.  (I may not be explaining that very well!)
 
-> I tried with only these 5 patches added -> no disk.
->
->
-> Some questions:
->
-> You try to initialize the PCI subsystem in a way the BIOS typically has
-> to do it in kexec case?
-
-These patches sends hot reset to endpoints to reset them, it may be
-different way from BIOS initialization.
-
-> Reacting and trying to handle error condtitions more gracefully
-> at the place where they are caught could be another approach which
-> imo makes sense to implement in parallel.
->
-> In my case for example I see:
-> "Present field in the IRTE entry is clear"
-> DMAR errors. I expect this comes from a device which still throws
-> interrupts, but irq vector got not set-up or registered in the kexec'ed
-> kernel.
->
-> I could imagine this is the same error which happens when an irq is
-> wrongly configured and spurious interrupts happen (but in irq remapped case).
-> In my case it's not sever as I only see this message once, but according
-> to another report, they see about 80 of such DMAR error messages per
-> second. This seem to result in endless DMAR error interrupts and finally
-> a dead system.
->
-> I wonder whether the DMAR error handler could already invoke a PCIe
-> reset.
-> I found:
-> int pci_set_pcie_reset_state(struct pci_dev *dev, enum pcie_reset_state state)
-> which unfortunatly is only implemented for PPC, but would it make sense to
-> implement this one and trigger function level reset if several specific DMAR
-> errors are seen (or other PCI(e) error handlers get active?)?
-
-Or AER framework may be able to handle this. Actually it has a function
-to reset endpoint when error is detected.
-
-Thanks,
-Takao Indoh
-
->
-> If this does not help the next step could be to stop DMAR error interrupt
-> handling or other iommu commands to keep the machine alive, even if one
-> device keeps firing interrupts to an unconfigured irq vector (or whatever other
-> things could happen).
->
-> Just some ideas...
-> Comments appreciated.
->
->     Thomas
->
->
-
+Hugh
