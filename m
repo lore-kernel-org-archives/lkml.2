@@ -1,367 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757813Ab3AINPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 08:15:21 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46143 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757476Ab3AINPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 08:15:20 -0500
-Date: Wed, 9 Jan 2013 13:15:15 +0000
-From: Mel Gorman <mgorman@suse.de>
-To: Hugh Dickins <hughd@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] mm: migrate: Check page_count of THP before migrating
-Message-ID: <20130109131515.GC13304@suse.de>
-References: <20130107170815.GO3885@suse.de>
- <alpine.LNX.2.00.1301081931530.20504@eggly.anvils>
+	id S1757798Ab3AINYw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 08:24:52 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:39059 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757651Ab3AINYv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 08:24:51 -0500
+Date: Wed, 9 Jan 2013 08:24:09 -0500
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Shuah Khan <shuahkhan@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not
+ enough ram for it
+Message-ID: <20130109132409.GB18395@phenom.dumpdata.com>
+References: <CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
+ <8762382z2c.fsf@xmission.com>
+ <CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
+ <87y5g4z7rp.fsf@xmission.com>
+ <CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
+ <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+ <20130109004340.GA12234@konrad-lan.dumpdata.com>
+ <87txqruq8p.fsf@xmission.com>
+ <CAE9FiQVgMK=CK5BvfOkGF3Pp4kOqBEg2mxX2zDuhW8zZXSVXzg@mail.gmail.com>
+ <CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1301081931530.20504@eggly.anvils>
+In-Reply-To: <CAE9FiQVomDtc0P9B7aTDBrm7kC+i=GYokBmT54w-VBwZsafb5g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 08, 2013 at 08:17:59PM -0800, Hugh Dickins wrote:
-> On Mon, 7 Jan 2013, Mel Gorman wrote:
+On Tue, Jan 08, 2013 at 05:12:02PM -0800, Yinghai Lu wrote:
+> On Tue, Jan 8, 2013 at 5:07 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Tue, Jan 8, 2013 at 4:58 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+> >
+> >>
+> >> So instead we need to say?
+> >>
+> >> +       if (no_iotlb_memory)
+> >> +               panic("Cannot allocate SWIOTLB buffer");
+> >> +
+> >>
+> >> Which is just making the panic a little later than it used to be and
+> >> seems completely reasonable.
+> >
+> > yes, looks some driver just use map_single without checking results.
 > 
-> > Hugh Dickins pointed out that migrate_misplaced_transhuge_page() does not
-> > check page_count before migrating like base page migration and khugepage. He
-> > could not see why this was safe and he is right.
-> > 
-> > The potential impact of the bug is avoided due to the limitations of NUMA
-> > balancing.  The page_mapcount() check ensures that only a single address
-> > space is using this page and as THPs are typically private it should not be
-> > possible for another address space to fault it in parallel. If the address
-> > space has one associated task then it's difficult to have both a GUP pin
-> > and be referencing the page at the same time. If there are multiple tasks
-> > then a buggy scenario requires that another thread be accessing the page
-> > while the direct IO is in flight. This is dodgy behaviour as there is
-> > a possibility of corruption with or without THP migration. It would be
-> > difficult to identify the corruption as being a migration bug.
-> > 
-> > While we happen to be safe for the most part it is shoddy to depend on
-> > such "safety" so this patch checks the page count similar to anonymous
-> > pages. Note that this does not mean that the page_mapcount() check can go
-> > away. If we were to remove the page_mapcount() check the the THP would
-> > have to be unmapped from all referencing PTEs, replaced with migration
-> > PTEs and restored properly afterwards.
-> > 
-> > Reported-by: Hugh Dickins <hughd@google.com>
-> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> update one.
+
+Please make it inline.
+
+Anyhow, comments:
+
+> Subject: [PATCH] x86: Don't panic if can not alloc buffer for swiotlb
 > 
-> Sorry, Mel, it's a NAK:
+> Normal boot path on system with iommu support:
+> swiotlb buffer will be allocated early at first and then try to initialize
+> iommu, if iommu for intel or amd could setup properly, swiotlb buffer
 
-Don't be sorry. It's not your fault I am a muppet.
-
-> you will have expected an ack from me two weeks
-> or more ago; but somehow I had an intuition that if I sat on it for
-> long enough, a worm would crawl out.  Got down to looking again today,
-> and I notice that although the putback_lru_page() is right,
-> NR_ISOLATED_ANON is not restored on this path, so that would leak.
+Intel or AMD
+> will be freed.
 > 
-> I expect you'll want to do something like:
-> 	if (isolated) {
-> 		putback_lru_page(page);
-> 		isolated = 0;
-> 		goto out;
-> 	}
-> and that may be the appropriate fix right now.
+> The early allocating is with bootmem, and could panic when we try to use
+> kdump with buffer above 4G only, or with memmap to limit mem under 4G.
+
+Can you provide the memmap example in here, please.
+
 > 
-
-Yes, I sent what should be a correction so we can treat this cleanup as
-a potential replacemet for it.
-
-> But I do still dislike the way you always put_page in
-> numamigrate_isolate_page():
-
-At one point there was a conditional put_page depending on different
-failures and it was a very difficult to follow. This was easier to
-follow but could still be improved.
-
-> it makes sense in the case when
-> isolate_lru_page() succeeds (I've long thought that weird both to
-> insist on an existing page reference and add one of its own), but
-> I find it very confusing on the failure paths, to have the put_page
-> far away from the unlock_page - and I get worried when I see put_page
-> followed by unlock_page rather than vice versa (it happens on !pmd_same
-> paths: if the pmd is not the same, then can we be sure that the put_page
-> does not free the page?)
+> According to Eric, add _nopanic version and no_iotlb_memory to fail
+> map single later if swiotlb is still needed.
 > 
-
-I'm depending on the page table reference to prevent the put_page()
-freeing the page. As mmap_sem is held, there cannot be an munmap()
-freeing it. As we hold the page lock there cannot be a parallel reclaim
-as trylock_page() in shrink_page_list() will fail.
-
-> At the bottom I've put my own cleanup for this, which simplifies by
-> doing the putback_lru_page() inside numamigrate_isolate_page(), and
-> doesn't put_page when it doesn't isolate.
+> -v2: don't pass nopanic, and use -ENOMEM return value according to Eric.
+>      panic early instead of using swiotlb_full to panic...according to Eric/Konrad.
 > 
-> I think the only functional difference from yours (aside from fixing
-> up NR_ISOLATED) is that migrate_misplaced_transhuge_page() doesn't
-> have to pretend to its caller that it succeeded when actually it
-> failed at the last hurdle (because it already did the unlock_page,
-> which in yours the caller expects to do on failure).  Oh, and I'm
-> not holding page lock (sometimes) at clear_pmdnuma: I didn't see
-> the reason for that, perhaps I'm missing something important there.
+> Suggested-by: Eric W. Biederman <ebiederm@xmission.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Cc: Joerg Roedel <joro@8bytes.org>
 > 
-> Maybe our tastes differ, and you won't see mine as an improvement.
-> And I've hardly tested, so haven't signed off, and won't be
-> surprised if its own worms crawl out.
-> 
-> <SNIP>
->
-> Not-signed-off-by: Hugh Dickins <hughd@google.com>
 > ---
+>  arch/x86/kernel/pci-swiotlb.c |    2 -
+>  include/linux/swiotlb.h       |    1 
+>  lib/swiotlb.c                 |   54 +++++++++++++++++++++++++++++++++++-------
+>  3 files changed, 47 insertions(+), 10 deletions(-)
 > 
->  mm/huge_memory.c |   28 +++++----------
->  mm/migrate.c     |   79 ++++++++++++++++++++++-----------------------
->  2 files changed, 48 insertions(+), 59 deletions(-)
-> 
-> --- 3.8-rc2/mm/huge_memory.c	2012-12-22 09:43:27.616015582 -0800
-> +++ linux/mm/huge_memory.c	2013-01-08 17:39:06.340407864 -0800
-> @@ -1298,7 +1298,6 @@ int do_huge_pmd_numa_page(struct mm_stru
->  	int target_nid;
->  	int current_nid = -1;
->  	bool migrated;
-> -	bool page_locked = false;
+> Index: linux-2.6/include/linux/swiotlb.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/swiotlb.h
+> +++ linux-2.6/include/linux/swiotlb.h
+> @@ -22,6 +22,7 @@ extern int swiotlb_force;
+>   */
+>  #define IO_TLB_SHIFT 11
 >  
->  	spin_lock(&mm->page_table_lock);
->  	if (unlikely(!pmd_same(pmd, *pmdp)))
-> @@ -1320,7 +1319,6 @@ int do_huge_pmd_numa_page(struct mm_stru
->  	/* Acquire the page lock to serialise THP migrations */
->  	spin_unlock(&mm->page_table_lock);
->  	lock_page(page);
-> -	page_locked = true;
->  
->  	/* Confirm the PTE did not while locked */
->  	spin_lock(&mm->page_table_lock);
-> @@ -1333,34 +1331,26 @@ int do_huge_pmd_numa_page(struct mm_stru
->  
->  	/* Migrate the THP to the requested node */
->  	migrated = migrate_misplaced_transhuge_page(mm, vma,
-> -				pmdp, pmd, addr,
-> -				page, target_nid);
-> -	if (migrated)
-> -		current_nid = target_nid;
-> -	else {
-> -		spin_lock(&mm->page_table_lock);
-> -		if (unlikely(!pmd_same(pmd, *pmdp))) {
-> -			unlock_page(page);
-> -			goto out_unlock;
-> -		}
-> -		goto clear_pmdnuma;
-> -	}
-> +				pmdp, pmd, addr, page, target_nid);
-> +	if (!migrated)
-> +		goto check_same;
->  
-> -	task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
-> +	task_numa_fault(target_nid, HPAGE_PMD_NR, true);
->  	return 0;
->  
+> +void swiotlb_init_nopanic(int verbose);
 
-Ok.
+No need for that, lets just use the swiotlb_init version.
 
-> +check_same:
-> +	spin_lock(&mm->page_table_lock);
-> +	if (unlikely(!pmd_same(pmd, *pmdp)))
-> +		goto out_unlock;
-
-Ok.
-
->  clear_pmdnuma:
->  	pmd = pmd_mknonnuma(pmd);
->  	set_pmd_at(mm, haddr, pmdp, pmd);
->  	VM_BUG_ON(pmd_numa(*pmdp));
->  	update_mmu_cache_pmd(vma, addr, pmdp);
-> -	if (page_locked)
-> -		unlock_page(page);
-> -
-
-This is ok too. The lock page is to prevent the page being reclaimed in
-parallel during migration. In the two cases you end up in clear_pmdnuma
-the page table lock is taken and you've done a pmd_same check and the page
-lock is not necessary.
-
->  out_unlock:
->  	spin_unlock(&mm->page_table_lock);
->  	if (current_nid != -1)
-> -		task_numa_fault(current_nid, HPAGE_PMD_NR, migrated);
-> +		task_numa_fault(current_nid, HPAGE_PMD_NR, false);
->  	return 0;
+>  extern void swiotlb_init(int verbose);
+>  extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
+>  extern unsigned long swiotlb_nr_tbl(void);
+> Index: linux-2.6/lib/swiotlb.c
+> ===================================================================
+> --- linux-2.6.orig/lib/swiotlb.c
+> +++ linux-2.6/lib/swiotlb.c
+> @@ -122,11 +122,18 @@ static dma_addr_t swiotlb_virt_to_bus(st
+>  	return phys_to_dma(hwdev, virt_to_phys(address));
 >  }
 >  
-> --- 3.8-rc2/mm/migrate.c	2012-12-22 09:43:27.636015582 -0800
-> +++ linux/mm/migrate.c	2013-01-08 18:17:02.664144777 -0800
-> @@ -1555,39 +1555,38 @@ bool numamigrate_update_ratelimit(pg_dat
->  
->  int numamigrate_isolate_page(pg_data_t *pgdat, struct page *page)
+> +static bool no_iotlb_memory;
+> +
+>  void swiotlb_print_info(void)
 >  {
-> -	int ret = 0;
-> +	int page_lru;
+>  	unsigned long bytes = io_tlb_nslabs << IO_TLB_SHIFT;
+>  	unsigned char *vstart, *vend;
 >  
->  	/* Avoid migrating to a node that is nearly full */
-> -	if (migrate_balanced_pgdat(pgdat, 1)) {
-> -		int page_lru;
-> +	if (!migrate_balanced_pgdat(pgdat, 1))
-> +		return 0;
->  
-> -		if (isolate_lru_page(page)) {
-> -			put_page(page);
-> -			return 0;
-> -		}
-> -
-> -		/* Page is isolated */
-> -		ret = 1;
-> -		page_lru = page_is_file_cache(page);
-> -		if (!PageTransHuge(page))
-> -			inc_zone_page_state(page, NR_ISOLATED_ANON + page_lru);
-> -		else
-> -			mod_zone_page_state(page_zone(page),
-> -					NR_ISOLATED_ANON + page_lru,
-> -					HPAGE_PMD_NR);
-> +	if (isolate_lru_page(page))
-> +		return 0;
-> +
-> +	/*
-> +	 * migrate_misplaced_transhuge_page() skips page migration's usual
-> +	 * check on page_count(), so we must do it here, now that the page
-> +	 * has been isolated: a GUP pin, or any other pin, prevents migration.
-> +	 * The expected page count is 3: 1 for page's mapcount and 1 for the
-> +	 * caller's pin and 1 for the reference taken by isolate_lru_page().
-> +	 */
-> +	if (PageTransHuge(page) && page_count(page) != 3) {
-> +		putback_lru_page(page);
-> +		return 0;
->  	}
->  
+> +	if (no_iotlb_memory) {
+> +		printk(KERN_INFO "software IO TLB: No low mem\n");
 
-Ok so you putback the page before the isolated count is updated. Makes
-sense.
+KERN_ERROR or KERN_WARN
 
-> +	page_lru = page_is_file_cache(page);
-> +	mod_zone_page_state(page_zone(page), NR_ISOLATED_ANON + page_lru,
-> +				hpage_nr_pages(page));
+> +		return;
+> +	}
 > +
+>  	vstart = phys_to_virt(io_tlb_start);
+>  	vend = phys_to_virt(io_tlb_end);
+>  
+> @@ -136,7 +143,8 @@ void swiotlb_print_info(void)
+>  	       bytes >> 20, vstart, vend - 1);
+>  }
+>  
+> -void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+> +static int __init __swiotlb_init_with_tbl(char *tlb, unsigned long nslabs,
+> +				 int verbose)
+
+Collapse it in. Meaning make swiotlb_init_with_tbl return an int. This will
+require altering the Xen version of Xen-SWIOTLB but that should be fairly easy.
+
+
+>  {
+>  	void *v_overflow_buffer;
+>  	unsigned long i, bytes;
+> @@ -150,9 +158,10 @@ void __init swiotlb_init_with_tbl(char *
 >  	/*
-> -	 * Page is either isolated or there is not enough space on the target
-> -	 * node. If isolated, then it has taken a reference count and the
-> -	 * callers reference can be safely dropped without the page
-> -	 * disappearing underneath us during migration. Otherwise the page is
-> -	 * not to be migrated but the callers reference should still be
-> -	 * dropped so it does not leak.
-> +	 * Isolating the page has taken another reference, so the
-> +	 * caller's reference can be safely dropped without the page
-> +	 * disappearing underneath us during migration.
+>  	 * Get the overflow emergency buffer
 >  	 */
->  	put_page(page);
-> -
-> -	return ret;
-> +	return 1;
+> -	v_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+> +	v_overflow_buffer = alloc_bootmem_low_pages_nopanic(
+> +						PAGE_ALIGN(io_tlb_overflow));
+>  	if (!v_overflow_buffer)
+> -		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+> +		return -ENOMEM;
+>  
+>  	io_tlb_overflow_buffer = __pa(v_overflow_buffer);
+>  
+> @@ -169,14 +178,22 @@ void __init swiotlb_init_with_tbl(char *
+>  
+>  	if (verbose)
+>  		swiotlb_print_info();
+> +
+> +	return 0;
+> +}
+> +
+> +void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
+> +{
+> +	if (__swiotlb_init_with_tbl(tlb, nslabs, verbose) == -ENOMEM)
+> +		panic("Cannot allocate SWIOTLB buffer");
+
+And that way we can get rid of this.
+
 >  }
 >  
 >  /*
-> @@ -1598,7 +1597,7 @@ int numamigrate_isolate_page(pg_data_t *
->  int migrate_misplaced_page(struct page *page, int node)
+>   * Statically reserve bounce buffer space and initialize bounce buffer data
+>   * structures for the software IO TLB used to implement the DMA API.
+>   */
+> -static void __init
+> -swiotlb_init_with_default_size(size_t default_size, int verbose)
+> +static  __init
+> +int swiotlb_init_with_default_size(size_t default_size, int verbose)
 >  {
->  	pg_data_t *pgdat = NODE_DATA(node);
-> -	int isolated = 0;
-> +	int isolated;
->  	int nr_remaining;
->  	LIST_HEAD(migratepages);
->  
-> @@ -1606,20 +1605,16 @@ int migrate_misplaced_page(struct page *
->  	 * Don't migrate pages that are mapped in multiple processes.
->  	 * TODO: Handle false sharing detection instead of this hammer
->  	 */
-> -	if (page_mapcount(page) != 1) {
-> -		put_page(page);
-> +	if (page_mapcount(page) != 1)
->  		goto out;
-> -	}
->  
+>  	unsigned char *vstart;
+>  	unsigned long bytes;
+> @@ -191,17 +208,33 @@ swiotlb_init_with_default_size(size_t de
 >  	/*
->  	 * Rate-limit the amount of data that is being migrated to a node.
->  	 * Optimal placement is no good if the memory bus is saturated and
->  	 * all the time is being spent migrating!
+>  	 * Get IO TLB memory from the low pages
 >  	 */
-> -	if (numamigrate_update_ratelimit(pgdat, 1)) {
-> -		put_page(page);
-> +	if (numamigrate_update_ratelimit(pgdat, 1))
->  		goto out;
-> -	}
+> -	vstart = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+> +	vstart = alloc_bootmem_low_pages_nopanic(PAGE_ALIGN(bytes));
+>  	if (!vstart)
+> -		panic("Cannot allocate SWIOTLB buffer");
+> +		return -ENOMEM;
 >  
->  	isolated = numamigrate_isolate_page(pgdat, page);
->  	if (!isolated)
-> @@ -1636,8 +1631,11 @@ int migrate_misplaced_page(struct page *
->  	} else
->  		count_vm_numa_event(NUMA_PAGE_MIGRATE);
->  	BUG_ON(!list_empty(&migratepages));
-> -out:
->  	return isolated;
+> -	swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose);
+> +	if (__swiotlb_init_with_tbl(vstart, io_tlb_nslabs, verbose) == -ENOMEM) {
+> +		free_bootmem(io_tlb_start,
+> +				     PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+> +		return -ENOMEM;
+> +	}
 > +
-> +out:
-> +	put_page(page);
 > +	return 0;
->  }
-
-Ok.
-
->  #endif /* CONFIG_NUMA_BALANCING */
->  
-> @@ -1672,17 +1670,15 @@ int migrate_misplaced_transhuge_page(str
->  
->  	new_page = alloc_pages_node(node,
->  		(GFP_TRANSHUGE | GFP_THISNODE) & ~__GFP_WAIT, HPAGE_PMD_ORDER);
-> -	if (!new_page) {
-> -		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
-> -		goto out_dropref;
-> -	}
-> +	if (!new_page)
-> +		goto out_fail;
+> +}
 > +
->  	page_xchg_last_nid(new_page, page_last_nid(page));
->  
->  	isolated = numamigrate_isolate_page(pgdat, page);
->  	if (!isolated) {
-> -		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
->  		put_page(new_page);
-> -		goto out_keep_locked;
-> +		goto out_fail;
->  	}
->  
->  	/* Prepare a page as a migration target */
-> @@ -1714,6 +1710,7 @@ int migrate_misplaced_transhuge_page(str
->  		putback_lru_page(page);
->  
->  		count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
-> +		isolated = 0;
->  		goto out;
->  	}
->  
-> @@ -1758,9 +1755,11 @@ out:
->  			-HPAGE_PMD_NR);
->  	return isolated;
->  
-> +out_fail:
-> +	count_vm_events(PGMIGRATE_FAIL, HPAGE_PMD_NR);
->  out_dropref:
-> +	unlock_page(page);
->  	put_page(page);
-> -out_keep_locked:
->  	return 0;
+> +void __init
+> +swiotlb_init_nopanic(int verbose)
+> +{
+> +	/* default to 64MB */
+> +	if (swiotlb_init_with_default_size(64 * (1<<20), verbose) == -ENOMEM)
+> +		pr_warn("Cannot allocate SWIOTLB buffer");
 >  }
->  #endif /* CONFIG_NUMA_BALANCING */
 
-I haven't tested this but I cannot see a problem with it either and the
-flow does look nicer. I'll test it this evening and look at it some
-more.
+And this
+>  
+>  void __init
+>  swiotlb_init(int verbose)
+>  {
+> -	swiotlb_init_with_default_size(64 * (1<<20), verbose);	/* default to 64MB */
+> +	/* default to 64MB */
+> +	if (swiotlb_init_with_default_size(64 * (1<<20), verbose) == -ENOMEM)
+> +		panic("Cannot allocate SWIOTLB buffer");
+>  }
 
--- 
-Mel Gorman
-SUSE Labs
+And just make this function return 'int'
+>  
+>  /*
+> @@ -405,6 +438,9 @@ phys_addr_t swiotlb_tbl_map_single(struc
+>  	unsigned long offset_slots;
+>  	unsigned long max_slots;
+>  
+> +	if (no_iotlb_memory)
+> +		panic("Cannot allocate SWIOTLB buffer");
+> +
+>  	mask = dma_get_seg_boundary(hwdev);
+>  
+>  	tbl_dma_addr &= mask;
+> Index: linux-2.6/arch/x86/kernel/pci-swiotlb.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/kernel/pci-swiotlb.c
+> +++ linux-2.6/arch/x86/kernel/pci-swiotlb.c
+> @@ -91,7 +91,7 @@ IOMMU_INIT(pci_swiotlb_detect_4gb,
+>  void __init pci_swiotlb_init(void)
+>  {
+>  	if (swiotlb) {
+> -		swiotlb_init(0);
+> +		swiotlb_init_nopanic(0);
+>  		dma_ops = &swiotlb_dma_ops;
+>  	}
+>  }
