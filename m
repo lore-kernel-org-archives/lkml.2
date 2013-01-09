@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab3AISpc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 13:45:32 -0500
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:58620 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932292Ab3AISpb (ORCPT
+	id S932447Ab3AISpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 13:45:53 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:40202 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932292Ab3AISpv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 13:45:31 -0500
-X-Greylist: delayed 342 seconds by postgrey-1.27 at vger.kernel.org; Wed, 09 Jan 2013 13:45:31 EST
+	Wed, 9 Jan 2013 13:45:51 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQUxxjZmd3C33_ujSeL1EjcKHHSoGusQwfBD+Zd=cwCDZA@mail.gmail.com>
-References: <20121030040237.GA10472@google.com> <1352003971-22278-1-git-send-email-yinghai@kernel.org>
- <CAE9FiQUn=bcgOLFzBwsBT1-O1poRNy9qYTb0w9EAya3_inKqAw@mail.gmail.com>
- <CAErSpo5Z57asEXbfesOjXMEPj4WM3YMbzQH3s-v_NBrnPNmuVQ@mail.gmail.com>
- <CAErSpo4LS7ShCbeOm1s9ob1MjPfUSWn9J96UHRBP6van54swQA@mail.gmail.com>
- <CAE9FiQV5x1S1BNHrXq0wMRDx7PD5BoCh3fOnq2vS_AOAGL8Rrw@mail.gmail.com>
- <CAErSpo5vEb=63jGsqfau1G=f54oqq17pc3ZzcpzhL7hQrtYhng@mail.gmail.com> <CAE9FiQUxxjZmd3C33_ujSeL1EjcKHHSoGusQwfBD+Zd=cwCDZA@mail.gmail.com>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Wed, 9 Jan 2013 11:39:28 -0700
-Message-ID: <CAErSpo6qX3ih9DXLqxqJw141OAeTFu0YfSih6LyD0sd2gS-Vyg@mail.gmail.com>
-Subject: Re: [PATCH 0/8] PCI, ACPI, x86: Reserve fw allocated resource for
- hot-add root bus
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <lenb@kernel.org>,
-        Taku Izumi <izumi.taku@jp.fujitsu.com>,
-        Jiang Liu <jiang.liu@huawei.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
-        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
+In-Reply-To: <50EDA154.6060407@pobox.com>
+References: <1357668987-3610-1-git-send-email-josh.coombs@gmail.com>
+	<50EDA154.6060407@pobox.com>
+Date: Wed, 9 Jan 2013 13:45:50 -0500
+Message-ID: <CAMW5UfaTX=2fQt=+2KiJCgnnUzeOXM4waMjYgyBj=RfQg6pDcQ@mail.gmail.com>
+Subject: Re: [PATCH] Allow Marvell SATA driver to work with LEDS_TRIGGER_IDE_DISK
+From: Josh Coombs <josh.coombs@gmail.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: Bryan Wu <cooloney@gmail.com>, "rpurdie@rpsys.net" <rpurdie@rpsys.net>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        linux ARM <linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 9, 2013 at 10:53 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Wed, Jan 9, 2013 at 9:35 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
->>> I don't know, that could be separated patcheset after we conclude
->>> pci root bus hotplug support.
->>
->> The main reason I review patches before merging them is to identify
->> issues that we can fix before they affect everybody.  It makes my life
->> a lot easier if I don't have to keep track of pending unaddressed
->> review comments.  Is there an advantage to waiting and doing this work
->> later?
->>
->>>>> In general these look good.  My main concern is that they only touch
->>>>> x86, without touching the similar code in frv, microblaze, mn10300,
->>>>> and powerpc.
->
-> the reason why we need to change those codes for x86, we want to make it support
-> pci root bus hotplug. So it would be reasonable for us to align other
-> platform to x86
-> changes after pci root bus hotplug change is completely done.
+Digging back through the archives, this came up once in 2007, Alan Cox
+did not like the idea of globally adding this call into the critical
+paths of libata at the time. (I've seen it done via external patches
+in ata_qc_issue and ata_qc_complete for example.)  If that concern is
+no longer in place, I can redo with it within libata so it'll work for
+all libata driven devices similar to how it's handled for legacy IDE
+drivers now.
 
-OK, I opened https://bugzilla.kernel.org/show_bug.cgi?id=52531 as a
-way to keep track of this consistency issue and merged
-pci/yinghai-survey-resources to my -next branch.
+Josh C
+
+On Wed, Jan 9, 2013 at 11:56 AM, Jeff Garzik <jgarzik@pobox.com> wrote:
+> On 01/08/2013 01:16 PM, Joshua Coombs wrote:
+>>
+>> Add a call to the IDE LED Trigger within the Marvell SATA driver to allow
+>> Marvell SoC devices to show SATA activity via GPIO connected LEDs.
+>>
+>> Signed-off-by: Joshua Coombs <josh.coombs@gmail.com>
+>> ---
+>>   drivers/ata/sata_mv.c | 3 +++
+>>   drivers/leds/Kconfig  | 3 +--
+>>   2 files changed, 4 insertions(+), 2 deletions(-)
+>
+>
+> NAK.  This is not appropriate at the specific driver level.  This would be
+> better implemented at a higher level.
+>
+>
+>
