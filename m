@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932134Ab3AIPwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 10:52:55 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:9342 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072Ab3AIPwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 10:52:53 -0500
-Date: Wed, 9 Jan 2013 10:52:41 -0500
-From: Vivek Goyal <vgoyal@redhat.com>
+	id S932118Ab3AIPze (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 10:55:34 -0500
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:39438 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758024Ab3AIPzd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 10:55:33 -0500
+Date: Wed, 9 Jan 2013 07:55:28 -0800
+From: Tejun Heo <tj@kernel.org>
 To: "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <peterz@infradead.org>,
+Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         device-mapper development <dm-devel@redhat.com>,
-        Tejun Heo <tj@kernel.org>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         Alasdair G Kergon <agk@redhat.com>
 Subject: Re: [PATCH repost] blkcg: fix "scheduling while atomic" in
  blk_queue_bypass_start
-Message-ID: <20130109155241.GE21265@redhat.com>
+Message-ID: <20130109155528.GJ3926@htj.dyndns.org>
 References: <50890937.7010809@ce.jp.nec.com>
  <20121026202105.GF24687@redhat.com>
  <508E572C.6000707@ce.jp.nec.com>
@@ -41,20 +42,6 @@ On Tue, Jan 08, 2013 at 04:31:30PM +0900, Jun'ichi Nomura wrote:
 > 
 > This patch moves blk_queue_bypass_start() before radix_tree_preload()
 > to avoid the sleeping call while preemption is disabled.
-
-Ok, raix_tree_preload() disabled preemption and blk_queue_bypass_start()
-calls synchronize_rcu() which in turn leads to schedule(), hence the
-warning.
-
-We also call __blkg_lookup_create() with preemption disabled and this
-can do blkg allocation. But allocation currently is GFP_ATOMIC, so not
-sleeping and scheduling here. So it should be fine.
-
-So fix looks good to me.
-
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-
-Vivek 
 > 
 >   BUG: scheduling while atomic: multipath/2460/0x00000002
 >   1 lock held by multipath/2460:
@@ -100,24 +87,10 @@ Vivek
 > Cc: Tejun Heo <tj@kernel.org>
 > Cc: Jens Axboe <axboe@kernel.dk>
 > Cc: Alasdair G Kergon <agk@redhat.com>
-> ---
->  block/blk-cgroup.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-> index b8858fb..53628e4 100644
-> --- a/block/blk-cgroup.c
-> +++ b/block/blk-cgroup.c
-> @@ -790,10 +790,10 @@ int blkcg_activate_policy(struct request_queue *q,
->  	if (!blkg)
->  		return -ENOMEM;
->  
-> -	preloaded = !radix_tree_preload(GFP_KERNEL);
-> -
->  	blk_queue_bypass_start(q);
->  
-> +	preloaded = !radix_tree_preload(GFP_KERNEL);
-> +
->  	/* make sure the root blkg exists and count the existing blkgs */
->  	spin_lock_irq(q->queue_lock);
->  
+
+Acked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
