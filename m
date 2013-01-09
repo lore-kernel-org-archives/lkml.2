@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757756Ab3AIJgM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 04:36:12 -0500
-Received: from cn.fujitsu.com ([222.73.24.84]:24335 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757574Ab3AIJdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757586Ab3AIJdn (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 9 Jan 2013 04:33:43 -0500
+Received: from cn.fujitsu.com ([222.73.24.84]:37942 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754470Ab3AIJdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 04:33:35 -0500
 X-IronPort-AV: E=Sophos;i="4.84,437,1355068800"; 
-   d="scan'208";a="6551292"
+   d="scan'208";a="6551287"
 From: Tang Chen <tangchen@cn.fujitsu.com>
 To: akpm@linux-foundation.org, rientjes@google.com, len.brown@intel.com,
         benh@kernel.crashing.org, paulus@samba.org, cl@linux.com,
@@ -21,9 +21,9 @@ Cc: x86@kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
         linux-s390@vger.kernel.org, linux-sh@vger.kernel.org,
         linux-ia64@vger.kernel.org, cmetcalf@tilera.com,
         sparclinux@vger.kernel.org
-Subject: [PATCH v6 02/15] memory-hotplug: check whether all memory blocks are offlined or not when removing memory
-Date: Wed, 9 Jan 2013 17:32:26 +0800
-Message-Id: <1357723959-5416-3-git-send-email-tangchen@cn.fujitsu.com>
+Subject: [PATCH v6 04/15] memory-hotplug: remove /sys/firmware/memmap/X sysfs
+Date: Wed, 9 Jan 2013 17:32:28 +0800
+Message-Id: <1357723959-5416-5-git-send-email-tangchen@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.10.1
 In-Reply-To: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
 References: <1357723959-5416-1-git-send-email-tangchen@cn.fujitsu.com>
@@ -38,117 +38,226 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 
-We remove the memory like this:
-1. lock memory hotplug
-2. offline a memory block
-3. unlock memory hotplug
-4. repeat 1-3 to offline all memory blocks
-5. lock memory hotplug
-6. remove memory(TODO)
-7. unlock memory hotplug
+When (hot)adding memory into system, /sys/firmware/memmap/X/{end, start, type}
+sysfs files are created. But there is no code to remove these files. The patch
+implements the function to remove them.
 
-All memory blocks must be offlined before removing memory. But we don't hold
-the lock in the whole operation. So we should check whether all memory blocks
-are offlined before step6. Otherwise, kernel maybe panicked.
+Note: The code does not free firmware_map_entry which is allocated by bootmem.
+      So the patch makes memory leak. But I think the memory leak size is
+      very samll. And it does not affect the system.
 
 Signed-off-by: Wen Congyang <wency@cn.fujitsu.com>
 Signed-off-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
 Signed-off-by: Tang Chen <tangchen@cn.fujitsu.com>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- drivers/base/memory.c          |    6 +++++
- include/linux/memory_hotplug.h |    1 +
- mm/memory_hotplug.c            |   48 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 55 insertions(+), 0 deletions(-)
+ drivers/firmware/memmap.c    |   96 +++++++++++++++++++++++++++++++++++++++++-
+ include/linux/firmware-map.h |    6 +++
+ mm/memory_hotplug.c          |    5 ++-
+ 3 files changed, 104 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 987604d..8300a18 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -693,6 +693,12 @@ int offline_memory_block(struct memory_block *mem)
- 	return ret;
+diff --git a/drivers/firmware/memmap.c b/drivers/firmware/memmap.c
+index 90723e6..4211da5 100644
+--- a/drivers/firmware/memmap.c
++++ b/drivers/firmware/memmap.c
+@@ -21,6 +21,7 @@
+ #include <linux/types.h>
+ #include <linux/bootmem.h>
+ #include <linux/slab.h>
++#include <linux/mm.h>
+ 
+ /*
+  * Data types ------------------------------------------------------------------
+@@ -79,7 +80,26 @@ static const struct sysfs_ops memmap_attr_ops = {
+ 	.show = memmap_attr_show,
+ };
+ 
++
++static inline struct firmware_map_entry *
++to_memmap_entry(struct kobject *kobj)
++{
++	return container_of(kobj, struct firmware_map_entry, kobj);
++}
++
++static void release_firmware_map_entry(struct kobject *kobj)
++{
++	struct firmware_map_entry *entry = to_memmap_entry(kobj);
++
++	if (PageReserved(virt_to_page(entry)))
++		/* There is no way to free memory allocated from bootmem */
++		return;
++
++	kfree(entry);
++}
++
+ static struct kobj_type memmap_ktype = {
++	.release	= release_firmware_map_entry,
+ 	.sysfs_ops	= &memmap_attr_ops,
+ 	.default_attrs	= def_attrs,
+ };
+@@ -94,6 +114,7 @@ static struct kobj_type memmap_ktype = {
+  * in firmware initialisation code in one single thread of execution.
+  */
+ static LIST_HEAD(map_entries);
++static DEFINE_SPINLOCK(map_entries_lock);
+ 
+ /**
+  * firmware_map_add_entry() - Does the real work to add a firmware memmap entry.
+@@ -118,11 +139,25 @@ static int firmware_map_add_entry(u64 start, u64 end,
+ 	INIT_LIST_HEAD(&entry->list);
+ 	kobject_init(&entry->kobj, &memmap_ktype);
+ 
++	spin_lock(&map_entries_lock);
+ 	list_add_tail(&entry->list, &map_entries);
++	spin_unlock(&map_entries_lock);
+ 
+ 	return 0;
  }
  
-+/* return true if the memory block is offlined, otherwise, return false */
-+bool is_memblock_offlined(struct memory_block *mem)
++/**
++ * firmware_map_remove_entry() - Does the real work to remove a firmware
++ * memmap entry.
++ * @entry: removed entry.
++ **/
++static inline void firmware_map_remove_entry(struct firmware_map_entry *entry)
 +{
-+	return mem->state == MEM_OFFLINE;
++	spin_lock(&map_entries_lock);
++	list_del(&entry->list);
++	spin_unlock(&map_entries_lock);
 +}
 +
  /*
-  * Initialize the sysfs support for memory devices...
+  * Add memmap entry on sysfs
   */
-diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
-index 4a45c4e..8dd0950 100644
---- a/include/linux/memory_hotplug.h
-+++ b/include/linux/memory_hotplug.h
-@@ -247,6 +247,7 @@ extern int add_memory(int nid, u64 start, u64 size);
- extern int arch_add_memory(int nid, u64 start, u64 size);
- extern int offline_pages(unsigned long start_pfn, unsigned long nr_pages);
- extern int offline_memory_block(struct memory_block *mem);
-+extern bool is_memblock_offlined(struct memory_block *mem);
- extern int remove_memory(u64 start, u64 size);
- extern int sparse_add_one_section(struct zone *zone, unsigned long start_pfn,
- 								int nr_pages);
-diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
-index 62e04c9..5808045 100644
---- a/mm/memory_hotplug.c
-+++ b/mm/memory_hotplug.c
-@@ -1430,6 +1430,54 @@ repeat:
- 		goto repeat;
- 	}
- 
-+	lock_memory_hotplug();
-+
-+	/*
-+	 * we have offlined all memory blocks like this:
-+	 *   1. lock memory hotplug
-+	 *   2. offline a memory block
-+	 *   3. unlock memory hotplug
-+	 *
-+	 * repeat step1-3 to offline the memory block. All memory blocks
-+	 * must be offlined before removing memory. But we don't hold the
-+	 * lock in the whole operation. So we should check whether all
-+	 * memory blocks are offlined.
-+	 */
-+
-+	mem = NULL;
-+	for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
-+		section_nr = pfn_to_section_nr(pfn);
-+		if (!present_section_nr(section_nr))
-+			continue;
-+
-+		section = __nr_to_section(section_nr);
-+		/* same memblock? */
-+		if (mem)
-+			if ((section_nr >= mem->start_section_nr) &&
-+			    (section_nr <= mem->end_section_nr))
-+				continue;
-+
-+		mem = find_memory_block_hinted(section, mem);
-+		if (!mem)
-+			continue;
-+
-+		ret = is_memblock_offlined(mem);
-+		if (!ret) {
-+			pr_warn("removing memory fails, because memory "
-+				"[%#010llx-%#010llx] is onlined\n",
-+				PFN_PHYS(section_nr_to_pfn(mem->start_section_nr)),
-+				PFN_PHYS(section_nr_to_pfn(mem->end_section_nr + 1)) - 1);
-+
-+			kobject_put(&mem->dev.kobj);
-+			unlock_memory_hotplug();
-+			return ret;
-+		}
-+	}
-+
-+	if (mem)
-+		kobject_put(&mem->dev.kobj);
-+	unlock_memory_hotplug();
-+
+@@ -144,6 +179,35 @@ static int add_sysfs_fw_map_entry(struct firmware_map_entry *entry)
  	return 0;
  }
- #else
+ 
++/*
++ * Remove memmap entry on sysfs
++ */
++static inline void remove_sysfs_fw_map_entry(struct firmware_map_entry *entry)
++{
++	kobject_put(&entry->kobj);
++}
++
++/*
++ * Search memmap entry
++ */
++
++static struct firmware_map_entry * __meminit
++firmware_map_find_entry(u64 start, u64 end, const char *type)
++{
++	struct firmware_map_entry *entry;
++
++	spin_lock(&map_entries_lock);
++	list_for_each_entry(entry, &map_entries, list)
++		if ((entry->start == start) && (entry->end == end) &&
++		    (!strcmp(entry->type, type))) {
++			spin_unlock(&map_entries_lock);
++			return entry;
++		}
++
++	spin_unlock(&map_entries_lock);
++	return NULL;
++}
++
+ /**
+  * firmware_map_add_hotplug() - Adds a firmware mapping entry when we do
+  * memory hotplug.
+@@ -196,6 +260,32 @@ int __init firmware_map_add_early(u64 start, u64 end, const char *type)
+ 	return firmware_map_add_entry(start, end, type, entry);
+ }
+ 
++/**
++ * firmware_map_remove() - remove a firmware mapping entry
++ * @start: Start of the memory range.
++ * @end:   End of the memory range.
++ * @type:  Type of the memory range.
++ *
++ * removes a firmware mapping entry.
++ *
++ * Returns 0 on success, or -EINVAL if no entry.
++ **/
++int __meminit firmware_map_remove(u64 start, u64 end, const char *type)
++{
++	struct firmware_map_entry *entry;
++
++	entry = firmware_map_find_entry(start, end - 1, type);
++	if (!entry)
++		return -EINVAL;
++
++	firmware_map_remove_entry(entry);
++
++	/* remove the memmap entry */
++	remove_sysfs_fw_map_entry(entry);
++
++	return 0;
++}
++
+ /*
+  * Sysfs functions -------------------------------------------------------------
+  */
+@@ -217,8 +307,10 @@ static ssize_t type_show(struct firmware_map_entry *entry, char *buf)
+ 	return snprintf(buf, PAGE_SIZE, "%s\n", entry->type);
+ }
+ 
+-#define to_memmap_attr(_attr) container_of(_attr, struct memmap_attribute, attr)
+-#define to_memmap_entry(obj) container_of(obj, struct firmware_map_entry, kobj)
++static inline struct memmap_attribute *to_memmap_attr(struct attribute *attr)
++{
++	return container_of(attr, struct memmap_attribute, attr);
++}
+ 
+ static ssize_t memmap_attr_show(struct kobject *kobj,
+ 				struct attribute *attr, char *buf)
+diff --git a/include/linux/firmware-map.h b/include/linux/firmware-map.h
+index 43fe52f..71d4fa7 100644
+--- a/include/linux/firmware-map.h
++++ b/include/linux/firmware-map.h
+@@ -25,6 +25,7 @@
+ 
+ int firmware_map_add_early(u64 start, u64 end, const char *type);
+ int firmware_map_add_hotplug(u64 start, u64 end, const char *type);
++int firmware_map_remove(u64 start, u64 end, const char *type);
+ 
+ #else /* CONFIG_FIRMWARE_MEMMAP */
+ 
+@@ -38,6 +39,11 @@ static inline int firmware_map_add_hotplug(u64 start, u64 end, const char *type)
+ 	return 0;
+ }
+ 
++static inline int firmware_map_remove(u64 start, u64 end, const char *type)
++{
++	return 0;
++}
++
+ #endif /* CONFIG_FIRMWARE_MEMMAP */
+ 
+ #endif /* _LINUX_FIRMWARE_MAP_H */
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index 69d62eb..9fd5904 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -1461,7 +1461,7 @@ static int is_memblock_offlined_cb(struct memory_block *mem, void *arg)
+ 	return ret;
+ }
+ 
+-int remove_memory(u64 start, u64 size)
++int __ref remove_memory(u64 start, u64 size)
+ {
+ 	unsigned long start_pfn, end_pfn;
+ 	int ret = 0;
+@@ -1511,6 +1511,9 @@ repeat:
+ 		return ret;
+ 	}
+ 
++	/* remove memmap entry */
++	firmware_map_remove(start, start + size, "System RAM");
++
+ 	unlock_memory_hotplug();
+ 
+ 	return 0;
 -- 
 1.7.1
 
