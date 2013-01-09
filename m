@@ -1,95 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933128Ab3AIV4a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:56:30 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41247 "EHLO mail.kernel.org"
+	id S933051Ab3AIV43 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:56:29 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41256 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932513Ab3AIUhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:03 -0500
+	id S932891Ab3AIUhE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Andre Przywara <osp@andrep.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        CAI Qian <caiqian@redhat.com>
-Subject: [ 28/47] x86, amd: Disable way access filter on Piledriver CPUs
-Date: Wed,  9 Jan 2013 12:35:23 -0800
-Message-Id: <20130109201732.744868262@linuxfoundation.org>
+        Tommi Rantala <tt.rantala@gmail.com>,
+        Vlad Yasevich <vyasevich@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [ 03/80] sctp: fix memory leak in sctp_datamsg_from_user() when copy from user space fails
+Date: Wed,  9 Jan 2013 12:34:55 -0800
+Message-Id: <20130109201500.825980027@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
 User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andre Przywara <andre.przywara@amd.com>
 
-commit 2bbf0a1427c377350f001fbc6260995334739ad7 upstream.
+From: Tommi Rantala <tt.rantala@gmail.com>
 
-The Way Access Filter in recent AMD CPUs may hurt the performance of
-some workloads, caused by aliasing issues in the L1 cache.
-This patch disables it on the affected CPUs.
+[ Upstream commit be364c8c0f17a3dd42707b5a090b318028538eb9 ]
 
-The issue is similar to that one of last year:
-http://lkml.indiana.edu/hypermail/linux/kernel/1107.3/00041.html
-This new patch does not replace the old one, we just need another
-quirk for newer CPUs.
+Trinity (the syscall fuzzer) discovered a memory leak in SCTP,
+reproducible e.g. with the sendto() syscall by passing invalid
+user space pointer in the second argument:
 
-The performance penalty without the patch depends on the
-circumstances, but is a bit less than the last year's 3%.
+ #include <string.h>
+ #include <arpa/inet.h>
+ #include <sys/socket.h>
 
-The workloads affected would be those that access code from the same
-physical page under different virtual addresses, so different
-processes using the same libraries with ASLR or multiple instances of
-PIE-binaries. The code needs to be accessed simultaneously from both
-cores of the same compute unit.
+ int main(void)
+ {
+         int fd;
+         struct sockaddr_in sa;
 
-More details can be found here:
-http://developer.amd.com/Assets/SharedL1InstructionCacheonAMD15hCPU.pdf
+         fd = socket(AF_INET, SOCK_STREAM, 132 /*IPPROTO_SCTP*/);
+         if (fd < 0)
+                 return 1;
 
-CPUs affected are anything with the core known as Piledriver.
-That includes the new parts of the AMD A-Series (aka Trinity) and the
-just released new CPUs of the FX-Series (aka Vishera).
-The model numbering is a bit odd here: FX CPUs have model 2,
-A-Series has model 10h, with possible extensions to 1Fh. Hence the
-range of model ids.
+         memset(&sa, 0, sizeof(sa));
+         sa.sin_family = AF_INET;
+         sa.sin_addr.s_addr = inet_addr("127.0.0.1");
+         sa.sin_port = htons(11111);
 
-Signed-off-by: Andre Przywara <osp@andrep.de>
-Link: http://lkml.kernel.org/r/1351700450-9277-1-git-send-email-osp@andrep.de
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Signed-off-by: CAI Qian <caiqian@redhat.com>
+         sendto(fd, NULL, 1, 0, (struct sockaddr *)&sa, sizeof(sa));
+
+         return 0;
+ }
+
+As far as I can tell, the leak has been around since ~2003.
+
+Signed-off-by: Tommi Rantala <tt.rantala@gmail.com>
+Acked-by: Vlad Yasevich <vyasevich@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- arch/x86/kernel/cpu/amd.c |   14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ net/sctp/chunk.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -554,6 +554,20 @@ static void __cpuinit init_amd(struct cp
- 		}
- 	}
+--- a/net/sctp/chunk.c
++++ b/net/sctp/chunk.c
+@@ -284,7 +284,7 @@ struct sctp_datamsg *sctp_datamsg_from_u
+ 			goto errout;
+ 		err = sctp_user_addto_chunk(chunk, offset, len, msgh->msg_iov);
+ 		if (err < 0)
+-			goto errout;
++			goto errout_chunk_free;
  
-+	/*
-+	 * The way access filter has a performance penalty on some workloads.
-+	 * Disable it on the affected CPUs.
-+	 */
-+	if ((c->x86 == 0x15) &&
-+	    (c->x86_model >= 0x02) && (c->x86_model < 0x20)) {
-+		u64 val;
-+
-+		if (!rdmsrl_safe(0xc0011021, &val) && !(val & 0x1E)) {
-+			val |= 0x1E;
-+			checking_wrmsrl(0xc0011021, val);
-+		}
-+	}
-+
- 	cpu_detect_cache_sizes(c);
+ 		offset += len;
  
- 	/* Multi core CPU? */
+@@ -324,7 +324,7 @@ struct sctp_datamsg *sctp_datamsg_from_u
+ 		__skb_pull(chunk->skb, (__u8 *)chunk->chunk_hdr
+ 			   - (__u8 *)chunk->skb->data);
+ 		if (err < 0)
+-			goto errout;
++			goto errout_chunk_free;
+ 
+ 		sctp_datamsg_assign(msg, chunk);
+ 		list_add_tail(&chunk->frag_list, &msg->chunks);
+@@ -332,6 +332,9 @@ struct sctp_datamsg *sctp_datamsg_from_u
+ 
+ 	return msg;
+ 
++errout_chunk_free:
++	sctp_chunk_free(chunk);
++
+ errout:
+ 	list_for_each_safe(pos, temp, &msg->chunks) {
+ 		list_del_init(pos);
 
 
