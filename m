@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934043Ab3AIUlO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:41:14 -0500
-Received: from mail.kernel.org ([198.145.19.201]:43763 "EHLO mail.kernel.org"
+	id S934104Ab3AIUvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:51:37 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43866 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933823Ab3AIUlB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:41:01 -0500
+	id S934040Ab3AIUlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:41:13 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 099/123] ARM: 7606/1: cache: flush to LoUU instead of LoUIS on uniprocessor CPUs
-Date: Wed,  9 Jan 2013 12:35:38 -0800
-Message-Id: <20130109201511.290756698@linuxfoundation.org>
+        Jeff Cook <jeff@deserettechnology.com>,
+        Gustavo Padovan <gustavo.padovan@collabora.co.uk>
+Subject: [ 108/123] Bluetooth: Add support for BCM20702A0 [0b05, 17b5]
+Date: Wed,  9 Jan 2013 12:35:47 -0800
+Message-Id: <20130109201512.324298908@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -28,40 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Jeff Cook <jeff@deserettechnology.com>
 
-commit d056a699dd3d9366dd3b4d9996e7848209199cda upstream.
+commit 1ee3ff6110c16acfc915a79b1e3feb5013c41e75 upstream.
 
-flush_cache_louis flushes the D-side caches to the point of unification
-inner-shareable. On uniprocessor CPUs, this is defined as zero and
-therefore no flushing will take place. Rather than invent a new interface
-for UP systems, instead use our SMP_ON_UP patching code to read the
-LoUU from the CLIDR instead.
+Vendor-specific ID for BCM20702A0.
+Support for bluetooth over Asus Wi-Fi GO!, included with Asus P8Z77-V
+Deluxe.
 
-Cc: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
-Tested-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+T:  Bus=07 Lev=02 Prnt=02 Port=00 Cnt=01 Dev#=  3 Spd=12  MxCh= 0
+D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
+P:  Vendor=0b05 ProdID=17b5 Rev=01.12
+S:  Manufacturer=Broadcom Corp
+S:  Product=BCM20702A0
+S:  SerialNumber=94DBC98AC113
+C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
+I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 1 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=01 Prot=01 Driver=(none)
+I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
+I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=01 Driver=(none)
+
+Signed-off-by: Jeff Cook <jeff@deserettechnology.com>
+Signed-off-by: Gustavo Padovan <gustavo.padovan@collabora.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mm/cache-v7.S |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/bluetooth/btusb.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/arm/mm/cache-v7.S
-+++ b/arch/arm/mm/cache-v7.S
-@@ -44,8 +44,10 @@ ENDPROC(v7_flush_icache_all)
- ENTRY(v7_flush_dcache_louis)
- 	dmb					@ ensure ordering with previous memory accesses
- 	mrc	p15, 1, r0, c0, c0, 1		@ read clidr, r0 = clidr
--	ands	r3, r0, #0xe00000		@ extract LoUIS from clidr
--	mov	r3, r3, lsr #20			@ r3 = LoUIS * 2
-+	ALT_SMP(ands	r3, r0, #(7 << 21))	@ extract LoUIS from clidr
-+	ALT_UP(ands	r3, r0, #(7 << 27))	@ extract LoUU from clidr
-+	ALT_SMP(mov	r3, r3, lsr #20)	@ r3 = LoUIS * 2
-+	ALT_UP(mov	r3, r3, lsr #26)	@ r3 = LoUU * 2
- 	moveq	pc, lr				@ return if level == 0
- 	mov	r10, #0				@ r10 (starting level) = 0
- 	b	flush_levels			@ start flushing cache levels
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -96,6 +96,7 @@ static struct usb_device_id btusb_table[
+ 	{ USB_DEVICE(0x0c10, 0x0000) },
+ 
+ 	/* Broadcom BCM20702A0 */
++	{ USB_DEVICE(0x0b05, 0x17b5) },
+ 	{ USB_DEVICE(0x04ca, 0x2003) },
+ 	{ USB_DEVICE(0x0489, 0xe042) },
+ 	{ USB_DEVICE(0x413c, 0x8197) },
 
 
