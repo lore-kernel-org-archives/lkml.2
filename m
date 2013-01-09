@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab3AIG00 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 01:26:26 -0500
-Received: from smtp.nue.novell.com ([195.135.221.5]:32819 "EHLO
-	smtp.nue.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752187Ab3AIG0Y (ORCPT
+	id S1757193Ab3AIG0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 01:26:45 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:44280 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757126Ab3AIG0o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 01:26:24 -0500
-Subject: Re: [PATCH 1/3] rtc-efi: register rtc-efi device when EFI enabled
-From: joeyli <jlee@suse.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Matthew Garrett <matthew.garrett@nebula.com>,
-        "matt.fleming@intel.com" <matt.fleming@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Jan Beulich <JBeulich@suse.com>
-In-Reply-To: <50DE4259.7090409@zytor.com>
-References: <1356712001-12198-1-git-send-email-jlee@suse.com>
-	 <E99CBA9F97C3D149AA6B19ED2E277C9B019215CC@BY2PRD0510MB365.namprd05.prod.outlook.com>
-	 <1356742803.6113.245.camel@linux-s257.site>  <50DE4259.7090409@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jan 2013 14:23:11 +0800
-Message-ID: <1357712591.6113.389.camel@linux-s257.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	Wed, 9 Jan 2013 01:26:44 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAKYAXd_-z5OSWwwPuJUHqBOKAaayzUy77iEi=JF0v6zGbXroRQ@mail.gmail.com>
+References: <1349795401-6497-1-git-send-email-linkinjeon@gmail.com>
+	<20121018223058.GA19469@quack.suse.cz>
+	<CAKYAXd_91tZ=LgaoPWMVkh6KKPKt0ctfsQo9f4FS-gjf8J77eQ@mail.gmail.com>
+	<CAKYAXd_-z5OSWwwPuJUHqBOKAaayzUy77iEi=JF0v6zGbXroRQ@mail.gmail.com>
+Date: Wed, 9 Jan 2013 15:26:43 +0900
+Message-ID: <CAKYAXd-Mm72cGwAoYd1ZtMFXD8WF2E3u7S23zckhoFA=h+4XhA@mail.gmail.com>
+Subject: Re: [PATCH 5/6] udf: implement extent caching while reading-writing
+ to a file
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Namjae Jeon <namjae.jeon@samsung.com>,
+        Ashish Sangwan <a.sangwan@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-於 五，2012-12-28 於 17:07 -0800，H. Peter Anvin 提到：
-> On 12/28/2012 05:00 PM, joeyli wrote:
-> > 於 五，2012-12-28 於 17:43 +0000，Matthew Garrett 提到：
-> >> On Sat, 2012-12-29 at 00:26 +0800, Lee, Chun-Yi wrote:
-> >>> UEFI time services, GetTime(), SetTime(), GetWakeupTime(), SetWakeupTime() are also
-> >>> supported by other non-IA64 architecutre with UEFI BIOS, e.g. x86.
-> >>>
-> >>> This patch changed RTC_DRV_EFI configuration to depend on EFI but not just IA64. It
-> >>> checks efi_enabled flag and efi-rtc driver should enabled.
-> >>
-> >> In theory, certainly - but do we still have machines that explode if the
-> >> get_time call is made? We may also want to think about disabling the
-> >> legacy access to the RTC if the EFI calls are present.
-> > 
-> > The legacy get_time access on my test machine is work fine, not thing
-> > explode. :-)
-> > Just we have a function want to expose the timezone information to
-> > userspace and also store it.
-> > 
-> 
-> We should indeed save the timezone information if it is available --
-> either from the ACPI TAD or from the EFI RTC, or even via some
-> platform-dependent mechanism.  It is important, though, that that is
-> separate from the order of priority.
-> 
-> 	-hpa
-> 
+2012/12/13, Namjae Jeon <linkinjeon@gmail.com>:
+> 2012/10/19, Namjae Jeon <linkinjeon@gmail.com>:
+>> 2012/10/19, Jan Kara <jack@suse.cz>:
+>>>   Hello,
+>>>
+>>> On Wed 10-10-12 00:10:01, Namjae Jeon wrote:
+>>>> From: Namjae Jeon <namjae.jeon@samsung.com>
+>>>>
+>>>> This patch implements extent caching.
+>>>> Instead of reading metadata everytime from file's starting position,
+>>>> now we read from the cached extent.
+>>>> This speeds up the transformation of file logical offsets to
+>>>> corresponding on-disk blocks.
+>>>   I have some mostly minor comments to the patch. But when reading the
+>>> extent code it is just ugly and hard to follow. So I'm thinking how to
+>>> improve that before making things even harder with the extent cache. So
+>>> give me a few more days please.
+>> Hi Jan.
+>> Okay, I see. Thanks!
+>>>
+> Hi Jan.
+> Sorry for interrupt. I am still waiting for your review.
+> Would you check extent cache patches ?
+> Thanks.
+Hi Jan.
 
-I found Windows 8 doesn't aware/maintain the Timezone and Daylight
-fields in EFI_TIME struct.
+Maybe You think you didn't convince extent cache implementation of
+write part in this patch.
+So I suggest that once, we add extent cache of read part first in case
+of read-only mount type.
+because it is real issue on 3D BD-disk playing(BD Disk is used on
+read-only mount type).
+And I will check more write part again.
 
-I got a Acer UEFI notebook and I keep the Windows 8 hard drive
-(/dev/sda) but install Linux to another hard drive (/dev/sdb). 
+Thanks.
 
-On Linux, I applied my rtc-efi patches for allow user space feed
-Timezone and store it to BIOS through SetTime(). I wrote a simple user
-space program to set Timezone and Daylight fields, after set those
-fields I reboot to Windows 8 and use DateTime setting GUI to look at the
-change. Looks Windows doesn't aware the change, it just assume the time
-in DateTime filed is local time, but didn't show the Timezone that was
-set by me on Linux to GUI.
-
-Then, I select another Timezone(country) through Windows 8 GUI, and
-reboot to Linux. I read the Timezone and Daylight by program but didn't
-see the Timezone and Daylight changed by Windows 8, the value is still
-the same with my latest time setting by Linux program. Windows 8 changed
-DayTime fields but didn't maintain Timezone and Daylight.
-
-I only have this machine with preloaded Windows 8 for verify the
-behavior, not sure it's normally or not. If Windows 8 ignores Timezone
-and Daylight fields in UEFI BIOS, then I think it's lower down the
-necessary for we maintain Timezone and Daylight in UEFI BIOS. 
-
-We still can store Timezone and Daylight value to UEFI, but will have no
-any interactive with Windows 8.
-
-Appreciate for any suggestions.
-
-
-Thanks a lot!
-Joey Lee
-
+>
+>>> 								Honza
+>
