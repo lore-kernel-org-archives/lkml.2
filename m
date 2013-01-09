@@ -1,19 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab3AIUhF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:37:05 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41221 "EHLO mail.kernel.org"
+	id S932970Ab3AIUhQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:37:16 -0500
+Received: from mail.kernel.org ([198.145.19.201]:41301 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932861Ab3AIUg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:36:59 -0500
+	id S932655Ab3AIUhI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:37:08 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [ 005/123] b43: fix tx path skb leaks
-Date: Wed,  9 Jan 2013 12:34:04 -0800
-Message-Id: <20130109201459.058631693@linuxfoundation.org>
+        Sonny Rao <sonnyrao@chromium.org>,
+        Puneet Kumar <puneetster@chromium.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Damien Wyart <damien.wyart@free.fr>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [ 015/123] mm: fix calculation of dirtyable memory
+Date: Wed,  9 Jan 2013 12:34:14 -0800
+Message-Id: <20130109201500.463211651@linuxfoundation.org>
 X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
 In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
 References: <20130109201458.392601412@linuxfoundation.org>
@@ -26,100 +30,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Sonny Rao <sonnyrao@chromium.org>
 
-commit 78f18df4b323d2ac14d6c82e2fc3c8dc4556bccc upstream.
+commit c8b74c2f6604923de91f8aa6539f8bb934736754 upstream.
 
-ieee80211_free_txskb() needs to be used instead of dev_kfree_skb_any for
-tx packets passed to the driver from mac80211
+The system uses global_dirtyable_memory() to calculate number of
+dirtyable pages/pages that can be allocated to the page cache.  A bug
+causes an underflow thus making the page count look like a big unsigned
+number.  This in turn confuses the dirty writeback throttling to
+aggressively write back pages as they become dirty (usually 1 page at a
+time).  This generally only affects systems with highmem because the
+underflowed count gets subtracted from the global count of dirtyable
+memory.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The problem was introduced with v3.2-4896-gab8fabd
+
+Fix is to ensure we don't get an underflowed total of either highmem or
+global dirtyable memory.
+
+Signed-off-by: Sonny Rao <sonnyrao@chromium.org>
+Signed-off-by: Puneet Kumar <puneetster@chromium.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Tested-by: Damien Wyart <damien.wyart@free.fr>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/b43/dma.c  |    7 +++++--
- drivers/net/wireless/b43/main.c |   12 ++++++++----
- drivers/net/wireless/b43/pio.c  |    4 ++--
- 3 files changed, 15 insertions(+), 8 deletions(-)
+ mm/page-writeback.c |   25 ++++++++++++++++++++-----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -409,7 +409,10 @@ static inline
- 				struct b43_dmadesc_meta *meta)
- {
- 	if (meta->skb) {
--		dev_kfree_skb_any(meta->skb);
-+		if (ring->tx)
-+			ieee80211_free_txskb(ring->dev->wl->hw, meta->skb);
-+		else
-+			dev_kfree_skb_any(meta->skb);
- 		meta->skb = NULL;
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -201,6 +201,18 @@ static unsigned long highmem_dirtyable_m
+ 		     zone_reclaimable_pages(z) - z->dirty_balance_reserve;
  	}
- }
-@@ -1454,7 +1457,7 @@ int b43_dma_tx(struct b43_wldev *dev, st
- 	if (unlikely(err == -ENOKEY)) {
- 		/* Drop this packet, as we don't have the encryption key
- 		 * anymore and must not transmit it unencrypted. */
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(dev->wl->hw, skb);
- 		err = 0;
- 		goto out;
- 	}
---- a/drivers/net/wireless/b43/main.c
-+++ b/drivers/net/wireless/b43/main.c
-@@ -3397,7 +3397,7 @@ static void b43_tx_work(struct work_stru
- 				break;
- 			}
- 			if (unlikely(err))
--				dev_kfree_skb(skb); /* Drop it */
-+				ieee80211_free_txskb(wl->hw, skb);
- 			err = 0;
- 		}
- 
-@@ -3419,7 +3419,7 @@ static void b43_op_tx(struct ieee80211_h
- 
- 	if (unlikely(skb->len < 2 + 2 + 6)) {
- 		/* Too short, this can't be a valid frame. */
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(hw, skb);
- 		return;
- 	}
- 	B43_WARN_ON(skb_shinfo(skb)->nr_frags);
-@@ -4229,8 +4229,12 @@ redo:
- 
- 	/* Drain all TX queues. */
- 	for (queue_num = 0; queue_num < B43_QOS_QUEUE_NUM; queue_num++) {
--		while (skb_queue_len(&wl->tx_queue[queue_num]))
--			dev_kfree_skb(skb_dequeue(&wl->tx_queue[queue_num]));
-+		while (skb_queue_len(&wl->tx_queue[queue_num])) {
-+			struct sk_buff *skb;
+ 	/*
++	 * Unreclaimable memory (kernel memory or anonymous memory
++	 * without swap) can bring down the dirtyable pages below
++	 * the zone's dirty balance reserve and the above calculation
++	 * will underflow.  However we still want to add in nodes
++	 * which are below threshold (negative values) to get a more
++	 * accurate calculation but make sure that the total never
++	 * underflows.
++	 */
++	if ((long)x < 0)
++		x = 0;
 +
-+			skb = skb_dequeue(&wl->tx_queue[queue_num]);
-+			ieee80211_free_txskb(wl->hw, skb);
-+		}
- 	}
++	/*
+ 	 * Make sure that the number of highmem pages is never larger
+ 	 * than the number of the total dirtyable memory. This can only
+ 	 * occur in very strange VM situations but we want to make sure
+@@ -222,8 +234,8 @@ static unsigned long global_dirtyable_me
+ {
+ 	unsigned long x;
  
- 	b43_mac_suspend(dev);
---- a/drivers/net/wireless/b43/pio.c
-+++ b/drivers/net/wireless/b43/pio.c
-@@ -196,7 +196,7 @@ static void b43_pio_cancel_tx_packets(st
- 	for (i = 0; i < ARRAY_SIZE(q->packets); i++) {
- 		pack = &(q->packets[i]);
- 		if (pack->skb) {
--			dev_kfree_skb_any(pack->skb);
-+			ieee80211_free_txskb(q->dev->wl->hw, pack->skb);
- 			pack->skb = NULL;
- 		}
- 	}
-@@ -552,7 +552,7 @@ int b43_pio_tx(struct b43_wldev *dev, st
- 	if (unlikely(err == -ENOKEY)) {
- 		/* Drop this packet, as we don't have the encryption key
- 		 * anymore and must not transmit it unencrypted. */
--		dev_kfree_skb_any(skb);
-+		ieee80211_free_txskb(dev->wl->hw, skb);
- 		err = 0;
- 		goto out;
- 	}
+-	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages() -
+-	    dirty_balance_reserve;
++	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
++	x -= min(x, dirty_balance_reserve);
+ 
+ 	if (!vm_highmem_is_dirtyable)
+ 		x -= highmem_dirtyable_memory(x);
+@@ -290,9 +302,12 @@ static unsigned long zone_dirtyable_memo
+ 	 * highmem zone can hold its share of dirty pages, so we don't
+ 	 * care about vm_highmem_is_dirtyable here.
+ 	 */
+-	return zone_page_state(zone, NR_FREE_PAGES) +
+-	       zone_reclaimable_pages(zone) -
+-	       zone->dirty_balance_reserve;
++	unsigned long nr_pages = zone_page_state(zone, NR_FREE_PAGES) +
++		zone_reclaimable_pages(zone);
++
++	/* don't allow this to underflow */
++	nr_pages -= min(nr_pages, zone->dirty_balance_reserve);
++	return nr_pages;
+ }
+ 
+ /**
 
 
