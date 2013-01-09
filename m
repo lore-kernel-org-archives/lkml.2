@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933133Ab3AIVsK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:48:10 -0500
-Received: from mail.kernel.org ([198.145.19.201]:41618 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933059Ab3AIUhh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:37:37 -0500
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [ 38/47] ARM: missing ->mmap_sem around find_vma() in swp_emulate.c
-Date: Wed,  9 Jan 2013 12:35:33 -0800
-Message-Id: <20130109201733.874580453@linuxfoundation.org>
-X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
-In-Reply-To: <20130109201729.435233560@linuxfoundation.org>
-References: <20130109201729.435233560@linuxfoundation.org>
-User-Agent: quilt/0.60-2.1.2
+	id S933197Ab3AIVsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:48:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:35342 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933059Ab3AIVsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 16:48:18 -0500
+Date: Wed, 9 Jan 2013 13:48:16 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Zlatko Calusic <zlatko.calusic@iskon.hr>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Minchan Kim <minchan.kim@gmail.com>, linux-mm <linux-mm@kvack.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: wait for congestion to clear on all zones
+Message-Id: <20130109134816.db51a820.akpm@linux-foundation.org>
+In-Reply-To: <50EDE41C.7090107@iskon.hr>
+References: <50EDE41C.7090107@iskon.hr>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.0-stable review patch.  If anyone has any objections, please let me know.
+On Wed, 09 Jan 2013 22:41:48 +0100
+Zlatko Calusic <zlatko.calusic@iskon.hr> wrote:
 
-------------------
+> Currently we take a short nap (HZ/10) and wait for congestion to clear
+> before taking another pass with lower priority in balance_pgdat(). But
+> we do that only for the highest zone that we encounter is unbalanced
+> and congested.
+> 
+> This patch changes that to wait on all congested zones in a single
+> pass in the hope that it will save us some scanning that way. Also we
+> take a nap as soon as congested zone is encountered and sc.priority <
+> DEF_PRIORITY - 2 (aka kswapd in trouble).
+> 
+> ...
+>
+> The patch is against the mm tree. Make sure that
+> mm-avoid-calling-pgdat_balanced-needlessly.patch is applied first (not
+> yet in the mmotm tree). Tested on half a dozen systems with different
+> workloads for the last few days, working really well!
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-
-commit 7bf9b7bef881aac820bf1f2e9951a17b09bd7e04 upstream.
-
-find_vma() is *not* safe when somebody else is removing vmas.  Not just
-the return value might get bogus just as you are getting it (this instance
-doesn't try to dereference the resulting vma), the search itself can get
-buggered in rather spectacular ways.  IOW, ->mmap_sem really, really is
-not optional here.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/arm/kernel/swp_emulate.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/arch/arm/kernel/swp_emulate.c
-+++ b/arch/arm/kernel/swp_emulate.c
-@@ -108,10 +108,12 @@ static void set_segfault(struct pt_regs
- {
- 	siginfo_t info;
- 
-+	down_read(&current->mm->mmap_sem);
- 	if (find_vma(current->mm, addr) == NULL)
- 		info.si_code = SEGV_MAPERR;
- 	else
- 		info.si_code = SEGV_ACCERR;
-+	up_read(&current->mm->mmap_sem);
- 
- 	info.si_signo = SIGSEGV;
- 	info.si_errno = 0;
-
+But what are the user-observable effcets of this change?  Less kernel
+CPU consumption, presumably?  Did you quantify it?
 
