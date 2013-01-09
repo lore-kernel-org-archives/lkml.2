@@ -1,162 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756169Ab3AIAE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jan 2013 19:04:58 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:53531 "EHLO
-	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061Ab3AHXgl (ORCPT
+	id S1756198Ab3AIAFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jan 2013 19:05:14 -0500
+Received: from out03.mta.xmission.com ([166.70.13.233]:40416 "EHLO
+	out03.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755944Ab3AIAFI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jan 2013 18:36:41 -0500
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: <stable@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Benjamin Gaignard <benjamin.gaignard@stericsson.com>,
+	Tue, 8 Jan 2013 19:05:08 -0500
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Shuah Khan <shuahkhan@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [v2.6.34-stable 15/77] genalloc: stop crashing the system when destroying a pool
-Date: Tue, 8 Jan 2013 18:34:54 -0500
-Message-ID: <1357688156-25387-16-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.12.1
-In-Reply-To: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1357688156-25387-1-git-send-email-paul.gortmaker@windriver.com>
+        Borislav Petkov <bp@alien8.de>, Jan Kiszka <jan.kiszka@web.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        linux-kernel@vger.kernel.org, Joerg Roedel <joro@8bytes.org>
+References: <1357260531-11115-1-git-send-email-yinghai@kernel.org>
+	<1357260531-11115-27-git-send-email-yinghai@kernel.org>
+	<CAKocOOP=jh2XOFJtoz-uHO2cvb9NRfOGdc05LKg1JH-ToiUwwA@mail.gmail.com>
+	<CAE9FiQVKFz6K8xw2Eu5J8G6=QDdo2A7Y2-81GYP5yvP+T1YG5A@mail.gmail.com>
+	<CAKocOOPqNPYU1dcDdHpKqMZtJnSOhT6tBGY7k4qGEy6uKSAr7Q@mail.gmail.com>
+	<CAE9FiQVM-Rd82n-qhasDCA0+-n6TWH6m9Vm6N1nER__5p34z-Q@mail.gmail.com>
+	<20130107152622.GD3219@phenom.dumpdata.com>
+	<CAKocOOM9MYD8Z0-ha7NQP6B=J-eGS6uao5oAVfiO+i-a0TVy1A@mail.gmail.com>
+	<8762382z2c.fsf@xmission.com>
+	<CAE9FiQWeGKw0VEt5a74Sq3RQo6xBOreQ8Rf_O+B9HqSTHYJxBA@mail.gmail.com>
+	<87y5g4z7rp.fsf@xmission.com>
+	<CAE9FiQVVtfxZs7E9Q=VbNHNbYJg_9TGCTetkZMYT0tgt0JLNZw@mail.gmail.com>
+	<CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+Date: Tue, 08 Jan 2013 16:04:52 -0800
+In-Reply-To: <CAE9FiQVCBehZ52p_UdfYbLoB3zJ=41NrQWeNyyCJ483D_9NEmg@mail.gmail.com>
+	(Yinghai Lu's message of "Tue, 8 Jan 2013 15:40:11 -0800")
+Message-ID: <874nirz0ez.fsf@xmission.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1/DLReH/Np7Kjo6eLn+kqJiSqerFVjV2mA=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  2.9 KHOP_BIG_TO_CC Sent to 10+ recipients instaed of Bcc or a list
+	*  3.0 XMDrug1234561 Drug references
+	*  0.1 XMSubLong Long Subject
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0005]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: **;Yinghai Lu <yinghai@kernel.org>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH v7u1 26/31] x86: Don't enable swiotlb if there is not enough ram for it
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 14:26:46 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
+Yinghai Lu <yinghai@kernel.org> writes:
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    http://git.kernel.org/?p=linux/kernel/git/paulg/longterm-queue-2.6.34.git
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+> On Mon, Jan 7, 2013 at 7:50 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Mon, Jan 7, 2013 at 7:13 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>> I meant we should detect failure to allocate bounce buffers in in
+>>> swiotlb_init() instead of panicing.
+>>>
+>>> I meant swiotlb_map_single() should either panic or simply fail.
+>>>
+>>> If I have read lib/swiotlb.c correctly the only place we allocate a
+>>> bounce buffer is in swiotlb_map_single.  If there are more places we can
+>>> allocate bounce buffers those need to be handled as well.
+>>
+>> ok, will give it a try.
+>
+> please check if you are ok with attached.
+>
 
-commit eedce141cd2dad8d0cefc5468ef41898949a7031 upstream.
+It looks like the right direction.   Certainly enough to test and see if
+the code will work.
 
-The genalloc code uses the bitmap API from include/linux/bitmap.h and
-lib/bitmap.c, which is based on long values.  Both bitmap_set from
-lib/bitmap.c and bitmap_set_ll, which is the lockless version from
-genalloc.c, use BITMAP_LAST_WORD_MASK to set the first bits in a long in
-the bitmap.
+I don't see the point of adding a nopanic case to the swiotlb
+initialization.  That just looks like unnecessary complications.
+Certainly a nopanic case implemented by passing a nopanic parameter
+looks like the wrong way to go.  At most you want to return an error
+code and do:
 
-That one uses (1 << bits) - 1, 0b111, if you are setting the first three
-bits.  This means that the API counts from the least significant bits
-(LSB from now on) to the MSB.  The LSB in the first long is bit 0, then.
-The same works for the lookup functions.
+swiotlb_init()
+{
+	if (swiotlb_init_with_default_size() == -ENOMEM)
+		panic("Cannot allocate SWIOTLB buffer");
+}
 
-The genalloc code uses longs for the bitmap, as it should.  In
-include/linux/genalloc.h, struct gen_pool_chunk has unsigned long
-bits[0] as its last member.  When allocating the struct, genalloc should
-reserve enough space for the bitmap.  This should be a proper number of
-longs that can fit the amount of bits in the bitmap.
+The page freeing in swiotlb_init_with_tbl appears to be in the wrong
+function.  I suggest looking at swiotlb_late_init which apparently is
+allowed to fail for some ideas.
 
-However, genalloc allocates an integer number of bytes that fit the
-amount of bits, but may not be an integer amount of longs.  9 bytes, for
-example, could be allocated for 70 bits.
+> looks like it need more change of lines.
 
-This is a problem in itself if the Least Significat Bit in a long is in
-the byte with the largest address, which happens in Big Endian machines.
-This means genalloc is not allocating the byte in which it will try to
-set or check for a bit.
+The size of the change matters less than how clean and maintainable the
+result is.  If done carefully I expect you can have net fewer lines but
+not needing to handle the case when the swiotlb apis are unavailable.
 
-This may end up in memory corruption, where genalloc will try to set the
-bits it has not allocated.  In fact, genalloc may not set these bits
-because it may find them already set, because they were not zeroed since
-they were not allocated.  And that's what causes a BUG when
-gen_pool_destroy is called and check for any set bits.
-
-What really happens is that genalloc uses kmalloc_node with __GFP_ZERO
-on gen_pool_add_virt.  With SLAB and SLUB, this means the whole slab
-will be cleared, not only the requested bytes.  Since struct
-gen_pool_chunk has a size that is a multiple of 8, and slab sizes are
-multiples of 8, we get lucky and allocate and clear the right amount of
-bytes.
-
-Hower, this is not the case with SLOB or with older code that did memset
-after allocating instead of using __GFP_ZERO.
-
-So, a simple module as this (running 3.6.0), will cause a crash when
-rmmod'ed.
-
-  [root@phantom-lp2 foo]# cat foo.c
-  #include <linux/kernel.h>
-  #include <linux/module.h>
-  #include <linux/init.h>
-  #include <linux/genalloc.h>
-
-  MODULE_LICENSE("GPL");
-  MODULE_VERSION("0.1");
-
-  static struct gen_pool *foo_pool;
-
-  static __init int foo_init(void)
-  {
-          int ret;
-          foo_pool = gen_pool_create(10, -1);
-          if (!foo_pool)
-                  return -ENOMEM;
-          ret = gen_pool_add(foo_pool, 0xa0000000, 32 << 10, -1);
-          if (ret) {
-                  gen_pool_destroy(foo_pool);
-                  return ret;
-          }
-          return 0;
-  }
-
-  static __exit void foo_exit(void)
-  {
-          gen_pool_destroy(foo_pool);
-  }
-
-  module_init(foo_init);
-  module_exit(foo_exit);
-  [root@phantom-lp2 foo]# zcat /proc/config.gz | grep SLOB
-  CONFIG_SLOB=y
-  [root@phantom-lp2 foo]# insmod ./foo.ko
-  [root@phantom-lp2 foo]# rmmod foo
-  ------------[ cut here ]------------
-  kernel BUG at lib/genalloc.c:243!
-  cpu 0x4: Vector: 700 (Program Check) at [c0000000bb0e7960]
-      pc: c0000000003cb50c: .gen_pool_destroy+0xac/0x110
-      lr: c0000000003cb4fc: .gen_pool_destroy+0x9c/0x110
-      sp: c0000000bb0e7be0
-     msr: 8000000000029032
-    current = 0xc0000000bb0e0000
-    paca    = 0xc000000006d30e00   softe: 0        irq_happened: 0x01
-      pid   = 13044, comm = rmmod
-  kernel BUG at lib/genalloc.c:243!
-  [c0000000bb0e7ca0] d000000004b00020 .foo_exit+0x20/0x38 [foo]
-  [c0000000bb0e7d20] c0000000000dff98 .SyS_delete_module+0x1a8/0x290
-  [c0000000bb0e7e30] c0000000000097d4 syscall_exit+0x0/0x94
-  --- Exception: c00 (System Call) at 000000800753d1a0
-  SP (fffd0b0e640) is in userspace
-
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@linux.vnet.ibm.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Benjamin Gaignard <benjamin.gaignard@stericsson.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- lib/genalloc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/lib/genalloc.c b/lib/genalloc.c
-index 736c3b0..3c76249 100644
---- a/lib/genalloc.c
-+++ b/lib/genalloc.c
-@@ -54,7 +54,7 @@ int gen_pool_add(struct gen_pool *pool, unsigned long addr, size_t size,
- 	struct gen_pool_chunk *chunk;
- 	int nbits = size >> pool->min_alloc_order;
- 	int nbytes = sizeof(struct gen_pool_chunk) +
--				(nbits + BITS_PER_BYTE - 1) / BITS_PER_BYTE;
-+				BITS_TO_LONGS(nbits) * sizeof(long);
- 
- 	chunk = kmalloc_node(nbytes, GFP_KERNEL | __GFP_ZERO, nid);
- 	if (unlikely(chunk == NULL))
--- 
-1.7.12.1
-
+Eric
