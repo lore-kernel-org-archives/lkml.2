@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933531Ab3AIVai (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 16:30:38 -0500
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43192 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933496Ab3AIVad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 16:30:33 -0500
-Date: Wed, 9 Jan 2013 21:28:47 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Thierry Reding <thierry.reding@avionic-design.de>
-Cc: linux-tegra@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <rob.herring@calxeda.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Andrew Murray <andrew.murray@arm.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-pci@vger.kernel.org
-Subject: Re: [PATCH 05/14] lib: Add I/O map cache implementation
-Message-ID: <20130109212847.GT3931@n2100.arm.linux.org.uk>
-References: <1357764194-12677-1-git-send-email-thierry.reding@avionic-design.de> <1357764194-12677-6-git-send-email-thierry.reding@avionic-design.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1357764194-12677-6-git-send-email-thierry.reding@avionic-design.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S933468Ab3AIVbK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 16:31:10 -0500
+Received: from mail.kernel.org ([198.145.19.201]:42428 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933384Ab3AIUi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:38:56 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Christian Lamparter <chunkeey@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [ 29/80] p54usb: add USBIDs for two more p54usb devices
+Date: Wed,  9 Jan 2013 12:35:21 -0800
+Message-Id: <20130109201504.106552374@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201500.410171651@linuxfoundation.org>
+References: <20130109201500.410171651@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 09, 2013 at 09:43:05PM +0100, Thierry Reding wrote:
-> The I/O map cache is used to map large regions of physical memory in
-> smaller chunks to avoid running out of vmalloc()/ioremap() space.
-> 
-> Signed-off-by: Thierry Reding <thierry.reding@avionic-design.de>
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-We already have a means where we record the mappings which ioremap()
-creates.  If you look at /proc/vmallocinfo, you'll notice lines such
-as:
+------------------
 
-0xf7b72000-0xf7b74000    8192 e1000_probe+0x291/0xa68 [e1000e] phys=fc025000 ioremap
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-which gives you the virtual address range, physical address and type
-of the mapping.  Why do we need a duplicated data structure?
+commit 4010fe21a315b4223c25376714c6a2b61b722e5c upstream.
 
-Moreover, you seem to suggest that you want to break up a large
-ioremap() mapping into several smaller mappings.  Why?  The idea
-behind ioremap() is that this relationship holds true:
+This patch adds USBIDs for:
+	- DrayTek Vigor 530
+	- Zoom 4410a
 
-	ptr = ioremap(cookie + n, size);
+It also adds a note about Gemtek WUBI-100GW
+and SparkLAN WL-682 USBID conflict [WUBI-100GW
+is a ISL3886+NET2280 (LM86 firmare) solution,
+whereas WL-682 is a ISL3887 (LM87 firmware)]
+device.
 
-For any 'n' in the range 0 .. size, the location shall be accessible
-via ptr + n when using the IO space accessors.  If you're going to
-break up a mapping into several smaller ones, this no longer holds
-true.
+Source: <http://www.wikidevi.com/wiki/Intersil/p54/usb/windows>
 
-If the problem is that you're ioremapping huge address ranges because
-you're passing larger-than-required resources to devices, then that's
-part of the problem too.
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/p54/p54usb.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -47,6 +47,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x0411, 0x0050)},	/* Buffalo WLI2-USB2-G54 */
+ 	{USB_DEVICE(0x045e, 0x00c2)},	/* Microsoft MN-710 */
+ 	{USB_DEVICE(0x0506, 0x0a11)},	/* 3COM 3CRWE254G72 */
++	{USB_DEVICE(0x0675, 0x0530)},	/* DrayTek Vigor 530 */
+ 	{USB_DEVICE(0x06b9, 0x0120)},	/* Thomson SpeedTouch 120g */
+ 	{USB_DEVICE(0x0707, 0xee06)},	/* SMC 2862W-G */
+ 	{USB_DEVICE(0x07aa, 0x001c)},	/* Corega CG-WLUSB2GT */
+@@ -82,6 +83,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x06a9, 0x000e)},	/* Westell 802.11g USB (A90-211WG-01) */
+ 	{USB_DEVICE(0x06b9, 0x0121)},	/* Thomson SpeedTouch 121g */
+ 	{USB_DEVICE(0x0707, 0xee13)},   /* SMC 2862W-G version 2 */
++	{USB_DEVICE(0x0803, 0x4310)},	/* Zoom 4410a */
+ 	{USB_DEVICE(0x083a, 0x4503)},	/* T-Com Sinus 154 data II */
+ 	{USB_DEVICE(0x083a, 0x4521)},   /* Siemens Gigaset USB Adapter 54 version 2 */
+ 	{USB_DEVICE(0x083a, 0xc501)},	/* Zoom Wireless-G 4410 */
+@@ -102,6 +104,7 @@ static struct usb_device_id p54u_table[]
+ 	{USB_DEVICE(0x13B1, 0x000C)},	/* Linksys WUSB54AG */
+ 	{USB_DEVICE(0x1413, 0x5400)},   /* Telsey 802.11g USB2.0 Adapter */
+ 	{USB_DEVICE(0x1435, 0x0427)},	/* Inventel UR054G */
++	/* {USB_DEVICE(0x15a9, 0x0002)}, * Also SparkLAN WL-682 with 3887 */
+ 	{USB_DEVICE(0x1668, 0x1050)},	/* Actiontec 802UIG-1 */
+ 	{USB_DEVICE(0x1740, 0x1000)},	/* Senao NUB-350 */
+ 	{USB_DEVICE(0x2001, 0x3704)},	/* DLink DWL-G122 rev A2 */
+
+
