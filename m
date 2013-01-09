@@ -1,69 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934149Ab3AIUv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jan 2013 15:51:59 -0500
-Received: from hydra.sisk.pl ([212.160.235.94]:36105 "EHLO hydra.sisk.pl"
+	id S932729Ab3AIUlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jan 2013 15:41:08 -0500
+Received: from mail.kernel.org ([198.145.19.201]:43693 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933894Ab3AIUv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jan 2013 15:51:56 -0500
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: SRAT: report non-volatile memory in debug
-Date: Wed, 09 Jan 2013 21:57:40 +0100
-Message-ID: <1571870.Rvy3fV1yKf@vostro.rjw.lan>
-User-Agent: KMail/4.9.5 (Linux/3.8.0-rc2+; KDE/4.9.5; x86_64; ; )
-In-Reply-To: <1357691375.1890.16.camel@buesod1.americas.hpqcorp.net>
-References: <1357690556.1890.13.camel@buesod1.americas.hpqcorp.net> <1692605.TGpS6mF86Q@vostro.rjw.lan> <1357691375.1890.16.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S933966Ab3AIUkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jan 2013 15:40:53 -0500
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, alan@lxorguk.ukuu.org.uk,
+        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Andrew Dahl <adahl@sgi.com>, Ben Myers <bpm@sgi.com>
+Subject: [ 093/123] xfs: fix direct IO nested transaction deadlock.
+Date: Wed,  9 Jan 2013 12:35:32 -0800
+Message-Id: <20130109201510.540202212@linuxfoundation.org>
+X-Mailer: git-send-email 1.8.1.rc1.5.g7e0651a
+In-Reply-To: <20130109201458.392601412@linuxfoundation.org>
+References: <20130109201458.392601412@linuxfoundation.org>
+User-Agent: quilt/0.60-2.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, January 08, 2013 04:29:35 PM Davidlohr Bueso wrote:
-> On Wed, 2013-01-09 at 01:34 +0100, Rafael J. Wysocki wrote:
-> > On Tuesday, January 08, 2013 04:15:56 PM Davidlohr Bueso wrote:
-> > > Just as with the other memory affinity flags, report
-> > > non-volatile memory with ACPI debug.
-> > 
-> > Looks kind of good, but ->
-> > 
-> > > Signed-off-by: Davidlohr Bueso <davidlohr.bueso@hp.com>
-> > > ---
-> > >  drivers/acpi/numa.c | 4 +++-
-> > >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/drivers/acpi/numa.c b/drivers/acpi/numa.c
-> > > index cb31298..68077ac 100644
-> > > --- a/drivers/acpi/numa.c
-> > > +++ b/drivers/acpi/numa.c
-> > > @@ -116,12 +116,14 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
-> > >  			struct acpi_srat_mem_affinity *p =
-> > >  			    (struct acpi_srat_mem_affinity *)header;
-> > >  			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-> > > -					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s\n",
-> > > +					  "SRAT Memory (0x%lx length 0x%lx) in proximity domain %d %s%s%s\n",
-> > >  					  (unsigned long)p->base_address,
-> > >  					  (unsigned long)p->length,
-> > >  					  p->proximity_domain,
-> > >  					  (p->flags & ACPI_SRAT_MEM_ENABLED)?
-> > >  					  "enabled" : "disabled",
-> > > +					  (p->flags & ACPI_SRAT_MEM_NON_VOLATILE)?
-> > > +					  " non-volatile" : "",
-> > 
-> > -> why did you put non-volatile before hot-pluggable?
-> 
-> No particular reason. Should I send a v2 with non-volatile at the end?
+3.7-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, please.
+------------------
 
-Thanks,
-Rafael
+From: Dave Chinner <dchinner@redhat.com>
+
+commit 437a255aa23766666aec78af63be4c253faa8d57 upstream.
+
+The direct IO path can do a nested transaction reservation when
+writing past the EOF. The first transaction is the append
+transaction for setting the filesize at IO completion, but we can
+also need a transaction for allocation of blocks. If the log is low
+on space due to reservations and small log, the append transaction
+can be granted after wating for space as the only active transaction
+in the system. This then attempts a reservation for an allocation,
+which there isn't space in the log for, and the reservation sleeps.
+The result is that there is nothing left in the system to wake up
+all the processes waiting for log space to come free.
+
+The stack trace that shows this deadlock is relatively innocuous:
+
+ xlog_grant_head_wait
+ xlog_grant_head_check
+ xfs_log_reserve
+ xfs_trans_reserve
+ xfs_iomap_write_direct
+ __xfs_get_blocks
+ xfs_get_blocks_direct
+ do_blockdev_direct_IO
+ __blockdev_direct_IO
+ xfs_vm_direct_IO
+ generic_file_direct_write
+ xfs_file_dio_aio_writ
+ xfs_file_aio_write
+ do_sync_write
+ vfs_write
+
+This was discovered on a filesystem with a log of only 10MB, and a
+log stripe unit of 256k whih increased the base reservations by
+512k. Hence a allocation transaction requires 1.2MB of log space to
+be available instead of only 260k, and so greatly increased the
+chance that there wouldn't be enough log space available for the
+nested transaction to succeed. The key to reproducing it is this
+mkfs command:
+
+mkfs.xfs -f -d agcount=16,su=256k,sw=12 -l su=256k,size=2560b $SCRATCH_DEV
+
+The test case was a 1000 fsstress processes running with random
+freeze and unfreezes every few seconds. Thanks to Eryu Guan
+(eguan@redhat.com) for writing the test that found this on a system
+with a somewhat unique default configuration....
+
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reviewed-by: Andrew Dahl <adahl@sgi.com>
+Signed-off-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/xfs/xfs_aops.c |   81 +++++++++++++++++++-----------------------------------
+ fs/xfs/xfs_log.c  |    3 +-
+ 2 files changed, 31 insertions(+), 53 deletions(-)
+
+--- a/fs/xfs/xfs_aops.c
++++ b/fs/xfs/xfs_aops.c
+@@ -124,7 +124,7 @@ xfs_setfilesize_trans_alloc(
+ 	ioend->io_append_trans = tp;
+ 
+ 	/*
+-	 * We will pass freeze protection with a transaction.  So tell lockdep
++	 * We may pass freeze protection with a transaction.  So tell lockdep
+ 	 * we released it.
+ 	 */
+ 	rwsem_release(&ioend->io_inode->i_sb->s_writers.lock_map[SB_FREEZE_FS-1],
+@@ -149,11 +149,13 @@ xfs_setfilesize(
+ 	xfs_fsize_t		isize;
+ 
+ 	/*
+-	 * The transaction was allocated in the I/O submission thread,
+-	 * thus we need to mark ourselves as beeing in a transaction
+-	 * manually.
++	 * The transaction may have been allocated in the I/O submission thread,
++	 * thus we need to mark ourselves as beeing in a transaction manually.
++	 * Similarly for freeze protection.
+ 	 */
+ 	current_set_flags_nested(&tp->t_pflags, PF_FSTRANS);
++	rwsem_acquire_read(&VFS_I(ip)->i_sb->s_writers.lock_map[SB_FREEZE_FS-1],
++			   0, 1, _THIS_IP_);
+ 
+ 	xfs_ilock(ip, XFS_ILOCK_EXCL);
+ 	isize = xfs_new_eof(ip, ioend->io_offset + ioend->io_size);
+@@ -187,7 +189,8 @@ xfs_finish_ioend(
+ 
+ 		if (ioend->io_type == XFS_IO_UNWRITTEN)
+ 			queue_work(mp->m_unwritten_workqueue, &ioend->io_work);
+-		else if (ioend->io_append_trans)
++		else if (ioend->io_append_trans ||
++			 (ioend->io_isdirect && xfs_ioend_is_append(ioend)))
+ 			queue_work(mp->m_data_workqueue, &ioend->io_work);
+ 		else
+ 			xfs_destroy_ioend(ioend);
+@@ -205,15 +208,6 @@ xfs_end_io(
+ 	struct xfs_inode *ip = XFS_I(ioend->io_inode);
+ 	int		error = 0;
+ 
+-	if (ioend->io_append_trans) {
+-		/*
+-		 * We've got freeze protection passed with the transaction.
+-		 * Tell lockdep about it.
+-		 */
+-		rwsem_acquire_read(
+-			&ioend->io_inode->i_sb->s_writers.lock_map[SB_FREEZE_FS-1],
+-			0, 1, _THIS_IP_);
+-	}
+ 	if (XFS_FORCED_SHUTDOWN(ip->i_mount)) {
+ 		ioend->io_error = -EIO;
+ 		goto done;
+@@ -226,35 +220,31 @@ xfs_end_io(
+ 	 * range to normal written extens after the data I/O has finished.
+ 	 */
+ 	if (ioend->io_type == XFS_IO_UNWRITTEN) {
++		error = xfs_iomap_write_unwritten(ip, ioend->io_offset,
++						  ioend->io_size);
++	} else if (ioend->io_isdirect && xfs_ioend_is_append(ioend)) {
+ 		/*
+-		 * For buffered I/O we never preallocate a transaction when
+-		 * doing the unwritten extent conversion, but for direct I/O
+-		 * we do not know if we are converting an unwritten extent
+-		 * or not at the point where we preallocate the transaction.
++		 * For direct I/O we do not know if we need to allocate blocks
++		 * or not so we can't preallocate an append transaction as that
++		 * results in nested reservations and log space deadlocks. Hence
++		 * allocate the transaction here. While this is sub-optimal and
++		 * can block IO completion for some time, we're stuck with doing
++		 * it this way until we can pass the ioend to the direct IO
++		 * allocation callbacks and avoid nesting that way.
+ 		 */
+-		if (ioend->io_append_trans) {
+-			ASSERT(ioend->io_isdirect);
+-
+-			current_set_flags_nested(
+-				&ioend->io_append_trans->t_pflags, PF_FSTRANS);
+-			xfs_trans_cancel(ioend->io_append_trans, 0);
+-		}
+-
+-		error = xfs_iomap_write_unwritten(ip, ioend->io_offset,
+-						 ioend->io_size);
+-		if (error) {
+-			ioend->io_error = -error;
++		error = xfs_setfilesize_trans_alloc(ioend);
++		if (error)
+ 			goto done;
+-		}
++		error = xfs_setfilesize(ioend);
+ 	} else if (ioend->io_append_trans) {
+ 		error = xfs_setfilesize(ioend);
+-		if (error)
+-			ioend->io_error = -error;
+ 	} else {
+ 		ASSERT(!xfs_ioend_is_append(ioend));
+ 	}
+ 
+ done:
++	if (error)
++		ioend->io_error = -error;
+ 	xfs_destroy_ioend(ioend);
+ }
+ 
+@@ -1432,25 +1422,21 @@ xfs_vm_direct_IO(
+ 		size_t size = iov_length(iov, nr_segs);
+ 
+ 		/*
+-		 * We need to preallocate a transaction for a size update
+-		 * here.  In the case that this write both updates the size
+-		 * and converts at least on unwritten extent we will cancel
+-		 * the still clean transaction after the I/O has finished.
++		 * We cannot preallocate a size update transaction here as we
++		 * don't know whether allocation is necessary or not. Hence we
++		 * can only tell IO completion that one is necessary if we are
++		 * not doing unwritten extent conversion.
+ 		 */
+ 		iocb->private = ioend = xfs_alloc_ioend(inode, XFS_IO_DIRECT);
+-		if (offset + size > XFS_I(inode)->i_d.di_size) {
+-			ret = xfs_setfilesize_trans_alloc(ioend);
+-			if (ret)
+-				goto out_destroy_ioend;
++		if (offset + size > XFS_I(inode)->i_d.di_size)
+ 			ioend->io_isdirect = 1;
+-		}
+ 
+ 		ret = __blockdev_direct_IO(rw, iocb, inode, bdev, iov,
+ 					    offset, nr_segs,
+ 					    xfs_get_blocks_direct,
+ 					    xfs_end_io_direct_write, NULL, 0);
+ 		if (ret != -EIOCBQUEUED && iocb->private)
+-			goto out_trans_cancel;
++			goto out_destroy_ioend;
+ 	} else {
+ 		ret = __blockdev_direct_IO(rw, iocb, inode, bdev, iov,
+ 					    offset, nr_segs,
+@@ -1460,15 +1446,6 @@ xfs_vm_direct_IO(
+ 
+ 	return ret;
+ 
+-out_trans_cancel:
+-	if (ioend->io_append_trans) {
+-		current_set_flags_nested(&ioend->io_append_trans->t_pflags,
+-					 PF_FSTRANS);
+-		rwsem_acquire_read(
+-			&inode->i_sb->s_writers.lock_map[SB_FREEZE_FS-1],
+-			0, 1, _THIS_IP_);
+-		xfs_trans_cancel(ioend->io_append_trans, 0);
+-	}
+ out_destroy_ioend:
+ 	xfs_destroy_ioend(ioend);
+ 	return ret;
+--- a/fs/xfs/xfs_log.c
++++ b/fs/xfs/xfs_log.c
+@@ -458,7 +458,8 @@ xfs_log_reserve(
+ 	tic->t_trans_type = t_type;
+ 	*ticp = tic;
+ 
+-	xlog_grant_push_ail(log, tic->t_unit_res * tic->t_cnt);
++	xlog_grant_push_ail(log, tic->t_cnt ? tic->t_unit_res * tic->t_cnt
++					    : tic->t_unit_res);
+ 
+ 	trace_xfs_log_reserve(log, tic);
+ 
 
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
